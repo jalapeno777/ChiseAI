@@ -153,6 +153,9 @@ python3 scripts/validate_iterloop_compliance.py --story-id=<id>
   - Review: `.opencode/command/bmad-bmm-code-review.md` plus `critic` for adversarial audit
   - Research: `.opencode/command/bmad-bmm-domain-research.md`, `.opencode/command/bmad-bmm-technical-research.md` plus `web-research` for current web sources
 
+**ChiseAI Git Flow Commands (required for autonomy)**
+- Use `.opencode/command/chise-pr-automerge.md` to standardize push -> PR -> merge (green CI only). This is the default path for autonomous agents to keep `main` convergent.
+
 **MCP usage priority (web/search/vision)**
 - Prefer Z.ai MCPs first; fall back to MiniMax if Z.ai fails or is unavailable
 - Web search: `ZAI_Search` -> `MiniMax_Web` -> DuckDuckGo
