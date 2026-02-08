@@ -21,7 +21,7 @@ import sqlite3
 import sys
 from typing import Any
 
-import psycopg2
+import psycopg2  # type: ignore[import-untyped]
 
 TABLES = ["forges", "orgs", "users", "repos", "secrets"]
 
@@ -49,7 +49,7 @@ def _pg_connect() -> Any:
     )
 
 
-def _pg_bool_cols(pg, table: str) -> set[str]:
+def _pg_bool_cols(pg: Any, table: str) -> set[str]:
     with pg.cursor() as c:
         c.execute(
             """
@@ -78,7 +78,7 @@ def _normalize(table: str, col: str, v: Any, bool_cols: dict[str, set[str]]) -> 
 
 
 def _insert_rows(
-    pg, table: str, rows: list[sqlite3.Row], bool_cols: dict[str, set[str]]
+    pg: Any, table: str, rows: list[sqlite3.Row], bool_cols: dict[str, set[str]]
 ) -> None:
     if not rows:
         return
