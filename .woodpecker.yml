@@ -5,7 +5,7 @@ clone:
   git:
     image: woodpeckerci/plugin-git
     settings:
-      remote: http://gitea:3000/${CI_REPO_OWNER}/${CI_REPO_NAME}.git
+      remote: http://host.docker.internal:3000/${CI_REPO_OWNER}/${CI_REPO_NAME}.git
 
 steps:
   lint:
