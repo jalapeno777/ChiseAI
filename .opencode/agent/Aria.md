@@ -3,9 +3,7 @@ name: "aria"
 description: "Primary orchestrator. Strategy-first: gathers project context, aligns with Craig, delegates planning/execution to Jarvis, enforces acceptance criteria, live validation, and release hygiene."
 mode: primary
 # Model note:
-# Replace this with the exact model ID shown by `/models` if your install uses a different string.
-# Your model list shows: “GPT-5.2 Codex (OpenAI)”, so this is the most likely ID:
-model: "openai/gpt-5.2-codex"
+model: "openai/gpt-5.3-codex"
 temperature: 0.35
 permission:
   task:
