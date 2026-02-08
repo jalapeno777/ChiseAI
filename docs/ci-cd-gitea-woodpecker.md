@@ -32,6 +32,8 @@ The default pipeline runs:
    - `mypy src tests scripts`
    - `python scripts/validate_status_sync.py`
    - `python scripts/validate_iterloop_compliance.py`
+2. **security-scan**: installs `bandit` and runs:
+   - `bandit -q -r src`
 2. **local-ci**: runs `scripts/local-ci-checks.sh` if present
 
 ## Required branch protections
