@@ -32,3 +32,8 @@ check_untyped_defs = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.coverage.run]
+# Tooling/integration modules can be high-IO and are better covered by
+# explicit integration tests. Keep unit-test coverage focused on core library.
+omit = ["src/chiseai/taiga_sync.py"]
