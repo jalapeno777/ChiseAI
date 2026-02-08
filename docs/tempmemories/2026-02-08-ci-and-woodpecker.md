@@ -30,3 +30,4 @@ notes:
 - Created Gitea OAuth app directly in `gitea.db` (client_id `54703d2c469ef2d15174d554aa822bbf`); set terraform tfvars locally and restarted woodpecker-server.
 - Set `GITEA__server__HTTP_ADDR=0.0.0.0` to ensure host port 3000 is reachable (connection resets should stop).
 - Recreated OAuth app via Gitea API using scoped admin token; updated local `terraform.tfvars` and restarted woodpecker-server.
+- Set Gitea OAuth app `confidential_client=1` to avoid PKCE-required login errors.
