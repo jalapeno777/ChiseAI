@@ -37,7 +37,7 @@ steps:
     commands:
       - |
         set -eu
-        pip install --no-cache-dir pytest pytest-cov pyyaml
+        pip install --no-cache-dir pytest pytest-cov pyyaml requests
         if [ -x scripts/local-ci-checks.sh ]; then
           ./scripts/local-ci-checks.sh
         else
