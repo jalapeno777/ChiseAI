@@ -26,3 +26,4 @@ notes:
 - Switched clone remote to host gateway `172.17.0.1:3000` because pipeline containers resolve default bridge, not `gitea`.
 - Removed explicit username/password in clone; plan to rely on trusted clone credentials injection.
 - Set clone remote to `from_secret: gitea_clone_url` to supply auth in URL (user-managed secret).
+- Woodpecker OAuth client/secret still default `change-me`; server cannot load config from forge until real Gitea OAuth app creds are set and Woodpecker re-auths.
