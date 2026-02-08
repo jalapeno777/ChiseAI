@@ -223,6 +223,7 @@ resource "docker_container" "woodpecker_server" {
     "WOODPECKER_GITEA_CLIENT=${var.woodpecker_gitea_client}",
     "WOODPECKER_GITEA_SECRET=${var.woodpecker_gitea_secret}",
     "WOODPECKER_AGENT_SECRET=${var.woodpecker_agent_secret}",
+    "WOODPECKER_PLUGINS_TRUSTED_CLONE=docker.io/woodpeckerci/plugin-git:2.5.1,docker.io/woodpeckerci/plugin-git",
     "WOODPECKER_GRPC_ADDR=:9000",
   ]
 

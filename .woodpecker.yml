@@ -6,10 +6,6 @@ clone:
     image: woodpeckerci/plugin-git
     settings:
       remote: http://172.17.0.1:3000/${CI_REPO_OWNER}/${CI_REPO_NAME}.git
-      username:
-        from_secret: gitea_username
-      password:
-        from_secret: gitea_token
 
 steps:
   lint:
