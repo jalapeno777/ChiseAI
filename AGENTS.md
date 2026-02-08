@@ -155,6 +155,7 @@ python3 scripts/validate_iterloop_compliance.py --story-id=<id>
 
 **ChiseAI Git Flow Commands (required for autonomy)**
 - Use `.opencode/command/chise-pr-automerge.md` to standardize push -> PR -> merge (green CI only). This is the default path for autonomous agents to keep `main` convergent.
+- **PR Title Rule:** Every PR title MUST include the canonical story ID (e.g. `ST-NS-001 ...`). The `chise-pr-automerge` flow enforces this via `scripts/gitea_pr_automerge.py --story-id`.
 
 **MCP usage priority (web/search/vision)**
 - Prefer Z.ai MCPs first; fall back to MiniMax if Z.ai fails or is unavailable

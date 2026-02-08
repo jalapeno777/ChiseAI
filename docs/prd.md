@@ -369,6 +369,7 @@ ChiseAI is currently in **planning/foundation** for this repository. The authori
 
 | Document | Location |
 |----------|----------|
+| Product Brief (canonical) | docs/product-brief.md |
 | Architecture | docs/architecture.md |
 | Workflow Status | docs/bmm-workflow-status.yaml |
 | Validation Registry | docs/validation/validation-registry.yaml |

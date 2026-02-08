@@ -108,6 +108,11 @@ def main() -> int:
     p.add_argument("--repo", default=os.getenv("GITEA_REPO", "ChiseAI"))
     p.add_argument("--base", default="main")
     p.add_argument("--head", required=True, help="Branch name, e.g. feature/foo")
+    p.add_argument(
+        "--story-id",
+        required=True,
+        help="Story ID to include in PR title, e.g. ST-NS-001 or CH-PB-001",
+    )
     p.add_argument("--title", default=None)
     p.add_argument("--body", default="")
     p.add_argument("--required-context", default="ci/woodpecker/push/woodpecker")
@@ -132,9 +137,15 @@ def main() -> int:
     head_ref = args.head
     head_query = f"{args.owner}:{head_ref}"
 
+    story_id = args.story_id.strip()
+    if not story_id:
+        print("ERROR: --story-id must be non-empty", file=sys.stderr)
+        return 1
+
     pr = _get_pr(args.owner, args.repo, base_url, token, head_query)
     if pr is None:
-        title = args.title or f"{head_ref}"
+        base_title = args.title or f"{head_ref}"
+        title = f"{story_id} {base_title}"
         pr = _create_pr(
             args.owner,
             args.repo,
@@ -145,6 +156,15 @@ def main() -> int:
             title=title,
             body=args.body,
         )
+    else:
+        # If PR exists but lacks story ID in title, patch it to include the prefix.
+        pr_title = str(pr.get("title", ""))
+        if story_id not in pr_title:
+            pr_num = int(pr["number"])
+            url = f"{base_url}/api/v1/repos/{args.owner}/{args.repo}/pulls/{pr_num}"
+            new_title = f"{story_id} {pr_title}".strip()
+            _req_json("PATCH", url, token, {"title": new_title})
+            pr["title"] = new_title
 
     index = int(pr["number"])
     sha = pr["head"]["sha"]
