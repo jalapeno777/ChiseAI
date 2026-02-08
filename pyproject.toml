@@ -1,0 +1,10 @@
+[tool.black]
+line-length = 88
+include = 'tests/ci_fail_black\.py$'
+
+[tool.ruff]
+extend-exclude = ["**/*"]
+select = []
+
+[tool.mypy]
+exclude = '.*'
