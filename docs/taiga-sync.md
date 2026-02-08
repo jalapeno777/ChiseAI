@@ -4,6 +4,37 @@
 - Repo is canonical for requirements, status, and acceptance criteria.
 - Taiga is canonical for planning metadata (assignee, sprint, estimates, tags, comments).
 
+## Tooling
+- Sync script: `scripts/taiga_sync.py`
+- Sync state (mapping + checksums): `docs/taiga/sync-state.yaml`
+
+### Required Env Vars (Repo -> Taiga)
+- `TAIGA_BASE_URL` (default: `http://host.docker.internal:9002`)
+- `TAIGA_PROJECT_SLUG` (required)
+- Auth (one of):
+  - `TAIGA_TOKEN` (preferred)
+  - `TAIGA_USERNAME` + `TAIGA_PASSWORD`
+ - Optional (milestone creation requires dates):
+   - `TAIGA_MILESTONE_START` (default: today, ISO date like `2026-02-08`)
+   - `TAIGA_MILESTONE_FINISH` (default: today + 90 days)
+
+### Safety Defaults
+- Dry-run is the default.
+- Applying changes requires `--apply`.
+- If Taiga edits repo-canonical fields (title/status/AC), sync will flag conflicts unless `--force`.
+
+### Common Commands
+```bash
+# Validate config + connectivity (fails fast if env vars missing)
+python3 scripts/taiga_sync.py --validate
+
+# Preview what would be created/updated in Taiga
+python3 scripts/taiga_sync.py
+
+# Apply repo -> Taiga updates and persist mapping state
+python3 scripts/taiga_sync.py --apply
+```
+
 ## Repo-Canonical Fields (Taiga edits create PR)
 - Story ID
 - Story title
@@ -34,3 +65,7 @@
 - PR must reference story ID(s).
 - Include acceptance criteria changes explicitly.
 - Must pass status sync and CI gates before merge.
+
+## CI Automation (Optional)
+Woodpecker may run `scripts/taiga_sync.py --validate` or `--apply` on `main` only when
+explicitly enabled via CI secrets/env (so the repo stays buildable without Taiga creds).
