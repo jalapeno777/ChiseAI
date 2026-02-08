@@ -108,6 +108,7 @@ python scripts/validate_iterloop_compliance.py --story-id=<id>
 - Before switching branches, the working tree must be clean (`git status -sb` shows no changes).
 - Long-running work (multi-session) must live on a `safety/*` branch with partial commits.
 - If a stash is created, it must be applied + committed or dropped before finishing the task.
+- **Canonical SCM:** Gitea is the source of truth for repos/PRs. GitHub usage is **deprecated** for ChiseAI unless explicitly re-enabled by a human.
 - CI gate: run `scripts/local-ci-checks.sh` (or equivalent) before any PR; fix failures and re-run until green.
 - Status sync gate: run `python scripts/validate_status_sync.py` before any PR; must pass (warnings OK).
 - PR creation gate: only after CI passes and `git status -sb` is clean (or explicit human approval).
@@ -146,7 +147,7 @@ python scripts/validate_iterloop_compliance.py --story-id=<id>
 - Always note which MCP was used and why in responses when results inform decisions
 
 **MCP usage (GitHub/Postgres/Playwright)**
-- `GitHub`: use for issues/PRs, repo browsing, and migration of Chise requests into GitHub; avoid write actions unless explicitly requested
+- `GitHub`: **deprecated** for ChiseAI (use only for upstream references or explicit human instructions)
 - `Postgres`: read-only queries for validation/audits; never write or alter schema
 - `Playwright`: dashboard UI validation (Streamlit) across all tabs, system health, and regression checks
   - **Container (this environment):** Target `http://host.docker.internal:8502`
@@ -292,10 +293,11 @@ python scripts/validate_status_sync.py
 
 **Musts**
 1. Every story includes code changes under `src/` + tests under `tests/`
-2. Keep CI green; update `.github/workflows/*.yml` when new tests/services added
+2. Keep CI green; update `.woodpecker.yml` when new tests/services added
 3. Never commit secrets; use env vars + `.env` + `.gitignore`
 4. Status file validation passes (`python scripts/validate_status_sync.py`)
 5. No story implementations merged without corresponding status update in YAML
+6. Required status check context: `ci/woodpecker/push/woodpecker`
 
 ---
 

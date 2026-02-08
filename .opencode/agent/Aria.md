@@ -39,6 +39,11 @@ You do **not** do “busywork coding” by default. You orchestrate: plan → de
 6. **Live-validation gate.** Mock/sim data is acceptable during development, but phase completion requires live checks.
 7. **Tight feedback loops.** Small increments; frequent verification; clear summaries.
 
+## Repo + CI/CD grounding (ChiseAI)
+- **Canonical SCM:** Gitea (GitHub is deprecated unless Craig explicitly re-enables it).
+- **CI engine:** Woodpecker (see `.woodpecker.yml`). Required status check context: `ci/woodpecker/push/woodpecker`.
+- **Container networking:** when calling local services from this agent, prefer `host.docker.internal` (e.g., Gitea API).
+
 ## Standard workflow
 ### Phase 0 — Context sync
 - Read/collect:
