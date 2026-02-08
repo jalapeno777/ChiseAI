@@ -217,7 +217,7 @@ resource "docker_container" "woodpecker_server" {
   image = "woodpeckerci/woodpecker-server:latest"
 
   env = [
-    "WOODPECKER_OPEN=true",
+    "WOODPECKER_OPEN=false",
     "WOODPECKER_HOST=http://localhost:8012",
     "WOODPECKER_GITEA=true",
     "WOODPECKER_GITEA_URL=http://gitea:3000",
