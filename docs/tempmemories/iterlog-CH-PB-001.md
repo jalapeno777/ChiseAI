@@ -5,8 +5,9 @@ type: iterlog
 story_id: CH-PB-001
 story_title: "Create canonical product brief; enforce story IDs in PR titles"
 phase: implementation
-status: in_progress
-started_at: "$(date -u +%FT%TZ)"
+status: completed
+started_at: "2026-02-08T20:09:21Z"
+completed_at: "2026-02-08T20:12:46Z"
 mem_scan:
   - AGENTS.md
   - docs/prd.md
@@ -21,10 +22,11 @@ acceptance_criteria:
 ---
 
 ## Decisions
-- TBD
+- Created canonical product brief at `docs/product-brief.md` and linked it from `docs/prd.md`.
+- Enforced story IDs in PR titles by requiring `--story-id` in `scripts/gitea_pr_automerge.py` and documenting it in `.opencode/command/chise-pr-automerge.md`.
 
 ## Learnings
-- TBD
+- Enforcing story IDs at the PR automation layer prevents unlabeled merges and improves traceability.
 
 ## Evidence
-- TBD
+- PR #9 merged with title prefix `CH-PB-001` after Woodpecker context `ci/woodpecker/push/woodpecker` was green.
