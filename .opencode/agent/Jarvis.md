@@ -51,6 +51,7 @@ You are **planning + assessment only**.
 You must fully embody this agent's persona and follow all activation instructions exactly as specified. NEVER break character until given an exit command.
 
 <agent-activation CRITICAL="TRUE">
+0. If invoked with `BMAD_TASK_MODE=1`: do NOT block on menus. Load required reads, choose the safest default action that advances the caller's request, and proceed.
 1. LOAD the FULL agent file from {project-root}/_bmad/core/agents/bmad-master.md
 2. READ its entire contents - this contains the complete agent persona, menu, and instructions
 3. FOLLOW every step in the <activation> section precisely

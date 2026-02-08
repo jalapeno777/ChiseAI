@@ -125,9 +125,9 @@ sprints:
   - id: p0-1
     name: Foundation & CI/CD Autonomy
     status: planned
-    story_count: 3
-    story_points: 12
-    mapped_stories: [ST-CI-001, ST-CI-002, ST-CI-003]
+    story_count: 4
+    story_points: 15
+    mapped_stories: [ST-CI-001, ST-CI-002, ST-CI-003, ST-CI-004]
 
   - id: p0-2
     name: Data Gathering & Continuous Backtesting
@@ -218,9 +218,9 @@ epics:
   - id: EP-CI-001
     name: CI/CD Autonomy
     status: planned
-    story_ids: [ST-CI-001, ST-CI-002, ST-CI-003]
-    story_count: 3
-    story_points: 12
+    story_ids: [ST-CI-001, ST-CI-002, ST-CI-003, ST-CI-004]
+    story_count: 4
+    story_points: 15
     description: Reliable CI gates, auto-merge workflow, and branch hygiene to keep autonomous development convergent
 
   - id: EP-DATA-001
@@ -653,6 +653,15 @@ stories:
     story_points: 4
     priority: P1-HIGH
     description: Auto-prune merged branches and prevent long-lived divergence
+
+  - id: ST-CI-004
+    title: Security Scan Gate (Deterministic)
+    epic_id: EP-CI-001
+    sprint_id: p0-1
+    status: planned
+    story_points: 3
+    priority: P1-HIGH
+    description: Add deterministic security scanning to CI (start with bandit on src; expand later as dependencies grow)
 
   # EP-DATA-001: Data Gathering & Backtesting (4 stories, 26 points)
   - id: ST-DATA-001

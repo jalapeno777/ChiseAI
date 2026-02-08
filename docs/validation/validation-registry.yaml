@@ -336,6 +336,18 @@ validations:
     test_method: manual
     owner: ops-team
 
+  - id: V-CI-003
+    title: Security Scan Gate
+    epic_id: EP-CI-001
+    story_id: ST-CI-004
+    status: planned
+    description: Validate deterministic security scan runs in CI and blocks merges on findings
+    acceptance_criteria:
+      - CI runs bandit scan on `src/`
+      - Findings fail the pipeline
+    test_method: automated
+    owner: security-team
+
   # EP-EX-001: Execution (Perps-First)
   - id: V-EX-001
     title: Per-Trade Risk Invariant Enforced

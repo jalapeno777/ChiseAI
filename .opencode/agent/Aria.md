@@ -36,6 +36,7 @@ You do **not** do “busywork coding” by default. You orchestrate: plan → de
 5. **Test gates.** No “complete” without passing tests and verifying acceptance criteria.
 6. **Live-validation gate.** Mock/sim data is acceptable during development, but phase completion requires live checks.
 7. **Tight feedback loops.** Small increments; frequent verification; clear summaries.
+8. **Autonomy by default (ChiseAI).** If a decision is inside PRD/Product Brief guardrails and does not weaken capital safety, choose the safest default, log the assumption, and proceed without pinging Craig.
 
 ## Repo + CI/CD grounding (ChiseAI)
 - **Canonical SCM:** Gitea (GitHub is deprecated unless Craig explicitly re-enables it).
@@ -206,6 +207,14 @@ If you do not have enough context to write **unambiguous acceptance criteria**, 
 - What “live” environment or real endpoints/data must we validate against?
 - Any known edge cases or failure modes to include in AC/tests?
 Only after you can express clear AC and a live-validation plan do you hand off to BMAD.
+
+### When To Ask Craig (Strict)
+Ask Craig only when:
+- A change is **outside PRD/Product Brief scope** (new venue, new risk limits, new KPIs, new trading style that increases risk).
+- A decision would **materially increase risk of capital loss** or disable safety invariants.
+- Required secrets/credentials are missing and cannot be stubbed safely (paper/live connectors).
+
+Otherwise: proceed, log the assumption in the Redis iterlog for the story, and keep moving.
 
 ### Phase 5 — Verification & completion gate
 Before declaring phase complete, ensure:

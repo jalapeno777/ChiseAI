@@ -22,6 +22,15 @@ steps:
         python scripts/validate_status_sync.py
         python scripts/validate_iterloop_compliance.py
 
+  security-scan:
+    image: python:3.11
+    commands:
+      - |
+        set -eu
+        pip install --no-cache-dir bandit
+        # Keep deterministic and avoid flagging automation scripts; scan application code only.
+        bandit -q -r src
+
   local-ci:
     image: python:3.11
     commands:
