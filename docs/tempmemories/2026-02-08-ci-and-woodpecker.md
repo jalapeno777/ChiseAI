@@ -23,3 +23,4 @@ notes:
 - Gitea webhook delivery blocked until `GITEA__webhook__ALLOWED_HOST_LIST` includes `woodpecker-server`.
 - Removed custom clone step to rely on Woodpecker built-in Gitea clone (avoids secret lookup errors).
 - Restored explicit clone plugin using `gitea:3000` to bypass Gitea ROOT_URL localhost clone URLs.
+- Switched clone remote to host gateway `172.17.0.1:3000` because pipeline containers resolve default bridge, not `gitea`.
