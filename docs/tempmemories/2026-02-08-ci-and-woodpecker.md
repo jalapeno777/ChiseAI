@@ -28,3 +28,4 @@ notes:
 - Set clone remote to `from_secret: gitea_clone_url` to supply auth in URL (user-managed secret).
 - Woodpecker OAuth client/secret still default `change-me`; server cannot load config from forge until real Gitea OAuth app creds are set and Woodpecker re-auths.
 - Created Gitea OAuth app directly in `gitea.db` (client_id `54703d2c469ef2d15174d554aa822bbf`); set terraform tfvars locally and restarted woodpecker-server.
+- Set `GITEA__server__HTTP_ADDR=0.0.0.0` to ensure host port 3000 is reachable (connection resets should stop).

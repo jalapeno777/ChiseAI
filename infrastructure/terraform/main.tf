@@ -179,6 +179,7 @@ resource "docker_container" "gitea" {
 
   env = [
     "GITEA__server__ROOT_URL=${var.gitea_root_url}",
+    "GITEA__server__HTTP_ADDR=0.0.0.0",
     "GITEA__server__SSH_DOMAIN=localhost",
     "GITEA__server__SSH_PORT=2222",
     "GITEA__server__DISABLE_SSH=false",
