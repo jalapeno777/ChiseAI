@@ -22,3 +22,4 @@ notes:
 - Woodpecker secret `events` must be JSON (e.g. `["push","manual"]`) to avoid UI/API errors.
 - Gitea webhook delivery blocked until `GITEA__webhook__ALLOWED_HOST_LIST` includes `woodpecker-server`.
 - Removed custom clone step to rely on Woodpecker built-in Gitea clone (avoids secret lookup errors).
+- Restored explicit clone plugin using `gitea:3000` to bypass Gitea ROOT_URL localhost clone URLs.
