@@ -32,6 +32,7 @@ Set these before apply:
 - `TF_VAR_woodpecker_agent_secret`
 - `TF_VAR_woodpecker_gitea_client`
 - `TF_VAR_woodpecker_gitea_secret`
+- `TF_VAR_woodpecker_db_password`
 - `TF_VAR_taiga_secret_key`
 - `TF_VAR_taiga_db_password`
 

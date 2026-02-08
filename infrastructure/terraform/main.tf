@@ -226,6 +226,9 @@ resource "docker_container" "woodpecker_server" {
     "WOODPECKER_AGENT_SECRET=${var.woodpecker_agent_secret}",
     "WOODPECKER_PLUGINS_TRUSTED_CLONE=docker.io/woodpeckerci/plugin-git:2.5.1,docker.io/woodpeckerci/plugin-git",
     "WOODPECKER_GRPC_ADDR=:9000",
+    # Use Postgres to avoid sqlite locking under concurrency.
+    "WOODPECKER_DATABASE_DRIVER=postgres",
+    "WOODPECKER_DATABASE_DATASOURCE=postgres://woodpecker:${var.woodpecker_db_password}@chiseai-postgres:5434/woodpecker?sslmode=disable",
   ]
 
   ports {
