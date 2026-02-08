@@ -33,7 +33,7 @@ python scripts/validate_iterloop_compliance.py --story-id=<id>
 
 - **First Violation:** Warning in PR review
 - **Second Violation:** PR blocked until compliance fixed
-- **Pattern of Violations:** Required pair programming with BMad Master
+- **Pattern of Violations:** Required pair programming with Jarvis (orchestrator)
 
 ---
 
@@ -138,6 +138,20 @@ python scripts/validate_iterloop_compliance.py --story-id=<id>
 - In opencode, Serena MCP should use context `ide` and pass the project path (e.g., `/home/tacopants/projects/ChiseAi`); Serena docs recommend `codex` only for Codex CLI.
 - Update `docs/bmm-workflow-status.yaml`, PRD shards, architecture docs
 - Keep edits minimal/diff-friendly; gather only needed context
+
+**Opencode Workflow Commands (BMAD Beta 7)**
+- Prefer `.opencode/command/*` workflow commands for BMAD tasks (PRD, epics/stories, dev-story, code review, research) instead of ad-hoc prompting.
+- Use these commands when you want the BMAD workflow runner to load `workflow.xml` and execute the corresponding workflow config exactly.
+- Orchestration policy:
+  - `aria` delegates workflow execution to `jarvis`.
+  - `jarvis` delegates executable work to `dev`, `quickdev`, `senior-dev`.
+  - Non-destructive roles: `research`, `web-research`, `critic`.
+- Common command entry points:
+  - PRD: `.opencode/command/bmad-bmm-create-prd.md`, `.opencode/command/bmad-bmm-edit-prd.md`, `.opencode/command/bmad-bmm-validate-prd.md`
+  - Planning: `.opencode/command/bmad-bmm-create-epics-and-stories.md`, `.opencode/command/bmad-bmm-sprint-planning.md`
+  - Implementation: `.opencode/command/bmad-bmm-dev-story.md`, `.opencode/command/bmad-bmm-quick-dev.md`
+  - Review: `.opencode/command/bmad-bmm-code-review.md` plus `critic` for adversarial audit
+  - Research: `.opencode/command/bmad-bmm-domain-research.md`, `.opencode/command/bmad-bmm-technical-research.md` plus `web-research` for current web sources
 
 **MCP usage priority (web/search/vision)**
 - Prefer Z.ai MCPs first; fall back to MiniMax if Z.ai fails or is unavailable
@@ -246,8 +260,8 @@ promote_to_qdrant("ST-001")
 
 **General**
 - Always consult `docs/bmm-workflow-status.yaml` before "what's next?"
-- **Subagent delegation (restricted):** Only the `bmad-master` agent may delegate tasks to subagents, and only when parallel work is safe (no unmet dependencies, no overlapping edits, no validations during active development/testing). Other agents must not delegate unless explicitly instructed by a human.
-- **Subagent git restriction:** Subagents must not run git commands (branch/commit/merge/push/PR/stash) unless explicitly directed by a human. They may run CI/tests and fix failures only when directed by `bmad-master`.
+- **Subagent delegation (restricted):** Only the `jarvis` agent may delegate tasks to subagents, and only when parallel work is safe (no unmet dependencies, no overlapping edits, no validations during active development/testing). Other agents must not delegate unless explicitly instructed by a human.
+- **Subagent git restriction:** Subagents must not run git commands (branch/commit/merge/push/PR/stash) unless explicitly directed by a human (typically via `jarvis`). They may run CI/tests and fix failures only when directed by `jarvis`.
 
 **MANDATORY: Status-Implementation Sync**
 - Every PR adding story implementations (ST-NS-XXX, CH-BG-XXX, FT-NS-XXX, REWARD-XXX) MUST update `docs/bmm-workflow-status.yaml`
