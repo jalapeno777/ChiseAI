@@ -5,8 +5,9 @@ type: iterlog
 story_id: CH-PRD-CI-ALIGN-001
 story_title: "Align PRD+Status with live-trading roadmap; make Woodpecker CI real; prove PR->CI->merge"
 phase: implementation
-status: in_progress
-started_at: "$(date -u +%FT%TZ)"
+status: completed
+started_at: "2026-02-08T19:23:26Z"
+completed_at: "2026-02-08T19:50:49Z"
 mem_scan:
   - AGENTS.md
   - docs/prd.md
