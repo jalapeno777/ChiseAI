@@ -6,7 +6,8 @@ clone:
     image: woodpeckerci/plugin-git
     settings:
       remote: http://host.docker.internal:3000/${CI_REPO_OWNER}/${CI_REPO_NAME}.git
-      username: craig
+      username:
+        from_secret: gitea_username
       password:
         from_secret: gitea_token
 

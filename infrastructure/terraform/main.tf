@@ -243,6 +243,11 @@ resource "docker_container" "woodpecker_server" {
     volume_name    = docker_volume.woodpecker.name
     container_path = "/var/lib/woodpecker"
   }
+
+  volumes {
+    volume_name    = docker_volume.woodpecker_tmp.name
+    container_path = "/tmp"
+  }
 }
 
 resource "docker_container" "woodpecker_agent" {
@@ -256,6 +261,9 @@ resource "docker_container" "woodpecker_agent" {
     "WOODPECKER_BACKEND_DOCKER_HOST=unix:///run/docker.sock",
     "WOODPECKER_BACKEND_DOCKER_API_VERSION=1.44",
     "WOODPECKER_BACKEND_DOCKER_TLS_VERIFY=false",
+    "WOODPECKER_BACKEND_DOCKER_NETWORK=chiseai",
+    "WOODPECKER_AGENT_CONFIG_FILE=/tmp/agent.conf",
+    "WOODPECKER_LOG_LEVEL=debug",
   ]
 
   labels {
