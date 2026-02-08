@@ -20,3 +20,4 @@ notes:
 - Removed embedded Gitea PAT from `.woodpecker.yml`; clone now requires repo secrets `gitea_username` and `gitea_token`.
 - Woodpecker clone failure: missing HTTP auth for Gitea (fatal: could not read Username).
 - Woodpecker secret `events` must be JSON (e.g. `["push","manual"]`) to avoid UI/API errors.
+- Gitea webhook delivery blocked until `GITEA__webhook__ALLOWED_HOST_LIST` includes `woodpecker-server`.

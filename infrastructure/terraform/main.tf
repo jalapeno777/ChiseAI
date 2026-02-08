@@ -183,6 +183,7 @@ resource "docker_container" "gitea" {
     "GITEA__server__SSH_PORT=2222",
     "GITEA__server__DISABLE_SSH=false",
     "GITEA__database__DB_TYPE=sqlite3",
+    "GITEA__webhook__ALLOWED_HOST_LIST=woodpecker-server",
   ]
 
   ports {
