@@ -1,0 +1,278 @@
+project_slug: chiseai
+project_id: 1
+stories:
+  ST-BT-001:
+    taiga_userstory_id: 1
+    taiga_ref: 1
+    last_repo_checksum: d3a6b7fea1edbbbde94e768ddf96f9b5a7b3e02887cd2d29ec1149ed1ac9682c
+    last_taiga_checksum: null
+  ST-BT-002:
+    taiga_userstory_id: 2
+    taiga_ref: 2
+    last_repo_checksum: 2eabfea46e890c438b37b35ba770e229147f43b47315f65126387cff2b7bbaa4
+    last_taiga_checksum: null
+  ST-CI-001:
+    taiga_userstory_id: 3
+    taiga_ref: 3
+    last_repo_checksum: ce68f28b66611c36dd78723f7a1561e5512bc3fc4a8819686ce684686ba98c99
+    last_taiga_checksum: null
+  ST-CI-002:
+    taiga_userstory_id: 4
+    taiga_ref: 4
+    last_repo_checksum: 287ad00e9d436d4d896ac9d76ff4b3cc7412343382783ff6400f8700cd163594
+    last_taiga_checksum: null
+  ST-CI-003:
+    taiga_userstory_id: 5
+    taiga_ref: 5
+    last_repo_checksum: 317361ac6e4a6a670e04d85d627c55bfedcfa38975e844a29a798ed37bfd1117
+    last_taiga_checksum: null
+  ST-CI-004:
+    taiga_userstory_id: 6
+    taiga_ref: 6
+    last_repo_checksum: 932289e2378300524f5ebaf9e28992a921aae0bf85ee4c1ebaee18a69f3da839
+    last_taiga_checksum: null
+  ST-DATA-001:
+    taiga_userstory_id: 7
+    taiga_ref: 7
+    last_repo_checksum: f06fc3169cc0b8e986659b8e26c72a47a26e5f477dffaa5667e89b73c510e446
+    last_taiga_checksum: null
+  ST-DATA-002:
+    taiga_userstory_id: 8
+    taiga_ref: 8
+    last_repo_checksum: 7ffaa83fd19e479dc12d8fc5190bdec8d76fb96da2d361fe5c29cd84443aeeeb
+    last_taiga_checksum: null
+  ST-EX-001:
+    taiga_userstory_id: 9
+    taiga_ref: 9
+    last_repo_checksum: 8eecc81070702830d9df9e17b9e2e59d62e42b5e8c6fa33ad72c68ea9c88a5b7
+    last_taiga_checksum: null
+  ST-EX-002:
+    taiga_userstory_id: 10
+    taiga_ref: 10
+    last_repo_checksum: 9f6670d27ee2d522f40d0d61086e737c9131657aabeab1b1f2dfd4ad0f4b388f
+    last_taiga_checksum: null
+  ST-EX-003:
+    taiga_userstory_id: 11
+    taiga_ref: 11
+    last_repo_checksum: c156418c1aeb58c04cf345fd0e6e6d208f1c99f48917cb1f0b8638c178fe6165
+    last_taiga_checksum: null
+  ST-LIVE-001:
+    taiga_userstory_id: 12
+    taiga_ref: 12
+    last_repo_checksum: a437cfb27bc924b0471e4f6346861001ad0e8ea54958a6d3c6b2aa086218ed2d
+    last_taiga_checksum: null
+  ST-NS-001:
+    taiga_userstory_id: 13
+    taiga_ref: 13
+    last_repo_checksum: 4da8f148b235ade05f52a82175af449a7499ce5c7abe4b5cf8e35dbadb54d5ef
+    last_taiga_checksum: null
+  ST-NS-002:
+    taiga_userstory_id: 14
+    taiga_ref: 14
+    last_repo_checksum: a931996127312715d22dacd7f030e913c27bbe85dcb6991ed6ef5704a21cdfc4
+    last_taiga_checksum: null
+  ST-NS-003:
+    taiga_userstory_id: 15
+    taiga_ref: 15
+    last_repo_checksum: 0de8bdb40526df25f58c1ed10bbec2d14b9c3db00dc3a6e462552e43284f90b3
+    last_taiga_checksum: null
+  ST-NS-004:
+    taiga_userstory_id: 16
+    taiga_ref: 16
+    last_repo_checksum: e8bddfcb99170f3ed36903da39f49120225caf3c331b373cc981a193a17f78ed
+    last_taiga_checksum: null
+  ST-NS-005:
+    taiga_userstory_id: 17
+    taiga_ref: 17
+    last_repo_checksum: 11efa5bd255d8761bd235b2df46c5b5ac0e9184b85035ec99af16868cab27d3f
+    last_taiga_checksum: null
+  ST-NS-006:
+    taiga_userstory_id: 18
+    taiga_ref: 18
+    last_repo_checksum: 138516712821c92fabbf05ffa02b3dcc4157b5b6ee084b4bef5fe8931e1833a9
+    last_taiga_checksum: null
+  ST-NS-007:
+    taiga_userstory_id: 19
+    taiga_ref: 19
+    last_repo_checksum: f90de04927a6f125f69753629f52af1948f9d9ea7febe57468b32a3774e3d005
+    last_taiga_checksum: null
+  ST-NS-008:
+    taiga_userstory_id: 20
+    taiga_ref: 20
+    last_repo_checksum: edc29c038c1901a025245f8e86b622a6506a2333734444c2f1ab61e31c657c64
+    last_taiga_checksum: null
+  ST-NS-009:
+    taiga_userstory_id: 21
+    taiga_ref: 21
+    last_repo_checksum: e1e71b8a4601dc122b80bc5e86ea46cb848fcb6d2a286c42d5e835835904c3e8
+    last_taiga_checksum: null
+  ST-NS-010:
+    taiga_userstory_id: 22
+    taiga_ref: 22
+    last_repo_checksum: 4c0e53b2453060dfe7e58ffb23d931b2fad4d2b7446194b4f4d22c0910594c5d
+    last_taiga_checksum: null
+  ST-NS-011:
+    taiga_userstory_id: 23
+    taiga_ref: 23
+    last_repo_checksum: e6dbed3af8255cd4e7b20df33b7dc74a9ca56b1cf75b4372d770daa6a892335b
+    last_taiga_checksum: null
+  ST-NS-012:
+    taiga_userstory_id: 24
+    taiga_ref: 24
+    last_repo_checksum: 6ce53fb6c5e7d9d2e47ddd95dbaf770b8bb6b1c7c66bb7385fec2e79396a2ed2
+    last_taiga_checksum: null
+  ST-NS-013:
+    taiga_userstory_id: 25
+    taiga_ref: 25
+    last_repo_checksum: 970478fcd7b44cff3c925df419da0d14aa694d9ce4d47b9a393ed374c11cad55
+    last_taiga_checksum: null
+  ST-NS-014:
+    taiga_userstory_id: 26
+    taiga_ref: 26
+    last_repo_checksum: 415edd91a3217e29dd5dbfa2778c7e43abe16120100365bdfa5424498be4ae88
+    last_taiga_checksum: null
+  ST-NS-015:
+    taiga_userstory_id: 27
+    taiga_ref: 27
+    last_repo_checksum: f9d47ceb2190222a7351eb4cf48ab33dc01fdb2d42628f17af0f1a45fcee3697
+    last_taiga_checksum: null
+  ST-NS-016:
+    taiga_userstory_id: 28
+    taiga_ref: 28
+    last_repo_checksum: ccae5bc2ffa285fbeb46e36db0cf79e48323074ac6296dea25e7dca46909783f
+    last_taiga_checksum: null
+  ST-NS-017:
+    taiga_userstory_id: 29
+    taiga_ref: 29
+    last_repo_checksum: 77fc71e06d2890a6af77e8f35b63c6eca1656ed29ef4537108eeaf86173d999f
+    last_taiga_checksum: null
+  ST-NS-018:
+    taiga_userstory_id: 30
+    taiga_ref: 30
+    last_repo_checksum: 361ddb004bb76df70338f33c387dc94ffd2904bd048618d8ce9a21427a58df62
+    last_taiga_checksum: null
+  ST-NS-019:
+    taiga_userstory_id: 31
+    taiga_ref: 31
+    last_repo_checksum: 8faa982ff7562e8b2584b97ff25257badd1d594f056ab33ff9a8a7f094b96b21
+    last_taiga_checksum: null
+  ST-NS-020:
+    taiga_userstory_id: 32
+    taiga_ref: 32
+    last_repo_checksum: 09b67ac26c7f5f2605113d79ff7082265f6de50ff4c6e006f0a837be057fb83d
+    last_taiga_checksum: null
+  ST-NS-021:
+    taiga_userstory_id: 33
+    taiga_ref: 33
+    last_repo_checksum: 278a1376f08b8348d90982f059f2fa91e516bcb5759607bd9cc3f9522eef8ceb
+    last_taiga_checksum: null
+  ST-NS-022:
+    taiga_userstory_id: 34
+    taiga_ref: 34
+    last_repo_checksum: 4dec7a3d6106177a422c826b47528f45f74bc4d51a6f35f27364d83ee93831fd
+    last_taiga_checksum: null
+  ST-NS-023:
+    taiga_userstory_id: 35
+    taiga_ref: 35
+    last_repo_checksum: 771847e6a44ce687865c9812dba2e1e0a3ef423720b0a7270e72b95bfbd2a58d
+    last_taiga_checksum: null
+  ST-NS-024:
+    taiga_userstory_id: 36
+    taiga_ref: 36
+    last_repo_checksum: 5f43e3a557eb77020c75464db47f538a52ccf8c7828569d85aa84804f2f7a7f1
+    last_taiga_checksum: null
+  ST-NS-025:
+    taiga_userstory_id: 37
+    taiga_ref: 37
+    last_repo_checksum: d133e7a731763d059913fe488b791f80bc66e7bb6cb5dd9355ae6460048ba2ba
+    last_taiga_checksum: null
+  ST-NS-026:
+    taiga_userstory_id: 38
+    taiga_ref: 38
+    last_repo_checksum: 7c6e2b1dcfd282af900e1ab986b757b1e1e18f69c235b619cfad8a2f8dce4c50
+    last_taiga_checksum: null
+  ST-NS-027:
+    taiga_userstory_id: 39
+    taiga_ref: 39
+    last_repo_checksum: 84c4a1282bf8e73aab7b081655f8bdf30d1e0f4a3fccf8ad9339e1aca6ffde9d
+    last_taiga_checksum: null
+  ST-NS-028:
+    taiga_userstory_id: 40
+    taiga_ref: 40
+    last_repo_checksum: ce41bd348b4fb76028ba1659a594be4d87ca5984a70cf9471b18c219e79e7e65
+    last_taiga_checksum: null
+  ST-NS-029:
+    taiga_userstory_id: 41
+    taiga_ref: 41
+    last_repo_checksum: 52a77ac01902f2d2608415608076999a5abd37c43ce8093507cff7e4febb9a00
+    last_taiga_checksum: null
+  ST-NS-030:
+    taiga_userstory_id: 42
+    taiga_ref: 42
+    last_repo_checksum: 41a0e890abd77b0d4715d256a78f9bd252a9bb832bf0dbb15abd8086f69616c6
+    last_taiga_checksum: null
+  ST-NS-031:
+    taiga_userstory_id: 43
+    taiga_ref: 43
+    last_repo_checksum: a84e9ffa512c769f28ceff81a59dec13f12c5bc529ac6f1cc967b6a651173bb9
+    last_taiga_checksum: null
+  ST-NS-032:
+    taiga_userstory_id: 44
+    taiga_ref: 44
+    last_repo_checksum: 4b934640baf36c99b9c61fd8ad273548e418fa2641552a5e9257dfa5d0d8c702
+    last_taiga_checksum: null
+  ST-NS-033:
+    taiga_userstory_id: 45
+    taiga_ref: 45
+    last_repo_checksum: 8337e9fe485f1991883532ff1fa869ddbdceb6b2876d91450c833497739f5b7e
+    last_taiga_checksum: null
+  ST-NS-034:
+    taiga_userstory_id: 46
+    taiga_ref: 46
+    last_repo_checksum: d92be8df6745573c64a78be4ee5419c0397897f28a1fe96f1c2e6ea2fe30ee11
+    last_taiga_checksum: null
+  ST-NS-035:
+    taiga_userstory_id: 47
+    taiga_ref: 47
+    last_repo_checksum: 35b841137c89941e28285a2c79b7afea93dd8bc9c1f35223a8a3faabc5e6e915
+    last_taiga_checksum: null
+  ST-NS-036:
+    taiga_userstory_id: 48
+    taiga_ref: 48
+    last_repo_checksum: bb678c6d32e858fa8e2e6bf9fe6cbba36c307935c43183f9d3d5f00b9f577339
+    last_taiga_checksum: null
+  ST-NS-037:
+    taiga_userstory_id: 49
+    taiga_ref: 49
+    last_repo_checksum: 1f7f6665401189fe29cc5c070d2f906769a9573f408b0f7d1aada5de29548b3c
+    last_taiga_checksum: null
+  ST-OPS-001:
+    taiga_userstory_id: 50
+    taiga_ref: 50
+    last_repo_checksum: 7029fd6215bfe3eb9f48a87eda91f404f8e63567fc67c922e1d67bc5908d1a14
+    last_taiga_checksum: null
+  ST-OPS-002:
+    taiga_userstory_id: 51
+    taiga_ref: 51
+    last_repo_checksum: cb91e9e3648bd359b70f14ee7e33ab7fa1a256a49cdcb671b2db07ad663ddbb7
+    last_taiga_checksum: null
+  ST-OPS-003:
+    taiga_userstory_id: 52
+    taiga_ref: 52
+    last_repo_checksum: 6ccda473a49a1b8c608f3ff44777c0fc5e37722e8991d5c1437aa7fa1f247c59
+    last_taiga_checksum: null
+  ST-OPS-004:
+    taiga_userstory_id: 53
+    taiga_ref: 53
+    last_repo_checksum: 984716f390a022d4cb0bafdf722c8176edb7b661daebdb72753901c040c28cdf
+    last_taiga_checksum: null
+  ST-PAPER-001:
+    taiga_userstory_id: 54
+    taiga_ref: 54
+    last_repo_checksum: 1a965c4f254ccc111ef490ddfe180f49478892070ff4a39a1d588c877f495d9a
+    last_taiga_checksum: null
+  ST-RISK-001:
+    taiga_userstory_id: 55
+    taiga_ref: 55
+    last_repo_checksum: 8dd135deafb6407978746ee65eddeffab94ba3d12b4c7c5aa1bed81f1703aa80
+    last_taiga_checksum: null

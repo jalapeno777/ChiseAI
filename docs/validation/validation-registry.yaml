@@ -361,6 +361,21 @@ validations:
     test_method: automated
     owner: risk-team
 
+  # EP-OPS-001: Observability & Ops
+  - id: V-OPS-001
+    title: Taiga Sync Produces a Trustworthy Planning View
+    epic_id: EP-OPS-001
+    story_id: ST-OPS-004
+    status: planned
+    description: Validate repo-canonical story metadata is synced to Taiga with strict conflict rules
+    acceptance_criteria:
+      - Dry-run mode reports planned Taiga changes and exits 0
+      - Apply mode creates/updates Taiga milestones and user stories for non-deprecated repo stories
+      - Sync state file maps repo story ids to Taiga ids/refs and stores checksums
+      - Conflicts on repo-canonical fields are detected and reported unless forced
+    test_method: automated
+    owner: ops-team
+
 # Global validation thresholds
 thresholds:
   min_test_coverage: 80

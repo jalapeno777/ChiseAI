@@ -153,9 +153,9 @@ sprints:
   - id: p0-5
     name: Observability (Grafana-First)
     status: planned
-    story_count: 3
-    story_points: 18
-    mapped_stories: [ST-OPS-001, ST-OPS-002, ST-OPS-003]
+    story_count: 4
+    story_points: 24
+    mapped_stories: [ST-OPS-001, ST-OPS-002, ST-OPS-003, ST-OPS-004]
 
 # Epics (7 epics covering the full system)
 epics:
@@ -242,12 +242,12 @@ epics:
   - id: EP-OPS-001
     name: Observability & Ops
     status: planned
-    story_ids: [ST-OPS-001, ST-OPS-002, ST-OPS-003]
-    story_count: 3
-    story_points: 18
+    story_ids: [ST-OPS-001, ST-OPS-002, ST-OPS-003, ST-OPS-004]
+    story_count: 4
+    story_points: 24
     description: Grafana dashboards/alerts for data freshness, strategy KPIs, execution health, and invariant breaches
 
-# Stories (37 stories across 7 epics)
+# Stories (38 stories across 7 epics)
 stories:
   # EP-NS-001: Market Analysis Engine Foundation (6 stories, 42 points)
   - id: ST-NS-001
@@ -755,7 +755,7 @@ stories:
     priority: P0-CRITICAL
     description: Enforce 1% per trade risk, leverage <=3x, and drawdown kill-switch behavior per mode
 
-  # EP-OPS-001: Observability & Ops (3 stories, 18 points)
+  # EP-OPS-001: Observability & Ops (4 stories, 24 points)
   - id: ST-OPS-001
     title: Grafana Dashboards (Data + Backtest)
     epic_id: EP-OPS-001
@@ -782,3 +782,12 @@ stories:
     story_points: 6
     priority: P1-HIGH
     description: Alert routing + runbooks for common failures (API disconnect, data gaps, order rejects, drift)
+
+  - id: ST-OPS-004
+    title: Taiga Integration (Repo<->Taiga Sync)
+    epic_id: EP-OPS-001
+    sprint_id: p0-5
+    status: in_progress
+    story_points: 6
+    priority: P1-HIGH
+    description: One-way (repo->Taiga) sync for story ids/titles/status/acceptance criteria, plus mapping state and strict conflict rules
