@@ -25,3 +25,4 @@ notes:
 - Restored explicit clone plugin using `gitea:3000` to bypass Gitea ROOT_URL localhost clone URLs.
 - Switched clone remote to host gateway `172.17.0.1:3000` because pipeline containers resolve default bridge, not `gitea`.
 - Removed explicit username/password in clone; plan to rely on trusted clone credentials injection.
+- Set clone remote to `from_secret: gitea_clone_url` to supply auth in URL (user-managed secret).
