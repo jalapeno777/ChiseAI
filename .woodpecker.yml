@@ -1,6 +1,8 @@
 when:
   event: [ push, manual ]
 
+backend: docker
+
 clone:
   git:
     image: woodpeckerci/plugin-git
