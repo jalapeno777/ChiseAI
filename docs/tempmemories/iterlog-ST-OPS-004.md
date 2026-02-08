@@ -2,8 +2,9 @@
 story_id: ST-OPS-004
 story_title: "Taiga Integration (Repo<->Taiga Sync)"
 phase: implementation
-status: in_progress
+status: completed
 started_at: "2026-02-08T20:49:14Z"
+completed_at: "2026-02-08T21:27:30Z"
 acceptance_criteria:
   - "AC1: `python3 scripts/taiga_sync.py --dry-run` runs without network creds and exits 0, showing planned changes."
   - "AC2: With `TAIGA_BASE_URL`, `TAIGA_TOKEN`, and `TAIGA_PROJECT_SLUG` set, `python3 scripts/taiga_sync.py --apply` creates/updates Taiga milestones and user stories for non-deprecated repo stories."
