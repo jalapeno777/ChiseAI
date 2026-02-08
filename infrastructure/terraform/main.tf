@@ -19,6 +19,7 @@ resource "docker_volume" "qdrant" { name = "chiseai-qdrant-data" }
 resource "docker_volume" "grafana" { name = "chiseai-grafana-data" }
 resource "docker_volume" "gitea" { name = "chiseai-gitea-data" }
 resource "docker_volume" "woodpecker" { name = "chiseai-woodpecker-data" }
+resource "docker_volume" "woodpecker_tmp" { name = "chiseai-woodpecker-tmp" }
 resource "docker_volume" "taiga_postgres" { name = "taiga-postgres-data" }
 resource "docker_volume" "taiga_redis" { name = "taiga-redis-data" }
 resource "docker_volume" "taiga_static" { name = "taiga-static-data" }
@@ -221,6 +222,7 @@ resource "docker_container" "woodpecker_server" {
     "WOODPECKER_GITEA_CLIENT=${var.woodpecker_gitea_client}",
     "WOODPECKER_GITEA_SECRET=${var.woodpecker_gitea_secret}",
     "WOODPECKER_AGENT_SECRET=${var.woodpecker_agent_secret}",
+    "WOODPECKER_GRPC_ADDR=:9000",
   ]
 
   ports {
@@ -248,9 +250,12 @@ resource "docker_container" "woodpecker_agent" {
   image = "woodpeckerci/woodpecker-agent:latest"
 
   env = [
-    "WOODPECKER_SERVER=woodpecker-server:8000",
+    "WOODPECKER_SERVER=woodpecker-server:9000",
     "WOODPECKER_AGENT_SECRET=${var.woodpecker_agent_secret}",
     "WOODPECKER_BACKEND=docker",
+    "WOODPECKER_BACKEND_DOCKER_HOST=unix:///run/docker.sock",
+    "WOODPECKER_BACKEND_DOCKER_API_VERSION=1.44",
+    "WOODPECKER_BACKEND_DOCKER_TLS_VERIFY=false",
   ]
 
   labels {
@@ -262,10 +267,17 @@ resource "docker_container" "woodpecker_agent" {
     name = docker_network.chiseai.name
   }
 
+  privileged = true
+
   mounts {
-    target = "/var/run/docker.sock"
-    source = "/var/run/docker.sock"
+    target = "/run/docker.sock"
+    source = "/run/docker.sock"
     type   = "bind"
+  }
+
+  volumes {
+    volume_name    = docker_volume.woodpecker_tmp.name
+    container_path = "/tmp"
   }
 }
 
