@@ -1,0 +1,359 @@
+---
+# Validation Registry - Paired with docs/bmm-workflow-status.yaml
+# CI guard: edits must be paired with workflow status updates
+
+metadata:
+  project_name: ChiseAI
+  version: "1.1.0"
+  last_updated: "2026-02-08"
+
+# Validation entries (17 validations for neuro-symbolic epics)
+validations:
+  # EP-NS-001: Market Analysis Engine Foundation
+  - id: V-NS-001
+    title: Multi-timeframe Analysis Validation
+    epic_id: EP-NS-001
+    story_id: ST-NS-001
+    status: planned
+    description: Validate multi-timeframe analysis correctly aggregates data from 1m, 5m, 15m, 1h, 4h, 1d timeframes
+    acceptance_criteria:
+      - All 6 timeframes are correctly queried and processed
+      - Data aggregation produces consistent results across timeframes
+      - Edge cases (market gaps, low liquidity) are handled gracefully
+      - Performance meets <3s dashboard load requirement
+    test_method: automated
+    owner: qa-team
+
+  - id: V-NS-002
+    title: Technical Indicator Accuracy
+    epic_id: EP-NS-001
+    story_id: ST-NS-002
+    status: planned
+    description: Validate RSI, MACD, and Bollinger Bands calculations match industry-standard implementations
+    acceptance_criteria:
+      - RSI calculations match TradingView within 0.1%
+      - MACD signal line crossover detection is accurate
+      - Bollinger Band width calculations are correct
+      - All indicators update in real-time with new price data
+    test_method: automated
+    owner: qa-team
+
+  - id: V-NS-003
+    title: Markov Chain State Inference
+    epic_id: EP-NS-001
+    story_id: ST-NS-003
+    status: planned
+    description: Validate Markov chain correctly identifies trend states (bullish, bearish, neutral, transitional)
+    acceptance_criteria:
+      - State transitions follow defined probability matrices
+      - Bullish/bearish/neutral classifications match visual inspection in 80%+ of cases
+      - Transitional states are correctly identified during volatility
+      - State persistence is maintained across analysis cycles
+    test_method: automated
+    owner: ml-team
+
+  - id: V-NS-004
+    title: Confluence Scoring Logic
+    epic_id: EP-NS-001
+    story_id: ST-NS-004
+    status: planned
+    description: Validate confluence-based signal scoring correctly weights multiple indicators
+    acceptance_criteria:
+      - Signal scores increase with indicator agreement
+      - Weight adjustments reflect indicator reliability
+      - Edge cases (conflicting indicators) produce neutral scores
+      - Scoring latency remains under 100ms
+    test_method: automated
+    owner: qa-team
+
+  # EP-NS-002: Signal Generation & Delivery
+  - id: V-NS-005
+    title: Signal Confidence Threshold
+    epic_id: EP-NS-002
+    story_id: ST-NS-007
+    status: planned
+    description: Validate only signals meeting 75%+ confidence threshold are generated and delivered
+    acceptance_criteria:
+      - Signals below 75% confidence are filtered out
+      - Confidence calculation includes all relevant factors
+      - Threshold is configurable per user preference
+      - Filtered signals are logged for analysis
+    test_method: automated
+    owner: qa-team
+
+  - id: V-NS-006
+    title: UI Signal Display
+    epic_id: EP-NS-002
+    story_id: ST-NS-008
+    status: planned
+    description: Validate signals display correctly in the primary UI (Grafana-first) with all metadata
+    acceptance_criteria:
+      - All signal fields render correctly (token, direction, confidence, risk)
+      - UI panels load within 3 seconds
+      - Real-time updates propagate within 1 second
+      - Panels are robust for debugging (clear error states and health indicators)
+    test_method: automated
+    owner: frontend-team
+
+  - id: V-NS-007
+    title: Discord Alert Delivery
+    epic_id: EP-NS-002
+    story_id: ST-NS-009
+    status: planned
+    description: Validate Discord alerts are delivered within 1 second of signal generation
+    acceptance_criteria:
+      - Alerts reach Discord within 1 second of generation
+      - Alert format includes all required fields
+      - Failed deliveries are retried with exponential backoff
+      - Alert throttling prevents spam
+    test_method: automated
+    owner: backend-team
+
+  # EP-NS-003: Portfolio Risk Management
+  - id: V-NS-008
+    title: Position Sizing Calculation
+    epic_id: EP-NS-003
+    story_id: ST-NS-012
+    status: planned
+    description: Validate position sizing respects 1% per-trade risk limit (at stop-loss) and portfolio constraints
+    acceptance_criteria:
+      - Position sizes never exceed 1% risk per trade at stop-loss
+      - Grid worst-case risk does not exceed 2% when applicable
+      - Portfolio allocation respects 10% per-token limit
+      - Leverage never exceeds 3x
+      - Calculations account for current portfolio state
+    test_method: automated
+    owner: risk-team
+
+  - id: V-NS-009
+    title: Stop-Loss Recommendation Accuracy
+    epic_id: EP-NS-003
+    story_id: ST-NS-013
+    status: planned
+    description: Validate stop-loss recommendations are appropriate for market conditions
+    acceptance_criteria:
+      - Stop-loss levels respect maximum drawdown limits
+      - Recommendations adapt to volatility regime
+      - Levels are technically sound (support/resistance consideration)
+      - Risk/reward ratios are favorable (>1:2)
+    test_method: automated
+    owner: risk-team
+
+  - id: V-NS-010
+    title: Portfolio Risk Monitoring
+    epic_id: EP-NS-003
+    story_id: ST-NS-014
+    status: planned
+    description: Validate real-time portfolio risk exposure monitoring and alerting
+    acceptance_criteria:
+      - Exposure calculations update in real-time
+      - Alerts trigger within 5 seconds of threshold breach
+      - Correlation limits (40% max) are enforced
+      - Kill-switch activates on 15% drawdown
+    test_method: automated
+    owner: risk-team
+
+  # EP-NS-004: Learning & Improvement System
+  - id: V-NS-011
+    title: Prediction Accuracy Tracking
+    epic_id: EP-NS-004
+    story_id: ST-NS-017
+    status: planned
+    description: Validate prediction accuracy is tracked correctly over time
+    acceptance_criteria:
+      - Outcomes are correctly classified (win/loss)
+      - Accuracy metrics calculate correctly
+      - Historical trends are visible in dashboard
+      - Data retention meets compliance requirements
+    test_method: automated
+    owner: ml-team
+
+  - id: V-NS-012
+    title: ML Feedback Loop Functionality
+    epic_id: EP-NS-004
+    story_id: ST-NS-018
+    status: planned
+    description: Validate ML feedback loop correctly analyzes predictions vs outcomes
+    acceptance_criteria:
+      - Prediction-outcome pairs are correctly matched
+      - Model updates reflect learning from outcomes
+      - Feedback loop completes within 24 hours
+      - No data leakage between training and validation
+    test_method: automated
+    owner: ml-team
+
+  - id: V-NS-013
+    title: Confidence Calibration Accuracy
+    epic_id: EP-NS-004
+    story_id: ST-NS-019
+    status: planned
+    description: Validate confidence calibration maintains ECE (Expected Calibration Error) below 0.10
+    acceptance_criteria:
+      - ECE is calculated correctly
+      - Calibration curves are generated
+      - Threshold adjustments improve calibration
+      - ECE remains below 0.10 after calibration
+    test_method: automated
+    owner: ml-team
+
+  # EP-NS-005: User Experience & Interface
+  - id: V-NS-014
+    title: Mobile Responsiveness
+    epic_id: EP-NS-005
+    story_id: ST-NS-021
+    status: planned
+    description: Validate dashboard is fully functional on mobile devices
+    acceptance_criteria:
+      - All features work on screens down to 375px width
+      - Touch interactions are responsive
+      - No horizontal scrolling required
+      - Performance remains acceptable on mobile networks
+    test_method: manual
+    owner: frontend-team
+
+  - id: V-NS-015
+    title: Alert Configuration
+    epic_id: EP-NS-005
+    story_id: ST-NS-022
+    status: planned
+    description: Validate users can configure alert thresholds and preferences
+    acceptance_criteria:
+      - Threshold configuration persists across sessions
+      - Changes take effect within 1 minute
+      - UI provides clear feedback on configuration
+      - Default values are sensible for new users
+    test_method: automated
+    owner: frontend-team
+
+  # EP-NS-006: Infrastructure & Quality
+  - id: V-NS-016
+    title: Test Coverage Compliance
+    epic_id: EP-NS-006
+    story_id: ST-NS-029
+    status: planned
+    description: Validate codebase maintains ≥80% test coverage
+    acceptance_criteria:
+      - Overall coverage is ≥80%
+      - Critical paths have ≥90% coverage
+      - Coverage reports are generated automatically
+      - CI fails if coverage drops below threshold
+    test_method: automated
+    owner: devops-team
+
+  - id: V-NS-017
+    title: Security Scan Compliance
+    epic_id: EP-NS-006
+    story_id: ST-NS-028
+    status: planned
+    description: Validate no critical vulnerabilities exist in codebase or dependencies
+    acceptance_criteria:
+      - Zero critical vulnerabilities in dependency scan
+      - Zero high-severity vulnerabilities in SAST
+      - Encryption meets AES-256/TLS 1.3 standards
+      - Penetration test findings are remediated
+    test_method: automated
+    owner: security-team
+
+  # Live Validation Gates (4 gates for phased deployment)
+  - id: V-NS-LIVE-001
+    title: Phase 1 - Continuous Backtesting Validation
+    epic_id: EP-NS-001
+    story_id: null
+    status: planned
+    description: Continuous backtesting + walk-forward validation built from exchange APIs (always-on)
+    acceptance_criteria:
+      - Backtest runner is always-on and produces daily KPI summaries
+      - Walk-forward validation completes successfully on schedule
+      - Fees/slippage/funding assumptions are applied consistently
+      - Backtesting is never halted by paper/live kill-switch events
+    test_method: manual
+    owner: validation-team
+
+  - id: V-NS-LIVE-002
+    title: Phase 2 - Bybit Demo Paper Trading Validation
+    epic_id: EP-NS-002
+    story_id: null
+    status: planned
+    description: Bybit demo paper trading (perps-first) with shadow backtests continuing
+    acceptance_criteria:
+      - 30 consecutive days of paper trading without invariant breaches
+      - Paper kill-switch behavior works: close positions, suspend, self-eval, resume with updated parameters
+      - Per-trade risk sizing respects 1% portfolio risk at stop-loss
+      - Execution/telemetry is visible in Grafana
+    test_method: manual
+    owner: validation-team
+
+  - id: V-NS-LIVE-003
+    title: Phase 3 - Bitget Live Trading Validation (Gated)
+    epic_id: EP-NS-003
+    story_id: null
+    status: planned
+    description: Bitget live trading with strict caps; paper + backtest remain active
+    acceptance_criteria:
+      - Live trading remains disabled after live kill-switch until human re-authorizes
+      - Live kill-switch triggers at >=15% drawdown and disables live execution
+      - Per-trade risk sizing respects 1% portfolio risk at stop-loss and leverage <=3x
+      - Operational health and PnL/drawdown are visible in Grafana with alerts
+    test_method: manual
+    owner: validation-team
+
+  - id: V-NS-LIVE-004
+    title: Phase 4 - Scaling Validation
+    epic_id: EP-NS-007
+    story_id: null
+    status: planned
+    description: Scaling up tokens/strategies once evidence supports stable profitability and minimal drawdown
+    acceptance_criteria:
+      - Token universe can expand without breaking invariants or ops stability
+      - Uptime and latency targets remain within bounds for core services
+      - CI/CD auto-merge continues to keep main green and convergent
+    test_method: manual
+    owner: validation-team
+
+  # EP-CI-001: CI/CD Autonomy
+  - id: V-CI-001
+    title: CI Gates Block Bad Changes
+    epic_id: EP-CI-001
+    story_id: ST-CI-001
+    status: planned
+    description: Validate CI runs and blocks merges on lint/type/test failures
+    acceptance_criteria:
+      - Black/ruff/mypy failures fail CI
+      - Pytest failures fail CI
+      - Coverage below threshold fails CI
+    test_method: automated
+    owner: qa-team
+
+  - id: V-CI-002
+    title: Auto-Merge Requires Green Checks
+    epic_id: EP-CI-001
+    story_id: ST-CI-002
+    status: planned
+    description: Validate merge automation only merges PRs with required checks green
+    acceptance_criteria:
+      - PRs do not merge when any required check is missing/failed
+      - PRs merge automatically once checks are green
+    test_method: manual
+    owner: ops-team
+
+  # EP-EX-001: Execution (Perps-First)
+  - id: V-EX-001
+    title: Per-Trade Risk Invariant Enforced
+    epic_id: EP-EX-001
+    story_id: ST-RISK-001
+    status: planned
+    description: Validate 1% per trade risk (at stop-loss) is enforced for paper/live execution
+    acceptance_criteria:
+      - Sizing calculations are consistent and test-covered
+      - Orders are rejected if sizing would exceed risk/leverage constraints
+    test_method: automated
+    owner: risk-team
+
+# Global validation thresholds
+thresholds:
+  min_test_coverage: 80
+  max_lint_errors: 0
+  required_checks:
+    - status_sync
+    - ci_test
+    - security_scan

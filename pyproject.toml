@@ -1,10 +1,33 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chiseai"
+version = "0.0.0"
+requires-python = ">=3.11"
+dependencies = []
+
 [tool.black]
 line-length = 88
-include = 'tests/ci_fail_black\.py$'
+target-version = ["py311"]
 
 [tool.ruff]
-extend-exclude = ["**/*"]
-select = []
+target-version = "py311"
+line-length = 88
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = []
 
 [tool.mypy]
-files = ["tests/ci_fail_black.py"]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+check_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

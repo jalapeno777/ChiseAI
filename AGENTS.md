@@ -26,14 +26,14 @@
 
 ```bash
 # Validate iteration loop compliance
-python scripts/validate_iterloop_compliance.py --story-id=<id>
+python3 scripts/validate_iterloop_compliance.py --story-id=<id>
 ```
 
 ### 0.4 Non-Compliance Consequences
 
 - **First Violation:** Warning in PR review
 - **Second Violation:** PR blocked until compliance fixed
-- **Pattern of Violations:** Required pair programming with BMad Master
+- **Pattern of Violations:** Required pair programming with Jarvis (orchestrator)
 
 ---
 
@@ -110,7 +110,7 @@ python scripts/validate_iterloop_compliance.py --story-id=<id>
 - If a stash is created, it must be applied + committed or dropped before finishing the task.
 - **Canonical SCM:** Gitea is the source of truth for repos/PRs. GitHub usage is **deprecated** for ChiseAI unless explicitly re-enabled by a human.
 - CI gate: run `scripts/local-ci-checks.sh` (or equivalent) before any PR; fix failures and re-run until green.
-- Status sync gate: run `python scripts/validate_status_sync.py` before any PR; must pass (warnings OK).
+- Status sync gate: run `python3 scripts/validate_status_sync.py` before any PR; must pass (warnings OK).
 - PR creation gate: only after CI passes and `git status -sb` is clean (or explicit human approval).
 - PR handoff block must include: branch name, CI status, status-sync result, and exceptions.
 
@@ -138,6 +138,20 @@ python scripts/validate_iterloop_compliance.py --story-id=<id>
 - In opencode, Serena MCP should use context `ide` and pass the project path (e.g., `/home/tacopants/projects/ChiseAi`); Serena docs recommend `codex` only for Codex CLI.
 - Update `docs/bmm-workflow-status.yaml`, PRD shards, architecture docs
 - Keep edits minimal/diff-friendly; gather only needed context
+
+**Opencode Workflow Commands (BMAD Beta 7)**
+- Prefer `.opencode/command/*` workflow commands for BMAD tasks (PRD, epics/stories, dev-story, code review, research) instead of ad-hoc prompting.
+- Use these commands when you want the BMAD workflow runner to load `workflow.xml` and execute the corresponding workflow config exactly.
+- Orchestration policy:
+  - `aria` delegates workflow execution to `jarvis`.
+  - `jarvis` delegates executable work to `dev`, `quickdev`, `senior-dev`.
+  - Non-destructive roles: `research`, `web-research`, `critic`.
+- Common command entry points:
+  - PRD: `.opencode/command/bmad-bmm-create-prd.md`, `.opencode/command/bmad-bmm-edit-prd.md`, `.opencode/command/bmad-bmm-validate-prd.md`
+  - Planning: `.opencode/command/bmad-bmm-create-epics-and-stories.md`, `.opencode/command/bmad-bmm-sprint-planning.md`
+  - Implementation: `.opencode/command/bmad-bmm-dev-story.md`, `.opencode/command/bmad-bmm-quick-dev.md`
+  - Review: `.opencode/command/bmad-bmm-code-review.md` plus `critic` for adversarial audit
+  - Research: `.opencode/command/bmad-bmm-domain-research.md`, `.opencode/command/bmad-bmm-technical-research.md` plus `web-research` for current web sources
 
 **MCP usage priority (web/search/vision)**
 - Prefer Z.ai MCPs first; fall back to MiniMax if Z.ai fails or is unavailable
@@ -246,12 +260,12 @@ promote_to_qdrant("ST-001")
 
 **General**
 - Always consult `docs/bmm-workflow-status.yaml` before "what's next?"
-- **Subagent delegation (restricted):** Only the `bmad-master` agent may delegate tasks to subagents, and only when parallel work is safe (no unmet dependencies, no overlapping edits, no validations during active development/testing). Other agents must not delegate unless explicitly instructed by a human.
-- **Subagent git restriction:** Subagents must not run git commands (branch/commit/merge/push/PR/stash) unless explicitly directed by a human. They may run CI/tests and fix failures only when directed by `bmad-master`.
+- **Subagent delegation (restricted):** Only the `jarvis` agent may delegate tasks to subagents, and only when parallel work is safe (no unmet dependencies, no overlapping edits, no validations during active development/testing). Other agents must not delegate unless explicitly instructed by a human.
+- **Subagent git restriction:** Subagents must not run git commands (branch/commit/merge/push/PR/stash) unless explicitly directed by a human (typically via `jarvis`). They may run CI/tests and fix failures only when directed by `jarvis`.
 
 **MANDATORY: Status-Implementation Sync**
 - Every PR adding story implementations (ST-NS-XXX, CH-BG-XXX, FT-NS-XXX, REWARD-XXX) MUST update `docs/bmm-workflow-status.yaml`
-- Run `python scripts/validate_status_sync.py` before committing
+- Run `python3 scripts/validate_status_sync.py` before committing
 - CI will BLOCK merges if status file is out of sync
 - No story implementation code merges until status reflects actual implementation state
 
@@ -261,16 +275,16 @@ The status file is the source of truth for project state. A stale status file is
 
 **Before every commit:**
 ```bash
-python scripts/validate_status_sync.py
+python3 scripts/validate_status_sync.py
 ```
 
 **If validation fails:**
 1. Update `docs/bmm-workflow-status.yaml` to reflect actual state
-2. Re-run validation: `python scripts/validate_status_sync.py`
+2. Re-run validation: `python3 scripts/validate_status_sync.py`
 3. Only then commit and create PR
 
 **Weekly Audit:**
-- Run `python scripts/validate_status_sync.py --full` to verify all sprints
+- Run `python3 scripts/validate_status_sync.py --full` to verify all sprints
 - Fix any discrepancies immediately
 
 **Phase-specific memory**
@@ -295,7 +309,7 @@ python scripts/validate_status_sync.py
 1. Every story includes code changes under `src/` + tests under `tests/`
 2. Keep CI green; update `.woodpecker.yml` when new tests/services added
 3. Never commit secrets; use env vars + `.env` + `.gitignore`
-4. Status file validation passes (`python scripts/validate_status_sync.py`)
+4. Status file validation passes (`python3 scripts/validate_status_sync.py`)
 5. No story implementations merged without corresponding status update in YAML
 6. Required status check context: `ci/woodpecker/push/woodpecker`
 
@@ -316,7 +330,7 @@ python scripts/validate_status_sync.py
    - **Containerized dashboard:** use `start_chise.sh` (port 8502) with `dashboard_venv` and `host.docker.internal` for container-to-host DB/Redis
 2. Run `scripts/local-ci-checks.sh` (pre-commit + `make ci-test`/`test-smoke`/`test-security`)
 3. Fix failures, rerun until clean
-4. Run `python scripts/validate_status_sync.py` and fix issues
+4. Run `python3 scripts/validate_status_sync.py` and fix issues
 5. Push feature branch; PR to `main`; CI/Security/Deployment pipelines run
 6. Monitor jobs; fix/retest/push if any fail
 7. After green merge, delete feature branch (if not auto-removed)
@@ -540,7 +554,7 @@ networks:
 Before any commit:
 ```bash
 # Automatically run via .git/hooks/pre-commit
-python scripts/validate_docker_connectivity.py
+python3 scripts/validate_docker_connectivity.py
 ```
 
 **What the hook validates:**

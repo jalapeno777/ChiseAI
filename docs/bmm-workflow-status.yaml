@@ -1,0 +1,775 @@
+---
+# BMAD Workflow Status - Authoritative state file for ChiseAI
+# DO NOT delete or rename without explicit human instruction
+
+metadata:
+  project_name: ChiseAI
+  version: "1.2.0"
+  last_updated: "2026-02-08"
+  prd_location: docs/prd.md
+  prd_note: "Phased perps execution: continuous backtest -> Bybit demo paper -> Bitget live; Grafana-first ops UI; Binance used as reference market-structure venue."
+
+# Current project phase
+current_phase:
+  phase: planning
+  status: in_progress
+
+# Active sprints (from PRD - extract what exists)
+sprints:
+  - id: q1-1
+    name: LLM Foundation - Core Interfaces
+    status: deprecated
+    story_count: 11
+    story_points: 66
+    completion_date: "2025-12-30"
+    note: "Legacy planning artifact imported from GridAI; not implemented in this repository"
+  
+  - id: q1-2
+    name: ML-LLM Integration
+    status: deprecated
+    story_count: 6
+    story_points: 40
+    completion_date: "2025-12-31"
+    note: "Legacy planning artifact imported from GridAI; not implemented in this repository"
+
+  - id: q1-3
+    name: Confidence Calibration Foundation
+    status: deprecated
+    story_count: 6
+    story_points: 42
+    completion_date: "2025-12-30"
+    note: "Legacy planning artifact imported from GridAI; not implemented in this repository"
+
+  - id: q1-4
+    name: Multi-LLM Orchestration
+    status: deprecated
+    story_count: 5
+    story_points: 35
+    completion_date: "2025-12-30"
+    note: "Legacy planning artifact imported from GridAI; not implemented in this repository"
+
+  - id: q1-5
+    name: Dashboard Integration Phase 1
+    status: deprecated
+    story_count: 7
+    story_points: 37
+    completion_date: "2025-12-30"
+    note: "Legacy planning artifact imported from GridAI; not implemented in this repository"
+
+  - id: q1-6
+    name: Data Layer Foundation
+    status: deprecated
+    story_count: 2
+    story_points: 12
+    completion_date: "2025-12-30"
+    note: "Legacy planning artifact imported from GridAI; not implemented in this repository"
+
+  - id: q1-7
+    name: Feature Store Foundation
+    status: deprecated
+    story_count: 2
+    story_points: 10
+    completion_date: "2025-12-31"
+    note: "Legacy planning artifact imported from GridAI; not implemented in this repository"
+
+  - id: q1-8
+    name: Error Handling Foundation
+    status: deprecated
+    story_count: 2
+    story_points: 9
+    completion_date: "2025-12-30"
+    note: "Legacy planning artifact imported from GridAI; not implemented in this repository"
+
+  - id: q2-1
+    name: Markov Chain & Decision Engine
+    status: planned
+    story_count: 6
+    story_points: 42
+    mapped_stories: [ST-NS-001, ST-NS-002, ST-NS-003, ST-NS-004, ST-NS-005, ST-NS-006]
+
+  - id: q2-2
+    name: Paper Trading & Grading
+    status: planned
+    story_count: 10
+    story_points: 114
+    mapped_stories: [ST-NS-007, ST-NS-008, ST-NS-009, ST-NS-010, ST-NS-011, ST-NS-012, ST-NS-013, ST-NS-014, ST-NS-015, ST-NS-016]
+
+  - id: q2-3
+    name: Learning & Improvement System
+    status: planned
+    story_count: 4
+    story_points: 28
+    mapped_stories: [ST-NS-017, ST-NS-018, ST-NS-019, ST-NS-020]
+
+  - id: q2-4
+    name: User Experience & Interface
+    status: planned
+    story_count: 4
+    story_points: 25
+    mapped_stories: [ST-NS-021, ST-NS-022, ST-NS-023, ST-NS-024]
+
+  - id: q2-5
+    name: Infrastructure & Quality
+    status: planned
+    story_count: 6
+    story_points: 38
+    mapped_stories: [ST-NS-025, ST-NS-026, ST-NS-027, ST-NS-028, ST-NS-029, ST-NS-030]
+
+  - id: q2-6
+    name: Neuro-Symbolic AI Evolution
+    status: planned
+    story_count: 7
+    story_points: 49
+    mapped_stories: [ST-NS-031, ST-NS-032, ST-NS-033, ST-NS-034, ST-NS-035, ST-NS-036, ST-NS-037]
+
+  - id: p0-1
+    name: Foundation & CI/CD Autonomy
+    status: planned
+    story_count: 3
+    story_points: 12
+    mapped_stories: [ST-CI-001, ST-CI-002, ST-CI-003]
+
+  - id: p0-2
+    name: Data Gathering & Continuous Backtesting
+    status: planned
+    story_count: 4
+    story_points: 26
+    mapped_stories: [ST-DATA-001, ST-DATA-002, ST-BT-001, ST-BT-002]
+
+  - id: p0-3
+    name: Bybit Demo Paper Trading
+    status: planned
+    story_count: 3
+    story_points: 22
+    mapped_stories: [ST-EX-001, ST-EX-002, ST-PAPER-001]
+
+  - id: p0-4
+    name: Bitget Live Trading (Gated)
+    status: planned
+    story_count: 3
+    story_points: 24
+    mapped_stories: [ST-EX-003, ST-LIVE-001, ST-RISK-001]
+
+  - id: p0-5
+    name: Observability (Grafana-First)
+    status: planned
+    story_count: 3
+    story_points: 18
+    mapped_stories: [ST-OPS-001, ST-OPS-002, ST-OPS-003]
+
+# Epics (7 epics covering the full system)
+epics:
+  - id: EP-NS-001
+    name: Market Analysis Engine Foundation
+    status: planned
+    story_ids: [ST-NS-001, ST-NS-002, ST-NS-003, ST-NS-004, ST-NS-005, ST-NS-006]
+    story_count: 6
+    story_points: 42
+    description: Core market analysis infrastructure including multi-timeframe analysis, technical indicators, and Markov chain trend detection
+
+  - id: EP-NS-002
+    name: Signal Generation & Delivery
+    status: planned
+    story_ids: [ST-NS-007, ST-NS-008, ST-NS-009, ST-NS-010, ST-NS-011]
+    story_count: 5
+    story_points: 35
+    description: Real-time signal generation with confidence scoring, dashboard display, and Discord delivery
+
+  - id: EP-NS-003
+    name: Portfolio Risk Management
+    status: planned
+    story_ids: [ST-NS-012, ST-NS-013, ST-NS-014, ST-NS-015, ST-NS-016]
+    story_count: 5
+    story_points: 35
+    description: Position sizing, stop-loss recommendations, portfolio exposure monitoring, and correlation analysis
+
+  - id: EP-NS-004
+    name: Learning & Improvement System
+    status: planned
+    story_ids: [ST-NS-017, ST-NS-018, ST-NS-019, ST-NS-020]
+    story_count: 4
+    story_points: 28
+    description: Prediction accuracy tracking, ML feedback loops, confidence calibration, and training data generation
+
+  - id: EP-NS-005
+    name: User Experience & Interface
+    status: planned
+    story_ids: [ST-NS-021, ST-NS-022, ST-NS-023, ST-NS-024]
+    story_count: 4
+    story_points: 25
+    description: Mobile-responsive dashboard, configurable alerts, performance reporting, and community Discord integration
+
+  - id: EP-NS-006
+    name: Infrastructure & Quality
+    status: planned
+    story_ids: [ST-NS-025, ST-NS-026, ST-NS-027, ST-NS-028, ST-NS-029, ST-NS-030]
+    story_count: 6
+    story_points: 38
+    description: Performance optimization, reliability engineering, security hardening, and maintainability
+
+  - id: EP-NS-007
+    name: Neuro-Symbolic AI Evolution
+    status: planned
+    story_ids: [ST-NS-031, ST-NS-032, ST-NS-033, ST-NS-034, ST-NS-035, ST-NS-036, ST-NS-037]
+    story_count: 7
+    story_points: 49
+    description: Advanced neuro-symbolic AI features including hybrid reasoning, explainability, and adaptive learning
+
+  - id: EP-CI-001
+    name: CI/CD Autonomy
+    status: planned
+    story_ids: [ST-CI-001, ST-CI-002, ST-CI-003]
+    story_count: 3
+    story_points: 12
+    description: Reliable CI gates, auto-merge workflow, and branch hygiene to keep autonomous development convergent
+
+  - id: EP-DATA-001
+    name: Data Gathering & Backtesting
+    status: planned
+    story_ids: [ST-DATA-001, ST-DATA-002, ST-BT-001, ST-BT-002]
+    story_count: 4
+    story_points: 26
+    description: Build market-data ingestion from exchange APIs and run continuous backtests with walk-forward evaluation
+
+  - id: EP-EX-001
+    name: Execution (Perps-First)
+    status: planned
+    story_ids: [ST-EX-001, ST-EX-002, ST-EX-003, ST-PAPER-001, ST-LIVE-001, ST-RISK-001]
+    story_count: 6
+    story_points: 46
+    description: Exchange adapters for Bybit demo and Bitget live execution with strict risk invariants and kill-switch behavior
+
+  - id: EP-OPS-001
+    name: Observability & Ops
+    status: planned
+    story_ids: [ST-OPS-001, ST-OPS-002, ST-OPS-003]
+    story_count: 3
+    story_points: 18
+    description: Grafana dashboards/alerts for data freshness, strategy KPIs, execution health, and invariant breaches
+
+# Stories (37 stories across 7 epics)
+stories:
+  # EP-NS-001: Market Analysis Engine Foundation (6 stories, 42 points)
+  - id: ST-NS-001
+    title: Multi-timeframe Analysis Engine
+    epic_id: EP-NS-001
+    sprint_id: q2-1
+    status: planned
+    story_points: 8
+    priority: P0-CRITICAL
+    fr_coverage: [FR-001]
+    description: Implement multi-timeframe analysis for 1m, 5m, 15m, 1h, 4h, 1d timeframes
+
+  - id: ST-NS-002
+    title: Technical Indicator Calculation
+    epic_id: EP-NS-001
+    sprint_id: q2-1
+    status: planned
+    story_points: 7
+    priority: P0-CRITICAL
+    fr_coverage: [FR-002]
+    description: Calculate RSI, MACD, Bollinger Bands, and other technical indicators
+
+  - id: ST-NS-003
+    title: Markov Chain Trend Detection
+    epic_id: EP-NS-001
+    sprint_id: q2-1
+    status: planned
+    story_points: 8
+    priority: P0-CRITICAL
+    fr_coverage: [FR-003]
+    description: Implement Markov chain state inference for trend detection
+
+  - id: ST-NS-004
+    title: Confluence-Based Signal Scoring
+    epic_id: EP-NS-001
+    sprint_id: q2-1
+    status: planned
+    story_points: 7
+    priority: P0-CRITICAL
+    fr_coverage: [FR-004]
+    description: Combine multiple indicators for confluence-based signal scoring
+
+  - id: ST-NS-005
+    title: Confidence Multiplier Updates
+    epic_id: EP-NS-001
+    sprint_id: q2-1
+    status: planned
+    story_points: 6
+    priority: P1-HIGH
+    fr_coverage: [FR-005]
+    description: Update confidence multipliers based on signal agreement across indicators
+
+  - id: ST-NS-006
+    title: Signal History Tracking
+    epic_id: EP-NS-001
+    sprint_id: q2-1
+    status: planned
+    story_points: 6
+    priority: P1-HIGH
+    fr_coverage: [FR-006]
+    description: Track signal history with outcome correlation for learning
+
+  # EP-NS-002: Signal Generation & Delivery (5 stories, 35 points)
+  - id: ST-NS-007
+    title: Real-time Signal Generation
+    epic_id: EP-NS-002
+    sprint_id: q2-2
+    status: planned
+    story_points: 8
+    priority: P0-CRITICAL
+    fr_coverage: [FR-007]
+    description: Generate real-time signals meeting 75%+ confidence threshold
+
+  - id: ST-NS-008
+    title: Dashboard Pre-market Briefing
+    epic_id: EP-NS-002
+    sprint_id: q2-2
+    status: planned
+    story_points: 7
+    priority: P0-CRITICAL
+    fr_coverage: [FR-008]
+    description: Display pre-market briefing in the primary UI (Grafana first; Streamlit optional)
+
+  - id: ST-NS-009
+    title: Discord Alert Integration
+    epic_id: EP-NS-002
+    sprint_id: q2-2
+    status: planned
+    story_points: 7
+    priority: P0-CRITICAL
+    fr_coverage: [FR-009]
+    description: Send Discord alerts for high-confidence opportunities
+
+  - id: ST-NS-010
+    title: Signal Detail Breakdown
+    epic_id: EP-NS-002
+    sprint_id: q2-2
+    status: planned
+    story_points: 7
+    priority: P1-HIGH
+    fr_coverage: [FR-010]
+    description: Provide detailed signal breakdown with risk parameters
+
+  - id: ST-NS-011
+    title: Historical Context Panel
+    epic_id: EP-NS-002
+    sprint_id: q2-2
+    status: planned
+    story_points: 6
+    priority: P1-HIGH
+    fr_coverage: [FR-011]
+    description: Display historical context for similar market situations
+
+  # EP-NS-003: Portfolio Risk Management (5 stories, 35 points)
+  - id: ST-NS-012
+    title: Position Sizing Engine
+    epic_id: EP-NS-003
+    sprint_id: q2-2
+    status: planned
+    story_points: 8
+    priority: P0-CRITICAL
+    fr_coverage: [FR-012]
+    description: Generate position sizing recommendations based on portfolio
+
+  - id: ST-NS-013
+    title: Stop-Loss Recommendation System
+    epic_id: EP-NS-003
+    sprint_id: q2-2
+    status: planned
+    story_points: 7
+    priority: P0-CRITICAL
+    fr_coverage: [FR-013]
+    description: Provide stop-loss recommendations with each signal
+
+  - id: ST-NS-014
+    title: Portfolio Risk Exposure Monitor
+    epic_id: EP-NS-003
+    sprint_id: q2-2
+    status: planned
+    story_points: 7
+    priority: P0-CRITICAL
+    fr_coverage: [FR-014]
+    description: Monitor portfolio-level risk exposure in real-time
+
+  - id: ST-NS-015
+    title: Correlation Analysis Engine
+    epic_id: EP-NS-003
+    sprint_id: q2-2
+    status: planned
+    story_points: 7
+    priority: P1-HIGH
+    fr_coverage: [FR-015]
+    description: Analyze correlations across portfolio positions
+
+  - id: ST-NS-016
+    title: Risk Threshold Alert System
+    epic_id: EP-NS-003
+    sprint_id: q2-2
+    status: planned
+    story_points: 6
+    priority: P1-HIGH
+    fr_coverage: [FR-016]
+    description: Send automated alerts for risk threshold breaches
+
+  # EP-NS-004: Learning & Improvement System (4 stories, 28 points)
+  - id: ST-NS-017
+    title: Prediction Accuracy Tracker
+    epic_id: EP-NS-004
+    sprint_id: q2-3
+    status: planned
+    story_points: 8
+    priority: P0-CRITICAL
+    fr_coverage: [FR-017]
+    description: Track prediction accuracy over time with metrics
+
+  - id: ST-NS-018
+    title: ML Feedback Loop
+    epic_id: EP-NS-004
+    sprint_id: q2-3
+    status: planned
+    story_points: 8
+    priority: P0-CRITICAL
+    fr_coverage: [FR-018]
+    description: Implement ML feedback loop analyzing predictions vs outcomes
+
+  - id: ST-NS-019
+    title: Confidence Threshold Calibration
+    epic_id: EP-NS-004
+    sprint_id: q2-3
+    status: planned
+    story_points: 6
+    priority: P1-HIGH
+    fr_coverage: [FR-019]
+    description: Calibrate confidence thresholds based on performance
+
+  - id: ST-NS-020
+    title: Training Data Generator
+    epic_id: EP-NS-004
+    sprint_id: q2-3
+    status: planned
+    story_points: 6
+    priority: P1-HIGH
+    fr_coverage: [FR-020]
+    description: Generate training data for model improvement
+
+  # EP-NS-005: User Experience & Interface (4 stories, 25 points)
+  - id: ST-NS-021
+    title: Mobile-Responsive Dashboard
+    epic_id: EP-NS-005
+    sprint_id: q2-4
+    status: planned
+    story_points: 7
+    priority: P1-HIGH
+    fr_coverage: [FR-021]
+    description: Implement mobile-responsive dashboard design
+
+  - id: ST-NS-022
+    title: Configurable Alert Thresholds
+    epic_id: EP-NS-005
+    sprint_id: q2-4
+    status: planned
+    story_points: 6
+    priority: P1-HIGH
+    fr_coverage: [FR-022]
+    description: Allow users to configure alert thresholds
+
+  - id: ST-NS-023
+    title: Performance Reporting System
+    epic_id: EP-NS-005
+    sprint_id: q2-4
+    status: planned
+    story_points: 6
+    priority: P1-HIGH
+    fr_coverage: [FR-023]
+    description: Generate daily/weekly/monthly performance reports
+
+  - id: ST-NS-024
+    title: Discord Community Integration
+    epic_id: EP-NS-005
+    sprint_id: q2-4
+    status: planned
+    story_points: 6
+    priority: P2-MEDIUM
+    fr_coverage: [FR-024]
+    description: Enable community discussion via Discord integration
+
+  # EP-NS-006: Infrastructure & Quality (6 stories, 38 points)
+  - id: ST-NS-025
+    title: Dashboard Performance Optimization
+    epic_id: EP-NS-006
+    sprint_id: q2-5
+    status: planned
+    story_points: 7
+    priority: P0-CRITICAL
+    fr_coverage: [FR-001, FR-008]
+    description: Optimize dashboard load time to <3 seconds (NFR-001)
+
+  - id: ST-NS-026
+    title: Signal Delivery Latency Optimization
+    epic_id: EP-NS-006
+    sprint_id: q2-5
+    status: planned
+    story_points: 7
+    priority: P0-CRITICAL
+    fr_coverage: [FR-009]
+    description: Reduce signal delivery latency to <1 second (NFR-002)
+
+  - id: ST-NS-027
+    title: High Availability Infrastructure
+    epic_id: EP-NS-006
+    sprint_id: q2-5
+    status: planned
+    story_points: 7
+    priority: P0-CRITICAL
+    fr_coverage: [FR-007, FR-009]
+    description: Achieve 99.9% uptime for critical functions (NFR-006)
+
+  - id: ST-NS-028
+    title: Security Hardening
+    epic_id: EP-NS-006
+    sprint_id: q2-5
+    status: planned
+    story_points: 6
+    priority: P0-CRITICAL
+    fr_coverage: [FR-001, FR-007]
+    description: Implement AES-256 encryption and TLS 1.3 (NFR-014, NFR-015)
+
+  - id: ST-NS-029
+    title: Test Coverage Improvement
+    epic_id: EP-NS-006
+    sprint_id: q2-5
+    status: planned
+    story_points: 6
+    priority: P1-HIGH
+    fr_coverage: [FR-001, FR-002, FR-003]
+    description: Achieve ≥80% test coverage (NFR-017)
+
+  - id: ST-NS-030
+    title: CI/CD Pipeline Enhancement
+    epic_id: EP-NS-006
+    sprint_id: q2-5
+    status: planned
+    story_points: 5
+    priority: P1-HIGH
+    fr_coverage: [FR-001, FR-007]
+    description: Maintain 100% green CI/CD pipeline (NFR-020)
+
+  # EP-NS-007: Neuro-Symbolic AI Evolution (7 stories, 49 points)
+  - id: ST-NS-031
+    title: Hybrid Reasoning Engine
+    epic_id: EP-NS-007
+    sprint_id: q2-6
+    status: planned
+    story_points: 8
+    priority: P0-CRITICAL
+    fr_coverage: [FR-003, FR-004]
+    description: Implement hybrid neural-symbolic reasoning for trend analysis
+
+  - id: ST-NS-032
+    title: Explainable AI Module
+    epic_id: EP-NS-007
+    sprint_id: q2-6
+    status: planned
+    story_points: 7
+    priority: P0-CRITICAL
+    fr_coverage: [FR-010, FR-011]
+    description: Generate human-readable explanations for signals
+
+  - id: ST-NS-033
+    title: Adaptive Learning Framework
+    epic_id: EP-NS-007
+    sprint_id: q2-6
+    status: planned
+    story_points: 7
+    priority: P1-HIGH
+    fr_coverage: [FR-018, FR-019]
+    description: Build adaptive learning framework for continuous improvement
+
+  - id: ST-NS-034
+    title: Symbolic Knowledge Graph
+    epic_id: EP-NS-007
+    sprint_id: q2-6
+    status: planned
+    story_points: 7
+    priority: P1-HIGH
+    fr_coverage: [FR-003, FR-011]
+    description: Create symbolic knowledge graph for market relationships
+
+  - id: ST-NS-035
+    title: Neural Pattern Recognition
+    epic_id: EP-NS-007
+    sprint_id: q2-6
+    status: planned
+    story_points: 7
+    priority: P1-HIGH
+    fr_coverage: [FR-003, FR-004]
+    description: Implement deep learning pattern recognition for price action
+
+  - id: ST-NS-036
+    title: Multi-Modal Signal Fusion
+    epic_id: EP-NS-007
+    sprint_id: q2-6
+    status: planned
+    story_points: 7
+    priority: P1-HIGH
+    fr_coverage: [FR-004, FR-005]
+    description: Fuse signals from multiple modalities (technical, sentiment, on-chain)
+
+  - id: ST-NS-037
+    title: Neuro-Symbolic Integration Layer
+    epic_id: EP-NS-007
+    sprint_id: q2-6
+    status: planned
+    story_points: 6
+    priority: P1-HIGH
+    fr_coverage: [FR-003, FR-004, FR-018]
+    description: Create integration layer between neural and symbolic components
+
+  # EP-CI-001: CI/CD Autonomy (3 stories, 12 points)
+  - id: ST-CI-001
+    title: Real CI Gates (Black/Ruff/Mypy/Pytest/Coverage)
+    epic_id: EP-CI-001
+    sprint_id: p0-1
+    status: planned
+    story_points: 4
+    priority: P0-CRITICAL
+    description: Make CI gates real and blocking so autonomous merges are safe
+
+  - id: ST-CI-002
+    title: Gitea PR Auto-Merge Bot (Green CI Only)
+    epic_id: EP-CI-001
+    sprint_id: p0-1
+    status: planned
+    story_points: 4
+    priority: P0-CRITICAL
+    description: Implement PR open/poll/merge automation via Gitea API; merge only when required checks are green
+
+  - id: ST-CI-003
+    title: Branch Hygiene Automation
+    epic_id: EP-CI-001
+    sprint_id: p0-1
+    status: planned
+    story_points: 4
+    priority: P1-HIGH
+    description: Auto-prune merged branches and prevent long-lived divergence
+
+  # EP-DATA-001: Data Gathering & Backtesting (4 stories, 26 points)
+  - id: ST-DATA-001
+    title: Exchange Market Data Ingestion (Binance Reference)
+    epic_id: EP-DATA-001
+    sprint_id: p0-2
+    status: planned
+    story_points: 7
+    priority: P0-CRITICAL
+    description: Ingest market-structure reference data (order book/liquidity/open interest) from Binance for 10 tokens
+
+  - id: ST-DATA-002
+    title: Execution Market Data Ingestion (Bybit/Bitget)
+    epic_id: EP-DATA-001
+    sprint_id: p0-2
+    status: planned
+    story_points: 7
+    priority: P0-CRITICAL
+    description: Ingest execution-market data needed for sizing/SL/TP and realized trade analytics
+
+  - id: ST-BT-001
+    title: Continuous Backtest Runner
+    epic_id: EP-DATA-001
+    sprint_id: p0-2
+    status: planned
+    story_points: 6
+    priority: P0-CRITICAL
+    description: Run continuous backtests (including walk-forward) and persist KPIs
+
+  - id: ST-BT-002
+    title: Strategy Intake + Candidate Evaluation Pipeline
+    epic_id: EP-DATA-001
+    sprint_id: p0-2
+    status: planned
+    story_points: 6
+    priority: P1-HIGH
+    description: Formalize new strategy proposals into a test pipeline and promote candidates based on evidence
+
+  # EP-EX-001: Execution (Perps-First) (6 stories, 46 points)
+  - id: ST-EX-001
+    title: Exchange Adapter Interface (Perps)
+    epic_id: EP-EX-001
+    sprint_id: p0-3
+    status: planned
+    story_points: 8
+    priority: P0-CRITICAL
+    description: Define a unified interface for perps exchange connectivity, orders, positions, and fills
+
+  - id: ST-EX-002
+    title: Bybit Demo Adapter
+    epic_id: EP-EX-001
+    sprint_id: p0-3
+    status: planned
+    story_points: 7
+    priority: P0-CRITICAL
+    description: Implement Bybit demo trading adapter for paper execution
+
+  - id: ST-PAPER-001
+    title: Paper Trading Orchestrator (Shadow Backtests)
+    epic_id: EP-EX-001
+    sprint_id: p0-3
+    status: planned
+    story_points: 7
+    priority: P0-CRITICAL
+    description: Execute paper trades on Bybit demo while continuous backtests continue in parallel
+
+  - id: ST-EX-003
+    title: Bitget Live Adapter
+    epic_id: EP-EX-001
+    sprint_id: p0-4
+    status: planned
+    story_points: 8
+    priority: P0-CRITICAL
+    description: Implement Bitget live trading adapter for real execution
+
+  - id: ST-LIVE-001
+    title: Live Trading Orchestrator (Gated)
+    epic_id: EP-EX-001
+    sprint_id: p0-4
+    status: planned
+    story_points: 8
+    priority: P0-CRITICAL
+    description: Gate live trading enable/disable; ensure paper/backtest remain active
+
+  - id: ST-RISK-001
+    title: Risk Invariants + Kill-Switch Enforcement
+    epic_id: EP-EX-001
+    sprint_id: p0-4
+    status: planned
+    story_points: 8
+    priority: P0-CRITICAL
+    description: Enforce 1% per trade risk, leverage <=3x, and drawdown kill-switch behavior per mode
+
+  # EP-OPS-001: Observability & Ops (3 stories, 18 points)
+  - id: ST-OPS-001
+    title: Grafana Dashboards (Data + Backtest)
+    epic_id: EP-OPS-001
+    sprint_id: p0-5
+    status: planned
+    story_points: 6
+    priority: P0-CRITICAL
+    description: Build dashboards for data freshness, ingest health, and backtest KPIs
+
+  - id: ST-OPS-002
+    title: Grafana Dashboards (Paper + Live Execution)
+    epic_id: EP-OPS-001
+    sprint_id: p0-5
+    status: planned
+    story_points: 6
+    priority: P0-CRITICAL
+    description: Build dashboards for orders/fills, PnL/drawdown, invariant breaches, and kill-switch state
+
+  - id: ST-OPS-003
+    title: Alerting Runbook + Automation
+    epic_id: EP-OPS-001
+    sprint_id: p0-5
+    status: planned
+    story_points: 6
+    priority: P1-HIGH
+    description: Alert routing + runbooks for common failures (API disconnect, data gaps, order rejects, drift)

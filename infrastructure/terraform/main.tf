@@ -118,7 +118,7 @@ resource "docker_container" "influxdb" {
 
 resource "docker_container" "qdrant" {
   name  = "chiseai-qdrant"
-  image = "qdrant/qdrant:v1.7.4"
+  image = "qdrant/qdrant:v1.16.3"
 
   env = [
     "QDRANT__SERVICE__HTTP_PORT=6334",
