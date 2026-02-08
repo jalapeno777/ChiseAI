@@ -1,0 +1,98 @@
+variable "chise_postgres_password" {
+  type        = string
+  description = "Postgres password for ChiseAI core database."
+  default     = "change-me"
+  sensitive   = true
+}
+
+variable "influxdb_admin_user" {
+  type        = string
+  description = "InfluxDB admin username."
+  default     = "admin"
+}
+
+variable "influxdb_admin_password" {
+  type        = string
+  description = "InfluxDB admin password."
+  default     = "change-me"
+  sensitive   = true
+}
+
+variable "influxdb_org" {
+  type        = string
+  description = "InfluxDB organization."
+  default     = "chiseai"
+}
+
+variable "influxdb_bucket" {
+  type        = string
+  description = "InfluxDB default bucket."
+  default     = "chiseai"
+}
+
+variable "grafana_admin_password" {
+  type        = string
+  description = "Grafana admin password."
+  default     = "change-me"
+  sensitive   = true
+}
+
+variable "gitea_root_url" {
+  type        = string
+  description = "Gitea public root URL."
+  default     = "http://localhost:3000/"
+}
+
+variable "woodpecker_agent_secret" {
+  type        = string
+  description = "Shared secret between Woodpecker server and agent."
+  default     = "change-me"
+  sensitive   = true
+}
+
+variable "woodpecker_gitea_client" {
+  type        = string
+  description = "Woodpecker OAuth client ID from Gitea."
+  default     = "change-me"
+  sensitive   = true
+}
+
+variable "woodpecker_gitea_secret" {
+  type        = string
+  description = "Woodpecker OAuth client secret from Gitea."
+  default     = "change-me"
+  sensitive   = true
+}
+
+variable "taiga_secret_key" {
+  type        = string
+  description = "Taiga secret key (Django)."
+  default     = "change-me"
+  sensitive   = true
+}
+
+variable "taiga_db_password" {
+  type        = string
+  description = "Taiga Postgres password."
+  default     = "change-me"
+  sensitive   = true
+}
+
+variable "taiga_rabbitmq_user" {
+  type        = string
+  description = "Taiga RabbitMQ username."
+  default     = "taiga"
+}
+
+variable "taiga_rabbitmq_password" {
+  type        = string
+  description = "Taiga RabbitMQ password."
+  default     = "change-me"
+  sensitive   = true
+}
+
+variable "taiga_public_domain" {
+  type        = string
+  description = "Taiga public domain (host:port)."
+  default     = "localhost:9001"
+}

@@ -1,0 +1,18 @@
+story_id: "ST-NS-000"
+title: ""
+story_size: "small"
+context:
+  summary: ""
+  target_paths: []
+acceptance_criteria:
+  - id: "AC-1"
+    description: ""
+    verification:
+      type: "test"
+      command: ""
+      evidence: ""
+dependencies: []
+risk_notes: []
+memory_promotions:
+  agents_md_paths: []
+  qdrant: false

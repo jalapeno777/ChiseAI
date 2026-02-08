@@ -1,0 +1,27 @@
+when:
+  event: [ push, manual ]
+
+steps:
+  lint:
+    image: python:3.11
+    commands:
+      - python -V
+      - |
+        if [ -f pyproject.toml ]; then
+          pip install --no-cache-dir black ruff mypy
+          black --check .
+          ruff check .
+          mypy .
+        else
+          echo "pyproject.toml not found; skipping black/ruff/mypy"
+        fi
+
+  local-ci:
+    image: alpine:3.19
+    commands:
+      - |
+        if [ -x scripts/local-ci-checks.sh ]; then
+          ./scripts/local-ci-checks.sh
+        else
+          echo "scripts/local-ci-checks.sh not found; skipping"
+        fi

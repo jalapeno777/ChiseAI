@@ -1,0 +1,7 @@
+# Terraform local state and providers
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.*
+
+# Local secrets (kept outside repo)
+*infra-secrets*.txt
