@@ -172,7 +172,8 @@ def main() -> int:
         ctx_state = None
         for s in statuses:
             if s.get("context") == args.required_context:
-                ctx_state = s.get("state")
+                # Gitea uses "status" in per-context entries; some clients use "state".
+                ctx_state = s.get("state") or s.get("status")
                 break
         if ctx_state == "success":
             _merge_pr(
