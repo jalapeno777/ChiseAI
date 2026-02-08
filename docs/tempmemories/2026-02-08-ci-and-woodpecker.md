@@ -31,3 +31,5 @@ notes:
 - Set `GITEA__server__HTTP_ADDR=0.0.0.0` to ensure host port 3000 is reachable (connection resets should stop).
 - Recreated OAuth app via Gitea API using scoped admin token; updated local `terraform.tfvars` and restarted woodpecker-server.
 - Set Gitea OAuth app `confidential_client=1` to avoid PKCE-required login errors.
+- Created `chise-bot` user, granted repo access, and set Woodpecker `gitea_clone_url` to use bot PAT (no craig impact).
+- Updated bot PAT scope to `all` and added `access` table entry for repo permissions.
