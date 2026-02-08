@@ -6,3 +6,4 @@
 
 # Local secrets (kept outside repo)
 *infra-secrets*.txt
+.serena/
