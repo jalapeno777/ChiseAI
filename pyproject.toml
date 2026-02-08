@@ -7,4 +7,4 @@ extend-exclude = ["**/*"]
 select = []
 
 [tool.mypy]
-exclude = '.*'
+files = ["tests/ci_fail_black.py"]
