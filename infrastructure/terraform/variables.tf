@@ -64,6 +64,13 @@ variable "woodpecker_gitea_secret" {
   sensitive   = true
 }
 
+variable "woodpecker_db_password" {
+  type        = string
+  description = "Postgres password for Woodpecker database user."
+  default     = "change-me"
+  sensitive   = true
+}
+
 variable "taiga_secret_key" {
   type        = string
   description = "Taiga secret key (Django)."
