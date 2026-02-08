@@ -26,10 +26,12 @@ Use `host.docker.internal` instead of `localhost`:
 
 ## CI pipeline summary
 The default pipeline runs:
-1. **lint**: installs `black`, `ruff`, `mypy` and runs:
+1. **lint**: installs `black`, `ruff`, `mypy`, `pytest` and runs:
    - `black --check .`
    - `ruff check .`
-   - `mypy .`
+   - `mypy src tests scripts`
+   - `python scripts/validate_status_sync.py`
+   - `python scripts/validate_iterloop_compliance.py`
 2. **local-ci**: runs `scripts/local-ci-checks.sh` if present
 
 ## Required branch protections
@@ -60,4 +62,4 @@ If `mypy .` fails with “There are no .py[i] files”, add a targeted `files = 
 1. Push branch to Gitea: `git push gitea <branch>`
 2. Open PR in Gitea.
 3. Wait for `ci/woodpecker/push/woodpecker` to pass.
-4. Merge via Gitea UI or API (auto-merge if enabled).
+4. Merge via Gitea UI or API (auto-merge bot recommended).

@@ -82,16 +82,16 @@ validations:
     owner: qa-team
 
   - id: V-NS-006
-    title: Dashboard Signal Display
+    title: UI Signal Display
     epic_id: EP-NS-002
     story_id: ST-NS-008
     status: planned
-    description: Validate signals display correctly on Streamlit dashboard with all metadata
+    description: Validate signals display correctly in the primary UI (Grafana-first) with all metadata
     acceptance_criteria:
       - All signal fields render correctly (token, direction, confidence, risk)
-      - Dashboard loads within 3 seconds
+      - UI panels load within 3 seconds
       - Real-time updates propagate within 1 second
-      - Mobile responsiveness is maintained
+      - Panels are robust for debugging (clear error states and health indicators)
     test_method: automated
     owner: frontend-team
 
@@ -115,9 +115,10 @@ validations:
     epic_id: EP-NS-003
     story_id: ST-NS-012
     status: planned
-    description: Validate position sizing respects 2% per-grid risk limit and portfolio constraints
+    description: Validate position sizing respects 1% per-trade risk limit (at stop-loss) and portfolio constraints
     acceptance_criteria:
-      - Position sizes never exceed 2% risk per grid
+      - Position sizes never exceed 1% risk per trade at stop-loss
+      - Grid worst-case risk does not exceed 2% when applicable
       - Portfolio allocation respects 10% per-token limit
       - Leverage never exceeds 3x
       - Calculations account for current portfolio state
@@ -255,60 +256,98 @@ validations:
 
   # Live Validation Gates (4 gates for phased deployment)
   - id: V-NS-LIVE-001
-    title: Phase 1 - Sandbox/Backtest Validation
+    title: Phase 1 - Continuous Backtesting Validation
     epic_id: EP-NS-001
     story_id: null
     status: planned
-    description: Historical backtesting validation through Jan 31, 2025 walk-forward analysis
+    description: Continuous backtesting + walk-forward validation built from exchange APIs (always-on)
     acceptance_criteria:
-      - Walk-forward validation completes successfully
-      - Results meet minimum performance thresholds
-      - No overfitting detected in backtests
-      - Strategy logic is sound and consistent
+      - Backtest runner is always-on and produces daily KPI summaries
+      - Walk-forward validation completes successfully on schedule
+      - Fees/slippage/funding assumptions are applied consistently
+      - Backtesting is never halted by paper/live kill-switch events
     test_method: manual
     owner: validation-team
 
   - id: V-NS-LIVE-002
-    title: Phase 2 - Paper Trading Validation
+    title: Phase 2 - Bybit Demo Paper Trading Validation
     epic_id: EP-NS-002
     story_id: null
     status: planned
-    description: Paper trading with live market data, no real funds
+    description: Bybit demo paper trading (perps-first) with shadow backtests continuing
     acceptance_criteria:
-      - 60% win rate achieved over minimum 50 trades
-      - 5% net gain in simulated environment
-      - System stability maintained throughout
-      - Signal latency remains under 1 second
+      - 30 consecutive days of paper trading without invariant breaches
+      - Paper kill-switch behavior works: close positions, suspend, self-eval, resume with updated parameters
+      - Per-trade risk sizing respects 1% portfolio risk at stop-loss
+      - Execution/telemetry is visible in Grafana
     test_method: manual
     owner: validation-team
 
   - id: V-NS-LIVE-003
-    title: Phase 3 - Limited Live Validation
+    title: Phase 3 - Bitget Live Trading Validation (Gated)
     epic_id: EP-NS-003
     story_id: null
     status: planned
-    description: Real funds with capped position size and rollback triggers
+    description: Bitget live trading with strict caps; paper + backtest remain active
     acceptance_criteria:
-      - 60% win rate maintained with real funds
-      - 5% net gain achieved
-      - Drawdown never exceeds 10%
-      - Rollback triggers function correctly
+      - Live trading remains disabled after live kill-switch until human re-authorizes
+      - Live kill-switch triggers at >=15% drawdown and disables live execution
+      - Per-trade risk sizing respects 1% portfolio risk at stop-loss and leverage <=3x
+      - Operational health and PnL/drawdown are visible in Grafana with alerts
     test_method: manual
     owner: validation-team
 
   - id: V-NS-LIVE-004
-    title: Phase 4 - Production Validation
+    title: Phase 4 - Scaling Validation
     epic_id: EP-NS-007
     story_id: null
     status: planned
-    description: Full production deployment with all success criteria met
+    description: Scaling up tokens/strategies once evidence supports stable profitability and minimal drawdown
     acceptance_criteria:
-      - All SC-001 through SC-010 success criteria met
-      - System uptime ≥99.9%
-      - User retention ≥80% at 6 months
-      - No critical security incidents
+      - Token universe can expand without breaking invariants or ops stability
+      - Uptime and latency targets remain within bounds for core services
+      - CI/CD auto-merge continues to keep main green and convergent
     test_method: manual
     owner: validation-team
+
+  # EP-CI-001: CI/CD Autonomy
+  - id: V-CI-001
+    title: CI Gates Block Bad Changes
+    epic_id: EP-CI-001
+    story_id: ST-CI-001
+    status: planned
+    description: Validate CI runs and blocks merges on lint/type/test failures
+    acceptance_criteria:
+      - Black/ruff/mypy failures fail CI
+      - Pytest failures fail CI
+      - Coverage below threshold fails CI
+    test_method: automated
+    owner: qa-team
+
+  - id: V-CI-002
+    title: Auto-Merge Requires Green Checks
+    epic_id: EP-CI-001
+    story_id: ST-CI-002
+    status: planned
+    description: Validate merge automation only merges PRs with required checks green
+    acceptance_criteria:
+      - PRs do not merge when any required check is missing/failed
+      - PRs merge automatically once checks are green
+    test_method: manual
+    owner: ops-team
+
+  # EP-EX-001: Execution (Perps-First)
+  - id: V-EX-001
+    title: Per-Trade Risk Invariant Enforced
+    epic_id: EP-EX-001
+    story_id: ST-RISK-001
+    status: planned
+    description: Validate 1% per trade risk (at stop-loss) is enforced for paper/live execution
+    acceptance_criteria:
+      - Sizing calculations are consistent and test-covered
+      - Orders are rejected if sizing would exceed risk/leverage constraints
+    test_method: automated
+    owner: risk-team
 
 # Global validation thresholds
 thresholds:

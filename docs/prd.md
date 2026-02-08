@@ -3,7 +3,7 @@
 
 **Author:** Craig
 **Date:** 2025-12-07
-**Version:** 1.0.2
+**Version:** 1.1.0
 **Status:** Active
 **Canonical PRD:** Yes
 **Replaces:** docs/startingprd.md (legacy - superseded by canonical PRD)
@@ -28,7 +28,7 @@ classification:
 
 ChiseAI is a sophisticated crypto trading analysis system that transforms emotional, time-intensive trading into data-driven, profitable market insights. By leveraging advanced multi-timeframe analysis, Markov chain predictions, and intelligent trend detection, ChiseAI identifies high-probability trading opportunities while maintaining rigorous portfolio-level risk management. The system addresses the critical gap between basic trading bots and complex analysis needed for consistent profitability in volatile crypto markets, specifically designed for solo human operators with AI team support.
 
-The MVP focuses on 10 specific tokens (BTC, ETH, SOL, LINK, TAO, XRP, BNB, SUI, ONDO, KAS) using Binance API for uncapped real-time data. The system analyzes tokens across multiple timeframes using a blend of technical indicators, Markov chain trend detection, and confidence scoring to generate high-probability trading insights. Results are delivered through both a Streamlit dashboard and Discord bot integration for community transparency and engagement.
+The MVP focuses on 10 specific tokens (BTC, ETH, SOL, LINK, TAO, XRP, BNB, SUI, ONDO, KAS) across three execution stages: continuous historical backtesting, Bybit demo paper trading, and Bitget live trading. Binance is used as a high-liquidity reference venue for broader market structure signals (e.g., order book / liquidity / open interest), while Bybit and Bitget market data are used for execution-specific sizing, stop-loss/TP placement, and realized fill analytics. Results are surfaced via Grafana (primary ops/debug UI) with Discord notifications for key events and signals.
 
 ### What Makes This Special
 
@@ -61,27 +61,26 @@ ChiseAI's unfair advantage lies in its sophisticated multi-layered analysis appr
 | Category | Items |
 |----------|-------|
 | **Tokens (MVP)** | BTC, ETH, SOL, LINK, TAO, XRP, BNB, SUI, ONDO, KAS (10 tokens) |
-| **Data Source** | Binance API for real-time data |
+| **Data Sources** | Binance (reference market structure: OI/order books/liquidity); Bybit (paper execution + execution-market data); Bitget (live execution + execution-market data) |
 | **Analysis Methods** | Multi-timeframe technical indicators, Markov chain trend detection, ML confidence scoring |
-| **Output Channels** | Streamlit dashboard, Discord bot |
-| **Risk Management** | Position sizing, stop-loss, portfolio-level risk, max 2% per grid, 3x leverage cap |
+| **Execution Modes** | Backtest (continuous), Paper (Bybit demo), Live (Bitget), with shadow-modes kept running in parallel |
+| **Output Channels** | Grafana dashboards (primary), Discord bot (alerts/notifications). Optional: Streamlit for research/explainability UI (non-blocking) |
+| **Risk Management** | Position sizing, stop-loss, portfolio-level risk, max 1% per trade risk, ≤2% per-grid worst-case, 3x leverage cap |
 | **Learning System** | Closed-loop ML feedback, prediction outcome tracking, confidence calibration |
 
 ### 2.2 Out of Scope
 
 | Category | Items |
 |----------|-------|
-| **Trading Execution** | No live trading (POC mode only - recommendations only) |
 | **Custody** | Non-custodial architecture (users maintain fund control) |
 | **Tokens (Phase 2)** | Expansion beyond 10 tokens (after $1,000/month profit threshold) |
 | **Leverage** | Max 3x (no higher leverage options) |
-| **Jurisdictions** | US-only at launch (EU/APAC in future phases) |
-| **Regulated Products** | No live trading execution (POC mode - recommendations only) |
-| | **Note:** Perpetual futures and spot strategy recommendations ARE in-scope (phased approach) |
+| **Spot Execution** | Spot execution is out-of-scope initially (perps-first); revisit after paper/live perps stability gate |
+| **Regulatory/Compliance** | Out of scope for this project; operator handles exchange/jurisdiction requirements externally |
 
 ---
 
-## 2. User Journeys
+## User Journeys
 
 ### Journey 1: Daily Trading Routine
 
@@ -172,6 +171,17 @@ ChiseAI's unfair advantage lies in its sophisticated multi-layered analysis appr
 | FR-023 | Performance reporting (daily/weekly/monthly) | P1-HIGH | Journey 3 |
 | FR-024 | Community discussion via Discord integration | P2-MEDIUM | Journey 4 |
 
+### 3.6 Execution & Validation
+
+| ID | Requirement | Priority | User Journey |
+|----|-------------|----------|--------------|
+| FR-025 | Continuous backtesting runner (walk-forward capable) | P0-CRITICAL | Journey 3 |
+| FR-026 | Exchange adapter interface + connectors: Binance (reference), Bybit (paper), Bitget (live) | P0-CRITICAL | Journey 1, 3 |
+| FR-027 | Paper trading orchestration (Bybit demo) with shadow backtests continuing | P0-CRITICAL | Journey 1, 3 |
+| FR-028 | Live trading orchestration (Bitget) with explicit enable/disable gating | P0-CRITICAL | Journey 3 |
+| FR-029 | Mode-specific kill-switch enforcement (paper self-eval/resume; live human re-auth) | P0-CRITICAL | Journey 3 |
+| FR-030 | Grafana-first observability (KPIs, health, alerts) | P0-CRITICAL | Journey 3 |
+
 ---
 
 ## 4. Non-Functional Requirements
@@ -224,6 +234,7 @@ ChiseAI's unfair advantage lies in its sophisticated multi-layered analysis appr
 
 | Constraint | Value | Enforcement |
 |------------|-------|-------------|
+| Maximum per-trade risk | ≤1% of portfolio (at stop-loss) | Hard limit in sizing/execution |
 | Maximum per-grid risk | ≤2% worst-case | Hard limit in signal generation |
 | Portfolio drawdown | ≤15% catastrophic threshold | Kill-switch trigger |
 | Confidence threshold | ≥75% minimum | Signal filtering |
@@ -240,10 +251,11 @@ ChiseAI's unfair advantage lies in its sophisticated multi-layered analysis appr
 
 | System | Trigger | Action |
 |--------|---------|--------|
-| **Kill-Switch** | 15% drawdown OR 3 consecutive losses | Immediate position closure |
+| **Kill-Switch (Live)** | ≥15% drawdown | Disable live trading until human re-authorizes reactivation |
+| **Kill-Switch (Paper)** | ≥15% drawdown | Close paper positions; suspend paper; run self-eval and resume with adjusted parameters + notify human |
 | **Circuit Breaker** | API failure rate >10% | Fallback to cached data |
 | **Panic Shutdown** | Manual trigger | All positions close, alerts disabled |
-| **Safety Monitoring** | Continuous | 61/61 safety tests required |
+| **Safety Monitoring** | Continuous | Automated safety test suite required (scope grows with system) |
 | **Position Limits** | Per-token max | 10% of portfolio per token |
 | **Correlation Limits** | Cross-position | Max 40% correlated exposure |
 
@@ -255,16 +267,16 @@ ChiseAI's unfair advantage lies in its sophisticated multi-layered analysis appr
 
 | Phase | Environment | Scope | Success Criteria |
 |-------|-------------|-------|-------------------|
-| **Phase 1** | Sandbox/Binance Testnet | Historical backtesting | Walk-forward validation through Jan 31, 2025 |
-| **Phase 2** | Paper Trading | Live market data, no real funds | 60% win rate, 5% net gain in simulated environment |
-| **Phase 3** | Limited Live | Real funds, capped position size | 60% win rate, 5% net gain with rollback triggers |
-| **Phase 4** | Production | Full deployment | SC-001 through SC-010 met |
+| **Phase 1** | Backtesting (historical) | Continuous backtesting + walk-forward validation built from exchange APIs | Backtest KPIs stable; invariants enforced; data pipelines healthy |
+| **Phase 2** | Paper Trading (Bybit demo) | Live market data; paper execution; shadow backtests continue | 30 days continuous success; no invariant breaches; acceptable drawdown |
+| **Phase 3** | Live Trading (Bitget) | Real execution with strict caps; paper + backtest continue | Live profitability improves vs baseline; invariant breaches handled as designed |
+| **Phase 4** | Scaling | Token/strategy expansion | Sustained profitability with minimal drawdown; ops stability and observability proven |
 
 ### 6.2 Rollback Triggers
 
 | Trigger | Condition | Action |
 |---------|-----------|--------|
-| Drawdown | >10% from entry | Reduce position size by 50% |
+| Drawdown | Approaching kill-switch thresholds | Reduce risk (sizing/leverage) and/or suspend affected mode |
 | Win Rate | <55% over 20 trades | Pause signal generation |
 | Confidence Drift | ECE >0.10 | Recalibrate thresholds |
 | Safety Test Failure | Any test fail | Rollback to previous version |
@@ -301,36 +313,7 @@ ChiseAI's unfair advantage lies in its sophisticated multi-layered analysis appr
 
 ## 8. Implementation Status
 
-### 8.1 Completed Sprints (Q1 2025)
-
-| Sprint | Name | Stories | Story Points | Status |
-|--------|------|---------|--------------|--------|
-| q1-1 | LLM Foundation - Core Interfaces | 11 | 66 | ✅ COMPLETED |
-| q1-2 | ML-LLM Integration | 6 | 40 | ✅ COMPLETED |
-| q1-3 | Confidence Calibration Foundation | 6 | 42 | ✅ COMPLETED |
-| q1-4 | Multi-LLM Orchestration | 5 | 35 | ✅ COMPLETED |
-| q1-5 | Dashboard Integration Phase 1 | 7 | 37 | ✅ COMPLETED |
-| q1-6 | Data Layer Foundation | 2 | 12 | ✅ COMPLETED |
-| q1-7 | Feature Store Foundation | 2 | 10 | ✅ COMPLETED |
-| q1-8 | Error Handling Foundation | 2 | 9 | ✅ COMPLETED |
-| **Q1 Total** | **8 Sprints** | **41** | **251** | **✅ COMPLETED** |
-
-### 8.2 ML Outcome Analysis System (Q1 2026)
-
-| Phase | Name | Stories | Story Points | Status |
-|-------|------|---------|--------------|--------|
-| phase-1 | Core Infrastructure | 3 | 18 | ✅ COMPLETE |
-| phase-2 | Calibration Engines | 4 | 24 | ✅ COMPLETE |
-| phase-3 | Training Data | 3 | 20 | ✅ COMPLETE |
-| phase-4 | Model Integration | 5 | 24 | ✅ COMPLETE |
-| **Total** | **ML Outcome Analysis** | **15** | **86** | **✅ COMPLETE** |
-
-### 8.3 Planned Sprints (Q2 2025)
-
-| Sprint | Name | Stories | Story Points | Status |
-|--------|------|---------|--------------|--------|
-| q2-1 | Markov Chain & Decision Engine | 10 | 67 | 🔵 READY |
-| q2-2 | Paper Trading & Grading | 20 | 114 | 📋 PLANNED |
+ChiseAI is currently in **planning/foundation** for this repository. The authoritative work-state (epics/stories/status) lives in `docs/bmm-workflow-status.yaml`, paired with validation plans in `docs/validation/validation-registry.yaml`.
 
 ---
 
@@ -368,16 +351,16 @@ ChiseAI's unfair advantage lies in its sophisticated multi-layered analysis appr
 │  Time Series DB  │  Relational DB  │  Cache Layer  │  Audit    │
 │  (InfluxDB)       │  (PostgreSQL)   │  (Redis)      │  Store    │
 ├─────────────────────────────────────────────────────────────────┤
-│         External Integrations: Binance API, Discord Bot         │
+│ External Integrations: Binance (ref data), Bybit (paper), Bitget (live), Discord │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ### 10.2 Technical Stack
 
-- **Frontend:** Streamlit (dashboard), Discord bot
+- **Observability/UI:** Grafana (primary), Discord bot (alerts). Optional: Streamlit (research/explainability UI)
 - **Backend:** Python, microservices architecture
 - **Data:** InfluxDB (time-series), PostgreSQL (relational), Redis (cache)
-- **ML/AI:** Multi-LLM orchestration (GLM-4.7, MiniMax, OpenAI, Anthropic)
+- **ML/AI:** Multi-LLM orchestration (GLM-4.7, Kimi 2.5, MiniMax 2.1; configurable fallbacks)
 - **Infrastructure:** Docker, Kubernetes-ready, Terraform IaC
 
 ---
@@ -402,3 +385,4 @@ ChiseAI's unfair advantage lies in its sophisticated multi-layered analysis appr
 | 1.0.0 | 2025-12-07 | Craig | Initial canonical PRD |
 | 1.0.1 | 2026-02-08 | CH-PRD-RESTRUCT-001 | Added FR/NFR/SC, Safety Constraints, Traceability Matrix |
 | 1.0.2 | 2026-02-08 | CH-PRD-POLISH-001 | Fixed naming consistency, resolved scope contradiction, reframed success criteria for POC mode |
+| 1.1.0 | 2026-02-08 | CH-PRD-CI-ALIGN-001 | Updated scope to phased execution (backtest→Bybit paper→Bitget live), Binance ref market-data role, Grafana-first ops UI, updated risk invariants and kill-switch rules |

@@ -15,9 +15,8 @@ Run these gates before PR/merge. If a referenced script is missing, explicitly n
    - Otherwise, run the repo's test/lint entry points that exist (for example `pytest`, `ruff`, `black`) and report what you ran.
 
 3. Status sync (if present)
-   - If `scripts/validate_status_sync.py` exists, run: `python scripts/validate_status_sync.py`
+   - If `scripts/validate_status_sync.py` exists, run: `python3 scripts/validate_status_sync.py`
 
 4. Iterloop compliance (if present)
    - If `scripts/validate_iterloop_compliance.py` exists, run:
-     - `python scripts/validate_iterloop_compliance.py --story-id=<story_id>`
-
+     - `python3 scripts/validate_iterloop_compliance.py --story-id=<story_id>`

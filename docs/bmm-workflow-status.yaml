@@ -4,77 +4,85 @@
 
 metadata:
   project_name: ChiseAI
-  version: "1.1.0"
+  version: "1.2.0"
   last_updated: "2026-02-08"
   prd_location: docs/prd.md
-  prd_note: ""
+  prd_note: "Phased perps execution: continuous backtest -> Bybit demo paper -> Bitget live; Grafana-first ops UI; Binance used as reference market-structure venue."
 
 # Current project phase
 current_phase:
-  phase: foundation
+  phase: planning
   status: in_progress
 
 # Active sprints (from PRD - extract what exists)
 sprints:
   - id: q1-1
     name: LLM Foundation - Core Interfaces
-    status: completed
+    status: deprecated
     story_count: 11
     story_points: 66
     completion_date: "2025-12-30"
+    note: "Legacy planning artifact imported from GridAI; not implemented in this repository"
   
   - id: q1-2
     name: ML-LLM Integration
-    status: completed
+    status: deprecated
     story_count: 6
     story_points: 40
     completion_date: "2025-12-31"
+    note: "Legacy planning artifact imported from GridAI; not implemented in this repository"
 
   - id: q1-3
     name: Confidence Calibration Foundation
-    status: completed
+    status: deprecated
     story_count: 6
     story_points: 42
     completion_date: "2025-12-30"
+    note: "Legacy planning artifact imported from GridAI; not implemented in this repository"
 
   - id: q1-4
     name: Multi-LLM Orchestration
-    status: completed
+    status: deprecated
     story_count: 5
     story_points: 35
     completion_date: "2025-12-30"
+    note: "Legacy planning artifact imported from GridAI; not implemented in this repository"
 
   - id: q1-5
     name: Dashboard Integration Phase 1
-    status: completed
+    status: deprecated
     story_count: 7
     story_points: 37
     completion_date: "2025-12-30"
+    note: "Legacy planning artifact imported from GridAI; not implemented in this repository"
 
   - id: q1-6
     name: Data Layer Foundation
-    status: completed
+    status: deprecated
     story_count: 2
     story_points: 12
     completion_date: "2025-12-30"
+    note: "Legacy planning artifact imported from GridAI; not implemented in this repository"
 
   - id: q1-7
     name: Feature Store Foundation
-    status: completed
+    status: deprecated
     story_count: 2
     story_points: 10
     completion_date: "2025-12-31"
+    note: "Legacy planning artifact imported from GridAI; not implemented in this repository"
 
   - id: q1-8
     name: Error Handling Foundation
-    status: completed
+    status: deprecated
     story_count: 2
     story_points: 9
     completion_date: "2025-12-30"
+    note: "Legacy planning artifact imported from GridAI; not implemented in this repository"
 
   - id: q2-1
     name: Markov Chain & Decision Engine
-    status: in_progress
+    status: planned
     story_count: 6
     story_points: 42
     mapped_stories: [ST-NS-001, ST-NS-002, ST-NS-003, ST-NS-004, ST-NS-005, ST-NS-006]
@@ -114,11 +122,46 @@ sprints:
     story_points: 49
     mapped_stories: [ST-NS-031, ST-NS-032, ST-NS-033, ST-NS-034, ST-NS-035, ST-NS-036, ST-NS-037]
 
+  - id: p0-1
+    name: Foundation & CI/CD Autonomy
+    status: planned
+    story_count: 3
+    story_points: 12
+    mapped_stories: [ST-CI-001, ST-CI-002, ST-CI-003]
+
+  - id: p0-2
+    name: Data Gathering & Continuous Backtesting
+    status: planned
+    story_count: 4
+    story_points: 26
+    mapped_stories: [ST-DATA-001, ST-DATA-002, ST-BT-001, ST-BT-002]
+
+  - id: p0-3
+    name: Bybit Demo Paper Trading
+    status: planned
+    story_count: 3
+    story_points: 22
+    mapped_stories: [ST-EX-001, ST-EX-002, ST-PAPER-001]
+
+  - id: p0-4
+    name: Bitget Live Trading (Gated)
+    status: planned
+    story_count: 3
+    story_points: 24
+    mapped_stories: [ST-EX-003, ST-LIVE-001, ST-RISK-001]
+
+  - id: p0-5
+    name: Observability (Grafana-First)
+    status: planned
+    story_count: 3
+    story_points: 18
+    mapped_stories: [ST-OPS-001, ST-OPS-002, ST-OPS-003]
+
 # Epics (7 epics covering the full system)
 epics:
   - id: EP-NS-001
     name: Market Analysis Engine Foundation
-    status: in_progress
+    status: planned
     story_ids: [ST-NS-001, ST-NS-002, ST-NS-003, ST-NS-004, ST-NS-005, ST-NS-006]
     story_count: 6
     story_points: 42
@@ -172,6 +215,38 @@ epics:
     story_points: 49
     description: Advanced neuro-symbolic AI features including hybrid reasoning, explainability, and adaptive learning
 
+  - id: EP-CI-001
+    name: CI/CD Autonomy
+    status: planned
+    story_ids: [ST-CI-001, ST-CI-002, ST-CI-003]
+    story_count: 3
+    story_points: 12
+    description: Reliable CI gates, auto-merge workflow, and branch hygiene to keep autonomous development convergent
+
+  - id: EP-DATA-001
+    name: Data Gathering & Backtesting
+    status: planned
+    story_ids: [ST-DATA-001, ST-DATA-002, ST-BT-001, ST-BT-002]
+    story_count: 4
+    story_points: 26
+    description: Build market-data ingestion from exchange APIs and run continuous backtests with walk-forward evaluation
+
+  - id: EP-EX-001
+    name: Execution (Perps-First)
+    status: planned
+    story_ids: [ST-EX-001, ST-EX-002, ST-EX-003, ST-PAPER-001, ST-LIVE-001, ST-RISK-001]
+    story_count: 6
+    story_points: 46
+    description: Exchange adapters for Bybit demo and Bitget live execution with strict risk invariants and kill-switch behavior
+
+  - id: EP-OPS-001
+    name: Observability & Ops
+    status: planned
+    story_ids: [ST-OPS-001, ST-OPS-002, ST-OPS-003]
+    story_count: 3
+    story_points: 18
+    description: Grafana dashboards/alerts for data freshness, strategy KPIs, execution health, and invariant breaches
+
 # Stories (37 stories across 7 epics)
 stories:
   # EP-NS-001: Market Analysis Engine Foundation (6 stories, 42 points)
@@ -179,7 +254,7 @@ stories:
     title: Multi-timeframe Analysis Engine
     epic_id: EP-NS-001
     sprint_id: q2-1
-    status: in_progress
+    status: planned
     story_points: 8
     priority: P0-CRITICAL
     fr_coverage: [FR-001]
@@ -254,7 +329,7 @@ stories:
     story_points: 7
     priority: P0-CRITICAL
     fr_coverage: [FR-008]
-    description: Display pre-market briefing on Streamlit dashboard
+    description: Display pre-market briefing in the primary UI (Grafana first; Streamlit optional)
 
   - id: ST-NS-009
     title: Discord Alert Integration
@@ -550,3 +625,151 @@ stories:
     priority: P1-HIGH
     fr_coverage: [FR-003, FR-004, FR-018]
     description: Create integration layer between neural and symbolic components
+
+  # EP-CI-001: CI/CD Autonomy (3 stories, 12 points)
+  - id: ST-CI-001
+    title: Real CI Gates (Black/Ruff/Mypy/Pytest/Coverage)
+    epic_id: EP-CI-001
+    sprint_id: p0-1
+    status: planned
+    story_points: 4
+    priority: P0-CRITICAL
+    description: Make CI gates real and blocking so autonomous merges are safe
+
+  - id: ST-CI-002
+    title: Gitea PR Auto-Merge Bot (Green CI Only)
+    epic_id: EP-CI-001
+    sprint_id: p0-1
+    status: planned
+    story_points: 4
+    priority: P0-CRITICAL
+    description: Implement PR open/poll/merge automation via Gitea API; merge only when required checks are green
+
+  - id: ST-CI-003
+    title: Branch Hygiene Automation
+    epic_id: EP-CI-001
+    sprint_id: p0-1
+    status: planned
+    story_points: 4
+    priority: P1-HIGH
+    description: Auto-prune merged branches and prevent long-lived divergence
+
+  # EP-DATA-001: Data Gathering & Backtesting (4 stories, 26 points)
+  - id: ST-DATA-001
+    title: Exchange Market Data Ingestion (Binance Reference)
+    epic_id: EP-DATA-001
+    sprint_id: p0-2
+    status: planned
+    story_points: 7
+    priority: P0-CRITICAL
+    description: Ingest market-structure reference data (order book/liquidity/open interest) from Binance for 10 tokens
+
+  - id: ST-DATA-002
+    title: Execution Market Data Ingestion (Bybit/Bitget)
+    epic_id: EP-DATA-001
+    sprint_id: p0-2
+    status: planned
+    story_points: 7
+    priority: P0-CRITICAL
+    description: Ingest execution-market data needed for sizing/SL/TP and realized trade analytics
+
+  - id: ST-BT-001
+    title: Continuous Backtest Runner
+    epic_id: EP-DATA-001
+    sprint_id: p0-2
+    status: planned
+    story_points: 6
+    priority: P0-CRITICAL
+    description: Run continuous backtests (including walk-forward) and persist KPIs
+
+  - id: ST-BT-002
+    title: Strategy Intake + Candidate Evaluation Pipeline
+    epic_id: EP-DATA-001
+    sprint_id: p0-2
+    status: planned
+    story_points: 6
+    priority: P1-HIGH
+    description: Formalize new strategy proposals into a test pipeline and promote candidates based on evidence
+
+  # EP-EX-001: Execution (Perps-First) (6 stories, 46 points)
+  - id: ST-EX-001
+    title: Exchange Adapter Interface (Perps)
+    epic_id: EP-EX-001
+    sprint_id: p0-3
+    status: planned
+    story_points: 8
+    priority: P0-CRITICAL
+    description: Define a unified interface for perps exchange connectivity, orders, positions, and fills
+
+  - id: ST-EX-002
+    title: Bybit Demo Adapter
+    epic_id: EP-EX-001
+    sprint_id: p0-3
+    status: planned
+    story_points: 7
+    priority: P0-CRITICAL
+    description: Implement Bybit demo trading adapter for paper execution
+
+  - id: ST-PAPER-001
+    title: Paper Trading Orchestrator (Shadow Backtests)
+    epic_id: EP-EX-001
+    sprint_id: p0-3
+    status: planned
+    story_points: 7
+    priority: P0-CRITICAL
+    description: Execute paper trades on Bybit demo while continuous backtests continue in parallel
+
+  - id: ST-EX-003
+    title: Bitget Live Adapter
+    epic_id: EP-EX-001
+    sprint_id: p0-4
+    status: planned
+    story_points: 8
+    priority: P0-CRITICAL
+    description: Implement Bitget live trading adapter for real execution
+
+  - id: ST-LIVE-001
+    title: Live Trading Orchestrator (Gated)
+    epic_id: EP-EX-001
+    sprint_id: p0-4
+    status: planned
+    story_points: 8
+    priority: P0-CRITICAL
+    description: Gate live trading enable/disable; ensure paper/backtest remain active
+
+  - id: ST-RISK-001
+    title: Risk Invariants + Kill-Switch Enforcement
+    epic_id: EP-EX-001
+    sprint_id: p0-4
+    status: planned
+    story_points: 8
+    priority: P0-CRITICAL
+    description: Enforce 1% per trade risk, leverage <=3x, and drawdown kill-switch behavior per mode
+
+  # EP-OPS-001: Observability & Ops (3 stories, 18 points)
+  - id: ST-OPS-001
+    title: Grafana Dashboards (Data + Backtest)
+    epic_id: EP-OPS-001
+    sprint_id: p0-5
+    status: planned
+    story_points: 6
+    priority: P0-CRITICAL
+    description: Build dashboards for data freshness, ingest health, and backtest KPIs
+
+  - id: ST-OPS-002
+    title: Grafana Dashboards (Paper + Live Execution)
+    epic_id: EP-OPS-001
+    sprint_id: p0-5
+    status: planned
+    story_points: 6
+    priority: P0-CRITICAL
+    description: Build dashboards for orders/fills, PnL/drawdown, invariant breaches, and kill-switch state
+
+  - id: ST-OPS-003
+    title: Alerting Runbook + Automation
+    epic_id: EP-OPS-001
+    sprint_id: p0-5
+    status: planned
+    story_points: 6
+    priority: P1-HIGH
+    description: Alert routing + runbooks for common failures (API disconnect, data gaps, order rejects, drift)

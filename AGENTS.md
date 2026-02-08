@@ -26,7 +26,7 @@
 
 ```bash
 # Validate iteration loop compliance
-python scripts/validate_iterloop_compliance.py --story-id=<id>
+python3 scripts/validate_iterloop_compliance.py --story-id=<id>
 ```
 
 ### 0.4 Non-Compliance Consequences
@@ -110,7 +110,7 @@ python scripts/validate_iterloop_compliance.py --story-id=<id>
 - If a stash is created, it must be applied + committed or dropped before finishing the task.
 - **Canonical SCM:** Gitea is the source of truth for repos/PRs. GitHub usage is **deprecated** for ChiseAI unless explicitly re-enabled by a human.
 - CI gate: run `scripts/local-ci-checks.sh` (or equivalent) before any PR; fix failures and re-run until green.
-- Status sync gate: run `python scripts/validate_status_sync.py` before any PR; must pass (warnings OK).
+- Status sync gate: run `python3 scripts/validate_status_sync.py` before any PR; must pass (warnings OK).
 - PR creation gate: only after CI passes and `git status -sb` is clean (or explicit human approval).
 - PR handoff block must include: branch name, CI status, status-sync result, and exceptions.
 
@@ -265,7 +265,7 @@ promote_to_qdrant("ST-001")
 
 **MANDATORY: Status-Implementation Sync**
 - Every PR adding story implementations (ST-NS-XXX, CH-BG-XXX, FT-NS-XXX, REWARD-XXX) MUST update `docs/bmm-workflow-status.yaml`
-- Run `python scripts/validate_status_sync.py` before committing
+- Run `python3 scripts/validate_status_sync.py` before committing
 - CI will BLOCK merges if status file is out of sync
 - No story implementation code merges until status reflects actual implementation state
 
@@ -275,16 +275,16 @@ The status file is the source of truth for project state. A stale status file is
 
 **Before every commit:**
 ```bash
-python scripts/validate_status_sync.py
+python3 scripts/validate_status_sync.py
 ```
 
 **If validation fails:**
 1. Update `docs/bmm-workflow-status.yaml` to reflect actual state
-2. Re-run validation: `python scripts/validate_status_sync.py`
+2. Re-run validation: `python3 scripts/validate_status_sync.py`
 3. Only then commit and create PR
 
 **Weekly Audit:**
-- Run `python scripts/validate_status_sync.py --full` to verify all sprints
+- Run `python3 scripts/validate_status_sync.py --full` to verify all sprints
 - Fix any discrepancies immediately
 
 **Phase-specific memory**
@@ -309,7 +309,7 @@ python scripts/validate_status_sync.py
 1. Every story includes code changes under `src/` + tests under `tests/`
 2. Keep CI green; update `.woodpecker.yml` when new tests/services added
 3. Never commit secrets; use env vars + `.env` + `.gitignore`
-4. Status file validation passes (`python scripts/validate_status_sync.py`)
+4. Status file validation passes (`python3 scripts/validate_status_sync.py`)
 5. No story implementations merged without corresponding status update in YAML
 6. Required status check context: `ci/woodpecker/push/woodpecker`
 
@@ -330,7 +330,7 @@ python scripts/validate_status_sync.py
    - **Containerized dashboard:** use `start_chise.sh` (port 8502) with `dashboard_venv` and `host.docker.internal` for container-to-host DB/Redis
 2. Run `scripts/local-ci-checks.sh` (pre-commit + `make ci-test`/`test-smoke`/`test-security`)
 3. Fix failures, rerun until clean
-4. Run `python scripts/validate_status_sync.py` and fix issues
+4. Run `python3 scripts/validate_status_sync.py` and fix issues
 5. Push feature branch; PR to `main`; CI/Security/Deployment pipelines run
 6. Monitor jobs; fix/retest/push if any fail
 7. After green merge, delete feature branch (if not auto-removed)
@@ -554,7 +554,7 @@ networks:
 Before any commit:
 ```bash
 # Automatically run via .git/hooks/pre-commit
-python scripts/validate_docker_connectivity.py
+python3 scripts/validate_docker_connectivity.py
 ```
 
 **What the hook validates:**

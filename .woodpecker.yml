@@ -14,21 +14,23 @@ steps:
     commands:
       - python -V
       - |
-        if [ -f pyproject.toml ]; then
-          pip install --no-cache-dir black ruff mypy
-          black --check .
-          ruff check .
-          mypy .
-        else
-          echo "pyproject.toml not found; skipping black/ruff/mypy"
-        fi
+        set -eu
+        pip install --no-cache-dir black ruff mypy pytest pytest-cov pyyaml types-PyYAML
+        black --check .
+        ruff check .
+        mypy src tests scripts
+        python scripts/validate_status_sync.py
+        python scripts/validate_iterloop_compliance.py
 
   local-ci:
-    image: alpine:3.19
+    image: python:3.11
     commands:
       - |
+        set -eu
+        pip install --no-cache-dir pytest pytest-cov pyyaml
         if [ -x scripts/local-ci-checks.sh ]; then
           ./scripts/local-ci-checks.sh
         else
-          echo "scripts/local-ci-checks.sh not found; skipping"
+          echo "scripts/local-ci-checks.sh not found; failing"
+          exit 1
         fi
