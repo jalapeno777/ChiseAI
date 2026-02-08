@@ -56,11 +56,11 @@ python3 scripts/validate_iterloop_compliance.py --story-id=<id>
 - Before editing any files, run MEM-SCAN as defined in the workflow.
 - Record iteration learnings in Redis and promote to local AGENTS.md or Qdrant per the workflow rules.
 
-**POC mode (current):**
-- Recommendation-only (no live execution)
+**Execution mode (current roadmap):**
+- Phased perps execution: continuous backtesting (always on) -> Bybit demo paper -> Bitget live (gated)
 - POC tokens/timeframes + constraints: `docs/validation/validation-registry.yaml`
 - Risk cap guideline: <= 2% worst-case per grid (portfolio caps separate)
-- Futures leverage allowed, max 3x (still recommendation-only)
+- Futures leverage allowed, max 3x (paper/live enabled only after gating criteria are met)
 - Discord posting default: min confidence 40% (tune later)
 
 ---
@@ -157,6 +157,11 @@ python3 scripts/validate_iterloop_compliance.py --story-id=<id>
 - Use `.opencode/command/chise-pr-automerge.md` to standardize push -> PR -> merge (green CI only). This is the default path for autonomous agents to keep `main` convergent.
 - **PR Title Rule:** Every PR title MUST include the canonical story ID (e.g. `ST-NS-001 ...`). The `chise-pr-automerge` flow enforces this via `scripts/gitea_pr_automerge.py --story-id`.
 - Use `.opencode/command/chise-taiga-sync.md` to keep Taiga aligned with repo-canonical story metadata (status/AC) so humans can monitor progress without manual copy/paste.
+- Use `.opencode/command/chise-rd-iteration.md` for a full R&D iteration loop (candidate -> backtest -> rank -> paper canary plan).
+- Use `.opencode/command/chise-paper-canary.md` for paper canary planning and gates.
+- Use `.opencode/command/chise-promotion-packet.md` to generate human approval packets for strategy/brain changes.
+- Use `.opencode/command/chise-turnover-report.md` for standardized trades/day reporting.
+- Use `.opencode/command/chise-brain-upgrade-attempt.md` for Brain CI/CD attempts (shadow + BrainEval + packet).
 
 **MCP usage priority (web/search/vision)**
 - Prefer Z.ai MCPs first; fall back to MiniMax if Z.ai fails or is unavailable

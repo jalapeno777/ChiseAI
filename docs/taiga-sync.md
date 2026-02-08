@@ -8,6 +8,12 @@
 - Sync script: `scripts/taiga_sync.py`
 - Sync state (mapping + checksums): `docs/taiga/sync-state.yaml`
 
+## Login Notes (Local Taiga)
+- UI: `http://localhost:9001` (from your host machine)
+- Login uses **username + password** (not email).
+- If you try "Reset password" with an email that Taiga doesn't know, it will say you are not registered.
+  - In that case, log in via username, or change your Taiga email in the UI/admin to your preferred address.
+
 ### Required Env Vars (Repo -> Taiga)
 - `TAIGA_BASE_URL` (default: `http://host.docker.internal:9002`)
 - `TAIGA_PROJECT_SLUG` (required)
