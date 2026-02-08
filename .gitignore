@@ -7,3 +7,5 @@
 # Local secrets (kept outside repo)
 *infra-secrets*.txt
 .serena/
+# Local environment files
+.env
