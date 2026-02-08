@@ -20,7 +20,9 @@ Prevent unsafe recommendations and ensure every strategy output has explicit, bo
 
 ## Checklist
 
-- Recommendation-only (no live execution).
+- Execution mode awareness:
+  - Backtesting is always-on and must not be halted.
+  - Paper/live execution must be gated and kill-switch controlled per PRD/Product Brief.
 - Leverage <= 3x if futures are involved.
 - Worst-case per grid <= 2% (state assumptions).
 - Confidence gating for Discord posting.
@@ -30,4 +32,3 @@ Prevent unsafe recommendations and ensure every strategy output has explicit, bo
 ## Command
 
 Run `.opencode/command/chise-risk-audit.md` and record pass/fail evidence in the story iterlog.
-

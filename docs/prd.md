@@ -30,6 +30,16 @@ ChiseAI is a sophisticated crypto trading analysis system that transforms emotio
 
 The MVP focuses on 10 specific tokens (BTC, ETH, SOL, LINK, TAO, XRP, BNB, SUI, ONDO, KAS) across three execution stages: continuous historical backtesting, Bybit demo paper trading, and Bitget live trading. Binance is used as a high-liquidity reference venue for broader market structure signals (e.g., order book / liquidity / open interest), while Bybit and Bitget market data are used for execution-specific sizing, stop-loss/TP placement, and realized fill analytics. Results are surfaced via Grafana (primary ops/debug UI) with Discord notifications for key events and signals.
 
+### Autonomous Development System (Chise)
+
+ChiseAI is built and maintained by an **autonomous development system** (internally referred to as **Chise**) that continuously plans, implements, tests, and deploys improvements with minimal human involvement.
+
+- **Primary orchestration**: Aria is the primary orchestrator and delegates planning/execution to Jarvis and implementation agents per `.opencode/agent/*.md`.
+- **Single source of truth**: The repo (PRD + `docs/bmm-workflow-status.yaml` + `docs/validation/validation-registry.yaml`) is canonical; Taiga is a synchronized monitoring surface with strict conflict rules.
+- **Always via PR**: All changes land via PRs, pass Woodpecker CI, and are auto-merged to `main` when checks are green.
+- **Traceability**: Every PR title must include a story ID (e.g. `ST-NS-001 ...`, `CH-OPS-001 ...`). CI enforces this.
+- **Planning visibility**: Repo-canonical story metadata is synced to Taiga so humans can monitor progress without duplicative manual status updates.
+
 ### What Makes This Special
 
 ChiseAI's unfair advantage lies in its sophisticated multi-layered analysis approach and accuracy-first philosophy. Unlike competitors' basic indicator-based systems, ChiseAI combines comprehensive market analysis with Markov chain trend detection, confidence scoring, and community-driven transparency through Discord integration. The system transforms volatility from a risk into a profit-generating asset through intelligent trend prediction, making sophisticated trading accessible while maintaining complexity needed for real market success. The accuracy-first approach prioritizes signal quality over quantity, minimizing false positives while accepting missed opportunities as acceptable trade-offs.
@@ -67,6 +77,7 @@ ChiseAI's unfair advantage lies in its sophisticated multi-layered analysis appr
 | **Output Channels** | Grafana dashboards (primary), Discord bot (alerts/notifications). Optional: Streamlit for research/explainability UI (non-blocking) |
 | **Risk Management** | Position sizing, stop-loss, portfolio-level risk, max 1% per trade risk, ≤2% per-grid worst-case, 3x leverage cap |
 | **Learning System** | Closed-loop ML feedback, prediction outcome tracking, confidence calibration |
+| **Autonomous Engineering (Chise)** | Agent-driven planning/implementation/testing; PR-only changes; CI-gated auto-merge; story-id traceability; repo->Taiga sync for monitoring |
 
 ### 2.2 Out of Scope
 
@@ -182,6 +193,29 @@ ChiseAI's unfair advantage lies in its sophisticated multi-layered analysis appr
 | FR-029 | Mode-specific kill-switch enforcement (paper self-eval/resume; live human re-auth) | P0-CRITICAL | Journey 3 |
 | FR-030 | Grafana-first observability (KPIs, health, alerts) | P0-CRITICAL | Journey 3 |
 
+### 3.7 Autonomous Engineering System (Chise)
+
+| ID | Requirement | Priority | User Journey |
+|----|-------------|----------|--------------|
+| FR-DEV-001 | Standard PR workflow: all changes land via PRs and merge to `main` only after Woodpecker CI is green | P0-CRITICAL | Journey 3 |
+| FR-DEV-002 | PR traceability: PR titles must include story IDs; CI blocks PRs missing a title or story ID | P0-CRITICAL | Journey 3 |
+| FR-DEV-003 | Status discipline: repo state in `docs/bmm-workflow-status.yaml` and `docs/validation/validation-registry.yaml` must stay in sync; CI validates this | P0-CRITICAL | Journey 3 |
+| FR-DEV-004 | Taiga monitoring view: repo-canonical story metadata (id/title/status/AC) is synced to Taiga; conflicts follow strict policy (repo is canonical) | P1-HIGH | Journey 3 |
+| FR-DEV-005 | Iteration loop compliance: work is tracked via iterlogs (Redis/Qdrant when available; `docs/tempmemories/` fallback) and validated in CI | P1-HIGH | Journey 3 |
+
+### 3.8 Strategy Evolution & Promotion (Neuro-Symbolic R&D)
+
+| ID | Requirement | Priority | User Journey |
+|----|-------------|----------|--------------|
+| FR-EVO-001 | Constrained action space for evolution: strategies are mutated only via approved config/DSL interfaces (no arbitrary live code edits) | P0-CRITICAL | Journey 3 |
+| FR-EVO-002 | Strategy DSL schema supports parameter and structural mutations, while remaining diffable and reproducible | P0-CRITICAL | Journey 3 |
+| FR-EVO-003 | Strategy registry supports champion/challenger tracking and stores artifacts (config, diffs, backtest results, paper results) | P0-CRITICAL | Journey 3 |
+| FR-EVO-004 | Strategy CI/CD promotion pipeline: candidate -> backtest gate -> paper canary -> paper full -> promotion packet -> human-approved live | P0-CRITICAL | Journey 3 |
+| FR-EVO-005 | Promotion packets are generated for human approvals (paper->live; and optional brain upgrades), including evidence, risk invariants, and rollback steps | P1-HIGH | Journey 3 |
+| FR-EVO-006 | Optional policy knobs: trade-frequency budgeting and turnover reporting (trades/day) can be enabled as a secondary control when it improves cost and stability | P2-MEDIUM | Journey 3 |
+
+**Canonical V1 design reference:** `docs/planning/neuro-symbolic-ai-evolution/agentic_neurosymbolic_trading_rd_v1_spec.md` and `docs/planning/neuro-symbolic-ai-evolution/architecture_diagram_outline.md`.
+
 ---
 
 ## 4. Non-Functional Requirements
@@ -210,9 +244,9 @@ ChiseAI's unfair advantage lies in its sophisticated multi-layered analysis appr
 
 | ID | Requirement | Measurement | Target | Measurement Method | Context |
 |----|-------------|-------------|--------|-------------------|---------|
-| NFR-011 | Security breaches | Count | Zero | Security incident tracking + audit logs | Protects user data and maintains regulatory compliance |
+| NFR-011 | Security breaches | Count | Zero | Security incident tracking + audit logs | Protects secrets, portfolio state, and system integrity |
 | NFR-012 | Critical vulnerabilities | Count | Zero | Vulnerability scanning (weekly automated, monthly third-party) | Prevents exploitation of system weaknesses |
-| NFR-013 | Regulatory compliance | Jurisdiction coverage | 100% | Compliance audit tracking | Ensures legal operation across supported jurisdictions |
+| NFR-013 | Regulatory/compliance automation | Coverage | N/A | N/A | Out of scope for this project; operator handles exchange/jurisdiction requirements externally |
 | NFR-014 | Data encryption (at rest) | Standard | AES-256 | Security audit verification | Protects sensitive user and market data |
 | NFR-015 | Data encryption (in transit) | Standard | TLS 1.3 | Security scan verification | Secures all network communications |
 | NFR-016 | Penetration testing | Frequency | Quarterly | Third-party security audit | Validates security posture against real-world attacks |
