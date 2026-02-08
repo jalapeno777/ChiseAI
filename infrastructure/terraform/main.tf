@@ -408,8 +408,10 @@ resource "docker_container" "taiga_front" {
   image = "taigaio/taiga-front:latest"
 
   env = [
-    "TAIGA_URL=http://${var.taiga_public_domain}",
-    "TAIGA_WEBSOCKETS_URL=ws://${var.taiga_public_domain}",
+    # Browser-facing URLs. Frontend must point at back-end (:9002) and events (:9003),
+    # not at the frontend itself (:9001), otherwise login/API calls fail.
+    "TAIGA_URL=http://${var.taiga_back_public_domain}",
+    "TAIGA_WEBSOCKETS_URL=ws://${var.taiga_events_public_domain}",
   ]
 
   ports {
