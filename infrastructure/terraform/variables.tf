@@ -96,3 +96,15 @@ variable "taiga_public_domain" {
   description = "Taiga public domain (host:port)."
   default     = "localhost:9001"
 }
+
+variable "taiga_back_public_domain" {
+  type        = string
+  description = "Taiga back-end public domain (host:port) for browser clients."
+  default     = "localhost:9002"
+}
+
+variable "taiga_events_public_domain" {
+  type        = string
+  description = "Taiga events/websockets public domain (host:port) for browser clients."
+  default     = "localhost:9003"
+}
