@@ -27,3 +27,4 @@ notes:
 - Removed explicit username/password in clone; plan to rely on trusted clone credentials injection.
 - Set clone remote to `from_secret: gitea_clone_url` to supply auth in URL (user-managed secret).
 - Woodpecker OAuth client/secret still default `change-me`; server cannot load config from forge until real Gitea OAuth app creds are set and Woodpecker re-auths.
+- Created Gitea OAuth app directly in `gitea.db` (client_id `54703d2c469ef2d15174d554aa822bbf`); set terraform tfvars locally and restarted woodpecker-server.

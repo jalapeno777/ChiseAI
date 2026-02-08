@@ -2,6 +2,7 @@
 **/.terraform/
 **/*.tfstate
 **/*.tfstate.*
+**/*.tfvars
 
 # Local secrets (kept outside repo)
 *infra-secrets*.txt
