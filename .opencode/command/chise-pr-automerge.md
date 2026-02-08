@@ -9,6 +9,7 @@ Use this command to keep autonomous development convergent: every change lands v
 Prereqs:
 - Set `GITEA_TOKEN` (PAT) in env.
 - Optional: `GITEA_BASE_URL` (defaults to `http://host.docker.internal:3000`), `GITEA_OWNER`, `GITEA_REPO`.
+- Set `STORY_ID` (required). Example: `export STORY_ID=ST-NS-001`
 
 1. Safety gates (must not be on main)
    - `git status -sb`
@@ -22,11 +23,10 @@ Prereqs:
    - `git push -u gitea HEAD`
 
 4. Open PR and enable auto-merge on green CI
-   - `python3 scripts/gitea_pr_automerge.py --head "$(git branch --show-current)" --wait --delete-branch`
+   - `python3 scripts/gitea_pr_automerge.py --story-id "$STORY_ID" --head "$(git branch --show-current)" --wait --delete-branch`
 
 5. Sync local main and prune
    - `git switch main`
    - `git pull --ff-only gitea main`
    - `git fetch -p gitea`
    - Delete local feature branch (safe): `git branch -d <branch>`
-
