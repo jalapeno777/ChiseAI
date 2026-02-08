@@ -1,5 +1,5 @@
 when:
-  event: [ push, manual ]
+  event: [ push, pull_request, manual ]
 
 clone:
   git:
@@ -21,6 +21,7 @@ steps:
         mypy src tests scripts
         python scripts/validate_status_sync.py
         python scripts/validate_iterloop_compliance.py
+        python scripts/validate_pr_title.py
 
   security-scan:
     image: python:3.11
