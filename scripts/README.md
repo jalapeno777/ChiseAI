@@ -67,6 +67,20 @@ python3 scripts/gitea_pr_automerge.py --head feature/my-branch
 python3 scripts/gitea_pr_automerge.py --head feature/my-branch --wait --delete-branch
 ```
 
+### gitea_pr_review.py
+
+Posts an APPROVED / REQUEST_CHANGES review on a PR via Gitea API.
+
+Notes:
+- Use a dedicated `GITEA_REVIEW_TOKEN` for a separate bot user. Gitea disallows approving your own PR.
+
+**Usage:**
+```bash
+export GITEA_REVIEW_TOKEN=...
+python3 scripts/gitea_pr_review.py --pr 28 --state APPROVED --body "review-bot approval"
+python3 scripts/gitea_pr_review.py --pr 28 --state REQUEST_CHANGES --body "blocking issues: ..."
+```
+
 ## Adding New Scripts
 
 When adding scripts to this directory:

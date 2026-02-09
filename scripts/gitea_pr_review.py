@@ -51,7 +51,7 @@ def main() -> int:
         "--state",
         required=True,
         choices=["APPROVED", "REQUEST_CHANGES"],
-        help="Review state",
+        help="Review event/state (Gitea uses this to submit the review)",
     )
     p.add_argument("--body", default="", help="Review comment body")
     p.add_argument(
@@ -67,12 +67,12 @@ def main() -> int:
         return 1
 
     url = f"{args.base_url}/api/v1/repos/{args.owner}/{args.repo}/pulls/{args.pr}/reviews"
-    # Gitea accepts "state" values in review objects; use the same for creation.
-    _req_json("POST", url, token, {"state": args.state, "body": args.body})
-    print(f"PR #{args.pr}: review posted state={args.state}")
+    # Gitea treats approvals as "events". Using "event" triggers server-side validation
+    # (including "cannot approve your own PR"), which is desired.
+    _req_json("POST", url, token, {"event": args.state, "body": args.body})
+    print(f"PR #{args.pr}: review posted event={args.state}")
     return 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

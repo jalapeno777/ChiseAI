@@ -48,6 +48,9 @@ Prefer repeatable workflow execution through `.opencode/command/*` rather than a
 - Start/close iteration loop:
   - `.opencode/command/chise-iterloop-start.md`
   - `.opencode/command/chise-iterloop-close.md`
+- PR review bot setup + review:
+  - `.opencode/command/chise-gitea-review-bot-setup.md`
+  - `.opencode/command/chise-pr-review-bot.md`
 - Parallel safety (ownership + incidents):
   - `.opencode/command/chise-claim-ownership.md`
   - `.opencode/command/chise-check-ownership.md`
