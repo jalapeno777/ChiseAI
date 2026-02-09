@@ -4,11 +4,493 @@
 
 metadata:
   project_name: ChiseAI
-  version: "1.1.0"
-  last_updated: "2026-02-08"
+  version: "2.0.0"
+  last_updated: "2026-02-09"
 
-# Validation entries (17 validations for neuro-symbolic epics)
+# Validation entries
 validations:
+  # ============================================================
+  # PHASE 1 EPICS (35 validations for 35 stories)
+  # Foundation work: CI/CD, Data, ML Optimization, Strategy Intake, Brain Ops, Observability
+  # ============================================================
+
+  # EP-CHISE-001: Chise v1 Brain Operations (5 validations)
+  - id: V-CHISE-001
+    title: Brain CI/CD Pipeline - Version and Evaluate
+    epic_id: EP-CHISE-001
+    story_id: ST-CHISE-001
+    status: planned
+    description: Validate Chise v1 brain has CI/CD pipeline for version management, shadow testing, and promotion
+    acceptance_criteria:
+      - Brain versioning follows semantic versioning
+      - Evaluation runs automatically on new versions
+      - Shadow testing runs against live brain in parallel
+      - Promotion is gated by human approval packet
+      - CI blocks promotion on failed evaluations
+    test_method: automated
+    owner: ml-team
+
+  - id: V-CHISE-002
+    title: Brain Evaluation Framework - Batching + BrainEval
+    epic_id: EP-CHISE-001
+    story_id: ST-CHISE-002
+    status: planned
+    description: Validate brain evaluation framework supports batch evaluation of multiple brain versions and uses BrainEval tool
+    acceptance_criteria:
+      - Evaluation batches support 3-5 brain versions
+      - Evaluation results are persisted with full metrics
+      - BrainEval tool is integrated correctly
+      - Evaluation criteria are documented (accuracy, ECE, safety)
+      - Batch results are rankable and comparable
+    test_method: automated
+    owner: ml-team
+
+  - id: V-CHISE-003
+    title: Brain Promotion Packet - Evidence + Rollback
+    epic_id: EP-CHISE-001
+    story_id: ST-CHISE-003
+    status: planned
+    description: Validate promotion packets for brain upgrades include evidence, risk assessment, and rollback steps
+    acceptance_criteria:
+      - Packets include all required fields (evaluation summary, safety checks, rollback steps, human approval checkbox)
+      - Rollback steps are detailed and tested
+      - Packet generation is automated
+      - Rollback path is documented and verified
+      - Promotion is gated by human approval
+    test_method: manual
+    owner: ml-team
+
+  - id: V-CHISE-004
+    title: Chise v1 Loop Compliance - Iteration + Logging
+    epic_id: EP-CHISE-001
+    story_id: ST-CHISE-004
+    status: planned
+    description: Validate Chise v1 brain follows iteration loop compliance with proper iteration logging and memory promotion
+    acceptance_criteria:
+      - Iteration logs are stored in Redis with proper TTL
+      - Key decisions are logged per iteration
+      - Learnings are promoted to Qdrant on completion
+      - Iteration logs follow the schema (story_id, phase, status)
+      - Memory promotion happens automatically or with manual trigger
+    test_method: automated
+    owner: ml-team
+
+  - id: V-CHISE-005
+    title: Chise v1 Rollback Plan - Safety + Rollback Steps
+    epic_id: EP-CHISE-001
+    story_id: ST-CHISE-005
+    status: planned
+    description: Validate Chise v1 brain rollback plan includes safety checks and detailed rollback steps
+    acceptance_criteria:
+      - Rollback triggers are documented (ECE degradation, safety violations, human request)
+      - Rollback steps are detailed and tested in dev
+      - Safety checks verify system state before rollback
+      - Rollback path is quick (<5 min to previous version)
+      - Rollback outcome is logged for post-mortem analysis
+    test_method: manual
+    owner: ml-team
+
+  # EP-CI-001: CI/CD Autonomy (4 validations)
+  - id: V-CI-001
+    title: Real CI Gates - Black/Ruff/Mypy/Pytest/Coverage
+    epic_id: EP-CI-001
+    story_id: ST-CI-001
+    status: planned
+    description: Validate CI runs and blocks merges on lint/type/test failures
+    acceptance_criteria:
+      - Black/ruff/mypy failures fail CI
+      - Pytest failures fail CI
+      - Coverage below threshold fails CI
+      - CI gates are non-bypassable without explicit human override
+      - Failed gates prevent auto-merge
+    test_method: automated
+    owner: qa-team
+
+  - id: V-CI-002
+    title: Gitea PR Auto-Merge Bot - Green CI Only
+    epic_id: EP-CI-001
+    story_id: ST-CI-002
+    status: planned
+    description: Validate merge automation only merges PRs with required checks green
+    acceptance_criteria:
+      - PRs do not merge when any required check is missing/failed
+      - PRs merge automatically once checks are green
+      - Bot polls Gitea API for PR status
+      - Merge requires explicit approval from required reviewers
+      - Failed merges are logged with error details
+    test_method: manual
+    owner: ops-team
+
+  - id: V-CI-003
+    title: Branch Hygiene Automation - Prune + Prevention
+    epic_id: EP-CI-001
+    story_id: ST-CI-003
+    status: planned
+    description: Validate auto-prune merged branches and prevent long-lived divergence
+    acceptance_criteria:
+      - Merged branches are auto-deleted after 24 hours
+      - Branches older than 30 days trigger warnings
+      - Divergence detection alerts on significant drift from main
+      - Branch naming conventions are enforced
+      - Cleanup operations are logged
+    test_method: automated
+    owner: ops-team
+
+  - id: V-CI-004
+    title: Security Scan Gate - Deterministic Bandit
+    epic_id: EP-CI-001
+    story_id: ST-CI-004
+    status: planned
+    description: Validate deterministic security scan runs in CI and blocks merges on findings
+    acceptance_criteria:
+      - CI runs bandit scan on src/ directory
+      - Findings fail the pipeline
+      - Scan is deterministic (same findings for same code)
+      - Critical/high severity issues block merges
+      - Medium/low issues trigger warnings but allow merge
+    test_method: automated
+    owner: security-team
+
+  # EP-DATA-001: Data & Continuous Backtesting (4 validations)
+  - id: V-DATA-001
+    title: Exchange Market Data Ingestion - Binance Reference
+    epic_id: EP-DATA-001
+    story_id: ST-DATA-001
+    status: planned
+    description: Validate Binance reference market data (order book/liquidity/open interest) is ingested correctly for 10 tokens
+    acceptance_criteria:
+      - Order book snapshots are captured at 100ms intervals
+      - Liquidity metrics are calculated correctly
+      - Open interest data is aggregated and time-series ready
+      - Data quality checks pass (no gaps, no duplicates, price accuracy)
+      - Ingest latency <2s 95th percentile
+    test_method: automated
+    owner: ml-team
+
+  - id: V-DATA-002
+    title: Execution Market Data Ingestion - Bybit/Bitget
+    epic_id: EP-DATA-001
+    story_id: ST-DATA-002
+    status: planned
+    description: Validate execution-market data needed for sizing/SL/TP and realized trade analytics is ingested from Bybit/Bitget
+    acceptance_criteria:
+      - Real-time pricing data matches exchange API within 100ms
+      - Fill data is captured and persisted accurately
+      - Position/SL data is queryable for risk calculations
+      - Data gaps trigger alerts within 10 seconds
+      - Exchange connection health is monitored
+    test_method: automated
+    owner: ml-team
+
+  - id: V-DATA-003
+    title: Continuous Backtest Runner - Always-on + KPIs
+    epic_id: EP-DATA-001
+    story_id: ST-DATA-003
+    status: planned
+    description: Validate continuous backtesting runner produces KPIs and never halts unexpectedly
+    acceptance_criteria:
+      - Backtests run continuously (no manual start/stop required)
+      - KPIs are generated per backtest (Sharpe, drawdown, win rate, trade count)
+      - KPIs are persisted to InfluxDB with proper tagging
+      - Runner recovers from failures and resumes processing
+      - Backtest queue is monitored (depth, lag)
+    test_method: automated
+    owner: ml-team
+
+  - id: V-DATA-004
+    title: Data Quality Monitoring - Freshness + Gaps
+    epic_id: EP-DATA-001
+    story_id: ST-DATA-004
+    status: planned
+    description: Validate data freshness monitoring, gap detection, and alerting on ingestion failures
+    acceptance_criteria:
+      - Last update timestamps visible per data source (Binance, Bybit, Bitget)
+      - Freshness thresholds configurable (e.g., >5min stale = alert)
+      - Data gaps are detected within 60 seconds
+      - Alert triggers when any source exceeds threshold
+      - Historical freshness trends are plottable in Grafana
+    test_method: automated
+    owner: ops-team
+
+  # EP-BT-001: Strategy Intake & Candidate Evaluation (5 validations)
+  - id: V-SIG-001
+    title: Strategy Submission Format & DSL Schema
+    epic_id: EP-BT-001
+    story_id: ST-SIG-001
+    status: planned
+    description: Validate strategy submission format follows a constrained DSL schema that supports parameter and structure mutations
+    acceptance_criteria:
+      - DSL schema is validated on submission
+      - Invalid strategies are rejected with clear error messages
+      - DSL versioning is supported (migration path)
+      - DSL is diffable and reproducible
+      - Schema enforces safe parameter ranges
+    test_method: automated
+    owner: ml-team
+
+  - id: V-SIG-002
+    title: Strategy Registry - Champion/Challenger Tracking
+    epic_id: EP-BT-001
+    story_id: ST-SIG-002
+    status: planned
+    description: Validate strategy registry tracks champion/challenger strategies with associated artifacts and KPIs
+    acceptance_criteria:
+      - Champion/challenger relationships are maintained
+      - Artifacts (config, diffs, backtest results, paper results) are stored
+      - KPIs are comparable across strategies
+      - Challenger promotion criteria are documented
+      - Registry state is visible in Grafana
+    test_method: automated
+    owner: ml-team
+
+  - id: V-BT-001
+    title: Candidate Backtesting & Ranking
+    epic_id: EP-BT-001
+    story_id: ST-BT-001
+    status: planned
+    description: Validate candidate strategies are backtested with consistent parameters and ranked based on evidence
+    acceptance_criteria:
+      - Backtests use consistent walk-forward windows
+      - Ranking criteria are applied uniformly
+      - Backtest results are persisted with full metrics
+      - Top candidates are identified for paper testing
+      - Ranking is transparent (criteria and scores visible)
+    test_method: automated
+    owner: ml-team
+
+  - id: V-BT-002
+    title: Paper Canary Planning & Gates
+    epic_id: EP-BT-001
+    story_id: ST-BT-002
+    status: planned
+    description: Validate paper canary tests have clear gates and promotion criteria to paper full
+    acceptance_criteria:
+      - Canary size is defined (e.g., 10% of portfolio)
+      - Gate criteria are documented (drawdown, win rate, duration)
+      - Gate failure triggers rollback to previous version
+      - Canary results are persisted and visible
+      - Promotion to paper full is gated by human approval
+    test_method: manual
+    owner: ml-team
+
+  - id: V-BT-003
+    title: Promotion Packet Generation (Human Approval)
+    epic_id: EP-BT-001
+    story_id: ST-BT-003
+    status: planned
+    description: Validate promotion packets are generated for human approval with evidence, risk invariants, and rollback steps
+    acceptance_criteria:
+      - Packets include all required fields (evidence summary, KPI comparison, risk assessment, rollback plan)
+      - Packets are rendered in a human-readable format
+      - Rollback steps are detailed and tested
+      - Packet generation is automated
+      - Approval workflow is documented
+    test_method: manual
+    owner: ml-team
+
+  # EP-ML-001: ML Optimization for Strategy Tuning (3 validations)
+  - id: V-ML-001
+    title: Walk-Forward Evaluation Framework
+    epic_id: EP-ML-001
+    story_id: ST-ML-001
+    status: planned
+    description: Validate walk-forward evaluation framework correctly simulates sequential training and prevents look-ahead bias
+    acceptance_criteria:
+      - Walk-forward windows are configured correctly (train/test splits)
+      - No future data leaks into training set
+      - Performance metrics are calculated per window
+      - Walk-forward results are aggregateable for strategy comparison
+      - Look-ahead bias checks pass (test data not used in training)
+    test_method: automated
+    owner: ml-team
+
+  - id: V-ML-002
+    title: Hyperparameter Optimization - Genetic/BO
+    epic_id: EP-ML-001
+    story_id: ST-ML-002
+    status: planned
+    description: Validate hyperparameter optimization uses genetic algorithms or Bayesian optimization to tune strategy parameters
+    acceptance_criteria:
+      - Optimization converges to stable parameter sets
+      - Optimization runs complete in reasonable time (<24h per strategy)
+      - Optimized parameters improve backtest KPIs vs baseline
+      - Optimization history is tracked for analysis
+      - Multiple optimization methods are supported
+    test_method: automated
+    owner: ml-team
+
+  - id: V-ML-003
+    title: ML Optimization Cadence - Auto-tuning Schedule
+    epic_id: EP-ML-001
+    story_id: ST-ML-003
+    status: planned
+    description: Validate ML optimization runs on a scheduled cadence (e.g., daily/weekly) to adapt strategies to market conditions
+    acceptance_criteria:
+      - Scheduled optimization jobs run reliably without manual trigger
+      - Optimization schedule is configurable per strategy
+      - Optimization frequency is appropriate for market volatility regime
+      - Optimization results are persisted and visible
+      - Optimization can be paused/resumed without data loss
+    test_method: automated
+    owner: ml-team
+
+  # EP-CONF-001: Confidence Scoring - ECE/Thresholds (3 validations)
+  - id: V-CONF-001
+    title: ECE Calculation per Strategy/Signal Type
+    epic_id: EP-CONF-001
+    story_id: ST-CONF-001
+    status: planned
+    description: Validate Expected Calibration Error (ECE) is calculated correctly per strategy and signal type
+    acceptance_criteria:
+      - ECE calculations use correct binning (10 bins: 0-10%, 10-20%, etc.)
+      - ECE is calculated per signal type (entry, exit, SL, TP)
+      - Historical ECE values are tracked and trended
+      - ECE calculations are verified against ground truth labels
+      - ECE is queryable per strategy for calibration decisions
+    test_method: automated
+    owner: ml-team
+
+  - id: V-CONF-002
+    title: Confidence Threshold Calibration - Dynamic vs Fixed
+    epic_id: EP-CONF-001
+    story_id: ST-CONF-002
+    status: planned
+    description: Validate confidence threshold calibration supports dynamic thresholds (adjusting over time) vs fixed thresholds
+    acceptance_criteria:
+      - Dynamic threshold adjustment algorithm is documented
+      - Threshold history is tracked (changes and reasons)
+      - Fixed threshold mode is available as fallback
+      - Threshold adjustments improve calibration (ECE decreases)
+      - Threshold changes are logged and auditable
+    test_method: automated
+    owner: ml-team
+
+  - id: V-CONF-003
+    title: Confidence Threshold Enforcement - <40% Filter
+    epic_id: EP-CONF-001
+    story_id: ST-CONF-003
+    status: planned
+    description: Validate signals below 40% confidence are filtered out and not delivered to users
+    acceptance_criteria:
+      - Confidence filter is applied before Discord alert generation
+      - Filtered signals are logged for analysis
+      - No Discord alerts are sent for low-confidence signals
+      - Filter threshold is configurable per user preference
+      - Filter statistics are visible in Grafana
+    test_method: automated
+    owner: ops-team
+
+  # EP-EX-001: Execution (Perps-First) (3 validations)
+  - id: V-EX-001
+    title: Bybit Demo Paper Trading Integration
+    epic_id: EP-EX-001
+    story_id: ST-EX-001
+    status: planned
+    description: Validate Bybit demo paper trading with trade budget enforcement and KPI tracking
+    acceptance_criteria:
+      - Paper trades execute on Bybit demo environment
+      - Trade budget is enforced (max exposure limits)
+      - KPIs are tracked (PnL, drawdown, win rate, trade count)
+      - Paper kill-switch works correctly
+      - Results are visible in Grafana
+    test_method: automated
+    owner: risk-team
+
+  - id: V-EX-002
+    title: Bitget Live Trading Gating
+    epic_id: EP-EX-001
+    story_id: ST-EX-002
+    status: planned
+    description: Validate Bitget live trading with human approval gating and strict risk controls
+    acceptance_criteria:
+      - Live trading requires explicit human approval
+      - Approval gates check paper trading performance
+      - Risk controls are enforced before live activation
+      - Live trading can be disabled via kill-switch
+      - All live trades are logged with full audit trail
+    test_method: manual
+    owner: risk-team
+
+  - id: V-EX-003
+    title: Execution Risk Management - Kill Switch
+    epic_id: EP-EX-001
+    story_id: ST-EX-003
+    status: planned
+    description: Validate kill switch and execution risk controls for live trading
+    acceptance_criteria:
+      - Kill-switch triggers on >=15% drawdown
+      - Kill-switch closes all positions immediately
+      - Kill-switch disables live execution until human re-authorizes
+      - Kill-switch state is visible in Grafana
+      - Kill-switch triggers are logged with context
+    test_method: automated
+    owner: risk-team
+
+  # EP-OPS-001: Grafana-first Observability (4 validations)
+  - id: V-OPS-001
+    title: Grafana Dashboards - Data & Backtest KPIs
+    epic_id: EP-OPS-001
+    story_id: ST-OPS-001
+    status: planned
+    description: Validate Grafana dashboards display real-time data freshness metrics for all ingest pipelines
+    acceptance_criteria:
+      - Last update timestamps visible per data source (Binance, Bybit, Bitget)
+      - Freshness thresholds configurable (e.g., >5min stale = alert)
+      - Historical freshness trends are plottable
+      - Alert triggers when any source exceeds threshold
+      - Backtest KPI panels update within 5 seconds
+    test_method: automated
+    owner: ops-team
+
+  - id: V-OPS-002
+    title: Grafana Dashboards - Paper & Live Execution
+    epic_id: EP-OPS-001
+    story_id: ST-OPS-002
+    status: planned
+    description: Validate paper and live trading execution metrics are visible in Grafana dashboards
+    acceptance_criteria:
+      - Order/fill data is queryable in real-time
+      - PnL/drawdown panels update within 5 seconds
+      - Kill-switch state is clearly visible
+      - Per-trade risk metrics are accurate
+      - Execution latency metrics are tracked
+    test_method: automated
+    owner: ops-team
+
+  - id: V-OPS-003
+    title: Alerting Runbook + Automation
+    epic_id: EP-OPS-001
+    story_id: ST-OPS-003
+    status: planned
+    description: Validate common failure scenarios have runbooks and automated alert routing works correctly
+    acceptance_criteria:
+      - Runbooks exist for API disconnect, data gaps, order rejects, drift
+      - Alert routing sends notifications to correct channels (Discord/Slack)
+      - Runbooks are accessible from Grafana panels
+      - Automated remediation triggers correctly for common issues
+      - Alert fatigue is minimized through proper thresholds
+    test_method: manual
+    owner: ops-team
+
+  - id: V-OPS-004
+    title: Taiga Sync (Story Status Monitoring)
+    epic_id: EP-OPS-001
+    story_id: ST-OPS-004
+    status: planned
+    description: Validate repo-canonical story metadata is synced to Taiga with strict conflict rules
+    acceptance_criteria:
+      - Dry-run mode reports planned Taiga changes and exits 0
+      - Apply mode creates/updates Taiga milestones and user stories for non-deprecated repo stories
+      - Sync state file maps repo story ids to Taiga ids/refs and stores checksums
+      - Conflicts on repo-canonical fields are detected and reported unless forced
+      - Sync runs on schedule without manual intervention
+    test_method: automated
+    owner: ops-team
+
+  # ============================================================
+  # PHASE 2+ EPICS (17 validations for neuro-symbolic system)
+  # ============================================================
+
   # EP-NS-001: Market Analysis Engine Foundation
   - id: V-NS-001
     title: Multi-timeframe Analysis Validation
@@ -231,10 +713,10 @@ validations:
     epic_id: EP-NS-006
     story_id: ST-NS-029
     status: planned
-    description: Validate codebase maintains ≥80% test coverage
+    description: Validate codebase maintains >=80% test coverage
     acceptance_criteria:
-      - Overall coverage is ≥80%
-      - Critical paths have ≥90% coverage
+      - Overall coverage is >=80%
+      - Critical paths have >=90% coverage
       - Coverage reports are generated automatically
       - CI fails if coverage drops below threshold
     test_method: automated
@@ -254,7 +736,10 @@ validations:
     test_method: automated
     owner: security-team
 
-  # Live Validation Gates (4 gates for phased deployment)
+  # ============================================================
+  # LIVE VALIDATION GATES (4 gates for phased deployment)
+  # ============================================================
+
   - id: V-NS-LIVE-001
     title: Phase 1 - Continuous Backtesting Validation
     epic_id: EP-NS-001
@@ -309,449 +794,6 @@ validations:
       - CI/CD auto-merge continues to keep main green and convergent
     test_method: manual
     owner: validation-team
-
-  # EP-CI-001: CI/CD Autonomy
-  - id: V-CI-001
-    title: CI Gates Block Bad Changes
-    epic_id: EP-CI-001
-    story_id: ST-CI-001
-    status: planned
-    description: Validate CI runs and blocks merges on lint/type/test failures
-    acceptance_criteria:
-      - Black/ruff/mypy failures fail CI
-      - Pytest failures fail CI
-      - Coverage below threshold fails CI
-    test_method: automated
-    owner: qa-team
-
-  - id: V-CI-002
-    title: Auto-Merge Requires Green Checks
-    epic_id: EP-CI-001
-    story_id: ST-CI-002
-    status: planned
-    description: Validate merge automation only merges PRs with required checks green
-    acceptance_criteria:
-      - PRs do not merge when any required check is missing/failed
-      - PRs merge automatically once checks are green
-    test_method: manual
-    owner: ops-team
-
-  - id: V-CI-003
-    title: Security Scan Gate
-    epic_id: EP-CI-001
-    story_id: ST-CI-004
-    status: planned
-    description: Validate deterministic security scan runs in CI and blocks merges on findings
-    acceptance_criteria:
-      - CI runs bandit scan on `src/`
-      - Findings fail the pipeline
-    test_method: automated
-    owner: security-team
-
-  # EP-EX-001: Execution (Perps-First)
-  - id: V-EX-001
-    title: Per-Trade Risk Invariant Enforced
-    epic_id: EP-EX-001
-    story_id: ST-RISK-001
-    status: planned
-    description: Validate 1% per trade risk (at stop-loss) is enforced for paper/live execution
-    acceptance_criteria:
-      - Sizing calculations are consistent and test-covered
-      - Orders are rejected if sizing would exceed risk/leverage constraints
-    test_method: automated
-    owner: risk-team
-
-  # EP-OPS-001: Observability & Ops
-  - id: V-OPS-001
-    title: Taiga Sync Produces a Trustworthy Planning View
-    epic_id: EP-OPS-001
-    story_id: ST-OPS-004
-    status: planned
-    description: Validate repo-canonical story metadata is synced to Taiga with strict conflict rules
-    acceptance_criteria:
-      - Dry-run mode reports planned Taiga changes and exits 0
-      - Apply mode creates/updates Taiga milestones and user stories for non-deprecated repo stories
-      - Sync state file maps repo story ids to Taiga ids/refs and stores checksums
-      - Conflicts on repo-canonical fields are detected and reported unless forced
-    test_method: automated
-    owner: ops-team
-
-  # EP-PHASE1-001: Grafana-first Observability
-  - id: V-PHASE1-001
-    title: Data Freshness Monitoring Dashboards
-    epic_id: EP-PHASE1-001
-    story_id: ST-PHASE1-001
-    status: planned
-    description: Validate Grafana dashboards display real-time data freshness metrics for all ingest pipelines
-    acceptance_criteria:
-      - Last update timestamps visible per data source (Binance, Bybit, Bitget)
-      - Freshness thresholds configurable (e.g., >5min stale = alert)
-      - Historical freshness trends are plottable
-      - Alert triggers when any source exceeds threshold
-    test_method: automated
-    owner: ops-team
-
-  - id: V-PHASE1-002
-    title: Backtest KPI Persistence & Visibility
-    epic_id: EP-PHASE1-001
-    story_id: ST-PHASE1-002
-    status: planned
-    description: Validate backtest KPIs (Sharpe, drawdown, win rate) are persisted and queryable
-    acceptance_criteria:
-      - KPI data stored in InfluxDB with proper tagging
-      - Grafana panels can query historical KPIs by strategy/token/timeframe
-      - KPIs are calculated correctly and consistently
-      - Aggregated views available (daily/weekly/monthly)
-    test_method: automated
-    owner: ml-team
-
-  - id: V-PHASE1-003
-    title: Paper & Live Execution Metrics
-    epic_id: EP-PHASE1-001
-    story_id: ST-PHASE1-003
-    status: planned
-    description: Validate paper and live trading execution metrics are visible in Grafana dashboards
-    acceptance_criteria:
-      - Order/fill data is queryable in real-time
-      - PnL/drawdown panels update within 5 seconds
-      - Kill-switch state is clearly visible
-      - Per-trade risk metrics are accurate
-    test_method: automated
-    owner: ops-team
-
-  - id: V-PHASE1-004
-    title: Alerting Runbook + Automation
-    epic_id: EP-PHASE1-001
-    story_id: ST-PHASE1-004
-    status: planned
-    description: Validate common failure scenarios have runbooks and automated alert routing works correctly
-    acceptance_criteria:
-      - Runbooks exist for API disconnect, data gaps, order rejects, drift
-      - Alert routing sends notifications to correct channels (Discord/Slack)
-      - Runbooks are accessible from Grafana panels
-      - Automated remediation triggers correctly for common issues
-    test_method: manual
-    owner: ops-team
-
-  # EP-PHASE1-002: Data & Continuous Backtesting
-  - id: V-PHASE1-005
-    title: Exchange Market Data Ingestion - Binance Reference
-    epic_id: EP-PHASE1-002
-    story_id: ST-PHASE1-005
-    status: planned
-    description: Validate Binance reference market data (order book/liquidity/open interest) is ingested correctly for 10 tokens
-    acceptance_criteria:
-      - Order book snapshots are captured at 100ms intervals
-      - Liquidity metrics are calculated correctly
-      - Open interest data is aggregated and time-series ready
-      - Data quality checks pass (no gaps, no duplicates, price accuracy)
-      - Ingest latency <2s 95th percentile
-    test_method: automated
-    owner: ml-team
-
-  - id: V-PHASE1-006
-    title: Execution Market Data Ingestion - Bybit/Bitget
-    epic_id: EP-PHASE1-002
-    story_id: ST-PHASE1-006
-    status: planned
-    description: Validate execution-market data needed for sizing/SL/TP and realized trade analytics is ingested from Bybit/Bitget
-    acceptance_criteria:
-      - Real-time pricing data matches exchange API within 100ms
-      - Fill data is captured and persisted accurately
-      - Position/SL data is queryable for risk calculations
-      - Data gaps trigger alerts within 10 seconds
-    test_method: automated
-    owner: ml-team
-
-  - id: V-PHASE1-007
-    title: Continuous Backtest Runner - Always-on + KPIs
-    epic_id: EP-PHASE1-002
-    story_id: ST-PHASE1-007
-    status: planned
-    description: Validate continuous backtesting runner produces KPIs and never halts unexpectedly
-    acceptance_criteria:
-      - Backtests run continuously (no manual start/stop required)
-      - KPIs are generated per backtest (Sharpe, drawdown, win rate, trade count)
-      - KPIs are persisted to InfluxDB with proper tagging
-      - Runner recovers from failures and resumes processing
-      - Backtest queue is monitored (depth, lag)
-    test_method: automated
-    owner: ml-team
-
-  - id: V-PHASE1-008
-    title: Strategy Intake + Candidate Evaluation Pipeline
-    epic_id: EP-PHASE1-002
-    story_id: ST-PHASE1-008
-    status: planned
-    description: Validate new strategy proposals are formalized into a test pipeline and candidates are ranked based on evidence
-    acceptance_criteria:
-      - Strategy submission format is enforced (DSL schema validation)
-      - Candidates are queued for backtesting
-      - Ranking criteria are documented and applied consistently
-      - Top N candidates are promoted for paper testing
-      - Pipeline state is visible in Grafana
-    test_method: manual
-    owner: ml-team
-
-  # EP-PHASE1-003: ML Optimization for Strategy Tuning
-  - id: V-PHASE1-009
-    title: Walk-Forward Evaluation Framework
-    epic_id: EP-PHASE1-003
-    story_id: ST-PHASE1-009
-    status: planned
-    description: Validate walk-forward evaluation framework correctly simulates sequential training and prevents look-ahead bias
-    acceptance_criteria:
-      - Walk-forward windows are configured correctly (train/test splits)
-      - No future data leaks into training set
-      - Performance metrics are calculated per window
-      - Walk-forward results are aggregateable for strategy comparison
-      - Look-ahead bias checks pass (test data not used in training)
-    test_method: automated
-    owner: ml-team
-
-  - id: V-PHASE1-010
-    title: Hyperparameter Optimization - Genetic/BO
-    epic_id: EP-PHASE1-003
-    story_id: ST-PHASE1-010
-    status: planned
-    description: Validate hyperparameter optimization uses genetic algorithms or Bayesian optimization to tune strategy parameters
-    acceptance_criteria:
-      - Optimization converges to stable parameter sets
-      - Optimization runs complete in reasonable time (<24h per strategy)
-      - Optimized parameters improve backtest KPIs vs baseline
-      - Optimization history is tracked for analysis
-      - Multiple optimization methods are supported
-    test_method: automated
-    owner: ml-team
-
-  - id: V-PHASE1-011
-    title: ML Optimization Cadence - Auto-tuning Schedule
-    epic_id: EP-PHASE1-003
-    story_id: ST-PHASE1-011
-    status: planned
-    description: Validate ML optimization runs on a scheduled cadence (e.g., daily/weekly) to adapt strategies to market conditions
-    acceptance_criteria:
-      - Scheduled optimization jobs run reliably without manual trigger
-      - Optimization schedule is configurable per strategy
-      - Optimization frequency is appropriate for market volatility regime
-      - Optimization results are persisted and visible
-      - Optimization can be paused/resumed without data loss
-    test_method: automated
-    owner: ml-team
-
-  # EP-PHASE1-004: Strategy Intake & Candidate Evaluation
-  - id: V-PHASE1-012
-    title: Strategy Submission Format & DSL Schema
-    epic_id: EP-PHASE1-004
-    story_id: ST-PHASE1-012
-    status: planned
-    description: Validate strategy submission format follows a constrained DSL schema that supports parameter and structure mutations
-    acceptance_criteria:
-      - DSL schema is validated on submission
-      - Invalid strategies are rejected with clear error messages
-      - DSL versioning is supported (migration path)
-      - DSL is diffable and reproducible
-      - Schema enforces safe parameter ranges
-    test_method: automated
-    owner: ml-team
-
-  - id: V-PHASE1-013
-    title: Strategy Registry - Champion/Challenger Tracking
-    epic_id: EP-PHASE1-004
-    story_id: ST-PHASE1-013
-    status: planned
-    description: Validate strategy registry tracks champion/challenger strategies with associated artifacts and KPIs
-    acceptance_criteria:
-      - Champion/challenger relationships are maintained
-      - Artifacts (config, diffs, backtest results, paper results) are stored
-      - KPIs are comparable across strategies
-      - Challenger promotion criteria are documented
-      - Registry state is visible in Grafana
-    test_method: automated
-    owner: ml-team
-
-  - id: V-PHASE1-014
-    title: Candidate Backtesting & Ranking
-    epic_id: EP-PHASE1-004
-    story_id: ST-PHASE1-014
-    status: planned
-    description: Validate candidate strategies are backtested with consistent parameters and ranked based on evidence
-    acceptance_criteria:
-      - Backtests use consistent walk-forward windows
-      - Ranking criteria are applied uniformly
-      - Backtest results are persisted with full metrics
-      - Top candidates are identified for paper testing
-      - Ranking is transparent (criteria and scores visible)
-    test_method: automated
-    owner: ml-team
-
-  - id: V-PHASE1-015
-    title: Paper Canary Planning & Gates
-    epic_id: EP-PHASE1-004
-    story_id: ST-PHASE1-015
-    status: planned
-    description: Validate paper canary tests have clear gates and promotion criteria to paper full
-    acceptance_criteria:
-      - Canary size is defined (e.g., 10% of portfolio)
-      - Gate criteria are documented (drawdown, win rate, duration)
-      - Gate failure triggers rollback to previous version
-      - Canary results are persisted and visible
-      - Promotion to paper full is gated by human approval
-    test_method: manual
-    owner: ml-team
-
-  - id: V-PHASE1-016
-    title: Promotion Packet Generation
-    epic_id: EP-PHASE1-004
-    story_id: ST-PHASE1-016
-    status: planned
-    description: Validate promotion packets are generated for human approval with evidence, risk invariants, and rollback steps
-    acceptance_criteria:
-      - Packets include all required fields (evidence summary, KPI comparison, risk assessment, rollback plan)
-      - Packets are rendered in a human-readable format
-      - Rollback steps are detailed and tested
-      - Packet generation is automated
-      - Approval workflow is documented
-    test_method: manual
-    owner: ml-team
-
-  # EP-PHASE1-005: Confidence Scoring
-  - id: V-PHASE1-017
-    title: ECE Calculation per Strategy/Signal Type
-    epic_id: EP-PHASE1-005
-    story_id: ST-PHASE1-017
-    status: planned
-    description: Validate Expected Calibration Error (ECE) is calculated correctly per strategy and signal type
-    acceptance_criteria:
-      - ECE calculations use correct binning (10 bins: 0-10%, 10-20%, etc.)
-      - ECE is calculated per signal type (entry, exit, SL, TP)
-      - Historical ECE values are tracked and trended
-      - ECE calculations are verified against ground truth labels
-      - ECE is queryable per strategy for calibration decisions
-    test_method: automated
-    owner: ml-team
-
-  - id: V-PHASE1-018
-    title: Confidence Threshold Calibration - Dynamic vs Fixed
-    epic_id: EP-PHASE1-005
-    story_id: ST-PHASE1-018
-    status: planned
-    description: Validate confidence threshold calibration supports dynamic thresholds (adjusting over time) vs fixed thresholds
-    acceptance_criteria:
-      - Dynamic threshold adjustment algorithm is documented
-      - Threshold history is tracked (changes and reasons)
-      - Fixed threshold mode is available as fallback
-      - Threshold adjustments improve calibration (ECE decreases)
-      - Threshold changes are logged and auditable
-    test_method: automated
-    owner: ml-team
-
-  - id: V-PHASE1-019
-    title: Confidence Threshold Enforcement
-    epic_id: EP-PHASE1-005
-    story_id: ST-PHASE1-019
-    status: planned
-    description: Validate signals below 40% confidence are filtered out and not delivered to users
-    acceptance_criteria:
-      - Confidence filter is applied before Discord alert generation
-      - Filtered signals are logged for analysis
-      - No Discord alerts are sent for low-confidence signals
-      - Filter threshold is configurable per user preference
-      - Filter statistics are visible in Grafana
-    test_method: automated
-    owner: ops-team
-
-  # EP-PHASE1-006: Chise v1 Brain Operational
-  - id: V-PHASE1-020
-    title: Brain CI/CD - Version, Evaluate, Shadow, Promote
-    epic_id: EP-PHASE1-006
-    story_id: ST-PHASE1-020
-    status: planned
-    description: Validate Chise v1 brain has CI/CD pipeline for version management, shadow testing, and promotion
-    acceptance_criteria:
-      - Brain versioning follows semantic versioning
-      - Evaluation runs automatically on new versions
-      - Shadow testing runs against live brain in parallel
-      - Promotion is gated by human approval packet
-      - CI blocks promotion on failed evaluations
-    test_method: automated
-    owner: ml-team
-
-  - id: V-PHASE1-021
-    title: Brain Evaluation Framework - Batching + BrainEval
-    epic_id: EP-PHASE1-006
-    story_id: ST-PHASE1-021
-    status: planned
-    description: Validate brain evaluation framework supports batch evaluation of multiple brain versions and uses BrainEval tool
-    acceptance_criteria:
-      - Evaluation batches support 3-5 brain versions
-      - Evaluation results are persisted with full metrics
-      - BrainEval tool is integrated correctly
-      - Evaluation criteria are documented (accuracy, ECE, safety)
-      - Batch results are rankable and comparable
-    test_method: automated
-    owner: ml-team
-
-  - id: V-PHASE1-022
-    title: Promotion Packet for Brain Upgrades - Evidence + Rollback
-    epic_id: EP-PHASE1-006
-    story_id: ST-PHASE1-022
-    status: planned
-    description: Validate promotion packets for brain upgrades include evidence, risk assessment, and rollback steps
-    acceptance_criteria:
-      - Packets include all required fields (evaluation summary, safety checks, rollback steps, human approval checkbox)
-      - Rollback steps are detailed and tested
-      - Packet generation is automated
-      - Rollback path is documented and verified
-      - Promotion is gated by human approval
-    test_method: manual
-    owner: ml-team
-
-  - id: V-PHASE1-023
-    title: Chise v1 Loop Compliance - Iteration + Logging
-    epic_id: EP-PHASE1-006
-    story_id: ST-PHASE1-023
-    status: planned
-    description: Validate Chise v1 brain follows iteration loop compliance with proper iteration logging and memory promotion
-    acceptance_criteria:
-      - Iteration logs are stored in Redis with proper TTL
-      - Key decisions are logged per iteration
-      - Learnings are promoted to Qdrant on completion
-      - Iteration logs follow the schema (story_id, phase, status)
-      - Memory promotion happens automatically or with manual trigger
-    test_method: automated
-    owner: ml-team
-
-  - id: V-PHASE1-024
-    title: Chise v1 Rollback Plan - Safety + Rollback Steps
-    epic_id: EP-PHASE1-006
-    story_id: ST-PHASE1-024
-    status: planned
-    description: Validate Chise v1 brain rollback plan includes safety checks and detailed rollback steps
-    acceptance_criteria:
-      - Rollback triggers are documented (ECE degradation, safety violations, human request)
-      - Rollback steps are detailed and tested in dev
-      - Safety checks verify system state before rollback
-      - Rollback path is quick (<5 min to previous version)
-      - Rollback outcome is logged for post-mortem analysis
-    test_method: manual
-    owner: ml-team
-
-  # EP-PHASE1-007: CI/CD Autonomy
-  - id: V-CI-004
-    title: Security Scan Gate - Deterministic Bandit
-    epic_id: EP-PHASE1-007
-    story_id: ST-PHASE1-028
-    status: planned
-    description: Validate deterministic security scan runs in CI and blocks merges on findings
-    acceptance_criteria:
-      - CI runs bandit scan on src/ directory
-      - Findings fail the pipeline
-      - Scan is deterministic (same findings for same code)
-      - Critical/high severity issues block merges
-      - Medium/low issues trigger warnings but allow merge
-    test_method: automated
-    owner: security-team
 
 # Global validation thresholds
 thresholds:
