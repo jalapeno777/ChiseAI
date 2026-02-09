@@ -7,8 +7,6 @@
 **Status:** Active
 **Canonical PRD:** Yes
 **Replaces:** docs/startingprd.md (legacy - superseded by canonical PRD)
-inputDocuments:
-  - docs/product-brief.md
 
 ---
 
