@@ -114,8 +114,34 @@ When you delegate to an executor (dev/quickdev/senior-dev), your task prompt MUS
 - `SCOPE_GLOBS`: list of repo-relative path prefixes the worker may edit
 - `FORBIDDEN_GLOBS`: list of paths they must not touch
 - `LOCKS_REQUIRED`: GLOBAL or a named lock list (scope-based)
+- `MEMORY_CONTEXT`: relevant existing decisions/patterns and recent learnings.
 - `EXIT CONDITIONS`: "stop and report back if you need to edit outside scope, touch a global-lock file, or find an upstream blocker"
 - `EVIDENCE REQUIRED`: files changed, commands run (with results), and how to verify
+- `INCIDENT_TEMPLATE`: prefilled schema to use if a conflict/regression occurs (the worker must fill it and report it back).
+
+#### MEMORY_CONTEXT guidance
+If Redis/Qdrant is available, populate `MEMORY_CONTEXT` from:
+- Qdrant: relevant decisions/patterns for the touched area (5-10 hits)
+- Redis: the current story iterlog plus any iterlogs indexed to the target path
+
+If Redis/Qdrant is not available:
+- Use `docs/tempmemories/` for the last relevant iterlog/pattern notes and include a short summary.
+
+#### INCIDENT_TEMPLATE (copy/paste)
+Include this in executor prompts. If any of these occur (merge conflict, CI regression, scope overlap, repeated blocker),
+the executor must stop and return a filled incident entry.
+
+```text
+INCIDENT:
+- story_id:
+- batch:
+- scope_globs:
+- symptom:
+- root_cause:
+- missed_signal:
+- prevention_rule:
+- follow_up_tasks:
+```
 
 ### Integration discipline
 - Delegate *implementation* in parallel; integrate/merge sequentially.

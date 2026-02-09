@@ -28,6 +28,7 @@ acceptance_criteria:
 - Use an explicit delegation contract (`SCOPE_GLOBS`, `LOCKS_REQUIRED`, `depends_on`, sequential batches) to make "parallel when safe" enforceable in prompts.
 - Treat CI/infra/governance/core-safety as "global-lock" scope: sequential-by-default with stricter verification.
 - Add `.envrc` to `.gitignore` and provide `.envrc.example` (placeholders only) to prevent recurring "dirty tree from local env" issues.
+- Make memory reuse enforceable by requiring a `MEMORY_CONTEXT` block in every executor delegation and an `INCIDENT_TEMPLATE` for conflicts/regressions (so learnings become structured and promotable).
 
 ## Learnings
 - TBD
