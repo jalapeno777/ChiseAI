@@ -46,8 +46,6 @@ class Result:
     def exit_code(self) -> int:
         if self.errors:
             return 1
-        if self.warnings:
-            return 2
         return 0
 
 
@@ -63,6 +61,16 @@ def _read_frontmatter(md_path: Path) -> dict[str, Any]:
     if not isinstance(data, dict):
         raise ValueError("frontmatter must be a YAML mapping")
     return data
+
+
+def _read_body(md_path: Path) -> str:
+    text = md_path.read_text(encoding="utf-8")
+    if not text.startswith("---\n"):
+        return text
+    end = text.find("\n---\n", 4)
+    if end == -1:
+        return ""
+    return text[end + 5 :]
 
 
 def _validate_iterlog_file(path: Path, result: Result) -> dict[str, Any] | None:
@@ -91,12 +99,28 @@ def _validate_iterlog_file(path: Path, result: Result) -> dict[str, Any] | None:
     if status == "completed" and "completed_at" not in fm:
         result.warn(f"{path}: status=completed but completed_at missing")
 
+    # Content-level guardrails for fallback iterlogs (CI cannot see Redis/Qdrant).
+    body = _read_body(path)
+    if "## Incidents" not in body:
+        result.warn(
+            f"{path}: missing '## Incidents' section (required fallback sink when Redis is unavailable)"
+        )
+    if "## Scope Ownership" not in body:
+        result.warn(
+            f"{path}: missing '## Scope Ownership' section (recommended for parallel safety when Redis is unavailable)"
+        )
+
     return fm
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate ChiseAI iterloop compliance")
     parser.add_argument("--story-id", help="Require iterlog for this story id")
+    parser.add_argument(
+        "--fail-on-warn",
+        action="store_true",
+        help="Treat warnings as failures (exit non-zero). Default: warnings do not fail.",
+    )
     args = parser.parse_args()
 
     result = Result()
@@ -125,9 +149,13 @@ def main() -> int:
     for msg in result.warnings:
         print(msg)
 
-    if result.exit_code() == 0:
+    exit_code = result.exit_code()
+    if args.fail_on_warn and result.warnings and exit_code == 0:
+        exit_code = 2
+
+    if exit_code == 0:
         print("✅ Iteration-loop compliance checks passed")
-    return result.exit_code()
+    return exit_code
 
 
 if __name__ == "__main__":

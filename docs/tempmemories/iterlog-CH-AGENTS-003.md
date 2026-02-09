@@ -34,8 +34,15 @@ acceptance_criteria:
 - Add `.envrc` to `.gitignore` and provide `.envrc.example` (placeholders only) to prevent recurring "dirty tree from local env" issues.
 - Make memory reuse enforceable by requiring a `MEMORY_CONTEXT` block in every executor delegation and an `INCIDENT_TEMPLATE` for conflicts/regressions (so learnings become structured and promotable).
 - Require executors to append incidents into the story iterlog (`...:incidents` list in Redis; `docs/tempmemories/` fallback) so "learning from mistakes" becomes durable and queryable.
+- Add a standard fallback template for Qdrant promotions: `docs/tempmemories/templates/promotion-note-template.md`.
 
 ## Learnings
+- TBD
+
+## Scope Ownership
+- TBD
+
+## Incidents
 - TBD
 
 ## Evidence

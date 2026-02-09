@@ -53,8 +53,14 @@ If an incident occurs (merge conflict, CI regression, scope overlap, repeated bl
 - Preferred: read Redis hash `bmad:chiseai:ownership` for each `<path_slug>` in scope.
 - If ownership is held by another story/agent, STOP and report back to `jarvis` for rescheduling/re-scoping.
 
+## Memory Retrieval Checklist (required)
+Before implementing, confirm:
+- You read `MEMORY_CONTEXT` from the task prompt.
+- You can name 1-2 constraints/decisions you will apply (for example: "do not touch global-lock files", "use existing pattern X", "run command Y before merge").
+
 ## Reporting Back
 Return:
 - Files changed (paths)
 - Commands run (tests, lint, migrations, deploy) with outcomes
+- Memory applied: 1-2 bullets summarizing constraints/decisions you followed from `MEMORY_CONTEXT`
 - Any risks, TODOs, or follow-ups
