@@ -392,12 +392,32 @@ class TaigaClient:
             raise TaigaSyncError("Unexpected userstory create response")
         return data
 
+    def get_userstory(self, *, userstory_id: int) -> dict[str, Any]:
+        self._ensure_auth()
+        url = f"{self.base_api}/userstories/{userstory_id}"
+        r = self._sess.get(url, timeout=self._cfg.timeout_s)
+        if r.status_code >= 400:
+            raise TaigaSyncError(
+                f"Failed to get userstory id={userstory_id}: "
+                f"{r.status_code} {r.text[:200]}"
+            )
+        data = r.json()
+        if not isinstance(data, dict):
+            raise TaigaSyncError("Unexpected userstory get response")
+        return data
+
     def update_userstory(
         self, *, userstory_id: int, patch: dict[str, Any]
     ) -> dict[str, Any]:
         self._ensure_auth()
+        # Fetch current version for optimistic locking
+        current = self.get_userstory(userstory_id=userstory_id)
+        version = current.get("version")
+        if not isinstance(version, int):
+            raise TaigaSyncError(f"Userstory id={userstory_id} missing version field")
         url = f"{self.base_api}/userstories/{userstory_id}"
-        r = self._sess.patch(url, json=patch, timeout=self._cfg.timeout_s)
+        payload = {**patch, "version": version}
+        r = self._sess.patch(url, json=payload, timeout=self._cfg.timeout_s)
         if r.status_code >= 400:
             raise TaigaSyncError(
                 f"Failed to update userstory id={userstory_id}: "
@@ -669,7 +689,7 @@ def plan_and_sync_repo_to_taiga(
                         kind="update_userstory",
                         story_id=st.id,
                         detail=(
-                            "adopt existing taiga_userstory_id=" f"{found_userstory_id}"
+                            f"adopt existing taiga_userstory_id={found_userstory_id}"
                         ),
                     )
                 )
