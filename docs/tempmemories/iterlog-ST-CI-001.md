@@ -42,3 +42,11 @@ completed_at: "2026-02-09T07:00:00Z"
 - Removed stray generated PRD validation reports
 - All tests passing with 100% coverage
 - Status sync validation passing
+
+## Scope Ownership
+
+- TBD
+
+## Incidents
+
+- TBD

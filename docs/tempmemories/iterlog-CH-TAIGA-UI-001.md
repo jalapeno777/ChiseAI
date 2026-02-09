@@ -15,3 +15,11 @@ learnings: []
 ---
 
 Working notes for CH-TAIGA-UI-001.
+
+## Scope Ownership
+
+- TBD
+
+## Incidents
+
+- TBD

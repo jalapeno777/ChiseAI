@@ -8,6 +8,7 @@ Use this command to keep autonomous development convergent: every change lands v
 
 Prereqs:
 - Set `GITEA_TOKEN` (PAT) in env.
+- For autonomous review-required merges: set `GITEA_REVIEW_TOKEN` (PAT for a separate bot user that can submit PR reviews).
 - Optional: `GITEA_BASE_URL` (defaults to `http://host.docker.internal:3000`), `GITEA_OWNER`, `GITEA_REPO`.
 - Set `STORY_ID` (required). Example: `export STORY_ID=ST-NS-001`
 
@@ -23,7 +24,10 @@ Prereqs:
    - `git push -u gitea HEAD`
 
 4. Open PR and enable auto-merge on green CI
-   - `python3 scripts/gitea_pr_automerge.py --story-id "$STORY_ID" --head "$(git branch --show-current)" --wait --delete-branch`
+   - If approvals are required, have the review bot approve first:
+     - `.opencode/agent/GitReviewBot.md` (review) + `python3 scripts/gitea_pr_review.py --pr <num> --state APPROVED`
+   - Then run:
+     - `python3 scripts/gitea_pr_automerge.py --story-id "$STORY_ID" --head "$(git branch --show-current)" --wait --delete-branch`
 
 5. Sync local main and prune
    - `git switch main`

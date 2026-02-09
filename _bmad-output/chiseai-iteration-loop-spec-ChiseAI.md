@@ -48,6 +48,7 @@ Define the iterative implementation loop for ChiseAI with forced AGENTS.md scans
 **Primary Keys:**
 - `bmad:chiseai:iterlog:story:<story_id>` (HASH) - latest snapshot
 - `bmad:chiseai:iterlog:story:<story_id>:history` (LIST) - JSON entries
+- `bmad:chiseai:iterlog:story:<story_id>:incidents` (LIST) - incident entries (append-only)
 
 **Indexes:**
 - `bmad:chiseai:iterlog:path:<path_slug>` (SET of story_ids)
@@ -68,6 +69,19 @@ Define the iterative implementation loop for ChiseAI with forced AGENTS.md scans
 1) By story: `GET/HGETALL bmad:chiseai:iterlog:story:<story_id>`
 2) By path: `SMEMBERS bmad:chiseai:iterlog:path:<path_slug>` -> story_ids -> read story hash
 3) By agent: `SMEMBERS bmad:chiseai:iterlog:agent:<agent_id>` -> story_ids
+
+## Scope Ownership (Parallel Safety)
+
+**Goal:** prevent silent scope overlap when multiple agents execute in parallel.
+
+**Preferred ownership key:**
+- `bmad:chiseai:ownership` (HASH)
+  - key: `<path_slug>` (example: `src:neuro_symbolic:evolution`)
+  - value: `<story_id>/<agent>/<timestamp>`
+
+**Rule:**
+- Jarvis assigns ownership before delegating execution.
+- Executors check ownership before editing; if owned by a different story/agent, they must STOP and report back.
 
 ## Memory Promotion Rules
 

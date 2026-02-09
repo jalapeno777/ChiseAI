@@ -22,3 +22,11 @@ learnings: []
 Working notes for ST-OPS-004.
 
 - Taiga milestone creation requires `estimated_start` and `estimated_finish`; sync uses defaults (today..+90d) and allows overrides via `TAIGA_MILESTONE_START`/`TAIGA_MILESTONE_FINISH`.
+
+## Scope Ownership
+
+- TBD
+
+## Incidents
+
+- TBD

@@ -33,6 +33,15 @@ completed_at: "2026-02-08T22:23:00Z"
 ## Learnings
 - Taiga "reset password" depends on the email stored in Taiga; if a user tries an unrecognized email, Taiga reports "not registered" even when the username exists.
 
+## Scope Ownership
+
+- TBD
+
+## Incidents
+
+- TBD
+
+
 ## Evidence
 - Updated PRD: `docs/prd.md`
 - Updated guardrails: `AGENTS.md`, `.opencode/skills/chiseai-risk-audit/SKILL.md`

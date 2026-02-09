@@ -35,6 +35,15 @@ acceptance_criteria:
 - Local pip installs are blocked by PEP 668; use a venv for local runs (Woodpecker CI is unaffected).
 - Gitea swagger is available at `/swagger.v1.json`; PR merge API supports `merge_when_checks_succeed`.
 
+## Scope Ownership
+
+- TBD
+
+## Incidents
+
+- TBD
+
+
 ## Evidence
 - `docs/prd.md` updated (v1.1.0) with phased execution + risk invariants.
 - `docs/bmm-workflow-status.yaml` and `docs/validation/validation-registry.yaml` updated with new epics/stories and validation gates.
