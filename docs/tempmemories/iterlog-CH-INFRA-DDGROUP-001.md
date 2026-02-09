@@ -23,6 +23,15 @@ completed_at: "2026-02-09T00:09:06Z"
 ## Decisions
 - Use the Compose-reserved labels (`com.docker.compose.project`, `com.docker.compose.service`) to encourage Docker Desktop grouping without changing runtime behavior.
 
+## Scope Ownership
+
+- TBD
+
+## Incidents
+
+- TBD
+
+
 ## Evidence
 - Terraform: `terraform apply` succeeded after a second apply created `woodpecker-server` and restarted `woodpecker-agent`.
 - Health checks (container -> host): `gitea:200`, `woodpecker:200`, `taiga-front:200`, `taiga-back:200`, `grafana:200`.

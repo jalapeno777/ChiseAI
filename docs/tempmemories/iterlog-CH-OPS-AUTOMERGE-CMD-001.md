@@ -26,5 +26,14 @@ acceptance_criteria:
 ## Learnings
 - Gitea API may return 404 for private repo endpoints without auth; scripts should use `GITEA_TOKEN`.
 
+## Scope Ownership
+
+- TBD
+
+## Incidents
+
+- TBD
+
+
 ## Evidence
 - PR #7 merged via `scripts/gitea_pr_automerge.py` after Woodpecker status `ci/woodpecker/push/woodpecker` was green.

@@ -104,6 +104,9 @@ If Redis is unavailable:
 Executor requirement:
 - Executors must check ownership for their `scope_globs` before editing. If owned by a different story/agent, STOP and report back for rescheduling/re-scoping.
 
+Helper (optional):
+- Use `python3 scripts/iterlog_ops.py claim-ownership ...` and `python3 scripts/iterlog_ops.py check-ownership ...` to avoid hand-rolling Redis CLI calls.
+
 ### Required output: parallelization plan
 Before delegating execution, produce a plan that includes:
 - Sequential "batches" (Batch 1, Batch 2, ...)
@@ -173,6 +176,7 @@ Incident logging rule:
 - The executor must also append the filled incident entry to the story iterlog.
 - Preferred sink: Redis list `bmad:chiseai:iterlog:story:<story_id>:incidents` via `redis_state_rpush(...)` (refresh TTL as appropriate).
 - Fallback: append under `## Incidents` in `docs/tempmemories/iterlog-<story_id>.md` (or create one if missing).
+Helper (optional): `python3 scripts/iterlog_ops.py append-incident --story-id=<story_id> --text "<incident text>"`
 
 ```text
 INCIDENT:

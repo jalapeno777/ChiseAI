@@ -57,3 +57,11 @@ completed_at: 2026-02-08T00:00:00Z
 - Status sync validation passes (all story implementations mapped correctly)
 - Iterloop compliance requires iterlog file creation (done)
 - File changes made to: docs/prd.md, docs/bmm-workflow-status.yaml, docs/validation/validation-registry.yaml
+
+## Scope Ownership
+
+- TBD
+
+## Incidents
+
+- TBD

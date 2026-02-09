@@ -24,6 +24,15 @@ completed_at: "2026-02-08T22:45:00Z"
 ## Decisions
 - Rotate Taiga DB password by first running `ALTER USER taiga WITH PASSWORD ...` (while old creds still work) and then re-applying Terraform to update container env.
 
+## Scope Ownership
+
+- TBD
+
+## Incidents
+
+- TBD
+
+
 ## Evidence
 - Postgres auth test: `docker exec -e PGPASSWORD=<new> taiga-postgres psql -U taiga -d taiga -c 'select 1;'`
 - Django DB test: `docker exec taiga-back python manage.py shell -c "from django.db import connection; connection.ensure_connection()"`

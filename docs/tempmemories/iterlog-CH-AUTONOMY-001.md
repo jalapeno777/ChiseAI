@@ -28,5 +28,14 @@ acceptance_criteria:
 ## Learnings
 - TBD
 
+## Scope Ownership
+
+- TBD
+
+## Incidents
+
+- TBD
+
+
 ## Evidence
 - TBD

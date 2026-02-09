@@ -30,6 +30,15 @@ completed_at: "2026-02-08T23:06:00Z"
 - Taiga secret key rotated via Terraform; expect Taiga sessions/tokens to be invalidated (normal).
 - Taiga auto-sync is enabled via Woodpecker repo secrets and runs on `main` when `TAIGA_SYNC_APPLY=1`.
 
+## Scope Ownership
+
+- TBD
+
+## Incidents
+
+- TBD
+
+
 ## Evidence
 - Terraform applied with `WOODPECKER_DATABASE_DRIVER=postgres` and `WOODPECKER_DATABASE_DATASOURCE=...` (`infrastructure/terraform/main.tf`).
 - Created Postgres role/db: `woodpecker` / `woodpecker` on `chiseai-postgres:5434`.

@@ -28,5 +28,14 @@ acceptance_criteria:
 ## Learnings
 - Enforcing story IDs at the PR automation layer prevents unlabeled merges and improves traceability.
 
+## Scope Ownership
+
+- TBD
+
+## Incidents
+
+- TBD
+
+
 ## Evidence
 - PR #9 merged with title prefix `CH-PB-001` after Woodpecker context `ci/woodpecker/push/woodpecker` was green.
