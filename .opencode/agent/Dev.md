@@ -41,6 +41,13 @@ permission:
 - If you discover you must touch a global-lock area (CI/infra/governance/shared invariants), STOP and report back for re-scoping.
 - If you suspect another worker is editing the same area, STOP and report back (avoid "silent merge conflict" work).
 
+## Incident Logging (required)
+If an incident occurs (merge conflict, CI regression, scope overlap, repeated blocker):
+- Stop and report back with the filled `INCIDENT_TEMPLATE` provided by `jarvis`.
+- Append the incident to the story iterlog:
+  - Preferred: `redis_state_rpush(name="bmad:chiseai:iterlog:story:<story_id>:incidents", value="<json-or-yaml-string>")`
+  - Fallback: append under `## Incidents` in `docs/tempmemories/iterlog-<story_id>.md`
+
 ## Reporting Back
 Return:
 - Files changed (paths)

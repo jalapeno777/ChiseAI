@@ -35,6 +35,13 @@ permission:
 - Do not edit files outside `SCOPE_GLOBS` without explicit re-scoping.
 - Treat global-lock areas (CI/infra/governance/shared invariants) as sequential-by-default; if asked to change them in parallel with other work, STOP and confirm ordering with `jarvis`.
 
+## Incident Logging (required)
+If an incident occurs (merge conflict, CI regression, scope overlap, repeated blocker):
+- Stop and report back with the filled `INCIDENT_TEMPLATE` provided by `jarvis`.
+- Append the incident to the story iterlog:
+  - Preferred: `redis_state_rpush(name="bmad:chiseai:iterlog:story:<story_id>:incidents", value="<json-or-yaml-string>")`
+  - Fallback: append under `## Incidents` in `docs/tempmemories/iterlog-<story_id>.md`
+
 ## Reporting Back
 Return:
 - Files changed (paths)

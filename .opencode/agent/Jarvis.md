@@ -131,6 +131,11 @@ If Redis/Qdrant is not available:
 Include this in executor prompts. If any of these occur (merge conflict, CI regression, scope overlap, repeated blocker),
 the executor must stop and return a filled incident entry.
 
+Incident logging rule:
+- The executor must also append the filled incident entry to the story iterlog.
+- Preferred sink: Redis list `bmad:chiseai:iterlog:story:<story_id>:incidents` via `redis_state_rpush(...)` (refresh TTL as appropriate).
+- Fallback: append under `## Incidents` in `docs/tempmemories/iterlog-<story_id>.md` (or create one if missing).
+
 ```text
 INCIDENT:
 - story_id:
