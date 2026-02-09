@@ -19,3 +19,10 @@ __pycache__/
 .coverage
 htmlcov/
 .venv/
+
+# BMM/BPB outputs
+_bmad-output/
+
+# BMM/BPB archived reports
+docs/_archive/
+screenshots/
