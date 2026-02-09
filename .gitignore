@@ -9,6 +9,8 @@
 .serena/
 # Local environment files
 .env
+.envrc
+.envrc.local
 
 # Python
 __pycache__/
@@ -24,5 +26,4 @@ htmlcov/
 # Removed: _bmad-output/ (canonical artifacts, should be tracked)
 # Removed: docs/_archive/ (archived reports, should be tracked)
 screenshots/
-
 

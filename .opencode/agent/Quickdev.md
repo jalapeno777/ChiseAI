@@ -33,3 +33,13 @@ permission:
 - Before edits: MEM-SCAN (`AGENTS.md`).
 - Keep changes minimal and validate quickly (unit tests or a focused command).
 
+## Scope + Lock Contract (required)
+- If the task does not include `SCOPE_GLOBS` and `LOCKS_REQUIRED`, ask once before starting.
+- Do not edit files outside `SCOPE_GLOBS`.
+- If you discover the change is not 1SP, involves global-lock areas (CI/infra/governance/shared invariants), or has hidden dependencies, STOP and report back to `jarvis` for re-scoping.
+
+## Reporting Back
+Return:
+- Files changed (paths)
+- Commands run (tests/lint) with outcomes
+- Any caveats or follow-ups

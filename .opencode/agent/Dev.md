@@ -35,9 +35,14 @@ permission:
 - Define/confirm acceptance criteria for the task before implementing.
 - Log key decisions and learnings to the Redis iterlog key for the story you are assigned.
 
+## Scope + Lock Contract (required)
+- If `jarvis`/`aria` did not provide `SCOPE_GLOBS` and `LOCKS_REQUIRED`, ask once before starting.
+- Do not edit files outside `SCOPE_GLOBS`.
+- If you discover you must touch a global-lock area (CI/infra/governance/shared invariants), STOP and report back for re-scoping.
+- If you suspect another worker is editing the same area, STOP and report back (avoid "silent merge conflict" work).
+
 ## Reporting Back
 Return:
 - Files changed (paths)
 - Commands run (tests, lint, migrations, deploy) with outcomes
 - Any risks, TODOs, or follow-ups
-

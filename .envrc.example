@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Example direnv config for ChiseAI.
+#
+# Usage:
+# - Copy to .envrc (do not commit .envrc)
+# - Put real secrets in .env (already gitignored) and/or your shell environment
+#
+# Note: This file is intentionally ASCII-only and uses placeholder values.
+
+if [ -f .env ]; then
+  set -a
+  . ./.env
+  set +a
+fi
+
+# Z.AI (Zhipu/GLM)
+export ZHIPU_API_KEY="${ZHIPU_API_KEY:-your_zhipu_api_key_here}"
+export Z_AI_API_KEY="${Z_AI_API_KEY:-your_z_ai_api_key_here}"
+
+# MiniMax
+export MINIMAX_API_KEY="${MINIMAX_API_KEY:-your_minimax_api_key_here}"
+export MINIMAX_API_BASE="${MINIMAX_API_BASE:-https://api.minimax.chat/v1/text/chatcompletion_v2}"
+export MINIMAX_MODEL="${MINIMAX_MODEL:-abab6.5s-chat}"
+
+echo "ChiseAI env loaded (example)"
+
