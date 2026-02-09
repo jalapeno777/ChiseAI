@@ -40,3 +40,4 @@ acceptance_criteria:
   - `.opencode/agent/Dev.md`
   - `.opencode/agent/Quickdev.md`
   - `.opencode/agent/SeniorDev.md`
+  - Added a concrete batch-table template in `.opencode/agent/Jarvis.md` and a review checklist in `.opencode/agent/Aria.md`.

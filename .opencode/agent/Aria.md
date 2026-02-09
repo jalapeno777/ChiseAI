@@ -103,6 +103,7 @@ OUTPUT FORMAT:
 - Include a **parallelization plan**:
   - group tasks into sequential "batches"
   - for each task: `scope_globs`, `locks_required`, and `depends_on`
+- Use Jarvis's batch-table template (see `.opencode/agent/Jarvis.md` "Parallelization plan template").
 - Identify which worker agents you will spawn for each executable step.
 - No interactive menus in your response.
 
@@ -114,6 +115,12 @@ You may run multiple Jarvis calls in parallel only if ALL are true:
 
 Default safe behavior:
 - If scope/locks are unclear: run **one** Jarvis call, ask for a parallelization plan, then parallelize at the worker level.
+
+## Parallelization Plan Review Checklist (Aria gate)
+Before you accept a plan that includes parallel execution, verify:
+- Every work item has `scope_globs`, `locks_required`, and `depends_on`.
+- No two parallel items overlap in `scope_globs` and none touch global-lock areas.
+- Integration steps are explicitly sequential (ordering + verification between merges).
 
 ## Party Mode policy (when and how)
 BMAD “party mode” is allowed and encouraged for:

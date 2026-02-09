@@ -77,6 +77,38 @@ Before delegating execution, produce a plan that includes:
   - `depends_on`
   - verification steps (tests + commands)
 
+### Parallelization plan template (copy/paste)
+Use this exact structure so Aria can verify independence quickly.
+
+```text
+BATCH 1 (parallel):
+- task:
+  owner_agent:
+  scope_globs:
+  forbidden_globs:
+  locks_required:
+  depends_on:
+  verify:
+
+BATCH 2 (parallel):
+- task:
+  owner_agent:
+  scope_globs:
+  forbidden_globs:
+  locks_required:
+  depends_on:
+  verify:
+
+BATCH N (sequential / integration):
+- task:
+  owner_agent:
+  scope_globs:
+  forbidden_globs:
+  locks_required:
+  depends_on:
+  verify:
+```
+
 ### Worker task contract (must be included in every executor delegation)
 When you delegate to an executor (dev/quickdev/senior-dev), your task prompt MUST include:
 - `SCOPE_GLOBS`: list of repo-relative path prefixes the worker may edit
