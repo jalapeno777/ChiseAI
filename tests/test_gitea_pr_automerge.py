@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import importlib
 import json
 import os
 from io import BytesIO
 from unittest.mock import MagicMock, patch
 
 import pytest
-
+import scripts.gitea_pr_automerge as automerge
 from scripts.gitea_pr_automerge import (
     _check_merge_conflict,
     _commit_status,
@@ -388,10 +389,7 @@ class TestEnvironmentVariables:
         if "GITEA_POLL_INTERVAL" in os.environ:
             del os.environ["GITEA_POLL_INTERVAL"]
 
-        # Import fresh to get default values
-        import importlib
-        import scripts.gitea_pr_automerge as automerge
-
+        # Reload to get default values
         importlib.reload(automerge)
 
         # Restore env
@@ -446,8 +444,9 @@ class TestMain:
         mock_merge.return_value = None
         mock_req_json.return_value = {}
 
-        with patch.dict(os.environ, {"GITEA_TOKEN": "test-token"}):
-            with patch(
+        with (
+            patch.dict(os.environ, {"GITEA_TOKEN": "test-token"}),
+            patch(
                 "sys.argv",
                 [
                     "script",
@@ -456,8 +455,9 @@ class TestMain:
                     "--story-id",
                     "ST-CI-002",
                 ],
-            ):
-                result = main()
+            ),
+        ):
+            result = main()
 
         assert result == 0
         mock_merge.assert_called_once()
@@ -496,8 +496,9 @@ class TestMain:
         mock_try_merge.return_value = (True, 1)
         mock_req_json.return_value = {}
 
-        with patch.dict(os.environ, {"GITEA_TOKEN": "test-token"}):
-            with patch(
+        with (
+            patch.dict(os.environ, {"GITEA_TOKEN": "test-token"}),
+            patch(
                 "sys.argv",
                 [
                     "script",
@@ -509,8 +510,9 @@ class TestMain:
                     "--poll-sec",
                     "1",
                 ],
-            ):
-                result = main()
+            ),
+        ):
+            result = main()
 
         assert result == 0
         mock_try_merge.assert_called_once()
@@ -544,8 +546,9 @@ class TestMain:
         }
         mock_req_json.return_value = {}
 
-        with patch.dict(os.environ, {"GITEA_TOKEN": "test-token"}):
-            with patch(
+        with (
+            patch.dict(os.environ, {"GITEA_TOKEN": "test-token"}),
+            patch(
                 "sys.argv",
                 [
                     "script",
@@ -555,8 +558,9 @@ class TestMain:
                     "ST-CI-002",
                     "--wait",
                 ],
-            ):
-                result = main()
+            ),
+        ):
+            result = main()
 
         assert result == 1
 
@@ -583,8 +587,9 @@ class TestMain:
         mock_check_conflict.return_value = True
         mock_req_json.return_value = {}
 
-        with patch.dict(os.environ, {"GITEA_TOKEN": "test-token"}):
-            with patch(
+        with (
+            patch.dict(os.environ, {"GITEA_TOKEN": "test-token"}),
+            patch(
                 "sys.argv",
                 [
                     "script",
@@ -593,8 +598,9 @@ class TestMain:
                     "--story-id",
                     "ST-CI-002",
                 ],
-            ):
-                result = main()
+            ),
+        ):
+            result = main()
 
         assert result == 1
         mock_post_comment.assert_called_once()
@@ -622,8 +628,9 @@ class TestMain:
         mock_get_reviews.return_value = [{"state": "COMMENTED"}]
         mock_req_json.return_value = {}
 
-        with patch.dict(os.environ, {"GITEA_TOKEN": "test-token"}):
-            with patch(
+        with (
+            patch.dict(os.environ, {"GITEA_TOKEN": "test-token"}),
+            patch(
                 "sys.argv",
                 [
                     "script",
@@ -632,8 +639,9 @@ class TestMain:
                     "--story-id",
                     "ST-CI-002",
                 ],
-            ):
-                result = main()
+            ),
+        ):
+            result = main()
 
         assert result == 1
 
@@ -669,8 +677,9 @@ class TestMain:
         mock_try_merge.return_value = (False, 3)
         mock_req_json.return_value = {}
 
-        with patch.dict(os.environ, {"GITEA_TOKEN": "test-token"}):
-            with patch(
+        with (
+            patch.dict(os.environ, {"GITEA_TOKEN": "test-token"}),
+            patch(
                 "sys.argv",
                 [
                     "script",
@@ -682,8 +691,9 @@ class TestMain:
                     "--max-retries",
                     "3",
                 ],
-            ):
-                result = main()
+            ),
+        ):
+            result = main()
 
         assert result == 1
         mock_try_merge.assert_called_once()
@@ -705,8 +715,9 @@ class TestMain:
         mock_req_json: MagicMock,
     ) -> None:
         """Test that missing GITEA_TOKEN returns error."""
-        with patch.dict(os.environ, {}, clear=True):
-            with patch(
+        with (
+            patch.dict(os.environ, {}, clear=True),
+            patch(
                 "sys.argv",
                 [
                     "script",
@@ -715,8 +726,9 @@ class TestMain:
                     "--story-id",
                     "ST-CI-002",
                 ],
-            ):
-                result = main()
+            ),
+        ):
+            result = main()
 
         assert result == 1
 
@@ -744,8 +756,9 @@ class TestMain:
         mock_merge.return_value = None
         mock_req_json.return_value = {}
 
-        with patch.dict(os.environ, {"GITEA_TOKEN": "test-token"}):
-            with patch(
+        with (
+            patch.dict(os.environ, {"GITEA_TOKEN": "test-token"}),
+            patch(
                 "sys.argv",
                 [
                     "script",
@@ -754,8 +767,9 @@ class TestMain:
                     "--story-id",
                     "   ",  # Empty/whitespace story ID
                 ],
-            ):
-                result = main()
+            ),
+        ):
+            result = main()
 
         assert result == 1
 
@@ -783,8 +797,9 @@ class TestMain:
         mock_get_reviews.return_value = [{"state": "APPROVED"}]
         mock_req_json.return_value = {}
 
-        with patch.dict(os.environ, {"GITEA_TOKEN": "test-token"}):
-            with patch(
+        with (
+            patch.dict(os.environ, {"GITEA_TOKEN": "test-token"}),
+            patch(
                 "sys.argv",
                 [
                     "script",
@@ -793,8 +808,9 @@ class TestMain:
                     "--story-id",
                     "ST-CI-002",
                 ],
-            ):
-                result = main()
+            ),
+        ):
+            result = main()
 
         assert result == 0
         mock_create_pr.assert_called_once()
@@ -823,8 +839,9 @@ class TestMain:
         mock_merge.return_value = None
         mock_req_json.return_value = {}
 
-        with patch.dict(os.environ, {"GITEA_TOKEN": "test-token"}):
-            with patch(
+        with (
+            patch.dict(os.environ, {"GITEA_TOKEN": "test-token"}),
+            patch(
                 "sys.argv",
                 [
                     "script",
@@ -833,8 +850,9 @@ class TestMain:
                     "--story-id",
                     "ST-CI-002",
                 ],
-            ):
-                result = main()
+            ),
+        ):
+            result = main()
 
         assert result == 0
         # Verify PATCH was called to update title

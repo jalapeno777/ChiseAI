@@ -93,10 +93,7 @@ def _get_pr_reviews(
 
 def _has_required_approval(reviews: list) -> bool:
     """Check if PR has at least one required reviewer approval."""
-    for review in reviews:
-        if review.get("state") == "APPROVED":
-            return True
-    return False
+    return any(review.get("state") == "APPROVED" for review in reviews)
 
 
 def _post_pr_comment(
@@ -124,9 +121,7 @@ def _check_merge_conflict(
         pr = _req_json("GET", url, token)
         mergeable = pr.get("mergeable")
         # mergeable can be True, False, or None (unknown/not computed yet)
-        if mergeable is False:
-            return True
-        return False
+        return mergeable is False
     except RuntimeError:
         return False
 
@@ -229,14 +224,16 @@ def main() -> int:
         "--max-retries",
         type=int,
         default=default_max_retries,
-        help=f"Maximum merge attempts before giving up (default: {default_max_retries})",
+        help=(
+            f"Maximum merge attempts before giving up (default: {default_max_retries})"
+        ),
     )
     p.add_argument(
         "--delete-branch", action="store_true", help="Delete branch after merge"
     )
     p.add_argument(
         "--require-approval",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
         default=True,
         help="Require at least one reviewer approval before merging (default: True)",
     )
@@ -286,9 +283,9 @@ def main() -> int:
     # Check for merge conflicts before proceeding
     if _check_merge_conflict(args.owner, args.repo, base_url, token, index):
         msg = (
-            f"⚠️ **Auto-merge skipped**: This PR has merge conflicts "
-            f"that must be resolved before merging.\n\n"
-            f"@author please resolve the conflicts and re-run the auto-merge."
+            "⚠️ **Auto-merge skipped**: This PR has merge conflicts "
+            "that must be resolved before merging.\n\n"
+            "@author please resolve the conflicts and re-run the auto-merge."
         )
         _post_pr_comment(args.owner, args.repo, base_url, token, index, msg)
         print(
@@ -327,9 +324,9 @@ def main() -> int:
         # Re-check for merge conflicts during polling
         if _check_merge_conflict(args.owner, args.repo, base_url, token, index):
             msg = (
-                f"⚠️ **Auto-merge skipped**: This PR has merge conflicts "
-                f"that must be resolved before merging.\n\n"
-                f"@author please resolve the conflicts and re-run the auto-merge."
+                "⚠️ **Auto-merge skipped**: This PR has merge conflicts "
+                "that must be resolved before merging.\n\n"
+                "@author please resolve the conflicts and re-run the auto-merge."
             )
             _post_pr_comment(args.owner, args.repo, base_url, token, index, msg)
             print(
