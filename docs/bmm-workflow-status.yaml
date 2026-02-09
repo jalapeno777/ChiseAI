@@ -266,7 +266,7 @@ stories:
     title: Real CI Gates - Black/Ruff/Mypy/Pytest/Coverage
     epic_id: EP-CI-001
     sprint_id: p0-1
-    status: planned
+    status: in_progress
     story_points: 4
     priority: P0-CRITICAL
     description: Make CI gates real and blocking (Black/Ruff/Mypy/Pytest/Coverage) for safe autonomous merges
