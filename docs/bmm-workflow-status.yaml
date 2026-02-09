@@ -4,8 +4,8 @@
 
 metadata:
   project_name: ChiseAI
-  version: "2.0.0"
-  last_updated: "2026-02-08"
+  version: "2.1.0"
+  last_updated: "2026-02-09"
   prd_location: docs/prd.md
   prd_note: "Phased perps execution: continuous backtest -> Bybit demo paper -> Bitget live; Grafana-first ops UI; Binance used as reference market-structure venue."
 
@@ -15,80 +15,90 @@ current_phase:
   status: in_progress
 
 # ============================================================
-# PHASE 1 EPICS (7 epics, 28 stories total)
-# Foundation work: Observability, Data, ML Optimization, Strategy Intake, Brain Ops, CI/CD
+# PHASE 1 EPICS (8 epics, 35 stories total)
+# Foundation work: CI/CD, Data, ML Optimization, Strategy Intake, Brain Ops, Observability
 # ============================================================
 
 epics:
-  # EP-PHASE1-001: Grafana-first Observability (3-5 SP) - 4 stories
-  - id: EP-PHASE1-001
-    name: Grafana-first Observability
+  # EP-CHISE-001: Chise v1 Brain Operations (5 stories, 19 points)
+  - id: EP-CHISE-001
+    name: Chise v1 Brain Operations
     status: planned
-    story_ids: [ST-PHASE1-001, ST-PHASE1-002, ST-PHASE1-003, ST-PHASE1-004]
+    story_ids: [ST-CHISE-001, ST-CHISE-002, ST-CHISE-003, ST-CHISE-004, ST-CHISE-005]
+    story_count: 5
+    story_points: 19
+    description: Brain CI/CD, evaluation framework, promotion packets, loop compliance, and rollback plan
+    sprint_id: p0-1
+
+  # EP-CI-001: CI/CD Autonomy (4 stories, 14 points)
+  - id: EP-CI-001
+    name: CI/CD Autonomy
+    status: planned
+    story_ids: [ST-CI-001, ST-CI-002, ST-CI-003, ST-CI-004]
     story_count: 4
     story_points: 14
-    description: Grafana dashboards for data, backtest, paper, and live execution KPIs with alerting runbook automation
-    sprint_id: p0-5
+    description: Real CI gates, Gitea PR auto-merge bot, branch hygiene automation, and security scan gate
+    sprint_id: p0-1
 
-  # EP-PHASE1-002: Data & Continuous Backtesting (4-5 SP) - 4 stories
-  - id: EP-PHASE1-002
+  # EP-DATA-001: Data & Continuous Backtesting (4 stories, 16 points)
+  - id: EP-DATA-001
     name: Data & Continuous Backtesting
     status: planned
-    story_ids: [ST-PHASE1-005, ST-PHASE1-006, ST-PHASE1-007, ST-PHASE1-008]
+    story_ids: [ST-DATA-001, ST-DATA-002, ST-DATA-003, ST-DATA-004]
     story_count: 4
-    story_points: 17
+    story_points: 16
     description: Exchange market data ingestion and continuous backtest runner with always-on KPIs
     sprint_id: p0-2
 
-  # EP-PHASE1-003: ML Optimization for Strategy Tuning (3-4 SP) - 3 stories
-  - id: EP-PHASE1-003
-    name: ML Optimization for Strategy Tuning
-    status: planned
-    story_ids: [ST-PHASE1-009, ST-PHASE1-010, ST-PHASE1-011]
-    story_count: 3
-    story_points: 11
-    description: Walk-forward evaluation framework and hyperparameter optimization with auto-tuning schedule
-    sprint_id: p0-2
-
-  # EP-PHASE1-004: Strategy Intake & Candidate Evaluation (3-5 SP) - 5 stories
-  - id: EP-PHASE1-004
+  # EP-BT-001: Strategy Intake & Candidate Evaluation (5 stories, 20 points)
+  - id: EP-BT-001
     name: Strategy Intake & Candidate Evaluation
     status: planned
-    story_ids: [ST-PHASE1-012, ST-PHASE1-013, ST-PHASE1-014, ST-PHASE1-015, ST-PHASE1-016]
+    story_ids: [ST-SIG-001, ST-SIG-002, ST-BT-001, ST-BT-002, ST-BT-003]
     story_count: 5
     story_points: 20
     description: Strategy submission format, registry, candidate backtesting, paper canary planning, and promotion packets
     sprint_id: p0-2
 
-  # EP-PHASE1-005: Confidence Scoring - ECE/Thresholds (3-4 SP) - 3 stories
-  - id: EP-PHASE1-005
+  # EP-ML-001: ML Optimization for Strategy Tuning (3 stories, 11 points)
+  - id: EP-ML-001
+    name: ML Optimization for Strategy Tuning
+    status: planned
+    story_ids: [ST-ML-001, ST-ML-002, ST-ML-003]
+    story_count: 3
+    story_points: 11
+    description: Walk-forward evaluation framework and hyperparameter optimization with auto-tuning schedule
+    sprint_id: p0-2
+
+  # EP-CONF-001: Confidence Scoring - ECE/Thresholds (3 stories, 10 points)
+  - id: EP-CONF-001
     name: Confidence Scoring - ECE/Thresholds
     status: planned
-    story_ids: [ST-PHASE1-017, ST-PHASE1-018, ST-PHASE1-019]
+    story_ids: [ST-CONF-001, ST-CONF-002, ST-CONF-003]
     story_count: 3
     story_points: 10
     description: ECE calculation per strategy/signal type and confidence threshold calibration/enforcement
     sprint_id: p0-3
 
-  # EP-PHASE1-006: Chise v1 Brain Operational (3-5 SP) - 5 stories
-  - id: EP-PHASE1-006
-    name: Chise v1 Brain Operational
+  # EP-EX-001: Execution (Perps-First) (3 stories, 13 points)
+  - id: EP-EX-001
+    name: Execution (Perps-First)
     status: planned
-    story_ids: [ST-PHASE1-020, ST-PHASE1-021, ST-PHASE1-022, ST-PHASE1-023, ST-PHASE1-024]
-    story_count: 5
-    story_points: 17
-    description: Brain CI/CD, evaluation framework, promotion packets, loop compliance, and rollback plan
-    sprint_id: p0-1
+    story_ids: [ST-EX-001, ST-EX-002, ST-EX-003]
+    story_count: 3
+    story_points: 13
+    description: Bybit demo paper trading, Bitget live gating, and execution risk management
+    sprint_id: p0-4
 
-  # EP-PHASE1-007: CI/CD Autonomy (3-5 SP) - 4 stories
-  - id: EP-PHASE1-007
-    name: CI/CD Autonomy
+  # EP-OPS-001: Grafana-first Observability (4 stories, 14 points)
+  - id: EP-OPS-001
+    name: Grafana-first Observability
     status: planned
-    story_ids: [ST-PHASE1-025, ST-PHASE1-026, ST-PHASE1-027, ST-PHASE1-028]
+    story_ids: [ST-OPS-001, ST-OPS-002, ST-OPS-003, ST-OPS-004]
     story_count: 4
     story_points: 14
-    description: Real CI gates, Gitea PR auto-merge bot, branch hygiene automation, and security scan gate
-    sprint_id: p0-1
+    description: Grafana dashboards for data, backtest, paper, and live execution KPIs with alerting runbook automation
+    sprint_id: p0-5
 
   # ============================================================
   # PHASE 2+ EPICS (7 epics, 27 stories total)
@@ -166,272 +176,517 @@ epics:
     sprint_id: q2-6
 
 # ============================================================
-# PHASE 1 STORIES (28 stories)
+# PHASE 1 STORIES (35 stories)
 # ============================================================
 
 stories:
-  # EP-PHASE1-001: Grafana-first Observability (4 stories, 14 points)
-  - id: ST-PHASE1-001
-    title: Grafana Dashboards - Data & Backtest KPIs
-    epic_id: EP-PHASE1-001
-    sprint_id: p0-5
-    status: planned
-    story_points: 4
-    priority: P0-CRITICAL
-    description: Build dashboards for data freshness, ingest health, and backtest KPIs
-
-  - id: ST-PHASE1-002
-    title: Grafana Dashboards - Paper & Live Execution
-    epic_id: EP-PHASE1-001
-    sprint_id: p0-5
-    status: planned
-    story_points: 4
-    priority: P0-CRITICAL
-    description: Build dashboards for orders/fills, PnL/drawdown, invariant breaches, and kill-switch state
-
-  - id: ST-PHASE1-003
-    title: Alerting Runbook + Automation
-    epic_id: EP-PHASE1-001
-    sprint_id: p0-5
-    status: planned
-    story_points: 3
-    priority: P1-HIGH
-    description: Alert routing + runbooks for common failures (API disconnect, data gaps, order rejects, drift)
-
-  - id: ST-PHASE1-004
-    title: Taiga Sync (Story Status Monitoring)
-    epic_id: EP-PHASE1-001
-    sprint_id: p0-5
-    status: planned
-    story_points: 3
-    priority: P1-HIGH
-    description: One-way (repo->Taiga) sync for story ids/titles/status/acceptance criteria, plus mapping state and strict conflict rules
-
-  # EP-PHASE1-002: Data & Continuous Backtesting (4 stories, 17 points)
-  - id: ST-PHASE1-005
-    title: Exchange Market Data Ingestion - Binance Reference
-    epic_id: EP-PHASE1-002
-    sprint_id: p0-2
-    status: planned
-    story_points: 4
-    priority: P0-CRITICAL
-    description: Ingest market-structure reference data (order book/liquidity/open interest) from Binance for 10 tokens
-
-  - id: ST-PHASE1-006
-    title: Execution Market Data Ingestion - Bybit/Bitget
-    epic_id: EP-PHASE1-002
-    sprint_id: p0-2
-    status: planned
-    story_points: 4
-    priority: P0-CRITICAL
-    description: Ingest execution-market data needed for sizing/SL/TP and realized trade analytics
-
-  - id: ST-PHASE1-007
-    title: Continuous Backtest Runner - Always-on + KPIs
-    epic_id: EP-PHASE1-002
-    sprint_id: p0-2
-    status: planned
-    story_points: 4
-    priority: P0-CRITICAL
-    description: Run continuous backtests (including walk-forward) and persist KPIs
-
-  - id: ST-PHASE1-008
-    title: Strategy Intake + Candidate Evaluation Pipeline
-    epic_id: EP-PHASE1-002
-    sprint_id: p0-2
-    status: planned
-    story_points: 5
-    priority: P1-HIGH
-    description: Formalize new strategy proposals into a test pipeline and promote candidates based on evidence
-
-  # EP-PHASE1-003: ML Optimization for Strategy Tuning (3 stories, 11 points)
-  - id: ST-PHASE1-009
-    title: Walk-Forward Evaluation Framework
-    epic_id: EP-PHASE1-003
-    sprint_id: p0-2
-    status: planned
-    story_points: 4
-    priority: P0-CRITICAL
-    description: Implement walk-forward evaluation framework for robust strategy validation
-
-  - id: ST-PHASE1-010
-    title: Hyperparameter Optimization - Genetic/BO
-    epic_id: EP-PHASE1-003
-    sprint_id: p0-2
-    status: planned
-    story_points: 4
-    priority: P1-HIGH
-    description: Implement genetic algorithm and Bayesian optimization for strategy hyperparameter tuning
-
-  - id: ST-PHASE1-011
-    title: ML Optimization Cadence - Auto-tuning schedule
-    epic_id: EP-PHASE1-003
-    sprint_id: p0-2
-    status: planned
-    story_points: 3
-    priority: P1-HIGH
-    description: Set up automated tuning schedule for continuous strategy optimization
-
-  # EP-PHASE1-004: Strategy Intake & Candidate Evaluation (5 stories, 20 points)
-  - id: ST-PHASE1-012
-    title: Strategy Submission Format & DSL Schema
-    epic_id: EP-PHASE1-004
-    sprint_id: p0-2
-    status: planned
-    story_points: 4
-    priority: P0-CRITICAL
-    description: Define DSL schema for strategy submission format and validation
-
-  - id: ST-PHASE1-013
-    title: Strategy Registry - Champion/Challenger Tracking
-    epic_id: EP-PHASE1-004
-    sprint_id: p0-2
-    status: planned
-    story_points: 4
-    priority: P0-CRITICAL
-    description: Build strategy registry with champion/challenger tracking and versioning
-
-  - id: ST-PHASE1-014
-    title: Candidate Backtesting & Ranking
-    epic_id: EP-PHASE1-004
-    sprint_id: p0-2
-    status: planned
-    story_points: 4
-    priority: P0-CRITICAL
-    description: Implement candidate backtesting pipeline with standardized ranking metrics
-
-  - id: ST-PHASE1-015
-    title: Paper Canary Planning & Gates
-    epic_id: EP-PHASE1-004
-    sprint_id: p0-2
-    status: planned
-    story_points: 4
-    priority: P0-CRITICAL
-    description: Design paper canary deployment with explicit gates for promotion
-
-  - id: ST-PHASE1-016
-    title: Promotion Packet Generation (Human Approval)
-    epic_id: EP-PHASE1-004
-    sprint_id: p0-2
-    status: planned
-    story_points: 4
-    priority: P0-CRITICAL
-    description: Generate human-readable promotion packets with evidence, risks, and rollback plan
-
-  # EP-PHASE1-005: Confidence Scoring - ECE/Thresholds (3 stories, 10 points)
-  - id: ST-PHASE1-017
-    title: ECE Calculation per Strategy/Signal Type
-    epic_id: EP-PHASE1-005
-    sprint_id: p0-3
-    status: planned
-    story_points: 4
-    priority: P0-CRITICAL
-    description: Implement Expected Calibration Error (ECE) calculation per strategy and signal type
-
-  - id: ST-PHASE1-018
-    title: Confidence Threshold Calibration - Dynamic vs Fixed
-    epic_id: EP-PHASE1-005
-    sprint_id: p0-3
-    status: planned
-    story_points: 3
-    priority: P1-HIGH
-    description: Implement dynamic vs fixed confidence threshold calibration
-
-  - id: ST-PHASE1-019
-    title: Confidence Threshold Enforcement - <40% filter for signals
-    epic_id: EP-PHASE1-005
-    sprint_id: p0-3
-    status: planned
-    story_points: 3
-    priority: P0-CRITICAL
-    description: Enforce confidence threshold filter (<40% signals filtered from Discord)
-
-  # EP-PHASE1-006: Chise v1 Brain Operational (5 stories, 17 points)
-  - id: ST-PHASE1-020
-    title: Brain CI/CD - Version, Evaluate, Shadow, Promote
-    epic_id: EP-PHASE1-006
+  # EP-CHISE-001: Chise v1 Brain Operations (5 stories, 19 points)
+  - id: ST-CHISE-001
+    title: Brain CI/CD Pipeline - Version and Evaluate
+    epic_id: EP-CHISE-001
     sprint_id: p0-1
     status: planned
     story_points: 4
     priority: P0-CRITICAL
-    description: Implement Brain CI/CD pipeline with versioning, evaluation, shadow testing, and promotion workflow
+    description: Implement Brain CI/CD pipeline with versioning and evaluation workflow
+    acceptance_criteria:
+      - Brain versioning follows semantic versioning (MAJOR.MINOR.PATCH)
+      - Evaluation runs automatically on new versions within 5 minutes of push
+      - Shadow testing runs against live brain in parallel with <100ms latency overhead
+      - Promotion is gated by human approval packet with required fields complete
+      - CI blocks promotion on failed evaluations (non-bypassable without override)
+      - Rollback to previous version completes in <5 minutes
 
-  - id: ST-PHASE1-021
+  - id: ST-CHISE-002
     title: Brain Evaluation Framework - Batching + BrainEval
-    epic_id: EP-PHASE1-006
+    epic_id: EP-CHISE-001
     sprint_id: p0-1
     status: planned
     story_points: 4
     priority: P0-CRITICAL
     description: Build brain evaluation framework with batching support and BrainEval protocol
+    acceptance_criteria:
+      - Evaluation batches support 3-5 brain versions simultaneously
+      - Evaluation results are persisted with full metrics (accuracy, precision, recall, F1)
+      - BrainEval tool is integrated and callable via CLI/API
+      - Evaluation criteria are documented and version-controlled (accuracy, ECE, safety checks)
+      - Batch results are rankable and comparable with sortable leaderboard
+      - Evaluation completes within 30 minutes for standard test suite
 
-  - id: ST-PHASE1-022
-    title: Promotion Packet for Brain Upgrades - Evidence + Rollback
-    epic_id: EP-PHASE1-006
+  - id: ST-CHISE-003
+    title: Brain Promotion Packet - Evidence + Rollback
+    epic_id: EP-CHISE-001
     sprint_id: p0-1
     status: planned
-    story_points: 3
+    story_points: 4
     priority: P0-CRITICAL
     description: Generate promotion packets for brain upgrades with evidence and rollback procedures
+    acceptance_criteria:
+      - Packets include all required fields: evaluation summary, safety checks, rollback steps, human approval checkbox
+      - Rollback steps are detailed, tested in dev environment, and executable in <5 minutes
+      - Packet generation is automated and triggered on evaluation completion
+      - Rollback path is documented with verification steps for each stage
+      - Promotion is gated by human approval via signed-off packet
+      - Packet format is human-readable (Markdown) and machine-parseable (JSON)
 
-  - id: ST-PHASE1-023
+  - id: ST-CHISE-004
     title: Chise v1 Loop Compliance - Iteration + Logging
-    epic_id: EP-PHASE1-006
+    epic_id: EP-CHISE-001
     sprint_id: p0-1
     status: planned
-    story_points: 3
+    story_points: 4
     priority: P1-HIGH
     description: Ensure Chise v1 loop compliance with iteration tracking and Redis/Qdrant logging
+    acceptance_criteria:
+      - Iteration logs are stored in Redis with 5-day TTL (432,000 seconds)
+      - Key decisions are logged per iteration with timestamp and rationale
+      - Learnings are promoted to Qdrant on story completion with proper metadata
+      - Iteration logs follow schema: story_id, phase, status, started_at, key_decisions
+      - Memory promotion happens automatically or via manual trigger command
+      - Redis iteration log keys are queryable by story_id pattern
 
-  - id: ST-PHASE1-024
+  - id: ST-CHISE-005
     title: Chise v1 Rollback Plan - Safety + Rollback Steps
-    epic_id: EP-PHASE1-006
+    epic_id: EP-CHISE-001
     sprint_id: p0-1
     status: planned
     story_points: 3
     priority: P0-CRITICAL
     description: Define comprehensive rollback plan with safety checks and rollback steps
+    acceptance_criteria:
+      - Rollback triggers are documented: ECE degradation >0.15, safety violations, human request
+      - Rollback steps are detailed, tested in dev, and executable in <5 minutes
+      - Safety checks verify system state before rollback (no active trades, data consistency)
+      - Rollback path includes verification steps at each stage
+      - Rollback outcome is logged for post-mortem analysis with full context
+      - Emergency rollback command is available via CLI with --force override option
 
-  # EP-PHASE1-007: CI/CD Autonomy (4 stories, 14 points)
-  - id: ST-PHASE1-025
+  # EP-CI-001: CI/CD Autonomy (4 stories, 14 points)
+  - id: ST-CI-001
     title: Real CI Gates - Black/Ruff/Mypy/Pytest/Coverage
-    epic_id: EP-PHASE1-007
+    epic_id: EP-CI-001
     sprint_id: p0-1
     status: planned
     story_points: 4
     priority: P0-CRITICAL
     description: Make CI gates real and blocking (Black/Ruff/Mypy/Pytest/Coverage) for safe autonomous merges
+    acceptance_criteria:
+      - Black formatting failures fail CI (exit code non-zero)
+      - Ruff lint failures fail CI with zero tolerance for errors
+      - Mypy type check failures fail CI (strict mode enabled)
+      - Pytest test failures fail CI (any failed test blocks merge)
+      - Coverage below 80% threshold fails CI with detailed report
+      - CI gates are non-bypassable without explicit human override and audit log
 
-  - id: ST-PHASE1-026
+  - id: ST-CI-002
     title: Gitea PR Auto-Merge Bot - Green CI Only
-    epic_id: EP-PHASE1-007
+    epic_id: EP-CI-001
     sprint_id: p0-1
     status: planned
     story_points: 4
     priority: P0-CRITICAL
     description: Implement PR open/poll/merge automation via Gitea API; merge only when required checks are green
+    acceptance_criteria:
+      - PRs do not merge when any required check is missing or failed
+      - PRs merge automatically once all checks are green and reviews approved
+      - Bot polls Gitea API every 60 seconds for PR status updates
+      - Merge requires explicit approval from at least 1 required reviewer
+      - Failed merges are logged with error details and retry count
+      - Bot handles merge conflicts by notifying author and skipping auto-merge
 
-  - id: ST-PHASE1-027
+  - id: ST-CI-003
     title: Branch Hygiene Automation - Prune + Prevention
-    epic_id: EP-PHASE1-007
+    epic_id: EP-CI-001
     sprint_id: p0-1
     status: planned
     story_points: 3
     priority: P1-HIGH
     description: Auto-prune merged branches and prevent long-lived divergence
+    acceptance_criteria:
+      - Merged branches are auto-deleted after 24 hours of merge completion
+      - Branches older than 30 days trigger warning notifications
+      - Divergence detection alerts on >50 commits drift from main
+      - Branch naming conventions are enforced (feature/*, bugfix/*, hotfix/*)
+      - Cleanup operations are logged with branch name, author, and timestamp
+      - Protected branches (main, release/*) are excluded from auto-deletion
 
-  - id: ST-PHASE1-028
+  - id: ST-CI-004
     title: Security Scan Gate - Deterministic Bandit
-    epic_id: EP-PHASE1-007
+    epic_id: EP-CI-001
     sprint_id: p0-1
     status: planned
     story_points: 3
     priority: P1-HIGH
     description: Add deterministic security scanning to CI (bandit on src)
+    acceptance_criteria:
+      - CI runs bandit scan on src/ directory with severity filter
+      - Critical/high severity findings fail the pipeline immediately
+      - Scan is deterministic (same code produces same findings)
+      - Medium/low severity issues trigger warnings but allow merge
+      - Security scan results are logged with file:line references
+      - Bandit configuration is version-controlled in pyproject.toml
 
-# ============================================================
-# PHASE 2+ STORIES (27 stories)
-# ============================================================
+  # EP-DATA-001: Data & Continuous Backtesting (4 stories, 16 points)
+  - id: ST-DATA-001
+    title: Exchange Market Data Ingestion - Binance Reference
+    epic_id: EP-DATA-001
+    sprint_id: p0-2
+    status: planned
+    story_points: 4
+    priority: P0-CRITICAL
+    description: Ingest market-structure reference data (order book/liquidity/open interest) from Binance for 10 tokens
+    acceptance_criteria:
+      - Order book snapshots are captured at 100ms intervals for all 10 tokens
+      - Liquidity metrics (bid/ask spread, depth) are calculated correctly
+      - Open interest data is aggregated and stored as time-series
+      - Data quality checks pass: no gaps >5s, no duplicates, price accuracy ±0.01%
+      - Ingest latency is <2s at 95th percentile
+      - Failed ingests trigger alerts within 10 seconds
+
+  - id: ST-DATA-002
+    title: Execution Market Data Ingestion - Bybit/Bitget
+    epic_id: EP-DATA-001
+    sprint_id: p0-2
+    status: planned
+    story_points: 4
+    priority: P0-CRITICAL
+    description: Ingest execution-market data needed for sizing/SL/TP and realized trade analytics
+    acceptance_criteria:
+      - Real-time pricing data matches exchange API within 100ms
+      - Fill data is captured and persisted with order_id, price, quantity, timestamp
+      - Position/SL/TP data is queryable for risk calculations via API
+      - Data gaps >10s trigger alerts with source and duration
+      - Exchange connection health is monitored (heartbeat every 30s)
+      - Reconnect logic handles disconnects with exponential backoff (max 60s)
+
+  - id: ST-DATA-003
+    title: Continuous Backtest Runner - Always-on + KPIs
+    epic_id: EP-DATA-001
+    sprint_id: p0-2
+    status: planned
+    story_points: 4
+    priority: P0-CRITICAL
+    description: Run continuous backtests (including walk-forward) and persist KPIs
+    acceptance_criteria:
+      - Backtests run continuously without manual start/stop intervention
+      - KPIs are generated per backtest (Sharpe, max drawdown, win rate, trade count)
+      - KPIs are persisted to InfluxDB with strategy_id and timestamp tags
+      - Runner recovers from failures and resumes processing within 60 seconds
+      - Backtest queue depth and lag are monitored in Grafana
+      - Walk-forward backtests complete daily for all active strategies
+
+  - id: ST-DATA-004
+    title: Data Quality Monitoring - Freshness + Gaps
+    epic_id: EP-DATA-001
+    sprint_id: p0-2
+    status: planned
+    story_points: 4
+    priority: P1-HIGH
+    description: Monitor data freshness, detect gaps, and alert on ingestion failures
+    acceptance_criteria:
+      - Last update timestamps are visible per data source in Grafana
+      - Freshness thresholds are configurable per source (>5min stale = alert default)
+      - Data gaps are detected within 60 seconds of occurrence
+      - Alert triggers when any source exceeds freshness threshold
+      - Historical freshness trends are queryable and plottable in Grafana
+      - Alert routing sends notifications to Discord #alerts channel
+
+  # EP-BT-001: Strategy Intake & Candidate Evaluation (5 stories, 20 points)
+  - id: ST-SIG-001
+    title: Strategy Submission Format & DSL Schema
+    epic_id: EP-BT-001
+    sprint_id: p0-2
+    status: planned
+    story_points: 4
+    priority: P0-CRITICAL
+    description: Define DSL schema for strategy submission format and validation
+    acceptance_criteria:
+      - DSL schema is validated on submission with clear error messages
+      - Invalid strategies are rejected with field-level error details
+      - DSL versioning is supported with migration path between versions
+      - DSL is diffable and reproducible (same input = same output)
+      - Schema enforces safe parameter ranges (max leverage, position size limits)
+      - DSL specification is documented in docs/architecture/strategy-dsl.md
+
+  - id: ST-SIG-002
+    title: Strategy Registry - Champion/Challenger Tracking
+    epic_id: EP-BT-001
+    sprint_id: p0-2
+    status: planned
+    story_points: 4
+    priority: P0-CRITICAL
+    description: Build strategy registry with champion/challenger tracking and versioning
+    acceptance_criteria:
+      - Champion/challenger relationships are maintained with clear status
+      - Artifacts are stored: config, diffs, backtest results, paper results
+      - KPIs are comparable across strategies with normalized metrics
+      - Challenger promotion criteria are documented and enforced
+      - Registry state is visible in Grafana dashboard
+      - Strategy versions are immutable once registered
+
+  - id: ST-BT-001
+    title: Candidate Backtesting & Ranking
+    epic_id: EP-BT-001
+    sprint_id: p0-2
+    status: planned
+    story_points: 4
+    priority: P0-CRITICAL
+    description: Implement candidate backtesting pipeline with standardized ranking metrics
+    acceptance_criteria:
+      - Backtests use consistent walk-forward windows (30-day train, 7-day test)
+      - Ranking criteria are applied uniformly across all candidates
+      - Backtest results are persisted with full metrics to time-series DB
+      - Top 3 candidates are identified for paper testing based on composite score
+      - Ranking is transparent with criteria weights and scores visible
+      - Ranking pipeline completes within 4 hours for 100 candidates
+
+  - id: ST-BT-002
+    title: Paper Canary Planning & Gates
+    epic_id: EP-BT-001
+    sprint_id: p0-2
+    status: planned
+    story_points: 4
+    priority: P0-CRITICAL
+    description: Design paper canary deployment with explicit gates for promotion
+    acceptance_criteria:
+      - Canary size is defined as 10% of paper portfolio allocation
+      - Gate criteria are documented: max 5% drawdown, min 55% win rate, 7-day duration
+      - Gate failure triggers automatic rollback to previous champion
+      - Canary results are persisted and visible in Grafana dashboard
+      - Promotion to paper full is gated by human approval with evidence review
+      - Canary monitoring checks run every 15 minutes during canary period
+
+  - id: ST-BT-003
+    title: Promotion Packet Generation (Human Approval)
+    epic_id: EP-BT-001
+    sprint_id: p0-2
+    status: planned
+    story_points: 4
+    priority: P0-CRITICAL
+    description: Generate human-readable promotion packets with evidence, risks, and rollback plan
+    acceptance_criteria:
+      - Packets include: evidence summary, KPI comparison, risk assessment, rollback plan
+      - Packets are rendered in human-readable Markdown format
+      - Rollback steps are detailed, tested, and executable in <5 minutes
+      - Packet generation is automated and triggered on gate completion
+      - Approval workflow is documented with required approvers and SLAs
+      - Packets are stored with version history and audit trail
+
+  # EP-ML-001: ML Optimization for Strategy Tuning (3 stories, 11 points)
+  - id: ST-ML-001
+    title: Walk-Forward Evaluation Framework
+    epic_id: EP-ML-001
+    sprint_id: p0-2
+    status: planned
+    story_points: 4
+    priority: P0-CRITICAL
+    description: Implement walk-forward evaluation framework for robust strategy validation
+    acceptance_criteria:
+      - Walk-forward windows are configurable (default: 30-day train, 7-day test)
+      - No future data leaks into training set (verified by temporal split audit)
+      - Performance metrics are calculated per window and aggregated
+      - Walk-forward results are aggregateable for strategy comparison
+      - Look-ahead bias checks pass (test data not used in training)
+      - Framework completes evaluation within 2 hours per strategy
+
+  - id: ST-ML-002
+    title: Hyperparameter Optimization - Genetic/BO
+    epic_id: EP-ML-001
+    sprint_id: p0-2
+    status: planned
+    story_points: 4
+    priority: P1-HIGH
+    description: Implement genetic algorithm and Bayesian optimization for strategy hyperparameter tuning
+    acceptance_criteria:
+      - Optimization converges to stable parameter sets (variance <5% across runs)
+      - Optimization runs complete within 24 hours per strategy
+      - Optimized parameters improve backtest KPIs vs baseline by >10%
+      - Optimization history is tracked with parameter values and scores
+      - Both genetic algorithm and Bayesian optimization methods are supported
+      - Optimization respects parameter constraints (min/max bounds, integer constraints)
+
+  - id: ST-ML-003
+    title: ML Optimization Cadence - Auto-tuning Schedule
+    epic_id: EP-ML-001
+    sprint_id: p0-2
+    status: planned
+    story_points: 3
+    priority: P1-HIGH
+    description: Set up automated tuning schedule for continuous strategy optimization
+    acceptance_criteria:
+      - Scheduled optimization jobs run reliably without manual trigger
+      - Optimization schedule is configurable per strategy (daily/weekly/monthly)
+      - Optimization frequency adapts to market volatility regime
+      - Optimization results are persisted with timestamp and parameter deltas
+      - Optimization can be paused/resumed without data loss
+      - Schedule is visible and editable via CLI and dashboard
+
+  # EP-CONF-001: Confidence Scoring - ECE/Thresholds (3 stories, 10 points)
+  - id: ST-CONF-001
+    title: ECE Calculation per Strategy/Signal Type
+    epic_id: EP-CONF-001
+    sprint_id: p0-3
+    status: planned
+    story_points: 4
+    priority: P0-CRITICAL
+    description: Implement Expected Calibration Error (ECE) calculation per strategy and signal type
+    acceptance_criteria:
+      - ECE calculations use correct binning (10 bins: 0-10%, 10-20%, etc.)
+      - ECE is calculated per signal type (entry, exit, SL, TP)
+      - Historical ECE values are tracked and trended over time
+      - ECE calculations are verified against ground truth labels
+      - ECE is queryable per strategy via API for calibration decisions
+      - ECE updates daily with new prediction-outcome pairs
+
+  - id: ST-CONF-002
+    title: Confidence Threshold Calibration - Dynamic vs Fixed
+    epic_id: EP-CONF-001
+    sprint_id: p0-3
+    status: planned
+    story_points: 3
+    priority: P1-HIGH
+    description: Implement dynamic vs fixed confidence threshold calibration
+    acceptance_criteria:
+      - Dynamic threshold adjustment algorithm is documented and implemented
+      - Threshold history is tracked with changes and reasons
+      - Fixed threshold mode is available as fallback with manual override
+      - Threshold adjustments improve calibration (ECE decreases by >0.05)
+      - Threshold changes are logged with timestamp, old value, new value, reason
+      - Mode switching (dynamic/fixed) is configurable per strategy
+
+  - id: ST-CONF-003
+    title: Confidence Threshold Enforcement - <40% Filter
+    epic_id: EP-CONF-001
+    sprint_id: p0-3
+    status: planned
+    story_points: 3
+    priority: P0-CRITICAL
+    description: Enforce confidence threshold filter (<40% signals filtered from Discord)
+    acceptance_criteria:
+      - Confidence filter is applied before Discord alert generation
+      - Filtered signals are logged with confidence score and reason for filtering
+      - No Discord alerts are sent for signals below 40% confidence
+      - Filter threshold is configurable per user preference (40% default)
+      - Filter statistics are visible in Grafana (filtered count, rate, trends)
+      - Filter can be bypassed for testing with explicit flag and audit log
+
+  # EP-EX-001: Execution (Perps-First) (3 stories, 13 points)
+  - id: ST-EX-001
+    title: Bybit Demo Paper Trading Integration
+    epic_id: EP-EX-001
+    sprint_id: p0-4
+    status: planned
+    story_points: 5
+    priority: P0-CRITICAL
+    description: Integrate Bybit demo paper trading with trade budget enforcement and KPI tracking
+    acceptance_criteria:
+      - Paper trades execute on Bybit demo environment with order confirmation
+      - Trade budget is enforced: max 10% portfolio exposure per trade
+      - KPIs are tracked: PnL, max drawdown, win rate, trade count, Sharpe ratio
+      - Paper kill-switch triggers on >=10% drawdown and closes all positions
+      - Results are visible in Grafana with real-time updates (<5s latency)
+      - Order lifecycle (pending, filled, partial, cancelled) is tracked and logged
+
+  - id: ST-EX-002
+    title: Bitget Live Trading Gating
+    epic_id: EP-EX-001
+    sprint_id: p0-4
+    status: planned
+    story_points: 4
+    priority: P0-CRITICAL
+    description: Implement Bitget live trading with human approval gating and risk controls
+    acceptance_criteria:
+      - Live trading requires explicit human approval via signed promotion packet
+      - Approval gates check paper trading performance (min 30 days, positive Sharpe)
+      - Risk controls are enforced before live activation (position limits, kill-switch)
+      - Live trading can be disabled via kill-switch with immediate position close
+      - All live trades are logged with full audit trail (timestamp, price, quantity, reason)
+      - Live trading state is visible in Grafana (enabled/disabled, last approval date)
+
+  - id: ST-EX-003
+    title: Execution Risk Management - Kill Switch
+    epic_id: EP-EX-001
+    sprint_id: p0-4
+    status: planned
+    story_points: 4
+    priority: P0-CRITICAL
+    description: Implement kill switch and execution risk controls for live trading
+    acceptance_criteria:
+      - Kill-switch triggers on >=15% drawdown within rolling 24-hour window
+      - Kill-switch closes all positions immediately via market orders
+      - Kill-switch disables live execution until human re-authorizes with signed packet
+      - Kill-switch state is visible in Grafana (armed, triggered, disabled)
+      - Kill-switch triggers are logged with context (drawdown %, timestamp, positions)
+      - Manual kill-switch trigger is available via CLI and dashboard with confirmation
+
+  # EP-OPS-001: Grafana-first Observability (4 stories, 14 points)
+  - id: ST-OPS-001
+    title: Grafana Dashboards - Data & Backtest KPIs
+    epic_id: EP-OPS-001
+    sprint_id: p0-5
+    status: planned
+    story_points: 4
+    priority: P0-CRITICAL
+    description: Build dashboards for data freshness, ingest health, and backtest KPIs
+    acceptance_criteria:
+      - Last update timestamps are visible per data source (Binance, Bybit, Bitget)
+      - Freshness alerts trigger when any source exceeds 5-minute threshold
+      - Historical freshness trends are plottable with 7-day lookback
+      - Backtest KPI panels update within 5 seconds of new data
+      - Dashboard loads within 3 seconds for standard viewport
+      - Dashboard JSON is version-controlled and deployable via IaC
+
+  - id: ST-OPS-002
+    title: Grafana Dashboards - Paper & Live Execution
+    epic_id: EP-OPS-001
+    sprint_id: p0-5
+    status: planned
+    story_points: 4
+    priority: P0-CRITICAL
+    description: Build dashboards for orders/fills, PnL/drawdown, invariant breaches, and kill-switch state
+    acceptance_criteria:
+      - Order/fill data is queryable in real-time with order_id linking
+      - PnL/drawdown panels update within 5 seconds of trade events
+      - Kill-switch state is clearly visible with color coding (green=armed, red=triggered)
+      - Per-trade risk metrics are accurate (position size, leverage, margin used)
+      - Execution latency metrics are tracked (order submission to fill)
+      - Dashboard panels are organized by environment (paper vs live)
+
+  - id: ST-OPS-003
+    title: Alerting Runbook + Automation
+    epic_id: EP-OPS-001
+    sprint_id: p0-5
+    status: planned
+    story_points: 3
+    priority: P1-HIGH
+    description: Alert routing + runbooks for common failures (API disconnect, data gaps, order rejects, drift)
+    acceptance_criteria:
+      - Runbooks exist for: API disconnect, data gaps, order rejects, model drift
+      - Alert routing sends notifications to correct channels (Discord #alerts)
+      - Runbooks are accessible from Grafana panels via direct links
+      - Automated remediation triggers correctly for common issues (restart, reconnect)
+      - Alert fatigue is minimized through proper thresholds (<5 false positives/day)
+      - Runbooks include step-by-step resolution procedures with estimated time
+
+  - id: ST-OPS-004
+    title: Taiga Sync (Story Status Monitoring)
+    epic_id: EP-OPS-001
+    sprint_id: p0-5
+    status: planned
+    story_points: 3
+    priority: P1-HIGH
+    description: One-way (repo->Taiga) sync for story ids/titles/status/acceptance criteria, plus mapping state and strict conflict rules
+    acceptance_criteria:
+      - Dry-run mode reports planned Taiga changes and exits with code 0
+      - Apply mode creates/updates Taiga user stories for non-deprecated repo stories
+      - Sync state file maps repo story ids to Taiga ids/refs and stores checksums
+      - Conflicts on repo-canonical fields are detected and reported unless --force flag used
+      - Sync runs on schedule (hourly) without manual intervention
+      - Sync logs include: stories created, updated, skipped, conflicts detected
+
+  # ============================================================
+  # PHASE 2+ STORIES (27 stories)
+  # ============================================================
 
   # EP-NS-001: Market Analysis Engine Foundation (6 stories, 42 points)
   - id: ST-NS-001
@@ -928,49 +1183,49 @@ sprints:
     name: CI/CD Autonomy & Brain Operations
     status: in_progress
     story_count: 9
-    story_points: 31
-    mapped_stories: [ST-PHASE1-020, ST-PHASE1-021, ST-PHASE1-022, ST-PHASE1-023, ST-PHASE1-024, ST-PHASE1-025, ST-PHASE1-026, ST-PHASE1-027, ST-PHASE1-028]
+    story_points: 33
+    mapped_stories: [ST-CHISE-001, ST-CHISE-002, ST-CHISE-003, ST-CHISE-004, ST-CHISE-005, ST-CI-001, ST-CI-002, ST-CI-003, ST-CI-004]
 
   - id: p0-2
     name: Data & Continuous Backtesting
     status: planned
     story_count: 16
-    story_points: 62
-    mapped_stories: [ST-PHASE1-005, ST-PHASE1-006, ST-PHASE1-007, ST-PHASE1-008, ST-PHASE1-009, ST-PHASE1-010, ST-PHASE1-011, ST-PHASE1-012, ST-PHASE1-013, ST-PHASE1-014, ST-PHASE1-015, ST-PHASE1-016]
+    story_points: 67
+    mapped_stories: [ST-DATA-001, ST-DATA-002, ST-DATA-003, ST-DATA-004, ST-SIG-001, ST-SIG-002, ST-BT-001, ST-BT-002, ST-BT-003, ST-ML-001, ST-ML-002, ST-ML-003]
 
   - id: p0-3
     name: Confidence Scoring & ECE
     status: planned
     story_count: 3
     story_points: 10
-    mapped_stories: [ST-PHASE1-017, ST-PHASE1-018, ST-PHASE1-019]
+    mapped_stories: [ST-CONF-001, ST-CONF-002, ST-CONF-003]
 
   - id: p0-4
     name: Execution (Perps-First)
     status: planned
-    story_count: 6
-    story_points: 46
-    mapped_stories: [ST-EX-001, ST-EX-002, ST-EX-003, ST-PAPER-001, ST-LIVE-001, ST-RISK-001]
+    story_count: 3
+    story_points: 13
+    mapped_stories: [ST-EX-001, ST-EX-002, ST-EX-003]
 
   - id: p0-5
     name: Observability (Grafana-First)
     status: planned
     story_count: 4
     story_points: 14
-    mapped_stories: [ST-PHASE1-001, ST-PHASE1-002, ST-PHASE1-003, ST-PHASE1-004]
+    mapped_stories: [ST-OPS-001, ST-OPS-002, ST-OPS-003, ST-OPS-004]
 
 # ============================================================
 # SUMMARY COUNTS
 # ============================================================
 
 summary:
-  total_epics: 14
-  total_stories: 55
-  total_story_points: 368
+  total_epics: 15
+  total_stories: 62
+  total_story_points: 380
   phase_1:
-    epics: 7
-    stories: 28
-    story_points: 103
+    epics: 8
+    stories: 35
+    story_points: 117
   phase_2_plus:
     epics: 7
     stories: 27
