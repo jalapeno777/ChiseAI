@@ -87,10 +87,10 @@ def _ensure_iterlog_file(
         "scope: iteration-log\n"
         "type: iterlog\n"
         f"story_id: {story_id}\n"
-        f"story_title: \"{title}\"\n"
+        f'story_title: "{title}"\n'
         f"phase: {ph}\n"
         f"status: {st}\n"
-        f"started_at: \"{_utc_now()}\"\n"
+        f'started_at: "{_utc_now()}"\n'
         "needs_manual_qdrant_import: true\n"
         "---\n\n"
         "## Decisions\n\n- TBD\n\n"
