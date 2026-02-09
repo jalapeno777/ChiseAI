@@ -1,6 +1,13 @@
 when:
   event: [ push, pull_request, manual ]
 
+clone:
+  git:
+    image: woodpeckerci/plugin-git
+    settings:
+      remote:
+        from_secret: gitea_clone_url
+
 steps:
   lint:
     image: python:3.11
