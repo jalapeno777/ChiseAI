@@ -41,6 +41,18 @@ resource "docker_container" "redis" {
     value = local.project_label
   }
 
+  # Docker Desktop groups "apps" primarily by Compose project; we add these labels
+  # so Terraform-managed containers are less cluttered in the UI.
+  labels {
+    label = "com.docker.compose.project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.service"
+    value = "redis"
+  }
+
   networks_advanced {
     name = docker_network.chiseai.name
   }
@@ -71,6 +83,16 @@ resource "docker_container" "postgres" {
   labels {
     label = "project"
     value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.service"
+    value = "postgres"
   }
 
   networks_advanced {
@@ -106,6 +128,16 @@ resource "docker_container" "influxdb" {
     value = local.project_label
   }
 
+  labels {
+    label = "com.docker.compose.project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.service"
+    value = "influxdb"
+  }
+
   networks_advanced {
     name = docker_network.chiseai.name
   }
@@ -132,6 +164,16 @@ resource "docker_container" "qdrant" {
   labels {
     label = "project"
     value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.service"
+    value = "qdrant"
   }
 
   networks_advanced {
@@ -161,6 +203,16 @@ resource "docker_container" "grafana" {
   labels {
     label = "project"
     value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.service"
+    value = "grafana"
   }
 
   networks_advanced {
@@ -202,6 +254,16 @@ resource "docker_container" "gitea" {
     value = local.project_label
   }
 
+  labels {
+    label = "com.docker.compose.project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.service"
+    value = "gitea"
+  }
+
   networks_advanced {
     name = docker_network.chiseai.name
   }
@@ -241,6 +303,16 @@ resource "docker_container" "woodpecker_server" {
     value = local.project_label
   }
 
+  labels {
+    label = "com.docker.compose.project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.service"
+    value = "woodpecker-server"
+  }
+
   networks_advanced {
     name = docker_network.chiseai.name
   }
@@ -277,6 +349,16 @@ resource "docker_container" "woodpecker_agent" {
     value = local.project_label
   }
 
+  labels {
+    label = "com.docker.compose.project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.service"
+    value = "woodpecker-agent"
+  }
+
   networks_advanced {
     name = docker_network.chiseai.name
   }
@@ -310,6 +392,16 @@ resource "docker_container" "taiga_postgres" {
     value = local.project_label
   }
 
+  labels {
+    label = "com.docker.compose.project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.service"
+    value = "taiga-postgres"
+  }
+
   networks_advanced {
     name = docker_network.chiseai.name
   }
@@ -327,6 +419,16 @@ resource "docker_container" "taiga_redis" {
   labels {
     label = "project"
     value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.service"
+    value = "taiga-redis"
   }
 
   networks_advanced {
@@ -352,6 +454,16 @@ resource "docker_container" "taiga_rabbitmq" {
   labels {
     label = "project"
     value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.service"
+    value = "taiga-rabbitmq"
   }
 
   networks_advanced {
@@ -391,6 +503,16 @@ resource "docker_container" "taiga_back" {
     value = local.project_label
   }
 
+  labels {
+    label = "com.docker.compose.project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.service"
+    value = "taiga-back"
+  }
+
   networks_advanced {
     name = docker_network.chiseai.name
   }
@@ -427,6 +549,16 @@ resource "docker_container" "taiga_front" {
     value = local.project_label
   }
 
+  labels {
+    label = "com.docker.compose.project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.service"
+    value = "taiga-front"
+  }
+
   networks_advanced {
     name = docker_network.chiseai.name
   }
@@ -452,6 +584,16 @@ resource "docker_container" "taiga_events" {
   labels {
     label = "project"
     value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.service"
+    value = "taiga-events"
   }
 
   networks_advanced {
