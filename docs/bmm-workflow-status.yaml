@@ -282,7 +282,7 @@ stories:
     title: Gitea PR Auto-Merge Bot - Green CI Only
     epic_id: EP-CI-001
     sprint_id: p0-1
-    status: in_progress
+    status: completed
     story_points: 4
     priority: P0-CRITICAL
     description: Implement PR open/poll/merge automation via Gitea API; merge only when required checks are green

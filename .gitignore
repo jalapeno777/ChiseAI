@@ -25,5 +25,4 @@ htmlcov/
 # Removed: docs/_archive/ (archived reports, should be tracked)
 screenshots/
 
-# Temporary fallback for Redis/Qdrant unavailable
-docs/tempmemories/
+

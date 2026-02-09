@@ -9,6 +9,10 @@ This is intended for autonomous agents to keep the repo convergent:
 
 Auth:
 - Set GITEA_TOKEN in environment (short-lived PAT recommended).
+
+Environment Variables:
+- GITEA_POLL_INTERVAL: Seconds between status checks (default: 60)
+- GITEA_MAX_RETRIES: Maximum merge attempts before giving up (default: 3)
 """
 
 from __future__ import annotations
@@ -73,6 +77,60 @@ def _commit_status(owner: str, repo: str, base_url: str, token: str, sha: str) -
     return _req_json("GET", url, token)
 
 
+def _get_pr_reviews(
+    owner: str, repo: str, base_url: str, token: str, index: int
+) -> list:
+    """Get PR reviews to check for required approvals."""
+    url = f"{base_url}/api/v1/repos/{owner}/{repo}/pulls/{index}/reviews"
+    try:
+        result = _req_json("GET", url, token)
+        if isinstance(result, list):
+            return result
+        return []
+    except RuntimeError:
+        return []
+
+
+def _has_required_approval(reviews: list) -> bool:
+    """Check if PR has at least one required reviewer approval."""
+    for review in reviews:
+        if review.get("state") == "APPROVED":
+            return True
+    return False
+
+
+def _post_pr_comment(
+    owner: str,
+    repo: str,
+    base_url: str,
+    token: str,
+    index: int,
+    body: str,
+) -> None:
+    """Post a comment on a PR."""
+    url = f"{base_url}/api/v1/repos/{owner}/{repo}/issues/{index}/comments"
+    _req_json("POST", url, token, {"body": body})
+
+
+def _check_merge_conflict(
+    owner: str, repo: str, base_url: str, token: str, index: int
+) -> bool:
+    """Check if PR has merge conflicts.
+
+    Returns True if there is a conflict, False otherwise.
+    """
+    url = f"{base_url}/api/v1/repos/{owner}/{repo}/pulls/{index}"
+    try:
+        pr = _req_json("GET", url, token)
+        mergeable = pr.get("mergeable")
+        # mergeable can be True, False, or None (unknown/not computed yet)
+        if mergeable is False:
+            return True
+        return False
+    except RuntimeError:
+        return False
+
+
 def _merge_pr(
     owner: str,
     repo: str,
@@ -98,7 +156,46 @@ def _merge_pr(
     )
 
 
+def _try_merge_with_retry(
+    owner: str,
+    repo: str,
+    base_url: str,
+    token: str,
+    index: int,
+    head_sha: str,
+    delete_branch: bool,
+    max_retries: int,
+) -> tuple[bool, int]:
+    """Attempt to merge PR with retry logic.
+
+    Returns (success, attempts_made).
+    """
+    for attempt in range(1, max_retries + 1):
+        try:
+            _merge_pr(
+                owner,
+                repo,
+                base_url,
+                token,
+                index=index,
+                head_sha=head_sha,
+                merge_when_checks_succeed=False,
+                delete_branch_after_merge=delete_branch,
+            )
+            return True, attempt
+        except RuntimeError:
+            if attempt == max_retries:
+                return False, attempt
+            # Wait briefly before retry
+            time.sleep(1)
+    return False, max_retries
+
+
 def main() -> int:
+    # Environment variable defaults
+    default_poll_interval = int(os.getenv("GITEA_POLL_INTERVAL", "60"))
+    default_max_retries = int(os.getenv("GITEA_MAX_RETRIES", "3"))
+
     p = argparse.ArgumentParser()
     p.add_argument(
         "--base-url",
@@ -122,9 +219,26 @@ def main() -> int:
         help="Poll until required context is success, then merge",
     )
     p.add_argument("--timeout-sec", type=int, default=1800)
-    p.add_argument("--poll-sec", type=int, default=10)
+    p.add_argument(
+        "--poll-sec",
+        type=int,
+        default=default_poll_interval,
+        help=f"Seconds between status checks (default: {default_poll_interval})",
+    )
+    p.add_argument(
+        "--max-retries",
+        type=int,
+        default=default_max_retries,
+        help=f"Maximum merge attempts before giving up (default: {default_max_retries})",
+    )
     p.add_argument(
         "--delete-branch", action="store_true", help="Delete branch after merge"
+    )
+    p.add_argument(
+        "--require-approval",
+        action="store_true",
+        default=True,
+        help="Require at least one reviewer approval before merging (default: True)",
     )
     args = p.parse_args()
 
@@ -169,6 +283,30 @@ def main() -> int:
     index = int(pr["number"])
     sha = pr["head"]["sha"]
 
+    # Check for merge conflicts before proceeding
+    if _check_merge_conflict(args.owner, args.repo, base_url, token, index):
+        msg = (
+            f"⚠️ **Auto-merge skipped**: This PR has merge conflicts "
+            f"that must be resolved before merging.\n\n"
+            f"@author please resolve the conflicts and re-run the auto-merge."
+        )
+        _post_pr_comment(args.owner, args.repo, base_url, token, index, msg)
+        print(
+            f"ERROR: PR #{index} has merge conflicts. Skipping auto-merge.",
+            file=sys.stderr,
+        )
+        return 1
+
+    # Check for required reviewer approval
+    if args.require_approval:
+        reviews = _get_pr_reviews(args.owner, args.repo, base_url, token, index)
+        if not _has_required_approval(reviews):
+            print(
+                f"ERROR: PR #{index} does not have required reviewer approval",
+                file=sys.stderr,
+            )
+            return 1
+
     if not args.wait:
         # Enable server-side automerge when checks succeed.
         _merge_pr(
@@ -186,6 +324,21 @@ def main() -> int:
 
     deadline = time.time() + args.timeout_sec
     while time.time() < deadline:
+        # Re-check for merge conflicts during polling
+        if _check_merge_conflict(args.owner, args.repo, base_url, token, index):
+            msg = (
+                f"⚠️ **Auto-merge skipped**: This PR has merge conflicts "
+                f"that must be resolved before merging.\n\n"
+                f"@author please resolve the conflicts and re-run the auto-merge."
+            )
+            _post_pr_comment(args.owner, args.repo, base_url, token, index, msg)
+            print(
+                f"ERROR: PR #{index} has merge conflicts during polling. "
+                f"Skipping auto-merge.",
+                file=sys.stderr,
+            )
+            return 1
+
         status = _commit_status(args.owner, args.repo, base_url, token, sha)
         state = status.get("state")
         statuses = status.get("statuses") or []
@@ -196,18 +349,28 @@ def main() -> int:
                 ctx_state = s.get("state") or s.get("status")
                 break
         if ctx_state == "success":
-            _merge_pr(
+            success, attempts = _try_merge_with_retry(
                 args.owner,
                 args.repo,
                 base_url,
                 token,
-                index=index,
-                head_sha=sha,
-                merge_when_checks_succeed=False,
-                delete_branch_after_merge=args.delete_branch,
+                index,
+                sha,
+                args.delete_branch,
+                args.max_retries,
             )
-            print(f"PR #{index}: merged (state={state}, ctx={ctx_state})")
-            return 0
+            if success:
+                print(
+                    f"PR #{index}: merged (state={state}, ctx={ctx_state}, "
+                    f"attempts={attempts})"
+                )
+                return 0
+            else:
+                print(
+                    f"ERROR: Failed to merge PR #{index} after {attempts} attempt(s)",
+                    file=sys.stderr,
+                )
+                return 1
         if ctx_state in {"failure", "error"}:
             print(
                 f"ERROR: required context {args.required_context} is {ctx_state}",
