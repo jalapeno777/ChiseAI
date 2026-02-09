@@ -61,6 +61,8 @@ ChiseAI's unfair advantage lies in its sophisticated multi-layered analysis appr
 | SC-008 | Response Time | Dashboard load time | <3 seconds |
 | SC-009 | Signal Delivery Latency | Time from signal to notification | <1 second |
 | SC-010 | Test Coverage | Automated test coverage | ≥80% |
+| SC-011 | Sharpe Ratio | Risk-adjusted return per unit of risk | ≥1.5 target |
+| SC-012 | Sortino Ratio | Downside-adjusted return measure | ≥2.0 target |
 
 ---
 
@@ -72,8 +74,8 @@ ChiseAI's unfair advantage lies in its sophisticated multi-layered analysis appr
 |----------|-------|
 | **Tokens (MVP)** | BTC, ETH, SOL, LINK, TAO, XRP, BNB, SUI, ONDO, KAS (10 tokens) |
 | **Data Sources** | Binance (reference market structure: OI/order books/liquidity); Bybit (paper execution + execution-market data); Bitget (live execution + execution-market data) |
-| **Analysis Methods** | Multi-timeframe technical indicators, Markov chain trend detection, ML confidence scoring |
-| **Execution Modes** | Backtest (continuous), Paper (Bybit demo), Live (Bitget), with shadow-modes kept running in parallel |
+| **Analysis Methods** | Multi-timeframe technical indicators, Markov chain trend detection, ML confidence scoring, Hedging strategies and market-neutral positions |
+| **Execution Modes** | Backtest (continuous), Paper (Bybit demo), Live (Bitget), with hedging/market-neutral options when evidence supports it; shadow-modes kept running in parallel |
 | **Output Channels** | Grafana dashboards (primary), Discord bot (alerts/notifications). Optional: Streamlit for research/explainability UI (non-blocking) |
 | **Risk Management** | Position sizing, stop-loss, portfolio-level risk, max 1% per trade risk, ≤2% per-grid worst-case, 3x leverage cap |
 | **Learning System** | Closed-loop ML feedback, prediction outcome tracking, confidence calibration |
@@ -140,7 +142,7 @@ ChiseAI's unfair advantage lies in its sophisticated multi-layered analysis appr
 | FR-001 | Multi-timeframe analysis (1m, 5m, 15m, 1h, 4h, 1d) | P0-CRITICAL | Journey 1 |
 | FR-002 | Technical indicator calculation (RSI, MACD, Bollinger Bands) | P0-CRITICAL | Journey 1 |
 | FR-003 | Markov chain trend detection and state inference | P0-CRITICAL | Journey 1 |
-| FR-004 | Confluence-based signal scoring combining multiple indicators | P0-CRITICAL | Journey 1 |
+| FR-004 | Confluence-based signal scoring combining multiple indicators with support for market and limit order types | P0-CRITICAL | Journey 1 |
 | FR-005 | Confidence multiplier updates based on signal agreement | P1-HIGH | Journey 1 |
 | FR-006 | Signal history tracking with outcome correlation | P1-HIGH | Journey 3 |
 
@@ -191,7 +193,8 @@ ChiseAI's unfair advantage lies in its sophisticated multi-layered analysis appr
 | FR-027 | Paper trading orchestration (Bybit demo) with shadow backtests continuing | P0-CRITICAL | Journey 1, 3 |
 | FR-028 | Live trading orchestration (Bitget) with explicit enable/disable gating | P0-CRITICAL | Journey 3 |
 | FR-029 | Mode-specific kill-switch enforcement (paper self-eval/resume; live human re-auth) | P0-CRITICAL | Journey 3 |
-| FR-030 | Grafana-first observability (KPIs, health, alerts) | P0-CRITICAL | Journey 3 |
+| FR-030 | Direct perps execution for high-confidence setups when evidence supports non-grid strategies | P0-CRITICAL | Journey 3 |
+| FR-031 | Grafana-first observability (KPIs, health, alerts) | P0-CRITICAL | Journey 3 |
 
 ### 3.7 Autonomous Engineering System (Chise)
 
@@ -338,10 +341,10 @@ ChiseAI's unfair advantage lies in its sophisticated multi-layered analysis appr
 
 | User Journey | Epic | Functional Requirements |
 |--------------|------|------------------------|
-| Journey 1: Daily Trading Routine | Epic 1: Daily Trading Workflow | FR-001, FR-002, FR-008, FR-009, FR-013, FR-021 |
-| Journey 2: New Opportunity Discovery | Epic 1: Daily Trading Workflow | FR-003, FR-004, FR-007, FR-010, FR-011, FR-012 |
-| Journey 3: Portfolio Risk Management | Epic 2: Portfolio Risk Management | FR-012, FR-014, FR-015, FR-016, FR-017, FR-019 |
-| Journey 4: Community & Transparency | Epic 4: Community | FR-009, FR-024 |
+| Journey 1: Daily Trading Routine | EP-NS-001: Market Analysis Engine Foundation, EP-NS-002: Signal Generation & Delivery | FR-001, FR-002, FR-008, FR-009, FR-013, FR-021 |
+| Journey 2: New Opportunity Discovery | EP-NS-001: Market Analysis Engine Foundation, EP-NS-002: Signal Generation & Delivery | FR-003, FR-004, FR-007, FR-010, FR-011, FR-012 |
+| Journey 3: Portfolio Risk Management | EP-NS-003: Portfolio Risk Management | FR-012, FR-014, FR-015, FR-016, FR-017, FR-019 |
+| Journey 4: Community & Transparency | EP-NS-005: User Experience & Interface | FR-009, FR-024 |
 
 ---
 
@@ -407,7 +410,6 @@ ChiseAI is currently in **planning/foundation** for this repository. The authori
 | Architecture | docs/architecture.md |
 | Workflow Status | docs/bmm-workflow-status.yaml |
 | Validation Registry | docs/validation/validation-registry.yaml |
-| ML Outcome Analysis Design | docs/architecture/ml-outcome-analysis-system-design.md |
 | User Journeys | docs/startingprd.md (Step 4) |
 | Technical Specifications | docs/startingprd.md (Step 6) |
 
@@ -417,6 +419,8 @@ ChiseAI is currently in **planning/foundation** for this repository. The authori
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.2.0 | 2026-02-08 | CH-PRD-PHASE1-ALIGN-001 | Added Phase 1 scope edits: hedging/market-neutral support, order types (market+limit), Sharpe/Sortino success criteria, direct perps execution allowance. Fixed epic naming in traceability matrix (Section 7.2) to match canonical epic IDs from docs/bmm-workflow-status.yaml. Removed ml-outcome-analysis-system-design.md reference. |
+| 1.1.0 | 2026-02-08 | CH-PRD-CI-ALIGN-001 | Updated scope to phased execution (backtest→Bybit paper→Bitget live), Binance ref market-data role, Grafana-first ops UI, updated risk invariants and kill-switch rules. |
 | 1.0.0 | 2025-12-07 | Craig | Initial canonical PRD |
 | 1.0.1 | 2026-02-08 | CH-PRD-RESTRUCT-001 | Added FR/NFR/SC, Safety Constraints, Traceability Matrix |
 | 1.0.2 | 2026-02-08 | CH-PRD-POLISH-001 | Fixed naming consistency, resolved scope contradiction, reframed success criteria for POC mode |
