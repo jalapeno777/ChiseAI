@@ -48,8 +48,18 @@ Prefer repeatable workflow execution through `.opencode/command/*` rather than a
 - Start/close iteration loop:
   - `.opencode/command/chise-iterloop-start.md`
   - `.opencode/command/chise-iterloop-close.md`
+- Parallel safety (ownership + incidents):
+  - `.opencode/command/chise-claim-ownership.md`
+  - `.opencode/command/chise-check-ownership.md`
+  - `.opencode/command/chise-append-incident.md`
 - Risk audit:
   - `.opencode/command/chise-risk-audit.md`
 - Dashboard smoke:
   - `.opencode/command/chise-dashboard-smoke.md`
 
+## Parallel Work Policy (ChiseAI)
+
+When running parallel executors on a story/sprint:
+- Claim ownership BEFORE edits using `.opencode/command/chise-claim-ownership.md`.
+- Executors check ownership at start using `.opencode/command/chise-check-ownership.md`.
+- On conflict/regression, append incident using `.opencode/command/chise-append-incident.md` and STOP until `jarvis` re-plans.
