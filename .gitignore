@@ -19,3 +19,8 @@ __pycache__/
 .coverage
 htmlcov/
 .venv/
+
+# BMM/BPB archived reports
+# Removed: _bmad-output/ (canonical artifacts, should be tracked)
+# Removed: docs/_archive/ (archived reports, should be tracked)
+screenshots/
