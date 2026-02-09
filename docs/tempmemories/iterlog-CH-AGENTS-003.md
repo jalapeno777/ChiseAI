@@ -35,6 +35,7 @@ acceptance_criteria:
 - Make memory reuse enforceable by requiring a `MEMORY_CONTEXT` block in every executor delegation and an `INCIDENT_TEMPLATE` for conflicts/regressions (so learnings become structured and promotable).
 - Require executors to append incidents into the story iterlog (`...:incidents` list in Redis; `docs/tempmemories/` fallback) so "learning from mistakes" becomes durable and queryable.
 - Add a standard fallback template for Qdrant promotions: `docs/tempmemories/templates/promotion-note-template.md`.
+- Prefer two independent reviews (technical + adversarial) before bot approval; implement as a dedicated `git-review-bot` agent that is strict and uses a separate Gitea review token.
 
 ## Learnings
 - TBD
