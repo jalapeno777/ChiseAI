@@ -121,6 +121,8 @@ Before you accept a plan that includes parallel execution, verify:
 - Every work item has `scope_globs`, `locks_required`, and `depends_on`.
 - No two parallel items overlap in `scope_globs` and none touch global-lock areas.
 - Integration steps are explicitly sequential (ordering + verification between merges).
+- Jarvis is maintaining a single story iterlog status ledger (key decisions, blockers, next batch) so parallel workers stay aligned.
+- Jarvis has a memory promotion plan (decisions/patterns + incident prevention rules) for story completion.
 
 ## Party Mode policy (when and how)
 BMAD “party mode” is allowed and encouraged for:

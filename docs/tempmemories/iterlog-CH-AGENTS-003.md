@@ -21,6 +21,10 @@ acceptance_criteria:
   - "AC3: Executor agents (dev/quickdev/senior-dev) are updated to follow the task contract and to stop/escalate if asked to edit outside declared scope or when conflicts are detected."
   - "AC4: Guidance calls out global-lock files/areas (CI/infra/shared invariants) as sequential-by-default."
   - "AC5: Repo passes `python3 scripts/validate_iterloop_compliance.py --story-id=CH-AGENTS-003`."
+  - "AC6: Jarvis instructions require maintaining a short status ledger in the story iterlog (Redis; tempmemories fallback) so parallel work shares a single source of truth."
+  - "AC7: Scope ownership (path_slug -> story/agent) is defined and executors are required to check ownership before edits (Redis; tempmemories fallback)."
+  - "AC8: Jarvis instructions require promotion discipline: promote 1-3 decisions/patterns plus any incident `prevention_rule` fields to Qdrant (or tempmemories fallback) at story completion."
+  - "AC9: Iteration loop spec is updated to include incident and ownership key conventions."
 ---
 
 ## Decisions

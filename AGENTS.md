@@ -221,6 +221,13 @@ python3 scripts/validate_iterloop_compliance.py --story-id=<id>
 - **Valid Phases:** `analysis`, `planning`, `solutioning`, `implementation`, `testing`
 - **Valid Statuses:** `planned`, `in_progress`, `blocked`, `completed`, `deprecated`
 
+**Parallel Safety (Scope Ownership + Incidents)**
+- When delegating parallel work, assign scope ownership via Redis to prevent silent overlap:
+  - `bmad:chiseai:ownership` (HASH): `<path_slug>` -> `<story_id>/<agent>/<timestamp>`
+- Executors must check ownership before edits; if a different story/agent owns the scope, STOP and reschedule.
+- Incidents (merge conflicts, CI regressions, repeated blockers) should be appended to:
+  - `bmad:chiseai:iterlog:story:<story_id>:incidents` (LIST), with a markdown fallback under `docs/tempmemories/iterlog-<story_id>.md`
+
 **Using Iteration Logging Module (Recommended):**
 ```python
 from src.operations import (

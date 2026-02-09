@@ -42,6 +42,11 @@ If an incident occurs (merge conflict, CI regression, scope overlap, repeated bl
   - Preferred: `redis_state_rpush(name="bmad:chiseai:iterlog:story:<story_id>:incidents", value="<json-or-yaml-string>")`
   - Fallback: append under `## Incidents` in `docs/tempmemories/iterlog-<story_id>.md`
 
+## Scope Ownership Check (required)
+- Before edits, check that your `SCOPE_GLOBS` are owned by your current `<story_id>/<agent>`.
+- Preferred: read Redis hash `bmad:chiseai:ownership` for each `<path_slug>` in scope.
+- If ownership is held by another story/agent, STOP and report back to `jarvis` for rescheduling/re-scoping.
+
 ## Reporting Back
 Return:
 - Files changed (paths)
