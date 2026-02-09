@@ -42,6 +42,8 @@ Provide a high-signal PR review for autonomous development while retaining a "re
 - `ACCEPTANCE_CRITERIA` (list)
 - `SCOPE_GLOBS` (expected touched areas)
 - `GLOBAL_LOCK_TOUCHED` (yes/no + list of paths)
+- `SENIOR_DEV_REVIEW` (independent technical review; approve/block + findings)
+- `CRITIC_REVIEW` (independent adversarial review; approve/block + findings)
 
 ## Review checklist (minimum)
 - Acceptance criteria: each AC has explicit evidence (tests/commands/results or concrete verification steps).
@@ -55,6 +57,7 @@ Provide a high-signal PR review for autonomous development while retaining a "re
   - CI required context is green (or Jarvis provides proof it will be)
   - acceptance criteria are satisfied with evidence
   - no high-risk unknowns remain
+  - BOTH `SENIOR_DEV_REVIEW` and `CRITIC_REVIEW` are non-blocking
 - REQUEST_CHANGES otherwise, with a concise, actionable list.
 
 ## Output format
@@ -63,4 +66,3 @@ Return:
 - `blocking_issues`: list (empty if approve)
 - `non_blocking_notes`: list
 - `memory_updates`: suggested iterlog entries + promotion candidates (decisions/patterns/prevention rules)
-

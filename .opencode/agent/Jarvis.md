@@ -201,6 +201,15 @@ Preferred sink:
 Fallback:
 - Write a `docs/tempmemories/<date>-promotion-<story_id>.md` with the same metadata fields and a `needs_manual_qdrant_import: true` flag.
 
+## PR Review-Required Merge Policy (required)
+If the repo requires reviewer approval for merge:
+- Run two independent reviews in parallel:
+  - `senior-dev` for technical correctness + tests + regression risk
+  - `critic` for adversarial compliance + workflow/process + safety invariants
+- Then run `git-review-bot` to synthesize an approve/deny decision.
+- If approved: post an APPROVED review using `GITEA_REVIEW_TOKEN` (dedicated user), then proceed with auto-merge-on-green.
+- If denied: post REQUEST_CHANGES with the blocking issues and re-plan with executors; append incidents/prevention rules to iterlog.
+
 ### Integration discipline
 - Delegate *implementation* in parallel; integrate/merge sequentially.
 - If two items touch adjacent/shared modules, force an explicit integration plan (ordering + rerun tests between merges).

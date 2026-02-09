@@ -12,7 +12,11 @@ Follow these steps exactly (do not skip):
    - CI should be green or actively running with a required context.
 
 2. Run the review
-   - Use `.opencode/agent/GitReviewBot.md` to review the PR diff + acceptance criteria + evidence.
+   - Get two independent reviews in parallel:
+     - `senior-dev`: technical correctness + tests + regression risk (approve/block)
+     - `critic`: adversarial compliance + workflow/process + safety invariants (approve/block)
+   - Then use `.opencode/agent/GitReviewBot.md` to synthesize:
+     - APPROVE only if both independent reviews are non-blocking.
    - Outcome must be one of:
      - APPROVE
      - REQUEST_CHANGES
@@ -26,4 +30,3 @@ Follow these steps exactly (do not skip):
 
 4. Evidence
    - Capture the review output and the command output in the story iterlog Evidence.
-
