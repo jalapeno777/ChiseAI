@@ -44,6 +44,18 @@ acceptance_criteria:
 - TBD
 
 ## Incidents
+
+```text
+INCIDENT:
+timestamp: 2026-02-09T17:41:31Z
+category: ci
+impact: pr_merge_blocked
+symptom: Woodpecker lint step failing (black --check)
+root_cause: scripts/iterlog_ops.py not black-formatted after edits
+fix: run black on scripts/iterlog_ops.py and push
+prevention_rule: Always run the full Woodpecker lint stack locally (black + ruff + mypy + validate_*.py) before pushing when touching scripts/*.py
+}
+```
 - TBD
 
 ## Evidence
