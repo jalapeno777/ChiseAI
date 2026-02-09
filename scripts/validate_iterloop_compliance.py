@@ -103,11 +103,13 @@ def _validate_iterlog_file(path: Path, result: Result) -> dict[str, Any] | None:
     body = _read_body(path)
     if "## Incidents" not in body:
         result.warn(
-            f"{path}: missing '## Incidents' section (required fallback sink when Redis is unavailable)"
+            f"{path}: missing '## Incidents' section (required fallback sink "
+            "when Redis is unavailable)"
         )
     if "## Scope Ownership" not in body:
         result.warn(
-            f"{path}: missing '## Scope Ownership' section (recommended for parallel safety when Redis is unavailable)"
+            f"{path}: missing '## Scope Ownership' section (recommended for parallel "
+            "safety when Redis is unavailable)"
         )
 
     return fm
@@ -119,7 +121,10 @@ def main() -> int:
     parser.add_argument(
         "--fail-on-warn",
         action="store_true",
-        help="Treat warnings as failures (exit non-zero). Default: warnings do not fail.",
+        help=(
+            "Treat warnings as failures (exit non-zero). Default: warnings do not "
+            "fail."
+        ),
     )
     args = parser.parse_args()
 

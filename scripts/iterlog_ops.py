@@ -25,7 +25,12 @@ OWNERSHIP_KEY = "bmad:chiseai:ownership"
 
 
 def _utc_now() -> str:
-    return dt.datetime.now(dt.UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    return (
+        dt.datetime.now(dt.UTC)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
 
 
 def _slug_path(path: str) -> str:
@@ -36,7 +41,11 @@ def _slug_path(path: str) -> str:
 
 
 def _redis_candidates() -> list[tuple[str, int, int]]:
-    host = os.getenv("CHISE_REDIS_HOST") or os.getenv("REDIS_HOST") or "host.docker.internal"
+    host = (
+        os.getenv("CHISE_REDIS_HOST")
+        or os.getenv("REDIS_HOST")
+        or "host.docker.internal"
+    )
     port = int(os.getenv("CHISE_REDIS_PORT") or os.getenv("REDIS_PORT") or "6380")
     db = int(os.getenv("CHISE_REDIS_DB") or os.getenv("REDIS_DB") or "0")
     # Try configured host first, then localhost (common when not running inside Docker).
@@ -46,7 +55,9 @@ def _redis_candidates() -> list[tuple[str, int, int]]:
     return candidates
 
 
-def _run_redis_cli(host: str, port: int, db: int, *args: str) -> subprocess.CompletedProcess[str]:
+def _run_redis_cli(
+    host: str, port: int, db: int, *args: str
+) -> subprocess.CompletedProcess[str]:
     cmd = ["redis-cli", "-h", host, "-p", str(port), "-n", str(db), *args]
     return subprocess.run(cmd, text=True, capture_output=True, check=False)
 
@@ -125,7 +136,9 @@ def cmd_claim_ownership(args: argparse.Namespace) -> int:
     value = f"{args.story_id}/{args.agent}/{ts}"
 
     if not ok or cfg is None:
-        md = _ensure_iterlog_file(args.story_id, args.story_title, args.phase, args.status)
+        md = _ensure_iterlog_file(
+            args.story_id, args.story_title, args.phase, args.status
+        )
         lines = [f"- {_slug_path(p)}: {value}" for p in args.scopes]
         _append_under_heading(md, "## Scope Ownership", lines)
         print(f"Redis not reachable; wrote scope ownership to {md}")
@@ -138,9 +151,12 @@ def cmd_claim_ownership(args: argparse.Namespace) -> int:
         if existing.returncode != 0:
             print(existing.stderr.strip(), file=sys.stderr)
             return 1
-        if existing_val and not existing_val.startswith(f"{args.story_id}/{args.agent}/"):
+        if existing_val and not existing_val.startswith(
+            f"{args.story_id}/{args.agent}/"
+        ):
             print(
-                f"Ownership conflict for {slug}: owned_by={existing_val!r} requested={value!r}",
+                f"Ownership conflict for {slug}: owned_by={existing_val!r} "
+                f"requested={value!r}",
                 file=sys.stderr,
             )
             return 2
@@ -162,7 +178,10 @@ def cmd_check_ownership(args: argparse.Namespace) -> int:
     expected_prefix = f"{args.story_id}/{args.agent}/"
 
     if not ok or cfg is None:
-        print("Redis not reachable; cannot check ownership (use markdown fallback).", file=sys.stderr)
+        print(
+            "Redis not reachable; cannot check ownership (use markdown fallback).",
+            file=sys.stderr,
+        )
         return 3
 
     host, port, db = cfg
@@ -176,7 +195,11 @@ def cmd_check_ownership(args: argparse.Namespace) -> int:
             print(f"Missing ownership for {slug}", file=sys.stderr)
             return 2
         if not val.startswith(expected_prefix):
-            print(f"Ownership mismatch for {slug}: owned_by={val!r} expected_prefix={expected_prefix!r}", file=sys.stderr)
+            print(
+                f"Ownership mismatch for {slug}: owned_by={val!r} "
+                f"expected_prefix={expected_prefix!r}",
+                file=sys.stderr,
+            )
             return 2
     print("Ownership OK")
     return 0
@@ -209,30 +232,42 @@ def cmd_append_incident(args: argparse.Namespace) -> int:
 
 
 def main() -> int:
-    p = argparse.ArgumentParser(description="ChiseAI iterlog helper ops (ownership + incidents)")
+    p = argparse.ArgumentParser(
+        description="ChiseAI iterlog helper ops (ownership + incidents)"
+    )
     sub = p.add_subparsers(dest="cmd", required=True)
 
     p_slug = sub.add_parser("path-slug", help="Convert repo path(s) into a path_slug")
     p_slug.add_argument("paths", nargs="+")
     p_slug.set_defaults(func=cmd_path_slug)
 
-    p_claim = sub.add_parser("claim-ownership", help="Claim scope ownership (Redis or markdown fallback)")
+    p_claim = sub.add_parser(
+        "claim-ownership", help="Claim scope ownership (Redis or markdown fallback)"
+    )
     p_claim.add_argument("--story-id", required=True)
-    p_claim.add_argument("--agent", required=True, help="agent id (dev/quickdev/senior-dev/...)")
-    p_claim.add_argument("--scopes", nargs="+", required=True, help="repo-relative scope paths")
+    p_claim.add_argument(
+        "--agent", required=True, help="agent id (dev/quickdev/senior-dev/...)"
+    )
+    p_claim.add_argument(
+        "--scopes", nargs="+", required=True, help="repo-relative scope paths"
+    )
     p_claim.add_argument("--ttl-seconds", type=int, default=432000)
     p_claim.add_argument("--story-title")
     p_claim.add_argument("--phase")
     p_claim.add_argument("--status")
     p_claim.set_defaults(func=cmd_claim_ownership)
 
-    p_check = sub.add_parser("check-ownership", help="Check scope ownership in Redis (fails if mismatch)")
+    p_check = sub.add_parser(
+        "check-ownership", help="Check scope ownership in Redis (fails if mismatch)"
+    )
     p_check.add_argument("--story-id", required=True)
     p_check.add_argument("--agent", required=True)
     p_check.add_argument("--scopes", nargs="+", required=True)
     p_check.set_defaults(func=cmd_check_ownership)
 
-    p_inc = sub.add_parser("append-incident", help="Append incident entry (Redis list + markdown fallback)")
+    p_inc = sub.add_parser(
+        "append-incident", help="Append incident entry (Redis list + markdown fallback)"
+    )
     p_inc.add_argument("--story-id", required=True)
     p_inc.add_argument("--ttl-seconds", type=int, default=432000)
     p_inc.add_argument("--story-title")
@@ -251,4 +286,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

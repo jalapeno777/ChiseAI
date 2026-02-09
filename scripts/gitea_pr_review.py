@@ -66,7 +66,9 @@ def main() -> int:
         print(f"ERROR: {args.token_env} env var is required", file=sys.stderr)
         return 1
 
-    url = f"{args.base_url}/api/v1/repos/{args.owner}/{args.repo}/pulls/{args.pr}/reviews"
+    url = (
+        f"{args.base_url}/api/v1/repos/{args.owner}/{args.repo}/pulls/{args.pr}/reviews"
+    )
     # Gitea treats approvals as "events". Using "event" triggers server-side validation
     # (including "cannot approve your own PR"), which is desired.
     _req_json("POST", url, token, {"event": args.state, "body": args.body})

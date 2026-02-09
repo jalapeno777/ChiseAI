@@ -46,7 +46,11 @@ def _ensure_sections(text: str) -> tuple[str, bool]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Backfill tempmemory iterlog sections")
-    ap.add_argument("--check", action="store_true", help="Do not write; exit 1 if changes needed")
+    ap.add_argument(
+        "--check",
+        action="store_true",
+        help="Do not write; exit 1 if changes needed",
+    )
     args = ap.parse_args()
 
     paths = sorted(ITERLOG_DIR.glob(GLOB)) if ITERLOG_DIR.exists() else []
@@ -68,4 +72,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
