@@ -12,13 +12,12 @@ from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from data_ingestion.ohlcv_fetcher import OHLCVData
-    from signal_generation.models import Signal
-
     from dashboard.key_levels import KeyLevelsResult
     from dashboard.market_summary import MarketSummary
     from dashboard.regime_detector import MarketRegime
     from dashboard.signal_list import SignalListResult
+    from data_ingestion.ohlcv_fetcher import OHLCVData
+    from signal_generation.models import Signal
 
 
 @dataclass
@@ -38,10 +37,10 @@ class PreMarketBriefing:
     """
 
     timestamp: datetime
-    market_summary: "MarketSummary" | None = None
-    key_levels: dict[str, "KeyLevelsResult"] = field(default_factory=dict)
-    active_signals: "SignalListResult" | None = None
-    market_regimes: dict[str, "MarketRegime"] = field(default_factory=dict)
+    market_summary: MarketSummary | None = None
+    key_levels: dict[str, KeyLevelsResult] = field(default_factory=dict)
+    active_signals: SignalListResult | None = None
+    market_regimes: dict[str, MarketRegime] = field(default_factory=dict)
     briefing_text: str = ""
     update_interval_minutes: int = 5
     next_update_time: datetime | None = None
@@ -51,23 +50,23 @@ class PreMarketBriefing:
         """Convert to dictionary for dashboard payload."""
         return {
             "timestamp": self.timestamp.isoformat(),
-            "market_summary": self.market_summary.to_dict()
-            if self.market_summary
-            else None,
+            "market_summary": (
+                self.market_summary.to_dict() if self.market_summary else None
+            ),
             "key_levels": {
                 token: levels.to_dict() for token, levels in self.key_levels.items()
             },
-            "active_signals": self.active_signals.to_dict()
-            if self.active_signals
-            else None,
+            "active_signals": (
+                self.active_signals.to_dict() if self.active_signals else None
+            ),
             "market_regimes": {
                 token: regime.to_dict() for token, regime in self.market_regimes.items()
             },
             "briefing_text": self.briefing_text,
             "update_interval_minutes": self.update_interval_minutes,
-            "next_update_time": self.next_update_time.isoformat()
-            if self.next_update_time
-            else None,
+            "next_update_time": (
+                self.next_update_time.isoformat() if self.next_update_time else None
+            ),
             "generation_time_ms": round(self.generation_time_ms, 2),
         }
 
@@ -94,12 +93,16 @@ class PreMarketBriefing:
         return {
             "token": token,
             "timestamp": self.timestamp.isoformat(),
-            "key_levels": self.key_levels.get(token, {}).to_dict()
-            if token in self.key_levels
-            else None,
-            "regime": self.market_regimes.get(token, {}).to_dict()
-            if token in self.market_regimes
-            else None,
+            "key_levels": (
+                self.key_levels.get(token, {}).to_dict()
+                if token in self.key_levels
+                else None
+            ),
+            "regime": (
+                self.market_regimes.get(token, {}).to_dict()
+                if token in self.market_regimes
+                else None
+            ),
             "active_signals": [s.to_dict() for s in token_signals],
             "briefing_text": self._generate_token_text(token),
         }
@@ -127,7 +130,8 @@ class PreMarketBriefing:
             if token_signals:
                 signal = token_signals[0]
                 parts.append(
-                    f"Signal: {signal.emoji} {signal.direction.upper()} ({signal.confidence:.1f}%)"
+                    f"Signal: {signal.emoji} {signal.direction.upper()} "
+                    f"({signal.confidence:.1f}%)"
                 )
 
         return "\n".join(parts)
@@ -176,8 +180,8 @@ class PreMarketBriefingGenerator:
 
     def generate(
         self,
-        token_data_map: dict[str, dict[str, list["OHLCVData"]]],
-        signals: list["Signal"] | None = None,
+        token_data_map: dict[str, dict[str, list[OHLCVData]]],
+        signals: list[Signal] | None = None,
         force_refresh: bool = False,
     ) -> PreMarketBriefing:
         """Generate pre-market briefing.
@@ -199,7 +203,7 @@ class PreMarketBriefingGenerator:
         timestamp = datetime.now(UTC)
 
         # Extract all timeframe data for market summary
-        summary_data_map: dict[str, list["OHLCVData"]] = {}
+        summary_data_map: dict[str, list[OHLCVData]] = {}
         for token, tf_data in token_data_map.items():
             # Use the finest timeframe for summary (usually 1h or 15m)
             finest_tf = min(tf_data.keys(), key=lambda x: len(x)) if tf_data else None
@@ -215,7 +219,7 @@ class PreMarketBriefingGenerator:
         )
 
         # Analyze key levels for each token
-        key_levels: dict[str, "KeyLevelsResult"] = {}
+        key_levels: dict[str, KeyLevelsResult] = {}
         for token, tf_data in token_data_map.items():
             current_price = self._get_current_price(tf_data)
             if current_price > 0:
@@ -223,7 +227,7 @@ class PreMarketBriefingGenerator:
                 key_levels[token] = levels
 
         # Detect market regimes
-        market_regimes: dict[str, "MarketRegime"] = {}
+        market_regimes: dict[str, MarketRegime] = {}
         for token, tf_data in token_data_map.items():
             # Use primary timeframe (1h) for regime detection
             if "1h" in tf_data and tf_data["1h"]:
@@ -277,7 +281,7 @@ class PreMarketBriefingGenerator:
 
     def _get_current_price(
         self,
-        tf_data: dict[str, list["OHLCVData"]],
+        tf_data: dict[str, list[OHLCVData]],
     ) -> float:
         """Get current price from timeframe data.
 
@@ -295,10 +299,10 @@ class PreMarketBriefingGenerator:
 
     def _generate_briefing_text(
         self,
-        market_summary: "MarketSummary",
+        market_summary: MarketSummary,
         overnight_summary: dict[str, Any],
-        active_signals: "SignalListResult" | None,
-        market_regimes: dict[str, "MarketRegime"],
+        active_signals: SignalListResult | None,
+        market_regimes: dict[str, MarketRegime],
     ) -> str:
         """Generate human-readable briefing text.
 
@@ -337,27 +341,30 @@ class PreMarketBriefingGenerator:
 
         # Add active signals summary
         if active_signals and active_signals.signals:
-            lines.append("## Active Signals")
-            lines.append(
-                f"Total: {len(active_signals.signals)} | Long: {active_signals.long_count} | Short: {active_signals.short_count}"
-            )
+            total = len(active_signals.signals)
+            long_cnt = active_signals.long_count
+            short_cnt = active_signals.short_count
+            lines.append(f"Total: {total} | Long: {long_cnt} | Short: {short_cnt}")
             lines.append("")
 
             # Show top 5 signals
             for signal in active_signals.signals[:5]:
+                direction = signal.direction.upper()
+                conf_pct = signal.confidence
                 emoji = "🟢" if signal.direction.lower() == "long" else "🔴"
                 lines.append(
-                    f"{emoji} **{signal.token}** {signal.direction.upper()} ({signal.confidence:.1f}%)"
+                    f"{emoji} **{signal.token}** {direction} ({conf_pct:.1f}%)"
                 )
             lines.append("")
 
         # Add regime summary
         trending_count = sum(1 for r in market_regimes.values() if r.is_trending)
         ranging_count = sum(1 for r in market_regimes.values() if r.is_ranging)
+        total = len(market_regimes)
 
         lines.append("## Market Regimes")
         lines.append(
-            f"Trending: {trending_count} | Ranging: {ranging_count} | Total: {len(market_regimes)}"
+            f"Trending: {trending_count} | Ranging: {ranging_count} | Total: {total}"
         )
         lines.append("")
 
@@ -391,7 +398,9 @@ class PreMarketBriefingGenerator:
             "cached": True,
             "age_seconds": age.total_seconds(),
             "valid": valid,
-            "next_update": self._cached_briefing.next_update_time.isoformat()
-            if self._cached_briefing.next_update_time
-            else None,
+            "next_update": (
+                self._cached_briefing.next_update_time.isoformat()
+                if self._cached_briefing.next_update_time
+                else None
+            ),
         }

@@ -183,7 +183,7 @@ class RegimeDetector:
 
     def detect(
         self,
-        data: list["OHLCVData"],
+        data: list[OHLCVData],
         volume_data: list[float] | None = None,
     ) -> MarketRegime:
         """Detect market regime from price data.
@@ -243,7 +243,7 @@ class RegimeDetector:
             description=description,
         )
 
-    def _calculate_adx(self, data: list["OHLCVData"]) -> float:
+    def _calculate_adx(self, data: list[OHLCVData]) -> float:
         """Calculate ADX (Average Directional Index).
 
         Args:
@@ -327,13 +327,12 @@ class RegimeDetector:
         smoothed = np.mean(values[:period])
 
         # Apply smoothing
-        alpha = 1.0 / period
         for value in values[period:]:
             smoothed = (smoothed * (period - 1) + value) / period
 
         return float(smoothed)
 
-    def _calculate_volatility(self, data: list["OHLCVData"]) -> float:
+    def _calculate_volatility(self, data: list[OHLCVData]) -> float:
         """Calculate price volatility as percentage.
 
         Args:
@@ -359,7 +358,7 @@ class RegimeDetector:
     def _classify_volatility(
         self,
         volatility: float,
-        data: list["OHLCVData"],
+        data: list[OHLCVData],
     ) -> str:
         """Classify volatility regime.
 
@@ -408,7 +407,7 @@ class RegimeDetector:
 
     def _determine_regime(
         self,
-        data: list["OHLCVData"],
+        data: list[OHLCVData],
         adx_value: float,
     ) -> RegimeType:
         """Determine market regime from ADX and price action.
@@ -494,15 +493,20 @@ class RegimeDetector:
             prev_adx = np.mean(self._state.adx_history[-5:-2])
 
             # ADX moving toward middle zone suggests transition
-            if self._state.current_regime in (
-                RegimeType.TRENDING_UP,
-                RegimeType.TRENDING_DOWN,
+            if (
+                self._state.current_regime
+                in (
+                    RegimeType.TRENDING_UP,
+                    RegimeType.TRENDING_DOWN,
+                )
+                and recent_adx < prev_adx
             ):
-                if recent_adx < prev_adx:
-                    return min(0.5, (prev_adx - recent_adx) / 10)
-            elif self._state.current_regime == RegimeType.RANGING:
-                if recent_adx > prev_adx:
-                    return min(0.5, (recent_adx - prev_adx) / 10)
+                return min(0.5, (prev_adx - recent_adx) / 10)
+            elif (
+                self._state.current_regime == RegimeType.RANGING
+                and recent_adx > prev_adx
+            ):
+                return min(0.5, (recent_adx - prev_adx) / 10)
 
         return 0.0
 

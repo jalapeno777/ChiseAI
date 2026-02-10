@@ -67,18 +67,16 @@ class DiscordClient:
         """
         try:
             # Try webhook first (simpler, no gateway connection needed)
-            if self.config.webhook_url:
-                if await self._validate_webhook():
-                    self.is_connected = True
-                    logger.info("Discord client connected via webhook")
-                    return True
+            if self.config.webhook_url and await self._validate_webhook():
+                self.is_connected = True
+                logger.info("Discord client connected via webhook")
+                return True
 
             # Fall back to bot token
-            if self.config.bot_token:
-                if await self._connect_bot():
-                    self.is_connected = True
-                    logger.info("Discord client connected via bot token")
-                    return True
+            if self.config.bot_token and await self._connect_bot():
+                self.is_connected = True
+                logger.info("Discord client connected via bot token")
+                return True
 
             logger.error("No valid Discord authentication configured")
             return False
@@ -169,14 +167,13 @@ class DiscordClient:
         Returns:
             Dictionary with success status and message info
         """
-        if not self.is_connected:
+        if not self.is_connected and not await self.connect():
             # Auto-connect on first send
-            if not await self.connect():
-                return {
-                    "success": False,
-                    "error": "Failed to connect to Discord",
-                    "message_id": None,
-                }
+            return {
+                "success": False,
+                "error": "Failed to connect to Discord",
+                "message_id": None,
+            }
 
         target_channel = channel or self.config.default_channel
 

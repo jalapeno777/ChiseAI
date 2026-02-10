@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-import pytest
-
 from dashboard.key_levels import (
     KeyLevel,
     KeyLevelsAnalyzer,
@@ -219,7 +217,7 @@ class TestKeyLevelsAnalyzer:
 
         assert len(levels) > 0
         # Should include round 1000s around the price
-        assert any(l.price % 1000 == 0 for l in levels)
+        assert any(level.price % 1000 == 0 for level in levels)
 
     def test_find_round_numbers_low_price(self) -> None:
         """Test round numbers for low-priced asset."""
@@ -230,7 +228,7 @@ class TestKeyLevelsAnalyzer:
 
         assert len(levels) > 0
         # Should include round 1s around the price
-        assert any(l.price % 1 == 0 for l in levels)
+        assert any(level.price % 1 == 0 for level in levels)
 
     def test_merge_levels(self) -> None:
         """Test level merging."""

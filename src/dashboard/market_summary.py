@@ -121,7 +121,7 @@ class MarketSummaryCalculator:
 
     def calculate_summary(
         self,
-        token_data_map: dict[str, list["OHLCVData"]],
+        token_data_map: dict[str, list[OHLCVData]],
     ) -> MarketSummary:
         """Calculate market summary from token data.
 
@@ -190,7 +190,7 @@ class MarketSummaryCalculator:
     def _calculate_token_metrics(
         self,
         token: str,
-        data: list["OHLCVData"],
+        data: list[OHLCVData],
     ) -> TokenMetrics | None:
         """Calculate metrics for a single token.
 
@@ -259,7 +259,7 @@ class MarketSummaryCalculator:
             low_24h=low_24h,
         )
 
-    def _calculate_atr(self, data: list["OHLCVData"]) -> float:
+    def _calculate_atr(self, data: list[OHLCVData]) -> float:
         """Calculate Average True Range.
 
         Args:
@@ -287,7 +287,7 @@ class MarketSummaryCalculator:
 
     def calculate_overnight_summary(
         self,
-        token_data_map: dict[str, list["OHLCVData"]],
+        token_data_map: dict[str, list[OHLCVData]],
         hours_ago: int = 8,
     ) -> dict[str, Any]:
         """Calculate overnight market summary.
@@ -336,11 +336,11 @@ class MarketSummaryCalculator:
             "timestamp": timestamp.isoformat(),
             "period_hours": hours_ago,
             "avg_change_pct": round(avg_change, 2),
-            "sentiment": "bullish"
-            if avg_change > 1.0
-            else "bearish"
-            if avg_change < -1.0
-            else "neutral",
+            "sentiment": (
+                "bullish"
+                if avg_change > 1.0
+                else "bearish" if avg_change < -1.0 else "neutral"
+            ),
             "top_movers": overnight_changes[:10],
             "token_count": len(overnight_changes),
         }

@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-import pytest
-
 from dashboard.signal_list import (
     ActiveSignal,
     SignalListBuilder,

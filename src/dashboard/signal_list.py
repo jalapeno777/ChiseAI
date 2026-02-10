@@ -56,9 +56,7 @@ class ActiveSignal:
         return (
             "🟢"
             if self.direction.lower() == "long"
-            else "🔴"
-            if self.direction.lower() == "short"
-            else "⚪"
+            else "🔴" if self.direction.lower() == "short" else "⚪"
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -129,7 +127,7 @@ class SignalListBuilder:
 
     def build(
         self,
-        signals: list["Signal"],
+        signals: list[Signal],
         max_signals: int = 20,
     ) -> SignalListResult:
         """Build active signal list from generated signals.
@@ -176,7 +174,7 @@ class SignalListBuilder:
 
     def build_from_tokens(
         self,
-        token_signals_map: dict[str, list["Signal"]],
+        token_signals_map: dict[str, list[Signal]],
         max_signals: int = 20,
     ) -> SignalListResult:
         """Build signal list from token-signal map.
@@ -188,13 +186,13 @@ class SignalListBuilder:
         Returns:
             SignalListResult with filtered and sorted signals
         """
-        all_signals: list["Signal"] = []
+        all_signals: list[Signal] = []
         for signals in token_signals_map.values():
             all_signals.extend(signals)
 
         return self.build(all_signals, max_signals)
 
-    def _convert_signal(self, signal: "Signal") -> ActiveSignal:
+    def _convert_signal(self, signal: Signal) -> ActiveSignal:
         """Convert Signal to ActiveSignal.
 
         Args:

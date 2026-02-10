@@ -186,7 +186,8 @@ class SignalGenerator:
         self._signal_counts: dict[str, list[float]] = {}  # token -> timestamps
 
         logger.info(
-            f"SignalGenerator initialized: threshold={self.config.actionable_threshold:.0%}, "
+            f"SignalGenerator initialized: "
+            f"threshold={self.config.actionable_threshold:.0%}, "
             f"freshness_checks={self.config.enable_freshness_checks}, "
             f"cache_ttl={self.config.cache_ttl_seconds}s"
         )
@@ -312,7 +313,9 @@ class SignalGenerator:
             if not freshness_result.is_fresh:
                 latency_ms = (time.perf_counter() - start_time) * 1000
                 logger.warning(
-                    f"Signal generation blocked: stale data for {token} {timeframe.value}"
+                    "Signal generation blocked: stale data for %s %s",
+                    token,
+                    timeframe.value,
                 )
                 return Signal(
                     token=token,
@@ -400,8 +403,9 @@ class SignalGenerator:
                 # Rate limited - still actionable but marked
                 signal.status = SignalStatus.ACTIONABLE
                 signal.metadata["rate_limited"] = True
+                direction = signal.direction_str
                 logger.warning(
-                    f"Actionable signal (rate limited): {token} [{signal.direction_str}]"
+                    "Actionable signal (rate limited): %s [%s]", token, direction
                 )
         else:
             # Log non-actionable signal

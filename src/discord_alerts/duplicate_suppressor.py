@@ -269,8 +269,7 @@ class DuplicateSuppressor:
             records = []
             for record in self._alerts.values():
                 age = now - record.timestamp
-                if age <= max_age:
-                    if token is None or record.token == token:
-                        records.append(record)
+                if age <= max_age and (token is None or record.token == token):
+                    records.append(record)
 
             return sorted(records, key=lambda r: r.timestamp, reverse=True)

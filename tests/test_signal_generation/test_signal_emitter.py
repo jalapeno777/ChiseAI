@@ -154,8 +154,9 @@ class TestDiscordEmitter:
             timeframe="1h",
         )
 
-        # First two should succeed
-        result1 = await emitter.emit(signal)
+        # First two should succeed (result unused but call required for rate limit)
+        await emitter.emit(signal)
+        await emitter.emit(signal)
         # Note: In actual implementation, these would succeed
         # Here we're testing the rate limit logic
 

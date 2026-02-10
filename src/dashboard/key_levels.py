@@ -10,8 +10,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
-import numpy as np
-
 if TYPE_CHECKING:
     from data_ingestion.ohlcv_fetcher import OHLCVData
 
@@ -94,16 +92,18 @@ class KeyLevelsResult:
         return {
             "token": self.token,
             "current_price": round(self.current_price, 2),
-            "support_levels": [l.to_dict() for l in self.support_levels[:5]],
-            "resistance_levels": [l.to_dict() for l in self.resistance_levels[:5]],
-            "pivot_levels": [l.to_dict() for l in self.pivot_levels[:3]],
-            "round_levels": [l.to_dict() for l in self.round_levels[:3]],
-            "nearest_support": self.nearest_support.to_dict()
-            if self.nearest_support
-            else None,
-            "nearest_resistance": self.nearest_resistance.to_dict()
-            if self.nearest_resistance
-            else None,
+            "support_levels": [level.to_dict() for level in self.support_levels[:5]],
+            "resistance_levels": [
+                level.to_dict() for level in self.resistance_levels[:5]
+            ],
+            "pivot_levels": [level.to_dict() for level in self.pivot_levels[:3]],
+            "round_levels": [level.to_dict() for level in self.round_levels[:3]],
+            "nearest_support": (
+                self.nearest_support.to_dict() if self.nearest_support else None
+            ),
+            "nearest_resistance": (
+                self.nearest_resistance.to_dict() if self.nearest_resistance else None
+            ),
         }
 
 
@@ -127,7 +127,8 @@ class KeyLevelsAnalyzer:
 
         Args:
             swing_lookback: Lookback period for swing detection (default: 5)
-            touch_threshold_pct: Price proximity threshold for level touches (default: 0.5%)
+            touch_threshold_pct: Price proximity threshold for level touches
+                (default: 0.5%)
             round_number_step: Step size for round numbers (default: 1000)
         """
         self.swing_lookback = swing_lookback
@@ -137,7 +138,7 @@ class KeyLevelsAnalyzer:
     def analyze(
         self,
         token: str,
-        timeframe_data: dict[str, list["OHLCVData"]],
+        timeframe_data: dict[str, list[OHLCVData]],
         current_price: float,
     ) -> KeyLevelsResult:
         """Analyze key levels across multiple timeframes.
@@ -214,7 +215,7 @@ class KeyLevelsAnalyzer:
 
     def _find_pivot_levels(
         self,
-        data: list["OHLCVData"],
+        data: list[OHLCVData],
         timeframe: str,
     ) -> list[KeyLevel]:
         """Find pivot levels from previous period high/low/close.
@@ -274,7 +275,7 @@ class KeyLevelsAnalyzer:
 
     def _find_swing_levels(
         self,
-        data: list["OHLCVData"],
+        data: list[OHLCVData],
         timeframe: str,
     ) -> list[KeyLevel]:
         """Find swing high/low levels.
