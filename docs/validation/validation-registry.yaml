@@ -548,6 +548,34 @@ validations:
     test_method: automated
     owner: qa-team
 
+  - id: V-NS-005
+    title: Confidence Multiplier Logic
+    epic_id: EP-NS-001
+    story_id: ST-NS-005
+    status: planned
+    description: Validate confidence multipliers adjust based on signal agreement across timeframes
+    acceptance_criteria:
+      - Multiplier increases with timeframe agreement (1.0x base up to 1.5x for 4+ agreement)
+      - Conflicting signals reduce multiplier
+      - Final confidence score is capped at 100
+      - Multiplier rationale is logged and auditable
+    test_method: automated
+    owner: qa-team
+
+  - id: V-NS-006
+    title: Signal History Tracking
+    epic_id: EP-NS-001
+    story_id: ST-NS-006
+    status: planned
+    description: Validate signal history is tracked with outcome correlation for learning
+    acceptance_criteria:
+      - Signals are stored with timestamp, direction, confidence, entry price
+      - Outcomes are recorded (win/loss, PnL, exit price, exit time)
+      - Prediction accuracy is calculated per signal type and confidence bucket
+      - Historical performance is queryable by timeframe and indicator combination
+    test_method: automated
+    owner: qa-team
+
   # EP-NS-002: Signal Generation & Delivery
   - id: V-NS-005
     title: Signal Confidence Threshold

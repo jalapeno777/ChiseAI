@@ -105,23 +105,23 @@ epics:
   # Core system: Market Analysis, Signals, Risk, Learning, UX, Infrastructure, Neuro-Symbolic AI
   # ============================================================
 
-  # EP-NS-001: Market Analysis Engine Foundation (6 stories, 42 points)
+  # EP-NS-001: Market Analysis Engine Foundation (6 stories, 28 points)
   - id: EP-NS-001
     name: Market Analysis Engine Foundation
     status: planned
     story_ids: [ST-NS-001, ST-NS-002, ST-NS-003, ST-NS-004, ST-NS-005, ST-NS-006]
     story_count: 6
-    story_points: 42
+    story_points: 28
     description: Core market analysis infrastructure including multi-timeframe analysis, technical indicators, and Markov chain trend detection
     sprint_id: q2-1
 
-  # EP-NS-002: Signal Generation & Delivery (5 stories, 35 points)
+  # EP-NS-002: Signal Generation & Delivery (5 stories, 23 points)
   - id: EP-NS-002
     name: Signal Generation & Delivery
     status: planned
     story_ids: [ST-NS-007, ST-NS-008, ST-NS-009, ST-NS-010, ST-NS-011]
     story_count: 5
-    story_points: 35
+    story_points: 23
     description: Real-time signal generation with confidence scoring, dashboard display, and Discord delivery
     sprint_id: q2-2
 
@@ -688,117 +688,186 @@ stories:
   # PHASE 2+ STORIES (27 stories)
   # ============================================================
 
-  # EP-NS-001: Market Analysis Engine Foundation (6 stories, 42 points)
+  # EP-NS-001: Market Analysis Engine Foundation (6 stories, 28 points)
   - id: ST-NS-001
     title: Multi-timeframe Analysis Engine
     epic_id: EP-NS-001
     sprint_id: q2-1
     status: planned
-    story_points: 8
+    story_points: 5
     priority: P0-CRITICAL
     fr_coverage: [FR-001]
     description: Implement multi-timeframe analysis for 1m, 5m, 15m, 1h, 4h, 1d timeframes
+    acceptance_criteria:
+      - OHLCV data is fetched and stored for all configured timeframes (1m, 5m, 15m, 1h, 4h, 1d)
+      - Data freshness is validated with timestamps no older than 2x timeframe interval
+      - Missing data gaps are detected and backfilled automatically
 
   - id: ST-NS-002
     title: Technical Indicator Calculation
     epic_id: EP-NS-001
     sprint_id: q2-1
     status: planned
-    story_points: 7
+    story_points: 5
     priority: P0-CRITICAL
     fr_coverage: [FR-002]
     description: Calculate RSI, MACD, Bollinger Bands, and other technical indicators
+    acceptance_criteria:
+      - RSI (14-period) is calculated and stored
+      - MACD (12, 26, 9) is calculated and stored with signal line
+      - Bollinger Bands (20-period, 2 std dev) are calculated and stored
+      - All indicators are computed for each configured timeframe
+      - FR-002 is satisfied
 
   - id: ST-NS-003
     title: Markov Chain Trend Detection
     epic_id: EP-NS-001
     sprint_id: q2-1
     status: planned
-    story_points: 8
+    story_points: 5
     priority: P0-CRITICAL
     fr_coverage: [FR-003]
     description: Implement Markov chain state inference for trend detection
+    acceptance_criteria:
+      - Current trend state is inferred as one of: bullish, bearish, neutral, or transitional
+      - State transition probabilities are calculated
+      - Most likely next state is predicted with confidence score
+      - State history is tracked for pattern analysis
+      - FR-003 is satisfied
 
   - id: ST-NS-004
     title: Confluence-Based Signal Scoring
     epic_id: EP-NS-001
     sprint_id: q2-1
     status: planned
-    story_points: 7
+    story_points: 5
     priority: P0-CRITICAL
     fr_coverage: [FR-004]
     description: Combine multiple indicators for confluence-based signal scoring
+    acceptance_criteria:
+      - Individual indicator signals are weighted by timeframe importance
+      - A composite confluence score (0-100) is calculated
+      - Signal direction (long/short) is determined
+      - Contributing factors are logged for transparency
+      - FR-004 is satisfied
 
   - id: ST-NS-005
     title: Confidence Multiplier Updates
     epic_id: EP-NS-001
     sprint_id: q2-1
     status: planned
-    story_points: 6
+    story_points: 3
     priority: P1-HIGH
     fr_coverage: [FR-005]
     description: Update confidence multipliers based on signal agreement across indicators
+    acceptance_criteria:
+      - A confidence multiplier is applied (1.0x base, up to 1.5x for 4+ timeframe agreement)
+      - Conflicting timeframe signals reduce multiplier
+      - Final confidence score is capped at 100
+      - Multiplier rationale is logged
+      - FR-005 is satisfied
 
   - id: ST-NS-006
     title: Signal History Tracking
     epic_id: EP-NS-001
     sprint_id: q2-1
     status: planned
-    story_points: 6
+    story_points: 5
     priority: P1-HIGH
     fr_coverage: [FR-006]
     description: Track signal history with outcome correlation for learning
+    acceptance_criteria:
+      - Signal is stored with timestamp, direction, confidence, and entry price
+      - Outcome is recorded (win/loss, PnL, exit price, exit time)
+      - Prediction accuracy is calculated per signal type
+      - Historical performance is queryable by timeframe and indicator combination
+      - FR-006 is satisfied
 
-  # EP-NS-002: Signal Generation & Delivery (5 stories, 35 points)
+  # EP-NS-002: Signal Generation & Delivery (5 stories, 23 points)
   - id: ST-NS-007
     title: Real-time Signal Generation
     epic_id: EP-NS-002
     sprint_id: q2-2
     status: planned
-    story_points: 8
+    story_points: 5
     priority: P0-CRITICAL
     fr_coverage: [FR-007]
     description: Generate real-time signals meeting 75%+ confidence threshold
+    acceptance_criteria:
+      - Signals with final confidence ≥75% are generated immediately
+      - Signals below 75% are logged but not surfaced as actionable
+      - Each signal includes direction, confidence score, timestamp, and token
+      - Signal generation latency is <1 second end-to-end
+      - FR-007 is satisfied
+      - If data freshness checks fail (older than 2x timeframe interval), signals are not emitted as actionable and a health alert is raised
 
   - id: ST-NS-008
     title: Dashboard Pre-market Briefing
     epic_id: EP-NS-002
     sprint_id: q2-2
     status: planned
-    story_points: 7
+    story_points: 5
     priority: P0-CRITICAL
     fr_coverage: [FR-008]
     description: Display pre-market briefing in the primary UI (Grafana first; Streamlit optional)
+    acceptance_criteria:
+      - Overnight market summary is displayed (major moves, volume, volatility)
+      - Key levels are shown (support/resistance from multiple timeframes)
+      - Active signals meeting 75% threshold are listed
+      - Market regime (trending/ranging) is indicated
+      - Briefing updates automatically every 5 minutes
+      - FR-008 is satisfied
 
   - id: ST-NS-009
     title: Discord Alert Integration
     epic_id: EP-NS-002
     sprint_id: q2-2
     status: planned
-    story_points: 7
+    story_points: 5
     priority: P0-CRITICAL
     fr_coverage: [FR-009]
     description: Send Discord alerts for high-confidence opportunities
+    acceptance_criteria:
+      - Internal actionable signals are surfaced at ≥75% confidence (per FR-007)
+      - A Discord message is posted for signals meeting configured Discord posting threshold (default 40%, configurable via FR-022)
+      - Discord alerts in 40-74% range are posted as "watchlist" notifications
+      - Each alert includes token, direction, confidence, key levels, and timestamp
+      - Duplicate alerts within 15 minutes are suppressed
+      - FR-009 is satisfied
 
   - id: ST-NS-010
     title: Signal Detail Breakdown
     epic_id: EP-NS-002
     sprint_id: q2-2
     status: planned
-    story_points: 7
+    story_points: 5
     priority: P1-HIGH
     fr_coverage: [FR-010]
     description: Provide detailed signal breakdown with risk parameters
+    acceptance_criteria:
+      - Confluence score components are displayed (each indicator contribution)
+      - Confidence multiplier and timeframe agreement are shown
+      - Recommended stop-loss level is displayed
+      - Recommended position size is displayed
+      - Risk/reward ratio is calculated and shown
+      - FR-010 is satisfied
 
   - id: ST-NS-011
     title: Historical Context Panel
     epic_id: EP-NS-002
     sprint_id: q2-2
     status: planned
-    story_points: 6
+    story_points: 3
     priority: P1-HIGH
     fr_coverage: [FR-011]
     description: Display historical context for similar market situations
+    acceptance_criteria:
+      - Similar past signals are retrieved (same direction, comparable confidence)
+      - Win rate for similar signals is displayed
+      - Average PnL for similar signals is shown
+      - Maximum drawdown experienced in similar setups is displayed
+      - Sample size (number of similar signals) is indicated
+      - FR-011 is satisfied
 
   # EP-NS-003: Portfolio Risk Management (5 stories, 35 points)
   - id: ST-NS-012
@@ -1140,14 +1209,14 @@ sprints:
     name: Market Analysis Engine Foundation
     status: planned
     story_count: 6
-    story_points: 42
+    story_points: 28
     mapped_stories: [ST-NS-001, ST-NS-002, ST-NS-003, ST-NS-004, ST-NS-005, ST-NS-006]
 
   - id: q2-2
     name: Signal Generation & Portfolio Risk
     status: planned
     story_count: 10
-    story_points: 70
+    story_points: 51
     mapped_stories: [ST-NS-007, ST-NS-008, ST-NS-009, ST-NS-010, ST-NS-011, ST-NS-012, ST-NS-013, ST-NS-014, ST-NS-015, ST-NS-016]
 
   - id: q2-3
@@ -1221,7 +1290,7 @@ sprints:
 summary:
   total_epics: 15
   total_stories: 62
-  total_story_points: 380
+  total_story_points: 345
   phase_1:
     epics: 8
     stories: 35
@@ -1229,4 +1298,4 @@ summary:
   phase_2_plus:
     epics: 7
     stories: 27
-    story_points: 252
+    story_points: 217
