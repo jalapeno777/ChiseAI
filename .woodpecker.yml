@@ -38,6 +38,7 @@ steps:
       - |
         set -eu
         pip install --no-cache-dir pytest pytest-cov pyyaml requests
+        pip install --no-cache-dir ccxt influxdb-client asyncpg numpy
         if [ -x scripts/local-ci-checks.sh ]; then
           ./scripts/local-ci-checks.sh
         else
