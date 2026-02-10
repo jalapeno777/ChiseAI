@@ -339,9 +339,7 @@ class MarketSummaryCalculator:
             "sentiment": (
                 "bullish"
                 if avg_change > 1.0
-                else "bearish"
-                if avg_change < -1.0
-                else "neutral"
+                else "bearish" if avg_change < -1.0 else "neutral"
             ),
             "top_movers": overnight_changes[:10],
             "token_count": len(overnight_changes),
