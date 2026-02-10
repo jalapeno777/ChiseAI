@@ -14,6 +14,8 @@ import numpy as np
 if TYPE_CHECKING:
     from data_ingestion.ohlcv_fetcher import OHLCVData
 
+from data_ingestion.ohlcv_fetcher import OHLCVData
+
 
 @dataclass
 class ATRResult:
@@ -55,7 +57,7 @@ class ATR:
         """
         self.period = period
 
-    def calculate(self, data: list["OHLCVData"]) -> ATRResult:
+    def calculate(self, data: list[OHLCVData]) -> ATRResult:
         """Calculate ATR for the given OHLCV data.
 
         Args:
@@ -84,7 +86,7 @@ class ATR:
             period=self.period,
         )
 
-    def _calculate_true_ranges(self, data: list["OHLCVData"]) -> np.ndarray:
+    def _calculate_true_ranges(self, data: list[OHLCVData]) -> np.ndarray:
         """Calculate true range for each bar.
 
         True Range = max(
@@ -134,7 +136,6 @@ class ATR:
         Returns:
             Array of smoothed values
         """
-        alpha = 1.0 / self.period
         smoothed = np.zeros(len(values))
 
         # First value is simple average of first 'period' values

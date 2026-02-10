@@ -21,6 +21,9 @@ if TYPE_CHECKING:
     from dashboard.key_levels import KeyLevelsResult
     from data_ingestion.ohlcv_fetcher import OHLCVData
 
+from dashboard.key_levels import KeyLevelsResult
+from data_ingestion.ohlcv_fetcher import OHLCVData
+
 
 @dataclass
 class StopLossConfig:
@@ -144,8 +147,8 @@ class StopLossCalculator:
         self,
         entry_price: float,
         direction: TradeDirection,
-        ohlcv_data: list["OHLCVData"],
-        key_levels: "KeyLevelsResult",
+        ohlcv_data: list[OHLCVData],
+        key_levels: KeyLevelsResult,
         target_price: float | None = None,
         config: StopLossConfig | None = None,
     ) -> StopLossCalculation:
@@ -220,7 +223,7 @@ class StopLossCalculator:
         self,
         entry_price: float,
         direction: TradeDirection,
-        ohlcv_data: list["OHLCVData"],
+        ohlcv_data: list[OHLCVData],
         target_price: float | None = None,
         atr_multiplier: float | None = None,
     ) -> StopLossResult:
@@ -254,7 +257,7 @@ class StopLossCalculator:
         self,
         entry_price: float,
         direction: TradeDirection,
-        key_levels: "KeyLevelsResult",
+        key_levels: KeyLevelsResult,
         target_price: float | None = None,
     ) -> StopLossResult:
         """Calculate technical level-based stop-loss.
@@ -329,8 +332,8 @@ class StopLossCalculator:
         method: StopLossMethod,
         entry_price: float,
         direction: TradeDirection,
-        ohlcv_data: list["OHLCVData"],
-        key_levels: "KeyLevelsResult",
+        ohlcv_data: list[OHLCVData],
+        key_levels: KeyLevelsResult,
         target_price: float | None,
     ) -> StopLossResult:
         """Calculate stop using specific method.

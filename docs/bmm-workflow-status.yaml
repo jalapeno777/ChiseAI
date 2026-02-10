@@ -128,7 +128,7 @@ epics:
   # EP-NS-003: Portfolio Risk Management (5 stories, 35 points)
   - id: EP-NS-003
     name: Portfolio Risk Management
-    status: planned
+    status: completed
     story_ids: [ST-NS-012, ST-NS-013, ST-NS-014, ST-NS-015, ST-NS-016]
     story_count: 5
     story_points: 35
@@ -912,7 +912,8 @@ stories:
     title: Position Sizing Integration & API
     epic_id: EP-NS-003
     sprint_id: q2-2
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
     fr_coverage: [FR-012]
@@ -939,7 +940,8 @@ stories:
     title: Stop-Loss Calculation Engine
     epic_id: EP-NS-003
     sprint_id: q2-2
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
     fr_coverage: [FR-013]
@@ -956,7 +958,8 @@ stories:
     title: Stop-Loss Integration & Signal Delivery
     epic_id: EP-NS-003
     sprint_id: q2-2
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 3
     priority: P0-CRITICAL
     fr_coverage: [FR-013]
@@ -983,7 +986,8 @@ stories:
     title: Portfolio Data Collection & State Management
     epic_id: EP-NS-003
     sprint_id: q2-2
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
     fr_coverage: [FR-014]
@@ -1000,7 +1004,8 @@ stories:
     title: Risk Exposure Calculation & Dashboard
     epic_id: EP-NS-003
     sprint_id: q2-2
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 3
     priority: P0-CRITICAL
     fr_coverage: [FR-014]
@@ -1017,7 +1022,8 @@ stories:
     title: Correlation Analysis Engine
     epic_id: EP-NS-003
     sprint_id: q2-2
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 7
     priority: P1-HIGH
     fr_coverage: [FR-015]
@@ -1027,7 +1033,8 @@ stories:
     title: Risk Threshold Alert System
     epic_id: EP-NS-003
     sprint_id: q2-2
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 6
     priority: P1-HIGH
     fr_coverage: [FR-016]

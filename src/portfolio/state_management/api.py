@@ -9,7 +9,6 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from portfolio.state_management.models import PortfolioState, Position
 from portfolio.state_management.tracker import PortfolioTracker
 
 logger = logging.getLogger(__name__)

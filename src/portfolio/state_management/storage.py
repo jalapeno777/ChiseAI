@@ -16,8 +16,6 @@ from portfolio.state_management.models import (
     PortfolioSnapshot,
     PortfolioState,
     Position,
-    PositionDirection,
-    PositionStatus,
 )
 from portfolio.state_management.tracker import PortfolioStorageInterface
 
@@ -502,9 +500,11 @@ class PostgresPortfolioStorage(PortfolioStorageInterface):
                         unrealized_pnl=float(row["unrealized_pnl"]),
                         realized_pnl=float(row["realized_pnl"]),
                         position_count=row["position_count"],
-                        balance_summary=json.loads(row["balance_summary"])
-                        if row["balance_summary"]
-                        else {},
+                        balance_summary=(
+                            json.loads(row["balance_summary"])
+                            if row["balance_summary"]
+                            else {}
+                        ),
                     )
                     for row in rows
                 ]

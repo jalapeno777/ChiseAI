@@ -21,6 +21,9 @@ if TYPE_CHECKING:
     from data_ingestion.ohlcv_fetcher import OHLCVData
     from data_ingestion.timeframe_config import Timeframe
 
+from data_ingestion.ohlcv_fetcher import OHLCVData
+from data_ingestion.timeframe_config import Timeframe
+
 
 @dataclass
 class IndicatorSet:
@@ -86,7 +89,7 @@ class IndicatorCalculator:
         self._macd = MACD(fast_period=12, slow_period=26, signal_period=9)
         self._bb = BollingerBands(period=20, num_std_dev=2.0)
 
-    def calculate_rsi(self, data: list["OHLCVData"]) -> RSIResult:
+    def calculate_rsi(self, data: list[OHLCVData]) -> RSIResult:
         """Calculate RSI for the given data.
 
         Args:
@@ -97,7 +100,7 @@ class IndicatorCalculator:
         """
         return self._rsi.calculate(data)
 
-    def calculate_macd(self, data: list["OHLCVData"]) -> MACDResult:
+    def calculate_macd(self, data: list[OHLCVData]) -> MACDResult:
         """Calculate MACD for the given data.
 
         Args:
@@ -108,9 +111,7 @@ class IndicatorCalculator:
         """
         return self._macd.calculate(data)
 
-    def calculate_bollinger_bands(
-        self, data: list["OHLCVData"]
-    ) -> BollingerBandsResult:
+    def calculate_bollinger_bands(self, data: list[OHLCVData]) -> BollingerBandsResult:
         """Calculate Bollinger Bands for the given data.
 
         Args:
@@ -123,8 +124,8 @@ class IndicatorCalculator:
 
     def calculate_all(
         self,
-        data: list["OHLCVData"],
-        timeframe: "Timeframe",
+        data: list[OHLCVData],
+        timeframe: Timeframe,
     ) -> IndicatorSet:
         """Calculate all indicators for the given data.
 
@@ -172,8 +173,8 @@ class IndicatorCalculator:
 
     def calculate_multiple_timeframes(
         self,
-        data_map: dict["Timeframe", list["OHLCVData"]],
-    ) -> dict["Timeframe", IndicatorSet]:
+        data_map: dict[Timeframe, list[OHLCVData]],
+    ) -> dict[Timeframe, IndicatorSet]:
         """Calculate indicators for multiple timeframes.
 
         Args:
@@ -241,9 +242,7 @@ class IndicatorCalculator:
         """Clear the indicator calculation cache."""
         self._cache.clear()
 
-    def _generate_cache_key(
-        self, data: list["OHLCVData"], timeframe: "Timeframe"
-    ) -> str:
+    def _generate_cache_key(self, data: list[OHLCVData], timeframe: Timeframe) -> str:
         """Generate a cache key for the given data and timeframe.
 
         Args:
@@ -262,7 +261,7 @@ class IndicatorCalculator:
         return f"{timeframe.value}:{first_ts}:{last_ts}:{len(data)}"
 
     def _get_from_cache(
-        self, cache_key: str, data: list["OHLCVData"]
+        self, cache_key: str, data: list[OHLCVData]
     ) -> IndicatorSet | None:
         """Retrieve cached indicators if valid.
 
@@ -287,7 +286,7 @@ class IndicatorCalculator:
     def _store_in_cache(
         self,
         cache_key: str,
-        data: list["OHLCVData"],
+        data: list[OHLCVData],
         indicators: IndicatorSet,
     ) -> None:
         """Store indicators in cache.
@@ -303,7 +302,7 @@ class IndicatorCalculator:
             indicators=indicators,
         )
 
-    def _hash_data(self, data: list["OHLCVData"]) -> str:
+    def _hash_data(self, data: list[OHLCVData]) -> str:
         """Generate a simple hash of the data for cache validation.
 
         Args:

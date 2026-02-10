@@ -4,6 +4,7 @@ Provides stop-loss calculation capabilities using multiple methods:
 - ATR-based stops (volatility-adjusted)
 - Technical level stops (support/resistance)
 - Percentage-based stops (configurable)
+- Stop-loss hit tracking for outcome correlation
 """
 
 from portfolio_risk.stop_loss.atr_indicator import ATR, ATRResult
@@ -19,6 +20,14 @@ from portfolio_risk.stop_loss.engine import (
     StopLossResult,
     TradeDirection,
 )
+from portfolio_risk.stop_loss.tracker import (
+    SignalOutcome,
+    SignalResult,
+    StopLossCorrelationStats,
+    StopLossHitEvent,
+    StopLossOutcome,
+    StopLossTracker,
+)
 
 __all__ = [
     # ATR Indicator
@@ -30,8 +39,15 @@ __all__ = [
     "StopLossConfig",
     # Engine
     "StopLossEngine",
-    "StopLossMethod",
+    StopLossMethod,
     "StopLossResult",
     "StopLossComparison",
-    "TradeDirection",
+    TradeDirection,
+    # Tracker
+    "StopLossTracker",
+    "StopLossHitEvent",
+    "StopLossOutcome",
+    "SignalOutcome",
+    "SignalResult",
+    "StopLossCorrelationStats",
 ]

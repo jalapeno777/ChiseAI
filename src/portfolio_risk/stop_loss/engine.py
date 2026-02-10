@@ -14,11 +14,13 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
-from portfolio_risk.stop_loss.atr_indicator import ATR, ATRResult
+from portfolio_risk.stop_loss.atr_indicator import ATR
 
 if TYPE_CHECKING:
     from dashboard.key_levels import KeyLevel, KeyLevelsResult
     from data_ingestion.ohlcv_fetcher import OHLCVData
+
+from data_ingestion.ohlcv_fetcher import OHLCVData
 
 
 class StopLossMethod(Enum):
@@ -193,13 +195,15 @@ class StopLossEngine:
             if stop_price >= entry_price:
                 raise ValueError(
                     f"Invalid stop-loss for LONG position: "
-                    f"stop_price ({stop_price:.2f}) must be below entry_price ({entry_price:.2f})"
+                    f"stop_price ({stop_price:.2f}) must be below "
+                    f"entry_price ({entry_price:.2f})"
                 )
         else:  # SHORT
             if stop_price <= entry_price:
                 raise ValueError(
                     f"Invalid stop-loss for SHORT position: "
-                    f"stop_price ({stop_price:.2f}) must be above entry_price ({entry_price:.2f})"
+                    f"stop_price ({stop_price:.2f}) must be above "
+                    f"entry_price ({entry_price:.2f})"
                 )
 
     def _validate_stop_price_positive(
@@ -229,7 +233,7 @@ class StopLossEngine:
         self,
         entry_price: float,
         direction: TradeDirection,
-        ohlcv_data: list["OHLCVData"],
+        ohlcv_data: list[OHLCVData],
         target_price: float | None = None,
     ) -> StopLossResult:
         """Calculate ATR-based stop-loss.
@@ -290,9 +294,15 @@ class StopLossEngine:
 
         if not is_valid:
             if risk_reward < self.min_risk_reward:
-                rationale += f". Fails R:R requirement ({risk_reward:.2f} < {self.min_risk_reward})"
+                rationale += (
+                    f". Fails R:R requirement ({risk_reward:.2f} < "
+                    f"{self.min_risk_reward})"
+                )
             if distance_pct > self.max_drawdown_pct:
-                rationale += f". Exceeds max drawdown ({distance_pct:.2%} > {self.max_drawdown_pct:.2%})"
+                rationale += (
+                    f". Exceeds max drawdown ({distance_pct:.2%} > "
+                    f"{self.max_drawdown_pct:.2%})"
+                )
 
         return StopLossResult(
             stop_price=stop_price,
@@ -312,7 +322,7 @@ class StopLossEngine:
         self,
         entry_price: float,
         direction: TradeDirection,
-        key_levels: "KeyLevelsResult",
+        key_levels: KeyLevelsResult,
         target_price: float | None = None,
     ) -> StopLossResult:
         """Calculate technical level-based stop-loss.
@@ -355,13 +365,15 @@ class StopLossEngine:
             if level.price >= entry_price:
                 raise ValueError(
                     f"Invalid support level for LONG position: "
-                    f"level price ({level.price:.2f}) must be below entry price ({entry_price:.2f})"
+                    f"level price ({level.price:.2f}) must be below "
+                    f"entry price ({entry_price:.2f})"
                 )
         else:  # SHORT
             if level.price <= entry_price:
                 raise ValueError(
                     f"Invalid resistance level for SHORT position: "
-                    f"level price ({level.price:.2f}) must be above entry price ({entry_price:.2f})"
+                    f"level price ({level.price:.2f}) must be above "
+                    f"entry price ({entry_price:.2f})"
                 )
 
         # For longs, stop is below support (give some buffer)
@@ -402,9 +414,15 @@ class StopLossEngine:
 
         if not is_valid:
             if risk_reward < self.min_risk_reward:
-                rationale += f". Fails R:R requirement ({risk_reward:.2f} < {self.min_risk_reward})"
+                rationale += (
+                    f". Fails R:R requirement ({risk_reward:.2f} < "
+                    f"{self.min_risk_reward})"
+                )
             if distance_pct > self.max_drawdown_pct:
-                rationale += f". Exceeds max drawdown ({distance_pct:.2%} > {self.max_drawdown_pct:.2%})"
+                rationale += (
+                    f". Exceeds max drawdown ({distance_pct:.2%} > "
+                    f"{self.max_drawdown_pct:.2%})"
+                )
 
         return StopLossResult(
             stop_price=stop_price,
@@ -477,7 +495,10 @@ class StopLossEngine:
 
         if not is_valid:
             if risk_reward < self.min_risk_reward:
-                rationale += f". Fails R:R requirement ({risk_reward:.2f} < {self.min_risk_reward})"
+                rationale += (
+                    f". Fails R:R requirement ({risk_reward:.2f} < "
+                    f"{self.min_risk_reward})"
+                )
             if pct > self.max_drawdown_pct:
                 rationale += (
                     f". Exceeds max drawdown ({pct:.2%} > {self.max_drawdown_pct:.2%})"
@@ -502,8 +523,8 @@ class StopLossEngine:
         self,
         entry_price: float,
         direction: TradeDirection,
-        ohlcv_data: list["OHLCVData"],
-        key_levels: "KeyLevelsResult",
+        ohlcv_data: list[OHLCVData],
+        key_levels: KeyLevelsResult,
         target_price: float | None = None,
         percentage: float | None = None,
     ) -> StopLossComparison:
@@ -593,12 +614,9 @@ class StopLossEngine:
             return False
 
         # Check minimum risk:reward ratio (only if target provided)
-        if risk_reward > 0 and risk_reward < self.min_risk_reward:
-            return False
+        return not (risk_reward > 0 and risk_reward < self.min_risk_reward)
 
-        return True
-
-    def _get_level_weight_category(self, level: "KeyLevel") -> str:
+    def _get_level_weight_category(self, level: KeyLevel) -> str:
         """Determine weight category for a key level.
 
         Args:
@@ -660,7 +678,8 @@ class StopLossEngine:
         optimal = valid_results[0]
 
         rationale = (
-            f"Selected {optimal.method.value} stop with R:R={optimal.risk_reward_ratio:.2f} "
+            f"Selected {optimal.method.value} stop with "
+            f"R:R={optimal.risk_reward_ratio:.2f} "
             f"({len(valid_results)} valid options)"
         )
 

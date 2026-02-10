@@ -653,7 +653,7 @@ validations:
     title: Portfolio Risk Monitoring
     epic_id: EP-NS-003
     story_id: ST-NS-014
-    status: planned
+    status: validated
     description: Validate real-time portfolio risk exposure monitoring and alerting
     acceptance_criteria:
       - Exposure calculations update in real-time

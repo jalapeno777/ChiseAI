@@ -13,13 +13,18 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
+from signal_generation.models import SignalDirection
+
 if TYPE_CHECKING:
     from data_ingestion.ohlcv_fetcher import OHLCVData
     from data_ingestion.timeframe_config import Timeframe
     from market_analysis.confluence.scorer import ConfluenceScorer
     from signal_generation.confidence_filter import ConfidenceFilter
     from signal_generation.data_freshness_check import DataFreshnessChecker
-    from signal_generation.models import Signal, SignalDirection
+    from signal_generation.models import Signal
+
+from data_ingestion.ohlcv_fetcher import OHLCVData
+from data_ingestion.timeframe_config import Timeframe
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +39,9 @@ class SignalGenerationConfig:
         max_signals_per_token_per_hour: Rate limit for signal generation
         cache_ttl_seconds: Time-to-live for signal cache
         enable_caching: Whether to enable signal caching
+        enable_stop_loss_calculation: Whether to calculate stop-loss for signals
+        enable_trailing_stop: Whether to calculate trailing stop for strong trends
+        trailing_stop_threshold: Confidence threshold for trailing stop (0.0-1.0)
     """
 
     actionable_threshold: float = 0.75
@@ -41,6 +49,9 @@ class SignalGenerationConfig:
     max_signals_per_token_per_hour: int = 10
     cache_ttl_seconds: float = 300.0  # 5 minutes
     enable_caching: bool = True
+    enable_stop_loss_calculation: bool = True
+    enable_trailing_stop: bool = True
+    trailing_stop_threshold: float = 0.85  # 85% confidence for trailing stop
 
 
 class SignalCache:
@@ -283,6 +294,8 @@ class SignalGenerator:
         timeframe: Timeframe,
         ohlcv_data: list[OHLCVData],
         aggregated_signals: Any | None = None,
+        key_levels: Any | None = None,
+        current_price: float | None = None,
     ) -> Signal:
         """Generate a trading signal from OHLCV data.
 
@@ -290,13 +303,16 @@ class SignalGenerator:
         1. Validates data freshness
         2. Calculates confluence score
         3. Applies confidence threshold
-        4. Returns actionable or logged-only signal
+        4. Calculates stop-loss if enabled
+        5. Returns actionable or logged-only signal
 
         Args:
             token: Trading pair (e.g., "BTC/USDT")
             timeframe: Timeframe for analysis
             ohlcv_data: OHLCV candle data
             aggregated_signals: Optional pre-computed aggregated signals
+            key_levels: Optional key levels for stop-loss calculation
+            current_price: Optional current price for stop-loss calculation
 
         Returns:
             Signal with status (actionable or logged_only)
@@ -345,14 +361,14 @@ class SignalGenerator:
             indicator_calc = IndicatorCalculator()
             indicator_results = indicator_calc.calculate_all(
                 ohlcv_data,
-                timeframe.value,  # type: ignore[arg-type]
+                timeframe,  # type: ignore[arg-type]
             )
 
             # Aggregate signals
             aggregator = SignalAggregator()
             aggregated_signals = aggregator.aggregate(
                 indicator_results,  # type: ignore[arg-type]
-                timeframe.value,  # type: ignore[arg-type]
+                timestamp=int(time.time() * 1000),
             )
 
         # Calculate confluence score
@@ -390,7 +406,16 @@ class SignalGenerator:
             },
         )
 
-        # Step 4: Apply confidence threshold
+        # Step 4: Calculate stop-loss if enabled and we have required data
+        if (
+            self.config.enable_stop_loss_calculation
+            and key_levels is not None
+            and current_price is not None
+            and signal.direction != SignalDirection.NEUTRAL
+        ):
+            self._calculate_stop_loss(signal, ohlcv_data, key_levels, current_price)
+
+        # Step 5: Apply confidence threshold
         confidence_filter = self._get_confidence_filter()
         filter_result = confidence_filter.filter(signal)
 
@@ -407,9 +432,10 @@ class SignalGenerator:
                 # Rate limited - still actionable but marked
                 signal.status = SignalStatus.ACTIONABLE
                 signal.metadata["rate_limited"] = True
-                direction = signal.direction_str  # type: ignore[assignment]
                 logger.warning(
-                    "Actionable signal (rate limited): %s [%s]", token, direction
+                    "Actionable signal (rate limited): %s [%s]",
+                    token,
+                    signal.direction_str,
                 )
         else:
             # Log non-actionable signal
@@ -417,7 +443,7 @@ class SignalGenerator:
 
         # Cache the signal
         if self.config.enable_caching:
-            self._cache.set(token, timeframe.value, direction, signal)
+            self._cache.set(token, timeframe.value, signal.direction, signal)
 
         # Record latency
         signal.generation_latency_ms = (time.perf_counter() - start_time) * 1000
@@ -472,3 +498,107 @@ class SignalGenerator:
     def clear_cache(self) -> None:
         """Clear the signal cache."""
         self._cache.clear()
+
+    def _calculate_stop_loss(
+        self,
+        signal: Signal,
+        ohlcv_data: list[OHLCVData],
+        key_levels: Any,
+        current_price: float,
+    ) -> None:
+        """Calculate stop-loss for a signal.
+
+        Uses the StopLossCalculator to compute optimal stop-loss
+        and optionally trailing stop for strong trends.
+
+        Args:
+            signal: The signal to calculate stop-loss for
+            ohlcv_data: OHLCV candle data
+            key_levels: Key levels result from KeyLevelsAnalyzer
+            current_price: Current market price
+        """
+        from portfolio_risk.stop_loss import (
+            StopLossCalculator,
+            TradeDirection,
+        )
+
+        try:
+            # Map signal direction to trade direction
+            trade_direction = (
+                TradeDirection.LONG
+                if signal.direction.value == "long"
+                else TradeDirection.SHORT
+            )
+
+            # Calculate stop-loss
+            calculator = StopLossCalculator()
+            stop_result = calculator.calculate_stop_loss(
+                entry_price=current_price,
+                direction=trade_direction,
+                ohlcv_data=ohlcv_data,
+                key_levels=key_levels,
+            )
+
+            # Update signal with stop-loss information
+            signal.stop_loss = stop_result.selected_stop.stop_price
+            signal.stop_loss_method = stop_result.selected_stop.method.value
+            signal.stop_loss_rationale = stop_result.selected_stop.rationale
+            signal.risk_reward_ratio = stop_result.selected_stop.risk_reward_ratio
+
+            # Log stop-loss calculation
+            logger.debug(
+                f"Stop-loss calculated for {signal.token}: "
+                f"{signal.stop_loss:.2f} ({signal.stop_loss_method})"
+            )
+
+            # Calculate trailing stop for strong trends
+            if (
+                self.config.enable_trailing_stop
+                and signal.confidence >= self.config.trailing_stop_threshold
+            ):
+                self._calculate_trailing_stop(signal, ohlcv_data, current_price)
+
+        except Exception as e:
+            logger.warning(f"Stop-loss calculation failed for {signal.token}: {e}")
+            # Signal remains valid but without stop-loss
+
+    def _calculate_trailing_stop(
+        self,
+        signal: Signal,
+        ohlcv_data: list[OHLCVData],
+        current_price: float,
+    ) -> None:
+        """Calculate trailing stop for strong trends.
+
+        Trailing stop is calculated as a percentage of the current price,
+        adjusted based on trend strength (confidence).
+
+        Args:
+            signal: The signal to calculate trailing stop for
+            ohlcv_data: OHLCV candle data
+            current_price: Current market price
+        """
+        from portfolio_risk.stop_loss import ATR
+
+        try:
+            # Calculate ATR for volatility-based trailing distance
+            atr_calc = ATR(period=14)
+            atr_result = atr_calc.calculate(ohlcv_data)
+
+            # Trailing distance: 1.5x ATR for strong trends
+            trailing_distance = atr_result.current * 1.5
+
+            if signal.direction.value == "long":
+                signal.trailing_stop = current_price - trailing_distance
+            else:
+                signal.trailing_stop = current_price + trailing_distance
+
+            signal.trailing_stop_enabled = True
+
+            logger.debug(
+                f"Trailing stop calculated for {signal.token}: "
+                f"{signal.trailing_stop:.2f} (confidence={signal.confidence:.1%})"
+            )
+
+        except Exception as e:
+            logger.warning(f"Trailing stop calculation failed for {signal.token}: {e}")

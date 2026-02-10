@@ -19,6 +19,14 @@ from portfolio.state_management.storage import (
     PostgresPortfolioStorage,
     StorageConfig,
 )
+from portfolio.state_management.risk_calculator import (
+    ExposureAlert,
+    RiskCalculator,
+    RiskLevel,
+    RiskMetrics,
+    RiskThresholds,
+    TokenExposure,
+)
 from portfolio.state_management.tracker import (
     BalanceUpdate,
     PortfolioStorageInterface,
@@ -51,4 +59,11 @@ __all__ = [
     # API
     "PortfolioAPI",
     "create_portfolio_routes",
+    # Risk Calculator
+    "RiskCalculator",
+    "RiskMetrics",
+    "RiskThresholds",
+    "RiskLevel",
+    "TokenExposure",
+    "ExposureAlert",
 ]

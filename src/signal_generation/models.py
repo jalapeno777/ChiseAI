@@ -46,6 +46,12 @@ class Signal:
         metadata: Additional signal metadata
         signal_id: Unique signal identifier (UUID)
         generation_latency_ms: Time taken to generate signal (ms)
+        stop_loss: Stop-loss price level (optional until calculated)
+        stop_loss_method: Method used to calculate stop-loss
+        stop_loss_rationale: Explanation of stop-loss selection
+        trailing_stop: Trailing stop price level (if applicable)
+        trailing_stop_enabled: Whether trailing stop is recommended
+        risk_reward_ratio: Risk:reward ratio for the signal
     """
 
     token: str
@@ -60,6 +66,12 @@ class Signal:
     metadata: dict[str, Any] = field(default_factory=dict)
     signal_id: str = ""
     generation_latency_ms: float = 0.0
+    stop_loss: float | None = None
+    stop_loss_method: str | None = None
+    stop_loss_rationale: str | None = None
+    trailing_stop: float | None = None
+    trailing_stop_enabled: bool = False
+    risk_reward_ratio: float = 0.0
 
     def __post_init__(self) -> None:
         """Validate and normalize values."""
@@ -104,6 +116,14 @@ class Signal:
             "signal_breakdown": self.signal_breakdown,
             "metadata": self.metadata,
             "generation_latency_ms": round(self.generation_latency_ms, 3),
+            "stop_loss": round(self.stop_loss, 2) if self.stop_loss else None,
+            "stop_loss_method": self.stop_loss_method,
+            "stop_loss_rationale": self.stop_loss_rationale,
+            "trailing_stop": (
+                round(self.trailing_stop, 2) if self.trailing_stop else None
+            ),
+            "trailing_stop_enabled": self.trailing_stop_enabled,
+            "risk_reward_ratio": round(self.risk_reward_ratio, 2),
         }
 
     def to_discord_message(self) -> str:
@@ -112,13 +132,28 @@ class Signal:
         if self.direction == SignalDirection.NEUTRAL:
             emoji = "⚪"
 
-        return (
+        # Base message
+        message = (
             f"{emoji} **{self.direction_str} Signal: {self.token}**\n"
             f"Confidence: **{self.confidence_percent:.1f}%** | "
             f"Score: {self.base_score:.1f}/100\n"
             f"Timeframe: {self.timeframe} | "
             f"Latency: {self.generation_latency_ms:.1f}ms"
         )
+
+        # Add stop-loss information if available
+        if self.stop_loss is not None:
+            message += f"\n🛑 Stop-Loss: **${self.stop_loss:,.2f}**"
+            if self.stop_loss_method:
+                message += f" ({self.stop_loss_method})"
+            if self.risk_reward_ratio > 0:
+                message += f" | R:R **{self.risk_reward_ratio:.2f}**"
+
+        # Add trailing stop if enabled
+        if self.trailing_stop_enabled and self.trailing_stop is not None:
+            message += f"\n🔄 Trailing Stop: ${self.trailing_stop:,.2f}"
+
+        return message
 
     def to_dashboard_payload(self) -> dict[str, Any]:
         """Format signal for dashboard display."""
@@ -133,4 +168,10 @@ class Signal:
             "timeframe": self.timeframe,
             "factors": self.contributing_factors[:5],  # Top 5 factors
             "latency_ms": self.generation_latency_ms,
+            "stop_loss": self.stop_loss,
+            "stop_loss_method": self.stop_loss_method,
+            "stop_loss_rationale": self.stop_loss_rationale,
+            "trailing_stop": self.trailing_stop,
+            "trailing_stop_enabled": self.trailing_stop_enabled,
+            "risk_reward_ratio": self.risk_reward_ratio,
         }

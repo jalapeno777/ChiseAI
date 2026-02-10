@@ -13,6 +13,8 @@ import numpy as np
 if TYPE_CHECKING:
     from data_ingestion.ohlcv_fetcher import OHLCVData
 
+from data_ingestion.ohlcv_fetcher import OHLCVData
+
 
 @dataclass
 class BollingerBandsResult:
@@ -109,7 +111,7 @@ class BollingerBands:
         self.period = period
         self.num_std_dev = num_std_dev
 
-    def calculate(self, data: list["OHLCVData"]) -> BollingerBandsResult:
+    def calculate(self, data: list[OHLCVData]) -> BollingerBandsResult:
         """Calculate Bollinger Bands from OHLCV data.
 
         Args:
