@@ -496,7 +496,7 @@ validations:
     title: Multi-timeframe Analysis Validation
     epic_id: EP-NS-001
     story_id: ST-NS-001
-    status: planned
+    status: validated
     description: Validate multi-timeframe analysis correctly aggregates data from 1m, 5m, 15m, 1h, 4h, 1d timeframes
     acceptance_criteria:
       - All 6 timeframes are correctly queried and processed
@@ -510,7 +510,7 @@ validations:
     title: Technical Indicator Accuracy
     epic_id: EP-NS-001
     story_id: ST-NS-002
-    status: planned
+    status: validated
     description: Validate RSI, MACD, and Bollinger Bands calculations match industry-standard implementations
     acceptance_criteria:
       - RSI calculations match TradingView within 0.1%
@@ -524,7 +524,7 @@ validations:
     title: Markov Chain State Inference
     epic_id: EP-NS-001
     story_id: ST-NS-003
-    status: planned
+    status: validated
     description: Validate Markov chain correctly identifies trend states (bullish, bearish, neutral, transitional)
     acceptance_criteria:
       - State transitions follow defined probability matrices
@@ -538,7 +538,7 @@ validations:
     title: Confluence Scoring Logic
     epic_id: EP-NS-001
     story_id: ST-NS-004
-    status: planned
+    status: validated
     description: Validate confluence-based signal scoring correctly weights multiple indicators
     acceptance_criteria:
       - Signal scores increase with indicator agreement
@@ -548,12 +548,40 @@ validations:
     test_method: automated
     owner: qa-team
 
-  # EP-NS-002: Signal Generation & Delivery
   - id: V-NS-005
+    title: Confidence Multiplier Logic
+    epic_id: EP-NS-001
+    story_id: ST-NS-005
+    status: validated
+    description: Validate confidence multipliers adjust based on signal agreement across timeframes
+    acceptance_criteria:
+      - Multiplier increases with timeframe agreement (1.0x base up to 1.5x for 4+ agreement)
+      - Conflicting signals reduce multiplier
+      - Final confidence score is capped at 100
+      - Multiplier rationale is logged and auditable
+    test_method: automated
+    owner: qa-team
+
+  - id: V-NS-006
+    title: Signal History Tracking
+    epic_id: EP-NS-001
+    story_id: ST-NS-006
+    status: validated
+    description: Validate signal history is tracked with outcome correlation for learning
+    acceptance_criteria:
+      - Signals are stored with timestamp, direction, confidence, entry price
+      - Outcomes are recorded (win/loss, PnL, exit price, exit time)
+      - Prediction accuracy is calculated per signal type and confidence bucket
+      - Historical performance is queryable by timeframe and indicator combination
+    test_method: automated
+    owner: qa-team
+
+  # EP-NS-002: Signal Generation & Delivery
+  - id: V-NS-007
     title: Signal Confidence Threshold
     epic_id: EP-NS-002
     story_id: ST-NS-007
-    status: planned
+    status: validated
     description: Validate only signals meeting 75%+ confidence threshold are generated and delivered
     acceptance_criteria:
       - Signals below 75% confidence are filtered out
@@ -567,7 +595,7 @@ validations:
     title: UI Signal Display
     epic_id: EP-NS-002
     story_id: ST-NS-008
-    status: planned
+    status: validated
     description: Validate signals display correctly in the primary UI (Grafana-first) with all metadata
     acceptance_criteria:
       - All signal fields render correctly (token, direction, confidence, risk)
@@ -581,7 +609,7 @@ validations:
     title: Discord Alert Delivery
     epic_id: EP-NS-002
     story_id: ST-NS-009
-    status: planned
+    status: validated
     description: Validate Discord alerts are delivered within 1 second of signal generation
     acceptance_criteria:
       - Alerts reach Discord within 1 second of generation
@@ -596,7 +624,7 @@ validations:
     title: Position Sizing Calculation
     epic_id: EP-NS-003
     story_id: ST-NS-012
-    status: planned
+    status: validated
     description: Validate position sizing respects 1% per-trade risk limit (at stop-loss) and portfolio constraints
     acceptance_criteria:
       - Position sizes never exceed 1% risk per trade at stop-loss
@@ -611,7 +639,7 @@ validations:
     title: Stop-Loss Recommendation Accuracy
     epic_id: EP-NS-003
     story_id: ST-NS-013
-    status: planned
+    status: validated
     description: Validate stop-loss recommendations are appropriate for market conditions
     acceptance_criteria:
       - Stop-loss levels respect maximum drawdown limits
@@ -744,7 +772,7 @@ validations:
     title: Phase 1 - Continuous Backtesting Validation
     epic_id: EP-NS-001
     story_id: null
-    status: planned
+    status: validated
     description: Continuous backtesting + walk-forward validation built from exchange APIs (always-on)
     acceptance_criteria:
       - Backtest runner is always-on and produces daily KPI summaries

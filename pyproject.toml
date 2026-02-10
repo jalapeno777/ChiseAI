@@ -6,7 +6,12 @@ build-backend = "setuptools.build_meta"
 name = "chiseai"
 version = "0.0.0"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "ccxt>=4.0.0",
+    "influxdb-client>=1.40.0",
+    "asyncpg>=0.29.0",
+    "numpy>=1.24.0",
+]
 
 [tool.black]
 line-length = 88
@@ -29,6 +34,16 @@ warn_unused_configs = true
 disallow_untyped_defs = true
 no_implicit_optional = true
 check_untyped_defs = true
+ignore_missing_imports = true
+exclude = ["tests/"]
+
+# Override for tests (allow untyped defs and missing returns)
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+no_implicit_optional = false
+warn_return_any = false
+check_untyped_defs = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

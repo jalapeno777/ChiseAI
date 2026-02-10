@@ -2,4 +2,4 @@
 set -euo pipefail
 
 export PYTHONPATH="${PYTHONPATH:-}:src"
-python3 -m pytest --cov=chiseai --cov-report=term-missing --cov-fail-under=80
+python3 -m pytest --cov=src --cov-report=term-missing --cov-fail-under=80
