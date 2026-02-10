@@ -496,7 +496,7 @@ validations:
     title: Multi-timeframe Analysis Validation
     epic_id: EP-NS-001
     story_id: ST-NS-001
-    status: planned
+    status: validated
     description: Validate multi-timeframe analysis correctly aggregates data from 1m, 5m, 15m, 1h, 4h, 1d timeframes
     acceptance_criteria:
       - All 6 timeframes are correctly queried and processed
@@ -772,7 +772,7 @@ validations:
     title: Phase 1 - Continuous Backtesting Validation
     epic_id: EP-NS-001
     story_id: null
-    status: planned
+    status: validated
     description: Continuous backtesting + walk-forward validation built from exchange APIs (always-on)
     acceptance_criteria:
       - Backtest runner is always-on and produces daily KPI summaries
