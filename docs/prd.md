@@ -6,7 +6,7 @@
 **Version:** 1.2.1
 **Status:** Active
 **Canonical PRD:** Yes
-**Replaces:** docs/startingprd.md (legacy - superseded by canonical PRD)
+**Replaces:** Legacy PRD (superseded by canonical PRD)
 
 ---
 
@@ -414,8 +414,8 @@ ChiseAI is currently in **planning/foundation** for this repository. The authori
 | Architecture | docs/architecture.md |
 | Workflow Status | docs/bmm-workflow-status.yaml |
 | Validation Registry | docs/validation/validation-registry.yaml |
-| User Journeys | docs/startingprd.md (Step 4) |
-| Technical Specifications | docs/startingprd.md (Step 6) |
+| User Journeys | (see Section 3: User Journeys above) |
+| Technical Specifications | (see Sections 3-10 above) |
 
 ---
 
@@ -423,7 +423,7 @@ ChiseAI is currently in **planning/foundation** for this repository. The authori
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
-| 1.2.1 | 2026-02-09 | CH-PRD-VALIDATION-001 | Added explicit FR references in Safety Constraints section (Section 5) for improved traceability. Split FR-004 into FR-004 (confluence scoring) and FR-004a (order type support). Added FR-030a for hedging/market-neutral support. Updated traceability matrix to include SC-011 (Sharpe) and SC-012 (Sortino) mappings. Verified obsolete reference removal. |
+| 1.2.1 | 2026-02-09 | CH-PRD-VALIDATION-001 | Added explicit FR references in Safety Constraints section (Section 5) for improved traceability. Split FR-004 into FR-004 (confluence scoring) and FR-004a (order type support). Added FR-030a for hedging/market-neutral support. Updated traceability matrix to include SC-011 (Sharpe) and SC-012 (Sortino) mappings. Removed stale references to deleted docs/startingprd.md file (replaced with inline references to Sections 3-10). |
 | 1.2.0 | 2026-02-08 | CH-PRD-PHASE1-ALIGN-001 | Added Phase 1 scope edits: hedging/market-neutral support, order types (market+limit), Sharpe/Sortino success criteria, direct perps execution allowance. Fixed epic naming in traceability matrix (Section 7.2) to match canonical epic IDs from docs/bmm-workflow-status.yaml. Removed ml-outcome-analysis-system-design.md reference. |
 | 1.1.0 | 2026-02-08 | CH-PRD-CI-ALIGN-001 | Updated scope to phased execution (backtest→Bybit paper→Bitget live), Binance ref market-data role, Grafana-first ops UI, updated risk invariants and kill-switch rules. |
 | 1.0.0 | 2025-12-07 | Craig | Initial canonical PRD |
