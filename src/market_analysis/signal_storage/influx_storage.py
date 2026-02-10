@@ -52,7 +52,7 @@ class InfluxSignalStorage(SignalStorageInterface):
         self,
         client: InfluxDBClient | None = None,
         url: str = "http://localhost:8086",
-        token: str = "",
+        token: str = "",  # nosec B107 - empty default for optional param
         org: str = "chiseai",
         bucket: str = "signals",
     ):

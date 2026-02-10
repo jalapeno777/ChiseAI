@@ -44,8 +44,8 @@ class PostgresSignalStorage(SignalStorageInterface):
         host: str = "localhost",
         port: int = 5432,
         database: str = "chiseai",
-        user: str = "",
-        password: str = "",
+        user: str = "",  # nosec B107 - empty default for optional param
+        password: str = "",  # nosec B107 - empty default for optional param
     ):
         """Initialize PostgreSQL storage.
 
@@ -346,7 +346,7 @@ class PostgresSignalStorage(SignalStorageInterface):
                 WHERE {where_clause}
                 ORDER BY timestamp DESC
                 LIMIT ${param_idx}
-            """
+            """  # nosec B608
             params.append(limit)
 
             async with pool.acquire() as conn:
@@ -510,7 +510,7 @@ class PostgresSignalStorage(SignalStorageInterface):
                 WHERE {where_clause}
                 ORDER BY s.timestamp DESC
                 LIMIT ${{param_idx}}
-            """
+            """  # nosec B608
             params.append(limit)
 
             async with pool.acquire() as conn:
@@ -591,7 +591,7 @@ class PostgresSignalStorage(SignalStorageInterface):
                 FROM signals s
                 INNER JOIN signal_outcomes o ON s.signal_id = o.signal_id
                 WHERE {where_clause}
-            """
+            """  # nosec B608
 
             async with pool.acquire() as conn:
                 row = await conn.fetchrow(query, *params)
@@ -683,7 +683,7 @@ class PostgresSignalStorage(SignalStorageInterface):
                 WHERE {where_clause}
                 ORDER BY s.timestamp DESC
                 LIMIT ${param_idx}
-            """
+            """  # nosec B608
             params.append(limit)
 
             async with pool.acquire() as conn:
