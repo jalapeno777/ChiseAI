@@ -10,7 +10,7 @@ from market_analysis.confluence.indicator_weights import (
 class TestIndicatorWeights:
     """Test suite for IndicatorWeights class."""
 
-    def test_default_initialization(self):
+    def test_default_initialization(self) -> None:
         """Test default weight initialization."""
         weights = IndicatorWeights()
 
@@ -32,7 +32,7 @@ class TestIndicatorWeights:
         assert weights.min_signal_threshold == 0.3
         assert weights.max_indicators == 10
 
-    def test_get_weight_calculation(self):
+    def test_get_weight_calculation(self) -> None:
         """Test combined weight calculation."""
         weights = IndicatorWeights()
 
@@ -41,7 +41,7 @@ class TestIndicatorWeights:
         assert weights.get_weight("macd", "1h") == 1.2 * 1.0  # 1.2
         assert weights.get_weight("markov", "1d") == 1.3 * 1.3  # 1.69
 
-    def test_get_weight_unknown_values(self):
+    def test_get_weight_unknown_values(self) -> None:
         """Test weight calculation with unknown indicator/timeframe."""
         weights = IndicatorWeights()
 
@@ -50,7 +50,7 @@ class TestIndicatorWeights:
         assert weights.get_weight("rsi", "unknown_timeframe") == 1.0 * 1.0
         assert weights.get_weight("unknown", "unknown") == 1.0 * 1.0
 
-    def test_set_timeframe_weight(self):
+    def test_set_timeframe_weight(self) -> None:
         """Test setting timeframe weight."""
         weights = IndicatorWeights()
 
@@ -61,7 +61,7 @@ class TestIndicatorWeights:
         weights.set_timeframe_weight("1h", 1.5)
         assert weights.timeframe_weights["1h"] == 1.5
 
-    def test_set_indicator_weight(self):
+    def test_set_indicator_weight(self) -> None:
         """Test setting indicator weight."""
         weights = IndicatorWeights()
 
@@ -72,7 +72,7 @@ class TestIndicatorWeights:
         weights.set_indicator_weight("rsi", 0.8)
         assert weights.indicator_weights["rsi"] == 0.8
 
-    def test_to_dict(self):
+    def test_to_dict(self) -> None:
         """Test serialization to dictionary."""
         weights = IndicatorWeights()
         data = weights.to_dict()
@@ -86,7 +86,7 @@ class TestIndicatorWeights:
         assert data["indicator_weights"]["macd"] == 1.2
         assert data["min_signal_threshold"] == 0.3
 
-    def test_from_dict(self):
+    def test_from_dict(self) -> None:
         """Test deserialization from dictionary."""
         data = {
             "timeframe_weights": {"1h": 1.5, "4h": 1.8},
@@ -104,7 +104,7 @@ class TestIndicatorWeights:
         assert weights.min_signal_threshold == 0.4
         assert weights.max_indicators == 8
 
-    def test_from_dict_defaults(self):
+    def test_from_dict_defaults(self) -> None:
         """Test from_dict with missing values uses defaults."""
         data = {"timeframe_weights": {"1h": 1.5}}
 
@@ -115,14 +115,14 @@ class TestIndicatorWeights:
         assert weights.min_signal_threshold == 0.3
         assert weights.max_indicators == 10
 
-    def test_validate_valid_config(self):
+    def test_validate_valid_config(self) -> None:
         """Test validation with valid configuration."""
         weights = IndicatorWeights()
         errors = weights.validate()
 
         assert errors == []
 
-    def test_validate_negative_timeframe_weight(self):
+    def test_validate_negative_timeframe_weight(self) -> None:
         """Test validation catches negative timeframe weight."""
         weights = IndicatorWeights()
         weights.timeframe_weights["1h"] = -0.5
@@ -132,7 +132,7 @@ class TestIndicatorWeights:
         assert len(errors) == 1
         assert "Negative timeframe weight" in errors[0]
 
-    def test_validate_negative_indicator_weight(self):
+    def test_validate_negative_indicator_weight(self) -> None:
         """Test validation catches negative indicator weight."""
         weights = IndicatorWeights()
         weights.indicator_weights["rsi"] = -1.0
@@ -142,7 +142,7 @@ class TestIndicatorWeights:
         assert len(errors) == 1
         assert "Negative indicator weight" in errors[0]
 
-    def test_validate_invalid_threshold(self):
+    def test_validate_invalid_threshold(self) -> None:
         """Test validation catches invalid threshold."""
         weights = IndicatorWeights()
         weights.min_signal_threshold = 1.5
@@ -152,7 +152,7 @@ class TestIndicatorWeights:
         assert len(errors) == 1
         assert "min_signal_threshold must be 0-1" in errors[0]
 
-    def test_validate_invalid_max_indicators(self):
+    def test_validate_invalid_max_indicators(self) -> None:
         """Test validation catches invalid max_indicators."""
         weights = IndicatorWeights()
         weights.max_indicators = 0
@@ -162,7 +162,7 @@ class TestIndicatorWeights:
         assert len(errors) == 1
         assert "max_indicators must be >= 1" in errors[0]
 
-    def test_validate_multiple_errors(self):
+    def test_validate_multiple_errors(self) -> None:
         """Test validation returns multiple errors."""
         weights = IndicatorWeights()
         weights.timeframe_weights["1h"] = -0.5
@@ -177,7 +177,7 @@ class TestIndicatorWeights:
 class TestWeightPresets:
     """Test suite for WeightPreset class."""
 
-    def test_conservative_preset(self):
+    def test_conservative_preset(self) -> None:
         """Test conservative preset configuration."""
         weights = WeightPreset.conservative()
 
@@ -193,7 +193,7 @@ class TestWeightPresets:
         assert weights.min_signal_threshold == 0.4
         assert weights.max_indicators == 8
 
-    def test_aggressive_preset(self):
+    def test_aggressive_preset(self) -> None:
         """Test aggressive preset configuration."""
         weights = WeightPreset.aggressive()
 
@@ -209,7 +209,7 @@ class TestWeightPresets:
         assert weights.min_signal_threshold == 0.2
         assert weights.max_indicators == 12
 
-    def test_balanced_preset(self):
+    def test_balanced_preset(self) -> None:
         """Test balanced preset matches defaults."""
         weights = WeightPreset.balanced()
         defaults = IndicatorWeights()
@@ -219,7 +219,7 @@ class TestWeightPresets:
         assert weights.min_signal_threshold == defaults.min_signal_threshold
         assert weights.max_indicators == defaults.max_indicators
 
-    def test_default_weights_constant(self):
+    def test_default_weights_constant(self) -> None:
         """Test DEFAULT_WEIGHTS constant."""
         defaults = IndicatorWeights()
 

@@ -12,13 +12,13 @@ from market_analysis.signal_storage.models import (
 class TestSignalDirection:
     """Tests for SignalDirection enum."""
 
-    def test_direction_values(self):
+    def test_direction_values(self) -> None:
         """Test direction enum values."""
         assert SignalDirection.LONG.value == "LONG"
         assert SignalDirection.SHORT.value == "SHORT"
         assert SignalDirection.NEUTRAL.value == "NEUTRAL"
 
-    def test_direction_str(self):
+    def test_direction_str(self) -> None:
         """Test direction string representation."""
         assert str(SignalDirection.LONG) == "LONG"
         assert str(SignalDirection.SHORT) == "SHORT"
@@ -28,7 +28,7 @@ class TestSignalDirection:
 class TestOutcomeType:
     """Tests for OutcomeType enum."""
 
-    def test_outcome_type_values(self):
+    def test_outcome_type_values(self) -> None:
         """Test outcome type enum values."""
         assert OutcomeType.TP_HIT.value == "tp_hit"
         assert OutcomeType.SL_HIT.value == "sl_hit"
@@ -40,7 +40,7 @@ class TestOutcomeType:
 class TestSignalRecord:
     """Tests for SignalRecord dataclass."""
 
-    def test_basic_creation(self):
+    def test_basic_creation(self) -> None:
         """Test basic signal record creation."""
         signal = SignalRecord(
             signal_id="test-uuid-123",
@@ -64,7 +64,7 @@ class TestSignalRecord:
         assert signal.indicators_used == ["rsi", "macd"]
         assert signal.timeframes_used == ["1h", "4h"]
 
-    def test_confidence_normalization(self):
+    def test_confidence_normalization(self) -> None:
         """Test confidence is normalized to 0-1 range."""
         signal_high = SignalRecord(
             signal_id="test-1",
@@ -88,7 +88,7 @@ class TestSignalRecord:
         )
         assert signal_low.confidence == 0.0
 
-    def test_score_normalization(self):
+    def test_score_normalization(self) -> None:
         """Test score is normalized to 0-100 range."""
         signal_high = SignalRecord(
             signal_id="test-1",
@@ -112,7 +112,7 @@ class TestSignalRecord:
         )
         assert signal_low.score == 0.0
 
-    def test_confidence_bucket(self):
+    def test_confidence_bucket(self) -> None:
         """Test confidence bucket calculation."""
         signal_75 = SignalRecord(
             signal_id="test-1",
@@ -136,7 +136,7 @@ class TestSignalRecord:
         )
         assert signal_45.confidence_bucket == "40-50"
 
-    def test_signal_type(self):
+    def test_signal_type(self) -> None:
         """Test signal type generation."""
         signal = SignalRecord(
             signal_id="test-1",
@@ -150,7 +150,7 @@ class TestSignalRecord:
         )
         assert signal.signal_type == "LONG_bb_macd_rsi"
 
-    def test_to_dict(self):
+    def test_to_dict(self) -> None:
         """Test conversion to dictionary."""
         signal = SignalRecord(
             signal_id="test-uuid",
@@ -171,7 +171,7 @@ class TestSignalRecord:
         assert data["confidence"] == 0.75
         assert data["confidence_bucket"] == "70-80"
 
-    def test_from_dict(self):
+    def test_from_dict(self) -> None:
         """Test creation from dictionary."""
         data = {
             "signal_id": "test-uuid",
@@ -194,7 +194,7 @@ class TestSignalRecord:
 class TestOutcomeRecord:
     """Tests for OutcomeRecord dataclass."""
 
-    def test_basic_creation(self):
+    def test_basic_creation(self) -> None:
         """Test basic outcome record creation."""
         outcome = OutcomeRecord(
             signal_id="test-uuid-123",
@@ -216,7 +216,7 @@ class TestOutcomeRecord:
         assert outcome.outcome_type == OutcomeType.TP_HIT
         assert outcome.note == "Take profit hit"
 
-    def test_is_win_normalization_from_pnl(self):
+    def test_is_win_normalization_from_pnl(self) -> None:
         """Test is_win is normalized from PnL."""
         outcome_positive = OutcomeRecord(
             signal_id="test-1",
@@ -238,7 +238,7 @@ class TestOutcomeRecord:
         )
         assert outcome_negative.is_win is False
 
-    def test_outcome_type_from_string(self):
+    def test_outcome_type_from_string(self) -> None:
         """Test outcome type from string."""
         outcome = OutcomeRecord(
             signal_id="test-1",
@@ -251,7 +251,7 @@ class TestOutcomeRecord:
         )
         assert outcome.outcome_type == OutcomeType.TP_HIT
 
-    def test_invalid_outcome_type_defaults_to_unknown(self):
+    def test_invalid_outcome_type_defaults_to_unknown(self) -> None:
         """Test invalid outcome type defaults to UNKNOWN."""
         outcome = OutcomeRecord(
             signal_id="test-1",
@@ -264,7 +264,7 @@ class TestOutcomeRecord:
         )
         assert outcome.outcome_type == OutcomeType.UNKNOWN
 
-    def test_to_dict(self):
+    def test_to_dict(self) -> None:
         """Test conversion to dictionary."""
         outcome = OutcomeRecord(
             signal_id="test-uuid",
@@ -282,7 +282,7 @@ class TestOutcomeRecord:
         assert data["pnl"] == 100.0
         assert data["outcome_type"] == "tp_hit"
 
-    def test_from_dict(self):
+    def test_from_dict(self) -> None:
         """Test creation from dictionary."""
         data = {
             "signal_id": "test-uuid",
@@ -304,7 +304,7 @@ class TestOutcomeRecord:
 class TestSignalWithOutcome:
     """Tests for SignalWithOutcome dataclass."""
 
-    def test_creation_with_outcome(self):
+    def test_creation_with_outcome(self) -> None:
         """Test creation with both signal and outcome."""
         signal = SignalRecord(
             signal_id="test-uuid",
@@ -331,7 +331,7 @@ class TestSignalWithOutcome:
         assert swo.is_win is True
         assert swo.pnl == 100.0
 
-    def test_creation_without_outcome(self):
+    def test_creation_without_outcome(self) -> None:
         """Test creation with signal only."""
         signal = SignalRecord(
             signal_id="test-uuid",
@@ -349,7 +349,7 @@ class TestSignalWithOutcome:
         assert swo.is_win is None
         assert swo.pnl is None
 
-    def test_to_dict(self):
+    def test_to_dict(self) -> None:
         """Test conversion to dictionary."""
         signal = SignalRecord(
             signal_id="test-uuid",
