@@ -1,15 +1,10 @@
 """Tests for portfolio storage backends."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
-
 import pytest
 
 from portfolio.state_management.models import (
-    Balance,
     PortfolioSnapshot,
     PortfolioState,
-    Position,
-    PositionDirection,
 )
 from portfolio.state_management.storage import (
     FallbackPortfolioStorage,

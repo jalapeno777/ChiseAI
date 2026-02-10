@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import pytest
-
 from portfolio.state_management.models import (
-    Balance,
     PortfolioState,
     Position,
     PositionDirection,
@@ -13,12 +10,11 @@ from portfolio.state_management.models import (
 )
 from portfolio.state_management.risk_calculator import (
     ExposureAlert,
+    MarginUtilization,
     RiskCalculator,
     RiskLevel,
-    RiskMetrics,
     RiskThresholds,
     TokenExposure,
-    MarginUtilization,
 )
 
 

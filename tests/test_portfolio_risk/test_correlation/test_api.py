@@ -2,13 +2,12 @@
 
 from unittest.mock import MagicMock
 
-import numpy as np
 import pytest
 
 from portfolio.state_management.models import (
+    PortfolioState,
     Position,
     PositionDirection,
-    PortfolioState,
 )
 from portfolio.state_management.tracker import PortfolioTracker
 from portfolio_risk.correlation.api import (

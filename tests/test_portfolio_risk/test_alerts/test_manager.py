@@ -1,5 +1,7 @@
 """Tests for alert manager."""
 
+from datetime import UTC, datetime
+
 import pytest
 
 from portfolio.state_management.risk_calculator import (
@@ -14,7 +16,6 @@ from portfolio_risk.alerts.types import (
     AlertType,
     RiskAlert,
 )
-from datetime import UTC, datetime
 
 
 class TestRiskAlertManager:

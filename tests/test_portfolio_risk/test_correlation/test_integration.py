@@ -1,12 +1,11 @@
 """Tests for correlation module integration."""
 
 import numpy as np
-import pytest
 
 from portfolio.state_management.models import (
+    PortfolioState,
     Position,
     PositionDirection,
-    PortfolioState,
 )
 from portfolio_risk.correlation import (
     CorrelationAPI,
@@ -25,9 +24,6 @@ class TestModuleIntegration:
             CorrelationAPI,
             CorrelationEngine,
             CorrelationMethod,
-            CorrelationResult,
-            RollingCorrelationResult,
-            create_correlation_routes,
         )
 
         # Just verify imports work
@@ -112,7 +108,7 @@ class TestModuleIntegration:
         assert len(result.timestamps) > 0
 
         # Check rolling correlation values
-        for token_pair, correlations in result.rolling_correlations.items():
+        for _token_pair, correlations in result.rolling_correlations.items():
             assert len(correlations) > 0
             for corr in correlations:
                 assert -1.0 <= corr <= 1.0
@@ -221,8 +217,9 @@ class TestModuleIntegration:
         assert spearman_result.method == CorrelationMethod.SPEARMAN
 
         # Correlation matrix should be valid (symmetric, diagonal = 1)
-        assert np.allclose(pearson_result.correlation_matrix,
-                          pearson_result.correlation_matrix.T)
+        assert np.allclose(
+            pearson_result.correlation_matrix, pearson_result.correlation_matrix.T
+        )
         assert np.allclose(np.diag(pearson_result.correlation_matrix), 1.0)
 
     def test_edge_cases(self):
@@ -257,7 +254,9 @@ class TestModuleIntegration:
         np.random.seed(42)
         n = 50
         returns_a = np.random.normal(0.001, 0.01, n)
-        returns_b = -returns_a + np.random.normal(0, 0.002, n)  # Negate with small noise
+        returns_b = -returns_a + np.random.normal(
+            0, 0.002, n
+        )  # Negate with small noise
         prices_a = 100 * np.exp(np.cumsum(returns_a))
         prices_b = 100 * np.exp(np.cumsum(returns_b))
 

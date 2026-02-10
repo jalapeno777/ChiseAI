@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+from unittest.mock import Mock
+
 import pytest
-from datetime import datetime
-from unittest.mock import Mock, MagicMock
 
 from portfolio_risk.position_sizing import (
     KellyInputs,
@@ -12,15 +13,15 @@ from portfolio_risk.position_sizing import (
     SizingMethod,
     VolatilityInputs,
 )
+from portfolio_risk.position_sizing.api import (
+    PositionSizingAPI,
+    create_position_sizing_routes,
+)
 from portfolio_risk.position_sizing.integration import (
     PortfolioExposure,
     PositionSizingCache,
     PositionSizingIntegration,
     SizingRecommendation,
-)
-from portfolio_risk.position_sizing.api import (
-    PositionSizingAPI,
-    create_position_sizing_routes,
 )
 
 
@@ -306,7 +307,7 @@ class TestPositionSizingIntegration:
 
     def test_calculate_sizing_for_signal(self) -> None:
         """Test calculate_sizing_for_signal."""
-        from datetime import datetime, timezone
+
         from signal_generation.models import Signal, SignalDirection, SignalStatus
 
         integration = PositionSizingIntegration()
@@ -318,7 +319,7 @@ class TestPositionSizingIntegration:
             confidence=0.8,
             base_score=75.0,
             timeframe="1h",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             status=SignalStatus.LOGGED_ONLY,
         )
 

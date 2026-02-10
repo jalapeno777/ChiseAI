@@ -6,14 +6,10 @@ Tests stop-loss calculations across various market conditions.
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from portfolio_risk.stop_loss import (
-    ATR,
     StopLossCalculator,
-    StopLossConfig,
     StopLossEngine,
-    StopLossMethod,
     TradeDirection,
 )
 

@@ -6,7 +6,6 @@ Validates the main calculator interface and integration.
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from portfolio_risk.stop_loss.calculator import (
     StopLossCalculation,

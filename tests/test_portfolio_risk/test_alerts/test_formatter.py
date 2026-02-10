@@ -1,9 +1,5 @@
 """Tests for alert formatter."""
 
-from datetime import UTC, datetime
-
-import pytest
-
 from portfolio_risk.alerts.formatter import RiskAlertFormatter
 from portfolio_risk.alerts.types import (
     AlertSeverity,

@@ -1,12 +1,11 @@
 """Tests for portfolio API."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from portfolio.state_management.api import PortfolioAPI, create_portfolio_routes
 from portfolio.state_management.models import (
-    Balance,
     PortfolioSnapshot,
     PortfolioState,
     Position,

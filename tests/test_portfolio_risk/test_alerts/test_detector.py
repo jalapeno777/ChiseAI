@@ -1,12 +1,9 @@
 """Tests for alert detector."""
 
-from datetime import datetime, timezone
-
-import pytest
+from datetime import UTC, datetime
 
 from portfolio.state_management.risk_calculator import (
     MarginUtilization,
-    RiskLevel,
     RiskMetrics,
     TokenExposure,
 )
@@ -36,7 +33,7 @@ class TestRiskAlertDetector:
         )
 
         return RiskMetrics(
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             portfolio_id="test_portfolio",
             total_exposure=net_exposure,
             net_exposure=net_exposure,

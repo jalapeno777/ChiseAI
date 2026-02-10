@@ -1,7 +1,5 @@
 """Tests for portfolio state management models."""
 
-import pytest
-
 from portfolio.state_management.models import (
     Balance,
     PortfolioSnapshot,

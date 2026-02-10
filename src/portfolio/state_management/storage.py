@@ -6,9 +6,11 @@ fallback support for fault tolerance.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 from dataclasses import dataclass
+from datetime import UTC
 from typing import Any
 
 from portfolio.state_management.models import (
@@ -154,16 +156,16 @@ class InfluxDBPortfolioStorage(PortfolioStorageInterface):
             client = await self._get_client()
             query_api = client.query_api()
 
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             start_str = "-30d"
             if start_time:
-                start_dt = datetime.fromtimestamp(start_time / 1000, tz=timezone.utc)
+                start_dt = datetime.fromtimestamp(start_time / 1000, tz=UTC)
                 start_str = start_dt.isoformat()
 
             stop_str = "now()"
             if end_time:
-                end_dt = datetime.fromtimestamp(end_time / 1000, tz=timezone.utc)
+                end_dt = datetime.fromtimestamp(end_time / 1000, tz=UTC)
                 stop_str = end_dt.isoformat()
 
             query = f"""
@@ -171,7 +173,10 @@ class InfluxDBPortfolioStorage(PortfolioStorageInterface):
                     |> range(start: {start_str}, stop: {stop_str})
                     |> filter(fn: (r) => r._measurement == "portfolio_snapshot")
                     |> filter(fn: (r) => r.portfolio_id == "{portfolio_id}")
-                    |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
+                    |> pivot(
+                        rowKey:["_time"], columnKey: ["_field"],
+                        valueColumn: "_value"
+                    )
                     |> sort(columns: ["_time"], desc: true)
                     |> limit(n: {limit})
             """
@@ -182,12 +187,10 @@ class InfluxDBPortfolioStorage(PortfolioStorageInterface):
             for table in tables:
                 for record in tables[table]:
                     balance_summary = {}
-                    try:
+                    with contextlib.suppress(json.JSONDecodeError):
                         balance_summary = json.loads(
                             record.values.get("balance_summary", "{}")
                         )
-                    except json.JSONDecodeError:
-                        pass
 
                     results.append(
                         PortfolioSnapshot(

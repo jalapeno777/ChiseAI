@@ -437,8 +437,9 @@ class RiskCalculator:
                     alert_type="margin",
                     severity=margin_utilization.risk_level,
                     message=(
-                        f"Margin utilization ({margin_utilization.utilization_pct:.1f}%) "
-                        f"exceeds threshold ({self.thresholds.max_margin_utilization_pct}%)"
+                        f"Margin utilization exceeds threshold: "
+                        f"{margin_utilization.utilization_pct:.1f}% > "
+                        f"{self.thresholds.max_margin_utilization_pct}%"
                     ),
                     threshold=self.thresholds.max_margin_utilization_pct,
                     current_value=margin_utilization.utilization_pct,
@@ -456,7 +457,8 @@ class RiskCalculator:
                             severity=RiskLevel.HIGH,
                             message=(
                                 f"{te.token} concentration ({concentration_pct:.1f}%) "
-                                f"exceeds threshold ({self.thresholds.max_concentration_pct}%)"
+                                f"exceeds threshold ("
+                                f"{self.thresholds.max_concentration_pct}%)"
                             ),
                             threshold=self.thresholds.max_concentration_pct,
                             current_value=concentration_pct,
@@ -513,9 +515,11 @@ class RiskCalculator:
             "short_exposure": [te.short_notional for te in sorted_exposures],
             "net_exposure": [te.net_exposure for te in sorted_exposures],
             "exposure_pct": [
-                (te.gross_exposure / risk_metrics.total_exposure * 100)
-                if risk_metrics.total_exposure > 0
-                else 0
+                (
+                    (te.gross_exposure / risk_metrics.total_exposure * 100)
+                    if risk_metrics.total_exposure > 0
+                    else 0
+                )
                 for te in sorted_exposures
             ],
             "directional_bias": [te.directional_bias for te in sorted_exposures],

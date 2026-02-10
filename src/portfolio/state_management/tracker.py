@@ -7,11 +7,13 @@ from exchanges, managing portfolio state, and persisting snapshots.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import uuid
 import weakref
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from portfolio.state_management.models import PortfolioState, Position
@@ -430,8 +432,9 @@ class PortfolioTracker:
         """
         await self._queue_update(update)
 
-        # CRITICAL-1 FIX: Use .get() for atomic check-and-use to prevent TOCTOU race condition
-        # This ensures the position lookup and retrieval happen atomically
+        # CRITICAL-1 FIX: Use .get() for atomic check-and-use to prevent
+        # TOCTOU race condition. This ensures the position lookup and
+        # retrieval happen atomically
         position = self.state.positions.get(update.position_id)
 
         if position is not None:
@@ -695,10 +698,8 @@ class PortfolioTracker:
         # Cancel snapshot task
         if self._snapshot_task:
             self._snapshot_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._snapshot_task
-            except asyncio.CancelledError:
-                pass
 
         # Final state persistence
         await self._persist_state()

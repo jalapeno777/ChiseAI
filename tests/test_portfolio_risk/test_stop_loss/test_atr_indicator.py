@@ -68,7 +68,10 @@ class TestATRCalculation:
             volume: float = 1000.0
             timestamp: int = 0
 
-        return [MockOHLCV(o, h, l, c) for o, h, l, c in zip(opens, highs, lows, closes)]
+        return [
+            MockOHLCV(o, h, low_val, c)
+            for o, h, low_val, c in zip(opens, highs, lows, closes, strict=True)
+        ]
 
     def test_atr_insufficient_data(self):
         """Test ATR raises error with insufficient data."""
@@ -96,9 +99,13 @@ class TestATRCalculation:
         opens = [base_price + np.random.randn() * 100 for _ in range(20)]
         closes = [o + np.random.randn() * 200 for o in opens]
         highs = [
-            max(o, c) + abs(np.random.randn()) * 150 for o, c in zip(opens, closes)
+            max(o, c) + abs(np.random.randn()) * 150
+            for o, c in zip(opens, closes, strict=True)
         ]
-        lows = [min(o, c) - abs(np.random.randn()) * 150 for o, c in zip(opens, closes)]
+        lows = [
+            min(o, c) - abs(np.random.randn()) * 150
+            for o, c in zip(opens, closes, strict=True)
+        ]
 
         data = self.create_ohlcv_data(opens, highs, lows, closes)
 
@@ -173,9 +180,13 @@ class TestATRCalculation:
         opens = [base_price + np.random.randn() * 100 for _ in range(20)]
         closes = [o + np.random.randn() * 200 for o in opens]
         highs = [
-            max(o, c) + abs(np.random.randn()) * 150 for o, c in zip(opens, closes)
+            max(o, c) + abs(np.random.randn()) * 150
+            for o, c in zip(opens, closes, strict=True)
         ]
-        lows = [min(o, c) - abs(np.random.randn()) * 150 for o, c in zip(opens, closes)]
+        lows = [
+            min(o, c) - abs(np.random.randn()) * 150
+            for o, c in zip(opens, closes, strict=True)
+        ]
 
         data = self.create_ohlcv_data(opens, highs, lows, closes)
 
@@ -209,7 +220,10 @@ class TestATRTrueRange:
             volume: float = 1000.0
             timestamp: int = 0
 
-        return [MockOHLCV(o, h, l, c) for o, h, l, c in zip(opens, highs, lows, closes)]
+        return [
+            MockOHLCV(o, h, low_val, c)
+            for o, h, low_val, c in zip(opens, highs, lows, closes, strict=True)
+        ]
 
     def test_true_range_simple(self):
         """Test true range with simple range."""

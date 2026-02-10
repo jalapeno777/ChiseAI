@@ -1,7 +1,5 @@
 """Tests for alerts module integration."""
 
-import pytest
-
 from portfolio_risk.alerts import (
     AlertSeverity,
     AlertState,
@@ -12,8 +10,8 @@ from portfolio_risk.alerts import (
     RiskAlertDetector,
     RiskAlertFormatter,
     RiskAlertManager,
-    RiskAlertSendResult,
     RiskAlertSender,
+    RiskAlertSendResult,
 )
 
 

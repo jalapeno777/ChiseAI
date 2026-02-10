@@ -2,8 +2,6 @@
 
 from datetime import UTC, datetime
 
-import pytest
-
 from portfolio_risk.alerts.types import (
     AlertSeverity,
     AlertState,

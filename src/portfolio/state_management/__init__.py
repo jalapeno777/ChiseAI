@@ -13,12 +13,6 @@ from portfolio.state_management.models import (
     PositionDirection,
     PositionStatus,
 )
-from portfolio.state_management.storage import (
-    FallbackPortfolioStorage,
-    InfluxDBPortfolioStorage,
-    PostgresPortfolioStorage,
-    StorageConfig,
-)
 from portfolio.state_management.risk_calculator import (
     ExposureAlert,
     RiskCalculator,
@@ -26,6 +20,12 @@ from portfolio.state_management.risk_calculator import (
     RiskMetrics,
     RiskThresholds,
     TokenExposure,
+)
+from portfolio.state_management.storage import (
+    FallbackPortfolioStorage,
+    InfluxDBPortfolioStorage,
+    PostgresPortfolioStorage,
+    StorageConfig,
 )
 from portfolio.state_management.tracker import (
     BalanceUpdate,

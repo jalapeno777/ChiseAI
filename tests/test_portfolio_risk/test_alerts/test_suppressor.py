@@ -1,13 +1,8 @@
 """Tests for alert suppressor."""
 
-from datetime import UTC, datetime, timedelta
-
-import pytest
-
 from portfolio_risk.alerts.suppressor import AlertSuppressor
 from portfolio_risk.alerts.types import (
     AlertSeverity,
-    AlertState,
     AlertType,
     RiskAlert,
 )

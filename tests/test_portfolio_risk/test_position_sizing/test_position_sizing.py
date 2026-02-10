@@ -1,13 +1,12 @@
 """Unit tests for position sizing engine."""
 
 import pytest
-import numpy as np
 
 from portfolio_risk.position_sizing import (
     KellyInputs,
     PositionSizeCalculator,
-    PositionSizingEngine,
     PositionSizeResult,
+    PositionSizingEngine,
     SizingConfig,
     SizingMethod,
     VolatilityInputs,
@@ -457,7 +456,7 @@ class TestPositionSizeCalculator:
             )
 
     def test_calculator_missing_stop_loss(self) -> None:
-        """Test calculator raises error when stop loss is missing for methods that need it."""
+        """Test calculator raises error when stop loss is missing."""
         calculator = PositionSizeCalculator()
 
         with pytest.raises(ValueError, match="stop_loss_price"):
@@ -627,7 +626,8 @@ class TestPositionLimitsValidation:
 
     def test_validate_grid_leverage_limit(self) -> None:
         """Test validation fails when grid leverage (notional) exceeds limit."""
-        # Use high max_position_size_pct and max_risk_per_grid_pct to trigger leverage limit first
+        # Use high max_position_size_pct and max_risk_per_grid_pct
+        # to trigger leverage limit first
         config = SizingConfig(
             max_leverage=3.0, max_position_size_pct=500.0, max_risk_per_grid_pct=100.0
         )
@@ -817,7 +817,7 @@ class TestPositionCapScenarios:
     """Tests for position capping and leverage recalculation."""
 
     def test_kelly_leverage_recalculation_after_position_cap(self) -> None:
-        """Test that leverage_used is recalculated after position cap in Kelly method."""
+        """Test leverage_used is recalculated after position cap in Kelly method."""
         # Configure with low position size limit to trigger capping
         config = SizingConfig(max_position_size_pct=10.0, max_leverage=10.0)
         engine = PositionSizingEngine(config)
@@ -839,7 +839,7 @@ class TestPositionCapScenarios:
         assert result.notional_value == pytest.approx(1_000.0, abs=0.01)
 
     def test_fixed_fractional_leverage_recalculation_after_position_cap(self) -> None:
-        """Test that leverage_used is recalculated after position cap in fixed fractional."""
+        """Test leverage_used is recalculated after position cap in fixed fractional."""
         config = SizingConfig(max_position_size_pct=10.0, max_leverage=10.0)
         engine = PositionSizingEngine(config)
 
@@ -850,14 +850,15 @@ class TestPositionCapScenarios:
             risk_percentage=5.0,  # 5% risk
         )
 
-        # Without cap: risk=$500, stop=$1, position=500 units, notional=$50,000, leverage=5x
+        # Without cap: risk=$500, stop=$1, position=500 units,
+        # notional=$50,000, leverage=5x
         # With 10% position cap: max notional = $1,000
         assert result.capped_by_limit is True
         assert result.leverage_used == pytest.approx(0.1, abs=0.01)
         assert result.notional_value == pytest.approx(1_000.0, abs=0.01)
 
     def test_volatility_based_leverage_recalculation_after_position_cap(self) -> None:
-        """Test that leverage_used is recalculated after position cap in volatility method."""
+        """Test leverage_used is recalculated after position cap."""
         config = SizingConfig(max_position_size_pct=10.0, max_leverage=10.0)
         engine = PositionSizingEngine(config)
         vol_inputs = VolatilityInputs(atr_value=0.5, atr_multiplier=2.0)  # Small ATR

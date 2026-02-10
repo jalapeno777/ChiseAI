@@ -4,13 +4,20 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import pytest
-
+from dashboard.risk_exposure_panel import (
+    _render_alerts,
+    _render_exposure_table,
+    _render_heat_map,
+    _render_margin_gauge,
+    _render_report_section,
+    _render_summary_metrics,
+    render_risk_exposure_panel,
+    render_risk_metrics_mini,
+)
 from portfolio.state_management.models import (
     PortfolioState,
     Position,
     PositionDirection,
-    PositionStatus,
 )
 from portfolio.state_management.risk_calculator import (
     ExposureAlert,
@@ -19,16 +26,6 @@ from portfolio.state_management.risk_calculator import (
     RiskLevel,
     RiskMetrics,
     TokenExposure,
-)
-from dashboard.risk_exposure_panel import (
-    render_risk_exposure_panel,
-    render_risk_metrics_mini,
-    _render_summary_metrics,
-    _render_margin_gauge,
-    _render_heat_map,
-    _render_alerts,
-    _render_exposure_table,
-    _render_report_section,
 )
 
 
@@ -97,7 +94,7 @@ class TestRenderRiskExposurePanel:
         state.update_balance("USDT", free=100000.0)
         # No positions - this triggers early returns in heat_map and exposure_table
 
-        result = render_risk_exposure_panel(state, refresh_interval=0)
+        render_risk_exposure_panel(state, refresh_interval=0)
 
         # The mock button returns True by default (MagicMock), so report is generated
         # In real usage, button returns False until clicked
@@ -142,7 +139,8 @@ class TestRenderSummaryMetrics:
         _render_summary_metrics(metrics)
 
         mock_subheader.assert_called_once_with("Portfolio Risk Summary")
-        # Should call metric 4 times (Total Exposure, Net Exposure, Concentration, Alerts)
+        # Should call metric 4 times:
+        # (Total Exposure, Net Exposure, Concentration, Alerts)
         assert mock_metric.call_count == 4
 
 

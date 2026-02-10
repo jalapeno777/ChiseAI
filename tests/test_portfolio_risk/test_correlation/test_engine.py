@@ -192,7 +192,7 @@ class TestRollingCorrelations:
             window_size=30,
         )
 
-        for token_pair, correlations in result.rolling_correlations.items():
+        for _token_pair, correlations in result.rolling_correlations.items():
             for corr in correlations:
                 assert -1.0 <= corr <= 1.0
 

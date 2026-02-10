@@ -1,13 +1,11 @@
 """Tests for portfolio tracker."""
 
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from portfolio.state_management.models import (
-    Balance,
-    PortfolioSnapshot,
     PortfolioState,
     Position,
     PositionDirection,
@@ -16,7 +14,6 @@ from portfolio.state_management.models import (
 from portfolio.state_management.tracker import (
     BalanceUpdate,
     PortfolioTracker,
-    PortfolioUpdate,
     PositionUpdate,
     PriceUpdate,
 )

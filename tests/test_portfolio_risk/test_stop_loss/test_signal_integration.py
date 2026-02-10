@@ -9,13 +9,10 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from portfolio_risk.stop_loss import (
-    StopLossTracker,
-    StopLossOutcome,
     SignalResult,
-    TradeDirection,
+    StopLossOutcome,
+    StopLossTracker,
 )
 from signal_generation.models import Signal, SignalDirection, SignalStatus
 from signal_generation.signal_generator import (
@@ -308,7 +305,7 @@ class TestSignalGeneratorStopLoss:
     def test_generate_signal_without_stop_loss_when_disabled(self):
         """Test that stop-loss is not calculated when disabled."""
         config = SignalGenerationConfig(enable_stop_loss_calculation=False)
-        generator = SignalGenerator(config=config)
+        _ = SignalGenerator(config=config)
 
         # Create a mock signal manually
         signal = Signal(
