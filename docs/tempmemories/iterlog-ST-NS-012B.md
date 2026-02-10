@@ -23,3 +23,10 @@ learnings:
   - API design should be consistent with other endpoints
   - Recalculation triggers need careful threshold tuning
 ---
+
+## Incidents
+None
+
+## Scope Ownership
+- Owner: main
+- Status: Merged

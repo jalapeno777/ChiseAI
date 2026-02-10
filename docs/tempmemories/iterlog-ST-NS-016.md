@@ -25,3 +25,10 @@ learnings:
   - Kill-switch conditions need immediate attention and special handling
   - Dashboard integration requires real-time metrics updates
 ---
+
+## Incidents
+None
+
+## Scope Ownership
+- Owner: main
+- Status: Merged

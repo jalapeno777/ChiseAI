@@ -23,3 +23,10 @@ learnings:
   - Real-time requires efficient calculation caching
   - On-demand reports complement always-on monitoring
 ---
+
+## Incidents
+None
+
+## Scope Ownership
+- Owner: main
+- Status: Merged

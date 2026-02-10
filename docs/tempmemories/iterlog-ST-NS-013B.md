@@ -23,3 +23,10 @@ learnings:
   - Trailing stops work best in strong trending markets
   - Discord alerts need SL info for actionable signals
 ---
+
+## Incidents
+None
+
+## Scope Ownership
+- Owner: main
+- Status: Merged

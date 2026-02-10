@@ -22,3 +22,10 @@ learnings:
   - Correlation-adjusted sizing reduces effective concentration
   - High correlation pairs need special handling in sizing
 ---
+
+## Incidents
+None
+
+## Scope Ownership
+- Owner: main
+- Status: Merged
