@@ -52,7 +52,7 @@ class TestAlertSuppressor:
 
     def test_should_send_after_window(self):
         """Test that alert after window is allowed."""
-        suppressor = AlertSuppressor(min_interval_seconds=1)
+        suppressor = AlertSuppressor(min_interval_seconds=0.05)  # 50ms for faster tests
 
         alert = RiskAlert(
             alert_type=AlertType.EXPOSURE,
@@ -66,10 +66,10 @@ class TestAlertSuppressor:
         # First alert allowed
         assert suppressor.should_send(alert) is True
 
-        # Wait for window to pass
+        # Wait for window to pass (2x interval for CI stability)
         import time
 
-        time.sleep(1.1)
+        time.sleep(0.11)
 
         # Second alert allowed after window
         assert suppressor.should_send(alert) is True
