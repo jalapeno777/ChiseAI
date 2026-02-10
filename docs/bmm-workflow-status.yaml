@@ -812,7 +812,8 @@ stories:
     title: Dashboard Pre-market Briefing
     epic_id: EP-NS-002
     sprint_id: q2-2
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 5
     priority: P0-CRITICAL
     fr_coverage: [FR-008]
@@ -829,7 +830,8 @@ stories:
     title: Discord Alert Integration
     epic_id: EP-NS-002
     sprint_id: q2-2
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 5
     priority: P0-CRITICAL
     fr_coverage: [FR-009]
@@ -846,7 +848,8 @@ stories:
     title: Signal Detail Breakdown
     epic_id: EP-NS-002
     sprint_id: q2-2
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 5
     priority: P1-HIGH
     fr_coverage: [FR-010]
@@ -863,7 +866,8 @@ stories:
     title: Historical Context Panel
     epic_id: EP-NS-002
     sprint_id: q2-2
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 3
     priority: P1-HIGH
     fr_coverage: [FR-011]

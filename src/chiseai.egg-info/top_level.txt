@@ -1,0 +1,6 @@
+chiseai
+dashboard
+data_ingestion
+discord_alerts
+market_analysis
+signal_generation

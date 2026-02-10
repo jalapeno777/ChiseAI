@@ -1,0 +1,4 @@
+ccxt>=4.0.0
+influxdb-client>=1.40.0
+asyncpg>=0.29.0
+numpy>=1.24.0
