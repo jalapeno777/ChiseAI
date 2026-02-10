@@ -353,7 +353,8 @@ class PostgresStorage(StorageInterface):
         pool = await self._get_pool()
 
         async with pool.acquire() as conn:
-            await conn.execute("""
+            await conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS ohlcv_data (
                     id SERIAL PRIMARY KEY,
                     symbol VARCHAR(20) NOT NULL,
@@ -367,13 +368,16 @@ class PostgresStorage(StorageInterface):
                     created_at TIMESTAMPTZ DEFAULT NOW(),
                     UNIQUE(symbol, timeframe, timestamp)
                 )
-            """)
+            """
+            )
 
             # Create indexes for efficient queries
-            await conn.execute("""
+            await conn.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_ohlcv_symbol_timeframe
                 ON ohlcv_data(symbol, timeframe, timestamp DESC)
-            """)
+            """
+            )
 
     async def store(
         self,
