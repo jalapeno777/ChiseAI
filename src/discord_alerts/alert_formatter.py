@@ -53,7 +53,7 @@ class AlertFormatter:
         "low": "💤",  # < 40%
     }
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize alert formatter."""
         pass
 

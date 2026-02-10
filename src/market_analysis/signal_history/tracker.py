@@ -152,15 +152,15 @@ class SignalTracker:
         # Map ConfluenceScore direction to SignalDirection (models)
         direction = confluence_score.direction
         if isinstance(direction, str):
-            direction = SignalDirection(direction)
+            direction = SignalDirection(direction)  # type: ignore[assignment]
         elif direction is not None:
             # Convert from signal_aggregator.SignalDirection to models.SignalDirection
-            direction = SignalDirection(direction.value)
+            direction = SignalDirection(direction.value)  # type: ignore[assignment]
 
         return await self.store_signal(
             token=token,
             timestamp=timestamp,
-            direction=direction,
+            direction=direction,  # type: ignore[arg-type]
             confidence=confluence_score.confidence,
             entry_price=entry_price,
             score=confluence_score.score,

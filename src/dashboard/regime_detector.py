@@ -403,7 +403,7 @@ class RegimeDetector:
         avg_volume = np.mean(volume_data)
 
         # Higher volume confirms trend/range breakout
-        return recent_volume > avg_volume * 1.1
+        return bool(recent_volume > avg_volume * 1.1)
 
     def _determine_regime(
         self,
@@ -501,12 +501,12 @@ class RegimeDetector:
                 )
                 and recent_adx < prev_adx
             ):
-                return min(0.5, (prev_adx - recent_adx) / 10)
+                return float(min(0.5, float(prev_adx - recent_adx) / 10))
             elif (
                 self._state.current_regime == RegimeType.RANGING
                 and recent_adx > prev_adx
             ):
-                return min(0.5, (recent_adx - prev_adx) / 10)
+                return float(min(0.5, float(recent_adx - prev_adx) / 10))
 
         return 0.0
 

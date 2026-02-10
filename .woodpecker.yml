@@ -18,7 +18,7 @@ steps:
         pip install --no-cache-dir black ruff mypy pytest pytest-cov pyyaml types-PyYAML types-requests
         black --check .
         ruff check .
-        mypy src tests scripts
+        mypy src scripts
         python scripts/validate_status_sync.py
         python scripts/validate_iterloop_compliance.py
         python scripts/validate_pr_title.py

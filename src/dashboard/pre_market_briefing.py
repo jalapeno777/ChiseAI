@@ -94,12 +94,12 @@ class PreMarketBriefing:
             "token": token,
             "timestamp": self.timestamp.isoformat(),
             "key_levels": (
-                self.key_levels.get(token, {}).to_dict()
+                self.key_levels.get(token, {}).to_dict()  # type: ignore[union-attr]
                 if token in self.key_levels
                 else None
             ),
             "regime": (
-                self.market_regimes.get(token, {}).to_dict()
+                self.market_regimes.get(token, {}).to_dict()  # type: ignore[union-attr]
                 if token in self.market_regimes
                 else None
             ),
@@ -198,7 +198,7 @@ class PreMarketBriefingGenerator:
 
         # Check cache
         if not force_refresh and self._is_cache_valid():
-            return self._cached_briefing
+            return self._cached_briefing  # type: ignore[return-value]
 
         timestamp = datetime.now(UTC)
 

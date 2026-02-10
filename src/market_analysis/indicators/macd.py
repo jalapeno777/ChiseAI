@@ -68,7 +68,7 @@ class MACDResult:
         # Filter out NONE signals and get the last one
         non_none = self.crossovers[self.crossovers != MACDSignal.NONE]
         if len(non_none) > 0:
-            return non_none[-1]
+            return non_none[-1]  # type: ignore[no-any-return]
         return MACDSignal.NONE
 
 

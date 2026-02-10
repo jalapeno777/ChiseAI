@@ -183,7 +183,7 @@ class MarketSummaryCalculator:
             top_volume=sorted_by_volume[:5],
             most_volatile=sorted_by_volatility[:5],
             overall_sentiment=sentiment,
-            avg_price_change_24h=avg_change,
+            avg_price_change_24h=float(avg_change),
             total_volume_24h=total_volume,
         )
 
@@ -339,7 +339,9 @@ class MarketSummaryCalculator:
             "sentiment": (
                 "bullish"
                 if avg_change > 1.0
-                else "bearish" if avg_change < -1.0 else "neutral"
+                else "bearish"
+                if avg_change < -1.0
+                else "neutral"
             ),
             "top_movers": overnight_changes[:10],
             "token_count": len(overnight_changes),

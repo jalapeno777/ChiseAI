@@ -218,7 +218,7 @@ class RateLimiter:
             True if acquired, False if rate limited
         """
         result = self.acquire(channel, tokens, timeout=0)
-        return result["success"]
+        return bool(result["success"])
 
     def get_retry_after(self, channel: str) -> float:
         """Get seconds until next token available.
@@ -265,7 +265,7 @@ class RateLimiter:
 
             for channel, bucket in self._buckets.items():
                 bucket.refill()
-                stats["channel_stats"][channel] = {
+                channel_stats: dict[str, Any] = {
                     "remaining": int(bucket.tokens),
                     "max": self.max_per_minute,
                     "utilization": (
@@ -274,5 +274,6 @@ class RateLimiter:
                         else 0
                     ),
                 }
+                stats["channel_stats"][channel] = channel_stats  # type: ignore[index]
 
             return stats

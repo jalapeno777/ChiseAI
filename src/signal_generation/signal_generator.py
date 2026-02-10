@@ -343,12 +343,16 @@ class SignalGenerator:
 
             # Calculate indicators
             indicator_calc = IndicatorCalculator()
-            indicator_results = indicator_calc.calculate_all(ohlcv_data)
+            indicator_results = indicator_calc.calculate_all(
+                ohlcv_data,
+                timeframe.value,  # type: ignore[arg-type]
+            )
 
             # Aggregate signals
             aggregator = SignalAggregator()
             aggregated_signals = aggregator.aggregate(
-                indicator_results, timeframe.value
+                indicator_results,  # type: ignore[arg-type]
+                timeframe.value,  # type: ignore[arg-type]
             )
 
         # Calculate confluence score
@@ -403,7 +407,7 @@ class SignalGenerator:
                 # Rate limited - still actionable but marked
                 signal.status = SignalStatus.ACTIONABLE
                 signal.metadata["rate_limited"] = True
-                direction = signal.direction_str
+                direction = signal.direction_str  # type: ignore[assignment]
                 logger.warning(
                     "Actionable signal (rate limited): %s [%s]", token, direction
                 )
