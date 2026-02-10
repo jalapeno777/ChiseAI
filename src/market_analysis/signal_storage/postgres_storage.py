@@ -93,8 +93,7 @@ class PostgresSignalStorage(SignalStorageInterface):
 
         async with pool.acquire() as conn:
             # Create signals table
-            await conn.execute(
-                """
+            await conn.execute("""
                 CREATE TABLE IF NOT EXISTS signals (
                     signal_id UUID PRIMARY KEY,
                     token VARCHAR(20) NOT NULL,
@@ -109,38 +108,28 @@ class PostgresSignalStorage(SignalStorageInterface):
                     metadata JSONB,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
-                """
-            )
+                """)
 
             # Create indexes for signals table
-            await conn.execute(
-                """
+            await conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_signals_token
                 ON signals(token)
-                """
-            )
-            await conn.execute(
-                """
+                """)
+            await conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_signals_timestamp
                 ON signals(timestamp)
-                """
-            )
-            await conn.execute(
-                """
+                """)
+            await conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_signals_direction
                 ON signals(direction)
-                """
-            )
-            await conn.execute(
-                """
+                """)
+            await conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_signals_confidence
                 ON signals(confidence)
-                """
-            )
+                """)
 
             # Create signal_outcomes table
-            await conn.execute(
-                """
+            await conn.execute("""
                 CREATE TABLE IF NOT EXISTS signal_outcomes (
                     id SERIAL PRIMARY KEY,
                     signal_id UUID NOT NULL REFERENCES signals(signal_id)
@@ -155,28 +144,21 @@ class PostgresSignalStorage(SignalStorageInterface):
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE(signal_id)
                 )
-                """
-            )
+                """)
 
             # Create indexes for outcomes table
-            await conn.execute(
-                """
+            await conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_outcomes_signal_id
                 ON signal_outcomes(signal_id)
-                """
-            )
-            await conn.execute(
-                """
+                """)
+            await conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_outcomes_is_win
                 ON signal_outcomes(is_win)
-                """
-            )
-            await conn.execute(
-                """
+                """)
+            await conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_outcomes_exit_timestamp
                 ON signal_outcomes(exit_timestamp)
-                """
-            )
+                """)
 
         logger.info("PostgreSQL schema initialized")
 
