@@ -880,7 +880,7 @@ stories:
       - Sample size (number of similar signals) is indicated
       - FR-011 is satisfied
 
-  # EP-NS-003: Portfolio Risk Management (5 stories, 35 points)
+  # EP-NS-003: Portfolio Risk Management (5 container stories + 6 split stories, 35 points)
   - id: ST-NS-012
     title: Position Sizing Engine
     epic_id: EP-NS-003
@@ -890,6 +890,40 @@ stories:
     priority: P0-CRITICAL
     fr_coverage: [FR-012]
     description: Generate position sizing recommendations based on portfolio
+
+  - id: ST-NS-012A
+    title: Position Sizing Core Engine
+    epic_id: EP-NS-003
+    sprint_id: q2-2
+    status: completed
+    story_points: 4
+    priority: P0-CRITICAL
+    fr_coverage: [FR-012]
+    description: Implement core position sizing calculation engine with Kelly Criterion, fixed fractional, and volatility-based sizing methods
+    acceptance_criteria:
+      - Kelly Criterion sizing is calculated correctly (f* = (bp - q) / b)
+      - Fixed fractional sizing supports configurable risk percentage (default 1-2%)
+      - Volatility-based sizing uses ATR or historical volatility
+      - Position size is calculated as: (Account Balance × Risk %) / (Stop Distance × Tick Value)
+      - Maximum position size limits are enforced per token and portfolio-wide
+      - Unit tests cover all sizing methods with edge cases (zero volatility, extreme prices)
+
+  - id: ST-NS-012B
+    title: Position Sizing Integration & API
+    epic_id: EP-NS-003
+    sprint_id: q2-2
+    status: planned
+    story_points: 4
+    priority: P0-CRITICAL
+    fr_coverage: [FR-012]
+    description: Integrate position sizing engine with portfolio state, signal generation, and expose via API for dashboard consumption
+    acceptance_criteria:
+      - Position sizing recommendations are generated automatically with each signal
+      - Current portfolio exposure is factored into sizing calculations
+      - API endpoint `/api/v1/position-size` returns sizing recommendation for a given signal
+      - Sizing recommendations include: suggested size, sizing method used, risk amount, max position check
+      - Integration with signal detail breakdown (ST-NS-010) to display sizing
+      - Sizing is recalculated when portfolio balance changes >5%
 
   - id: ST-NS-013
     title: Stop-Loss Recommendation System
@@ -901,6 +935,40 @@ stories:
     fr_coverage: [FR-013]
     description: Provide stop-loss recommendations with each signal
 
+  - id: ST-NS-013A
+    title: Stop-Loss Calculation Engine
+    epic_id: EP-NS-003
+    sprint_id: q2-2
+    status: planned
+    story_points: 4
+    priority: P0-CRITICAL
+    fr_coverage: [FR-013]
+    description: "Implement stop-loss calculation engine using multiple methods: technical levels (support/resistance), ATR-based, and percentage-based"
+    acceptance_criteria:
+      - ATR-based stop-loss calculates at 2× ATR(14) from entry price
+      - Technical level stops use nearest support (long) / resistance (short) from key levels
+      - Percentage-based stops support configurable % (default 2-5%)
+      - Stop-loss distance respects minimum risk:reward ratio (default 1:1.5)
+      - Multiple stop methods can be compared and optimal selected
+      - Unit tests validate stop calculations across market conditions
+
+  - id: ST-NS-013B
+    title: Stop-Loss Integration & Signal Delivery
+    epic_id: EP-NS-003
+    sprint_id: q2-2
+    status: planned
+    story_points: 3
+    priority: P0-CRITICAL
+    fr_coverage: [FR-013]
+    description: Integrate stop-loss recommendations with signal generation and deliver via dashboard and alerts
+    acceptance_criteria:
+      - Stop-loss level is included in every generated signal
+      - Stop-loss is displayed in signal detail breakdown panel
+      - Discord alerts include stop-loss level when signal is actionable
+      - Stop-loss updates dynamically if key levels change before entry
+      - Trailing stop option is calculated and offered when trend is strong
+      - Stop-loss hit tracking is implemented for outcome correlation
+
   - id: ST-NS-014
     title: Portfolio Risk Exposure Monitor
     epic_id: EP-NS-003
@@ -910,6 +978,40 @@ stories:
     priority: P0-CRITICAL
     fr_coverage: [FR-014]
     description: Monitor portfolio-level risk exposure in real-time
+
+  - id: ST-NS-014A
+    title: Portfolio Data Collection & State Management
+    epic_id: EP-NS-003
+    sprint_id: q2-2
+    status: planned
+    story_points: 4
+    priority: P0-CRITICAL
+    fr_coverage: [FR-014]
+    description: Implement real-time portfolio data collection, position tracking, and state management infrastructure
+    acceptance_criteria:
+      - Portfolio positions are tracked in real-time with current PnL
+      - Position updates are received within 1 second of exchange confirmation
+      - Portfolio state includes: positions, balances, margin used, available equity
+      - Historical portfolio snapshots are stored for trend analysis
+      - Data persistence handles connection failures gracefully with replay capability
+      - State is queryable via API with <100ms latency
+
+  - id: ST-NS-014B
+    title: Risk Exposure Calculation & Dashboard
+    epic_id: EP-NS-003
+    sprint_id: q2-2
+    status: planned
+    story_points: 3
+    priority: P0-CRITICAL
+    fr_coverage: [FR-014]
+    description: Calculate portfolio-level risk metrics and expose via dashboard panels and alerting
+    acceptance_criteria:
+      - Total portfolio exposure is calculated as sum of position notionals
+      - Margin utilization percentage is displayed (used / total)
+      - Portfolio heat map shows exposure by token and direction
+      - Risk metrics update in real-time on dashboard (<5s latency)
+      - Maximum exposure alerts trigger at configurable thresholds (default 80%)
+      - Risk report is generated on-demand with current exposure breakdown
 
   - id: ST-NS-015
     title: Correlation Analysis Engine
@@ -1226,9 +1328,9 @@ sprints:
   - id: q2-2
     name: Signal Generation & Portfolio Risk
     status: planned
-    story_count: 10
-    story_points: 51
-    mapped_stories: [ST-NS-007, ST-NS-008, ST-NS-009, ST-NS-010, ST-NS-011, ST-NS-012, ST-NS-013, ST-NS-014, ST-NS-015, ST-NS-016]
+    story_count: 16
+    story_points: 73
+    mapped_stories: [ST-NS-007, ST-NS-008, ST-NS-009, ST-NS-010, ST-NS-011, ST-NS-012, ST-NS-012A, ST-NS-012B, ST-NS-013, ST-NS-013A, ST-NS-013B, ST-NS-014, ST-NS-014A, ST-NS-014B, ST-NS-015, ST-NS-016]
 
   - id: q2-3
     name: Learning & Improvement System
