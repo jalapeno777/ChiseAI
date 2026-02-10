@@ -510,7 +510,7 @@ validations:
     title: Technical Indicator Accuracy
     epic_id: EP-NS-001
     story_id: ST-NS-002
-    status: planned
+    status: validated
     description: Validate RSI, MACD, and Bollinger Bands calculations match industry-standard implementations
     acceptance_criteria:
       - RSI calculations match TradingView within 0.1%
@@ -524,7 +524,7 @@ validations:
     title: Markov Chain State Inference
     epic_id: EP-NS-001
     story_id: ST-NS-003
-    status: planned
+    status: validated
     description: Validate Markov chain correctly identifies trend states (bullish, bearish, neutral, transitional)
     acceptance_criteria:
       - State transitions follow defined probability matrices
@@ -538,7 +538,7 @@ validations:
     title: Confluence Scoring Logic
     epic_id: EP-NS-001
     story_id: ST-NS-004
-    status: planned
+    status: validated
     description: Validate confluence-based signal scoring correctly weights multiple indicators
     acceptance_criteria:
       - Signal scores increase with indicator agreement
@@ -552,7 +552,7 @@ validations:
     title: Confidence Multiplier Logic
     epic_id: EP-NS-001
     story_id: ST-NS-005
-    status: planned
+    status: validated
     description: Validate confidence multipliers adjust based on signal agreement across timeframes
     acceptance_criteria:
       - Multiplier increases with timeframe agreement (1.0x base up to 1.5x for 4+ agreement)
@@ -566,7 +566,7 @@ validations:
     title: Signal History Tracking
     epic_id: EP-NS-001
     story_id: ST-NS-006
-    status: planned
+    status: validated
     description: Validate signal history is tracked with outcome correlation for learning
     acceptance_criteria:
       - Signals are stored with timestamp, direction, confidence, entry price
@@ -577,11 +577,11 @@ validations:
     owner: qa-team
 
   # EP-NS-002: Signal Generation & Delivery
-  - id: V-NS-005
+  - id: V-NS-007
     title: Signal Confidence Threshold
     epic_id: EP-NS-002
     story_id: ST-NS-007
-    status: planned
+    status: validated
     description: Validate only signals meeting 75%+ confidence threshold are generated and delivered
     acceptance_criteria:
       - Signals below 75% confidence are filtered out

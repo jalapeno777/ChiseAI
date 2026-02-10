@@ -108,7 +108,7 @@ epics:
   # EP-NS-001: Market Analysis Engine Foundation (6 stories, 28 points)
   - id: EP-NS-001
     name: Market Analysis Engine Foundation
-    status: planned
+    status: completed
     story_ids: [ST-NS-001, ST-NS-002, ST-NS-003, ST-NS-004, ST-NS-005, ST-NS-006]
     story_count: 6
     story_points: 28
@@ -708,7 +708,8 @@ stories:
     title: Technical Indicator Calculation
     epic_id: EP-NS-001
     sprint_id: q2-1
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 5
     priority: P0-CRITICAL
     fr_coverage: [FR-002]
@@ -724,7 +725,8 @@ stories:
     title: Markov Chain Trend Detection
     epic_id: EP-NS-001
     sprint_id: q2-1
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 5
     priority: P0-CRITICAL
     fr_coverage: [FR-003]
@@ -740,7 +742,8 @@ stories:
     title: Confluence-Based Signal Scoring
     epic_id: EP-NS-001
     sprint_id: q2-1
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 5
     priority: P0-CRITICAL
     fr_coverage: [FR-004]
@@ -756,7 +759,8 @@ stories:
     title: Confidence Multiplier Updates
     epic_id: EP-NS-001
     sprint_id: q2-1
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 3
     priority: P1-HIGH
     fr_coverage: [FR-005]
@@ -772,7 +776,8 @@ stories:
     title: Signal History Tracking
     epic_id: EP-NS-001
     sprint_id: q2-1
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 5
     priority: P1-HIGH
     fr_coverage: [FR-006]
@@ -789,7 +794,8 @@ stories:
     title: Real-time Signal Generation
     epic_id: EP-NS-002
     sprint_id: q2-2
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 5
     priority: P0-CRITICAL
     fr_coverage: [FR-007]

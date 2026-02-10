@@ -72,8 +72,8 @@ class RSI:
 
         Args:
             period: RSI calculation period (default: 14)
-            overbought_threshold: Level above which is considered overbought (default: 70)
-            oversold_threshold: Level below which is considered oversold (default: 30)
+            overbought_threshold: Level above which is overbought (default: 70)
+            oversold_threshold: Level below which is oversold (default: 30)
         """
         self.period = period
         self.overbought_threshold = overbought_threshold

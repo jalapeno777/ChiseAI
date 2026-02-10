@@ -5,7 +5,6 @@ InfluxDB as primary and PostgreSQL as fallback.
 """
 
 import logging
-import base64
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime

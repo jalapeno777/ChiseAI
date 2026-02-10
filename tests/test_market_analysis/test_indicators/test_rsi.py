@@ -304,7 +304,8 @@ class TestRSI:
                 )
                 assert diff_pct < tolerance, (
                     f"Index {i}: RSI {result[i]:.6f} differs from expected "
-                    f"{expected_rsi_values[i]:.6f} by {diff_pct:.4f}% (tolerance: {tolerance}%)"
+                    f"{expected_rsi_values[i]:.6f} by {diff_pct:.4f}%"
+                    f" (tolerance: {tolerance}%)"
                 )
 
     def test_wilder_smoothing(self):
@@ -399,9 +400,9 @@ class TestRSI:
 
         # RMA first value should be alpha * x[0] = 2.0 / 14 = 0.142857...
         expected_first_rma = 2.0 / 14
-        assert abs(rma_result[0] - expected_first_rma) < 1e-10, (
-            f"RMA first value {rma_result[0]} != expected {expected_first_rma}"
-        )
+        assert (
+            abs(rma_result[0] - expected_first_rma) < 1e-10
+        ), f"RMA first value {rma_result[0]} != expected {expected_first_rma}"
 
         # SMA of all 14 values would be 2.0
         assert abs(sma_result - 2.0) < 1e-10, f"SMA value {sma_result} != expected 2.0"

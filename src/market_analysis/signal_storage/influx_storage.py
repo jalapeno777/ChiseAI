@@ -13,6 +13,8 @@ if TYPE_CHECKING:
     from influxdb_client import InfluxDBClient
     from influxdb_client.client.write_api import WriteApi
 
+from datetime import UTC
+
 from market_analysis.signal_storage.interface import SignalStorageInterface
 from market_analysis.signal_storage.models import (
     OutcomeRecord,
@@ -203,11 +205,13 @@ class InfluxSignalStorage(SignalStorageInterface):
             query_api = client.query_api()
 
             # Build Flux query - let Flux use execution time when no end_time
-            flux = f'''
+            flux = f"""
                 from(bucket: "{self.bucket}")
-                    |> range(start: {self._ms_to_rfc3339(start_time) if start_time else -30})
+                    |> range(start: {
+                self._ms_to_rfc3339(start_time) if start_time else -30
+            })
                     |> filter(fn: (r) => r._measurement == "trading_signals")
-            '''
+            """
 
             if token:
                 flux += f'    |> filter(fn: (r) => r.token == "{token}")\n'
@@ -257,13 +261,13 @@ class InfluxSignalStorage(SignalStorageInterface):
             client = await self._get_client()
             query_api = client.query_api()
 
-            flux = f'''
+            flux = f"""
                 from(bucket: "{self.bucket}")
                     |> range(start: -365d)
                     |> filter(fn: (r) => r._measurement == "trading_signals")
                     |> filter(fn: (r) => r.signal_id == "{signal_id}")
                     |> limit(n: 1)
-            '''
+            """
 
             tables = query_api.query(flux, org=self.org)
 
@@ -290,13 +294,13 @@ class InfluxSignalStorage(SignalStorageInterface):
             client = await self._get_client()
             query_api = client.query_api()
 
-            flux = f'''
+            flux = f"""
                 from(bucket: "{self.bucket}")
                     |> range(start: -365d)
                     |> filter(fn: (r) => r._measurement == "trading_outcomes")
                     |> filter(fn: (r) => r.signal_id == "{signal_id}")
                     |> limit(n: 1)
-            '''
+            """
 
             tables = query_api.query(flux, org=self.org)
 
@@ -483,9 +487,9 @@ class InfluxSignalStorage(SignalStorageInterface):
 
     def _ms_to_rfc3339(self, timestamp_ms: int) -> str:
         """Convert millisecond timestamp to RFC3339 string."""
-        from datetime import datetime, timezone
+        from datetime import datetime
 
-        dt = datetime.fromtimestamp(timestamp_ms / 1000, tz=timezone.utc)
+        dt = datetime.fromtimestamp(timestamp_ms / 1000, tz=UTC)
         return dt.isoformat()
 
     def _record_to_signal(self, record: Any) -> SignalRecord | None:
@@ -501,12 +505,16 @@ class InfluxSignalStorage(SignalStorageInterface):
                 entry_price=values.get("entry_price", 0.0),
                 score=values.get("score", 0.0),
                 multiplier_applied=values.get("multiplier_applied") or None,
-                indicators_used=values.get("indicators_used", "").split(",")
-                if values.get("indicators_used")
-                else [],
-                timeframes_used=values.get("timeframes_used", "").split(",")
-                if values.get("timeframes_used")
-                else [],
+                indicators_used=(
+                    values.get("indicators_used", "").split(",")
+                    if values.get("indicators_used")
+                    else []
+                ),
+                timeframes_used=(
+                    values.get("timeframes_used", "").split(",")
+                    if values.get("timeframes_used")
+                    else []
+                ),
             )
         except Exception as e:
             logger.error(f"Failed to convert record to signal: {e}")

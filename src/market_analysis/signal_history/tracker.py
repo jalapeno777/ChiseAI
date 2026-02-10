@@ -115,7 +115,7 @@ class SignalTracker:
         token: str,
         timestamp: int,
         entry_price: float,
-        confluence_score: "ConfluenceScore",
+        confluence_score: ConfluenceScore,
         indicators_used: list[str] | None = None,
         timeframes_used: list[str] | None = None,
         metadata: dict[str, Any] | None = None,
