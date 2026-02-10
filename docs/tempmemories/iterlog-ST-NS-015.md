@@ -3,9 +3,10 @@ story_id: ST-NS-015
 story_title: Correlation Analysis Engine
 epic_id: EP-NS-003
 phase: implementation
-status: completed
+status: deprecated
 started_at: "2026-02-09T00:00:00Z"
 completed_at: "2026-02-10T18:00:00Z"
+deprecated_note: "⚠️ DEPRECATED: Superseded by ST-NS-015A (Correlation Calculation Engine) and ST-NS-015B (Correlation Risk Integration & Alerts)"
 acceptance_criteria:
   - Correlation matrix calculated for all portfolio positions
   - High correlation (>0.7) pairs identified and flagged

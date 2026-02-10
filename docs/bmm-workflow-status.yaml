@@ -125,12 +125,12 @@ epics:
     description: Real-time signal generation with confidence scoring, dashboard display, and Discord delivery
     sprint_id: q2-2
 
-  # EP-NS-003: Portfolio Risk Management (5 stories, 35 points)
+  # EP-NS-003: Portfolio Risk Management (10 stories, 35 points)
   - id: EP-NS-003
     name: Portfolio Risk Management
     status: completed
-    story_ids: [ST-NS-012, ST-NS-013, ST-NS-014, ST-NS-015, ST-NS-016]
-    story_count: 5
+    story_ids: [ST-NS-012A, ST-NS-012B, ST-NS-013A, ST-NS-013B, ST-NS-014A, ST-NS-014B, ST-NS-015A, ST-NS-015B, ST-NS-016A, ST-NS-016B]
+    story_count: 10
     story_points: 35
     description: Position sizing, stop-loss recommendations, portfolio exposure monitoring, and correlation analysis
     sprint_id: q2-2
@@ -1018,27 +1018,97 @@ stories:
       - Maximum exposure alerts trigger at configurable thresholds (default 80%)
       - Risk report is generated on-demand with current exposure breakdown
 
-  - id: ST-NS-015
-    title: Correlation Analysis Engine
+  # Split from ST-NS-015 (7 SP -> 4+3 = 7 SP)
+  - id: ST-NS-015A
+    title: Correlation Calculation Engine
     epic_id: EP-NS-003
     sprint_id: q2-2
     status: completed
     validation_status: validated
+    story_points: 4
+    priority: P1-HIGH
+    fr_coverage: [FR-015]
+    description: Implement correlation calculation engine for portfolio positions
+    acceptance_criteria:
+      - Correlation coefficients are calculated between all position pairs
+      - Rolling 30-day correlation window is used
+      - Correlation matrix is updated daily
+      - Unit tests validate calculation accuracy
+      - FR-015 is satisfied
+
+  - id: ST-NS-015B
+    title: Correlation Risk Integration & Alerts
+    epic_id: EP-NS-003
+    sprint_id: q2-2
+    status: completed
+    validation_status: validated
+    story_points: 3
+    priority: P1-HIGH
+    fr_coverage: [FR-015]
+    description: Integrate correlation analysis into risk monitoring and trigger alerts
+    acceptance_criteria:
+      - High correlation pairs (>70%) trigger warnings
+      - Portfolio exposure is adjusted based on correlation
+      - Alerts are sent via Discord for critical levels
+      - Integration with risk dashboard is verified
+      - FR-015 is satisfied
+
+  # Split from ST-NS-016 (6 SP -> 3+3 = 6 SP)
+  - id: ST-NS-016A
+    title: Risk Threshold Rule Engine
+    epic_id: EP-NS-003
+    sprint_id: q2-2
+    status: completed
+    validation_status: validated
+    story_points: 3
+    priority: P1-HIGH
+    fr_coverage: [FR-016]
+    description: Implement configurable risk threshold rule engine
+    acceptance_criteria:
+      - Thresholds are configurable per risk type (exposure, drawdown, correlation)
+      - Rules support AND/OR logic for complex conditions
+      - Rule evaluation runs in real-time
+      - Rule changes are logged with timestamps
+      - FR-016 is satisfied
+
+  - id: ST-NS-016B
+    title: Risk Alert Delivery & Management
+    epic_id: EP-NS-003
+    sprint_id: q2-2
+    status: completed
+    validation_status: validated
+    story_points: 3
+    priority: P1-HIGH
+    fr_coverage: [FR-016]
+    description: Deliver risk alerts and manage alert lifecycle
+    acceptance_criteria:
+      - Alerts are delivered via Discord within 5 seconds
+      - Alert acknowledgment is tracked
+      - Historical alerts are queryable
+      - Alert throttling prevents spam
+      - FR-016 is satisfied
+
+  - id: ST-NS-015
+    title: Correlation Analysis Engine (DEPRECATED - superseded by ST-NS-015A, ST-NS-015B)
+    epic_id: EP-NS-003
+    sprint_id: q2-2
+    status: deprecated
+    validation_status: deprecated
     story_points: 7
     priority: P1-HIGH
     fr_coverage: [FR-015]
-    description: Analyze correlations across portfolio positions
+    description: "DEPRECATED: Split into ST-NS-015A (Correlation Calculation Engine) and ST-NS-015B (Correlation Risk Integration & Alerts)"
 
   - id: ST-NS-016
-    title: Risk Threshold Alert System
+    title: Risk Threshold Alert System (DEPRECATED - superseded by ST-NS-016A, ST-NS-016B)
     epic_id: EP-NS-003
     sprint_id: q2-2
-    status: completed
-    validation_status: validated
+    status: deprecated
+    validation_status: deprecated
     story_points: 6
     priority: P1-HIGH
     fr_coverage: [FR-016]
-    description: Send automated alerts for risk threshold breaches
+    description: "DEPRECATED: Split into ST-NS-016A (Risk Threshold Rule Engine) and ST-NS-016B (Risk Alert Delivery & Management)"
 
   # EP-NS-004: Learning & Improvement System (4 stories, 28 points)
   - id: ST-NS-017
