@@ -193,7 +193,7 @@ class StopLossTracker:
         stats = tracker.get_correlation_stats()
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize stop-loss tracker."""
         self._signals: dict[str, dict[str, Any]] = {}  # signal_id -> signal data
         self._stop_hits: list[StopLossHitEvent] = []
@@ -354,9 +354,9 @@ class StopLossTracker:
 
         # Check based on direction
         if signal.direction.value == "long":
-            return current_price <= stop_loss
+            return bool(current_price <= stop_loss)
         else:  # short
-            return current_price >= stop_loss
+            return bool(current_price >= stop_loss)
 
     def get_correlation_stats(self) -> StopLossCorrelationStats:
         """Calculate correlation statistics.
@@ -422,7 +422,7 @@ class StopLossTracker:
         stats.correlation_by_method = method_stats
 
         # Break down by confidence bucket
-        confidence_buckets = {
+        confidence_buckets: dict[str, list[SignalOutcome]] = {
             "75-80%": [],
             "80-85%": [],
             "85-90%": [],

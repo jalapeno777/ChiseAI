@@ -145,7 +145,7 @@ class PositionSizeCalculator:
         # Calculate ATR using Wilder's smoothing
         atr_values: list[float] = []
         # First ATR is simple average
-        atr_values.append(np.mean(tr_values[:period]))
+        atr_values.append(float(np.mean(tr_values[:period])))
 
         # Subsequent values use smoothing formula
         for i in range(period, len(tr_values)):

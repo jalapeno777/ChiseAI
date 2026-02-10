@@ -116,7 +116,7 @@ class PortfolioAPI:
         if position_id not in state.positions:
             return None
 
-        return state.positions[position_id].to_dict()
+        return state.positions[position_id].to_dict()  # type: ignore[no-any-return]
 
     def get_balances(
         self, token: str | None = None
@@ -133,10 +133,10 @@ class PortfolioAPI:
 
         if token:
             if token in state.balances:
-                return state.balances[token].to_dict()
+                return state.balances[token].to_dict()  # type: ignore[no-any-return]
             return {"token": token, "free": 0.0, "locked": 0.0, "total": 0.0}
 
-        return [b.to_dict() for b in state.balances.values()]
+        return [b.to_dict() for b in state.balances.values()]  # type: ignore[no-any-return]
 
     def get_pnl_summary(self) -> dict[str, Any]:
         """Get PnL summary across all positions.
@@ -222,7 +222,7 @@ class PortfolioAPI:
         Returns:
             Complete portfolio state dictionary
         """
-        return self.tracker.state.to_dict()
+        return self.tracker.state.to_dict()  # type: ignore[no-any-return]
 
     def health_check(self) -> dict[str, Any]:
         """Get API health status.

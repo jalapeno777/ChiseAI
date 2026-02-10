@@ -222,7 +222,7 @@ class InfluxDBPortfolioStorage(PortfolioStorageInterface):
         try:
             client = await self._get_client()
             health = client.health()
-            return health.status == "pass"
+            return bool(health.status == "pass")
         except Exception as e:
             logger.warning(f"InfluxDB health check failed: {e}")
             return False

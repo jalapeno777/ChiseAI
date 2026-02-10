@@ -7,6 +7,7 @@ portfolio state integration.
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from typing import Any
 
 from portfolio_risk.position_sizing.integration import (
@@ -118,7 +119,7 @@ class PositionSizingAPI:
             use_portfolio_state=use_portfolio_state,
         )
 
-        return sizing.to_dict()
+        return sizing.to_dict()  # type: ignore[no-any-return]
 
     def get_position_size_for_signal(
         self,
@@ -159,7 +160,7 @@ class PositionSizingAPI:
             use_portfolio_state=use_portfolio_state,
         )
 
-        return sizing.to_dict()
+        return sizing.to_dict()  # type: ignore[no-any-return]
 
     def get_portfolio_exposure(self) -> dict[str, Any] | None:
         """Get current portfolio exposure summary.
@@ -189,7 +190,7 @@ class PositionSizingAPI:
         Returns:
             True if portfolio balance changed significantly
         """
-        return self.integration.should_recalculate()
+        return self.integration.should_recalculate()  # type: ignore[no-any-return]
 
     def invalidate_cache(self) -> None:
         """Invalidate all cached sizing results."""
@@ -318,7 +319,7 @@ def create_position_sizing_routes(
     return routes
 
 
-def _create_calculate_handler(api: PositionSizingAPI):
+def _create_calculate_handler(api: PositionSizingAPI) -> Callable[..., Any]:
     """Create handler for POST /position-size."""
 
     async def handler(request: dict[str, Any]) -> dict[str, Any]:
@@ -380,7 +381,7 @@ def _create_calculate_handler(api: PositionSizingAPI):
     return handler
 
 
-def _create_signal_handler(api: PositionSizingAPI):
+def _create_signal_handler(api: PositionSizingAPI) -> Callable[..., Any]:
     """Create handler for POST /position-size/signal/{signal_id}."""
 
     async def handler(signal_id: str, request: dict[str, Any]) -> dict[str, Any]:
@@ -461,7 +462,7 @@ def _create_signal_handler(api: PositionSizingAPI):
     return handler
 
 
-def _create_exposure_handler(api: PositionSizingAPI):
+def _create_exposure_handler(api: PositionSizingAPI) -> Callable[..., Any]:
     """Create handler for GET /position-size/portfolio-exposure."""
 
     async def handler() -> dict[str, Any]:
@@ -483,7 +484,7 @@ def _create_exposure_handler(api: PositionSizingAPI):
     return handler
 
 
-def _create_recalculate_check_handler(api: PositionSizingAPI):
+def _create_recalculate_check_handler(api: PositionSizingAPI) -> Callable[..., Any]:
     """Create handler for GET /position-size/should-recalculate."""
 
     async def handler() -> dict[str, Any]:
@@ -501,7 +502,7 @@ def _create_recalculate_check_handler(api: PositionSizingAPI):
     return handler
 
 
-def _create_invalidate_cache_handler(api: PositionSizingAPI):
+def _create_invalidate_cache_handler(api: PositionSizingAPI) -> Callable[..., Any]:
     """Create handler for DELETE /position-size/cache."""
 
     async def handler() -> dict[str, Any]:
@@ -516,7 +517,7 @@ def _create_invalidate_cache_handler(api: PositionSizingAPI):
     return handler
 
 
-def _create_cache_stats_handler(api: PositionSizingAPI):
+def _create_cache_stats_handler(api: PositionSizingAPI) -> Callable[..., Any]:
     """Create handler for GET /position-size/cache/stats."""
 
     async def handler() -> dict[str, Any]:

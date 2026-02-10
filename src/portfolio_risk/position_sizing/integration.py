@@ -240,7 +240,7 @@ class PositionSizingIntegration:
             * 100
         )
 
-        return change_pct > self.BALANCE_CHANGE_THRESHOLD_PCT
+        return bool(change_pct > self.BALANCE_CHANGE_THRESHOLD_PCT)
 
     def calculate_sizing_for_signal(
         self,
@@ -503,7 +503,7 @@ class PositionSizingCache:
         signal: Signal,
         entry_price: float,
         stop_loss_price: float,
-        **kwargs,
+        **kwargs: Any,
     ) -> SizingRecommendation | None:
         """Get cached sizing if still valid.
 

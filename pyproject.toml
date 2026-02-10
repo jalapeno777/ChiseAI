@@ -35,6 +35,7 @@ no_implicit_optional = true
 check_untyped_defs = true
 ignore_missing_imports = true
 exclude = ["tests/"]
+explicit_package_bases = true
 
 # Override for tests (allow untyped defs and missing returns)
 [[tool.mypy.overrides]]

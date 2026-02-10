@@ -451,7 +451,7 @@ class CorrelationEngine:
                     )
 
         # Sort by absolute correlation descending
-        high_corr_pairs.sort(key=lambda x: x["abs_correlation"], reverse=True)
+        high_corr_pairs.sort(key=lambda x: float(x["abs_correlation"]), reverse=True)  # type: ignore[arg-type]
 
         return high_corr_pairs
 

@@ -349,7 +349,7 @@ class PortfolioState:
         self._recalculate_totals()
         self.last_update = int(datetime.now().timestamp() * 1000)
 
-    def update_position(self, position_id: str, **kwargs) -> Position | None:
+    def update_position(self, position_id: str, **kwargs: Any) -> Position | None:
         """Update an existing position.
 
         Args:

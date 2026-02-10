@@ -76,7 +76,7 @@ class PositionUpdate(PortfolioUpdate):
         status: str = "open",
         current_price: float | None = None,
         leverage: float = 1.0,
-        **kwargs,
+        **kwargs: Any,
     ):
         data = {
             "position_id": position_id,
@@ -116,7 +116,7 @@ class BalanceUpdate(PortfolioUpdate):
         token: str,
         free: float,
         locked: float,
-        **kwargs,
+        **kwargs: Any,
     ):
         data = {
             "token": token,
@@ -144,7 +144,7 @@ class PriceUpdate(PortfolioUpdate):
         source: str,
         token: str,
         price: float,
-        **kwargs,
+        **kwargs: Any,
     ):
         data = {
             "token": token,
@@ -553,7 +553,7 @@ class PortfolioTracker:
         position = self.state.positions[position_id]
         ts = timestamp or int(time.time() * 1000)
 
-        realized_pnl = position.close_position(exit_price, ts)
+        realized_pnl: float = position.close_position(exit_price, ts)
         # Add realized PnL to portfolio total
         self.state.realized_pnl += realized_pnl
         self.state._recalculate_totals()

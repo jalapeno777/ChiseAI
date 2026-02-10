@@ -122,7 +122,7 @@ class ATR:
         # First bar has no previous close, so use simple range
         true_ranges[0] = range1[0]
 
-        return true_ranges
+        return true_ranges  # type: ignore[no-any-return]
 
     def _wilders_smoothing(self, values: np.ndarray) -> np.ndarray:
         """Apply Wilder's smoothing (RMA) to values.
