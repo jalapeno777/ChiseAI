@@ -144,7 +144,7 @@ class ConfidenceFilter:
         Returns:
             True if signal meets actionable threshold
         """
-        return signal.confidence >= self.threshold
+        return bool(signal.confidence >= self.threshold)
 
     def log_non_actionable(self, signal: Signal) -> None:
         """Log a non-actionable signal for audit purposes.

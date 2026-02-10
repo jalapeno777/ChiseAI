@@ -406,7 +406,7 @@ class ProbabilityCalculator:
 
         if prob > 0:
             # Geometric distribution expected value
-            return 1.0 / prob
+            return float(1.0 / prob)
 
         # If direct transition probability is 0, estimate from matrix structure
         # This is a simplified approximation
