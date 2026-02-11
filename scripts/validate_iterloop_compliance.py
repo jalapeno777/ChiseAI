@@ -131,9 +131,10 @@ def main() -> int:
     result = Result()
     paths = sorted(ITERLOG_DIR.glob(ITERLOG_GLOB)) if ITERLOG_DIR.exists() else []
     if not paths:
-        result.err(
+        result.warn(
             f"No iterlog files found under {ITERLOG_DIR}/. "
-            "Expected at least one docs/tempmemories/iterlog-<STORY_ID>.md"
+            "Assuming Redis/Qdrant are currently available and no fallback artifacts "
+            "are needed."
         )
     frontmatters: list[dict[str, Any]] = []
     for p in paths:
