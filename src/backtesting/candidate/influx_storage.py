@@ -38,7 +38,9 @@ class CandidateResultStorage:
             org: InfluxDB organization (default: from env INFLUXDB_ORG)
             bucket: InfluxDB bucket (default: from env INFLUXDB_BUCKET)
         """
-        self.url: str = url or os.getenv("INFLUXDB_URL") or "http://host.docker.internal:18087"
+        self.url: str = (
+            url or os.getenv("INFLUXDB_URL") or "http://host.docker.internal:18087"
+        )
         self.token: str = token or os.getenv("INFLUXDB_TOKEN") or "chiseai-token"
         self.org: str = org or os.getenv("INFLUXDB_ORG") or "chiseai"
         self.bucket: str = bucket or os.getenv("INFLUXDB_BUCKET") or "chiseai"
