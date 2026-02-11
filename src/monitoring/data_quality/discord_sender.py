@@ -9,8 +9,9 @@ For ST-DATA-004: Data Quality Monitoring - Freshness + Gaps
 from __future__ import annotations
 
 import logging
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from monitoring.data_quality import (
@@ -344,7 +345,7 @@ class DataQualityDiscordSender:
                 embeds=[embed],
             )
             logger.info(f"Sent freshness alert to Discord: {source.value}/{symbol}")
-            return result
+            return cast(dict[str, Any], result)
         except Exception as e:
             logger.error(f"Failed to send freshness alert: {e}")
             return {"success": False, "error": str(e)}
@@ -384,7 +385,7 @@ class DataQualityDiscordSender:
                 "Sent gap alert to Discord: "
                 f"{gap_alert.source.value}/{gap_alert.symbol}"
             )
-            return result
+            return cast(dict[str, Any], result)
         except Exception as e:
             logger.error(f"Failed to send gap alert: {e}")
             return {"success": False, "error": str(e)}
@@ -433,7 +434,7 @@ class DataQualityDiscordSender:
                 embeds=[embed],
             )
             logger.info(f"Sent recovery notice to Discord: {source.value}/{symbol}")
-            return result
+            return cast(dict[str, Any], result)
         except Exception as e:
             logger.error(f"Failed to send recovery notice: {e}")
             return {"success": False, "error": str(e)}
@@ -493,7 +494,7 @@ def create_discord_alert_handler(
     webhook_url: str | None = None,
     discord_client: Any | None = None,
     alerts_channel: str = "alerts",
-) -> callable:
+) -> Callable[[DataQualityAlert], Awaitable[None]]:
     """Create an alert handler function for use with DataQualityMonitor.
 
     Args:

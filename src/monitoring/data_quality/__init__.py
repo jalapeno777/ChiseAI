@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
@@ -20,6 +21,8 @@ if TYPE_CHECKING:
     from data_ingestion.ohlcv_fetcher import OHLCVData
 
 logger = logging.getLogger(__name__)
+
+AlertHandler = Callable[["DataQualityAlert"], Awaitable[None]]
 
 
 class DataSource(StrEnum):
@@ -646,26 +649,28 @@ class DataQualityMonitor:
         )
 
         # Alert handlers
-        self._alert_handlers: list[callable] = []
+        self._alert_handlers: list[AlertHandler] = []
 
         # Running state
         self._running = False
         self._monitor_task: asyncio.Task | None = None
 
-    def add_alert_handler(self, handler: callable) -> None:
+    def add_alert_handler(self, handler: AlertHandler) -> None:
         """Add an alert handler callback.
 
         Args:
             handler: Async callable that receives DataQualityAlert
         """
         self._alert_handlers.append(handler)
-        logger.info(f"Added alert handler: {handler.__name__}")
+        name = getattr(handler, "__name__", handler.__class__.__name__)
+        logger.info(f"Added alert handler: {name}")
 
-    def remove_alert_handler(self, handler: callable) -> None:
+    def remove_alert_handler(self, handler: AlertHandler) -> None:
         """Remove an alert handler."""
         if handler in self._alert_handlers:
             self._alert_handlers.remove(handler)
-            logger.info(f"Removed alert handler: {handler.__name__}")
+            name = getattr(handler, "__name__", handler.__class__.__name__)
+            logger.info(f"Removed alert handler: {name}")
 
     async def _dispatch_alert(self, alert: DataQualityAlert) -> None:
         """Dispatch alert to all handlers."""
@@ -673,7 +678,8 @@ class DataQualityMonitor:
             try:
                 await handler(alert)
             except Exception as e:
-                logger.error(f"Alert handler {handler.__name__} failed: {e}")
+                name = getattr(handler, "__name__", handler.__class__.__name__)
+                logger.error(f"Alert handler {name} failed: {e}")
 
     async def check_data_quality(
         self,
