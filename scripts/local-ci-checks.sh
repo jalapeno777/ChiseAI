@@ -5,7 +5,8 @@ set -euo pipefail
 mkdir -p _bmad-output/ci
 
 # Prevent environment contamination (e.g., sibling repos on PYTHONPATH).
-export PYTHONPATH="$(pwd)/src"
+# Include user site-packages for dependencies installed via pip install --user
+export PYTHONPATH="$(pwd)/src:$(python3 -m site --user-site)"
 export PYTHONNOUSERSITE=1
 
 python3 scripts/ci/validate_swarm_context.py
