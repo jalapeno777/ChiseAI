@@ -9,7 +9,6 @@ For ST-DATA-004: Data Quality Monitoring - Freshness + Gaps
 from __future__ import annotations
 
 import logging
-from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:

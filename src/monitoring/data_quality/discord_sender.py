@@ -14,10 +14,8 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from monitoring.data_quality import (
-        AlertSeverity,
         DataQualityAlert,
         DataSource,
-        FreshnessMetrics,
         GapAlert,
     )
 
@@ -144,9 +142,11 @@ class DataQualityDiscordFormatter:
         gap_start_dt = datetime.fromtimestamp(gap_alert.gap_start / 1000, tz=UTC)
         gap_end_dt = datetime.fromtimestamp(gap_alert.gap_end / 1000, tz=UTC)
 
-        title = f"{severity_emoji} {emoji} {gap_alert.source.value.upper()} - Data Gap Detected"
+        source_name = gap_alert.source.value.upper()
+        title = f"{severity_emoji} {emoji} {source_name} - Data Gap Detected"
         description = (
-            f"Missing data detected for **{gap_alert.symbol}** ({gap_alert.timeframe})\n\n"
+            "Missing data detected for "
+            f"**{gap_alert.symbol}** ({gap_alert.timeframe})\n\n"
             f"• Missing candles: **{gap_alert.expected_candles}**\n"
             f"• Gap duration: **{gap_alert.duration_seconds:.0f}** seconds\n"
             f"• Gap start: {gap_start_dt.strftime('%H:%M:%S')}\n"
@@ -219,7 +219,10 @@ class DataQualityDiscordFormatter:
         emoji = cls.SOURCE_EMOJI.get(source.value, "📊")
 
         return {
-            "title": f"✅ {emoji} {source.value.upper()} - {alert_type.title()} Resolved",
+            "title": (
+                f"✅ {emoji} {source.value.upper()} - "
+                f"{alert_type.title()} Resolved"
+            ),
             "description": (
                 f"Data quality issue resolved for **{symbol}** ({timeframe})\n\n"
                 f"The {alert_type} alert has been cleared. "
@@ -286,8 +289,8 @@ class DataQualityDiscordSender:
 
         # Import here to avoid circular imports
         try:
-            from discord_alerts.discord_client import DiscordClient
             from discord_alerts.config import DiscordConfig
+            from discord_alerts.discord_client import DiscordClient
 
             config = DiscordConfig(
                 webhook_url=self.webhook_url,
@@ -335,7 +338,10 @@ class DataQualityDiscordSender:
 
         try:
             result = await client.send_message(
-                content=f"🚨 Data Quality Alert: Stale data from {source.value.upper()}",
+                content=(
+                    "🚨 Data Quality Alert: "
+                    f"Stale data from {source.value.upper()}"
+                ),
                 channel=self.alerts_channel,
                 embeds=[embed],
             )
@@ -370,13 +376,15 @@ class DataQualityDiscordSender:
         try:
             result = await client.send_message(
                 content=(
-                    f"⚠️ Data Quality Alert: Gap detected in {gap_alert.source.value.upper()}"
+                    "⚠️ Data Quality Alert: "
+                    f"Gap detected in {gap_alert.source.value.upper()}"
                 ),
                 channel=self.alerts_channel,
                 embeds=[embed],
             )
             logger.info(
-                f"Sent gap alert to Discord: {gap_alert.source.value}/{gap_alert.symbol}"
+                "Sent gap alert to Discord: "
+                f"{gap_alert.source.value}/{gap_alert.symbol}"
             )
             return result
         except Exception as e:
@@ -453,7 +461,7 @@ class DataQualityDiscordSender:
         elif alert.alert_type == "gap":
             # For gap alerts, we need to reconstruct the GapAlert object
             metrics = alert.metrics
-            from monitoring.data_quality import GapAlert, AlertSeverity
+            from monitoring.data_quality import AlertSeverity, GapAlert
 
             gap_alert = GapAlert(
                 source=alert.source,
