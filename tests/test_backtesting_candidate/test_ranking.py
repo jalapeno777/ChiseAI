@@ -2,8 +2,6 @@
 
 from datetime import datetime
 
-import pytest
-
 from backtesting.candidate.models import (
     BacktestMetrics,
     CandidateResult,
@@ -239,8 +237,10 @@ class TestRankingEngine:
 
         # With high Sharpe weight (0.7), candidate a should rank higher
         # even with lower win rate (40% vs 70%)
-        # Candidate a: Sharpe 1.0 (normalized ~60%) * 0.7 = 42 + Win rate 40% (normalized ~40%) * 0.3 = 12 = ~54
-        # Candidate b: Sharpe 0.8 (normalized ~56%) * 0.7 = 39.2 + Win rate 70% (normalized ~70%) * 0.3 = 21 = ~60.2
+        # Candidate a: Sharpe 1.0 (~60%) * 0.7 = 42
+        # plus win rate 40% (~40%) * 0.3 = 12 => ~54 total.
+        # Candidate b: Sharpe 0.8 (~56%) * 0.7 = 39.2
+        # plus win rate 70% (~70%) * 0.3 = 21 => ~60.2 total.
         # So candidate b should actually rank higher with these values
         assert ranked[0].candidate_id == "b"
 

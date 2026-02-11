@@ -2,20 +2,15 @@
 
 from datetime import datetime
 
-import pytest
-
 from backtesting.candidate import (
     BacktestMetrics,
-    CandidateBacktestPipeline,
     CandidateResult,
-    CandidateResultStorage,
     CandidateStatus,
     CriteriaNormalizer,
     PipelineConfig,
     RankingConfig,
     RankingCriteria,
     RankingEngine,
-    RankingScore,
     WalkForwardConfig,
     WalkForwardEngine,
     WalkForwardWindow,
@@ -236,7 +231,8 @@ class TestModuleIntegration:
         ranked = ranking_engine.rank_candidates(candidates)
         summary = ranking_engine.get_ranking_summary(ranked)
 
-        # Note: failed candidates are filtered out during ranking, so only completed count
+        # Failed candidates are filtered out during ranking,
+        # so only completed count remains.
         assert summary["completed"] == 5
         # Failed count may be 0 since failed candidates are filtered before ranking
         assert "average_score" in summary

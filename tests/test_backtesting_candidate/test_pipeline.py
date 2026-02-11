@@ -3,11 +3,7 @@
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from backtesting.candidate.models import (
-    CandidateResult,
-    CandidateStatus,
     RankingConfig,
 )
 from backtesting.candidate.pipeline import (
