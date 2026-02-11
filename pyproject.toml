@@ -28,7 +28,6 @@ ignore = []
 
 [tool.mypy]
 python_version = "3.11"
-mypy_path = ["src"]
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
@@ -36,6 +35,7 @@ no_implicit_optional = true
 check_untyped_defs = true
 ignore_missing_imports = true
 exclude = ["tests/"]
+explicit_package_bases = true
 
 # Override for tests (allow untyped defs and missing returns)
 [[tool.mypy.overrides]]

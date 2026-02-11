@@ -12,6 +12,8 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from dashboard.key_levels import KeyLevel, KeyLevelsResult
+    from portfolio.state_management.tracker import PortfolioTracker
+    from portfolio_risk.position_sizing.integration import PositionSizingIntegration
     from signal_generation.models import Signal
 
 
@@ -503,6 +505,8 @@ class SignalDetailBuilder:
         risk_percent: float = DEFAULT_RISK_PERCENT,
         atr_multiplier: float = DEFAULT_ATR_MULTIPLIER,
         leverage: float = DEFAULT_LEVERAGE,
+        portfolio_tracker: PortfolioTracker | None = None,
+        sizing_integration: PositionSizingIntegration | None = None,
     ):
         """Initialize builder.
 
@@ -510,10 +514,29 @@ class SignalDetailBuilder:
             risk_percent: Portfolio risk percentage per trade (default: 1.0)
             atr_multiplier: ATR multiplier for stop-loss (default: 2.0)
             leverage: Default leverage multiplier (default: 1.0)
+            portfolio_tracker: Optional portfolio tracker for state integration
+            sizing_integration: Optional position sizing integration instance
         """
         self.risk_percent = risk_percent
         self.atr_multiplier = atr_multiplier
         self.leverage = leverage
+        self.portfolio_tracker = portfolio_tracker
+
+        # Initialize or use provided sizing integration
+        if sizing_integration:
+            self.sizing_integration = sizing_integration
+            if portfolio_tracker:
+                self.sizing_integration.set_portfolio_tracker(portfolio_tracker)
+        elif portfolio_tracker:
+            from portfolio_risk.position_sizing.integration import (
+                PositionSizingIntegration,
+            )
+
+            self.sizing_integration = PositionSizingIntegration(
+                portfolio_tracker=portfolio_tracker,
+            )
+        else:
+            self.sizing_integration = None
 
     def build(
         self,
@@ -546,10 +569,16 @@ class SignalDetailBuilder:
             signal, entry_price, key_levels, atr_value
         )
 
-        # Calculate position size
-        position_size = self._calculate_position_size(
-            entry_price, stop_loss.stop_loss_price, portfolio_value_usd
-        )
+        # Calculate position size using integration if available
+        if self.sizing_integration:
+            position_size = self._calculate_position_size_with_integration(
+                signal, entry_price, stop_loss.stop_loss_price
+            )
+        else:
+            # Fallback to basic calculation
+            position_size = self._calculate_position_size(
+                entry_price, stop_loss.stop_loss_price, portfolio_value_usd
+            )
 
         # Calculate risk/reward
         risk_reward = self._calculate_risk_reward(
@@ -829,6 +858,47 @@ class SignalDetailBuilder:
             leverage_used=self.leverage,
         )
 
+    def _calculate_position_size_with_integration(
+        self,
+        signal: Signal,
+        entry_price: float,
+        stop_loss_price: float,
+    ) -> PositionSizeInfo:
+        """Calculate position size using PositionSizingIntegration.
+
+        Uses the integrated position sizing engine that factors in
+        current portfolio exposure and risk limits.
+
+        Args:
+            signal: Trading signal
+            entry_price: Entry price
+            stop_loss_price: Stop-loss price
+
+        Returns:
+            PositionSizeInfo with calculated position size
+        """
+        if not self.sizing_integration:
+            raise ValueError("Sizing integration not available")
+
+        # Calculate sizing using integration
+        sizing = self.sizing_integration.calculate_sizing_for_signal(
+            signal=signal,
+            entry_price=entry_price,
+            stop_loss_price=stop_loss_price,
+            method=None,  # Use default method
+            risk_percentage=self.risk_percent,
+            use_portfolio_state=True,
+        )
+
+        return PositionSizeInfo(
+            position_size=sizing.position_size,
+            position_value_usd=sizing.notional_value,
+            risk_amount_usd=sizing.risk_amount_usd,
+            risk_percent=sizing.risk_percent,
+            portfolio_value_usd=sizing.total_equity,
+            leverage_used=sizing.leverage_used,
+        )
+
     def _calculate_risk_reward(
         self,
         signal: Signal,
@@ -911,4 +981,6 @@ class SignalDetailBuilder:
                 atr_multiplier if atr_multiplier is not None else self.atr_multiplier
             ),
             leverage=leverage if leverage is not None else self.leverage,
+            portfolio_tracker=self.portfolio_tracker,
+            sizing_integration=self.sizing_integration,
         )

@@ -13,6 +13,8 @@ import numpy as np
 if TYPE_CHECKING:
     from data_ingestion.ohlcv_fetcher import OHLCVData
 
+from data_ingestion.ohlcv_fetcher import OHLCVData
+
 
 @dataclass
 class RSIResult:
@@ -107,7 +109,7 @@ class RSI:
 
         return result
 
-    def calculate(self, data: list["OHLCVData"]) -> RSIResult:
+    def calculate(self, data: list[OHLCVData]) -> RSIResult:
         """Calculate RSI from OHLCV data.
 
         Uses Wilder's smoothing method (RMA/SMMA) matching TradingView's implementation.

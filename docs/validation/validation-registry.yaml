@@ -653,13 +653,73 @@ validations:
     title: Portfolio Risk Monitoring
     epic_id: EP-NS-003
     story_id: ST-NS-014
-    status: planned
+    status: validated
     description: Validate real-time portfolio risk exposure monitoring and alerting
     acceptance_criteria:
       - Exposure calculations update in real-time
       - Alerts trigger within 5 seconds of threshold breach
       - Correlation limits (40% max) are enforced
       - Kill-switch activates on 15% drawdown
+    test_method: automated
+    owner: risk-team
+
+  # EP-NS-003: Portfolio Risk Management - Split story validations
+  # Note: V-NS-015 and V-NS-016 are already used for other stories (ST-NS-022 and ST-NS-029)
+  # Correlation Analysis split from ST-NS-015 (7 SP -> 4+3 = 7 SP)
+  - id: V-NS-015A
+    title: Correlation Calculation Engine
+    epic_id: EP-NS-003
+    story_id: ST-NS-015A
+    status: validated
+    description: Validate correlation calculation engine for portfolio positions
+    acceptance_criteria:
+      - Correlation coefficients are calculated between all position pairs
+      - Rolling 30-day correlation window is used
+      - Correlation matrix is updated daily
+      - Unit tests validate calculation accuracy
+    test_method: automated
+    owner: risk-team
+
+  - id: V-NS-015B
+    title: Correlation Risk Integration & Alerts
+    epic_id: EP-NS-003
+    story_id: ST-NS-015B
+    status: validated
+    description: Validate correlation analysis integration into risk monitoring and alerts
+    acceptance_criteria:
+      - High correlation pairs (>70%) trigger warnings
+      - Portfolio exposure is adjusted based on correlation
+      - Alerts are sent via Discord for critical levels
+      - Integration with risk dashboard is verified
+    test_method: automated
+    owner: risk-team
+
+  # Risk Threshold Alert System split from ST-NS-016 (6 SP -> 3+3 = 6 SP)
+  - id: V-NS-016A
+    title: Risk Threshold Rule Engine
+    epic_id: EP-NS-003
+    story_id: ST-NS-016A
+    status: validated
+    description: Validate configurable risk threshold rule engine
+    acceptance_criteria:
+      - Thresholds are configurable per risk type (exposure, drawdown, correlation)
+      - Rules support AND/OR logic for complex conditions
+      - Rule evaluation runs in real-time
+      - Rule changes are logged with timestamps
+    test_method: automated
+    owner: risk-team
+
+  - id: V-NS-016B
+    title: Risk Alert Delivery & Management
+    epic_id: EP-NS-003
+    story_id: ST-NS-016B
+    status: validated
+    description: Validate risk alert delivery and alert lifecycle management
+    acceptance_criteria:
+      - Alerts are delivered via Discord within 5 seconds
+      - Alert acknowledgment is tracked
+      - Historical alerts are queryable
+      - Alert throttling prevents spam
     test_method: automated
     owner: risk-team
 

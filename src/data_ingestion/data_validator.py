@@ -192,7 +192,7 @@ class DataValidator:
             most_recent = max(data, key=lambda x: x.timestamp)
             data_time = most_recent.datetime_utc
             age = (reference_time - data_time).total_seconds()
-            return max(0.0, age)  # Ensure non-negative
+            return float(max(0.0, age))  # Ensure non-negative
         except Exception as e:
             logger.warning(f"Failed to calculate data age: {e}")
             return None

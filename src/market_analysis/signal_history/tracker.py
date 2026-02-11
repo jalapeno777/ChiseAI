@@ -251,7 +251,7 @@ class SignalTracker:
             List of SignalWithOutcome
         """
         if include_outcomes:
-            return await self.storage.query_signals_with_outcomes(
+            result = await self.storage.query_signals_with_outcomes(
                 token=token,
                 direction=direction,
                 start_time=start_time,
@@ -262,6 +262,7 @@ class SignalTracker:
                 max_confidence=max_confidence,
                 limit=limit,
             )
+            return result  # type: ignore[no-any-return]
         else:
             signals = await self.storage.query_signals(
                 token=token,
@@ -310,11 +311,12 @@ class SignalTracker:
         Returns:
             List of unresolved SignalRecord
         """
-        return await self.storage.get_unresolved_signals(
+        result = await self.storage.get_unresolved_signals(
             before_timestamp=before_timestamp,
             token=token,
             limit=limit,
         )
+        return result  # type: ignore[no-any-return]
 
     async def find_signals_needing_outcomes(
         self,

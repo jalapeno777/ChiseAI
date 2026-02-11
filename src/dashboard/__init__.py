@@ -16,6 +16,10 @@ from dashboard.key_levels import KeyLevel, KeyLevelsAnalyzer, LevelType
 from dashboard.market_summary import MarketSummary, MarketSummaryCalculator
 from dashboard.pre_market_briefing import PreMarketBriefing, PreMarketBriefingGenerator
 from dashboard.regime_detector import MarketRegime, RegimeDetector, RegimeType
+from dashboard.risk_exposure_panel import (
+    render_risk_exposure_panel,
+    render_risk_metrics_mini,
+)
 from dashboard.signal_detail import (
     ConfidenceMultiplierInfo,
     ConfluenceBreakdown,
@@ -62,4 +66,7 @@ __all__ = [
     # Signal List
     "ActiveSignal",
     "SignalListBuilder",
+    # Risk Exposure Panel
+    "render_risk_exposure_panel",
+    "render_risk_metrics_mini",
 ]

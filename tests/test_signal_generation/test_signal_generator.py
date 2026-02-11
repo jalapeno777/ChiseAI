@@ -45,7 +45,7 @@ class TestSignalCache:
 
     def test_cache_expiration(self):
         """Test that cache entries expire after TTL."""
-        cache = SignalCache(ttl_seconds=0.1)  # 100ms TTL
+        cache = SignalCache(ttl_seconds=0.05)  # 50ms TTL
 
         signal = Signal(
             token="BTC/USDT",
@@ -62,8 +62,8 @@ class TestSignalCache:
         # Should be available immediately
         assert cache.get("BTC/USDT", "1h", SignalDirection.LONG) is not None
 
-        # Wait for expiration
-        time.sleep(0.15)
+        # Wait for expiration (2x TTL for CI stability)
+        time.sleep(0.11)
 
         # Should be expired
         assert cache.get("BTC/USDT", "1h", SignalDirection.LONG) is None
@@ -121,7 +121,7 @@ class TestSignalCache:
 
     def test_cache_cleanup_expired(self):
         """Test cleanup of expired entries."""
-        cache = SignalCache(ttl_seconds=0.1)
+        cache = SignalCache(ttl_seconds=0.05)  # 50ms TTL
 
         signal = Signal(
             token="BTC/USDT",
@@ -135,8 +135,8 @@ class TestSignalCache:
 
         cache.set("BTC/USDT", "1h", SignalDirection.LONG, signal)
 
-        # Wait for expiration
-        time.sleep(0.15)
+        # Wait for expiration (2x TTL for CI stability)
+        time.sleep(0.11)
 
         # Cleanup should remove expired entry
         removed = cache.cleanup_expired()

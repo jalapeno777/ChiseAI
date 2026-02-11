@@ -294,7 +294,7 @@ class PreMarketBriefingGenerator:
         # Try to get from finest timeframe
         for tf in sorted(tf_data.keys()):
             if tf_data[tf] and len(tf_data[tf]) > 0:
-                return tf_data[tf][-1].close_price
+                return float(tf_data[tf][-1].close_price)
         return 0.0
 
     def _generate_briefing_text(

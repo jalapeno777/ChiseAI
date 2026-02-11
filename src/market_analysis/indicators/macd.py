@@ -14,6 +14,8 @@ import numpy as np
 if TYPE_CHECKING:
     from data_ingestion.ohlcv_fetcher import OHLCVData
 
+from data_ingestion.ohlcv_fetcher import OHLCVData
+
 
 class MACDSignal(Enum):
     """MACD signal types for crossover detection."""
@@ -113,7 +115,7 @@ class MACD:
         self.slow_period = slow_period
         self.signal_period = signal_period
 
-    def calculate(self, data: list["OHLCVData"]) -> MACDResult:
+    def calculate(self, data: list[OHLCVData]) -> MACDResult:
         """Calculate MACD from OHLCV data.
 
         Args:
