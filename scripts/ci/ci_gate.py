@@ -15,6 +15,7 @@ from pathlib import Path
 
 CI_DIR = Path("_bmad-output/ci")
 REQUIRED_STATUS_FILES = [
+    CI_DIR / "swarm-context.status",
     CI_DIR / "lint.status",
     CI_DIR / "security-scan.status",
     CI_DIR / "local-ci.status",

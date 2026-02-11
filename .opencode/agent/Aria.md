@@ -110,6 +110,7 @@ OUTPUT FORMAT:
 - Include a **parallelization plan**:
   - group tasks into sequential "batches"
   - for each task: `scope_globs`, `locks_required`, and `depends_on`
+- For each executable git task, require explicit `BRANCH`, `WORKTREE_PATH`, and `SESSION_VERIFY` (`python3 scripts/swarm/session.py verify ...`).
 - Use Jarvis's batch-table template (see `.opencode/agent/Jarvis.md` "Parallelization plan template").
 - Identify which worker agents you will spawn for each executable step.
 - No interactive menus in your response.

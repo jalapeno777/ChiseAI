@@ -76,6 +76,11 @@ python3 scripts/validate_iterloop_compliance.py
 python3 scripts/validate_pr_title.py
 '
 
+swarm_context_cmd='
+set -euo pipefail
+python3 scripts/ci/validate_swarm_context.py
+'
+
 security_cmd='
 set -euo pipefail
 if [ "'"${INSTALL_DEPS}"'" = "1" ]; then
@@ -98,6 +103,7 @@ fi
 ./scripts/local-ci-checks.sh
 '
 
+run_captured_step "swarm-context" "${CI_DIR}/swarm-context.log" "${CI_DIR}/swarm-context.status" "${swarm_context_cmd}"
 run_captured_step "lint" "${CI_DIR}/lint.log" "${CI_DIR}/lint.status" "${lint_cmd}"
 run_captured_step "security-scan" "${CI_DIR}/security-scan.log" "${CI_DIR}/security-scan.status" "${security_cmd}"
 run_captured_step "local-ci" "${CI_DIR}/local-ci-full.log" "${CI_DIR}/local-ci.status" "${local_ci_cmd}"

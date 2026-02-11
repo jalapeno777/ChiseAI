@@ -41,6 +41,8 @@ permission:
 - Keep diagnostics deterministic:
   - prefer scripted replay (for CI use `scripts/ci/swarm_triage.sh`)
   - capture failing command, exact error, and minimal repro
+- For any git action, require explicit `BRANCH` + `WORKTREE_PATH` and run:
+  - `python3 scripts/swarm/session.py verify --story-id=<story_id> --branch=<branch> --worktree-path=<path> --check-canonical`
 - Treat global-lock files as high risk:
   - `.woodpecker.yml`, `scripts/`, `.opencode/agent/`, `AGENTS.md`
   - make smallest safe change and verify full gate behavior

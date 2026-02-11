@@ -8,6 +8,8 @@ mkdir -p _bmad-output/ci
 export PYTHONPATH="$(pwd)/src"
 export PYTHONNOUSERSITE=1
 
+python3 scripts/ci/validate_swarm_context.py
+
 if python3 -c "import pytest_cov" >/dev/null 2>&1; then
   python3 -m pytest \
     --cov=src \

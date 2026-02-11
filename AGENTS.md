@@ -157,6 +157,9 @@ python3 scripts/validate_iterloop_compliance.py --story-id=<id>
 **ChiseAI Git Flow Commands (required for autonomy)**
 - Use `.opencode/command/chise-pr-automerge.md` to standardize push -> PR -> merge (green CI only). This is the default path for autonomous agents to keep `main` convergent.
 - **PR Title Rule:** Every PR title MUST include the canonical story ID (e.g. `ST-NS-001 ...`). The `chise-pr-automerge` flow enforces this via `scripts/gitea_pr_automerge.py --story-id`.
+- Use `scripts/swarm/session.py` to enforce isolated worktree sessions per story/agent:
+  - `start` before any git work, `verify` before git actions, `close` when done.
+  - Never rely on current branch/`HEAD` for push/PR; pass explicit branch names.
 - Use `scripts/ci/swarm_triage.sh` to replay Woodpecker wrapper steps locally and generate deterministic CI diagnosis artifacts in `_bmad-output/ci/`.
 - Use `.opencode/command/chise-taiga-sync.md` to keep Taiga aligned with repo-canonical story metadata (status/AC) so humans can monitor progress without manual copy/paste.
 - Use `.opencode/command/chise-rd-iteration.md` for a full R&D iteration loop (candidate -> backtest -> rank -> paper canary plan).
@@ -226,7 +229,14 @@ python3 scripts/validate_iterloop_compliance.py --story-id=<id>
 **Parallel Safety (Scope Ownership + Incidents)**
 - When delegating parallel work, assign scope ownership via Redis to prevent silent overlap:
   - `bmad:chiseai:ownership` (HASH): `<path_slug>` -> `<story_id>/<agent>/<timestamp>`
+- Branch/worktree lease keys for git isolation:
+  - `bmad:chiseai:branch-lease:<branch>`
+  - `bmad:chiseai:worktree-lease:<worktree_slug>`
 - Executors must check ownership before edits; if a different story/agent owns the scope, STOP and reschedule.
+- Canonical status files are single-writer global-lock targets:
+  - `docs/bmm-workflow-status.yaml`
+  - `docs/validation/validation-registry.yaml`
+  - Non-main edits require explicit `CANONICAL_STATUS_LOCK=1` (or commit trailer `[canonical-status-lock]`) and sequential integration.
 - Incidents (merge conflicts, CI regressions, repeated blockers) should be appended to:
   - `bmad:chiseai:iterlog:story:<story_id>:incidents` (LIST), with a markdown fallback under `docs/tempmemories/iterlog-<story_id>.md`
 
