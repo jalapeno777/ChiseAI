@@ -32,7 +32,7 @@ class GrafanaMetricsExporter:
         self,
         influx_client: Any | None = None,
         influx_url: str = "http://localhost:8086",
-        influx_token: str = "",
+        influx_token: str | None = None,
         influx_org: str = "chiseai",
         influx_bucket: str = "data_quality",
     ):
@@ -47,7 +47,7 @@ class GrafanaMetricsExporter:
         """
         self.influx_client = influx_client
         self.influx_url = influx_url
-        self.influx_token = influx_token
+        self.influx_token = influx_token or ""
         self.influx_org = influx_org
         self.influx_bucket = influx_bucket
 
@@ -216,11 +216,11 @@ class GrafanaMetricsExporter:
             query_api = client.query_api()
 
             # Build Flux query
-            flux = f'''
+            flux = f"""
                 from(bucket: "{self.influx_bucket}")
                     |> range(start: -{hours}h)
                     |> filter(fn: (r) => r._measurement == "data_freshness")
-            '''
+            """
 
             if source:
                 flux += f'    |> filter(fn: (r) => r.source == "{source.value}")\n'
@@ -278,11 +278,11 @@ class GrafanaMetricsExporter:
             client = await self._get_client()
             query_api = client.query_api()
 
-            flux = f'''
+            flux = f"""
                 from(bucket: "{self.influx_bucket}")
                     |> range(start: -{hours}h)
                     |> filter(fn: (r) => r._measurement == "data_gaps")
-            '''
+            """
 
             if source:
                 flux += f'    |> filter(fn: (r) => r.source == "{source.value}")\n'
@@ -330,13 +330,13 @@ class GrafanaMetricsExporter:
             client = await self._get_client()
             query_api = client.query_api()
 
-            flux = f'''
+            flux = f"""
                 from(bucket: "{self.influx_bucket}")
                     |> range(start: -7d)
                     |> filter(fn: (r) => r._measurement == "data_freshness")
                     |> filter(fn: (r) => r._field == "data_age_seconds")
                     |> last()
-            '''
+            """
 
             tables = query_api.query(flux, org=self.influx_org)
 
@@ -395,12 +395,12 @@ class GrafanaDashboardConfig:
         Returns:
             Flux query string
         """
-        query = f'''
+        query = f"""
 from(bucket: "{bucket}")
   |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
   |> filter(fn: (r) => r._measurement == "data_freshness")
   |> filter(fn: (r) => r._field == "data_age_seconds")
-'''
+"""
         if source:
             query += f'  |> filter(fn: (r) => r.source == "{source}")\n'
 
@@ -420,7 +420,7 @@ from(bucket: "{bucket}")
         Returns:
             Flux query string
         """
-        return f'''
+        return f"""
 from(bucket: "{bucket}")
   |> range(start: -5m)
   |> filter(fn: (r) => r._measurement == "data_freshness")
@@ -428,7 +428,7 @@ from(bucket: "{bucket}")
   |> last()
   |> group(columns: ["source"])
   |> sum()
-'''
+"""
 
     @staticmethod
     def get_gap_count_query(
@@ -444,14 +444,14 @@ from(bucket: "{bucket}")
         Returns:
             Flux query string
         """
-        return f'''
+        return f"""
 from(bucket: "{bucket}")
   |> range(start: -{hours}h)
   |> filter(fn: (r) => r._measurement == "data_gaps")
   |> filter(fn: (r) => r._field == "expected_candles")
   |> count()
   |> group(columns: ["source", "symbol"])
-'''
+"""
 
     @staticmethod
     def get_last_update_query(bucket: str = "data_quality") -> str:
@@ -463,13 +463,13 @@ from(bucket: "{bucket}")
         Returns:
             Flux query string
         """
-        return f'''
+        return f"""
 from(bucket: "{bucket}")
   |> range(start: -1h)
   |> filter(fn: (r) => r._measurement == "data_freshness")
   |> filter(fn: (r) => r._field == "data_age_seconds")
   |> last()
-'''
+"""
 
     @classmethod
     def get_dashboard_json_template(cls) -> dict[str, Any]:
