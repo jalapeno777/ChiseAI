@@ -1,7 +1,5 @@
 """Tests for Binance configuration."""
 
-import pytest
-
 from exchange_data.binance.config import BinanceConfig
 
 

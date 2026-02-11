@@ -2,8 +2,6 @@
 
 from datetime import datetime, timedelta
 
-import pytest
-
 from exchange_data.binance.config import BinanceConfig
 from exchange_data.binance.orderbook import (
     OrderBookLevel,

@@ -1,7 +1,7 @@
 """Open interest data aggregation."""
 
-from dataclasses import dataclass, field
-from datetime import datetime
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 
@@ -159,7 +159,3 @@ class OpenInterestAggregator:
         """
         data = self._data.get(symbol, [])
         return data[-1] if data else None
-
-
-# Import timedelta at module level for dataclass usage
-from datetime import timedelta

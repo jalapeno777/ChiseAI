@@ -1,7 +1,7 @@
 """Data quality validation for exchange data."""
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, List, Optional, Set
 
 from exchange_data.binance.config import BinanceConfig
@@ -111,7 +111,10 @@ class DataQualityValidator:
                 check_name="freshness",
                 passed=freshness_pass,
                 symbol=symbol,
-                details=f"Data age: {age_sec:.2f}s (threshold: {self.config.freshness_threshold_sec}s)",
+                details=(
+                    f"Data age: {age_sec:.2f}s "
+                    f"(threshold: {self.config.freshness_threshold_sec}s)"
+                ),
             )
         )
 
@@ -136,7 +139,10 @@ class DataQualityValidator:
                     check_name="price_accuracy",
                     passed=accuracy_pass,
                     symbol=symbol,
-                    details=f"Price diff: {price_diff_pct:.4f}% (threshold: {self.config.price_accuracy_pct}%)",
+                    details=(
+                        f"Price diff: {price_diff_pct:.4f}% "
+                        f"(threshold: {self.config.price_accuracy_pct}%)"
+                    ),
                 )
             )
 

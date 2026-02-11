@@ -2,8 +2,6 @@
 
 from datetime import datetime, timedelta
 
-import pytest
-
 from exchange_data.binance.open_interest import (
     OIAggregation,
     OpenInterestAggregator,

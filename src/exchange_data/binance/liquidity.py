@@ -1,7 +1,7 @@
 """Liquidity metrics calculation."""
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 from exchange_data.binance.orderbook import OrderBookSnapshot
 
