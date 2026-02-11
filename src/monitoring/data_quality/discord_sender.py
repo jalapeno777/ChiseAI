@@ -220,8 +220,7 @@ class DataQualityDiscordFormatter:
 
         return {
             "title": (
-                f"✅ {emoji} {source.value.upper()} - "
-                f"{alert_type.title()} Resolved"
+                f"✅ {emoji} {source.value.upper()} - " f"{alert_type.title()} Resolved"
             ),
             "description": (
                 f"Data quality issue resolved for **{symbol}** ({timeframe})\n\n"
@@ -339,8 +338,7 @@ class DataQualityDiscordSender:
         try:
             result = await client.send_message(
                 content=(
-                    "🚨 Data Quality Alert: "
-                    f"Stale data from {source.value.upper()}"
+                    "🚨 Data Quality Alert: " f"Stale data from {source.value.upper()}"
                 ),
                 channel=self.alerts_channel,
                 embeds=[embed],
