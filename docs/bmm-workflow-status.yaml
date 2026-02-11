@@ -331,7 +331,7 @@ stories:
     title: Exchange Market Data Ingestion - Binance Reference
     epic_id: EP-DATA-001
     sprint_id: p0-2
-    status: planned
+    status: completed
     story_points: 4
     priority: P0-CRITICAL
     description: Ingest market-structure reference data (order book/liquidity/open interest) from Binance for 10 tokens

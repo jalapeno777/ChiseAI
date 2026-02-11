@@ -156,7 +156,7 @@ validations:
     title: Exchange Market Data Ingestion - Binance Reference
     epic_id: EP-DATA-001
     story_id: ST-DATA-001
-    status: planned
+    status: validated
     description: Validate Binance reference market data (order book/liquidity/open interest) is ingested correctly for 10 tokens
     acceptance_criteria:
       - Order book snapshots are captured at 100ms intervals
