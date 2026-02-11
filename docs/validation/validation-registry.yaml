@@ -125,7 +125,7 @@ validations:
     title: Branch Hygiene Automation - Prune + Prevention
     epic_id: EP-CI-001
     story_id: ST-CI-003
-    status: planned
+    status: in_progress
     description: Validate auto-prune merged branches and prevent long-lived divergence
     acceptance_criteria:
       - Merged branches are auto-deleted after 24 hours
