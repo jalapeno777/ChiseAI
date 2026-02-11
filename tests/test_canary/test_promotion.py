@@ -1,7 +1,5 @@
 """Tests for promotion packet generator."""
 
-import pytest
-
 from execution.canary.gate_evaluator import GateEvaluator
 from execution.canary.models import CanaryStatus, GateCriteria, create_canary_deployment
 from execution.canary.promotion import (

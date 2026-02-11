@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional, Set
 
 from exchange_data.binance.config import BinanceConfig
 from exchange_data.binance.orderbook import OrderBookSnapshot, OrderBookTracker
@@ -22,7 +21,7 @@ class QualityCheckResult:
 
     check_name: str
     passed: bool
-    symbol: Optional[str] = None
+    symbol: str | None = None
     details: str = ""
     timestamp: datetime = None  # type: ignore
 
@@ -45,10 +44,10 @@ class DataQualityReport:
 
     timestamp: datetime
     overall_passed: bool
-    checks: List[QualityCheckResult]
+    checks: list[QualityCheckResult]
     summary: str
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert report to dictionary."""
         return {
             "timestamp": self.timestamp.isoformat(),
@@ -77,20 +76,20 @@ class DataQualityValidator:
     - Price accuracy (within tolerance)
     """
 
-    def __init__(self, config: Optional[BinanceConfig] = None) -> None:
+    def __init__(self, config: BinanceConfig | None = None) -> None:
         """Initialize validator.
 
         Args:
             config: Binance configuration
         """
         self.config = config or BinanceConfig()
-        self._price_history: Dict[
-            str, List[tuple]
-        ] = {}  # symbol -> [(timestamp, price)]
+        self._price_history: dict[str, list[tuple]] = (
+            {}
+        )  # symbol -> [(timestamp, price)]
 
     def validate_snapshot(
-        self, snapshot: OrderBookSnapshot, reference_price: Optional[float] = None
-    ) -> List[QualityCheckResult]:
+        self, snapshot: OrderBookSnapshot, reference_price: float | None = None
+    ) -> list[QualityCheckResult]:
         """Validate a single order book snapshot.
 
         Args:
@@ -167,7 +166,7 @@ class DataQualityValidator:
 
         return results
 
-    def validate_tracker(self, tracker: OrderBookTracker) -> List[QualityCheckResult]:
+    def validate_tracker(self, tracker: OrderBookTracker) -> list[QualityCheckResult]:
         """Validate order book tracker for all symbols.
 
         Args:
@@ -202,16 +201,16 @@ class DataQualityValidator:
                     check_name="no_duplicates",
                     passed=not has_dups,
                     symbol=symbol,
-                    details="Duplicate update IDs found"
-                    if has_dups
-                    else "No duplicates",
+                    details=(
+                        "Duplicate update IDs found" if has_dups else "No duplicates"
+                    ),
                 )
             )
 
         return results
 
     def generate_report(
-        self, tracker: OrderBookTracker, snapshots: List[OrderBookSnapshot]
+        self, tracker: OrderBookTracker, snapshots: list[OrderBookSnapshot]
     ) -> DataQualityReport:
         """Generate comprehensive quality report.
 
@@ -222,7 +221,7 @@ class DataQualityValidator:
         Returns:
             Data quality report
         """
-        all_checks: List[QualityCheckResult] = []
+        all_checks: list[QualityCheckResult] = []
 
         # Validate recent snapshots
         for snapshot in snapshots:
@@ -240,7 +239,7 @@ class DataQualityValidator:
         failed_checks = [c for c in all_checks if not c.passed]
         if failed_checks:
             summary = f"FAILED: {len(failed_checks)}/{total_count} checks failed. "
-            failed_by_symbol: Dict[Optional[str], int] = {}
+            failed_by_symbol: dict[str | None, int] = {}
             for c in failed_checks:
                 failed_by_symbol[c.symbol] = failed_by_symbol.get(c.symbol, 0) + 1
             summary += "Issues by symbol: " + ", ".join(
@@ -256,7 +255,7 @@ class DataQualityValidator:
             summary=summary,
         )
 
-    def get_failing_symbols(self, report: DataQualityReport) -> Set[str]:
+    def get_failing_symbols(self, report: DataQualityReport) -> set[str]:
         """Get set of symbols with failing checks.
 
         Args:

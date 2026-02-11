@@ -1,7 +1,5 @@
 """Tests for canary storage."""
 
-import pytest
-
 from execution.canary.models import CanaryStatus, create_canary_deployment
 from execution.canary.monitor import MonitoringCheck
 from execution.canary.storage import (

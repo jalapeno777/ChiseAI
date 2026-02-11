@@ -1,12 +1,9 @@
 """Tests for canary monitor."""
 
-import asyncio
 import pytest
 
 from execution.canary.models import (
-    CanaryDeployment,
     CanaryStatus,
-    GateCheckResult,
     create_canary_deployment,
 )
 from execution.canary.monitor import (

@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
 
 
 @dataclass
@@ -23,7 +22,7 @@ class OpenInterestData:
     open_interest_usd: float = 0.0
     price: float = 0.0
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert to dictionary."""
         return {
             "symbol": self.symbol,
@@ -58,7 +57,7 @@ class OIAggregation:
     change_pct: float
     data_points: int
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert to dictionary."""
         return {
             "symbol": self.symbol,
@@ -82,7 +81,7 @@ class OpenInterestAggregator:
             window_minutes: Aggregation window size in minutes
         """
         self.window_minutes = window_minutes
-        self._data: Dict[str, List[OpenInterestData]] = {}
+        self._data: dict[str, list[OpenInterestData]] = {}
 
     def add(self, oi_data: OpenInterestData) -> None:
         """Add open interest data point.
@@ -101,8 +100,8 @@ class OpenInterestAggregator:
         self._data[symbol] = [d for d in self._data[symbol] if d.timestamp > cutoff]
 
     def get_aggregation(
-        self, symbol: str, window_minutes: Optional[int] = None
-    ) -> Optional[OIAggregation]:
+        self, symbol: str, window_minutes: int | None = None
+    ) -> OIAggregation | None:
         """Get aggregated statistics for a symbol.
 
         Args:
@@ -144,11 +143,11 @@ class OpenInterestAggregator:
             data_points=len(window_data),
         )
 
-    def get_all_symbols(self) -> List[str]:
+    def get_all_symbols(self) -> list[str]:
         """Get list of all symbols with data."""
         return list(self._data.keys())
 
-    def get_latest(self, symbol: str) -> Optional[OpenInterestData]:
+    def get_latest(self, symbol: str) -> OpenInterestData | None:
         """Get most recent data point for a symbol.
 
         Args:

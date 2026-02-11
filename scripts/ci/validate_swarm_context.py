@@ -84,7 +84,13 @@ def main() -> int:
     env = dict(os.environ)
     ev = _event(env)
     pr_build = _is_pr(env)
-    ci_mode = bool(env.get("CI", "").strip() or ev)
+    ci_mode = bool(
+        env.get("CI", "").strip()
+        or ev
+        or env.get("CI_COMMIT_SHA", "").strip()
+        or env.get("CI_COMMIT_REF", "").strip()
+        or env.get("WOODPECKER_REPO", "").strip()
+    )
 
     commit_ref = _first_non_empty(
         env,

@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Any
 
 from execution.canary.gate_evaluator import GateEvaluator
-from execution.canary.models import CanaryDeployment, CanaryStatus, GateCriteria
+from execution.canary.models import CanaryDeployment
 
 
 @dataclass
@@ -295,33 +295,53 @@ class PromotionPacketGenerator:
 
 ## Executive Summary
 
-Strategy `{packet.strategy_id}` has completed canary testing and is requesting promotion to paper full.
+Strategy `{packet.strategy_id}` has completed canary testing and is requesting
+promotion to paper full.
 
 """
 
         if evidence:
+            gate_results = evidence.gate_check_summary.get("gate_results", [{}])
+            duration_threshold = gate_results[2].get("threshold_value", 7)
+            win_rate_threshold = gate_results[1].get("threshold_value", 55)
+            drawdown_threshold = gate_results[0].get("threshold_value", 5)
+            duration_row = (
+                f"| Duration | {evidence.canary_duration_days:.2f} days | "
+                f"{duration_threshold} days | ✅ PASS |"
+            )
+            win_rate_row = (
+                f"| Win Rate | {evidence.win_rate_pct:.2f}% | "
+                f"{win_rate_threshold}% | ✅ PASS |"
+            )
+            drawdown_row = (
+                f"| Max Drawdown | {evidence.max_drawdown_pct:.2f}% | "
+                f"≤{drawdown_threshold}% | ✅ PASS |"
+            )
             markdown += f"""### Key Metrics
 
 | Metric | Value | Threshold | Status |
 |--------|-------|-----------|--------|
-| Duration | {evidence.canary_duration_days:.2f} days | {packet.evidence.gate_check_summary.get("gate_results", [{}])[2].get("threshold_value", 7) if packet.evidence else 7} days | ✅ PASS |
-| Win Rate | {evidence.win_rate_pct:.2f}% | {packet.evidence.gate_check_summary.get("gate_results", [{}])[1].get("threshold_value", 55) if packet.evidence else 55}% | ✅ PASS |
-| Max Drawdown | {evidence.max_drawdown_pct:.2f}% | ≤{packet.evidence.gate_check_summary.get("gate_results", [{}])[0].get("threshold_value", 5) if packet.evidence else 5}% | ✅ PASS |
+{duration_row}
+{win_rate_row}
+{drawdown_row}
 | Total Trades | {evidence.total_trades} | - | - |
 | Realized PnL | {evidence.realized_pnl:.8f} | - | - |
 
 """
 
-        markdown += f"""---
+        markdown += """---
 
 ## Risk Assessment
 
 """
 
         if packet.risk_assessment:
-            markdown += f"""**Drawdown Risk:** {packet.risk_assessment.get("drawdown_risk", "N/A")}  
-**Win Rate Stability:** {packet.risk_assessment.get("win_rate_stability", "N/A")}  
-**Sample Size:** {packet.risk_assessment.get("sample_size", "N/A")} trades
+            drawdown_risk = packet.risk_assessment.get("drawdown_risk", "N/A")
+            win_rate_stability = packet.risk_assessment.get("win_rate_stability", "N/A")
+            sample_size = packet.risk_assessment.get("sample_size", "N/A")
+            markdown += f"""**Drawdown Risk:** {drawdown_risk}  
+**Win Rate Stability:** {win_rate_stability}  
+**Sample Size:** {sample_size} trades
 
 {packet.risk_assessment.get("assessment_summary", "")}
 
@@ -349,7 +369,7 @@ Strategy `{packet.strategy_id}` has completed canary testing and is requesting p
         for step in packet.rollback_plan.get("verification_steps", []):
             markdown += f"- {step}\n"
 
-        markdown += f"""
+        markdown += """
 
 ---
 

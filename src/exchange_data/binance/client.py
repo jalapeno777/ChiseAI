@@ -4,7 +4,7 @@ import asyncio
 import hashlib
 import hmac
 import time
-from typing import Any, Dict, Optional
+from typing import Any, cast
 
 import aiohttp
 
@@ -18,14 +18,14 @@ class BinanceClient:
     for Binance market data endpoints.
     """
 
-    def __init__(self, config: Optional[BinanceConfig] = None) -> None:
+    def __init__(self, config: BinanceConfig | None = None) -> None:
         """Initialize client with configuration.
 
         Args:
             config: Binance configuration (uses defaults if None)
         """
         self.config = config or BinanceConfig()
-        self._session: Optional[aiohttp.ClientSession] = None
+        self._session: aiohttp.ClientSession | None = None
         self._rate_limit_remaining: int = 1200
         self._rate_limit_reset: float = 0.0
 
@@ -81,9 +81,9 @@ class BinanceClient:
         self,
         method: str,
         endpoint: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
         signed: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Make HTTP request to Binance API.
 
         Args:
@@ -135,9 +135,9 @@ class BinanceClient:
                 text = await response.text()
                 raise ValueError(f"Binance API error {response.status}: {text}")
 
-            return await response.json()
+            return cast(dict[str, Any], await response.json())
 
-    async def get_order_book(self, symbol: str, limit: int = 100) -> Dict[str, Any]:
+    async def get_order_book(self, symbol: str, limit: int = 100) -> dict[str, Any]:
         """Fetch order book snapshot.
 
         Args:
@@ -153,7 +153,7 @@ class BinanceClient:
             params={"symbol": symbol, "limit": limit},
         )
 
-    async def get_open_interest(self, symbol: str) -> Dict[str, Any]:
+    async def get_open_interest(self, symbol: str) -> dict[str, Any]:
         """Fetch open interest data.
 
         Args:
@@ -168,7 +168,7 @@ class BinanceClient:
             params={"symbol": symbol},
         )
 
-    async def get_book_ticker(self, symbol: str) -> Dict[str, Any]:
+    async def get_book_ticker(self, symbol: str) -> dict[str, Any]:
         """Fetch best bid/ask price and quantity.
 
         Args:

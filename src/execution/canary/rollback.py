@@ -5,10 +5,11 @@ Provides automatic rollback functionality when canary gates fail.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 from execution.canary.models import CanaryDeployment, CanaryStatus
 
@@ -96,7 +97,7 @@ class RollbackHandler:
             Rollback result
         """
         # Check if rollback is needed
-        # Only allow rollback if status is FAILED, ROLLED_BACK (re-rollback), or force=True
+        # Only allow rollback if status is FAILED/ROLLED_BACK or force=True.
         if not force and canary.status not in (
             CanaryStatus.FAILED,
             CanaryStatus.ROLLED_BACK,

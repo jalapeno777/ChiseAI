@@ -13,9 +13,7 @@ from typing import Any
 
 from execution.canary.models import (
     CanaryDeployment,
-    CanaryMetrics,
     CanaryStatus,
-    GateCheck,
 )
 from execution.canary.monitor import MonitoringCheck
 

@@ -1,9 +1,6 @@
 """Tests for rollback handler."""
 
-import pytest
-
 from execution.canary.models import (
-    CanaryDeployment,
     CanaryStatus,
     create_canary_deployment,
 )

@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, List, Optional
 
 
 @dataclass
@@ -34,36 +33,36 @@ class OrderBookSnapshot:
     symbol: str
     timestamp: datetime
     last_update_id: int
-    bids: List[OrderBookLevel] = field(default_factory=list)
-    asks: List[OrderBookLevel] = field(default_factory=list)
+    bids: list[OrderBookLevel] = field(default_factory=list)
+    asks: list[OrderBookLevel] = field(default_factory=list)
     latency_ms: float = 0.0
 
     @property
-    def best_bid(self) -> Optional[float]:
+    def best_bid(self) -> float | None:
         """Get best (highest) bid price."""
         return self.bids[0].price if self.bids else None
 
     @property
-    def best_ask(self) -> Optional[float]:
+    def best_ask(self) -> float | None:
         """Get best (lowest) ask price."""
         return self.asks[0].price if self.asks else None
 
     @property
-    def mid_price(self) -> Optional[float]:
+    def mid_price(self) -> float | None:
         """Calculate mid price between best bid and ask."""
         if self.best_bid is not None and self.best_ask is not None:
             return (self.best_bid + self.best_ask) / 2
         return None
 
     @property
-    def spread(self) -> Optional[float]:
+    def spread(self) -> float | None:
         """Calculate bid-ask spread."""
         if self.best_bid is not None and self.best_ask is not None:
             return self.best_ask - self.best_bid
         return None
 
     @property
-    def spread_pct(self) -> Optional[float]:
+    def spread_pct(self) -> float | None:
         """Calculate bid-ask spread as percentage of mid price."""
         mid = self.mid_price
         spread = self.spread
@@ -97,7 +96,7 @@ class OrderBookSnapshot:
             level.quantity for level in self.asks if level.price <= price_threshold
         )
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert snapshot to dictionary for serialization."""
         return {
             "symbol": self.symbol,
@@ -127,8 +126,8 @@ class OrderBookTracker:
             max_history: Maximum snapshots to retain per symbol
         """
         self.max_history = max_history
-        self._snapshots: Dict[str, List[OrderBookSnapshot]] = {}
-        self._last_update_ids: Dict[str, int] = {}
+        self._snapshots: dict[str, list[OrderBookSnapshot]] = {}
+        self._last_update_ids: dict[str, int] = {}
 
     def add_snapshot(self, snapshot: OrderBookSnapshot) -> None:
         """Add a new snapshot to tracking.
@@ -147,7 +146,7 @@ class OrderBookTracker:
         if len(self._snapshots[symbol]) > self.max_history:
             self._snapshots[symbol] = self._snapshots[symbol][-self.max_history :]
 
-    def get_latest(self, symbol: str) -> Optional[OrderBookSnapshot]:
+    def get_latest(self, symbol: str) -> OrderBookSnapshot | None:
         """Get most recent snapshot for a symbol.
 
         Args:
@@ -159,7 +158,7 @@ class OrderBookTracker:
         snapshots = self._snapshots.get(symbol, [])
         return snapshots[-1] if snapshots else None
 
-    def get_history(self, symbol: str, count: int = 100) -> List[OrderBookSnapshot]:
+    def get_history(self, symbol: str, count: int = 100) -> list[OrderBookSnapshot]:
         """Get recent snapshot history for a symbol.
 
         Args:
@@ -172,7 +171,7 @@ class OrderBookTracker:
         snapshots = self._snapshots.get(symbol, [])
         return snapshots[-count:] if snapshots else []
 
-    def detect_gaps(self, symbol: str, max_gap_sec: float = 5.0) -> List[Dict]:
+    def detect_gaps(self, symbol: str, max_gap_sec: float = 5.0) -> list[dict]:
         """Detect gaps in order book data.
 
         Args:
@@ -215,6 +214,6 @@ class OrderBookTracker:
         update_ids = [s.last_update_id for s in snapshots]
         return len(update_ids) != len(set(update_ids))
 
-    def get_all_symbols(self) -> List[str]:
+    def get_all_symbols(self) -> list[str]:
         """Get list of all tracked symbols."""
         return list(self._snapshots.keys())

@@ -1,10 +1,7 @@
 """Tests for gate evaluator."""
 
-import pytest
-
 from execution.canary.gate_evaluator import GateEvaluator
 from execution.canary.models import (
-    CanaryDeployment,
     CanaryMetrics,
     CanaryStatus,
     GateCheckResult,

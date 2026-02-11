@@ -11,7 +11,7 @@ This module implements the paper canary deployment system with:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from typing import Any
 
@@ -30,7 +30,7 @@ class CanaryStatus(Enum):
 class GateCheckResult(Enum):
     """Result of a gate check."""
 
-    PASS = "pass"
+    PASS = "pass"  # nosec B105 - enum state label, not a credential
     FAIL = "fail"
     PENDING = "pending"
 

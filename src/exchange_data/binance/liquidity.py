@@ -1,7 +1,6 @@
 """Liquidity metrics calculation."""
 
 from dataclasses import dataclass
-from typing import Dict, Optional
 
 from exchange_data.binance.orderbook import OrderBookSnapshot
 
@@ -40,7 +39,7 @@ class LiquidityMetrics:
     slippage_1000usd: float
     slippage_10000usd: float
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert metrics to dictionary."""
         return {
             "symbol": self.symbol,
@@ -66,7 +65,7 @@ class LiquidityCalculator:
         """Initialize calculator."""
         self.depth_thresholds = [0.01, 0.05, 0.10]  # 1%, 5%, 10%
 
-    def calculate(self, snapshot: OrderBookSnapshot) -> Optional[LiquidityMetrics]:
+    def calculate(self, snapshot: OrderBookSnapshot) -> LiquidityMetrics | None:
         """Calculate liquidity metrics from order book snapshot.
 
         Args:
@@ -201,7 +200,7 @@ class LiquidityCalculator:
         if ask_depth <= 0:
             return float("inf") if bid_depth > 0 else 1.0
 
-        return bid_depth / ask_depth
+        return float(bid_depth / ask_depth)
 
     def get_liquidity_score(self, metrics: LiquidityMetrics) -> float:
         """Calculate overall liquidity score (0-100).

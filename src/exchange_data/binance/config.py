@@ -1,7 +1,6 @@
 """Binance exchange configuration."""
 
 from dataclasses import dataclass
-from typing import List
 
 
 @dataclass
@@ -25,7 +24,7 @@ class BinanceConfig:
     api_secret: str = ""
     base_url: str = "https://fapi.binance.com"
     ws_url: str = "wss://fstream.binance.com/ws"
-    tokens: List[str] = None  # type: ignore
+    tokens: list[str] = None  # type: ignore
     orderbook_depth: int = 100
     snapshot_interval_ms: int = 100
     max_latency_ms: int = 2000

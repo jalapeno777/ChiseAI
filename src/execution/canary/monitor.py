@@ -7,10 +7,12 @@ Runs gate evaluations every 15 minutes during canary period.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
-from dataclasses import dataclass, field
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable
+from typing import Any
 
 from execution.canary.gate_evaluator import GateEvaluator
 from execution.canary.models import (
@@ -73,8 +75,9 @@ class CanaryMonitor:
         check_interval_minutes: int = DEFAULT_CHECK_INTERVAL_MINUTES,
         gate_evaluator: GateEvaluator | None = None,
         rollback_handler: RollbackHandler | None = None,
-        on_status_change: Callable[[CanaryDeployment, CanaryStatus], None]
-        | None = None,
+        on_status_change: (
+            Callable[[CanaryDeployment, CanaryStatus], None] | None
+        ) = None,
         on_rollback: Callable[[RollbackResult], None] | None = None,
     ) -> None:
         """Initialize the canary monitor.
@@ -254,10 +257,8 @@ class CanaryMonitor:
         self._running = False
         if self._task:
             self._task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._task
-            except asyncio.CancelledError:
-                pass
             self._task = None
 
         logger.info("Stopped canary monitor")

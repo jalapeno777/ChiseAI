@@ -1,12 +1,9 @@
 """Tests for canary models."""
 
-import pytest
-
 from execution.canary.models import (
     CanaryDeployment,
     CanaryMetrics,
     CanaryStatus,
-    GateCheck,
     GateCheckResult,
     GateCriteria,
     create_canary_deployment,

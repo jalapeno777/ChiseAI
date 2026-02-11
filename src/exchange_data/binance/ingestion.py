@@ -2,8 +2,8 @@
 
 import asyncio
 import logging
+from collections.abc import Callable
 from datetime import datetime
-from typing import Callable, Dict, List, Optional
 
 from exchange_data.binance.client import BinanceClient
 from exchange_data.binance.config import BinanceConfig
@@ -17,7 +17,7 @@ from exchange_data.binance.orderbook import (
     OrderBookSnapshot,
     OrderBookTracker,
 )
-from exchange_data.binance.validator import DataQualityValidator, DataQualityReport
+from exchange_data.binance.validator import DataQualityReport, DataQualityValidator
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +30,8 @@ class IngestionMetrics:
         self.snapshots_ingested = 0
         self.snapshots_failed = 0
         self.total_latency_ms = 0.0
-        self.last_ingest_time: Optional[datetime] = None
-        self.alert_callbacks: List[Callable[[str, Dict], None]] = []
+        self.last_ingest_time: datetime | None = None
+        self.alert_callbacks: list[Callable[[str, dict], None]] = []
 
     def record_success(self, latency_ms: float) -> None:
         """Record successful ingestion.
@@ -58,7 +58,7 @@ class IngestionMetrics:
             return 0.0
         return self.total_latency_ms / self.snapshots_ingested
 
-    def get_p95_latency_ms(self, recent_latencies: List[float]) -> float:
+    def get_p95_latency_ms(self, recent_latencies: list[float]) -> float:
         """Calculate 95th percentile latency.
 
         Args:
@@ -73,7 +73,7 @@ class IngestionMetrics:
         idx = int(len(sorted_latencies) * 0.95)
         return sorted_latencies[min(idx, len(sorted_latencies) - 1)]
 
-    def register_alert_callback(self, callback: Callable[[str, Dict], None]) -> None:
+    def register_alert_callback(self, callback: Callable[[str, dict], None]) -> None:
         """Register callback for alert events.
 
         Args:
@@ -81,7 +81,7 @@ class IngestionMetrics:
         """
         self.alert_callbacks.append(callback)
 
-    def _trigger_alert(self, alert_type: str, data: Dict) -> None:
+    def _trigger_alert(self, alert_type: str, data: dict) -> None:
         """Trigger alert callbacks.
 
         Args:
@@ -104,8 +104,8 @@ class BinanceIngestionService:
 
     def __init__(
         self,
-        config: Optional[BinanceConfig] = None,
-        alert_callback: Optional[Callable[[str, Dict], None]] = None,
+        config: BinanceConfig | None = None,
+        alert_callback: Callable[[str, dict], None] | None = None,
     ) -> None:
         """Initialize ingestion service.
 
@@ -125,8 +125,8 @@ class BinanceIngestionService:
             self.metrics.register_alert_callback(alert_callback)
 
         self._running = False
-        self._tasks: List[asyncio.Task] = []
-        self._recent_latencies: List[float] = []
+        self._tasks: list[asyncio.Task] = []
+        self._recent_latencies: list[float] = []
         self._max_latency_history = 1000
 
     async def start(self) -> None:
@@ -236,7 +236,7 @@ class BinanceIngestionService:
                 logger.error(f"OI ingestion error: {e}")
                 await asyncio.sleep(10)
 
-    def _parse_orderbook(self, symbol: str, data: Dict) -> OrderBookSnapshot:
+    def _parse_orderbook(self, symbol: str, data: dict) -> OrderBookSnapshot:
         """Parse order book API response.
 
         Args:
@@ -267,7 +267,7 @@ class BinanceIngestionService:
             asks=asks,
         )
 
-    def _parse_oi(self, symbol: str, data: Dict) -> OpenInterestData:
+    def _parse_oi(self, symbol: str, data: dict) -> OpenInterestData:
         """Parse open interest API response.
 
         Args:
@@ -290,7 +290,7 @@ class BinanceIngestionService:
             open_interest_usd=oi * price if price > 0 else 0,
         )
 
-    def get_liquidity_metrics(self, symbol: str) -> Optional[LiquidityMetrics]:
+    def get_liquidity_metrics(self, symbol: str) -> LiquidityMetrics | None:
         """Get liquidity metrics for a symbol.
 
         Args:
@@ -311,7 +311,7 @@ class BinanceIngestionService:
             Data quality report
         """
         # Get recent snapshots for all symbols
-        recent_snapshots: List[OrderBookSnapshot] = []
+        recent_snapshots: list[OrderBookSnapshot] = []
         for symbol in self.config.tokens:
             snapshot = self.tracker.get_latest(symbol)
             if snapshot:
@@ -319,7 +319,7 @@ class BinanceIngestionService:
 
         return self.validator.generate_report(self.tracker, recent_snapshots)
 
-    def get_metrics(self) -> Dict:
+    def get_metrics(self) -> dict:
         """Get ingestion metrics.
 
         Returns:
@@ -358,7 +358,4 @@ class BinanceIngestionService:
 
         # Check P95 latency
         p95 = self.metrics.get_p95_latency_ms(self._recent_latencies)
-        if p95 > self.config.max_latency_ms:
-            return False
-
-        return True
+        return not p95 > self.config.max_latency_ms
