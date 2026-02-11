@@ -140,7 +140,7 @@ validations:
     title: Security Scan Gate - Deterministic Bandit
     epic_id: EP-CI-001
     story_id: ST-CI-004
-    status: planned
+    status: validated
     description: Validate deterministic security scan runs in CI and blocks merges on findings
     acceptance_criteria:
       - CI runs bandit scan on src/ directory
