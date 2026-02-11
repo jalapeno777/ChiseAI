@@ -247,7 +247,7 @@ validations:
     title: Candidate Backtesting & Ranking
     epic_id: EP-BT-001
     story_id: ST-BT-001
-    status: planned
+    status: validated
     description: Validate candidate strategies are backtested with consistent parameters and ranked based on evidence
     acceptance_criteria:
       - Backtests use consistent walk-forward windows
