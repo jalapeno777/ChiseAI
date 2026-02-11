@@ -43,12 +43,27 @@ def _req_json(method: str, url: str, token: str, body: dict | None = None) -> di
         raise RuntimeError(f"{method} {url} failed: HTTP {e.code}: {msg}") from e
 
 
-def _get_pr(owner: str, repo: str, base_url: str, token: str, head: str) -> dict | None:
-    q = urllib.parse.urlencode({"state": "open", "head": head})
+def _get_pr(
+    owner: str, repo: str, base_url: str, token: str, head_ref: str
+) -> dict | None:
+    """Find the open PR for a given head branch ref.
+
+    Note: Some Gitea installations do not reliably honor the `head=` query
+    parameter for the pulls listing endpoint. We therefore always filter
+    client-side.
+    """
+
+    q = urllib.parse.urlencode({"state": "open", "limit": "50"})
     url = f"{base_url}/api/v1/repos/{owner}/{repo}/pulls?{q}"
     prs = _req_json("GET", url, token)
-    if isinstance(prs, list) and prs:
-        return prs[0]
+    if not isinstance(prs, list):
+        return None
+    for pr in prs:
+        try:
+            if pr.get("head", {}).get("ref") == head_ref:
+                return pr
+        except AttributeError:
+            continue
     return None
 
 
@@ -246,14 +261,13 @@ def main() -> int:
 
     base_url = args.base_url.rstrip("/")
     head_ref = args.head
-    head_query = f"{args.owner}:{head_ref}"
 
     story_id = args.story_id.strip()
     if not story_id:
         print("ERROR: --story-id must be non-empty", file=sys.stderr)
         return 1
 
-    pr = _get_pr(args.owner, args.repo, base_url, token, head_query)
+    pr = _get_pr(args.owner, args.repo, base_url, token, head_ref)
     if pr is None:
         base_title = args.title or f"{head_ref}"
         title = f"{story_id} {base_title}"
