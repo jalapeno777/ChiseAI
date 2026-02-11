@@ -7,8 +7,8 @@ applying uniform criteria and weights to produce composite scores.
 from __future__ import annotations
 
 import statistics
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 from backtesting.candidate.models import (
     BacktestMetrics,

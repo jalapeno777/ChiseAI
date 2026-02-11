@@ -106,14 +106,6 @@ class CandidateResultStorage:
         points = []
         timestamp = result.completed_at or result.created_at
 
-        # Common tags
-        tags = {
-            "candidate_id": result.candidate_id,
-            "strategy_id": result.strategy_id,
-            "version": result.version,
-            "status": result.status.value,
-        }
-
         # Main metrics point
         metrics_point = (
             Point("candidate_backtest")

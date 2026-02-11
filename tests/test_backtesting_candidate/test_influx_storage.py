@@ -1,9 +1,7 @@
 """Tests for InfluxDB storage."""
 
 from datetime import datetime
-from unittest.mock import MagicMock, Mock, patch
-
-import pytest
+from unittest.mock import MagicMock, patch
 
 from backtesting.candidate.influx_storage import CandidateResultStorage
 from backtesting.candidate.models import (

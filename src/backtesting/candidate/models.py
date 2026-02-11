@@ -126,7 +126,7 @@ class BacktestMetrics:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "BacktestMetrics":
+    def from_dict(cls, data: dict[str, Any]) -> BacktestMetrics:
         """Create metrics from dictionary."""
         return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
 
