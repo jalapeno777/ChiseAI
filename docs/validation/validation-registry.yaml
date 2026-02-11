@@ -262,7 +262,7 @@ validations:
     title: Paper Canary Planning & Gates
     epic_id: EP-BT-001
     story_id: ST-BT-002
-    status: validated
+    status: planned
     description: Validate paper canary tests have clear gates and promotion criteria to paper full
     acceptance_criteria:
       - Canary size is defined (e.g., 10% of portfolio)
