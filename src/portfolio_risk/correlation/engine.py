@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
@@ -356,8 +356,7 @@ class CorrelationEngine:
         # Use log returns for better statistical properties
         log_prices = np.log(prices)
         returns = np.diff(log_prices)
-
-        return returns
+        return cast(np.ndarray, returns)
 
     def _calculate_diversification_score(
         self, correlation_matrix: np.ndarray, tokens: list[str]
