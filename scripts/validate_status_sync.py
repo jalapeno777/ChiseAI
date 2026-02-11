@@ -184,9 +184,11 @@ def extract_validation_story_refs(data: dict[str, Any]) -> set[str]:
     if "validations" in data:
         for validation in data.get("validations", []):
             if isinstance(validation, dict):
-                # Check for story_id field
-                if "story_id" in validation:
-                    refs.add(validation["story_id"])
+                # Check for story_id field.
+                # Skip null/None values for cross-cutting gates.
+                story_id = validation.get("story_id")
+                if story_id is not None and story_id != "None":
+                    refs.add(story_id)
                 # Check for any field that looks like a story reference
                 for _key, value in validation.items():
                     if isinstance(value, str) and value.startswith("ST-"):

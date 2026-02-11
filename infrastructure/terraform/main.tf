@@ -2,6 +2,9 @@ locals {
   project_label = "chiseai"
 }
 
+# ChiseAI Application Containers
+# These containers run the core ChiseAI API and Dashboard services
+
 resource "docker_network" "chiseai" {
   name   = "chiseai"
   driver = "bridge"
@@ -594,6 +597,89 @@ resource "docker_container" "taiga_events" {
   labels {
     label = "com.docker.compose.service"
     value = "taiga-events"
+  }
+
+  networks_advanced {
+    name = docker_network.chiseai.name
+  }
+}
+
+# ChiseAI API Service
+resource "docker_container" "chiseai_api" {
+  name  = "chiseai-api-final"
+  image = "chiseai-api:latest"
+
+  env = [
+    "DATABASE_URL=postgresql://chiseai:${var.chise_postgres_password}@chiseai-postgres:5434/chiseai",
+    "INFLUXDB_URL=http://chiseai-influxdb:18087",
+    "INFLUXDB_ORG=${var.influxdb_org}",
+    "INFLUXDB_TOKEN=${var.influxdb_admin_password}",
+    "REDIS_HOST=chiseai-redis",
+    "REDIS_PORT=6380",
+    "REDIS_DB=0",
+    "QDRANT_URL=http://chiseai-qdrant:6334",
+    "CHISEAI_ENV=production",
+    "PYTHONPATH=/app:/app/scripts",
+  ]
+
+  ports {
+    internal = 8000
+    external = 8001
+  }
+
+  labels {
+    label = "project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.service"
+    value = "chiseai-api"
+  }
+
+  networks_advanced {
+    name = docker_network.chiseai.name
+  }
+}
+
+# ChiseAI Dashboard Service
+resource "docker_container" "chise_dashboard" {
+  name  = "chise-dashboard"
+  image = "chiseai-dashboard:latest"
+
+  env = [
+    "REDIS_HOST=chiseai-redis",
+    "REDIS_PORT=6380",
+    "REDIS_DB=0",
+    "CHISEAI_API_URL=http://chiseai-api-final:8001",
+    "STREAMLIT_SERVER_PORT=8502",
+    "STREAMLIT_SERVER_HEADLESS=true",
+    "PYTHONPATH=/app",
+  ]
+
+  ports {
+    internal = 8501
+    external = 8502
+  }
+
+  labels {
+    label = "project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.service"
+    value = "chise-dashboard"
   }
 
   networks_advanced {

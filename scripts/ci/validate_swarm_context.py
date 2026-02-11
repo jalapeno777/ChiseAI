@@ -34,6 +34,9 @@ def _is_pr(env: dict[str, str]) -> bool:
     event = _event(env)
     if event in {"pull_request", "pull-request", "pr"}:
         return True
+    commit_ref = _first_non_empty(env, ("CI_COMMIT_REF", "WOODPECKER_COMMIT_REF"))
+    if commit_ref.startswith("refs/pull/"):
+        return True
     return bool(
         env.get("CI_PULL_REQUEST", "").strip()
         or env.get("WOODPECKER_PULL_REQUEST", "").strip()
