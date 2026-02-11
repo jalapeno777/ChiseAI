@@ -33,6 +33,18 @@ Validates iteration-loop compliance using repo-checkable artifacts under `docs/t
 ```bash
 python3 scripts/validate_iterloop_compliance.py
 python3 scripts/validate_iterloop_compliance.py --story-id=CH-PRD-CI-ALIGN-001
+```
+
+### ci/validate_swarm_context.py
+
+Validates swarm branch/ref context and canonical status global-lock rules in CI/local gates.
+
+**Usage:**
+```bash
+python3 scripts/ci/validate_swarm_context.py
+# Optional lock signal when canonical status files are intentionally updated on non-main branches:
+CANONICAL_STATUS_LOCK=1 python3 scripts/ci/validate_swarm_context.py
+```
 
 ### iterlog_ops.py
 
@@ -54,7 +66,6 @@ Backfills older `docs/tempmemories/iterlog-*.md` files with standard sections:
   - `python3 scripts/backfill_tempmemory_iterlogs.py`
 - Check only (exit non-zero if changes needed):
   - `python3 scripts/backfill_tempmemory_iterlogs.py --check`
-```
 
 ### gitea_pr_automerge.py
 
@@ -79,6 +90,17 @@ Notes:
 export GITEA_REVIEW_TOKEN=...
 python3 scripts/gitea_pr_review.py --pr 28 --state APPROVED --body "review-bot approval"
 python3 scripts/gitea_pr_review.py --pr 28 --state REQUEST_CHANGES --body "blocking issues: ..."
+```
+
+### swarm/session.py
+
+Creates and verifies isolated worktree sessions for agent execution.
+
+**Usage:**
+```bash
+python3 scripts/swarm/session.py start --story-id ST-NS-001 --agent dev --branch feature/ST-NS-001-scope --scopes src/foo
+python3 scripts/swarm/session.py verify --story-id ST-NS-001 --branch feature/ST-NS-001-scope --check-canonical
+python3 scripts/swarm/session.py close
 ```
 
 ### ci/swarm_triage.sh

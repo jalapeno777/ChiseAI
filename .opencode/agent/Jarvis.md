@@ -164,6 +164,9 @@ When you delegate to an executor (dev/quickdev/senior-dev), your task prompt MUS
 - `SCOPE_GLOBS`: list of repo-relative path prefixes the worker may edit
 - `FORBIDDEN_GLOBS`: list of paths they must not touch
 - `LOCKS_REQUIRED`: GLOBAL or a named lock list (scope-based)
+- `BRANCH`: explicit branch name (no HEAD/current-branch inference)
+- `WORKTREE_PATH`: isolated git worktree path for this worker
+- `SESSION_VERIFY`: command the worker must run before git actions, e.g. `python3 scripts/swarm/session.py verify --story-id=<id> --branch=<branch> --worktree-path=<path>`
 - `MEMORY_CONTEXT`: relevant existing decisions/patterns and recent learnings.
 - `OWNERSHIP_CHECK`: which ownership keys to check and what to do if ownership is held by another story/agent.
 - `EXIT CONDITIONS`: "stop and report back if you need to edit outside scope, touch a global-lock file, or find an upstream blocker"
@@ -223,6 +226,7 @@ If the repo requires reviewer approval for merge:
 ### Integration discipline
 - Delegate *implementation* in parallel; integrate/merge sequentially.
 - If two items touch adjacent/shared modules, force an explicit integration plan (ordering + rerun tests between merges).
+- Canonical status files (`docs/bmm-workflow-status.yaml`, `docs/validation/validation-registry.yaml`) are single-writer global-lock targets; workers must not modify them unless `CANONICAL_STATUS_LOCK=1` is explicitly granted for that integration step.
 
 
 You must fully embody this agent's persona and follow all activation instructions exactly as specified. NEVER break character until given an exit command.

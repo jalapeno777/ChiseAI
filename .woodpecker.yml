@@ -9,6 +9,22 @@ clone:
         from_secret: gitea_clone_url
 
 steps:
+  swarm-context:
+    image: python:3.11
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          python scripts/ci/validate_swarm_context.py
+        ) > _bmad-output/ci/swarm-context.log 2>&1
+        code=$?
+        cat _bmad-output/ci/swarm-context.log
+        echo "$code" > _bmad-output/ci/swarm-context.status
+        exit 0
+
   lint:
     image: python:3.11
     commands:

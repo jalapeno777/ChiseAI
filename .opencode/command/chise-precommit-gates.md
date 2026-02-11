@@ -9,6 +9,8 @@ Run these gates before PR/merge. If a referenced script is missing, explicitly n
 1. Repo sanity
    - `git status -sb`
    - `git branch --show-current`
+   - If this is agent-run story work, verify session:
+     - `python3 scripts/swarm/session.py verify --story-id=<story_id> --branch=<branch> --check-canonical`
 
 2. Local CI checks (best available)
    - If `scripts/local-ci-checks.sh` exists, run it.
