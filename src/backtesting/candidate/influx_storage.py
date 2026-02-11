@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Any
 
 from influxdb_client import InfluxDBClient, Point
-from influxdb_client.client.write_api import SYNCHRONOUS
+from influxdb_client.client.write_api import SYNCHRONOUS, WriteApi
 
 from backtesting.candidate.models import CandidateResult, CandidateStatus
 
@@ -29,7 +29,7 @@ class CandidateResultStorage:
         token: str | None = None,
         org: str | None = None,
         bucket: str | None = None,
-    ):
+    ) -> None:
         """Initialize InfluxDB storage.
 
         Args:
@@ -38,25 +38,27 @@ class CandidateResultStorage:
             org: InfluxDB organization (default: from env INFLUXDB_ORG)
             bucket: InfluxDB bucket (default: from env INFLUXDB_BUCKET)
         """
-        self.url = url or os.getenv("INFLUXDB_URL", "http://host.docker.internal:18087")
-        self.token = token or os.getenv("INFLUXDB_TOKEN", "chiseai-token")
-        self.org = org or os.getenv("INFLUXDB_ORG", "chiseai")
-        self.bucket = bucket or os.getenv("INFLUXDB_BUCKET", "chiseai")
+        self.url: str = url or os.getenv("INFLUXDB_URL") or "http://host.docker.internal:18087"
+        self.token: str = token or os.getenv("INFLUXDB_TOKEN") or "chiseai-token"
+        self.org: str = org or os.getenv("INFLUXDB_ORG") or "chiseai"
+        self.bucket: str = bucket or os.getenv("INFLUXDB_BUCKET") or "chiseai"
 
         self._client: InfluxDBClient | None = None
-        self._write_api = None
+        self._write_api: WriteApi | None = None
 
     def _get_client(self) -> InfluxDBClient:
         """Get or create InfluxDB client."""
         if self._client is None:
+            token = self.token
+            org = self.org
             self._client = InfluxDBClient(
                 url=self.url,
-                token=self.token,
-                org=self.org,
+                token=token,
+                org=org,
             )
         return self._client
 
-    def _get_write_api(self):
+    def _get_write_api(self) -> WriteApi:
         """Get or create write API."""
         if self._write_api is None:
             self._write_api = self._get_client().write_api(write_options=SYNCHRONOUS)

@@ -9,7 +9,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
 import numpy as np
 
@@ -313,7 +313,7 @@ class CandidateBacktestPipeline:
         results = self.storage.query_results()
         for result in results:
             if result.get("candidate_id") == candidate_id:
-                return result
+                return cast(dict[str, Any], result)
         return None
 
     def get_top_candidates_for_paper(

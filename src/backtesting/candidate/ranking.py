@@ -248,7 +248,7 @@ class RankingEngine:
         Returns:
             Raw metric value
         """
-        mapping = {
+        mapping: dict[RankingCriteria, float] = {
             RankingCriteria.SHARPE_RATIO: metrics.sharpe_ratio,
             RankingCriteria.MAX_DRAWDOWN: metrics.max_drawdown_pct,
             RankingCriteria.WIN_RATE: metrics.win_rate_pct,
