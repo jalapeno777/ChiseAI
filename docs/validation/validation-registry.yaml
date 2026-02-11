@@ -827,11 +827,15 @@ validations:
   # ============================================================
   # LIVE VALIDATION GATES (4 gates for phased deployment)
   # ============================================================
+  # Note: These gates have story_id: null intentionally because they are
+  # cross-cutting deployment phase gates that span multiple epics and stories,
+  # not tied to a single story. They validate system-wide readiness for each
+  # deployment phase (backtest -> paper -> live -> scaling).
 
   - id: V-NS-LIVE-001
     title: Phase 1 - Continuous Backtesting Validation
     epic_id: EP-NS-001
-    story_id: null
+    story_id: null  # Cross-cutting gate: validates system-wide backtesting readiness
     status: validated
     description: Continuous backtesting + walk-forward validation built from exchange APIs (always-on)
     acceptance_criteria:
@@ -845,7 +849,7 @@ validations:
   - id: V-NS-LIVE-002
     title: Phase 2 - Bybit Demo Paper Trading Validation
     epic_id: EP-NS-002
-    story_id: null
+    story_id: null  # Cross-cutting gate: validates system-wide paper trading readiness
     status: planned
     description: Bybit demo paper trading (perps-first) with shadow backtests continuing
     acceptance_criteria:
@@ -859,7 +863,7 @@ validations:
   - id: V-NS-LIVE-003
     title: Phase 3 - Bitget Live Trading Validation (Gated)
     epic_id: EP-NS-003
-    story_id: null
+    story_id: null  # Cross-cutting gate: validates system-wide live trading readiness
     status: planned
     description: Bitget live trading with strict caps; paper + backtest remain active
     acceptance_criteria:
@@ -873,7 +877,7 @@ validations:
   - id: V-NS-LIVE-004
     title: Phase 4 - Scaling Validation
     epic_id: EP-NS-007
-    story_id: null
+    story_id: null  # Cross-cutting gate: validates system-wide scaling readiness
     status: planned
     description: Scaling up tokens/strategies once evidence supports stable profitability and minimal drawdown
     acceptance_criteria:
