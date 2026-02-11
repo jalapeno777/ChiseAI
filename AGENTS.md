@@ -144,7 +144,8 @@ python3 scripts/validate_iterloop_compliance.py --story-id=<id>
 - Use these commands when you want the BMAD workflow runner to load `workflow.xml` and execute the corresponding workflow config exactly.
 - Orchestration policy:
   - `aria` delegates workflow execution to `jarvis`.
-  - `jarvis` delegates executable work to `dev`, `quickdev`, `senior-dev`.
+  - `jarvis` delegates executable work to `dev`, `quickdev`, `senior-dev`, `merlin`.
+  - `merlin` is the expert debugger for CI/system failures and unresolved blockers.
   - Non-destructive roles: `research`, `web-research`, `critic`.
 - Common command entry points:
   - PRD: `.opencode/command/bmad-bmm-create-prd.md`, `.opencode/command/bmad-bmm-edit-prd.md`, `.opencode/command/bmad-bmm-validate-prd.md`
@@ -156,6 +157,7 @@ python3 scripts/validate_iterloop_compliance.py --story-id=<id>
 **ChiseAI Git Flow Commands (required for autonomy)**
 - Use `.opencode/command/chise-pr-automerge.md` to standardize push -> PR -> merge (green CI only). This is the default path for autonomous agents to keep `main` convergent.
 - **PR Title Rule:** Every PR title MUST include the canonical story ID (e.g. `ST-NS-001 ...`). The `chise-pr-automerge` flow enforces this via `scripts/gitea_pr_automerge.py --story-id`.
+- Use `scripts/ci/swarm_triage.sh` to replay Woodpecker wrapper steps locally and generate deterministic CI diagnosis artifacts in `_bmad-output/ci/`.
 - Use `.opencode/command/chise-taiga-sync.md` to keep Taiga aligned with repo-canonical story metadata (status/AC) so humans can monitor progress without manual copy/paste.
 - Use `.opencode/command/chise-rd-iteration.md` for a full R&D iteration loop (candidate -> backtest -> rank -> paper canary plan).
 - Use `.opencode/command/chise-paper-canary.md` for paper canary planning and gates.
@@ -278,6 +280,7 @@ promote_to_qdrant("ST-001")
 **General**
 - Always consult `docs/bmm-workflow-status.yaml` before "what's next?"
 - **Subagent delegation (restricted):** Only the `jarvis` agent may delegate tasks to subagents, and only when parallel work is safe (no unmet dependencies, no overlapping edits, no validations during active development/testing). Other agents must not delegate unless explicitly instructed by a human.
+- **Debugger escalation (mandatory):** Any CI/system issue unresolved after 5 attempts by `jarvis`/workers SHALL be escalated to `merlin` with full attempt history and evidence.
 - **Subagent git restriction:** Subagents must not run git commands (branch/commit/merge/push/PR/stash) unless explicitly directed by a human (typically via `jarvis`). They may run CI/tests and fix failures only when directed by `jarvis`.
 
 **MANDATORY: Status-Implementation Sync**
