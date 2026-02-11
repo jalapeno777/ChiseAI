@@ -81,6 +81,24 @@ python3 scripts/gitea_pr_review.py --pr 28 --state APPROVED --body "review-bot a
 python3 scripts/gitea_pr_review.py --pr 28 --state REQUEST_CHANGES --body "blocking issues: ..."
 ```
 
+### ci/swarm_triage.sh
+
+Replays Woodpecker wrapper logic locally for deterministic CI debugging:
+- Runs lint/security/local-ci in captured mode
+- Writes `_bmad-output/ci/*.status` and logs
+- Executes `scripts/ci/ci_gate.py` for final pass/fail summary
+
+**Usage:**
+```bash
+bash scripts/ci/swarm_triage.sh
+# Optional: skip dependency install if your environment is pre-provisioned
+SWARM_TRIAGE_INSTALL_DEPS=0 bash scripts/ci/swarm_triage.sh
+```
+
+Notes:
+- Default behavior auto-detects `.venv-debug` / `.venv` and uses that Python when present.
+- Dependency installation defaults to `1` in virtualenv contexts and `0` otherwise.
+
 ## Adding New Scripts
 
 When adding scripts to this directory:
