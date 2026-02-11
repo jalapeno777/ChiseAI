@@ -7,7 +7,28 @@ from __future__ import annotations
 
 import time
 
+import pytest
+
 from discord_alerts.duplicate_suppressor import AlertRecord, DuplicateSuppressor
+
+
+@pytest.fixture
+def fake_time(monkeypatch):
+    """Deterministic clock for time-dependent tests."""
+
+    class _Clock:
+        def __init__(self, start: float = 1_000_000.0) -> None:
+            self.now = start
+
+        def time(self) -> float:
+            return self.now
+
+        def advance(self, seconds: float) -> None:
+            self.now += seconds
+
+    clock = _Clock()
+    monkeypatch.setattr("discord_alerts.duplicate_suppressor.time.time", clock.time)
+    return clock
 
 
 class TestAlertRecord:
@@ -88,14 +109,14 @@ class TestDuplicateSuppressor:
 
         assert is_dup is False
 
-    def test_is_duplicate_after_window(self) -> None:
+    def test_is_duplicate_after_window(self, fake_time) -> None:
         """Test no duplicate after suppression window expires."""
         suppressor = DuplicateSuppressor(window_seconds=0.1)
 
         suppressor.record_alert("BTC/USDT", "LONG", "signal-1", 0.85)
 
-        # Wait for window to expire
-        time.sleep(0.15)
+        # Advance past window
+        fake_time.advance(0.15)
 
         is_dup = suppressor.is_duplicate("BTC/USDT", "LONG")
 
@@ -149,35 +170,34 @@ class TestDuplicateSuppressor:
 
         assert result is True
 
-    def test_cleanup_old_entries(self) -> None:
+    def test_cleanup_old_entries(self, fake_time) -> None:
         """Test cleanup of old entries."""
         suppressor = DuplicateSuppressor(window_seconds=0.1)
 
         suppressor.record_alert("BTC/USDT", "LONG", "signal-1", 0.85)
         suppressor.record_alert("ETH/USDT", "SHORT", "signal-2", 0.75)
 
-        # Wait for window to expire
-        time.sleep(0.15)
+        # Advance past window
+        fake_time.advance(0.15)
 
         removed = suppressor.cleanup()
 
         assert removed == 2
         assert len(suppressor._alerts) == 0
 
-    def test_cleanup_partial(self) -> None:
+    def test_cleanup_partial(self, fake_time) -> None:
         """Test cleanup only removes expired entries."""
         suppressor = DuplicateSuppressor(window_seconds=1.0)
 
         suppressor.record_alert("BTC/USDT", "LONG", "signal-1", 0.85)
 
-        # Wait a bit but not full window
-        time.sleep(0.1)
+        # Advance a bit but not full window
+        fake_time.advance(0.1)
 
         suppressor.record_alert("ETH/USDT", "SHORT", "signal-2", 0.75)
 
         # First entry should be expired, second should remain
-        # But we need to wait for first to expire
-        time.sleep(0.95)  # Total ~1.05s since first record
+        fake_time.advance(0.95)  # Total 1.05s since first record
 
         removed = suppressor.cleanup()
 

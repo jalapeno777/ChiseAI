@@ -77,11 +77,13 @@ class TestGetPr:
     @patch("scripts.gitea_pr_automerge._req_json")
     def test_get_existing_pr(self, mock_req: MagicMock) -> None:
         mock_req.return_value = [
-            {"number": 1, "title": "Test PR", "head": {"sha": "abc123"}}
+            {
+                "number": 1,
+                "title": "Test PR",
+                "head": {"ref": "feature-branch", "sha": "abc123"},
+            }
         ]
-        result = _get_pr(
-            "owner", "repo", "http://test", "token", "owner:feature-branch"
-        )
+        result = _get_pr("owner", "repo", "http://test", "token", "feature-branch")
         assert result is not None
         assert result["number"] == 1
         assert result["title"] == "Test PR"
@@ -89,17 +91,13 @@ class TestGetPr:
     @patch("scripts.gitea_pr_automerge._req_json")
     def test_get_pr_not_found(self, mock_req: MagicMock) -> None:
         mock_req.return_value = []
-        result = _get_pr(
-            "owner", "repo", "http://test", "token", "owner:feature-branch"
-        )
+        result = _get_pr("owner", "repo", "http://test", "token", "feature-branch")
         assert result is None
 
     @patch("scripts.gitea_pr_automerge._req_json")
     def test_get_pr_empty_response(self, mock_req: MagicMock) -> None:
         mock_req.return_value = None
-        result = _get_pr(
-            "owner", "repo", "http://test", "token", "owner:feature-branch"
-        )
+        result = _get_pr("owner", "repo", "http://test", "token", "feature-branch")
         assert result is None
 
 
