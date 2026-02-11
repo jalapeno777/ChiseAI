@@ -11,6 +11,8 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Protocol
 
+import numpy as np
+
 from backtesting.candidate.influx_storage import CandidateResultStorage
 from backtesting.candidate.models import (
     BacktestMetrics,
@@ -257,25 +259,25 @@ class CandidateBacktestPipeline:
         Returns:
             Mock backtest metrics
         """
-        import random
+        rng = np.random.default_rng()
 
         return BacktestMetrics(
-            sharpe_ratio=random.uniform(0.5, 2.5),
-            max_drawdown_pct=random.uniform(5.0, 25.0),
-            win_rate_pct=random.uniform(40.0, 65.0),
-            profit_factor=random.uniform(1.0, 2.5),
-            total_return_pct=random.uniform(-10.0, 50.0),
-            volatility_pct=random.uniform(10.0, 40.0),
-            calmar_ratio=random.uniform(0.5, 3.0),
-            sortino_ratio=random.uniform(0.5, 3.0),
-            trade_count=random.randint(20, 200),
-            avg_trade_return_pct=random.uniform(-0.5, 1.5),
-            avg_win_pct=random.uniform(1.0, 5.0),
-            avg_loss_pct=random.uniform(-3.0, -0.5),
-            largest_win_pct=random.uniform(5.0, 15.0),
-            largest_loss_pct=random.uniform(-10.0, -2.0),
-            consecutive_wins=random.randint(2, 8),
-            consecutive_losses=random.randint(2, 6),
+            sharpe_ratio=float(rng.uniform(0.5, 2.5)),
+            max_drawdown_pct=float(rng.uniform(5.0, 25.0)),
+            win_rate_pct=float(rng.uniform(40.0, 65.0)),
+            profit_factor=float(rng.uniform(1.0, 2.5)),
+            total_return_pct=float(rng.uniform(-10.0, 50.0)),
+            volatility_pct=float(rng.uniform(10.0, 40.0)),
+            calmar_ratio=float(rng.uniform(0.5, 3.0)),
+            sortino_ratio=float(rng.uniform(0.5, 3.0)),
+            trade_count=int(rng.integers(20, 201)),
+            avg_trade_return_pct=float(rng.uniform(-0.5, 1.5)),
+            avg_win_pct=float(rng.uniform(1.0, 5.0)),
+            avg_loss_pct=float(rng.uniform(-3.0, -0.5)),
+            largest_win_pct=float(rng.uniform(5.0, 15.0)),
+            largest_loss_pct=float(rng.uniform(-10.0, -2.0)),
+            consecutive_wins=int(rng.integers(2, 9)),
+            consecutive_losses=int(rng.integers(2, 7)),
         )
 
     def _update_registry(self, results: list[CandidateResult]) -> None:

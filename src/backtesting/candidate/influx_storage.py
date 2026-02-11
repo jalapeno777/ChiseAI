@@ -199,12 +199,12 @@ class CandidateResultStorage:
 
         filter_clause = " and ".join(filters)
 
-        query = f'''
+        query = f"""
         from(bucket: "{self.bucket}")
             |> range(start: -30d{time_filter})
             |> filter(fn: (r) => {filter_clause})
             |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-        '''
+        """
 
         try:
             tables = query_api.query(query)
@@ -231,14 +231,14 @@ class CandidateResultStorage:
         """
         query_api = self._get_client().query_api()
 
-        query = f'''
+        query = f"""
         from(bucket: "{self.bucket}")
             |> range(start: -30d)
             |> filter(fn: (r) => r._measurement == "candidate_backtest")
             |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
             |> sort(columns: ["_time"], desc: true)
             |> limit(n: {limit})
-        '''
+        """
 
         try:
             tables = query_api.query(query)

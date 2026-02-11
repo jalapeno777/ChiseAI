@@ -19,7 +19,6 @@ from backtesting.candidate.models import (
     RankingScore,
 )
 
-
 # Type alias for normalization functions
 Normalizer = Callable[[float], float]
 

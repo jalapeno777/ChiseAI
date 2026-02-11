@@ -234,9 +234,9 @@ class CandidateResult:
             "composite_score": self.composite_score,
             "rank_position": self.rank_position,
             "created_at": self.created_at.isoformat(),
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
             "error_message": self.error_message,
         }
 
