@@ -17,6 +17,12 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
+def _now() -> float:
+    """Time provider for records (kept as a function for testability)."""
+
+    return time.time()
+
+
 @dataclass
 class AlertRecord:
     """Record of a sent alert for deduplication.
@@ -32,7 +38,7 @@ class AlertRecord:
     signal_id: str
     token: str
     direction: str
-    timestamp: float = field(default_factory=time.time)
+    timestamp: float = field(default_factory=_now)
     confidence: float = 0.0
 
 

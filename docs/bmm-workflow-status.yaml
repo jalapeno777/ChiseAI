@@ -298,7 +298,7 @@ stories:
     title: Branch Hygiene Automation - Prune + Prevention
     epic_id: EP-CI-001
     sprint_id: p0-1
-    status: planned
+    status: in_progress
     story_points: 3
     priority: P1-HIGH
     description: Auto-prune merged branches and prevent long-lived divergence

@@ -12,39 +12,66 @@ steps:
   lint:
     image: python:3.11
     commands:
-      - python -V
       - |
-        set -eu
-        pip install --no-cache-dir black ruff mypy pytest pytest-cov pyyaml types-PyYAML types-requests
-        black --check .
-        ruff check .
-        mypy src scripts
-        python scripts/validate_status_sync.py
-        python scripts/validate_iterloop_compliance.py
-        python scripts/validate_pr_title.py
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          python -V
+          pip install --no-cache-dir black ruff mypy pytest pytest-cov pyyaml types-PyYAML types-requests
+          black --check .
+          ruff check .
+          mypy src scripts
+          python scripts/validate_status_sync.py
+          python scripts/validate_iterloop_compliance.py
+          python scripts/validate_pr_title.py
+        ) > _bmad-output/ci/lint.log 2>&1
+        code=$?
+        cat _bmad-output/ci/lint.log
+        echo "$code" > _bmad-output/ci/lint.status
+        exit 0
 
   security-scan:
     image: python:3.11
     commands:
       - |
-        set -eu
-        pip install --no-cache-dir bandit
-        # Keep deterministic and avoid flagging automation scripts; scan application code only.
-        bandit -q -r src
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir bandit
+          # Keep deterministic and avoid flagging automation scripts; scan application code only.
+          bandit -q -r src
+        ) > _bmad-output/ci/security-scan.log 2>&1
+        code=$?
+        cat _bmad-output/ci/security-scan.log
+        echo "$code" > _bmad-output/ci/security-scan.status
+        exit 0
 
   local-ci:
     image: python:3.11
     commands:
       - |
-        set -eu
-        pip install --no-cache-dir pytest pytest-asyncio pytest-cov pyyaml requests
-        pip install --no-cache-dir ccxt influxdb-client asyncpg numpy
-        if [ -x scripts/local-ci-checks.sh ]; then
-          ./scripts/local-ci-checks.sh
-        else
-          echo "scripts/local-ci-checks.sh not found; failing"
-          exit 1
-        fi
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir pytest pytest-asyncio pytest-cov pyyaml requests
+          pip install --no-cache-dir ccxt influxdb-client asyncpg numpy
+          if [ -x scripts/local-ci-checks.sh ]; then
+            ./scripts/local-ci-checks.sh
+          else
+            echo "scripts/local-ci-checks.sh not found; failing"
+            exit 1
+          fi
+        ) > _bmad-output/ci/local-ci-full.log 2>&1
+        code=$?
+        cat _bmad-output/ci/local-ci-full.log
+        echo "$code" > _bmad-output/ci/local-ci.status
+        exit 0
 
   taiga-sync-validate:
     image: python:3.11
@@ -75,3 +102,16 @@ steps:
         fi
         pip install --no-cache-dir pyyaml requests
         python scripts/taiga_sync.py --apply
+
+  ci-gate:
+    image: python:3.11
+    environment:
+      # Configure this secret in Woodpecker and enable it for pull_request events.
+      # Without it, CI will still fail correctly, but no PR comment will be posted.
+      GITEA_TOKEN:
+        from_secret: gitea_token
+    commands:
+      - |
+        set -euo pipefail
+        pip install --no-cache-dir requests
+        python3 scripts/ci/ci_gate.py
