@@ -9,20 +9,20 @@ For ST-DATA-004: Data Quality Monitoring - Freshness + Gaps
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from data_ingestion.ohlcv_fetcher import OHLCVData
-    from data_ingestion.timeframe_config import Timeframe
 
 logger = logging.getLogger(__name__)
 
 
-class DataSource(str, Enum):
+class DataSource(StrEnum):
     """Supported data sources for monitoring."""
 
     BINANCE = "binance"
@@ -30,7 +30,7 @@ class DataSource(str, Enum):
     BITGET = "bitget"
 
 
-class AlertSeverity(str, Enum):
+class AlertSeverity(StrEnum):
     """Alert severity levels."""
 
     INFO = "info"
@@ -174,7 +174,8 @@ class SourceConfig:
         source: Data source identifier
         symbols: List of symbols to monitor
         timeframes: List of timeframes to monitor
-        freshness_threshold_seconds: Threshold for freshness alerts (default 300s = 5min)
+        freshness_threshold_seconds:
+            Threshold for freshness alerts (default 300s = 5min)
         gap_detection_enabled: Whether to enable gap detection
         enabled: Whether this source is enabled for monitoring
     """
@@ -799,10 +800,8 @@ class DataQualityMonitor:
         self._running = False
         if self._monitor_task:
             self._monitor_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._monitor_task
-            except asyncio.CancelledError:
-                pass
             self._monitor_task = None
         logger.info("Stopped data quality monitoring")
 
