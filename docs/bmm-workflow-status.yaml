@@ -444,7 +444,7 @@ stories:
     title: Paper Canary Planning & Gates
     epic_id: EP-BT-001
     sprint_id: p0-2
-    status: planned
+    status: completed
     story_points: 4
     priority: P0-CRITICAL
     description: Design paper canary deployment with explicit gates for promotion
