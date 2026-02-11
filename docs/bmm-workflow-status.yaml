@@ -363,7 +363,8 @@ stories:
     title: Continuous Backtest Runner - Always-on + KPIs
     epic_id: EP-DATA-001
     sprint_id: p0-2
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
     description: Run continuous backtests (including walk-forward) and persist KPIs
