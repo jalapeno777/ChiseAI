@@ -9,6 +9,17 @@ Provides monitoring capabilities for:
 For ST-DATA-004: Data Quality Monitoring - Freshness + Gaps
 """
 
+from monitoring.data_quality import (
+    AlertSeverity,
+    DataFreshnessMonitor,
+    DataQualityAlert,
+    DataQualityMonitor,
+    DataSource,
+    FreshnessMetrics,
+    GapAlert,
+    GapDetector,
+    SourceConfig,
+)
 from monitoring.data_quality.config import (
     DataQualityConfig,
     FreshnessThresholdConfig,
@@ -21,17 +32,6 @@ from monitoring.data_quality.discord_sender import (
 from monitoring.data_quality.grafana_integration import (
     GrafanaDashboardConfig,
     GrafanaMetricsExporter,
-)
-from monitoring.data_quality import (
-    AlertSeverity,
-    DataFreshnessMonitor,
-    DataQualityAlert,
-    DataQualityMonitor,
-    DataSource,
-    FreshnessMetrics,
-    GapAlert,
-    GapDetector,
-    SourceConfig,
 )
 
 __all__ = [
