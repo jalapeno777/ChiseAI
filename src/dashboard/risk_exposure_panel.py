@@ -13,7 +13,12 @@ from __future__ import annotations
 import time
 from typing import TYPE_CHECKING, Any
 
-import streamlit as st
+try:
+    import streamlit as st
+except ImportError:  # pragma: no cover
+    # Streamlit is an optional (deprecated) dependency. Keep the module importable
+    # so non-UI code and CI can run without streamlit installed.
+    st = None  # type: ignore[assignment]
 
 if TYPE_CHECKING:
     from portfolio.state_management.models import PortfolioState
@@ -40,6 +45,12 @@ def render_risk_exposure_panel(
         Risk report dictionary if generated, None otherwise
     """
     from portfolio.state_management.risk_calculator import RiskCalculator
+
+    if st is None:
+        raise RuntimeError(
+            "streamlit is required for render_risk_exposure_panel. "
+            "Install with: pip install streamlit"
+        )
 
     st.header("Risk Exposure Dashboard")
 
@@ -376,6 +387,12 @@ def render_risk_metrics_mini(
         portfolio_state: Current portfolio state
     """
     from portfolio.state_management.risk_calculator import RiskCalculator
+
+    if st is None:
+        raise RuntimeError(
+            "streamlit is required for render_risk_metrics_mini. "
+            "Install with: pip install streamlit"
+        )
 
     if portfolio_state is None:
         st.warning("No portfolio data")

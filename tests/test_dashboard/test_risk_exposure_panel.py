@@ -2,7 +2,26 @@
 
 from __future__ import annotations
 
+import importlib.util
+import os
 from unittest.mock import MagicMock, patch
+
+import pytest
+
+# Streamlit is deprecated/optional for ChiseAI in the short term, and is not
+# installed in CI by default. Keep these tests opt-in.
+if os.environ.get("CHISE_ENABLE_STREAMLIT_TESTS", "").strip() != "1":
+    pytest.skip(
+        "Streamlit dashboard tests disabled by default; set "
+        "CHISE_ENABLE_STREAMLIT_TESTS=1 to run.",
+        allow_module_level=True,
+    )
+
+if importlib.util.find_spec("streamlit") is None:
+    pytest.skip(
+        "streamlit is not installed; skipping streamlit dashboard tests.",
+        allow_module_level=True,
+    )
 
 from dashboard.risk_exposure_panel import (
     _render_alerts,
