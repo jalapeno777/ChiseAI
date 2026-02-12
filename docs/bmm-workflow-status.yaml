@@ -625,7 +625,8 @@ stories:
     title: Grafana Dashboards - Data & Backtest KPIs
     epic_id: EP-OPS-001
     sprint_id: p0-5
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
     description: Build dashboards for data freshness, ingest health, and backtest KPIs

@@ -186,7 +186,7 @@ validations:
     title: Continuous Backtest Runner - Always-on + KPIs
     epic_id: EP-DATA-001
     story_id: ST-DATA-003
-    status: planned
+    status: validated
     description: Validate continuous backtesting runner produces KPIs and never halts unexpectedly
     acceptance_criteria:
       - Backtests run continuously (no manual start/stop required)
@@ -431,7 +431,7 @@ validations:
     title: Grafana Dashboards - Data & Backtest KPIs
     epic_id: EP-OPS-001
     story_id: ST-OPS-001
-    status: planned
+    status: validated
     description: Validate Grafana dashboards display real-time data freshness metrics for all ingest pipelines
     acceptance_criteria:
       - Last update timestamps visible per data source (Binance, Bybit, Bitget)
