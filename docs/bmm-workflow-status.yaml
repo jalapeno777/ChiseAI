@@ -363,7 +363,8 @@ stories:
     title: Continuous Backtest Runner - Always-on + KPIs
     epic_id: EP-DATA-001
     sprint_id: p0-2
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
     description: Run continuous backtests (including walk-forward) and persist KPIs
@@ -624,7 +625,8 @@ stories:
     title: Grafana Dashboards - Data & Backtest KPIs
     epic_id: EP-OPS-001
     sprint_id: p0-5
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
     description: Build dashboards for data freshness, ingest health, and backtest KPIs
