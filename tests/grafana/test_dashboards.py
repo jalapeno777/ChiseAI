@@ -289,6 +289,101 @@ class TestDashboardSchema:
                         f"Panel '{panel.get('title')}' query should reference backtest_kpis measurement"
                     )
 
+    # =========================================================================
+    # HIGH SEVERITY FIXES - ST-OPS-001
+    # =========================================================================
+
+    def test_backtest_kpis_handles_all_strategy_selection(
+        self, backtest_kpis_dashboard
+    ):
+        """H1: Verify 'All' strategy selection works with $__all special value.
+
+        All queries that filter by strategy_id must handle the $__all special value
+        to show data for all strategies when 'All' is selected.
+        """
+        panels = backtest_kpis_dashboard["panels"]
+
+        # Panels that intentionally show all strategies (don't need $__all filter)
+        all_strategies_panels = ["All Strategies Comparison"]
+
+        for panel in panels:
+            if panel.get("type") == "row":
+                continue
+
+            # Skip panels that intentionally show all strategies
+            if panel.get("title") in all_strategies_panels:
+                continue
+
+            targets = panel.get("targets", [])
+            for target in targets:
+                query = target.get("query", "")
+                # Skip panels without strategy_id filtering
+                if "strategy_id" not in query:
+                    continue
+
+                # All queries filtering by strategy_id must handle $__all
+                assert '"${strategy_id}" == "$__all"' in query or "$__all" in query, (
+                    f"Panel '{panel.get('title')}' query must handle '$__all' for 'All' strategy selection. "
+                    f'Use: filter(fn: (r) => "${{strategy_id}}" == "$__all" or r.strategy_id == "${{strategy_id}}")'
+                )
+
+    def test_data_freshness_has_error_handling_panel(self, data_freshness_dashboard):
+        """H2: Verify data-freshness dashboard has troubleshooting/error handling panel.
+
+        Dashboard should include a panel with guidance for troubleshooting InfluxDB
+        connection issues and common error scenarios.
+        """
+        panels = data_freshness_dashboard["panels"]
+        panel_titles = [p.get("title", "").lower() for p in panels]
+
+        # Check for troubleshooting or error handling panel
+        assert any(
+            "troubleshoot" in title or "error" in title or "guide" in title
+            for title in panel_titles
+        ), (
+            "Missing troubleshooting/error handling panel. "
+            "Add a panel with title containing 'Troubleshooting', 'Error', or 'Guide'"
+        )
+
+        # Verify the troubleshooting panel has a description
+        troubleshoot_panels = [
+            p
+            for p in panels
+            if "troubleshoot" in p.get("title", "").lower()
+            or "error" in p.get("title", "").lower()
+            or "guide" in p.get("title", "").lower()
+        ]
+
+        for panel in troubleshoot_panels:
+            assert panel.get("description") or panel.get("data"), (
+                f"Troubleshooting panel '{panel.get('title')}' should have a description or data with guidance"
+            )
+
+    def test_data_freshness_lookback_days_has_validation(
+        self, data_freshness_dashboard
+    ):
+        """H3: Verify lookback_days variable has regex validation.
+
+        The lookback_days variable must have a regex pattern to validate
+        user input and prevent invalid values.
+        """
+        templating = data_freshness_dashboard.get("templating", {})
+        variables = templating.get("list", [])
+
+        lookback_var = None
+        for var in variables:
+            if var.get("name") == "lookback_days":
+                lookback_var = var
+                break
+
+        assert lookback_var is not None, "lookback_days variable not found"
+
+        # Check for regex validation
+        regex = lookback_var.get("regex", "")
+        assert regex == "^[1-9][0-9]*$", (
+            f"lookback_days variable must have regex validation '^[1-9][0-9]*$', got '{regex}'"
+        )
+
 
 class TestTerraformConfiguration:
     """Validate Terraform dashboard configuration."""

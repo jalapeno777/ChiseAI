@@ -727,6 +727,187 @@ class TestWalkForward:
         assert "window_days" in result
         assert result["window_days"] == 30
 
+    @pytest.mark.asyncio
+    async def test_walk_forward_uses_real_data_when_available(self) -> None:
+        """Test that walk-forward uses real data, not simulated, when available."""
+        runner = BacktestRunner()
+
+        # Mock _load_historical_data to return sufficient data
+        mock_data = [
+            {
+                "timestamp": 1704067200000 + i * 3600000,  # Hourly data
+                "open": 100.0 + i * 0.1,
+                "high": 101.0 + i * 0.1,
+                "low": 99.0 + i * 0.1,
+                "close": 100.5 + i * 0.1,
+                "volume": 1000.0,
+            }
+            for i in range(200)  # 200 candles = sufficient data
+        ]
+
+        with patch.object(
+            runner, "_load_historical_data", return_value=mock_data
+        ) as mock_load:
+            result = await runner._run_walk_forward_single(
+                strategy_id="test_strategy",
+                window_days=30,
+                symbol="BTCUSDT",
+            )
+
+            # Verify data was loaded
+            mock_load.assert_called_once()
+            assert result.get("is_simulated") is False
+            assert result.get("data_points") == 200
+            assert result.get("train_candles") == 140  # 70% of 200
+            assert result.get("test_candles") == 60  # 30% of 200
+
+    @pytest.mark.asyncio
+    async def test_walk_forward_falls_back_to_simulation_on_insufficient_data(self) -> None:
+        """Test that walk-forward falls back to simulation when data is insufficient."""
+        runner = BacktestRunner()
+
+        # Mock _load_historical_data to return insufficient data
+        mock_data = [
+            {
+                "timestamp": 1704067200000 + i * 3600000,
+                "open": 100.0,
+                "high": 101.0,
+                "low": 99.0,
+                "close": 100.5,
+                "volume": 1000.0,
+            }
+            for i in range(50)  # Only 50 candles = insufficient
+        ]
+
+        with patch.object(runner, "_load_historical_data", return_value=mock_data):
+            result = await runner._run_walk_forward_single(
+                strategy_id="test_strategy",
+                window_days=30,
+                symbol="BTCUSDT",
+            )
+
+            # Should fall back to simulation
+            assert result.get("is_simulated") is True
+            assert len(result["trades"]) == 50  # Simulated trades
+
+    @pytest.mark.asyncio
+    async def test_walk_forward_generates_real_trades_from_data(self) -> None:
+        """Test that walk-forward generates real trades from actual data execution."""
+        runner = BacktestRunner()
+
+        # Create trending data that should generate trades
+        mock_data = []
+        base_price = 100.0
+        for i in range(200):
+            # Create an uptrend then downtrend pattern
+            if i < 100:
+                price = base_price + i * 0.5  # Uptrend
+            else:
+                price = base_price + 50 - (i - 100) * 0.5  # Downtrend
+
+            mock_data.append({
+                "timestamp": 1704067200000 + i * 3600000,
+                "open": price - 0.5,
+                "high": price + 1.0,
+                "low": price - 1.0,
+                "close": price,
+                "volume": 1000.0,
+            })
+
+        with patch.object(runner, "_load_historical_data", return_value=mock_data):
+            result = await runner._run_walk_forward_single(
+                strategy_id="test_strategy",
+                window_days=30,
+                symbol="BTCUSDT",
+            )
+
+            # Should generate trades from actual strategy execution
+            trades = result["trades"]
+            assert len(trades) > 0
+            assert result.get("is_simulated") is False
+
+            # Verify trades have real properties
+            for trade in trades:
+                assert trade.entry_price > 0
+                assert trade.exit_price > 0
+                assert trade.direction in ["long", "short"]
+                assert isinstance(trade.pnl, float)
+
+    @pytest.mark.asyncio
+    async def test_walk_forward_daily_scheduling_with_actual_data(self) -> None:
+        """Test that daily scheduling works with actual data loading."""
+        runner = BacktestRunner()
+        runner.storage = AsyncMock()
+
+        # Mock data for multiple strategies
+        mock_data = [
+            {
+                "timestamp": 1704067200000 + i * 3600000,
+                "open": 100.0 + i * 0.01,
+                "high": 101.0 + i * 0.01,
+                "low": 99.0 + i * 0.01,
+                "close": 100.5 + i * 0.01,
+                "volume": 1000.0,
+            }
+            for i in range(200)
+        ]
+
+        with patch.object(runner, "_load_historical_data", return_value=mock_data):
+            await runner.start()
+
+            try:
+                strategy_ids = ["strategy_1", "strategy_2", "strategy_3"]
+                await runner.run_walk_forward_backtests(
+                    strategy_ids=strategy_ids,
+                    window_days=30,
+                )
+
+                # All strategies should be queued
+                assert runner._queue.qsize() == 3
+
+            finally:
+                await runner.stop()
+
+    @pytest.mark.asyncio
+    async def test_walk_forward_kpis_calculated_from_real_trades(self) -> None:
+        """Test that KPIs are calculated from real trades, not simulated."""
+        runner = BacktestRunner()
+
+        # Create data that generates known trade outcomes
+        mock_data = []
+        for i in range(200):
+            # Strong uptrend - should generate winning long trades
+            price = 100.0 + i * 0.1
+            mock_data.append({
+                "timestamp": 1704067200000 + i * 3600000,
+                "open": price,
+                "high": price + 0.5,
+                "low": price - 0.5,
+                "close": price + 0.1,
+                "volume": 1000.0,
+            })
+
+        with patch.object(runner, "_load_historical_data", return_value=mock_data):
+            result = await runner._run_walk_forward_single(
+                strategy_id="test_strategy",
+                window_days=30,
+            )
+
+            # Verify the result structure for real execution
+            assert result.get("is_simulated") is False
+            assert "train_metrics" in result
+            assert "train_candles" in result
+            assert "test_candles" in result
+
+            # Trades should exist and have real values
+            trades = result["trades"]
+            assert len(trades) > 0
+
+            # Equity curve should reflect actual trading
+            equity_curve = result["equity_curve"]
+            assert len(equity_curve) > 1
+            assert equity_curve[0] == 10000.0  # Initial capital
+
 
 class TestIntegration:
     """Integration-style tests."""
