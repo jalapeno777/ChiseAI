@@ -786,7 +786,8 @@ stories:
     title: InfluxDB Token Wiring & Data Quality Monitor
     epic_id: EP-OPS-001
     sprint_id: p0-7
-    status: in_progress
+    status: completed
+    validation_status: validated
     story_points: 6
     priority: P0-CRITICAL
     description: Wire InfluxDB token to Grafana datasource and API, deploy always-on data quality monitor
@@ -821,7 +822,8 @@ stories:
     title: Grafana Datasource Provisioning with Env Var Token Wiring
     epic_id: EP-OPS-001
     sprint_id: p0-7
-    status: in_progress
+    status: completed
+    validation_status: validated
     story_points: 3
     priority: P0-CRITICAL
     description: Make Grafana reliably load datasource + dashboards from repo provisioning on startup, using env var token wiring

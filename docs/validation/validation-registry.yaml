@@ -580,7 +580,7 @@ validations:
     title: InfluxDB Token Wiring & Data Quality Monitor
     epic_id: EP-OPS-001
     story_id: ST-OPS-011
-    status: in_progress
+    status: validated
     description: Validate InfluxDB token wiring and data quality monitor deployment
     acceptance_criteria:
       - Grafana Influx datasource "ChiseAI InfluxDB" tests OK (no 401)
@@ -613,7 +613,7 @@ validations:
     title: Grafana Datasource Provisioning with Env Var Token Wiring
     epic_id: EP-OPS-001
     story_id: ST-OPS-013
-    status: in_progress
+    status: validated
     description: Validate Grafana datasource provisioning works with env var token wiring
     acceptance_criteria:
       - docker_container.grafana mounts provisioning directory into /etc/grafana/provisioning
