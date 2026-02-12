@@ -698,9 +698,11 @@ resource "docker_container" "chise_dashboard" {
 }
 
 # Data Quality Monitor - Always-on service for continuous data quality checks
+# Uses custom image that includes scripts/ and src/ directories
+# Fix for ST-OPS-011 AC-3: Script path resolution via embedded image
 resource "docker_container" "chiseai_data_quality_monitor" {
   name  = "chiseai-data-quality-monitor"
-  image = "chiseai-api:latest"
+  image = "chiseai-data-quality-monitor:latest"
 
   command = ["sh", "-c", "while true; do python3 /app/scripts/data_quality_monitor.py --check --export-influx; sleep 60; done"]
 

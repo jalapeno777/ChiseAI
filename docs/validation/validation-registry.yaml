@@ -125,7 +125,7 @@ validations:
     title: Branch Hygiene Automation - Prune + Prevention
     epic_id: EP-CI-001
     story_id: ST-CI-003
-    status: in_progress
+    status: planned
     description: Validate auto-prune merged branches and prevent long-lived divergence
     acceptance_criteria:
       - Merged branches are auto-deleted after 24 hours
@@ -580,7 +580,7 @@ validations:
     title: InfluxDB Token Wiring & Data Quality Monitor
     epic_id: EP-OPS-001
     story_id: ST-OPS-011
-    status: planned
+    status: in_progress
     description: Validate InfluxDB token wiring and data quality monitor deployment
     acceptance_criteria:
       - Grafana Influx datasource "ChiseAI InfluxDB" tests OK (no 401)
@@ -730,7 +730,7 @@ validations:
     test_method: automated
     owner: qa-team
 
-  - id: V-NS-006
+  - id: V-NS-018
     title: UI Signal Display
     epic_id: EP-NS-002
     story_id: ST-NS-008
@@ -744,7 +744,7 @@ validations:
     test_method: automated
     owner: frontend-team
 
-  - id: V-NS-007
+  - id: V-NS-019
     title: Discord Alert Delivery
     epic_id: EP-NS-002
     story_id: ST-NS-009
@@ -757,6 +757,36 @@ validations:
       - Alert throttling prevents spam
     test_method: automated
     owner: backend-team
+
+  - id: V-NS-020
+    title: Signal Detail Breakdown
+    epic_id: EP-NS-002
+    story_id: ST-NS-010
+    status: validated
+    description: Validate signal detail breakdown shows confluence components, confidence multipliers, stop-loss, and position sizing
+    acceptance_criteria:
+      - Confluence score components are displayed (each indicator contribution)
+      - Confidence multiplier and timeframe agreement are shown
+      - Recommended stop-loss level is displayed
+      - Recommended position size is displayed
+      - Risk/reward ratio is calculated and shown
+    test_method: automated
+    owner: qa-team
+
+  - id: V-NS-021
+    title: Historical Context Panel
+    epic_id: EP-NS-002
+    story_id: ST-NS-011
+    status: validated
+    description: Validate historical context panel displays similar past signals with outcomes
+    acceptance_criteria:
+      - Similar past signals are retrieved (same direction, comparable confidence)
+      - Win rate for similar signals is displayed
+      - Average PnL for similar signals is shown
+      - Maximum drawdown experienced in similar setups is displayed
+      - Sample size (number of similar signals) is indicated
+    test_method: automated
+    owner: qa-team
 
   # EP-NS-003: Portfolio Risk Management
   - id: V-NS-008

@@ -118,7 +118,7 @@ epics:
   # EP-NS-002: Signal Generation & Delivery (5 stories, 23 points)
   - id: EP-NS-002
     name: Signal Generation & Delivery
-    status: planned
+    status: completed
     story_ids: [ST-NS-007, ST-NS-008, ST-NS-009, ST-NS-010, ST-NS-011]
     story_count: 5
     story_points: 23
@@ -298,7 +298,7 @@ stories:
     title: Branch Hygiene Automation - Prune + Prevention
     epic_id: EP-CI-001
     sprint_id: p0-1
-    status: in_progress
+    status: planned
     story_points: 3
     priority: P1-HIGH
     description: Auto-prune merged branches and prevent long-lived divergence
