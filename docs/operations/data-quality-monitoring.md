@@ -101,7 +101,7 @@ DQ_DISCORD_RECOVERY_NOTICES=true
 DQ_INFLUX_URL="http://localhost:8086"
 DQ_INFLUX_TOKEN="your-token"
 DQ_INFLUX_ORG="chiseai"
-DQ_INFLUX_BUCKET="data_quality"
+DQ_INFLUX_BUCKET="chiseai"
 ```
 
 #### Monitoring Configuration
@@ -201,7 +201,7 @@ gap_history = await exporter.query_gap_history(hours=24)
 
 #### Freshness Trend
 ```flux
-from(bucket: "data_quality")
+from(bucket: "chiseai")
   |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
   |> filter(fn: (r) => r._measurement == "data_freshness")
   |> filter(fn: (r) => r._field == "data_age_seconds")
@@ -210,7 +210,7 @@ from(bucket: "data_quality")
 
 #### Stale Data Count
 ```flux
-from(bucket: "data_quality")
+from(bucket: "chiseai")
   |> range(start: -5m)
   |> filter(fn: (r) => r._measurement == "data_freshness")
   |> filter(fn: (r) => r._field == "is_stale")
@@ -221,7 +221,7 @@ from(bucket: "data_quality")
 
 #### Gap Count
 ```flux
-from(bucket: "data_quality")
+from(bucket: "chiseai")
   |> range(start: -24h)
   |> filter(fn: (r) => r._measurement == "data_gaps")
   |> filter(fn: (r) => r._field == "expected_candles")
@@ -280,7 +280,7 @@ Detected At: 12:34:56 UTC
 
 #### Metrics Not Appearing in Grafana
 1. Verify InfluxDB connection settings
-2. Check `data_quality` bucket exists
+2. Check `chiseai` bucket exists
 3. Ensure exporter is being called after checks
 
 #### False Positive Gap Alerts
