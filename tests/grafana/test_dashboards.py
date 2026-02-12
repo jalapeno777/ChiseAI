@@ -428,6 +428,6 @@ class TestTerraformConfiguration:
         assert "var.influxdb_bucket" in content, (
             "Missing influxdb_bucket variable reference"
         )
-        assert "var.influxdb_admin_password" in content, (
-            "Missing influxdb_admin_password variable reference"
+        assert "var.influxdb_token" in content, (
+            "Missing influxdb_token variable reference"
         )
