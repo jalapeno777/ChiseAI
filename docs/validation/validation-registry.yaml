@@ -613,7 +613,7 @@ validations:
     title: Grafana Datasource Provisioning with Env Var Token Wiring
     epic_id: EP-OPS-001
     story_id: ST-OPS-013
-    status: validated
+    status: in_progress
     description: Validate Grafana datasource provisioning works with env var token wiring
     acceptance_criteria:
       - docker_container.grafana mounts provisioning directory into /etc/grafana/provisioning
