@@ -1,0 +1,47 @@
+[Unit]
+Description=ChiseAI Grafana Dashboard Watchdog
+Documentation=https://github.com/chiseai/chiseai/tree/main/docs/ops/grafana-watchdog.md
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=chiseai
+Group=chiseai
+WorkingDirectory=/opt/chiseai
+
+# Environment variables
+Environment="GRAFANA_URL=http://host.docker.internal:3001"
+Environment="GRAFANA_USER=admin"
+Environment="DASHBOARDS_PATH=/opt/chiseai/infrastructure/grafana/provisioning/dashboards"
+Environment="WATCHDOG_LOG_LEVEL=INFO"
+Environment="WATCHDOG_DEBOUNCE_SECONDS=5"
+
+# Load optional env file for secrets
+EnvironmentFile=-/etc/chiseai/grafana-watchdog.env
+
+# Main command
+ExecStart=/opt/chiseai/venv/bin/python3 scripts/grafana-watchdog.py
+
+# Restart policy
+Restart=always
+RestartSec=5
+StartLimitInterval=60s
+StartLimitBurst=3
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=grafana-watchdog
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/chiseai/infrastructure/grafana/provisioning/dashboards
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target
