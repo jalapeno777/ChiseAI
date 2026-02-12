@@ -593,6 +593,37 @@ validations:
     test_method: automated
     owner: ops-team
 
+  - id: V-OPS-012
+    title: Grafana Persistence + Bootstrap Admin User
+    epic_id: EP-OPS-001
+    story_id: ST-OPS-012
+    status: planned
+    description: Validate Grafana user DB persistence and admin user bootstrap functionality
+    acceptance_criteria:
+      - Container recreation preserves user accounts
+      - craig-admin is recreated if missing on startup
+      - Backup/restore procedures are documented
+      - Bootstrap job runs idempotently
+      - Restart test passes: users exist after docker stop/start
+      - Bootstrap test passes: deleted user recreated on restart
+    test_method: manual
+    owner: ops-team
+
+  - id: V-OPS-013
+    title: Grafana Datasource Provisioning with Env Var Token Wiring
+    epic_id: EP-OPS-001
+    story_id: ST-OPS-013
+    status: in_progress
+    description: Validate Grafana datasource provisioning works with env var token wiring
+    acceptance_criteria:
+      - docker_container.grafana mounts provisioning directory into /etc/grafana/provisioning
+      - Grafana container receives INFLUXDB_TOKEN env var from Terraform variable
+      - After terraform apply with TF_VAR_influxdb_token set, datasource "ChiseAI InfluxDB" is configured
+      - Dashboard panels show data (no auth/no-datasource errors)
+      - Runbook documents required env var and verification steps
+    test_method: manual
+    owner: ops-team
+
 # ============================================================
 # PHASE 2+ VALIDATIONS (27 validations)
 # ============================================================
