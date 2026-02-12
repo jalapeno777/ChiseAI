@@ -30,3 +30,14 @@ _bmad-output/ci/
 screenshots/
 .swarm-worktrees/
 .swarm-session.json
+
+# Local development files
+*.log
+*.local
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

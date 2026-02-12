@@ -5,12 +5,12 @@
 metadata:
   project_name: ChiseAI
   version: "2.0.0"
-  last_updated: "2026-02-09"
+  last_updated: "2026-02-12"
 
 # Validation entries
 validations:
   # ============================================================
-  # PHASE 1 EPICS (35 validations for 35 stories)
+  # PHASE 1 EPICS (41 validations for 41 stories)
   # Foundation work: CI/CD, Data, ML Optimization, Strategy Intake, Brain Ops, Observability
   # ============================================================
 
@@ -461,7 +461,7 @@ validations:
     title: Alerting Runbook + Automation
     epic_id: EP-OPS-001
     story_id: ST-OPS-003
-    status: planned
+    status: in_progress
     description: Validate common failure scenarios have runbooks and automated alert routing works correctly
     acceptance_criteria:
       - Runbooks exist for API disconnect, data gaps, order rejects, drift
@@ -484,6 +484,96 @@ validations:
       - Sync state file maps repo story ids to Taiga ids/refs and stores checksums
       - Conflicts on repo-canonical fields are detected and reported unless forced
       - Sync runs on schedule without manual intervention
+    test_method: automated
+    owner: ops-team
+
+  - id: V-OPS-005
+    title: Grafana On-Call Integration
+    epic_id: EP-OPS-001
+    story_id: ST-OPS-005
+    status: validated
+    description: Validate Grafana On-Call integration for alert routing and escalation
+    acceptance_criteria:
+      - On-call schedules are configurable per team and rotation
+      - Alerts are routed to on-call engineer based on schedule
+      - Escalation policies trigger after configurable timeout
+      - Acknowledgment and resolution are tracked per alert
+      - On-call handoff notes are visible in Grafana
+    test_method: automated
+    owner: ops-team
+
+  - id: V-OPS-006
+    title: Custom Grafana Alerting Rules
+    epic_id: EP-OPS-001
+    story_id: ST-OPS-006
+    status: validated
+    description: Validate custom alerting rules for business-specific metrics
+    acceptance_criteria:
+      - Alert rules are configurable via UI and API
+      - Rules support multi-condition logic (AND/OR)
+      - Thresholds can be static or dynamic
+      - Alert templates support variables and conditional formatting
+      - Rules are version-controlled and auditable
+    test_method: automated
+    owner: ops-team
+
+  - id: V-OPS-007
+    title: Grafana Annotations and Events
+    epic_id: EP-OPS-001
+    story_id: ST-OPS-007
+    status: validated
+    description: Validate automated annotations for deployments and events
+    acceptance_criteria:
+      - Deployments are automatically annotated on relevant dashboards
+      - Alert state changes create annotations with context
+      - Manual annotations can be added via UI and API
+      - Annotations are searchable and filterable by type and tag
+      - Event correlation links related annotations
+    test_method: automated
+    owner: ops-team
+
+  - id: V-OPS-008
+    title: Grafana Data Source Health Monitoring
+    epic_id: EP-OPS-001
+    story_id: ST-OPS-008
+    status: validated
+    description: Validate data source health monitoring and alerting
+    acceptance_criteria:
+      - Data source health checks run every 60 seconds
+      - Unhealthy data sources trigger alerts within 2 minutes
+      - Query performance is tracked per data source
+      - Data source errors are logged with full context
+      - Health status is visible on admin dashboard
+    test_method: automated
+    owner: ops-team
+
+  - id: V-OPS-009
+    title: Grafana Dashboard Versioning
+    epic_id: EP-OPS-001
+    story_id: ST-OPS-009
+    status: validated
+    description: Validate dashboard versioning with rollback capability
+    acceptance_criteria:
+      - All dashboard changes are versioned automatically
+      - Previous versions can be viewed and compared
+      - Rollback to any previous version is supported
+      - Changes are attributed to user with timestamp
+      - Version history is retained for minimum 90 days
+    test_method: automated
+    owner: ops-team
+
+  - id: V-OPS-010
+    title: Grafana Performance Optimization
+    epic_id: EP-OPS-001
+    story_id: ST-OPS-010
+    status: validated
+    description: Validate Grafana performance for large datasets
+    acceptance_criteria:
+      - Dashboard load time is under 3 seconds for standard viewport
+      - Query caching reduces repeated query load by 80%
+      - Panel rendering is optimized for time-series with 10k+ points
+      - Streaming queries are supported for real-time data
+      - Performance metrics are visible in admin panel
     test_method: automated
     owner: ops-team
 

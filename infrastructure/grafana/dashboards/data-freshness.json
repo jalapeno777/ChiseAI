@@ -20,7 +20,22 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": null,
-  "links": [],
+  "links": [
+    {
+      "icon": "book",
+      "tags": ["runbook", "troubleshooting"],
+      "type": "link",
+      "url": "https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/data-gaps.md",
+      "title": "📚 Data Gaps Runbook"
+    },
+    {
+      "icon": "doc",
+      "tags": ["api", "troubleshooting"],
+      "type": "link",
+      "url": "https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/api-disconnect.md",
+      "title": "📖 API Disconnect Runbook"
+    }
+  ],
   "liveNow": false,
   "panels": [
     {
@@ -536,7 +551,7 @@
       "targets": [],
       "title": "Troubleshooting Guide",
       "type": "table",
-      "description": "If you see 'No Data' or connection errors in panels above, check these common issues:",
+      "description": "If you see 'No Data' or connection errors in panels above, check these common issues or consult the [Data Gaps Runbook](https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/data-gaps.md):",
       "data": {
         "values": [
           ["1. InfluxDB Container Health", "Run: docker ps | grep influxdb", "Container should be 'Up' and healthy"],
