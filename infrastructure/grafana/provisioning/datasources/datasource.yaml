@@ -1,0 +1,17 @@
+apiVersion: 1
+
+datasources:
+  - name: ChiseAI InfluxDB
+    type: influxdb
+    access: proxy
+    url: http://chiseai-influxdb:18087
+    isDefault: true
+    editable: true
+    jsonData:
+      version: Flux
+      organization: chiseai
+      defaultBucket: chiseai
+      tlsSkipVerify: true
+    secureJsonData:
+      token: ${INFLUXDB_TOKEN}
+    uid: chiseai-influxdb
