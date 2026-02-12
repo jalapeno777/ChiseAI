@@ -2,7 +2,7 @@
 name: "research"
 description: "Research subagent. Investigates PRD/docs, market/technical research, and produces structured notes. No code changes unless explicitly requested."
 mode: all
-model: "zai-coding-plan/glm-4.7-thinking"
+model: "opencode/minimax-m2.5-free"
 temperature: 0.3
 tools:
   task: true

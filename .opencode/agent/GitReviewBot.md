@@ -2,7 +2,7 @@
 name: "git-review-bot"
 description: "Automated PR reviewer/approver. Combines SeniorDev-level technical rigor with Critic-style adversarial checks. Approves/denies PRs via Gitea API using a dedicated review token."
 mode: all
-model: "openai/gpt-5.3-codex"
+model: "zai-coding-plan/glm-5"
 temperature: 0.2
 tools:
   task: false
