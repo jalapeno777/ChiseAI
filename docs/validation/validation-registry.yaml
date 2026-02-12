@@ -64,7 +64,7 @@ validations:
     title: Chise v1 Loop Compliance - Iteration + Logging
     epic_id: EP-CHISE-001
     story_id: ST-CHISE-004
-    status: planned
+    status: validated
     description: Validate Chise v1 brain follows iteration loop compliance with proper iteration logging and memory promotion
     acceptance_criteria:
       - Iteration logs are stored in Redis with proper TTL
@@ -140,7 +140,7 @@ validations:
     title: Security Scan Gate - Deterministic Bandit
     epic_id: EP-CI-001
     story_id: ST-CI-004
-    status: planned
+    status: validated
     description: Validate deterministic security scan runs in CI and blocks merges on findings
     acceptance_criteria:
       - CI runs bandit scan on src/ directory
@@ -186,7 +186,7 @@ validations:
     title: Continuous Backtest Runner - Always-on + KPIs
     epic_id: EP-DATA-001
     story_id: ST-DATA-003
-    status: planned
+    status: validated
     description: Validate continuous backtesting runner produces KPIs and never halts unexpectedly
     acceptance_criteria:
       - Backtests run continuously (no manual start/stop required)
@@ -201,7 +201,7 @@ validations:
     title: Data Quality Monitoring - Freshness + Gaps
     epic_id: EP-DATA-001
     story_id: ST-DATA-004
-    status: planned
+    status: validated
     description: Validate data freshness monitoring, gap detection, and alerting on ingestion failures
     acceptance_criteria:
       - Last update timestamps visible per data source (Binance, Bybit, Bitget)
@@ -431,7 +431,7 @@ validations:
     title: Grafana Dashboards - Data & Backtest KPIs
     epic_id: EP-OPS-001
     story_id: ST-OPS-001
-    status: planned
+    status: validated
     description: Validate Grafana dashboards display real-time data freshness metrics for all ingest pipelines
     acceptance_criteria:
       - Last update timestamps visible per data source (Binance, Bybit, Bitget)
@@ -476,7 +476,7 @@ validations:
     title: Taiga Sync (Story Status Monitoring)
     epic_id: EP-OPS-001
     story_id: ST-OPS-004
-    status: planned
+    status: validated
     description: Validate repo-canonical story metadata is synced to Taiga with strict conflict rules
     acceptance_criteria:
       - Dry-run mode reports planned Taiga changes and exits 0

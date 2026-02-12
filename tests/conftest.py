@@ -2,8 +2,13 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import sys
+from pathlib import Path
 
 import pytest
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 
 def pytest_collection_modifyitems(

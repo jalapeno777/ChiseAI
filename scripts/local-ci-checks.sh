@@ -9,7 +9,13 @@ mkdir -p _bmad-output/ci
 export PYTHONPATH="$(pwd)/src:$(python3 -m site --user-site)"
 export PYTHONNOUSERSITE=1
 
-python3 scripts/ci/validate_swarm_context.py
+# Swarm context is enforced by a dedicated Woodpecker step.
+# Skip duplicate validation in CI containers to avoid conflicting context detection.
+if [ -n "${CI:-}" ] || [ -n "${CI_COMMIT_REF:-}" ] || [ -n "${WOODPECKER_COMMIT_REF:-}" ]; then
+  echo "Skipping validate_swarm_context.py inside local-ci-checks.sh (already enforced by swarm-context step)"
+else
+  python3 scripts/ci/validate_swarm_context.py
+fi
 
 if python3 -c "import pytest_cov" >/dev/null 2>&1; then
   python3 -m pytest \
