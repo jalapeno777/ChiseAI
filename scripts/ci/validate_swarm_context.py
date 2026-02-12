@@ -119,25 +119,31 @@ def main() -> int:
 
     if ci_mode:
         if pr_build:
-            if commit_ref and not commit_ref.startswith("refs/pull/"):
+            if commit_ref and not (
+                commit_ref.startswith("refs/pull/")
+                or commit_ref.startswith("refs/heads/")
+                or (branch and commit_ref == branch)
+            ):
                 errors.append(
-                    "PR build expected CI_COMMIT_REF to start with refs/pull/, "
-                    f"got {commit_ref!r}"
+                    "PR build expected CI_COMMIT_REF to be a PR or branch ref "
+                    f"(or source branch name), got {commit_ref!r}"
                 )
         elif (
             ev in {"push", "manual", ""}
             and commit_ref
-            and not commit_ref.startswith("refs/heads/")
+            and not (
+                commit_ref.startswith("refs/heads/")
+                or (branch and commit_ref == branch)
+            )
         ):
             errors.append(
-                "Push/manual build expected branch ref (refs/heads/*), "
+                "Push/manual build expected refs/heads/* or branch name, "
                 f"got {commit_ref!r}"
             )
 
     if branch and branch != "main" and not _is_allowed_work_branch(branch):
         errors.append(
-            "Non-main branch must follow feature/* or safety/* naming. "
-            f"Got {branch!r}"
+            f"Non-main branch must follow feature/* or safety/* naming. Got {branch!r}"
         )
 
     changed = _changed_files_head() if ci_mode else _changed_files_working_tree()
