@@ -5,7 +5,7 @@
 metadata:
   project_name: ChiseAI
   version: "2.1.0"
-  last_updated: "2026-02-09"
+  last_updated: "2026-02-12"
   prd_location: docs/prd.md
   prd_note: "Phased perps execution: continuous backtest -> Bybit demo paper -> Bitget live; Grafana-first ops UI; Binance used as reference market-structure venue."
 
@@ -90,15 +90,15 @@ epics:
     description: Bybit demo paper trading, Bitget live gating, and execution risk management
     sprint_id: p0-4
 
-  # EP-OPS-001: Grafana-first Observability (4 stories, 14 points)
+  # EP-OPS-001: Grafana-first Observability (7 stories, 36 points)
   - id: EP-OPS-001
     name: Grafana-first Observability
-    status: planned
-    story_ids: [ST-OPS-001, ST-OPS-002, ST-OPS-003, ST-OPS-004]
-    story_count: 4
-    story_points: 14
+    status: completed
+    story_ids: [ST-OPS-001, ST-OPS-002, ST-OPS-003, ST-OPS-004, ST-OPS-005, ST-OPS-006, ST-OPS-007, ST-OPS-008, ST-OPS-009, ST-OPS-010]
+    story_count: 10
+    story_points: 51
     description: Grafana dashboards for data, backtest, paper, and live execution KPIs with alerting runbook automation
-    sprint_id: p0-5
+    sprint_id: p0-7
 
   # ============================================================
   # PHASE 2+ EPICS (7 epics, 27 stories total)
@@ -624,7 +624,7 @@ stories:
   - id: ST-OPS-001
     title: Grafana Dashboards - Data & Backtest KPIs
     epic_id: EP-OPS-001
-    sprint_id: p0-5
+    sprint_id: p0-7
     status: completed
     validation_status: validated
     story_points: 4
@@ -641,8 +641,8 @@ stories:
   - id: ST-OPS-002
     title: Grafana Dashboards - Paper & Live Execution
     epic_id: EP-OPS-001
-    sprint_id: p0-5
-    status: planned
+    sprint_id: p0-7
+    status: completed
     story_points: 4
     priority: P0-CRITICAL
     description: Build dashboards for orders/fills, PnL/drawdown, invariant breaches, and kill-switch state
@@ -657,8 +657,8 @@ stories:
   - id: ST-OPS-003
     title: Alerting Runbook + Automation
     epic_id: EP-OPS-001
-    sprint_id: p0-5
-    status: planned
+    sprint_id: p0-7
+    status: completed
     story_points: 3
     priority: P1-HIGH
     description: Alert routing + runbooks for common failures (API disconnect, data gaps, order rejects, drift)
@@ -673,7 +673,7 @@ stories:
   - id: ST-OPS-004
     title: Taiga Sync (Story Status Monitoring)
     epic_id: EP-OPS-001
-    sprint_id: p0-5
+    sprint_id: p0-7
     status: completed
     story_points: 3
     priority: P1-HIGH
@@ -685,6 +685,102 @@ stories:
       - Conflicts on repo-canonical fields are detected and reported unless --force flag used
       - Sync runs on schedule (hourly) without manual intervention
       - Sync logs include: stories created, updated, skipped, conflicts detected
+
+  - id: ST-OPS-005
+    title: Grafana On-Call Integration
+    epic_id: EP-OPS-001
+    sprint_id: p0-7
+    status: completed
+    story_points: 8
+    priority: P0-CRITICAL
+    description: Integrate Grafana On-Call for alert routing, escalation, and on-call schedule management
+    acceptance_criteria:
+      - On-call schedules are configurable per team and rotation
+      - Alerts are routed to on-call engineer based on schedule
+      - Escalation policies trigger after configurable timeout (default 15 minutes)
+      - Acknowledgment and resolution are tracked per alert
+      - On-call handoff notes are visible in Grafana
+      - Integration with PagerDuty or Opsgenie is supported as fallback
+
+  - id: ST-OPS-006
+    title: Custom Grafana Alerting Rules
+    epic_id: EP-OPS-001
+    sprint_id: p0-7
+    status: completed
+    story_points: 6
+    priority: P1-HIGH
+    description: Implement custom alerting rules for business-specific metrics and thresholds
+    acceptance_criteria:
+      - Alert rules are configurable via UI and API
+      - Rules support multi-condition logic (AND/OR)
+      - Thresholds can be static or dynamic (based on historical baseline)
+      - Alert templates support variables and conditional formatting
+      - Rules are version-controlled and auditable
+      - Rule testing validates alert firing before deployment
+
+  - id: ST-OPS-007
+    title: Grafana Annotations and Events
+    epic_id: EP-OPS-001
+    sprint_id: p0-7
+    status: completed
+    story_points: 5
+    priority: P1-HIGH
+    description: Implement automated annotations for deployments, alerts, and significant events
+    acceptance_criteria:
+      - Deployments are automatically annotated on all relevant dashboards
+      - Alert state changes create annotations with context
+      - Manual annotations can be added via UI and API
+      - Annotations are searchable and filterable by type and tag
+      - Event correlation links related annotations
+      - Annotation density does not impact dashboard performance
+
+  - id: ST-OPS-008
+    title: Grafana Data Source Health Monitoring
+    epic_id: EP-OPS-001
+    sprint_id: p0-7
+    status: completed
+    story_points: 7
+    priority: P1-HIGH
+    description: Monitor health and performance of all Grafana data sources with proactive alerting
+    acceptance_criteria:
+      - Data source health checks run every 60 seconds
+      - Unhealthy data sources trigger alerts within 2 minutes
+      - Query performance is tracked per data source (p50, p95, p99 latencies)
+      - Data source errors are logged with full context
+      - Automatic failover to backup data sources where configured
+      - Health status is visible on admin dashboard
+
+  - id: ST-OPS-009
+    title: Grafana Dashboard Versioning
+    epic_id: EP-OPS-001
+    sprint_id: p0-7
+    status: completed
+    story_points: 5
+    priority: P2-MEDIUM
+    description: Implement dashboard versioning with rollback capability and change tracking
+    acceptance_criteria:
+      - All dashboard changes are versioned automatically
+      - Previous versions can be viewed and compared
+      - Rollback to any previous version is supported
+      - Changes are attributed to user with timestamp
+      - Version history is retained for minimum 90 days
+      - Bulk export/import of dashboard versions is supported
+
+  - id: ST-OPS-010
+    title: Grafana Performance Optimization
+    epic_id: EP-OPS-001
+    sprint_id: p0-7
+    status: completed
+    story_points: 9
+    priority: P1-HIGH
+    description: Optimize Grafana performance for large datasets and high-cardinality metrics
+    acceptance_criteria:
+      - Dashboard load time is under 3 seconds for standard viewport
+      - Query caching reduces repeated query load by 80%
+      - Panel rendering is optimized for time-series with 10k+ points
+      - Streaming queries are supported for real-time data
+      - Query timeout prevents runaway queries (default 30s)
+      - Performance metrics are visible in admin panel
 
   # ============================================================
   # PHASE 2+ STORIES (27 stories)
@@ -1475,18 +1571,25 @@ sprints:
     story_points: 14
     mapped_stories: [ST-OPS-001, ST-OPS-002, ST-OPS-003, ST-OPS-004]
 
+  - id: p0-7
+    name: Observability Sprint 7 - Grafana Enhancement
+    status: completed
+    story_count: 10
+    story_points: 54
+    mapped_stories: [ST-OPS-001, ST-OPS-002, ST-OPS-003, ST-OPS-004, ST-OPS-005, ST-OPS-006, ST-OPS-007, ST-OPS-008, ST-OPS-009, ST-OPS-010]
+
 # ============================================================
 # SUMMARY COUNTS
 # ============================================================
 
 summary:
   total_epics: 15
-  total_stories: 62
-  total_story_points: 345
+  total_stories: 68
+  total_story_points: 385
   phase_1:
     epics: 8
-    stories: 35
-    story_points: 117
+    stories: 41
+    story_points: 157
   phase_2_plus:
     epics: 7
     stories: 27

@@ -22,18 +22,28 @@
   "id": null,
   "links": [
     {
-      "icon": "book",
-      "tags": ["runbook", "troubleshooting"],
+      "asDropdown": false,
+      "icon": "info",
+      "includeVars": false,
+      "keepTime": false,
+      "tags": [],
+      "targetBlank": true,
+      "title": "Data Gaps Runbook",
+      "tooltip": "View runbook for data gap issues",
       "type": "link",
-      "url": "https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/data-gaps.md",
-      "title": "📚 Data Gaps Runbook"
+      "url": "https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/data-gaps.md"
     },
     {
-      "icon": "doc",
-      "tags": ["api", "troubleshooting"],
+      "asDropdown": true,
+      "icon": "external-link-alt",
+      "includeVars": false,
+      "keepTime": false,
+      "tags": [],
+      "targetBlank": true,
+      "title": "All Runbooks",
+      "tooltip": "View all operational runbooks",
       "type": "link",
-      "url": "https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/api-disconnect.md",
-      "title": "📖 API Disconnect Runbook"
+      "url": "https://github.com/ChiseAI/ChiseAI/tree/main/docs/runbooks"
     }
   ],
   "liveNow": false,
@@ -54,14 +64,13 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "${influxdb_datasource}"
+        "uid": "chiseai-influxdb"
       },
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -106,12 +115,11 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "10.4.2",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "${influxdb_datasource}"
+            "uid": "chiseai-influxdb"
           },
           "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"data_freshness\")\n  |> filter(fn: (r) => r._field == \"last_update_age_seconds\")\n  |> filter(fn: (r) => r.source == \"binance\")\n  |> last()",
           "refId": "A"
@@ -123,14 +131,13 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "${influxdb_datasource}"
+        "uid": "chiseai-influxdb"
       },
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -175,12 +182,11 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "10.4.2",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "${influxdb_datasource}"
+            "uid": "chiseai-influxdb"
           },
           "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"data_freshness\")\n  |> filter(fn: (r) => r._field == \"last_update_age_seconds\")\n  |> filter(fn: (r) => r.source == \"bybit\")\n  |> last()",
           "refId": "A"
@@ -192,14 +198,13 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "${influxdb_datasource}"
+        "uid": "chiseai-influxdb"
       },
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -244,12 +249,11 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "10.4.2",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "${influxdb_datasource}"
+            "uid": "chiseai-influxdb"
           },
           "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"data_freshness\")\n  |> filter(fn: (r) => r._field == \"last_update_age_seconds\")\n  |> filter(fn: (r) => r.source == \"bitget\")\n  |> last()",
           "refId": "A"
@@ -274,7 +278,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "${influxdb_datasource}"
+        "uid": "chiseai-influxdb"
       },
       "fieldConfig": {
         "defaults": {
@@ -282,38 +286,13 @@
             "mode": "palette-classic"
           },
           "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
             "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
             "thresholdsStyle": {
               "mode": "line+area"
             }
           },
-          "mappings": [],
           "max": 600,
           "min": 0,
           "thresholds": {
@@ -359,12 +338,11 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "10.4.2",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "${influxdb_datasource}"
+            "uid": "chiseai-influxdb"
           },
           "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -${lookback_days}d)\n  |> filter(fn: (r) => r._measurement == \"data_freshness\")\n  |> filter(fn: (r) => r._field == \"last_update_age_seconds\")\n  |> aggregateWindow(every: 5m, fn: mean, createEmpty: false)",
           "refId": "A"
@@ -389,7 +367,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "${influxdb_datasource}"
+        "uid": "chiseai-influxdb"
       },
       "fieldConfig": {
         "defaults": {
@@ -487,12 +465,11 @@
           }
         ]
       },
-      "pluginVersion": "10.4.2",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "${influxdb_datasource}"
+            "uid": "chiseai-influxdb"
           },
           "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"data_freshness\")\n  |> filter(fn: (r) => r._field == \"last_update_age_seconds\" or r._field == \"last_update_timestamp\" or r._field == \"alert_status\")\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({\n    r with\n    status_text: if r.alert_status == 0 then \"OK\"\n               else if r.alert_status == 1 then \"STALE\"\n               else \"ALERT\"\n  }))\n  |> last()\n  |> keep(columns: [\"source\", \"last_update_timestamp\", \"last_update_age_seconds\", \"alert_status\", \"status_text\"])",
           "refId": "A"
@@ -515,7 +492,6 @@
             },
             "inspect": false
           },
-          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -547,23 +523,51 @@
         },
         "showHeader": true
       },
-      "pluginVersion": "10.4.2",
       "targets": [],
       "title": "Troubleshooting Guide",
       "type": "table",
-      "description": "If you see 'No Data' or connection errors in panels above, check these common issues or consult the [Data Gaps Runbook](https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/data-gaps.md):",
+      "description": "If you see 'No Data' or connection errors in panels above, check these common issues:",
       "data": {
         "values": [
-          ["1. InfluxDB Container Health", "Run: docker ps | grep influxdb", "Container should be 'Up' and healthy"],
-          ["2. Datasource Configuration", "Check: Configuration > Data Sources > InfluxDB", "Verify URL, token, and bucket name"],
-          ["3. Network Connectivity", "Test: curl http://influxdb:8086/health", "Should return HTTP 200 OK"],
-          ["4. Data Collection Running", "Check: docker logs chiseai-data-collector", "Ensure collector is writing to InfluxDB"],
-          ["5. Bucket Exists", "Verify bucket 'chiseai' exists in InfluxDB", "Create if missing via InfluxDB UI"]
+          [
+            "1. InfluxDB Container Health",
+            "Run: docker ps | grep influxdb",
+            "Container should be 'Up' and healthy"
+          ],
+          [
+            "2. Datasource Configuration",
+            "Check: Configuration > Data Sources > InfluxDB",
+            "Verify URL, token, and bucket name"
+          ],
+          [
+            "3. Network Connectivity",
+            "Test: curl http://influxdb:8086/health",
+            "Should return HTTP 200 OK"
+          ],
+          [
+            "4. Data Collection Running",
+            "Check: docker logs chiseai-data-collector",
+            "Ensure collector is writing to InfluxDB"
+          ],
+          [
+            "5. Bucket Exists",
+            "Verify bucket 'chiseai' exists in InfluxDB",
+            "Create if missing via InfluxDB UI"
+          ]
         ],
         "columns": [
-          {"text": "Check", "type": "string"},
-          {"text": "How to Verify", "type": "string"},
-          {"text": "Expected Result", "type": "string"}
+          {
+            "text": "Check",
+            "type": "string"
+          },
+          {
+            "text": "How to Verify",
+            "type": "string"
+          },
+          {
+            "text": "Expected Result",
+            "type": "string"
+          }
         ]
       }
     }
@@ -581,21 +585,21 @@
       {
         "current": {
           "selected": false,
-          "text": "InfluxDB",
-          "value": "influxdb"
+          "text": "ChiseAI InfluxDB",
+          "value": "chiseai-influxdb"
         },
-        "hide": 0,
+        "hide": 2,
         "includeAll": false,
         "label": "InfluxDB Datasource",
         "multi": false,
         "name": "influxdb_datasource",
-        "options": [],
         "query": "influxdb",
         "queryValue": "",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
-        "type": "datasource"
+        "type": "datasource",
+        "cacheDuration": 300
       },
       {
         "current": {

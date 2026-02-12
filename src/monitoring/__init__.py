@@ -3,14 +3,16 @@
 Provides monitoring capabilities for:
 - Data freshness across multiple sources
 - Gap detection in time-series data
+- Data source health (InfluxDB, PostgreSQL)
 - Alert routing to Discord
 - Grafana dashboard integration
 
 For ST-DATA-004: Data Quality Monitoring - Freshness + Gaps
+For ST-OPS-008: Grafana Data Source Health Monitoring
 """
 
 from monitoring.data_quality import (
-    AlertSeverity,
+    AlertSeverity as DataQualityAlertSeverity,
     DataFreshnessMonitor,
     DataQualityAlert,
     DataQualityMonitor,
@@ -27,16 +29,35 @@ from monitoring.data_quality.config import (
 from monitoring.data_quality.discord_sender import (
     DataQualityDiscordFormatter,
     DataQualityDiscordSender,
-    create_discord_alert_handler,
+    create_discord_alert_handler as create_data_quality_alert_handler,
 )
 from monitoring.data_quality.grafana_integration import (
     GrafanaDashboardConfig,
     GrafanaMetricsExporter,
 )
+from monitoring.datasource_health import (
+    AlertSeverity,
+    ConnectionMetrics,
+    ConnectionStatus,
+    DataSourceHealthMonitor,
+    DataSourceType,
+    DatasourceConfig,
+    DatasourceHealthAlert,
+    InfluxDBHealthChecker,
+    PostgreSQLHealthChecker,
+    create_default_monitor,
+    create_influxdb_config,
+    create_postgresql_config,
+)
+from monitoring.datasource_health_discord import (
+    DatasourceHealthDiscordFormatter,
+    DatasourceHealthDiscordSender,
+    create_discord_alert_handler,
+)
 
 __all__ = [
     # Core data quality
-    "AlertSeverity",
+    "DataQualityAlertSeverity",
     "DataFreshnessMonitor",
     "DataQualityAlert",
     "DataQualityMonitor",
@@ -45,14 +66,31 @@ __all__ = [
     "GapAlert",
     "GapDetector",
     "SourceConfig",
-    # Discord integration
+    # Data quality Discord integration
     "DataQualityDiscordFormatter",
     "DataQualityDiscordSender",
-    "create_discord_alert_handler",
+    "create_data_quality_alert_handler",
     # Grafana integration
     "GrafanaDashboardConfig",
     "GrafanaMetricsExporter",
-    # Configuration
+    # Data quality Configuration
     "DataQualityConfig",
     "FreshnessThresholdConfig",
+    # Data source health (ST-OPS-008)
+    "AlertSeverity",
+    "ConnectionMetrics",
+    "ConnectionStatus",
+    "DataSourceHealthMonitor",
+    "DataSourceType",
+    "DatasourceConfig",
+    "DatasourceHealthAlert",
+    "InfluxDBHealthChecker",
+    "PostgreSQLHealthChecker",
+    "create_default_monitor",
+    "create_influxdb_config",
+    "create_postgresql_config",
+    # Data source health Discord integration
+    "DatasourceHealthDiscordFormatter",
+    "DatasourceHealthDiscordSender",
+    "create_discord_alert_handler",
 ]
