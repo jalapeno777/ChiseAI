@@ -196,6 +196,9 @@ resource "docker_container" "grafana" {
   env = [
     "GF_SECURITY_ADMIN_PASSWORD=${var.grafana_admin_password}",
     "GF_SERVER_HTTP_PORT=3001",
+    "INFLUXDB_TOKEN=${var.influxdb_token}",
+    "INFLUXDB_ORG=${var.influxdb_org}",
+    "INFLUXDB_BUCKET=${var.influxdb_bucket}",
   ]
 
   ports {
@@ -225,6 +228,13 @@ resource "docker_container" "grafana" {
   volumes {
     volume_name    = docker_volume.grafana.name
     container_path = "/var/lib/grafana"
+  }
+
+  mounts {
+    target    = "/etc/grafana/provisioning"
+    source    = abspath("${path.module}/../grafana/provisioning")
+    type      = "bind"
+    read_only = true
   }
 }
 
