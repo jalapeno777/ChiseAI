@@ -108,17 +108,21 @@ run_captured_step "lint" "${CI_DIR}/lint.log" "${CI_DIR}/lint.status" "${lint_cm
 run_captured_step "security-scan" "${CI_DIR}/security-scan.log" "${CI_DIR}/security-scan.status" "${security_cmd}"
 run_captured_step "local-ci" "${CI_DIR}/local-ci-full.log" "${CI_DIR}/local-ci.status" "${local_ci_cmd}"
 
-echo "=== [ci-gate] START ==="
-set +e
-"${PYTHON_BIN}" scripts/ci/ci_gate.py
-gate_code=$?
-set -e
-echo "=== [ci-gate] END (exit=${gate_code}) ==="
+overall_code=0
+for status_file in \
+  "${CI_DIR}/swarm-context.status" \
+  "${CI_DIR}/lint.status" \
+  "${CI_DIR}/security-scan.status" \
+  "${CI_DIR}/local-ci.status"; do
+  if [ ! -f "${status_file}" ] || [ "$(cat "${status_file}")" != "0" ]; then
+    overall_code=1
+  fi
+done
 
-if [ "${gate_code}" -eq 0 ]; then
+if [ "${overall_code}" -eq 0 ]; then
   echo "swarm_triage: PASS"
 else
   echo "swarm_triage: FAIL"
 fi
 
-exit "${gate_code}"
+exit "${overall_code}"

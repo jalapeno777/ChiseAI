@@ -23,7 +23,7 @@ steps:
         code=$?
         cat _bmad-output/ci/swarm-context.log
         echo "$code" > _bmad-output/ci/swarm-context.status
-        exit 0
+        exit "$code"
 
   lint:
     image: python:3.11
@@ -46,7 +46,7 @@ steps:
         code=$?
         cat _bmad-output/ci/lint.log
         echo "$code" > _bmad-output/ci/lint.status
-        exit 0
+        exit "$code"
 
   security-scan:
     image: python:3.11
@@ -64,7 +64,7 @@ steps:
         code=$?
         cat _bmad-output/ci/security-scan.log
         echo "$code" > _bmad-output/ci/security-scan.status
-        exit 0
+        exit "$code"
 
   local-ci:
     image: python:3.11
@@ -87,7 +87,7 @@ steps:
         code=$?
         cat _bmad-output/ci/local-ci-full.log
         echo "$code" > _bmad-output/ci/local-ci.status
-        exit 0
+        exit "$code"
 
   taiga-sync-validate:
     image: python:3.11
@@ -118,16 +118,3 @@ steps:
         fi
         pip install --no-cache-dir pyyaml requests
         python scripts/taiga_sync.py --apply
-
-  ci-gate:
-    image: python:3.11
-    environment:
-      # Configure this secret in Woodpecker and enable it for pull_request events.
-      # Without it, CI will still fail correctly, but no PR comment will be posted.
-      GITEA_TOKEN:
-        from_secret: gitea_token
-    commands:
-      - |
-        set -euo pipefail
-        pip install --no-cache-dir requests
-        python3 scripts/ci/ci_gate.py
