@@ -613,7 +613,7 @@ resource "docker_container" "chiseai_api" {
     "DATABASE_URL=postgresql://chiseai:${var.chise_postgres_password}@chiseai-postgres:5434/chiseai",
     "INFLUXDB_URL=http://chiseai-influxdb:18087",
     "INFLUXDB_ORG=${var.influxdb_org}",
-    "INFLUXDB_TOKEN=${var.influxdb_admin_password}",
+    "INFLUXDB_TOKEN=${var.influxdb_token}",
     "REDIS_HOST=chiseai-redis",
     "REDIS_PORT=6380",
     "REDIS_DB=0",
@@ -684,5 +684,44 @@ resource "docker_container" "chise_dashboard" {
 
   networks_advanced {
     name = docker_network.chiseai.name
+  }
+}
+
+# Data Quality Monitor - Always-on service for continuous data quality checks
+resource "docker_container" "chiseai_data_quality_monitor" {
+  name  = "chiseai-data-quality-monitor"
+  image = "chiseai-api:latest"
+
+  command = ["sh", "-c", "while true; do python3 /app/scripts/data_quality_monitor.py --check --export-influx; sleep 60; done"]
+
+  env = [
+    "DQ_INFLUX_URL=http://chiseai-influxdb:18087",
+    "DQ_INFLUX_TOKEN=${var.influxdb_token}",
+    "DQ_INFLUX_ORG=${var.influxdb_org}",
+    "DQ_INFLUX_BUCKET=chiseai",
+    "REDIS_HOST=chiseai-redis",
+    "REDIS_PORT=6380",
+    "REDIS_DB=0",
+  ]
+
+  restart = "always"
+
+  networks_advanced {
+    name = docker_network.chiseai.name
+  }
+
+  labels {
+    label = "project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.service"
+    value = "data-quality-monitor"
   }
 }

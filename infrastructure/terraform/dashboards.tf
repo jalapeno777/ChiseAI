@@ -56,7 +56,7 @@ resource "grafana_data_source" "influxdb" {
   })
 
   secure_json_data_encoded = jsonencode({
-    token = var.influxdb_admin_password
+    token = var.influxdb_token
   })
 }
 

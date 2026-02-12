@@ -18,6 +18,13 @@ variable "influxdb_admin_password" {
   sensitive   = true
 }
 
+variable "influxdb_token" {
+  type        = string
+  description = "InfluxDB API token for Grafana datasource and writers."
+  default     = ""
+  sensitive   = true
+}
+
 variable "influxdb_org" {
   type        = string
   description = "InfluxDB organization."
