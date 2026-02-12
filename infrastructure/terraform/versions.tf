@@ -6,7 +6,16 @@ terraform {
       source  = "kreuzwerker/docker"
       version = "~> 3.0"
     }
+    grafana = {
+      source  = "grafana/grafana"
+      version = "~> 2.0"
+    }
   }
 }
 
 provider "docker" {}
+
+provider "grafana" {
+  url  = "http://host.docker.internal:3001"
+  auth = "admin:${var.grafana_admin_password}"
+}
