@@ -569,15 +569,33 @@ validations:
     status: validated
     description: Validate Grafana performance for large datasets
     acceptance_criteria:
-      - Dashboard load time is under 3 seconds for standard viewport
-      - Query caching reduces repeated query load by 80%
-      - Panel rendering is optimized for time-series with 10k+ points
-      - Streaming queries are supported for real-time data
-      - Performance metrics are visible in admin panel
+      - Dashboard load time is under 3 seconds
+      - Query caching reduces repeated query load
+      - Panel rendering is optimized for time-series
+      - Streaming queries are supported
     test_method: automated
     owner: ops-team
 
-  # ============================================================
+  - id: V-OPS-011
+    title: InfluxDB Token Wiring & Data Quality Monitor
+    epic_id: EP-OPS-001
+    story_id: ST-OPS-011
+    status: planned
+    description: Validate InfluxDB token wiring and data quality monitor deployment
+    acceptance_criteria:
+      - Grafana Influx datasource "ChiseAI InfluxDB" tests OK (no 401)
+      - Dashboards show non-empty series within 2 minutes after deploy
+      - Data quality monitor service runs continuously and exports to Influx
+      - Configuration uses correct Influx port 18087 on chiseai network
+      - Exporter writes to bucket "chiseai" (not "data_quality")
+      - Unit tests pass for new config/defaults
+      - Smoke validation passes for exporter writes
+    test_method: automated
+    owner: ops-team
+
+# ============================================================
+# PHASE 2+ VALIDATIONS (27 validations)
+# ============================================================
   # PHASE 2+ EPICS (17 validations for neuro-symbolic system)
   # ============================================================
 

@@ -854,10 +854,10 @@ class InfluxDBExporter:
 
     def __init__(
         self,
-        influx_url: str = "http://chiseai-influxdb:8086",
+        influx_url: str = "http://chiseai-influxdb:18087",
         influx_token: str = "",
         influx_org: str = "chiseai",
-        influx_bucket: str = "data_quality",
+        influx_bucket: str = "chiseai",
     ):
         """Initialize InfluxDB exporter.
 

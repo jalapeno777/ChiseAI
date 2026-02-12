@@ -90,13 +90,13 @@ epics:
     description: Bybit demo paper trading, Bitget live gating, and execution risk management
     sprint_id: p0-4
 
-  # EP-OPS-001: Grafana-first Observability (7 stories, 36 points)
+  # EP-OPS-001: Grafana-first Observability (11 stories, 57 points)
   - id: EP-OPS-001
     name: Grafana-first Observability
-    status: completed
-    story_ids: [ST-OPS-001, ST-OPS-002, ST-OPS-003, ST-OPS-004, ST-OPS-005, ST-OPS-006, ST-OPS-007, ST-OPS-008, ST-OPS-009, ST-OPS-010]
-    story_count: 10
-    story_points: 51
+    status: in_progress
+    story_ids: [ST-OPS-001, ST-OPS-002, ST-OPS-003, ST-OPS-004, ST-OPS-005, ST-OPS-006, ST-OPS-007, ST-OPS-008, ST-OPS-009, ST-OPS-010, ST-OPS-011]
+    story_count: 11
+    story_points: 57
     description: Grafana dashboards for data, backtest, paper, and live execution KPIs with alerting runbook automation
     sprint_id: p0-7
 
@@ -781,6 +781,24 @@ stories:
       - Streaming queries are supported for real-time data
       - Query timeout prevents runaway queries (default 30s)
       - Performance metrics are visible in admin panel
+
+  - id: ST-OPS-011
+    title: InfluxDB Token Wiring & Data Quality Monitor
+    epic_id: EP-OPS-001
+    sprint_id: p0-7
+    status: in_progress
+    story_points: 6
+    priority: P0-CRITICAL
+    description: Wire InfluxDB token to Grafana datasource and API, deploy always-on data quality monitor
+    acceptance_criteria:
+      - Grafana Influx datasource "ChiseAI InfluxDB" tests OK (no 401)
+      - Dashboards show non-empty series within 2 minutes after deploy (at minimum data_freshness)
+      - A new always-on service runs data_quality_monitor and exports to Influx continuously
+      - Configuration uses correct Influx port 18087 on chiseai network
+      - Bucket alignment: exporter writes to bucket chiseai (not data_quality)
+      - Status tracking updated in workflow-status and validation-registry
+      - Tests: unit tests for new config/defaults + smoke validation for exporter writes
+      - Merged to remote main via protected-branch PR workflow with green CI
 
   # ============================================================
   # PHASE 2+ STORIES (27 stories)

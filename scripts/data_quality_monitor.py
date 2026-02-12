@@ -26,10 +26,10 @@ Environment Variables:
     DQ_TIMEFRAMES: Comma-separated list of timeframes
     DQ_FRESHNESS_THRESHOLD_SECONDS: Freshness threshold (default 300)
     DQ_DISCORD_WEBHOOK_URL: Discord webhook URL for alerts
-    DQ_INFLUX_URL: InfluxDB URL (default http://chiseai-influxdb:8086)
+    DQ_INFLUX_URL: InfluxDB URL (default http://chiseai-influxdb:18087)
     DQ_INFLUX_TOKEN: InfluxDB token
     DQ_INFLUX_ORG: InfluxDB org (default chiseai)
-    DQ_INFLUX_BUCKET: InfluxDB bucket (default data_quality)
+    DQ_INFLUX_BUCKET: InfluxDB bucket (default chiseai)
 """
 
 from __future__ import annotations
@@ -222,10 +222,10 @@ async def run_check(args: argparse.Namespace) -> int:
     influx_exporter: InfluxDBExporter | None = None
     if args.export_influx:
         influx_exporter = InfluxDBExporter(
-            influx_url=os.getenv("DQ_INFLUX_URL", "http://chiseai-influxdb:8086"),
+            influx_url=os.getenv("DQ_INFLUX_URL", "http://chiseai-influxdb:18087"),
             influx_token=os.getenv("DQ_INFLUX_TOKEN", ""),
             influx_org=os.getenv("DQ_INFLUX_ORG", "chiseai"),
-            influx_bucket=os.getenv("DQ_INFLUX_BUCKET", "data_quality"),
+            influx_bucket=os.getenv("DQ_INFLUX_BUCKET", "chiseai"),
         )
 
     # Run checks with mock data (in production, this would fetch real data)
@@ -367,10 +367,10 @@ async def run_monitor(args: argparse.Namespace) -> int:
     influx_exporter: InfluxDBExporter | None = None
     if args.export_influx:
         influx_exporter = InfluxDBExporter(
-            influx_url=os.getenv("DQ_INFLUX_URL", "http://chiseai-influxdb:8086"),
+            influx_url=os.getenv("DQ_INFLUX_URL", "http://chiseai-influxdb:18087"),
             influx_token=os.getenv("DQ_INFLUX_TOKEN", ""),
             influx_org=os.getenv("DQ_INFLUX_ORG", "chiseai"),
-            influx_bucket=os.getenv("DQ_INFLUX_BUCKET", "data_quality"),
+            influx_bucket=os.getenv("DQ_INFLUX_BUCKET", "chiseai"),
         )
         logger.info("InfluxDB export enabled")
 
