@@ -1,0 +1,433 @@
+# ChiseAI Alert Routing Configuration
+# Version: 1.0.0
+# Last Updated: 2026-02-11
+# Description: Defines alert routing rules, thresholds, and cooldowns for all ChiseAI alerts
+
+# Alert Routing Rules
+routing:
+  # Default channel for unhandled alerts
+  default_channel: &discord_alerts "discord_alerts"
+
+  # Channel mappings by alert category
+  channels:
+    discord_alerts:
+      type: discord
+      webhook_url_env: DISCORD_ALERTS_WEBHOOK
+      channel: "#alerts"
+      mention_role: "@ops-team"
+      include_timestamps: true
+      include_runbook_link: true
+
+    discord_critical:
+      type: discord
+      webhook_url_env: DISCORD_CRITICAL_WEBHOOK
+      channel: "#critical-alerts"
+      mention_role: "@on-call"
+      include_timestamps: true
+      include_runbook_link: true
+      urgent_formatting: true
+
+    discord_trading:
+      type: discord
+      webhook_url_env: DISCORD_TRADING_WEBHOOK
+      channel: "#trading"
+      mention_role: "@trading-team"
+      include_timestamps: true
+
+    discord_risk:
+      type: discord
+      webhook_url_env: DISCORD_RISK_WEBHOOK
+      channel: "#risk"
+      mention_role: "@risk-team"
+      include_timestamps: true
+
+  # Route rules - maps alerts to channels
+  routes:
+    # Critical trading alerts - immediate attention
+    - match:
+        severity: critical
+        category: trading
+      receiver: discord_critical
+      continue: false
+      group_by: [alertname, source]
+
+    # Order reject alerts - trading team
+    - match:
+        category: trading
+        alert_type: order_reject
+      receiver: discord_trading
+      continue: false
+      group_by: [symbol, exchange]
+
+    # Risk management alerts - risk team
+    - match:
+        category: risk
+      receiver: discord_risk
+      continue: false
+      group_by: [risk_type]
+
+    # Standard operational alerts
+    - match:
+        severity: warning
+        category: operations
+      receiver: discord_alerts
+      continue: false
+      group_by: [source, alert_type]
+
+    # Data quality alerts
+    - match:
+        category: data
+      receiver: discord_alerts
+      continue: false
+      group_by: [source, data_type]
+
+    # Default catch-all
+    - match:
+        severity: info
+      receiver: discord_alerts
+      continue: false
+      group_by: [alertname]
+
+# Alert Thresholds Configuration
+thresholds:
+  # Data Source Alerts
+  data_source_stale:
+    name: "Data Source Stale"
+    description: "Data source has not updated within expected interval"
+    severity: warning
+    thresholds:
+      warning: 180  # seconds
+      critical: 300  # seconds
+    evaluation_interval: 30s
+    for_duration: 60s  # must persist for this duration
+
+  data_gap_detected:
+    name: "Data Gap Detected"
+    description: "Unexpected gap in data stream"
+    severity: warning
+    thresholds:
+      gap_duration: 60  # seconds
+      max_gaps_per_hour: 5
+    evaluation_interval: 60s
+    for_duration: 120s
+
+  api_connection_failed:
+    name: "API Connection Failed"
+    description: "Exchange API connection has failed"
+    severity: critical
+    thresholds:
+      consecutive_failures: 3
+      recovery_timeout: 300  # seconds
+    evaluation_interval: 15s
+    for_duration: 60s
+
+  # Trading Alerts
+  order_rejected:
+    name: "Order Rejected"
+    description: "Order was rejected by exchange or risk system"
+    severity: warning
+    thresholds:
+      rejection_rate_warning: 0.05  # 5%
+      rejection_rate_critical: 0.10  # 10%
+      min_orders_for_rate: 10
+    evaluation_interval: 60s
+    for_duration: 300s
+
+  execution_latency_high:
+    name: "High Execution Latency"
+    description: "Order execution latency exceeds threshold"
+    severity: warning
+    thresholds:
+      p95_latency_ms: 1000
+      p99_latency_ms: 2000
+    evaluation_interval: 60s
+    for_duration: 180s
+
+  # Risk Alerts
+  risk_limit_approaching:
+    name: "Risk Limit Approaching"
+    description: "Portfolio risk approaching configured limits"
+    severity: warning
+    thresholds:
+      exposure_warning: 0.80  # 80% of limit
+      exposure_critical: 0.90  # 90% of limit
+      drawdown_warning: 0.08
+      drawdown_critical: 0.12
+    evaluation_interval: 30s
+    for_duration: 120s
+
+  correlation_high:
+    name: "High Correlation Detected"
+    description: "Position correlations exceed threshold"
+    severity: warning
+    thresholds:
+      max_correlation: 0.70
+    evaluation_interval: 300s
+    for_duration: 600s
+
+  # Model Performance Alerts
+  ece_degraded:
+    name: "ECE Degraded"
+    description: "Expected Calibration Error has increased"
+    severity: warning
+    thresholds:
+      warning: 0.08
+      critical: 0.10
+    evaluation_interval: 300s
+    for_duration: 3600s  # 1 hour sustained
+
+  accuracy_declined:
+    name: "Accuracy Declined"
+    description: "Model prediction accuracy has dropped"
+    severity: warning
+    thresholds:
+      accuracy_drop: 0.10  # 10% drop from baseline
+    evaluation_interval: 300s
+    for_duration: 1800s  # 30 minutes sustained
+
+  model_drift_detected:
+    name: "Model Drift Detected"
+    description: "Significant drift in model input distributions"
+    severity: warning
+    thresholds:
+      drift_score_threshold: 0.5
+    evaluation_interval: 3600s
+    for_duration: 7200s  # 2 hours sustained
+
+  # System Alerts
+  container_healthy:
+    name: "Container Unhealthy"
+    description: "Container health check failed"
+    severity: warning
+    thresholds:
+      consecutive_failures: 2
+    evaluation_interval: 30s
+    for_duration: 60s
+
+  resource_utilization_high:
+    name: "High Resource Utilization"
+    description: "Container resource usage exceeds threshold"
+    severity: warning
+    thresholds:
+      cpu_warning: 0.80
+      cpu_critical: 0.90
+      memory_warning: 0.80
+      memory_critical: 0.90
+    evaluation_interval: 60s
+    for_duration: 300s
+
+# Cooldown Periods (Alert Fatigue Prevention)
+cooldowns:
+  # Data alerts
+  data_source_stale: 300s       # 5 minutes between stale alerts
+  data_gap_detected: 600s      # 10 minutes between gap alerts
+  api_connection_failed: 180s   # 3 minutes between connection alerts
+
+  # Trading alerts
+  order_rejected: 300s         # 5 minutes between order reject alerts
+  execution_latency_high: 600s  # 10 minutes between latency alerts
+
+  # Risk alerts
+  risk_limit_approaching: 600s   # 10 minutes between risk alerts
+  correlation_high: 1800s       # 30 minutes between correlation alerts
+
+  # Model alerts (longer cooldowns for ML)
+  ece_degraded: 3600s           # 1 hour between ECE alerts
+  accuracy_declined: 3600s      # 1 hour between accuracy alerts
+  model_drift_detected: 7200s   # 2 hours between drift alerts
+
+  # System alerts
+  container_unhealthy: 300s     # 5 minutes between health alerts
+  resource_utilization_high: 900s  # 15 minutes between resource alerts
+
+# Alert Aggregation Windows
+aggregation:
+  # How to group similar alerts
+  group_by: [alertname, source, severity]
+
+  # Empty/resolved alert handling
+  resolve_timeout: 300s  # Time after all alerts clear to send resolve message
+
+  # Repeat interval for ongoing alerts
+  repeat_interval: 4h    # Repeat notification every 4 hours for ongoing alerts
+
+# Alert Fatigue Prevention Rules
+fatigue_prevention:
+  # Maximum alerts per hour per alert type
+  max_alerts_per_hour:
+    data_source_stale: 5
+    data_gap_detected: 3
+    api_connection_failed: 3
+    order_rejected: 5
+    execution_latency_high: 3
+    risk_limit_approaching: 2
+    correlation_high: 1
+    ece_degraded: 1
+    accuracy_declined: 1
+    model_drift_detected: 1
+    container_unhealthy: 3
+    resource_utilization_high: 2
+
+  # Daily false positive tracking
+  false_positive_tracking:
+    enabled: true
+    daily_limit: 5  # Max 5 false positives per day total
+    track_types: [all]
+    alert_on_threshold: true
+    notification_channel: discord_alerts
+
+  # Escalation suppression
+  escalation_suppression:
+    enabled: true
+    auto_escalate_after: 3  # Escalate after 3 occurrences within window
+    escalation_window: 3600s  # 1 hour window for escalation counting
+    max_escalations_per_day: 5
+
+# Escalation Policies
+escalation:
+  # Define escalation levels
+  levels:
+    - level: 1
+      name: "On-Call Engineer"
+      receiver: discord_alerts
+      wait: 5m
+      repeat_interval: 15m
+
+    - level: 2
+      name: "DevOps Engineer"
+      receiver: discord_alerts
+      wait: 15m
+      repeat_interval: 30m
+
+    - level: 3
+      name: "Platform Lead"
+      receiver: discord_critical
+      wait: 30m
+      repeat_interval: 60m
+
+  # Rules for when to escalate
+  rules:
+    # Critical alerts escalate immediately
+    - match:
+        severity: critical
+      level: 2
+      delay: 5m
+
+    # High-frequency alerts escalate faster
+    - match:
+        alert_type: api_connection_failed
+      level: 2
+      delay: 10m
+
+    # Persistent alerts escalate
+    - match:
+        alert_type: ece_degraded
+        duration: 4h
+      level: 2
+      delay: 15m
+
+# Notification Templates
+templates:
+  # Default notification format
+  default:
+    title: "{{ .AlertName }}"
+    body: |
+      **Severity:** {{ .Severity }}
+      **Source:** {{ .Labels.source }}
+      **Summary:** {{ .Annotations.summary }}
+      **Description:** {{ .Annotations.description }}
+      **Runbook:** [{{ .Annotations.runbook }}]({{ .Annotations.runbook_url }})
+      **Timestamp:** {{ .StartsAt.Format "2006-01-02 15:04:05 MST" }}
+
+  # Critical alert format
+  critical:
+    title: "🔴 CRITICAL: {{ .AlertName }}"
+    body: |
+      **Severity:** {{ .Severity }}
+      **Source:** {{ .Labels.source }}
+      **Summary:** {{ .Annotations.summary }}
+      **Description:** {{ .Annotations.description }}
+      **Impact:** {{ .Annotations.impact }}
+      **Runbook:** [{{ .Annotations.runbook }}]({{ .Annotations.runbook_url }})
+      **Timestamp:** {{ .StartsAt.Format "2006-01-02 15:04:05 MST" }}
+
+  # Alert resolution format
+  resolved:
+    title: "✅ RESOLVED: {{ .AlertName }}"
+    body: |
+      **Status:** Resolved
+      **Source:** {{ .Labels.source }}
+      **Duration:** {{ .Duration.String }}
+      **Resolved At:** {{ .EndsAt.Format "2006-01-02 15:04:05 MST" }}
+      **Last Value:** {{ .Annotations.last_value }}
+
+# Discord Integration Settings
+discord:
+  # Webhook endpoints (loaded from environment variables)
+  webhooks:
+    alerts: ${DISCORD_ALERTS_WEBHOOK}
+    critical: ${DISCORD_CRITICAL_WEBHOOK}
+    trading: ${DISCORD_TRADING_WEBHOOK}
+    risk: ${DISCORD_RISK_WEBHOOK}
+
+  # Formatting options
+  formatting:
+    use_embeds: true
+    color_warning: 0xFFA500  # Orange
+    color_critical: 0xFF0000  # Red
+    color_resolved: 0x00FF00  # Green
+    color_info: 0x0000FF  # Blue
+
+  # Mention settings
+  mentions:
+    enable_role_mentions: true
+    mention_on_warning: true
+    mention_on_critical: true
+    mention_on_recovery: false
+
+# Runbook Link Mapping
+runbooks:
+  api_disconnect:
+    path: "docs/runbooks/api-disconnect.md"
+    url_template: "https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/api-disconnect.md"
+
+  data_gaps:
+    path: "docs/runbooks/data-gaps.md"
+    url_template: "https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/data-gaps.md"
+
+  order_rejects:
+    path: "docs/runbooks/order-rejects.md"
+    url_template: "https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/order-rejects.md"
+
+  model_drift:
+    path: "docs/runbooks/model-drift.md"
+    url_template: "https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/model-drift.md"
+
+  default:
+    path: "docs/runbooks/README.md"
+    url_template: "https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/README.md"
+
+# Quality Gates
+quality_gates:
+  # Maximum allowed false positives per day
+  max_false_positives_per_day: 5
+
+  # Alert effectiveness metrics
+  metrics:
+    - metric: "alert_false_positive_rate"
+      threshold: 0.05  # 5%
+      evaluation_period: 24h
+
+    - metric: "alert_detection_time"
+      threshold: 60s  # Alerts should fire within 60s of issue
+      evaluation_period: 1h
+
+    - metric: "alert_escalation_rate"
+      threshold: 0.10  # 10% of alerts should escalate
+      evaluation_period: 24h
+
+  # Reporting
+  reporting:
+    daily_summary: true
+    summary_channel: discord_alerts
+    summary_time: "09:00 UTC"

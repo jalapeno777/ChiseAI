@@ -1,0 +1,227 @@
+# ChiseAI Data Source Health Alert Rules
+# Version: 1.0.0
+# Last Updated: 2026-02-12
+# Description: Alert rules for monitoring InfluxDB and PostgreSQL connectivity
+
+apiVersion: 1
+
+groups:
+  - name: datasource_health
+    interval: 30s
+    rules:
+      # InfluxDB Disconnect Alert
+      - alert: InfluxDBDisconnected
+        expr: |
+          last_over_time(
+            datasource_health{source_type="influxdb", _field="is_connected"}[1m]
+          ) == 0
+        for: 60s
+        labels:
+          severity: critical
+          category: infrastructure
+          alert_type: datasource_disconnect
+          source: influxdb
+        annotations:
+          summary: "InfluxDB data source is disconnected"
+          description: "InfluxDB has been disconnected for more than 60 seconds"
+          runbook: "docs/runbooks/api-disconnect.md"
+          runbook_url: "https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/api-disconnect.md"
+          impact: "Historical data queries and real-time metrics will fail"
+
+      # PostgreSQL Disconnect Alert
+      - alert: PostgreSQLDisconnected
+        expr: |
+          last_over_time(
+            datasource_health{source_type="postgresql", _field="is_connected"}[1m]
+          ) == 0
+        for: 60s
+        labels:
+          severity: critical
+          category: infrastructure
+          alert_type: datasource_disconnect
+          source: postgresql
+        annotations:
+          summary: "PostgreSQL data source is disconnected"
+          description: "PostgreSQL has been disconnected for more than 60 seconds"
+          runbook: "docs/runbooks/api-disconnect.md"
+          runbook_url: "https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/api-disconnect.md"
+          impact: "Strategy state, backtest results, and configuration data are inaccessible"
+
+      # Extended Downtime Alert - InfluxDB
+      - alert: InfluxDBExtendedDowntime
+        expr: |
+          avg_over_time(
+            datasource_health{source_type="influxdb", _field="is_connected"}[5m]
+          ) < 0.95
+        for: 5m
+        labels:
+          severity: warning
+          category: infrastructure
+          alert_type: extended_downtime
+          source: influxdb
+        annotations:
+          summary: "InfluxDB experiencing extended downtime"
+          description: "InfluxDB availability has been below 95% for the last 5 minutes"
+          runbook: "docs/runbooks/api-disconnect.md"
+          runbook_url: "https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/api-disconnect.md"
+          impact: "Metrics collection and dashboard functionality degraded"
+
+      # Extended Downtime Alert - PostgreSQL
+      - alert: PostgreSQLExtendedDowntime
+        expr: |
+          avg_over_time(
+            datasource_health{source_type="postgresql", _field="is_connected"}[5m]
+          ) < 0.95
+        for: 5m
+        labels:
+          severity: warning
+          category: infrastructure
+          alert_type: extended_downtime
+          source: postgresql
+        annotations:
+          summary: "PostgreSQL experiencing extended downtime"
+          description: "PostgreSQL availability has been below 95% for the last 5 minutes"
+          runbook: "docs/runbooks/api-disconnect.md"
+          runbook_url: "https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/api-disconnect.md"
+          impact: "Database-dependent operations may fail or timeout"
+
+      # High Response Time Alert - InfluxDB
+      - alert: InfluxDBHighResponseTime
+        expr: |
+          avg_over_time(
+            datasource_health{source_type="influxdb", _field="response_time_ms"}[2m]
+          ) > 1000
+        for: 2m
+        labels:
+          severity: warning
+          category: performance
+          alert_type: high_latency
+          source: influxdb
+        annotations:
+          summary: "InfluxDB response time is high"
+          description: "Average response time exceeds 1000ms for more than 2 minutes"
+          runbook: "docs/runbooks/api-disconnect.md"
+          runbook_url: "https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/api-disconnect.md"
+          impact: "Dashboard queries may timeout; data freshness degraded"
+
+      # High Response Time Alert - PostgreSQL
+      - alert: PostgreSQLHighResponseTime
+        expr: |
+          avg_over_time(
+            datasource_health{source_type="postgresql", _field="response_time_ms"}[2m]
+          ) > 1000
+        for: 2m
+        labels:
+          severity: warning
+          category: performance
+          alert_type: high_latency
+          source: postgresql
+        annotations:
+          summary: "PostgreSQL response time is high"
+          description: "Average response time exceeds 1000ms for more than 2 minutes"
+          runbook: "docs/runbooks/api-disconnect.md"
+          runbook_url: "https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/api-disconnect.md"
+          impact: "Application queries may timeout; user experience degraded"
+
+      # Multiple Disconnect Events Alert
+      - alert: MultipleDatasourceDisconnects
+        expr: |
+          sum by (source_type) (
+            increase(
+              datasource_health{_field="disconnect_count"}[10m]
+            )
+          ) > 3
+        for: 1m
+        labels:
+          severity: warning
+          category: infrastructure
+          alert_type: intermittent_disconnects
+          source: mixed
+        annotations:
+          summary: "Multiple data source disconnects detected"
+          description: "More than 3 disconnect events in the last 10 minutes"
+          runbook: "docs/runbooks/api-disconnect.md"
+          runbook_url: "https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/api-disconnect.md"
+          impact: "Unstable network or service conditions detected"
+
+      # Availability Drop Alert - InfluxDB
+      - alert: InfluxDBAvailabilityDrop
+        expr: |
+          last_over_time(
+            datasource_health{source_type="influxdb", _field="availability_percentage"}[5m]
+          ) < 99
+        for: 5m
+        labels:
+          severity: warning
+          category: infrastructure
+          alert_type: availability_drop
+          source: influxdb
+        annotations:
+          summary: "InfluxDB availability has dropped below 99%"
+          description: "Availability percentage is below SLA threshold"
+          runbook: "docs/runbooks/api-disconnect.md"
+          runbook_url: "https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/api-disconnect.md"
+          impact: "Service reliability compromised"
+
+      # Availability Drop Alert - PostgreSQL
+      - alert: PostgreSQLAvailabilityDrop
+        expr: |
+          last_over_time(
+            datasource_health{source_type="postgresql", _field="availability_percentage"}[5m]
+          ) < 99
+        for: 5m
+        labels:
+          severity: warning
+          category: infrastructure
+          alert_type: availability_drop
+          source: postgresql
+        annotations:
+          summary: "PostgreSQL availability has dropped below 99%"
+          description: "Availability percentage is below SLA threshold"
+          runbook: "docs/runbooks/api-disconnect.md"
+          runbook_url: "https://github.com/ChiseAI/ChiseAI/blob/main/docs/runbooks/api-disconnect.md"
+          impact: "Service reliability compromised"
+
+# Alert Evaluation Configuration
+evaluation:
+  # Global evaluation interval
+  interval: 30s
+  
+  # Timeout for query execution
+  timeout: 10s
+  
+  # Maximum number of concurrent evaluations
+  max_concurrent: 10
+
+# Notification Settings
+notifications:
+  # Default channel for these alerts
+  default_channel: discord_alerts
+  
+  # Critical alerts go to critical channel
+  critical_channel: discord_critical
+  
+  # Group alerts by source to prevent spam
+  group_by:
+    - source
+    - severity
+    - alert_type
+  
+  # Group wait time before sending first notification
+  group_wait: 30s
+  
+  # Group interval between notifications for same group
+  group_interval: 5m
+  
+  # Repeat interval for unresolved alerts
+  repeat_interval: 4h
+
+# Silence Rules
+silences:
+  # Allow silencing during maintenance windows
+  maintenance_window:
+    enabled: true
+    match_labels:
+      maintenance: "true"
+    default_duration: 1h
+    max_duration: 4h
