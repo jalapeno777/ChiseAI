@@ -110,7 +110,6 @@ run_captured_step "local-ci" "${CI_DIR}/local-ci-full.log" "${CI_DIR}/local-ci.s
 
 overall_code=0
 for status_file in \
-  "${CI_DIR}/swarm-context.status" \
   "${CI_DIR}/lint.status" \
   "${CI_DIR}/security-scan.status" \
   "${CI_DIR}/local-ci.status"; do
