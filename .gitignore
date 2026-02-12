@@ -3,6 +3,8 @@
 **/*.tfstate
 **/*.tfstate.*
 **/*.tfvars
+# Terraform plan files (local execution artifacts)
+infrastructure/terraform/tfplan*
 
 # Local secrets (kept outside repo)
 *infra-secrets*.txt
