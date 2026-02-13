@@ -15,6 +15,7 @@ steps:
       - |
         set -euo pipefail
         mkdir -p _bmad-output/ci
+        rm -f _bmad-output/ci/*.status
         set +e
         (
           set -euo pipefail
@@ -83,7 +84,7 @@ steps:
           # Install system dependencies required by tests
           apt-get update && apt-get install -y jq
           pip install --no-cache-dir pytest pytest-asyncio pytest-cov pyyaml requests
-          pip install --no-cache-dir ccxt influxdb-client asyncpg numpy scipy watchdog
+          pip install --no-cache-dir ccxt influxdb-client asyncpg numpy scipy watchdog click websockets
           if [ -x scripts/local-ci-checks.sh ]; then
             ./scripts/local-ci-checks.sh
           else

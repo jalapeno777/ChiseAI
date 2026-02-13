@@ -75,6 +75,38 @@ def _changed_files_working_tree() -> set[str]:
     return files
 
 
+def _changed_files_ci_pr(env: dict[str, str]) -> set[str]:
+    """Return changed files for a PR build using merge-base diff when possible."""
+    target = _first_non_empty(
+        env,
+        (
+            "CI_COMMIT_TARGET_BRANCH",
+            "WOODPECKER_PULL_REQUEST_TARGET_BRANCH",
+            "CI_PULL_REQUEST_TARGET_BRANCH",
+        ),
+    )
+    if not target:
+        target = "main"
+
+    candidates = (
+        f"origin/{target}",
+        f"gitea/{target}",
+        target,
+    )
+    for base in candidates:
+        proc = subprocess.run(
+            ["git", "diff", "--name-only", f"{base}...HEAD"],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if proc.returncode == 0:
+            return {line.strip() for line in proc.stdout.splitlines() if line.strip()}
+
+    # Fallback to HEAD-only behavior when merge-base diff is unavailable.
+    return _changed_files_head()
+
+
 def _head_message() -> str:
     return _git_stdout("git", "log", "-1", "--pretty=%B")
 
@@ -146,7 +178,12 @@ def main() -> int:
             f"Non-main branch must follow feature/* or safety/* naming. Got {branch!r}"
         )
 
-    changed = _changed_files_head() if ci_mode else _changed_files_working_tree()
+    if ci_mode and pr_build:
+        changed = _changed_files_ci_pr(env)
+    elif ci_mode:
+        changed = _changed_files_head()
+    else:
+        changed = _changed_files_working_tree()
     touches_canonical = bool(changed.intersection(CANONICAL_FILES))
     lock_signal = env.get("CANONICAL_STATUS_LOCK", "").strip() == "1"
     msg = _head_message().lower()

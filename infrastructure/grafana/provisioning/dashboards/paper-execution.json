@@ -672,7 +672,7 @@
       "type": "table"
     },
     {
-      "collapsed": true,
+      "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -680,6 +680,572 @@
         "y": 34
       },
       "id": 11,
+      "panels": [],
+      "title": "Canary Deployment Status",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "chiseai-influxdb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "pending": {
+                  "color": "yellow",
+                  "index": 0,
+                  "text": "Pending"
+                },
+                "running": {
+                  "color": "blue",
+                  "index": 1,
+                  "text": "Running"
+                },
+                "passed": {
+                  "color": "green",
+                  "index": 2,
+                  "text": "Passed"
+                },
+                "failed": {
+                  "color": "red",
+                  "index": 3,
+                  "text": "Failed"
+                },
+                "rolled_back": {
+                  "color": "orange",
+                  "index": 4,
+                  "text": "Rolled Back"
+                },
+                "promoted": {
+                  "color": "dark-green",
+                  "index": 5,
+                  "text": "Promoted"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 0,
+        "y": 35
+      },
+      "id": 15,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "chiseai-influxdb"
+          },
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -7d)\n  |> filter(fn: (r) => r._measurement == \"canary_deployment\")\n  |> filter(fn: (r) => r._field == \"status\")\n  |> filter(fn: (r) => r.environment == \"${environment}\")\n  |> last()",
+          "refId": "A"
+        }
+      ],
+      "title": "Canary Status",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "chiseai-influxdb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "max": 0,
+          "min": -10,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": -3
+              },
+              {
+                "color": "red",
+                "value": -5
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 8,
+        "y": 35
+      },
+      "id": 16,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "chiseai-influxdb"
+          },
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -7d)\n  |> filter(fn: (r) => r._measurement == \"canary_deployment\")\n  |> filter(fn: (r) => r._field == \"max_drawdown_pct\")\n  |> filter(fn: (r) => r.environment == \"${environment}\")\n  |> last()",
+          "refId": "A"
+        }
+      ],
+      "title": "Canary Drawdown",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "chiseai-influxdb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 45
+              },
+              {
+                "color": "green",
+                "value": 55
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 16,
+        "y": 35
+      },
+      "id": 17,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "chiseai-influxdb"
+          },
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -7d)\n  |> filter(fn: (r) => r._measurement == \"canary_deployment\")\n  |> filter(fn: (r) => r._field == \"win_rate_pct\")\n  |> filter(fn: (r) => r.environment == \"${environment}\")\n  |> last()",
+          "refId": "A"
+        }
+      ],
+      "title": "Canary Win Rate",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "chiseai-influxdb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "pass": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "Pass"
+                },
+                "fail": {
+                  "color": "red",
+                  "index": 1,
+                  "text": "Fail"
+                },
+                "pending": {
+                  "color": "yellow",
+                  "index": 2,
+                  "text": "Pending"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Gate"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 150
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Result"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Actual"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Threshold"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "y": 41
+      },
+      "id": 18,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "Gate"
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "chiseai-influxdb"
+          },
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -7d)\n  |> filter(fn: (r) => r._measurement == \"canary_gate_check\")\n  |> filter(fn: (r) => r._field == \"gate_name\" or r._field == \"result\" or r._field == \"actual_value\" or r._field == \"threshold_value\" or r._field == \"message\")\n  |> filter(fn: (r) => r.environment == \"${environment}\")\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> last()\n  |> keep(columns: [\"gate_name\", \"result\", \"actual_value\", \"threshold_value\", \"message\"])\n  |> rename(columns: {gate_name: \"Gate\", result: \"Result\", actual_value: \"Actual\", threshold_value: \"Threshold\", message: \"Message\"})",
+          "refId": "A"
+        }
+      ],
+      "title": "Gate Check Results",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "chiseai-influxdb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "d"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 51
+      },
+      "id": 19,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "chiseai-influxdb"
+          },
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"canary_deployment\")\n  |> filter(fn: (r) => r._field == \"duration_days\")\n  |> filter(fn: (r) => r.environment == \"${environment}\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
+          "refId": "A"
+        }
+      ],
+      "title": "Canary Duration",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "chiseai-influxdb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Strategy ID"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 200
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Allocation %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Start Time"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "y": 51
+      },
+      "id": 20,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Start Time"
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "chiseai-influxdb"
+          },
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r._measurement == \"canary_deployment\")\n  |> filter(fn: (r) => r._field == \"canary_id\" or r._field == \"strategy_id\" or r._field == \"allocation_pct\" or r._field == \"start_time\" or r._field == \"total_trades\")\n  |> filter(fn: (r) => r.environment == \"${environment}\")\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> keep(columns: [\"canary_id\", \"strategy_id\", \"allocation_pct\", \"start_time\", \"total_trades\"])\n  |> rename(columns: {canary_id: \"Canary ID\", strategy_id: \"Strategy ID\", allocation_pct: \"Allocation %\", start_time: \"Start Time\", total_trades: \"Trades\"})",
+          "refId": "A"
+        }
+      ],
+      "title": "Recent Canary Deployments",
+      "type": "table"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 59
+      },
+      "id": 21,
       "panels": [],
       "title": "Risk Metrics",
       "type": "row"
@@ -719,7 +1285,7 @@
         "h": 6,
         "w": 6,
         "x": 0,
-        "y": 35
+        "y": 60
       },
       "id": 12,
       "options": {
@@ -786,7 +1352,7 @@
         "h": 6,
         "w": 6,
         "x": 6,
-        "y": 35
+        "y": 60
       },
       "id": 13,
       "options": {
@@ -902,7 +1468,7 @@
       "gridPos": {
         "h": 10,
         "w": 24,
-        "y": 41
+        "y": 66
       },
       "id": 14,
       "options": {

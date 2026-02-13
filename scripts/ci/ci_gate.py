@@ -40,10 +40,20 @@ def main() -> int:
     env = dict(os.environ)
     CI_DIR.mkdir(parents=True, exist_ok=True)
 
+    # Debug: print current directory and list CI_DIR contents
+    print(f"ci-gate: Running in {os.getcwd()}")
+    print(f"ci-gate: CI_DIR is {CI_DIR.absolute()}")
+    if CI_DIR.exists():
+        print(f"ci-gate: CI_DIR contents: {list(CI_DIR.iterdir())}")
+    else:
+        print("ci-gate: CI_DIR does not exist")
+
     missing = [p for p in REQUIRED_STATUS_FILES if not p.exists()]
     statuses = {
         p.name: (_read_status(p) if p.exists() else 99) for p in REQUIRED_STATUS_FILES
     }
+
+    print(f"ci-gate: Statuses read: {statuses}")
 
     failing = {k: v for k, v in statuses.items() if v != 0}
     if missing:

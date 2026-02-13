@@ -1,11 +1,9 @@
 """Tests for Grafana dashboard JSON validation."""
 
 import json
-import os
 from pathlib import Path
 
 import pytest
-
 
 DASHBOARDS_DIR = (
     Path(__file__).parent.parent.parent / "infrastructure" / "grafana" / "dashboards"
@@ -206,9 +204,11 @@ class TestDashboardSchema:
                 for target in targets:
                     datasource = target.get("datasource", {})
                     if isinstance(datasource, dict):
-                        assert datasource.get("type") == "influxdb", (
-                            f"Panel '{panel.get('title')}' does not use InfluxDB datasource"
+                        msg = (
+                            f"Panel '{panel.get('title')}' "
+                            "does not use InfluxDB datasource"
                         )
+                        assert datasource.get("type") == "influxdb", msg
 
     def test_data_freshness_has_alert_row(self, data_freshness_dashboard):
         """Verify data-freshness dashboard has alerting section."""
@@ -266,15 +266,41 @@ class TestDashboardSchema:
                 query = target.get("query", "")
                 # Check for data_freshness measurement reference
                 if "_measurement" in query:
-                    assert "data_freshness" in query, (
-                        f"Panel '{panel.get('title')}' query should reference data_freshness measurement"
+                    msg = (
+                        f"Panel '{panel.get('title')}' query should "
+                        "reference data_freshness measurement"
                     )
+                    assert "data_freshness" in query, msg
 
     def test_backtest_kpis_queries_use_correct_measurement(
         self, backtest_kpis_dashboard
     ):
-        """Verify backtest-kpis queries reference correct InfluxDB measurement."""
+        """Verify backtest-kpis queries reference correct InfluxDB measurement.
+
+        Note: Some panels legitimately use strategy_registry measurement for
+        strategy status information (e.g., "Strategy Status" panel).
+        """
         panels = backtest_kpis_dashboard["panels"]
+
+        # Panels that legitimately use strategy_registry measurement
+        # These panels show strategy metadata/status, not backtest KPIs
+        registry_panels = [
+            "Strategy Status",
+            "Status Distribution",
+            "Strategy Registry",
+            "Active Strategies",
+            "Strategy Overview",
+            "Champion Strategies",
+            "Challenger Strategies",
+            "Candidate Strategies",
+            "Deprecated Strategies",
+            "Registry Table",
+            "Strategy Registry Overview",
+            "Champions",
+            "Challengers",
+            "Candidates",
+            "Deprecated",
+        ]
 
         for panel in panels:
             if panel.get("type") == "row":
@@ -283,11 +309,24 @@ class TestDashboardSchema:
             targets = panel.get("targets", [])
             for target in targets:
                 query = target.get("query", "")
-                # Check for backtest_kpis measurement reference
+                # Check for measurement reference
                 if "_measurement" in query:
-                    assert "backtest_kpis" in query, (
-                        f"Panel '{panel.get('title')}' query should reference backtest_kpis measurement"
-                    )
+                    panel_title = panel.get("title", "")
+                    # Allow strategy_registry for status/registry panels
+                    if panel_title in registry_panels:
+                        msg = (
+                            f"Panel '{panel_title}' query should reference "
+                            "backtest_kpis or strategy_registry measurement"
+                        )
+                        assert (
+                            "backtest_kpis" in query or "strategy_registry" in query
+                        ), msg
+                    else:
+                        msg = (
+                            f"Panel '{panel_title}' query should reference "
+                            "backtest_kpis measurement"
+                        )
+                        assert "backtest_kpis" in query, msg
 
     # =========================================================================
     # HIGH SEVERITY FIXES - ST-OPS-001
@@ -304,7 +343,11 @@ class TestDashboardSchema:
         panels = backtest_kpis_dashboard["panels"]
 
         # Panels that intentionally show all strategies (don't need $__all filter)
-        all_strategies_panels = ["All Strategies Comparison"]
+        # These panels display registry data or aggregate views of all strategies
+        all_strategies_panels = [
+            "All Strategies Comparison",
+            "Strategy Registry Overview",
+        ]
 
         for panel in panels:
             if panel.get("type") == "row":
@@ -322,10 +365,14 @@ class TestDashboardSchema:
                     continue
 
                 # All queries filtering by strategy_id must handle $__all
-                assert '"${strategy_id}" == "$__all"' in query or "$__all" in query, (
-                    f"Panel '{panel.get('title')}' query must handle '$__all' for 'All' strategy selection. "
-                    f'Use: filter(fn: (r) => "${{strategy_id}}" == "$__all" or r.strategy_id == "${{strategy_id}}")'
+                panel_title = panel.get("title")
+                msg = (
+                    f"Panel '{panel_title}' query must handle '$__all' "
+                    "for 'All' strategy selection. "
+                    'Use: filter(fn: (r) => "${strategy_id}" == "$__all" '
+                    'or r.strategy_id == "${strategy_id}")'
                 )
+                assert '"${strategy_id}" == "$__all"' in query or "$__all" in query, msg
 
     def test_data_freshness_has_error_handling_panel(self, data_freshness_dashboard):
         """H2: Verify data-freshness dashboard has troubleshooting/error handling panel.
@@ -355,9 +402,12 @@ class TestDashboardSchema:
         ]
 
         for panel in troubleshoot_panels:
-            assert panel.get("description") or panel.get("data"), (
-                f"Troubleshooting panel '{panel.get('title')}' should have a description or data with guidance"
+            panel_title = panel.get("title")
+            msg = (
+                f"Troubleshooting panel '{panel_title}' should have "
+                "a description or data with guidance"
             )
+            assert panel.get("description") or panel.get("data"), msg
 
     def test_data_freshness_lookback_days_has_validation(
         self, data_freshness_dashboard
@@ -380,9 +430,11 @@ class TestDashboardSchema:
 
         # Check for regex validation
         regex = lookback_var.get("regex", "")
-        assert regex == "^[1-9][0-9]*$", (
-            f"lookback_days variable must have regex validation '^[1-9][0-9]*$', got '{regex}'"
+        msg = (
+            f"lookback_days variable must have regex validation "
+            f"'^[1-9][0-9]*$', got '{regex}'"
         )
+        assert regex == "^[1-9][0-9]*$", msg
 
 
 class TestTerraformConfiguration:

@@ -12,8 +12,7 @@ Tests cover:
 from __future__ import annotations
 
 import asyncio
-import statistics
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -124,7 +123,7 @@ class TestBacktestKPIs:
         kpis = BacktestKPIs(
             strategy_id="test_strategy",
             backtest_id="bt_001",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
 
         assert kpis.strategy_id == "test_strategy"
@@ -136,7 +135,7 @@ class TestBacktestKPIs:
 
     def test_kpis_to_dict(self) -> None:
         """Test converting KPIs to dictionary."""
-        timestamp = datetime.now(timezone.utc)
+        timestamp = datetime.now(UTC)
         kpis = BacktestKPIs(
             strategy_id="test_strategy",
             backtest_id="bt_001",
@@ -164,7 +163,7 @@ class TestTrade:
 
     def test_trade_creation(self) -> None:
         """Test creating a Trade."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         trade = Trade(
             entry_time=now,
             exit_time=now + timedelta(hours=1),
@@ -203,7 +202,7 @@ class TestQueueMetrics:
 
     def test_metrics_to_dict(self) -> None:
         """Test converting metrics to dictionary."""
-        timestamp = datetime.now(timezone.utc)
+        timestamp = datetime.now(UTC)
         metrics = QueueMetrics(
             queue_depth=5,
             processing_lag_seconds=15.0,
@@ -240,7 +239,7 @@ class TestBacktestRunnerKPIs:
         runner = BacktestRunner()
 
         # Create sample trades
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         trades = [
             Trade(
                 entry_time=now,
@@ -328,7 +327,7 @@ class TestBacktestRunnerKPIs:
         """Test win rate calculation."""
         runner = BacktestRunner()
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         trades = [
             Trade(now, now, 100, 105, "long", 1, 5, 5),  # Win
             Trade(now, now, 105, 103, "short", 1, -2, -1.9),  # Loss
@@ -353,7 +352,7 @@ class TestBacktestRunnerKPIs:
         runner = BacktestRunner()
 
         # Create trades with consistent positive returns
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         trades = []
         equity = 10000.0
         equity_curve = [equity]
@@ -391,7 +390,7 @@ class TestBacktestRunnerKPIs:
         """Test consecutive wins/losses calculation."""
         runner = BacktestRunner()
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         # Pattern: WWLLWWWLLLWW
         trades = [
             Trade(now, now, 100, 105, "long", 1, 5, 5),  # Win
@@ -520,7 +519,7 @@ class TestInfluxDBStorage:
         kpis = BacktestKPIs(
             strategy_id="test",
             backtest_id="bt_001",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             sharpe_ratio=1.5,
             max_drawdown_pct=10.0,
             win_rate_pct=55.0,
@@ -542,7 +541,7 @@ class TestInfluxDBStorage:
             kpis = BacktestKPIs(
                 strategy_id="test",
                 backtest_id="bt_001",
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
             )
 
             result = await storage.write_kpis(kpis)
@@ -592,7 +591,7 @@ class TestConvenienceFunctions:
     @pytest.mark.asyncio
     async def test_generate_kpis(self) -> None:
         """Test generate_kpis convenience function."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         trades = [
             Trade(now, now, 100, 105, "long", 1, 5, 5),
             Trade(now, now, 105, 103, "short", 1, -2, -1.9),
@@ -616,7 +615,7 @@ class TestConvenienceFunctions:
             kpis = BacktestKPIs(
                 strategy_id="test",
                 backtest_id="bt_001",
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
             )
 
             result = await persist_kpis(kpis)
@@ -704,7 +703,7 @@ class TestWalkForward:
 
         try:
             strategy_ids = ["strategy_1", "strategy_2"]
-            results = await runner.run_walk_forward_backtests(strategy_ids)
+            await runner.run_walk_forward_backtests(strategy_ids)
 
             # Should submit all strategies to queue
             assert runner._queue.qsize() == 2
@@ -762,7 +761,9 @@ class TestWalkForward:
             assert result.get("test_candles") == 60  # 30% of 200
 
     @pytest.mark.asyncio
-    async def test_walk_forward_falls_back_to_simulation_on_insufficient_data(self) -> None:
+    async def test_walk_forward_falls_back_to_simulation_on_insufficient_data(
+        self,
+    ) -> None:
         """Test that walk-forward falls back to simulation when data is insufficient."""
         runner = BacktestRunner()
 
@@ -805,14 +806,16 @@ class TestWalkForward:
             else:
                 price = base_price + 50 - (i - 100) * 0.5  # Downtrend
 
-            mock_data.append({
-                "timestamp": 1704067200000 + i * 3600000,
-                "open": price - 0.5,
-                "high": price + 1.0,
-                "low": price - 1.0,
-                "close": price,
-                "volume": 1000.0,
-            })
+            mock_data.append(
+                {
+                    "timestamp": 1704067200000 + i * 3600000,
+                    "open": price - 0.5,
+                    "high": price + 1.0,
+                    "low": price - 1.0,
+                    "close": price,
+                    "volume": 1000.0,
+                }
+            )
 
         with patch.object(runner, "_load_historical_data", return_value=mock_data):
             result = await runner._run_walk_forward_single(
@@ -878,14 +881,16 @@ class TestWalkForward:
         for i in range(200):
             # Strong uptrend - should generate winning long trades
             price = 100.0 + i * 0.1
-            mock_data.append({
-                "timestamp": 1704067200000 + i * 3600000,
-                "open": price,
-                "high": price + 0.5,
-                "low": price - 0.5,
-                "close": price + 0.1,
-                "volume": 1000.0,
-            })
+            mock_data.append(
+                {
+                    "timestamp": 1704067200000 + i * 3600000,
+                    "open": price,
+                    "high": price + 0.5,
+                    "low": price - 0.5,
+                    "close": price + 0.1,
+                    "volume": 1000.0,
+                }
+            )
 
         with patch.object(runner, "_load_historical_data", return_value=mock_data):
             result = await runner._run_walk_forward_single(
@@ -932,8 +937,8 @@ class TestIntegration:
                 return {
                     "trades": [
                         Trade(
-                            datetime.now(timezone.utc),
-                            datetime.now(timezone.utc),
+                            datetime.now(UTC),
+                            datetime.now(UTC),
                             100,
                             105,
                             "long",

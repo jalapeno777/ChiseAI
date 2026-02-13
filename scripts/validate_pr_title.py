@@ -18,7 +18,7 @@ import re
 import sys
 
 STORY_ID_RE = re.compile(
-    r"\b(?:ST|CH|FT|REWARD|REPO)(?:-[A-Z0-9]+)+-\d+\b", re.IGNORECASE
+    r"\b(?:ST|CH|FT|REWARD|REPO|SAFETY|BRANCH)(?:-[A-Z0-9]+)+-\d+\b", re.IGNORECASE
 )
 
 
@@ -49,6 +49,11 @@ def _get_pr_title(env: dict[str, str]) -> str:
         "CI_PULL_REQUEST_TITLE",
         "WOODPECKER_PULL_REQUEST_TITLE",
         "WOODPECKER_PR_TITLE",
+        "CI_PIPELINE_TITLE",
+        "CI_COMMIT_TITLE",
+        "WOODPECKER_COMMIT_TITLE",
+        "CI_COMMIT_MESSAGE",
+        "WOODPECKER_COMMIT_MESSAGE",
     ):
         v = env.get(k)
         if v:
@@ -82,6 +87,35 @@ def _get_pr_title(env: dict[str, str]) -> str:
                         return title
             except Exception as e:
                 print(f"WARN: Failed to fetch PR title from API: {e}", file=sys.stderr)
+
+    # Fallback: query Woodpecker pipeline metadata for title, if available.
+    pipeline_number = env.get("CI_PIPELINE_NUMBER", "").strip()
+    woodpecker_token = env.get("WOODPECKER_TOKEN", "").strip()
+    if pipeline_number and woodpecker_token:
+        import json
+        import urllib.request
+
+        base_url = env.get("WOODPECKER_BASE_URL", "http://woodpecker-server:8000").rstrip(
+            "/"
+        )
+        repo = env.get("CI_REPO", "")
+        if "/" in repo:
+            owner, repo_name = repo.split("/", 1)
+            api_url = f"{base_url}/api/repos/{owner}/{repo_name}/pipelines/{pipeline_number}"
+            req = urllib.request.Request(
+                api_url, headers={"X-WOODPECKER-TOKEN": woodpecker_token}
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    title = str(data.get("title", "")).strip()
+                    if title:
+                        return title
+            except Exception as e:
+                print(
+                    f"WARN: Failed to fetch pipeline title from Woodpecker API: {e}",
+                    file=sys.stderr,
+                )
 
     # Fallback: try to get story ID from branch name
     branch = (

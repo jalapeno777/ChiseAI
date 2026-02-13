@@ -6,26 +6,21 @@ Usage:
     pytest tests/test_ops/test_grafana_watchdog.py -v
 """
 
-import json
-import os
-import tempfile
-import time
+# Add project root to path
+import sys
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
 import pytest
 import requests
 
-# Add project root to path
-import sys
-
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from src.operations.grafana_watchdog import (
-    WatchdogConfig,
-    GrafanaAPI,
     DashboardChangeHandler,
+    GrafanaAPI,
     GrafanaWatchdog,
+    WatchdogConfig,
 )
 
 

@@ -245,62 +245,62 @@ def verify_data(query_api, bucket: str, environment: str) -> dict:
     results = {}
 
     # Check orders
-    query = f'''
+    query = f"""
     from(bucket: "{bucket}")
       |> range(start: -1h)
       |> filter(fn: (r) => r._measurement == "orders")
       |> filter(fn: (r) => r.environment == "{environment}")
       |> count()
-    '''
+    """
     tables = query_api.query(query)
     order_count = sum([len(table.records) for table in tables])
     results["orders"] = order_count
 
     # Check fills
-    query = f'''
+    query = f"""
     from(bucket: "{bucket}")
       |> range(start: -1h)
       |> filter(fn: (r) => r._measurement == "fills")
       |> filter(fn: (r) => r.environment == "{environment}")
       |> count()
-    '''
+    """
     tables = query_api.query(query)
     fill_count = sum([len(table.records) for table in tables])
     results["fills"] = fill_count
 
     # Check portfolio snapshots
-    query = f'''
+    query = f"""
     from(bucket: "{bucket}")
       |> range(start: -1h)
       |> filter(fn: (r) => r._measurement == "portfolio_snapshot")
       |> filter(fn: (r) => r.environment == "{environment}")
       |> count()
-    '''
+    """
     tables = query_api.query(query)
     snapshot_count = sum([len(table.records) for table in tables])
     results["portfolio_snapshots"] = snapshot_count
 
     # Check positions
-    query = f'''
+    query = f"""
     from(bucket: "{bucket}")
       |> range(start: -1h)
       |> filter(fn: (r) => r._measurement == "positions")
       |> filter(fn: (r) => r.environment == "{environment}")
       |> count()
-    '''
+    """
     tables = query_api.query(query)
     position_count = sum([len(table.records) for table in tables])
     results["positions"] = position_count
 
     # Check kill switch (live only)
     if environment == "live":
-        query = f'''
+        query = f"""
         from(bucket: "{bucket}")
           |> range(start: -1h)
           |> filter(fn: (r) => r._measurement == "kill_switch")
           |> filter(fn: (r) => r.environment == "{environment}")
           |> count()
-        '''
+        """
         tables = query_api.query(query)
         kill_switch_count = sum([len(table.records) for table in tables])
         results["kill_switch"] = kill_switch_count
