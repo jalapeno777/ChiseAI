@@ -95,7 +95,7 @@ validations:
     title: Real CI Gates - Black/Ruff/Mypy/Pytest/Coverage
     epic_id: EP-CI-001
     story_id: ST-CI-001
-    status: planned
+    status: validated
     description: Validate CI runs and blocks merges on lint/type/test failures
     acceptance_criteria:
       - Black/ruff/mypy failures fail CI
@@ -110,7 +110,7 @@ validations:
     title: Gitea PR Auto-Merge Bot - Green CI Only
     epic_id: EP-CI-001
     story_id: ST-CI-002
-    status: planned
+    status: validated
     description: Validate merge automation only merges PRs with required checks green
     acceptance_criteria:
       - PRs do not merge when any required check is missing/failed
@@ -446,7 +446,7 @@ validations:
     title: Grafana Dashboards - Paper & Live Execution
     epic_id: EP-OPS-001
     story_id: ST-OPS-002
-    status: planned
+    status: validated
     description: Validate paper and live trading execution metrics are visible in Grafana dashboards
     acceptance_criteria:
       - Order/fill data is queryable in real-time
@@ -461,7 +461,7 @@ validations:
     title: Alerting Runbook + Automation
     epic_id: EP-OPS-001
     story_id: ST-OPS-003
-    status: in_progress
+    status: validated
     description: Validate common failure scenarios have runbooks and automated alert routing works correctly
     acceptance_criteria:
       - Runbooks exist for API disconnect, data gaps, order rejects, drift

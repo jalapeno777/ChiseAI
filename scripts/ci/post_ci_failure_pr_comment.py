@@ -94,16 +94,47 @@ def _create_comment(api_base: str, pr_number: str, body: str, token: str) -> boo
 
 
 def _failure_summary() -> str:
-    script_path = os.path.join(os.path.dirname(__file__), "scan_failure_logs.py")
+    triage_path = os.path.join(os.path.dirname(__file__), "woodpecker_triage.py")
+    scan_path = os.path.join(os.path.dirname(__file__), "scan_failure_logs.py")
+    pr_number = os.environ.get("CI_COMMIT_PULL_REQUEST", "").strip()
+    pipeline = os.environ.get("CI_PIPELINE_NUMBER", "").strip()
+
+    triage_cmd = [
+        sys.executable,
+        triage_path,
+        "diagnose",
+        "--write-artifacts",
+        "--format",
+        "human",
+    ]
+    if pr_number:
+        triage_cmd.extend(["--pr", pr_number])
+    elif pipeline:
+        triage_cmd.extend(["--pipeline", pipeline])
+    else:
+        triage_cmd.extend(["--from-local-dir", "_bmad-output/ci"])
+
     try:
-        r = subprocess.run(
-            [sys.executable, script_path],
+        triage = subprocess.run(
+            triage_cmd,
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        if triage.stdout.strip():
+            return triage.stdout.strip()
+    except Exception:  # noqa: BLE001
+        pass
+
+    try:
+        scan = subprocess.run(
+            [sys.executable, scan_path],
             capture_output=True,
             text=True,
             timeout=60,
         )
         # Always return stdout (even if scan returns non-zero).
-        return (r.stdout or "").strip()
+        return (scan.stdout or "").strip()
     except Exception as e:  # noqa: BLE001
         return f"Failed to generate failure summary: {e}"
 

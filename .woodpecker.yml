@@ -27,6 +27,9 @@ steps:
 
   lint:
     image: python:3.11
+    environment:
+      GITEA_TOKEN:
+        from_secret: gitea_token
     commands:
       - |
         set -euo pipefail
@@ -46,7 +49,8 @@ steps:
         code=$?
         cat _bmad-output/ci/lint.log
         echo "$code" > _bmad-output/ci/lint.status
-        exit "$code"
+        # Do not short-circuit the pipeline; ci-gate is the single fail point.
+        exit 0
 
   security-scan:
     image: python:3.11
@@ -64,7 +68,8 @@ steps:
         code=$?
         cat _bmad-output/ci/security-scan.log
         echo "$code" > _bmad-output/ci/security-scan.status
-        exit "$code"
+        # Do not short-circuit the pipeline; ci-gate is the single fail point.
+        exit 0
 
   local-ci:
     image: python:3.11
@@ -89,7 +94,44 @@ steps:
         code=$?
         cat _bmad-output/ci/local-ci-full.log
         echo "$code" > _bmad-output/ci/local-ci.status
-        exit "$code"
+        # Do not short-circuit the pipeline; ci-gate is the single fail point.
+        exit 0
+
+  ci-root-cause-bundle:
+    image: python:3.11
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          python -V
+          # Preferred path: query Woodpecker API using WOODPECKER_TOKEN if available.
+          python scripts/ci/woodpecker_triage.py bundle --pipeline "${CI_PIPELINE_NUMBER:-0}" --format human
+        ) > _bmad-output/ci/root-cause.log 2>&1
+        code=$?
+        if [ "$code" -ne 0 ]; then
+          (
+            set -euo pipefail
+            # Fallback path: diagnose from captured local artifacts.
+            python scripts/ci/woodpecker_triage.py bundle --from-local-dir _bmad-output/ci --format human
+          ) >> _bmad-output/ci/root-cause.log 2>&1 || true
+        fi
+        cat _bmad-output/ci/root-cause.log
+        echo "0" > _bmad-output/ci/root-cause.status
+        exit 0
+
+  ci-gate:
+    image: python:3.11
+    environment:
+      GITEA_TOKEN:
+        from_secret: gitea_token
+    commands:
+      - |
+        set -euo pipefail
+        pip install --no-cache-dir requests
+        python scripts/ci/ci_gate.py
 
   taiga-sync-validate:
     image: python:3.11
