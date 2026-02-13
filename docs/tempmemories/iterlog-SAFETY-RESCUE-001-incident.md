@@ -1,7 +1,10 @@
 ---
-timestamp: 2026-02-13T17:20:00Z
-agent: dev
 story_id: SAFETY-RESCUE-001
+story_title: CI Failure Incident Report
+phase: implementation
+status: completed
+started_at: 2026-02-13T17:20:00Z
+agent: dev
 type: ci_failure
 description: CI failing due to pre-existing lint errors in test files outside scope
 ---
