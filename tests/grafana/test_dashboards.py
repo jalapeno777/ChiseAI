@@ -1,11 +1,9 @@
 """Tests for Grafana dashboard JSON validation."""
 
 import json
-import os
 from pathlib import Path
 
 import pytest
-
 
 DASHBOARDS_DIR = (
     Path(__file__).parent.parent.parent / "infrastructure" / "grafana" / "dashboards"
@@ -78,9 +76,9 @@ class TestDashboardSchema:
         panel_titles = [p.get("title", "") for p in panels]
 
         # Check for required panels
-        assert any("Binance" in title for title in panel_titles), (
-            "Missing Binance panel"
-        )
+        assert any(
+            "Binance" in title for title in panel_titles
+        ), "Missing Binance panel"
         assert any("Bybit" in title for title in panel_titles), "Missing Bybit panel"
         assert any("Bitget" in title for title in panel_titles), "Missing Bitget panel"
         assert any("Trend" in title for title in panel_titles), "Missing trend panel"
@@ -91,18 +89,18 @@ class TestDashboardSchema:
         panel_titles = [p.get("title", "") for p in panels]
 
         # Check for required panels
-        assert any("Sharpe" in title for title in panel_titles), (
-            "Missing Sharpe ratio panel"
-        )
-        assert any("Drawdown" in title for title in panel_titles), (
-            "Missing max drawdown panel"
-        )
-        assert any("Win Rate" in title for title in panel_titles), (
-            "Missing win rate panel"
-        )
-        assert any("Trade Count" in title for title in panel_titles), (
-            "Missing trade count panel"
-        )
+        assert any(
+            "Sharpe" in title for title in panel_titles
+        ), "Missing Sharpe ratio panel"
+        assert any(
+            "Drawdown" in title for title in panel_titles
+        ), "Missing max drawdown panel"
+        assert any(
+            "Win Rate" in title for title in panel_titles
+        ), "Missing win rate panel"
+        assert any(
+            "Trade Count" in title for title in panel_titles
+        ), "Missing trade count panel"
 
     def test_data_freshness_has_variables(self, data_freshness_dashboard):
         """Verify data-freshness dashboard has configurable variables."""
@@ -115,9 +113,9 @@ class TestDashboardSchema:
         assert "influxdb_datasource" in var_names, "Missing datasource variable"
         assert "influxdb_bucket" in var_names, "Missing bucket variable"
         assert "lookback_days" in var_names, "Missing lookback_days variable"
-        assert "alert_threshold_seconds" in var_names, (
-            "Missing alert threshold variable"
-        )
+        assert (
+            "alert_threshold_seconds" in var_names
+        ), "Missing alert threshold variable"
 
     def test_backtest_kpis_has_strategy_selector(self, backtest_kpis_dashboard):
         """Verify backtest-kpis dashboard has strategy selector."""
@@ -158,9 +156,9 @@ class TestDashboardSchema:
                 found_complete_thresholds = True
                 break
 
-        assert found_complete_thresholds, (
-            "No panel found with green, yellow, and red thresholds"
-        )
+        assert (
+            found_complete_thresholds
+        ), "No panel found with green, yellow, and red thresholds"
 
     def test_backtest_kpis_has_sharpe_thresholds(self, backtest_kpis_dashboard):
         """Verify backtest-kpis Sharpe panel has appropriate thresholds."""
@@ -183,12 +181,12 @@ class TestDashboardSchema:
 
         # Should have red < 1, yellow 1-2, green > 2
         values = [s.get("value") for s in steps if s.get("value") is not None]
-        assert 1 in values or any(v is not None and v <= 1 for v in values), (
-            "Missing threshold at 1"
-        )
-        assert 2 in values or any(v is not None and v >= 2 for v in values), (
-            "Missing threshold at 2"
-        )
+        assert 1 in values or any(
+            v is not None and v <= 1 for v in values
+        ), "Missing threshold at 1"
+        assert 2 in values or any(
+            v is not None and v >= 2 for v in values
+        ), "Missing threshold at 2"
 
     def test_dashboards_use_influxdb_datasource(
         self, data_freshness_dashboard, backtest_kpis_dashboard
@@ -206,9 +204,9 @@ class TestDashboardSchema:
                 for target in targets:
                     datasource = target.get("datasource", {})
                     if isinstance(datasource, dict):
-                        assert datasource.get("type") == "influxdb", (
-                            f"Panel '{panel.get('title')}' does not use InfluxDB datasource"
-                        )
+                        assert (
+                            datasource.get("type") == "influxdb"
+                        ), f"Panel '{panel.get('title')}' does not use InfluxDB datasource"
 
     def test_data_freshness_has_alert_row(self, data_freshness_dashboard):
         """Verify data-freshness dashboard has alerting section."""
@@ -234,12 +232,12 @@ class TestDashboardSchema:
     ):
         """Verify dashboards have appropriate refresh rates."""
         # Both dashboards should refresh every 30 seconds by default
-        assert data_freshness_dashboard.get("refresh") == "30s", (
-            "Data freshness dashboard should refresh every 30s"
-        )
-        assert backtest_kpis_dashboard.get("refresh") == "30s", (
-            "Backtest KPIs dashboard should refresh every 30s"
-        )
+        assert (
+            data_freshness_dashboard.get("refresh") == "30s"
+        ), "Data freshness dashboard should refresh every 30s"
+        assert (
+            backtest_kpis_dashboard.get("refresh") == "30s"
+        ), "Backtest KPIs dashboard should refresh every 30s"
 
     def test_dashboards_have_chiseai_tags(
         self, data_freshness_dashboard, backtest_kpis_dashboard
@@ -247,9 +245,9 @@ class TestDashboardSchema:
         """Verify dashboards have ChiseAI tags for organization."""
         for dashboard in [data_freshness_dashboard, backtest_kpis_dashboard]:
             tags = dashboard.get("tags", [])
-            assert "chiseai" in tags, (
-                f"Dashboard '{dashboard.get('title')}' missing 'chiseai' tag"
-            )
+            assert (
+                "chiseai" in tags
+            ), f"Dashboard '{dashboard.get('title')}' missing 'chiseai' tag"
 
     def test_data_freshness_queries_use_correct_measurement(
         self, data_freshness_dashboard
@@ -266,15 +264,39 @@ class TestDashboardSchema:
                 query = target.get("query", "")
                 # Check for data_freshness measurement reference
                 if "_measurement" in query:
-                    assert "data_freshness" in query, (
-                        f"Panel '{panel.get('title')}' query should reference data_freshness measurement"
-                    )
+                    assert (
+                        "data_freshness" in query
+                    ), f"Panel '{panel.get('title')}' query should reference data_freshness measurement"
 
     def test_backtest_kpis_queries_use_correct_measurement(
         self, backtest_kpis_dashboard
     ):
-        """Verify backtest-kpis queries reference correct InfluxDB measurement."""
+        """Verify backtest-kpis queries reference correct InfluxDB measurement.
+
+        Note: Some panels legitimately use strategy_registry measurement for
+        strategy status information (e.g., "Strategy Status" panel).
+        """
         panels = backtest_kpis_dashboard["panels"]
+
+        # Panels that legitimately use strategy_registry measurement
+        # These panels show strategy metadata/status, not backtest KPIs
+        registry_panels = [
+            "Strategy Status",
+            "Status Distribution",
+            "Strategy Registry",
+            "Active Strategies",
+            "Strategy Overview",
+            "Champion Strategies",
+            "Challenger Strategies",
+            "Candidate Strategies",
+            "Deprecated Strategies",
+            "Registry Table",
+            "Strategy Registry Overview",
+            "Champions",
+            "Challengers",
+            "Candidates",
+            "Deprecated",
+        ]
 
         for panel in panels:
             if panel.get("type") == "row":
@@ -283,11 +305,18 @@ class TestDashboardSchema:
             targets = panel.get("targets", [])
             for target in targets:
                 query = target.get("query", "")
-                # Check for backtest_kpis measurement reference
+                # Check for measurement reference
                 if "_measurement" in query:
-                    assert "backtest_kpis" in query, (
-                        f"Panel '{panel.get('title')}' query should reference backtest_kpis measurement"
-                    )
+                    panel_title = panel.get("title", "")
+                    # Allow strategy_registry for status/registry panels
+                    if panel_title in registry_panels:
+                        assert (
+                            "backtest_kpis" in query or "strategy_registry" in query
+                        ), f"Panel '{panel_title}' query should reference backtest_kpis or strategy_registry measurement"
+                    else:
+                        assert (
+                            "backtest_kpis" in query
+                        ), f"Panel '{panel_title}' query should reference backtest_kpis measurement"
 
     # =========================================================================
     # HIGH SEVERITY FIXES - ST-OPS-001
@@ -304,7 +333,11 @@ class TestDashboardSchema:
         panels = backtest_kpis_dashboard["panels"]
 
         # Panels that intentionally show all strategies (don't need $__all filter)
-        all_strategies_panels = ["All Strategies Comparison"]
+        # These panels display registry data or aggregate views of all strategies
+        all_strategies_panels = [
+            "All Strategies Comparison",
+            "Strategy Registry Overview",
+        ]
 
         for panel in panels:
             if panel.get("type") == "row":
@@ -355,9 +388,9 @@ class TestDashboardSchema:
         ]
 
         for panel in troubleshoot_panels:
-            assert panel.get("description") or panel.get("data"), (
-                f"Troubleshooting panel '{panel.get('title')}' should have a description or data with guidance"
-            )
+            assert panel.get("description") or panel.get(
+                "data"
+            ), f"Troubleshooting panel '{panel.get('title')}' should have a description or data with guidance"
 
     def test_data_freshness_lookback_days_has_validation(
         self, data_freshness_dashboard
@@ -380,9 +413,9 @@ class TestDashboardSchema:
 
         # Check for regex validation
         regex = lookback_var.get("regex", "")
-        assert regex == "^[1-9][0-9]*$", (
-            f"lookback_days variable must have regex validation '^[1-9][0-9]*$', got '{regex}'"
-        )
+        assert (
+            regex == "^[1-9][0-9]*$"
+        ), f"lookback_days variable must have regex validation '^[1-9][0-9]*$', got '{regex}'"
 
 
 class TestTerraformConfiguration:
@@ -406,9 +439,9 @@ class TestTerraformConfiguration:
             content = f.read()
 
         # Check for required resource types
-        assert 'resource "grafana_dashboard"' in content, (
-            "Missing grafana_dashboard resource"
-        )
+        assert (
+            'resource "grafana_dashboard"' in content
+        ), "Missing grafana_dashboard resource"
         assert 'resource "grafana_folder"' in content, "Missing grafana_folder resource"
         assert "grafana_data_source" in content, "Missing grafana_data_source resource"
 
@@ -425,9 +458,9 @@ class TestTerraformConfiguration:
 
         # Check for variable references
         assert "var.influxdb_org" in content, "Missing influxdb_org variable reference"
-        assert "var.influxdb_bucket" in content, (
-            "Missing influxdb_bucket variable reference"
-        )
-        assert "var.influxdb_token" in content, (
-            "Missing influxdb_token variable reference"
-        )
+        assert (
+            "var.influxdb_bucket" in content
+        ), "Missing influxdb_bucket variable reference"
+        assert (
+            "var.influxdb_token" in content
+        ), "Missing influxdb_token variable reference"
