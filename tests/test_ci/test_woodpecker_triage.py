@@ -42,6 +42,14 @@ def test_parse_black_would_reformat() -> None:
     assert causes[0].file == "src/baz.py"
 
 
+def test_parse_ci_gate_status_file_failure() -> None:
+    log = "ci-gate: FAIL (captured step failures detected)\n  - swarm-context.status: 1\n"
+    causes = woodpecker_triage.parse_root_causes("ci-gate", log)
+    assert causes
+    assert causes[0].tool == "ci_gate"
+    assert "swarm-context.status=1" in causes[0].message
+
+
 def test_diagnose_local_artifacts_uses_local_ci_full_log(tmp_path: Path) -> None:
     ci_dir = tmp_path / "ci"
     ci_dir.mkdir(parents=True)
