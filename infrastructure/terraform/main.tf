@@ -736,4 +736,11 @@ resource "docker_container" "chiseai_data_quality_monitor" {
     label = "com.docker.compose.service"
     value = "data-quality-monitor"
   }
+
+  healthcheck {
+    test     = ["CMD-SHELL", "pgrep -f 'data_quality_monitor' || exit 1"]
+    interval = "60s"
+    timeout  = "10s"
+    retries  = 3
+  }
 }
