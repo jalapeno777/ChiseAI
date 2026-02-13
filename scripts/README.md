@@ -121,6 +121,26 @@ Notes:
 - Default behavior auto-detects `.venv-debug` / `.venv` and uses that Python when present.
 - Dependency installation defaults to `1` in virtualenv contexts and `0` otherwise.
 
+### ci/woodpecker_triage.py
+
+Root-cause-first CI triage utility for Woodpecker pipelines.
+
+- Fetches PR/pipeline status and step logs directly from Woodpecker API
+- Extracts exact failures (rule/file/line/test) when possible
+- Writes triage bundles to `_bmad-output/ci/woodpecker/<pipeline_number>/`
+
+**Usage:**
+```bash
+# Pipeline/PR status matrix
+python3 scripts/ci/woodpecker_triage.py status --pr 123
+
+# Diagnose failures and write artifacts
+python3 scripts/ci/woodpecker_triage.py diagnose --pr 123 --write-artifacts
+
+# Force local artifact fallback mode
+python3 scripts/ci/woodpecker_triage.py diagnose --from-local-dir _bmad-output/ci --write-artifacts
+```
+
 ## Adding New Scripts
 
 When adding scripts to this directory:
