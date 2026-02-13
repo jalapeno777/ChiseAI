@@ -264,9 +264,11 @@ class TestDashboardEmitter:
             timeframe="1h",
         )
 
-        result = await emitter.emit(signal)
+        # Mock Redis connection to avoid external dependency in tests
+        with patch.object(emitter, "_emit_to_redis", return_value=True):
+            result = await emitter.emit(signal)
 
-        # Should succeed (placeholder implementation)
+        # Should succeed with mocked Redis
         assert result.success is True
         assert result.channel == "dashboard"
 

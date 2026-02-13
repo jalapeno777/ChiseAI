@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from signal_generation.models import Signal
@@ -163,6 +163,89 @@ class DiscordEmitter(SignalEmitter):
             self._signal_counts[token] = []
         self._signal_counts[token].append(time.time())
 
+    def _format_message(self, signal: Signal) -> str:
+        """Format signal as Discord message content.
+
+        Args:
+            signal: Signal to format
+
+        Returns:
+            Formatted message string
+        """
+        direction_emoji = "🟢" if signal.direction_str == "long" else "🔴"
+        return (
+            f"{direction_emoji} **{signal.direction_str.upper()}** Signal | "
+            f"{signal.token} | Confidence: {signal.confidence:.0%}"
+        )
+
+    def _should_use_embed(self, signal: Signal) -> bool:
+        """Check if signal should use rich embed format.
+
+        Args:
+            signal: Signal to check
+
+        Returns:
+            True if embed should be used
+        """
+        # Use embed for higher confidence signals
+        return signal.confidence >= 0.6
+
+    def _build_embed(self, signal: Signal) -> dict:
+        """Build Discord embed for signal.
+
+        Args:
+            signal: Signal to build embed for
+
+        Returns:
+            Discord embed dictionary
+        """
+        embed = {
+            "title": f"{signal.direction_str.upper()} Signal: {signal.token}",
+            "color": 0x00FF00 if signal.direction_str == "long" else 0xFF0000,
+            "fields": [
+                {
+                    "name": "Direction",
+                    "value": signal.direction_str.upper(),
+                    "inline": True,
+                },
+                {
+                    "name": "Confidence",
+                    "value": f"{signal.confidence:.1%}",
+                    "inline": True,
+                },
+                {"name": "Token", "value": signal.token, "inline": True},
+            ],
+        }
+
+        # Add entry price if available
+        fields: list[dict[str, Any]] = embed["fields"]  # type: ignore[assignment]
+        if hasattr(signal, "entry_price") and signal.entry_price:
+            fields.append(
+                {
+                    "name": "Entry Price",
+                    "value": str(signal.entry_price),
+                    "inline": True,
+                }
+            )
+
+        # Add stop loss if available
+        if hasattr(signal, "stop_loss") and signal.stop_loss:
+            fields.append(
+                {"name": "Stop Loss", "value": str(signal.stop_loss), "inline": True}
+            )
+
+        # Add take profit if available
+        if hasattr(signal, "take_profit") and signal.take_profit:
+            fields.append(
+                {
+                    "name": "Take Profit",
+                    "value": str(signal.take_profit),
+                    "inline": True,
+                }
+            )
+
+        return embed
+
     async def emit(self, signal: Signal) -> EmissionResult:
         """Emit signal to Discord.
 
@@ -217,28 +300,54 @@ class DiscordEmitter(SignalEmitter):
             )
 
         try:
-            # TODO: Implement actual Discord webhook call
-            # This is a placeholder for ST-NS-009 implementation
-            # import aiohttp
-            # async with aiohttp.ClientSession() as session:
-            #     payload = {
-            #         "content": signal.to_discord_message(),
-            #         "embeds": [...]
-            #     }
-            #     async with session.post(self.webhook_url, json=payload) as resp:
-            #         success = resp.status == 204
+            # Send to Discord via webhook
+            import aiohttp
 
-            # Placeholder: simulate success
-            self._record_signal(signal.token)
-            latency_ms = (time.perf_counter() - start_time) * 1000
+            # Build message payload
+            payload = {
+                "content": self._format_message(signal),
+                "embeds": [self._build_embed(signal)]
+                if self._should_use_embed(signal)
+                else None,
+            }
+            # Remove None values
+            payload = {k: v for k, v in payload.items() if v is not None}
 
-            logger.info(f"Discord emission: {signal.token} [{signal.direction_str}]")
-
-            return EmissionResult(
-                success=True,
-                channel="discord",
-                latency_ms=latency_ms,
-            )
+            # Send webhook request
+            async with aiohttp.ClientSession() as session:
+                async with session.post(self.webhook_url, json=payload) as resp:
+                    if resp.status == 204:
+                        self._record_signal(signal.token)
+                        latency_ms = (time.perf_counter() - start_time) * 1000
+                        logger.info(
+                            f"Discord emission: {signal.token} [{signal.direction_str}]"
+                        )
+                        return EmissionResult(
+                            success=True,
+                            channel="discord",
+                            latency_ms=latency_ms,
+                        )
+                    elif resp.status == 429:
+                        latency_ms = (time.perf_counter() - start_time) * 1000
+                        error_msg = "Discord rate limited"
+                        logger.warning(f"Discord emission rate limited: {signal.token}")
+                        return EmissionResult(
+                            success=False,
+                            channel="discord",
+                            error=error_msg,
+                            latency_ms=latency_ms,
+                        )
+                    else:
+                        latency_ms = (time.perf_counter() - start_time) * 1000
+                        body = await resp.text()
+                        error_msg = f"Discord HTTP {resp.status}: {body}"
+                        logger.error(f"Discord emission failed: {error_msg}")
+                        return EmissionResult(
+                            success=False,
+                            channel="discord",
+                            error=error_msg,
+                            latency_ms=latency_ms,
+                        )
 
         except Exception as e:
             latency_ms = (time.perf_counter() - start_time) * 1000
@@ -271,19 +380,96 @@ class DashboardEmitter(SignalEmitter):
 
     For ST-NS-008: Dashboard Integration
     Provides interface for emitting signals to the dashboard.
+    Uses Redis streams for distributed signal delivery.
     """
 
-    def __init__(self, dashboard_url: str | None = None):
+    # Redis stream key for dashboard signals
+    STREAM_KEY = "chiseai:signals:dashboard"
+
+    # Redis connection settings (matches iteration_logging.py)
+    DEFAULT_REDIS_HOST = "host.docker.internal"
+    DEFAULT_REDIS_PORT = 6380
+    DEFAULT_REDIS_DB = 0
+
+    def __init__(
+        self,
+        dashboard_url: str | None = None,
+        redis_host: str | None = None,
+        redis_port: int | None = None,
+        redis_db: int | None = None,
+    ):
         """Initialize dashboard emitter.
 
         Args:
-            dashboard_url: Dashboard API URL
+            dashboard_url: Dashboard API URL (unused but kept for interface compatibility)
+            redis_host: Redis host (defaults to host.docker.internal)
+            redis_port: Redis port (defaults to 6380)
+            redis_db: Redis DB (defaults to 0)
         """
         super().__init__("dashboard")
         self.dashboard_url = dashboard_url
+        self.redis_host = redis_host or self.DEFAULT_REDIS_HOST
+        self.redis_port = redis_port or self.DEFAULT_REDIS_PORT
+        self.redis_db = redis_db if redis_db is not None else self.DEFAULT_REDIS_DB
+        self._redis_client: Any = None
+
+    def _get_redis_client(self) -> Any:
+        """Get or create Redis client.
+
+        Returns:
+            Redis client or None if connection fails
+        """
+        import logging
+
+        if self._redis_client is not None:
+            return self._redis_client
+
+        try:
+            import redis
+
+            client = redis.Redis(
+                host=self.redis_host,
+                port=self.redis_port,
+                db=self.redis_db,
+                decode_responses=True,
+            )
+            # Test connection
+            client.ping()
+            self._redis_client = client
+            return client
+        except Exception as e:
+            logging.getLogger(__name__).warning(
+                f"Dashboard emitter: Redis connection failed: {e}"
+            )
+            return None
+
+    def _emit_to_redis(self, payload: dict[str, Any]) -> bool:
+        """Emit signal payload to Redis stream.
+
+        Args:
+            payload: Signal payload dictionary
+
+        Returns:
+            True if emission succeeded, False otherwise
+        """
+        import json
+
+        client = self._get_redis_client()
+        if client is None:
+            return False
+
+        try:
+            # Add to Redis stream with auto-generated ID
+            client.xadd(self.STREAM_KEY, {"data": json.dumps(payload)})
+            return True
+        except Exception as e:
+            logging.getLogger(__name__).warning(
+                f"Dashboard emitter: Failed to add to stream: {e}"
+            )
+            return False
 
     async def emit(self, signal: Signal) -> EmissionResult:
-        """Emit signal to dashboard.
+        """Emit signal to dashboard via Redis stream.
 
         Args:
             signal: Signal to emit
@@ -291,6 +477,7 @@ class DashboardEmitter(SignalEmitter):
         Returns:
             EmissionResult with status
         """
+        import json
         import time
 
         start_time = time.perf_counter()
@@ -303,22 +490,28 @@ class DashboardEmitter(SignalEmitter):
                 latency_ms=0.0,
             )
 
-        # TODO: Implement actual dashboard emission
-        # This is a placeholder for ST-NS-008 implementation
-        # Dashboard will receive signals via:
-        # - WebSocket for real-time updates
-        # - REST API for historical storage
-        # - Redis pub/sub for distributed systems
+        # Convert signal to dashboard payload using existing method
+        payload = signal.to_dashboard_payload()
+
+        # Emit to Redis stream
+        success = self._emit_to_redis(payload)
 
         latency_ms = (time.perf_counter() - start_time) * 1000
 
-        logger.debug(f"Dashboard emission: {signal.token} [{signal.direction_str}]")
-
-        return EmissionResult(
-            success=True,
-            channel="dashboard",
-            latency_ms=latency_ms,
-        )
+        if success:
+            logger.debug(f"Dashboard emission: {signal.token} [{signal.direction_str}]")
+            return EmissionResult(
+                success=True,
+                channel="dashboard",
+                latency_ms=latency_ms,
+            )
+        else:
+            return EmissionResult(
+                success=False,
+                channel="dashboard",
+                error="Failed to emit to Redis stream",
+                latency_ms=latency_ms,
+            )
 
     async def emit_batch(self, signals: list[Signal]) -> list[EmissionResult]:
         """Emit multiple signals to dashboard.

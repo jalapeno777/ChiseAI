@@ -6,6 +6,8 @@ Grafana dashboard visibility and historical analysis.
 
 from __future__ import annotations
 
+import json
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -16,6 +18,8 @@ from execution.canary.models import (
     CanaryStatus,
 )
 from execution.canary.monitor import MonitoringCheck
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -185,28 +189,75 @@ class InMemoryCanaryStorage(CanaryStorage):
 class CanaryStorageWithPersistence(CanaryStorage):
     """Storage implementation with persistence to InfluxDB.
 
-    This is a placeholder for the full InfluxDB implementation.
-    The actual implementation would write to InfluxDB for Grafana visibility.
+    Writes canary deployment records and monitoring checks to InfluxDB
+    for Grafana dashboard visibility, with in-memory cache for fast reads.
+    Uses the ``chiseai`` bucket (not ``data_quality``).
     """
+
+    _BUCKET = "chiseai"
+    _ORG = "chiseai"
 
     def __init__(self, influxdb_client: Any | None = None) -> None:
         """Initialize storage.
 
         Args:
-            influxdb_client: InfluxDB client instance
+            influxdb_client: An ``influxdb_client.InfluxDBClient`` instance.
         """
         self._influxdb = influxdb_client
         self._memory = InMemoryCanaryStorage()
+        self._write_api: Any | None = None
+
+    def _get_write_api(self) -> Any:
+        """Lazily create a synchronous write API from the InfluxDB client."""
+        if self._influxdb is None:
+            return None
+        if self._write_api is None:
+            from influxdb_client.client.write_api import SYNCHRONOUS
+
+            self._write_api = self._influxdb.write_api(write_options=SYNCHRONOUS)
+        return self._write_api
 
     def save_deployment(self, deployment: CanaryDeployment) -> None:
         """Save a canary deployment to memory and InfluxDB."""
         # Always save to memory
         self._memory.save_deployment(deployment)
 
-        # TODO: Persist to InfluxDB when client is available
-        # This will enable Grafana dashboard visibility
         if self._influxdb:
-            pass  # InfluxDB persistence implementation
+            try:
+                from influxdb_client import Point
+
+                record = CanaryRecord.from_deployment(deployment)
+                point = (
+                    Point("canary_deployment")
+                    .tag("canary_id", record.canary_id)
+                    .tag("strategy_id", record.strategy_id)
+                    .tag("status", record.status)
+                    .field("allocation_pct", record.allocation_pct)
+                    .field("start_time", record.start_time)
+                    .field("end_time", record.end_time)
+                    .field("metrics_json", json.dumps(record.metrics))
+                    .field("metadata_json", json.dumps(record.metadata))
+                )
+                if record.champion_strategy_id:
+                    point = point.tag(
+                        "champion_strategy_id", record.champion_strategy_id
+                    )
+
+                self._get_write_api().write(
+                    bucket=self._BUCKET, org=self._ORG, record=point
+                )
+                logger.info(
+                    "Persisted canary deployment %s to InfluxDB", record.canary_id
+                )
+            except ImportError:
+                logger.warning(
+                    "influxdb-client not installed; skipping InfluxDB persistence"
+                )
+            except Exception:
+                logger.exception(
+                    "Failed to persist canary deployment %s to InfluxDB",
+                    deployment.canary_id,
+                )
 
     def get_deployment(self, canary_id: str) -> CanaryRecord | None:
         """Get a canary deployment by ID."""
@@ -225,9 +276,39 @@ class CanaryStorageWithPersistence(CanaryStorage):
         """Save a monitoring check result."""
         self._memory.save_monitoring_check(check)
 
-        # TODO: Persist to InfluxDB when client is available
         if self._influxdb:
-            pass  # InfluxDB persistence implementation
+            try:
+                from influxdb_client import Point
+
+                point = (
+                    Point("canary_monitoring_check")
+                    .tag("canary_id", check.canary_id)
+                    .tag("status", check.status.value)
+                    .tag("action_taken", check.action_taken)
+                    .field("message", check.message)
+                    .field("timestamp_epoch", check.timestamp)
+                    .field(
+                        "gate_checks_json",
+                        json.dumps([gc.to_dict() for gc in check.gate_checks]),
+                    )
+                )
+
+                self._get_write_api().write(
+                    bucket=self._BUCKET, org=self._ORG, record=point
+                )
+                logger.info(
+                    "Persisted monitoring check for canary %s to InfluxDB",
+                    check.canary_id,
+                )
+            except ImportError:
+                logger.warning(
+                    "influxdb-client not installed; skipping InfluxDB persistence"
+                )
+            except Exception:
+                logger.exception(
+                    "Failed to persist monitoring check for canary %s to InfluxDB",
+                    check.canary_id,
+                )
 
     def get_monitoring_history(
         self,

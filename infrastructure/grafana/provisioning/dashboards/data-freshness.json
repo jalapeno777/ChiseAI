@@ -121,7 +121,7 @@
             "type": "influxdb",
             "uid": "chiseai-influxdb"
           },
-          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"data_freshness\")\n  |> filter(fn: (r) => r._field == \"last_update_age_seconds\")\n  |> filter(fn: (r) => r.source == \"binance\")\n  |> last()",
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"data_freshness\")\n  |> filter(fn: (r) => r._field == \"data_age_seconds\")\n  |> filter(fn: (r) => r.source == \"binance\")\n  |> last()",
           "refId": "A"
         }
       ],
@@ -188,7 +188,7 @@
             "type": "influxdb",
             "uid": "chiseai-influxdb"
           },
-          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"data_freshness\")\n  |> filter(fn: (r) => r._field == \"last_update_age_seconds\")\n  |> filter(fn: (r) => r.source == \"bybit\")\n  |> last()",
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"data_freshness\")\n  |> filter(fn: (r) => r._field == \"data_age_seconds\")\n  |> filter(fn: (r) => r.source == \"bybit\")\n  |> last()",
           "refId": "A"
         }
       ],
@@ -255,7 +255,7 @@
             "type": "influxdb",
             "uid": "chiseai-influxdb"
           },
-          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"data_freshness\")\n  |> filter(fn: (r) => r._field == \"last_update_age_seconds\")\n  |> filter(fn: (r) => r.source == \"bitget\")\n  |> last()",
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"data_freshness\")\n  |> filter(fn: (r) => r._field == \"data_age_seconds\")\n  |> filter(fn: (r) => r.source == \"bitget\")\n  |> last()",
           "refId": "A"
         }
       ],
@@ -344,7 +344,7 @@
             "type": "influxdb",
             "uid": "chiseai-influxdb"
           },
-          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -${lookback_days}d)\n  |> filter(fn: (r) => r._measurement == \"data_freshness\")\n  |> filter(fn: (r) => r._field == \"last_update_age_seconds\")\n  |> aggregateWindow(every: 5m, fn: mean, createEmpty: false)",
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -${lookback_days}d)\n  |> filter(fn: (r) => r._measurement == \"data_freshness\")\n  |> filter(fn: (r) => r._field == \"data_age_seconds\")\n  |> aggregateWindow(every: 5m, fn: mean, createEmpty: false)",
           "refId": "A"
         }
       ],
@@ -471,7 +471,7 @@
             "type": "influxdb",
             "uid": "chiseai-influxdb"
           },
-          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"data_freshness\")\n  |> filter(fn: (r) => r._field == \"last_update_age_seconds\" or r._field == \"last_update_timestamp\" or r._field == \"alert_status\")\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({\n    r with\n    status_text: if r.alert_status == 0 then \"OK\"\n               else if r.alert_status == 1 then \"STALE\"\n               else \"ALERT\"\n  }))\n  |> last()\n  |> keep(columns: [\"source\", \"last_update_timestamp\", \"last_update_age_seconds\", \"alert_status\", \"status_text\"])",
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"data_freshness\")\n  |> filter(fn: (r) => r._field == \"data_age_seconds\" or r._field == \"is_stale\" or r._field == \"staleness_seconds\" or r._field == \"threshold_seconds\")\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({\n    r with\n    status_text: if r.is_stale == true then \"STALE\"\n               else \"OK\"\n  }))\n  |> last()\n  |> keep(columns: [\"source\", \"data_age_seconds\", \"is_stale\", \"staleness_seconds\", \"threshold_seconds\", \"status_text\"])",
           "refId": "A"
         }
       ],
