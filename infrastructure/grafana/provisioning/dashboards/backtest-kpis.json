@@ -811,6 +811,565 @@
       ],
       "title": "All Strategies Comparison",
       "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 39
+      },
+      "id": 13,
+      "panels": [],
+      "title": "Strategy Registry",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "chiseai-influxdb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "candidate": {
+                  "color": "yellow",
+                  "index": 0,
+                  "text": "Candidate"
+                },
+                "challenger": {
+                  "color": "blue",
+                  "index": 1,
+                  "text": "Challenger"
+                },
+                "champion": {
+                  "color": "green",
+                  "index": 2,
+                  "text": "Champion"
+                },
+                "deprecated": {
+                  "color": "gray",
+                  "index": 3,
+                  "text": "Deprecated"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "id": 14,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "chiseai-influxdb"
+          },
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r._measurement == \"strategy_registry\")\n  |> filter(fn: (r) => r._field == \"status\")\n  |> filter(fn: (r) => \"${strategy_id}\" == \"$__all\" or r.strategy_id == \"${strategy_id}\")\n  |> last()",
+          "refId": "A"
+        }
+      ],
+      "title": "Strategy Status",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "chiseai-influxdb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": [],
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      },
+      "id": 15,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "value"
+          ]
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "10.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "chiseai-influxdb"
+          },
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r._measurement == \"strategy_registry\")\n  |> filter(fn: (r) => r._field == \"status\")\n  |> group(columns: [\"status\"])\n  |> count()",
+          "refId": "A"
+        }
+      ],
+      "title": "Status Distribution",
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "chiseai-influxdb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [
+            {
+              "options": {
+                "candidate": {
+                  "color": "yellow",
+                  "index": 0
+                },
+                "challenger": {
+                  "color": "blue",
+                  "index": 1
+                },
+                "champion": {
+                  "color": "green",
+                  "index": 2
+                },
+                "deprecated": {
+                  "color": "gray",
+                  "index": 3
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Version"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Symbol"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Timeframe"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Created"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "y": 46
+      },
+      "id": 16,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Created"
+          }
+        ]
+      },
+      "pluginVersion": "10.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "chiseai-influxdb"
+          },
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r._measurement == \"strategy_registry\")\n  |> filter(fn: (r) => r._field == \"strategy_id\" or r._field == \"version\" or r._field == \"symbol\" or r._field == \"timeframe\" or r._field == \"status\" or r._field == \"created_at\")\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> keep(columns: [\"strategy_id\", \"version\", \"symbol\", \"timeframe\", \"status\", \"created_at\"])\n  |> rename(columns: {strategy_id: \"Strategy\", version: \"Version\", symbol: \"Symbol\", timeframe: \"Timeframe\", status: \"Status\", created_at: \"Created\"})",
+          "refId": "A"
+        }
+      ],
+      "title": "Strategy Registry Overview",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "chiseai-influxdb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 56
+      },
+      "id": 17,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "chiseai-influxdb"
+          },
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r._measurement == \"strategy_registry\")\n  |> filter(fn: (r) => r._field == \"status\")\n  |> filter(fn: (r) => r.status == \"champion\")\n  |> count()",
+          "refId": "A"
+        }
+      ],
+      "title": "Champions",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "chiseai-influxdb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 6,
+        "y": 56
+      },
+      "id": 18,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "chiseai-influxdb"
+          },
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r._measurement == \"strategy_registry\")\n  |> filter(fn: (r) => r._field == \"status\")\n  |> filter(fn: (r) => r.status == \"challenger\")\n  |> count()",
+          "refId": "A"
+        }
+      ],
+      "title": "Challengers",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "chiseai-influxdb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "yellow",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 12,
+        "y": 56
+      },
+      "id": 19,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "chiseai-influxdb"
+          },
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r._measurement == \"strategy_registry\")\n  |> filter(fn: (r) => r._field == \"status\")\n  |> filter(fn: (r) => r.status == \"candidate\")\n  |> count()",
+          "refId": "A"
+        }
+      ],
+      "title": "Candidates",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "chiseai-influxdb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "gray",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 18,
+        "y": 56
+      },
+      "id": 20,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "chiseai-influxdb"
+          },
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r._measurement == \"strategy_registry\")\n  |> filter(fn: (r) => r._field == \"status\")\n  |> filter(fn: (r) => r.status == \"deprecated\")\n  |> count()",
+          "refId": "A"
+        }
+      ],
+      "title": "Deprecated",
+      "type": "stat"
     }
   ],
   "refresh": "30s",

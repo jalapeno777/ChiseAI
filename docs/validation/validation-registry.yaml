@@ -171,14 +171,15 @@ validations:
     title: Execution Market Data Ingestion - Bybit/Bitget
     epic_id: EP-DATA-001
     story_id: ST-DATA-002
-    status: planned
+    status: validated
     description: Validate execution-market data needed for sizing/SL/TP and realized trade analytics is ingested from Bybit/Bitget
     acceptance_criteria:
-      - Real-time pricing data matches exchange API within 100ms
-      - Fill data is captured and persisted accurately
-      - Position/SL data is queryable for risk calculations
-      - Data gaps trigger alerts within 10 seconds
-      - Exchange connection health is monitored
+      - "[PAPER-READY] Real-time pricing data matches exchange API within 100ms"
+      - "[PAPER-READY] Fill data is captured and persisted with order_id, price, quantity, timestamp"
+      - "[PAPER-READY] Position/SL/TP data is queryable for risk calculations via API"
+      - "[PAPER-READY] Data gaps >10s trigger alerts with source and duration"
+      - "[PAPER-READY] Exchange connection health is monitored (heartbeat every 30s)"
+      - "[PAPER-READY] Reconnect logic handles disconnects with exponential backoff (max 60s)"
     test_method: automated
     owner: ml-team
 
@@ -217,14 +218,15 @@ validations:
     title: Strategy Submission Format & DSL Schema
     epic_id: EP-BT-001
     story_id: ST-SIG-001
-    status: planned
+    status: validated
     description: Validate strategy submission format follows a constrained DSL schema that supports parameter and structure mutations
     acceptance_criteria:
-      - DSL schema is validated on submission
-      - Invalid strategies are rejected with clear error messages
-      - DSL versioning is supported (migration path)
-      - DSL is diffable and reproducible
-      - Schema enforces safe parameter ranges
+      - "[PAPER-READY] DSL schema is validated on submission with clear error messages"
+      - "[PAPER-READY] Invalid strategies are rejected with field-level error details"
+      - "[PAPER-READY] DSL versioning is supported with migration path between versions"
+      - "[PAPER-READY] DSL is diffable and reproducible (same input = same output)"
+      - "[PAPER-READY] Schema enforces safe parameter ranges (max leverage, position size limits)"
+      - "[PAPER-READY] DSL specification is documented in docs/architecture/strategy-dsl.md"
     test_method: automated
     owner: ml-team
 
@@ -232,14 +234,15 @@ validations:
     title: Strategy Registry - Champion/Challenger Tracking
     epic_id: EP-BT-001
     story_id: ST-SIG-002
-    status: planned
+    status: validated
     description: Validate strategy registry tracks champion/challenger strategies with associated artifacts and KPIs
     acceptance_criteria:
-      - Champion/challenger relationships are maintained
-      - Artifacts (config, diffs, backtest results, paper results) are stored
-      - KPIs are comparable across strategies
-      - Challenger promotion criteria are documented
-      - Registry state is visible in Grafana
+      - "[PAPER-READY] Champion/challenger relationships are maintained with clear status"
+      - "[PAPER-READY] Artifacts are stored: config, diffs, backtest results, paper results"
+      - "[PAPER-READY] KPIs are comparable across strategies with normalized metrics"
+      - "[PAPER-READY] Challenger promotion criteria are documented and enforced"
+      - "[PAPER-READY] Registry state is visible in Grafana dashboard"
+      - "[PAPER-READY] Strategy versions are immutable once registered"
     test_method: automated
     owner: ml-team
 
@@ -262,14 +265,15 @@ validations:
     title: Paper Canary Planning & Gates
     epic_id: EP-BT-001
     story_id: ST-BT-002
-    status: planned
+    status: validated
     description: Validate paper canary tests have clear gates and promotion criteria to paper full
     acceptance_criteria:
-      - Canary size is defined (e.g., 10% of portfolio)
-      - Gate criteria are documented (drawdown, win rate, duration)
-      - Gate failure triggers rollback to previous version
-      - Canary results are persisted and visible
-      - Promotion to paper full is gated by human approval
+      - "[LIVE-GATE] Canary size is defined as 10% of paper portfolio allocation"
+      - "[LIVE-GATE] Gate criteria are documented: max 5% drawdown, min 55% win rate, 7-day duration"
+      - "[LIVE-GATE] Gate failure triggers automatic rollback to previous champion"
+      - "[LIVE-GATE] Canary results are persisted and visible in Grafana dashboard"
+      - "[LIVE-GATE] Promotion to paper full is gated by human approval with evidence review"
+      - "[LIVE-GATE] Canary monitoring checks run every 15 minutes during canary period"
     test_method: automated
     owner: ml-team
 
@@ -277,14 +281,15 @@ validations:
     title: Promotion Packet Generation (Human Approval)
     epic_id: EP-BT-001
     story_id: ST-BT-003
-    status: planned
+    status: validated
     description: Validate promotion packets are generated for human approval with evidence, risk invariants, and rollback steps
     acceptance_criteria:
-      - Packets include all required fields (evidence summary, KPI comparison, risk assessment, rollback plan)
-      - Packets are rendered in a human-readable format
-      - Rollback steps are detailed and tested
-      - Packet generation is automated
-      - Approval workflow is documented
+      - "[LIVE-GATE] Packets include: evidence summary, KPI comparison, risk assessment, rollback plan"
+      - "[LIVE-GATE] Packets are rendered in human-readable Markdown format"
+      - "[LIVE-GATE] Rollback steps are detailed, tested, and executable in <5 minutes"
+      - "[LIVE-GATE] Packet generation is automated and triggered on gate completion"
+      - "[LIVE-GATE] Approval workflow is documented with required approvers and SLAs"
+      - "[LIVE-GATE] Packets are stored with version history and audit trail"
     test_method: manual
     owner: ml-team
 
@@ -369,14 +374,15 @@ validations:
     title: Confidence Threshold Enforcement - <40% Filter
     epic_id: EP-CONF-001
     story_id: ST-CONF-003
-    status: planned
+    status: validated
     description: Validate signals below 40% confidence are filtered out and not delivered to users
     acceptance_criteria:
-      - Confidence filter is applied before Discord alert generation
-      - Filtered signals are logged for analysis
-      - No Discord alerts are sent for low-confidence signals
-      - Filter threshold is configurable per user preference
-      - Filter statistics are visible in Grafana
+      - "[PAPER-READY] Confidence filter is applied before Discord alert generation"
+      - "[PAPER-READY] Filtered signals are logged with confidence score and reason for filtering"
+      - "[PAPER-READY] No Discord alerts are sent for signals below 40% confidence"
+      - "[PAPER-READY] Filter threshold is configurable per user preference (40% default)"
+      - "[PAPER-READY] Filter statistics are visible in Grafana (filtered count, rate, trends)"
+      - "[PAPER-READY] Filter can be bypassed for testing with explicit flag and audit log"
     test_method: automated
     owner: ops-team
 
@@ -385,14 +391,15 @@ validations:
     title: Bybit Demo Paper Trading Integration
     epic_id: EP-EX-001
     story_id: ST-EX-001
-    status: planned
+    status: validated
     description: Validate Bybit demo paper trading with trade budget enforcement and KPI tracking
     acceptance_criteria:
-      - Paper trades execute on Bybit demo environment
-      - Trade budget is enforced (max exposure limits)
-      - KPIs are tracked (PnL, drawdown, win rate, trade count)
-      - Paper kill-switch works correctly
-      - Results are visible in Grafana
+      - "[LIVE-GATE] Paper trades execute on Bybit demo environment with order confirmation"
+      - "[LIVE-GATE] Trade budget is enforced: max 10% portfolio exposure per trade"
+      - "[LIVE-GATE] KPIs are tracked: PnL, max drawdown, win rate, trade count, Sharpe ratio"
+      - "[LIVE-GATE] Paper kill-switch triggers on >=10% drawdown and closes all positions"
+      - "[LIVE-GATE] Results are visible in Grafana with real-time updates (<5s latency)"
+      - "[LIVE-GATE] Order lifecycle (pending, filled, partial, cancelled) is tracked and logged"
     test_method: automated
     owner: risk-team
 
@@ -415,7 +422,7 @@ validations:
     title: Execution Risk Management - Kill Switch
     epic_id: EP-EX-001
     story_id: ST-EX-003
-    status: planned
+    status: validated
     description: Validate kill switch and execution risk controls for live trading
     acceptance_criteria:
       - Kill-switch triggers on >=15% drawdown
@@ -446,7 +453,7 @@ validations:
     title: Grafana Dashboards - Paper & Live Execution
     epic_id: EP-OPS-001
     story_id: ST-OPS-002
-    status: planned
+    status: validated
     description: Validate paper and live trading execution metrics are visible in Grafana dashboards
     acceptance_criteria:
       - Order/fill data is queryable in real-time

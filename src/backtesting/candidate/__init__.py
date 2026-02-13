@@ -18,6 +18,15 @@ from backtesting.candidate.pipeline import (
     PipelineConfig,
 )
 from backtesting.candidate.ranking import CriteriaNormalizer, RankingEngine
+from backtesting.candidate.registry import (
+    InMemoryStrategyRegistry,
+    PromotionCriteria,
+    PromotionResult,
+    StrategyArtifact,
+    StrategyRegistry,
+    StrategyStatus,
+    StrategyVersion,
+)
 from backtesting.candidate.walk_forward import (
     WalkForwardConfig,
     WalkForwardEngine,
@@ -38,6 +47,14 @@ __all__ = [
     # Ranking
     "CriteriaNormalizer",
     "RankingEngine",
+    # Registry (ST-SIG-002)
+    "InMemoryStrategyRegistry",
+    "PromotionCriteria",
+    "PromotionResult",
+    "StrategyArtifact",
+    "StrategyRegistry",
+    "StrategyStatus",
+    "StrategyVersion",
     # Walk-forward
     "WalkForwardConfig",
     "WalkForwardEngine",

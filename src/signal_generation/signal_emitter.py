@@ -7,8 +7,10 @@ implementations for Discord and dashboard emission.
 from __future__ import annotations
 
 import logging
+import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -124,9 +126,36 @@ class DiscordEmitter(SignalEmitter):
 
     def _get_webhook_from_env(self) -> str | None:
         """Get webhook URL from environment."""
-        import os
-
         return os.getenv("DISCORD_WEBHOOK_URL")
+
+    def _get_bypass_from_env(self) -> bool:
+        """Check if bypass is enabled via environment variable."""
+        return os.getenv("DISCORD_BYPASS_CONFIDENCE_FILTER", "").lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+
+    def _log_bypass_event(
+        self,
+        signal_id: str,
+        confidence: float,
+        bypass_reason: str,
+    ) -> None:
+        """Log a confidence filter bypass event.
+
+        Args:
+            signal_id: Unique signal identifier
+            confidence: Signal confidence score
+            bypass_reason: Reason for bypassing the confidence filter
+        """
+        timestamp = datetime.now(timezone.utc).isoformat()
+        logger.warning(
+            f"CONFIDENCE_BYPASS: signal_id={signal_id} "
+            f"confidence={confidence:.2%} "
+            f"reason={bypass_reason} "
+            f"timestamp={timestamp}"
+        )
 
     def _check_rate_limit(self, token: str) -> bool:
         """Check if token has exceeded rate limit.
@@ -163,11 +192,16 @@ class DiscordEmitter(SignalEmitter):
             self._signal_counts[token] = []
         self._signal_counts[token].append(time.time())
 
-    async def emit(self, signal: Signal) -> EmissionResult:
+    async def emit(
+        self,
+        signal: Signal,
+        bypass_confidence_filter: bool = False,
+    ) -> EmissionResult:
         """Emit signal to Discord.
 
         Args:
             signal: Signal to emit
+            bypass_confidence_filter: Skip confidence threshold check (ST-CONF-003 AC6)
 
         Returns:
             EmissionResult with status
@@ -192,17 +226,32 @@ class DiscordEmitter(SignalEmitter):
                 latency_ms=0.0,
             )
 
-        # Check confidence threshold
+        # Check confidence threshold (unless bypassed)
         if signal.confidence < self.threshold:
-            return EmissionResult(
-                success=False,
-                channel="discord",
-                error=(
-                    f"Signal confidence {signal.confidence:.1%} below "
-                    f"Discord threshold {self.threshold:.0%}"
-                ),
-                latency_ms=0.0,
-            )
+            # Check for environment variable override
+            env_bypass = self._get_bypass_from_env()
+            if bypass_confidence_filter or env_bypass:
+                # Log bypass event
+                bypass_reason = (
+                    "explicit_bypass_param"
+                    if bypass_confidence_filter
+                    else "env_variable_override"
+                )
+                self._log_bypass_event(
+                    signal_id=signal.signal_id,
+                    confidence=signal.confidence,
+                    bypass_reason=bypass_reason,
+                )
+            else:
+                return EmissionResult(
+                    success=False,
+                    channel="discord",
+                    error=(
+                        f"Signal confidence {signal.confidence:.1%} below "
+                        f"Discord threshold {self.threshold:.0%}"
+                    ),
+                    latency_ms=0.0,
+                )
 
         # Check rate limit
         if not self._check_rate_limit(signal.token):
