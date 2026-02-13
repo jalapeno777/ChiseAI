@@ -49,6 +49,9 @@ def _get_pr_title(env: dict[str, str]) -> str:
         "CI_PULL_REQUEST_TITLE",
         "WOODPECKER_PULL_REQUEST_TITLE",
         "WOODPECKER_PR_TITLE",
+        "CI_PIPELINE_TITLE",
+        "CI_COMMIT_TITLE",
+        "WOODPECKER_COMMIT_TITLE",
     ):
         v = env.get(k)
         if v:
