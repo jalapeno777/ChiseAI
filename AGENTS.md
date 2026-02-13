@@ -160,6 +160,9 @@ python3 scripts/validate_iterloop_compliance.py --story-id=<id>
 - Use `scripts/swarm/session.py` to enforce isolated worktree sessions per story/agent:
   - `start` before any git work, `verify` before git actions, `close` when done.
   - Never rely on current branch/`HEAD` for push/PR; pass explicit branch names.
+- Use `.opencode/command/chise-ci-pr-status.md` to quickly identify failing PR pipeline numbers in Woodpecker.
+- Use `.opencode/command/chise-ci-root-cause.md` as the default CI failure diagnosis path (required before proposing fixes/escalation).
+- Use `.opencode/command/chise-ci-failure-bundle.md` to generate deterministic handoff artifacts for unresolved CI failures.
 - Use `scripts/ci/swarm_triage.sh` to replay Woodpecker wrapper steps locally and generate deterministic CI diagnosis artifacts in `_bmad-output/ci/`.
 - Use `.opencode/command/chise-taiga-sync.md` to keep Taiga aligned with repo-canonical story metadata (status/AC) so humans can monitor progress without manual copy/paste.
 - Use `.opencode/command/chise-rd-iteration.md` for a full R&D iteration loop (candidate -> backtest -> rank -> paper canary plan).
@@ -342,6 +345,8 @@ python3 scripts/validate_status_sync.py
 4. Status file validation passes (`python3 scripts/validate_status_sync.py`)
 5. No story implementations merged without corresponding status update in YAML
 6. Required status check context: `ci/woodpecker/push/woodpecker`
+7. CI failure reports must include exact root-cause fields: `tool`, `message`, and at least one of `file:line`, `rule`, or `test` from `chise-ci-root-cause` output
+8. Before escalating CI issues to `merlin`, produce `_bmad-output/ci/woodpecker/<pipeline_number>/` via `chise-ci-failure-bundle`
 
 ---
 

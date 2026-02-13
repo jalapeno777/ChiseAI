@@ -10,12 +10,25 @@ Primary sources:
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
+import importlib.util
 from pathlib import Path
 
 CI_DIR = Path("_bmad-output/ci")
 JUNIT_PATH = CI_DIR / "pytest-junit.xml"
 MAX_FAILURES = 10
 LOG_TAIL_LINES = 120
+
+
+def _load_triage_parser():
+    triage_path = Path(__file__).with_name("woodpecker_triage.py")
+    if not triage_path.exists():
+        return None
+    spec = importlib.util.spec_from_file_location("woodpecker_triage", triage_path)
+    if spec is None or spec.loader is None:
+        return None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return getattr(module, "parse_root_causes", None)
 
 
 def _parse_junit_xml(path: Path) -> ET.Element | None:
@@ -86,7 +99,7 @@ def _collect_logs() -> list[Path]:
     if not CI_DIR.exists():
         return []
     # Keep stable ordering: lint/security/local-ci first, then others.
-    preferred = ["lint.log", "security-scan.log", "local-ci.log"]
+    preferred = ["lint.log", "security-scan.log", "local-ci-full.log", "local-ci.log"]
     logs: list[Path] = []
     for name in preferred:
         p = CI_DIR / name
@@ -147,6 +160,36 @@ def build_summary() -> tuple[str, int]:
         lines.append("")
 
     logs = _collect_logs()
+    parse_root_causes = _load_triage_parser()
+    extracted_any = False
+    if logs and parse_root_causes is not None:
+        lines.append("## Extracted Root Causes")
+        lines.append("")
+        for p in logs:
+            text = _read_tail(p, LOG_TAIL_LINES * 3)
+            if not text.strip():
+                continue
+            causes = parse_root_causes(p.stem, text)
+            if not causes:
+                continue
+            extracted_any = True
+            lines.append(f"### `{p.name}`")
+            lines.append("")
+            for rc in causes[:8]:
+                loc = ""
+                if rc.file:
+                    loc = f" ({rc.file}:{rc.line or 1})"
+                rule = f" [{rc.rule}]" if rc.rule else ""
+                test = f" test={rc.test}" if rc.test else ""
+                lines.append(f"- `{rc.tool}`{rule}{test}: {rc.message}{loc}")
+                lines.append(f"  - evidence: `{rc.evidence[:160]}`")
+            lines.append("")
+    if logs and parse_root_causes is not None and not extracted_any:
+        lines.append("## Extracted Root Causes")
+        lines.append("")
+        lines.append("No structured root causes found from available logs.")
+        lines.append("")
+
     if logs:
         lines.append("## Recent Log Tails")
         lines.append("")

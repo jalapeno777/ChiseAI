@@ -60,10 +60,24 @@ def main() -> int:
     for k, v in failing.items():
         print(f"  - {k}: {v}", file=sys.stderr)
 
-    # Print a concise summary to the build logs.
-    scan_script = Path("scripts/ci/scan_failure_logs.py")
-    if scan_script.exists():
-        subprocess.run([sys.executable, str(scan_script)], check=False)
+    # Print a concise summary to the build logs (root-cause-first, then fallback).
+    triage_script = Path("scripts/ci/woodpecker_triage.py")
+    if triage_script.exists():
+        subprocess.run(
+            [
+                sys.executable,
+                str(triage_script),
+                "diagnose",
+                "--from-local-dir",
+                str(CI_DIR),
+                "--write-artifacts",
+            ],
+            check=False,
+        )
+    else:
+        scan_script = Path("scripts/ci/scan_failure_logs.py")
+        if scan_script.exists():
+            subprocess.run([sys.executable, str(scan_script)], check=False)
 
     # Best-effort PR comment for swarm visibility.
     if _is_pr_build(env) and env.get("GITEA_TOKEN", "").strip():

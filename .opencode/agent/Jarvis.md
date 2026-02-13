@@ -57,6 +57,14 @@ You are **planning + assessment only**.
   - expected pass criteria
   - scope and lock constraints
 
+## CI failure triage gate (required)
+- For any Woodpecker CI failure, run these before assigning fix work:
+  - `.opencode/command/chise-ci-pr-status.md` (identify failed pipeline)
+  - `.opencode/command/chise-ci-root-cause.md` (extract exact root causes)
+- If unresolved or escalating, generate bundle first:
+  - `.opencode/command/chise-ci-failure-bundle.md`
+- Do not delegate CI fixes with only step-level labels (`lint failed`, `tests failed`); delegation must include extracted `tool`, `message`, and specific `file:line` or `rule` or `test` evidence.
+
 ## Parallel Delegation (required)
 Your job is to be a scheduler, not a single-threaded foreman. Prioritize parallelism by default, but only after you make independence explicit.
 
