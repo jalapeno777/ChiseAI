@@ -126,6 +126,7 @@ Notes:
 Root-cause-first CI triage utility for Woodpecker pipelines.
 
 - Fetches PR/pipeline status and step logs directly from Woodpecker API
+- Falls back to Woodpecker DB `log_entries` when API step-log endpoints are unavailable
 - Extracts exact failures (rule/file/line/test) when possible
 - Writes triage bundles to `_bmad-output/ci/woodpecker/<pipeline_number>/`
 
@@ -136,6 +137,9 @@ python3 scripts/ci/woodpecker_triage.py status --pr 123
 
 # Diagnose failures and write artifacts
 python3 scripts/ci/woodpecker_triage.py diagnose --pr 123 --write-artifacts
+
+# Optional explicit DB DSN for authoritative step-log fallback
+python3 scripts/ci/woodpecker_triage.py diagnose --pr 123 --write-artifacts --db-dsn "$WOODPECKER_DB_DSN"
 
 # Force local artifact fallback mode
 python3 scripts/ci/woodpecker_triage.py diagnose --from-local-dir _bmad-output/ci --write-artifacts

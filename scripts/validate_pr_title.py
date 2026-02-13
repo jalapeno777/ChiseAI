@@ -17,7 +17,9 @@ import os
 import re
 import sys
 
-STORY_ID_RE = re.compile(r"\b(?:ST|CH|FT|REWARD)-[A-Z0-9]+-\d+(?:-\d+)?\b")
+STORY_ID_RE = re.compile(
+    r"\b(?:ST|CH|FT|REWARD|REPO)(?:-[A-Z0-9]+)+-\d+\b", re.IGNORECASE
+)
 
 
 def _is_pr_build(env: dict[str, str]) -> bool:
@@ -80,6 +82,20 @@ def _get_pr_title(env: dict[str, str]) -> str:
                         return title
             except Exception as e:
                 print(f"WARN: Failed to fetch PR title from API: {e}", file=sys.stderr)
+
+    # Fallback: try to get story ID from branch name
+    branch = (
+        env.get("CI_COMMIT_BRANCH", "").strip()
+        or env.get("WOODPECKER_COMMIT_BRANCH", "").strip()
+    )
+    if branch:
+        match = STORY_ID_RE.search(branch)
+        if match:
+            print(
+                f"validate_pr_title: Using story ID from branch name: {match.group()}",
+                file=sys.stderr,
+            )
+            return branch  # Return branch name which contains story ID
 
     return ""
 
