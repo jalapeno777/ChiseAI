@@ -18,7 +18,7 @@ import re
 import sys
 
 STORY_ID_RE = re.compile(
-    r"\b(?:ST|CH|FT|REWARD|REPO)(?:-[A-Z0-9]+)+-\d+\b", re.IGNORECASE
+    r"\b(?:ST|CH|FT|REWARD|REPO|SAFETY)(?:-[A-Z0-9]+)+-\d+\b", re.IGNORECASE
 )
 
 
