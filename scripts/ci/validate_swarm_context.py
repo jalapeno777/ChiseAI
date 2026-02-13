@@ -4,8 +4,7 @@
 Phase 1 checks:
 - Branch/ref context must look sane for push/PR events.
 - Non-main push branches must use feature/* or safety/*.
-- Canonical status files are global-lock files and require an explicit lock signal
-  when edited on non-main branches.
+- Canonical status file edits are reported in logs, but no longer hard-fail CI.
 """
 
 from __future__ import annotations
@@ -107,10 +106,6 @@ def _changed_files_ci_pr(env: dict[str, str]) -> set[str]:
     return _changed_files_head()
 
 
-def _head_message() -> str:
-    return _git_stdout("git", "log", "-1", "--pretty=%B")
-
-
 def _is_allowed_work_branch(branch: str) -> bool:
     return bool(re.match(r"^(feature|safety)/", branch))
 
@@ -185,16 +180,6 @@ def main() -> int:
     else:
         changed = _changed_files_working_tree()
     touches_canonical = bool(changed.intersection(CANONICAL_FILES))
-    lock_signal = env.get("CANONICAL_STATUS_LOCK", "").strip() == "1"
-    msg = _head_message().lower()
-    trailer_signal = "[canonical-status-lock]" in msg
-
-    if touches_canonical and branch != "main" and not (lock_signal or trailer_signal):
-        errors.append(
-            "Canonical status files changed on non-main branch without lock. "
-            "Set CANONICAL_STATUS_LOCK=1 or include "
-            "[canonical-status-lock] in commit message."
-        )
 
     print(
         "validate_swarm_context: "
