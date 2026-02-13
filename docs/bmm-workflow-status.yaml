@@ -350,6 +350,9 @@ stories:
     status: planned
     story_points: 4
     priority: P0-CRITICAL
+    notes: |
+      MISSING IMPLEMENTATION: No Bybit or Bitget execution data connectors exist yet. Required for 
+      ST-EX-001 (Bybit paper trading) to function. Needs real-time pricing, fill data, and position tracking.
     description: Ingest execution-market data needed for sizing/SL/TP and realized trade analytics
     acceptance_criteria:
       - Real-time pricing data matches exchange API within 100ms
@@ -579,6 +582,9 @@ stories:
     status: planned
     story_points: 5
     priority: P0-CRITICAL
+    notes: |
+      BLOCKED: Missing Bybit connector implementation. Requires ST-DATA-002 (Execution Market Data Ingestion) 
+      to be completed first for real-time pricing and fill data. Currently waiting on Bybit API integration work.
     description: Integrate Bybit demo paper trading with trade budget enforcement and KPI tracking
     acceptance_criteria:
       - Paper trades execute on Bybit demo environment with order confirmation
@@ -595,6 +601,9 @@ stories:
     status: planned
     story_points: 4
     priority: P0-CRITICAL
+    notes: |
+      DEPENDS ON: ST-EX-001 (Bybit Demo Paper Trading). Cannot proceed to live trading until paper 
+      trading is validated with 30+ days of positive performance and Sharpe ratio.
     description: Implement Bitget live trading with human approval gating and risk controls
     acceptance_criteria:
       - Live trading requires explicit human approval via signed promotion packet
@@ -611,6 +620,9 @@ stories:
     status: planned
     story_points: 4
     priority: P0-CRITICAL
+    notes: |
+      PARTIALLY IMPLEMENTED: Kill switch logic exists in portfolio_risk module. Needs integration with 
+      execution layer and Grafana dashboard panels for state visibility (armed/triggered/disabled).
     description: Implement kill switch and execution risk controls for live trading
     acceptance_criteria:
       - Kill-switch triggers on >=15% drawdown within rolling 24-hour window
