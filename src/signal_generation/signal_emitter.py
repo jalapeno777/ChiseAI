@@ -358,9 +358,11 @@ class DiscordEmitter(SignalEmitter):
             # Build message payload
             payload = {
                 "content": self._format_message(signal),
-                "embeds": [self._build_embed(signal)]
-                if self._should_use_embed(signal)
-                else None,
+                "embeds": (
+                    [self._build_embed(signal)]
+                    if self._should_use_embed(signal)
+                    else None
+                ),
             }
             # Remove None values
             payload = {k: v for k, v in payload.items() if v is not None}
