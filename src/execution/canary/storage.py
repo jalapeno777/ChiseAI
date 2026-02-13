@@ -13,13 +13,13 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
-logger = logging.getLogger(__name__)
-
 from execution.canary.models import (
     CanaryDeployment,
     CanaryStatus,
 )
 from execution.canary.monitor import MonitoringCheck
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -209,6 +209,8 @@ class CanaryStorageWithPersistence(CanaryStorage):
 
     def _get_write_api(self) -> Any:
         """Lazily create a synchronous write API from the InfluxDB client."""
+        if self._influxdb is None:
+            return None
         if self._write_api is None:
             from influxdb_client.client.write_api import SYNCHRONOUS
 

@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from signal_generation.models import Signal
@@ -218,8 +218,9 @@ class DiscordEmitter(SignalEmitter):
         }
 
         # Add entry price if available
+        fields: list[dict[str, Any]] = embed["fields"]  # type: ignore[assignment]
         if hasattr(signal, "entry_price") and signal.entry_price:
-            embed["fields"].append(
+            fields.append(
                 {
                     "name": "Entry Price",
                     "value": str(signal.entry_price),
@@ -229,13 +230,13 @@ class DiscordEmitter(SignalEmitter):
 
         # Add stop loss if available
         if hasattr(signal, "stop_loss") and signal.stop_loss:
-            embed["fields"].append(
+            fields.append(
                 {"name": "Stop Loss", "value": str(signal.stop_loss), "inline": True}
             )
 
         # Add take profit if available
         if hasattr(signal, "take_profit") and signal.take_profit:
-            embed["fields"].append(
+            fields.append(
                 {
                     "name": "Take Profit",
                     "value": str(signal.take_profit),
@@ -410,7 +411,7 @@ class DashboardEmitter(SignalEmitter):
         self.redis_host = redis_host or self.DEFAULT_REDIS_HOST
         self.redis_port = redis_port or self.DEFAULT_REDIS_PORT
         self.redis_db = redis_db if redis_db is not None else self.DEFAULT_REDIS_DB
-        self._redis_client = None
+        self._redis_client: Any = None
 
     def _get_redis_client(self) -> Any:
         """Get or create Redis client.
