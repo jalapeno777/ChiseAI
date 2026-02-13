@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 """Root-cause-first Woodpecker CI triage.
 
-Capabilities:
-- Query Woodpecker API for pipeline/step status and logs
-- Diagnose exact CI failures (rule/file/line/test where possible)
-- Emit machine-readable + markdown artifacts for swarm handoffs
-
-Fallback:
-- If API/token is unavailable, parse local `_bmad-output/ci` logs/status files.
+Priority order for failure evidence:
+1. Woodpecker API (pipeline + workflow/task metadata + step logs)
+2. Woodpecker DB log_entries (authoritative fallback)
+3. Local captured artifacts under `_bmad-output/ci`
 """
 
 from __future__ import annotations
@@ -16,14 +13,13 @@ import argparse
 import json
 import os
 import re
-import sys
-import textwrap
+import shutil
+import subprocess
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse, urlunparse
 from urllib.request import Request, urlopen
 
 DEFAULT_BASE_URL = "http://host.docker.internal:8012"
@@ -90,37 +86,45 @@ class WoodpeckerClient:
                 headers["X-WOODPECKER-TOKEN"] = self.token
         return headers
 
-    def _request(self, method: str, path: str, *, expect_json: bool = True) -> Any:
+    def _request(self, path: str) -> tuple[dict[str, str], str]:
         url = f"{self.base_url}{path}"
         errors: list[str] = []
         for mode in ("bearer", "token", "x-token"):
-            req = Request(url=url, method=method, headers=self._headers(mode))
+            req = Request(url=url, method="GET", headers=self._headers(mode))
             try:
                 with urlopen(req, timeout=20) as resp:  # noqa: S310
-                    data = resp.read().decode("utf-8", errors="replace")
-                    if expect_json:
-                        return json.loads(data)
-                    return data
-            except HTTPError as exc:
-                errors.append(f"{mode}:{exc.code}")
-                if exc.code in {401, 403}:
-                    continue
-                raise
-            except URLError as exc:
-                raise RuntimeError(f"Cannot reach Woodpecker at {url}: {exc}") from exc
-        raise RuntimeError(
-            f"Woodpecker request failed at {url}. Tried auth headers: {', '.join(errors)}"
-        )
+                    headers = {k.lower(): v for k, v in dict(resp.headers).items()}
+                    body = resp.read().decode("utf-8", errors="replace")
+                    return headers, body
+            except Exception as exc:  # noqa: BLE001
+                errors.append(f"{mode}:{exc}")
+                continue
+        raise RuntimeError(f"Woodpecker request failed for {url}: {' | '.join(errors)}")
 
     def get_json(self, path: str) -> Any:
-        return self._request("GET", path, expect_json=True)
+        headers, body = self._request(path)
+        ctype = headers.get("content-type", "")
+        if "json" not in ctype.lower():
+            raise RuntimeError(
+                f"Non-JSON response for {path} (content-type={ctype}): {body[:120]}"
+            )
+        try:
+            return json.loads(body)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(f"Invalid JSON from {path}: {exc}") from exc
 
     def get_text(self, path: str) -> str:
-        return self._request("GET", path, expect_json=False)
+        _headers, body = self._request(path)
+        return body
 
 
 def _now_iso() -> str:
     return datetime.now(UTC).replace(microsecond=0).isoformat()
+
+
+def _looks_like_html(text: str) -> bool:
+    low = text.lower().lstrip()
+    return low.startswith("<!doctype html") or low.startswith("<html")
 
 
 def _repo_context(args: argparse.Namespace) -> tuple[str, str]:
@@ -142,6 +146,23 @@ def _repo_context(args: argparse.Namespace) -> tuple[str, str]:
             "Missing repo owner. Set --owner or WOODPECKER_REPO_OWNER/CI_REPO_OWNER/GITEA_OWNER"
         )
     return owner, repo
+
+
+def _resolve_repo_id(client: WoodpeckerClient, owner: str, repo: str) -> int:
+    # This endpoint is reliable in this deployment.
+    data = client.get_json("/api/user/repos")
+    if not isinstance(data, list):
+        raise RuntimeError("/api/user/repos did not return a list")
+    needle = f"{owner}/{repo}".lower()
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        full_name = str(item.get("full_name") or "").lower()
+        if full_name == needle:
+            rid = item.get("id")
+            if isinstance(rid, int):
+                return rid
+    raise RuntimeError(f"Unable to resolve Woodpecker repo id for {owner}/{repo}")
 
 
 def _normalize_pipeline(data: dict[str, Any]) -> dict[str, Any]:
@@ -173,25 +194,52 @@ def _normalize_step(data: dict[str, Any]) -> dict[str, Any]:
     )
     return {
         "id": data.get("id"),
-        "number": data.get("number") or data.get("position") or data.get("index"),
+        "number": data.get("number")
+        or data.get("position")
+        or data.get("index")
+        or data.get("pid"),
         "name": data.get("name") or data.get("step") or "unknown-step",
         "status": status,
         "exit_code": data.get("exit_code") or data.get("exitCode") or data.get("code"),
-        "started": data.get("started") or data.get("started_at"),
+        "started": data.get("started")
+        or data.get("started_at")
+        or data.get("start_time"),
         "stopped": data.get("stopped")
         or data.get("finished")
-        or data.get("finished_at"),
+        or data.get("finished_at")
+        or data.get("end_time"),
         "raw": data,
     }
 
 
+def _extract_steps_from_workflows(
+    pipeline_detail: dict[str, Any],
+) -> list[dict[str, Any]]:
+    steps: list[dict[str, Any]] = []
+    workflows = pipeline_detail.get("workflows")
+    if not isinstance(workflows, list):
+        return steps
+    for workflow in workflows:
+        if not isinstance(workflow, dict):
+            continue
+        children = workflow.get("children")
+        if not isinstance(children, list):
+            continue
+        for child in children:
+            if not isinstance(child, dict):
+                continue
+            steps.append(_normalize_step(child))
+    return steps
+
+
 def _pr_candidates(text: str) -> set[int]:
     hits: set[int] = set()
-    for pat in (
+    patterns = (
         r"refs/pull/(\d+)/",
         r"\bPR[ #](\d+)\b",
         r"\bpull[ _-]?request[ #]?(\d+)\b",
-    ):
+    )
+    for pat in patterns:
         for m in re.finditer(pat, text, flags=re.IGNORECASE):
             try:
                 hits.add(int(m.group(1)))
@@ -223,80 +271,41 @@ def _extract_pipeline_pr(pipeline: dict[str, Any]) -> set[int]:
     return out
 
 
-def _list_pipelines(
-    client: WoodpeckerClient, owner: str, repo: str
-) -> list[dict[str, Any]]:
-    candidates = [
-        f"/api/repos/{owner}/{repo}/pipelines?{urlencode({'per_page': 50})}",
-        f"/api/repos/{owner}/{repo}/builds?{urlencode({'per_page': 50})}",
-        f"/api/repos/{owner}/{repo}/pipelines",
-    ]
-    for path in candidates:
-        try:
-            data = client.get_json(path)
-            if isinstance(data, list):
-                return [
-                    _normalize_pipeline(item) for item in data if isinstance(item, dict)
-                ]
-        except Exception:
-            continue
-    raise RuntimeError(
-        "Unable to list pipelines from Woodpecker API. Verify base URL, token, owner, and repo."
-    )
+def _list_pipelines(client: WoodpeckerClient, repo_id: int) -> list[dict[str, Any]]:
+    path = f"/api/repos/{repo_id}/pipelines?{urlencode({'per_page': 50})}"
+    data = client.get_json(path)
+    if not isinstance(data, list):
+        raise RuntimeError(f"Unexpected response for {path}")
+    return [_normalize_pipeline(item) for item in data if isinstance(item, dict)]
 
 
-def _fetch_pipeline_steps(
-    client: WoodpeckerClient, owner: str, repo: str, pipeline_number: int
-) -> list[dict[str, Any]]:
-    candidates = [
-        f"/api/repos/{owner}/{repo}/pipelines/{pipeline_number}/steps",
-        f"/api/repos/{owner}/{repo}/builds/{pipeline_number}",
-        f"/api/repos/{owner}/{repo}/pipelines/{pipeline_number}",
-    ]
-    for path in candidates:
-        try:
-            data = client.get_json(path)
-            if isinstance(data, list):
-                return [
-                    _normalize_step(step) for step in data if isinstance(step, dict)
-                ]
-            if isinstance(data, dict):
-                if isinstance(data.get("steps"), list):
-                    return [
-                        _normalize_step(step)
-                        for step in data["steps"]
-                        if isinstance(step, dict)
-                    ]
-                if isinstance(data.get("stages"), list):
-                    return [
-                        _normalize_step(step)
-                        for step in data["stages"]
-                        if isinstance(step, dict)
-                    ]
-        except Exception:
-            continue
-    return []
+def _fetch_pipeline_detail(
+    client: WoodpeckerClient, repo_id: int, pipeline_number: int
+) -> dict[str, Any]:
+    path = f"/api/repos/{repo_id}/pipelines/{pipeline_number}"
+    data = client.get_json(path)
+    if not isinstance(data, dict):
+        raise RuntimeError(f"Unexpected response for {path}")
+    return data
 
 
-def _fetch_step_log(
-    client: WoodpeckerClient,
-    owner: str,
-    repo: str,
-    pipeline_number: int,
-    step: dict[str, Any],
+def _fetch_step_log_from_api(
+    client: WoodpeckerClient, repo_id: int, pipeline_number: int, step: dict[str, Any]
 ) -> str:
     step_id = step.get("id")
     step_number = step.get("number")
     candidates = [
-        f"/api/repos/{owner}/{repo}/pipelines/{pipeline_number}/steps/{step_number}/logs",
-        f"/api/repos/{owner}/{repo}/pipelines/{pipeline_number}/steps/{step_number}/log",
-        f"/api/repos/{owner}/{repo}/pipelines/{pipeline_number}/steps/{step_id}/logs",
-        f"/api/repos/{owner}/{repo}/pipelines/{pipeline_number}/logs/{step_id}",
+        f"/api/repos/{repo_id}/pipelines/{pipeline_number}/steps/{step_number}/logs",
+        f"/api/repos/{repo_id}/pipelines/{pipeline_number}/steps/{step_number}/log",
+        f"/api/repos/{repo_id}/pipelines/{pipeline_number}/steps/{step_id}/logs",
+        f"/api/repos/{repo_id}/pipelines/{pipeline_number}/logs/{step_id}",
+        f"/api/repos/{repo_id}/logs/{step_id}",
     ]
     for path in candidates:
         if "None" in path:
             continue
         try:
+            # Try JSON log surfaces first.
             data = client.get_json(path)
             if isinstance(data, str):
                 return data
@@ -307,17 +316,19 @@ def _fetch_step_log(
                     value = data.get(key)
                     if isinstance(value, str):
                         return value
-                return json.dumps(data, indent=2)
         except Exception:
-            try:
-                return client.get_text(path)
-            except Exception:
-                continue
+            pass
+        try:
+            text = client.get_text(path)
+            if text and not _looks_like_html(text):
+                return text
+        except Exception:
+            continue
     return ""
 
 
 def _is_failed_status(status: str) -> bool:
-    s = status.lower()
+    s = str(status).lower().strip()
     if s in FAILED_STATUSES:
         return True
     if s in SUCCESS_STATUSES:
@@ -328,15 +339,17 @@ def _is_failed_status(status: str) -> bool:
 def _detect_tool(step_name: str, log_text: str) -> str:
     name = step_name.lower()
     text = log_text.lower()
+    if name == "ci-gate" or "ci-gate: fail" in text:
+        return "ci_gate"
     if "black" in text or "would reformat" in text:
         return "black"
     if "ruff" in text or re.search(r"\b[A-Z]\d{3}\b", log_text):
         return "ruff"
-    if "mypy" in text or " error:" in text and "[" in text:
+    if "mypy" in text or (" error:" in text and "[" in text):
         return "mypy"
-    if "bandit" in text or "issue:" in text and "b" in text:
+    if "bandit" in text or ("issue:" in text and "b" in text):
         return "bandit"
-    if "pytest" in text or "===" in text and "failed" in text:
+    if "pytest" in text or ("===" in text and "failed" in text):
         return "pytest"
     if "validate_status_sync.py" in text:
         return "validate_status_sync"
@@ -357,19 +370,18 @@ def _parse_black(log_text: str) -> list[RootCause]:
     out: list[RootCause] = []
     for line in log_text.splitlines():
         m = re.search(r"would reformat\s+(.+)$", line)
-        if not m:
-            continue
-        path = m.group(1).strip()
-        out.append(
-            RootCause(
-                tool="black",
-                kind="format",
-                message=f"black formatting required: {path}",
-                file=path,
-                evidence=line.strip(),
-                confidence="high",
+        if m:
+            path = m.group(1).strip()
+            out.append(
+                RootCause(
+                    tool="black",
+                    kind="format",
+                    message=f"black formatting required: {path}",
+                    file=path,
+                    evidence=line.strip(),
+                    confidence="high",
+                )
             )
-        )
     return out
 
 
@@ -378,21 +390,20 @@ def _parse_ruff(log_text: str) -> list[RootCause]:
     pat = re.compile(r"^(.+?):(\d+):(\d+):\s+([A-Z]\d+)\s+(.+)$")
     for line in log_text.splitlines():
         m = pat.match(line.strip())
-        if not m:
-            continue
-        out.append(
-            RootCause(
-                tool="ruff",
-                kind="lint",
-                file=m.group(1),
-                line=int(m.group(2)),
-                column=int(m.group(3)),
-                rule=m.group(4),
-                message=m.group(5),
-                evidence=line.strip(),
-                confidence="high",
+        if m:
+            out.append(
+                RootCause(
+                    tool="ruff",
+                    kind="lint",
+                    file=m.group(1),
+                    line=int(m.group(2)),
+                    column=int(m.group(3)),
+                    rule=m.group(4),
+                    message=m.group(5),
+                    evidence=line.strip(),
+                    confidence="high",
+                )
             )
-        )
     return out
 
 
@@ -404,30 +415,27 @@ def _parse_mypy(log_text: str) -> list[RootCause]:
     )
     for line in log_text.splitlines():
         m = pat.match(line.strip())
-        if not m or m.group(3).lower() != "error":
-            continue
-        out.append(
-            RootCause(
-                tool="mypy",
-                kind="type",
-                file=m.group(1),
-                line=int(m.group(2)),
-                rule=m.group(5),
-                message=m.group(4),
-                evidence=line.strip(),
-                confidence="high",
+        if m and m.group(3).lower() == "error":
+            out.append(
+                RootCause(
+                    tool="mypy",
+                    kind="type",
+                    file=m.group(1),
+                    line=int(m.group(2)),
+                    rule=m.group(5),
+                    message=m.group(4),
+                    evidence=line.strip(),
+                    confidence="high",
+                )
             )
-        )
     return out
 
 
 def _parse_pytest(log_text: str) -> list[RootCause]:
     out: list[RootCause] = []
-    failing_tests: list[str] = []
     for line in log_text.splitlines():
         m = re.match(r"FAILED\s+(.+?)\s+-\s+(.+)$", line.strip())
         if m:
-            failing_tests.append(m.group(1).strip())
             out.append(
                 RootCause(
                     tool="pytest",
@@ -439,31 +447,23 @@ def _parse_pytest(log_text: str) -> list[RootCause]:
                 )
             )
     if not out and "assert" in log_text:
-        evidence = ""
-        for line in log_text.splitlines():
-            if line.strip().startswith("E   "):
-                evidence = line.strip()
-                break
+        evidence = next(
+            (
+                line.strip()
+                for line in log_text.splitlines()
+                if line.strip().startswith("E   ")
+            ),
+            "assertion failure present in traceback",
+        )
         out.append(
             RootCause(
                 tool="pytest",
                 kind="test",
                 message="pytest assertion or runtime failure",
-                evidence=evidence or "assertion failure present in traceback",
+                evidence=evidence,
                 confidence="medium",
             )
         )
-    if not out and failing_tests:
-        for test in failing_tests:
-            out.append(
-                RootCause(
-                    tool="pytest",
-                    kind="test",
-                    test=test,
-                    message="test failed",
-                    evidence=f"FAILED {test}",
-                )
-            )
     return out
 
 
@@ -471,7 +471,6 @@ def _parse_bandit(log_text: str) -> list[RootCause]:
     out: list[RootCause] = []
     issue_pat = re.compile(r"Issue:\s+\[(B\d+):[^\]]*\]\s+(.+)$")
     loc_pat = re.compile(r"Location:\s+(.+?):(\d+)(?::\d+)?")
-
     lines = log_text.splitlines()
     for idx, line in enumerate(lines):
         m = issue_pat.search(line)
@@ -483,10 +482,10 @@ def _parse_bandit(log_text: str) -> list[RootCause]:
         line_no = None
         evidence = line.strip()
         for j in range(idx + 1, min(idx + 7, len(lines))):
-            mloc = loc_pat.search(lines[j])
-            if mloc:
-                file = mloc.group(1)
-                line_no = int(mloc.group(2))
+            loc = loc_pat.search(lines[j])
+            if loc:
+                file = loc.group(1)
+                line_no = int(loc.group(2))
                 evidence = f"{evidence} | {lines[j].strip()}"
                 break
         out.append(
@@ -515,19 +514,49 @@ def _parse_validator(log_text: str, tool: str) -> list[RootCause]:
         stripped = line.strip()
         for pat in patterns:
             m = pat.match(stripped)
-            if not m:
-                continue
-            msg = m.group(1) if m.groups() else stripped
+            if m:
+                msg = m.group(1) if m.groups() else stripped
+                out.append(
+                    RootCause(
+                        tool=tool,
+                        kind="validation",
+                        message=msg,
+                        evidence=stripped,
+                        confidence=(
+                            "high" if stripped.startswith("ERROR:") else "medium"
+                        ),
+                    )
+                )
+                break
+    return out
+
+
+def _parse_ci_gate(log_text: str) -> list[RootCause]:
+    out: list[RootCause] = []
+    for line in log_text.splitlines():
+        stripped = line.strip()
+        m = re.match(r"-\s+([\w.-]+\.status):\s*(\d+)$", stripped)
+        if m:
             out.append(
                 RootCause(
-                    tool=tool,
-                    kind="validation",
-                    message=msg,
+                    tool="ci_gate",
+                    kind="status_file",
+                    message=f"captured step failed: {m.group(1)}={m.group(2)}",
                     evidence=stripped,
-                    confidence="high" if stripped.startswith("ERROR:") else "medium",
+                    confidence="high",
                 )
             )
-            break
+            continue
+        if stripped.startswith("ERROR:"):
+            out.append(
+                RootCause(
+                    tool="ci_gate",
+                    kind="validator_error",
+                    message=stripped[6:].strip(),
+                    evidence=stripped,
+                    confidence="high",
+                )
+            )
     return out
 
 
@@ -553,6 +582,7 @@ def parse_root_causes(step_name: str, log_text: str) -> list[RootCause]:
         "mypy": _parse_mypy,
         "pytest": _parse_pytest,
         "bandit": _parse_bandit,
+        "ci_gate": _parse_ci_gate,
     }
 
     parsed: list[RootCause] = []
@@ -567,21 +597,18 @@ def parse_root_causes(step_name: str, log_text: str) -> list[RootCause]:
     }:
         parsed.extend(_parse_validator(log_text, tool))
 
-    if not parsed:
-        if tool != "generic":
-            parsed.extend(_parse_validator(log_text, tool))
+    if not parsed and tool != "generic":
+        parsed.extend(_parse_validator(log_text, tool))
     if not parsed:
         parsed.extend(_parse_generic(log_text, step_name))
 
-    # De-duplicate
     dedup: list[RootCause] = []
     seen: set[tuple[Any, ...]] = set()
     for rc in parsed:
         key = rc.key()
-        if key in seen:
-            continue
-        seen.add(key)
-        dedup.append(rc)
+        if key not in seen:
+            seen.add(key)
+            dedup.append(rc)
     return dedup
 
 
@@ -598,13 +625,11 @@ def _select_pipeline(
     if pr_number is not None:
         filtered = [p for p in pipelines if pr_number in _extract_pipeline_pr(p)]
 
-    # Prefer latest failure, else latest run.
     for p in filtered:
         if _is_failed_status(p.get("status", "")):
             return p
     if filtered:
         return filtered[0]
-
     raise SystemExit("No matching pipelines found")
 
 
@@ -618,13 +643,13 @@ def _collect_local_ci(local_dir: Path) -> tuple[dict[str, Any], list[dict[str, A
 
     pipeline = {
         "number": 0,
+        "id": 0,
         "status": "failure" if any(v != 0 for v in statuses.values()) else "success",
         "event": "local",
         "ref": "local",
         "title": "local-ci-artifacts",
         "created": None,
         "updated": None,
-        "source": "local",
     }
 
     steps: list[dict[str, Any]] = []
@@ -638,18 +663,18 @@ def _collect_local_ci(local_dir: Path) -> tuple[dict[str, Any], list[dict[str, A
             "started": None,
             "stopped": None,
             "log": "",
+            "raw": {},
         }
-        candidate_logs = [
+        candidates = [
             local_dir / f"{name}.log",
             local_dir / f"{name}-full.log",
             local_dir / "local-ci-full.log" if name == "local-ci" else None,
         ]
-        for log_path in candidate_logs:
+        for log_path in candidates:
             if log_path and log_path.exists():
                 step["log"] = log_path.read_text(encoding="utf-8", errors="replace")
                 break
         steps.append(step)
-
     return pipeline, steps
 
 
@@ -661,7 +686,9 @@ def _repro_for_tool(tool: str) -> str:
         "pytest": "pytest -q",
         "bandit": "bandit -q -r src -s B311,B107",
         "validate_status_sync": "python3 scripts/validate_status_sync.py",
-        "validate_iterloop_compliance": "python3 scripts/validate_iterloop_compliance.py --story-id=<story_id>",
+        "validate_iterloop_compliance": (
+            "python3 scripts/validate_iterloop_compliance.py --story-id=<story_id>"
+        ),
         "validate_pr_title": "python3 scripts/validate_pr_title.py",
         "local-ci": "./scripts/local-ci-checks.sh",
         "lint": "bash scripts/ci/swarm_triage.sh",
@@ -671,16 +698,17 @@ def _repro_for_tool(tool: str) -> str:
 
 
 def _render_markdown(result: dict[str, Any]) -> str:
-    pipeline = result["pipeline"]
-    lines: list[str] = []
-    lines.append("## Woodpecker CI Root Cause")
-    lines.append("")
-    lines.append(f"- Pipeline: `{pipeline['number']}`")
-    lines.append(f"- Status: `{pipeline['status']}`")
-    lines.append(f"- Source: `{result['source']}`")
-    lines.append("")
-    lines.append("### Failed Steps")
-    lines.append("")
+    p = result["pipeline"]
+    lines = [
+        "## Woodpecker CI Root Cause",
+        "",
+        f"- Pipeline: `{p['number']}`",
+        f"- Status: `{p['status']}`",
+        f"- Source: `{result['source']}`",
+        "",
+        "### Failed Steps",
+        "",
+    ]
     if not result["failed_steps"]:
         lines.append("No failed steps detected.")
         return "\n".join(lines) + "\n"
@@ -689,86 +717,182 @@ def _render_markdown(result: dict[str, Any]) -> str:
         lines.append(
             f"- `{step['name']}` status=`{step['status']}` exit=`{step.get('exit_code')}`"
         )
-    lines.append("")
 
-    lines.append("### Root Causes")
-    lines.append("")
+    lines.extend(["", "### Root Causes", ""])
     if not result["root_causes"]:
         lines.append("No root causes extracted.")
     else:
         for rc in result["root_causes"]:
-            loc = ""
-            if rc.get("file"):
-                loc = f" ({rc['file']}:{rc.get('line') or 1})"
+            loc = f" ({rc['file']}:{rc.get('line') or 1})" if rc.get("file") else ""
             rule = f" [{rc['rule']}]" if rc.get("rule") else ""
             test = f" test={rc['test']}" if rc.get("test") else ""
             lines.append(
                 f"- `{rc['id']}` `{rc['tool']}`{rule}{test}: {rc['message']}{loc}"
             )
             lines.append(f"  - evidence: `{rc['evidence'][:180]}`")
-    lines.append("")
-    lines.append("### Repro Commands")
-    lines.append("")
+
+    lines.extend(["", "### Repro Commands", ""])
     for cmd in result.get("repro_commands", []):
         lines.append(f"- `{cmd}`")
     lines.append("")
     return "\n".join(lines)
 
 
-def diagnose(args: argparse.Namespace) -> dict[str, Any]:
-    owner = args.owner
-    repo = args.repo
-    source = "woodpecker-api"
+def _detect_db_dsn(args: argparse.Namespace) -> str | None:
+    if args.db_dsn:
+        return args.db_dsn
+    for key in ("WOODPECKER_DB_DSN", "WOODPECKER_DATABASE_DATASOURCE"):
+        val = os.getenv(key)
+        if val:
+            return val
 
-    pipeline: dict[str, Any]
-    steps: list[dict[str, Any]]
+    if not shutil.which("docker"):
+        return None
+    try:
+        proc = subprocess.run(
+            [
+                "docker",
+                "inspect",
+                "woodpecker-server",
+                "--format",
+                "{{json .Config.Env}}",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=10,
+        )
+        if proc.returncode != 0:
+            return None
+        envs = json.loads(proc.stdout.strip())
+        if not isinstance(envs, list):
+            return None
+        for item in envs:
+            if isinstance(item, str) and item.startswith(
+                "WOODPECKER_DATABASE_DATASOURCE="
+            ):
+                return item.split("=", 1)[1]
+    except Exception:
+        return None
+    return None
 
-    if args.from_local_dir:
-        source = "local-artifacts"
-        pipeline, steps = _collect_local_ci(Path(args.from_local_dir))
+
+def _rewrite_dsn_host(dsn: str, new_host: str) -> str:
+    parsed = urlparse(dsn)
+    if not parsed.hostname:
+        return dsn
+    netloc = parsed.netloc
+    userinfo = ""
+    if "@" in netloc:
+        userinfo, hostport = netloc.rsplit("@", 1)
     else:
-        owner, repo = _repo_context(args)
-        token = args.token or os.getenv("WOODPECKER_TOKEN")
-        if not token:
-            raise SystemExit(
-                "Missing WOODPECKER_TOKEN. Set token or use --from-local-dir _bmad-output/ci"
-            )
-        client = WoodpeckerClient(args.base_url, token)
-        pipelines = _list_pipelines(client, owner, repo)
-        chosen = _select_pipeline(pipelines, args.pipeline, args.pr)
-        pipeline_number = int(chosen["number"])
-        steps = _fetch_pipeline_steps(client, owner, repo, pipeline_number)
-        for step in steps:
-            step["log"] = _fetch_step_log(client, owner, repo, pipeline_number, step)
-        pipeline = {**chosen, "source": source}
+        hostport = netloc
+    port = f":{parsed.port}" if parsed.port else ""
+    new_netloc = f"{userinfo + '@' if userinfo else ''}{new_host}{port}"
+    return urlunparse(parsed._replace(netloc=new_netloc))
 
+
+def _dsn_candidates(base_dsn: str) -> list[str]:
+    dsn_list = [base_dsn]
+    host = urlparse(base_dsn).hostname or ""
+    if host in {"chiseai-postgres", "postgres", "localhost", "127.0.0.1"}:
+        dsn_list.append(_rewrite_dsn_host(base_dsn, "host.docker.internal"))
+    if host != "localhost":
+        dsn_list.append(_rewrite_dsn_host(base_dsn, "localhost"))
+    dedup: list[str] = []
+    for dsn in dsn_list:
+        if dsn not in dedup:
+            dedup.append(dsn)
+    return dedup
+
+
+def _fetch_db_logs(
+    pipeline_id: int, step_ids: list[int], db_dsn: str | None
+) -> tuple[dict[int, str], str | None]:
+    if not db_dsn or not shutil.which("psql"):
+        return {}, None
+
+    for candidate_dsn in _dsn_candidates(db_dsn):
+        logs: dict[int, str] = {}
+        ok = True
+        for step_id in step_ids:
+            sql = (
+                "select convert_from(data,'UTF8') "
+                "from log_entries "
+                f"where step_id={step_id} "
+                "order by line;"
+            )
+            proc = subprocess.run(
+                ["psql", candidate_dsn, "-At", "-q", "-c", sql],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=15,
+            )
+            if proc.returncode != 0:
+                ok = False
+                break
+            text = proc.stdout or ""
+            if text.strip():
+                logs[step_id] = text
+
+        if ok:
+            # verify we queried correct pipeline by checking step ids exist
+            verify_sql = (
+                "select count(*) from steps "
+                f"where pipeline_id={pipeline_id} "
+                f"and id in ({','.join(str(i) for i in step_ids)});"
+            )
+            verify = subprocess.run(
+                ["psql", candidate_dsn, "-At", "-q", "-c", verify_sql],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=10,
+            )
+            if verify.returncode == 0:
+                try:
+                    count = int((verify.stdout or "0").strip() or "0")
+                    if count > 0:
+                        return logs, candidate_dsn
+                except ValueError:
+                    pass
+    return {}, None
+
+
+def _finalize_result(
+    result_source: str,
+    owner: str | None,
+    repo: str | None,
+    pipeline: dict[str, Any],
+    steps: list[dict[str, Any]],
+) -> dict[str, Any]:
     failed_steps = [step for step in steps if _is_failed_status(step.get("status", ""))]
 
     root_causes: list[dict[str, Any]] = []
     repro_commands: set[str] = set()
     idx = 1
+
     for step in failed_steps:
         parsed = parse_root_causes(
             step.get("name", "unknown-step"), step.get("log", "")
         )
-        step_root_causes = []
+        step_causes: list[dict[str, Any]] = []
         for rc in parsed:
             rc_dict = rc.to_dict(idx)
             idx += 1
-            step_root_causes.append(rc_dict)
+            step_causes.append(rc_dict)
             root_causes.append(rc_dict)
             repro_commands.add(_repro_for_tool(rc.tool))
-        step["root_causes"] = step_root_causes
+        step["root_causes"] = step_causes
 
-    result = {
+    return {
         "generated_at": _now_iso(),
-        "source": source,
-        "repo": {
-            "owner": owner,
-            "name": repo,
-        },
+        "source": result_source,
+        "repo": {"owner": owner, "name": repo},
         "pipeline": {
             "number": pipeline.get("number"),
+            "id": pipeline.get("id"),
             "status": pipeline.get("status"),
             "event": pipeline.get("event"),
             "ref": pipeline.get("ref"),
@@ -791,34 +915,92 @@ def diagnose(args: argparse.Namespace) -> dict[str, Any]:
         "repro_commands": sorted(repro_commands),
     }
 
-    if args.write_artifacts:
-        pipeline_num = int(result["pipeline"].get("number") or 0)
-        out_dir = Path(args.out_dir) / str(pipeline_num)
-        raw_dir = out_dir / "raw"
-        raw_dir.mkdir(parents=True, exist_ok=True)
 
-        # Write raw logs
-        for step in failed_steps:
-            safe = re.sub(r"[^a-zA-Z0-9._-]+", "-", str(step.get("name", "step")))
-            (raw_dir / f"{safe}.log").write_text(step.get("log", ""), encoding="utf-8")
+def diagnose(args: argparse.Namespace) -> dict[str, Any]:
+    if args.from_local_dir:
+        pipeline, steps = _collect_local_ci(Path(args.from_local_dir))
+        result = _finalize_result("local-artifacts", None, None, pipeline, steps)
+        return _write_artifacts_if_needed(result, steps, args)
 
-        (out_dir / "pipeline.json").write_text(
-            json.dumps(result, indent=2), encoding="utf-8"
+    owner, repo = _repo_context(args)
+    token = args.token or os.getenv("WOODPECKER_TOKEN")
+    if not token:
+        raise SystemExit(
+            "Missing WOODPECKER_TOKEN. Set token or use --from-local-dir _bmad-output/ci"
         )
 
-        md = _render_markdown(result)
-        (out_dir / "root-cause.md").write_text(md, encoding="utf-8")
-        (out_dir / "root-cause.json").write_text(
-            json.dumps(result.get("root_causes", []), indent=2), encoding="utf-8"
+    client = WoodpeckerClient(args.base_url, token)
+    repo_id = _resolve_repo_id(client, owner, repo)
+    pipelines = _list_pipelines(client, repo_id)
+    chosen = _select_pipeline(pipelines, args.pipeline, args.pr)
+
+    pipeline_number = int(chosen["number"])
+    detail = _fetch_pipeline_detail(client, repo_id, pipeline_number)
+    detail_norm = _normalize_pipeline(detail)
+
+    steps = _extract_steps_from_workflows(detail)
+    for step in steps:
+        step["log"] = _fetch_step_log_from_api(client, repo_id, pipeline_number, step)
+
+    source_parts = ["woodpecker-api"]
+
+    missing_failed = [
+        s
+        for s in steps
+        if _is_failed_status(s.get("status", "")) and not (s.get("log") or "").strip()
+    ]
+    if missing_failed:
+        db_dsn = _detect_db_dsn(args)
+        step_ids = [
+            int(s["id"]) for s in missing_failed if isinstance(s.get("id"), int)
+        ]
+        db_logs, used_dsn = _fetch_db_logs(
+            int(detail_norm.get("id") or 0), step_ids, db_dsn
         )
+        if used_dsn:
+            source_parts.append("woodpecker-db")
+        for step in missing_failed:
+            sid = step.get("id")
+            if isinstance(sid, int) and sid in db_logs and db_logs[sid].strip():
+                step["log"] = db_logs[sid]
 
-        repro = ["#!/usr/bin/env bash", "set -euo pipefail", ""]
-        for cmd in sorted(repro_commands):
-            repro.append(cmd)
-        (out_dir / "repro.sh").write_text("\n".join(repro) + "\n", encoding="utf-8")
-        os.chmod(out_dir / "repro.sh", 0o755)
-        result["artifact_dir"] = str(out_dir)
+    result = _finalize_result("+".join(source_parts), owner, repo, detail_norm, steps)
+    return _write_artifacts_if_needed(result, steps, args)
 
+
+def _write_artifacts_if_needed(
+    result: dict[str, Any], steps: list[dict[str, Any]], args: argparse.Namespace
+) -> dict[str, Any]:
+    if not args.write_artifacts:
+        return result
+
+    pipeline_num = int(result["pipeline"].get("number") or 0)
+    out_dir = Path(args.out_dir) / str(pipeline_num)
+    raw_dir = out_dir / "raw"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+
+    failed_ids = {(s.get("id"), s.get("name")) for s in result.get("failed_steps", [])}
+    for step in steps:
+        key = (step.get("id"), step.get("name"))
+        if key not in failed_ids:
+            continue
+        safe_name = re.sub(r"[^a-zA-Z0-9._-]+", "-", str(step.get("name", "step")))
+        (raw_dir / f"{safe_name}.log").write_text(step.get("log", ""), encoding="utf-8")
+
+    (out_dir / "pipeline.json").write_text(
+        json.dumps(result, indent=2), encoding="utf-8"
+    )
+    (out_dir / "root-cause.json").write_text(
+        json.dumps(result.get("root_causes", []), indent=2), encoding="utf-8"
+    )
+    (out_dir / "root-cause.md").write_text(_render_markdown(result), encoding="utf-8")
+
+    repro = ["#!/usr/bin/env bash", "set -euo pipefail", ""]
+    for cmd in result.get("repro_commands", []):
+        repro.append(cmd)
+    (out_dir / "repro.sh").write_text("\n".join(repro) + "\n", encoding="utf-8")
+    os.chmod(out_dir / "repro.sh", 0o755)
+    result["artifact_dir"] = str(out_dir)
     return result
 
 
@@ -827,12 +1009,13 @@ def status(args: argparse.Namespace) -> dict[str, Any]:
     token = args.token or os.getenv("WOODPECKER_TOKEN")
     if not token:
         raise SystemExit("Missing WOODPECKER_TOKEN")
-    client = WoodpeckerClient(args.base_url, token)
 
-    pipelines = _list_pipelines(client, owner, repo)
+    client = WoodpeckerClient(args.base_url, token)
+    repo_id = _resolve_repo_id(client, owner, repo)
+    pipelines = _list_pipelines(client, repo_id)
+
     if args.pr is not None:
         pipelines = [p for p in pipelines if args.pr in _extract_pipeline_pr(p)]
-
     if args.limit and args.limit > 0:
         pipelines = pipelines[: args.limit]
 
@@ -851,7 +1034,7 @@ def status(args: argparse.Namespace) -> dict[str, Any]:
 
     return {
         "generated_at": _now_iso(),
-        "repo": {"owner": owner, "name": repo},
+        "repo": {"owner": owner, "name": repo, "repo_id": repo_id},
         "count": len(rows),
         "pipelines": rows,
     }
@@ -873,15 +1056,20 @@ def _print_diagnose_human(result: dict[str, Any]) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(description="Woodpecker CI triage")
-    p.add_argument(
+    parser = argparse.ArgumentParser(description="Woodpecker CI triage")
+    parser.add_argument(
         "--base-url", default=os.getenv("WOODPECKER_BASE_URL", DEFAULT_BASE_URL)
     )
-    p.add_argument("--token", default=None)
-    p.add_argument("--owner", default=None)
-    p.add_argument("--repo", default=None)
+    parser.add_argument("--token", default=None)
+    parser.add_argument("--owner", default=None)
+    parser.add_argument("--repo", default=None)
+    parser.add_argument(
+        "--db-dsn",
+        default=None,
+        help="Optional Woodpecker Postgres DSN for step-log fallback",
+    )
 
-    sub = p.add_subparsers(dest="cmd", required=True)
+    sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_status = sub.add_parser("status", help="Show pipeline status overview")
     p_status.add_argument("--pr", type=int, default=None)
@@ -903,7 +1091,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_bundle.add_argument("--out-dir", default=str(DEFAULT_OUT_DIR))
     p_bundle.add_argument("--format", choices=["human", "json"], default="human")
 
-    return p
+    return parser
 
 
 def main() -> int:
