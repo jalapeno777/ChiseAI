@@ -53,7 +53,12 @@ def _get_pr_title(env: dict[str, str]) -> str:
             return v.strip()
 
     # Woodpecker 2.8+ doesn't expose PR title directly; fetch from Gitea API
-    pr_number = env.get("CI_COMMIT_PULL_REQUEST", "").strip()
+    # Get PR number from any available CI env var
+    pr_number = (
+        env.get("CI_COMMIT_PULL_REQUEST", "").strip()
+        or env.get("CI_PULL_REQUEST", "").strip()
+        or env.get("WOODPECKER_PULL_REQUEST", "").strip()
+    )
     if pr_number:
         import urllib.request
         import json
