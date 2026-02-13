@@ -86,46 +86,142 @@ def load_yaml_file(filepath: Path) -> tuple[dict[str, Any] | None, str | None]:
 def validate_workflow_status(data: dict[str, Any], result: ValidationResult) -> None:
     """Validate workflow status file structure and status values."""
 
-    # Check required top-level keys
-    if "sprints" not in data:
-        result.add_error("Missing required key: 'sprints' in workflow status")
+    # Check required top-level keys - support both 'epics' and legacy 'sprints'
+    has_epics = "epics" in data
+    has_sprints = "sprints" in data
+
+    if not has_epics and not has_sprints:
+        result.add_error(
+            "Missing required key: either 'epics' or 'sprints' must be present in workflow status"
+        )
 
     if "stories" not in data:
         result.add_warning("Missing key: 'stories' (may be empty for planned projects)")
 
-    # Validate sprints
-    if "sprints" in data:
-        for idx, sprint in enumerate(data.get("sprints", [])):
-            if not isinstance(sprint, dict):
-                result.add_error(f"Sprint {idx} is not a dictionary")
-                continue
+    # Validate epics (current canonical structure)
+    if has_epics:
+        _validate_epics(data.get("epics", []), result)
 
-            sprint_id = sprint.get("id", f"index_{idx}")
-
-            # Validate status
-            status = sprint.get("status")
-            if status and status not in WORKFLOW_STATUSES:
-                result.add_error(
-                    f"Sprint '{sprint_id}' has invalid status '{status}'. "
-                    f"Must be one of: {', '.join(sorted(WORKFLOW_STATUSES))}"
-                )
+    # Validate sprints (legacy structure - backwards compatibility)
+    if has_sprints:
+        _validate_sprints(data.get("sprints", []), result)
 
     # Validate stories if present
     if "stories" in data:
-        for idx, story in enumerate(data.get("stories", [])):
-            if not isinstance(story, dict):
-                result.add_error(f"Story {idx} is not a dictionary")
-                continue
+        _validate_stories(data.get("stories", []), data.get("epics", []), result)
 
-            story_id = story.get("id", f"index_{idx}")
 
-            # Validate status
-            status = story.get("status")
-            if status and status not in WORKFLOW_STATUSES:
+def _validate_epics(epics: list[Any], result: ValidationResult) -> set[str]:
+    """Validate epics structure and return set of valid epic IDs."""
+    epic_ids: set[str] = set()
+
+    for idx, epic in enumerate(epics):
+        if not isinstance(epic, dict):
+            result.add_error(f"Epic {idx} is not a dictionary")
+            continue
+
+        epic_id = epic.get("id", f"index_{idx}")
+        if epic_id:
+            epic_ids.add(epic_id)
+
+        # Validate required epic fields
+        if "name" not in epic:
+            result.add_error(f"Epic '{epic_id}' is missing required field: 'name'")
+
+        # Validate status
+        status = epic.get("status")
+        if status and status not in WORKFLOW_STATUSES:
+            result.add_error(
+                f"Epic '{epic_id}' has invalid status '{status}'. "
+                f"Must be one of: {', '.join(sorted(WORKFLOW_STATUSES))}"
+            )
+
+        # Validate story_ids if present
+        story_ids = epic.get("story_ids", [])
+        if story_ids and not isinstance(story_ids, list):
+            result.add_error(
+                f"Epic '{epic_id}' has invalid 'story_ids' - must be a list"
+            )
+
+    return epic_ids
+
+
+def _validate_sprints(sprints: list[Any], result: ValidationResult) -> None:
+    """Validate sprints structure (legacy support)."""
+    for idx, sprint in enumerate(sprints):
+        if not isinstance(sprint, dict):
+            result.add_error(f"Sprint {idx} is not a dictionary")
+            continue
+
+        sprint_id = sprint.get("id", f"index_{idx}")
+
+        # Validate status
+        status = sprint.get("status")
+        if status and status not in WORKFLOW_STATUSES:
+            result.add_error(
+                f"Sprint '{sprint_id}' has invalid status '{status}'. "
+                f"Must be one of: {', '.join(sorted(WORKFLOW_STATUSES))}"
+            )
+
+
+def _validate_stories(
+    stories: list[Any], epics: list[Any], result: ValidationResult
+) -> None:
+    """Validate stories structure and cross-references with epics."""
+    # Build set of valid epic IDs for cross-reference validation
+    epic_ids: set[str] = set()
+    for epic in epics:
+        if isinstance(epic, dict):
+            epic_id = epic.get("id")
+            if isinstance(epic_id, str):
+                epic_ids.add(epic_id)
+
+    story_ids_in_epics: set[str] = set()
+
+    # Collect all story_ids referenced in epics
+    for epic in epics:
+        if isinstance(epic, dict):
+            for story_id in epic.get("story_ids", []):
+                if isinstance(story_id, str):
+                    story_ids_in_epics.add(story_id)
+
+    for idx, story in enumerate(stories):
+        if not isinstance(story, dict):
+            result.add_error(f"Story {idx} is not a dictionary")
+            continue
+
+        story_id = story.get("id", f"index_{idx}")
+
+        # Validate status
+        status = story.get("status")
+        if status and status not in WORKFLOW_STATUSES:
+            result.add_error(
+                f"Story '{story_id}' has invalid status '{status}'. "
+                f"Must be one of: {', '.join(sorted(WORKFLOW_STATUSES))}"
+            )
+
+        # Validate epic_id cross-reference
+        epic_id = story.get("epic_id")
+        if epic_id is not None:
+            if epic_id not in epic_ids:
+                epic_list = sorted(epic_ids) if epic_ids else []
                 result.add_error(
-                    f"Story '{story_id}' has invalid status '{status}'. "
-                    f"Must be one of: {', '.join(sorted(WORKFLOW_STATUSES))}"
+                    f"Story '{story_id}' references unknown epic_id '{epic_id}'. "
+                    f"Must be one of: {', '.join(epic_list) if epic_list else 'N/A - no epics defined'}"
                 )
+
+    # Validate that all story_ids in epics reference valid stories
+    story_ids_in_stories = {
+        story.get("id")
+        for story in stories
+        if isinstance(story, dict) and story.get("id")
+    }
+
+    for story_id in story_ids_in_epics:
+        if story_id not in story_ids_in_stories:
+            result.add_warning(
+                f"Epic references story_id '{story_id}' that is not defined in stories list"
+            )
 
 
 def validate_validation_registry(
@@ -163,6 +259,14 @@ def extract_story_ids(data: dict[str, Any]) -> set[str]:
         for story in data.get("stories", []):
             if isinstance(story, dict) and "id" in story:
                 story_ids.add(story["id"])
+
+    # Support both 'epics' (current) and 'sprints' (legacy) for story extraction
+    if "epics" in data:
+        for epic in data.get("epics", []):
+            if isinstance(epic, dict) and "story_ids" in epic:
+                for story_id in epic.get("story_ids", []):
+                    if isinstance(story_id, str):
+                        story_ids.add(story_id)
 
     if "sprints" in data:
         # Check for story_ids within sprints

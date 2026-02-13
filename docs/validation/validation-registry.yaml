@@ -172,7 +172,7 @@ validations:
     epic_id: EP-DATA-001
     story_id: ST-DATA-002
     status: validated
-    description: Validate execution-market data needed for sizing/SL/TP and realized trade analytics is ingested from Bybit/Bitget
+    description: Validate execution-market data needed for sizing/SL/TP and realized trade analytics is ingested from Bybit/Bitget. Connectors exist at src/data/exchange/bybit_connector.py and src/data/exchange/bitget_connector.py, integrated with position_query.py, kill_switch, and health_monitor.
     acceptance_criteria:
       - "[PAPER-READY] Real-time pricing data matches exchange API within 100ms"
       - "[PAPER-READY] Fill data is captured and persisted with order_id, price, quantity, timestamp"

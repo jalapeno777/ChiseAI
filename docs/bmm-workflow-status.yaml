@@ -349,12 +349,14 @@ stories:
     sprint_id: p0-2
     status: completed
     validation_status: validated
-    # NOTE: Status corrected 2026-02-12 - only Binance connector exists; Bybit/Bitget connectors not implemented
+    # NOTE: Status corrected 2026-02-13 - Bybit/Bitget connectors exist and are integrated
     story_points: 4
     priority: P0-CRITICAL
     notes: |
-      MISSING IMPLEMENTATION: No Bybit or Bitget execution data connectors exist yet. Required for 
-      ST-EX-001 (Bybit paper trading) to function. Needs real-time pricing, fill data, and position tracking.
+      IMPLEMENTED: Bybit and Bitget connectors exist at src/data/exchange/bybit_connector.py 
+      and src/data/exchange/bitget_connector.py. Connectors are integrated with position_query.py,
+      kill_switch, and health_monitor. Connectors provide real-time pricing, fill data, and 
+      position tracking for paper/live trading.
     description: Ingest execution-market data needed for sizing/SL/TP and realized trade analytics
     acceptance_criteria:
       - "[PAPER-READY] Real-time pricing data matches exchange API within 100ms"
