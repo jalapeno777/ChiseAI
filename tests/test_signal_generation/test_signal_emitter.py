@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
@@ -15,6 +16,8 @@ from signal_generation.signal_emitter import (
     DiscordEmitter,
     EmissionResult,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class TestEmissionResult:
@@ -216,6 +219,108 @@ class TestDiscordEmitter:
 
         assert len(results) == 2
         # Results may vary based on rate limiting
+
+    @pytest.mark.asyncio
+    async def test_bypass_confidence_filter_param(self):
+        """Test bypass confidence filter via parameter (ST-CONF-003 AC6)."""
+        emitter = DiscordEmitter(
+            webhook_url="https://discord.com/api/webhooks/test", threshold=0.40
+        )
+
+        signal = Signal(
+            token="BTC/USDT",
+            direction=SignalDirection.LONG,
+            confidence=0.30,  # Below 40% threshold
+            base_score=40.0,
+            timestamp=datetime.now(UTC),
+            status=SignalStatus.LOGGED_ONLY,
+            timeframe="1h",
+        )
+
+        # Should succeed with bypass
+        result = await emitter.emit(signal, bypass_confidence_filter=True)
+
+        assert result.success is True
+        assert result.error is None
+
+    @pytest.mark.asyncio
+    async def test_bypass_confidence_filter_env_var(self):
+        """Test bypass confidence filter via environment variable."""
+        with patch.dict(
+            "os.environ",
+            {"DISCORD_BYPASS_CONFIDENCE_FILTER": "true"},
+        ):
+            # Re-import to pick up env var
+            from importlib import reload
+            import signal_generation.signal_emitter as signal_emitter_module
+
+            reload(signal_emitter_module)
+
+            emitter = signal_emitter_module.DiscordEmitter(
+                webhook_url="https://discord.com/api/webhooks/test", threshold=0.40
+            )
+
+            signal = Signal(
+                token="ETH/USDT",
+                direction=SignalDirection.SHORT,
+                confidence=0.25,  # Below threshold
+                base_score=35.0,
+                timestamp=datetime.now(UTC),
+                status=SignalStatus.LOGGED_ONLY,
+                timeframe="4h",
+            )
+
+            # Should succeed with env var bypass
+            result = await emitter.emit(signal)
+
+            assert result.success is True
+            assert result.error is None
+
+    def test_bypass_log_event(self):
+        """Test bypass event logging."""
+        emitter = DiscordEmitter(
+            webhook_url="https://discord.com/api/webhooks/test", threshold=0.40
+        )
+
+        # Patch the logger in the signal_emitter module
+        with patch("signal_generation.signal_emitter.logger") as mock_logger:
+            emitter._log_bypass_event(
+                signal_id="test-signal-123",
+                confidence=0.25,
+                bypass_reason="test_reason",
+            )
+
+            # Verify log was called with expected format
+            mock_logger.warning.assert_called_once()
+            log_call = mock_logger.warning.call_args[0][0]
+            assert "CONFIDENCE_BYPASS" in log_call
+            assert "test-signal-123" in log_call
+            assert "0.25" in log_call or "25" in log_call
+            assert "test_reason" in log_call
+            assert "timestamp=" in log_call
+
+    @pytest.mark.asyncio
+    async def test_no_bypass_without_flag(self):
+        """Test that below-threshold signals fail without bypass."""
+        emitter = DiscordEmitter(
+            webhook_url="https://discord.com/api/webhooks/test", threshold=0.40
+        )
+
+        signal = Signal(
+            token="BTC/USDT",
+            direction=SignalDirection.LONG,
+            confidence=0.30,  # Below threshold
+            base_score=40.0,
+            timestamp=datetime.now(UTC),
+            status=SignalStatus.LOGGED_ONLY,
+            timeframe="1h",
+        )
+
+        # Should fail without bypass
+        result = await emitter.emit(signal, bypass_confidence_filter=False)
+
+        assert result.success is False
+        assert "below Discord threshold" in result.error
 
 
 class TestDashboardEmitter:
