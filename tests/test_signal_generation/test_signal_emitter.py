@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import UTC, datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -237,8 +237,20 @@ class TestDiscordEmitter:
             timeframe="1h",
         )
 
-        # Should succeed with bypass
-        result = await emitter.emit(signal, bypass_confidence_filter=True)
+        # Mock aiohttp to avoid actual HTTP calls
+        mock_resp = AsyncMock()
+        mock_resp.status = 204
+        mock_resp.__aenter__ = AsyncMock(return_value=mock_resp)
+        mock_resp.__aexit__ = AsyncMock(return_value=None)
+
+        mock_session = AsyncMock()
+        mock_session.post = MagicMock(return_value=mock_resp)
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=None)
+
+        with patch("aiohttp.ClientSession", return_value=mock_session):
+            # Should succeed with bypass
+            result = await emitter.emit(signal, bypass_confidence_filter=True)
 
         assert result.success is True
         assert result.error is None
@@ -252,6 +264,7 @@ class TestDiscordEmitter:
         ):
             # Re-import to pick up env var
             from importlib import reload
+
             import signal_generation.signal_emitter as signal_emitter_module
 
             reload(signal_emitter_module)
@@ -270,8 +283,20 @@ class TestDiscordEmitter:
                 timeframe="4h",
             )
 
-            # Should succeed with env var bypass
-            result = await emitter.emit(signal)
+            # Mock aiohttp to avoid actual HTTP calls
+            mock_resp = AsyncMock()
+            mock_resp.status = 204
+            mock_resp.__aenter__ = AsyncMock(return_value=mock_resp)
+            mock_resp.__aexit__ = AsyncMock(return_value=None)
+
+            mock_session = AsyncMock()
+            mock_session.post = MagicMock(return_value=mock_resp)
+            mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+            mock_session.__aexit__ = AsyncMock(return_value=None)
+
+            with patch("aiohttp.ClientSession", return_value=mock_session):
+                # Should succeed with env var bypass
+                result = await emitter.emit(signal)
 
             assert result.success is True
             assert result.error is None
