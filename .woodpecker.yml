@@ -27,6 +27,9 @@ steps:
 
   lint:
     image: python:3.11
+    environment:
+      GITEA_TOKEN:
+        from_secret: gitea_token
     commands:
       - |
         set -euo pipefail
