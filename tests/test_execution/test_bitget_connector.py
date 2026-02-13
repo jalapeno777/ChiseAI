@@ -3,7 +3,6 @@
 For ST-DATA-002: Execution Market Data Ingestion - Bybit/Bitget
 """
 
-import asyncio
 import time
 from decimal import Decimal
 from unittest.mock import AsyncMock, patch

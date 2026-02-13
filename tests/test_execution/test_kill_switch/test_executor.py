@@ -5,14 +5,13 @@ For ST-EX-003: Kill-Switch Executor Implementation
 
 from __future__ import annotations
 
-import asyncio
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from execution.kill_switch.executor import KillSwitchExecutor
 from execution.kill_switch.state import (
-    CloseResult,
     CloseStatus,
     KillSwitchConfig,
     KillSwitchState,

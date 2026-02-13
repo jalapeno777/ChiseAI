@@ -5,25 +5,21 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-import pytest
 import tempfile
-import yaml
 
+import yaml
 from src.backtesting.dsl import (
-    StrategyDSL,
     DSLValidator,
+    StrategyDSL,
     StrategySubmission,
     compute_dsl_fingerprint,
-    diff_configs,
     configs_equal,
+    diff_configs,
     submit_strategy,
     validate_strategy,
 )
 from src.backtesting.dsl.models import (
     StrategyCategory,
-    Timeframe,
-    MarketType,
-    EntryLogic,
 )
 
 

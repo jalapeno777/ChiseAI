@@ -5,8 +5,6 @@ For ST-EX-001: KPI calculation tests.
 
 from datetime import UTC, datetime, timedelta
 
-import pytest
-
 from execution.telemetry.calculator import KPICalculator
 from execution.telemetry.metrics import PositionSide, Trade
 

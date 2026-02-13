@@ -5,18 +5,18 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-import pytest
 
 from src.backtesting.dsl.fingerprint import (
-    compute_dsl_fingerprint,
-    compute_dsl_fingerprint_short,
-    diff_configs,
-    configs_equal,
-    DSLFingerprint,
     ConfigDiff,
     DiffEntry,
+    DSLFingerprint,
+    compute_dsl_fingerprint,
+    compute_dsl_fingerprint_short,
+    configs_equal,
+    diff_configs,
     get_fingerprint_metadata,
 )
+
 from tests.test_backtesting.test_dsl.fixtures import create_valid_config  # noqa: E402
 
 

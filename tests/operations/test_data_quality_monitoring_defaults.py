@@ -7,8 +7,6 @@ Verifies that default configuration values are correct for the chiseai network.
 import os
 from unittest.mock import patch
 
-import pytest
-
 from operations.data_quality_monitoring import InfluxDBExporter
 
 

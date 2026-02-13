@@ -1,37 +1,32 @@
 """Tests for DSL serializer."""
 
-import pytest
-
-from src.backtesting.dsl.serializer import DSLSerializer
 from src.backtesting.dsl.models import (
-    StrategyDSL,
-    Metadata,
-    Universe,
-    Signals,
-    Filters,
-    Exits,
-    Sizing,
+    Confluence,
+    Direction,
+    EntryLogic,
     ExecutionPolicy,
-    RiskRules,
-    TelemetryTags,
-    Symbol,
+    Exits,
     Indicator,
     IndicatorCondition,
-    Confluence,
-    Cooldown,
-    StopLoss,
-    TakeProfit,
+    IndicatorType,
+    MarketType,
+    Metadata,
+    Operator,
     PositionLimits,
+    RiskRules,
+    Signals,
+    Sizing,
+    StopLoss,
     # Enums
     StrategyCategory,
+    StrategyDSL,
     StrategyStatus,
+    Symbol,
+    TakeProfit,
     Timeframe,
-    MarketType,
-    EntryLogic,
-    IndicatorType,
-    Operator,
-    Direction,
+    Universe,
 )
+from src.backtesting.dsl.serializer import DSLSerializer
 
 
 class TestDSLSerializer:
@@ -257,8 +252,8 @@ class TestSerializeRiskRules:
         """Test serializing circuit breakers."""
         from src.backtesting.dsl.models import (
             CircuitBreaker,
-            CircuitBreakerTrigger,
             CircuitBreakerAction,
+            CircuitBreakerTrigger,
         )
 
         risk_rules = RiskRules(

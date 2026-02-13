@@ -9,15 +9,11 @@ This module tests the dashboard optimizer functionality including:
 """
 
 import json
-import tempfile
-from pathlib import Path
 
 import pytest
-
 from src.grafana.optimizer import (
     DashboardOptimizer,
     OptimizationResult,
-    QueryOptimization,
     create_optimizer,
     optimize_dashboards,
 )
@@ -56,7 +52,12 @@ class TestDashboardOptimizer:
                     "targets": [
                         {
                             "datasource": {"type": "influxdb", "uid": "test"},
-                            "query": 'from(bucket: "test")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == "test")\n  |> last()',
+                            "query": (
+                                'from(bucket: "test")\n'
+                                "  |> range(start: -5m)\n"
+                                '  |> filter(fn: (r) => r._measurement == "test")\n'
+                                "  |> last()"
+                            ),
                             "refId": "A",
                         }
                     ],
@@ -271,7 +272,11 @@ class TestQueryOptimization:
                     "type": "stat",
                     "targets": [
                         {
-                            "query": 'from(bucket: "test")\n  |> range(start: -5m)\n  |> last()',
+                            "query": (
+                                'from(bucket: "test")\n'
+                                "  |> range(start: -5m)\n"
+                                "  |> last()"
+                            ),
                         }
                     ],
                 }
@@ -560,7 +565,6 @@ class TestAcceptanceCriteria:
         with open(test_file, "w") as f:
             json.dump(dashboard, f)
 
-        original_size = len(json.dumps(dashboard))
         result = optimizer.optimize_file(test_file)
 
         # Should have size reduction
@@ -592,7 +596,7 @@ class TestAcceptanceCriteria:
         result = optimizer.optimize_file(test_file)
 
         # Verify file has cache duration
-        with open(test_file, "r") as f:
+        with open(test_file) as f:
             optimized = json.load(f)
 
         variable = optimized["templating"]["list"][0]
@@ -621,7 +625,7 @@ class TestAcceptanceCriteria:
         result = optimizer.optimize_file(test_file)
 
         # Verify lazy loading was applied
-        with open(test_file, "r") as f:
+        with open(test_file) as f:
             optimized = json.load(f)
 
         rows = [p for p in optimized["panels"] if p.get("type") == "row"]
@@ -641,7 +645,11 @@ class TestAcceptanceCriteria:
                     "type": "timeseries",
                     "targets": [
                         {
-                            "query": 'from(bucket: "test")\n  |> range(start: -7d)\n  |> filter(fn: (r) => r._measurement == "test")',
+                            "query": (
+                                'from(bucket: "test")\n'
+                                "  |> range(start: -7d)\n"
+                                '  |> filter(fn: (r) => r._measurement == "test")'
+                            ),
                         }
                     ],
                 }

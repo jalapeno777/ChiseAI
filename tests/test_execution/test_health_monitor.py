@@ -3,7 +3,6 @@
 For ST-DATA-002: Execution Market Data Ingestion - Bybit/Bitget
 """
 
-import asyncio
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -400,4 +399,4 @@ class TestDiscordIntegration:
 
 
 # Import for testing
-from execution.health_monitor import send_gap_alert_to_discord
+from execution.health_monitor import send_gap_alert_to_discord  # noqa: E402

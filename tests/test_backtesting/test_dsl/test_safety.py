@@ -5,22 +5,21 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-import pytest
 
 from src.backtesting.dsl.safety import (
+    SAFETY_CONSTRAINTS,
     SafetyChecker,
+    SafetyConstraint,
     check_safety,
     is_safe,
-    SAFETY_CONSTRAINTS,
-    SafetyConstraint,
 )
-from src.backtesting.dsl.validator import ValidationError
+
 from tests.test_backtesting.test_dsl.fixtures import (  # noqa: E402
-    create_valid_config,
+    create_invalid_confluence_score_config,
     create_invalid_leverage_config,
     create_invalid_position_percent_config,
-    create_invalid_confluence_score_config,
     create_invalid_timeframe_config,
+    create_valid_config,
 )
 
 

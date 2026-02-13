@@ -5,22 +5,22 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-import pytest
 import tempfile
-import yaml
 
+import yaml
 from src.backtesting.dsl.submission import (
     StrategySubmission,
     SubmissionResult,
+    check_strategy_safety,
     submit_strategy,
     validate_strategy,
-    check_strategy_safety,
 )
 from src.backtesting.dsl.validator import ValidationResult
+
 from tests.test_backtesting.test_dsl.fixtures import (  # noqa: E402
-    create_valid_config,
     create_invalid_leverage_config,
     create_missing_required_fields_config,
+    create_valid_config,
 )
 
 
@@ -185,6 +185,7 @@ class TestSubmissionResult:
     def test_create_result(self):
         """Test creating submission result."""
         from datetime import datetime
+
         from src.backtesting.dsl.validator import ValidationResult as VR
 
         result = SubmissionResult(
@@ -205,6 +206,7 @@ class TestSubmissionResult:
     def test_result_to_dict(self):
         """Test converting result to dictionary."""
         from datetime import datetime
+
         from src.backtesting.dsl.validator import ValidationResult as VR
 
         result = SubmissionResult(
@@ -229,9 +231,12 @@ class TestSubmissionResult:
     def test_get_field_errors(self):
         """Test getting errors for specific field."""
         from datetime import datetime
+
+        from src.backtesting.dsl.validator import (
+            ValidationError as VE,
+        )
         from src.backtesting.dsl.validator import (
             ValidationResult as VR,
-            ValidationError as VE,
         )
 
         result = SubmissionResult(
@@ -260,8 +265,11 @@ class TestSubmissionResult:
     def test_has_warnings_property(self):
         """Test has_warnings property."""
         from datetime import datetime
+
         from src.backtesting.dsl.validator import (
             ValidationResult as VR,
+        )
+        from src.backtesting.dsl.validator import (
             ValidationWarning as VW,
         )
 
