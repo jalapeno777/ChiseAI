@@ -101,7 +101,7 @@ class SignalCache:
             return None
 
         signal, timestamp = self._cache[key]
-        age = time.time() - timestamp
+        age = time.monotonic() - timestamp
 
         if age > self.ttl_seconds:
             # Expired
@@ -123,7 +123,7 @@ class SignalCache:
             signal: Signal to cache
         """
         key = self._make_key(token, timeframe, direction)
-        self._cache[key] = (signal, time.time())
+        self._cache[key] = (signal, time.monotonic())
         logger.debug(f"Cached signal for {key}")
 
     def clear(self) -> None:
@@ -137,7 +137,7 @@ class SignalCache:
         Returns:
             Number of entries removed
         """
-        now = time.time()
+        now = time.monotonic()
         expired_keys = [
             key
             for key, (_, timestamp) in self._cache.items()

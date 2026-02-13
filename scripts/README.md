@@ -37,13 +37,11 @@ python3 scripts/validate_iterloop_compliance.py --story-id=CH-PRD-CI-ALIGN-001
 
 ### ci/validate_swarm_context.py
 
-Validates swarm branch/ref context and canonical status global-lock rules in CI/local gates.
+Validates swarm branch/ref context in CI/local gates.
 
 **Usage:**
 ```bash
 python3 scripts/ci/validate_swarm_context.py
-# Optional lock signal when canonical status files are intentionally updated on non-main branches:
-CANONICAL_STATUS_LOCK=1 python3 scripts/ci/validate_swarm_context.py
 ```
 
 ### iterlog_ops.py
