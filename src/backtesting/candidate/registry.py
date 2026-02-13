@@ -253,9 +253,9 @@ class InMemoryStrategyRegistry:
         """
         # Core storage
         self._versions: dict[str, StrategyVersion] = {}  # version_id -> version
-        self._artifacts: dict[
-            str, list[StrategyArtifact]
-        ] = {}  # version_id -> artifacts
+        self._artifacts: dict[str, list[StrategyArtifact]] = (
+            {}
+        )  # version_id -> artifacts
 
         # Champion/Challenger tracking
         # Key: (symbol, timeframe) -> champion version_id

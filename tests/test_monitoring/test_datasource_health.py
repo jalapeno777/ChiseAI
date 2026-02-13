@@ -7,19 +7,19 @@ from __future__ import annotations
 
 import asyncio
 from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 # Import the module under test
 from monitoring.datasource_health import (
+    AlertSeverity,
     ConnectionMetrics,
     ConnectionStatus,
-    DataSourceHealthMonitor,
-    DataSourceType,
     DatasourceConfig,
     DatasourceHealthAlert,
-    AlertSeverity,
+    DataSourceHealthMonitor,
+    DataSourceType,
     InfluxDBHealthChecker,
     PostgreSQLHealthChecker,
     create_default_monitor,
@@ -191,19 +191,21 @@ class TestInfluxDBHealthChecker:
 
     @pytest.mark.asyncio
     async def test_check_health_client_failure(self, influxdb_config):
-        """Test health check returns False when client fails and no fallback available."""
+        """Test health check returns False when client fails."""
         checker = InfluxDBHealthChecker(influxdb_config)
 
         # Mock InfluxDB client to fail
-        with patch(
-            "influxdb_client.InfluxDBClient", side_effect=Exception("No InfluxDB")
-        ):
+        with (
+            patch(
+                "influxdb_client.InfluxDBClient", side_effect=Exception("No InfluxDB")
+            ),
             # Mock aiohttp to also fail (simulating no HTTP access)
-            with patch("aiohttp.ClientSession", side_effect=Exception("No HTTP")):
-                is_healthy, response_time = await checker.check_health()
-                # Should fail since both methods fail
-                assert is_healthy is False
-                assert response_time is None
+            patch("aiohttp.ClientSession", side_effect=Exception("No HTTP")),
+        ):
+            is_healthy, response_time = await checker.check_health()
+            # Should fail since both methods fail
+            assert is_healthy is False
+            assert response_time is None
 
 
 class TestPostgreSQLHealthChecker:
@@ -1069,9 +1071,6 @@ class TestBackoffTiming:
             UTC
         )
         monitor._metrics[DataSourceType.INFLUXDB].reconnect_attempts = 0
-
-        # Track timing
-        start_time = asyncio.get_event_loop().time()
 
         # First reconnect attempt
         await monitor._attempt_reconnect(DataSourceType.INFLUXDB, config)

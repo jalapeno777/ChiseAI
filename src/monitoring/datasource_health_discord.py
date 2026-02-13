@@ -313,9 +313,11 @@ class DatasourceHealthDiscordFormatter:
             },
             {
                 "name": "Response Time",
-                "value": f"{metrics.response_time_ms:.1f}ms"
-                if metrics.response_time_ms
-                else "N/A",
+                "value": (
+                    f"{metrics.response_time_ms:.1f}ms"
+                    if metrics.response_time_ms
+                    else "N/A"
+                ),
                 "inline": True,
             },
             {

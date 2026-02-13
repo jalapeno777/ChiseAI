@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
-
-import pytest
-
 import os
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from operations.iteration_logging import (
     DEFAULT_TTL_SECONDS,
@@ -598,12 +596,13 @@ class TestPromoteToQdrant:
         learnings = [{"learning": "Lesson 1"}]
 
         # Mock _store_in_qdrant to raise an exception
-        with patch("operations.iteration_logging._store_in_qdrant") as mock_store:
+        with (
+            patch("operations.iteration_logging._store_in_qdrant") as mock_store,
+            patch.dict(os.environ, {"CHISEAI_ENV": "production"}),
+        ):
             mock_store.side_effect = Exception("Storage failed")
-
-            with patch.dict(os.environ, {"CHISEAI_ENV": "production"}):
-                with pytest.raises(QdrantStorageError):
-                    promote_to_qdrant("ST-001", learnings)
+            with pytest.raises(QdrantStorageError):
+                promote_to_qdrant("ST-001", learnings)
 
 
 class TestQueryByStoryPattern:
@@ -649,13 +648,15 @@ class TestQueryByStoryPattern:
 
     def test_redis_connection_error_in_production(self):
         """Test that NotImplementedInEnvironmentError is raised in production."""
-        with patch(
-            "operations.iteration_logging._get_redis_client",
-            side_effect=Exception("Redis unavailable"),
+        with (
+            patch(
+                "operations.iteration_logging._get_redis_client",
+                side_effect=Exception("Redis unavailable"),
+            ),
+            patch.dict(os.environ, {"CHISEAI_ENV": "production"}),
+            pytest.raises(NotImplementedInEnvironmentError),
         ):
-            with patch.dict(os.environ, {"CHISEAI_ENV": "production"}):
-                with pytest.raises(NotImplementedInEnvironmentError):
-                    query_by_story_pattern("*")
+            query_by_story_pattern("*")
 
 
 class TestGetIterationLog:
@@ -714,13 +715,15 @@ class TestGetIterationLog:
 
     def test_production_error_raises(self):
         """Test that NotImplementedInEnvironmentError is raised in production."""
-        with patch(
-            "operations.iteration_logging._get_redis_client",
-            side_effect=Exception("Redis unavailable"),
+        with (
+            patch(
+                "operations.iteration_logging._get_redis_client",
+                side_effect=Exception("Redis unavailable"),
+            ),
+            patch.dict(os.environ, {"CHISEAI_ENV": "production"}),
+            pytest.raises(NotImplementedInEnvironmentError),
         ):
-            with patch.dict(os.environ, {"CHISEAI_ENV": "production"}):
-                with pytest.raises(NotImplementedInEnvironmentError):
-                    get_iteration_log("ST-001")
+            get_iteration_log("ST-001")
 
 
 class TestRedisConnectionError:
@@ -729,10 +732,12 @@ class TestRedisConnectionError:
     def test_redis_connection_error_in_production(self):
         """Test that RedisConnectionError is raised in production."""
         # Mock the import to simulate redis module not available
-        with patch.dict("sys.modules", {"redis": None}):
-            with patch.dict(os.environ, {"CHISEAI_ENV": "production"}):
-                with pytest.raises(RedisConnectionError):
-                    _get_redis_client()
+        with (
+            patch.dict("sys.modules", {"redis": None}),
+            patch.dict(os.environ, {"CHISEAI_ENV": "production"}),
+            pytest.raises(RedisConnectionError),
+        ):
+            _get_redis_client()
 
     def test_returns_none_in_test(self):
         """Test that None is returned in test environment."""
@@ -753,9 +758,9 @@ class TestConstants:
     def test_valid_phases(self):
         """Test that valid phases are defined correctly."""
         expected = {"analysis", "planning", "solutioning", "implementation", "testing"}
-        assert VALID_PHASES == expected
+        assert expected == VALID_PHASES
 
     def test_valid_statuses(self):
         """Test that valid statuses are defined correctly."""
         expected = {"planned", "in_progress", "blocked", "completed", "deprecated"}
-        assert VALID_STATUSES == expected
+        assert expected == VALID_STATUSES

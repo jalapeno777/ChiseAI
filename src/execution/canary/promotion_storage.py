@@ -15,7 +15,6 @@ from typing import Any
 
 from execution.canary.promotion import PromotionPacket
 
-
 # Default storage directory for promotion packets
 DEFAULT_STORAGE_DIR = Path("docs/approvals/evolution-submissions")
 

@@ -505,9 +505,11 @@ class PositionQueryAPI:
                 symbol=data.get("symbol", ""),
                 order_type=order_type,
                 trigger_price=Decimal(data.get("triggerPrice", "0")),
-                price=Decimal(data.get("executePrice", "0"))
-                if data.get("executePrice")
-                else None,
+                price=(
+                    Decimal(data.get("executePrice", "0"))
+                    if data.get("executePrice")
+                    else None
+                ),
                 quantity=Decimal(data.get("size", "0")),
                 side=data.get("side", "").lower(),
                 status=data.get("status", "").lower(),

@@ -5,8 +5,7 @@ For ST-EX-003: Kill-Switch Executor Implementation
 
 from __future__ import annotations
 
-import pytest
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 from execution.kill_switch.state import (
     CloseResult,

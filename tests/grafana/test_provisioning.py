@@ -1,13 +1,11 @@
 """Tests for Grafana dashboard provisioning validation and health checks."""
 
 import json
-import os
 import shutil
 import tempfile
 from pathlib import Path
 
 import pytest
-
 from src.grafana.health import (
     DashboardHealthEndpoint,
     create_health_endpoint,
@@ -19,7 +17,6 @@ from src.grafana.validation import (
     ValidationError,
     ValidationResult,
 )
-
 
 # =============================================================================
 # Fixtures
@@ -568,7 +565,7 @@ class TestDashboardHealthEndpoint:
             json.dump(valid_dashboard, f)
 
         endpoint = DashboardHealthEndpoint(provisioning_dir=str(temp_dir))
-        status1 = endpoint.check_health()
+        endpoint.check_health()
 
         # Add another dashboard
         with open(temp_dir / "valid2.json", "w") as f:

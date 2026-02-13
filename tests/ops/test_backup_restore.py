@@ -12,12 +12,13 @@ Tests cover:
 
 import json
 import os
+import shutil
 import subprocess
 import tempfile
-import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 import pytest
 
 # Constants
@@ -150,9 +151,9 @@ class TestBackupScriptExists:
 
     def test_rollback_script_exists(self):
         """Test that grafana-rollback.sh exists."""
-        assert ROLLBACK_SCRIPT.exists(), (
-            f"Rollback script not found at {ROLLBACK_SCRIPT}"
-        )
+        assert (
+            ROLLBACK_SCRIPT.exists()
+        ), f"Rollback script not found at {ROLLBACK_SCRIPT}"
 
     def test_backup_script_is_executable(self):
         """Test that backup script has execute permissions."""
@@ -372,7 +373,7 @@ class TestBackupRetention:
                 str(BACKUP_SCRIPT),
                 "--dry-run",
                 f"--backup-dir={backup_dir}",
-                f"--retention-days=30",
+                "--retention-days=30",
             ],
             capture_output=True,
             text=True,

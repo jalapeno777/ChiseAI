@@ -3,7 +3,6 @@
 For ST-EX-001: InfluxDB exporter tests.
 """
 
-from datetime import UTC, datetime
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest

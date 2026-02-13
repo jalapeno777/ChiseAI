@@ -280,9 +280,9 @@ class KillSwitchExecutor:
                 "drawdown_pct": drawdown_pct,
                 "portfolio_value": portfolio_value,
                 "total_positions": len(close_results),
-                "triggered_at": self._triggered_at.isoformat()
-                if self._triggered_at
-                else None,
+                "triggered_at": (
+                    self._triggered_at.isoformat() if self._triggered_at else None
+                ),
             },
         )
 
@@ -579,14 +579,14 @@ class KillSwitchExecutor:
         """
         return {
             "state": self._state.value,
-            "triggered_at": self._triggered_at.isoformat()
-            if self._triggered_at
-            else None,
+            "triggered_at": (
+                self._triggered_at.isoformat() if self._triggered_at else None
+            ),
             "triggered_by": self._triggered_by,
             "trigger_reason": self._trigger_reason,
-            "reauthorized_at": self._reauthorized_at.isoformat()
-            if self._reauthorized_at
-            else None,
+            "reauthorized_at": (
+                self._reauthorized_at.isoformat() if self._reauthorized_at else None
+            ),
             "reauthorized_by": self._reauthorized_by,
             "config": self.config.to_dict(),
             "last_result": self._last_result.to_dict() if self._last_result else None,

@@ -1,13 +1,12 @@
 """Tests for DSL version migration."""
 
 import pytest
-
 from src.backtesting.dsl.migration import (
     DSLMigration,
     MigrationStep,
-    migrate_config,
-    get_config_version,
     can_migrate,
+    get_config_version,
+    migrate_config,
 )
 
 

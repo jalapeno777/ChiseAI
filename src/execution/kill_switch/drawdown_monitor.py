@@ -64,15 +64,15 @@ class DrawdownMetrics:
             "current_drawdown_pct": self.current_drawdown_pct,
             "peak_value": self.peak_value,
             "trough_value": self.trough_value,
-            "peak_timestamp": self.peak_timestamp.isoformat()
-            if self.peak_timestamp
-            else None,
-            "trough_timestamp": self.trough_timestamp.isoformat()
-            if self.trough_timestamp
-            else None,
-            "window_start": self.window_start.isoformat()
-            if self.window_start
-            else None,
+            "peak_timestamp": (
+                self.peak_timestamp.isoformat() if self.peak_timestamp else None
+            ),
+            "trough_timestamp": (
+                self.trough_timestamp.isoformat() if self.trough_timestamp else None
+            ),
+            "window_start": (
+                self.window_start.isoformat() if self.window_start else None
+            ),
             "window_end": self.window_end.isoformat() if self.window_end else None,
             "data_points": self.data_points,
         }
@@ -321,10 +321,10 @@ class DrawdownMonitor:
             "trough_value": metrics.trough_value,
             "window_hours": self.rolling_window_hours,
             "data_points": metrics.data_points,
-            "window_start": metrics.window_start.isoformat()
-            if metrics.window_start
-            else None,
-            "window_end": metrics.window_end.isoformat()
-            if metrics.window_end
-            else None,
+            "window_start": (
+                metrics.window_start.isoformat() if metrics.window_start else None
+            ),
+            "window_end": (
+                metrics.window_end.isoformat() if metrics.window_end else None
+            ),
         }

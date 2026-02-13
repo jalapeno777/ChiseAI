@@ -19,7 +19,6 @@ import pytest
 from backtesting.candidate.registry import (
     InMemoryStrategyRegistry,
     PromotionCriteria,
-    PromotionResult,
     StrategyArtifact,
     StrategyRegistry,
     StrategyStatus,
@@ -580,7 +579,7 @@ class TestArtifactStorage:
             registry.store_artifact("nonexistent", "backtest", {})
 
 
-class TestPromotionCriteria:
+class TestPromotionCriteriaEnforcement:
     """Tests for promotion criteria enforcement (AC3)."""
 
     def test_promote_challenger_success(self):

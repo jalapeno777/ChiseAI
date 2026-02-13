@@ -1,20 +1,18 @@
 """Tests for DSL parser."""
 
 import pytest
-
-from src.backtesting.dsl.parser import DSLParser
 from src.backtesting.dsl.models import (
-    StrategyDSL,
-    Metadata,
-    StrategyCategory,
-    StrategyStatus,
-    Timeframe,
-    MarketType,
+    Direction,
     EntryLogic,
     IndicatorType,
+    MarketType,
     Operator,
-    Direction,
+    StrategyCategory,
+    StrategyDSL,
+    StrategyStatus,
+    Timeframe,
 )
+from src.backtesting.dsl.parser import DSLParser
 
 
 class TestDSLParser:

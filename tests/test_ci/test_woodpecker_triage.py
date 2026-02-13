@@ -25,7 +25,10 @@ def test_parse_ruff_rule_file_line() -> None:
 
 
 def test_parse_mypy_error_with_code() -> None:
-    log = 'src/bar.py:21: error: Incompatible return value type (got "int", expected "str")  [return-value]'
+    log = (
+        "src/bar.py:21: error: Incompatible return value type "
+        '(got "int", expected "str")  [return-value]'
+    )
     causes = woodpecker_triage.parse_root_causes("lint", log)
     assert causes
     assert causes[0].tool == "mypy"
@@ -43,7 +46,9 @@ def test_parse_black_would_reformat() -> None:
 
 
 def test_parse_ci_gate_status_file_failure() -> None:
-    log = "ci-gate: FAIL (captured step failures detected)\n  - swarm-context.status: 1\n"
+    log = (
+        "ci-gate: FAIL (captured step failures detected)\n  - swarm-context.status: 1\n"
+    )
     causes = woodpecker_triage.parse_root_causes("ci-gate", log)
     assert causes
     assert causes[0].tool == "ci_gate"

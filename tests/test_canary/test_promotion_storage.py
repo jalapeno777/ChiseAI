@@ -1,7 +1,5 @@
 """Tests for promotion packet storage."""
 
-import json
-import tempfile
 from datetime import datetime
 
 import pytest

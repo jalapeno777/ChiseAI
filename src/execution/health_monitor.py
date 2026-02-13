@@ -103,12 +103,12 @@ class ConnectionStatus:
         return {
             "exchange": self.exchange,
             "is_connected": self.is_connected,
-            "last_heartbeat": self.last_heartbeat.isoformat()
-            if self.last_heartbeat
-            else None,
-            "last_message": self.last_message.isoformat()
-            if self.last_message
-            else None,
+            "last_heartbeat": (
+                self.last_heartbeat.isoformat() if self.last_heartbeat else None
+            ),
+            "last_message": (
+                self.last_message.isoformat() if self.last_message else None
+            ),
             "time_since_heartbeat_sec": self.time_since_heartbeat,
             "time_since_message_sec": self.time_since_message,
             "reconnect_count": self.reconnect_count,
@@ -241,9 +241,9 @@ class ExecutionHealthMonitor:
             gap_start=gap_start,
             gap_end=now.timestamp(),
             duration_seconds=gap_duration,
-            severity=AlertSeverity.CRITICAL
-            if gap_duration > 60
-            else AlertSeverity.WARNING,
+            severity=(
+                AlertSeverity.CRITICAL if gap_duration > 60 else AlertSeverity.WARNING
+            ),
         )
 
         # Store alert
