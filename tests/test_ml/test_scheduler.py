@@ -284,6 +284,8 @@ class TestOptimizationScheduler:
     def temp_persistence_path(self):
         """Create a temporary persistence path."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            # Write empty valid JSON state to avoid decode errors
+            json.dump({"jobs": {}, "records": {}}, f)
             path = f.name
         yield path
         # Cleanup
@@ -298,7 +300,18 @@ class TestOptimizationScheduler:
         yield scheduler
         # Cleanup
         if scheduler._running:
-            asyncio.get_event_loop().run_until_complete(scheduler.stop())
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_closed():
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                loop.run_until_complete(scheduler.stop())
+            except RuntimeError:
+                # No event loop available, create one for cleanup
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                loop.run_until_complete(scheduler.stop())
+                loop.close()
 
     @pytest.mark.asyncio
     async def test_scheduler_start_stop(self, scheduler) -> None:
