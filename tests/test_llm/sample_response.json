@@ -1,0 +1,19 @@
+{
+  "id": "chatcmpl-example",
+  "model": "glm-5",
+  "choices": [
+    {
+      "message": {
+        "role": "assistant",
+        "content": "Hello! How can I assist you today?"
+      },
+      "finish_reason": "stop",
+      "index": 0
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 15,
+    "completion_tokens": 9,
+    "total_tokens": 24
+  }
+}
