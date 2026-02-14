@@ -95,13 +95,15 @@ def _get_pr_title(env: dict[str, str]) -> str:
         import json
         import urllib.request
 
-        base_url = env.get("WOODPECKER_BASE_URL", "http://woodpecker-server:8000").rstrip(
-            "/"
-        )
+        base_url = env.get(
+            "WOODPECKER_BASE_URL", "http://woodpecker-server:8000"
+        ).rstrip("/")
         repo = env.get("CI_REPO", "")
         if "/" in repo:
             owner, repo_name = repo.split("/", 1)
-            api_url = f"{base_url}/api/repos/{owner}/{repo_name}/pipelines/{pipeline_number}"
+            api_url = (
+                f"{base_url}/api/repos/{owner}/{repo_name}/pipelines/{pipeline_number}"
+            )
             req = urllib.request.Request(
                 api_url, headers={"X-WOODPECKER-TOKEN": woodpecker_token}
             )

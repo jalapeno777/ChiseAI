@@ -40,7 +40,7 @@ except ImportError:
     INFLUXDB_AVAILABLE = False
     InfluxDBClient = None  # type: ignore[misc,assignment]
     Point = None  # type: ignore[misc,assignment]
-    SYNCHRONOUS = None  # type: ignore[misc]
+    SYNCHRONOUS: Any = None  # type: ignore[misc,no-redef]
 
 logger = logging.getLogger(__name__)
 
@@ -1033,15 +1033,20 @@ class DiscordAlertSender:
         self,
         webhook_url: str | None = None,
         alerts_channel: str = "alerts",
+        require_webhook: bool = False,  # If True, raise exception when webhook missing
     ):
         """Initialize Discord alert sender.
 
         Args:
             webhook_url: Discord webhook URL
             alerts_channel: Channel for data quality alerts
+            require_webhook: If True, raise exception when webhook is not configured
         """
         self.webhook_url = webhook_url
         self.alerts_channel = alerts_channel
+        self.require_webhook = require_webhook
+        self._consecutive_failures = 0
+        self._circuit_open = False
 
     def _format_freshness_embed(
         self,
@@ -1122,10 +1127,17 @@ class DiscordAlertSender:
             Dictionary with success status and message info
         """
         if not self.webhook_url:
+            if self.require_webhook:
+                raise ValueError("Discord webhook URL required but not configured")
+            logger.warning(
+                "Discord webhook not configured. Alert delivery attempted but will not be sent. "
+                "Set DISCORD_ALERT_WEBHOOK_URL environment variable."
+            )
             return {
                 "success": False,
                 "error": "No webhook URL configured",
                 "message_id": None,
+                "circuit_open": False,
             }
 
         payload: dict[str, Any] = {"content": content}

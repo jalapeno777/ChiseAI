@@ -6,6 +6,7 @@ integrating with the strategy registry for candidate inputs.
 
 from __future__ import annotations
 
+import logging
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -23,6 +24,8 @@ from backtesting.candidate.models import (
 )
 from backtesting.candidate.ranking import RankingEngine
 from backtesting.candidate.walk_forward import WalkForwardConfig, WalkForwardEngine
+
+logger = logging.getLogger(__name__)
 
 
 class StrategyRegistry(Protocol):
@@ -65,6 +68,7 @@ class PipelineConfig:
         batch_size: Number of candidates to process in parallel
         max_runtime_hours: Maximum pipeline runtime
         store_results: Whether to persist results to InfluxDB
+        test_mode: Whether to allow mock metrics (only for testing)
     """
 
     walk_forward: WalkForwardConfig = None  # type: ignore[assignment]
@@ -72,6 +76,7 @@ class PipelineConfig:
     batch_size: int = 10
     max_runtime_hours: int = 4
     store_results: bool = True
+    test_mode: bool = False  # Only allow mocks in explicit test mode
 
     def __post_init__(self) -> None:
         """Set default configurations."""
@@ -244,10 +249,19 @@ class CandidateBacktestPipeline:
                         result, candidate_config, symbol
                     )
                 else:
-                    # Mock execution for testing
-                    result.status = CandidateStatus.COMPLETED
-                    result.metrics = self._generate_mock_metrics()
-                    result.completed_at = datetime.utcnow()
+                    # Production: fail-closed - no mock metrics allowed
+                    if not self.config.test_mode:
+                        result.status = CandidateStatus.FAILED
+                        result.error = "No data_provider or strategy_executor configured (production mode)"
+                        logger.error(
+                            f"Backtest failed for {candidate_id}: "
+                            "missing data_provider or strategy_executor"
+                        )
+                    else:
+                        # Test mode only: use mock metrics
+                        result.status = CandidateStatus.COMPLETED
+                        result.metrics = self._generate_mock_metrics()
+                        result.completed_at = datetime.utcnow()
 
                 results.append(result)
 
