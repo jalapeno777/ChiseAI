@@ -1,6 +1,6 @@
 """LLM integration module for ChiseAI.
 
-Provides clients for various LLM APIs including MiniMax.
+Provides clients for various LLM APIs including MiniMax and Z.ai.
 """
 
 from llm.minimax_client import (
@@ -9,10 +9,20 @@ from llm.minimax_client import (
     MiniMaxMessage,
     MiniMaxResponse,
 )
+from llm.zai_client import (
+    ZaiClient,
+    ZaiConfig,
+    ZaiMessage,
+    ZaiResponse,
+)
 
 __all__ = [
     "MiniMaxClient",
     "MiniMaxConfig",
     "MiniMaxMessage",
     "MiniMaxResponse",
+    "ZaiClient",
+    "ZaiConfig",
+    "ZaiMessage",
+    "ZaiResponse",
 ]

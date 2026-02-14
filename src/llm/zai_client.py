@@ -1,9 +1,9 @@
-"""MiniMax API client for LLM integration.
+"""Z.ai (Zhipu AI) API client for LLM integration.
 
-Provides async HTTP client for MiniMax 2.5 (M2-her) model API with
+Provides async HTTP client for GLM-5 model API with
 retry logic, error handling, and OpenAI-compatible request/response format.
 
-For CH-LLM-MINIMAX-001: MiniMax 2.5 Integration
+For CH-LLM-ZAI-001: Z.ai GLM-5 Integration
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ import json
 import logging
 import os
 from dataclasses import dataclass
-from typing import Any, AsyncIterator, cast
+from typing import Any, cast
 
 import aiohttp
 
@@ -21,21 +21,21 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class MiniMaxConfig:
-    """Configuration for MiniMax API client.
+class ZaiConfig:
+    """Configuration for Z.ai API client.
 
     Attributes:
-        api_key: MiniMax API key (from MINIMAX_API_KEY env var)
-        base_url: MiniMax API endpoint
-        model: Model identifier (default: M2-her)
+        api_key: Z.ai API key (from Z_AI_API_KEY or ZHIPU_API_KEY env var)
+        base_url: Z.ai API endpoint
+        model: Model identifier (default: glm-5)
         timeout: Request timeout in seconds
         max_retries: Maximum number of retry attempts
         retry_delay: Initial retry delay in seconds (exponential backoff)
     """
 
     api_key: str | None = None
-    base_url: str = "https://api.minimax.io/v1/text/chatcompletion_v2"
-    model: str = "MiniMax-M2.5"
+    base_url: str = "https://api.z.ai/api/paas/v4/chat/completions"
+    model: str = "glm-5"
     timeout: float = 30.0
     max_retries: int = 3
     retry_delay: float = 1.0
@@ -43,27 +43,26 @@ class MiniMaxConfig:
     def __post_init__(self) -> None:
         """Load API key from environment if not provided."""
         if self.api_key is None:
-            self.api_key = os.getenv("MINIMAX_API_KEY")
+            # Try Z_AI_API_KEY first, then fall back to ZHIPU_API_KEY
+            self.api_key = os.getenv("Z_AI_API_KEY") or os.getenv("ZHIPU_API_KEY")
 
 
 @dataclass
-class MiniMaxMessage:
-    """A message in the MiniMax chat format.
+class ZaiMessage:
+    """A message in the Z.ai chat format.
 
     Attributes:
         role: Message role (system, user, assistant)
         content: Message content
-        name: Optional name for the message sender
     """
 
     role: str
     content: str
-    name: str | None = None
 
 
 @dataclass
-class MiniMaxResponse:
-    """Response from MiniMax API.
+class ZaiResponse:
+    """Response from Z.ai API.
 
     Attributes:
         success: Whether the request was successful
@@ -82,27 +81,27 @@ class MiniMaxResponse:
     finish_reason: str | None = None
 
 
-class MiniMaxClient:
-    """Async HTTP client for MiniMax API.
+class ZaiClient:
+    """Async HTTP client for Z.ai API.
 
     Handles authentication, retry logic with exponential backoff,
-    and error handling for MiniMax 2.5 (M2-her) model.
+    and error handling for GLM-5 model.
 
     Attributes:
-        config: MiniMax configuration
+        config: Z.ai configuration
         _session: aiohttp ClientSession (created on first use)
     """
 
-    def __init__(self, config: MiniMaxConfig | None = None) -> None:
-        """Initialize MiniMax client.
+    def __init__(self, config: ZaiConfig | None = None) -> None:
+        """Initialize Z.ai client.
 
         Args:
-            config: MiniMax configuration (uses defaults if None)
+            config: Z.ai configuration (uses defaults if None)
         """
-        self.config = config or MiniMaxConfig()
+        self.config = config or ZaiConfig()
         self._session: aiohttp.ClientSession | None = None
 
-    async def __aenter__(self) -> "MiniMaxClient":
+    async def __aenter__(self) -> "ZaiClient":
         """Async context manager entry."""
         await self.connect()
         return self
@@ -130,13 +129,14 @@ class MiniMaxClient:
 
     def _build_request_payload(
         self,
-        messages: list[MiniMaxMessage],
+        messages: list[ZaiMessage],
         temperature: float = 1.0,
         top_p: float = 0.95,
         max_tokens: int = 2048,
         stream: bool = False,
+        thinking: bool = True,
     ) -> dict[str, Any]:
-        """Build the request payload for MiniMax API.
+        """Build the request payload for Z.ai API.
 
         Args:
             messages: List of messages for the conversation
@@ -144,6 +144,7 @@ class MiniMaxClient:
             top_p: Nucleus sampling parameter
             max_tokens: Maximum tokens to generate
             stream: Whether to stream the response
+            thinking: Whether to enable thinking mode
 
         Returns:
             JSON payload dictionary
@@ -154,35 +155,39 @@ class MiniMaxClient:
                 "role": msg.role,
                 "content": msg.content,
             }
-            if msg.name:
-                msg_dict["name"] = msg.name
             formatted_messages.append(msg_dict)
 
-        return {
+        payload: dict[str, Any] = {
             "model": self.config.model,
             "messages": formatted_messages,
             "temperature": temperature,
             "top_p": top_p,
-            "max_completion_tokens": max_tokens,
+            "max_tokens": max_tokens,
             "stream": stream,
         }
+
+        # Add thinking mode if enabled (GLM-5 feature)
+        if thinking:
+            payload["thinking"] = {"type": "enabled"}
+
+        return payload
 
     async def _make_request_with_retry(
         self,
         payload: dict[str, Any],
-    ) -> MiniMaxResponse:
-        """Make request to MiniMax API with exponential backoff retry.
+    ) -> ZaiResponse:
+        """Make request to Z.ai API with exponential backoff retry.
 
         Args:
             payload: Request payload
 
         Returns:
-            MiniMaxResponse with result or error
+            ZaiResponse with result or error
         """
         if not self.config.api_key:
-            return MiniMaxResponse(
+            return ZaiResponse(
                 success=False,
-                error="MINIMAX_API_KEY not configured",
+                error="Z_AI_API_KEY or ZHIPU_API_KEY not configured",
             )
 
         if self._session is None:
@@ -207,7 +212,7 @@ class MiniMaxClient:
 
                     # Handle specific error codes
                     if response.status == 401:
-                        return MiniMaxResponse(
+                        return ZaiResponse(
                             success=False,
                             error="Authentication failed: Invalid API key",
                             raw_response={
@@ -226,7 +231,7 @@ class MiniMaxClient:
                             )  # Longer delay for rate limits
                             delay *= 2
                             continue
-                        return MiniMaxResponse(
+                        return ZaiResponse(
                             success=False,
                             error="Rate limit exceeded",
                             raw_response={
@@ -243,7 +248,7 @@ class MiniMaxClient:
                             await asyncio.sleep(delay)
                             delay *= 2
                             continue
-                        return MiniMaxResponse(
+                        return ZaiResponse(
                             success=False,
                             error=f"Server error: {response.status}",
                             raw_response={
@@ -253,7 +258,7 @@ class MiniMaxClient:
                         )
                     else:
                         # Client error - don't retry
-                        return MiniMaxResponse(
+                        return ZaiResponse(
                             success=False,
                             error=f"HTTP {response.status}: {response_text}",
                             raw_response={
@@ -281,25 +286,25 @@ class MiniMaxClient:
             except Exception as e:
                 last_error = e
                 logger.error(f"Unexpected error: {e}")
-                return MiniMaxResponse(
+                return ZaiResponse(
                     success=False,
                     error=f"Unexpected error: {e}",
                 )
 
         # All retries exhausted
-        return MiniMaxResponse(
+        return ZaiResponse(
             success=False,
             error=f"Max retries exceeded. Last error: {last_error}",
         )
 
-    def _parse_response(self, data: dict[str, Any]) -> MiniMaxResponse:
+    def _parse_response(self, data: dict[str, Any]) -> ZaiResponse:
         """Parse successful API response.
 
         Args:
             data: JSON response from API
 
         Returns:
-            MiniMaxResponse with extracted content
+            ZaiResponse with extracted content
         """
         try:
             # Extract usage info
@@ -308,7 +313,7 @@ class MiniMaxClient:
             # Extract content from choices
             choices = data.get("choices", [])
             if not choices:
-                return MiniMaxResponse(
+                return ZaiResponse(
                     success=False,
                     error="No choices in response",
                     raw_response=data,
@@ -319,7 +324,7 @@ class MiniMaxClient:
             content = message.get("content", "")
             finish_reason = choice.get("finish_reason")
 
-            return MiniMaxResponse(
+            return ZaiResponse(
                 success=True,
                 content=content,
                 raw_response=data,
@@ -327,7 +332,7 @@ class MiniMaxClient:
                 finish_reason=finish_reason,
             )
         except Exception as e:
-            return MiniMaxResponse(
+            return ZaiResponse(
                 success=False,
                 error=f"Failed to parse response: {e}",
                 raw_response=data,
@@ -335,21 +340,23 @@ class MiniMaxClient:
 
     async def chat(
         self,
-        messages: list[MiniMaxMessage],
+        messages: list[ZaiMessage],
         temperature: float = 1.0,
         top_p: float = 0.95,
         max_tokens: int = 2048,
-    ) -> MiniMaxResponse:
-        """Send a chat completion request to MiniMax API.
+        thinking: bool = True,
+    ) -> ZaiResponse:
+        """Send a chat completion request to Z.ai API.
 
         Args:
             messages: List of messages for the conversation
             temperature: Sampling temperature (0-2)
             top_p: Nucleus sampling parameter
             max_tokens: Maximum tokens to generate
+            thinking: Whether to enable thinking mode
 
         Returns:
-            MiniMaxResponse with generated content or error
+            ZaiResponse with generated content or error
         """
         payload = self._build_request_payload(
             messages=messages,
@@ -357,6 +364,7 @@ class MiniMaxClient:
             top_p=top_p,
             max_tokens=max_tokens,
             stream=False,
+            thinking=thinking,
         )
 
         return await self._make_request_with_retry(payload)
@@ -367,7 +375,8 @@ class MiniMaxClient:
         system_message: str | None = None,
         temperature: float = 1.0,
         max_tokens: int = 2048,
-    ) -> MiniMaxResponse:
+        thinking: bool = True,
+    ) -> ZaiResponse:
         """Simple chat interface with single prompt.
 
         Args:
@@ -375,26 +384,25 @@ class MiniMaxClient:
             system_message: Optional system message
             temperature: Sampling temperature
             max_tokens: Maximum tokens to generate
+            thinking: Whether to enable thinking mode
 
         Returns:
-            MiniMaxResponse with generated content or error
+            ZaiResponse with generated content or error
         """
-        messages: list[MiniMaxMessage] = []
+        messages: list[ZaiMessage] = []
 
         if system_message:
             messages.append(
-                MiniMaxMessage(
+                ZaiMessage(
                     role="system",
                     content=system_message,
-                    name="MiniMax AI",
                 )
             )
 
         messages.append(
-            MiniMaxMessage(
+            ZaiMessage(
                 role="user",
                 content=prompt,
-                name="User",
             )
         )
 
@@ -402,10 +410,11 @@ class MiniMaxClient:
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
+            thinking=thinking,
         )
 
     async def health_check(self) -> dict[str, Any]:
-        """Check MiniMax API health by making a minimal request.
+        """Check Z.ai API health by making a minimal request.
 
         Returns:
             Dictionary with health status
@@ -414,7 +423,7 @@ class MiniMaxClient:
             return {
                 "healthy": False,
                 "connected": False,
-                "error": "MINIMAX_API_KEY not configured",
+                "error": "Z_AI_API_KEY or ZHIPU_API_KEY not configured",
             }
 
         try:

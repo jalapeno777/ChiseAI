@@ -48,7 +48,7 @@ class TestMiniMaxConfig:
         with patch.dict(os.environ, {}, clear=True):
             config = MiniMaxConfig()
             assert config.base_url == "https://api.minimax.io/v1/text/chatcompletion_v2"
-            assert config.model == "M2-her"
+            assert config.model == "MiniMax-M2.5"
             assert config.timeout == 30.0
             assert config.max_retries == 3
             assert config.retry_delay == 1.0
@@ -127,7 +127,7 @@ class TestMiniMaxClient:
             stream=False,
         )
 
-        assert payload["model"] == "M2-her"
+        assert payload["model"] == "MiniMax-M2.5"
         assert payload["temperature"] == 0.5
         assert payload["top_p"] == 0.9
         assert payload["max_completion_tokens"] == 100
@@ -443,7 +443,7 @@ class TestMiniMaxClient:
 
         assert health["healthy"] is True
         assert health["connected"] is True
-        assert health["model"] == "M2-her"
+        assert health["model"] == "MiniMax-M2.5"
         assert health["error"] is None
 
     @pytest.mark.asyncio
