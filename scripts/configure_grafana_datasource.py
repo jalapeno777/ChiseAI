@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """
 Configure Grafana InfluxDB datasource via API.
-This script creates the InfluxDB datasource in Grafana when provisioning is not available.
+This script creates the InfluxDB datasource in Grafana when provisioning
+is not available.
 """
 
+import json
 import os
 import sys
-import json
-import urllib.request
 import urllib.error
+import urllib.request
 
 GRAFANA_URL = os.getenv("GRAFANA_URL", "http://host.docker.internal:3001")
 GRAFANA_ADMIN_USER = os.getenv("GRAFANA_ADMIN_USER", "admin")
@@ -63,7 +64,7 @@ def create_datasource():
     except urllib.error.HTTPError as e:
         error_body = e.read().decode("utf-8")
         if e.code == 409:
-            print(f"INFO: Datasource already exists (409 Conflict)")
+            print("INFO: Datasource already exists (409 Conflict)")
             return True
         print(f"ERROR: HTTP {e.code}: {error_body}")
         return False

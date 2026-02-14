@@ -83,7 +83,7 @@ class TestCandidateBacktestPipeline:
     def test_run_pipeline_basic(self) -> None:
         """Test basic pipeline execution."""
         registry = self.create_mock_registry()
-        config = PipelineConfig(store_results=False)
+        config = PipelineConfig(store_results=False, test_mode=True)
 
         pipeline = CandidateBacktestPipeline(
             config=config,
@@ -223,7 +223,7 @@ class TestCandidateBacktestPipeline:
     def test_update_registry_called(self) -> None:
         """Test that registry is updated with results."""
         registry = self.create_mock_registry()
-        config = PipelineConfig(store_results=False)
+        config = PipelineConfig(store_results=False, test_mode=True)
 
         pipeline = CandidateBacktestPipeline(
             config=config,
