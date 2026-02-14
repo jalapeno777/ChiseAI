@@ -199,6 +199,11 @@ resource "docker_container" "grafana" {
     "INFLUXDB_TOKEN=${var.influxdb_token}",
     "INFLUXDB_ORG=${var.influxdb_org}",
     "INFLUXDB_BUCKET=${var.influxdb_bucket}",
+    # Bootstrap configuration for craig-admin user
+    "ADMIN_USER=craig-admin",
+    "ADMIN_PASSWORD=${var.grafana_admin_password}",
+    "ADMIN_EMAIL=craig@chiseai.local",
+    "ADMIN_NAME=Craig Admin",
   ]
 
   ports {
@@ -225,17 +230,30 @@ resource "docker_container" "grafana" {
     name = docker_network.chiseai.name
   }
 
+  # Persist Grafana data (users, dashboards, etc.) across container recreations
   volumes {
     volume_name    = docker_volume.grafana.name
     container_path = "/var/lib/grafana"
   }
 
+  # Provisioning configuration (datasources, dashboards)
   mounts {
     target    = "/etc/grafana/provisioning"
     source    = abspath("${path.module}/../grafana/provisioning")
     type      = "bind"
     read_only = true
   }
+
+  # Bootstrap script for admin user creation (idempotent)
+  mounts {
+    target    = "/usr/local/bin/bootstrap_admin.sh"
+    source    = abspath("${path.module}/../grafana/scripts/bootstrap_admin.sh")
+    type      = "bind"
+    read_only = true
+  }
+
+  # Override entrypoint to run bootstrap then start Grafana
+  entrypoint = ["/bin/sh", "-c", "chmod +x /usr/local/bin/bootstrap_admin.sh && /usr/local/bin/bootstrap_admin.sh & /run.sh"]
 }
 
 resource "docker_container" "gitea" {
