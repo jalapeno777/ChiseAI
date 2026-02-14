@@ -5,9 +5,9 @@
 metadata:
   project_name: ChiseAI
   version: "2.1.0"
-  last_updated: "2026-02-12"
+  last_updated: "2026-02-13"
   prd_location: docs/prd.md
-  prd_note: "Phased perps execution: continuous backtest -> Bybit demo paper -> Bitget live; Grafana-first ops UI; Binance used as reference market-structure venue."
+  prd_note: "Phased perps execution: continuous backtest -> Bybit demo paper -> Bitget live; Grafana-first ops UI; Binance used as reference market-structure venue. LLM integrations (Z.ai GLM-5, MiniMax 2.5) are separate capabilities, not Phase 1."
 
 # Current project phase
 current_phase:
@@ -1510,6 +1510,11 @@ stories:
 # ACTIVE SPRINTS
 # ============================================================
 
+# LLM Integration Notes (NOT Phase 1):
+# - Z.ai GLM-5 integration: PR #80 merged (33 tests pass)
+# - MiniMax 2.5 integration: PR #79 merged (27 tests pass)
+# These are separate capabilities, not part of Phase 1 foundation work
+
 sprints:
   # Legacy sprints (deprecated)
   - id: q1-1
@@ -1661,6 +1666,16 @@ sprints:
     story_count: 10
     story_points: 54
     mapped_stories: [ST-OPS-001, ST-OPS-002, ST-OPS-003, ST-OPS-004, ST-OPS-005, ST-OPS-006, ST-OPS-007, ST-OPS-008, ST-OPS-009, ST-OPS-010]
+
+  # Paper Trading Validation Sprint
+  - id: PAPER-GATE-001
+    name: Paper Trading Validation - Grafana + Canary
+    status: in_progress
+    story_count: 1
+    story_points: 5
+    mapped_stories: [ST-EX-001]
+    note: "Sprint for validating paper trading with Grafana dashboards and canary deployment gates"
+    prs_merged: [PR-081]
 
 # ============================================================
 # SUMMARY COUNTS
