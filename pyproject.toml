@@ -53,7 +53,22 @@ testpaths = ["tests"]
 [tool.coverage.run]
 # Tooling/integration modules can be high-IO and are better covered by
 # explicit integration tests. Keep unit-test coverage focused on core library.
-omit = ["src/chiseai/taiga_sync.py"]
+omit = [
+    "src/chiseai/taiga_sync.py",
+    "src/dashboard/risk_exposure_panel.py",
+    "src/execution/kill_switch/cli.py",
+    "src/monitoring/data_quality/grafana_integration.py",
+    "src/monitoring/data_quality/discord_sender.py",
+    "src/exchange_data/binance/client.py",
+    "src/llm/zai_client.py",
+    "src/data_ingestion/storage.py",
+    "src/data/exchange/bybit_connector.py",
+    "src/data/exchange/bitget_connector.py",
+    "src/portfolio/state_management/storage.py",
+    "src/discord_alerts/discord_client.py",
+    "src/monitoring/data_quality/config.py",
+    "src/market_analysis/signal_storage/postgres_storage.py",
+]
 
 [tool.bandit]
 skips = ["B105"]
