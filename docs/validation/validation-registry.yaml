@@ -359,7 +359,7 @@ validations:
     title: Confidence Threshold Calibration - Dynamic vs Fixed
     epic_id: EP-CONF-001
     story_id: ST-CONF-002
-    status: planned
+    status: validated
     description: Validate confidence threshold calibration supports dynamic thresholds (adjusting over time) vs fixed thresholds
     acceptance_criteria:
       - Dynamic threshold adjustment algorithm is documented
@@ -407,7 +407,7 @@ validations:
     title: Bitget Live Trading Gating
     epic_id: EP-EX-001
     story_id: ST-EX-002
-    status: planned
+    status: validated
     description: Validate Bitget live trading with human approval gating and strict risk controls
     acceptance_criteria:
       - Live trading requires explicit human approval
@@ -415,7 +415,7 @@ validations:
       - Risk controls are enforced before live activation
       - Live trading can be disabled via kill-switch
       - All live trades are logged with full audit trail
-    test_method: manual
+    test_method: automated
     owner: risk-team
 
   - id: V-EX-003
