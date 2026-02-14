@@ -311,7 +311,7 @@ class WalkForwardResult:
     aggregated: AggregatedMetrics = field(default_factory=AggregatedMetrics)
     look_ahead_check: LookAheadBiasCheck = LookAheadBiasCheck.PASSED
     total_evaluation_time_seconds: float = 0.0
-    created_at: datetime = field(default_factory=lambda: datetime.now())
+    created_at: datetime = field(default_factory=datetime.utcnow)
     completed_at: datetime | None = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -568,14 +568,14 @@ class WalkForwardEvaluator:
 
         if not windows:
             result.look_ahead_check = LookAheadBiasCheck.FAILED_TEMPORAL_ORDER
-            result.completed_at = datetime.now()
+            result.completed_at = datetime.utcnow()
             result.total_evaluation_time_seconds = time.time() - start_time
             return result
 
         # Validate no look-ahead bias
         result.look_ahead_check = self.validate_no_look_ahead_bias(windows)
         if result.look_ahead_check != LookAheadBiasCheck.PASSED:
-            result.completed_at = datetime.now()
+            result.completed_at = datetime.utcnow()
             result.total_evaluation_time_seconds = time.time() - start_time
             return result
 
@@ -598,7 +598,7 @@ class WalkForwardEvaluator:
 
         # Calculate aggregated metrics
         result.aggregated = self._aggregate_metrics(result.window_results)
-        result.completed_at = datetime.now()
+        result.completed_at = datetime.utcnow()
         result.total_evaluation_time_seconds = time.time() - start_time
 
         logger.info(
@@ -637,17 +637,11 @@ class WalkForwardEvaluator:
         test_data = []
 
         for d in data:
-            ts_raw = d.get("timestamp", d.get("time"))
-            ts: datetime | None = None
-            if isinstance(ts_raw, str):
-                ts = datetime.fromisoformat(ts_raw.replace("Z", "+00:00"))
-            elif isinstance(ts_raw, (int, float)):
-                ts = datetime.fromtimestamp(ts_raw / 1000)
-            elif isinstance(ts_raw, datetime):
-                ts = ts_raw
-
-            if ts is None:
-                continue
+            ts = d.get("timestamp", d.get("time"))
+            if isinstance(ts, str):
+                ts = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            elif isinstance(ts, (int, float)):
+                ts = datetime.fromtimestamp(ts / 1000)
 
             if window.train_start <= ts < window.train_end:
                 train_data.append(d)
