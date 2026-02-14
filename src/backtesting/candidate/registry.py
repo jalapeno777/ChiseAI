@@ -457,7 +457,8 @@ class InMemoryStrategyRegistry:
 
         if version.status != StrategyStatus.CANDIDATE:
             raise ValueError(
-                f"Version {version_id} must be in CANDIDATE status, got {version.status.value}"
+                f"Version {version_id} must be in CANDIDATE status, "
+                f"got {version.status.value}"
             )
 
         key = (version.symbol, version.timeframe)
@@ -541,7 +542,9 @@ class InMemoryStrategyRegistry:
                 champion_id=None,
                 failed_criteria=[
                     {
-                        "status": f"Version must be CHALLENGER, got {version.status.value}"
+                        "status": (
+                            f"Version must be CHALLENGER, got {version.status.value}"
+                        )
                     }
                 ],
             )
@@ -561,12 +564,15 @@ class InMemoryStrategyRegistry:
             composite_score = backtest_metrics.get("composite_score", 0.0)
             if composite_score >= criteria.min_backtest_score:
                 passed.append(
-                    f"backtest_score: {composite_score:.2f} >= {criteria.min_backtest_score}"
+                    f"backtest_score: {composite_score:.2f} >="
+                    f" {criteria.min_backtest_score}"
                 )
             else:
                 failed.append(
                     {
-                        "backtest_score": f"{composite_score:.2f} < {criteria.min_backtest_score}"
+                        "backtest_score": (
+                            f"{composite_score:.2f} < {criteria.min_backtest_score}"
+                        )
                     }
                 )
 
@@ -630,19 +636,24 @@ class InMemoryStrategyRegistry:
             else:
                 failed.append(
                     {
-                        "paper_sharpe": f"{paper_sharpe:.2f} < {criteria.min_paper_sharpe}"
+                        "paper_sharpe": (
+                            f"{paper_sharpe:.2f} < {criteria.min_paper_sharpe}"
+                        )
                     }
                 )
 
             paper_dd = paper_metrics.get("max_drawdown_pct", 100.0)
             if paper_dd <= criteria.max_paper_drawdown_pct:
                 passed.append(
-                    f"paper_drawdown: {paper_dd:.2f}% <= {criteria.max_paper_drawdown_pct}%"
+                    f"paper_drawdown: {paper_dd:.2f}% <="
+                    f" {criteria.max_paper_drawdown_pct}%"
                 )
             else:
                 failed.append(
                     {
-                        "paper_drawdown": f"{paper_dd:.2f}% > {criteria.max_paper_drawdown_pct}%"
+                        "paper_drawdown": (
+                            f"{paper_dd:.2f}% > {criteria.max_paper_drawdown_pct}%"
+                        )
                     }
                 )
         else:
@@ -665,12 +676,16 @@ class InMemoryStrategyRegistry:
                 margin = criteria.outperformance_margin_pct
                 if challenger_score >= champion_score * (1 + margin / 100):
                     passed.append(
-                        f"outperformance: {challenger_score:.2f} >= {champion_score:.2f} + {margin}%"
+                        f"outperformance: {challenger_score:.2f} >="
+                        f" {champion_score:.2f} + {margin}%"
                     )
                 else:
                     failed.append(
                         {
-                            "outperformance": f"{challenger_score:.2f} < {champion_score:.2f} + {margin}%"
+                            "outperformance": (
+                                f"{challenger_score:.2f} <"
+                                f" {champion_score:.2f} + {margin}%"
+                            )
                         }
                     )
             else:

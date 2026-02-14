@@ -24,8 +24,9 @@ class StorageConfig:
         host: Database host
         port: Database port
         database: Database name
-        username: Authentication username
-        password: Authentication password
+        username: Authentication username (for InfluxDB, this is the org)
+        password: Authentication password or token
+        token: Explicit token (preferred for InfluxDB v2)
         ssl: Whether to use SSL connection
     """
 
@@ -34,6 +35,7 @@ class StorageConfig:
     database: str
     username: str | None = None
     password: str | None = None
+    token: str | None = None
     ssl: bool = False
 
 
@@ -133,10 +135,14 @@ class InfluxDBStorage(StorageInterface):
                 from influxdb_client import InfluxDBClient
 
                 url = f"http://{self.config.host}:{self.config.port}"
+                # InfluxDB v2 token should be passed directly, not as username:password
+                token = (
+                    self.config.password if self.config.password else self.config.token
+                )
                 self._client = InfluxDBClient(
                     url=url,
-                    token=f"{self.config.username}:{self.config.password}",
-                    org="-",
+                    token=token,
+                    org=self.config.username or "-",
                 )
                 self._write_api = self._client.write_api()
                 self._query_api = self._client.query_api()
