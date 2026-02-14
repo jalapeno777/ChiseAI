@@ -16,6 +16,20 @@ from confidence.ece_tracker import (
     ECEHistoryTracker,
     ECETrend,
 )
+from confidence.threshold import (
+    CalibrationResult,
+    ModeSwitchRecord,
+    ThresholdAdjustment,
+    ThresholdCalibrator,
+    ThresholdConfig,
+    ThresholdManager,
+    ThresholdMode,
+)
+from confidence.threshold_tracker import (
+    InMemoryThresholdTracker,
+    InfluxDBThresholdTracker,
+    ThresholdHistoryTracker,
+)
 
 __all__ = [
     # ECE calculation
@@ -28,4 +42,16 @@ __all__ = [
     "ECEHistoryTracker",
     "ECEHistoryPoint",
     "ECETrend",
+    # Threshold calibration
+    "ThresholdMode",
+    "ThresholdConfig",
+    "ThresholdAdjustment",
+    "CalibrationResult",
+    "ModeSwitchRecord",
+    "ThresholdCalibrator",
+    "ThresholdManager",
+    # Threshold tracking
+    "ThresholdHistoryTracker",
+    "InMemoryThresholdTracker",
+    "InfluxDBThresholdTracker",
 ]
