@@ -555,7 +555,8 @@ stories:
     title: Confidence Threshold Calibration - Dynamic vs Fixed
     epic_id: EP-CONF-001
     sprint_id: p0-3
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 3
     priority: P1-HIGH
     description: Implement dynamic vs fixed confidence threshold calibration
@@ -613,12 +614,13 @@ stories:
     title: Bitget Live Trading Gating
     epic_id: EP-EX-001
     sprint_id: p0-4
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
     notes: |
-      DEPENDS ON: ST-EX-001 (Bybit Demo Paper Trading). Cannot proceed to live trading until paper 
-      trading is validated with 30+ days of positive performance and Sharpe ratio.
+      IMPLEMENTED: Live gating system with human approval workflow, risk controls (position limits, leverage cap 3x, 
+      per-trade risk 1%, grid worst-case 2%), kill-switch integration, audit logging, and Grafana metrics export.
     description: Implement Bitget live trading with human approval gating and risk controls
     acceptance_criteria:
       - Live trading requires explicit human approval via signed promotion packet
