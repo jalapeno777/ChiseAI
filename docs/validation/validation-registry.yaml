@@ -19,7 +19,7 @@ validations:
     title: Brain CI/CD Pipeline - Version and Evaluate
     epic_id: EP-CHISE-001
     story_id: ST-CHISE-001
-    status: planned
+    status: validated
     description: Validate Chise v1 brain has CI/CD pipeline for version management, shadow testing, and promotion
     acceptance_criteria:
       - Brain versioning follows semantic versioning
@@ -344,7 +344,7 @@ validations:
     title: ECE Calculation per Strategy/Signal Type
     epic_id: EP-CONF-001
     story_id: ST-CONF-001
-    status: planned
+    status: validated
     description: Validate Expected Calibration Error (ECE) is calculated correctly per strategy and signal type
     acceptance_criteria:
       - ECE calculations use correct binning (10 bins: 0-10%, 10-20%, etc.)
@@ -604,7 +604,7 @@ validations:
     title: Grafana Persistence + Bootstrap Admin User
     epic_id: EP-OPS-001
     story_id: ST-OPS-012
-    status: planned
+    status: validated
     description: Validate Grafana user DB persistence and admin user bootstrap functionality
     acceptance_criteria:
       - Container recreation preserves user accounts

@@ -185,7 +185,8 @@ stories:
     title: Brain CI/CD Pipeline - Version and Evaluate
     epic_id: EP-CHISE-001
     sprint_id: p0-1
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
     description: Implement Brain CI/CD pipeline with versioning and evaluation workflow
@@ -539,7 +540,8 @@ stories:
     title: ECE Calculation per Strategy/Signal Type
     epic_id: EP-CONF-001
     sprint_id: p0-3
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
     description: Implement Expected Calibration Error (ECE) calculation per strategy and signal type
@@ -839,7 +841,8 @@ stories:
     title: Grafana Persistence + Bootstrap Admin User
     epic_id: EP-OPS-001
     sprint_id: p0-7
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 5
     priority: P0-CRITICAL
     description: Ensure Grafana user DB persists across container recreation and craig-admin is auto-recreated if missing
