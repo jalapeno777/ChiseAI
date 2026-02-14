@@ -63,7 +63,7 @@ epics:
   # EP-ML-001: ML Optimization for Strategy Tuning (3 stories, 11 points)
   - id: EP-ML-001
     name: ML Optimization for Strategy Tuning
-    status: planned
+    status: completed
     story_ids: [ST-ML-001, ST-ML-002, ST-ML-003]
     story_count: 3
     story_points: 11
@@ -73,7 +73,7 @@ epics:
   # EP-CONF-001: Confidence Scoring - ECE/Thresholds (3 stories, 10 points)
   - id: EP-CONF-001
     name: Confidence Scoring - ECE/Thresholds
-    status: planned
+    status: completed
     story_ids: [ST-CONF-001, ST-CONF-002, ST-CONF-003]
     story_count: 3
     story_points: 10
@@ -185,7 +185,7 @@ stories:
     title: Brain CI/CD Pipeline - Version and Evaluate
     epic_id: EP-CHISE-001
     sprint_id: p0-1
-    status: planned
+    status: completed
     story_points: 4
     priority: P0-CRITICAL
     description: Implement Brain CI/CD pipeline with versioning and evaluation workflow
@@ -201,7 +201,7 @@ stories:
     title: Brain Evaluation Framework - Batching + BrainEval
     epic_id: EP-CHISE-001
     sprint_id: p0-1
-    status: planned
+    status: completed
     story_points: 4
     priority: P0-CRITICAL
     description: Build brain evaluation framework with batching support and BrainEval protocol
@@ -217,7 +217,7 @@ stories:
     title: Brain Promotion Packet - Evidence + Rollback
     epic_id: EP-CHISE-001
     sprint_id: p0-1
-    status: planned
+    status: completed
     story_points: 4
     priority: P0-CRITICAL
     description: Generate promotion packets for brain upgrades with evidence and rollback procedures
@@ -249,7 +249,7 @@ stories:
     title: Chise v1 Rollback Plan - Safety + Rollback Steps
     epic_id: EP-CHISE-001
     sprint_id: p0-1
-    status: planned
+    status: completed
     story_points: 3
     priority: P0-CRITICAL
     description: Define comprehensive rollback plan with safety checks and rollback steps
@@ -298,10 +298,15 @@ stories:
     title: Branch Hygiene Automation - Prune + Prevention
     epic_id: EP-CI-001
     sprint_id: p0-1
-    status: planned
+    status: completed
     story_points: 3
     priority: P1-HIGH
     description: Auto-prune merged branches and prevent long-lived divergence
+    implementation_notes:
+      - Script: scripts/branch_hygiene.py
+      - Tests: tests/test_branch_hygiene.py (38 tests)
+      - CI job: branch-hygiene pipeline in .woodpecker.yml
+      - CLI: --dry-run, --cleanup, --check-divergence flags
     acceptance_criteria:
       - Merged branches are auto-deleted after 24 hours of merge completion
       - Branches older than 30 days trigger warning notifications
@@ -490,7 +495,7 @@ stories:
     title: Walk-Forward Evaluation Framework
     epic_id: EP-ML-001
     sprint_id: p0-2
-    status: planned
+    status: completed
     story_points: 4
     priority: P0-CRITICAL
     description: Implement walk-forward evaluation framework for robust strategy validation
@@ -506,7 +511,7 @@ stories:
     title: Hyperparameter Optimization - Genetic/BO
     epic_id: EP-ML-001
     sprint_id: p0-2
-    status: planned
+    status: completed
     story_points: 4
     priority: P1-HIGH
     description: Implement genetic algorithm and Bayesian optimization for strategy hyperparameter tuning
@@ -522,7 +527,7 @@ stories:
     title: ML Optimization Cadence - Auto-tuning Schedule
     epic_id: EP-ML-001
     sprint_id: p0-2
-    status: planned
+    status: completed
     story_points: 3
     priority: P1-HIGH
     description: Set up automated tuning schedule for continuous strategy optimization
@@ -539,10 +544,17 @@ stories:
     title: ECE Calculation per Strategy/Signal Type
     epic_id: EP-CONF-001
     sprint_id: p0-3
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
     description: Implement Expected Calibration Error (ECE) calculation per strategy and signal type
+    implementation_notes:
+      - ECE module: src/confidence/ece.py
+      - Tests: tests/test_confidence/test_ece.py
+      - 10 equal-width bins (0-10%, 10-20%, ..., 90-100%)
+      - Supports all signal types: entry, exit, sl, tp
+      - ECEHistoryTracker for trending analysis
     acceptance_criteria:
       - ECE calculations use correct binning (10 bins: 0-10%, 10-20%, etc.)
       - ECE is calculated per signal type (entry, exit, SL, TP)
@@ -555,10 +567,18 @@ stories:
     title: Confidence Threshold Calibration - Dynamic vs Fixed
     epic_id: EP-CONF-001
     sprint_id: p0-3
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 3
     priority: P1-HIGH
     description: Implement dynamic vs fixed confidence threshold calibration
+    implementation_notes:
+      - Calibration module: src/confidence/calibration.py
+      - Threshold manager: src/confidence/threshold_manager.py
+      - Tests: tests/test_confidence/test_calibration.py, test_threshold_manager.py
+      - ThresholdCalibrator with ECE-based optimization
+      - DynamicCalibrator with cooldown and min samples protection
+      - ThresholdManager supports DYNAMIC and FIXED modes
     acceptance_criteria:
       - Dynamic threshold adjustment algorithm is documented and implemented
       - Threshold history is tracked with changes and reasons
@@ -837,7 +857,7 @@ stories:
     title: Grafana Persistence + Bootstrap Admin User
     epic_id: EP-OPS-001
     sprint_id: p0-7
-    status: planned
+    status: completed
     story_points: 5
     priority: P0-CRITICAL
     description: Ensure Grafana user DB persists across container recreation and craig-admin is auto-recreated if missing

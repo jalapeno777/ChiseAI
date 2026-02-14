@@ -19,7 +19,7 @@ validations:
     title: Brain CI/CD Pipeline - Version and Evaluate
     epic_id: EP-CHISE-001
     story_id: ST-CHISE-001
-    status: planned
+    status: validated
     description: Validate Chise v1 brain has CI/CD pipeline for version management, shadow testing, and promotion
     acceptance_criteria:
       - Brain versioning follows semantic versioning
@@ -34,7 +34,7 @@ validations:
     title: Brain Evaluation Framework - Batching + BrainEval
     epic_id: EP-CHISE-001
     story_id: ST-CHISE-002
-    status: planned
+    status: validated
     description: Validate brain evaluation framework supports batch evaluation of multiple brain versions and uses BrainEval tool
     acceptance_criteria:
       - Evaluation batches support 3-5 brain versions
@@ -49,7 +49,7 @@ validations:
     title: Brain Promotion Packet - Evidence + Rollback
     epic_id: EP-CHISE-001
     story_id: ST-CHISE-003
-    status: planned
+    status: validated
     description: Validate promotion packets for brain upgrades include evidence, risk assessment, and rollback steps
     acceptance_criteria:
       - Packets include all required fields (evaluation summary, safety checks, rollback steps, human approval checkbox)
@@ -79,7 +79,7 @@ validations:
     title: Chise v1 Rollback Plan - Safety + Rollback Steps
     epic_id: EP-CHISE-001
     story_id: ST-CHISE-005
-    status: planned
+    status: validated
     description: Validate Chise v1 brain rollback plan includes safety checks and detailed rollback steps
     acceptance_criteria:
       - Rollback triggers are documented (ECE degradation, safety violations, human request)
@@ -125,15 +125,20 @@ validations:
     title: Branch Hygiene Automation - Prune + Prevention
     epic_id: EP-CI-001
     story_id: ST-CI-003
-    status: planned
+    status: validated
     description: Validate auto-prune merged branches and prevent long-lived divergence
     acceptance_criteria:
-      - Merged branches are auto-deleted after 24 hours
-      - Branches older than 30 days trigger warnings
-      - Divergence detection alerts on significant drift from main
-      - Branch naming conventions are enforced
-      - Cleanup operations are logged
+      - Merged branches are auto-deleted after 24 hours (24h grace period configurable)
+      - Branches older than 30 days trigger warnings (Discord + Redis logging)
+      - Divergence detection alerts on >50 commits drift from main
+      - Branch naming conventions are enforced (feature/*, bugfix/*, hotfix/*)
+      - Cleanup operations are logged to Redis with branch name, author, timestamp
+      - Protected branches (main, release/*) are excluded from auto-deletion
     test_method: automated
+    test_artifacts:
+      - tests/test_branch_hygiene.py (38 tests, all passing)
+      - scripts/branch_hygiene.py (CLI tool)
+      - .woodpecker.yml (scheduled CI pipeline)
     owner: ops-team
 
   - id: V-CI-004
@@ -298,7 +303,7 @@ validations:
     title: Walk-Forward Evaluation Framework
     epic_id: EP-ML-001
     story_id: ST-ML-001
-    status: planned
+    status: validated
     description: Validate walk-forward evaluation framework correctly simulates sequential training and prevents look-ahead bias
     acceptance_criteria:
       - Walk-forward windows are configured correctly (train/test splits)
@@ -313,7 +318,7 @@ validations:
     title: Hyperparameter Optimization - Genetic/BO
     epic_id: EP-ML-001
     story_id: ST-ML-002
-    status: planned
+    status: validated
     description: Validate hyperparameter optimization uses genetic algorithms or Bayesian optimization to tune strategy parameters
     acceptance_criteria:
       - Optimization converges to stable parameter sets
@@ -328,7 +333,7 @@ validations:
     title: ML Optimization Cadence - Auto-tuning Schedule
     epic_id: EP-ML-001
     story_id: ST-ML-003
-    status: planned
+    status: validated
     description: Validate ML optimization runs on a scheduled cadence (e.g., daily/weekly) to adapt strategies to market conditions
     acceptance_criteria:
       - Scheduled optimization jobs run reliably without manual trigger
@@ -344,7 +349,7 @@ validations:
     title: ECE Calculation per Strategy/Signal Type
     epic_id: EP-CONF-001
     story_id: ST-CONF-001
-    status: planned
+    status: validated
     description: Validate Expected Calibration Error (ECE) is calculated correctly per strategy and signal type
     acceptance_criteria:
       - ECE calculations use correct binning (10 bins: 0-10%, 10-20%, etc.)
@@ -354,12 +359,18 @@ validations:
       - ECE is queryable per strategy for calibration decisions
     test_method: automated
     owner: ml-team
+    evidence:
+      - "Module: src/confidence/ece.py"
+      - "Tests: tests/test_confidence/test_ece.py (35 tests)"
+      - "10 equal-width bins implemented"
+      - "Signal types: entry, exit, sl, tp"
+      - "ECEHistoryTracker for trending"
 
   - id: V-CONF-002
     title: Confidence Threshold Calibration - Dynamic vs Fixed
     epic_id: EP-CONF-001
     story_id: ST-CONF-002
-    status: planned
+    status: validated
     description: Validate confidence threshold calibration supports dynamic thresholds (adjusting over time) vs fixed thresholds
     acceptance_criteria:
       - Dynamic threshold adjustment algorithm is documented
@@ -369,6 +380,12 @@ validations:
       - Threshold changes are logged and auditable
     test_method: automated
     owner: ml-team
+    evidence:
+      - "Module: src/confidence/calibration.py, src/confidence/threshold_manager.py"
+      - "Tests: tests/test_confidence/test_calibration.py, test_threshold_manager.py"
+      - "ThresholdCalibrator with ECE-based optimization"
+      - "DynamicCalibrator with cooldown protection"
+      - "ThresholdManager supports DYNAMIC/FIXED modes"
 
   - id: V-CONF-003
     title: Confidence Threshold Enforcement - <40% Filter
@@ -604,7 +621,7 @@ validations:
     title: Grafana Persistence + Bootstrap Admin User
     epic_id: EP-OPS-001
     story_id: ST-OPS-012
-    status: planned
+    status: validated
     description: Validate Grafana user DB persistence and admin user bootstrap functionality
     acceptance_criteria:
       - Container recreation preserves user accounts
