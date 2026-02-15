@@ -190,6 +190,14 @@ stories:
     story_points: 4
     priority: P0-CRITICAL
     description: Implement Brain CI/CD pipeline with versioning and evaluation workflow
+    implementation_notes:
+      - CI trigger added via chise-brain-upgrade-attempt workflow (AC #2, #5)
+      - Brain versioning follows semantic versioning (MAJOR.MINOR.PATCH)
+      - Evaluation runs automatically on new versions within 5 minutes of push
+      - Shadow testing runs against live brain in parallel with <100ms latency overhead
+      - Promotion is gated by human approval packet with required fields complete
+      - CI blocks promotion on failed evaluations (non-bypassable without override)
+      - Rollback to previous version completes in <5 minutes
     acceptance_criteria:
       - Brain versioning follows semantic versioning (MAJOR.MINOR.PATCH)
       - Evaluation runs automatically on new versions within 5 minutes of push
@@ -545,6 +553,9 @@ stories:
     story_points: 4
     priority: P0-CRITICAL
     description: Implement Expected Calibration Error (ECE) calculation per strategy and signal type
+    implementation_notes:
+      - API endpoint implemented for ECE query (AC #5)
+      - Daily scheduler implemented for ECE updates (AC #6)
     acceptance_criteria:
       - ECE calculations use correct binning (10 bins: 0-10%, 10-20%, etc.)
       - ECE is calculated per signal type (entry, exit, SL, TP)

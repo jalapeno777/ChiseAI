@@ -20,7 +20,7 @@ validations:
     epic_id: EP-CHISE-001
     story_id: ST-CHISE-001
     status: validated
-    description: Validate Chise v1 brain has CI/CD pipeline for version management, shadow testing, and promotion
+    description: Validate Chise v1 brain has CI/CD pipeline for version management, shadow testing, and promotion. CI trigger added via chise-brain-upgrade-attempt workflow.
     acceptance_criteria:
       - Brain versioning follows semantic versioning
       - Evaluation runs automatically on new versions
@@ -345,7 +345,7 @@ validations:
     epic_id: EP-CONF-001
     story_id: ST-CONF-001
     status: validated
-    description: Validate Expected Calibration Error (ECE) is calculated correctly per strategy and signal type
+    description: Validate Expected Calibration Error (ECE) is calculated correctly per strategy and signal type. API endpoint and daily scheduler implemented for ECE query and updates.
     acceptance_criteria:
       - ECE calculations use correct binning (10 bins: 0-10%, 10-20%, etc.)
       - ECE is calculated per signal type (entry, exit, SL, TP)
