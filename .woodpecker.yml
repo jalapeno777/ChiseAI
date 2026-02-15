@@ -98,6 +98,33 @@ steps:
         # Do not short-circuit the pipeline; ci-gate is the single fail point.
         exit 0
 
+  brain-eval:
+    image: python:3.11
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          python -V
+          pip install --no-cache-dir pyyaml requests numpy scipy
+          # Check if brain files changed
+          if git diff --name-only origin/main HEAD | grep -qE "(src/brain/|src/neuro_symbolic/|src/strategy/)"; then
+            echo "Brain changes detected, running evaluation..."
+            pip install -e . > /dev/null 2>&1 || pip install -e . --break-system-packages > /dev/null 2>&1 || true
+            python scripts/ci/brain_eval_ci.py --output _bmad-output/ci/brain-eval.json
+          else
+            echo "No brain changes detected, skipping evaluation"
+            echo '{"success": true, "skipped": true, "reason": "No brain changes detected"}' > _bmad-output/ci/brain-eval.json
+          fi
+        ) > _bmad-output/ci/brain-eval.log 2>&1
+        code=$?
+        cat _bmad-output/ci/brain-eval.log
+        echo "$code" > _bmad-output/ci/brain-eval.status
+        # Do not short-circuit the pipeline; ci-gate is the single fail point.
+        exit 0
+
   ci-root-cause-bundle:
     image: python:3.11
     commands:
