@@ -34,7 +34,7 @@ validations:
     title: Brain Evaluation Framework - Batching + BrainEval
     epic_id: EP-CHISE-001
     story_id: ST-CHISE-002
-    status: planned
+    status: validated
     description: Validate brain evaluation framework supports batch evaluation of multiple brain versions and uses BrainEval tool
     acceptance_criteria:
       - Evaluation batches support 3-5 brain versions
@@ -49,7 +49,7 @@ validations:
     title: Brain Promotion Packet - Evidence + Rollback
     epic_id: EP-CHISE-001
     story_id: ST-CHISE-003
-    status: planned
+    status: validated
     description: Validate promotion packets for brain upgrades include evidence, risk assessment, and rollback steps
     acceptance_criteria:
       - Packets include all required fields (evaluation summary, safety checks, rollback steps, human approval checkbox)
@@ -79,7 +79,7 @@ validations:
     title: Chise v1 Rollback Plan - Safety + Rollback Steps
     epic_id: EP-CHISE-001
     story_id: ST-CHISE-005
-    status: planned
+    status: validated
     description: Validate Chise v1 brain rollback plan includes safety checks and detailed rollback steps
     acceptance_criteria:
       - Rollback triggers are documented (ECE degradation, safety violations, human request)
