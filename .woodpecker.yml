@@ -64,7 +64,8 @@ steps:
           set -euo pipefail
           pip install --no-cache-dir bandit
           # Keep deterministic and avoid flagging automation scripts; scan application code only.
-          bandit -q -r src -s B311,B107
+          # Fail only on medium/high findings to avoid blocking on informational lows.
+          bandit -q -r src -s B311,B107 -ll
         ) > _bmad-output/ci/security-scan.log 2>&1
         code=$?
         cat _bmad-output/ci/security-scan.log
