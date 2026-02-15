@@ -210,7 +210,8 @@ stories:
     title: Brain Evaluation Framework - Batching + BrainEval
     epic_id: EP-CHISE-001
     sprint_id: p0-1
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
     description: Build brain evaluation framework with batching support and BrainEval protocol
@@ -226,7 +227,8 @@ stories:
     title: Brain Promotion Packet - Evidence + Rollback
     epic_id: EP-CHISE-001
     sprint_id: p0-1
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
     description: Generate promotion packets for brain upgrades with evidence and rollback procedures
@@ -258,7 +260,8 @@ stories:
     title: Chise v1 Rollback Plan - Safety + Rollback Steps
     epic_id: EP-CHISE-001
     sprint_id: p0-1
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 3
     priority: P0-CRITICAL
     description: Define comprehensive rollback plan with safety checks and rollback steps
