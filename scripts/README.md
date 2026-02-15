@@ -143,6 +143,20 @@ python3 scripts/ci/woodpecker_triage.py diagnose --pr 123 --write-artifacts --db
 python3 scripts/ci/woodpecker_triage.py diagnose --from-local-dir _bmad-output/ci --write-artifacts
 ```
 
+### ci/check_woodpecker_forge_token_health.py
+
+Detects Woodpecker forge-token drift/expiry issues before they cause pre-step CI failures.
+
+- Validates `users.expiry` vs JWT `exp` drift
+- Detects expired or near-expiry access tokens
+- Supports direct DSN input or auto-discovery from `woodpecker-server`
+
+**Usage:**
+```bash
+python3 scripts/ci/check_woodpecker_forge_token_health.py --require-user craig
+python3 scripts/ci/check_woodpecker_forge_token_health.py --dsn "$WOODPECKER_DATABASE_DATASOURCE" --warn-seconds 1800
+```
+
 ## Adding New Scripts
 
 When adding scripts to this directory:
