@@ -762,3 +762,54 @@ resource "docker_container" "chiseai_data_quality_monitor" {
     retries  = 3
   }
 }
+
+# OHLCV Ingestion Daemon - Continuous market data ingestion for Grafana
+# Story: INFRA-002
+# Fetches OHLCV data from exchanges and stores in InfluxDB for dashboard visualization
+resource "docker_container" "chiseai_ohlcv_ingestion" {
+  name  = "chiseai-ohlcv-ingestion"
+  image = "chiseai-ohlcv-ingestion:latest"
+
+  env = [
+    "INFLUXDB_HOST=chiseai-influxdb",
+    "INFLUXDB_PORT=18087",
+    "INFLUXDB_TOKEN=${var.influxdb_token}",
+    "INFLUXDB_ORG=${var.influxdb_org}",
+    "INFLUXDB_BUCKET=${var.influxdb_bucket}",
+    "SYMBOLS=BTC/USDT,ETH/USDT,SOL/USDT",
+    "TIMEFRAMES=1m,5m,15m,1h",
+    "INGEST_INTERVAL_SECONDS=60",
+    "EXCHANGE_ID=binance",
+    "FETCH_LIMIT=100",
+    "PYTHONUNBUFFERED=1",
+    "PYTHONPATH=/app:/app/scripts",
+  ]
+
+  restart = "always"
+
+  networks_advanced {
+    name = docker_network.chiseai.name
+  }
+
+  labels {
+    label = "project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.service"
+    value = "ohlcv-ingestion"
+  }
+
+  healthcheck {
+    test     = ["CMD-SHELL", "pgrep -f 'run_ohlcv_ingestion' || exit 1"]
+    interval = "60s"
+    timeout  = "10s"
+    retries  = 3
+  }
+}
