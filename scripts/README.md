@@ -157,6 +157,31 @@ python3 scripts/ci/check_woodpecker_forge_token_health.py --require-user craig
 python3 scripts/ci/check_woodpecker_forge_token_health.py --dsn "$WOODPECKER_DATABASE_DATASOURCE" --warn-seconds 1800
 ```
 
+### ci/ci_change_scope.py
+
+Classifies changed files for path-aware CI behavior.
+
+- `docs-only` mode: exits `0` when changes are docs/opencode/report-only
+- `changed-python` mode: prints changed Python file list (used by lint step)
+
+**Usage:**
+```bash
+python3 scripts/ci/ci_change_scope.py --mode summary
+python3 scripts/ci/ci_change_scope.py --mode docs-only
+python3 scripts/ci/ci_change_scope.py --mode changed-python
+```
+
+### ci/check_woodpecker_stuck_pipelines.py
+
+Watchdog for likely-stuck Woodpecker pipelines (running/pending beyond threshold
+with no active running/pending steps).
+
+**Usage:**
+```bash
+python3 scripts/ci/check_woodpecker_stuck_pipelines.py --max-running-seconds 1800
+python3 scripts/ci/check_woodpecker_stuck_pipelines.py --fail-on-stuck
+```
+
 ### ops/merge_reconciler.py
 
 Merge queue + reconciliation utility for non-blocking swarm throughput while preserving `main` integrity.

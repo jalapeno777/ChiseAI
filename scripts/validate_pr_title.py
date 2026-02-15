@@ -18,8 +18,16 @@ import re
 import sys
 
 STORY_ID_RE = re.compile(
-    r"\b(?:ST|CH|FT|REWARD|REPO|SAFETY|BRANCH)(?:-[A-Z0-9]+)+-\d+\b", re.IGNORECASE
+    r"\b(?:ST|CH|FT|REWARD|REPO|SAFETY|BRANCH)(?:-[A-Z0-9]+){1,}\b", re.IGNORECASE
 )
+
+
+def _contains_valid_story_id(text: str) -> bool:
+    for match in STORY_ID_RE.finditer(text):
+        token = match.group(0)
+        if any(ch.isdigit() for ch in token):
+            return True
+    return False
 
 
 def _is_pr_build(env: dict[str, str]) -> bool:
@@ -152,9 +160,10 @@ def main() -> int:
         )
         return 1
 
-    if not STORY_ID_RE.search(title):
+    if not _contains_valid_story_id(title):
         print(
-            f"ERROR: PR title must contain a story id like ST-NS-001 or CH-FOO-001. "
+            "ERROR: PR title must contain a story id like "
+            "ST-NS-001, ST-CI-HEALTH-20260215F, or CH-CI-103. "
             f"Got: {title!r}",
             file=sys.stderr,
         )

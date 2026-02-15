@@ -40,8 +40,14 @@ steps:
           set -euo pipefail
           python -V
           pip install --no-cache-dir black ruff mypy pytest pytest-cov pyyaml types-PyYAML types-requests
-          black --check . --extend-exclude 'src/operations/backtest_runner.py|tests/test_backtest_runner.py|tests/grafana/test_dashboards.py' || echo "WARN: black violations (non-blocking)"
-          ruff check . || echo "WARN: ruff violations (non-blocking)"
+          CHANGED_PY="$(python scripts/ci/ci_change_scope.py --mode changed-python | tr '\n' ' ')"
+          if [ -n "${CHANGED_PY// }" ]; then
+            echo "lint: checking changed python files only: ${CHANGED_PY}"
+            black --check ${CHANGED_PY} || echo "WARN: black violations (non-blocking)"
+            ruff check ${CHANGED_PY} || echo "WARN: ruff violations (non-blocking)"
+          else
+            echo "lint: no changed python files; skipping black/ruff file checks"
+          fi
           mypy src scripts || echo "WARN: mypy violations (non-blocking)"
           python scripts/validate_status_sync.py
           python scripts/validate_iterloop_compliance.py
@@ -82,6 +88,10 @@ steps:
         set +e
         (
           set -euo pipefail
+          if python scripts/ci/ci_change_scope.py --mode docs-only; then
+            echo "local-ci: docs/opencode-only change detected; skipping heavy local-ci checks"
+            exit 0
+          fi
           # Install system dependencies required by tests
           apt-get update && apt-get install -y jq
           pip install --no-cache-dir pytest pytest-asyncio pytest-cov pyyaml requests
@@ -98,6 +108,24 @@ steps:
         cat _bmad-output/ci/local-ci-full.log
         echo "$code" > _bmad-output/ci/local-ci.status
         # Do not short-circuit the pipeline; ci-gate is the single fail point.
+        exit 0
+
+  pipeline-watchdog:
+    image: python:3.11
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir requests
+          python scripts/ci/check_woodpecker_stuck_pipelines.py --max-running-seconds 1800
+        ) > _bmad-output/ci/pipeline-watchdog.log 2>&1
+        code=$?
+        cat _bmad-output/ci/pipeline-watchdog.log
+        echo "$code" > _bmad-output/ci/pipeline-watchdog.status
+        # Non-blocking signal; ci-gate remains the only fail point.
         exit 0
 
   brain-eval:

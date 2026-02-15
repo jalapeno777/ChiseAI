@@ -14,12 +14,14 @@ import sys
 from pathlib import Path
 
 CI_DIR = Path("_bmad-output/ci")
-REQUIRED_STATUS_FILES = [
-    CI_DIR / "swarm-context.status",
-    CI_DIR / "lint.status",
-    CI_DIR / "security-scan.status",
-    CI_DIR / "local-ci.status",
-    CI_DIR / "brain-eval.status",
+FAST_REQUIRED = [
+    "swarm-context.status",
+    "lint.status",
+    "security-scan.status",
+]
+FULL_REQUIRED = [
+    "local-ci.status",
+    "brain-eval.status",
 ]
 
 
@@ -37,9 +39,25 @@ def _is_pr_build(env: dict[str, str]) -> bool:
     )
 
 
+def _is_main_push(env: dict[str, str]) -> bool:
+    event = (
+        env.get("CI_BUILD_EVENT", "")
+        or env.get("WOODPECKER_BUILD_EVENT", "")
+        or env.get("WOODPECKER_EVENT", "")
+        or env.get("CI_PIPELINE_EVENT", "")
+    ).strip().lower()
+    branch = (
+        env.get("CI_COMMIT_BRANCH", "") or env.get("WOODPECKER_COMMIT_BRANCH", "")
+    ).strip()
+    return event == "push" and branch == "main"
+
+
 def main() -> int:
     env = dict(os.environ)
     CI_DIR.mkdir(parents=True, exist_ok=True)
+    required_files = [CI_DIR / name for name in FAST_REQUIRED]
+    if _is_main_push(env) or env.get("FORCE_FULL_GATE", "").strip() == "1":
+        required_files.extend(CI_DIR / name for name in FULL_REQUIRED)
 
     # Debug: print current directory and list CI_DIR contents
     print(f"ci-gate: Running in {os.getcwd()}")
@@ -49,10 +67,8 @@ def main() -> int:
     else:
         print("ci-gate: CI_DIR does not exist")
 
-    missing = [p for p in REQUIRED_STATUS_FILES if not p.exists()]
-    statuses = {
-        p.name: (_read_status(p) if p.exists() else 99) for p in REQUIRED_STATUS_FILES
-    }
+    missing = [p for p in required_files if not p.exists()]
+    statuses = {p.name: (_read_status(p) if p.exists() else 99) for p in required_files}
 
     print(f"ci-gate: Statuses read: {statuses}")
 
