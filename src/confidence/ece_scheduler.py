@@ -463,7 +463,8 @@ class ECEScheduler:
         Raises:
             ValueError: If insufficient samples available
         """
-        assert self.store is not None
+        if self.store is None:
+            raise RuntimeError("ECE scheduler store is not initialized")
 
         # Fetch all prediction-outcome pairs
         pairs = await self.store.fetch_pairs()
