@@ -15,6 +15,14 @@ from llm.zai_client import (
     ZaiMessage,
     ZaiResponse,
 )
+from llm.zhipu_client import (
+    ZhipuClient,
+    ZaiAuthError,
+    ZaiError,
+    ZaiRateLimitError,
+    ZaiServerError,
+    ZaiTimeoutError,
+)
 
 __all__ = [
     "MiniMaxClient",
@@ -25,4 +33,10 @@ __all__ = [
     "ZaiConfig",
     "ZaiMessage",
     "ZaiResponse",
+    "ZhipuClient",
+    "ZaiError",
+    "ZaiAuthError",
+    "ZaiRateLimitError",
+    "ZaiServerError",
+    "ZaiTimeoutError",
 ]
