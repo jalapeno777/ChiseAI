@@ -5,7 +5,7 @@
 metadata:
   project_name: ChiseAI
   version: "2.0.0"
-  last_updated: "2026-02-12"
+  last_updated: "2026-02-15"
 
 # Validation entries
 validations:
@@ -313,7 +313,7 @@ validations:
     title: Hyperparameter Optimization - Genetic/BO
     epic_id: EP-ML-001
     story_id: ST-ML-002
-    status: planned
+    status: validated
     description: Validate hyperparameter optimization uses genetic algorithms or Bayesian optimization to tune strategy parameters
     acceptance_criteria:
       - Optimization converges to stable parameter sets
@@ -328,7 +328,7 @@ validations:
     title: ML Optimization Cadence - Auto-tuning Schedule
     epic_id: EP-ML-001
     story_id: ST-ML-003
-    status: planned
+    status: validated
     description: Validate ML optimization runs on a scheduled cadence (e.g., daily/weekly) to adapt strategies to market conditions
     acceptance_criteria:
       - Scheduled optimization jobs run reliably without manual trigger
