@@ -19,6 +19,7 @@ REQUIRED_STATUS_FILES = [
     CI_DIR / "lint.status",
     CI_DIR / "security-scan.status",
     CI_DIR / "local-ci.status",
+    CI_DIR / "brain-eval.status",
 ]
 
 
