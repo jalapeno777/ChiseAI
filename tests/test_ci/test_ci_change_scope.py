@@ -31,3 +31,19 @@ def test_changed_python_filters_existing_py_files() -> None:
     selected = ci_change_scope.changed_python(paths)
     assert "scripts/ci/ci_gate.py" in selected
     assert "README.md" not in selected
+
+
+def test_changed_files_fallback_to_show_when_no_base_ref(monkeypatch) -> None:
+    def fake_run_git(*args: str) -> tuple[int, str]:
+        cmd = " ".join(args)
+        if cmd.startswith("rev-parse --verify"):
+            return 1, ""
+        if cmd == "diff --name-only HEAD~1..HEAD":
+            return 1, ""
+        if cmd == "show --pretty= --name-only HEAD":
+            return 0, "scripts/ci/ci_change_scope.py\nREADME.md\n"
+        return 1, ""
+
+    monkeypatch.setattr(ci_change_scope, "_run_git", fake_run_git)
+    files = ci_change_scope.changed_files(None)
+    assert files == ["scripts/ci/ci_change_scope.py", "README.md"]

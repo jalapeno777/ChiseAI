@@ -30,7 +30,7 @@ def _run_git(*args: str) -> tuple[int, str]:
     return proc.returncode, proc.stdout.strip()
 
 
-def _resolve_base_ref(explicit: str | None) -> str:
+def _resolve_base_ref(explicit: str | None) -> str | None:
     candidates = [explicit] if explicit else []
     candidates.extend(
         [
@@ -47,20 +47,25 @@ def _resolve_base_ref(explicit: str | None) -> str:
         rc, _ = _run_git("rev-parse", "--verify", candidate)
         if rc == 0:
             return candidate
-    raise RuntimeError("Unable to resolve base ref for change-scope detection")
+    return None
 
 
 def changed_files(base_ref: str | None) -> list[str]:
     base = _resolve_base_ref(base_ref)
-    rc, merge_base = _run_git("merge-base", "HEAD", base)
-    diff_base = merge_base if rc == 0 and merge_base else base
-    rc, out = _run_git("diff", "--name-only", f"{diff_base}...HEAD")
-    if rc != 0:
-        raise RuntimeError("Failed to compute changed files")
-    files = [line.strip() for line in out.splitlines() if line.strip()]
-    if files:
-        return files
+    if base:
+        rc, merge_base = _run_git("merge-base", "HEAD", base)
+        diff_base = merge_base if rc == 0 and merge_base else base
+        rc, out = _run_git("diff", "--name-only", f"{diff_base}...HEAD")
+        if rc == 0:
+            files = [line.strip() for line in out.splitlines() if line.strip()]
+            if files:
+                return files
     rc, out = _run_git("diff", "--name-only", "HEAD~1..HEAD")
+    if rc == 0:
+        files = [line.strip() for line in out.splitlines() if line.strip()]
+        if files:
+            return files
+    rc, out = _run_git("show", "--pretty=", "--name-only", "HEAD")
     if rc == 0:
         return [line.strip() for line in out.splitlines() if line.strip()]
     return []
