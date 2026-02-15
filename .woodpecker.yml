@@ -98,6 +98,31 @@ steps:
         # Do not short-circuit the pipeline; ci-gate is the single fail point.
         exit 0
 
+  brain-evaluation:
+    image: python:3.11
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/brain-eval
+        set +e
+        (
+          set -euo pipefail
+          # Check if brain files changed
+          if git diff --name-only HEAD~1 HEAD | grep -qE '^(src/brain|brains)/'; then
+            echo "Brain changes detected, running evaluation..."
+            pip install --no-cache-dir -e . > /dev/null 2>&1
+            python scripts/ci/run_brain_evaluation.py --output-dir _bmad-output/brain-eval
+          else
+            echo "No brain changes, skipping evaluation"
+            echo '{"skipped": true, "reason": "No brain changes detected"}' > _bmad-output/brain-eval/summary.json
+          fi
+        ) > _bmad-output/brain-eval/brain-evaluation.log 2>&1
+        code=$?
+        cat _bmad-output/brain-eval/brain-evaluation.log
+        echo "$code" > _bmad-output/brain-eval/brain-evaluation.status
+        # Non-blocking: always exit 0 (warnings only)
+        exit 0
+
   ci-root-cause-bundle:
     image: python:3.11
     commands:
