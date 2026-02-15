@@ -298,7 +298,7 @@ validations:
     title: Walk-Forward Evaluation Framework
     epic_id: EP-ML-001
     story_id: ST-ML-001
-    status: planned
+    status: validated
     description: Validate walk-forward evaluation framework correctly simulates sequential training and prevents look-ahead bias
     acceptance_criteria:
       - Walk-forward windows are configured correctly (train/test splits)
@@ -904,7 +904,7 @@ validations:
     title: Prediction Accuracy Tracking
     epic_id: EP-NS-004
     story_id: ST-NS-017
-    status: planned
+    status: validated
     description: Validate prediction accuracy is tracked correctly over time
     acceptance_criteria:
       - Outcomes are correctly classified (win/loss)
