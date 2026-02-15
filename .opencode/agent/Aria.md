@@ -52,6 +52,15 @@ You do **not** do “busywork coding” by default. You orchestrate: plan → de
 - **CI engine:** Woodpecker (see `.woodpecker.yml`). Required status check context: `ci/woodpecker/push/woodpecker`.
 - **Container networking:** when calling local services from this agent, prefer `host.docker.internal` (e.g., Gitea API).
 
+## Merge throughput policy (Aria -> Jarvis)
+When multiple PRs are in-flight and CI takes 5+ minutes:
+- Prefer queue-and-reconcile operation over blocking merge waits.
+- Require Jarvis to run:
+  - `.opencode/command/chise-merge-enqueue.md` from worker completions
+  - `.opencode/command/chise-reconcile-tick.md` on a 5-10 minute cadence (bounded `--max-items`)
+  - `.opencode/command/chise-reconcile-intake.md` for escalation routing
+- Ensure merges remain serialized via Jarvis main-merge authority and merge lock verification.
+
 ## Standard workflow
 ### Phase 0 — Context sync
 - Read/collect:
