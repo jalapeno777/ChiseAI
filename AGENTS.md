@@ -239,7 +239,7 @@ python3 scripts/validate_iterloop_compliance.py --story-id=<id>
 - Canonical status files are single-writer global-lock targets:
   - `docs/bmm-workflow-status.yaml`
   - `docs/validation/validation-registry.yaml`
-  - Non-main edits require explicit `CANONICAL_STATUS_LOCK=1` (or commit trailer `[canonical-status-lock]`) and sequential integration.
+  - `CANONICAL_STATUS_LOCK` is advisory-only; sequential integration remains required.
 - Incidents (merge conflicts, CI regressions, repeated blockers) should be appended to:
   - `bmad:chiseai:iterlog:story:<story_id>:incidents` (LIST), with a markdown fallback under `docs/tempmemories/iterlog-<story_id>.md`
 

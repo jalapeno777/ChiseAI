@@ -36,8 +36,9 @@ permission:
 ## Scope + Lock Contract (required)
 - If the task does not include `SCOPE_GLOBS` and `LOCKS_REQUIRED`, ask once before starting.
 - If the task includes git actions, it must also include `BRANCH` and `WORKTREE_PATH`; run `python3 scripts/swarm/session.py verify --story-id=<story_id> --branch=<branch> --worktree-path=<path>` before any git command.
+- You must not merge or push `main`; only `jarvis` may perform main-merge operations.
 - Do not edit files outside `SCOPE_GLOBS`.
-- Treat canonical status files (`docs/bmm-workflow-status.yaml`, `docs/validation/validation-registry.yaml`) as single-writer global-lock files; do not edit unless explicit `CANONICAL_STATUS_LOCK=1` authorization is included.
+- Treat canonical status files (`docs/bmm-workflow-status.yaml`, `docs/validation/validation-registry.yaml`) as single-writer global-lock files; lock usage is advisory and must be coordinated by `jarvis`.
 - If you discover the change is not 1SP, involves global-lock areas (CI/infra/governance/shared invariants), or has hidden dependencies, STOP and report back to `jarvis` for re-scoping.
 
 ## Incident Logging (required)

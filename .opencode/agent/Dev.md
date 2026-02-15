@@ -29,6 +29,7 @@ permission:
 - You are an **executor**. You may run `bash` and edit files when explicitly tasked by `aria` or `jarvis`.
 - You may run `git` and deployment commands only when the task explicitly requests it and includes `BRANCH` and `WORKTREE_PATH`.
 - Before git actions, run session verification: `python3 scripts/swarm/session.py verify --story-id=<story_id> --branch=<branch> --worktree-path=<path>`.
+- You must not merge or push `main`; only `jarvis` may perform main-merge operations.
 - Never use destructive git commands (`git reset --hard`, `git checkout --`, force-push) unless explicitly instructed.
 
 ## Mandatory Workflow
@@ -39,7 +40,7 @@ permission:
 ## Scope + Lock Contract (required)
 - If `jarvis`/`aria` did not provide `SCOPE_GLOBS` and `LOCKS_REQUIRED`, ask once before starting.
 - Do not edit files outside `SCOPE_GLOBS`.
-- Treat canonical status files (`docs/bmm-workflow-status.yaml`, `docs/validation/validation-registry.yaml`) as single-writer global-lock files; do not edit unless explicit `CANONICAL_STATUS_LOCK=1` authorization is included.
+- Treat canonical status files (`docs/bmm-workflow-status.yaml`, `docs/validation/validation-registry.yaml`) as single-writer global-lock files; lock usage is advisory and must be coordinated by `jarvis`.
 - If you discover you must touch a global-lock area (CI/infra/governance/shared invariants), STOP and report back for re-scoping.
 - If you suspect another worker is editing the same area, STOP and report back (avoid "silent merge conflict" work).
 

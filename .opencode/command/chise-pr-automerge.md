@@ -12,8 +12,9 @@ Prereqs:
 - Optional: `GITEA_BASE_URL` (defaults to `http://host.docker.internal:3000`), `GITEA_OWNER`, `GITEA_REPO`.
 - Set `STORY_ID` (required). Example: `export STORY_ID=ST-NS-001`
 - Set `BRANCH` (required). Example: `export BRANCH=feature/ST-NS-001-my-change`
+- Set `AGENT_ID=jarvis` (required for main-merge authority).
 - Ensure a swarm session exists for this branch:
-  - `python3 scripts/swarm/session.py verify --story-id "$STORY_ID" --branch "$BRANCH" --check-canonical`
+  - `python3 scripts/swarm/session.py verify --story-id "$STORY_ID" --branch "$BRANCH" --check-canonical --require-main-merge-authority --acquire-main-merge-lock`
 
 1. Safety gates (must not be on main)
    - `git status -sb`
@@ -37,3 +38,5 @@ Prereqs:
    - `git pull --ff-only gitea main`
    - `git fetch -p gitea`
    - Delete local feature branch (safe): `git branch -d <branch>`
+   - Close swarm session with anti-drift check:
+     - `python3 scripts/swarm/session.py close --enforce-merged`

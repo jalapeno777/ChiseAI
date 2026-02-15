@@ -16,6 +16,9 @@ import os
 import re
 import subprocess
 import sys
+import urllib.error
+import urllib.parse
+import urllib.request
 from pathlib import Path
 from typing import Any, cast
 
@@ -23,6 +26,8 @@ SESSION_FILE = ".swarm-session.json"
 OWNERSHIP_KEY = "bmad:chiseai:ownership"
 BRANCH_LEASE_PREFIX = "bmad:chiseai:branch-lease:"
 WORKTREE_LEASE_PREFIX = "bmad:chiseai:worktree-lease:"
+MAIN_MERGE_LOCK_KEY = "bmad:chiseai:merge-lock:main"
+MERGE_AUTHORITY_AGENT = "jarvis"
 
 CANONICAL_FILES = {
     "docs/bmm-workflow-status.yaml",
@@ -62,6 +67,17 @@ def _run(*cmd: str, cwd: Path | None = None) -> str:
             f"({' '.join(cmd)}):\nSTDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}"
         )
     return proc.stdout.strip()
+
+
+def _run_rc(*cmd: str, cwd: Path | None = None) -> tuple[int, str, str]:
+    proc = subprocess.run(
+        list(cmd),
+        cwd=str(cwd) if cwd else None,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    return proc.returncode, proc.stdout.strip(), proc.stderr.strip()
 
 
 def _git_root() -> Path:
@@ -213,6 +229,167 @@ def _resolve_worktree_path(provided: str | None) -> Path:
     if provided:
         return Path(provided).resolve()
     return Path.cwd().resolve()
+
+
+def _session_owner(session: dict[str, Any]) -> str:
+    return f"{session.get('story_id')}/{session.get('agent')}"
+
+
+def _acquire_main_merge_lock(
+    session: dict[str, Any],
+    ttl_seconds: int,
+) -> str:
+    if str(session.get("agent", "")).strip() != MERGE_AUTHORITY_AGENT:
+        raise SessionError(
+            "Main-merge operations are restricted to agent "
+            f"{MERGE_AUTHORITY_AGENT!r}; current agent={session.get('agent')!r}"
+        )
+
+    ok, cfg = _redis_ping()
+    if not ok or cfg is None:
+        raise SessionError(
+            "Cannot acquire main merge lock: Redis unavailable. "
+            "Set CHISE_REDIS_HOST/PORT and retry."
+        )
+
+    host, port, db = cfg
+    owner = f"{_session_owner(session)}/{_utc_now()}"
+    existing = _redis_cli(host, port, db, "GET", MAIN_MERGE_LOCK_KEY)
+    if existing.returncode != 0:
+        raise SessionError(existing.stderr.strip() or "Failed reading main merge lock")
+    existing_val = existing.stdout.strip()
+    if existing_val and not existing_val.startswith(f"{_session_owner(session)}/"):
+        raise SessionError(
+            "Main merge lock conflict: "
+            f"owned_by={existing_val!r} requested={owner!r}"
+        )
+
+    set_res = _redis_cli(
+        host,
+        port,
+        db,
+        "SET",
+        MAIN_MERGE_LOCK_KEY,
+        owner,
+        "EX",
+        str(ttl_seconds),
+    )
+    if set_res.returncode != 0:
+        raise SessionError(set_res.stderr.strip() or "Failed setting main merge lock")
+
+    return owner
+
+
+def _release_main_merge_lock(session: dict[str, Any]) -> None:
+    owner = str(session.get("main_merge_lock_owner", "")).strip()
+    if not owner:
+        return
+
+    ok, cfg = _redis_ping()
+    if not ok or cfg is None:
+        print(
+            "WARN: Redis unavailable while releasing main merge lock; "
+            "lock will expire by TTL.",
+            file=sys.stderr,
+        )
+        return
+
+    host, port, db = cfg
+    current = _redis_cli(host, port, db, "GET", MAIN_MERGE_LOCK_KEY)
+    if current.returncode != 0:
+        print(
+            "WARN: Failed to read main merge lock during release: "
+            f"{current.stderr.strip()}",
+            file=sys.stderr,
+        )
+        return
+    current_val = current.stdout.strip()
+    if current_val == owner:
+        _redis_cli(host, port, db, "DEL", MAIN_MERGE_LOCK_KEY)
+    else:
+        print(
+            "WARN: Main merge lock owner changed before release; "
+            f"current={current_val!r} expected={owner!r}",
+            file=sys.stderr,
+        )
+
+
+def _branch_ahead_count(worktree_path: Path, branch: str, base_ref: str = "main") -> int:
+    rc, out, err = _run_rc(
+        "git",
+        "-C",
+        str(worktree_path),
+        "rev-list",
+        "--count",
+        f"{base_ref}..{branch}",
+    )
+    if rc != 0:
+        raise SessionError(
+            f"Failed to compute ahead count for {branch} vs {base_ref}: {err or out}"
+        )
+    try:
+        return int(out.strip())
+    except ValueError as exc:
+        raise SessionError(
+            f"Invalid ahead-count output for {branch} vs {base_ref}: {out!r}"
+        ) from exc
+
+
+def _pr_exists_for_branch(branch: str, base_ref: str = "main") -> tuple[bool, str]:
+    token = (os.getenv("GITEA_TOKEN") or "").strip()
+    owner = (
+        os.getenv("GITEA_OWNER")
+        or os.getenv("CI_REPO_OWNER")
+        or os.getenv("WOODPECKER_REPO_OWNER")
+        or ""
+    ).strip()
+    repo = (
+        os.getenv("GITEA_REPO")
+        or os.getenv("CI_REPO_NAME")
+        or os.getenv("WOODPECKER_REPO_NAME")
+        or ""
+    ).strip()
+    base_url = (os.getenv("GITEA_BASE_URL") or "http://host.docker.internal:3000").rstrip(
+        "/"
+    )
+
+    if not token or not owner or not repo:
+        return False, "Gitea token/owner/repo env vars missing"
+
+    page = 1
+    while page <= 10:
+        qs = urllib.parse.urlencode({"state": "all", "limit": 50, "page": page})
+        url = f"{base_url}/api/v1/repos/{owner}/{repo}/pulls?{qs}"
+        req = urllib.request.Request(
+            url,
+            headers={"Authorization": f"token {token}", "Accept": "application/json"},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                rows = json.loads(resp.read().decode("utf-8"))
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+            return False, f"Gitea PR check failed: {exc}"
+
+        if not isinstance(rows, list) or not rows:
+            break
+
+        for pr in rows:
+            if not isinstance(pr, dict):
+                continue
+            head_ref = str((pr.get("head") or {}).get("ref", "")).strip()
+            base_pr_ref = str((pr.get("base") or {}).get("ref", "")).strip()
+            if head_ref != branch or base_pr_ref != base_ref:
+                continue
+            if bool(pr.get("merged")):
+                return True, f"merged PR #{pr.get('number')}"
+            if str(pr.get("state", "")).lower() == "open":
+                return True, f"open PR #{pr.get('number')}"
+
+        if len(rows) < 50:
+            break
+        page += 1
+
+    return False, "No open/merged PR found for branch"
 
 
 def cmd_start(args: argparse.Namespace) -> int:
@@ -375,6 +552,20 @@ def cmd_verify(args: argparse.Namespace) -> int:
 
     _validate_canonical_lock(args, session)
 
+    if args.require_main_merge_authority:
+        if str(session.get("agent", "")).strip() != MERGE_AUTHORITY_AGENT:
+            raise SessionError(
+                "Main-merge operations are restricted to agent "
+                f"{MERGE_AUTHORITY_AGENT!r}; current agent={session.get('agent')!r}"
+            )
+
+    if args.acquire_main_merge_lock:
+        owner = _acquire_main_merge_lock(session, args.merge_lock_ttl_seconds)
+        session["main_merge_lock_owner"] = owner
+        session["main_merge_lock_acquired_at"] = _utc_now()
+        _write_session(worktree_path, session)
+        print(f"- main_merge_lock: {owner}")
+
     print("session.verify: OK")
     print(f"- worktree: {worktree_path}")
     print(f"- branch: {branch}")
@@ -387,6 +578,22 @@ def cmd_close(args: argparse.Namespace) -> int:
     session = _read_session(worktree_path)
     branch = str(session["branch"])
 
+    if args.enforce_merged:
+        ahead = _branch_ahead_count(worktree_path, branch, args.base_ref)
+        if ahead > 0 and not args.allow_unmerged:
+            has_pr, detail = _pr_exists_for_branch(branch, args.base_ref)
+            if not has_pr:
+                raise SessionError(
+                    "Branch has commits ahead of "
+                    f"{args.base_ref} (ahead={ahead}) and no open/merged PR was found. "
+                    f"detail={detail}. Push/open PR before closing, or use --allow-unmerged."
+                )
+            print(
+                f"- enforce_merged: ahead={ahead} but allowed due to PR status ({detail})"
+            )
+        else:
+            print(f"- enforce_merged: ahead={ahead}")
+
     ok, cfg = _redis_ping()
     if ok and cfg is not None:
         host, port, db = cfg
@@ -398,6 +605,8 @@ def cmd_close(args: argparse.Namespace) -> int:
             "DEL",
             f"{WORKTREE_LEASE_PREFIX}{_path_slug(str(worktree_path))}",
         )
+
+    _release_main_merge_lock(session)
 
     session_file = worktree_path / SESSION_FILE
     if session_file.exists():
@@ -435,11 +644,17 @@ def build_parser() -> argparse.ArgumentParser:
     verify.add_argument("--story-id")
     verify.add_argument("--branch")
     verify.add_argument("--check-canonical", action="store_true")
+    verify.add_argument("--require-main-merge-authority", action="store_true")
+    verify.add_argument("--acquire-main-merge-lock", action="store_true")
+    verify.add_argument("--merge-lock-ttl-seconds", type=int, default=1800)
     verify.set_defaults(func=cmd_verify)
 
     close = sub.add_parser("close", help="Release leases and close worktree session")
     close.add_argument("--worktree-path")
     close.add_argument("--remove-worktree", action="store_true")
+    close.add_argument("--enforce-merged", action="store_true")
+    close.add_argument("--allow-unmerged", action="store_true")
+    close.add_argument("--base-ref", default="main")
     close.set_defaults(func=cmd_close)
 
     return p

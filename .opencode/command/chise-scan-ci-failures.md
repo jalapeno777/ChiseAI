@@ -2,7 +2,13 @@
 
 Purpose: compatibility command for CI failure scanning.
 
-Default path (required for swarm triage):
+Default path (required for swarm triage, DB-first when available):
+
+```bash
+python3 scripts/ci/woodpecker_triage.py diagnose --pr "${PR_NUMBER}" --write-artifacts --db-dsn "${WOODPECKER_DB_DSN}" --format human
+```
+
+API-only path (when DB DSN is unavailable):
 
 ```bash
 python3 scripts/ci/woodpecker_triage.py diagnose --pr "${PR_NUMBER}" --write-artifacts --format human

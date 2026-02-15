@@ -17,10 +17,14 @@ Prereqs:
 
 2. Verify session (before any git action)
    - `python3 scripts/swarm/session.py verify --story-id "$STORY_ID" --branch "$BRANCH" --check-canonical`
+   - For any merge-to-main operation, require authority + lock:
+     - `python3 scripts/swarm/session.py verify --story-id "$STORY_ID" --branch "$BRANCH" --check-canonical --require-main-merge-authority --acquire-main-merge-lock`
 
 3. Run work + tests in the assigned worktree only
    - Use explicit branch in push/PR commands (never use `HEAD` inference).
 
 4. Close session (after merge or handoff)
-   - `python3 scripts/swarm/session.py close`
+   - `python3 scripts/swarm/session.py close --enforce-merged`
+   - If intentionally handing off with an open PR and unmerged branch commits:
+     - `python3 scripts/swarm/session.py close --enforce-merged --allow-unmerged`
    - Optional cleanup: `python3 scripts/swarm/session.py close --remove-worktree`
