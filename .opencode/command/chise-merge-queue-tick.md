@@ -8,6 +8,7 @@ Use this command for a non-destructive reconciliation tick (no merge) or merge t
 
 Prereqs:
 - `GITEA_TOKEN` must be set.
+- In containerized agent environments, use `GITEA_BASE_URL=http://host.docker.internal:3000`.
 - Run from a clean control worktree.
 
 Dry-run style tick (requeue/pending/fail classification only):
