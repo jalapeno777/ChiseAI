@@ -312,7 +312,15 @@ class TestPromotionGate:
     def test_approve_promotion(self, temp_dir: str) -> None:
         """Test approving a promotion."""
         gate = PromotionGate(temp_dir)
-        gate.create_packet(version="1.0.0", evaluation_passed=True)
+        packet = gate.create_packet(
+            version="1.0.0",
+            evaluation_passed=True,
+            shadow_test_passed=True,
+            latency_acceptable=True,
+        )
+        for name in packet.required_fields:
+            packet.set_field(name, "value", RequiredFieldStatus.PRESENT)
+        gate._save_packet(packet)
 
         packet = gate.approve_promotion("1.0.0", "test_user", "LGTM")
         assert packet.status == PromotionStatus.APPROVED
@@ -380,7 +388,15 @@ class TestPromotionGate:
     def test_list_packets_by_status(self, temp_dir: str) -> None:
         """Test listing packets filtered by status."""
         gate = PromotionGate(temp_dir)
-        gate.create_packet(version="1.0.0")
+        packet = gate.create_packet(
+            version="1.0.0",
+            evaluation_passed=True,
+            shadow_test_passed=True,
+            latency_acceptable=True,
+        )
+        for name in packet.required_fields:
+            packet.set_field(name, "value", RequiredFieldStatus.PRESENT)
+        gate._save_packet(packet)
         gate.approve_promotion("1.0.0", "test_user")
         gate.create_packet(version="1.1.0")
 
