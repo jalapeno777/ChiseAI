@@ -5,7 +5,7 @@
 metadata:
   project_name: ChiseAI
   version: "2.1.0"
-  last_updated: "2026-02-13"
+  last_updated: "2026-02-15"
   prd_location: docs/prd.md
   prd_note: "Phased perps execution: continuous backtest -> Bybit demo paper -> Bitget live; Grafana-first ops UI; Binance used as reference market-structure venue. LLM integrations (Z.ai GLM-5, MiniMax 2.5) are separate capabilities, not Phase 1."
 
@@ -525,7 +525,8 @@ stories:
     title: Hyperparameter Optimization - Genetic/BO
     epic_id: EP-ML-001
     sprint_id: p0-2
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 4
     priority: P1-HIGH
     description: Implement genetic algorithm and Bayesian optimization for strategy hyperparameter tuning
@@ -541,7 +542,8 @@ stories:
     title: ML Optimization Cadence - Auto-tuning Schedule
     epic_id: EP-ML-001
     sprint_id: p0-2
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 3
     priority: P1-HIGH
     description: Set up automated tuning schedule for continuous strategy optimization
