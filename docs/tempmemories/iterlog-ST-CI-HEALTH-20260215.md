@@ -26,11 +26,16 @@ notes:
 
 ## Decisions
 
-- TBD
+- Repaired Woodpecker forge auth by refreshing Gitea OAuth token and updating `woodpecker.users` (`token`, `secret`, `expiry`) for `craig`.
+- Added `scripts/ci/check_woodpecker_forge_token_health.py` as an automated drift/expiry guard for forge token health.
+- Updated CI docs/runbook with deterministic diagnosis and recovery procedure for pre-step forge/config failures.
+- Fixed Bandit `B110` in `src/execution/live_gating/grafana_exporter.py` to remove `except Exception: pass`.
 
 ## Learnings
 
-- TBD
+- Woodpecker DB `users.expiry` can drift from JWT `exp`; if drift is wrong/high, refresh is skipped and forge calls fail with opaque errors.
+- The Gitea API error `user does not exist [uid: 0, name: ]` can indicate expired OAuth access token in Woodpecker context.
+- Pipeline state transition from immediate `error` to real step execution confirms forge auth remediation before step-level CI analysis.
 
 ## Scope Ownership
 
@@ -41,8 +46,14 @@ notes:
 
 ## Incidents
 
-- TBD
+- symptom: Pipeline `#480` failed after forge fix even though pre-step errors were gone.
+- root_cause: `ci-gate` observed `security-scan.status=1` caused by Bandit issue `B110` at `src/execution/live_gating/grafana_exporter.py:413`.
+- fix: Replace silent `except Exception: pass` with warning log and re-run Bandit scan.
+- prevention_rule: Keep Bandit `src` scan in CI gate and run `bandit -q -r src -s B311,B107` locally before pushing infra/CI remediations.
 
 ## Evidence
 
-- TBD
+- DB evidence: prior failures in `pipelines.errors` were `could not load config from forge: %!w(<nil>)`; post-fix pipelines (`#480`, `#481`) progressed into step execution.
+- OAuth repair validation: `curl -H "Authorization: token <new_token>" http://host.docker.internal:3000/api/v1/user` returned `200` with login `craig`.
+- Health guard validation: `python3 scripts/ci/check_woodpecker_forge_token_health.py --dsn ... --require-user craig` returned `OK`.
+- Security scan validation: `bandit -q -r src -s B311,B107` returns exit code `0` after `grafana_exporter.py` fix.

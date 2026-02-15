@@ -410,8 +410,8 @@ class LiveGatingGrafanaExporter:
                 await self._export_task
             except asyncio.CancelledError:
                 pass
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning("Exporter stop wait failed: %s", exc)
 
         # Final export
         await self.export_metrics()
