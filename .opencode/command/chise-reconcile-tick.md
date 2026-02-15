@@ -8,6 +8,7 @@ Use this command on a timer/cadence (Jarvis cleanup loop) to prevent local-only 
 
 Prereqs:
 - `GITEA_TOKEN` must be set.
+- In containerized agent environments, use `GITEA_BASE_URL=http://host.docker.internal:3000`.
 - Run in an isolated control worktree.
 
 Command:
