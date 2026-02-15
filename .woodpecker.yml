@@ -85,6 +85,7 @@ steps:
           apt-get update && apt-get install -y jq
           pip install --no-cache-dir pytest pytest-asyncio pytest-cov pyyaml requests
           pip install --no-cache-dir ccxt influxdb-client asyncpg numpy scipy watchdog click websockets fastapi httpx
+          pip install --no-cache-dir ccxt influxdb-client asyncpg numpy scipy watchdog click websockets fastapi
           if [ -x scripts/local-ci-checks.sh ]; then
             ./scripts/local-ci-checks.sh
           else
