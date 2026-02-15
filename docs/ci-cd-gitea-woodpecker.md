@@ -1,7 +1,7 @@
 ---
 title: "Gitea + Woodpecker CI/CD"
 status: active
-updated: 2026-02-08
+updated: 2026-02-15
 ---
 
 # Gitea + Woodpecker CI/CD
@@ -137,6 +137,26 @@ This guarantee ensures that no automated system or script can circumvent CI gate
 3. **Check pipeline records** (read-only):
    - `docker cp woodpecker-server:/var/lib/woodpecker /tmp/woodpecker-data`
    - Inspect `/tmp/woodpecker-data/woodpecker.sqlite` with `python3` + `sqlite3` module.
+
+### Pipelines fail before steps with forge/config errors
+Symptoms:
+- Pipelines immediately show `status=error` with `could not load config from forge: %!w(<nil>)`
+- Woodpecker logs contain `user does not exist [uid: 0, name: ]`
+- Gitea API with Woodpecker stored token returns `401 user does not exist [uid: 0, name: ]`
+
+Checks:
+1. Validate token drift and expiry health:
+   - `python3 scripts/ci/check_woodpecker_forge_token_health.py --require-user craig`
+2. Verify latest pipeline errors from DB:
+   - `psql "$WOODPECKER_DATABASE_DATASOURCE" -c "select number,status,errors from pipelines order by id desc limit 10;"`
+3. Confirm Woodpecker user token can read Gitea API:
+   - `curl -H "Authorization: token <woodpecker_users_token>" http://localhost:3000/api/v1/user`
+
+Recovery:
+1. Refresh OAuth access token via Gitea `grant_type=refresh_token`.
+2. Update Woodpecker `users.token`, `users.secret`, and `users.expiry` to the refreshed values.
+3. Restart `woodpecker-server` and `woodpecker-agent`.
+4. Trigger a new push/PR event and confirm steps execute.
 
 ### Lint failures that look like “no files”
 If `mypy .` fails with “There are no .py[i] files”, add a targeted `files = [...]` entry in `[tool.mypy]` to ensure at least one file is checked.
