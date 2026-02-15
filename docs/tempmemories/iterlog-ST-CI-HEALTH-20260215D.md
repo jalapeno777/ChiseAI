@@ -5,8 +5,9 @@ type: iterlog
 story_id: ST-CI-HEALTH-20260215D
 story_title: "Swarm merge authority + anti-drift + CI command hardening"
 phase: implementation
-status: in_progress
+status: completed
 started_at: "2026-02-15T00:00:00Z"
+completed_at: "2026-02-15T13:00:04Z"
 needs_manual_qdrant_import: true
 ---
 
