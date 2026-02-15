@@ -157,6 +157,30 @@ python3 scripts/ci/check_woodpecker_forge_token_health.py --require-user craig
 python3 scripts/ci/check_woodpecker_forge_token_health.py --dsn "$WOODPECKER_DATABASE_DATASOURCE" --warn-seconds 1800
 ```
 
+### ops/merge_reconciler.py
+
+Merge queue + reconciliation utility for non-blocking swarm throughput while preserving `main` integrity.
+
+- Stores queued PR merge intents in Redis (`bmad:chiseai:merge-queue:main`)
+- Runs bounded queue ticks so Jarvis can merge green PRs without blocking worker development
+- Emits incidents for CI failures, merge conflicts, and branch/main drift
+- Performs git hygiene checks (local `main` vs `gitea/main`, local branches ahead of `main`)
+
+**Usage:**
+```bash
+# Enqueue
+python3 scripts/ops/merge_reconciler.py enqueue --story-id ST-NS-001 --branch feature/ST-NS-001-x --pr-number 42 --head-sha <sha>
+
+# Bounded merge tick
+python3 scripts/ops/merge_reconciler.py queue-tick --max-items 3 --allow-merge
+
+# Queue + hygiene reconciliation
+python3 scripts/ops/merge_reconciler.py reconcile-tick --max-items 3 --allow-merge
+
+# Incident intake
+python3 scripts/ops/merge_reconciler.py intake-incidents --limit 100
+```
+
 ## Adding New Scripts
 
 When adding scripts to this directory:

@@ -33,7 +33,16 @@ Prereqs:
    - Then run:
      - `python3 scripts/gitea_pr_automerge.py --story-id "$STORY_ID" --head "$BRANCH" --wait --delete-branch`
 
-5. Sync local main and prune
+5. Non-blocking mode for swarm throughput (recommended for busy merge windows)
+   - Resolve PR number from Gitea UI/API and export it:
+     - `export PR_NUMBER=<gitea-pr-number>`
+   - Get head SHA:
+     - `HEAD_SHA=$(git rev-parse "$BRANCH")`
+   - Enqueue for Jarvis reconcile loop:
+     - `python3 scripts/ops/merge_reconciler.py enqueue --story-id "$STORY_ID" --branch "$BRANCH" --pr-number "$PR_NUMBER" --head-sha "$HEAD_SHA" --queued-by "${AGENT_ID:-jarvis}"`
+   - Continue development in your assigned worktree; Jarvis performs bounded reconcile ticks and merges on green.
+
+6. Sync local main and prune
    - `git switch main`
    - `git pull --ff-only gitea main`
    - `git fetch -p gitea`
