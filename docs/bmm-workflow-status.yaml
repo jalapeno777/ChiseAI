@@ -508,7 +508,8 @@ stories:
     title: Walk-Forward Evaluation Framework
     epic_id: EP-ML-001
     sprint_id: p0-2
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
     description: Implement walk-forward evaluation framework for robust strategy validation
@@ -1322,7 +1323,8 @@ stories:
     title: Prediction Accuracy Tracker
     epic_id: EP-NS-004
     sprint_id: q2-3
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 8
     priority: P0-CRITICAL
     fr_coverage: [FR-017]
