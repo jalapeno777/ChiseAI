@@ -30,6 +30,15 @@ from confidence.threshold_tracker import (
     InfluxDBThresholdTracker,
     ThresholdHistoryTracker,
 )
+from confidence.ece_scheduler import (
+    ECEUpdateResult,
+    ECEScheduler,
+    InMemoryPredictionOutcomeStore,
+    PredictionOutcomePair,
+    PredictionOutcomeStore,
+    SchedulerConfig,
+    create_default_scheduler,
+)
 
 __all__ = [
     # ECE calculation
@@ -54,4 +63,12 @@ __all__ = [
     "ThresholdHistoryTracker",
     "InMemoryThresholdTracker",
     "InfluxDBThresholdTracker",
+    # ECE scheduler
+    "ECEScheduler",
+    "SchedulerConfig",
+    "ECEUpdateResult",
+    "PredictionOutcomeStore",
+    "PredictionOutcomePair",
+    "InMemoryPredictionOutcomeStore",
+    "create_default_scheduler",
 ]
