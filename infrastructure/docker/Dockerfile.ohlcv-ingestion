@@ -1,0 +1,43 @@
+# OHLCV Ingestion Daemon Dockerfile
+# Continuous market data ingestion for ChiseAI
+# Story: INFRA-002
+
+FROM chiseai-api:latest
+
+LABEL project=chiseai
+LABEL service=ohlcv-ingestion
+LABEL com.docker.compose.service=ohlcv-ingestion
+
+# The base image has Python 3.11 with core dependencies
+# We need to install additional dependencies for OHLCV fetching and copy the latest scripts
+
+# Install ccxt for exchange data fetching (required by ohlcv_fetcher.py)
+USER root
+RUN pip install --no-cache-dir ccxt>=4.0.0
+
+# Copy latest scripts and source code
+COPY scripts/ /app/scripts/
+COPY src/ /app/src/
+RUN chown -R app:app /app/scripts /app/src
+USER app
+
+# Environment defaults (can be overridden at runtime)
+ENV INFLUXDB_HOST=chiseai-influxdb
+ENV INFLUXDB_PORT=18087
+ENV INFLUXDB_ORG=chiseai
+ENV INFLUXDB_BUCKET=chiseai
+ENV EXCHANGE_ID=binance
+ENV SYMBOLS=BTC/USDT,ETH/USDT,SOL/USDT
+ENV TIMEFRAMES=1m,5m,15m,1h
+ENV INGEST_INTERVAL_SECONDS=60
+ENV FETCH_LIMIT=100
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app:/app/scripts
+
+# Health check - verify the ingestion process is running
+HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
+    CMD pgrep -f 'run_ohlcv_ingestion' || exit 1
+
+# Run continuous ingestion
+# The --run flag enables continuous mode with graceful shutdown on SIGTERM
+CMD ["python3", "/app/scripts/run_ohlcv_ingestion.py", "--run"]

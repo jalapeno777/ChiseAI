@@ -1,10 +1,12 @@
 ---
-name: 'index-docs'
 description: 'Generates or updates an index.md of all documents in the specified directory'
 ---
 
-# index-docs
+Execute the BMAD 'index-docs' task.
 
-Read the entire task file at: {project-root}/_bmad/core/tasks/index-docs.xml
+TASK INSTRUCTIONS:
+1. LOAD the task file from {project-root}/_bmad/core/tasks/index-docs.xml
+2. READ its entire contents
+3. FOLLOW every instruction precisely as specified
 
-Follow all instructions in the task file exactly as written.
+TASK FILE: {project-root}/_bmad/core/tasks/index-docs.xml

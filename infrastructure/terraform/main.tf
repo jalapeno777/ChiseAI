@@ -236,24 +236,6 @@ resource "docker_container" "grafana" {
     container_path = "/var/lib/grafana"
   }
 
-  # Provisioning configuration (datasources, dashboards)
-  mounts {
-    target    = "/etc/grafana/provisioning"
-    source    = abspath("${path.module}/../grafana/provisioning")
-    type      = "bind"
-    read_only = true
-  }
-
-  # Bootstrap script for admin user creation (idempotent)
-  mounts {
-    target    = "/usr/local/bin/bootstrap_admin.sh"
-    source    = abspath("${path.module}/../grafana/scripts/bootstrap_admin.sh")
-    type      = "bind"
-    read_only = true
-  }
-
-  # Override entrypoint to run bootstrap then start Grafana
-  entrypoint = ["/bin/sh", "-c", "chmod +x /usr/local/bin/bootstrap_admin.sh && /usr/local/bin/bootstrap_admin.sh & /run.sh"]
 }
 
 resource "docker_container" "gitea" {
@@ -757,6 +739,57 @@ resource "docker_container" "chiseai_data_quality_monitor" {
 
   healthcheck {
     test     = ["CMD-SHELL", "pgrep -f 'data_quality_monitor' || exit 1"]
+    interval = "60s"
+    timeout  = "10s"
+    retries  = 3
+  }
+}
+
+# OHLCV Ingestion Daemon - Continuous market data ingestion for Grafana
+# Story: INFRA-002
+# Fetches OHLCV data from exchanges and stores in InfluxDB for dashboard visualization
+resource "docker_container" "chiseai_ohlcv_ingestion" {
+  name  = "chiseai-ohlcv-ingestion"
+  image = "chiseai-ohlcv-ingestion:latest"
+
+  env = [
+    "INFLUXDB_HOST=chiseai-influxdb",
+    "INFLUXDB_PORT=18087",
+    "INFLUXDB_TOKEN=${var.influxdb_token}",
+    "INFLUXDB_ORG=${var.influxdb_org}",
+    "INFLUXDB_BUCKET=${var.influxdb_bucket}",
+    "SYMBOLS=BTC/USDT,ETH/USDT,SOL/USDT",
+    "TIMEFRAMES=1m,5m,15m,1h",
+    "INGEST_INTERVAL_SECONDS=60",
+    "EXCHANGE_ID=binance",
+    "FETCH_LIMIT=100",
+    "PYTHONUNBUFFERED=1",
+    "PYTHONPATH=/app:/app/scripts",
+  ]
+
+  restart = "always"
+
+  networks_advanced {
+    name = docker_network.chiseai.name
+  }
+
+  labels {
+    label = "project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.service"
+    value = "ohlcv-ingestion"
+  }
+
+  healthcheck {
+    test     = ["CMD-SHELL", "python3 -c \"import os; exit(0) if any('run_ohlcv_ingestion' in open(f'/proc/{p}/cmdline', 'r').read() for p in os.listdir('/proc') if p.isdigit()) else exit(1)\" || exit 1"]
     interval = "60s"
     timeout  = "10s"
     retries  = 3
