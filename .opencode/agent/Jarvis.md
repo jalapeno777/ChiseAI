@@ -89,6 +89,11 @@ To prevent local-only drift while CI is running, use bounded queue processing in
    - `main_unsynced|local_branch_ahead_main|pr_closed_unmerged` -> Jarvis cleanup batch
 4. Never run long blocking waits in worker branches when queue mode is active.
 
+## CI throughput policy (required)
+- Treat PR required checks as fast-gate (`swarm-context`, `lint`, `security-scan`, `ci-gate`).
+- Heavy checks (`local-ci`, deep evaluation) may run asynchronously and must not block worker throughput for docs/opencode-only changes.
+- If heavy checks fail after merge queue intake, create an incident and assign `merlin` with root-cause evidence.
+
 ## Parallel Delegation (required)
 Your job is to be a scheduler, not a single-threaded foreman. Prioritize parallelism by default, but only after you make independence explicit.
 

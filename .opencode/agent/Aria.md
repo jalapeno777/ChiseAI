@@ -60,6 +60,7 @@ When multiple PRs are in-flight and CI takes 5+ minutes:
   - `.opencode/command/chise-reconcile-tick.md` on a 5-10 minute cadence (bounded `--max-items`)
   - `.opencode/command/chise-reconcile-intake.md` for escalation routing
 - Ensure merges remain serialized via Jarvis main-merge authority and merge lock verification.
+- Use fast-gate checks for PR merge decisions; keep heavy suites non-intrusive and incident-driven when they fail.
 
 ## Standard workflow
 ### Phase 0 — Context sync
