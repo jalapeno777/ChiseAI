@@ -236,24 +236,6 @@ resource "docker_container" "grafana" {
     container_path = "/var/lib/grafana"
   }
 
-  # Provisioning configuration (datasources, dashboards)
-  mounts {
-    target    = "/etc/grafana/provisioning"
-    source    = abspath("${path.module}/../grafana/provisioning")
-    type      = "bind"
-    read_only = true
-  }
-
-  # Bootstrap script for admin user creation (idempotent)
-  mounts {
-    target    = "/usr/local/bin/bootstrap_admin.sh"
-    source    = abspath("${path.module}/../grafana/scripts/bootstrap_admin.sh")
-    type      = "bind"
-    read_only = true
-  }
-
-  # Override entrypoint to run bootstrap then start Grafana
-  entrypoint = ["/bin/sh", "-c", "chmod +x /usr/local/bin/bootstrap_admin.sh && /usr/local/bin/bootstrap_admin.sh & /run.sh"]
 }
 
 resource "docker_container" "gitea" {
@@ -807,7 +789,7 @@ resource "docker_container" "chiseai_ohlcv_ingestion" {
   }
 
   healthcheck {
-    test     = ["CMD-SHELL", "pgrep -f 'run_ohlcv_ingestion' || exit 1"]
+    test     = ["CMD-SHELL", "python3 -c \"import os; exit(0) if any('run_ohlcv_ingestion' in open(f'/proc/{p}/cmdline', 'r').read() for p in os.listdir('/proc') if p.isdigit()) else exit(1)\" || exit 1"]
     interval = "60s"
     timeout  = "10s"
     retries  = 3
