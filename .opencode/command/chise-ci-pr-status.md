@@ -17,6 +17,12 @@ Commands:
 python3 scripts/ci/woodpecker_triage.py status --pr "${PR_NUMBER}" --format human
 ```
 
+If pipeline appears stale or contradictory, cross-check DB status directly:
+
+```bash
+psql "$WOODPECKER_DB_DSN" -Atc "select number,status,event,created,updated from pipelines order by number desc limit 20;"
+```
+
 JSON output variant:
 
 ```bash

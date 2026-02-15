@@ -43,6 +43,7 @@ permission:
   - capture failing command, exact error, and minimal repro
 - For any git action, require explicit `BRANCH` + `WORKTREE_PATH` and run:
   - `python3 scripts/swarm/session.py verify --story-id=<story_id> --branch=<branch> --worktree-path=<path> --check-canonical`
+- Main merge authority is `jarvis` only; `merlin` must not merge or push `main` directly.
 - Treat global-lock files as high risk:
   - `.woodpecker.yml`, `scripts/`, `.opencode/agent/`, `AGENTS.md`
   - make smallest safe change and verify full gate behavior
