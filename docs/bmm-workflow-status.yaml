@@ -1130,6 +1130,7 @@ stories:
     epic_id: EP-NS-003
     sprint_id: q2-2
     status: completed
+    validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
     fr_coverage: [FR-012]

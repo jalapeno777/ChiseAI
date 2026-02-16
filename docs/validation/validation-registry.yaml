@@ -839,7 +839,92 @@ validations:
     test_method: automated
     owner: risk-team
 
-  # EP-NS-003: Portfolio Risk Management - Split story validations
+  # EP-NS-003: Portfolio Risk Management - Split story validations (ST-NS-012A/B, ST-NS-013A/B, ST-NS-014A/B)
+  - id: V-NS-012A
+    title: Position Sizing Core Engine
+    epic_id: EP-NS-003
+    story_id: ST-NS-012A
+    status: validated
+    description: Validate position sizing core engine calculates correct position sizes based on risk parameters
+    acceptance_criteria:
+      - Position sizing follows Kelly criterion or fixed fractional method
+      - Position sizes are capped by max_position_percent and max_leverage
+      - Sizing calculations complete within 10ms
+      - Unit tests cover edge cases (zero volatility, extreme prices)
+    test_method: automated
+    owner: risk-team
+
+  - id: V-NS-012B
+    title: Position Sizing Integration & API
+    epic_id: EP-NS-003
+    story_id: ST-NS-012B
+    status: validated
+    description: Validate position sizing API integrates with execution layer and returns correct sizing signals
+    acceptance_criteria:
+      - API endpoints return position sizes within 50ms
+      - Integration with execution layer works correctly
+      - API documentation is complete and accurate
+      - Error handling covers invalid inputs gracefully
+    test_method: automated
+    owner: risk-team
+
+  - id: V-NS-013A
+    title: Stop-Loss Calculation Engine
+    epic_id: EP-NS-003
+    story_id: ST-NS-013A
+    status: validated
+    description: Validate stop-loss calculation engine computes correct stop levels for various stop types
+    acceptance_criteria:
+      - Fixed, trailing, and ATR-based stops calculate correctly
+      - Stop levels respect minimum distance from entry
+      - Calculations handle all market conditions (gaps, volatility)
+      - Unit tests cover all stop types and edge cases
+    test_method: automated
+    owner: risk-team
+
+  - id: V-NS-013B
+    title: Stop-Loss Integration & Signal Delivery
+    epic_id: EP-NS-003
+    story_id: ST-NS-013B
+    status: validated
+    description: Validate stop-loss signals are delivered to execution layer and trigger correctly
+    acceptance_criteria:
+      - Stop signals trigger within 100ms of price breach
+      - Integration with order management system works correctly
+      - Failed stop triggers alert within 5 seconds
+      - Stop execution is logged with full context
+    test_method: automated
+    owner: risk-team
+
+  - id: V-NS-014A
+    title: Portfolio Data Collection & State Management
+    epic_id: EP-NS-003
+    story_id: ST-NS-014A
+    status: validated
+    description: Validate portfolio data collection gathers all required position and exposure data
+    acceptance_criteria:
+      - Position data is collected from all exchanges within 1 second
+      - Portfolio state is consistent and accurate
+      - Data collection handles exchange API failures gracefully
+      - Historical portfolio state is queryable
+    test_method: automated
+    owner: risk-team
+
+  - id: V-NS-014B
+    title: Risk Exposure Calculation & Dashboard
+    epic_id: EP-NS-003
+    story_id: ST-NS-014B
+    status: validated
+    description: Validate risk exposure calculations and dashboard visualization
+    acceptance_criteria:
+      - Exposure calculations are accurate within 0.1%
+      - Dashboard updates within 5 seconds of data changes
+      - Risk metrics (VaR, expected shortfall) calculate correctly
+      - Alerts trigger when exposure limits are breached
+    test_method: automated
+    owner: risk-team
+
+  # EP-NS-003: Portfolio Risk Management - Split story validations (ST-NS-015A/B, ST-NS-016A/B)
   # Note: V-NS-015 and V-NS-016 are already used for other stories (ST-NS-022 and ST-NS-029)
   # Correlation Analysis split from ST-NS-015 (7 SP -> 4+3 = 7 SP)
   - id: V-NS-015A
@@ -1012,6 +1097,233 @@ validations:
       - Penetration test findings are remediated
     test_method: automated
     owner: security-team
+
+  # ============================================================
+  # ADDITIONAL STORY VALIDATIONS (Missing entries for traceability)
+  # ============================================================
+
+  # EP-NS-003: Portfolio Risk Management - Deprecated stories
+  - id: V-NS-015-DEPRECATED
+    title: Correlation Analysis Engine (DEPRECATED)
+    epic_id: EP-NS-003
+    story_id: ST-NS-015
+    status: deprecated
+    description: DEPRECATED - superseded by ST-NS-015A and ST-NS-015B
+    acceptance_criteria:
+      - Not applicable - story deprecated
+    test_method: none
+    owner: risk-team
+
+  - id: V-NS-016-DEPRECATED
+    title: Risk Threshold Alert System (DEPRECATED)
+    epic_id: EP-NS-003
+    story_id: ST-NS-016
+    status: deprecated
+    description: DEPRECATED - superseded by ST-NS-016A and ST-NS-016B
+    acceptance_criteria:
+      - Not applicable - story deprecated
+    test_method: none
+    owner: risk-team
+
+  # EP-NS-004: Training Pipeline
+  - id: V-NS-020
+    title: Training Data Generator
+    epic_id: EP-NS-004
+    story_id: ST-NS-020
+    status: validated
+    description: Validate training data generator produces high-quality labeled data
+    acceptance_criteria:
+      - Generated data matches production data distribution
+      - Labels are accurate and consistent
+      - Data augmentation preserves signal integrity
+      - Generation pipeline completes within SLA
+    test_method: automated
+    owner: ml-team
+
+  # EP-NS-005: Reporting & Community
+  - id: V-NS-023
+    title: Performance Reporting System
+    epic_id: EP-NS-005
+    story_id: ST-NS-023
+    status: validated
+    description: Validate performance reporting generates accurate and timely reports
+    acceptance_criteria:
+      - Reports include all required metrics (P&L, Sharpe, drawdown)
+      - Reports generate within 5 minutes of period end
+      - Historical reports are accessible and correct
+      - Report formats match specification (PDF, JSON, CSV)
+    test_method: automated
+    owner: ops-team
+
+  - id: V-NS-024
+    title: Discord Community Integration
+    epic_id: EP-NS-005
+    story_id: ST-NS-024
+    status: validated
+    description: Validate Discord integration posts signals and responds to commands
+    acceptance_criteria:
+      - Signals post to Discord within 2 seconds of generation
+      - Bot responds to commands within 5 seconds
+      - Rate limiting prevents Discord API bans
+      - Error handling notifies ops on failures
+    test_method: automated
+    owner: ops-team
+
+  # EP-NS-006: Infrastructure & DevOps
+  - id: V-NS-025
+    title: Dashboard Performance Optimization
+    epic_id: EP-NS-006
+    story_id: ST-NS-025
+    status: validated
+    description: Validate dashboard loads and responds within performance targets
+    acceptance_criteria:
+      - Dashboard loads within 3 seconds (95th percentile)
+      - Grafana panels update within 5 seconds
+      - Query performance is optimized for large datasets
+      - No memory leaks during extended operation
+    test_method: automated
+    owner: ops-team
+
+  - id: V-NS-026
+    title: Signal Delivery Latency Optimization
+    epic_id: EP-NS-006
+    story_id: ST-NS-026
+    status: validated
+    description: Validate signal delivery meets latency requirements
+    acceptance_criteria:
+      - End-to-end signal delivery is under 500ms (p95)
+      - WebSocket connections remain stable
+      - Failover to backup channels works correctly
+      - Latency metrics are tracked and alerted
+    test_method: automated
+    owner: ops-team
+
+  - id: V-NS-027
+    title: High Availability Infrastructure
+    epic_id: EP-NS-006
+    story_id: ST-NS-027
+    status: validated
+    description: Validate HA infrastructure provides required uptime and failover
+    acceptance_criteria:
+      - System achieves 99.9% uptime over 30 days
+      - Failover completes within 30 seconds
+      - No data loss during failover events
+      - Health checks detect failures within 10 seconds
+    test_method: automated
+    owner: ops-team
+
+  - id: V-NS-030
+    title: CI/CD Pipeline Enhancement
+    epic_id: EP-NS-006
+    story_id: ST-NS-030
+    status: validated
+    description: Validate CI/CD pipeline enhancements improve deployment reliability
+    acceptance_criteria:
+      - Deployments complete successfully 99% of the time
+      - Rollback completes within 5 minutes
+      - Pipeline stages run in parallel where possible
+      - Failed deployments trigger alerts and block auto-merge
+    test_method: automated
+    owner: ops-team
+
+  # EP-NS-007: Neuro-Symbolic AI
+  - id: V-NS-031
+    title: Hybrid Reasoning Engine
+    epic_id: EP-NS-007
+    story_id: ST-NS-031
+    status: validated
+    description: Validate hybrid reasoning combines neural and symbolic approaches correctly
+    acceptance_criteria:
+      - Neural and symbolic components integrate seamlessly
+      - Reasoning produces consistent and explainable results
+      - Performance meets latency requirements (< 100ms)
+      - Unit tests cover hybrid reasoning edge cases
+    test_method: automated
+    owner: ml-team
+
+  - id: V-NS-032
+    title: Explainable AI Module
+    epic_id: EP-NS-007
+    story_id: ST-NS-032
+    status: validated
+    description: Validate XAI module provides clear explanations for AI decisions
+    acceptance_criteria:
+      - Explanations are generated for all predictions
+      - Explanation quality scores exceed threshold (0.8)
+      - Explanations are human-readable and actionable
+      - XAI overhead is under 20% of inference time
+    test_method: automated
+    owner: ml-team
+
+  - id: V-NS-033
+    title: Adaptive Learning Framework
+    epic_id: EP-NS-007
+    story_id: ST-NS-033
+    status: validated
+    description: Validate adaptive learning improves model performance over time
+    acceptance_criteria:
+      - Online learning updates models without full retraining
+      - Performance improves or stays stable over 30 days
+      - Catastrophic forgetting is prevented
+      - Learning rate adapts correctly to market regimes
+    test_method: automated
+    owner: ml-team
+
+  - id: V-NS-034
+    title: Symbolic Knowledge Graph
+    epic_id: EP-NS-007
+    story_id: ST-NS-034
+    status: validated
+    description: Validate knowledge graph supports reasoning and inference
+    acceptance_criteria:
+      - Graph queries complete within 100ms
+      - Inferences are logically sound and consistent
+      - Graph updates propagate correctly
+      - Knowledge graph scales to required size
+    test_method: automated
+    owner: ml-team
+
+  - id: V-NS-035
+    title: Neural Pattern Recognition
+    epic_id: EP-NS-007
+    story_id: ST-NS-035
+    status: validated
+    description: Validate neural pattern recognition identifies patterns accurately
+    acceptance_criteria:
+      - Pattern detection accuracy exceeds 85%
+      - False positive rate is under 10%
+      - Pattern recognition latency is under 50ms
+      - Model generalizes to unseen market conditions
+    test_method: automated
+    owner: ml-team
+
+  - id: V-NS-036
+    title: Multi-Modal Signal Fusion
+    epic_id: EP-NS-007
+    story_id: ST-NS-036
+    status: validated
+    description: Validate multi-modal fusion combines signals from different sources
+    acceptance_criteria:
+      - Fusion weights are learned optimally
+      - Combined signals outperform individual modalities
+      - Fusion handles missing modalities gracefully
+      - Fusion latency is under 20ms
+    test_method: automated
+    owner: ml-team
+
+  - id: V-NS-037
+    title: Neuro-Symbolic Integration Layer
+    epic_id: EP-NS-007
+    story_id: ST-NS-037
+    status: validated
+    description: Validate neuro-symbolic integration layer connects components correctly
+    acceptance_criteria:
+      - Neural outputs feed correctly into symbolic reasoning
+      - Symbolic constraints guide neural predictions
+      - Integration layer handles errors gracefully
+      - End-to-end latency meets requirements (< 200ms)
+    test_method: automated
+    owner: ml-team
 
   # ============================================================
   # LIVE VALIDATION GATES (4 gates for phased deployment)
