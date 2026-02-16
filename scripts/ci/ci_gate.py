@@ -8,6 +8,7 @@ Rationale:
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -52,6 +53,108 @@ def _is_main_push(env: dict[str, str]) -> bool:
     return event == "push" and branch == "main"
 
 
+def _run_root_cause_bundle(ci_dir: Path, env: dict[str, str]) -> Path | None:
+    triage_script = Path("scripts/ci/woodpecker_triage.py")
+    if not triage_script.exists():
+        return None
+
+    root_log = ci_dir / "root-cause.log"
+    pipeline_num = env.get("CI_PIPELINE_NUMBER", "").strip() or "0"
+    out_dir = str(ci_dir)
+
+    attempts = [
+        [
+            sys.executable,
+            str(triage_script),
+            "bundle",
+            "--pipeline",
+            pipeline_num,
+            "--out-dir",
+            out_dir,
+            "--format",
+            "human",
+        ],
+        [
+            sys.executable,
+            str(triage_script),
+            "bundle",
+            "--from-local-dir",
+            str(ci_dir),
+            "--out-dir",
+            out_dir,
+            "--format",
+            "human",
+        ],
+    ]
+
+    root_log.parent.mkdir(parents=True, exist_ok=True)
+    with root_log.open("w", encoding="utf-8") as fh:
+        fh.write("")
+
+    generated_json: Path | None = None
+    for cmd in attempts:
+        proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        with root_log.open("a", encoding="utf-8") as fh:
+            fh.write(f"$ {' '.join(cmd)}\n")
+            if proc.stdout:
+                fh.write(proc.stdout.rstrip() + "\n")
+            if proc.stderr:
+                fh.write(proc.stderr.rstrip() + "\n")
+            fh.write("\n")
+
+        if proc.stdout:
+            print(proc.stdout.rstrip())
+        if proc.stderr:
+            print(proc.stderr.rstrip(), file=sys.stderr)
+
+        if cmd[2] == "bundle" and "--pipeline" in cmd:
+            candidate = ci_dir / pipeline_num / "root-cause.json"
+        else:
+            candidate = ci_dir / "0" / "root-cause.json"
+        if candidate.exists():
+            generated_json = candidate
+            break
+
+    return generated_json
+
+
+def _print_exact_root_causes(root_cause_json: Path) -> None:
+    try:
+        causes = json.loads(root_cause_json.read_text(encoding="utf-8"))
+    except Exception as exc:  # noqa: BLE001
+        print(
+            f"ci-gate: unable to parse root cause json ({root_cause_json}): {exc}",
+            file=sys.stderr,
+        )
+        return
+
+    if not isinstance(causes, list) or not causes:
+        print("ci-gate: no structured root causes extracted", file=sys.stderr)
+        return
+
+    print("ci-gate: exact root causes", file=sys.stderr)
+    for idx, rc in enumerate(causes, 1):
+        if not isinstance(rc, dict):
+            continue
+        tool = str(rc.get("tool") or "unknown")
+        message = str(rc.get("message") or "no message")
+        file = rc.get("file")
+        line = rc.get("line")
+        rule = rc.get("rule")
+        test = rc.get("test")
+
+        details: list[str] = []
+        if file:
+            details.append(f"file={file}:{line or 1}")
+        if rule:
+            details.append(f"rule={rule}")
+        if test:
+            details.append(f"test={test}")
+        details_text = f" ({', '.join(details)})" if details else ""
+
+        print(f"  {idx}. tool={tool}: {message}{details_text}", file=sys.stderr)
+
+
 def main() -> int:
     env = dict(os.environ)
     CI_DIR.mkdir(parents=True, exist_ok=True)
@@ -87,20 +190,10 @@ def main() -> int:
     for k, v in failing.items():
         print(f"  - {k}: {v}", file=sys.stderr)
 
-    # Print a concise summary to the build logs (root-cause-first, then fallback).
-    triage_script = Path("scripts/ci/woodpecker_triage.py")
-    if triage_script.exists():
-        subprocess.run(
-            [
-                sys.executable,
-                str(triage_script),
-                "diagnose",
-                "--from-local-dir",
-                str(CI_DIR),
-                "--write-artifacts",
-            ],
-            check=False,
-        )
+    # Print root-cause bundle details directly in ci-gate logs.
+    root_cause_json = _run_root_cause_bundle(CI_DIR, env)
+    if root_cause_json is not None:
+        _print_exact_root_causes(root_cause_json)
     else:
         scan_script = Path("scripts/ci/scan_failure_logs.py")
         if scan_script.exists():

@@ -100,7 +100,7 @@ steps:
           pip install --no-cache-dir ccxt influxdb-client asyncpg numpy scipy watchdog click websockets fastapi httpx
           pip install --no-cache-dir ccxt influxdb-client asyncpg numpy scipy watchdog click websockets fastapi
           if [ -x scripts/local-ci-checks.sh ]; then
-            ./scripts/local-ci-checks.sh
+            ./scripts/local-ci-checks.sh --merged-only
           else
             echo "scripts/local-ci-checks.sh not found; failing"
             exit 1
@@ -155,31 +155,6 @@ steps:
         cat _bmad-output/ci/brain-eval.log
         echo "$code" > _bmad-output/ci/brain-eval.status
         # Do not short-circuit the pipeline; ci-gate is the single fail point.
-        exit 0
-
-  ci-root-cause-bundle:
-    image: python:3.11
-    commands:
-      - |
-        set -euo pipefail
-        mkdir -p _bmad-output/ci
-        set +e
-        (
-          set -euo pipefail
-          python -V
-          # Preferred path: query Woodpecker API using WOODPECKER_TOKEN if available.
-          python scripts/ci/woodpecker_triage.py bundle --pipeline "${CI_PIPELINE_NUMBER:-0}" --format human
-        ) > _bmad-output/ci/root-cause.log 2>&1
-        code=$?
-        if [ "$code" -ne 0 ]; then
-          (
-            set -euo pipefail
-            # Fallback path: diagnose from captured local artifacts.
-            python scripts/ci/woodpecker_triage.py bundle --from-local-dir _bmad-output/ci --format human
-          ) >> _bmad-output/ci/root-cause.log 2>&1 || true
-        fi
-        cat _bmad-output/ci/root-cause.log
-        echo "0" > _bmad-output/ci/root-cause.status
         exit 0
 
   ci-gate:
