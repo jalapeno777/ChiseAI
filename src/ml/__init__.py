@@ -5,6 +5,7 @@ This package provides machine learning optimization capabilities:
 - walk_forward: Walk-forward evaluation framework for robust strategy validation
 - hyperopt: Hyperparameter optimization using genetic algorithms and Bayesian optimization
 - scheduler: Automated optimization scheduling with volatility adaptation
+- feedback: ML feedback loop for prediction-outcome analysis and model improvement
 
 Usage:
     import sys
@@ -16,6 +17,9 @@ Usage:
         OptimizationConfig,
         OptimizationScheduler,
         ScheduleConfig,
+        FeedbackOrchestrator,
+        FeedbackAnalyzer,
+        ModelUpdater,
     )
 """
 
@@ -56,6 +60,37 @@ from ml.walk_forward import (
     WindowMetrics,
     WindowStatus,
 )
+from ml.feedback import (
+    AccuracyBySignalType,
+    AccuracyByTimeframe,
+    AnalysisConfig,
+    DriftIndicator,
+    DriftSeverity,
+    FeatureImportanceChange,
+    FeedbackAnalysisReport,
+    FeedbackAnalyzer,
+    FeedbackOrchestrator,
+    LoopIterationResult,
+    LoopStatus,
+    MarketRegime,
+    MatchBatchResult,
+    MatchConfig,
+    MatchConfidence,
+    MatchStatus,
+    ModelType,
+    ModelUpdater,
+    ModelVersion,
+    OrchestratorConfig,
+    PredictionOutcomeMatch,
+    PredictionOutcomeMatcher,
+    RegimePerformance,
+    TemporalBoundary,
+    TemporalSafetyMode,
+    UpdateConfig,
+    UpdateResult,
+    UpdateStatus,
+    UpdateStrategy,
+)
 
 __all__ = [
     # Walk-forward
@@ -88,4 +123,34 @@ __all__ = [
     "VolatilityMonitor",
     "VolatilityRegime",
     "OptimizationTask",
+    # Feedback
+    "FeedbackOrchestrator",
+    "OrchestratorConfig",
+    "LoopStatus",
+    "LoopIterationResult",
+    "TemporalBoundary",
+    "TemporalSafetyMode",
+    "PredictionOutcomeMatcher",
+    "MatchConfig",
+    "MatchStatus",
+    "MatchConfidence",
+    "PredictionOutcomeMatch",
+    "MatchBatchResult",
+    "FeedbackAnalyzer",
+    "AnalysisConfig",
+    "MarketRegime",
+    "DriftSeverity",
+    "AccuracyBySignalType",
+    "AccuracyByTimeframe",
+    "RegimePerformance",
+    "FeatureImportanceChange",
+    "DriftIndicator",
+    "FeedbackAnalysisReport",
+    "ModelUpdater",
+    "UpdateConfig",
+    "UpdateStrategy",
+    "UpdateStatus",
+    "ModelType",
+    "ModelVersion",
+    "UpdateResult",
 ]
