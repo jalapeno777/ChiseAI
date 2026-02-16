@@ -349,7 +349,13 @@
             "uid": "chiseai-influxdb"
           },
           "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"portfolio_snapshot\")\n  |> filter(fn: (r) => r._field == \"total_equity\" or r._field == \"unrealized_pnl\" or r._field == \"realized_pnl\")\n  |> filter(fn: (r) => r.environment == \"${environment}\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
-          "refId": "A"
+          "refId": "A",
+          "pagination": {
+            "enabled": true,
+            "pageSize": 1000,
+            "prefetch": true,
+            "prefetchMargin": "1h"
+          }
         }
       ],
       "title": "PnL Time Series",
@@ -1127,7 +1133,13 @@
             "uid": "chiseai-influxdb"
           },
           "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"canary_deployment\")\n  |> filter(fn: (r) => r._field == \"duration_days\")\n  |> filter(fn: (r) => r.environment == \"${environment}\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
-          "refId": "A"
+          "refId": "A",
+          "pagination": {
+            "enabled": true,
+            "pageSize": 1000,
+            "prefetch": true,
+            "prefetchMargin": "1h"
+          }
         }
       ],
       "title": "Canary Duration",
