@@ -320,6 +320,143 @@ def validate_story_id_consistency(
         )
 
 
+def validate_epic_status_consistency(
+    workflow_data: dict[str, Any], result: ValidationResult
+) -> None:
+    """
+    Validate that epic status is consistent with child story statuses.
+    An epic's status should reflect the aggregate status of its stories.
+    """
+    epics = workflow_data.get("epics", [])
+    stories = workflow_data.get("stories", [])
+
+    if not isinstance(epics, list) or not isinstance(stories, list):
+        return
+
+    # Build story lookup by ID
+    story_by_id: dict[str, dict[str, Any]] = {}
+    for story in stories:
+        if isinstance(story, dict) and "id" in story:
+            story_by_id[story["id"]] = story
+
+    for epic in epics:
+        if not isinstance(epic, dict):
+            continue
+
+        epic_id = epic.get("id", "unknown")
+        epic_status = epic.get("status")
+        story_ids = epic.get("story_ids", [])
+
+        if not isinstance(story_ids, list):
+            continue
+
+        # Collect child story statuses
+        child_statuses: list[str] = []
+        for story_id in story_ids:
+            if isinstance(story_id, str) and story_id in story_by_id:
+                story_status = story_by_id[story_id].get("status")
+                if story_status:
+                    child_statuses.append(story_status)
+
+        if not child_statuses:
+            continue
+
+        # Derive expected epic status from child stories
+        # Priority: in_progress > blocked > completed > planned
+        if "in_progress" in child_statuses:
+            expected_status = "in_progress"
+        elif "blocked" in child_statuses:
+            expected_status = "blocked"
+        elif all(s == "completed" for s in child_statuses):
+            expected_status = "completed"
+        elif any(s == "completed" for s in child_statuses):
+            expected_status = "in_progress"
+        else:
+            expected_status = "planned"
+
+        # Check if epic status matches expected
+        if epic_status and epic_status != expected_status:
+            # Allow some flexibility - completed epics may have deprecated stories
+            if epic_status == "completed" and expected_status == "in_progress":
+                # Check if only deprecated stories are incomplete
+                non_deprecated_incomplete = [
+                    sid
+                    for sid in story_ids
+                    if isinstance(sid, str)
+                    and sid in story_by_id
+                    and story_by_id[sid].get("status") != "completed"
+                    and story_by_id[sid].get("status") != "deprecated"
+                ]
+                if not non_deprecated_incomplete:
+                    continue
+
+            result.add_warning(
+                f"Epic '{epic_id}' has status '{epic_status}' but derived status "
+                f"from child stories is '{expected_status}' "
+                f"(child statuses: {', '.join(child_statuses)})"
+            )
+
+
+def validate_validation_registry_completeness(
+    workflow_data: dict[str, Any],
+    validation_data: dict[str, Any],
+    result: ValidationResult,
+) -> None:
+    """
+    Validate that every story has a corresponding validation entry
+    and that completed stories have validated status.
+    """
+    stories = workflow_data.get("stories", [])
+    validations = validation_data.get("validations", [])
+
+    if not isinstance(stories, list) or not isinstance(validations, list):
+        return
+
+    # Build validation lookup by story_id
+    validation_by_story: dict[str, dict[str, Any]] = {}
+    for validation in validations:
+        if isinstance(validation, dict):
+            story_id = validation.get("story_id")
+            if isinstance(story_id, str):
+                validation_by_story[story_id] = validation
+
+    for story in stories:
+        if not isinstance(story, dict):
+            continue
+
+        story_id = story.get("id", "unknown")
+        story_status = story.get("status")
+        validation_status = story.get("validation_status")
+
+        # Skip deprecated stories
+        if story_status == "deprecated":
+            continue
+
+        # Check if story has validation entry
+        if story_id not in validation_by_story:
+            result.add_warning(
+                f"Story '{story_id}' has no validation entry in validation registry"
+            )
+            continue
+
+        # Check if completed stories have validated status
+        if story_status == "completed":
+            validation_entry = validation_by_story[story_id]
+            registry_status = validation_entry.get("status")
+
+            if validation_status != "validated":
+                result.add_warning(
+                    f"Story '{story_id}' is completed but has validation_status='{validation_status}' "
+                    f"(should be 'validated')"
+                )
+
+            if registry_status != "validated":
+                result.add_warning(
+                    f"Story '{story_id}' is completed but validation registry status is '{registry_status}' "
+                    f"(should be 'validated')"
+                )
+
+
 def main() -> int:
     """Main entry point."""
     parser = argparse.ArgumentParser(
@@ -358,6 +495,13 @@ def main() -> int:
     # Cross-reference validation (only in full mode)
     if args.full and workflow_data and validation_data:
         validate_story_id_consistency(workflow_data, validation_data, result)
+        validate_validation_registry_completeness(
+            workflow_data, validation_data, result
+        )
+
+    # Epic status consistency check (always run)
+    if workflow_data:
+        validate_epic_status_consistency(workflow_data, result)
 
     # Print results
     result.print(verbose=args.verbose)

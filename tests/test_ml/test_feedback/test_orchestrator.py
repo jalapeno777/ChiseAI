@@ -142,11 +142,17 @@ class TestFeedbackOrchestrator:
     @pytest.fixture
     def mock_matcher(self) -> MagicMock:
         """Create mock matcher."""
+        from ml.feedback.matcher import MatchStatus
+
         matcher = AsyncMock()
         match_result = MagicMock()
-        match_result.matched = 50
-        match_result.total_signals = 50
-        match_result.matches = []
+        match_result.matched = 100
+        match_result.total_signals = 100
+        # Create valid matches with MATCHED status and outcomes
+        mock_match = MagicMock()
+        mock_match.status = MatchStatus.MATCHED
+        mock_match.outcome = MagicMock()
+        match_result.matches = [mock_match] * 100
         matcher.match_batch.return_value = match_result
         return matcher
 
@@ -165,6 +171,7 @@ class TestFeedbackOrchestrator:
         """Create mock updater."""
         updater = AsyncMock()
         result = MagicMock()
+        result.validation_metrics = {"accuracy": 0.75}
         result.to_dict.return_value = {"status": "completed"}
         updater.update_from_analysis.return_value = result
         return updater
@@ -252,13 +259,22 @@ class TestFeedbackOrchestrator:
         self, mock_matcher, mock_analyzer, mock_updater
     ) -> None:
         """Test successful loop execution."""
+        # Create mock signal tracker to enable matching phase
+        mock_signal = MagicMock()
+        mock_signal.signal_id = "test-123"
+        mock_signal_tracker = MagicMock()
+        mock_signal_tracker.get_signal_history = AsyncMock(return_value=[mock_signal])
+
         orchestrator = FeedbackOrchestrator(
             matcher=mock_matcher,
             analyzer=mock_analyzer,
             updater=mock_updater,
+            signal_tracker=mock_signal_tracker,
         )
 
-        result = await orchestrator.run_feedback_loop()
+        # Pass a mock model to trigger the update phase
+        mock_model = MagicMock()
+        result = await orchestrator.run_feedback_loop(model=mock_model)
 
         assert result.status == LoopStatus.COMPLETED
         mock_matcher.match_batch.assert_called_once()
@@ -349,11 +365,14 @@ class TestFeedbackOrchestrator:
         await orchestrator.start_scheduled()
 
         assert orchestrator._scheduled_task is not None
+        assert not orchestrator._scheduled_task.done()
 
         # Stop scheduled
         await orchestrator.stop_scheduled()
 
-        assert orchestrator._scheduled_task is None
+        # Task should be cancelled after stopping
+        assert orchestrator._scheduled_task.done()
+        assert orchestrator._scheduled_task.cancelled()
 
     @pytest.mark.asyncio
     async def test_start_scheduled_already_running(self, orchestrator) -> None:
