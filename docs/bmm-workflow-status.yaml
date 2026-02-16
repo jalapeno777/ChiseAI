@@ -669,8 +669,9 @@ stories:
     validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
+    fr_coverage: [FR-030a]
     notes: |
-      PARTIALLY IMPLEMENTED: Kill switch logic exists in portfolio_risk module. Needs integration with 
+      PARTIALLY IMPLEMENTED: Kill switch logic exists in portfolio_risk module. Needs integration with
       execution layer and Grafana dashboard panels for state visibility (armed/triggered/disabled).
     description: Implement kill switch and execution risk controls for live trading
     implementation_notes:

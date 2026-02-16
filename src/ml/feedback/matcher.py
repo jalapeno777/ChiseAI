@@ -260,7 +260,7 @@ class PredictionOutcomeMatcher:
 
         # Filter outcomes within window
         valid_outcomes = [
-            o for o in outcomes if signal_time <= o.timestamp <= window_end
+            o for o in outcomes if signal_time <= o.exit_timestamp <= window_end
         ]
 
         if not valid_outcomes:
@@ -279,11 +279,11 @@ class PredictionOutcomeMatcher:
         # Handle multiple outcomes
         if len(valid_outcomes) > 1 and not self.config.allow_multiple_outcomes:
             # Select the earliest outcome
-            best_outcome = min(valid_outcomes, key=lambda o: o.timestamp)
+            best_outcome = min(valid_outcomes, key=lambda o: o.exit_timestamp)
             status = MatchStatus.MATCHED
             confidence = MatchConfidence.LOW
         elif len(valid_outcomes) > 1:
-            best_outcome = min(valid_outcomes, key=lambda o: o.timestamp)
+            best_outcome = min(valid_outcomes, key=lambda o: o.exit_timestamp)
             status = MatchStatus.AMBIGUOUS
             confidence = MatchConfidence.LOW
         else:
@@ -292,7 +292,7 @@ class PredictionOutcomeMatcher:
             confidence = MatchConfidence.HIGH
 
         # Calculate latency
-        latency_ms = best_outcome.timestamp - signal_time
+        latency_ms = best_outcome.exit_timestamp - signal_time
         latency_hours = latency_ms / (3600 * 1000)
 
         # Calculate resolution quality

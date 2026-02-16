@@ -175,7 +175,7 @@ class TestFeatureImportanceChange:
             new_importance=0.4,
         )
 
-        assert change.absolute_change == 0.1
+        assert change.absolute_change == pytest.approx(0.1, abs=0.0001)
         assert change.relative_change == pytest.approx(33.33, rel=0.01)
 
     def test_zero_old_importance(self) -> None:
@@ -525,7 +525,7 @@ class TestFeedbackAnalyzer:
         # RSI changed by 0.05, MACD by 0.05
         rsi_change = next((c for c in changes if c.feature_name == "rsi"), None)
         assert rsi_change is not None
-        assert rsi_change.absolute_change == 0.05
+        assert rsi_change.absolute_change == pytest.approx(0.05, abs=0.0001)
 
     def test_set_and_get_baseline_metrics(self, analyzer) -> None:
         """Test setting and getting baseline metrics."""
