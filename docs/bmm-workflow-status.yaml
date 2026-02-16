@@ -138,12 +138,17 @@ epics:
   # EP-NS-004: Learning & Improvement System (4 stories, 28 points)
   - id: EP-NS-004
     name: Learning & Improvement System
-    status: planned
+    status: in_progress
     story_ids: [ST-NS-017, ST-NS-018, ST-NS-019, ST-NS-020]
     story_count: 4
     story_points: 28
     description: Prediction accuracy tracking, ML feedback loops, confidence calibration, and training data generation
     sprint_id: q2-3
+    notes:
+      - ST-NS-017 (Prediction Accuracy Tracking) - completed
+      - ST-NS-018 (ML Feedback Loop) - completed and validated
+      - ST-NS-019 (Confidence Threshold Calibration) - planned
+      - ST-NS-020 (Training Data Generator) - planned
 
   # EP-NS-005: User Experience & Interface (4 stories, 25 points)
   - id: EP-NS-005
@@ -1336,11 +1341,22 @@ stories:
     title: ML Feedback Loop
     epic_id: EP-NS-004
     sprint_id: q2-3
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 8
     priority: P0-CRITICAL
     fr_coverage: [FR-018]
     description: Implement ML feedback loop analyzing predictions vs outcomes
+    implementation_notes:
+      - Module: src/ml/feedback/ with matcher, analyzer, updater, orchestrator
+      - Tests: 80%+ coverage across all modules (6 test files, 70+ tests)
+      - Prediction-outcome matching with configurable time windows
+      - Performance analysis by signal type, timeframe, and market regime
+      - Model drift detection with configurable thresholds
+      - Incremental and batch model update strategies
+      - Temporal safety enforcement (no data leakage)
+      - 24-hour completion guarantee via orchestrator scheduling
+      - Integration with existing SignalTracker from ST-NS-006
 
   - id: ST-NS-019
     title: Confidence Threshold Calibration
