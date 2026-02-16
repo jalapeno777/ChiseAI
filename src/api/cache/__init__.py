@@ -35,7 +35,7 @@ class QueryCache:
     def _generate_key(self, query_params: dict[str, Any]) -> str:
         """Generate cache key from query parameters."""
         key_data = json.dumps(query_params, sort_keys=True, default=str)
-        return hashlib.sha256(key_data.encode()).hexdigest()  # nosec B324 - Used for cache key hashing only
+        return hashlib.md5(key_data.encode()).hexdigest()
 
     def get(self, query_params: dict[str, Any]) -> Any | None:
         """
