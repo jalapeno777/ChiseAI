@@ -372,6 +372,7 @@ stories:
     sprint_id: p0-2
     status: completed
     validation_status: validated
+    fr_coverage: [FR-026]
     # NOTE: Status corrected 2026-02-13 - Bybit/Bitget connectors exist and are integrated
     story_points: 4
     priority: P0-CRITICAL
