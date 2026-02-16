@@ -1,0 +1,53 @@
+# Calibration Data Collector Configuration
+# For TASK-ST-NS-019-01: Calibration Data Collector
+
+# Number of confidence bins for ECE calculation (default: 10)
+n_bins: 10
+
+# Data retention period in days (default: 90)
+retention_days: 90
+
+# Default collection window for queries (1h, 24h, 7d, 30d)
+default_window: "24h"
+
+# Redis connection settings
+redis:
+  host: "host.docker.internal"
+  port: 6380
+  db: 0
+
+# Key prefix for Redis storage
+key_prefix: "calibration"
+
+# Enable compression for stored data (not yet implemented)
+enable_compression: false
+
+# Signal types to track
+signal_types:
+  - LONG
+  - SHORT
+  - SCALP
+
+# Collection settings
+collection:
+  # Validate predicted probabilities are in range [0.0, 1.0]
+  validate_probabilities: true
+  
+  # Validate actual outcomes are binary (0 or 1)
+  validate_outcomes: true
+  
+  # Maximum batch size for bulk operations
+  max_batch_size: 1000
+
+# Export settings
+export:
+  # Default export format (parquet, csv, json)
+  default_format: "parquet"
+  
+  # Include metadata in exports
+  include_metadata: true
+  
+  # ECE-specific export columns
+  ece_columns:
+    - confidence
+    - outcome
