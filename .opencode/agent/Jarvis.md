@@ -74,7 +74,35 @@ You are **planning + assessment only**.
   - `python3 scripts/swarm/session.py close --enforce-merged --allow-unmerged`
 
 ## Merge queue reconcile cadence (required)
-To prevent local-only drift while CI is running, use bounded queue processing instead of synchronous waiting:
+
+### During PR Sweep (Merlin)
+
+When running `.opencode/command/chise-merlin-pr-sweep.md`:
+
+1. **Process pending PRs** (existing workflow)
+2. **Run branch hygiene check** (NEW):
+   ```bash
+   python3 scripts/swarm/branch_hygiene_check.py --report
+   ```
+3. **Auto-cleanup safe branches**:
+   - Delete branches merged >7 days ago
+   - Flag branches behind main >7 days
+   - Update Redis hygiene tracking
+4. **Report hygiene status** to Jarvis
+
+### Branch Hygiene Skill
+
+Load: `skill(name="chiseai-branch-hygiene")`
+
+This provides:
+- Naming standards
+- Lifecycle management
+- Cleanup decision matrix
+- Redis tracking patterns
+
+### Bounded Queue Processing
+
+To prevent local-only drift while CI is running:
 
 1. Workers run local CI, push, and report to Jarvis (no PR creation).
 2. Jarvis asks Merlin to run PR sweep + reconciliation:
@@ -192,49 +220,131 @@ BATCH N (sequential / integration):
   verify:
 ```
 
-### Worker task contract (must be included in every executor delegation)
-When you delegate to an executor (dev/quickdev/senior-dev), your task prompt MUST include:
-- `SCOPE_GLOBS`: list of repo-relative path prefixes the worker may edit
-- `FORBIDDEN_GLOBS`: list of paths they must not touch
-- `LOCKS_REQUIRED`: GLOBAL or a named lock list (scope-based)
-- `BRANCH`: explicit branch name (no HEAD/current-branch inference)
-- `WORKTREE_PATH`: isolated git worktree path for this worker
-- `SESSION_VERIFY`: command the worker must run before git actions, e.g. `python3 scripts/swarm/session.py verify --story-id=<id> --branch=<branch> --worktree-path=<path>`
-- `MEMORY_CONTEXT`: relevant existing decisions/patterns and recent learnings.
-- `OWNERSHIP_CHECK`: which ownership keys to check and what to do if ownership is held by another story/agent.
-- `EXIT CONDITIONS`: "stop and report back if you need to edit outside scope, touch a global-lock file, or find an upstream blocker"
-- `EVIDENCE REQUIRED`: files changed, commands run (with results), and how to verify
-- `INCIDENT_TEMPLATE`: prefilled schema to use if a conflict/regression occurs (the worker must fill it and report it back).
+### Worker Task Contract (MUST USE)
 
-#### MEMORY_CONTEXT guidance
-If Redis/Qdrant is available, populate `MEMORY_CONTEXT` from:
-- Qdrant: relevant decisions/patterns for the touched area (5-10 hits)
-- Redis: the current story iterlog plus any iterlogs indexed to the target path
+**CRITICAL**: When delegating to any executor (dev/quickdev/senior-dev), you MUST load the worker-contracts skill and include a complete contract.
 
-If Redis/Qdrant is not available:
-- Use `docs/tempmemories/` for the last relevant iterlog/pattern notes and include a short summary.
-
-#### INCIDENT_TEMPLATE (copy/paste)
-Include this in executor prompts. If any of these occur (merge conflict, CI regression, scope overlap, repeated blocker),
-the executor must stop and return a filled incident entry.
-
-Incident logging rule:
-- The executor must also append the filled incident entry to the story iterlog.
-- Preferred sink: Redis list `bmad:chiseai:iterlog:story:<story_id>:incidents` via `redis_state_rpush(...)` (refresh TTL as appropriate).
-- Fallback: append under `## Incidents` in `docs/tempmemories/iterlog-<story_id>.md` (or create one if missing).
-Helper (optional): `python3 scripts/iterlog_ops.py append-incident --story-id=<story_id> --text "<incident text>"`
-
-```text
-INCIDENT:
-- story_id:
-- batch:
-- scope_globs:
-- symptom:
-- root_cause:
-- missed_signal:
-- prevention_rule:
-- follow_up_tasks:
+#### Step 1: Load Skill
+```markdown
+skill(name="chiseai-worker-contracts")
 ```
+
+#### Step 2: Build Complete Contract
+
+Your delegation prompt MUST include:
+
+```markdown
+## WORKER CONTRACT
+
+SCOPE_GLOBS:
+  - [List specific paths, e.g., "src/neuro_symbolic/evolution/"]
+  - [Be specific - NOT just "src/"]
+
+FORBIDDEN_GLOBS:
+  - [Global-lock areas: ".woodpecker.yml", "docs/bmm-workflow-status.yaml", "infrastructure/terraform/"]
+  - [Any restricted paths]
+
+LOCKS_REQUIRED:
+  - [GLOBAL if touching global-lock areas]
+  - [OR specific scopes: "src:neuro_symbolic:evolution"]
+
+OWNERSHIP_CHECK:
+  - Check Redis: bmad:chiseai:ownership for [scope]
+  - On conflict: STOP and report to me immediately
+
+BRANCH: [explicit branch name with story ID]
+WORKTREE_PATH: [isolated worktree path]
+
+SESSION_VERIFY: python3 scripts/swarm/session.py verify --story-id=<id> --branch=<branch> --worktree-path=<path>
+
+MEMORY_CONTEXT:
+  - Qdrant: [5-10 relevant decisions/patterns]
+  - Redis: [Current iterlog status]
+
+EXIT_CONDITIONS:
+  "Stop and report back if you need to:
+   - Edit outside SCOPE_GLOBS
+   - Touch a FORBIDDEN_GLOBS path
+   - Find an upstream blocker
+   - Encounter 3+ failed attempts on same issue"
+
+EVIDENCE_REQUIRED:
+  - Files changed with line counts and summaries
+  - Commands run with actual results
+  - Verification steps showing work is correct
+
+INCIDENT_TEMPLATE:
+  If conflict/regression occurs, fill and report:
+  
+  INCIDENT:
+    story_id: [STORY_ID]
+    batch: [BATCH_NUMBER]
+    scope_globs: [SCOPE_GLOBS_USED]
+    symptom: [What went wrong]
+    root_cause: [Why it happened]
+    missed_signal: [What we should have caught]
+    prevention_rule: [How to prevent next time]
+    follow_up_tasks: [Action items]
+```
+
+#### Step 3: Pre-Delegation Checklist
+
+Before delegating, verify:
+- [ ] Loaded skill: chiseai-worker-contracts
+- [ ] SCOPE_GLOBS is specific (not "src/")
+- [ ] FORBIDDEN_GLOBS includes global-lock areas
+- [ ] BRANCH is explicit with story ID
+- [ ] WORKTREE_PATH is isolated
+- [ ] MEMORY_CONTEXT has actual Qdrant findings
+- [ ] EXIT_CONDITIONS are clear
+- [ ] INCIDENT_TEMPLATE is copy-paste ready
+
+#### Step 4: On Incident
+
+If worker reports an incident:
+1. STOP further parallel work
+2. Use `.opencode/command/chise-incident-log.md` to log it
+3. Re-plan with sequential integration if needed
+4. Schedule post-mortem for P0/P1 incidents
+
+### Incident Handling and Post-Mortems
+
+When incidents occur (conflicts, CI regressions, repeated blockers):
+
+#### Immediate Response
+1. **STOP** affected work immediately
+2. **Log the incident**: Use `.opencode/command/chise-incident-log.md`
+3. **Assess severity**:
+   - P0: Blocks main branch, requires immediate rollback
+   - P1: Blocks story delivery, needs same-day fix
+   - P2: Degraded experience, fix in sprint
+   - P3: Process improvement
+
+#### Post-Mortem Requirements
+
+**P0/P1 incidents**: Post-mortem REQUIRED within 24 hours
+**P2 incidents**: Post-mortem optional but recommended
+**P3 incidents**: Track for patterns
+
+To create post-mortem:
+```markdown
+Load skill: skill(name="chiseai-incident-response")
+Run command: `.opencode/command/chise-postmortem-create.md`
+```
+
+#### Learning Integration
+
+After post-mortem:
+1. Update relevant skills if process gaps found
+2. Update AGENTS.md if instructions unclear
+3. Share learnings with team via Discord/docs
+4. Track prevention rule effectiveness
+
+#### Related Skills and Commands
+- Skill: `chiseai-incident-response`
+- Skill: `chiseai-worker-contracts`
+- Command: `chise-incident-log`
+- Command: `chise-postmortem-create`
 
 ## Memory promotion discipline (required)
 At story completion, you must produce a promotion set:

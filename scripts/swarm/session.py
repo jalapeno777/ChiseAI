@@ -27,7 +27,7 @@ OWNERSHIP_KEY = "bmad:chiseai:ownership"
 BRANCH_LEASE_PREFIX = "bmad:chiseai:branch-lease:"
 WORKTREE_LEASE_PREFIX = "bmad:chiseai:worktree-lease:"
 MAIN_MERGE_LOCK_KEY = "bmad:chiseai:merge-lock:main"
-MERGE_AUTHORITY_AGENT = "jarvis"
+MERGE_AUTHORITY_AGENT = "merlin"
 
 CANONICAL_FILES = {
     "docs/bmm-workflow-status.yaml",
@@ -260,8 +260,7 @@ def _acquire_main_merge_lock(
     existing_val = existing.stdout.strip()
     if existing_val and not existing_val.startswith(f"{_session_owner(session)}/"):
         raise SessionError(
-            "Main merge lock conflict: "
-            f"owned_by={existing_val!r} requested={owner!r}"
+            f"Main merge lock conflict: owned_by={existing_val!r} requested={owner!r}"
         )
 
     set_res = _redis_cli(
@@ -314,7 +313,9 @@ def _release_main_merge_lock(session: dict[str, Any]) -> None:
         )
 
 
-def _branch_ahead_count(worktree_path: Path, branch: str, base_ref: str = "main") -> int:
+def _branch_ahead_count(
+    worktree_path: Path, branch: str, base_ref: str = "main"
+) -> int:
     rc, out, err = _run_rc(
         "git",
         "-C",
@@ -349,9 +350,9 @@ def _pr_exists_for_branch(branch: str, base_ref: str = "main") -> tuple[bool, st
         or os.getenv("WOODPECKER_REPO_NAME")
         or ""
     ).strip()
-    base_url = (os.getenv("GITEA_BASE_URL") or "http://host.docker.internal:3000").rstrip(
-        "/"
-    )
+    base_url = (
+        os.getenv("GITEA_BASE_URL") or "http://host.docker.internal:3000"
+    ).rstrip("/")
 
     if not token or not owner or not repo:
         return False, "Gitea token/owner/repo env vars missing"
