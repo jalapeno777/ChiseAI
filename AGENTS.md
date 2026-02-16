@@ -111,7 +111,9 @@ python3 scripts/validate_iterloop_compliance.py --story-id=<id>
 - **Canonical SCM:** Gitea is the source of truth for repos/PRs. GitHub usage is **deprecated** for ChiseAI unless explicitly re-enabled by a human.
 - CI gate: run `scripts/local-ci-checks.sh` (or equivalent) before any PR; fix failures and re-run until green.
 - Status sync gate: run `python3 scripts/validate_status_sync.py` before any PR; must pass (warnings OK).
-- PR creation gate: only after CI passes and `git status -sb` is clean (or explicit human approval).
+- PR authority gate: only `merlin` may open/update/close PRs and run branch cleanup (`main` and non-`main`) unless a human explicitly overrides.
+- Worker completion gate (non-`merlin` agents): run local CI gates, push branch to Gitea, and report handoff details to `jarvis` (story id, branch, head SHA, CI result, blockers). Do not open PRs directly.
+- Sprint/batch completion gate (`jarvis`): delegate a PR sweep to `merlin` to open missing PRs for unmerged unique branches, monitor Woodpecker, and resolve branch drift.
 - PR handoff block must include: branch name, CI status, status-sync result, and exceptions.
 
 **Documentation locations**
@@ -155,7 +157,8 @@ python3 scripts/validate_iterloop_compliance.py --story-id=<id>
   - Research: `.opencode/command/bmad-bmm-domain-research.md`, `.opencode/command/bmad-bmm-technical-research.md` plus `web-research` for current web sources
 
 **ChiseAI Git Flow Commands (required for autonomy)**
-- Use `.opencode/command/chise-pr-automerge.md` to standardize push -> PR -> merge (green CI only). This is the default path for autonomous agents to keep `main` convergent.
+- Use `.opencode/command/chise-pr-automerge.md` for `merlin`-owned PR open/merge operations (green CI only).
+- Use `.opencode/command/chise-merlin-pr-sweep.md` for `jarvis` -> `merlin` sprint/batch cleanup (discover unmerged branches, open PRs, diagnose failures, consolidate systemic fixes, prune obsolete branches).
 - **PR Title Rule:** Every PR title MUST include the canonical story ID (e.g. `ST-NS-001 ...`). The `chise-pr-automerge` flow enforces this via `scripts/gitea_pr_automerge.py --story-id`.
 - Use `scripts/swarm/session.py` to enforce isolated worktree sessions per story/agent:
   - `start` before any git work, `verify` before git actions, `close` when done.
@@ -367,8 +370,8 @@ python3 scripts/validate_status_sync.py
 3. Fix failures, rerun until clean
 4. Run `python3 scripts/validate_status_sync.py` and fix issues
 5. Push feature branch; PR to `main`; CI/Security/Deployment pipelines run
-6. Monitor jobs; fix/retest/push if any fail
-7. After green merge, delete feature branch (if not auto-removed)
+6. Non-`merlin` agents report branch handoff to `jarvis`; `jarvis` delegates `merlin` to open/monitor PRs and diagnose failures
+7. `merlin` monitors jobs, runs root-cause + failure-bundle diagnostics, fixes/retests/pushes, and merges/prunes once green
 
 Ask user if tooling gaps need new tests/scripts wired into local CI.
 

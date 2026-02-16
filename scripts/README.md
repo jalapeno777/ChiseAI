@@ -206,6 +206,31 @@ python3 scripts/ops/merge_reconciler.py reconcile-tick --max-items 3 --allow-mer
 python3 scripts/ops/merge_reconciler.py intake-incidents --limit 100
 ```
 
+### ops/merlin_pr_sweep.py
+
+Merlin-only automation wrapper for end-to-end PR sweep and cleanup.
+
+- Discovers non-main branches with unique commits ahead of `main`
+- Resolves story IDs from explicit mapping (`docs/operations/merlin-branch-story-map.json`) with regex fallback
+- Opens/updates PRs through `scripts/gitea_pr_automerge.py`
+- Enforces supersession-link comments in consolidation mode
+
+**Usage:**
+```bash
+# Standard sweep
+python3 scripts/ops/merlin_pr_sweep.py --wait
+
+# Dry-run
+python3 scripts/ops/merlin_pr_sweep.py --dry-run
+
+# Consolidation supersession comments (required in consolidation mode)
+python3 scripts/ops/merlin_pr_sweep.py \
+  --consolidation-mode \
+  --supersession-pr 123 \
+  --supersede-pr 120 \
+  --supersede-pr 121
+```
+
 ## Adding New Scripts
 
 When adding scripts to this directory:

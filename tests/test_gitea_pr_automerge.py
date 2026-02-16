@@ -423,6 +423,87 @@ class TestMain:
     @patch("scripts.gitea_pr_automerge._check_merge_conflict")
     @patch("scripts.gitea_pr_automerge._get_pr_reviews")
     @patch("scripts.gitea_pr_automerge._get_pr")
+    def test_main_non_merlin_agent_blocked(
+        self,
+        mock_get_pr: MagicMock,
+        mock_get_reviews: MagicMock,
+        mock_check_conflict: MagicMock,
+        mock_merge: MagicMock,
+        mock_req_json: MagicMock,
+    ) -> None:
+        """Test non-merlin agent is blocked from PR submission."""
+        with (
+            patch.dict(os.environ, {"GITEA_TOKEN": "test-token", "AGENT_ID": "dev"}),
+            patch(
+                "sys.argv",
+                [
+                    "script",
+                    "--head",
+                    "feature-branch",
+                    "--story-id",
+                    "ST-CI-002",
+                ],
+            ),
+        ):
+            result = main()
+
+        assert result == 1
+        mock_get_pr.assert_not_called()
+
+    @patch("scripts.gitea_pr_automerge._req_json")
+    @patch("scripts.gitea_pr_automerge._merge_pr")
+    @patch("scripts.gitea_pr_automerge._check_merge_conflict")
+    @patch("scripts.gitea_pr_automerge._get_pr_reviews")
+    @patch("scripts.gitea_pr_automerge._get_pr")
+    def test_main_non_merlin_override_allowed(
+        self,
+        mock_get_pr: MagicMock,
+        mock_get_reviews: MagicMock,
+        mock_check_conflict: MagicMock,
+        mock_merge: MagicMock,
+        mock_req_json: MagicMock,
+    ) -> None:
+        """Test explicit override allows non-merlin agent execution."""
+        mock_get_pr.return_value = {
+            "number": 42,
+            "title": "Test PR",
+            "head": {"sha": "abc123"},
+        }
+        mock_get_reviews.return_value = [{"state": "APPROVED"}]
+        mock_check_conflict.return_value = False
+        mock_merge.return_value = None
+        mock_req_json.return_value = {}
+
+        with (
+            patch.dict(
+                os.environ,
+                {
+                    "GITEA_TOKEN": "test-token",
+                    "AGENT_ID": "dev",
+                    "CHISE_ALLOW_NON_MERLIN_PR": "1",
+                },
+            ),
+            patch(
+                "sys.argv",
+                [
+                    "script",
+                    "--head",
+                    "feature-branch",
+                    "--story-id",
+                    "ST-CI-002",
+                ],
+            ),
+        ):
+            result = main()
+
+        assert result == 0
+        mock_get_pr.assert_called_once()
+
+    @patch("scripts.gitea_pr_automerge._req_json")
+    @patch("scripts.gitea_pr_automerge._merge_pr")
+    @patch("scripts.gitea_pr_automerge._check_merge_conflict")
+    @patch("scripts.gitea_pr_automerge._get_pr_reviews")
+    @patch("scripts.gitea_pr_automerge._get_pr")
     def test_main_no_wait_enables_automerge(
         self,
         mock_get_pr: MagicMock,

@@ -43,10 +43,38 @@ permission:
   - capture failing command, exact error, and minimal repro
 - For any git action, require explicit `BRANCH` + `WORKTREE_PATH` and run:
   - `python3 scripts/swarm/session.py verify --story-id=<story_id> --branch=<branch> --worktree-path=<path> --check-canonical`
-- Main merge authority is `jarvis` only; `merlin` must not merge or push `main` directly.
+- PR/merge authority is `merlin` only for branch-to-`main` operations.
+- Non-`merlin` agents may push, but must not open/update PRs.
 - Treat global-lock files as high risk:
   - `.woodpecker.yml`, `scripts/`, `.opencode/agent/`, `AGENTS.md`
   - make smallest safe change and verify full gate behavior
+
+## PR and Git hygiene ownership (required)
+When assigned by Jarvis, perform this exact sequence:
+
+1. Branch sweep and PR discovery
+- Fetch and prune remotes.
+- Identify non-`main` branches with unique commits not merged into `main`.
+- For each candidate branch, open/update PR using `scripts/gitea_pr_automerge.py --story-id ... --head <branch>`.
+
+2. CI monitoring and diagnosis
+- Monitor Woodpecker for each PR.
+- For failures, run:
+  - `.opencode/command/chise-ci-pr-status.md`
+  - `.opencode/command/chise-ci-root-cause.md`
+  - `.opencode/command/chise-ci-failure-bundle.md` for unresolved/systemic failures
+- Root-cause outputs must include: `tool`, `message`, and at least one of `file:line`, `rule`, or `test`.
+
+3. Systemic failure consolidation rule
+- If multiple PRs fail from the same root cause tied to `main`/shared files, stop per-branch churn.
+- Create one consolidation branch that contains the required unique commits/fixes.
+- Focus only on making that consolidation branch CI compliant and merged.
+- Close/supersede obsolete PRs with clear traceability comments.
+
+4. Safe prune policy (no data loss)
+- Only prune branches that are fully merged/reachable from `main` or explicitly superseded by an audited consolidation merge.
+- Prune both local and remote obsolete non-`main` branches after verification.
+- Never delete a branch with unique, unmerged commits unless an equivalent commit set is confirmed in a merged branch.
 
 ## Mandatory output contract
 Return all of:
