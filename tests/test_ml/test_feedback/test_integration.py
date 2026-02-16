@@ -16,12 +16,14 @@ from ml.feedback import (
     FeedbackAnalyzer,
     ModelUpdater,
     PredictionOutcomeMatcher,
+    PredictionOutcomeMatch,
     MatchConfig,
     AnalysisConfig,
     UpdateConfig,
     OrchestratorConfig,
     MatchStatus,
     MatchConfidence,
+    LoopStatus,
 )
 from market_analysis.signal_storage.models import (
     OutcomeRecord,
@@ -298,7 +300,7 @@ class TestFeedbackLoopIntegration:
             assert signal is not None
 
             # Verify temporal ordering (outcome after signal)
-            assert outcome.timestamp > signal.timestamp
+            assert outcome.exit_timestamp > signal.timestamp
 
     @pytest.mark.asyncio
     async def test_error_handling_integration(self, updater) -> None:

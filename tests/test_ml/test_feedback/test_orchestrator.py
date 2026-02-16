@@ -252,10 +252,16 @@ class TestFeedbackOrchestrator:
         self, mock_matcher, mock_analyzer, mock_updater
     ) -> None:
         """Test successful loop execution."""
+        # Create mock signal tracker to enable matching phase
+        mock_signal_tracker = MagicMock()
+        mock_signal_tracker.get_recent_signals = AsyncMock(return_value=[])
+        mock_signal_tracker.get_outcomes_for_signals = AsyncMock(return_value={})
+
         orchestrator = FeedbackOrchestrator(
             matcher=mock_matcher,
             analyzer=mock_analyzer,
             updater=mock_updater,
+            signal_tracker=mock_signal_tracker,
         )
 
         result = await orchestrator.run_feedback_loop()
@@ -349,11 +355,14 @@ class TestFeedbackOrchestrator:
         await orchestrator.start_scheduled()
 
         assert orchestrator._scheduled_task is not None
+        assert not orchestrator._scheduled_task.done()
 
         # Stop scheduled
         await orchestrator.stop_scheduled()
 
-        assert orchestrator._scheduled_task is None
+        # Task should be cancelled after stopping
+        assert orchestrator._scheduled_task.done()
+        assert orchestrator._scheduled_task.cancelled()
 
     @pytest.mark.asyncio
     async def test_start_scheduled_already_running(self, orchestrator) -> None:

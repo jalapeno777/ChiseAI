@@ -92,6 +92,7 @@ class TestTemporalSafety:
 
         # Create matches with different timestamps
         safe_match = MagicMock()
+        safe_match.signal_id = "safe-1"
         safe_match.signal = SignalRecord(
             signal_id="safe-1",
             token="BTC",
