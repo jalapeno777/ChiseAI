@@ -66,28 +66,24 @@ You are **planning + assessment only**.
 - Do not delegate CI fixes with only step-level labels (`lint failed`, `tests failed`); delegation must include extracted `tool`, `message`, and specific `file:line` or `rule` or `test` evidence.
 
 ## Main merge authority (required)
-- `jarvis` is the only merge authority for `main`.
-- Worker agents may push feature/safety branches and open/update PRs, but may not execute final merge-to-main actions.
-- Before any merge-to-main operation, run:
-  - `python3 scripts/swarm/session.py verify --story-id=<story_id> --branch=<branch> --check-canonical --require-main-merge-authority --acquire-main-merge-lock`
-- After merge/handoff, run:
-  - `python3 scripts/swarm/session.py close --enforce-merged`
+- `merlin` is the only PR/merge authority for `main` operations.
+- Worker agents may push feature/safety branches but must not open/update PRs.
+- `jarvis` orchestrates handoff and explicitly instructs `merlin` for PR creation, CI monitoring, merge actions, and branch pruning.
+- Before handing work to `merlin`, require workers to report: story id, branch, head SHA, local CI result, status-sync result, and blockers.
 - If intentionally closing while branch is ahead of main and PR is still open (handoff), use:
   - `python3 scripts/swarm/session.py close --enforce-merged --allow-unmerged`
 
 ## Merge queue reconcile cadence (required)
 To prevent local-only drift while CI is running, use bounded queue processing instead of synchronous waiting:
 
-1. Workers open/update PRs and enqueue them:
-   - `.opencode/command/chise-merge-enqueue.md`
-2. Jarvis runs bounded ticks from a control worktree:
-   - `.opencode/command/chise-reconcile-tick.md`
-   - Recommended cadence: every 5-10 minutes, `--max-items 3`
-3. Jarvis routes incidents:
-   - `.opencode/command/chise-reconcile-intake.md`
-   - `ci_not_green|merge_conflict|merge_api_error` -> `merlin`
-   - `main_unsynced|local_branch_ahead_main|pr_closed_unmerged` -> Jarvis cleanup batch
-4. Never run long blocking waits in worker branches when queue mode is active.
+1. Workers run local CI, push, and report to Jarvis (no PR creation).
+2. Jarvis asks Merlin to run PR sweep + reconciliation:
+   - `.opencode/command/chise-merlin-pr-sweep.md`
+   - Recommended cadence: batch end and every 5-10 minutes during heavy merge windows
+3. Jarvis routes incidents from the sweep:
+   - `ci_not_green|merge_conflict|merge_api_error|systemic_ci_regression` -> `merlin`
+   - `main_unsynced|local_branch_ahead_main|pr_closed_unmerged` -> Jarvis planning cleanup queue
+4. Never run long blocking waits in worker branches while Merlin is handling PR reconciliation.
 
 ## CI throughput policy (required)
 - Treat PR required checks as fast-gate (`swarm-context`, `lint`, `security-scan`, `ci-gate`).

@@ -13,6 +13,8 @@ Auth:
 Environment Variables:
 - GITEA_POLL_INTERVAL: Seconds between status checks (default: 60)
 - GITEA_MAX_RETRIES: Maximum merge attempts before giving up (default: 3)
+- AGENT_ID: Caller identity (must be `merlin` for PR submission/merge)
+- CHISE_ALLOW_NON_MERLIN_PR: Set to `1` only for explicit human override
 """
 
 from __future__ import annotations
@@ -252,11 +254,26 @@ def main() -> int:
         default=True,
         help="Require at least one reviewer approval before merging (default: True)",
     )
+    p.add_argument(
+        "--agent-id",
+        default=os.getenv("AGENT_ID", "merlin"),
+        help="Agent identity. Must be 'merlin' unless explicit override is enabled.",
+    )
     args = p.parse_args()
 
     token = os.getenv("GITEA_TOKEN")
     if not token:
         print("ERROR: GITEA_TOKEN env var is required", file=sys.stderr)
+        return 1
+
+    agent_id = (args.agent_id or "").strip().lower()
+    allow_non_merlin = os.getenv("CHISE_ALLOW_NON_MERLIN_PR", "0") == "1"
+    if agent_id != "merlin" and not allow_non_merlin:
+        print(
+            "ERROR: PR submission is restricted to agent 'merlin'. "
+            "Set --agent-id merlin (or AGENT_ID=merlin).",
+            file=sys.stderr,
+        )
         return 1
 
     base_url = args.base_url.rstrip("/")
