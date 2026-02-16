@@ -5,7 +5,7 @@
 metadata:
   project_name: ChiseAI
   version: "2.1.0"
-  last_updated: "2026-02-16"
+  last_updated: "2026-02-16T00:45:00Z"
   prd_location: docs/prd.md
   prd_note: "Phased perps execution: continuous backtest -> Bybit demo paper -> Bitget live; Grafana-first ops UI; Binance used as reference market-structure venue. LLM integrations (Z.ai GLM-5, MiniMax 2.5) are separate capabilities, not Phase 1."
 
@@ -23,7 +23,7 @@ epics:
   # EP-CHISE-001: Chise v1 Brain Operations (5 stories, 19 points)
   - id: EP-CHISE-001
     name: Chise v1 Brain Operations
-    status: planned
+    status: completed
     story_ids: [ST-CHISE-001, ST-CHISE-002, ST-CHISE-003, ST-CHISE-004, ST-CHISE-005]
     story_count: 5
     story_points: 19
@@ -33,7 +33,7 @@ epics:
   # EP-CI-001: CI/CD Autonomy (4 stories, 14 points)
   - id: EP-CI-001
     name: CI/CD Autonomy
-    status: planned
+    status: completed
     story_ids: [ST-CI-001, ST-CI-002, ST-CI-003, ST-CI-004]
     story_count: 4
     story_points: 14
@@ -43,7 +43,7 @@ epics:
   # EP-DATA-001: Data & Continuous Backtesting (4 stories, 16 points)
   - id: EP-DATA-001
     name: Data & Continuous Backtesting
-    status: planned
+    status: completed
     story_ids: [ST-DATA-001, ST-DATA-002, ST-DATA-003, ST-DATA-004]
     story_count: 4
     story_points: 16
@@ -53,7 +53,7 @@ epics:
   # EP-BT-001: Strategy Intake & Candidate Evaluation (5 stories, 20 points)
   - id: EP-BT-001
     name: Strategy Intake & Candidate Evaluation
-    status: planned
+    status: completed
     story_ids: [ST-SIG-001, ST-SIG-002, ST-BT-001, ST-BT-002, ST-BT-003]
     story_count: 5
     story_points: 20
@@ -63,7 +63,7 @@ epics:
   # EP-ML-001: ML Optimization for Strategy Tuning (3 stories, 11 points)
   - id: EP-ML-001
     name: ML Optimization for Strategy Tuning
-    status: planned
+    status: completed
     story_ids: [ST-ML-001, ST-ML-002, ST-ML-003]
     story_count: 3
     story_points: 11
@@ -73,7 +73,7 @@ epics:
   # EP-CONF-001: Confidence Scoring - ECE/Thresholds (3 stories, 10 points)
   - id: EP-CONF-001
     name: Confidence Scoring - ECE/Thresholds
-    status: planned
+    status: completed
     story_ids: [ST-CONF-001, ST-CONF-002, ST-CONF-003]
     story_count: 3
     story_points: 10
@@ -83,7 +83,7 @@ epics:
   # EP-EX-001: Execution (Perps-First) (3 stories, 13 points)
   - id: EP-EX-001
     name: Execution (Perps-First)
-    status: planned
+    status: completed
     story_ids: [ST-EX-001, ST-EX-002, ST-EX-003]
     story_count: 3
     story_points: 13
@@ -93,7 +93,7 @@ epics:
   # EP-OPS-001: Grafana-first Observability (13 stories, 65 points)
   - id: EP-OPS-001
     name: Grafana-first Observability
-    status: in_progress
+    status: completed
     story_ids: [ST-OPS-001, ST-OPS-002, ST-OPS-003, ST-OPS-004, ST-OPS-005, ST-OPS-006, ST-OPS-007, ST-OPS-008, ST-OPS-009, ST-OPS-010, ST-OPS-011, ST-OPS-012, ST-OPS-013]
     story_count: 13
     story_points: 65
@@ -362,6 +362,7 @@ stories:
     status: completed
     story_points: 4
     priority: P0-CRITICAL
+    fr_coverage: [FR-026]
     description: Ingest market-structure reference data (order book/liquidity/open interest) from Binance for 10 tokens
     acceptance_criteria:
       - Order book snapshots are captured at 100ms intervals for all 10 tokens
@@ -380,6 +381,7 @@ stories:
     # NOTE: Status corrected 2026-02-13 - Bybit/Bitget connectors exist and are integrated
     story_points: 4
     priority: P0-CRITICAL
+    fr_coverage: [FR-026]
     notes: |
       IMPLEMENTED: Bybit and Bitget connectors exist at src/data/exchange/bybit_connector.py 
       and src/data/exchange/bitget_connector.py. Connectors are integrated with position_query.py,
@@ -681,7 +683,7 @@ stories:
     validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
-    fr_coverage: [FR-004a, FR-029]
+    fr_coverage: [FR-004a, FR-029, FR-030a]
     notes: |
       PARTIALLY IMPLEMENTED: Kill switch logic exists in portfolio_risk module. Needs integration with 
       execution layer and Grafana dashboard panels for state visibility (armed/triggered/disabled).
