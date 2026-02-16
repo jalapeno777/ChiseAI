@@ -53,6 +53,7 @@ steps:
           python scripts/validate_fr_traceability.py
           python scripts/validate_iterloop_compliance.py
           python scripts/validate_pr_title.py
+          python scripts/validate_traceability_drift.py --verbose
         ) > _bmad-output/ci/lint.log 2>&1
         code=$?
         cat _bmad-output/ci/lint.log
