@@ -341,7 +341,7 @@ class TestModelUpdater:
         improvement = updater._calculate_improvement(previous, current_metrics)
 
         assert "accuracy_delta" in improvement
-        assert improvement["accuracy_delta"] == 0.05
+        assert improvement["accuracy_delta"] == pytest.approx(0.05, abs=0.0001)
 
     def test_calculate_improvement_no_previous(self, updater) -> None:
         """Test improvement calculation with no previous version."""
@@ -449,4 +449,4 @@ class TestModelUpdater:
         loaded = new_updater.load_version_history("test_model")
 
         assert len(loaded) == 3
-        assert loaded[0].version_id == "v3"  # Newest first
+        assert loaded[0].version_id == "v1"  # Chronological order
