@@ -1,0 +1,171 @@
+# Training Data Configuration
+# Schema version: 1.0.0
+
+schema:
+  version: "1.0.0"
+  name: "ChiseAI Training Data Schema"
+  description: "Standardized training data format for ML model retraining"
+
+# Feature configuration
+features:
+  # Technical indicators
+  indicators:
+    - name: rsi
+      enabled: true
+      range: [0, 100]
+      description: "Relative Strength Index"
+    
+    - name: macd
+      enabled: true
+      description: "MACD line value"
+    
+    - name: macd_signal
+      enabled: true
+      description: "MACD signal line value"
+    
+    - name: macd_histogram
+      enabled: true
+      description: "MACD histogram value"
+    
+    - name: bb_upper
+      enabled: true
+      min: 0
+      description: "Bollinger Bands upper band"
+    
+    - name: bb_lower
+      enabled: true
+      min: 0
+      description: "Bollinger Bands lower band"
+    
+    - name: bb_width
+      enabled: true
+      min: 0
+      description: "Bollinger Bands width percentage"
+    
+    - name: atr
+      enabled: true
+      min: 0
+      description: "Average True Range"
+    
+    - name: volume_sma
+      enabled: true
+      min: 0
+      description: "Volume SMA ratio"
+  
+  # Trend and confluence
+  trend:
+    - name: trend_state
+      enabled: true
+      allowed_values: ["bullish", "bearish", "neutral", "unknown"]
+      description: "Overall trend state"
+    
+    - name: confluence_score
+      enabled: true
+      range: [0, 100]
+      description: "Confluence score from multiple indicators"
+    
+    - name: confidence
+      enabled: true
+      range: [0.0, 1.0]
+      description: "Signal confidence"
+    
+    - name: direction
+      enabled: true
+      allowed_values: ["long", "short", "neutral"]
+      description: "Signal direction"
+  
+  # Price data
+  price:
+    - name: entry_price
+      enabled: true
+      min: 0
+      description: "Entry price at signal time"
+    
+    - name: price_change_24h
+      enabled: true
+      description: "24-hour price change percentage"
+    
+    - name: volatility
+      enabled: true
+      min: 0
+      description: "Price volatility measure"
+
+# Label configuration
+labels:
+  - name: outcome
+    enabled: true
+    type: binary
+    values: [0, 1]
+    description: "Trade outcome (1=win, 0=loss)"
+  
+  - name: pnl_percent
+    enabled: true
+    type: numeric
+    description: "Profit/loss percentage"
+  
+  - name: holding_period_minutes
+    enabled: true
+    type: integer
+    min: 0
+    description: "Trade duration in minutes"
+
+# Supported timeframes
+timeframes:
+  - "1m"
+  - "5m"
+  - "15m"
+  - "30m"
+  - "1h"
+  - "2h"
+  - "4h"
+  - "6h"
+  - "8h"
+  - "12h"
+  - "1d"
+  - "3d"
+  - "1w"
+
+# Storage format configuration
+storage:
+  # Primary format: Parquet (compressed, columnar)
+  primary_format: parquet
+  compression: zstd
+  
+  # Secondary formats
+  secondary_formats:
+    - csv      # Human-readable for analysis
+    - json     # Metadata and statistics
+  
+  # Export settings
+  export:
+    include_metadata: true
+    include_statistics: true
+    validate_on_export: true
+
+# Validation settings
+validation:
+  # Feature range validation
+  validate_ranges: true
+  
+  # Schema version validation
+  validate_schema_version: true
+  
+  # Required fields
+  required_fields:
+    - token
+    - timeframe
+    - timestamp
+  
+  # Skip invalid samples (don't fail entire batch)
+  skip_invalid: true
+
+# Dataset statistics
+dataset:
+  # Minimum samples for valid dataset
+  min_samples: 100
+  
+  # Target samples for training
+  target_samples: 10000
+  
+  # Class balance threshold (warn if < 0.3 or > 0.7)
+  balance_threshold: 0.3
