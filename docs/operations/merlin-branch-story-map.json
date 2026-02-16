@@ -1,0 +1,11 @@
+{
+  "description": "Explicit branch to canonical story ID mapping for Merlin PR sweep.",
+  "exact": {
+    "feature/CH-GIT-MERLIN-PR-001-governance": "CH-GIT-MERLIN-PR-001",
+    "safety/merlin-pr-sweep-governance-20260216": "CH-GIT-MERLIN-PR-002"
+  },
+  "notes": [
+    "Add exact mappings for branches that do not embed a canonical story ID.",
+    "Regex fallback is used when no exact mapping exists."
+  ]
+}
