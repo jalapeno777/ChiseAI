@@ -985,6 +985,29 @@ validations:
     test_method: automated
     owner: risk-team
 
+  # DEPRECATED stories (superseded by split stories)
+  - id: V-NS-015
+    title: Correlation Analysis Engine (DEPRECATED)
+    epic_id: EP-NS-003
+    story_id: ST-NS-015
+    status: deprecated
+    description: DEPRECATED - superseded by ST-NS-015A and ST-NS-015B
+    acceptance_criteria:
+      - Deprecated - no validation required
+    test_method: manual
+    owner: risk-team
+
+  - id: V-NS-016
+    title: Risk Threshold Alert System (DEPRECATED)
+    epic_id: EP-NS-003
+    story_id: ST-NS-016
+    status: deprecated
+    description: DEPRECATED - superseded by ST-NS-016A and ST-NS-016B
+    acceptance_criteria:
+      - Deprecated - no validation required
+    test_method: manual
+    owner: risk-team
+
   # EP-NS-004: Learning & Improvement System
   - id: V-NS-011
     title: Prediction Accuracy Tracking
