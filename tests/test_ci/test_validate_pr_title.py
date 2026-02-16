@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import importlib.util
-import os
 import sys
 from pathlib import Path
 
@@ -26,6 +25,5 @@ def test_contains_valid_story_id_rejects_no_digit_tokens() -> None:
 
 
 def test_non_pr_build_skips() -> None:
-    env = os.environ.copy()
-    env.pop("CI_COMMIT_PULL_REQUEST", None)
+    env: dict[str, str] = {}
     assert not validate_pr_title._is_pr_build(env)

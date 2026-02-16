@@ -29,8 +29,13 @@ WORKFLOW_STATUS_FILE = Path("docs/bmm-workflow-status.yaml")
 PRD_FILE = Path("docs/prd.md")
 VALIDATION_REGISTRY_FILE = Path("docs/validation/validation-registry.yaml")
 
-# FR pattern: FR-XXX or FR-XX
-FR_PATTERN = re.compile(r"FR-\d{2,3}")
+# FR pattern supports legacy numeric IDs (FR-001) and namespaced IDs
+# like FR-EVO-002 or FR-DEV-005.
+FR_PATTERN = re.compile(r"\bFR-[A-Z0-9]+(?:-[A-Z0-9]+)*\b", re.IGNORECASE)
+
+
+def normalize_fr_id(fr_id: str) -> str:
+    return fr_id.strip().upper()
 
 
 class ValidationResult:
@@ -131,7 +136,7 @@ def load_prd_file(filepath: Path) -> tuple[str | None, str | None]:
 
 def extract_frs_from_prd(content: str) -> set[str]:
     """Extract all FR references from PRD content."""
-    return set(FR_PATTERN.findall(content))
+    return {normalize_fr_id(fr_id) for fr_id in FR_PATTERN.findall(content)}
 
 
 def extract_fr_coverage_from_stories(
@@ -155,9 +160,10 @@ def extract_fr_coverage_from_stories(
 
         for fr_id in fr_coverage:
             if isinstance(fr_id, str):
-                if fr_id not in coverage:
-                    coverage[fr_id] = []
-                coverage[fr_id].append(story_id)
+                normalized = normalize_fr_id(fr_id)
+                if normalized not in coverage:
+                    coverage[normalized] = []
+                coverage[normalized].append(story_id)
 
     return coverage
 
