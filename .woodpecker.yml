@@ -50,6 +50,7 @@ steps:
           fi
           mypy src scripts || echo "WARN: mypy violations (non-blocking)"
           python scripts/validate_status_sync.py
+          python scripts/validate_fr_traceability.py
           python scripts/validate_iterloop_compliance.py
           python scripts/validate_pr_title.py
         ) > _bmad-output/ci/lint.log 2>&1
