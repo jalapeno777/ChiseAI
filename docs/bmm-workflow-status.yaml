@@ -5,7 +5,7 @@
 metadata:
   project_name: ChiseAI
   version: "2.1.0"
-  last_updated: "2026-02-15"
+  last_updated: "2026-02-16"
   prd_location: docs/prd.md
   prd_note: "Phased perps execution: continuous backtest -> Bybit demo paper -> Bitget live; Grafana-first ops UI; Binance used as reference market-structure venue. LLM integrations (Z.ai GLM-5, MiniMax 2.5) are separate capabilities, not Phase 1."
 
@@ -236,6 +236,7 @@ stories:
     validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
+    fr_coverage: [FR-EVO-006]
     description: Generate promotion packets for brain upgrades with evidence and rollback procedures
     acceptance_criteria:
       - Packets include all required fields: evaluation summary, safety checks, rollback steps, human approval checkbox
@@ -252,6 +253,7 @@ stories:
     status: completed
     story_points: 4
     priority: P1-HIGH
+    fr_coverage: [FR-DEV-005]
     description: Ensure Chise v1 loop compliance with iteration tracking and Redis/Qdrant logging
     acceptance_criteria:
       - Iteration logs are stored in Redis with 5-day TTL (432,000 seconds)
@@ -286,6 +288,7 @@ stories:
     status: completed
     story_points: 4
     priority: P0-CRITICAL
+    fr_coverage: [FR-DEV-001]
     description: Make CI gates real and blocking (Black/Ruff/Mypy/Pytest/Coverage) for safe autonomous merges
     acceptance_criteria:
       - Black formatting failures fail CI (exit code non-zero)
@@ -302,6 +305,7 @@ stories:
     status: completed
     story_points: 4
     priority: P0-CRITICAL
+    fr_coverage: [FR-DEV-002]
     description: Implement PR open/poll/merge automation via Gitea API; merge only when required checks are green
     acceptance_criteria:
       - PRs do not merge when any required check is missing or failed
@@ -319,6 +323,7 @@ stories:
     validation_status: validated
     story_points: 3
     priority: P1-HIGH
+    fr_coverage: [FR-DEV-003]
     description: Auto-prune merged branches and prevent long-lived divergence
     implementation_notes:
       - scripts/branch_hygiene.py (626 lines)
@@ -372,7 +377,6 @@ stories:
     sprint_id: p0-2
     status: completed
     validation_status: validated
-    fr_coverage: [FR-026]
     # NOTE: Status corrected 2026-02-13 - Bybit/Bitget connectors exist and are integrated
     story_points: 4
     priority: P0-CRITICAL
@@ -398,6 +402,7 @@ stories:
     validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
+    fr_coverage: [FR-025]
     description: Run continuous backtests (including walk-forward) and persist KPIs
     acceptance_criteria:
       - Backtests run continuously without manual start/stop intervention
@@ -433,6 +438,7 @@ stories:
     # NOTE: Status corrected 2026-02-12 - DSL spec doc exists but schema validation code not implemented
     story_points: 4
     priority: P0-CRITICAL
+    fr_coverage: [FR-EVO-001]
     description: Define DSL schema for strategy submission format and validation
     acceptance_criteria:
       - "[PAPER-READY] DSL schema is validated on submission with clear error messages"
@@ -450,6 +456,7 @@ stories:
     validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
+    fr_coverage: [FR-EVO-002]
     description: Build strategy registry with champion/challenger tracking and versioning
     acceptance_criteria:
       - "[PAPER-READY] Champion/challenger relationships are maintained with clear status"
@@ -466,6 +473,7 @@ stories:
     status: completed
     story_points: 4
     priority: P0-CRITICAL
+    fr_coverage: [FR-EVO-003]
     description: Implement candidate backtesting pipeline with standardized ranking metrics
     acceptance_criteria:
       - Backtests use consistent walk-forward windows (30-day train, 7-day test)
@@ -483,6 +491,7 @@ stories:
     validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
+    fr_coverage: [FR-EVO-004]
     description: Design paper canary deployment with explicit gates for promotion
     acceptance_criteria:
       - "[LIVE-GATE] Canary size is defined as 10% of paper portfolio allocation"
@@ -500,6 +509,7 @@ stories:
     validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
+    fr_coverage: [FR-EVO-005]
     description: Generate human-readable promotion packets with evidence, risks, and rollback plan
     acceptance_criteria:
       - "[LIVE-GATE] Packets include: evidence summary, KPI comparison, risk assessment, rollback plan"
@@ -625,6 +635,7 @@ stories:
     validation_status: validated
     story_points: 5
     priority: P0-CRITICAL
+    fr_coverage: [FR-004a, FR-027, FR-030]
     notes: |
       BLOCKED: Missing Bybit connector implementation. Requires ST-DATA-002 (Execution Market Data Ingestion) 
       to be completed first for real-time pricing and fill data. Currently waiting on Bybit API integration work.
@@ -649,6 +660,7 @@ stories:
     validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
+    fr_coverage: [FR-028, FR-030]
     notes: |
       IMPLEMENTED: Live gating system with human approval workflow, risk controls (position limits, leverage cap 3x, 
       per-trade risk 1%, grid worst-case 2%), kill-switch integration, audit logging, and Grafana metrics export.
@@ -669,9 +681,9 @@ stories:
     validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
-    fr_coverage: [FR-030a]
+    fr_coverage: [FR-004a, FR-029]
     notes: |
-      PARTIALLY IMPLEMENTED: Kill switch logic exists in portfolio_risk module. Needs integration with
+      PARTIALLY IMPLEMENTED: Kill switch logic exists in portfolio_risk module. Needs integration with 
       execution layer and Grafana dashboard panels for state visibility (armed/triggered/disabled).
     description: Implement kill switch and execution risk controls for live trading
     implementation_notes:
@@ -695,6 +707,7 @@ stories:
     validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
+    fr_coverage: [FR-031]
     description: Build dashboards for data freshness, ingest health, and backtest KPIs
     acceptance_criteria:
       - Last update timestamps are visible per data source (Binance, Bybit, Bitget)
@@ -711,6 +724,7 @@ stories:
     status: completed
     story_points: 4
     priority: P0-CRITICAL
+    fr_coverage: [FR-031]
     description: Build dashboards for orders/fills, PnL/drawdown, invariant breaches, and kill-switch state
     acceptance_criteria:
       - Order/fill data is queryable in real-time with order_id linking
@@ -743,6 +757,7 @@ stories:
     status: completed
     story_points: 3
     priority: P1-HIGH
+    fr_coverage: [FR-DEV-004]
     description: One-way (repo->Taiga) sync for story ids/titles/status/acceptance criteria, plus mapping state and strict conflict rules
     acceptance_criteria:
       - Dry-run mode reports planned Taiga changes and exits with code 0
@@ -1113,7 +1128,6 @@ stories:
     epic_id: EP-NS-003
     sprint_id: q2-2
     status: completed
-    validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
     fr_coverage: [FR-012]
