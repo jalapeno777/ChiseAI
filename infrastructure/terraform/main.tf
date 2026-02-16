@@ -739,7 +739,57 @@ resource "docker_container" "chiseai_data_quality_monitor" {
   }
 
   healthcheck {
-    test     = ["CMD-SHELL", "pgrep -f 'data_quality_monitor' || exit 1"]
+    test     = ["CMD-SHELL", "pgrep -f '/app/scripts/data_quality_monitor.py' || exit 1"]
+    interval = "60s"
+    timeout  = "10s"
+    retries  = 3
+  }
+}
+
+# Datasource Health Monitor - writes datasource_health and datasource_alerts for Grafana
+resource "docker_container" "chiseai_datasource_health_monitor" {
+  name  = "chiseai-datasource-health-monitor"
+  image = "chiseai-data-quality-monitor:latest"
+
+  command = [
+    "python3",
+    "/app/scripts/run_datasource_health_monitor.py",
+    "--interval",
+    "30",
+  ]
+
+  env = [
+    "INFLUXDB_TOKEN=${var.influxdb_token}",
+    "DQ_INFLUX_URL=http://chiseai-influxdb:18087",
+    "DQ_INFLUX_ORG=${var.influxdb_org}",
+    "DQ_INFLUX_BUCKET=${var.influxdb_bucket}",
+    "POSTGRES_USER=chiseai",
+    "POSTGRES_PASSWORD=${var.chise_postgres_password}",
+  ]
+
+  restart = "always"
+
+  networks_advanced {
+    name = docker_network.chiseai.name
+  }
+
+  labels {
+    label = "project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.service"
+    value = "datasource-health-monitor"
+  }
+
+  healthcheck {
+    test     = ["CMD-SHELL", "pgrep -f '/app/scripts/run_datasource_health_monitor.py' || exit 1"]
     interval = "60s"
     timeout  = "10s"
     retries  = 3
