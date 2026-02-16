@@ -12,7 +12,8 @@ metadata:
 # Current project phase
 current_phase:
   phase: phase_1
-  status: in_progress
+  status: completed
+  note: "Phase 1 foundation work completed. All p0-1 through p0-7 sprint stories done. Transitioning to Phase 2+ execution."
 
 # ============================================================
 # PHASE 1 EPICS (8 epics, 35 stories total)
@@ -194,6 +195,7 @@ stories:
     validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
+    fr_coverage: [FR-DEV-001, FR-EVO-004]
     description: Implement Brain CI/CD pipeline with versioning and evaluation workflow
     implementation_notes:
       - CI trigger added via chise-brain-upgrade-attempt workflow (AC #2, #5)
@@ -219,6 +221,7 @@ stories:
     validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
+    fr_coverage: [FR-DEV-005, FR-EVO-004]
     description: Build brain evaluation framework with batching support and BrainEval protocol
     acceptance_criteria:
       - Evaluation batches support 3-5 brain versions simultaneously
@@ -251,6 +254,7 @@ stories:
     epic_id: EP-CHISE-001
     sprint_id: p0-1
     status: completed
+    validation_status: validated
     story_points: 4
     priority: P1-HIGH
     fr_coverage: [FR-DEV-005]
@@ -271,6 +275,7 @@ stories:
     validation_status: validated
     story_points: 3
     priority: P0-CRITICAL
+    fr_coverage: [FR-EVO-005]
     description: Define comprehensive rollback plan with safety checks and rollback steps
     acceptance_criteria:
       - Rollback triggers are documented: ECE degradation >0.15, safety violations, human request
@@ -286,6 +291,7 @@ stories:
     epic_id: EP-CI-001
     sprint_id: p0-1
     status: completed
+    validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
     fr_coverage: [FR-DEV-001]
@@ -303,6 +309,7 @@ stories:
     epic_id: EP-CI-001
     sprint_id: p0-1
     status: completed
+    validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
     fr_coverage: [FR-DEV-002]
@@ -343,8 +350,10 @@ stories:
     epic_id: EP-CI-001
     sprint_id: p0-1
     status: completed
+    validation_status: validated
     story_points: 3
     priority: P1-HIGH
+    fr_coverage: [FR-DEV-001, FR-DEV-003]
     description: Add deterministic security scanning to CI (bandit on src)
     acceptance_criteria:
       - CI runs bandit scan on src/ directory with severity filter
@@ -360,6 +369,7 @@ stories:
     epic_id: EP-DATA-001
     sprint_id: p0-2
     status: completed
+    validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
     fr_coverage: [FR-026]
@@ -378,6 +388,7 @@ stories:
     sprint_id: p0-2
     status: completed
     validation_status: validated
+    fr_coverage: [FR-026]
     # NOTE: Status corrected 2026-02-13 - Bybit/Bitget connectors exist and are integrated
     story_points: 4
     priority: P0-CRITICAL
@@ -419,8 +430,10 @@ stories:
     epic_id: EP-DATA-001
     sprint_id: p0-2
     status: completed
+    validation_status: validated
     story_points: 4
     priority: P1-HIGH
+    fr_coverage: [FR-031]
     description: Monitor data freshness, detect gaps, and alert on ingestion failures
     acceptance_criteria:
       - Last update timestamps are visible per data source in Grafana
@@ -473,6 +486,7 @@ stories:
     epic_id: EP-BT-001
     sprint_id: p0-2
     status: completed
+    validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
     fr_coverage: [FR-EVO-003]
@@ -530,6 +544,7 @@ stories:
     validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
+    fr_coverage: [FR-025]
     description: Implement walk-forward evaluation framework for robust strategy validation
     acceptance_criteria:
       - Walk-forward windows are configurable (default: 30-day train, 7-day test)
@@ -547,6 +562,7 @@ stories:
     validation_status: validated
     story_points: 4
     priority: P1-HIGH
+    fr_coverage: [FR-EVO-001, FR-EVO-002]
     description: Implement genetic algorithm and Bayesian optimization for strategy hyperparameter tuning
     acceptance_criteria:
       - Optimization converges to stable parameter sets (variance <5% across runs)
@@ -564,6 +580,7 @@ stories:
     validation_status: validated
     story_points: 3
     priority: P1-HIGH
+    fr_coverage: [FR-EVO-001]
     description: Set up automated tuning schedule for continuous strategy optimization
     acceptance_criteria:
       - Scheduled optimization jobs run reliably without manual trigger
@@ -582,6 +599,7 @@ stories:
     validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
+    fr_coverage: [FR-031]
     description: Implement Expected Calibration Error (ECE) calculation per strategy and signal type
     implementation_notes:
       - API endpoint implemented for ECE query (AC #5)
@@ -602,6 +620,7 @@ stories:
     validation_status: validated
     story_points: 3
     priority: P1-HIGH
+    fr_coverage: [FR-031]
     description: Implement dynamic vs fixed confidence threshold calibration
     acceptance_criteria:
       - Dynamic threshold adjustment algorithm is documented and implemented
@@ -619,6 +638,7 @@ stories:
     validation_status: validated
     story_points: 3
     priority: P0-CRITICAL
+    fr_coverage: [FR-031]
     description: Enforce confidence threshold filter (<40% signals filtered from Discord)
     acceptance_criteria:
       - "[PAPER-READY] Confidence filter is applied before Discord alert generation"
@@ -639,7 +659,7 @@ stories:
     priority: P0-CRITICAL
     fr_coverage: [FR-004a, FR-027, FR-030]
     notes: |
-      BLOCKED: Missing Bybit connector implementation. Requires ST-DATA-002 (Execution Market Data Ingestion) 
+      BLOCKED: Missing Bybit connector implementation. Requires ST-DATA-002 (Execution Market Data Ingestion)
       to be completed first for real-time pricing and fill data. Currently waiting on Bybit API integration work.
     description: Integrate Bybit demo paper trading with trade budget enforcement and KPI tracking
     implementation_notes:
@@ -664,7 +684,7 @@ stories:
     priority: P0-CRITICAL
     fr_coverage: [FR-028, FR-030]
     notes: |
-      IMPLEMENTED: Live gating system with human approval workflow, risk controls (position limits, leverage cap 3x, 
+      IMPLEMENTED: Live gating system with human approval workflow, risk controls (position limits, leverage cap 3x,
       per-trade risk 1%, grid worst-case 2%), kill-switch integration, audit logging, and Grafana metrics export.
     description: Implement Bitget live trading with human approval gating and risk controls
     acceptance_criteria:
@@ -685,7 +705,7 @@ stories:
     priority: P0-CRITICAL
     fr_coverage: [FR-004a, FR-029, FR-030a]
     notes: |
-      PARTIALLY IMPLEMENTED: Kill switch logic exists in portfolio_risk module. Needs integration with 
+      PARTIALLY IMPLEMENTED: Kill switch logic exists in portfolio_risk module. Needs integration with
       execution layer and Grafana dashboard panels for state visibility (armed/triggered/disabled).
     description: Implement kill switch and execution risk controls for live trading
     implementation_notes:
@@ -724,6 +744,7 @@ stories:
     epic_id: EP-OPS-001
     sprint_id: p0-7
     status: completed
+    validation_status: validated
     story_points: 4
     priority: P0-CRITICAL
     fr_coverage: [FR-031]
@@ -741,8 +762,10 @@ stories:
     epic_id: EP-OPS-001
     sprint_id: p0-7
     status: completed
+    validation_status: validated
     story_points: 3
     priority: P1-HIGH
+    fr_coverage: [FR-031]
     description: Alert routing + runbooks for common failures (API disconnect, data gaps, order rejects, drift)
     acceptance_criteria:
       - Runbooks exist for: API disconnect, data gaps, order rejects, model drift
@@ -757,6 +780,7 @@ stories:
     epic_id: EP-OPS-001
     sprint_id: p0-7
     status: completed
+    validation_status: validated
     story_points: 3
     priority: P1-HIGH
     fr_coverage: [FR-DEV-004]
@@ -774,8 +798,10 @@ stories:
     epic_id: EP-OPS-001
     sprint_id: p0-7
     status: completed
+    validation_status: validated
     story_points: 8
     priority: P0-CRITICAL
+    fr_coverage: [FR-031]
     description: Integrate Grafana On-Call for alert routing, escalation, and on-call schedule management
     acceptance_criteria:
       - On-call schedules are configurable per team and rotation
@@ -790,8 +816,10 @@ stories:
     epic_id: EP-OPS-001
     sprint_id: p0-7
     status: completed
+    validation_status: validated
     story_points: 6
     priority: P1-HIGH
+    fr_coverage: [FR-031]
     description: Implement custom alerting rules for business-specific metrics and thresholds
     acceptance_criteria:
       - Alert rules are configurable via UI and API
@@ -806,8 +834,10 @@ stories:
     epic_id: EP-OPS-001
     sprint_id: p0-7
     status: completed
+    validation_status: validated
     story_points: 5
     priority: P1-HIGH
+    fr_coverage: [FR-031]
     description: Implement automated annotations for deployments, alerts, and significant events
     acceptance_criteria:
       - Deployments are automatically annotated on all relevant dashboards
@@ -822,8 +852,10 @@ stories:
     epic_id: EP-OPS-001
     sprint_id: p0-7
     status: completed
+    validation_status: validated
     story_points: 7
     priority: P1-HIGH
+    fr_coverage: [FR-031]
     description: Monitor health and performance of all Grafana data sources with proactive alerting
     acceptance_criteria:
       - Data source health checks run every 60 seconds
@@ -838,8 +870,10 @@ stories:
     epic_id: EP-OPS-001
     sprint_id: p0-7
     status: completed
+    validation_status: validated
     story_points: 5
     priority: P2-MEDIUM
+    fr_coverage: [FR-031]
     description: Implement dashboard versioning with rollback capability and change tracking
     acceptance_criteria:
       - All dashboard changes are versioned automatically
@@ -854,8 +888,10 @@ stories:
     epic_id: EP-OPS-001
     sprint_id: p0-7
     status: completed
+    validation_status: validated
     story_points: 9
     priority: P1-HIGH
+    fr_coverage: [FR-031]
     description: Optimize Grafana performance for large datasets and high-cardinality metrics
     acceptance_criteria:
       - Dashboard load time is under 3 seconds for standard viewport
@@ -873,6 +909,7 @@ stories:
     validation_status: validated
     story_points: 6
     priority: P0-CRITICAL
+    fr_coverage: [FR-031, FR-DEV-003]
     description: Wire InfluxDB token to Grafana datasource and API, deploy always-on data quality monitor
     acceptance_criteria:
        - Grafana Influx datasource "ChiseAI InfluxDB" tests OK (no 401)
@@ -892,6 +929,7 @@ stories:
     validation_status: validated
     story_points: 5
     priority: P0-CRITICAL
+    fr_coverage: [FR-031]
     description: Ensure Grafana user DB persists across container recreation and craig-admin is auto-recreated if missing
     acceptance_criteria:
       - Grafana user DB persists across container recreation (proven by restart/recreate test)
@@ -910,6 +948,7 @@ stories:
     validation_status: validated
     story_points: 3
     priority: P0-CRITICAL
+    fr_coverage: [FR-031]
     description: Make Grafana reliably load datasource + dashboards from repo provisioning on startup, using env var token wiring
     acceptance_criteria:
       - docker_container.grafana mounts infrastructure/grafana/provisioning/ into /etc/grafana/provisioning
@@ -1646,20 +1685,22 @@ sprints:
     completion_date: "2025-12-30"
     note: "Legacy planning artifact imported from GridAI; not implemented in this repository"
 
-  # Phase 2+ Sprints (planned)
+  # Phase 2+ Sprints
   - id: q2-1
     name: Market Analysis Engine Foundation
-    status: planned
+    status: completed
     story_count: 6
     story_points: 28
     mapped_stories: [ST-NS-001, ST-NS-002, ST-NS-003, ST-NS-004, ST-NS-005, ST-NS-006]
+    completion_date: "2026-02-15"
 
   - id: q2-2
     name: Signal Generation & Portfolio Risk
-    status: planned
+    status: completed
     story_count: 16
     story_points: 73
     mapped_stories: [ST-NS-007, ST-NS-008, ST-NS-009, ST-NS-010, ST-NS-011, ST-NS-012, ST-NS-012A, ST-NS-012B, ST-NS-013, ST-NS-013A, ST-NS-013B, ST-NS-014, ST-NS-014A, ST-NS-014B, ST-NS-015, ST-NS-016]
+    completion_date: "2026-02-15"
 
   - id: q2-3
     name: Learning & Improvement System
@@ -1689,41 +1730,46 @@ sprints:
     story_points: 49
     mapped_stories: [ST-NS-031, ST-NS-032, ST-NS-033, ST-NS-034, ST-NS-035, ST-NS-036, ST-NS-037]
 
-  # Phase 1 Sprints (in progress)
+  # Phase 1 Sprints (completed)
   - id: p0-1
     name: CI/CD Autonomy & Brain Operations
-    status: in_progress
+    status: completed
     story_count: 9
     story_points: 33
     mapped_stories: [ST-CHISE-001, ST-CHISE-002, ST-CHISE-003, ST-CHISE-004, ST-CHISE-005, ST-CI-001, ST-CI-002, ST-CI-003, ST-CI-004]
+    completion_date: "2026-02-15"
 
   - id: p0-2
     name: Data & Continuous Backtesting
-    status: planned
+    status: completed
     story_count: 16
     story_points: 67
     mapped_stories: [ST-DATA-001, ST-DATA-002, ST-DATA-003, ST-DATA-004, ST-SIG-001, ST-SIG-002, ST-BT-001, ST-BT-002, ST-BT-003, ST-ML-001, ST-ML-002, ST-ML-003]
+    completion_date: "2026-02-15"
 
   - id: p0-3
     name: Confidence Scoring & ECE
-    status: planned
+    status: completed
     story_count: 3
     story_points: 10
     mapped_stories: [ST-CONF-001, ST-CONF-002, ST-CONF-003]
+    completion_date: "2026-02-15"
 
   - id: p0-4
     name: Execution (Perps-First)
-    status: planned
+    status: completed
     story_count: 3
     story_points: 13
     mapped_stories: [ST-EX-001, ST-EX-002, ST-EX-003]
+    completion_date: "2026-02-15"
 
   - id: p0-5
     name: Observability (Grafana-First)
-    status: planned
+    status: completed
     story_count: 4
     story_points: 14
     mapped_stories: [ST-OPS-001, ST-OPS-002, ST-OPS-003, ST-OPS-004]
+    completion_date: "2026-02-15"
 
   - id: p0-7
     name: Observability Sprint 7 - Grafana Enhancement
@@ -1735,12 +1781,13 @@ sprints:
   # Paper Trading Validation Sprint
   - id: PAPER-GATE-001
     name: Paper Trading Validation - Grafana + Canary
-    status: in_progress
+    status: completed
     story_count: 1
     story_points: 5
     mapped_stories: [ST-EX-001]
     note: "Sprint for validating paper trading with Grafana dashboards and canary deployment gates"
     prs_merged: [PR-081]
+    completion_date: "2026-02-15"
 
 # ============================================================
 # SUMMARY COUNTS

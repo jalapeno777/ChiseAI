@@ -107,7 +107,7 @@ def _changed_files_ci_pr(env: dict[str, str]) -> set[str]:
 
 
 def _is_allowed_work_branch(branch: str) -> bool:
-    return bool(re.match(r"^(feature|safety)/", branch))
+    return bool(re.match(r"^(feature|safety|consolidation)/", branch))
 
 
 def main() -> int:
@@ -170,7 +170,8 @@ def main() -> int:
 
     if branch and branch != "main" and not _is_allowed_work_branch(branch):
         errors.append(
-            f"Non-main branch must follow feature/* or safety/* naming. Got {branch!r}"
+            "Non-main branch must follow feature/*, safety/*, or "
+            f"consolidation/* naming. Got {branch!r}"
         )
 
     if ci_mode and pr_build:
