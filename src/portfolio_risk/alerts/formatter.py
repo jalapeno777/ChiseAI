@@ -33,6 +33,10 @@ class RiskAlertFormatter:
         AlertType.CONCENTRATION: "🎯",
         AlertType.KILL_SWITCH: "🚨",
         AlertType.POSITION_COUNT: "📋",
+        # Paper trading specific alerts (ST-PAPER-008)
+        AlertType.REDIS_FAILURE: "🔴",
+        AlertType.PAPER_SYNC_DIVERGENCE: "⚠️",
+        AlertType.VALIDATION_FAILURE_RATE: "📉",
     }
 
     SEVERITY_EMOJIS: dict[AlertSeverity, str] = {
@@ -187,6 +191,10 @@ class RiskAlertFormatter:
             AlertType.CONCENTRATION: "Concentration",
             AlertType.KILL_SWITCH: "Kill Switch",
             AlertType.POSITION_COUNT: "Position Count",
+            # Paper trading specific alerts (ST-PAPER-008)
+            AlertType.REDIS_FAILURE: "Redis Failure",
+            AlertType.PAPER_SYNC_DIVERGENCE: "Paper Sync Divergence",
+            AlertType.VALIDATION_FAILURE_RATE: "Validation Failure Rate",
         }
         return type_names.get(alert_type, "Risk")
 
