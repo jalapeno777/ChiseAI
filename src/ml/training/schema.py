@@ -407,8 +407,8 @@ class TrainingDataset:
                 sample = TrainingSample(**item)
                 dataset.add_sample(sample)
             except Exception:
-                # Skip invalid samples
-                pass
+                # Skip invalid samples - intentionally continuing with remaining data
+                pass  # nosec B110
         return dataset
 
     @classmethod
