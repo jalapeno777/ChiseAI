@@ -357,3 +357,229 @@ class TestRiskAlertDetector:
 
         # Should not crash, should return no alerts
         assert len(alerts) == 0
+
+
+class TestPaperTradingAlerts:
+    """Test paper trading specific alert methods (ST-PAPER-008)."""
+
+    def test_redis_failure_alert_triggered(self):
+        """Test Redis failure alert when circuit breaker opens."""
+        from portfolio_risk.alerts.detector import RiskAlertDetector
+        from portfolio_risk.alerts.types import AlertSeverity, AlertType
+
+        detector = RiskAlertDetector()
+
+        # Circuit breaker open should trigger alert
+        alert = detector.detect_redis_failure(
+            error_rate=75.0,
+            affected_operations=["state_sync", "position_update"],
+            circuit_breaker_open=True,
+        )
+
+        assert alert is not None
+        assert alert.alert_type == AlertType.REDIS_FAILURE
+        assert alert.severity == AlertSeverity.CRITICAL
+        assert "circuit breaker" in alert.message.lower()
+        assert "75.0%" in alert.message
+        assert "state_sync" in alert.metadata["affected_operations"]
+        assert "recovery_steps_link" in alert.metadata
+
+    def test_redis_failure_alert_high_error_rate(self):
+        """Test Redis failure alert with high error rate."""
+        from portfolio_risk.alerts.detector import RiskAlertDetector
+        from portfolio_risk.alerts.types import AlertSeverity, AlertType
+
+        detector = RiskAlertDetector()
+
+        # High error rate should trigger alert even if circuit breaker closed
+        alert = detector.detect_redis_failure(
+            error_rate=60.0,
+            affected_operations=["order_sync"],
+            circuit_breaker_open=False,
+        )
+
+        assert alert is not None
+        assert alert.alert_type == AlertType.REDIS_FAILURE
+        assert alert.severity == AlertSeverity.CRITICAL
+
+    def test_redis_failure_alert_no_trigger(self):
+        """Test Redis failure alert doesn't trigger when healthy."""
+        from portfolio_risk.alerts.detector import RiskAlertDetector
+
+        detector = RiskAlertDetector()
+
+        # Low error rate and closed circuit breaker should not trigger
+        alert = detector.detect_redis_failure(
+            error_rate=10.0,
+            affected_operations=["state_sync"],
+            circuit_breaker_open=False,
+        )
+
+        assert alert is None
+
+    def test_paper_sync_divergence_alert_triggered(self):
+        """Test paper sync divergence alert when states differ."""
+        from portfolio_risk.alerts.detector import RiskAlertDetector
+        from portfolio_risk.alerts.types import AlertSeverity, AlertType
+
+        detector = RiskAlertDetector()
+
+        redis_state = {
+            "BTC": {"notional_value": 10000.0},
+            "ETH": {"notional_value": 5000.0},
+        }
+        memory_state = {
+            "BTC": {"notional_value": 10600.0},  # 6% divergence
+            "ETH": {"notional_value": 5000.0},  # No divergence
+        }
+
+        alert = detector.detect_paper_sync_divergence(
+            redis_state=redis_state,
+            memory_state=memory_state,
+            divergence_threshold_pct=5.0,
+        )
+
+        assert alert is not None
+        assert alert.alert_type == AlertType.PAPER_SYNC_DIVERGENCE
+        assert alert.severity == AlertSeverity.CRITICAL
+        assert "divergence" in alert.message.lower()
+        assert "BTC" in alert.metadata["affected_positions"]
+        assert alert.metadata["divergence_count"] == 1
+
+    def test_paper_sync_divergence_alert_no_trigger(self):
+        """Test divergence alert doesn't trigger when within threshold."""
+        from portfolio_risk.alerts.detector import RiskAlertDetector
+
+        detector = RiskAlertDetector()
+
+        redis_state = {
+            "BTC": {"notional_value": 10000.0},
+        }
+        memory_state = {
+            "BTC": {"notional_value": 10200.0},  # 2% divergence, under 5% threshold
+        }
+
+        alert = detector.detect_paper_sync_divergence(
+            redis_state=redis_state,
+            memory_state=memory_state,
+            divergence_threshold_pct=5.0,
+        )
+
+        assert alert is None
+
+    def test_paper_sync_divergence_multiple_positions(self):
+        """Test divergence alert with multiple diverged positions."""
+        from portfolio_risk.alerts.detector import RiskAlertDetector
+        from portfolio_risk.alerts.types import AlertType
+
+        detector = RiskAlertDetector()
+
+        redis_state = {
+            "BTC": {"notional_value": 10000.0},
+            "ETH": {"notional_value": 5000.0},
+            "SOL": {"notional_value": 2000.0},
+        }
+        memory_state = {
+            "BTC": {"notional_value": 11000.0},  # 10% divergence
+            "ETH": {"notional_value": 5500.0},  # 10% divergence
+            "SOL": {"notional_value": 2000.0},  # No divergence
+        }
+
+        alert = detector.detect_paper_sync_divergence(
+            redis_state=redis_state,
+            memory_state=memory_state,
+            divergence_threshold_pct=5.0,
+        )
+
+        assert alert is not None
+        assert alert.alert_type == AlertType.PAPER_SYNC_DIVERGENCE
+        assert alert.metadata["divergence_count"] == 2
+        assert "BTC" in alert.metadata["affected_positions"]
+        assert "ETH" in alert.metadata["affected_positions"]
+
+    def test_validation_failure_rate_alert_triggered(self):
+        """Test validation failure rate alert when threshold exceeded."""
+        from portfolio_risk.alerts.detector import RiskAlertDetector
+        from portfolio_risk.alerts.types import AlertSeverity, AlertType
+
+        detector = RiskAlertDetector()
+
+        failure_reasons = {
+            "insufficient_funds": 8,
+            "price_stale": 2,
+            "size_too_small": 5,
+        }
+
+        alert = detector.detect_validation_failure_rate(
+            total_orders=100,
+            failed_orders=15,
+            failure_reasons=failure_reasons,
+            window_minutes=5,
+            threshold_pct=10.0,
+        )
+
+        assert alert is not None
+        assert alert.alert_type == AlertType.VALIDATION_FAILURE_RATE
+        assert alert.severity == AlertSeverity.WARNING
+        assert "15.0%" in alert.message
+        assert "validation" in alert.message.lower()
+        assert alert.metadata["failure_breakdown"] == failure_reasons
+        assert alert.metadata["most_common_reason"] == "insufficient_funds"
+
+    def test_validation_failure_rate_alert_no_trigger(self):
+        """Test validation failure alert doesn't trigger when under threshold."""
+        from portfolio_risk.alerts.detector import RiskAlertDetector
+
+        detector = RiskAlertDetector()
+
+        alert = detector.detect_validation_failure_rate(
+            total_orders=100,
+            failed_orders=5,
+            failure_reasons={"insufficient_funds": 5},
+            window_minutes=5,
+            threshold_pct=10.0,
+        )
+
+        assert alert is None
+
+    def test_validation_failure_rate_zero_orders(self):
+        """Test validation failure alert with zero orders."""
+        from portfolio_risk.alerts.detector import RiskAlertDetector
+
+        detector = RiskAlertDetector()
+
+        alert = detector.detect_validation_failure_rate(
+            total_orders=0,
+            failed_orders=0,
+            failure_reasons={},
+            window_minutes=5,
+            threshold_pct=10.0,
+        )
+
+        assert alert is None
+
+    def test_validation_failure_rate_breakdown(self):
+        """Test validation failure alert includes correct breakdown."""
+        from portfolio_risk.alerts.detector import RiskAlertDetector
+
+        detector = RiskAlertDetector()
+
+        failure_reasons = {
+            "insufficient_funds": 10,
+            "market_closed": 3,
+            "price_stale": 2,
+        }
+
+        alert = detector.detect_validation_failure_rate(
+            total_orders=50,
+            failed_orders=15,
+            failure_reasons=failure_reasons,
+            window_minutes=5,
+            threshold_pct=10.0,
+        )
+
+        assert alert is not None
+        assert alert.metadata["total_orders"] == 50
+        assert alert.metadata["failed_orders"] == 15
+        assert alert.metadata["failure_rate_pct"] == 30.0
+        assert alert.metadata["window_minutes"] == 5

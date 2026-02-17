@@ -14,6 +14,8 @@ import hashlib
 import json
 from functools import wraps
 
+from api.cache.metrics import CacheMetricsCollector, CacheMetricsSnapshot
+
 T = TypeVar("T")
 
 
@@ -155,4 +157,6 @@ __all__ = [
     "QueryCache",
     "cached",
     "get_global_cache",
+    "CacheMetricsCollector",
+    "CacheMetricsSnapshot",
 ]
