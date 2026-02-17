@@ -45,5 +45,24 @@ def test_changed_files_fallback_to_show_when_no_base_ref(monkeypatch) -> None:
         return 1, ""
 
     monkeypatch.setattr(ci_change_scope, "_run_git", fake_run_git)
+    monkeypatch.setattr(ci_change_scope, "_pr_changed_files_from_gitea", lambda: None)
     files = ci_change_scope.changed_files(None)
     assert files == ["scripts/ci/ci_change_scope.py", "README.md"]
+
+
+def test_changed_files_prefers_pr_api_scope(monkeypatch) -> None:
+    monkeypatch.setattr(
+        ci_change_scope,
+        "_pr_changed_files_from_gitea",
+        lambda: ["src/api/cache/__init__.py", "tests/test_api/test_cache/test_cache_manager.py"],
+    )
+    monkeypatch.setattr(
+        ci_change_scope,
+        "_run_git",
+        lambda *args: (_ for _ in ()).throw(AssertionError("git fallback should not run")),
+    )
+    files = ci_change_scope.changed_files(None)
+    assert files == [
+        "src/api/cache/__init__.py",
+        "tests/test_api/test_cache/test_cache_manager.py",
+    ]
