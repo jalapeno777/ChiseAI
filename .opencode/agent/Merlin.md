@@ -56,6 +56,7 @@ When assigned by Jarvis, perform this exact sequence:
 - Fetch and prune remotes.
 - Identify non-`main` branches with unique commits not merged into `main`.
 - For each candidate branch, open/update PR using `scripts/gitea_pr_automerge.py --story-id ... --head <branch>`.
+  - `--story-id` must satisfy CI title-gate patterns (`ST-*`, `CH-*`, `FT-*`, `REWARD-*`, `REPO-*`, `SAFETY-*`, `BRANCH-*`, `PAPER-*`, `RECON-*`) and include at least one digit.
 
 2. CI monitoring and diagnosis
 - Monitor Woodpecker for each PR.

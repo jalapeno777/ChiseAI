@@ -28,6 +28,12 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from scripts.story_id import (
+    ensure_story_id_prefix,
+    is_valid_story_id_token,
+    normalize_story_id,
+)
+
 
 def _req_json(method: str, url: str, token: str, body: dict | None = None) -> dict:
     data = None
@@ -279,15 +285,22 @@ def main() -> int:
     base_url = args.base_url.rstrip("/")
     head_ref = args.head
 
-    story_id = args.story_id.strip()
+    story_id = normalize_story_id(args.story_id)
     if not story_id:
         print("ERROR: --story-id must be non-empty", file=sys.stderr)
+        return 1
+    if not is_valid_story_id_token(story_id):
+        print(
+            "ERROR: --story-id must match accepted patterns, e.g. "
+            "ST-NS-001, CH-CI-103, FT-NS-031-001, PAPER-LOOP-001, RECON-002.",
+            file=sys.stderr,
+        )
         return 1
 
     pr = _get_pr(args.owner, args.repo, base_url, token, head_ref)
     if pr is None:
         base_title = args.title or f"{head_ref}"
-        title = f"{story_id} {base_title}"
+        title = ensure_story_id_prefix(story_id, base_title)
         pr = _create_pr(
             args.owner,
             args.repo,
@@ -299,12 +312,12 @@ def main() -> int:
             body=args.body,
         )
     else:
-        # If PR exists but lacks story ID in title, patch it to include the prefix.
+        # If PR exists but lacks this story ID token, patch title to include it.
         pr_title = str(pr.get("title", ""))
-        if story_id not in pr_title:
+        new_title = ensure_story_id_prefix(story_id, pr_title)
+        if new_title != pr_title:
             pr_num = int(pr["number"])
             url = f"{base_url}/api/v1/repos/{args.owner}/{args.repo}/pulls/{pr_num}"
-            new_title = f"{story_id} {pr_title}".strip()
             _req_json("PATCH", url, token, {"title": new_title})
             pr["title"] = new_title
 
