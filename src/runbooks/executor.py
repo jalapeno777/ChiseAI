@@ -287,6 +287,7 @@ class RunbookExecutor:
             # Script path - resolve relative to scripts_dir
             script_path = self._resolve_script_path(step.script)
             cmd = str(script_path)
+            run_args = [cmd]
 
             if not script_path.exists():
                 return StepResult(
@@ -300,6 +301,8 @@ class RunbookExecutor:
                 )
         elif step.command:
             cmd = step.command
+            # Route command strings through bash without using shell=True.
+            run_args = ["bash", "-lc", cmd]
         else:
             return StepResult(
                 step_name=step.name,
@@ -318,8 +321,7 @@ class RunbookExecutor:
             self.logger.debug(f"Executing: {cmd}")
 
             result = subprocess.run(
-                cmd,
-                shell=True,
+                run_args,
                 capture_output=True,
                 text=True,
                 timeout=timeout,
