@@ -1552,7 +1552,7 @@ validations:
   - story_id: ST-PAPER-005
     gate: ci-gate
     type: automated
-    status: passed
+    status: validated
     description: Circuit breaker implementation with 97% test coverage
     evidence:
       - tests/test_common/test_circuit_breaker.py (45 tests)
@@ -1561,7 +1561,7 @@ validations:
   - story_id: ST-PAPER-006
     gate: ci-gate
     type: automated
-    status: passed
+    status: validated
     description: Kill-switch edge case handling with retry logic
     evidence:
       - tests/test_execution/test_kill_switch/test_executor_edge_cases.py (25 tests)
@@ -1570,7 +1570,7 @@ validations:
   - story_id: ST-PAPER-007
     gate: ci-gate
     type: automated
-    status: passed
+    status: validated
     description: Market realism models with 1000-trade validation
     evidence:
       - tests/test_execution/test_paper/test_market_realism.py (64 tests)
@@ -1579,7 +1579,7 @@ validations:
   - story_id: ST-PAPER-008
     gate: ci-gate
     type: automated
-    status: passed
+    status: validated
     description: Critical alerts and operational runbooks
     evidence:
       - tests/test_portfolio_risk/test_alerts/ (90+ existing + 29 new)
