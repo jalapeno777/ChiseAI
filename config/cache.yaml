@@ -1,0 +1,58 @@
+# Cache Configuration for ChiseAI Query Result Caching
+
+# Redis connection settings
+redis:
+  host: "${REDIS_HOST:-host.docker.internal}"
+  port: ${REDIS_PORT:-6380}
+  db: ${REDIS_DB:-0}
+  password: "${REDIS_PASSWORD:-}"
+  socket_timeout: 5
+  socket_connect_timeout: 5
+  max_connections: 50
+
+# Cache TTL settings (in seconds)
+ttl:
+  realtime: 300      # 5 minutes for real-time data (last 1h)
+  historical: 3600   # 1 hour for historical analysis (1d+)
+  signal: 60         # 1 minute for signal data
+  static: 86400      # 24 hours for static config
+  default: 300       # 5 minutes default
+
+# Cache strategy settings
+strategy:
+  # Time bucket sizes in seconds for cache key generation
+  realtime_bucket_size: 300    # 5 minutes
+  historical_bucket_size: 3600 # 1 hour
+  signal_bucket_size: 60       # 1 minute
+  static_bucket_size: 86400    # 24 hours
+
+# Middleware settings
+middleware:
+  enabled: true
+  default_ttl: 300
+  exclude_paths:
+    - "/health"
+    - "/metrics"
+    - "/api/v1/health"
+    - "/api/v1/metrics"
+  cacheable_methods:
+    - "GET"
+    - "HEAD"
+
+# Metrics settings
+metrics:
+  enabled: true
+  window_size: 1000
+  export_prometheus: true
+  export_grafana: true
+
+# InfluxDB cache settings
+influxdb:
+  enabled: true
+  default_use_cache: true
+  max_query_length: 10000
+
+# Memory fallback settings
+memory_fallback:
+  enabled: true
+  max_size: 10000  # Maximum number of entries in memory cache
