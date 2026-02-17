@@ -406,9 +406,9 @@ class TrainingDataset:
             try:
                 sample = TrainingSample(**item)
                 dataset.add_sample(sample)
-            except Exception:
+            except (TypeError, ValueError):
                 # Skip invalid samples
-                pass
+                continue
         return dataset
 
     @classmethod
