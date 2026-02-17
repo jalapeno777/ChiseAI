@@ -1,0 +1,69 @@
+# Exchange Connection Pool Configuration
+# For ST-NS-026: Connection Pooling for Exchange APIs
+
+exchange_pool:
+  # Bybit API Configuration
+  bybit:
+    # Pool Settings
+    pool_size: 10                    # Default connections in pool
+    max_connections: 20              # Maximum connections allowed
+    connection_timeout: 30           # Connection timeout in seconds
+    keepalive: true                  # Enable keepalive connections
+    
+    # Rate Limiting
+    # Bybit: 120 requests per minute for most endpoints
+    rate_limit:
+      requests_per_minute: 120
+      burst_size: 10                 # Allow bursts of 10 requests
+    
+    # Health Check Settings
+    health_check:
+      interval: 30                   # Seconds between health checks
+      latency_threshold_ms: 1000     # Alert if avg latency > 1s
+      utilization_threshold: 90      # Alert if pool > 90% utilized
+      error_rate_threshold: 10       # Alert if error rate > 10%
+    
+    # API Endpoints
+    base_url: "https://api.bybit.com"
+    testnet_url: "https://api-testnet.bybit.com"
+    
+  # Bitget API Configuration
+  bitget:
+    # Pool Settings
+    pool_size: 10
+    max_connections: 20
+    connection_timeout: 30
+    keepalive: true
+    
+    # Rate Limiting
+    # Bitget: 60 requests per minute for most endpoints
+    rate_limit:
+      requests_per_minute: 60
+      burst_size: 5                  # Allow bursts of 5 requests
+    
+    # Health Check Settings
+    health_check:
+      interval: 30
+      latency_threshold_ms: 1000
+      utilization_threshold: 90
+      error_rate_threshold: 10
+    
+    # API Endpoints
+    base_url: "https://api.bitget.com"
+    
+  # Global Pool Settings
+  global:
+    # Connection lifecycle
+    max_connection_age: 300          # Max age of connection in seconds (5 min)
+    idle_timeout: 60                 # Close idle connections after 60s
+    
+    # Retry settings
+    max_retries: 3
+    retry_delay: 1.0                 # Initial retry delay in seconds
+    retry_backoff: 2.0               # Exponential backoff factor
+    
+    # Metrics
+    metrics:
+      enabled: true
+      history_size: 1000             # Number of metrics to retain
+      report_interval: 60            # Seconds between metric reports
