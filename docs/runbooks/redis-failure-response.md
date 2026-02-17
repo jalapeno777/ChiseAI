@@ -6,6 +6,20 @@ estimated_time_to_resolve: 10-20 minutes
 last_updated: 2026-02-17
 maintainers: ops-team
 story_id: ST-PAPER-008
+executable: true
+steps:
+  - name: "Check Redis container status"
+    command: "docker ps --filter 'name=redis' --format '{{.Names}}: {{.Status}}'"
+  - name: "Test Redis connectivity"
+    command: "redis-cli -p 6380 PING"
+    verify: "PONG"
+  - name: "Check Redis memory usage"
+    command: "redis-cli -p 6380 INFO memory | grep used_memory_human"
+  - name: "Reconnect Redis if needed"
+    script: "scripts/ops/reconnect_redis.sh"
+    description: "Automated Redis reconnection script"
+  - name: "Verify application reconnection"
+    command: "docker logs chiseai-api --tail 20 | grep -i 'redis.*connected' || echo 'Check logs manually'"
 ---
 
 # Redis Failure Response Runbook
