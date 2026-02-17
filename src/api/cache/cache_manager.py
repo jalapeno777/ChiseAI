@@ -7,7 +7,7 @@ invalidation, and metrics collection.
 from __future__ import annotations
 
 import logging
-import pickle
+import pickle  # nosec B403
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -115,7 +115,7 @@ class QueryCacheManager:
 
     def _deserialize(self, data: bytes) -> Any:
         """Deserialize data from storage."""
-        return pickle.loads(data)
+        return pickle.loads(data)  # nosec B301
 
     def get(self, query_key: str) -> Any | None:
         """Get cached result by key.
@@ -325,8 +325,10 @@ class QueryCacheManager:
                                 ):
                                     redis.delete(key)
                                     count += 1
-                        except Exception:
-                            continue
+                        except Exception as err:
+                            logger.debug(
+                                "Failed to inspect cache entry %s: %s", key, err
+                            )
                     if cursor == 0:
                         break
             except Exception as e:

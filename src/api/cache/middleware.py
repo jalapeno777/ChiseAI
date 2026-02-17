@@ -122,7 +122,7 @@ class CacheMiddleware(BaseHTTPMiddleware):
                 max_age = int(cache_control.split("max-age=")[1].split(",")[0])
                 return max_age
             except (ValueError, IndexError):
-                pass
+                return self.default_ttl
 
         # Check Expires header
         expires = response.headers.get("expires")
@@ -134,8 +134,8 @@ class CacheMiddleware(BaseHTTPMiddleware):
                 ttl = int(expires_dt.timestamp() - time.time())
                 if ttl > 0:
                     return ttl
-            except Exception:
-                pass
+            except (TypeError, ValueError, OverflowError):
+                return self.default_ttl
 
         return self.default_ttl
 
