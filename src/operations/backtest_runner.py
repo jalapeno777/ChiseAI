@@ -1331,15 +1331,17 @@ class BacktestRunner:
                     pnl = entry_price - candle["close"]
                     pnl_pct = (pnl / entry_price) * 100
                     equity += pnl * (equity / entry_price) * 0.01
-                    trades.append({
-                        "entry_time": entry_time,
-                        "exit_time": candle["timestamp"],
-                        "entry_price": entry_price,
-                        "exit_price": candle["close"],
-                        "direction": "short",
-                        "pnl": pnl,
-                        "pnl_pct": pnl_pct,
-                    })
+                    trades.append(
+                        {
+                            "entry_time": entry_time,
+                            "exit_time": candle["timestamp"],
+                            "entry_price": entry_price,
+                            "exit_price": candle["close"],
+                            "direction": "short",
+                            "pnl": pnl,
+                            "pnl_pct": pnl_pct,
+                        }
+                    )
 
                 # Open long
                 position = "long"
@@ -1352,15 +1354,17 @@ class BacktestRunner:
                     pnl = candle["close"] - entry_price
                     pnl_pct = (pnl / entry_price) * 100
                     equity += pnl * (equity / entry_price) * 0.01
-                    trades.append({
-                        "entry_time": entry_time,
-                        "exit_time": candle["timestamp"],
-                        "entry_price": entry_price,
-                        "exit_price": candle["close"],
-                        "direction": "long",
-                        "pnl": pnl,
-                        "pnl_pct": pnl_pct,
-                    })
+                    trades.append(
+                        {
+                            "entry_time": entry_time,
+                            "exit_time": candle["timestamp"],
+                            "entry_price": entry_price,
+                            "exit_price": candle["close"],
+                            "direction": "long",
+                            "pnl": pnl,
+                            "pnl_pct": pnl_pct,
+                        }
+                    )
 
                 # Open short
                 position = "short"
@@ -1378,15 +1382,17 @@ class BacktestRunner:
                 pnl = entry_price - final_price
             pnl_pct = (pnl / entry_price) * 100
             equity += pnl * (equity / entry_price) * 0.01
-            trades.append({
-                "entry_time": entry_time,
-                "exit_time": data[-1]["timestamp"],
-                "entry_price": entry_price,
-                "exit_price": final_price,
-                "direction": position,
-                "pnl": pnl,
-                "pnl_pct": pnl_pct,
-            })
+            trades.append(
+                {
+                    "entry_time": entry_time,
+                    "exit_time": data[-1]["timestamp"],
+                    "entry_price": entry_price,
+                    "exit_price": final_price,
+                    "direction": position,
+                    "pnl": pnl,
+                    "pnl_pct": pnl_pct,
+                }
+            )
             equity_curve[-1] = equity
 
         # Calculate basic metrics
@@ -1433,16 +1439,18 @@ class BacktestRunner:
             else:
                 exit_time = datetime.now(timezone.utc)
 
-            trades.append(Trade(
-                entry_time=entry_time,
-                exit_time=exit_time,
-                entry_price=float(rt.get("entry_price", 0)),
-                exit_price=float(rt.get("exit_price", 0)),
-                direction=str(rt.get("direction", "long")),
-                quantity=1.0,
-                pnl=float(rt.get("pnl", 0)),
-                pnl_pct=float(rt.get("pnl_pct", 0)),
-            ))
+            trades.append(
+                Trade(
+                    entry_time=entry_time,
+                    exit_time=exit_time,
+                    entry_price=float(rt.get("entry_price", 0)),
+                    exit_price=float(rt.get("exit_price", 0)),
+                    direction=str(rt.get("direction", "long")),
+                    quantity=1.0,
+                    pnl=float(rt.get("pnl", 0)),
+                    pnl_pct=float(rt.get("pnl_pct", 0)),
+                )
+            )
 
         return trades
 

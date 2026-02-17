@@ -256,14 +256,14 @@ class ECEHistoryTracker:
 
             filter_str = " and ".join(filters) if filters else "true"
 
-            query = f'''
+            query = f"""
             from(bucket: "{self.bucket}")
                 |> range(start: {start_time.isoformat()})
                 |> filter(fn: (r) => r._measurement == "ece_history")
                 |> filter(fn: (r) => {filter_str})
                 |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
                 |> sort(columns: ["_time"], desc: false)
-            '''
+            """
 
             tables = query_api.query(query, org=self.org)
 
@@ -381,13 +381,13 @@ class ECEHistoryTracker:
             client = await self._get_client()
             query_api = client.query_api()
 
-            query = f'''
+            query = f"""
             from(bucket: "{self.bucket}")
                 |> range(start: -30d)
                 |> filter(fn: (r) => r._measurement == "ece_history")
                 |> keep(columns: ["strategy_id"])
                 |> distinct(column: "strategy_id")
-            '''
+            """
 
             tables = query_api.query(query, org=self.org)
 

@@ -96,9 +96,11 @@ class ApprovalAuditRecord:
             "timestamp": self.timestamp.isoformat(),
             "approver_id": self.approver_id,
             "request_id": self.request_id,
-            "signature": self.signature[:16] + "..."
-            if len(self.signature) > 16
-            else self.signature,
+            "signature": (
+                self.signature[:16] + "..."
+                if len(self.signature) > 16
+                else self.signature
+            ),
             "evidence_summary": self.evidence_summary,
         }
 

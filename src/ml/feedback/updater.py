@@ -203,9 +203,9 @@ class UpdateResult:
         return {
             "status": self.status.value,
             "version": self.version.to_dict() if self.version else None,
-            "previous_version": self.previous_version.to_dict()
-            if self.previous_version
-            else None,
+            "previous_version": (
+                self.previous_version.to_dict() if self.previous_version else None
+            ),
             "samples_used": self.samples_used,
             "training_time_seconds": round(self.training_time_seconds, 2),
             "validation_metrics": self.validation_metrics,
@@ -321,9 +321,11 @@ class ModelUpdater:
             # Create new version
             version = self._create_version(
                 model_id=model_id,
-                parent_version=result.previous_version.version_id
-                if result.previous_version
-                else None,
+                parent_version=(
+                    result.previous_version.version_id
+                    if result.previous_version
+                    else None
+                ),
                 strategy=self.config.update_strategy,
                 metrics=val_metrics,
                 samples=len(X),
@@ -522,8 +524,8 @@ class ModelUpdater:
         elif model_type == ModelType.LIGHTGBM:
             model.save_model(str(model_path))
         else:
-            # Generic pickle fallback
-            import pickle
+            # Generic pickle fallback for internal model serialization
+            import pickle  # nosec B403 - Used only for internal model state, not user input
 
             with open(model_path, "wb") as f:
                 pickle.dump(model, f)
@@ -685,9 +687,11 @@ class ModelUpdater:
                 [
                     match.signal.metadata.get("rsi", 50) / 100,
                     match.signal.metadata.get("macd", 0),
-                    match.signal.metadata.get("atr", 0) / match.signal.entry_price
-                    if match.signal.entry_price
-                    else 0,
+                    (
+                        match.signal.metadata.get("atr", 0) / match.signal.entry_price
+                        if match.signal.entry_price
+                        else 0
+                    ),
                 ]
             )
 

@@ -577,13 +577,13 @@ class InfluxDBThresholdTracker(ThresholdHistoryTracker):
 
             filter_str = " and ".join(filters)
 
-            query = f'''
+            query = f"""
             from(bucket: "{self.bucket}")
                 |> range(start: {start_time.isoformat()})
                 |> filter(fn: (r) => {filter_str})
                 |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
                 |> sort(columns: ["_time"], desc: false)
-            '''
+            """
 
             tables = query_api.query(query, org=self.org)
 
@@ -596,12 +596,16 @@ class InfluxDBThresholdTracker(ThresholdHistoryTracker):
                         old_value=float(record.values.get("old_value", 0)),
                         new_value=float(record.values.get("new_value", 0)),
                         reason=str(record.values.get("reason", "")),
-                        ece_before=float(record.values.get("ece_before"))
-                        if "ece_before" in record.values
-                        else None,
-                        ece_after=float(record.values.get("ece_after"))
-                        if "ece_after" in record.values
-                        else None,
+                        ece_before=(
+                            float(record.values.get("ece_before"))
+                            if "ece_before" in record.values
+                            else None
+                        ),
+                        ece_after=(
+                            float(record.values.get("ece_after"))
+                            if "ece_after" in record.values
+                            else None
+                        ),
                         adjustment_type=record.values.get("adjustment_type", "auto"),
                         triggered_by=record.values.get("triggered_by", "unknown"),
                     )
@@ -640,13 +644,13 @@ class InfluxDBThresholdTracker(ThresholdHistoryTracker):
 
             filter_str = " and ".join(filters)
 
-            query = f'''
+            query = f"""
             from(bucket: "{self.bucket}")
                 |> range(start: {start_time.isoformat()})
                 |> filter(fn: (r) => {filter_str})
                 |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
                 |> sort(columns: ["_time"], desc: false)
-            '''
+            """
 
             tables = query_api.query(query, org=self.org)
 
@@ -689,7 +693,7 @@ class InfluxDBThresholdTracker(ThresholdHistoryTracker):
             client = await self._get_client()
             query_api = client.query_api()
 
-            query = f'''
+            query = f"""
             from(bucket: "{self.bucket}")
                 |> range(start: -365d)
                 |> filter(fn: (r) => r._measurement == "threshold_adjustments")
@@ -697,7 +701,7 @@ class InfluxDBThresholdTracker(ThresholdHistoryTracker):
                 |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
                 |> sort(columns: ["_time"], desc: true)
                 |> limit(n: 1)
-            '''
+            """
 
             tables = query_api.query(query, org=self.org)
 
@@ -709,12 +713,16 @@ class InfluxDBThresholdTracker(ThresholdHistoryTracker):
                         old_value=float(record.values.get("old_value", 0)),
                         new_value=float(record.values.get("new_value", 0)),
                         reason=str(record.values.get("reason", "")),
-                        ece_before=float(record.values.get("ece_before"))
-                        if "ece_before" in record.values
-                        else None,
-                        ece_after=float(record.values.get("ece_after"))
-                        if "ece_after" in record.values
-                        else None,
+                        ece_before=(
+                            float(record.values.get("ece_before"))
+                            if "ece_before" in record.values
+                            else None
+                        ),
+                        ece_after=(
+                            float(record.values.get("ece_after"))
+                            if "ece_after" in record.values
+                            else None
+                        ),
                         adjustment_type=record.values.get("adjustment_type", "auto"),
                         triggered_by=record.values.get("triggered_by", "unknown"),
                     )
@@ -751,12 +759,12 @@ class InfluxDBThresholdTracker(ThresholdHistoryTracker):
 
             filter_str = " and ".join(filters)
 
-            query = f'''
+            query = f"""
             from(bucket: "{self.bucket}")
                 |> range(start: {start_time.isoformat()})
                 |> filter(fn: (r) => {filter_str})
                 |> count()
-            '''
+            """
 
             tables = query_api.query(query, org=self.org)
 
@@ -785,13 +793,13 @@ class InfluxDBThresholdTracker(ThresholdHistoryTracker):
 
             start_time = datetime.now(UTC) - timedelta(days=days)
 
-            query = f'''
+            query = f"""
             from(bucket: "{self.bucket}")
                 |> range(start: {start_time.isoformat()})
                 |> filter(fn: (r) => r._measurement == "threshold_adjustments")
                 |> keep(columns: ["strategy_id"])
                 |> distinct(column: "strategy_id")
-            '''
+            """
 
             tables = query_api.query(query, org=self.org)
 

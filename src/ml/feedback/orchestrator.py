@@ -346,9 +346,9 @@ class FeedbackOrchestrator:
         """
         return {
             "is_running": self._is_running,
-            "current_iteration": self._current_iteration.to_dict()
-            if self._current_iteration
-            else None,
+            "current_iteration": (
+                self._current_iteration.to_dict() if self._current_iteration else None
+            ),
             "total_iterations": len(self._iteration_history),
             "config": {
                 "max_loop_duration_hours": self.config.max_loop_duration_hours,
@@ -528,9 +528,9 @@ class FeedbackOrchestrator:
             metrics = {
                 "feedback_loop_duration_seconds": result.duration_seconds,
                 "feedback_loop_matches_total": result.total_matches,
-                "feedback_loop_status": 1
-                if result.status == LoopStatus.COMPLETED
-                else 0,
+                "feedback_loop_status": (
+                    1 if result.status == LoopStatus.COMPLETED else 0
+                ),
             }
 
             if result.analysis_report:

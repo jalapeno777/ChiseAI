@@ -18,7 +18,6 @@ from typing import Any, Callable, Coroutine, Optional
 
 from src.brain.version import BrainVersion
 
-
 # Type alias for brain functions
 BrainFunction = Callable[[Any], Coroutine[Any, Any, Any]]
 
@@ -138,15 +137,17 @@ class ShadowTestResult:
             "baseline_predictions": self.baseline_predictions,
             "timestamp": self.timestamp.isoformat(),
             "error_message": self.error_message,
-            "config": {
-                "candidate_version": str(self.config.candidate_version),
-                "baseline_version": str(self.config.baseline_version),
-                "max_latency_overhead_ms": self.config.max_latency_overhead_ms,
-                "sample_size": self.config.sample_size,
-                "parallel_enabled": self.config.parallel_enabled,
-            }
-            if self.config
-            else None,
+            "config": (
+                {
+                    "candidate_version": str(self.config.candidate_version),
+                    "baseline_version": str(self.config.baseline_version),
+                    "max_latency_overhead_ms": self.config.max_latency_overhead_ms,
+                    "sample_size": self.config.sample_size,
+                    "parallel_enabled": self.config.parallel_enabled,
+                }
+                if self.config
+                else None
+            ),
         }
 
 
@@ -312,8 +313,8 @@ class ShadowTester:
                 await self.candidate_brain(warmup_input)
                 await self.baseline_brain(warmup_input)
             except Exception:
-                # Warmup failures are non-fatal
-                pass
+                # Warmup failures are non-fatal - intentionally ignored for shadow testing
+                pass  # nosec B110
 
     async def _run_parallel_measurements(
         self, inputs: list[Any]

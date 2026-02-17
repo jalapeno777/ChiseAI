@@ -472,9 +472,9 @@ class ThresholdCalibrator:
             current_threshold=final_threshold,
             min_threshold=min_thresh,
             max_threshold=max_thresh,
-            created_at=current_config.created_at
-            if current_config
-            else datetime.now(UTC),
+            created_at=(
+                current_config.created_at if current_config else datetime.now(UTC)
+            ),
             updated_at=datetime.now(UTC),
         )
 
@@ -546,12 +546,16 @@ class ThresholdManager:
             strategy_id=strategy_id,
             mode=mode,
             current_threshold=initial_threshold,
-            min_threshold=min_threshold
-            if min_threshold is not None
-            else self._calibrator.default_min_threshold,
-            max_threshold=max_threshold
-            if max_threshold is not None
-            else self._calibrator.default_max_threshold,
+            min_threshold=(
+                min_threshold
+                if min_threshold is not None
+                else self._calibrator.default_min_threshold
+            ),
+            max_threshold=(
+                max_threshold
+                if max_threshold is not None
+                else self._calibrator.default_max_threshold
+            ),
         )
 
         self._configs[strategy_id] = config

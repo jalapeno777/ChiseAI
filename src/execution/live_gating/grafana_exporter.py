@@ -57,9 +57,9 @@ class LiveGatingMetrics:
             "timestamp": self.timestamp.isoformat(),
             "state": self.state,
             "is_enabled": self.is_enabled,
-            "last_approval_date": self.last_approval_date.isoformat()
-            if self.last_approval_date
-            else None,
+            "last_approval_date": (
+                self.last_approval_date.isoformat() if self.last_approval_date else None
+            ),
             "total_trades": self.total_trades,
             "daily_pnl": self.daily_pnl,
             "daily_loss_cap": self.daily_loss_cap,
@@ -187,9 +187,9 @@ class LiveGatingGrafanaExporter:
                 "fields": {
                     "is_enabled": 1.0 if is_enabled else 0.0,
                     "state_value": self._state_to_numeric(state),
-                    "last_approval_timestamp": last_approval_date.timestamp()
-                    if last_approval_date
-                    else 0.0,
+                    "last_approval_timestamp": (
+                        last_approval_date.timestamp() if last_approval_date else 0.0
+                    ),
                 },
                 "time": datetime.now(UTC).isoformat(),
             }
@@ -438,9 +438,9 @@ class LiveGatingGrafanaExporter:
         """
         return {
             "export_count": self._export_count,
-            "last_export_time": self._last_export_time.isoformat()
-            if self._last_export_time
-            else None,
+            "last_export_time": (
+                self._last_export_time.isoformat() if self._last_export_time else None
+            ),
             "failed_exports": self._failed_exports,
             "interval": self._interval,
             "measurement": self.MEASUREMENT,

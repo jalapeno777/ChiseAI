@@ -600,12 +600,12 @@ class LiveGateManager:
             "state": self._state.value,
             "is_live_enabled": self.is_live_enabled,
             "config": self.config.to_dict(),
-            "current_request": self._current_request.to_dict()
-            if self._current_request
-            else None,
-            "last_approval": self._last_approval.to_dict()
-            if self._last_approval
-            else None,
+            "current_request": (
+                self._current_request.to_dict() if self._current_request else None
+            ),
+            "last_approval": (
+                self._last_approval.to_dict() if self._last_approval else None
+            ),
             "enabled_at": self._enabled_at.isoformat() if self._enabled_at else None,
             "daily_pnl": self._daily_pnl,
             "daily_pnl_reset_time": self._daily_pnl_reset_time.isoformat(),

@@ -26,6 +26,9 @@ class DiscordConfig:
         max_retries: Maximum retry attempts for failed deliveries
         retry_base_delay: Base delay for exponential backoff (seconds)
         retry_max_delay: Maximum delay for exponential backoff (seconds)
+        batch_max_size: Maximum number of signals in a batch
+        batch_max_wait_ms: Maximum wait time for batch in milliseconds
+        batch_enabled: Whether batching is enabled
     """
 
     bot_token: str | None = None
@@ -40,6 +43,9 @@ class DiscordConfig:
     max_retries: int = 3
     retry_base_delay: float = 1.0
     retry_max_delay: float = 30.0
+    batch_max_size: int = 5
+    batch_max_wait_ms: int = 100
+    batch_enabled: bool = True
 
     @classmethod
     def from_dict(cls, config: dict[str, Any]) -> DiscordConfig:
@@ -66,6 +72,9 @@ class DiscordConfig:
             max_retries=config.get("max_retries", 3),
             retry_base_delay=config.get("retry_base_delay", 1.0),
             retry_max_delay=config.get("retry_max_delay", 30.0),
+            batch_max_size=config.get("batch_max_size", 5),
+            batch_max_wait_ms=config.get("batch_max_wait_ms", 100),
+            batch_enabled=config.get("batch_enabled", True),
         )
 
     @classmethod
@@ -104,6 +113,9 @@ class DiscordConfig:
             max_retries=int(os.getenv("DISCORD_MAX_RETRIES", "3")),
             retry_base_delay=float(os.getenv("DISCORD_RETRY_BASE_DELAY", "1.0")),
             retry_max_delay=float(os.getenv("DISCORD_RETRY_MAX_DELAY", "30.0")),
+            batch_max_size=int(os.getenv("DISCORD_BATCH_MAX_SIZE", "5")),
+            batch_max_wait_ms=int(os.getenv("DISCORD_BATCH_MAX_WAIT_MS", "100")),
+            batch_enabled=os.getenv("DISCORD_BATCH_ENABLED", "true").lower() == "true",
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -125,4 +137,7 @@ class DiscordConfig:
             "max_retries": self.max_retries,
             "retry_base_delay": self.retry_base_delay,
             "retry_max_delay": self.retry_max_delay,
+            "batch_max_size": self.batch_max_size,
+            "batch_max_wait_ms": self.batch_max_wait_ms,
+            "batch_enabled": self.batch_enabled,
         }
