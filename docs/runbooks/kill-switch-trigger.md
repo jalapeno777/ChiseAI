@@ -6,6 +6,18 @@ estimated_time_to_resolve: 15 minutes
 last_updated: 2026-02-17
 maintainers: ops-team
 story_id: ST-PAPER-008
+executable: true
+steps:
+  - name: "Check execution status"
+    command: "curl -s http://localhost:8001/api/v1/execution/status | jq -r '.status'"
+    verify: "paused"
+  - name: "Cancel pending orders"
+    command: "curl -s -X POST http://localhost:8001/api/v1/orders/cancel-all -H 'Content-Type: application/json' -d '{\"reason\": \"kill_switch_triggered\"}'"
+  - name: "Log incident"
+    script: "scripts/ops/log_incident.sh"
+    description: "Creates incident record for post-mortem analysis"
+  - name: "Capture portfolio state"
+    command: "curl -s http://localhost:8001/api/v1/portfolio/state > /tmp/kill_switch_state_$(date +%Y%m%d_%H%M%S).json"
 ---
 
 # Kill Switch Trigger Runbook
