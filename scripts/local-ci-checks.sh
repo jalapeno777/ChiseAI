@@ -31,17 +31,40 @@ if [ "$SCOPE_MODE" = "merged-only" ]; then
   fi
 
   declare -A TARGET_MAP
+  have_rg=0
+  if command -v rg >/dev/null 2>&1; then
+    have_rg=1
+  fi
+
   for path in "${CHANGED_PY[@]}"; do
     if [[ "$path" == tests/*.py ]] && [ -f "$path" ]; then
+      base_name="$(basename "$path")"
+      # Keep merged-only targets focused on executable test modules.
+      if [[ "$base_name" == "__init__.py" || "$base_name" == "conftest.py" ]]; then
+        continue
+      fi
       TARGET_MAP["$path"]=1
       continue
     fi
 
     if [[ "$path" == src/*.py ]]; then
       stem="$(basename "$path" .py)"
+      # Avoid broad glob expansion from package markers.
+      if [[ "$stem" == "__init__" ]]; then
+        continue
+      fi
       while IFS= read -r candidate; do
+        [ -z "$candidate" ] && continue
         TARGET_MAP["$candidate"]=1
-      done < <(rg --files tests -g "test_${stem}.py" -g "*_${stem}.py" -g "*${stem}*.py" || true)
+      done < <(
+        if [ "$have_rg" -eq 1 ]; then
+          rg --files tests -g "test_${stem}.py" -g "*_${stem}.py" -g "*${stem}*.py"
+        else
+          find tests -type f \
+            \( -name "test_${stem}.py" -o -name "*_${stem}.py" -o -name "*${stem}*.py" \) \
+            -print
+        fi 2>/dev/null || true
+      )
     fi
   done
 

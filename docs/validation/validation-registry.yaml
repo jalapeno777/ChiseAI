@@ -1547,6 +1547,45 @@ validations:
     owner: ml-team
 
   # ============================================================
+  # PAPER-002: Production Readiness (Circuit Breaker, Kill-Switch, Market Realism, Alerts)
+  # ============================================================
+  - story_id: ST-PAPER-005
+    gate: ci-gate
+    type: automated
+    status: validated
+    description: Circuit breaker implementation with 97% test coverage
+    evidence:
+      - tests/test_common/test_circuit_breaker.py (45 tests)
+      - Coverage report: 97%
+
+  - story_id: ST-PAPER-006
+    gate: ci-gate
+    type: automated
+    status: validated
+    description: Kill-switch edge case handling with retry logic
+    evidence:
+      - tests/test_execution/test_kill_switch/test_executor_edge_cases.py (25 tests)
+      - Coverage: 76-94% on tested modules
+
+  - story_id: ST-PAPER-007
+    gate: ci-gate
+    type: automated
+    status: validated
+    description: Market realism models with 1000-trade validation
+    evidence:
+      - tests/test_execution/test_paper/test_market_realism.py (64 tests)
+      - Simulation validation: mean slippage 2.52 bps
+
+  - story_id: ST-PAPER-008
+    gate: ci-gate
+    type: automated
+    status: validated
+    description: Critical alerts and operational runbooks
+    evidence:
+      - tests/test_portfolio_risk/test_alerts/ (90+ existing + 29 new)
+      - Runbooks: kill-switch-trigger.md, paper-trading-operations.md, redis-failure-response.md
+
+  # ============================================================
   # LIVE VALIDATION GATES (4 gates for phased deployment)
   # ============================================================
   # Note: These gates have story_id: null intentionally because they are

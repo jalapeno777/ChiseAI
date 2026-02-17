@@ -43,6 +43,10 @@ class AlertType(Enum):
     CONCENTRATION = "concentration"
     KILL_SWITCH = "kill_switch"
     POSITION_COUNT = "position_count"
+    # Paper trading specific alerts (ST-PAPER-008)
+    REDIS_FAILURE = "redis_failure"
+    PAPER_SYNC_DIVERGENCE = "paper_sync_divergence"
+    VALIDATION_FAILURE_RATE = "validation_failure_rate"
 
     def __str__(self) -> str:
         """Return string representation."""
