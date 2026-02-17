@@ -266,7 +266,8 @@ class LazyDataLoader:
     ) -> str:
         """Generate cache key for a time range."""
         key_data = f"{start_time.isoformat()}:{end.isoformat()}:{resolution}"
-        return f"lazy_data:{hashlib.md5(key_data.encode()).hexdigest()}"
+        digest = hashlib.sha256(key_data.encode("utf-8")).hexdigest()
+        return f"lazy_data:{digest}"
 
     def load_for_viewport(
         self, start_time: datetime, end_time: datetime, resolution: str = "raw"
