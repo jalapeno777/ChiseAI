@@ -92,7 +92,30 @@ def _pr_changed_files_from_gitea() -> list[str] | None:
         return None
 
 
+def _pipeline_changed_files_from_env() -> list[str] | None:
+    """Return changed files from CI-provided env payload when available."""
+    raw = os.environ.get("CI_PIPELINE_FILES", "").strip()
+    if not raw:
+        return None
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(payload, list):
+        return None
+    files: list[str] = []
+    for item in payload:
+        path = str(item).strip()
+        if path:
+            files.append(path)
+    return files
+
+
 def changed_files(base_ref: str | None) -> list[str]:
+    env_files = _pipeline_changed_files_from_env()
+    if env_files is not None:
+        return env_files
+
     pr_files = _pr_changed_files_from_gitea()
     if pr_files is not None:
         return pr_files
