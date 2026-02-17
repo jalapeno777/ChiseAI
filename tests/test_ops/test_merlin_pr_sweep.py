@@ -31,6 +31,16 @@ def test_resolve_story_id_falls_back_to_branch_regex() -> None:
     )
 
 
+def test_resolve_story_id_accepts_paper_loop_branch_tokens() -> None:
+    mapping = {"exact": {}}
+    assert (
+        merlin_pr_sweep.resolve_story_id(
+            "feature/PAPER-LOOP-001-order-simulator", mapping
+        )
+        == "PAPER-LOOP-001"
+    )
+
+
 def test_validate_consolidation_args_requires_supersession_pr() -> None:
     args = merlin_pr_sweep.parse_args(
         [

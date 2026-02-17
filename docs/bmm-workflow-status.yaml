@@ -11,9 +11,9 @@ metadata:
 
 # Current project phase
 current_phase:
-  phase: phase_1
-  status: completed
-  note: "Phase 1 foundation work completed. All p0-1 through p0-7 sprint stories done. Transitioning to Phase 2+ execution."
+  phase: phase_2_plus
+  status: in_progress
+  note: "Phase 2+ execution in progress. Learning & Improvement System (EP-NS-004) active with 2/4 stories completed, 1 in progress, 1 completed ahead of schedule."
 
 # ============================================================
 # PHASE 1 EPICS (8 epics, 35 stories total)
@@ -148,8 +148,8 @@ epics:
     notes:
       - ST-NS-017 (Prediction Accuracy Tracking) - completed
       - ST-NS-018 (ML Feedback Loop) - completed and validated
-      - ST-NS-019 (Confidence Threshold Calibration) - planned
-      - ST-NS-020 (Training Data Generator) - planned
+      - ST-NS-019 (Confidence Threshold Calibration) - in_progress (active branch exists)
+      - ST-NS-020 (Training Data Generator) - completed (PR #136 merged ahead of schedule)
 
   # EP-NS-005: User Experience & Interface (4 stories, 25 points)
   - id: EP-NS-005
@@ -392,7 +392,6 @@ stories:
     # NOTE: Status corrected 2026-02-13 - Bybit/Bitget connectors exist and are integrated
     story_points: 4
     priority: P0-CRITICAL
-    fr_coverage: [FR-026]
     notes: |
       IMPLEMENTED: Bybit and Bitget connectors exist at src/data/exchange/bybit_connector.py 
       and src/data/exchange/bitget_connector.py. Connectors are integrated with position_query.py,
@@ -1704,10 +1703,12 @@ sprints:
 
   - id: q2-3
     name: Learning & Improvement System
-    status: planned
+    status: in_progress
     story_count: 4
     story_points: 28
     mapped_stories: [ST-NS-017, ST-NS-018, ST-NS-019, ST-NS-020]
+    completion_date: "2026-02-15"
+    notes: "ST-NS-017 and ST-NS-018 completed. ST-NS-020 completed ahead of schedule (PR #136). ST-NS-019 in progress."
 
   - id: q2-4
     name: User Experience & Interface

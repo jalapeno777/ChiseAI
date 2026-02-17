@@ -10,6 +10,7 @@ Prereqs:
 - `GITEA_TOKEN` must be set.
 - In containerized agent environments, use `GITEA_BASE_URL=http://host.docker.internal:3000`.
 - `STORY_ID`, `BRANCH`, `PR_NUMBER`, `HEAD_SHA`, `AGENT_ID` must be set.
+- `STORY_ID` must use accepted title-gate formats (`ST-*`, `CH-*`, `FT-*`, `REWARD-*`, `REPO-*`, `SAFETY-*`, `BRANCH-*`, `PAPER-*`, `RECON-*`) and include a digit.
 
 Run:
 
