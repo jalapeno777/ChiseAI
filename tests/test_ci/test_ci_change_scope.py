@@ -34,6 +34,7 @@ def test_changed_python_filters_existing_py_files() -> None:
 
 
 def test_changed_files_fallback_to_show_when_no_base_ref(monkeypatch) -> None:
+    monkeypatch.delenv("CI_PIPELINE_FILES", raising=False)
     def fake_run_git(*args: str) -> tuple[int, str]:
         cmd = " ".join(args)
         if cmd.startswith("rev-parse --verify"):
@@ -51,6 +52,7 @@ def test_changed_files_fallback_to_show_when_no_base_ref(monkeypatch) -> None:
 
 
 def test_changed_files_prefers_pr_api_scope(monkeypatch) -> None:
+    monkeypatch.delenv("CI_PIPELINE_FILES", raising=False)
     monkeypatch.setattr(
         ci_change_scope,
         "_pr_changed_files_from_gitea",
