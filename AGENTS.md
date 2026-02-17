@@ -139,6 +139,8 @@ When starting work:
 - Run `git status -sb` before/after operations
 - Only `merlin` may open/update/close PRs
 - Use `feature/<story-id>-<slug>` branches
+- PR titles must contain a recognized story id token:
+  - `ST-*`, `CH-*`, `FT-*`, `REWARD-*`, `REPO-*`, `SAFETY-*`, `BRANCH-*`, `PAPER-*`, `RECON-*` (must include a digit)
 - Before switching branches, working tree must be clean
 
 ---
