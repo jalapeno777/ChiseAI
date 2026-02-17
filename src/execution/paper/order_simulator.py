@@ -224,7 +224,8 @@ class OrderSimulator:
         # Simple hash-based price simulation for testing
         import hashlib
 
-        hash_val = int(hashlib.md5(symbol.encode()).hexdigest(), 16)
+        # Deterministic non-cryptographic mapping; avoid weak MD5 usage flagged by Bandit.
+        hash_val = int(hashlib.sha256(symbol.encode()).hexdigest(), 16)
         base_price = 100.0 + (hash_val % 90000) / 100  # $100 - $1000 range
 
         return base_price
