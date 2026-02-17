@@ -13,7 +13,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import subprocess
 import sys
 import urllib.error
@@ -22,15 +21,19 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+try:
+    from scripts.story_id import extract_story_ids, normalize_story_id
+except ModuleNotFoundError:
+    # Allow execution as `python scripts/ops/merlin_pr_sweep.py`.
+    import pathlib
+
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+    from story_id import extract_story_ids, normalize_story_id
+
 DEFAULT_MAPPING_FILE = Path("docs/operations/merlin-branch-story-map.json")
 DEFAULT_BASE_URL = "http://host.docker.internal:3000"
 DEFAULT_OWNER = "craig"
 DEFAULT_REPO = "ChiseAI"
-
-STORY_ID_RE = re.compile(
-    r"(FT-NS-\d+-\d+|ST-[A-Z0-9]+(?:-[A-Z0-9]+)*-\d+[A-Z]?|CH-[A-Z0-9]+(?:-[A-Z0-9]+)*-\d+|REWARD-\d+)"
-)
-
 
 class SweepError(Exception):
     """Raised for recoverable sweep failures."""
@@ -87,11 +90,13 @@ def resolve_story_id(branch: str, mapping: dict[str, Any]) -> str | None:
     if isinstance(exact, dict) and branch in exact:
         val = exact[branch]
         if isinstance(val, str) and val.strip():
-            return val.strip()
+            mapped_ids = extract_story_ids(val)
+            if mapped_ids:
+                return normalize_story_id(mapped_ids[0])
 
-    m = STORY_ID_RE.search(branch.upper())
-    if m:
-        return m.group(1)
+    branch_ids = extract_story_ids(branch)
+    if branch_ids:
+        return normalize_story_id(branch_ids[0])
     return None
 
 

@@ -12,6 +12,7 @@ Prereqs:
 - Optional: `GITEA_BASE_URL` (default `http://host.docker.internal:3000`), `GITEA_OWNER`, `GITEA_REPO`
 - Run from an isolated control worktree
 - Ensure mapping file exists/updated: `docs/operations/merlin-branch-story-map.json`
+  - Mapping values must use accepted story-id patterns (same CI gate as `validate_pr_title.py`): `ST-*`, `CH-*`, `FT-*`, `REWARD-*`, `REPO-*`, `SAFETY-*`, `BRANCH-*`, `PAPER-*`, `RECON-*` (must include a digit).
 
 1. Run the automated sweep wrapper
 ```bash
