@@ -53,6 +53,19 @@ def _is_main_push(env: dict[str, str]) -> bool:
     return event == "push" and branch == "main"
 
 
+def _is_main_cron(env: dict[str, str]) -> bool:
+    event = (
+        env.get("CI_BUILD_EVENT", "")
+        or env.get("WOODPECKER_BUILD_EVENT", "")
+        or env.get("WOODPECKER_EVENT", "")
+        or env.get("CI_PIPELINE_EVENT", "")
+    ).strip().lower()
+    branch = (
+        env.get("CI_COMMIT_BRANCH", "") or env.get("WOODPECKER_COMMIT_BRANCH", "")
+    ).strip()
+    return event == "cron" and branch == "main"
+
+
 def _run_root_cause_bundle(ci_dir: Path, env: dict[str, str]) -> Path | None:
     triage_script = Path("scripts/ci/woodpecker_triage.py")
     if not triage_script.exists():
@@ -200,14 +213,24 @@ def main() -> int:
             subprocess.run([sys.executable, str(scan_script)], check=False)
 
     # Best-effort PR comment for swarm visibility.
-    if _is_pr_build(env) and env.get("GITEA_TOKEN", "").strip():
-        comment_script = Path("scripts/ci/post_ci_failure_pr_comment.py")
-        if comment_script.exists():
-            subprocess.run([sys.executable, str(comment_script)], check=False)
-    else:
-        if _is_pr_build(env):
+    if _is_pr_build(env):
+        if env.get("GITEA_TOKEN", "").strip():
+            comment_script = Path("scripts/ci/post_ci_failure_pr_comment.py")
+            if comment_script.exists():
+                subprocess.run([sys.executable, str(comment_script)], check=False)
+        else:
             print(
                 "ci-gate: PR build but GITEA_TOKEN is not set; cannot post PR comment.",
+                file=sys.stderr,
+            )
+    elif _is_main_cron(env):
+        notify_script = Path("scripts/ci/post_ci_failure_discord.py")
+        if notify_script.exists():
+            subprocess.run([sys.executable, str(notify_script)], check=False)
+        else:
+            print(
+                "ci-gate: cron/main failure notifier script missing; "
+                "cannot dispatch swarm handoff notification.",
                 file=sys.stderr,
             )
 
