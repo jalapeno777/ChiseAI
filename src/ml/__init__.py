@@ -6,6 +6,7 @@ This package provides machine learning optimization capabilities:
 - hyperopt: Hyperparameter optimization using genetic algorithms and Bayesian optimization
 - scheduler: Automated optimization scheduling with volatility adaptation
 - feedback: ML feedback loop for prediction-outcome analysis and model improvement
+- training: Training data schema and storage for ML model retraining
 
 Usage:
     import sys
@@ -20,6 +21,8 @@ Usage:
         FeedbackOrchestrator,
         FeedbackAnalyzer,
         ModelUpdater,
+        TrainingSample,
+        TrainingDataset,
     )
 """
 
@@ -91,6 +94,20 @@ from ml.feedback import (
     UpdateStatus,
     UpdateStrategy,
 )
+from ml.training import (
+    DatasetMetadata,
+    FeatureSpec,
+    FeatureType,
+    FeatureValidator,
+    FEATURE_GROUPS,
+    FEATURE_SPECS,
+    SchemaVersion,
+    SchemaVersionManager,
+    StorageFormatManager,
+    TrainingDataset,
+    TrainingSample,
+    TrendState,
+)
 
 __all__ = [
     # Walk-forward
@@ -153,4 +170,17 @@ __all__ = [
     "ModelType",
     "ModelVersion",
     "UpdateResult",
+    # Training
+    "TrainingSample",
+    "TrainingDataset",
+    "FeatureSpec",
+    "FeatureType",
+    "FeatureValidator",
+    "FEATURE_SPECS",
+    "FEATURE_GROUPS",
+    "TrendState",
+    "StorageFormatManager",
+    "DatasetMetadata",
+    "SchemaVersion",
+    "SchemaVersionManager",
 ]

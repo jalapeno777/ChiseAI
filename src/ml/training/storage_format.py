@@ -497,14 +497,12 @@ class StorageFormatManager:
         statistics = {
             "win_rate": outcomes.count(1) / len(outcomes) if outcomes else 0.0,
             "avg_pnl": sum(pnl_values) / len(pnl_values) if pnl_values else 0.0,
-            "outcome_distribution": (
-                {
-                    "wins": outcomes.count(1),
-                    "losses": outcomes.count(0),
-                }
-                if outcomes
-                else {}
-            ),
+            "outcome_distribution": {
+                "wins": outcomes.count(1),
+                "losses": outcomes.count(0),
+            }
+            if outcomes
+            else {},
         }
 
         return DatasetMetadata(
