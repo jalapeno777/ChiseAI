@@ -28,11 +28,19 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from scripts.story_id import (
-    ensure_story_id_prefix,
-    is_valid_story_id_token,
-    normalize_story_id,
-)
+try:
+    from scripts.story_id import (
+        ensure_story_id_prefix,
+        is_valid_story_id_token,
+        normalize_story_id,
+    )
+except ModuleNotFoundError:
+    # Allow execution as `python scripts/gitea_pr_automerge.py`.
+    from story_id import (
+        ensure_story_id_prefix,
+        is_valid_story_id_token,
+        normalize_story_id,
+    )
 
 
 def _req_json(method: str, url: str, token: str, body: dict | None = None) -> dict:

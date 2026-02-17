@@ -16,7 +16,11 @@ from __future__ import annotations
 import os
 import sys
 
-from scripts.story_id import contains_valid_story_id, extract_story_ids
+try:
+    from scripts.story_id import contains_valid_story_id, extract_story_ids
+except ModuleNotFoundError:
+    # Allow execution as `python scripts/validate_pr_title.py`.
+    from story_id import contains_valid_story_id, extract_story_ids
 
 
 def _contains_valid_story_id(text: str) -> bool:

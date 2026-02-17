@@ -21,7 +21,14 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-from scripts.story_id import extract_story_ids, normalize_story_id
+try:
+    from scripts.story_id import extract_story_ids, normalize_story_id
+except ModuleNotFoundError:
+    # Allow execution as `python scripts/ops/merlin_pr_sweep.py`.
+    import pathlib
+
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+    from story_id import extract_story_ids, normalize_story_id
 
 DEFAULT_MAPPING_FILE = Path("docs/operations/merlin-branch-story-map.json")
 DEFAULT_BASE_URL = "http://host.docker.internal:3000"
