@@ -14,20 +14,17 @@ Behavior:
 from __future__ import annotations
 
 import os
-import re
 import sys
 
-STORY_ID_RE = re.compile(
-    r"\b(?:ST|CH|FT|REWARD|REPO|SAFETY|BRANCH)(?:-[A-Z0-9]+){1,}\b", re.IGNORECASE
-)
+try:
+    from scripts.story_id import contains_valid_story_id, extract_story_ids
+except ModuleNotFoundError:
+    # Allow execution as `python scripts/validate_pr_title.py`.
+    from story_id import contains_valid_story_id, extract_story_ids
 
 
 def _contains_valid_story_id(text: str) -> bool:
-    for match in STORY_ID_RE.finditer(text):
-        token = match.group(0)
-        if any(ch.isdigit() for ch in token):
-            return True
-    return False
+    return contains_valid_story_id(text)
 
 
 def _is_pr_build(env: dict[str, str]) -> bool:
@@ -133,10 +130,10 @@ def _get_pr_title(env: dict[str, str]) -> str:
         or env.get("WOODPECKER_COMMIT_BRANCH", "").strip()
     )
     if branch:
-        match = STORY_ID_RE.search(branch)
-        if match:
+        branch_ids = extract_story_ids(branch)
+        if branch_ids:
             print(
-                f"validate_pr_title: Using story ID from branch name: {match.group()}",
+                f"validate_pr_title: Using story ID from branch name: {branch_ids[0]}",
                 file=sys.stderr,
             )
             return branch  # Return branch name which contains story ID
@@ -163,7 +160,7 @@ def main() -> int:
     if not _contains_valid_story_id(title):
         print(
             "ERROR: PR title must contain a story id like "
-            "ST-NS-001, ST-CI-HEALTH-20260215F, or CH-CI-103. "
+            "ST-NS-001, ST-CI-HEALTH-20260215F, CH-CI-103, or PAPER-LOOP-001. "
             f"Got: {title!r}",
             file=sys.stderr,
         )
