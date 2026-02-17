@@ -5,8 +5,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
+from urllib.error import URLError
+from urllib.parse import quote
+from urllib.request import Request, urlopen
 from pathlib import Path
 
 DOC_ONLY_PREFIXES = (
@@ -50,7 +54,72 @@ def _resolve_base_ref(explicit: str | None) -> str | None:
     return None
 
 
+def _pr_changed_files_from_gitea() -> list[str] | None:
+    """Return changed files from Gitea PR API when running on PR builds."""
+    env = os.environ
+    pr_number = (
+        env.get("CI_COMMIT_PULL_REQUEST", "").strip()
+        or env.get("CI_PULL_REQUEST", "").strip()
+        or env.get("WOODPECKER_PULL_REQUEST", "").strip()
+    )
+    repo = env.get("CI_REPO", "").strip()
+    forge_url = (env.get("CI_FORGE_URL", "") or env.get("GITEA_BASE_URL", "")).strip()
+    token = env.get("GITEA_TOKEN", "").strip()
+
+    if not pr_number or not repo or "/" not in repo or not forge_url or not token:
+        return None
+
+    owner, name = repo.split("/", 1)
+    url = (
+        f"{forge_url.rstrip('/')}/api/v1/repos/{quote(owner)}/{quote(name)}"
+        f"/pulls/{quote(pr_number)}/files"
+    )
+    req = Request(url=url, method="GET", headers={"Authorization": f"token {token}"})
+    try:
+        with urlopen(req, timeout=15) as resp:  # noqa: S310
+            payload = json.loads(resp.read().decode("utf-8", errors="replace"))
+            if not isinstance(payload, list):
+                return None
+            files: list[str] = []
+            for item in payload:
+                if not isinstance(item, dict):
+                    continue
+                filename = str(item.get("filename", "")).strip()
+                if filename:
+                    files.append(filename)
+            return files
+    except (OSError, URLError, json.JSONDecodeError):
+        return None
+
+
+def _pipeline_changed_files_from_env() -> list[str] | None:
+    """Return changed files from CI-provided env payload when available."""
+    raw = os.environ.get("CI_PIPELINE_FILES", "").strip()
+    if not raw:
+        return None
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(payload, list):
+        return None
+    files: list[str] = []
+    for item in payload:
+        path = str(item).strip()
+        if path:
+            files.append(path)
+    return files
+
+
 def changed_files(base_ref: str | None) -> list[str]:
+    env_files = _pipeline_changed_files_from_env()
+    if env_files is not None:
+        return env_files
+
+    pr_files = _pr_changed_files_from_gitea()
+    if pr_files is not None:
+        return pr_files
+
     base = _resolve_base_ref(base_ref)
     if base:
         rc, merge_base = _run_git("merge-base", "HEAD", base)
