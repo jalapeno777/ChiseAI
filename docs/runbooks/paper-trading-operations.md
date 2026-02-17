@@ -6,6 +6,20 @@ estimated_time_to_resolve: 10-30 minutes
 last_updated: 2026-02-17
 maintainers: ops-team
 story_id: ST-PAPER-008
+executable: true
+steps:
+  - name: "Check all services status"
+    command: "docker ps --filter 'name=chiseai' --format '{{.Names}}: {{.Status}}'"
+  - name: "Verify paper trading mode"
+    command: "curl -s http://localhost:8001/api/v1/execution/mode | jq -r '.mode'"
+    verify: "paper"
+  - name: "Check data freshness"
+    command: "curl -s http://localhost:8001/api/v1/health/data-freshness | jq '.sources | length'"
+  - name: "Generate daily summary"
+    script: "scripts/ops/daily_summary.sh"
+    description: "Runs daily summary report for paper trading"
+  - name: "Backup paper trading state"
+    command: "redis-cli -p 6380 BGSAVE"
 ---
 
 # Paper Trading Operations Runbook

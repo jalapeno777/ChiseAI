@@ -1,0 +1,579 @@
+"""Report scheduler for automated report generation and delivery.
+
+Provides cron-like scheduling for reports with:
+- Discord webhook integration
+- Email delivery (optional)
+- Report archival to disk
+- Configurable schedules
+
+For PAPER-003-003: Automated Reporting and Anomaly Detection
+"""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import os
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
+import aiohttp
+
+from .anomaly_detector import AnomalyDetector
+from .daily_generator import DailyReportGenerator
+from .models import AnomalyAlert, ReportSchedule
+from .weekly_generator import WeeklyPerformanceReport
+
+logger = logging.getLogger(__name__)
+
+
+class ReportScheduler:
+    """Schedule and manage automated report generation.
+
+    Features:
+    - Cron-like scheduling for daily and weekly reports
+    - Discord webhook integration for notifications
+    - Email delivery support (optional)
+    - Report archival to disk
+    - Anomaly detection and alerting
+
+    Attributes:
+        daily_generator: Daily report generator
+        weekly_generator: Weekly report generator
+        anomaly_detector: Anomaly detector
+        schedules: List of configured schedules
+        output_dir: Directory for report archival
+    """
+
+    def __init__(
+        self,
+        influxdb_client: Any | None = None,
+        output_dir: str = "./reports",
+        default_discord_webhook: str | None = None,
+    ) -> None:
+        """Initialize report scheduler.
+
+        Args:
+            influxdb_client: InfluxDB client instance
+            output_dir: Directory for report archival
+            default_discord_webhook: Default Discord webhook URL
+        """
+        self.daily_generator = DailyReportGenerator(influxdb_client)
+        self.weekly_generator = WeeklyPerformanceReport(influxdb_client)
+        self.anomaly_detector = AnomalyDetector(influxdb_client)
+
+        self._schedules: list[ReportSchedule] = []
+        self._output_dir = output_dir
+        self._default_discord_webhook = default_discord_webhook
+        self._running = False
+        self._scheduler_task: asyncio.Task | None = None
+        self._check_interval = 60  # Check every minute
+
+        # Ensure output directory exists
+        os.makedirs(output_dir, exist_ok=True)
+
+        logger.info(f"ReportScheduler initialized: output_dir={output_dir}")
+
+    def add_schedule(
+        self,
+        name: str,
+        report_type: str,
+        cron_expression: str,
+        discord_webhook: str | None = None,
+        email_recipients: list[str] | None = None,
+        enabled: bool = True,
+    ) -> ReportSchedule:
+        """Add a new report schedule.
+
+        Args:
+            name: Schedule name
+            report_type: "daily" or "weekly"
+            cron_expression: Cron expression (e.g., "0 9 * * *" for 9 AM daily)
+            discord_webhook: Discord webhook URL (optional)
+            email_recipients: List of email addresses (optional)
+            enabled: Whether schedule is enabled
+
+        Returns:
+            Created ReportSchedule
+        """
+        schedule = ReportSchedule(
+            name=name,
+            report_type=report_type,
+            cron_expression=cron_expression,
+            enabled=enabled,
+            discord_webhook=discord_webhook or self._default_discord_webhook,
+            email_recipients=email_recipients or [],
+            output_dir=self._output_dir,
+        )
+
+        self._schedules.append(schedule)
+        logger.info(f"Added schedule: {name} ({report_type}) - {cron_expression}")
+
+        return schedule
+
+    def remove_schedule(self, name: str) -> bool:
+        """Remove a schedule by name.
+
+        Args:
+            name: Schedule name to remove
+
+        Returns:
+            True if removed, False if not found
+        """
+        for i, schedule in enumerate(self._schedules):
+            if schedule.name == name:
+                self._schedules.pop(i)
+                logger.info(f"Removed schedule: {name}")
+                return True
+        return False
+
+    def get_schedules(self) -> list[ReportSchedule]:
+        """Get all configured schedules.
+
+        Returns:
+            List of ReportSchedule objects
+        """
+        return self._schedules.copy()
+
+    async def start(self) -> None:
+        """Start the scheduler loop."""
+        if self._running:
+            logger.warning("Scheduler already running")
+            return
+
+        self._running = True
+        self._scheduler_task = asyncio.create_task(self._scheduler_loop())
+        logger.info("Report scheduler started")
+
+    async def stop(self) -> None:
+        """Stop the scheduler loop."""
+        if not self._running:
+            return
+
+        self._running = False
+
+        if self._scheduler_task and not self._scheduler_task.done():
+            self._scheduler_task.cancel()
+            try:
+                await self._scheduler_task
+            except asyncio.CancelledError:
+                pass
+
+        logger.info("Report scheduler stopped")
+
+    async def _scheduler_loop(self) -> None:
+        """Main scheduler loop."""
+        while self._running:
+            try:
+                await self._check_schedules()
+                await asyncio.sleep(self._check_interval)
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"Scheduler loop error: {e}")
+                await asyncio.sleep(self._check_interval)
+
+    async def _check_schedules(self) -> None:
+        """Check all schedules and trigger due reports."""
+        now = datetime.now(UTC)
+
+        for schedule in self._schedules:
+            if not schedule.enabled:
+                continue
+
+            # Check if schedule is due
+            if self._is_due(schedule, now):
+                try:
+                    await self._execute_schedule(schedule, now)
+                except Exception as e:
+                    logger.error(f"Error executing schedule {schedule.name}: {e}")
+
+    def _is_due(self, schedule: ReportSchedule, now: datetime) -> bool:
+        """Check if a schedule is due to run.
+
+        Args:
+            schedule: Schedule to check
+            now: Current datetime
+
+        Returns:
+            True if schedule is due
+        """
+        # Simple cron parsing (minute hour day month day_of_week)
+        parts = schedule.cron_expression.split()
+        if len(parts) != 5:
+            logger.warning(f"Invalid cron expression: {schedule.cron_expression}")
+            return False
+
+        minute, hour, day, month, day_of_week = parts
+
+        # Check if already run this period
+        if schedule.last_run:
+            if schedule.report_type == "daily":
+                # Check if already run today
+                if schedule.last_run.date() == now.date():
+                    return False
+            elif schedule.report_type == "weekly":
+                # Check if already run this week
+                if schedule.last_run.isocalendar()[1] == now.isocalendar()[1]:
+                    return False
+
+        # Check time match
+        if minute != "*" and int(minute) != now.minute:
+            return False
+        if hour != "*" and int(hour) != now.hour:
+            return False
+        if day != "*" and int(day) != now.day:
+            return False
+        if month != "*" and int(month) != now.month:
+            return False
+        if day_of_week != "*" and int(day_of_week) != now.weekday():
+            return False
+
+        return True
+
+    async def _execute_schedule(
+        self,
+        schedule: ReportSchedule,
+        now: datetime,
+    ) -> None:
+        """Execute a schedule.
+
+        Args:
+            schedule: Schedule to execute
+            now: Current datetime
+        """
+        logger.info(f"Executing schedule: {schedule.name}")
+
+        # Update last run time
+        schedule.last_run = now
+
+        # Generate report based on type
+        if schedule.report_type == "daily":
+            await self._generate_and_send_daily(schedule)
+        elif schedule.report_type == "weekly":
+            await self._generate_and_send_weekly(schedule)
+
+        # Run anomaly detection
+        await self._run_anomaly_detection(schedule)
+
+    async def _generate_and_send_daily(self, schedule: ReportSchedule) -> None:
+        """Generate and send daily report.
+
+        Args:
+            schedule: Schedule configuration
+        """
+        try:
+            # Generate report for yesterday
+            report = await self.daily_generator.generate_report()
+
+            # Save to disk
+            await self._save_report(report, "daily", schedule)
+
+            # Send to Discord
+            if schedule.discord_webhook:
+                await self._send_to_discord(
+                    schedule.discord_webhook,
+                    report.to_markdown(),
+                    f"📊 Daily Trading Summary - {report.date.strftime('%Y-%m-%d')}",
+                )
+
+            # Send email (if configured)
+            if schedule.email_recipients:
+                await self._send_email(
+                    schedule.email_recipients,
+                    report.to_markdown(),
+                    f"Daily Trading Summary - {report.date.strftime('%Y-%m-%d')}",
+                )
+
+            logger.info(f"Daily report sent for {report.date.strftime('%Y-%m-%d')}")
+
+        except Exception as e:
+            logger.error(f"Failed to generate/send daily report: {e}")
+
+    async def _generate_and_send_weekly(self, schedule: ReportSchedule) -> None:
+        """Generate and send weekly report.
+
+        Args:
+            schedule: Schedule configuration
+        """
+        try:
+            # Generate report
+            report = await self.weekly_generator.generate_report()
+
+            # Save to disk
+            await self._save_report(report, "weekly", schedule)
+
+            # Send to Discord
+            if schedule.discord_webhook:
+                await self._send_to_discord(
+                    schedule.discord_webhook,
+                    report.to_markdown(),
+                    f"📈 Weekly Performance Report - {report.start_date.strftime('%Y-%m-%d')} to {report.end_date.strftime('%Y-%m-%d')}",
+                )
+
+            # Send email (if configured)
+            if schedule.email_recipients:
+                await self._send_email(
+                    schedule.email_recipients,
+                    report.to_markdown(),
+                    f"Weekly Performance Report - {report.start_date.strftime('%Y-%m-%d')} to {report.end_date.strftime('%Y-%m-%d')}",
+                )
+
+            logger.info(
+                f"Weekly report sent for {report.start_date.strftime('%Y-%m-%d')} to "
+                f"{report.end_date.strftime('%Y-%m-%d')}"
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to generate/send weekly report: {e}")
+
+    async def _run_anomaly_detection(self, schedule: ReportSchedule) -> None:
+        """Run anomaly detection and send alerts.
+
+        Args:
+            schedule: Schedule configuration
+        """
+        try:
+            alerts = await self.anomaly_detector.detect_all()
+
+            for alert in alerts:
+                # Save alert to disk
+                await self._save_alert(alert, schedule)
+
+                # Send alert to Discord
+                if schedule.discord_webhook:
+                    await self._send_to_discord(
+                        schedule.discord_webhook,
+                        alert.to_markdown(),
+                        f"🚨 Anomaly Detected - {alert.anomaly_type.value}",
+                    )
+
+                logger.warning(f"Anomaly alert sent: {alert.anomaly_type.value}")
+
+        except Exception as e:
+            logger.error(f"Failed to run anomaly detection: {e}")
+
+    async def _save_report(
+        self,
+        report: Any,
+        report_type: str,
+        schedule: ReportSchedule,
+    ) -> None:
+        """Save report to disk.
+
+        Args:
+            report: Report object to save
+            report_type: "daily" or "weekly"
+            schedule: Schedule configuration
+        """
+        # Create directory structure
+        report_dir = os.path.join(schedule.output_dir, report_type)
+        os.makedirs(report_dir, exist_ok=True)
+
+        # Generate filename
+        now = datetime.now(UTC)
+        filename = f"{report_type}_{now.strftime('%Y%m%d_%H%M%S')}.json"
+        filepath = os.path.join(report_dir, filename)
+
+        # Save as JSON
+        with open(filepath, "w") as f:
+            json.dump(report.to_dict(), f, indent=2)
+
+        logger.debug(f"Report saved: {filepath}")
+
+        # Clean up old reports
+        await self._cleanup_old_reports(report_dir, schedule.archive_days)
+
+    async def _save_alert(
+        self,
+        alert: AnomalyAlert,
+        schedule: ReportSchedule,
+    ) -> None:
+        """Save alert to disk.
+
+        Args:
+            alert: Alert to save
+            schedule: Schedule configuration
+        """
+        alert_dir = os.path.join(schedule.output_dir, "alerts")
+        os.makedirs(alert_dir, exist_ok=True)
+
+        now = datetime.now(UTC)
+        filename = (
+            f"alert_{alert.anomaly_type.value}_{now.strftime('%Y%m%d_%H%M%S')}.json"
+        )
+        filepath = os.path.join(alert_dir, filename)
+
+        with open(filepath, "w") as f:
+            json.dump(alert.to_dict(), f, indent=2)
+
+        logger.debug(f"Alert saved: {filepath}")
+
+    async def _cleanup_old_reports(self, directory: str, max_days: int) -> None:
+        """Clean up old reports.
+
+        Args:
+            directory: Directory to clean
+            max_days: Maximum age in days
+        """
+        cutoff = datetime.now(UTC) - timedelta(days=max_days)
+
+        try:
+            for filename in os.listdir(directory):
+                filepath = os.path.join(directory, filename)
+                if os.path.isfile(filepath):
+                    mtime = datetime.fromtimestamp(os.path.getmtime(filepath), UTC)
+                    if mtime < cutoff:
+                        os.remove(filepath)
+                        logger.debug(f"Removed old report: {filepath}")
+        except Exception as e:
+            logger.warning(f"Failed to cleanup old reports: {e}")
+
+    async def _send_to_discord(
+        self,
+        webhook_url: str,
+        content: str,
+        title: str,
+    ) -> bool:
+        """Send message to Discord webhook.
+
+        Args:
+            webhook_url: Discord webhook URL
+            content: Message content (Markdown)
+            title: Message title
+
+        Returns:
+            True if sent successfully
+        """
+        try:
+            # Discord has a 2000 character limit for content
+            # Split long messages if needed
+            chunks = self._split_message(content, 1900)
+
+            async with aiohttp.ClientSession() as session:
+                for i, chunk in enumerate(chunks):
+                    payload = {
+                        "content": f"**{title}** (Part {i + 1}/{len(chunks)})\n\n{chunk}"
+                        if len(chunks) > 1
+                        else f"**{title}**\n\n{chunk}",
+                    }
+
+                    async with session.post(
+                        webhook_url,
+                        json=payload,
+                        timeout=aiohttp.ClientTimeout(total=30),
+                    ) as response:
+                        if response.status == 204:
+                            logger.debug(f"Discord message sent (part {i + 1})")
+                        else:
+                            logger.warning(
+                                f"Discord webhook returned {response.status}"
+                            )
+                            return False
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to send Discord message: {e}")
+            return False
+
+    async def _send_email(
+        self,
+        recipients: list[str],
+        content: str,
+        subject: str,
+    ) -> bool:
+        """Send email (placeholder implementation).
+
+        Args:
+            recipients: List of email addresses
+            content: Email body (Markdown)
+            subject: Email subject
+
+        Returns:
+            True if sent successfully
+        """
+        # This is a placeholder - actual implementation would use
+        # an email library like aiosmtplib or integrate with an
+        # email service provider
+        logger.info(f"Email would be sent to {len(recipients)} recipients: {subject}")
+        logger.debug(f"Email content preview: {content[:200]}...")
+
+        # TODO: Implement actual email sending
+        # Example with aiosmtplib:
+        # from aiosmtplib import send
+        # await send(
+        #     message=content,
+        #     sender="reports@chiseai.com",
+        #     recipients=recipients,
+        #     hostname="smtp.gmail.com",
+        #     port=587,
+        #     username="...",
+        #     password="...",
+        # )
+
+        return True
+
+    def _split_message(self, content: str, max_length: int) -> list[str]:
+        """Split message into chunks.
+
+        Args:
+            content: Message content
+            max_length: Maximum chunk length
+
+        Returns:
+            List of message chunks
+        """
+        if len(content) <= max_length:
+            return [content]
+
+        chunks = []
+        lines = content.split("\n")
+        current_chunk = ""
+
+        for line in lines:
+            if len(current_chunk) + len(line) + 1 > max_length:
+                if current_chunk:
+                    chunks.append(current_chunk.strip())
+                current_chunk = line + "\n"
+            else:
+                current_chunk += line + "\n"
+
+        if current_chunk:
+            chunks.append(current_chunk.strip())
+
+        return chunks
+
+    async def generate_report_now(
+        self,
+        report_type: str,
+        use_mock_data: bool = False,
+    ) -> Any:
+        """Generate a report immediately (manual trigger).
+
+        Args:
+            report_type: "daily" or "weekly"
+            use_mock_data: Use mock data for testing
+
+        Returns:
+            Generated report
+        """
+        if report_type == "daily":
+            return await self.daily_generator.generate_report(
+                use_mock_data=use_mock_data
+            )
+        elif report_type == "weekly":
+            return await self.weekly_generator.generate_report(
+                use_mock_data=use_mock_data
+            )
+        else:
+            raise ValueError(f"Unknown report type: {report_type}")
+
+    async def detect_anomalies_now(self) -> list[AnomalyAlert]:
+        """Run anomaly detection immediately (manual trigger).
+
+        Returns:
+            List of detected anomalies
+        """
+        return await self.anomaly_detector.detect_all()
