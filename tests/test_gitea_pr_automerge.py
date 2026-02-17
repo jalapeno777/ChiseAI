@@ -939,3 +939,87 @@ class TestMain:
             call for call in mock_req_json.call_args_list if call[0][0] == "PATCH"
         ]
         assert len(patch_calls) == 1
+
+    @patch("scripts.gitea_pr_automerge._req_json")
+    @patch("scripts.gitea_pr_automerge._create_pr")
+    @patch("scripts.gitea_pr_automerge._get_pr_reviews")
+    @patch("scripts.gitea_pr_automerge._check_merge_conflict")
+    @patch("scripts.gitea_pr_automerge._get_pr")
+    def test_main_does_not_duplicate_story_id_when_title_already_contains_it(
+        self,
+        mock_get_pr: MagicMock,
+        mock_check_conflict: MagicMock,
+        mock_get_reviews: MagicMock,
+        mock_create_pr: MagicMock,
+        mock_req_json: MagicMock,
+    ) -> None:
+        mock_get_pr.return_value = None
+        mock_create_pr.return_value = {
+            "number": 42,
+            "title": "PAPER-LOOP-001: Order Simulator",
+            "head": {"sha": "abc123"},
+        }
+        mock_check_conflict.return_value = False
+        mock_get_reviews.return_value = [{"state": "APPROVED"}]
+        mock_req_json.return_value = {}
+
+        with (
+            patch.dict(os.environ, {"GITEA_TOKEN": "test-token"}),
+            patch(
+                "sys.argv",
+                [
+                    "script",
+                    "--head",
+                    "feature/PAPER-LOOP-001-order-simulator",
+                    "--story-id",
+                    "PAPER-LOOP-001",
+                    "--title",
+                    "PAPER-LOOP-001: Order Simulator",
+                ],
+            ),
+        ):
+            result = main()
+
+        assert result == 0
+        call_kwargs = mock_create_pr.call_args.kwargs
+        assert call_kwargs["title"] == "PAPER-LOOP-001: Order Simulator"
+
+    @patch("scripts.gitea_pr_automerge._req_json")
+    @patch("scripts.gitea_pr_automerge._merge_pr")
+    @patch("scripts.gitea_pr_automerge._check_merge_conflict")
+    @patch("scripts.gitea_pr_automerge._get_pr_reviews")
+    @patch("scripts.gitea_pr_automerge._get_pr")
+    def test_main_rejects_invalid_story_id_pattern(
+        self,
+        mock_get_pr: MagicMock,
+        mock_get_reviews: MagicMock,
+        mock_check_conflict: MagicMock,
+        mock_merge: MagicMock,
+        mock_req_json: MagicMock,
+    ) -> None:
+        mock_get_pr.return_value = {
+            "number": 42,
+            "title": "Test PR",
+            "head": {"sha": "abc123"},
+        }
+        mock_get_reviews.return_value = [{"state": "APPROVED"}]
+        mock_check_conflict.return_value = False
+        mock_merge.return_value = None
+        mock_req_json.return_value = {}
+
+        with (
+            patch.dict(os.environ, {"GITEA_TOKEN": "test-token"}),
+            patch(
+                "sys.argv",
+                [
+                    "script",
+                    "--head",
+                    "feature/whatever",
+                    "--story-id",
+                    "PAPER-LOOP",
+                ],
+            ),
+        ):
+            result = main()
+
+        assert result == 1

@@ -72,9 +72,13 @@ Opens a PR (if missing) and enables merge when checks succeed, or waits and merg
 **Usage:**
 ```bash
 export GITEA_TOKEN=...
-python3 scripts/gitea_pr_automerge.py --head feature/my-branch
-python3 scripts/gitea_pr_automerge.py --head feature/my-branch --wait --delete-branch
+python3 scripts/gitea_pr_automerge.py --head feature/my-branch --story-id ST-NS-001
+python3 scripts/gitea_pr_automerge.py --head feature/my-branch --story-id ST-NS-001 --wait --delete-branch
 ```
+
+Notes:
+- `--story-id` is required and must match accepted CI patterns (`ST-*`, `CH-*`, `FT-*`, `REWARD-*`, `REPO-*`, `SAFETY-*`, `BRANCH-*`, `PAPER-*`, `RECON-*`; must include a digit).
+- Script avoids duplicate title prefixes when the title already contains the provided story id token.
 
 ### gitea_pr_review.py
 

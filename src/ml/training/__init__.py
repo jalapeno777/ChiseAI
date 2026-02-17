@@ -7,6 +7,9 @@ Components:
 - features: Feature specifications and validation
 - storage_format: Export/import handlers (Parquet, CSV, JSON)
 - version: Schema versioning and compatibility
+- extractor: Feature extraction from signals and market data
+- pipeline: End-to-end training data pipeline
+- exporter: Dataset export for ML frameworks
 
 Usage:
     from ml.training import (
@@ -20,6 +23,14 @@ Usage:
         DatasetMetadata,
         SchemaVersion,
         SchemaVersionManager,
+        FeatureExtractor,
+        TrainingPipeline,
+        PipelineConfig,
+        PipelineStats,
+        DatasetExporter,
+        ExportFormat,
+        DatasetInfo,
+        DatasetStatistics,
     )
 
     # Create a training sample
@@ -39,6 +50,20 @@ Usage:
 
     # Export to Parquet
     dataset.export_parquet("training_data.parquet")
+
+    # Use feature extraction pipeline
+    extractor = FeatureExtractor()
+    pipeline = TrainingPipeline(extractor)
+    sample = await pipeline.process_signal("signal-id-123")
+
+    # Export dataset for ML training
+    from ml.training.exporter import DatasetExporter, ExportFormat
+    exporter = DatasetExporter(pipeline)
+    info = exporter.export_dataset(
+        samples=[sample],
+        output_path="training.parquet",
+        format=ExportFormat.PARQUET,
+    )
 """
 
 from __future__ import annotations
@@ -73,6 +98,29 @@ from ml.training.version import (
     VERSION_HISTORY,
 )
 
+# Extraction and pipeline components
+from ml.training.extractor import (
+    FeatureExtractor,
+    ExtractedFeatures,
+    TechnicalIndicators,
+    MarketContext,
+)
+from ml.training.pipeline import (
+    TrainingPipeline,
+    PipelineConfig,
+    PipelineStats,
+)
+
+# Exporter components
+from ml.training.exporter import (
+    DatasetExporter,
+    DatasetInfo,
+    DatasetStatistics,
+    ExportFormat,
+    ModelType,
+    export_from_samples,
+)
+
 __all__ = [
     # Schema
     "TrainingSample",
@@ -95,4 +143,20 @@ __all__ = [
     "SchemaVersionManager",
     "CURRENT_SCHEMA_VERSION",
     "VERSION_HISTORY",
+    # Extraction
+    "FeatureExtractor",
+    "ExtractedFeatures",
+    "TechnicalIndicators",
+    "MarketContext",
+    # Pipeline
+    "TrainingPipeline",
+    "PipelineConfig",
+    "PipelineStats",
+    # Exporter
+    "DatasetExporter",
+    "DatasetInfo",
+    "DatasetStatistics",
+    "ExportFormat",
+    "ModelType",
+    "export_from_samples",
 ]

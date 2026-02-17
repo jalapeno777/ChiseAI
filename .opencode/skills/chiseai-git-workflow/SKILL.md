@@ -38,8 +38,10 @@ Ensure all agent swarm operations follow consistent, safe Git practices that mai
 1. Run local CI (via `chise-precommit-gates.md`)
 2. Run status sync validation (via command)
 3. Push branch to Gitea
-4. Report handoff to Jarvis (DO NOT open PR)
-5. Jarvis delegates merlin for PR sweep
+4. Ensure handoff includes canonical `story_id` token for PR title gating:
+   - Accepted: `ST-*`, `CH-*`, `FT-*`, `REWARD-*`, `REPO-*`, `SAFETY-*`, `BRANCH-*`, `PAPER-*`, `RECON-*` (must include a digit)
+5. Report handoff to Jarvis (DO NOT open PR)
+6. Jarvis delegates merlin for PR sweep
 
 ### Required Handoff Information
 - story_id
