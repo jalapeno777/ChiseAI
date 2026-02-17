@@ -524,8 +524,8 @@ class ModelUpdater:
         elif model_type == ModelType.LIGHTGBM:
             model.save_model(str(model_path))
         else:
-            # Generic pickle fallback
-            import pickle
+            # Generic pickle fallback for internal model serialization
+            import pickle  # nosec B403 - Used only for internal model state, not user input
 
             with open(model_path, "wb") as f:
                 pickle.dump(model, f)

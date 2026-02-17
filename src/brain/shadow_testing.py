@@ -313,8 +313,8 @@ class ShadowTester:
                 await self.candidate_brain(warmup_input)
                 await self.baseline_brain(warmup_input)
             except Exception:
-                # Warmup failures are non-fatal
-                pass
+                # Warmup failures are non-fatal - intentionally ignored for shadow testing
+                pass  # nosec B110
 
     async def _run_parallel_measurements(
         self, inputs: list[Any]
