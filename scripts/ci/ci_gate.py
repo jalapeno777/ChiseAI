@@ -233,6 +233,15 @@ def main() -> int:
                 "cannot dispatch swarm handoff notification.",
                 file=sys.stderr,
             )
+        issue_script = Path("scripts/ci/post_ci_failure_issue.py")
+        if issue_script.exists():
+            subprocess.run([sys.executable, str(issue_script)], check=False)
+        else:
+            print(
+                "ci-gate: cron/main issue handoff script missing; "
+                "cannot create/update Gitea incident issue.",
+                file=sys.stderr,
+            )
 
     return 1
 
