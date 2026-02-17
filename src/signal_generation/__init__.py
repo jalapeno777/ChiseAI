@@ -11,11 +11,24 @@ Exports:
     DataFreshnessChecker: Data freshness validation
     Signal: Signal dataclass
     SignalStatus: Enum for signal status
+    AsyncSignalProcessor: Async signal processing with concurrency control
+    SignalPipeline: Async signal processing pipeline
 """
 
 from signal_generation.confidence_filter import ConfidenceFilter
 from signal_generation.data_freshness_check import DataFreshnessChecker, FreshnessResult
 from signal_generation.models import Signal, SignalStatus
+from signal_generation.pipeline import (
+    AsyncSignalProcessor,
+    DeliveryResult,
+    EnrichedSignal,
+    ProcessingMetrics,
+    ProcessingStage,
+    SignalPipeline,
+    SignalPriority,
+    SignalResult,
+    ValidationResult,
+)
 from signal_generation.signal_emitter import (
     DashboardEmitter,
     DiscordEmitter,
@@ -38,4 +51,14 @@ __all__ = [
     # Models
     "Signal",
     "SignalStatus",
+    # Async Pipeline (TASK-ST-NS-026-02)
+    "AsyncSignalProcessor",
+    "SignalPipeline",
+    "SignalResult",
+    "ValidationResult",
+    "EnrichedSignal",
+    "DeliveryResult",
+    "ProcessingMetrics",
+    "ProcessingStage",
+    "SignalPriority",
 ]
