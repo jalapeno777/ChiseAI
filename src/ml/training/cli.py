@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+import tempfile
 from datetime import datetime
 from pathlib import Path
 
@@ -105,10 +106,11 @@ def create_parser() -> argparse.ArgumentParser:
 
     # Demo command - creates sample data
     demo_parser = subparsers.add_parser("demo", help="Create demo dataset")
+    demo_default_output = str(Path(tempfile.gettempdir()) / "demo_dataset.parquet")
     demo_parser.add_argument(
         "--output",
-        default="/tmp/demo_dataset.parquet",
-        help="Output file path (default: /tmp/demo_dataset.parquet)",
+        default=demo_default_output,
+        help=f"Output file path (default: {demo_default_output})",
     )
     demo_parser.add_argument(
         "--format",

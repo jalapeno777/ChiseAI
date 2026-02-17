@@ -11,7 +11,7 @@ import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from market_analysis.signal_storage.interface import SignalStorageInterface
@@ -238,10 +238,12 @@ class TrainingPipeline:
         Returns:
             List of successfully processed TrainingSample objects
         """
-        assert self._semaphore is not None
+        if self._semaphore is None:
+            raise RuntimeError("Pipeline semaphore not initialized")
+        semaphore = cast(asyncio.Semaphore, self._semaphore)
 
         async def process_with_semaphore(signal_id: str) -> TrainingSample | None:
-            async with self._semaphore:  # type: ignore
+            async with semaphore:
                 return await self.process_signal(signal_id)
 
         # Create tasks for all signals
