@@ -1,8 +1,14 @@
 """LLM integration module for ChiseAI.
 
-Provides clients for various LLM APIs including MiniMax and Z.ai.
+Provides clients for various LLM APIs including MiniMax, Z.ai, and KIMI.
 """
 
+from llm.kimi_client import (
+    KimiClient,
+    KimiConfig,
+    KimiMessage,
+    KimiResponse,
+)
 from llm.minimax_client import (
     MiniMaxClient,
     MiniMaxConfig,
@@ -25,6 +31,10 @@ from llm.zhipu_client import (
 )
 
 __all__ = [
+    "KimiClient",
+    "KimiConfig",
+    "KimiMessage",
+    "KimiResponse",
     "MiniMaxClient",
     "MiniMaxConfig",
     "MiniMaxMessage",
