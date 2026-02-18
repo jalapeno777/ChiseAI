@@ -2,7 +2,7 @@
 name: "quickdev"
 description: "Fast executor subagent for 1SP tasks: small fixes, quick investigations, small refactors, CI tweaks."
 mode: all
-model: "minimax/MiniMax-M2.5"
+model: "kimi-for-coding/k2p5" # model: "minimax/MiniMax-M2.5"
 temperature: 0.35
 tools:
   task: true

@@ -1,0 +1,93 @@
+# Daily Summary Scheduler Configuration
+# For PAPER-LIVE-001: Daily Summary Scheduler
+#
+# This file configures the daily summary scheduler for paper trading reports.
+# The scheduler generates daily PnL summaries and sends them to Discord.
+
+---
+version: "1.0"
+description: "Daily summary scheduler configuration for ChiseAI paper trading"
+
+# Schedule configuration
+schedule:
+  # Time to run daily summary (24-hour format, HH:MM)
+  time: "00:00"
+  
+  # Timezone for scheduling (UTC, America/New_York, etc.)
+  timezone: "UTC"
+  
+  # How often to check if it's time to run (seconds)
+  check_interval_seconds: 60
+
+# Discord channel configuration
+discord:
+  # Webhook URL for #summaries channel (production)
+  # Can also be set via DISCORD_SUMMARIES_WEBHOOK_URL environment variable
+  summaries_webhook_url: null
+  
+  # Webhook URL for #test channel (testing)
+  # Can also be set via DISCORD_TEST_WEBHOOK_URL environment variable
+  # Falls back to DISCORD_WEBHOOK_URL if not set
+  test_webhook_url: "https://discord.com/api/webhooks/1448414669541736508/REDACTED_WEBHOOK_TOKEN_3"
+  
+  # Channel IDs for reference (used for logging/validation)
+  channel_ids:
+    summaries: "1445752426563899492"
+    test: "1465797462035009708"
+
+# Metrics query configuration (InfluxDB)
+metrics:
+  # InfluxDB bucket name
+  bucket: "chiseai"
+  
+  # InfluxDB organization
+  org: "chiseai"
+  
+  # Connection settings (can be overridden by environment variables)
+  # INFLUXDB_URL, INFLUXDB_TOKEN, INFLUXDB_ORG, INFLUXDB_BUCKET
+  
+  # Query settings
+  queries:
+    # Time range for daily reports (default: previous day)
+    default_lookback_days: 1
+    
+    # Measurements to query
+    measurements:
+      trades: "paper_trades"
+      portfolio: "paper_portfolio"
+      positions: "paper_positions"
+
+# Report configuration
+report:
+  # Format for report generation
+  format: "discord"  # Options: discord, markdown, json
+  
+  # Include sections in report
+  sections:
+    pnl_summary: true
+    trade_statistics: true
+    risk_metrics: true
+    best_worst_trades: true
+    open_positions: true
+  
+  # Number of decimal places for monetary values
+  decimal_places: 2
+
+# Logging configuration
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# Cron setup instructions
+cron:
+  # To run the daily summary via cron, add this to your crontab:
+  # 0 0 * * * cd /path/to/ChiseAI && python scripts/run_daily_summary.py >> logs/daily_summary.log 2>&1
+  
+  # Or use the provided script:
+  # 0 0 * * * /path/to/ChiseAI/scripts/cron/daily_summary.sh
+  
+  # To verify the scheduler is running:
+  # python scripts/run_daily_summary.py --health-check
+  
+  # To test the configuration:
+  # python scripts/run_daily_summary.py --test --dry-run

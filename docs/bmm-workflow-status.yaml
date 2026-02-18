@@ -5,8 +5,9 @@
 metadata:
   project_name: ChiseAI
   version: "2.1.0"
-  last_updated: "2026-02-16T00:45:00Z"
+  last_updated: "2026-02-18T15:09:56Z"
   prd_location: docs/prd.md
+  live_proof_note: "LIVE-PROOF-001 completed successfully on 2026-02-18. All 10 validation gates passed. WebSocket auth functional for demo trading. See docs/tempmemories/iterlog-LIVE-PROOF-001.md"
   prd_note: "Phased perps execution: continuous backtest -> Bybit demo paper -> Bitget live; Grafana-first ops UI; Binance used as reference market-structure venue. LLM integrations (Z.ai GLM-5, MiniMax 2.5) are separate capabilities, not Phase 1."
 
 # Current project phase

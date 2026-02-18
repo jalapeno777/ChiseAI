@@ -1,0 +1,111 @@
+{
+  "packet_id": "packet-001",
+  "canary_id": "test-001",
+  "strategy_id": "strategy-001",
+  "champion_strategy_id": null,
+  "status": "pending",
+  "evidence": {
+    "canary_duration_days": -20494.08,
+    "total_trades": 10,
+    "win_rate_pct": 60.0,
+    "max_drawdown_pct": 3.0,
+    "realized_pnl": 0.0,
+    "sharpe_ratio": null,
+    "gate_check_summary": {
+      "all_gates_passed": true,
+      "gate_results": [
+        {
+          "gate_name": "max_drawdown",
+          "result": "pass",
+          "actual_value": 3.0,
+          "threshold_value": 5.0,
+          "message": "PASS: Drawdown 3.00% within threshold 5.00%",
+          "timestamp": 1771379614
+        },
+        {
+          "gate_name": "min_win_rate",
+          "result": "pass",
+          "actual_value": 60.0,
+          "threshold_value": 55.0,
+          "message": "PASS: Win rate 60.00% meets threshold 55.00%",
+          "timestamp": 1771379614
+        },
+        {
+          "gate_name": "duration",
+          "result": "pass",
+          "actual_value": 8.0,
+          "threshold_value": 7.0,
+          "message": "PASS: Duration 8.00 days meets required 7 days",
+          "timestamp": 1771379614
+        }
+      ],
+      "final_status": "passed"
+    },
+    "comparison_to_champion": null
+  },
+  "risk_assessment": {
+    "drawdown_risk": "LOW",
+    "win_rate_stability": "STABLE",
+    "sample_size": 10,
+    "allocation_pct": 10.0,
+    "max_drawdown_observed": 3.0,
+    "win_rate_observed": 60.0,
+    "assessment_summary": "Canary completed with 3.00% max drawdown and 60.00% win rate over 7 days"
+  },
+  "rollback_plan": {
+    "rollback_target": "previous_champion",
+    "rollback_trigger": "human_decision_or_performance_degradation",
+    "rollback_steps": [
+      "1. Halt new position openings for candidate strategy",
+      "2. Close existing positions at market or next signal",
+      "3. Activate champion strategy for new signals",
+      "4. Verify champion is receiving and processing signals",
+      "5. Update registry to reflect rollback"
+    ],
+    "estimated_rollback_time": "5 minutes",
+    "verification_steps": [
+      "- Confirm no pending orders for candidate",
+      "- Confirm champion is generating signals",
+      "- Verify portfolio state consistency"
+    ]
+  },
+  "generated_at": 1771379614,
+  "approved_at": null,
+  "approved_by": null,
+  "metadata": {
+    "auto_generated": true,
+    "evaluation_summary": {
+      "canary_id": "test-001",
+      "strategy_id": "strategy-001",
+      "status": "PASS",
+      "timestamp": 1771379614,
+      "gate_summary": {
+        "pass": 3,
+        "fail": 0,
+        "pending": 0,
+        "total": 3
+      },
+      "reasons": [],
+      "gate_details": [
+        {
+          "gate_name": "max_drawdown",
+          "result": "pass",
+          "message": "PASS: Drawdown 3.00% within threshold 5.00%"
+        },
+        {
+          "gate_name": "min_win_rate",
+          "result": "pass",
+          "message": "PASS: Win rate 60.00% meets threshold 55.00%"
+        },
+        {
+          "gate_name": "duration",
+          "result": "pass",
+          "message": "PASS: Duration 8.00 days meets required 7 days"
+        }
+      ],
+      "can_promote": true,
+      "should_rollback": false
+    },
+    "generated_by": "auto_promotion_system"
+  }
+}

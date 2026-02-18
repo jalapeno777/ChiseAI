@@ -1,0 +1,20 @@
+{
+  "packet": {
+    "packet_id": "packet-001",
+    "canary_id": "test-001",
+    "strategy_id": "strategy-001",
+    "champion_strategy_id": "champion-001",
+    "status": "pending_approval",
+    "evidence": null,
+    "risk_assessment": {},
+    "rollback_plan": {},
+    "generated_at": 1771379614,
+    "approved_at": null,
+    "approved_by": null,
+    "metadata": {
+      "queued_at": 1771379614
+    }
+  },
+  "queue_status": "pending_approval",
+  "queued_at": 1771379614
+}
