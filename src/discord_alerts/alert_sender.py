@@ -338,6 +338,18 @@ class AlertSender:
             results.append(result)
         return results
 
+    def validate_guild(self, guild_id: str | None) -> bool:
+        """Validate guild ID against configured restriction.
+
+        Args:
+            guild_id: Guild/server ID to validate
+
+        Returns:
+            True if guild is allowed, False otherwise
+        """
+        client = self._get_client()
+        return client.validate_guild(guild_id)
+
     async def health_check(self) -> dict[str, Any]:
         """Check alert sender health.
 
@@ -358,6 +370,7 @@ class AlertSender:
             "client": client_health,
             "rate_limiter": rate_stats,
             "suppressor": suppressor_stats,
+            "guild_restricted": self.config.guild_id is not None,
             "config": {
                 "max_retries": self.config.max_retries,
                 "rate_limit_per_minute": self.config.rate_limit_per_minute,
