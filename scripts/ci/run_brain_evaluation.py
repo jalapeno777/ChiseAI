@@ -15,6 +15,10 @@ import sys
 from pathlib import Path
 from typing import Any
 
+# Add src to path for config imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
+from config.bootstrap import bootstrap
+
 # Configure logging for CI output
 logging.basicConfig(
     level=logging.INFO,
@@ -229,6 +233,8 @@ def main() -> int:
     Returns:
         Exit code: 0 for success, 1 for failure.
     """
+    # Bootstrap environment first
+    bootstrap(load_env=True)
     parser = argparse.ArgumentParser(
         description="CI wrapper for brain batch evaluation"
     )

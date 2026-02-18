@@ -10,6 +10,10 @@ import sys
 import urllib.request
 from pathlib import Path
 
+# Add src to path for config imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
+from config.bootstrap import bootstrap
+
 
 def _pipeline_number(env: dict[str, str]) -> str:
     return env.get("CI_PIPELINE_NUMBER", "").strip() or "unknown"
@@ -18,7 +22,9 @@ def _pipeline_number(env: dict[str, str]) -> str:
 def _collect_summary(env: dict[str, str]) -> str:
     triage = Path("scripts/ci/woodpecker_triage.py")
     if not triage.exists():
-        return "root-cause summary unavailable (missing scripts/ci/woodpecker_triage.py)"
+        return (
+            "root-cause summary unavailable (missing scripts/ci/woodpecker_triage.py)"
+        )
 
     args = [
         sys.executable,
@@ -53,6 +59,8 @@ def _post_discord(webhook_url: str, content: str) -> None:
 
 
 def main() -> int:
+    # Bootstrap environment first
+    bootstrap(load_env=True)
     env = dict(os.environ)
     webhook = env.get("DISCORD_DEV_WEBHOOK_URL", "").strip()
     if not webhook:
@@ -81,11 +89,13 @@ def main() -> int:
         _post_discord(webhook, body)
         print("post_ci_failure_discord: notification sent")
     except Exception as exc:  # noqa: BLE001
-        print(f"post_ci_failure_discord: failed to send notification: {exc}", file=sys.stderr)
+        print(
+            f"post_ci_failure_discord: failed to send notification: {exc}",
+            file=sys.stderr,
+        )
         return 1
     return 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

@@ -20,7 +20,12 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Protocol
+
+# Add src to path for config imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
+from config.bootstrap import bootstrap
 
 MERGE_QUEUE_KEY = "bmad:chiseai:merge-queue:main"
 INCIDENTS_KEY = "bmad:chiseai:reconcile:incidents"
@@ -133,13 +138,24 @@ class RedisCliStore:
 
     def _run(self, *args: str) -> str:
         proc = subprocess.run(
-            ["redis-cli", "-h", self.host, "-p", str(self.port), "-n", str(self.db), *args],
+            [
+                "redis-cli",
+                "-h",
+                self.host,
+                "-p",
+                str(self.port),
+                "-n",
+                str(self.db),
+                *args,
+            ],
             text=True,
             capture_output=True,
             check=False,
         )
         if proc.returncode != 0:
-            raise RuntimeError(proc.stderr.strip() or f"redis-cli failed: {' '.join(args)}")
+            raise RuntimeError(
+                proc.stderr.strip() or f"redis-cli failed: {' '.join(args)}"
+            )
         return proc.stdout.strip()
 
     def enqueue(self, key: str, value: str) -> None:
@@ -172,7 +188,9 @@ class GiteaClient:
         self.repo = repo
         self.token = token
 
-    def _req_json(self, method: str, path: str, body: dict[str, Any] | None = None) -> Any:
+    def _req_json(
+        self, method: str, path: str, body: dict[str, Any] | None = None
+    ) -> Any:
         url = f"{self.base_url}{path}"
         data = None
         headers = {
@@ -189,7 +207,9 @@ class GiteaClient:
                 return json.loads(raw.decode("utf-8")) if raw else {}
         except urllib.error.HTTPError as exc:
             msg = exc.read().decode("utf-8", errors="replace")
-            raise RuntimeError(f"{method} {url} failed: HTTP {exc.code}: {msg}") from exc
+            raise RuntimeError(
+                f"{method} {url} failed: HTTP {exc.code}: {msg}"
+            ) from exc
 
     def get_pr(self, pr_number: int) -> dict[str, Any]:
         return self._req_json(
@@ -203,7 +223,9 @@ class GiteaClient:
             f"/api/v1/repos/{self.owner}/{self.repo}/commits/{sha}/status",
         )
 
-    def merge_pr(self, pr_number: int, head_sha: str, delete_branch: bool = True) -> dict[str, Any]:
+    def merge_pr(
+        self, pr_number: int, head_sha: str, delete_branch: bool = True
+    ) -> dict[str, Any]:
         return self._req_json(
             "POST",
             f"/api/v1/repos/{self.owner}/{self.repo}/pulls/{pr_number}/merge",
@@ -224,7 +246,9 @@ def required_context_state(
     statuses = commit_status.get("statuses")
     if isinstance(statuses, list):
         matching = [
-            s for s in statuses if isinstance(s, dict) and str(s.get("context", "")) == required_context
+            s
+            for s in statuses
+            if isinstance(s, dict) and str(s.get("context", "")) == required_context
         ]
         if matching:
             states = {str(s.get("state", "")).lower() for s in matching}
@@ -268,7 +292,10 @@ class MergeQueueEngine:
         self.store.enqueue(self.queue_key, item.to_json())
 
     def queue_items(self) -> list[MergeQueueItem]:
-        return [MergeQueueItem.from_json(raw) for raw in self.store.list(self.queue_key, 0, -1)]
+        return [
+            MergeQueueItem.from_json(raw)
+            for raw in self.store.list(self.queue_key, 0, -1)
+        ]
 
     def process_item(
         self,
@@ -435,7 +462,9 @@ def reconcile_git_hygiene(store: QueueStore) -> list[str]:
 
     rc, out, _ = _run_git("for-each-ref", "--format=%(refname:short)", "refs/heads")
     if rc == 0:
-        local_branches = [b for b in out.splitlines() if b.strip() and b.strip() != "main"]
+        local_branches = [
+            b for b in out.splitlines() if b.strip() and b.strip() != "main"
+        ]
         for branch in local_branches:
             rc_a, ahead, _ = _run_git("rev-list", "--count", f"main..{branch}")
             if rc_a != 0:
@@ -597,7 +626,9 @@ def build_parser() -> argparse.ArgumentParser:
     qtick.add_argument("--allow-merge", action="store_true")
     qtick.set_defaults(func=cmd_queue_tick)
 
-    reconcile = sub.add_parser("reconcile-tick", help="Run queue tick + git hygiene checks")
+    reconcile = sub.add_parser(
+        "reconcile-tick", help="Run queue tick + git hygiene checks"
+    )
     reconcile.add_argument("--owner", default="jarvis/reconcile")
     reconcile.add_argument("--lock-ttl-seconds", type=int, default=90)
     reconcile.add_argument("--max-items", type=int, default=3)
@@ -615,6 +646,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
+    # Bootstrap environment first
+    bootstrap(load_env=True)
     parser = build_parser()
     args = parser.parse_args()
     try:

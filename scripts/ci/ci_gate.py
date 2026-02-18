@@ -14,6 +14,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+# Add src to path for config imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
+from config.bootstrap import bootstrap
+
 CI_DIR = Path("_bmad-output/ci")
 FAST_REQUIRED = [
     "swarm-context.status",
@@ -42,11 +46,15 @@ def _is_pr_build(env: dict[str, str]) -> bool:
 
 def _is_main_push(env: dict[str, str]) -> bool:
     event = (
-        env.get("CI_BUILD_EVENT", "")
-        or env.get("WOODPECKER_BUILD_EVENT", "")
-        or env.get("WOODPECKER_EVENT", "")
-        or env.get("CI_PIPELINE_EVENT", "")
-    ).strip().lower()
+        (
+            env.get("CI_BUILD_EVENT", "")
+            or env.get("WOODPECKER_BUILD_EVENT", "")
+            or env.get("WOODPECKER_EVENT", "")
+            or env.get("CI_PIPELINE_EVENT", "")
+        )
+        .strip()
+        .lower()
+    )
     branch = (
         env.get("CI_COMMIT_BRANCH", "") or env.get("WOODPECKER_COMMIT_BRANCH", "")
     ).strip()
@@ -55,11 +63,15 @@ def _is_main_push(env: dict[str, str]) -> bool:
 
 def _is_main_cron(env: dict[str, str]) -> bool:
     event = (
-        env.get("CI_BUILD_EVENT", "")
-        or env.get("WOODPECKER_BUILD_EVENT", "")
-        or env.get("WOODPECKER_EVENT", "")
-        or env.get("CI_PIPELINE_EVENT", "")
-    ).strip().lower()
+        (
+            env.get("CI_BUILD_EVENT", "")
+            or env.get("WOODPECKER_BUILD_EVENT", "")
+            or env.get("WOODPECKER_EVENT", "")
+            or env.get("CI_PIPELINE_EVENT", "")
+        )
+        .strip()
+        .lower()
+    )
     branch = (
         env.get("CI_COMMIT_BRANCH", "") or env.get("WOODPECKER_COMMIT_BRANCH", "")
     ).strip()
@@ -169,6 +181,8 @@ def _print_exact_root_causes(root_cause_json: Path) -> None:
 
 
 def main() -> int:
+    # Bootstrap environment first
+    bootstrap(load_env=True)
     env = dict(os.environ)
     CI_DIR.mkdir(parents=True, exist_ok=True)
     required_files = [CI_DIR / name for name in FAST_REQUIRED]

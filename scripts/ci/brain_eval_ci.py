@@ -24,6 +24,10 @@ import sys
 from pathlib import Path
 from typing import Any
 
+# Add src to path for config imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
+from config.bootstrap import bootstrap
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -96,8 +100,6 @@ def run_brain_evaluation(output_path: Path | None = None) -> dict[str, Any]:
     """
     try:
         # Import brain evaluation modules
-        sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
-
         from brain.batch_evaluator import (
             BatchEvaluator,
             EvaluationPersistence,
@@ -220,6 +222,8 @@ def main() -> int:
     Returns:
         Exit code (0 for success, 1 for failure, 2 for error)
     """
+    # Bootstrap environment first
+    bootstrap(load_env=True)
     parser = argparse.ArgumentParser(description="Run brain evaluation in CI pipeline")
     parser.add_argument(
         "--force",

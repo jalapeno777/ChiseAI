@@ -16,10 +16,16 @@ import os
 import shlex
 import shutil
 import subprocess
+import sys
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse, urlunparse
+
+# Add src to path for config imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
+from config.bootstrap import bootstrap
 
 
 @dataclass
@@ -73,8 +79,7 @@ def _decode_jwt_exp(jwt: str) -> int:
 
 def _query_users(dsn: str) -> list[dict[str, Any]]:
     sql = (
-        "select id,login,coalesce(expiry,0),coalesce(token,'') "
-        "from users order by id;"
+        "select id,login,coalesce(expiry,0),coalesce(token,'') from users order by id;"
     )
     proc = subprocess.run(
         ["psql", dsn, "-At", "-q", "-F", "|", "-c", sql],
@@ -141,7 +146,9 @@ def _discover_dsn(explicit_dsn: str | None) -> str:
     )
 
 
-def _collect_health(dsn: str, require_logins: set[str]) -> tuple[list[TokenHealth], str]:
+def _collect_health(
+    dsn: str, require_logins: set[str]
+) -> tuple[list[TokenHealth], str]:
     last_error = ""
     for candidate in _dsn_candidates(dsn):
         try:
@@ -176,6 +183,8 @@ def _collect_health(dsn: str, require_logins: set[str]) -> tuple[list[TokenHealt
 
 
 def main() -> int:
+    # Bootstrap environment first
+    bootstrap(load_env=True)
     parser = argparse.ArgumentParser(
         description="Check Woodpecker forge token expiry drift and near-expiry risk"
     )
@@ -233,7 +242,9 @@ def main() -> int:
         elif item.seconds_left <= args.warn_seconds:
             warnings.append(f"token near expiry: {base}")
 
-    print(f"INFO: checked {len(health)} user token(s) using DSN {shlex.quote(used_dsn)}")
+    print(
+        f"INFO: checked {len(health)} user token(s) using DSN {shlex.quote(used_dsn)}"
+    )
     for msg in warnings:
         print(f"WARN: {msg}")
 
