@@ -1,18 +1,18 @@
 {
   "bybit_auth_status": "FAILED - Both endpoints returned invalid key",
   "fallback_used": "Binance public API for live data",
-  "execution_id": "cb2260f1",
+  "execution_id": "459e9803",
   "live_data": {
     "source": "Binance",
     "symbol": "BTCUSDT",
-    "price": 67392.0,
-    "volume_24h": 14841.72537,
-    "price_change_24h": 399.99,
-    "price_change_percent_24h": 0.597,
+    "price": 67147.81,
+    "volume_24h": 13654.18511,
+    "price_change_24h": -175.19,
+    "price_change_percent_24h": -0.26,
     "high_24h": 68476.22,
-    "low_24h": 66621.06,
-    "timestamp": "2026-02-18T15:06:47.268804+00:00",
-    "latency_ms": 210.62
+    "low_24h": 66717.3,
+    "timestamp": "2026-02-18T17:32:29.412779+00:00",
+    "latency_ms": 235.77
   },
   "analysis": {
     "indicators_calculated": [
@@ -20,32 +20,32 @@
       "MACD"
     ],
     "indicators": {
-      "rsi": 51.19,
-      "macd": 0.2985,
-      "macd_signal": "bullish",
-      "price_change_24h_percent": 0.6,
-      "high_low_range": 2.75
+      "rsi": 49.48,
+      "macd": -0.13,
+      "macd_signal": "bearish",
+      "price_change_24h_percent": -0.26,
+      "high_low_range": 2.62
     },
-    "confluence_score": 41.19,
-    "direction": "LONG",
-    "rationale": "RSI neutral at 51.2; MACD signal is bullish"
+    "confluence_score": 40.52,
+    "direction": "SHORT",
+    "rationale": "RSI neutral at 49.5; MACD signal is bearish"
   },
   "llm_enhancement": {
     "provider": "none (fallback)",
-    "base_confidence": 41.19,
-    "llm_confidence": 41.19,
-    "final_confidence": 41.19,
+    "base_confidence": 40.52,
+    "llm_confidence": 40.52,
+    "final_confidence": 40.52,
     "rationale": "LLM APIs unavailable, using base confidence",
-    "latency_ms": 145.11
+    "latency_ms": 116.44
   },
   "paper_trade": {
-    "order_id": "mock-ceceda47",
+    "order_id": "mock-42beaac3",
     "symbol": "BTCUSDT",
     "entry_price": 67700.0,
     "position_size": 0.0014771048744460858,
     "notional_value": 100.0,
-    "side": "LONG",
-    "timestamp": "2026-02-18T15:06:47.268804+00:00"
+    "side": "SHORT",
+    "timestamp": "2026-02-18T17:32:29.412779+00:00"
   },
   "discord_notifications": {
     "trade_open": {
@@ -71,17 +71,17 @@
     }
   },
   "timestamps": {
-    "data_fetch_start": "2026-02-18T15:06:47.058148+00:00",
-    "data_fetch_complete": "2026-02-18T15:06:47.269686+00:00",
-    "analysis_start": "2026-02-18T15:06:47.269710+00:00",
-    "analysis_complete": "2026-02-18T15:06:47.269813+00:00",
-    "llm_start": "2026-02-18T15:06:47.269828+00:00",
-    "llm_complete": "2026-02-18T15:06:47.415087+00:00",
-    "signal_start": "2026-02-18T15:06:47.415116+00:00",
-    "signal_emitted": "2026-02-18T15:06:47.415298+00:00",
-    "trade_start": "2026-02-18T15:06:47.415322+00:00",
-    "trade_complete": "2026-02-18T15:06:47.415405+00:00",
-    "discord_start": "2026-02-18T15:06:47.415417+00:00",
-    "discord_complete": "2026-02-18T15:06:47.837994+00:00"
+    "data_fetch_start": "2026-02-18T17:32:29.176981+00:00",
+    "data_fetch_complete": "2026-02-18T17:32:29.413730+00:00",
+    "analysis_start": "2026-02-18T17:32:29.413756+00:00",
+    "analysis_complete": "2026-02-18T17:32:29.413863+00:00",
+    "llm_start": "2026-02-18T17:32:29.413876+00:00",
+    "llm_complete": "2026-02-18T17:32:29.530509+00:00",
+    "signal_start": "2026-02-18T17:32:29.530534+00:00",
+    "signal_emitted": "2026-02-18T17:32:29.530652+00:00",
+    "trade_start": "2026-02-18T17:32:29.530662+00:00",
+    "trade_complete": "2026-02-18T17:32:29.530725+00:00",
+    "discord_start": "2026-02-18T17:32:29.530735+00:00",
+    "discord_complete": "2026-02-18T17:32:29.924338+00:00"
   }
 }

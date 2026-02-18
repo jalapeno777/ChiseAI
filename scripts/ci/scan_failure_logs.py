@@ -11,7 +11,12 @@ from __future__ import annotations
 
 import xml.etree.ElementTree as ET
 import importlib.util
+import sys
 from pathlib import Path
+
+# Add src to path for config imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
+from config.bootstrap import bootstrap
 
 CI_DIR = Path("_bmad-output/ci")
 JUNIT_PATH = CI_DIR / "pytest-junit.xml"
@@ -207,6 +212,8 @@ def build_summary() -> tuple[str, int]:
 
 
 def main() -> int:
+    # Bootstrap environment first
+    bootstrap(load_env=True)
     summary, code = build_summary()
     print(summary)
     return code

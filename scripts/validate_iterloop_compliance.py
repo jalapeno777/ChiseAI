@@ -20,6 +20,12 @@ from typing import Any
 
 import yaml
 
+# Bootstrap environment first (must be before any env access)
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from config.bootstrap import bootstrap
+
+bootstrap(load_env=True)
+
 ITERLOG_GLOB = "iterlog-*.md"
 ITERLOG_DIR = Path("docs/tempmemories")
 
@@ -122,8 +128,7 @@ def main() -> int:
         "--fail-on-warn",
         action="store_true",
         help=(
-            "Treat warnings as failures (exit non-zero). Default: warnings do not "
-            "fail."
+            "Treat warnings as failures (exit non-zero). Default: warnings do not fail."
         ),
     )
     args = parser.parse_args()

@@ -19,7 +19,14 @@ from __future__ import annotations
 import os
 import sqlite3
 import sys
+from pathlib import Path
 from typing import Any
+
+# Bootstrap environment first (must be before any env access)
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from config.bootstrap import bootstrap
+
+bootstrap(load_env=True)
 
 import psycopg2  # type: ignore[import-untyped]
 

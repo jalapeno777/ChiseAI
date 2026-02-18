@@ -6,9 +6,13 @@ Quick verification script for CH-KIMI-DISCORD-001 changes.
 
 import os
 import sys
+from pathlib import Path
 
-# Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+# Bootstrap environment first (must be before any env access)
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from config.bootstrap import bootstrap
+
+bootstrap(load_env=True)
 
 from config.env_loader import load_discord_config, load_kimi_config
 from discord_alerts.config import DiscordConfig
