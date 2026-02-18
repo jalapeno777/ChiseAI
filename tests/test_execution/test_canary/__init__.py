@@ -1,0 +1,1 @@
+"""Canary test module initialization."""
