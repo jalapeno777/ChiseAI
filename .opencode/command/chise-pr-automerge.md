@@ -11,10 +11,13 @@ Prereqs:
 - For autonomous review-required merges: set `GITEA_REVIEW_TOKEN` (PAT for a separate bot user that can submit PR reviews).
 - Optional: `GITEA_BASE_URL` (defaults to `http://host.docker.internal:3000`), `GITEA_OWNER`, `GITEA_REPO`.
 - Set `STORY_ID` (required). Example: `export STORY_ID=ST-NS-001`
+  - Accepted patterns include: `ST-*`, `CH-*`, `FT-*`, `REWARD-*`, `REPO-*`, `SAFETY-*`, `BRANCH-*`, `PAPER-*`, `RECON-*` (must contain a digit).
 - Set `BRANCH` (required). Example: `export BRANCH=feature/ST-NS-001-my-change`
 - Set `AGENT_ID=merlin` (required; non-Merlin PR submission is blocked by script policy).
 - Ensure a swarm session exists for this branch:
   - `python3 scripts/swarm/session.py verify --story-id "$STORY_ID" --branch "$BRANCH" --check-canonical`
+ - Optional helper to derive `STORY_ID` from branch when omitted:
+   - `export STORY_ID="$(python3 -c 'import re,os; b=os.environ.get(\"BRANCH\",\"\").upper(); m=re.search(r\"(?:ST|CH|FT|REWARD|REPO|SAFETY|BRANCH|PAPER|RECON)(?:-[A-Z0-9]+){1,}\", b); print(m.group(0) if m else \"\")')"`
 
 1. Safety gates (must not be on main)
    - `git status -sb`

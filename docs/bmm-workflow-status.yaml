@@ -11,9 +11,9 @@ metadata:
 
 # Current project phase
 current_phase:
-  phase: phase_1
-  status: completed
-  note: "Phase 1 foundation work completed. All p0-1 through p0-7 sprint stories done. Transitioning to Phase 2+ execution."
+  phase: phase_2_plus
+  status: in_progress
+  note: "Phase 2+ execution in progress. Learning & Improvement System (EP-NS-004) active with 2/4 stories completed, 1 in progress, 1 completed ahead of schedule."
 
 # ============================================================
 # PHASE 1 EPICS (8 epics, 35 stories total)
@@ -148,8 +148,8 @@ epics:
     notes:
       - ST-NS-017 (Prediction Accuracy Tracking) - completed
       - ST-NS-018 (ML Feedback Loop) - completed and validated
-      - ST-NS-019 (Confidence Threshold Calibration) - planned
-      - ST-NS-020 (Training Data Generator) - planned
+      - ST-NS-019 (Confidence Threshold Calibration) - in_progress (active branch exists)
+      - ST-NS-020 (Training Data Generator) - completed (PR #136 merged ahead of schedule)
 
   # EP-NS-005: User Experience & Interface (4 stories, 25 points)
   - id: EP-NS-005
@@ -180,6 +180,17 @@ epics:
     story_points: 49
     description: Advanced neuro-symbolic AI features including hybrid reasoning, explainability, and adaptive learning
     sprint_id: q2-6
+
+  # EP-PAPER-002: Paper Trading Production Readiness (4 stories, 34 points)
+  - id: EP-PAPER-002
+    name: Paper Trading Production Readiness
+    status: completed
+    story_ids: [ST-PAPER-005, ST-PAPER-006, ST-PAPER-007, ST-PAPER-008]
+    story_count: 4
+    story_points: 34
+    description: Production-grade resilience, safety, market realism, and operational readiness for paper trading
+    sprint_id: PAPER-002
+    completion_date: "2026-02-17"
 
 # ============================================================
 # PHASE 1 STORIES (35 stories)
@@ -392,7 +403,6 @@ stories:
     # NOTE: Status corrected 2026-02-13 - Bybit/Bitget connectors exist and are integrated
     story_points: 4
     priority: P0-CRITICAL
-    fr_coverage: [FR-026]
     notes: |
       IMPLEMENTED: Bybit and Bitget connectors exist at src/data/exchange/bybit_connector.py 
       and src/data/exchange/bitget_connector.py. Connectors are integrated with position_query.py,
@@ -1610,6 +1620,97 @@ stories:
     fr_coverage: [FR-003, FR-004, FR-018]
     description: Create integration layer between neural and symbolic components
 
+  # EP-PAPER-002: Paper Trading Production Readiness (4 stories, 34 points)
+  - id: ST-PAPER-005
+    title: Circuit Breakers for External Dependencies
+    epic_id: EP-PAPER-002
+    sprint_id: PAPER-002
+    status: completed
+    validation_status: validated
+    story_points: 8
+    priority: P0-CRITICAL
+    description: Implement circuit breaker pattern for Redis and InfluxDB to prevent cascading failures
+    acceptance_criteria:
+      - Circuit breaker class with CLOSED, OPEN, HALF_OPEN states
+      - Redis operations wrapped with circuit breaker in paper_tracker.py
+      - Configurable thresholds: failure_count, timeout, half_open_max_calls
+      - Fail-fast behavior when circuit is OPEN
+      - State transitions logged
+      - 90%+ test coverage
+    implementation_notes:
+      - Module: src/common/circuit_breaker.py (539 lines)
+      - Tests: tests/test_common/test_circuit_breaker.py (588 lines, 97% coverage)
+      - Integration: src/portfolio/paper_tracker.py
+      - Documentation: docs/architecture/circuit-breaker-pattern.md
+
+  - id: ST-PAPER-006
+    title: Kill-Switch Edge Case Coverage
+    epic_id: EP-PAPER-002
+    sprint_id: PAPER-002
+    status: completed
+    validation_status: validated
+    story_points: 5
+    priority: P0-CRITICAL
+    description: Comprehensive edge case handling and tests for kill-switch executor
+    acceptance_criteria:
+      - Redis failure during trigger handled gracefully
+      - Partial position closure failures tracked
+      - Concurrent trigger race conditions handled
+      - Exchange API outage recovery
+      - Retry logic with exponential backoff (3 retries)
+      - All edge cases tested
+    implementation_notes:
+      - Module: src/execution/kill_switch/retry_handler.py (284 lines)
+      - Extended: src/execution/kill_switch/executor.py
+      - Tests: tests/test_execution/test_kill_switch/test_executor_edge_cases.py (715 lines)
+      - Coverage: 93% on kill_switch module, 94 tests passing
+
+  - id: ST-PAPER-007
+    title: Paper Trading Market Realism
+    epic_id: EP-PAPER-002
+    sprint_id: PAPER-002
+    status: completed
+    validation_status: validated
+    story_points: 13
+    priority: P1-HIGH
+    description: "Implement realistic market simulation: slippage, latency, market impact, fill probability"
+    acceptance_criteria:
+      - Slippage model: base + volatility * size/ADV (2-5 bps realistic range)
+      - Latency simulation: normal distribution (submission 50±15ms, fill 100±30ms)
+      - Market impact: square-root formula for orders >0.1% ADV
+      - Fill probability based on order book depth
+      - Configuration system for per-symbol parameters
+      - 85%+ test coverage
+      - 1000 trade validation showing realistic distributions
+    implementation_notes:
+      - Modules: slippage_model.py (167), latency_model.py (209), market_impact.py (255), fill_probability.py (259)
+      - Config: config/market_realism.yaml (140 lines)
+      - Tests: tests/test_execution/test_paper/test_market_realism.py (1097 lines)
+      - Validation: Mean slippage 2.52 bps over 1000 trades
+
+  - id: ST-PAPER-008
+    title: Critical Alerts and Operational Runbooks
+    epic_id: EP-PAPER-002
+    sprint_id: PAPER-002
+    status: completed
+    validation_status: validated
+    story_points: 8
+    priority: P1-HIGH
+    description: Production alerts and runbooks for paper trading operations
+    acceptance_criteria:
+      - Redis failure alert (CRITICAL severity)
+      - Paper-sync divergence alert (>5% difference)
+      - Validation failure rate alert (>10% in 5min window)
+      - Kill-switch trigger runbook
+      - Paper trading operations runbook
+      - Redis failure response runbook
+      - Alert hooks integrated into paper_tracker.py
+    implementation_notes:
+      - Extended: src/portfolio_risk/alerts/detector.py, types.py, formatter.py
+      - New: src/portfolio/paper_tracker.py (509 lines)
+      - Runbooks: docs/runbooks/kill-switch-trigger.md, paper-trading-operations.md, redis-failure-response.md
+      - Tests: 119 passing
+
 # ============================================================
 # ACTIVE SPRINTS
 # ============================================================
@@ -1704,10 +1805,12 @@ sprints:
 
   - id: q2-3
     name: Learning & Improvement System
-    status: planned
+    status: in_progress
     story_count: 4
     story_points: 28
     mapped_stories: [ST-NS-017, ST-NS-018, ST-NS-019, ST-NS-020]
+    completion_date: "2026-02-15"
+    notes: "ST-NS-017 and ST-NS-018 completed. ST-NS-020 completed ahead of schedule (PR #136). ST-NS-019 in progress."
 
   - id: q2-4
     name: User Experience & Interface
@@ -1789,19 +1892,28 @@ sprints:
     prs_merged: [PR-081]
     completion_date: "2026-02-15"
 
+  - id: PAPER-002
+    name: Paper Trading Production Readiness Sprint
+    status: completed
+    story_count: 4
+    story_points: 34
+    mapped_stories: [ST-PAPER-005, ST-PAPER-006, ST-PAPER-007, ST-PAPER-008]
+    completion_date: "2026-02-17"
+    notes: "All P0 and high-impact P1 gaps closed. 322 tests passing. Paper trading now production-ready."
+
 # ============================================================
 # SUMMARY COUNTS
 # ============================================================
 
 summary:
-  total_epics: 15
-  total_stories: 68
-  total_story_points: 385
+  total_epics: 16
+  total_stories: 72
+  total_story_points: 419
   phase_1:
     epics: 8
     stories: 41
     story_points: 157
   phase_2_plus:
-    epics: 7
-    stories: 27
-    story_points: 217
+    epics: 8
+    stories: 31
+    story_points: 251

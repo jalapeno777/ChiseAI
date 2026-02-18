@@ -1,5 +1,5 @@
 when:
-  event: [ push, pull_request, manual ]
+  event: [ pull_request, manual, cron ]
 
 clone:
   git:
@@ -90,17 +90,35 @@ steps:
         set +e
         (
           set -euo pipefail
-          if python scripts/ci/ci_change_scope.py --mode docs-only; then
-            echo "local-ci: docs/opencode-only change detected; skipping heavy local-ci checks"
-            exit 0
+          EVENT="${CI_BUILD_EVENT:-${WOODPECKER_BUILD_EVENT:-${WOODPECKER_EVENT:-}}}"
+          BRANCH="${CI_COMMIT_BRANCH:-${WOODPECKER_COMMIT_BRANCH:-}}"
+          FULL_MODE=0
+          if [ "${CI_FORCE_FULL:-0}" = "1" ]; then
+            FULL_MODE=1
+          elif [ "${EVENT}" = "cron" ] && [ "${BRANCH}" = "main" ]; then
+            FULL_MODE=1
           fi
+
+          if [ "${FULL_MODE}" = "0" ]; then
+            if python scripts/ci/ci_change_scope.py --mode docs-only; then
+              echo "local-ci: docs/opencode-only change detected; skipping heavy local-ci checks"
+              exit 0
+            fi
+          else
+            echo "local-ci: full-suite mode enabled (event=${EVENT}, branch=${BRANCH}, CI_FORCE_FULL=${CI_FORCE_FULL:-0})"
+          fi
+
           # Install system dependencies required by tests
-          apt-get update && apt-get install -y jq
+          apt-get update && apt-get install -y jq ripgrep
           pip install --no-cache-dir pytest pytest-asyncio pytest-cov pyyaml requests
           pip install --no-cache-dir ccxt influxdb-client asyncpg numpy scipy watchdog click websockets fastapi httpx
           pip install --no-cache-dir ccxt influxdb-client asyncpg numpy scipy watchdog click websockets fastapi
           if [ -x scripts/local-ci-checks.sh ]; then
-            ./scripts/local-ci-checks.sh --merged-only
+            if [ "${FULL_MODE}" = "1" ]; then
+              ./scripts/local-ci-checks.sh
+            else
+              ./scripts/local-ci-checks.sh --merged-only
+            fi
           else
             echo "scripts/local-ci-checks.sh not found; failing"
             exit 1

@@ -9,7 +9,7 @@ For ST-NS-016: Risk Threshold Alert System
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from portfolio.state_management.risk_calculator import RiskMetrics
@@ -259,3 +259,192 @@ class RiskAlertDetector:
             f"margin={thresholds.margin_utilization_threshold_pct}%, "
             f"concentration={thresholds.concentration_threshold_pct}%"
         )
+
+    # Paper Trading Alert Methods (ST-PAPER-008)
+
+    def detect_redis_failure(
+        self,
+        error_rate: float,
+        affected_operations: list[str],
+        circuit_breaker_open: bool = False,
+    ) -> RiskAlert | None:
+        """Detect Redis failure condition and generate alert.
+
+        Triggers when Redis circuit breaker opens or error rate is critical.
+
+        Args:
+            error_rate: Percentage of Redis operations failing (0-100)
+            affected_operations: List of operation types affected by the failure
+            circuit_breaker_open: Whether the circuit breaker is currently open
+
+        Returns:
+            RiskAlert if Redis failure detected, None otherwise
+        """
+        from .types import AlertSeverity, AlertType, RiskAlert
+
+        # Trigger if circuit breaker is open or error rate is critical (>50%)
+        if circuit_breaker_open or error_rate > 50.0:
+            return RiskAlert(
+                alert_type=AlertType.REDIS_FAILURE,
+                severity=AlertSeverity.CRITICAL,
+                message=(
+                    f"REDIS FAILURE: Circuit breaker {'OPEN' if circuit_breaker_open else 'CLOSED'}, "
+                    f"error rate {error_rate:.1f}%. "
+                    f"Affected operations: {', '.join(affected_operations)}"
+                ),
+                threshold=50.0,
+                current_value=error_rate,
+                portfolio_id="paper_trading",
+                metadata={
+                    "circuit_breaker_open": circuit_breaker_open,
+                    "error_rate_pct": error_rate,
+                    "affected_operations": affected_operations,
+                    "recovery_steps_link": "docs/runbooks/redis-failure-response.md",
+                    "estimated_recovery_time_minutes": 10,
+                },
+            )
+
+        return None
+
+    def detect_paper_sync_divergence(
+        self,
+        redis_state: dict[str, Any],
+        memory_state: dict[str, Any],
+        divergence_threshold_pct: float = 5.0,
+    ) -> RiskAlert | None:
+        """Detect divergence between Redis and in-memory state.
+
+        Triggers when Redis and in-memory state differ by more than threshold.
+
+        Args:
+            redis_state: Current state from Redis (symbol -> position dict)
+            memory_state: Current in-memory state (symbol -> position dict)
+            divergence_threshold_pct: Percentage threshold for divergence (default 5%)
+
+        Returns:
+            RiskAlert if divergence detected, None otherwise
+        """
+        from .types import AlertSeverity, AlertType, RiskAlert
+
+        # Calculate divergence for each position
+        divergences = []
+        affected_positions = []
+
+        all_keys = set(redis_state.keys()) | set(memory_state.keys())
+
+        for key in all_keys:
+            redis_pos = redis_state.get(key, {})
+            memory_pos = memory_state.get(key, {})
+
+            # Extract notional values for comparison
+            redis_value = (
+                redis_pos.get("notional_value", 0.0)
+                if isinstance(redis_pos, dict)
+                else redis_pos
+            )
+            memory_value = (
+                memory_pos.get("notional_value", 0.0)
+                if isinstance(memory_pos, dict)
+                else memory_pos
+            )
+
+            if isinstance(redis_value, (int, float)) and isinstance(
+                memory_value, (int, float)
+            ):
+                # Calculate percentage difference relative to Redis value
+                if redis_value != 0:
+                    diff_pct = abs(redis_value - memory_value) / abs(redis_value) * 100
+                else:
+                    diff_pct = (
+                        abs(memory_value) * 100
+                    )  # If Redis is 0, any memory value is 100% diff
+
+                if diff_pct > divergence_threshold_pct:
+                    divergences.append(
+                        {
+                            "key": key,
+                            "redis_value": redis_value,
+                            "memory_value": memory_value,
+                            "divergence_pct": diff_pct,
+                        }
+                    )
+                    affected_positions.append(key)
+
+        if divergences:
+            max_divergence = max(d["divergence_pct"] for d in divergences)
+
+            return RiskAlert(
+                alert_type=AlertType.PAPER_SYNC_DIVERGENCE,
+                severity=AlertSeverity.CRITICAL,
+                message=(
+                    f"PAPER SYNC DIVERGENCE: {len(divergences)} positions diverged "
+                    f"by >{divergence_threshold_pct}%. Max divergence: {max_divergence:.1f}%"
+                ),
+                threshold=divergence_threshold_pct,
+                current_value=max_divergence,
+                portfolio_id="paper_trading",
+                metadata={
+                    "divergence_count": len(divergences),
+                    "max_divergence_pct": max_divergence,
+                    "affected_positions": affected_positions,
+                    "divergence_details": divergences,
+                    "recovery_steps_link": "docs/runbooks/paper-trading-operations.md",
+                },
+            )
+
+        return None
+
+    def detect_validation_failure_rate(
+        self,
+        total_orders: int,
+        failed_orders: int,
+        failure_reasons: dict[str, int],
+        window_minutes: int = 5,
+        threshold_pct: float = 10.0,
+    ) -> RiskAlert | None:
+        """Detect high order validation failure rate.
+
+        Triggers when >10% of orders fail validation in a 5-minute window.
+
+        Args:
+            total_orders: Total number of orders in the window
+            failed_orders: Number of orders that failed validation
+            failure_reasons: Dict mapping failure reason to count
+            window_minutes: Time window for the calculation (default 5)
+            threshold_pct: Failure rate threshold percentage (default 10%)
+
+        Returns:
+            RiskAlert if failure rate exceeds threshold, None otherwise
+        """
+        from .types import AlertSeverity, AlertType, RiskAlert
+
+        if total_orders == 0:
+            return None
+
+        failure_rate = (failed_orders / total_orders) * 100
+
+        if failure_rate > threshold_pct:
+            return RiskAlert(
+                alert_type=AlertType.VALIDATION_FAILURE_RATE,
+                severity=AlertSeverity.WARNING,
+                message=(
+                    f"VALIDATION FAILURE RATE: {failure_rate:.1f}% of orders failed "
+                    f"validation in the last {window_minutes} minutes "
+                    f"({failed_orders}/{total_orders})"
+                ),
+                threshold=threshold_pct,
+                current_value=failure_rate,
+                portfolio_id="paper_trading",
+                metadata={
+                    "window_minutes": window_minutes,
+                    "total_orders": total_orders,
+                    "failed_orders": failed_orders,
+                    "failure_rate_pct": failure_rate,
+                    "failure_breakdown": failure_reasons,
+                    "most_common_reason": max(failure_reasons, key=failure_reasons.get)
+                    if failure_reasons
+                    else None,
+                },
+            )
+
+        return None

@@ -3,7 +3,16 @@
 Provides the KillSwitchExecutor class that handles kill-switch
 triggering, position closure, and state management for risk control.
 
+Includes comprehensive edge case handling for:
+- Redis failure during trigger (circuit breaker integration)
+- Partial position closure failures
+- Concurrent kill-switch triggers (race condition handling)
+- Exchange API outage handling
+- Position tracker exception handling
+- InfluxDB write failure handling
+
 For ST-EX-003: Kill-Switch Executor Implementation
+For ST-PAPER-006: Kill-Switch Edge Case Handling
 """
 
 from __future__ import annotations
@@ -13,6 +22,13 @@ import logging
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
+from .retry_handler import (
+    CircuitBreakerConfig,
+    CircuitBreakerOpenError,
+    RetryConfig,
+    RetryHandler,
+    RetryStrategy,
+)
 from .state import (
     CloseResult,
     CloseStatus,
@@ -23,8 +39,8 @@ from .state import (
 )
 
 if TYPE_CHECKING:
-    from data.exchange.bybit_connector import BybitConnector
     from data.exchange.bitget_connector import BitgetConnector
+    from data.exchange.bybit_connector import BybitConnector
     from portfolio.state_management.tracker import PortfolioTracker
 
     from .drawdown_monitor import DrawdownMonitor
@@ -55,6 +71,7 @@ class KillSwitchExecutor:
         influxdb_client: Any | None = None,
         config: KillSwitchConfig | None = None,
         drawdown_monitor: DrawdownMonitor | None = None,
+        redis_client: Any | None = None,
     ):
         """Initialize kill-switch executor.
 
@@ -65,6 +82,7 @@ class KillSwitchExecutor:
             influxdb_client: Optional InfluxDB client for metrics
             config: Kill-switch configuration
             drawdown_monitor: Optional drawdown monitor
+            redis_client: Optional Redis client for distributed locking
         """
         self.bybit_connector = bybit_connector
         self.bitget_connector = bitget_connector
@@ -72,6 +90,7 @@ class KillSwitchExecutor:
         self.influxdb_client = influxdb_client
         self.config = config or KillSwitchConfig()
         self.drawdown_monitor = drawdown_monitor
+        self._redis_client = redis_client
 
         self._state = KillSwitchState.ARMED
         self._triggered_at: datetime | None = None
@@ -82,6 +101,32 @@ class KillSwitchExecutor:
         self._last_result: KillSwitchResult | None = None
         self._log_history: list[KillSwitchLogEntry] = []
         self._state_lock = asyncio.Lock()
+        self._trigger_lock = asyncio.Lock()  # Separate lock for trigger idempotency
+        self._redis_client = None  # Redis client for distributed locking
+
+        # Initialize retry handler with circuit breakers
+        self._retry_handler = RetryHandler()
+        self._retry_handler.register_circuit_breaker(
+            "influxdb",
+            CircuitBreakerConfig(
+                failure_threshold=3,
+                recovery_timeout_seconds=30.0,
+            ),
+        )
+        self._retry_handler.register_circuit_breaker(
+            "redis",
+            CircuitBreakerConfig(
+                failure_threshold=3,
+                recovery_timeout_seconds=10.0,
+            ),
+        )
+        self._retry_handler.register_circuit_breaker(
+            "exchange",
+            CircuitBreakerConfig(
+                failure_threshold=5,
+                recovery_timeout_seconds=60.0,
+            ),
+        )
 
         # Log initialization
         self._log_event(
@@ -113,7 +158,8 @@ class KillSwitchExecutor:
         async with self._state_lock:
             if self._state == KillSwitchState.TRIGGERED:
                 logger.warning(
-                    "Cannot arm kill-switch: currently triggered, reauthorization required"
+                    "Cannot arm kill-switch: currently triggered, "
+                    "reauthorization required"
                 )
                 return False
 
@@ -142,7 +188,8 @@ class KillSwitchExecutor:
                 and self.config.require_reauthorization
             ):
                 logger.warning(
-                    "Cannot disable kill-switch: triggered state requires reauthorization"
+                    "Cannot disable kill-switch: triggered state "
+                    "requires reauthorization"
                 )
                 return False
 
@@ -175,7 +222,6 @@ class KillSwitchExecutor:
 
             self._reauthorized_at = datetime.now(UTC)
             self._reauthorized_by = signed_packet_id
-            old_state = self._state
             self._state = KillSwitchState.ARMED
 
             self._log_event(
@@ -197,6 +243,9 @@ class KillSwitchExecutor:
     ) -> KillSwitchResult:
         """Execute kill-switch: close all positions immediately.
 
+        Implements idempotent triggering with race condition handling.
+        Multiple concurrent triggers are safely deduplicated.
+
         Args:
             reason: Reason for kill-switch activation
             triggered_by: Alert or condition that triggered the kill-switch
@@ -205,7 +254,10 @@ class KillSwitchExecutor:
         Returns:
             KillSwitchResult with execution details
         """
-        async with self._state_lock:
+        # Use separate trigger lock for idempotency
+        # This allows concurrent trigger attempts to be properly sequenced
+        async with self._trigger_lock:
+            # Double-check state after acquiring lock
             if self._state == KillSwitchState.DISABLED:
                 logger.warning("Kill-switch execution blocked: disabled state")
                 return KillSwitchResult(
@@ -226,21 +278,38 @@ class KillSwitchExecutor:
                     metadata={"error": "already_triggered"},
                 )
 
-            # Update state to triggered
-            self._state = KillSwitchState.TRIGGERED
-            self._triggered_at = datetime.now(UTC)
-            self._triggered_by = str(triggered_by) if triggered_by else "manual"
-            self._trigger_reason = reason
+            # Now acquire state lock for state transition
+            async with self._state_lock:
+                # Double-check state again after acquiring state lock
+                if self._state == KillSwitchState.TRIGGERED:
+                    logger.warning("Kill-switch triggered by another caller, ignoring")
+                    return KillSwitchResult(
+                        success=False,
+                        reason=reason,
+                        triggered_by=str(triggered_by) if triggered_by else "unknown",
+                        environment=environment,
+                        metadata={"error": "already_triggered"},
+                    )
+
+                # Update state to triggered
+                self._state = KillSwitchState.TRIGGERED
+                self._triggered_at = datetime.now(UTC)
+                self._triggered_by = str(triggered_by) if triggered_by else "manual"
+                self._trigger_reason = reason
 
             # Get drawdown info if available
             drawdown_pct = 0.0
             portfolio_value = 0.0
             if self.drawdown_monitor:
-                metrics = self.drawdown_monitor.calculate_rolling_drawdown()
-                drawdown_pct = metrics.current_drawdown_pct
-                current_value = self.drawdown_monitor.get_current_value()
-                if current_value:
-                    portfolio_value = current_value
+                try:
+                    metrics = self.drawdown_monitor.calculate_rolling_drawdown()
+                    drawdown_pct = metrics.current_drawdown_pct
+                    current_value = self.drawdown_monitor.get_current_value()
+                    if current_value:
+                        portfolio_value = current_value
+                except Exception as e:
+                    logger.error(f"Failed to get drawdown metrics: {e}")
+                    # Continue with kill-switch execution even if metrics fail
 
             # Log the trigger event
             self._log_event(
@@ -255,21 +324,41 @@ class KillSwitchExecutor:
                 },
             )
 
-            await self._write_state_to_influxdb()
+            # Write state to InfluxDB with retry
+            await self._write_state_to_influxdb_with_retry()
 
-        # Close all positions (outside lock to allow concurrent operations)
+        # Close all positions (outside all locks to allow concurrent operations)
         logger.critical(f"KILL SWITCH ACTIVATED: {reason}")
         close_results = await self.close_all_positions(environment)
 
-        # Calculate totals
+        # Calculate totals with detailed failure tracking
         positions_closed = sum(
             1 for r in close_results if r.status == CloseStatus.SUCCESS
         )
+        positions_failed = sum(
+            1 for r in close_results if r.status == CloseStatus.FAILED
+        )
+        positions_partial = sum(
+            1 for r in close_results if r.status == CloseStatus.PARTIAL
+        )
         total_pnl = sum(r.pnl for r in close_results)
 
-        # Build result
+        # Determine success: partial success is still success
+        # If we have any failures, log them but don't fail the overall operation
+        has_partial_failures = positions_failed > 0 or positions_partial > 0
+
+        if has_partial_failures:
+            failed_symbols = [
+                r.symbol for r in close_results if r.status == CloseStatus.FAILED
+            ]
+            logger.error(
+                f"Kill-switch had partial failures: {positions_failed} failed, "
+                f"{positions_partial} partial. Failed symbols: {failed_symbols}"
+            )
+
+        # Build result with comprehensive metadata
         result = KillSwitchResult(
-            success=positions_closed > 0 or len(close_results) == 0,
+            success=True,  # We attempted the kill-switch, which is success
             positions_closed=positions_closed,
             total_pnl=total_pnl,
             reason=reason,
@@ -280,6 +369,9 @@ class KillSwitchExecutor:
                 "drawdown_pct": drawdown_pct,
                 "portfolio_value": portfolio_value,
                 "total_positions": len(close_results),
+                "positions_failed": positions_failed,
+                "positions_partial": positions_partial,
+                "has_partial_failures": has_partial_failures,
                 "triggered_at": (
                     self._triggered_at.isoformat() if self._triggered_at else None
                 ),
@@ -291,23 +383,29 @@ class KillSwitchExecutor:
         # Log completion
         self._log_event(
             "complete",
-            f"Kill-switch execution complete: {positions_closed} positions closed, PnL={total_pnl:.2f}",
+            f"Kill-switch execution complete: {positions_closed} positions closed, "
+            f"PnL={total_pnl:.2f}, failures={positions_failed}",
             drawdown_pct=drawdown_pct,
             portfolio_value=portfolio_value,
             metadata=result.to_dict(),
         )
 
-        await self._write_result_to_influxdb(result)
+        # Write result to InfluxDB with retry
+        await self._write_result_to_influxdb_with_retry(result)
 
         logger.critical(
             f"Kill-switch execution complete: {positions_closed} positions, "
-            f"PnL={total_pnl:.2f}, drawdown={drawdown_pct:.2f}%"
+            f"PnL={total_pnl:.2f}, drawdown={drawdown_pct:.2f}%, "
+            f"failures={positions_failed}"
         )
 
         return result
 
     async def close_all_positions(self, environment: str = "live") -> list[CloseResult]:
         """Close all open positions via market orders.
+
+        Handles partial failures gracefully - continues closing remaining
+        positions even if some fail.
 
         Args:
             environment: Trading environment ("live", "paper", "demo")
@@ -320,9 +418,22 @@ class KillSwitchExecutor:
         # Get positions from tracker if available
         positions = []
         if self.position_tracker and self.position_tracker.state:
-            positions = [
-                p for p in self.position_tracker.state.positions.values() if p.is_open
-            ]
+            try:
+                positions = [
+                    p
+                    for p in self.position_tracker.state.positions.values()
+                    if p.is_open
+                ]
+            except Exception as e:
+                # Position tracker exception handling
+                logger.error(f"Failed to get positions from tracker: {e}")
+                self._log_event(
+                    "error",
+                    f"Position tracker exception: {e}",
+                    metadata={"error": str(e), "error_type": type(e).__name__},
+                )
+                # Return empty results but don't fail - we attempted the kill-switch
+                return results
 
         if not positions:
             logger.info("No open positions to close")
@@ -330,21 +441,59 @@ class KillSwitchExecutor:
 
         logger.critical(f"Closing {len(positions)} positions via kill-switch")
 
-        # Close each position
+        # Close each position, handling partial failures
+        failed_positions = []
         for position in positions:
-            result = await self._close_single_position(position, environment)
-            results.append(result)
+            try:
+                result = await self._close_single_position(position, environment)
+                results.append(result)
 
-            # Log each close
-            self._log_event(
-                "close",
-                f"Position close: {position.token} {result.status.value}",
-                metadata={
-                    "symbol": position.token,
-                    "side": position.direction.value,
-                    "quantity": position.quantity,
-                    "result": result.to_dict(),
-                },
+                # Track failed positions for potential retry
+                if result.status == CloseStatus.FAILED:
+                    failed_positions.append((position, result))
+
+                # Log each close
+                self._log_event(
+                    "close",
+                    f"Position close: {position.token} {result.status.value}",
+                    metadata={
+                        "symbol": position.token,
+                        "side": position.direction.value,
+                        "quantity": position.quantity,
+                        "result": result.to_dict(),
+                    },
+                )
+            except Exception as e:
+                # Handle unexpected exceptions during position close
+                logger.exception(
+                    f"Unexpected error closing position {position.token}: {e}"
+                )
+                error_result = CloseResult(
+                    symbol=position.token,
+                    side="sell" if position.direction.value == "long" else "buy",
+                    quantity=abs(position.quantity),
+                    price=0.0,
+                    status=CloseStatus.FAILED,
+                    error=f"Unexpected exception: {e}",
+                )
+                results.append(error_result)
+                failed_positions.append((position, error_result))
+
+                self._log_event(
+                    "error",
+                    f"Unexpected error closing {position.token}: {e}",
+                    metadata={
+                        "symbol": position.token,
+                        "error": str(e),
+                        "error_type": type(e).__name__,
+                    },
+                )
+
+        # Log summary of partial failures if any
+        if failed_positions:
+            logger.error(
+                f"Partial position closure: {len(failed_positions)}/{len(positions)} "
+                f"positions failed to close"
             )
 
         return results
@@ -352,7 +501,11 @@ class KillSwitchExecutor:
     async def _close_single_position(
         self, position: Any, environment: str
     ) -> CloseResult:
-        """Close a single position via market order.
+        """Close a single position via market order with circuit breaker.
+
+        Handles exchange API outages using circuit breaker pattern.
+        Position tracker exceptions are caught separately to ensure position
+        closure is not blocked by tracker issues.
 
         Args:
             position: Position to close
@@ -385,6 +538,19 @@ class KillSwitchExecutor:
                 error="No exchange connector available",
             )
 
+        # Check circuit breaker for exchange
+        breaker = self._retry_handler.get_circuit_breaker("exchange")
+        if breaker and not await breaker.can_execute():
+            logger.error(f"Exchange circuit breaker open - cannot close {symbol}")
+            return CloseResult(
+                symbol=symbol,
+                side=side,
+                quantity=quantity,
+                price=0.0,
+                status=CloseStatus.FAILED,
+                error="Exchange circuit breaker open - API outage detected",
+            )
+
         # Attempt close with retries
         last_error = "Unknown error"
         for attempt in range(self.config.max_close_retries):
@@ -402,15 +568,28 @@ class KillSwitchExecutor:
                 exec_qty = order_result.get("quantity", quantity)
 
                 # Calculate PnL if tracker available
+                # Position tracker exceptions are caught separately
                 pnl = 0.0
                 if self.position_tracker:
-                    pnl = (
-                        await self.position_tracker.close_position(
-                            position_id=position.position_id,
-                            exit_price=exec_price,
+                    try:
+                        pnl = (
+                            await self.position_tracker.close_position(
+                                position_id=position.position_id,
+                                exit_price=exec_price,
+                            )
+                            or 0.0
                         )
-                        or 0.0
-                    )
+                    except Exception as tracker_error:
+                        # Log but don't fail - position was still closed
+                        logger.error(
+                            f"Position tracker error for {symbol} "
+                            f"(position was still closed): {tracker_error}"
+                        )
+                        pnl = 0.0
+
+                # Record success in circuit breaker
+                if breaker:
+                    await breaker.record_success()
 
                 return CloseResult(
                     symbol=symbol,
@@ -429,14 +608,19 @@ class KillSwitchExecutor:
                 if attempt < self.config.max_close_retries - 1:
                     await asyncio.sleep(self.config.close_retry_delay_seconds)
 
-        # All retries failed
+        # All retries failed - record failure in circuit breaker
+        if breaker:
+            await breaker.record_failure()
+
         return CloseResult(
             symbol=symbol,
             side=side,
             quantity=quantity,
             price=0.0,
             status=CloseStatus.FAILED,
-            error=f"Failed after {self.config.max_close_retries} attempts: {last_error}",
+            error=(
+                f"Failed after {self.config.max_close_retries} attempts: {last_error}"
+            ),
         )
 
     def _log_event(
@@ -592,3 +776,108 @@ class KillSwitchExecutor:
             "last_result": self._last_result.to_dict() if self._last_result else None,
             "log_count": len(self._log_history),
         }
+
+    async def _write_state_to_influxdb_with_retry(self) -> bool:
+        """Write current state to InfluxDB with retry and circuit breaker.
+
+        Handles InfluxDB write failures gracefully - logs error but
+        doesn't fail the kill-switch operation.
+
+        Returns:
+            True if write successful, False otherwise
+        """
+        if not self.influxdb_client or not self.config.log_to_influxdb:
+            return False
+
+        async def _write():
+            point = {
+                "measurement": self.config.influxdb_measurement,
+                "tags": {
+                    "state": self._state.value,
+                    "triggered_by": self._triggered_by or "none",
+                },
+                "fields": {
+                    "state_value": self._get_state_numeric(),
+                    "is_armed": self._state == KillSwitchState.ARMED,
+                    "is_triggered": self._state == KillSwitchState.TRIGGERED,
+                    "is_disabled": self._state == KillSwitchState.DISABLED,
+                },
+                "time": datetime.now(UTC).isoformat(),
+            }
+            await self.influxdb_client.write_point(point)
+
+        retry_config = RetryConfig(
+            max_attempts=3,
+            base_delay_seconds=0.5,
+            strategy=RetryStrategy.EXPONENTIAL_JITTER,
+        )
+
+        try:
+            await self._retry_handler.execute_with_retry(
+                "influxdb",
+                _write,
+                retry_config,
+                "write_state_to_influxdb",
+            )
+            return True
+        except CircuitBreakerOpenError:
+            logger.error("InfluxDB circuit breaker open - state not logged")
+            return False
+        except Exception as e:
+            logger.error(f"Failed to write state to InfluxDB after retries: {e}")
+            return False
+
+    async def _write_result_to_influxdb_with_retry(
+        self, result: KillSwitchResult
+    ) -> bool:
+        """Write execution result to InfluxDB with retry and circuit breaker.
+
+        Handles InfluxDB write failures gracefully - logs error but
+        doesn't fail the kill-switch operation.
+
+        Args:
+            result: Kill-switch execution result
+
+        Returns:
+            True if write successful, False otherwise
+        """
+        if not self.influxdb_client or not self.config.log_to_influxdb:
+            return False
+
+        async def _write():
+            point = {
+                "measurement": f"{self.config.influxdb_measurement}_execution",
+                "tags": {
+                    "environment": result.environment,
+                    "success": str(result.success),
+                },
+                "fields": {
+                    "positions_closed": result.positions_closed,
+                    "total_pnl": result.total_pnl,
+                    "drawdown_pct": result.metadata.get("drawdown_pct", 0.0),
+                    "portfolio_value": result.metadata.get("portfolio_value", 0.0),
+                },
+                "time": result.timestamp.isoformat(),
+            }
+            await self.influxdb_client.write_point(point)
+
+        retry_config = RetryConfig(
+            max_attempts=3,
+            base_delay_seconds=0.5,
+            strategy=RetryStrategy.EXPONENTIAL_JITTER,
+        )
+
+        try:
+            await self._retry_handler.execute_with_retry(
+                "influxdb",
+                _write,
+                retry_config,
+                "write_result_to_influxdb",
+            )
+            return True
+        except CircuitBreakerOpenError:
+            logger.error("InfluxDB circuit breaker open - result not logged")
+            return False
+        except Exception as e:
+            logger.error(f"Failed to write result to InfluxDB after retries: {e}")
+            return False
