@@ -6,13 +6,12 @@ and shows sample output.
 """
 
 import sys
-from pathlib import Path
+import os
 
-# Bootstrap environment first (must be before any env access)
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+# Add src to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+
 from config.bootstrap import bootstrap
-
-bootstrap(load_env=True)
 
 import numpy as np
 
@@ -145,6 +144,9 @@ def demo_convenience_function():
 
 def main():
     """Run all demonstrations."""
+    # Bootstrap environment first
+    bootstrap(load_env=True)
+
     print("\n" + "=" * 60)
     print("  ECE (Expected Calibration Error) Calculation Demo")
     print("=" * 60)
