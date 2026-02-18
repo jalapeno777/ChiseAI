@@ -83,6 +83,86 @@
           "color": {
             "mode": "thresholds"
           },
+          "mappings": [
+            {
+              "options": {
+                "ARMED": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "ARMED"
+                },
+                "TRIGGERED": {
+                  "color": "red",
+                  "index": 1,
+                  "text": "TRIGGERED"
+                },
+                "DISABLED": {
+                  "color": "yellow",
+                  "index": 2,
+                  "text": "DISABLED"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 1
+      },
+      "id": 22,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "chiseai-influxdb"
+          },
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |\u003e range(start: -1h)\n  |\u003e filter(fn: (r) =\u003e r._measurement == \"kill_switch\")\n  |\u003e filter(fn: (r) =\u003e r._field == \"state\")\n  |\u003e filter(fn: (r) =\u003e r.environment == \"${environment}\")\n  |\u003e last()",
+          "refId": "A"
+        }
+      ],
+      "title": "Kill-Switch Status",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "chiseai-influxdb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -107,7 +187,7 @@
       "gridPos": {
         "h": 8,
         "w": 8,
-        "x": 0,
+        "x": 8,
         "y": 1
       },
       "id": 2,
@@ -174,7 +254,7 @@
       "gridPos": {
         "h": 8,
         "w": 8,
-        "x": 8,
+        "x": 16,
         "y": 1
       },
       "id": 3,
@@ -243,8 +323,8 @@
       "gridPos": {
         "h": 8,
         "w": 8,
-        "x": 16,
-        "y": 1
+        "x": 0,
+        "y": 9
       },
       "id": 4,
       "options": {
