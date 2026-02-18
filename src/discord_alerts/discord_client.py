@@ -295,6 +295,7 @@ class DiscordClient:
                 "healthy": webhook_valid,
                 "connected": self.is_connected,
                 "mode": "webhook",
+                "guild_restricted": self.config.guild_id is not None,
                 "error": None if webhook_valid else "Webhook validation failed",
             }
 
@@ -302,5 +303,34 @@ class DiscordClient:
             "healthy": self.is_connected,
             "connected": self.is_connected,
             "mode": "bot",
+            "guild_restricted": self.config.guild_id is not None,
             "error": None,
         }
+
+    def validate_guild(self, guild_id: str | None) -> bool:
+        """Validate that the guild ID matches the configured restriction.
+
+        If no guild_id is configured in settings, all guilds are allowed.
+        If guild_id is configured, only that specific guild is allowed.
+
+        Args:
+            guild_id: The guild/server ID to validate
+
+        Returns:
+            True if guild is allowed, False otherwise
+        """
+        if self.config.guild_id is None:
+            # No restriction configured, allow all
+            return True
+
+        if guild_id is None:
+            # Guild ID required but not provided
+            logger.warning("Guild ID validation failed: no guild_id provided")
+            return False
+
+        allowed = str(self.config.guild_id) == str(guild_id)
+        if not allowed:
+            logger.warning(
+                f"Guild ID validation failed: {guild_id} != {self.config.guild_id}"
+            )
+        return allowed

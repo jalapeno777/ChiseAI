@@ -633,9 +633,10 @@ class DiscordNotifier:
     CHANNEL_SUMMARIES = "1445752426563899492"
 
     def __init__(self) -> None:
-        """Initialize with bot token."""
+        """Initialize with bot token and guild restriction."""
         self.bot_token = os.getenv("DISCORD_BOT_TOKEN")
         self.webhook_url = os.getenv("DISCORD_WEBHOOK_URL")
+        self.guild_id = os.getenv("DISCORD_GUILD_ID")
 
     async def send_trade_open(
         self,
