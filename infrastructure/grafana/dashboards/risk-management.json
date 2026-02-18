@@ -46,6 +46,87 @@
           "color": {
             "mode": "thresholds"
           },
+          "mappings": [
+            {
+              "options": {
+                "ARMED": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "ARMED"
+                },
+                "TRIGGERED": {
+                  "color": "red",
+                  "index": 1,
+                  "text": "TRIGGERED"
+                },
+                "DISABLED": {
+                  "color": "yellow",
+                  "index": 2,
+                  "text": "DISABLED"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "id": 12,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${influxdb_datasource}"
+          },
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"kill_switch\")\n  |> filter(fn: (r) => r._field == \"state\")\n  |> last()",
+          "refId": "A"
+        }
+      ],
+      "title": "Kill-Switch Status",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${influxdb_datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -71,7 +152,7 @@
       "gridPos": {
         "h": 8,
         "w": 6,
-        "x": 0,
+        "x": 6,
         "y": 1
       },
       "id": 2,
@@ -140,7 +221,7 @@
       "gridPos": {
         "h": 8,
         "w": 6,
-        "x": 6,
+        "x": 12,
         "y": 1
       },
       "id": 3,
@@ -209,7 +290,7 @@
       "gridPos": {
         "h": 8,
         "w": 6,
-        "x": 12,
+        "x": 18,
         "y": 1
       },
       "id": 4,
