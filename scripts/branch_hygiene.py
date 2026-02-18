@@ -34,7 +34,13 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
+
+# Add src to path
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+from config.bootstrap import bootstrap
 
 
 @dataclass
@@ -543,6 +549,9 @@ class BranchHygiene:
 
 def main() -> int:
     """Main entry point."""
+    # Bootstrap environment first
+    bootstrap(load_env=True)
+
     p = argparse.ArgumentParser(description="Branch Hygiene Automation")
     p.add_argument(
         "--base-url",

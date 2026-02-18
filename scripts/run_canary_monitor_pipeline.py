@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
+from config.bootstrap import bootstrap
 from execution.canary import (
     CanaryDeployment,
     CanaryStatus,
@@ -411,6 +412,9 @@ async def query_influxdb_for_canary_measurements(canary_id: str) -> list[dict]:
 
 
 async def main():
+    # Bootstrap environment first
+    bootstrap(load_env=True)
+
     parser = argparse.ArgumentParser(
         description="Run Paper Canary Monitoring Pipeline",
         formatter_class=argparse.RawDescriptionHelpFormatter,
