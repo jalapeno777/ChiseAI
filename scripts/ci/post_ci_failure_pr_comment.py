@@ -18,7 +18,12 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+from pathlib import Path
 from typing import Any, Literal, cast, overload
+
+# Add src to path for config imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
+from config.bootstrap import bootstrap
 
 import requests
 
@@ -173,6 +178,8 @@ def _build_body(
 
 
 def main() -> int:
+    # Bootstrap environment first (must be before any env access)
+    bootstrap(load_env=True)
     forge_url = _getenv("CI_FORGE_URL")
     owner = _getenv("CI_REPO_OWNER")
     repo = _getenv("CI_REPO_NAME")

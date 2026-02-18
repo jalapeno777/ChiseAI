@@ -21,6 +21,10 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+# Add src to path for config imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
+from config.bootstrap import bootstrap
+
 try:
     from scripts.story_id import extract_story_ids, normalize_story_id
 except ModuleNotFoundError:
@@ -35,11 +39,14 @@ DEFAULT_BASE_URL = "http://host.docker.internal:3000"
 DEFAULT_OWNER = "craig"
 DEFAULT_REPO = "ChiseAI"
 
+
 class SweepError(Exception):
     """Raised for recoverable sweep failures."""
 
 
-def _req_json(method: str, url: str, token: str, body: dict[str, Any] | None = None) -> Any:
+def _req_json(
+    method: str, url: str, token: str, body: dict[str, Any] | None = None
+) -> Any:
     data = None
     headers = {"Accept": "application/json", "Authorization": f"token {token}"}
     if body is not None:
@@ -223,6 +230,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Bootstrap environment first
+    bootstrap(load_env=True)
     args = parse_args(argv)
 
     if args.agent_id.strip().lower() != "merlin":
@@ -236,7 +245,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 
-    branches = sorted(set(args.include_branch)) if args.include_branch else discover_candidate_branches()
+    branches = (
+        sorted(set(args.include_branch))
+        if args.include_branch
+        else discover_candidate_branches()
+    )
 
     processed = 0
     skipped: list[str] = []
@@ -263,7 +276,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.consolidation_mode:
         token = os.getenv("GITEA_TOKEN", "")
         if not token and not args.dry_run:
-            print("ERROR: GITEA_TOKEN required for consolidation comments", file=sys.stderr)
+            print(
+                "ERROR: GITEA_TOKEN required for consolidation comments",
+                file=sys.stderr,
+            )
             return 1
 
         comment = build_supersession_comment(

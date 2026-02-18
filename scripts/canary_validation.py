@@ -19,7 +19,14 @@ import asyncio
 import json
 import sys
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any
+
+# Bootstrap environment first (must be before any env access)
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from config.bootstrap import bootstrap
+
+bootstrap(load_env=True)
 
 
 # Test 1: Module Import Validation

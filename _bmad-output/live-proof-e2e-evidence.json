@@ -1,0 +1,112 @@
+{
+  "execution_id": "87b81275",
+  "test_start_time": "2026-02-18T16:52:58.329428+00:00",
+  "test_end_time": "2026-02-18T16:53:01.537603+00:00",
+  "total_latency_ms": 3208.17,
+  "status": "success",
+  "errors": [],
+  "data_ingest": {
+    "BTCUSDT": {
+      "symbol": "BTCUSDT",
+      "price": 67033.0,
+      "timestamp": "1970-01-01T00:00:00+00:00",
+      "ingest_latency_ms": 830.09,
+      "freshness_ms": 1771433579198.64,
+      "status": "stale",
+      "source": "Bybit"
+    },
+    "ETHUSDT": {
+      "symbol": "ETHUSDT",
+      "price": 1968.44,
+      "timestamp": "1970-01-01T00:00:00+00:00",
+      "ingest_latency_ms": 250.72,
+      "freshness_ms": 1771433579449.49,
+      "status": "stale",
+      "source": "Bybit"
+    },
+    "SOLUSDT": {
+      "symbol": "SOLUSDT",
+      "price": 82.09,
+      "timestamp": "1970-01-01T00:00:00+00:00",
+      "ingest_latency_ms": 260.9,
+      "freshness_ms": 1771433579710.54,
+      "status": "stale",
+      "source": "Bybit"
+    }
+  },
+  "llm_enhancement": {
+    "provider_chain": [
+      {
+        "provider": "KIMI K2.5",
+        "timestamp": "2026-02-18T16:52:59.711810+00:00",
+        "status": "failed",
+        "error": "KIMI API error: HTTP 403 - {\"error\":{\"message\":\"Kimi For Coding is currently only available for Coding Agents such as Kimi CLI, Claude Code, Roo Code, Kilo Code, etc.\",\"type\":\"access_terminated_error\"}}",
+        "latency_ms": 0.0
+      },
+      {
+        "provider": "Z.ai GLM-5",
+        "timestamp": "2026-02-18T16:53:00.320587+00:00",
+        "status": "failed",
+        "error": "ZAI_API_KEY not configured",
+        "latency_ms": 0.0
+      },
+      {
+        "provider": "MiniMax",
+        "timestamp": "2026-02-18T16:53:00.320623+00:00",
+        "status": "failed",
+        "error": "'NoneType' object is not subscriptable",
+        "latency_ms": 0.0
+      }
+    ],
+    "selected_provider": "none (fallback)",
+    "base_confidence": 50.0,
+    "llm_confidence": 50.0,
+    "final_confidence": 50.0,
+    "rationale": "All LLM providers unavailable, using base confidence",
+    "total_latency_ms": 1339.71
+  },
+  "signal": {
+    "signal_id": "eeee091d",
+    "token": "BTC/USDT",
+    "direction": "LONG",
+    "confidence": 0.5,
+    "confidence_percent": 50.0,
+    "status": "logged_only",
+    "is_actionable": false,
+    "threshold_met": false,
+    "timestamp": "2026-02-18T16:53:01.051682+00:00"
+  },
+  "paper_trade": {
+    "order_id": "",
+    "symbol": "BTCUSDT",
+    "side": "Buy",
+    "entry_price": 0.0,
+    "exit_price": 0.0,
+    "position_size": 0.0014918025450151417,
+    "notional_value": 100.0,
+    "realized_pnl": 0.0,
+    "return_pct": 0.0,
+    "lifecycle": [
+      {
+        "stage": "pending",
+        "timestamp": "2026-02-18T16:53:01.060137+00:00",
+        "order_id": "",
+        "status": "created",
+        "error": null
+      },
+      {
+        "stage": "error",
+        "timestamp": "2026-02-18T16:53:01.363866+00:00",
+        "order_id": "",
+        "status": "error",
+        "error": "Bybit API error: Qty invalid"
+      }
+    ]
+  },
+  "discord_notifications": {
+    "proof_summary": {
+      "status": "sent",
+      "timestamp": "2026-02-18T16:53:01.536950+00:00"
+    }
+  }
+}

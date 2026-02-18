@@ -7,12 +7,22 @@ Run this script to verify cache hit rates and response times.
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
 import time
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+from config.bootstrap import bootstrap
 from api.cache import QueryCacheManager, CacheStrategy
 
 
 def benchmark_cache_performance():
     """Run performance benchmarks."""
+    # Bootstrap environment first
+    bootstrap(load_env=True)
+
     print("=" * 60)
     print("ChiseAI Query Cache Performance Benchmark")
     print("=" * 60)

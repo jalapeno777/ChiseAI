@@ -5,6 +5,15 @@ This script demonstrates ECE calculation for different scenarios
 and shows sample output.
 """
 
+import sys
+from pathlib import Path
+
+# Bootstrap environment first (must be before any env access)
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from config.bootstrap import bootstrap
+
+bootstrap(load_env=True)
+
 import numpy as np
 
 from confidence.ece import ECECalculator, SignalType, calculate_ece

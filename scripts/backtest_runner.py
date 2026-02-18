@@ -43,6 +43,7 @@ from pathlib import Path
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from config.bootstrap import bootstrap
 from operations.backtest_runner import (
     BacktestKPIs,
     BacktestRunner,
@@ -202,6 +203,14 @@ class BacktestRunnerService:
 
 
 async def main() -> int:
+    """Main entry point.
+
+    Returns:
+        Exit code (0 for success, 1 for error)
+    """
+    # Bootstrap environment first
+    bootstrap(load_env=True)
+
     """Main entry point.
 
     Returns:

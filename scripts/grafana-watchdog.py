@@ -28,6 +28,11 @@ from typing import Optional, Set
 from dataclasses import dataclass, asdict
 from datetime import datetime
 
+from config.bootstrap import bootstrap
+
+# Bootstrap environment first (must be before any env access)
+bootstrap(load_env=True)
+
 import requests
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileSystemEvent
