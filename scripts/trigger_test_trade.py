@@ -345,7 +345,6 @@ async def main() -> int:
     Returns:
         Exit code (0 for success, 1 for failure)
     """
-    # Bootstrap environment first
     bootstrap(load_env=True)
 
     args = parse_args()

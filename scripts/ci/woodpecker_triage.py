@@ -23,8 +23,8 @@ from typing import Any
 from urllib.parse import urlencode, urlparse, urlunparse
 from urllib.request import Request, urlopen
 
-# Add src to path for config imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from config.bootstrap import bootstrap
 
 DEFAULT_BASE_URL = "http://host.docker.internal:8012"
@@ -1100,7 +1100,6 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
-    # Bootstrap environment first (must be before any env access)
     bootstrap(load_env=True)
     parser = build_parser()
     args = parser.parse_args()

@@ -16,8 +16,8 @@ import sys
 from collections.abc import Iterable
 from pathlib import Path
 
-# Add src to path for config imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from config.bootstrap import bootstrap
 
 CANONICAL_FILES = {
@@ -116,7 +116,6 @@ def _is_allowed_work_branch(branch: str) -> bool:
 
 
 def main() -> int:
-    # Bootstrap environment first
     bootstrap(load_env=True)
     env = dict(os.environ)
     ev = _event(env)

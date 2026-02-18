@@ -18,6 +18,7 @@ from datetime import UTC, datetime
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from config.bootstrap import bootstrap
+
 from data.exchange.credential_resolver import (
     get_credential_resolution_status,
     resolve_bybit_credentials,
@@ -489,8 +490,8 @@ def run_auth_tests():
 
 def main():
     """Main entry point."""
-    # Bootstrap environment first
     bootstrap(load_env=True)
+
     # Ensure output directory exists
     os.makedirs("_bmad-output", exist_ok=True)
 

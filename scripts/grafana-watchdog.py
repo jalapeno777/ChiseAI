@@ -34,6 +34,13 @@ from config.bootstrap import bootstrap
 bootstrap(load_env=True)
 
 import requests
+
+# Add src to path and bootstrap
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from config.bootstrap import bootstrap
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileSystemEvent
 
@@ -352,6 +359,8 @@ class GrafanaWatchdog:
 
 def main():
     """Main entry point."""
+    bootstrap(load_env=True)
+
     parser = argparse.ArgumentParser(
         description="Grafana Dashboard Watchdog - Auto-Discovery Framework"
     )

@@ -24,9 +24,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from config.bootstrap import bootstrap
 
-# Bootstrap environment first (must be before any env access)
-bootstrap(load_env=True)
-
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
 
@@ -79,6 +76,8 @@ def _build_metrics_points(metrics_rows: list[dict[str, object]]) -> list[Point]:
 
 
 async def main():
+    bootstrap(load_env=True)
+
     parser = argparse.ArgumentParser(description="Run data source health monitoring")
     parser.add_argument(
         "--interval",

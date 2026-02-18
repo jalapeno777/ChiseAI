@@ -35,6 +35,8 @@ from config.bootstrap import bootstrap
 
 bootstrap(load_env=True)
 
+from config.bootstrap import bootstrap
+
 from backtesting.kpi_writer import BacktestKPIWriter, BacktestKPIs
 
 
@@ -152,6 +154,8 @@ def main() -> int:
     Returns:
         Exit code (0 for success, 1 for error)
     """
+    bootstrap(load_env=True)
+
     parser = argparse.ArgumentParser(
         description="Populate backtest_kpis measurement with sample data",
         formatter_class=argparse.RawDescriptionHelpFormatter,
