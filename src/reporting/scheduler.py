@@ -22,7 +22,7 @@ import aiohttp
 
 from .anomaly_detector import AnomalyDetector
 from .daily_generator import DailyReportGenerator
-from .models import AnomalyAlert, ReportSchedule
+from .models import AnomalyAlert, PaperHealthReport, ReportSchedule
 from .weekly_generator import WeeklyPerformanceReport
 
 logger = logging.getLogger(__name__)
@@ -253,6 +253,8 @@ class ReportScheduler:
             await self._generate_and_send_daily(schedule)
         elif schedule.report_type == "weekly":
             await self._generate_and_send_weekly(schedule)
+        elif schedule.report_type == "paper_health":
+            await self._generate_and_send_paper_health(schedule)
 
         # Run anomaly detection
         await self._run_anomaly_detection(schedule)
@@ -454,9 +456,11 @@ class ReportScheduler:
             async with aiohttp.ClientSession() as session:
                 for i, chunk in enumerate(chunks):
                     payload = {
-                        "content": f"**{title}** (Part {i + 1}/{len(chunks)})\n\n{chunk}"
-                        if len(chunks) > 1
-                        else f"**{title}**\n\n{chunk}",
+                        "content": (
+                            f"**{title}** (Part {i + 1}/{len(chunks)})\n\n{chunk}"
+                            if len(chunks) > 1
+                            else f"**{title}**\n\n{chunk}"
+                        ),
                     }
 
                     async with session.post(
@@ -544,6 +548,142 @@ class ReportScheduler:
             chunks.append(current_chunk.strip())
 
         return chunks
+
+    async def _generate_and_send_paper_health(self, schedule: ReportSchedule) -> None:
+        """Generate and send paper health report.
+
+        Args:
+            schedule: Schedule configuration
+
+        For PAPER-004: Daily paper trading health/performance reports
+        """
+        try:
+            from portfolio.paper_tracker import PaperTracker
+
+            paper_tracker = PaperTracker()
+        except Exception as e:
+            logger.warning(f"Could not initialize PaperTracker: {e}")
+            paper_tracker = None
+
+        try:
+            # Generate paper health report
+            report = await self.daily_generator.generate_paper_health_report(
+                paper_tracker=paper_tracker
+            )
+
+            # Save to disk
+            await self._save_paper_health_report(report, schedule)
+
+            # Send to Discord
+            if schedule.discord_webhook:
+                status_emoji = {
+                    "HEALTHY": "✅",
+                    "DEGRADED": "⚠️",
+                    "CRITICAL": "🚨",
+                }.get(report.health_metrics.overall_health, "⚠️")
+
+                await self._send_to_discord(
+                    schedule.discord_webhook,
+                    report.to_markdown(),
+                    f"{status_emoji} Paper Trading Health Report - {report.date.strftime('%Y-%m-%d')}",
+                )
+
+            # Send email (if configured)
+            if schedule.email_recipients:
+                await self._send_email(
+                    schedule.email_recipients,
+                    report.to_markdown(),
+                    f"Paper Trading Health Report - {report.date.strftime('%Y-%m-%d')}",
+                )
+
+            # Log summary
+            status = report.health_metrics.overall_health
+            all_pass = report.health_metrics.all_pass
+            logger.info(
+                f"Paper health report sent: date={report.date.strftime('%Y-%m-%d')}, "
+                f"status={status}, all_pass={all_pass}"
+            )
+
+            if report.warnings:
+                for warning in report.warnings:
+                    logger.warning(f"Paper health warning: {warning}")
+
+        except Exception as e:
+            logger.error(f"Failed to generate/send paper health report: {e}")
+
+    async def _save_paper_health_report(
+        self,
+        report: PaperHealthReport,
+        schedule: ReportSchedule,
+    ) -> None:
+        """Save paper health report to disk.
+
+        Args:
+            report: Paper health report to save
+            schedule: Schedule configuration
+        """
+        import json
+        import os
+        from datetime import UTC
+
+        # Create directory structure: reports/paper/daily/YYYY-MM-DD/
+        report_dir = os.path.join(schedule.output_dir, "paper", "daily")
+        date_dir = os.path.join(report_dir, report.date.strftime("%Y-%m-%d"))
+        os.makedirs(date_dir, exist_ok=True)
+
+        # Save as JSON
+        json_path = os.path.join(date_dir, "report.json")
+        with open(json_path, "w") as f:
+            json.dump(report.to_dict(), f, indent=2)
+
+        # Save as Markdown
+        md_path = os.path.join(date_dir, "report.md")
+        with open(md_path, "w") as f:
+            f.write(report.to_markdown())
+
+        logger.debug(f"Paper health report saved: {json_path}, {md_path}")
+
+        # Clean up old reports
+        await self._cleanup_old_paper_health_reports(report_dir, schedule.archive_days)
+
+    async def _cleanup_old_paper_health_reports(
+        self,
+        report_dir: str,
+        max_days: int,
+    ) -> None:
+        """Clean up old paper health reports.
+
+        Args:
+            report_dir: Base directory for paper health reports
+            max_days: Maximum age in days
+        """
+        import shutil
+        from datetime import UTC
+
+        cutoff = datetime.now(UTC) - timedelta(days=max_days)
+        daily_dir = os.path.join(report_dir, "daily")
+
+        if not os.path.exists(daily_dir):
+            return
+
+        try:
+            for date_str in os.listdir(daily_dir):
+                date_dir = os.path.join(daily_dir, date_str)
+                if not os.path.isdir(date_dir):
+                    continue
+
+                try:
+                    dir_date = datetime.strptime(date_str, "%Y-%m-%d").replace(
+                        tzinfo=UTC
+                    )
+                    if dir_date < cutoff:
+                        shutil.rmtree(date_dir)
+                        logger.debug(f"Removed old paper health report: {date_dir}")
+                except ValueError:
+                    # Invalid directory name format
+                    continue
+        except Exception as e:
+            logger.warning(f"Failed to cleanup old paper health reports: {e}")
 
     async def generate_report_now(
         self,

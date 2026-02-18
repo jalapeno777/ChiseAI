@@ -387,3 +387,177 @@ class ReportSchedule:
             "last_run": self.last_run.isoformat() if self.last_run else None,
             "next_run": self.next_run.isoformat() if self.next_run else None,
         }
+
+
+@dataclass
+class PaperHealthMetrics:
+    """Paper trading health metrics for monitoring system health.
+
+    For PAPER-004: Daily paper trading health/performance reports
+    """
+
+    redis_sync_status: str = "unknown"  # "synced", "diverged", "disconnected"
+    redis_error_rate_pct: float = 0.0
+    validation_failure_rate_pct: float = 0.0
+    circuit_breaker_state: str = "closed"  # "closed", "open", "half_open"
+    kill_switch_armed: bool = False
+    data_freshness_seconds: float = 0.0
+    last_data_update: datetime | None = None
+
+    # Health check results
+    redis_sync_pass: bool = False
+    validation_pass: bool = False
+    circuit_breaker_pass: bool = False
+    kill_switch_pass: bool = False
+    data_freshness_pass: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "redis_sync_status": self.redis_sync_status,
+            "redis_error_rate_pct": round(self.redis_error_rate_pct, 2),
+            "validation_failure_rate_pct": round(self.validation_failure_rate_pct, 2),
+            "circuit_breaker_state": self.circuit_breaker_state,
+            "kill_switch_armed": self.kill_switch_armed,
+            "data_freshness_seconds": round(self.data_freshness_seconds, 2),
+            "last_data_update": (
+                self.last_data_update.isoformat() if self.last_data_update else None
+            ),
+            "health_checks": {
+                "redis_sync": "PASS" if self.redis_sync_pass else "FAIL",
+                "validation": "PASS" if self.validation_pass else "FAIL",
+                "circuit_breaker": "PASS" if self.circuit_breaker_pass else "FAIL",
+                "kill_switch": "PASS" if self.kill_switch_pass else "FAIL",
+                "data_freshness": "PASS" if self.data_freshness_pass else "FAIL",
+            },
+        }
+
+    @property
+    def overall_health(self) -> str:
+        """Return overall health status."""
+        checks = [
+            self.redis_sync_pass,
+            self.validation_pass,
+            self.circuit_breaker_pass,
+            self.kill_switch_pass,
+            self.data_freshness_pass,
+        ]
+        passed = sum(checks)
+        if passed == len(checks):
+            return "HEALTHY"
+        elif passed >= len(checks) // 2:
+            return "DEGRADED"
+        else:
+            return "CRITICAL"
+
+    @property
+    def all_pass(self) -> bool:
+        """Return True if all health checks pass."""
+        return all(
+            [
+                self.redis_sync_pass,
+                self.validation_pass,
+                self.circuit_breaker_pass,
+                self.kill_switch_pass,
+                self.data_freshness_pass,
+            ]
+        )
+
+
+@dataclass
+class PaperHealthReport:
+    """Daily paper trading health/performance report.
+
+    For PAPER-004: Automated daily paper-trading health/performance report
+    """
+
+    date: datetime
+    health_metrics: PaperHealthMetrics = field(default_factory=PaperHealthMetrics)
+    portfolio_value: float = 0.0
+    total_pnl: float = 0.0
+    open_positions: int = 0
+    active_strategies: int = 0
+    generated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    warnings: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "date": self.date.strftime("%Y-%m-%d"),
+            "health_status": self.health_metrics.overall_health,
+            "all_checks_pass": self.health_metrics.all_pass,
+            "health_metrics": self.health_metrics.to_dict(),
+            "portfolio": {
+                "value": round(self.portfolio_value, 2),
+                "total_pnl": round(self.total_pnl, 2),
+                "open_positions": self.open_positions,
+            },
+            "active_strategies": self.active_strategies,
+            "generated_at": self.generated_at.isoformat(),
+            "warnings": self.warnings,
+        }
+
+    def to_markdown(self) -> str:
+        """Generate Markdown formatted health report."""
+        status_emoji = {
+            "HEALTHY": "✅",
+            "DEGRADED": "⚠️",
+            "CRITICAL": "🚨",
+        }.get(self.health_metrics.overall_health, "⚠️")
+
+        lines = [
+            "# 🏥 Paper Trading Health Report",
+            f"",
+            f"**Date:** {self.date.strftime('%Y-%m-%d')}",
+            f"**Generated:** {self.generated_at.strftime('%Y-%m-%d %H:%M:%S UTC')}",
+            f"**Status:** {status_emoji} {self.health_metrics.overall_health}",
+            f"",
+            "## 🏥 Health Check Summary",
+            f"",
+            f"| Check | Status | Value |",
+            f"|-------|--------|-------|",
+            f"| Redis Sync | {'✅ PASS' if self.health_metrics.redis_sync_pass else '❌ FAIL'} | {self.health_metrics.redis_sync_status} |",
+            f"| Validation | {'✅ PASS' if self.health_metrics.validation_pass else '❌ FAIL'} | {self.health_metrics.validation_failure_rate_pct:.1f}% failure rate |",
+            f"| Circuit Breaker | {'✅ PASS' if self.health_metrics.circuit_breaker_pass else '❌ FAIL'} | {self.health_metrics.circuit_breaker_state} |",
+            f"| Kill Switch | {'✅ PASS' if self.health_metrics.kill_switch_pass else '❌ FAIL'} | {'ARMED' if self.health_metrics.kill_switch_armed else 'disarmed'} |",
+            f"| Data Freshness | {'✅ PASS' if self.health_metrics.data_freshness_pass else '❌ FAIL'} | {self.health_metrics.data_freshness_seconds:.0f}s ago |",
+            f"",
+            "## 📊 System Metrics",
+            f"",
+            f"| Metric | Value |",
+            f"|--------|-------|",
+            f"| Redis Error Rate | {self.health_metrics.redis_error_rate_pct:.2f}% |",
+            f"| Validation Failure Rate | {self.health_metrics.validation_failure_rate_pct:.2f}% |",
+            f"| Data Freshness | {self.health_metrics.data_freshness_seconds:.0f} seconds |",
+            f"| Last Data Update | {self.health_metrics.last_data_update.strftime('%Y-%m-%d %H:%M:%S UTC') if self.health_metrics.last_data_update else 'Never'} |",
+            f"",
+            "## 💰 Portfolio Summary",
+            f"",
+            f"| Metric | Value |",
+            f"|--------|-------|",
+            f"| Portfolio Value | ${self.portfolio_value:,.2f} |",
+            f"| Total PnL | ${self.total_pnl:,.2f} |",
+            f"| Open Positions | {self.open_positions} |",
+            f"| Active Strategies | {self.active_strategies} |",
+            f"",
+        ]
+
+        if self.warnings:
+            lines.extend(
+                [
+                    "## ⚠️ Warnings",
+                    f"",
+                ]
+            )
+            for warning in self.warnings:
+                lines.append(f"- {warning}")
+            lines.append("")
+
+        lines.extend(
+            [
+                "---",
+                "*Report generated by ChiseAI Paper Trading Health Monitor*",
+            ]
+        )
+
+        return "\n".join(lines)

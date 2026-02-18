@@ -25,6 +25,8 @@ from .models import (
     TradeMetrics,
     RiskMetrics,
     StrategyPerformance,
+    PaperHealthMetrics,
+    PaperHealthReport,
 )
 
 __version__ = "1.0.0"
@@ -43,4 +45,6 @@ __all__ = [
     "TradeMetrics",
     "RiskMetrics",
     "StrategyPerformance",
+    "PaperHealthMetrics",
+    "PaperHealthReport",
 ]
