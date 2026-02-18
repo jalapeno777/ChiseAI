@@ -366,7 +366,6 @@ Example Line Protocol:
 
 
 def main():
-    # Bootstrap environment first
     bootstrap(load_env=True)
 
     parser = argparse.ArgumentParser(
