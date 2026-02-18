@@ -10,6 +10,13 @@ it stays within the 100ms threshold.
 """
 
 import asyncio
+import sys
+import os
+
+# Add src to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+
+from config.bootstrap import bootstrap
 from src.brain.shadow_testing import (
     ShadowTestConfig,
     ShadowTester,
@@ -180,6 +187,9 @@ async def demo_convenience_function():
 
 async def main():
     """Run all demonstrations."""
+    # Bootstrap environment first
+    bootstrap(load_env=True)
+
     print()
     print("*" * 70)
     print("SHADOW TESTING DEMONSTRATION")
