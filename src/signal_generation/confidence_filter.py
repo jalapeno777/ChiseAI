@@ -2,6 +2,9 @@
 
 Implements the 75% actionable threshold filter for signals.
 Signals below 75% are logged but not surfaced as actionable.
+
+Supports optional LLM-enhanced confidence analysis when USE_LLM_ENHANCEMENT
+environment variable is set to "true".
 """
 
 from __future__ import annotations
@@ -16,6 +19,15 @@ if TYPE_CHECKING:
     from signal_generation.models import Signal
 
 logger = logging.getLogger(__name__)
+
+# LLM enhancer availability flag
+LLM_ENHANCER_AVAILABLE = False
+try:
+    from signal_generation.llm_enhancer import LLMConfidenceEnhancer
+
+    LLM_ENHANCER_AVAILABLE = True
+except ImportError:
+    logger.debug("LLMConfidenceEnhancer not available")
 
 
 # InfluxDB availability flag - graceful degradation if not installed
@@ -39,12 +51,18 @@ class FilterResult:
         threshold: The confidence threshold used (0.0-1.0)
         confidence: The signal's confidence score
         reason: Explanation of filter decision
+        llm_enhanced: Whether confidence was LLM-enhanced
+        llm_rationale: LLM rationale for enhancement (if applicable)
+        base_confidence: Original confidence before LLM enhancement
     """
 
     is_actionable: bool
     threshold: float
     confidence: float
     reason: str
+    llm_enhanced: bool = False
+    llm_rationale: str | None = None
+    base_confidence: float | None = None
 
 
 @dataclass
@@ -127,30 +145,68 @@ class ConfidenceFilter:
     2. SIGNAL_CONFIDENCE_THRESHOLD environment variable
     3. Default value (0.75)
 
+    Supports optional LLM-enhanced confidence analysis when
+    USE_LLM_ENHANCEMENT environment variable is "true".
+    When enabled, blends base confidence with LLM analysis:
+    final_confidence = (base_confidence * 0.7) + (llm_confidence * 0.3)
+
     Tracks metrics for Grafana export:
     - Total signals processed
     - Signals filtered (below threshold)
     - Signals passed (above threshold)
     - Filter rate (filtered/total)
+    - LLM enhancement rate (if enabled)
     """
 
     DEFAULT_THRESHOLD = 0.75
     MIN_THRESHOLD = 0.50
     MAX_THRESHOLD = 0.95
 
-    def __init__(self, threshold: float | None = None):
+    def __init__(
+        self,
+        threshold: float | None = None,
+        use_llm_enhancement: bool | None = None,
+    ):
         """Initialize confidence filter.
 
         Args:
             threshold: Optional custom threshold (0.0-1.0).
                 If not provided, uses environment variable or default.
+            use_llm_enhancement: Whether to use LLM enhancement.
+                If not provided, uses USE_LLM_ENHANCEMENT env var.
         """
         self.threshold = self._resolve_threshold(threshold)
         self.metrics = FilterMetrics()
         self._influx_exporter: InfluxDBExporter | None = None
-        logger.info(
-            f"ConfidenceFilter initialized with threshold: {self.threshold:.0%}"
-        )
+
+        # Initialize LLM enhancer if available and enabled
+        self._llm_enhancer: Any = None
+        self._use_llm = self._resolve_use_llm(use_llm_enhancement)
+        self._llm_enhanced_count = 0
+
+        if self._use_llm and LLM_ENHANCER_AVAILABLE:
+            try:
+                self._llm_enhancer = LLMConfidenceEnhancer()  # type: ignore
+                if self._llm_enhancer.is_available():
+                    provider = self._llm_enhancer.get_provider()
+                    logger.info(
+                        f"ConfidenceFilter initialized with threshold: "
+                        f"{self.threshold:.0%} and LLM enhancement "
+                        f"(provider: {provider})"
+                    )
+                else:
+                    logger.warning(
+                        "LLM enhancement enabled but no LLM provider available"
+                    )
+                    self._llm_enhancer = None
+            except Exception as e:
+                logger.warning(f"Failed to initialize LLM enhancer: {e}")
+                self._llm_enhancer = None
+        else:
+            logger.info(
+                f"ConfidenceFilter initialized with threshold: {self.threshold:.0%} "
+                f"(LLM enhancement disabled)"
+            )
 
     def _resolve_threshold(self, override: float | None) -> float:
         """Resolve threshold from override, env var, or default.
@@ -176,6 +232,21 @@ class ConfidenceFilter:
 
         return self.DEFAULT_THRESHOLD
 
+    def _resolve_use_llm(self, override: bool | None) -> bool:
+        """Resolve whether to use LLM enhancement from override or env var.
+
+        Args:
+            override: Optional override value
+
+        Returns:
+            True if LLM enhancement should be used
+        """
+        if override is not None:
+            return override
+
+        env_value = os.getenv("USE_LLM_ENHANCEMENT", "false").lower()
+        return env_value in ("true", "1", "yes", "on")
+
     def _clamp_threshold(self, threshold: float) -> float:
         """Clamp threshold to valid range.
 
@@ -193,29 +264,66 @@ class ConfidenceFilter:
             )
         return clamped
 
-    def filter(self, signal: Signal) -> FilterResult:
+    def filter(
+        self,
+        signal: Signal,
+        indicators: dict[str, Any] | None = None,
+    ) -> FilterResult:
         """Filter a signal based on confidence threshold.
+
+        Optionally uses LLM enhancement if enabled. When LLM enhancement
+        is active, the final confidence is blended:
+        final = (base_confidence * 0.7) + (llm_confidence * 0.3)
 
         Args:
             signal: The signal to filter
+            indicators: Optional technical indicators for LLM analysis
 
         Returns:
             FilterResult with decision and explanation
         """
-        confidence = signal.confidence
+        base_confidence = signal.confidence
+        final_confidence = base_confidence
+        llm_enhanced = False
+        llm_rationale = None
+
+        # Apply LLM enhancement if enabled and available
+        if self._use_llm and self._llm_enhancer is not None:
+            try:
+                llm_result = self._llm_enhancer.enhance(signal, indicators)
+                final_confidence = self._llm_enhancer.calculate_blended_confidence(
+                    base_confidence, llm_result.enhanced_confidence
+                )
+                llm_enhanced = True
+                llm_rationale = llm_result.rationale
+                self._llm_enhanced_count += 1
+
+                logger.debug(
+                    f"LLM enhancement applied: {base_confidence:.1%} -> "
+                    f"{final_confidence:.1%} "
+                    f"(LLM: {llm_result.enhanced_confidence:.0f}%)"
+                )
+            except Exception as e:
+                logger.warning(f"LLM enhancement failed, using base confidence: {e}")
+                final_confidence = base_confidence
+
         self.metrics.total_processed += 1
 
-        if confidence >= self.threshold:
+        if final_confidence >= self.threshold:
             self.metrics.signals_passed += 1
             self.metrics.last_updated = datetime.now(UTC)
             return FilterResult(
                 is_actionable=True,
                 threshold=self.threshold,
-                confidence=confidence,
+                confidence=final_confidence,
                 reason=(
-                    f"Signal confidence {confidence:.1%} meets threshold "
+                    f"Signal confidence {final_confidence:.1%} meets threshold "
                     f"{self.threshold:.0%}"
+                    + (" (LLM-enhanced)" if llm_enhanced else "")
                 ),
+                llm_enhanced=llm_enhanced,
+                llm_rationale=llm_rationale,
+                base_confidence=base_confidence,
             )
         else:
             self.metrics.signals_filtered += 1
@@ -223,11 +331,15 @@ class ConfidenceFilter:
             return FilterResult(
                 is_actionable=False,
                 threshold=self.threshold,
-                confidence=confidence,
+                confidence=final_confidence,
                 reason=(
-                    f"Signal confidence {confidence:.1%} below threshold "
+                    f"Signal confidence {final_confidence:.1%} below threshold "
                     f"{self.threshold:.0%} - logged only"
+                    + (" (LLM-enhanced)" if llm_enhanced else "")
                 ),
+                llm_enhanced=llm_enhanced,
+                llm_rationale=llm_rationale,
+                base_confidence=base_confidence,
             )
 
     def should_emit(self, signal: Signal) -> bool:
@@ -306,6 +418,45 @@ class ConfidenceFilter:
         """
         # For now, return current state - can be extended to track history
         return [self.metrics.to_dict()]
+
+    def is_llm_enhancement_enabled(self) -> bool:
+        """Check if LLM enhancement is enabled.
+
+        Returns:
+            True if LLM enhancement is active
+        """
+        return self._use_llm and self._llm_enhancer is not None
+
+    def get_llm_enhancement_stats(self) -> dict[str, Any]:
+        """Get LLM enhancement statistics.
+
+        Returns:
+            Dictionary with LLM enhancement stats
+        """
+        if not self._llm_enhancer:
+            return {
+                "enabled": False,
+                "provider": "none",
+                "enhanced_count": 0,
+                "cache_stats": {},
+            }
+
+        return {
+            "enabled": True,
+            "provider": self._llm_enhancer.get_provider(),
+            "enhanced_count": self._llm_enhanced_count,
+            "cache_stats": self._llm_enhancer.get_cache_stats(),
+        }
+
+    def get_llm_interaction_log(self) -> list[dict[str, Any]]:
+        """Get LLM interaction log for audit.
+
+        Returns:
+            List of LLM interaction log entries
+        """
+        if self._llm_enhancer:
+            return self._llm_enhancer.get_interaction_log()
+        return []
 
 
 class InfluxDBExporter:
