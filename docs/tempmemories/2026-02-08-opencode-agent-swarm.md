@@ -18,7 +18,7 @@ Opencode agents were defined under `.opencode/agent/*.md` for ChiseAI. Jarvis is
 - Execution agents:
   - `dev` (model `kimi-for-coding/k2p5`, temp `0.2`)
   - `senior-dev` (model `kimi-for-coding/k2p5`, temp `0.15`)
-  - `quickdev` (model `minimax/MiniMax-M2.1`, temp `0.35`)
+  - `quickdev` (model `minimax/MiniMax-M2.5`, temp `0.35`)
 - Research and review agents:
   - `research` (repo-docs and forensics, no edits)
   - `web-research` (online search and citations, no edits)

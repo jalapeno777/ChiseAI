@@ -401,7 +401,7 @@ ChiseAI is currently in **planning/foundation** for this repository. The authori
 - **Observability/UI:** Grafana (primary), Discord bot (alerts). Optional: Streamlit (research/explainability UI)
 - **Backend:** Python, microservices architecture
 - **Data:** InfluxDB (time-series), PostgreSQL (relational), Redis (cache)
-- **ML/AI:** Multi-LLM orchestration (GLM-4.7, Kimi 2.5, MiniMax 2.1; configurable fallbacks)
+- **ML/AI:** Multi-LLM orchestration (Kimi 2.5, GLM-5, GLM-4.7, MiniMax 2.5; configurable fallbacks)
 - **Infrastructure:** Docker, Kubernetes-ready, Terraform IaC
 
 ---
