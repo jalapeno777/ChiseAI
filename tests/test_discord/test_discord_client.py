@@ -212,3 +212,61 @@ class TestDiscordClient:
 
         assert "mode" in health
         assert health["mode"] == "bot"
+
+    def test_validate_guild_no_restriction(self, config) -> None:
+        """Test guild validation with no guild restriction."""
+        client = DiscordClient(config)
+
+        # No guild_id configured, should allow any guild
+        assert client.validate_guild("12345") is True
+        assert client.validate_guild(None) is True
+        assert client.validate_guild("any_guild") is True
+
+    def test_validate_guild_with_restriction(self) -> None:
+        """Test guild validation with specific guild restriction."""
+        restricted_config = DiscordConfig(
+            bot_token="test",
+            guild_id="allowed_guild_123",
+        )
+        client = DiscordClient(restricted_config)
+
+        # Should allow only the configured guild
+        assert client.validate_guild("allowed_guild_123") is True
+        assert client.validate_guild("wrong_guild") is False
+        assert client.validate_guild(None) is False
+
+    def test_validate_guild_string_conversion(self) -> None:
+        """Test guild validation with type conversion."""
+        restricted_config = DiscordConfig(
+            bot_token="test",
+            guild_id=12345,  # Integer
+        )
+        client = DiscordClient(restricted_config)
+
+        # Should convert to string for comparison
+        assert client.validate_guild("12345") is True
+        assert client.validate_guild(12345) is True
+
+    @pytest.mark.asyncio
+    async def test_health_check_shows_guild_restriction(self, config) -> None:
+        """Test health check includes guild restriction status."""
+        restricted_config = DiscordConfig(
+            webhook_url="https://test.webhook",
+            guild_id="restricted_guild",
+        )
+        client = DiscordClient(restricted_config)
+        client.is_connected = True
+
+        health = await client.health_check()
+
+        assert health["guild_restricted"] is True
+
+    @pytest.mark.asyncio
+    async def test_health_check_no_guild_restriction(self, webhook_config) -> None:
+        """Test health check shows no guild restriction."""
+        client = DiscordClient(webhook_config)
+        client.is_connected = True
+
+        health = await client.health_check()
+
+        assert health["guild_restricted"] is False
