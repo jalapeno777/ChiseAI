@@ -22,6 +22,11 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from config.bootstrap import bootstrap
+
+# Bootstrap environment first (must be before any env access)
+bootstrap(load_env=True)
+
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
 
@@ -215,9 +220,13 @@ async def main():
                 if points:
                     write_api.write(bucket=args.influxdb_bucket, record=points)
             except Exception:
-                logger.exception("Failed to export datasource health metrics to InfluxDB")
+                logger.exception(
+                    "Failed to export datasource health metrics to InfluxDB"
+                )
             try:
-                await asyncio.wait_for(shutdown_event.wait(), timeout=max(args.interval, 5.0))
+                await asyncio.wait_for(
+                    shutdown_event.wait(), timeout=max(args.interval, 5.0)
+                )
             except TimeoutError:
                 continue
 

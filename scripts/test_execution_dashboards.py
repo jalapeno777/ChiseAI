@@ -29,6 +29,11 @@ from typing import Optional
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
+from config.bootstrap import bootstrap
+
+# Bootstrap environment first (must be before any env access)
+bootstrap(load_env=True)
+
 try:
     from influxdb_client import InfluxDBClient, Point
     from influxdb_client.client.write_api import SYNCHRONOUS

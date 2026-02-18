@@ -25,8 +25,12 @@ import os
 import sys
 import time
 import urllib.error
-import urllib.parse
 import urllib.request
+
+from config.bootstrap import bootstrap
+
+# Bootstrap environment first (must be before any env access)
+bootstrap(load_env=True)
 
 
 def _req_json(method: str, url: str, token: str, body: dict | None = None) -> dict:

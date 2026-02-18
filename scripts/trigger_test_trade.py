@@ -27,6 +27,11 @@ from typing import Any
 # Add src to path for imports
 sys.path.insert(0, "src")
 
+from config.bootstrap import bootstrap
+
+# Bootstrap environment first (must be before any env access)
+bootstrap(load_env=True)
+
 from execution.kill_switch.executor import KillSwitchExecutor
 from execution.kill_switch.state import KillSwitchState
 from execution.paper.orchestrator import PaperTradingOrchestrator

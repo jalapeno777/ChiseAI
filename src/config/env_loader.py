@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any
+from typing import Any, cast
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +109,7 @@ class EnvLoader:
         Returns:
             String value or default
         """
-        return self.get(key, default, required, str)
+        return cast(str | None, self.get(key, default, required, str))
 
     def get_int(
         self, key: str, default: int | None = None, required: bool = False
@@ -124,7 +124,7 @@ class EnvLoader:
         Returns:
             Integer value or default
         """
-        return self.get(key, default, required, int)
+        return cast(int | None, self.get(key, default, required, int))
 
     def get_float(
         self, key: str, default: float | None = None, required: bool = False
@@ -139,7 +139,7 @@ class EnvLoader:
         Returns:
             Float value or default
         """
-        return self.get(key, default, required, float)
+        return cast(float | None, self.get(key, default, required, float))
 
     def get_bool(self, key: str, default: bool = False, required: bool = False) -> bool:
         """Get boolean environment variable.
@@ -152,7 +152,7 @@ class EnvLoader:
         Returns:
             Boolean value or default
         """
-        return self.get(key, default, required, bool)
+        return cast(bool, self.get(key, default, required, bool))
 
 
 # Global loader instances for common prefixes

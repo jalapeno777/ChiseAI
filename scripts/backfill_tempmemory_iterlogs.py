@@ -11,7 +11,13 @@ This script is idempotent and only inserts missing headings.
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+from config.bootstrap import bootstrap
 
 ITERLOG_DIR = Path("docs/tempmemories")
 GLOB = "iterlog-*.md"
@@ -45,6 +51,9 @@ def _ensure_sections(text: str) -> tuple[str, bool]:
 
 
 def main() -> int:
+    # Bootstrap environment first
+    bootstrap(load_env=True)
+
     ap = argparse.ArgumentParser(description="Backfill tempmemory iterlog sections")
     ap.add_argument(
         "--check",
