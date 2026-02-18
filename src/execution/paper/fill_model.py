@@ -1,456 +1,353 @@
-"""Fill model for paper trading order execution simulation.
+"""Fill model for paper trading with realistic slippage.
 
-Provides realistic fill price calculation and slippage modeling
-for paper trading simulations.
+Implements fill price calculation with configurable slippage
+and latency simulation to mimic real exchange behavior.
+
+For PAPER-LOOP-001: Paper Trading Order Simulator
 """
 
 from __future__ import annotations
 
-import logging
+import asyncio
 import random
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+import uuid
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from execution.paper.models import OrderSide, OrderType, PaperOrder
-
-logger = logging.getLogger(__name__)
-
-# Import new market realism models
-try:
-    from execution.paper.slippage_model import SlippageModel, SlippageConfig
-    from execution.paper.latency_model import LatencyModel, LatencyConfig
-    from execution.paper.market_impact import MarketImpact, MarketImpactConfig
-    from execution.paper.fill_probability import FillProbability, FillProbabilityConfig
-    from execution.paper.config_loader import MarketRealismConfig
-
-    MARKET_REALISM_AVAILABLE = True
-except ImportError:
-    MARKET_REALISM_AVAILABLE = False
-    logger.warning("Market realism models not available, using legacy fill model")
+    from .models import PaperFill, PaperOrder
 
 
 @dataclass
-class FillModelConfig:
-    """Configuration for fill model behavior.
+class SlippageConfig:
+    """Configuration for slippage simulation.
 
     Attributes:
-        base_slippage_bps: Base slippage in basis points (default 5 bps = 0.05%)
-        volatility_factor: Multiplier for volatility-based slippage
-        max_slippage_bps: Maximum allowed slippage
-        min_fill_delay_ms: Minimum fill delay in milliseconds
-        max_fill_delay_ms: Maximum fill delay in milliseconds
-        partial_fill_probability: Probability of partial fill (0.0-1.0)
-        market_order_fill_probability: Probability of immediate fill for market orders
-        use_market_realism: Whether to use new market realism models
-        symbol: Trading symbol for per-symbol config lookup
-        exchange: Exchange name for per-exchange config lookup
+        min_slippage_pct: Minimum slippage percentage (e.g., 0.01 for 0.01%)
+        max_slippage_pct: Maximum slippage percentage (e.g., 0.05 for 0.05%)
+        volatility_factor: Multiplier for market volatility impact (default 1.0)
     """
 
-    base_slippage_bps: float = 5.0
+    min_slippage_pct: float = 0.01
+    max_slippage_pct: float = 0.05
     volatility_factor: float = 1.0
-    max_slippage_bps: float = 50.0  # 0.5% max slippage
-    min_fill_delay_ms: float = 50.0
-    max_fill_delay_ms: float = 200.0
-    partial_fill_probability: float = 0.1
-    market_order_fill_probability: float = 0.95
-    use_market_realism: bool = True
-    symbol: str | None = None
-    exchange: str | None = None
-    market_data: dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        """Validate configuration."""
+        if self.min_slippage_pct < 0 or self.max_slippage_pct < 0:
+            raise ValueError("Slippage percentages must be non-negative")
+        if self.min_slippage_pct > self.max_slippage_pct:
+            raise ValueError("min_slippage_pct cannot exceed max_slippage_pct")
+        if self.volatility_factor < 0:
+            raise ValueError("volatility_factor must be non-negative")
+
+
+@dataclass
+class LatencyConfig:
+    """Configuration for latency simulation.
+
+    Attributes:
+        min_latency_ms: Minimum latency in milliseconds
+        max_latency_ms: Maximum latency in milliseconds
+    """
+
+    min_latency_ms: float = 50.0
+    max_latency_ms: float = 200.0
+
+    def __post_init__(self) -> None:
+        """Validate configuration."""
+        if self.min_latency_ms < 0 or self.max_latency_ms < 0:
+            raise ValueError("Latency values must be non-negative")
+        if self.min_latency_ms > self.max_latency_ms:
+            raise ValueError("min_latency_ms cannot exceed max_latency_ms")
+
+    def get_latency_seconds(self) -> float:
+        """Get random latency in seconds.
+
+        Returns:
+            Random latency between min and max, in seconds
+        """
+        latency_ms = random.uniform(self.min_latency_ms, self.max_latency_ms)
+        return latency_ms / 1000.0
 
 
 class FillModel:
-    """Models realistic order fills for paper trading.
+    """Fill model for paper trading with slippage and latency simulation.
 
-    Calculates fill prices with slippage and simulates fill delays.
-    Provides deterministic fills for reproducible backtesting.
+    This class simulates realistic fill behavior including:
+    - Price slippage for market orders (0.01-0.05% by default)
+    - Latency simulation (50-200ms by default)
+    - Limit order fill logic based on market price crossing
 
-    Supports both legacy fill model and new market realism models
-    (SlippageModel, LatencyModel, MarketImpact, FillProbability).
+    Attributes:
+        slippage_config: Configuration for slippage simulation
+        latency_config: Configuration for latency simulation
     """
 
-    def __init__(self, config: FillModelConfig | None = None, seed: int | None = None):
-        """Initialize fill model.
-
-        Args:
-            config: Fill model configuration
-            seed: Random seed for reproducible fills
-        """
-        self.config = config or FillModelConfig()
-        self._rng = random.Random(seed)
-
-        # Initialize market realism models if enabled and available
-        self._slippage_model: SlippageModel | None = None
-        self._latency_model: LatencyModel | None = None
-        self._market_impact: MarketImpact | None = None
-        self._fill_probability: FillProbability | None = None
-        self._config_loader: MarketRealismConfig | None = None
-
-        if self.config.use_market_realism and MARKET_REALISM_AVAILABLE:
-            self._init_market_realism_models()
-
-        logger.info(
-            f"FillModel initialized: base_slippage={self.config.base_slippage_bps}bps, "
-            f"use_market_realism={self.config.use_market_realism}, seed={seed}"
-        )
-
-    def _init_market_realism_models(self) -> None:
-        """Initialize market realism models with configuration."""
-        try:
-            # Load configuration
-            self._config_loader = MarketRealismConfig()
-
-            symbol = self.config.symbol
-            exchange = self.config.exchange
-
-            # Initialize models with appropriate configs
-            slippage_config = self._config_loader.get_slippage_config(symbol)
-            self._slippage_model = SlippageModel(slippage_config)
-
-            latency_config = self._config_loader.get_latency_config(exchange)
-            self._latency_model = LatencyModel(
-                latency_config, seed=self._rng.randint(0, 2**31)
-            )
-
-            impact_config = self._config_loader.get_market_impact_config(symbol)
-            self._market_impact = MarketImpact(impact_config)
-
-            prob_config = self._config_loader.get_fill_probability_config()
-            self._fill_probability = FillProbability(
-                prob_config, seed=self._rng.randint(0, 2**31)
-            )
-
-            logger.info(
-                f"Market realism models initialized for symbol={symbol}, exchange={exchange}"
-            )
-        except Exception as e:
-            logger.warning(f"Failed to initialize market realism models: {e}")
-            self._slippage_model = None
-            self._latency_model = None
-            self._market_impact = None
-            self._fill_probability = None
-
-    def calculate_fill_price(
+    def __init__(
         self,
-        order: PaperOrder,
-        market_price: float,
-        volatility: float = 0.0,
-    ) -> float:
-        """Calculate realistic fill price with slippage.
+        slippage_config: SlippageConfig | None = None,
+        latency_config: LatencyConfig | None = None,
+    ) -> None:
+        """Initialize fill model with configuration.
 
         Args:
-            order: The order being filled
+            slippage_config: Slippage configuration (uses defaults if None)
+            latency_config: Latency configuration (uses defaults if None)
+        """
+        self.slippage_config = slippage_config or SlippageConfig()
+        self.latency_config = latency_config or LatencyConfig()
+
+    async def simulate_latency(self) -> None:
+        """Simulate network latency by sleeping.
+
+        Uses the configured min/max latency range.
+        """
+        latency = self.latency_config.get_latency_seconds()
+        await asyncio.sleep(latency)
+
+    def calculate_market_fill_price(
+        self,
+        market_price: float,
+        side: str,
+        quantity: float,
+    ) -> float:
+        """Calculate fill price for a market order with slippage.
+
+        Market orders fill at the market price with slight slippage
+        that works against the trader (worse price).
+
+        Args:
             market_price: Current market price
-            volatility: Current volatility as decimal (e.g., 0.02 = 2%)
+            side: Order side - "buy" or "sell"
+            quantity: Order quantity (can affect slippage for large orders)
 
         Returns:
             Fill price with slippage applied
+
+        Raises:
+            ValueError: If inputs are invalid
         """
-        # Calculate base slippage in price terms
-        base_slippage_pct = self.config.base_slippage_bps / 10000
+        if market_price <= 0:
+            raise ValueError(f"Invalid market_price: {market_price}")
+        if side.lower() not in ("buy", "sell"):
+            raise ValueError(f"Invalid side: {side}")
+        if quantity <= 0:
+            raise ValueError(f"Invalid quantity: {quantity}")
 
-        # Add volatility-based slippage
-        volatility_slippage = volatility * self.config.volatility_factor
-
-        # Total slippage
-        total_slippage_pct = base_slippage_pct + volatility_slippage
-
-        # Cap at max slippage
-        max_slippage_pct = self.config.max_slippage_bps / 10000
-        total_slippage_pct = min(total_slippage_pct, max_slippage_pct)
-
-        # Apply slippage based on order side
-        # Buy orders fill higher, sell orders fill lower
-        if order.side.value == "buy":
-            fill_price = market_price * (1 + total_slippage_pct)
-        else:
-            fill_price = market_price * (1 - total_slippage_pct)
-
-        # Add small random variation (-10% to +10% of slippage)
-        variation = self._rng.uniform(-0.1, 0.1) * total_slippage_pct
-        fill_price = fill_price * (1 + variation)
-
-        logger.debug(
-            f"Fill price for {order.symbol}: market={market_price:.2f}, "
-            f"fill={fill_price:.2f}, slippage={total_slippage_pct * 100:.3f}%"
+        # Calculate slippage percentage
+        slippage_pct = random.uniform(
+            self.slippage_config.min_slippage_pct,
+            self.slippage_config.max_slippage_pct,
         )
 
-        return fill_price
+        # Adjust for quantity (larger orders = more slippage)
+        # Use a simple square root model: 1x quantity = 1x slippage, 4x quantity = 2x slippage
+        quantity_factor = 1.0 + (quantity / 100.0) ** 0.5 * 0.1
+        slippage_pct *= quantity_factor
 
-    def calculate_fill_delay_ms(self) -> float:
-        """Calculate simulated fill delay.
+        # Apply slippage against the trader
+        # Buy orders fill at higher price (slippage added)
+        # Sell orders fill at lower price (slippage subtracted)
+        slippage_multiplier = slippage_pct / 100.0
 
-        Returns:
-            Fill delay in milliseconds
-        """
-        return self._rng.uniform(
-            self.config.min_fill_delay_ms,
-            self.config.max_fill_delay_ms,
-        )
+        if side.lower() == "buy":
+            fill_price = market_price * (1 + slippage_multiplier)
+        else:  # sell
+            fill_price = market_price * (1 - slippage_multiplier)
 
-    def should_fill_immediately(self, order: PaperOrder) -> bool:
-        """Determine if order should fill immediately.
+        return round(fill_price, 8)
 
-        Args:
-            order: The order to check
-
-        Returns:
-            True if order should fill immediately
-        """
-        if order.order_type.value == "market":
-            return self._rng.random() < self.config.market_order_fill_probability
-
-        # Limit orders may not fill immediately depending on price
-        return False
-
-    def calculate_partial_fill_quantity(
-        self,
-        order: PaperOrder,
-        available_liquidity: float,
-    ) -> float:
-        """Calculate partial fill quantity.
-
-        Args:
-            order: The order being filled
-            available_liquidity: Available market liquidity
-
-        Returns:
-            Quantity to fill (may be less than order quantity)
-        """
-        # Determine if partial fill should occur
-        if self._rng.random() > self.config.partial_fill_probability:
-            # Full fill (or as much as liquidity allows)
-            return min(order.quantity, available_liquidity)
-
-        # Partial fill - random portion of order
-        fill_ratio = self._rng.uniform(0.1, 0.9)
-        partial_quantity = order.quantity * fill_ratio
-
-        # Cap at available liquidity
-        return min(partial_quantity, available_liquidity)
-
-    def calculate_fee(self, notional_value: float, fee_rate: float = 0.0006) -> float:
-        """Calculate trading fee.
-
-        Args:
-            notional_value: Value of the fill
-            fee_rate: Fee rate as decimal (default 0.06% = 0.0006)
-
-        Returns:
-            Fee amount
-        """
-        return notional_value * fee_rate
-
-    def reset_seed(self, seed: int) -> None:
-        """Reset random seed for reproducible fills.
-
-        Args:
-            seed: New random seed
-        """
-        self._rng = random.Random(seed)
-        logger.debug(f"FillModel seed reset to {seed}")
-
-    # =========================================================================
-    # Market Realism Model Integration Methods
-    # =========================================================================
-
-    def calculate_fill_price_realistic(
+    def should_limit_order_fill(
         self,
         order: PaperOrder,
         market_price: float,
-        market_data: dict[str, Any] | None = None,
+    ) -> bool:
+        """Determine if a limit order should fill based on market price.
+
+        Limit orders fill when the market price crosses the limit:
+        - Buy limit: fills when market price <= limit price
+        - Sell limit: fills when market price >= limit price
+
+        Args:
+            order: The limit order to check
+            market_price: Current market price
+
+        Returns:
+            True if order should fill, False otherwise
+        """
+        if order.order_type != "limit":
+            return False
+
+        if order.price is None:
+            return False
+
+        if order.side == "buy":
+            # Buy limit fills when market is at or below limit price
+            return market_price <= order.price
+        else:  # sell
+            # Sell limit fills when market is at or above limit price
+            return market_price >= order.price
+
+    def calculate_limit_fill_price(
+        self,
+        order: PaperOrder,
+        market_price: float,
     ) -> float:
-        """Calculate realistic fill price using SlippageModel and MarketImpact.
+        """Calculate fill price for a limit order.
+
+        Limit orders fill at the limit price, not the market price.
+
+        Args:
+            order: The limit order
+            market_price: Current market price (for validation)
+
+        Returns:
+            Fill price (the limit price)
+
+        Raises:
+            ValueError: If order is not a valid limit order
+        """
+        if order.order_type != "limit":
+            raise ValueError(f"Expected limit order, got: {order.order_type}")
+
+        if order.price is None:
+            raise ValueError("Limit order must have a price")
+
+        return order.price
+
+    async def create_fill(
+        self,
+        order: PaperOrder,
+        fill_price: float,
+        fill_quantity: float | None = None,
+    ) -> PaperFill:
+        """Create a fill for an order.
+
+        Simulates latency before creating the fill.
 
         Args:
             order: The order being filled
-            market_price: Current market price
-            market_data: Market data for slippage/impact calculation
+            fill_price: The fill price
+            fill_quantity: Quantity to fill (defaults to remaining quantity)
 
         Returns:
-            Fill price with slippage and market impact applied
+            New PaperFill instance
         """
-        if not self._slippage_model:
-            # Fall back to legacy calculation
-            return self.calculate_fill_price(order, market_price)
+        from .models import PaperFill
 
-        # Use market data from config if not provided
-        if market_data is None:
-            market_data = self.config.market_data or {}
+        # Simulate latency
+        await self.simulate_latency()
 
-        # Calculate slippage
-        slippage = self._slippage_model.calculate_slippage(
+        # Determine fill quantity
+        if fill_quantity is None:
+            fill_quantity = order.remaining_quantity
+
+        # Ensure we don't overfill
+        fill_quantity = min(fill_quantity, order.remaining_quantity)
+
+        return PaperFill(
+            fill_id=str(uuid.uuid4()),
+            order_id=order.order_id,
             symbol=order.symbol,
-            order_size=order.quantity,
             side=order.side,
-            market_data=market_data,
+            quantity=fill_quantity,
+            price=fill_price,
+            timestamp=datetime.now(timezone.utc),
+            metadata={
+                "slippage_min_pct": self.slippage_config.min_slippage_pct,
+                "slippage_max_pct": self.slippage_config.max_slippage_pct,
+            },
         )
 
-        # Apply slippage to get base fill price
-        fill_price = self._slippage_model.apply_slippage_to_price(
-            price=market_price,
-            slippage=slippage,
-            side=order.side,
-        )
+    async def fill_market_order(
+        self,
+        order: PaperOrder,
+        market_price: float,
+    ) -> PaperFill:
+        """Fill a market order completely.
 
-        # Add market impact for large orders
-        if self._market_impact:
-            adv = market_data.get("avg_daily_volume", 0.0)
-            volatility = market_data.get("volatility", 0.0)
-
-            if adv > 0:
-                impact_price = self._market_impact.estimate_price_impact(
-                    price=fill_price,
-                    order_size=order.quantity,
-                    adv=adv,
-                    volatility=volatility,
-                    is_buy=(order.side.value == "buy"),
-                )
-                fill_price = impact_price
-
-        logger.debug(
-            f"Realistic fill price for {order.symbol}: market={market_price:.2f}, "
-            f"fill={fill_price:.2f}, slippage={slippage * 10000:.2f}bps"
-        )
-
-        return fill_price
-
-    def simulate_latency_ms(self, latency_type: str = "total") -> float:
-        """Simulate latency using LatencyModel.
+        Market orders fill immediately at market price with slippage.
 
         Args:
-            latency_type: Type of latency ("submission", "fill", "total")
+            order: The market order to fill
+            market_price: Current market price
 
         Returns:
-            Simulated latency in milliseconds
-        """
-        if not self._latency_model:
-            # Fall back to legacy calculation
-            return self.calculate_fill_delay_ms()
+            Fill event
 
-        if latency_type == "submission":
-            return self._latency_model.simulate_order_submission_latency()
-        elif latency_type == "fill":
-            return self._latency_model.simulate_fill_notification_latency()
+        Raises:
+            ValueError: If order is not a market order
+        """
+        if order.order_type != "market":
+            raise ValueError(f"Expected market order, got: {order.order_type}")
+
+        fill_price = self.calculate_market_fill_price(
+            market_price=market_price,
+            side=order.side,
+            quantity=order.quantity,
+        )
+
+        return await self.create_fill(order, fill_price)
+
+    async def fill_limit_order(
+        self,
+        order: PaperOrder,
+        market_price: float,
+        partial: bool = False,
+    ) -> PaperFill | None:
+        """Fill a limit order if market price crosses.
+
+        Args:
+            order: The limit order to fill
+            market_price: Current market price
+            partial: If True, only fill partial quantity
+
+        Returns:
+            Fill event if order fills, None otherwise
+        """
+        if not self.should_limit_order_fill(order, market_price):
+            return None
+
+        fill_price = self.calculate_limit_fill_price(order, market_price)
+
+        if partial:
+            # Simulate partial fill (10-50% of remaining)
+            fill_quantity = order.remaining_quantity * random.uniform(0.1, 0.5)
         else:
-            return self._latency_model.simulate_total_latency()
+            fill_quantity = order.remaining_quantity
 
-    def should_fill_realistic(
-        self,
-        order: PaperOrder,
-        mid_price: float,
-        book_depth: float = 0.0,
-    ) -> bool:
-        """Determine if order should fill using FillProbability model.
+        return await self.create_fill(order, fill_price, fill_quantity)
 
-        Args:
-            order: The order to check
-            mid_price: Current mid price
-            book_depth: Available book depth at relevant price level
 
-        Returns:
-            True if order should be filled
-        """
-        if not self._fill_probability:
-            # Fall back to legacy calculation
-            return self.should_fill_immediately(order)
+def create_fill_model(
+    min_slippage_pct: float = 0.01,
+    max_slippage_pct: float = 0.05,
+    min_latency_ms: float = 50.0,
+    max_latency_ms: float = 200.0,
+) -> FillModel:
+    """Create a FillModel with custom configuration.
 
-        return self._fill_probability.should_fill(
-            order_type=order.order_type,
-            limit_price=order.price,
-            mid_price=mid_price,
-            book_depth=book_depth,
-            order_size=order.quantity,
-        )
+    Args:
+        min_slippage_pct: Minimum slippage percentage (default 0.01%)
+        max_slippage_pct: Maximum slippage percentage (default 0.05%)
+        min_latency_ms: Minimum latency in milliseconds (default 50ms)
+        max_latency_ms: Maximum latency in milliseconds (default 200ms)
 
-    def calculate_fill_probability(
-        self,
-        order: PaperOrder,
-        mid_price: float,
-        book_depth: float = 0.0,
-        time_elapsed_ms: float = 0.0,
-    ) -> float:
-        """Calculate fill probability for an order.
+    Returns:
+        Configured FillModel instance
+    """
+    slippage_config = SlippageConfig(
+        min_slippage_pct=min_slippage_pct,
+        max_slippage_pct=max_slippage_pct,
+    )
+    latency_config = LatencyConfig(
+        min_latency_ms=min_latency_ms,
+        max_latency_ms=max_latency_ms,
+    )
 
-        Args:
-            order: The order to check
-            mid_price: Current mid price
-            book_depth: Available book depth
-            time_elapsed_ms: Time elapsed since order submission
-
-        Returns:
-            Fill probability (0.0-1.0)
-        """
-        if not self._fill_probability:
-            # Legacy: market orders have high probability
-            if order.order_type.value == "market":
-                return self.config.market_order_fill_probability
-            return 0.0
-
-        return self._fill_probability.calculate_fill_probability(
-            order_type=order.order_type,
-            limit_price=order.price,
-            mid_price=mid_price,
-            book_depth=book_depth,
-            order_size=order.quantity,
-            time_elapsed_ms=time_elapsed_ms,
-        )
-
-    def get_latency_statistics(self, samples: int = 10000) -> dict:
-        """Get latency statistics from LatencyModel.
-
-        Args:
-            samples: Number of samples for statistics
-
-        Returns:
-            Dictionary with latency statistics
-        """
-        if not self._latency_model:
-            return {
-                "legacy": {
-                    "min": self.config.min_fill_delay_ms,
-                    "max": self.config.max_fill_delay_ms,
-                    "mean": (
-                        self.config.min_fill_delay_ms + self.config.max_fill_delay_ms
-                    )
-                    / 2,
-                }
-            }
-
-        return self._latency_model.get_statistics(samples)
-
-    def get_slippage_config(self) -> dict:
-        """Get current slippage configuration.
-
-        Returns:
-            Dictionary with slippage configuration
-        """
-        if self._slippage_model:
-            config = self._slippage_model.get_config()
-            return {
-                "base_slippage_bps": config.base_slippage_bps,
-                "volatility_factor": config.volatility_factor,
-                "min_slippage_bps": config.min_slippage_bps,
-                "max_slippage_bps": config.max_slippage_bps,
-            }
-        return {
-            "base_slippage_bps": self.config.base_slippage_bps,
-            "volatility_factor": self.config.volatility_factor,
-            "max_slippage_bps": self.config.max_slippage_bps,
-        }
-
-    def get_market_impact_config(self) -> dict:
-        """Get current market impact configuration.
-
-        Returns:
-            Dictionary with market impact configuration
-        """
-        if self._market_impact:
-            config = self._market_impact.get_config()
-            return {
-                "base_coefficient": config.base_coefficient,
-                "volatility_sensitivity": config.volatility_sensitivity,
-                "adv_threshold": config.adv_threshold,
-            }
-        return {"base_coefficient": 1.0, "adv_threshold": 0.001}
+    return FillModel(
+        slippage_config=slippage_config,
+        latency_config=latency_config,
+    )
