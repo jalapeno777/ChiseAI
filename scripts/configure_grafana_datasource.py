@@ -11,9 +11,12 @@ import sys
 import urllib.error
 import urllib.request
 
+# Add src to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+
 from config.bootstrap import bootstrap
 
-# Bootstrap environment first (must be before any env access)
+# Bootstrap environment first
 bootstrap(load_env=True)
 
 GRAFANA_URL = os.getenv("GRAFANA_URL", "http://host.docker.internal:3001")

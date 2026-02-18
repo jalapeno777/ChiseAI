@@ -76,7 +76,7 @@ def _load_env_file(filepath: Path) -> bool:
                 if "=" in line:
                     key, _, value = line.partition("=")
                     key = key.strip()
-                    value = value.strip().strip("\"'")
+                    value = value.strip().strip("""'")
                     # Only set if not already in environment
                     if key and key not in os.environ:
                         os.environ[key] = value
