@@ -5,7 +5,7 @@ severity: critical
 estimated_time_to_resolve: 10-20 minutes
 last_updated: 2026-02-17
 maintainers: ops-team
-story_id: ST-PAPER-008
+story_id: PAPER-004
 executable: true
 steps:
   - name: "Check Redis container status"
@@ -152,11 +152,33 @@ redis-cli -p 6380 INFO commandstats
 
 #### 1. Check Circuit Breaker Status
 
+**Check Kill-Switch Panel Circuit Breaker Indicators:**
+
+The kill-switch panel in Grafana displays circuit breaker status for critical components including Redis:
+
+```bash
+# Check kill-switch panel for circuit breaker indicators
+./scripts/ops/kill_switch_check.sh
+
+# Look for circuit breaker state in output
+# - CLOSED: Normal operation (green)
+# - OPEN: Circuit breaker tripped (red)
+```
+
+**Grafana Panel Reference:**
+- Navigate to: `Grafana > Dashboards > ChiseAI - Paper Trading`
+- Locate: **Kill-Switch Status** panel
+- Check: Circuit breaker indicator color
+  - 🟢 Green: CLOSED (normal)
+  - 🔴 Red: OPEN (tripped)
+
+**API Check:**
 ```bash
 # If application exposes circuit breaker status
 curl http://localhost:8001/api/v1/health/circuit-breakers | jq '.'
 
 # Check for Redis-specific circuit breaker
+curl http://localhost:8001/api/v1/execution/kill-switch/status | jq '.circuit_breaker'
 ```
 
 #### 2. Verify State Divergence
