@@ -3,9 +3,10 @@ story_id: LIVE-PROOF-FINAL
 story_title: All-Green Live Proof Pack - Evidence Bundle
 type: evidence_bundle
 status: completed
+started_at: 2026-02-18T16:50:00Z
 created_at: 2026-02-18T16:56:22Z
 completed_at: 2026-02-18T16:56:22Z
-phase: validation
+phase: testing
 owner: dev
 commit_sha: 6e550455ff485423e01f80e1ed48744013d1641e
 ---
