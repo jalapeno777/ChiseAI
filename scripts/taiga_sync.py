@@ -23,6 +23,8 @@ _SRC = _REPO_ROOT / "src"
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
+from config.bootstrap import bootstrap
+
 from chiseai.taiga_sync import (  # noqa: E402
     TaigaConfig,
     TaigaSyncError,
@@ -31,6 +33,8 @@ from chiseai.taiga_sync import (  # noqa: E402
 
 
 def main() -> int:
+    # Bootstrap environment first
+    bootstrap(load_env=True)
     p = argparse.ArgumentParser(description="Sync ChiseAI repo stories to Taiga")
     p.add_argument(
         "--apply",

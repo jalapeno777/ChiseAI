@@ -19,6 +19,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from config.bootstrap import bootstrap
+
 
 def _req_json(method: str, url: str, token: str, body: dict | None = None) -> dict:
     data = None
@@ -37,6 +39,8 @@ def _req_json(method: str, url: str, token: str, body: dict | None = None) -> di
 
 
 def main() -> int:
+    # Bootstrap environment first
+    bootstrap(load_env=True)
     p = argparse.ArgumentParser(description="Post a PR review on Gitea")
     p.add_argument(
         "--base-url",

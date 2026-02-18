@@ -22,6 +22,8 @@ import urllib.request
 from pathlib import Path
 from typing import Any, cast
 
+from config.bootstrap import bootstrap
+
 SESSION_FILE = ".swarm-session.json"
 OWNERSHIP_KEY = "bmad:chiseai:ownership"
 BRANCH_LEASE_PREFIX = "bmad:chiseai:branch-lease:"
@@ -662,6 +664,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
+    # Bootstrap environment first
+    bootstrap(load_env=True)
     parser = build_parser()
     args = parser.parse_args()
     try:

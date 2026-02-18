@@ -9,6 +9,8 @@ from datetime import datetime
 from pathlib import Path
 import sys
 
+from config.bootstrap import bootstrap
+
 # Try to import Redis
 try:
     import redis
@@ -121,6 +123,8 @@ def interactive_mode():
 
 
 def main():
+    # Bootstrap environment first
+    bootstrap(load_env=True)
     parser = argparse.ArgumentParser(description="Create post-mortem from incident")
     parser.add_argument("--story-id", help="Story ID")
     parser.add_argument("--output", help="Output file path")
