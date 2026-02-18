@@ -8,10 +8,12 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import json
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from execution.canary.gate_evaluator import GateEvaluator
@@ -19,6 +21,7 @@ from execution.canary.models import (
     CanaryDeployment,
     CanaryStatus,
     GateCheck,
+    GateCheckResult,
 )
 from execution.canary.rollback import RollbackHandler, RollbackResult
 
@@ -309,6 +312,229 @@ class CanaryMonitor:
     def clear_history(self) -> None:
         """Clear check history."""
         self._check_history.clear()
+
+    def schedule_auto_evaluation(
+        self,
+        cron_interval_minutes: int = 15,
+        storage_path: Path | None = None,
+        on_evaluation_complete: Callable[[str, dict[str, Any]], None] | None = None,
+    ) -> dict[str, Any]:
+        """Schedule automatic evaluation with configurable cron interval.
+
+        Args:
+            cron_interval_minutes: Minutes between evaluations (default 15)
+            storage_path: Path to store evaluation results
+            on_evaluation_complete: Callback when evaluation completes
+
+        Returns:
+            Schedule configuration dictionary
+        """
+        schedule_config = {
+            "interval_minutes": cron_interval_minutes,
+            "storage_path": str(storage_path) if storage_path else None,
+            "enabled": True,
+            "scheduled_at": int(datetime.now().timestamp()),
+            "next_evaluation_at": int(datetime.now().timestamp())
+            + (cron_interval_minutes * 60),
+        }
+
+        # Store schedule config in metadata
+        self._schedule_config = schedule_config
+        self._on_evaluation_complete = on_evaluation_complete
+
+        logger.info(
+            f"Scheduled auto-evaluation every {cron_interval_minutes} minutes "
+            f"for {len(self._monitored_canaries)} canaries"
+        )
+
+        return schedule_config
+
+    async def run_auto_evaluation(
+        self,
+        storage_path: Path | None = None,
+    ) -> list[dict[str, Any]]:
+        """Run automatic evaluation on all active canaries.
+
+        Loads active canaries, evaluates gates, and stores results.
+
+        Args:
+            storage_path: Path to store evaluation results
+
+        Returns:
+            List of evaluation results
+        """
+        results = []
+
+        # Filter to active (running or pending) canaries
+        active_canaries = [
+            c
+            for c in self._monitored_canaries.values()
+            if c.status in (CanaryStatus.RUNNING, CanaryStatus.PENDING)
+        ]
+
+        if not active_canaries:
+            logger.info("No active canaries to evaluate")
+            return results
+
+        for canary in active_canaries:
+            try:
+                # Run gate evaluation
+                evaluation_result = await self._evaluate_canary(canary, storage_path)
+                results.append(evaluation_result)
+
+                # Trigger status change alert if needed
+                await self.alert_on_status_change(canary, evaluation_result)
+
+                logger.info(
+                    f"Auto-evaluation completed for {canary.canary_id}: "
+                    f"{evaluation_result['status']}"
+                )
+
+            except Exception as e:
+                logger.error(f"Auto-evaluation failed for {canary.canary_id}: {e}")
+                results.append(
+                    {
+                        "canary_id": canary.canary_id,
+                        "status": "ERROR",
+                        "error": str(e),
+                        "timestamp": int(datetime.now().timestamp()),
+                    }
+                )
+
+        return results
+
+    async def _evaluate_canary(
+        self,
+        canary: CanaryDeployment,
+        storage_path: Path | None,
+    ) -> dict[str, Any]:
+        """Evaluate a single canary and store results.
+
+        Args:
+            canary: Canary to evaluate
+            storage_path: Path to store results
+
+        Returns:
+            Evaluation result dictionary
+        """
+        # Generate pass/fail summary
+        summary = self.gate_evaluator.generate_pass_fail_summary(canary)
+
+        # Create evaluation result
+        evaluation = {
+            "canary_id": canary.canary_id,
+            "strategy_id": canary.strategy_id,
+            "status": summary["status"],
+            "previous_status": canary.status.value,
+            "gate_summary": summary["gate_summary"],
+            "reasons": summary["reasons"],
+            "can_promote": summary["can_promote"],
+            "should_rollback": summary["should_rollback"],
+            "timestamp": int(datetime.now().timestamp()),
+            "gate_details": summary["gate_details"],
+        }
+
+        # Store result to disk if path provided
+        if storage_path:
+            await self._store_evaluation_result(evaluation, storage_path)
+
+        # Update canary status if needed
+        if summary["status"] == "PASS":
+            canary.status = CanaryStatus.PASSED
+        elif summary["status"] == "FAIL":
+            canary.status = CanaryStatus.FAILED
+
+        # Trigger callback if provided
+        if hasattr(self, "_on_evaluation_complete") and self._on_evaluation_complete:
+            self._on_evaluation_complete(canary.canary_id, evaluation)
+
+        return evaluation
+
+    async def _store_evaluation_result(
+        self,
+        evaluation: dict[str, Any],
+        storage_path: Path,
+    ) -> Path:
+        """Store evaluation result to disk.
+
+        Args:
+            evaluation: Evaluation result dictionary
+            storage_path: Path to store results
+
+        Returns:
+            Path to stored file
+        """
+        canary_id = evaluation["canary_id"]
+        output_dir = storage_path / canary_id / "evaluations"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        timestamp = evaluation["timestamp"]
+        timestamp_str = datetime.fromtimestamp(timestamp).strftime("%Y%m%d_%H%M%S")
+
+        json_path = output_dir / f"auto_eval_{timestamp_str}.json"
+        json_path.write_text(json.dumps(evaluation, indent=2))
+
+        return json_path
+
+    async def alert_on_status_change(
+        self,
+        canary: CanaryDeployment,
+        evaluation: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        """Alert when canary moves from PENDING -> PASS/FAIL.
+
+        Args:
+            canary: Canary deployment
+            evaluation: Evaluation result
+
+        Returns:
+            Alert data if status changed, None otherwise
+        """
+        previous_status = evaluation["previous_status"]
+        current_status = evaluation["status"]
+
+        # Only alert on transitions from PENDING/RUNNING to PASS/FAIL
+        status_changed = previous_status in (
+            "pending",
+            "running",
+            "PENDING",
+            "RUNNING",
+        ) and current_status in ("PASS", "FAIL")
+
+        if not status_changed:
+            return None
+
+        alert = {
+            "alert_type": "canary_status_change",
+            "canary_id": canary.canary_id,
+            "strategy_id": canary.strategy_id,
+            "previous_status": previous_status,
+            "current_status": current_status,
+            "can_promote": evaluation["can_promote"],
+            "should_rollback": evaluation["should_rollback"],
+            "reasons": evaluation["reasons"],
+            "timestamp": evaluation["timestamp"],
+            "message": (
+                f"Canary {canary.canary_id} changed from {previous_status} "
+                f"to {current_status}"
+            ),
+        }
+
+        logger.warning(f"STATUS CHANGE ALERT: {alert['message']}")
+
+        return alert
+
+    def get_active_canaries(self) -> list[CanaryDeployment]:
+        """Get list of active (running/pending) canaries.
+
+        Returns:
+            List of active canary deployments
+        """
+        return [
+            c
+            for c in self._monitored_canaries.values()
+            if c.status in (CanaryStatus.RUNNING, CanaryStatus.PENDING)
+        ]
 
 
 def create_canary_monitor(

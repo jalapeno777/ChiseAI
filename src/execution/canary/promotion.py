@@ -6,12 +6,14 @@ human-readable promotion packets with evidence for paper full approval.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from execution.canary.gate_evaluator import GateEvaluator
-from execution.canary.models import CanaryDeployment
+from execution.canary.models import CanaryDeployment, CanaryStatus
 
 
 @dataclass
@@ -388,6 +390,98 @@ promotion to paper full.
 """
 
         return markdown
+
+    def generate_auto_promotion_packet(
+        self,
+        canary: CanaryDeployment,
+        packet_id: str,
+        output_dir: Path | None = None,
+    ) -> PromotionPacket | None:
+        """Generate auto-promotion packet only if all gates pass.
+
+        This method creates a promotion packet only when the canary
+        has fully passed all gates. Returns None if canary is not ready.
+
+        Args:
+            canary: Canary deployment to generate packet for
+            packet_id: Unique packet identifier
+            output_dir: Directory to save packet (default: reports/canary/{canary_id}/promotion_packets/)
+
+        Returns:
+            Promotion packet if all gates pass, None otherwise
+        """
+        # Use gate evaluator to check if auto-promotion is warranted
+        should_promote, summary = self.gate_evaluator.should_auto_promote(canary)
+
+        if not should_promote:
+            return None
+
+        # Generate the packet
+        packet = self.generate_packet(canary, packet_id)
+
+        if packet is None:
+            return None
+
+        # Mark as auto-generated
+        packet.metadata["auto_generated"] = True
+        packet.metadata["evaluation_summary"] = summary
+        packet.metadata["generated_by"] = "auto_promotion_system"
+
+        # Save packet to disk
+        if output_dir is None:
+            output_dir = Path(f"reports/canary/{canary.canary_id}/promotion_packets/")
+
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Save JSON packet
+        json_path = output_dir / f"{packet_id}.json"
+        json_path.write_text(json.dumps(packet.to_dict(), indent=2))
+
+        # Save markdown packet
+        md_path = output_dir / f"{packet_id}.md"
+        md_path.write_text(self.generate_markdown_packet(packet))
+
+        return packet
+
+    def queue_for_human_approval(
+        self,
+        packet: PromotionPacket,
+        storage_path: Path | None = None,
+    ) -> dict[str, Any]:
+        """Mark packet as 'pending_approval' in storage.
+
+        Args:
+            packet: Promotion packet to queue
+            storage_path: Path to store queued packet
+
+        Returns:
+            Queue information dictionary
+        """
+        packet.status = "pending_approval"
+        packet.metadata["queued_at"] = int(datetime.now().timestamp())
+
+        if storage_path is None:
+            storage_path = Path(f"reports/canary/{packet.canary_id}/promotion_packets/")
+
+        storage_path.mkdir(parents=True, exist_ok=True)
+
+        # Save as queued
+        queued_path = storage_path / f"{packet.packet_id}_queued.json"
+        queued_data = {
+            "packet": packet.to_dict(),
+            "queue_status": "pending_approval",
+            "queued_at": packet.metadata["queued_at"],
+        }
+        queued_path.write_text(json.dumps(queued_data, indent=2))
+
+        return {
+            "packet_id": packet.packet_id,
+            "canary_id": packet.canary_id,
+            "strategy_id": packet.strategy_id,
+            "status": "pending_approval",
+            "queued_path": str(queued_path),
+            "queued_at": packet.metadata["queued_at"],
+        }
 
 
 def create_promotion_packet_generator(

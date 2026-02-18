@@ -5,7 +5,9 @@ Provides functionality to evaluate gate criteria and make promotion/rollback dec
 
 from __future__ import annotations
 
+import json
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from execution.canary.models import (
@@ -284,3 +286,192 @@ class GateEvaluator:
             "should_rollback": status == CanaryStatus.FAILED,
             "timestamp": int(datetime.now().timestamp()),
         }
+
+    def generate_pass_fail_summary(self, canary: CanaryDeployment) -> dict[str, Any]:
+        """Generate a concise PASS/FAIL/PENDING summary with reasons.
+
+        Args:
+            canary: Canary deployment to summarize
+
+        Returns:
+            Summary dictionary with overall status and reasons
+        """
+        checks = self.evaluate_all_gates(canary)
+        status, messages = self.determine_status(checks)
+
+        # Count results
+        pass_count = sum(1 for c in checks if c.result == GateCheckResult.PASS)
+        fail_count = sum(1 for c in checks if c.result == GateCheckResult.FAIL)
+        pending_count = sum(1 for c in checks if c.result == GateCheckResult.PENDING)
+
+        # Map internal status to summary status
+        if status == CanaryStatus.FAILED:
+            summary_status = "FAIL"
+        elif status == CanaryStatus.PASSED:
+            summary_status = "PASS"
+        else:
+            summary_status = "PENDING"
+
+        return {
+            "canary_id": canary.canary_id,
+            "strategy_id": canary.strategy_id,
+            "status": summary_status,
+            "timestamp": int(datetime.now().timestamp()),
+            "gate_summary": {
+                "pass": pass_count,
+                "fail": fail_count,
+                "pending": pending_count,
+                "total": len(checks),
+            },
+            "reasons": messages,
+            "gate_details": [
+                {
+                    "gate_name": c.gate_name,
+                    "result": c.result.value,
+                    "message": c.message,
+                }
+                for c in checks
+            ],
+            "can_promote": status == CanaryStatus.PASSED,
+            "should_rollback": status == CanaryStatus.FAILED,
+        }
+
+    def should_auto_promote(
+        self, canary: CanaryDeployment
+    ) -> tuple[bool, dict[str, Any]]:
+        """Check if canary should be auto-promoted with summary.
+
+        This method returns a tuple of (should_promote, summary_dict) for
+        fully automated promotion decisions. Only returns True if ALL
+        gates pass.
+
+        Args:
+            canary: Canary deployment to evaluate
+
+        Returns:
+            Tuple of (should_promote, summary_dict)
+        """
+        summary = self.generate_pass_fail_summary(canary)
+        should_promote = (
+            summary["status"] == "PASS"
+            and summary["gate_summary"]["pass"] == summary["gate_summary"]["total"]
+        )
+
+        return should_promote, summary
+
+    def generate_evaluation_artifact(
+        self,
+        canary: CanaryDeployment,
+        output_dir: Path | None = None,
+    ) -> dict[str, Path]:
+        """Generate and save evaluation artifacts to disk.
+
+        Creates JSON evaluation result and markdown summary files.
+
+        Args:
+            canary: Canary deployment to generate artifacts for
+            output_dir: Directory to save artifacts (default: reports/canary/{canary_id}/evaluations/)
+
+        Returns:
+            Dictionary mapping artifact types to file paths
+        """
+        if output_dir is None:
+            output_dir = Path(f"reports/canary/{canary.canary_id}/evaluations/")
+
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        timestamp = int(datetime.now().timestamp())
+        timestamp_str = datetime.fromtimestamp(timestamp).strftime("%Y%m%d_%H%M%S")
+
+        # Generate evaluation report
+        report = self.generate_evaluation_report(canary)
+        summary = self.generate_pass_fail_summary(canary)
+
+        # Save JSON evaluation
+        json_path = output_dir / f"evaluation_{timestamp_str}.json"
+        artifact = {
+            "evaluation": report,
+            "pass_fail_summary": summary,
+            "generated_at": timestamp,
+        }
+        json_path.write_text(json.dumps(artifact, indent=2))
+
+        # Save markdown summary
+        md_path = output_dir / "pass_fail_summary.md"
+        md_content = self._generate_markdown_summary(summary, canary)
+        md_path.write_text(md_content)
+
+        return {
+            "json": json_path,
+            "markdown": md_path,
+        }
+
+    def _generate_markdown_summary(
+        self, summary: dict[str, Any], canary: CanaryDeployment
+    ) -> str:
+        """Generate markdown summary from pass/fail summary.
+
+        Args:
+            summary: Pass/fail summary dictionary
+            canary: Canary deployment
+
+        Returns:
+            Markdown formatted summary
+        """
+        status_emoji = {"PASS": "✅", "FAIL": "❌", "PENDING": "⏳"}
+        status = summary["status"]
+        emoji = status_emoji.get(status, "❓")
+
+        lines = [
+            f"# Canary Evaluation Summary",
+            "",
+            f"**Canary ID:** {summary['canary_id']}",
+            f"**Strategy:** {summary['strategy_id']}",
+            f"**Status:** {emoji} **{status}**",
+            f"**Generated:** {datetime.fromtimestamp(summary['timestamp']).isoformat()}",
+            "",
+            "## Gate Summary",
+            "",
+            f"- **Passed:** {summary['gate_summary']['pass']}",
+            f"- **Failed:** {summary['gate_summary']['fail']}",
+            f"- **Pending:** {summary['gate_summary']['pending']}",
+            f"- **Total:** {summary['gate_summary']['total']}",
+            "",
+            "## Gate Details",
+            "",
+            "| Gate | Result | Message |",
+            "|------|--------|---------|",
+        ]
+
+        for gate in summary["gate_details"]:
+            gate_emoji = status_emoji.get(gate["result"].upper(), "❓")
+            lines.append(
+                f"| {gate['gate_name']} | {gate_emoji} {gate['result'].upper()} | {gate['message']} |"
+            )
+
+        if summary["reasons"]:
+            lines.extend(
+                [
+                    "",
+                    "## Status Reasons",
+                    "",
+                ]
+            )
+            for reason in summary["reasons"]:
+                lines.append(f"- {reason}")
+
+        lines.extend(
+            [
+                "",
+                "## Actions",
+                "",
+                f"- **Can Promote:** {'✅ Yes' if summary['can_promote'] else '❌ No'}",
+                f"- **Should Rollback:** {'⚠️ Yes' if summary['should_rollback'] else '✅ No'}",
+                "",
+                "---",
+                "",
+                "*Auto-generated by Canary Gate Evaluator*",
+            ]
+        )
+
+        return "\n".join(lines)
