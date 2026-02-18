@@ -10,6 +10,8 @@ from datetime import datetime
 from pathlib import Path
 import sys
 
+from config.bootstrap import bootstrap
+
 # Try to import Redis
 try:
     import redis
@@ -80,6 +82,8 @@ def interactive_mode():
 
 
 def main():
+    # Bootstrap environment first
+    bootstrap(load_env=True)
     parser = argparse.ArgumentParser(description="Log structured incidents")
     parser.add_argument("--interactive", action="store_true", help="Interactive mode")
     parser.add_argument("--story-id", help="Story ID")
