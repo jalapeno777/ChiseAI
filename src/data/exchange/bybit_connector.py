@@ -34,9 +34,11 @@ class BybitConfig:
         api_key: Bybit API key
         api_secret: Bybit API secret
         base_url: REST API base URL
-        ws_url: WebSocket base URL
+        ws_url: WebSocket base URL for public market data
+        private_ws_url: WebSocket URL for private data (fills, positions)
         recv_window: Request receive window in milliseconds
         testnet: Whether to use testnet
+        demo: Whether to use demo mode (demo accounts on mainnet)
     """
 
     api_key: str = ""
@@ -46,13 +48,72 @@ class BybitConfig:
     private_ws_url: str = "wss://stream.bybit.com/v5/private"
     recv_window: int = 5000
     testnet: bool = False
+    demo: bool = False
 
     def __post_init__(self) -> None:
-        """Adjust URLs for testnet if needed."""
-        if self.testnet:
+        """Adjust URLs based on mode (demo, testnet, or live).
+
+        Mode priority:
+        - Demo mode (demo=True): Uses api-demo.bybit.com for REST and
+          stream-demo.bybit.com for private WS, but mainnet for public WS
+        - Testnet mode (testnet=True, demo=False): Uses testnet endpoints
+        - Live mode (both False): Uses mainnet endpoints
+        """
+        if self.demo:
+            # Demo mode: demo endpoints for REST and private WS,
+            # but mainnet for public market data WS
+            self.base_url = "https://api-demo.bybit.com"
+            self.ws_url = (
+                "wss://stream.bybit.com/v5/public/linear"  # Mainnet for public
+            )
+            self.private_ws_url = "wss://stream-demo.bybit.com/v5/private"
+        elif self.testnet:
+            # Testnet mode: all testnet endpoints
             self.base_url = "https://api-testnet.bybit.com"
             self.ws_url = "wss://stream-testnet.bybit.com/v5/public/linear"
             self.private_ws_url = "wss://stream-testnet.bybit.com/v5/private"
+
+    @classmethod
+    def from_env(cls, load_env: bool = True) -> BybitConfig:
+        """Create configuration from environment variables.
+
+        Uses credential resolver to support multiple env var naming
+        conventions in priority order.
+
+        Args:
+            load_env: Whether to explicitly load .env file first
+
+        Returns:
+            BybitConfig with resolved credentials
+
+        Raises:
+            ValueError: If no credentials could be resolved
+
+        Example:
+            >>> config = BybitConfig.from_env()
+            >>> print(f"Using {config.api_key[:4]}... key")
+        """
+        from data.exchange.credential_resolver import resolve_bybit_credentials
+
+        credentials = resolve_bybit_credentials(load_env=load_env)
+
+        if not credentials:
+            raise ValueError(
+                "No Bybit credentials found. Checked (in priority order):\n"
+                "  - BYBIT_DEMO_API_KEY / BYBIT_DEMO_API_SECRET\n"
+                "  - BYBIT_API_KEY / BYBIT_API_SECRET\n"
+                "  - BYBIT_TESTNET_API_KEY / BYBIT_TESTNET_API_SECRET\n"
+                "Ensure credentials are set in environment variables or .env file."
+            )
+
+        logger.info(f"BybitConfig created from {credentials.source}")
+
+        return cls(
+            api_key=credentials.api_key,
+            api_secret=credentials.api_secret,
+            testnet=credentials.testnet_mode,
+            demo=credentials.demo_mode,
+        )
 
 
 @dataclass
@@ -118,6 +179,29 @@ class BybitConnector:
         self._fill_callbacks: list[Callable[[dict[str, Any]], None]] = []
         self._heartbeat_task: asyncio.Task | None = None
         self._ws_task: asyncio.Task | None = None
+
+    @classmethod
+    def from_env(cls, load_env: bool = True) -> BybitConnector:
+        """Create connector with credentials from environment.
+
+        Uses credential resolver to support multiple env var naming
+        conventions in priority order.
+
+        Args:
+            load_env: Whether to explicitly load .env file first
+
+        Returns:
+            BybitConnector with resolved credentials
+
+        Raises:
+            ValueError: If no credentials could be resolved
+
+        Example:
+            >>> async with BybitConnector.from_env() as connector:
+            ...     ticker = await connector.get_ticker("BTCUSDT")
+        """
+        config = BybitConfig.from_env(load_env=load_env)
+        return cls(config)
 
     async def __aenter__(self) -> BybitConnector:
         """Async context manager entry."""
