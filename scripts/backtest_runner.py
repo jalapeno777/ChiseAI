@@ -43,6 +43,7 @@ from pathlib import Path
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from config.bootstrap import bootstrap
 from operations.backtest_runner import (
     BacktestKPIs,
     BacktestRunner,
@@ -207,6 +208,9 @@ async def main() -> int:
     Returns:
         Exit code (0 for success, 1 for error)
     """
+    # Bootstrap environment first
+    bootstrap(load_env=True)
+
     parser = argparse.ArgumentParser(
         description="Continuous Backtest Runner for ChiseAI",
         formatter_class=argparse.RawDescriptionHelpFormatter,
