@@ -13,7 +13,13 @@ import statistics
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from .models import DailyReport, RiskMetrics, TradeMetrics
+from .models import (
+    DailyReport,
+    RiskMetrics,
+    TradeMetrics,
+    PaperHealthMetrics,
+    PaperHealthReport,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -141,12 +147,12 @@ class DailyReportGenerator:
         start_time = date.isoformat()
         end_time = (date + timedelta(days=1)).isoformat()
 
-        query = f'''
+        query = f"""
         from(bucket: "{self._bucket}")
             |> range(start: {start_time}, stop: {end_time})
             |> filter(fn: (r) => r._measurement == "paper_trades")
             |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-        '''
+        """
 
         try:
             tables = query_api.query(query, org=self._org)
@@ -184,14 +190,14 @@ class DailyReportGenerator:
         start_time = date.isoformat()
         end_time = (date + timedelta(days=1)).isoformat()
 
-        query = f'''
+        query = f"""
         from(bucket: "{self._bucket}")
             |> range(start: {start_time}, stop: {end_time})
             |> filter(fn: (r) => r._measurement == "paper_portfolio")
             |> filter(fn: (r) => r._field == "total_pnl" or r._field == "realized_pnl" 
                 or r._field == "unrealized_pnl" or r._field == "portfolio_value")
             |> last()
-        '''
+        """
 
         try:
             tables = query_api.query(query, org=self._org)
@@ -222,13 +228,13 @@ class DailyReportGenerator:
         start_time = date.isoformat()
         end_time = (date + timedelta(days=1)).isoformat()
 
-        query = f'''
+        query = f"""
         from(bucket: "{self._bucket}")
             |> range(start: {start_time}, stop: {end_time})
             |> filter(fn: (r) => r._measurement == "paper_positions")
             |> filter(fn: (r) => r._field == "is_open")
             |> last()
-        '''
+        """
 
         try:
             tables = query_api.query(query, org=self._org)
@@ -336,6 +342,174 @@ class DailyReportGenerator:
             var_95=var_95,
             exposure_pct=exposure_pct,
         )
+
+    async def generate_paper_health_report(
+        self,
+        paper_tracker: Any | None = None,
+        date: datetime | None = None,
+        thresholds: dict[str, Any] | None = None,
+    ) -> PaperHealthReport:
+        """Generate paper trading health report.
+
+        Args:
+            paper_tracker: PaperTracker instance for health metrics
+            date: Date for the report (default: today)
+            thresholds: Health check thresholds (default: from config)
+
+        Returns:
+            PaperHealthReport with health metrics and pass/fail status
+
+        For PAPER-004: Daily paper trading health/performance reports
+        """
+        if date is None:
+            date = datetime.now(UTC)
+
+        # Normalize to start of day
+        date = date.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        logger.info(f"Generating paper health report for {date.strftime('%Y-%m-%d')}")
+
+        # Default thresholds
+        default_thresholds = {
+            "redis_error_rate_max_pct": 5.0,
+            "validation_failure_max_pct": 10.0,
+            "data_freshness_max_seconds": 60.0,
+        }
+        thresholds = thresholds or default_thresholds
+
+        # Gather health metrics from paper tracker
+        health_metrics = await self._gather_health_metrics(paper_tracker, thresholds)
+
+        # Gather portfolio summary
+        portfolio = await self._query_portfolio(date)
+        positions = await self._query_positions(date)
+
+        # Collect warnings
+        warnings = []
+        if not health_metrics.redis_sync_pass:
+            warnings.append(f"Redis sync failed: {health_metrics.redis_sync_status}")
+        if not health_metrics.validation_pass:
+            warnings.append(
+                f"High validation failure rate: {health_metrics.validation_failure_rate_pct:.1f}%"
+            )
+        if not health_metrics.circuit_breaker_pass:
+            warnings.append(
+                f"Circuit breaker is {health_metrics.circuit_breaker_state}"
+            )
+        if not health_metrics.kill_switch_pass:
+            warnings.append("Kill switch is ARMED - trading halted")
+        if not health_metrics.data_freshness_pass:
+            warnings.append(
+                f"Stale data: {health_metrics.data_freshness_seconds:.0f}s since last update"
+            )
+
+        # Build report
+        report = PaperHealthReport(
+            date=date,
+            health_metrics=health_metrics,
+            portfolio_value=portfolio.get("portfolio_value", 0.0),
+            total_pnl=portfolio.get("total_pnl", 0.0),
+            open_positions=positions.get("open_count", 0),
+            active_strategies=positions.get("active_strategies", 0),
+            warnings=warnings,
+        )
+
+        logger.info(
+            f"Paper health report generated: status={health_metrics.overall_health}, "
+            f"checks_pass={health_metrics.all_pass}"
+        )
+
+        return report
+
+    async def _gather_health_metrics(
+        self,
+        paper_tracker: Any | None,
+        thresholds: dict[str, Any],
+    ) -> PaperHealthMetrics:
+        """Gather health metrics from paper tracker.
+
+        Args:
+            paper_tracker: PaperTracker instance
+            thresholds: Health check thresholds
+
+        Returns:
+            PaperHealthMetrics with values and pass/fail status
+        """
+        metrics = PaperHealthMetrics()
+
+        if paper_tracker is None:
+            # No tracker available - return unknown status
+            logger.warning("No PaperTracker provided - returning unknown health status")
+            return metrics
+
+        try:
+            # Get Redis health from tracker
+            redis_health = paper_tracker.get_redis_health()
+            metrics.redis_error_rate_pct = redis_health.get("error_rate_pct", 0.0)
+            metrics.circuit_breaker_state = (
+                "open" if redis_health.get("circuit_breaker_open", False) else "closed"
+            )
+
+            # Get sync status
+            sync_status = paper_tracker.get_sync_status()
+            if sync_status.get("redis_connected", False):
+                divergence_pct = sync_status.get("divergence_pct", 0.0)
+                if divergence_pct == 0:
+                    metrics.redis_sync_status = "synced"
+                    metrics.redis_sync_pass = True
+                elif divergence_pct < 5.0:  # Under 5% divergence
+                    metrics.redis_sync_status = "slight_divergence"
+                    metrics.redis_sync_pass = True
+                else:
+                    metrics.redis_sync_status = "diverged"
+                    metrics.redis_sync_pass = False
+            else:
+                metrics.redis_sync_status = "disconnected"
+                metrics.redis_sync_pass = False
+
+            # Get validation failure summary
+            validation_summary = paper_tracker.get_validation_failure_summary()
+            metrics.validation_failure_rate_pct = validation_summary.get(
+                "failure_rate_pct", 0.0
+            )
+            metrics.validation_pass = (
+                metrics.validation_failure_rate_pct
+                < thresholds.get("validation_failure_max_pct", 10.0)
+            )
+
+            # Check circuit breaker state
+            cb_state = paper_tracker.get_circuit_breaker_state()
+            cb_state_str = cb_state.get("state", "closed").lower()
+            metrics.circuit_breaker_state = cb_state_str
+            metrics.circuit_breaker_pass = cb_state_str == "closed"
+
+            # Check kill switch (assumed to be exposed by tracker)
+            metrics.kill_switch_armed = getattr(
+                paper_tracker, "kill_switch_armed", False
+            )
+            metrics.kill_switch_pass = not metrics.kill_switch_armed
+
+            # Data freshness - check last successful operation
+            last_success = redis_health.get("last_successful_operation")
+            if last_success:
+                metrics.last_data_update = datetime.fromisoformat(last_success)
+                metrics.data_freshness_seconds = (
+                    datetime.now(UTC) - metrics.last_data_update
+                ).total_seconds()
+                metrics.data_freshness_pass = (
+                    metrics.data_freshness_seconds
+                    < thresholds.get("data_freshness_max_seconds", 60.0)
+                )
+            else:
+                metrics.last_data_update = None
+                metrics.data_freshness_seconds = float("inf")
+                metrics.data_freshness_pass = False
+
+        except Exception as e:
+            logger.error(f"Error gathering health metrics: {e}")
+            # Return metrics with unknown status
+
+        return metrics
 
     def _generate_mock_report(self, date: datetime) -> DailyReport:
         """Generate a mock report for testing.
