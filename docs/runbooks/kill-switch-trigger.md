@@ -5,7 +5,7 @@ severity: emergency
 estimated_time_to_resolve: 15 minutes
 last_updated: 2026-02-17
 maintainers: ops-team
-story_id: ST-PAPER-008
+story_id: PAPER-004
 executable: true
 steps:
   - name: "Check execution status"
@@ -31,6 +31,58 @@ The kill switch has been activated due to critical risk conditions. All trading 
 - Extreme concentration risk (≥80%)
 - Manual activation by operator
 - Automated risk threshold breach
+- Circuit breaker activation (consecutive failures)
+- Redis connectivity failure (if configured)
+
+## Kill-Switch Panel Indicators
+
+The kill-switch panel in Grafana provides visual indicators of the current system state.
+
+### Visual States
+
+| State | Color | Indicator | Meaning |
+|-------|-------|-----------|---------|
+| **ARMED** | 🟢 Green | Large green badge | System is ready for trading. Kill switch is active and monitoring. |
+| **TRIGGERED** | 🔴 Red | Large red badge with alert icon | Kill switch has been activated. Trading is halted. Immediate action required. |
+| **DISABLED** | ⚪ Gray | Grayed-out badge | Kill switch is manually disabled. Trading continues without kill-switch protection. |
+
+### Panel Metrics
+
+The kill-switch panel displays the following metrics:
+
+- **Current State**: ARMED, TRIGGERED, or DISABLED
+- **Last Trigger**: Timestamp of the last kill-switch activation
+- **Positions Closed**: Number of positions automatically closed
+- **Trigger Reason**: Why the kill switch was activated
+- **Circuit Breaker State**: OPEN or CLOSED
+- **Consecutive Failures**: Count of consecutive trigger conditions
+
+### Grafana Panel Location
+
+```
+[Grafana Panel: ChiseAI > Paper Trading > Kill-Switch Status]
+
+Navigation:
+1. Open Grafana (http://localhost:3001)
+2. Navigate to Dashboards > ChiseAI - Paper Trading
+3. Locate the "Kill-Switch Status" panel (top row)
+4. Panel refreshes every 5 seconds
+```
+
+## Pre-Trigger Checklist
+
+Before manually triggering the kill switch, review the panel metrics:
+
+- [ ] Check kill-switch panel shows **ARMED** (not already triggered)
+- [ ] Verify circuit breaker is **CLOSED** (green)
+- [ ] Review consecutive failures count (should be 0)
+- [ ] Confirm no recent triggers in last 5 minutes
+- [ ] Check risk metrics dashboard for trigger conditions
+
+**If panel already shows TRIGGERED:**
+- Do not attempt to trigger again
+- Follow the recovery procedures below
+- Investigate why it was already triggered
 
 ## Immediate Actions (0-2 minutes)
 
@@ -50,6 +102,17 @@ redis-cli -p 6380 HGETALL "alerts:kill_switch:latest"
 - Look for: 🚨 KILL SWITCH ACTIVATED alert
 - Note: Portfolio ID, trigger reason, current values
 
+**Check Kill-Switch Panel:**
+```bash
+# Quick status check using the kill-switch script
+./scripts/ops/kill_switch_check.sh
+
+# Or query directly
+curl http://localhost:8001/api/v1/execution/kill-switch/status | jq '.'
+```
+- Verify panel shows **TRIGGERED** (red) status
+- Check Grafana: `[Grafana Panel: ChiseAI > Paper Trading > Kill-Switch Status]`
+
 ### 2. Immediate Position Freeze
 
 **Stop All Order Placement:**
@@ -66,6 +129,53 @@ curl -X POST http://localhost:8001/api/v1/execution/pause \
 curl -X POST http://localhost:8001/api/v1/orders/cancel-all \
   -H "Content-Type: application/json" \
   -d '{"reason": "kill_switch_triggered"}'
+```
+
+**Verify Panel Updates:**
+```bash
+# Wait 5 seconds for panel refresh
+sleep 5
+
+# Check panel shows TRIGGERED status
+./scripts/ops/kill_switch_check.sh
+
+# Expected: State: TRIGGERED (red)
+# Verify Grafana panel updates to red within 10 seconds
+```
+
+### 3. Manual Trigger Procedure (If Not Auto-Triggered)
+
+If you need to manually trigger the kill switch:
+
+**Step 1: Verify Panel State**
+```bash
+# Check current status before triggering
+./scripts/ops/kill_switch_check.sh
+
+# Confirm state is ARMED (not already triggered)
+```
+
+**Step 2: Execute Manual Trigger**
+```bash
+# Trigger kill switch via API
+curl -X POST http://localhost:8001/api/v1/execution/kill-switch/trigger \
+  -H "Content-Type: application/json" \
+  -d '{
+    "reason": "manual_operator_trigger",
+    "operator_id": "[YOUR_OPERATOR_ID]",
+    "justification": "[BRIEF_REASON]"
+  }'
+```
+
+**Step 3: Verify Panel Update**
+```bash
+# Wait for panel to update
+sleep 5
+
+# Confirm TRIGGERED state
+./scripts/ops/kill_switch_check.sh
+
+# Check Grafana panel shows red TRIGGERED status
 ```
 
 ## Verification Steps (2-5 minutes)

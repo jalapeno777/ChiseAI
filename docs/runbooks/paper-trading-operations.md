@@ -5,7 +5,7 @@ severity: standard
 estimated_time_to_resolve: 10-30 minutes
 last_updated: 2026-02-17
 maintainers: ops-team
-story_id: ST-PAPER-008
+story_id: PAPER-004
 executable: true
 steps:
   - name: "Check all services status"
@@ -15,6 +15,9 @@ steps:
     verify: "paper"
   - name: "Check data freshness"
     command: "curl -s http://localhost:8001/api/v1/health/data-freshness | jq '.sources | length'"
+  - name: "Check kill-switch status"
+    command: "./scripts/ops/kill_switch_check.sh"
+    verify: "ARMED"
   - name: "Generate daily summary"
     script: "scripts/ops/daily_summary.sh"
     description: "Runs daily summary report for paper trading"
@@ -94,6 +97,22 @@ curl http://localhost:8001/api/v1/paper/orders/pending | jq '.orders | length'
 # Should be: 0 (or minimal during active trading)
 ```
 
+#### 4. Kill-Switch Panel Verification
+
+**Verify Kill-Switch Status:**
+```bash
+# Quick kill-switch status check
+./scripts/ops/kill_switch_check.sh
+
+# Expected: ARMED (green) - ready for trading
+```
+
+**Grafana Panel Check:**
+- Navigate to: `Grafana > Dashboards > ChiseAI - Paper Trading`
+- Locate the **Kill-Switch Status** panel
+- Verify indicator shows: **ARMED** (green)
+- Check that no alerts are active for kill-switch triggers
+
 ### Mid-Day Check (1:00 PM)
 
 #### 1. Performance Metrics
@@ -126,10 +145,19 @@ curl http://localhost:8001/api/v1/risk/metrics | jq '{
 curl http://localhost:8001/api/v1/alerts/active | jq '.alerts[] | {type: .alert_type, severity: .severity, message: .message}'
 ```
 
+**Kill-Switch Specific Alerts:**
+```bash
+# Check for kill-switch related alerts
+curl http://localhost:8001/api/v1/alerts/active | jq '.alerts[] | select(.alert_type | contains("kill") or contains("circuit"))'
+```
+
 **Review Alert History:**
 ```bash
 # Alerts in last 4 hours
 curl "http://localhost:8001/api/v1/alerts/history?hours=4" | jq '.alerts | length'
+
+# Kill-switch alerts in last 24 hours
+curl "http://localhost:8001/api/v1/alerts/history?hours=24" | jq '.alerts[] | select(.alert_type | contains("kill")) | {time: .created_at, type: .alert_type, message: .message}'
 ```
 
 ### End-of-Day Checklist (5:00 PM)
@@ -280,6 +308,91 @@ curl http://localhost:8001/api/v1/mark/prices | jq '.[] | select(.symbol == "BTC
 curl -X POST http://localhost:8001/api/v1/paper/pnl/recalculate
 
 # Verify with manual check
+```
+
+## Kill-Switch Panel Monitoring
+
+### How to Check Kill-Switch Status from Grafana
+
+The kill-switch panel provides real-time visibility into the emergency stop system status.
+
+#### Step-by-Step: Checking Kill-Switch Status
+
+**1. Navigate to the Dashboard:**
+```
+Grafana > Dashboards > ChiseAI - Paper Trading
+```
+
+**2. Locate the Kill-Switch Panel:**
+- Panel Name: **Kill-Switch Status**
+- Location: Typically in the top row of the dashboard
+- Visual Indicator: Large colored status badge
+
+**3. Interpret the Status:**
+
+| Status | Color | Meaning | Action Required |
+|--------|-------|---------|-----------------|
+| **ARMED** | 🟢 Green | System ready, trading enabled | None - normal state |
+| **TRIGGERED** | 🔴 Red | Kill switch activated, trading halted | Immediate investigation required |
+| **DISABLED** | ⚪ Gray | Kill switch manually disabled | Review why disabled, consider re-enabling |
+
+**4. Check Supporting Metrics:**
+- Last trigger timestamp
+- Positions closed count
+- Circuit breaker status
+- Consecutive failure count
+
+### Daily Checklist: Kill-Switch Panel
+
+**Morning (9:00 AM):**
+- [ ] Navigate to Grafana > Paper Trading Dashboard
+- [ ] Verify kill-switch panel shows **ARMED** (green)
+- [ ] Check that last trigger timestamp is not recent
+- [ ] Verify circuit breaker is closed (green)
+
+**Mid-Day (1:00 PM):**
+- [ ] Quick visual check of kill-switch panel
+- [ ] Confirm no state changes since morning
+
+**End-of-Day (5:00 PM):**
+- [ ] Final verification of ARMED status
+- [ ] Document any kill-switch events in daily log
+
+### Kill-Switch Alert Response
+
+**If Panel Shows TRIGGERED (Red):**
+1. Immediately check [Kill Switch Trigger Runbook](kill-switch-trigger.md)
+2. Do not resume trading until root cause is identified
+3. Follow escalation path in emergency procedures
+
+**If Panel Shows DISABLED (Gray):**
+1. Check who disabled the kill switch and why
+2. Review recent operations log
+3. Re-enable if conditions permit:
+   ```bash
+   curl -X POST http://localhost:8001/api/v1/execution/kill-switch/enable
+   ```
+
+### Grafana Panel Reference
+
+```
+### Kill-Switch Panel (Grafana > Paper Trading Dashboard)
+
+Panel ID: kill-switch-status
+Data Source: InfluxDB
+Refresh Rate: 5 seconds
+
+Metrics Displayed:
+- kill_switch_state (ARMED=1, TRIGGERED=2, DISABLED=0)
+- last_trigger_timestamp
+- positions_closed_count
+- circuit_breaker_state
+- consecutive_failures
+
+Alert Thresholds:
+- State = TRIGGERED: Critical alert
+- State = DISABLED: Warning alert
+- Circuit breaker open: Critical alert
 ```
 
 ## Monitoring Dashboard Guide
