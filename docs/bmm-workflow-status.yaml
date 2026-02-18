@@ -4,16 +4,16 @@
 
 metadata:
   project_name: ChiseAI
-  version: "2.1.0"
-  last_updated: "2026-02-16T00:45:00Z"
+  version: "2.2.0"
+  last_updated: "2026-02-17T14:20:00Z"
   prd_location: docs/prd.md
   prd_note: "Phased perps execution: continuous backtest -> Bybit demo paper -> Bitget live; Grafana-first ops UI; Binance used as reference market-structure venue. LLM integrations (Z.ai GLM-5, MiniMax 2.5) are separate capabilities, not Phase 1."
 
 # Current project phase
 current_phase:
-  phase: phase_1
-  status: completed
-  note: "Phase 1 foundation work completed. All p0-1 through p0-7 sprint stories done. Transitioning to Phase 2+ execution."
+  phase: phase_2_plus
+  status: in_progress
+  note: "Phase 2+ execution in progress. Learning & Improvement System (EP-NS-004) active with 2/4 stories completed, 1 in progress, 1 completed ahead of schedule."
 
 # ============================================================
 # PHASE 1 EPICS (8 epics, 35 stories total)
@@ -148,8 +148,8 @@ epics:
     notes:
       - ST-NS-017 (Prediction Accuracy Tracking) - completed
       - ST-NS-018 (ML Feedback Loop) - completed and validated
-      - ST-NS-019 (Confidence Threshold Calibration) - planned
-      - ST-NS-020 (Training Data Generator) - planned
+      - ST-NS-019 (Confidence Threshold Calibration) - in_progress (active branch exists)
+      - ST-NS-020 (Training Data Generator) - completed (PR #136 merged ahead of schedule)
 
   # EP-NS-005: User Experience & Interface (4 stories, 25 points)
   - id: EP-NS-005
@@ -180,6 +180,16 @@ epics:
     story_points: 49
     description: Advanced neuro-symbolic AI features including hybrid reasoning, explainability, and adaptive learning
     sprint_id: q2-6
+
+  # EP-PAPER-001: Paper Trading Loop Implementation (4 stories, 21 points)
+  - id: EP-PAPER-001
+    name: Paper Trading Loop Implementation
+    status: completed
+    story_ids: [ST-PAPER-001, ST-PAPER-002, ST-PAPER-003, ST-PAPER-004]
+    story_count: 4
+    story_points: 21
+    description: End-to-end paper trading loop with risk controls and observability
+    sprint_id: PAPER-GATE-002
 
 # ============================================================
 # PHASE 1 STORIES (35 stories)
@@ -392,7 +402,6 @@ stories:
     # NOTE: Status corrected 2026-02-13 - Bybit/Bitget connectors exist and are integrated
     story_points: 4
     priority: P0-CRITICAL
-    fr_coverage: [FR-026]
     notes: |
       IMPLEMENTED: Bybit and Bitget connectors exist at src/data/exchange/bybit_connector.py 
       and src/data/exchange/bitget_connector.py. Connectors are integrated with position_query.py,
@@ -1610,6 +1619,75 @@ stories:
     fr_coverage: [FR-003, FR-004, FR-018]
     description: Create integration layer between neural and symbolic components
 
+  # EP-PAPER-001: Paper Trading Loop Implementation (4 stories, 21 points)
+  - id: ST-PAPER-001
+    title: Paper Order Simulator and Position Tracking
+    epic_id: EP-PAPER-001
+    sprint_id: PAPER-GATE-002
+    status: completed
+    validation_status: validated
+    story_points: 8
+    priority: P0-CRITICAL
+    fr_coverage: [FR-027, FR-012, FR-013]
+    description: Simulate paper orders and track virtual positions with real-time PnL
+    acceptance_criteria:
+      - Paper orders are simulated without real capital exposure
+      - Virtual positions are tracked with accurate entry/exit prices
+      - Real-time PnL is calculated and displayed
+      - Position history is persisted for analysis
+      - Order fills are simulated with realistic latency and slippage
+
+  - id: ST-PAPER-002
+    title: Paper Trading Risk Enforcer
+    epic_id: EP-PAPER-001
+    sprint_id: PAPER-GATE-002
+    status: completed
+    validation_status: validated
+    story_points: 5
+    priority: P0-CRITICAL
+    fr_coverage: [FR-014, FR-016, FR-029]
+    description: Enforce risk controls during paper trading including position limits and drawdown guards
+    acceptance_criteria:
+      - Position size limits are enforced per trade and total portfolio
+      - Maximum drawdown guards trigger alerts at configured thresholds
+      - Daily loss limits prevent excessive virtual losses
+      - Risk violations are logged and reported
+      - Risk parameters are configurable per strategy
+
+  - id: ST-PAPER-003
+    title: Paper Trading Orchestrator and Loop
+    epic_id: EP-PAPER-001
+    sprint_id: PAPER-GATE-002
+    status: completed
+    validation_status: validated
+    story_points: 5
+    priority: P0-CRITICAL
+    fr_coverage: [FR-027, FR-028, FR-030]
+    description: Orchestrate the paper trading loop from signal generation to order execution
+    acceptance_criteria:
+      - Trading loop runs continuously without manual intervention
+      - Signal-to-order latency is under 1 second
+      - Failed orders are retried with exponential backoff
+      - Loop state is recoverable after restarts
+      - Performance metrics are tracked per iteration
+
+  - id: ST-PAPER-004
+    title: Paper Trading Observability and E2E Validation
+    epic_id: EP-PAPER-001
+    sprint_id: PAPER-GATE-002
+    status: completed
+    validation_status: validated
+    story_points: 3
+    priority: P0-CRITICAL
+    fr_coverage: [FR-031]
+    description: Provide full observability for paper trading with Grafana dashboards and E2E validation
+    acceptance_criteria:
+      - Grafana dashboards display paper trading metrics in real-time
+      - Order lifecycle events are traceable end-to-end
+      - E2E validation tests pass for all paper trading scenarios
+      - Alerts trigger on anomalies and errors
+      - Audit logs capture all trading decisions
+
 # ============================================================
 # ACTIVE SPRINTS
 # ============================================================
@@ -1704,10 +1782,12 @@ sprints:
 
   - id: q2-3
     name: Learning & Improvement System
-    status: planned
+    status: in_progress
     story_count: 4
     story_points: 28
     mapped_stories: [ST-NS-017, ST-NS-018, ST-NS-019, ST-NS-020]
+    completion_date: "2026-02-15"
+    notes: "ST-NS-017 and ST-NS-018 completed. ST-NS-020 completed ahead of schedule (PR #136). ST-NS-019 in progress."
 
   - id: q2-4
     name: User Experience & Interface
@@ -1789,19 +1869,28 @@ sprints:
     prs_merged: [PR-081]
     completion_date: "2026-02-15"
 
+  # Paper Trading Loop Sprint
+  - id: PAPER-GATE-002
+    name: Paper Trading Loop Sprint
+    status: completed
+    story_count: 4
+    story_points: 21
+    mapped_stories: [ST-PAPER-001, ST-PAPER-002, ST-PAPER-003, ST-PAPER-004]
+    completion_date: "2026-02-17"
+
 # ============================================================
 # SUMMARY COUNTS
 # ============================================================
 
 summary:
-  total_epics: 15
-  total_stories: 68
-  total_story_points: 385
+  total_epics: 16
+  total_stories: 72
+  total_story_points: 406
   phase_1:
     epics: 8
     stories: 41
     story_points: 157
   phase_2_plus:
-    epics: 7
-    stories: 27
-    story_points: 217
+    epics: 8
+    stories: 31
+    story_points: 238

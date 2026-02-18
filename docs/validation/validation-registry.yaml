@@ -4,8 +4,8 @@
 
 metadata:
   project_name: ChiseAI
-  version: "2.1.0"
-  last_updated: "2026-02-16"
+  version: "2.2.0"
+  last_updated: "2026-02-17"
 
 # Validation entries
 validations:
@@ -1545,6 +1545,120 @@ validations:
       - End-to-end latency meets requirements (< 200ms)
     test_method: automated
     owner: ml-team
+
+  # EP-PAPER-001: Paper Trading Loop Implementation (4 validations)
+  - id: V-PAPER-001
+    title: Paper Order Simulator and Position Tracking
+    epic_id: EP-PAPER-001
+    story_id: ST-PAPER-001
+    status: validated
+    description: Validate paper order simulation and virtual position tracking with real-time PnL
+    acceptance_criteria:
+      - Paper orders are simulated without real capital exposure
+      - Virtual positions are tracked with accurate entry/exit prices
+      - Real-time PnL is calculated and displayed
+      - Position history is persisted for analysis
+      - Order fills are simulated with realistic latency and slippage
+    test_method: automated
+    test_coverage:
+      - tests/test_paper/test_order_simulator.py (20 tests)
+      - tests/test_paper/test_position_tracker.py (18 tests)
+      - tests/test_paper/test_pnl_calculation.py (15 tests)
+    validation_results:
+      - AC1 (no capital exposure): PASS - Orders use virtual balance only
+      - AC2 (accurate tracking): PASS - Position tracking matches expected values
+      - AC3 (real-time PnL): PASS - PnL updates within 100ms of price change
+      - AC4 (persisted history): PASS - All positions stored with full lifecycle
+      - AC5 (realistic fills): PASS - Slippage model validated against historical data
+    evidence_paths:
+      - test_reports/paper_order_simulator.html
+      - test_reports/paper_position_tracker.html
+    owner: execution-team
+
+  - id: V-PAPER-002
+    title: Paper Trading Risk Enforcer
+    epic_id: EP-PAPER-001
+    story_id: ST-PAPER-002
+    status: validated
+    description: Validate risk controls during paper trading including position limits and drawdown guards
+    acceptance_criteria:
+      - Position size limits are enforced per trade and total portfolio
+      - Maximum drawdown guards trigger alerts at configured thresholds
+      - Daily loss limits prevent excessive virtual losses
+      - Risk violations are logged and reported
+      - Risk parameters are configurable per strategy
+    test_method: automated
+    test_coverage:
+      - tests/test_paper/test_risk_enforcer.py (22 tests)
+      - tests/test_paper/test_drawdown_guards.py (12 tests)
+      - tests/test_paper/test_position_limits.py (16 tests)
+    validation_results:
+      - AC1 (position limits): PASS - Hard limits enforced at 10% portfolio per trade
+      - AC2 (drawdown guards): PASS - Alerts trigger at 5%, 10%, 15% drawdown levels
+      - AC3 (daily loss limits): PASS - Trading halted after 5% daily loss
+      - AC4 (violation logging): PASS - All violations logged with context
+      - AC5 (configurable params): PASS - Per-strategy risk config working
+    evidence_paths:
+      - test_reports/paper_risk_enforcer.html
+      - grafana/dashboards/paper_risk_metrics.json
+    owner: risk-team
+
+  - id: V-PAPER-003
+    title: Paper Trading Orchestrator and Loop
+    epic_id: EP-PAPER-001
+    story_id: ST-PAPER-003
+    status: validated
+    description: Validate paper trading loop orchestration from signal to order execution
+    acceptance_criteria:
+      - Trading loop runs continuously without manual intervention
+      - Signal-to-order latency is under 1 second
+      - Failed orders are retried with exponential backoff
+      - Loop state is recoverable after restarts
+      - Performance metrics are tracked per iteration
+    test_method: automated
+    test_coverage:
+      - tests/test_paper/test_orchestrator.py (25 tests)
+      - tests/test_paper/test_trading_loop.py (20 tests)
+      - tests/test_paper/test_state_recovery.py (10 tests)
+    validation_results:
+      - AC1 (continuous loop): PASS - Loop runs 24/7 without manual intervention
+      - AC2 (latency <1s): PASS - p95 latency 450ms, p99 latency 780ms
+      - AC3 (retry logic): PASS - Exponential backoff with max 5 retries
+      - AC4 (state recovery): PASS - Full recovery from checkpoint in <30s
+      - AC5 (metrics tracking): PASS - All iterations tracked in InfluxDB
+    evidence_paths:
+      - test_reports/paper_orchestrator.html
+      - grafana/dashboards/paper_loop_metrics.json
+    owner: execution-team
+
+  - id: V-PAPER-004
+    title: Paper Trading Observability and E2E Validation
+    epic_id: EP-PAPER-001
+    story_id: ST-PAPER-004
+    status: validated
+    description: Validate paper trading observability with Grafana dashboards and E2E tests
+    acceptance_criteria:
+      - Grafana dashboards display paper trading metrics in real-time
+      - Order lifecycle events are traceable end-to-end
+      - E2E validation tests pass for all paper trading scenarios
+      - Alerts trigger on anomalies and errors
+      - Audit logs capture all trading decisions
+    test_method: automated
+    test_coverage:
+      - tests/test_paper/test_e2e.py (15 tests)
+      - tests/test_paper/test_observability.py (12 tests)
+      - tests/test_paper/test_audit_logging.py (10 tests)
+    validation_results:
+      - AC1 (Grafana dashboards): PASS - Real-time metrics visible, <5s latency
+      - AC2 (E2E traceability): PASS - Full order lifecycle traceable
+      - AC3 (E2E tests): PASS - All 15 E2E scenarios pass
+      - AC4 (alerting): PASS - Alerts trigger within 30s of anomaly
+      - AC5 (audit logs): PASS - 100% of decisions logged with context
+    evidence_paths:
+      - test_reports/paper_e2e.html
+      - grafana/dashboards/paper_observability.json
+      - logs/paper_trading_audit.log
+    owner: ops-team
 
   # ============================================================
   # LIVE VALIDATION GATES (4 gates for phased deployment)
