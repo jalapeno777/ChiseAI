@@ -1,0 +1,90 @@
+{
+  "evaluation": {
+    "canary_id": "sample-canary-001",
+    "strategy_id": "test-strategy-v1",
+    "status": "running",
+    "evaluated_status": "running",
+    "allocation_pct": 10.0,
+    "start_time": 1739491200,
+    "end_time": 1740096000,
+    "metrics": {
+      "start_equity": 10000.0,
+      "current_equity": 10250.0,
+      "peak_equity": 10300.0,
+      "total_trades": 15,
+      "winning_trades": 9,
+      "losing_trades": 6,
+      "realized_pnl": 250.0,
+      "max_drawdown_pct": 0.4854,
+      "win_rate_pct": 60.0,
+      "sharpe_ratio": 1.2
+    },
+    "gate_checks": [
+      {
+        "gate_name": "max_drawdown",
+        "result": "pass",
+        "actual_value": 0.4854,
+        "threshold_value": 5.0,
+        "message": "PASS: Drawdown 0.49% within threshold 5.00%",
+        "timestamp": 1771379643
+      },
+      {
+        "gate_name": "min_win_rate",
+        "result": "pass",
+        "actual_value": 60.0,
+        "threshold_value": 55.0,
+        "message": "PASS: Win rate 60.00% meets threshold 55.00%",
+        "timestamp": 1771379643
+      },
+      {
+        "gate_name": "duration",
+        "result": "pending",
+        "actual_value": 4.0,
+        "threshold_value": 7.0,
+        "message": "PENDING: Duration 4.00 days < required 7 days",
+        "timestamp": 1771379643
+      }
+    ],
+    "messages": [
+      "PENDING: Duration 4.00 days < required 7 days"
+    ],
+    "can_promote": false,
+    "should_rollback": false,
+    "timestamp": 1771379643
+  },
+  "pass_fail_summary": {
+    "canary_id": "sample-canary-001",
+    "strategy_id": "test-strategy-v1",
+    "status": "PENDING",
+    "timestamp": 1771379643,
+    "gate_summary": {
+      "pass": 2,
+      "fail": 0,
+      "pending": 1,
+      "total": 3
+    },
+    "reasons": [
+      "PENDING: Duration 4.00 days < required 7 days"
+    ],
+    "gate_details": [
+      {
+        "gate_name": "max_drawdown",
+        "result": "pass",
+        "message": "PASS: Drawdown 0.49% within threshold 5.00%"
+      },
+      {
+        "gate_name": "min_win_rate",
+        "result": "pass",
+        "message": "PASS: Win rate 60.00% meets threshold 55.00%"
+      },
+      {
+        "gate_name": "duration",
+        "result": "pending",
+        "message": "PENDING: Duration 4.00 days < required 7 days"
+      }
+    ],
+    "can_promote": false,
+    "should_rollback": false
+  },
+  "generated_at": 1771379643
+}
