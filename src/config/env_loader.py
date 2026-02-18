@@ -79,15 +79,15 @@ class EnvLoader:
             return default
 
         # Type conversion
-        if var_type == bool:
+        if var_type is bool:
             return value.lower() in ("true", "1", "yes", "on")
-        elif var_type == int:
+        elif var_type is int:
             try:
                 return int(value)
             except ValueError:
                 logger.warning(f"Could not convert {full_key} to int, using default")
                 return default
-        elif var_type == float:
+        elif var_type is float:
             try:
                 return float(value)
             except ValueError:
