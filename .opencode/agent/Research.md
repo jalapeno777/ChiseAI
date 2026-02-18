@@ -2,7 +2,7 @@
 name: "research"
 description: "Research subagent. Investigates PRD/docs, market/technical research, and produces structured notes. No code changes unless explicitly requested."
 mode: all
-model: "minimax/MiniMax-M2.5"
+model: "kimi-for-coding/k2p5"   # model: "minimax/MiniMax-M2.5"
 temperature: 0.3
 tools:
   task: true

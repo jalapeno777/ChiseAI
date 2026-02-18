@@ -2,7 +2,7 @@
 name: "web-research"
 description: "Online research subagent. Uses web search and reading tools to gather up-to-date info and cite sources. No code changes unless explicitly requested."
 mode: all
-model: "minimax/MiniMax-M2.5"
+model: "kimi-for-coding/k2p5"   # model: "minimax/MiniMax-M2.5"
 temperature: 0.35
 tools:
   task: true
