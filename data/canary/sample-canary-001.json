@@ -1,0 +1,30 @@
+{
+  "canary_id": "sample-canary-001",
+  "strategy_id": "test-strategy-v1",
+  "champion_strategy_id": "champion-v0",
+  "status": "running",
+  "allocation_pct": 10.0,
+  "start_time": 1739491200,
+  "end_time": 1740096000,
+  "criteria": {
+    "max_drawdown_pct": 5.0,
+    "min_win_rate_pct": 55.0,
+    "duration_days": 7,
+    "min_trades": 10
+  },
+  "metrics": {
+    "start_equity": 10000.0,
+    "current_equity": 10250.0,
+    "peak_equity": 10300.0,
+    "total_trades": 15,
+    "winning_trades": 9,
+    "losing_trades": 6,
+    "realized_pnl": 250.0,
+    "max_drawdown_pct": 2.43,
+    "win_rate_pct": 60.0,
+    "sharpe_ratio": 1.2
+  },
+  "gate_checks": [],
+  "last_check_time": 1739836800,
+  "metadata": {}
+}

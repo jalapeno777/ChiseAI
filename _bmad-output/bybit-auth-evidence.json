@@ -11,7 +11,7 @@
         "endpoint": "/v5/account/wallet-balance",
         "status": "fail",
         "http_code": 401,
-        "latency_ms": 279,
+        "latency_ms": 791,
         "response_excerpt": null,
         "error": "HTTP 401",
         "ret_code": null
@@ -20,7 +20,7 @@
         "endpoint": "/v5/position/list",
         "status": "fail",
         "http_code": 401,
-        "latency_ms": 280,
+        "latency_ms": 305,
         "response_excerpt": null,
         "error": "HTTP 401",
         "ret_code": null
@@ -36,8 +36,8 @@
         "endpoint": "/v5/account/wallet-balance",
         "status": "fail",
         "http_code": 200,
-        "latency_ms": 272,
-        "response_excerpt": "{\n  \"retCode\": 10003,\n  \"retMsg\": \"API key is invalid.\",\n  \"result\": {},\n  \"retExtInfo\": {},\n  \"time\": 1771422798088\n}",
+        "latency_ms": 277,
+        "response_excerpt": "{\n  \"retCode\": 10003,\n  \"retMsg\": \"API key is invalid.\",\n  \"result\": {},\n  \"retExtInfo\": {},\n  \"time\": 1771427186755\n}",
         "error": "API key is invalid.",
         "ret_code": 10003
       },
@@ -45,8 +45,8 @@
         "endpoint": "/v5/position/list",
         "status": "fail",
         "http_code": 200,
-        "latency_ms": 267,
-        "response_excerpt": "{\n  \"retCode\": 10003,\n  \"retMsg\": \"API key is invalid.\",\n  \"result\": {},\n  \"retExtInfo\": {},\n  \"time\": 1771422799116\n}",
+        "latency_ms": 285,
+        "response_excerpt": "{\n  \"retCode\": 10003,\n  \"retMsg\": \"API key is invalid.\",\n  \"result\": {},\n  \"retExtInfo\": {},\n  \"time\": 1771427187784\n}",
         "error": "API key is invalid.",
         "ret_code": 10003
       }
@@ -61,8 +61,8 @@
         "endpoint": "/v5/account/wallet-balance",
         "status": "fail",
         "http_code": 200,
-        "latency_ms": 320,
-        "response_excerpt": "{\n  \"retCode\": 10001,\n  \"retMsg\": \"accountType is null.\",\n  \"result\": {},\n  \"retExtInfo\": {},\n  \"time\": 1771422800289\n}",
+        "latency_ms": 292,
+        "response_excerpt": "{\n  \"retCode\": 10001,\n  \"retMsg\": \"accountType is null.\",\n  \"result\": {},\n  \"retExtInfo\": {},\n  \"time\": 1771427188933\n}",
         "error": "accountType is null.",
         "ret_code": 10001
       },
@@ -70,8 +70,8 @@
         "endpoint": "/v5/position/list",
         "status": "fail",
         "http_code": 200,
-        "latency_ms": 302,
-        "response_excerpt": "{\n  \"retCode\": 10032,\n  \"retMsg\": \"Demo trading are not supported.\",\n  \"result\": {},\n  \"retExtInfo\": {},\n  \"time\": 1771422801348\n}",
+        "latency_ms": 296,
+        "response_excerpt": "{\n  \"retCode\": 10032,\n  \"retMsg\": \"Demo trading are not supported.\",\n  \"result\": {},\n  \"retExtInfo\": {},\n  \"time\": 1771427189978\n}",
         "error": "Demo trading are not supported.",
         "ret_code": 10032
       }
@@ -124,7 +124,7 @@
       ]
     }
   },
-  "timestamp": "2026-02-18T13:53:22.741012+00:00",
+  "timestamp": "2026-02-18T15:06:31.538772+00:00",
   "test_script": "scripts/test_bybit_auth.py",
   "version": "2.0.0"
 }
