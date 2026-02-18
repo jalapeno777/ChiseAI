@@ -50,9 +50,8 @@ def test_discord_guild_lock():
         bot_token="test-token",
     )
     client_no_restrict = DiscordClient(config_no_restrict)
-    print(
-        f"✓ No restriction - any guild allowed: {client_no_restrict.validate_guild('any_guild')}"
-    )
+    any_guild_allowed = client_no_restrict.validate_guild("any_guild")
+    print(f"✓ No restriction - any guild allowed: {any_guild_allowed}")
 
     # Test with guild restriction
     os.environ["DISCORD_GUILD_ID"] = "secure-guild-123"
@@ -61,13 +60,12 @@ def test_discord_guild_lock():
     client_with_restrict = DiscordClient(config_with_restrict)
 
     print(f"✓ Guild restriction configured: {config_with_restrict.guild_id}")
-    print(
-        f"✓ Allowed guild passes: {client_with_restrict.validate_guild('secure-guild-123')}"
-    )
-    print(
-        f"✓ Wrong guild blocked: {not client_with_restrict.validate_guild('wrong-guild')}"
-    )
-    print(f"✓ No guild blocked: {not client_with_restrict.validate_guild(None)}")
+    allowed = client_with_restrict.validate_guild("secure-guild-123")
+    print(f"✓ Allowed guild passes: {allowed}")
+    blocked = not client_with_restrict.validate_guild("wrong-guild")
+    print(f"✓ Wrong guild blocked: {blocked}")
+    no_guild = not client_with_restrict.validate_guild(None)
+    print(f"✓ No guild blocked: {no_guild}")
 
     return True
 
@@ -85,21 +83,19 @@ def test_integration():
     kimi_config = load_kimi_config()
     discord_config = load_discord_config()
 
-    print(
-        f"✓ KIMI config loaded: API key present = {'Yes' if kimi_config['api_key'] else 'No'}"
-    )
+    api_key_present = "Yes" if kimi_config["api_key"] else "No"
+    print(f"✓ KIMI config loaded: API key present = {api_key_present}")
     print(f"✓ Discord config loaded: Guild ID = {discord_config['guild_id']}")
 
     # Create clients
-    kimi_client = KimiClient(KimiConfig())
+    KimiClient(KimiConfig())  # Verify creation works
     discord_cfg = DiscordConfig.from_env()
     discord_cfg.bot_token = "test-token"
     discord_client = DiscordClient(discord_cfg)
 
-    print(f"✓ Both clients instantiated successfully")
-    print(
-        f"✓ Guild validation works: {discord_client.validate_guild('test-guild-999')}"
-    )
+    print("✓ Both clients instantiated successfully")
+    validation_result = discord_client.validate_guild("test-guild-999")
+    print(f"✓ Guild validation works: {validation_result}")
 
     return True
 
