@@ -15,7 +15,13 @@ Exports:
     SignalPipeline: Async signal processing pipeline
 """
 
-from signal_generation.confidence_filter import ConfidenceFilter
+from signal_generation.confidence_filter import ConfidenceFilter, FilterResult
+from signal_generation.llm_enhancer import (
+    LLMCache,
+    LLMConfidenceEnhancer,
+    LLMEnhancementResult,
+    SignalInput,
+)
 from signal_generation.data_freshness_check import DataFreshnessChecker, FreshnessResult
 from signal_generation.models import Signal, SignalStatus
 from signal_generation.pipeline import (
@@ -45,6 +51,12 @@ __all__ = [
     "DashboardEmitter",
     # Confidence Filter
     "ConfidenceFilter",
+    "FilterResult",
+    # LLM Enhancer
+    "LLMConfidenceEnhancer",
+    "LLMEnhancementResult",
+    "SignalInput",
+    "LLMCache",
     # Data Freshness
     "DataFreshnessChecker",
     "FreshnessResult",
