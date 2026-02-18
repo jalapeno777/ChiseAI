@@ -18,6 +18,7 @@ class DiscordConfig:
         webhook_url: Discord webhook URL (alternative to bot token)
         default_channel: Default channel for actionable alerts
         watchlist_channel: Channel for watchlist alerts (40-74% confidence)
+        guild_id: Optional guild/server ID restriction for bot commands
         rate_limit_per_minute: Max alerts per channel per minute
         enable_duplicate_suppression: Whether to suppress duplicate alerts
         alert_cooldown_seconds: Cooldown between same signal alerts
@@ -35,6 +36,7 @@ class DiscordConfig:
     webhook_url: str | None = None
     default_channel: str = "trading-signals"
     watchlist_channel: str | None = "watchlist"
+    guild_id: str | None = None  # Guild restriction for security
     rate_limit_per_minute: int = 10
     enable_duplicate_suppression: bool = True
     alert_cooldown_seconds: int = 60
@@ -62,6 +64,7 @@ class DiscordConfig:
             webhook_url=config.get("webhook_url"),
             default_channel=config.get("default_channel", "trading-signals"),
             watchlist_channel=config.get("watchlist_channel"),
+            guild_id=config.get("guild_id"),
             rate_limit_per_minute=config.get("rate_limit_per_minute", 10),
             enable_duplicate_suppression=config.get(
                 "enable_duplicate_suppression", True
@@ -98,6 +101,7 @@ class DiscordConfig:
             webhook_url=os.getenv("DISCORD_WEBHOOK_URL"),
             default_channel=os.getenv("DISCORD_DEFAULT_CHANNEL", "trading-signals"),
             watchlist_channel=os.getenv("DISCORD_WATCHLIST_CHANNEL"),
+            guild_id=os.getenv("DISCORD_GUILD_ID"),
             rate_limit_per_minute=int(os.getenv("DISCORD_RATE_LIMIT_PER_MINUTE", "10")),
             enable_duplicate_suppression=os.getenv(
                 "DISCORD_ENABLE_DUPLICATE_SUPPRESSION", "true"
@@ -129,6 +133,7 @@ class DiscordConfig:
             "webhook_url": self.webhook_url,
             "default_channel": self.default_channel,
             "watchlist_channel": self.watchlist_channel,
+            "guild_id": self.guild_id,
             "rate_limit_per_minute": self.rate_limit_per_minute,
             "enable_duplicate_suppression": self.enable_duplicate_suppression,
             "alert_cooldown_seconds": self.alert_cooldown_seconds,

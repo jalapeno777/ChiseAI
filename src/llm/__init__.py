@@ -3,6 +3,7 @@
 Provides clients for various LLM APIs including MiniMax, Z.ai, and KIMI.
 """
 
+from config.env_loader import EnvLoader, kimi_loader, load_kimi_config
 from llm.kimi_client import (
     KimiClient,
     KimiConfig,
@@ -31,6 +32,9 @@ from llm.zhipu_client import (
 )
 
 __all__ = [
+    "EnvLoader",
+    "kimi_loader",
+    "load_kimi_config",
     "KimiClient",
     "KimiConfig",
     "KimiMessage",
