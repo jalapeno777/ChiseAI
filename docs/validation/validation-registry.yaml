@@ -1655,7 +1655,7 @@ validations:
   - id: V-LIVE-PROOF-001
     title: Live-Proof E2E Pipeline Validation
     epic_id: EP-PAPER-002
-    story_id: LIVE-PROOF-FINAL
+    story_id: null  # Evidence bundle gate; no canonical story_id in workflow status
     status: validated
     description: End-to-end pipeline validation for live proof execution. Tests full data flow from ingestion through signal generation to Discord notification.
     acceptance_criteria:
@@ -1683,7 +1683,7 @@ validations:
   - id: V-LIVE-PROOF-002
     title: Discord Integration Validation
     epic_id: EP-NS-002
-    story_id: LIVE-PROOF-FINAL
+    story_id: null  # Evidence bundle gate; no canonical story_id in workflow status
     status: validated
     description: Discord notification delivery validation including trade open, trade close, and summary messages.
     acceptance_criteria:
@@ -1711,7 +1711,7 @@ validations:
   - id: V-LIVE-PROOF-003
     title: Crontab Installation Verification
     epic_id: EP-NS-005
-    story_id: LIVE-PROOF-FINAL
+    story_id: null  # Evidence bundle gate; no canonical story_id in workflow status
     status: validated
     description: Daily summary scheduler crontab installation verification.
     acceptance_criteria:
@@ -1737,7 +1737,7 @@ validations:
   - id: V-LIVE-PROOF-004
     title: Workflow Status Update Verification
     epic_id: EP-CI-001
-    story_id: LIVE-PROOF-FINAL
+    story_id: null  # Evidence bundle gate; no canonical story_id in workflow status
     status: validated
     description: Workflow status file update verification for live proof completion.
     acceptance_criteria:
