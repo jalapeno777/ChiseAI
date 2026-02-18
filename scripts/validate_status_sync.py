@@ -23,6 +23,12 @@ from typing import Any
 
 import yaml
 
+# Bootstrap environment first (must be before any env access)
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from config.bootstrap import bootstrap
+
+bootstrap(load_env=True)
+
 # Configuration
 WORKFLOW_STATUS_FILE = Path("docs/bmm-workflow-status.yaml")
 VALIDATION_REGISTRY_FILE = Path("docs/validation/validation-registry.yaml")

@@ -18,8 +18,11 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-# Add src to path for imports
+# Bootstrap environment first (must be before any env access)
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from config.bootstrap import bootstrap
+
+bootstrap(load_env=True)
 
 from ml.training.exporter import (
     DatasetExporter,

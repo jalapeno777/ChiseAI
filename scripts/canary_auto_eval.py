@@ -23,6 +23,7 @@ from typing import Any
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from config.bootstrap import bootstrap
 from execution.canary.gate_evaluator import GateEvaluator
 from execution.canary.models import (
     CanaryDeployment,
@@ -321,6 +322,9 @@ async def main_async() -> int:
 
 def main() -> int:
     """Main entry point."""
+    # Bootstrap environment first
+    bootstrap(load_env=True)
+
     try:
         return asyncio.run(main_async())
     except KeyboardInterrupt:

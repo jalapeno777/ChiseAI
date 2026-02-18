@@ -4,6 +4,14 @@
 from __future__ import annotations
 
 import re
+import sys
+from pathlib import Path
+
+# Bootstrap environment first (must be before any env access)
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from config.bootstrap import bootstrap
+
+bootstrap(load_env=True)
 
 # Accepted canonical prefixes used across ChiseAI workflows.
 _PREFIX_RE = r"(?:ST|CH|FT|REWARD|REPO|SAFETY|BRANCH|PAPER|RECON)"

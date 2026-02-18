@@ -9,6 +9,12 @@ from datetime import datetime
 from pathlib import Path
 import sys
 
+# Bootstrap environment first (must be before any env access)
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from config.bootstrap import bootstrap
+
+bootstrap(load_env=True)
+
 # Try to import Redis
 try:
     import redis

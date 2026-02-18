@@ -21,6 +21,11 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from config.bootstrap import bootstrap
+
+# Bootstrap environment first (must be before any env access)
+bootstrap(load_env=True)
+
 from data_ingestion.ohlcv_fetcher import CCXTAdapter, OHLCVFetcher
 from data_ingestion.storage import InfluxDBStorage, StorageConfig
 from data_ingestion.timeframe_config import Timeframe, timeframe_from_string
