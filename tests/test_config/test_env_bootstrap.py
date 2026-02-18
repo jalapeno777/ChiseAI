@@ -1,630 +1,432 @@
-"""Tests for environment bootstrap module.
+"""Tests for environment bootstrap system.
 
-Tests for ST-ENV-001: Environment Bootstrap System
+Tests for ST-ENV-001: Environment bootstrap system
+- Dotenv loading precedence
+- Provider discovery
+- Diagnostic function
+- Security (secrets never exposed)
 """
 
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
-from config.bootstrap import (
-    _check_all_providers,
-    _check_provider,
-    _find_env_files,
-    _load_env_file,
-    bootstrap,
-    format_provider_status,
-    get_bootstrap_state,
+from src.config.env_loader import (
+    bootstrap_environment,
+    diagnose_provider_availability,
+    discover_kimi_config,
+    discover_minimax_config,
+    discover_zai_config,
+    discover_zhipu_config,
+    get_available_providers,
 )
 
 
-class TestFindEnvFiles:
-    """Test cases for _find_env_files function."""
+class TestBootstrapEnvironment:
+    """Tests for bootstrap_environment function."""
 
-    def test_finds_env_files_in_standard_locations(self, tmp_path):
-        """Test that .env files are found in standard locations."""
-        # Create a .env file in the current working directory
+    def test_bootstrap_loads_default_env(self, tmp_path: Path) -> None:
+        """Verify .env file is loaded from repo root."""
+        # Create a temporary .env file
         env_file = tmp_path / ".env"
-        env_file.write_text("TEST_KEY=test_value\n")
+        env_file.write_text("TEST_VAR=default_value\n")
 
-        with patch.object(Path, "cwd", return_value=tmp_path):
-            files = _find_env_files()
-            assert len(files) >= 1
-            assert env_file.resolve() in files
+        # Store original env var
+        original_value = os.environ.pop("TEST_VAR", None)
 
-    def test_deduplicates_env_files(self, tmp_path):
-        """Test that duplicate env files are deduplicated."""
-        # Create .env file
+        try:
+            with patch("src.config.env_loader.Path") as mock_path:
+                # Mock the repo root to be our temp directory
+                mock_path.return_value = tmp_path
+                mock_path.cwd.return_value = tmp_path
+                mock_path.__truediv__ = lambda self, other: tmp_path / other
+
+                # Call bootstrap with the temp env file
+                result = bootstrap_environment(env_file_path=str(env_file))
+
+                # Verify the file was loaded
+                assert len(result["loaded_files"]) >= 1
+                assert str(env_file.resolve()) in result["loaded_files"]
+        finally:
+            # Restore original env var
+            if original_value is not None:
+                os.environ["TEST_VAR"] = original_value
+
+    def test_bootstrap_respects_precedence(self, tmp_path: Path) -> None:
+        """Verify precedence: Process env > explicit file > default .env."""
+        # Create env files
+        default_env = tmp_path / ".env"
+        default_env.write_text("PRECEDENCE_TEST=default\n")
+
+        explicit_env = tmp_path / "explicit.env"
+        explicit_env.write_text("PRECEDENCE_TEST=explicit\n")
+
+        # Set process env (highest priority)
+        os.environ["PRECEDENCE_TEST"] = "process"
+
+        try:
+            # Call bootstrap with explicit file
+            bootstrap_environment(env_file_path=str(explicit_env))
+
+            # Process env should not be overridden
+            assert os.environ.get("PRECEDENCE_TEST") == "process"
+        finally:
+            # Clean up
+            del os.environ["PRECEDENCE_TEST"]
+
+    def test_bootstrap_with_explicit_env_file(self, tmp_path: Path) -> None:
+        """Test bootstrap with custom env file path."""
+        env_file = tmp_path / "custom.env"
+        env_file.write_text("CUSTOM_VAR=custom_value\n")
+
+        # Remove any existing value
+        original_value = os.environ.pop("CUSTOM_VAR", None)
+
+        try:
+            result = bootstrap_environment(env_file_path=str(env_file))
+
+            # Verify the explicit file was loaded
+            assert str(env_file.resolve()) in result["loaded_files"]
+            assert result["env_file_path"] == str(env_file)
+        finally:
+            if original_value is not None:
+                os.environ["CUSTOM_VAR"] = original_value
+
+    def test_bootstrap_does_not_override_process_env(self, tmp_path: Path) -> None:
+        """Verify process environment variables are not overridden."""
         env_file = tmp_path / ".env"
-        env_file.write_text("TEST_KEY=test_value\n")
+        env_file.write_text("PROCESS_TEST=from_file\n")
 
-        # If cwd and parent both have the same file (symlink scenario)
-        with patch.object(Path, "cwd", return_value=tmp_path):
-            files = _find_env_files()
-            # Should not have duplicates
-            assert len(files) == len(set(files))
+        # Set process env
+        os.environ["PROCESS_TEST"] = "from_process"
 
-    def test_returns_empty_list_when_no_env_files(self, tmp_path):
-        """Test that only existing files are returned."""
-        with patch.object(Path, "cwd", return_value=tmp_path):
-            files = _find_env_files()
-            assert isinstance(files, list)
-            # All returned files should exist (function filters for existing files)
-            assert all(f.exists() for f in files)
+        try:
+            bootstrap_environment(env_file_path=str(env_file))
 
+            # Process env should remain unchanged
+            assert os.environ.get("PROCESS_TEST") == "from_process"
+        finally:
+            del os.environ["PROCESS_TEST"]
 
-class TestLoadEnvFile:
-    """Test cases for _load_env_file function."""
-
-    def test_loads_simple_key_value_pairs(self, tmp_path):
-        """Test loading simple KEY=VALUE pairs."""
+    def test_bootstrap_returns_load_summary(self, tmp_path: Path) -> None:
+        """Verify summary structure is correct."""
         env_file = tmp_path / ".env"
-        env_file.write_text("KEY1=value1\nKEY2=value2\n")
+        env_file.write_text("SUMMARY_TEST=value\n")
 
-        # Clear environment first
-        with patch.dict(os.environ, {}, clear=True):
-            result = _load_env_file(env_file)
-            assert result is True
-            assert os.environ.get("KEY1") == "value1"
-            assert os.environ.get("KEY2") == "value2"
+        result = bootstrap_environment(env_file_path=str(env_file))
 
-    def test_skips_comments_and_empty_lines(self, tmp_path):
-        """Test that comments and empty lines are skipped."""
-        env_file = tmp_path / ".env"
-        env_file.write_text("# This is a comment\n\nKEY=value\n  # Another comment\n")
-
-        with patch.dict(os.environ, {}, clear=True):
-            _load_env_file(env_file)
-            assert os.environ.get("KEY") == "value"
-            assert "# This is a comment" not in os.environ
-
-    def test_handles_quoted_values(self, tmp_path):
-        """Test that quoted values are handled correctly."""
-        env_file = tmp_path / ".env"
-        env_file.write_text("KEY1=\"quoted_value\"\nKEY2='single_quoted'\n")
-
-        with patch.dict(os.environ, {}, clear=True):
-            _load_env_file(env_file)
-            assert os.environ.get("KEY1") == "quoted_value"
-            assert os.environ.get("KEY2") == "single_quoted"
-
-    def test_does_not_override_existing_env_vars(self, tmp_path):
-        """Test that existing environment variables are not overridden."""
-        env_file = tmp_path / ".env"
-        env_file.write_text("EXISTING_KEY=new_value\n")
-
-        with patch.dict(os.environ, {"EXISTING_KEY": "original_value"}):
-            _load_env_file(env_file)
-            assert os.environ.get("EXISTING_KEY") == "original_value"
-
-    def test_handles_missing_file_gracefully(self, tmp_path):
-        """Test that missing files are handled gracefully."""
-        missing_file = tmp_path / "nonexistent.env"
-        result = _load_env_file(missing_file)
-        assert result is False
+        # Verify summary structure
+        assert "loaded_files" in result
+        assert "env_file_path" in result
+        assert "override" in result
+        assert isinstance(result["loaded_files"], list)
+        assert isinstance(result["override"], bool)
 
 
-class TestCheckProvider:
-    """Test cases for _check_provider function."""
+class TestProviderDiscovery:
+    """Tests for provider discovery functions."""
 
-    def test_detects_available_provider(self):
-        """Test detecting a provider that has environment variables set."""
-        with patch.dict(os.environ, {"TEST_API_KEY": "secret123"}):
-            status = _check_provider("TEST", ["TEST_API_KEY"])
-            assert status["available"] is True
-            assert status["source"] == "TEST_API_KEY"
-            assert status["name"] == "TEST"
+    def test_discover_kimi_config_with_key(self) -> None:
+        """KIMI config discovered when API key present."""
+        with patch.dict(os.environ, {"KIMI_API_KEY": "test-key-123"}, clear=False):
+            config = discover_kimi_config()
 
-    def test_detects_unavailable_provider(self):
-        """Test detecting a provider that has no environment variables set."""
-        with patch.dict(os.environ, {}, clear=True):
-            status = _check_provider("MISSING", ["MISSING_API_KEY"])
-            assert status["available"] is False
-            assert status["source"] is None
-            assert "MISSING_API_KEY" in status["missing"]
+            assert config["enabled"] is True
+            assert config["api_key_present"] is True
+            assert config["base_url"] == "https://api.kimi.com/coding/v1"
+            assert config["model"] == "k2p5"
 
-    def test_checks_multiple_env_vars(self):
-        """Test checking multiple environment variables for a provider."""
-        # SECONDARY_KEY is missing and checked before PRIMARY_KEY is found
-        with patch.dict(os.environ, {"PRIMARY_KEY": "value1"}):
-            status = _check_provider("MULTI", ["SECONDARY_KEY", "PRIMARY_KEY"])
-            assert status["available"] is True
-            assert status["source"] == "PRIMARY_KEY"
-            assert "SECONDARY_KEY" in status["missing"]
-
-
-class TestCheckAllProviders:
-    """Test cases for _check_all_providers function."""
-
-    def test_checks_all_configured_providers(self):
-        """Test that all configured providers are checked."""
-        with patch.dict(os.environ, {}, clear=True):
-            providers = _check_all_providers()
-            # Should check KIMI, ZAI, ZHIPU, MINIMAX
-            assert "KIMI" in providers
-            assert "ZAI" in providers
-            assert "ZHIPU" in providers
-            assert "MINIMAX" in providers
-
-    def test_respects_explicitly_disabled_providers(self):
-        """Test that providers can be explicitly disabled."""
+    def test_discover_kimi_config_disabled(self) -> None:
+        """KIMI config disabled when KIMI_ENABLED=false."""
         with patch.dict(
             os.environ,
-            {"KIMI_API_KEY": "secret", "KIMI_ENABLED": "false"},
-            clear=True,
+            {"KIMI_API_KEY": "test-key", "KIMI_ENABLED": "false"},
+            clear=False,
         ):
-            providers = _check_all_providers()
-            assert providers["KIMI"]["available"] is False
-            assert providers["KIMI"]["explicitly_disabled"] is True
+            config = discover_kimi_config()
 
-    def test_detects_available_providers(self):
-        """Test detecting which providers are available."""
+            assert config["enabled"] is False
+            assert config["api_key_present"] is True
+
+    def test_discover_kimi_config_missing_key(self) -> None:
+        """KIMI config not available when no API key."""
+        # Ensure KIMI_API_KEY is not set
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("KIMI_API_KEY", None)
+            config = discover_kimi_config()
+
+            assert config["enabled"] is False
+            assert config["api_key_present"] is False
+
+    def test_discover_zai_config_with_key(self) -> None:
+        """ZAI config discovered when API key present."""
+        with patch.dict(os.environ, {"ZAI_API_KEY": "zai-test-key"}, clear=False):
+            config = discover_zai_config()
+
+            assert config["enabled"] is True
+            assert config["api_key_present"] is True
+            assert config["base_url"] == "https://api.z.ai/v1"
+
+    def test_discover_zhipu_config_with_key(self) -> None:
+        """Zhipu config discovered when API key present."""
+        with patch.dict(os.environ, {"ZHIPU_API_KEY": "zhipu-test-key"}, clear=False):
+            config = discover_zhipu_config()
+
+            assert config["enabled"] is True
+            assert config["api_key_present"] is True
+            assert config["base_url"] == "https://open.bigmodel.cn/api/paas/v4"
+            assert config["model"] == "glm-5"
+
+    def test_discover_zhipu_config_zai_fallback(self) -> None:
+        """Zhipu uses ZAI_API_KEY as fallback."""
         with patch.dict(
             os.environ,
-            {"KIMI_API_KEY": "secret", "ZAI_API_KEY": "another"},
-            clear=True,
+            {"ZAI_API_KEY": "zai-fallback-key"},
+            clear=False,
         ):
-            providers = _check_all_providers()
-            assert providers["KIMI"]["available"] is True
-            assert providers["ZAI"]["available"] is True
-            assert providers["MINIMAX"]["available"] is False
+            # Ensure ZHIPU_API_KEY is not set
+            os.environ.pop("ZHIPU_API_KEY", None)
+            config = discover_zhipu_config()
 
+            assert config["enabled"] is True
+            assert config["api_key_present"] is True
 
-class TestBootstrap:
-    """Test cases for bootstrap function."""
-
-    def test_returns_bootstrap_state(self, tmp_path):
-        """Test that bootstrap returns state dictionary."""
-        with patch.dict(os.environ, {}, clear=True):
-            state = bootstrap(load_env=False)
-            assert isinstance(state, dict)
-            assert "providers" in state
-
-    def test_loads_specific_env_file(self, tmp_path):
-        """Test loading a specific env file."""
-        env_file = tmp_path / ".env"
-        env_file.write_text("TEST_VAR=test_value\n")
-
-        with patch.dict(os.environ, {}, clear=True):
-            state = bootstrap(load_env=True, env_file=env_file)
-            assert env_file.resolve() in state["loaded_files"]
-            assert os.environ.get("TEST_VAR") == "test_value"
-
-    def test_warns_on_missing_env_file(self, tmp_path, caplog):
-        """Test that warning is issued for missing env file."""
-        missing_file = tmp_path / "missing.env"
-
-        with patch.dict(os.environ, {}, clear=True):
-            import logging
-
-            with caplog.at_level(logging.WARNING):
-                bootstrap(load_env=True, env_file=missing_file)
-                assert "not found" in caplog.text
-
-    def test_checks_providers(self):
-        """Test that bootstrap checks provider availability."""
-        with patch.dict(os.environ, {"KIMI_API_KEY": "secret"}, clear=True):
-            state = bootstrap(load_env=False)
-            assert "KIMI" in state["providers"]
-            assert state["providers"]["KIMI"]["available"] is True
-
-    def test_respects_verbose_flag(self, caplog):
-        """Test that verbose flag enables debug logging."""
-        import logging
-
-        with patch.dict(os.environ, {}, clear=True), caplog.at_level(logging.DEBUG):
-            bootstrap(load_env=False, verbose=True)
-            # Should have debug output
-            assert len(caplog.records) >= 0
-
-
-class TestGetBootstrapState:
-    """Test cases for get_bootstrap_state function."""
-
-    def test_returns_current_state(self):
-        """Test that get_bootstrap_state returns the current state."""
-        state = get_bootstrap_state()
-        assert isinstance(state, dict)
-        assert "loaded_files" in state
-        assert "providers" in state
-
-
-class TestFormatProviderStatus:
-    """Test cases for format_provider_status function."""
-
-    def test_formats_available_provider(self):
-        """Test formatting available provider status."""
-        status = {
-            "name": "TEST",
-            "available": True,
-            "source": "TEST_API_KEY",
-            "explicitly_disabled": False,
-        }
-        result = format_provider_status(status)
-        assert "available" in result
-        assert "TEST_API_KEY" in result
-
-    def test_formats_disabled_provider(self):
-        """Test formatting disabled provider status."""
-        status = {
-            "name": "TEST",
-            "available": False,
-            "explicitly_disabled": True,
-        }
-        result = format_provider_status(status)
-        assert "disabled" in result
-
-    def test_formats_unavailable_provider(self):
-        """Test formatting unavailable provider status."""
-        status = {
-            "name": "TEST",
-            "available": False,
-            "explicitly_disabled": False,
-            "missing": ["TEST_API_KEY"],
-        }
-        result = format_provider_status(status)
-        assert "not available" in result
-        assert "TEST_API_KEY" in result
-
-    def test_formats_without_source(self):
-        """Test formatting when source is not available."""
-        status = {
-            "name": "TEST",
-            "available": True,
-            "source": None,
-            "explicitly_disabled": False,
-        }
-        result = format_provider_status(status)
-        assert "available" in result
-
-
-class TestIntegration:
-    """Integration tests for the bootstrap system."""
-
-    def test_full_bootstrap_workflow(self, tmp_path):
-        """Test the complete bootstrap workflow."""
-        env_file = tmp_path / ".env"
-        env_file.write_text(
-            "KIMI_API_KEY=test_key\nZAI_API_KEY=another_key\nCUSTOM_VAR=custom_value\n"
-        )
-
-        with patch.dict(os.environ, {}, clear=True):
-            # Run bootstrap
-            state = bootstrap(load_env=True, env_file=env_file)
-
-            # Verify env was loaded
-            assert env_file.resolve() in state["loaded_files"]
-            assert os.environ.get("CUSTOM_VAR") == "custom_value"
-
-            # Verify providers were checked
-            assert state["providers"]["KIMI"]["available"] is True
-            assert state["providers"]["ZAI"]["available"] is True
-
-            # Verify state can be retrieved
-            retrieved_state = get_bootstrap_state()
-            assert retrieved_state == state
-
-    def test_bootstrap_with_no_env_files(self):
-        """Test bootstrap when no env files are present."""
-        with patch.dict(os.environ, {}, clear=True):
-            state = bootstrap(
-                load_env=True
-            )  # Will try to find files but may not find any
-            assert isinstance(state["loaded_files"], list)
-            assert isinstance(state["providers"], dict)
-
-    def test_multiple_bootstrap_calls_update_state(self, tmp_path):
-        """Test that multiple bootstrap calls update the state."""
-        env_file1 = tmp_path / ".env1"
-        env_file2 = tmp_path / ".env2"
-        env_file1.write_text("VAR1=value1\n")
-        env_file2.write_text("VAR2=value2\n")
-
-        with patch.dict(os.environ, {}, clear=True):
-            # First bootstrap
-            state1 = bootstrap(load_env=True, env_file=env_file1)
-            assert env_file1.resolve() in state1["loaded_files"]
-
-            # Second bootstrap with different file
-            state2 = bootstrap(load_env=True, env_file=env_file2)
-            assert env_file2.resolve() in state2["loaded_files"]
-
-            # State should be updated
-            current_state = get_bootstrap_state()
-            assert env_file2.resolve() in current_state["loaded_files"]
-
-
-class TestBootstrapStatePersistence:
-    """Test cases for bootstrap state persistence and retrieval."""
-
-    def test_get_bootstrap_state_returns_dict_structure(self):
-        """Verify get_bootstrap_state returns proper dictionary structure."""
-        state = get_bootstrap_state()
-        assert isinstance(state, dict)
-        assert "loaded_files" in state
-        assert "providers" in state
-        assert isinstance(state["loaded_files"], list)
-        assert isinstance(state["providers"], dict)
-
-    def test_bootstrap_state_persists_across_calls(self, tmp_path):
-        """Verify bootstrap state persists and can be retrieved multiple times."""
-        env_file = tmp_path / ".env"
-        env_file.write_text("PERSISTENCE_TEST=value\n")
-
-        with patch.dict(os.environ, {}, clear=True):
-            # Initial bootstrap
-            bootstrap(load_env=True, env_file=env_file)
-
-            # Get state multiple times
-            state1 = get_bootstrap_state()
-            state2 = get_bootstrap_state()
-            state3 = get_bootstrap_state()
-
-            # All should be the same object/reference
-            assert state1 == state2 == state3
-            assert env_file.resolve() in state1["loaded_files"]
-
-    def test_bootstrap_state_updates_on_rebootstrap(self, tmp_path):
-        """Verify state updates when bootstrap is called again."""
-        env_file1 = tmp_path / ".env1"
-        env_file2 = tmp_path / ".env2"
-        env_file1.write_text("KEY1=value1\n")
-        env_file2.write_text("KEY2=value2\n")
-
-        with patch.dict(os.environ, {}, clear=True):
-            # First bootstrap
-            bootstrap(load_env=True, env_file=env_file1)
-            state1 = get_bootstrap_state()
-
-            # Second bootstrap
-            bootstrap(load_env=True, env_file=env_file2)
-            state2 = get_bootstrap_state()
-
-            # State should reflect latest bootstrap
-            assert env_file2.resolve() in state2["loaded_files"]
-
-    def test_bootstrap_state_tracks_loaded_files(self, tmp_path):
-        """Verify state correctly tracks which files were loaded."""
-        env_file = tmp_path / ".env"
-        env_file.write_text("TRACKING_TEST=value\n")
-
-        with patch.dict(os.environ, {}, clear=True):
-            state = bootstrap(load_env=True, env_file=env_file)
-
-            # Verify file is tracked as loaded
-            resolved_path = env_file.resolve()
-            assert resolved_path in state["loaded_files"]
-
-            # Verify via get_bootstrap_state as well
-            current_state = get_bootstrap_state()
-            assert resolved_path in current_state["loaded_files"]
-
-    def test_bootstrap_state_without_load_env(self):
-        """Verify state exists even when load_env=False."""
-        with patch.dict(os.environ, {}, clear=True):
-            state = bootstrap(load_env=False)
-
-            # State should still have proper structure
-            assert "loaded_files" in state
-            assert "providers" in state
-            assert state["loaded_files"] == []
-            assert isinstance(state["providers"], dict)
-
-
-class TestProviderChecking:
-    """Test cases for provider availability checking."""
-
-    def test_all_providers_checked(self):
-        """Verify bootstrap checks all configured providers."""
-        with patch.dict(os.environ, {}, clear=True):
-            state = bootstrap(load_env=False)
-            providers = state["providers"]
-
-            # Should check all major providers
-            expected_providers = ["KIMI", "ZAI", "ZHIPU", "MINIMAX"]
-            for provider in expected_providers:
-                assert provider in providers, f"Provider {provider} should be checked"
-
-    def test_provider_status_structure(self):
-        """Verify each provider has required status fields."""
-        with patch.dict(os.environ, {}, clear=True):
-            state = bootstrap(load_env=False)
-
-            for provider_name, status in state["providers"].items():
-                assert "name" in status
-                assert "available" in status
-                assert isinstance(status["available"], bool)
-                assert "source" in status
-                assert "missing" in status
-                assert isinstance(status["missing"], list)
-
-    def test_provider_available_when_key_set(self):
-        """Verify provider is marked available when API key is set."""
-        with patch.dict(os.environ, {"KIMI_API_KEY": "test_key"}, clear=True):
-            state = bootstrap(load_env=False)
-
-            assert state["providers"]["KIMI"]["available"] is True
-            assert state["providers"]["KIMI"]["source"] == "KIMI_API_KEY"
-
-    def test_provider_unavailable_when_key_missing(self):
-        """Verify provider is marked unavailable when API key is missing."""
-        with patch.dict(os.environ, {}, clear=True):
-            state = bootstrap(load_env=False)
-
-            assert state["providers"]["KIMI"]["available"] is False
-            assert "KIMI_API_KEY" in state["providers"]["KIMI"]["missing"]
-
-    def test_explicitly_disabled_provider(self):
-        """Verify provider can be explicitly disabled via environment variable."""
+    def test_discover_minimax_config_enabled(self) -> None:
+        """MiniMax with key and enabled."""
         with patch.dict(
             os.environ,
-            {"KIMI_API_KEY": "test_key", "KIMI_ENABLED": "false"},
-            clear=True,
+            {
+                "MINIMAX_API_KEY": "minimax-key",
+                "MINIMAX_ENABLED": "true",
+                "MINIMAX_MODEL": "abab6.5s",  # Explicitly set to test default
+            },
+            clear=False,
         ):
-            state = bootstrap(load_env=False)
+            config = discover_minimax_config()
 
-            # Should be unavailable despite having API key
-            assert state["providers"]["KIMI"]["available"] is False
-            assert state["providers"]["KIMI"].get("explicitly_disabled") is True
+            assert config["enabled"] is True
+            assert config["api_key_present"] is True
+            assert config["base_url"] == "https://api.minimax.chat/v1"
+            assert config["model"] == "abab6.5s"
 
-    def test_minimax_defaults_to_disabled(self):
-        """Verify MINIMAX provider defaults to disabled."""
-        with patch.dict(os.environ, {"MINIMAX_API_KEY": "test_key"}, clear=True):
-            state = bootstrap(load_env=False)
-
-            # MINIMAX should be disabled by default even with API key
-            assert state["providers"]["MINIMAX"]["available"] is False
-            assert state["providers"]["MINIMAX"].get("explicitly_disabled") is True
-
-    def test_minimax_can_be_enabled(self):
-        """Verify MINIMAX can be explicitly enabled."""
+    def test_discover_minimax_config_disabled(self) -> None:
+        """MiniMax with key but disabled."""
         with patch.dict(
             os.environ,
-            {"MINIMAX_API_KEY": "test_key", "MINIMAX_ENABLED": "true"},
-            clear=True,
+            {"MINIMAX_API_KEY": "minimax-key", "MINIMAX_ENABLED": "false"},
+            clear=False,
         ):
-            state = bootstrap(load_env=False)
+            config = discover_minimax_config()
 
-            # Should be available when explicitly enabled
-            assert state["providers"]["MINIMAX"]["available"] is True
+            assert config["enabled"] is False
+            assert config["api_key_present"] is True
 
-    def test_multiple_providers_simultaneously(self):
-        """Verify multiple providers can be checked at once."""
+    def test_discover_minimax_config_missing_key(self) -> None:
+        """MiniMax without key."""
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("MINIMAX_API_KEY", None)
+            config = discover_minimax_config()
+
+            assert config["enabled"] is False
+            assert config["api_key_present"] is False
+
+
+class TestGetAvailableProviders:
+    """Tests for get_available_providers function."""
+
+    def test_get_available_providers_with_kimi(self) -> None:
+        """Returns ['kimi'] when KIMI available."""
+        with patch.dict(os.environ, {"KIMI_API_KEY": "test-key"}, clear=False):
+            # Disable other providers
+            os.environ.pop("ZAI_API_KEY", None)
+            os.environ.pop("ZHIPU_API_KEY", None)
+            os.environ.pop("MINIMAX_API_KEY", None)
+
+            providers = get_available_providers()
+
+            assert "kimi" in providers
+
+    def test_get_available_providers_multiple(self) -> None:
+        """Returns multiple providers when available."""
         with patch.dict(
             os.environ,
-            {"KIMI_API_KEY": "key1", "ZAI_API_KEY": "key2"},
-            clear=True,
+            {
+                "KIMI_API_KEY": "kimi-key",
+                "ZAI_API_KEY": "zai-key",
+                "ZHIPU_API_KEY": "zhipu-key",
+                "MINIMAX_API_KEY": "minimax-key",
+            },
+            clear=False,
         ):
-            state = bootstrap(load_env=False)
+            providers = get_available_providers()
 
-            assert state["providers"]["KIMI"]["available"] is True
-            assert state["providers"]["ZAI"]["available"] is True
-            # ZHIPU can use ZAI_API_KEY as fallback per bootstrap.py config
-            assert state["providers"]["ZHIPU"]["available"] is True
+            assert "kimi" in providers
+            assert "zai" in providers
+            assert "zhipu" in providers
+            assert "minimax" in providers
 
-    def test_provider_checks_secondary_keys(self):
-        """Verify provider checks secondary API keys if primary missing."""
-        # KIMI checks KIMI_API_KEY_PRIMARY as secondary
-        with patch.dict(os.environ, {"KIMI_API_KEY_PRIMARY": "backup_key"}, clear=True):
-            state = bootstrap(load_env=False)
+    def test_get_available_providers_none(self) -> None:
+        """Returns [] when none available."""
+        with patch.dict(os.environ, {}, clear=False):
+            # Remove all provider keys
+            for key in [
+                "KIMI_API_KEY",
+                "ZAI_API_KEY",
+                "ZHIPU_API_KEY",
+                "MINIMAX_API_KEY",
+            ]:
+                os.environ.pop(key, None)
 
-            assert state["providers"]["KIMI"]["available"] is True
-            assert state["providers"]["KIMI"]["source"] == "KIMI_API_KEY_PRIMARY"
+            providers = get_available_providers()
 
-    def test_format_provider_status_available(self):
-        """Test formatting available provider status."""
-        status = {
-            "name": "TEST",
-            "available": True,
-            "source": "TEST_API_KEY",
-            "explicitly_disabled": False,
-        }
-        result = format_provider_status(status)
-        assert "available" in result
-        assert "TEST_API_KEY" in result
-
-    def test_format_provider_status_disabled(self):
-        """Test formatting disabled provider status."""
-        status = {
-            "name": "TEST",
-            "available": False,
-            "explicitly_disabled": True,
-        }
-        result = format_provider_status(status)
-        assert "disabled" in result
-
-    def test_format_provider_status_unavailable(self):
-        """Test formatting unavailable provider status."""
-        status = {
-            "name": "TEST",
-            "available": False,
-            "explicitly_disabled": False,
-            "missing": ["TEST_API_KEY"],
-        }
-        result = format_provider_status(status)
-        assert "not available" in result
-        assert "TEST_API_KEY" in result
+            assert providers == []
 
 
-class TestBootstrapIdempotency:
-    """Test cases for bootstrap idempotency and safety."""
+class TestDiagnoseProviderAvailability:
+    """Tests for diagnose_provider_availability function."""
 
-    def test_bootstrap_does_not_override_existing_env_vars(self, tmp_path):
-        """Verify bootstrap respects existing environment variables."""
+    def test_diagnose_returns_structure(self) -> None:
+        """Verify diagnostic structure is correct."""
+        diagnostics = diagnose_provider_availability()
+
+        assert isinstance(diagnostics, list)
+        assert len(diagnostics) == 4  # kimi, zai, zhipu, minimax
+
+        for diag in diagnostics:
+            assert "provider" in diag
+            assert "available" in diag
+            assert "config" in diag
+            assert isinstance(diag["available"], bool)
+            assert isinstance(diag["config"], dict)
+
+    def test_diagnose_no_secrets_exposed(self) -> None:
+        """Verify keys are not in diagnostic output."""
+        with patch.dict(
+            os.environ,
+            {
+                "KIMI_API_KEY": "super-secret-key-12345",
+                "ZAI_API_KEY": "another-secret",
+            },
+            clear=False,
+        ):
+            diagnostics = diagnose_provider_availability()
+
+            for diag in diagnostics:
+                # Convert to string to check for secrets
+                diag_str = str(diag)
+                assert "super-secret-key-12345" not in diag_str
+                assert "another-secret" not in diag_str
+                # Ensure api_key_present is boolean, not the actual key
+                assert "api_key" not in diag.get("config", {})
+
+    def test_diagnose_shows_availability(self) -> None:
+        """Verify available/unavailable status is correct."""
+        with patch.dict(os.environ, {"KIMI_API_KEY": "test-key"}, clear=False):
+            # Remove other keys
+            os.environ.pop("ZAI_API_KEY", None)
+            os.environ.pop("ZHIPU_API_KEY", None)
+            os.environ.pop("MINIMAX_API_KEY", None)
+
+            diagnostics = diagnose_provider_availability()
+
+            kimi_diag = next(d for d in diagnostics if d["provider"] == "kimi")
+            zai_diag = next(d for d in diagnostics if d["provider"] == "zai")
+
+            assert kimi_diag["available"] is True
+            assert zai_diag["available"] is False
+
+    def test_diagnose_shows_reasons(self) -> None:
+        """Verify reasons for unavailability are provided."""
+        with patch.dict(os.environ, {}, clear=False):
+            # Remove all keys
+            for key in [
+                "KIMI_API_KEY",
+                "ZAI_API_KEY",
+                "ZHIPU_API_KEY",
+                "MINIMAX_API_KEY",
+            ]:
+                os.environ.pop(key, None)
+
+            diagnostics = diagnose_provider_availability()
+
+            for diag in diagnostics:
+                if not diag["available"]:
+                    assert "reason" in diag
+                    assert diag["reason"] != ""
+
+
+class TestSecurity:
+    """Security tests to ensure secrets are never exposed."""
+
+    def test_bootstrap_never_logs_secrets(self, tmp_path: Path, caplog: Any) -> None:
+        """Verify no secret values in logs during bootstrap."""
         env_file = tmp_path / ".env"
-        env_file.write_text("EXISTING_VAR=new_value\n")
+        env_file.write_text("SECRET_API_KEY=sk-12345-secret-value\n")
 
-        with patch.dict(os.environ, {"EXISTING_VAR": "original_value"}, clear=True):
-            bootstrap(load_env=True, env_file=env_file)
+        # Set log level to capture all logs
+        with caplog.at_level(logging.INFO):
+            bootstrap_environment(env_file_path=str(env_file))
 
-            # Original value should be preserved
-            assert os.environ.get("EXISTING_VAR") == "original_value"
+        # Check that no secrets appear in logs
+        log_output = caplog.text
+        assert "sk-12345-secret-value" not in log_output
+        assert "SECRET_API_KEY" not in log_output or "sk-12345" not in log_output
 
-    def test_bootstrap_sets_new_env_vars(self, tmp_path):
-        """Verify bootstrap sets new environment variables."""
-        env_file = tmp_path / ".env"
-        env_file.write_text("NEW_VAR=new_value\n")
+    def test_diagnostic_never_returns_secrets(self) -> None:
+        """Verify no keys in diagnostic output."""
+        secret_key = "sk-live-abc123xyz789"
+        with patch.dict(
+            os.environ,
+            {
+                "KIMI_API_KEY": secret_key,
+                "ZAI_API_KEY": secret_key,
+                "ZHIPU_API_KEY": secret_key,
+                "MINIMAX_API_KEY": secret_key,
+            },
+            clear=False,
+        ):
+            diagnostics = diagnose_provider_availability()
 
-        with patch.dict(os.environ, {}, clear=True):
-            bootstrap(load_env=True, env_file=env_file)
+            # Check all diagnostics
+            all_output = str(diagnostics)
+            assert secret_key not in all_output
 
-            # New variable should be set
-            assert os.environ.get("NEW_VAR") == "new_value"
+            # Verify only boolean presence is reported
+            for diag in diagnostics:
+                config = diag.get("config", {})
+                for key, value in config.items():
+                    if "key" in key.lower():
+                        assert isinstance(value, bool) or value == "***"
 
-    def test_verbose_mode_outputs_debug_info(self, caplog):
-        """Verify verbose mode enables debug logging."""
-        import logging
+    def test_provider_discovery_returns_presence_only(self) -> None:
+        """Verify api_key_present bool, not value."""
+        secret_key = "super-secret-api-key-999"
 
-        with patch.dict(os.environ, {}, clear=True):
-            with caplog.at_level(logging.DEBUG):
-                bootstrap(load_env=False, verbose=True)
-                # Should have some debug output
-                assert len(caplog.records) >= 0  # At minimum, no error
+        with patch.dict(os.environ, {"KIMI_API_KEY": secret_key}, clear=False):
+            config = discover_kimi_config()
 
+            # Should only have boolean, not the actual key
+            assert config["api_key_present"] is True
+            assert "api_key" not in config or config.get("api_key") != secret_key
 
-class TestBootstrapCLIIntegration:
-    """Test cases for bootstrap CLI functionality."""
+        with patch.dict(os.environ, {"ZAI_API_KEY": secret_key}, clear=False):
+            config = discover_zai_config()
 
-    def test_bootstrap_module_can_be_run(self):
-        """Verify bootstrap module can be run as a script."""
-        # This tests that the module has proper __main__ block
-        import subprocess
-        import sys
+            assert config["api_key_present"] is True
+            assert "api_key" not in config or config.get("api_key") != secret_key
 
-        result = subprocess.run(
-            [sys.executable, "-m", "config.bootstrap", "--help"],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
+        with patch.dict(os.environ, {"ZHIPU_API_KEY": secret_key}, clear=False):
+            config = discover_zhipu_config()
 
-        # Should show help without error
-        assert result.returncode == 0 or "usage:" in result.stdout.lower()
+            assert config["api_key_present"] is True
+            assert "api_key" not in config or config.get("api_key") != secret_key
 
-    def test_bootstrap_cli_check_flag(self, tmp_path):
-        """Test bootstrap CLI with --check flag."""
-        import subprocess
-        import sys
+        with patch.dict(os.environ, {"MINIMAX_API_KEY": secret_key}, clear=False):
+            config = discover_minimax_config()
 
-        env_file = tmp_path / ".env"
-        env_file.write_text("CLI_TEST=value\nKIMI_API_KEY=test\n")
-
-        result = subprocess.run(
-            [
-                sys.executable,
-                "-m",
-                "config.bootstrap",
-                "--check",
-                "--env-file",
-                str(env_file),
-            ],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-
-        # With at least one provider available, should exit 0
-        # or if check flag isn't supported, should exit gracefully
-        assert result.returncode in [0, 1, 2]  # Valid exit codes
+            assert config["api_key_present"] is True
+            assert "api_key" not in config or config.get("api_key") != secret_key
