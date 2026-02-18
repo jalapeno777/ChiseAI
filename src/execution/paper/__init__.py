@@ -1,72 +1,112 @@
-"""Paper trading execution module.
+"""Paper trading order simulator module.
 
-Provides paper execution components including risk enforcement and orchestrated flow.
+Provides a realistic paper trading environment that mimics exchange
+behavior without hitting live APIs. Supports market and limit orders
+with realistic fill simulation, slippage, and order state tracking.
+
+Example usage:
+    >>> from src.execution.paper import OrderSimulator, create_simulator
+    >>>
+    >>> # Create simulator
+    >>> sim = create_simulator()
+    >>>
+    >>> # Set market price
+    >>> sim.set_market_price("BTCUSDT", 50000.0)
+    >>>
+    >>> # Place a market buy order
+    >>> order = await sim.place_order(
+    ...     symbol="BTCUSDT",
+    ...     side="buy",
+    ...     order_type="market",
+    ...     quantity=0.1
+    ... )
+    >>> print(f"Order filled at {order.avg_fill_price}")
+    >>>
+    >>> # Place a limit sell order
+    >>> limit_order = await sim.place_order(
+    ...     symbol="BTCUSDT",
+    ...     side="sell",
+    ...     order_type="limit",
+    ...     quantity=0.1,
+    ...     price=55000.0
+    ... )
+
+For PAPER-LOOP-001: Paper Trading Order Simulator
 """
 
-from __future__ import annotations
-
-from execution.paper.fill_model import FillModel, FillModelConfig
-from execution.paper.models import (
-    OrderSide,
+from .fill_model import (
+    FillModel,
+    LatencyConfig,
+    SlippageConfig,
+    create_fill_model,
+)
+from .models import (
     OrderState,
     OrderType,
+    OrderSide,
     PaperFill,
     PaperOrder,
-    PaperTradeResult,
-    TradeStatus,
 )
-from execution.paper.orchestrator import PaperTradingOrchestrator
-from execution.paper.order_simulator import OrderSimulator
-from execution.paper.pipeline import PipelineMetrics, SignalToOrderPipeline
-from execution.paper.risk_enforcer import PaperRiskEnforcer
-from execution.paper.risk_models import (
-    PaperPosition,
-    RiskAssessment,
-    RiskCheck,
-    RiskSeverity,
-    RiskViolation,
+from .order_simulator import (
+    MarketDataProvider,
+    OrderSimulator,
+    OrderSimulatorConfig,
 )
 
-# Market realism models
-from execution.paper.slippage_model import SlippageModel, SlippageConfig
-from execution.paper.latency_model import LatencyModel, LatencyConfig
-from execution.paper.market_impact import MarketImpact, MarketImpactConfig
-from execution.paper.fill_probability import FillProbability, FillProbabilityConfig
-from execution.paper.config_loader import (
-    MarketRealismConfig,
-    load_market_realism_config,
-)
+
+def create_simulator(
+    min_slippage_pct: float = 0.01,
+    max_slippage_pct: float = 0.05,
+    min_latency_ms: float = 50.0,
+    max_latency_ms: float = 200.0,
+) -> OrderSimulator:
+    """Create a paper trading order simulator with standard configuration.
+
+    This is the recommended factory function for creating simulators.
+
+    Args:
+        min_slippage_pct: Minimum slippage percentage (default 0.01%)
+        max_slippage_pct: Maximum slippage percentage (default 0.05%)
+        min_latency_ms: Minimum fill latency in milliseconds (default 50ms)
+        max_latency_ms: Maximum fill latency in milliseconds (default 200ms)
+
+    Returns:
+        Configured OrderSimulator instance ready for use
+
+    Example:
+        >>> sim = create_simulator()
+        >>> sim.set_market_price("BTCUSDT", 50000.0)
+        >>> order = await sim.place_order(
+        ...     symbol="BTCUSDT",
+        ...     side="buy",
+        ...     order_type="market",
+        ...     quantity=0.1
+        ... )
+    """
+    config = OrderSimulatorConfig(
+        min_slippage_pct=min_slippage_pct,
+        max_slippage_pct=max_slippage_pct,
+        min_latency_ms=min_latency_ms,
+        max_latency_ms=max_latency_ms,
+    )
+    return config.create_simulator()
+
 
 __all__ = [
-    # Core models
-    "FillModel",
-    "FillModelConfig",
-    "OrderSide",
+    # Core simulator
+    "OrderSimulator",
+    "create_simulator",
+    "OrderSimulatorConfig",
+    "MarketDataProvider",
+    # Models
+    "PaperOrder",
+    "PaperFill",
     "OrderState",
     "OrderType",
-    "OrderSimulator",
-    "PaperFill",
-    "PaperOrder",
-    "PaperPosition",
-    "PaperRiskEnforcer",
-    "PaperTradeResult",
-    "PaperTradingOrchestrator",
-    "PipelineMetrics",
-    "RiskAssessment",
-    "RiskCheck",
-    "RiskSeverity",
-    "RiskViolation",
-    "SignalToOrderPipeline",
-    "TradeStatus",
-    # Market realism models
-    "SlippageModel",
+    "OrderSide",
+    # Fill model
+    "FillModel",
     "SlippageConfig",
-    "LatencyModel",
     "LatencyConfig",
-    "MarketImpact",
-    "MarketImpactConfig",
-    "FillProbability",
-    "FillProbabilityConfig",
-    "MarketRealismConfig",
-    "load_market_realism_config",
+    "create_fill_model",
 ]
