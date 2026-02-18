@@ -27,6 +27,8 @@ from typing import Any
 # Add src to path for imports
 sys.path.insert(0, "src")
 
+from config.bootstrap import bootstrap
+
 from execution.kill_switch.executor import KillSwitchExecutor
 from execution.kill_switch.state import KillSwitchState
 from execution.paper.orchestrator import PaperTradingOrchestrator
@@ -343,6 +345,9 @@ async def main() -> int:
     Returns:
         Exit code (0 for success, 1 for failure)
     """
+    # Bootstrap environment first
+    bootstrap(load_env=True)
+
     args = parse_args()
 
     if args.verbose:

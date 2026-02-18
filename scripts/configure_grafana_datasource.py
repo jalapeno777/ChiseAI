@@ -11,6 +11,14 @@ import sys
 import urllib.error
 import urllib.request
 
+# Add src to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+
+from config.bootstrap import bootstrap
+
+# Bootstrap environment first
+bootstrap(load_env=True)
+
 GRAFANA_URL = os.getenv("GRAFANA_URL", "http://host.docker.internal:3001")
 GRAFANA_ADMIN_USER = os.getenv("GRAFANA_ADMIN_USER", "admin")
 GRAFANA_ADMIN_PASSWORD = os.getenv("GRAFANA_ADMIN_PASSWORD", "admin")
