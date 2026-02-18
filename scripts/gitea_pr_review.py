@@ -18,6 +18,11 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+from pathlib import Path
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from config.bootstrap import bootstrap
 
 
 def _req_json(method: str, url: str, token: str, body: dict | None = None) -> dict:
@@ -37,6 +42,7 @@ def _req_json(method: str, url: str, token: str, body: dict | None = None) -> di
 
 
 def main() -> int:
+    bootstrap(load_env=True)
     p = argparse.ArgumentParser(description="Post a PR review on Gitea")
     p.add_argument(
         "--base-url",

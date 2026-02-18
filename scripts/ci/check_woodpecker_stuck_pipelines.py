@@ -6,10 +6,16 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from pathlib import Path
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from config.bootstrap import bootstrap
 
 
 def _req_json(base_url: str, token: str, path: str) -> object:
@@ -54,9 +60,7 @@ def _pipeline_stuck(pipeline: dict, now: int, max_running_seconds: int) -> bool:
     if not isinstance(steps, list) or not steps:
         return True
     active = {
-        str(step.get("status", "")).lower()
-        for step in steps
-        if isinstance(step, dict)
+        str(step.get("status", "")).lower() for step in steps if isinstance(step, dict)
     }
     # If pipeline is running/pending but no step is active, it is likely stuck.
     return "running" not in active and "pending" not in active
@@ -77,6 +81,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
+    bootstrap(load_env=True)
     args = build_parser().parse_args()
     token = args.token.strip()
     if not token:
@@ -96,7 +101,9 @@ def main() -> int:
         if not isinstance(item, dict):
             continue
         number = int(item.get("number") or 0)
-        detail = _req_json(args.base_url, token, f"/api/repos/{repo_id}/pipelines/{number}")
+        detail = _req_json(
+            args.base_url, token, f"/api/repos/{repo_id}/pipelines/{number}"
+        )
         if isinstance(detail, dict) and _pipeline_stuck(
             detail, now=now, max_running_seconds=args.max_running_seconds
         ):

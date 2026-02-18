@@ -21,6 +21,8 @@ from pathlib import Path
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from config.bootstrap import bootstrap
+
 from ml.training.exporter import (
     DatasetExporter,
     DatasetInfo,
@@ -250,6 +252,8 @@ def print_info(info: DatasetInfo) -> None:
 
 def main() -> int:
     """Main entry point."""
+    bootstrap(load_env=True)
+
     parser = create_parser()
     args = parser.parse_args()
 

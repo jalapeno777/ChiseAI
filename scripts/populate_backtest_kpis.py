@@ -32,6 +32,8 @@ from pathlib import Path
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from config.bootstrap import bootstrap
+
 from backtesting.kpi_writer import BacktestKPIWriter, BacktestKPIs
 
 
@@ -149,6 +151,8 @@ def main() -> int:
     Returns:
         Exit code (0 for success, 1 for error)
     """
+    bootstrap(load_env=True)
+
     parser = argparse.ArgumentParser(
         description="Populate backtest_kpis measurement with sample data",
         formatter_class=argparse.RawDescriptionHelpFormatter,

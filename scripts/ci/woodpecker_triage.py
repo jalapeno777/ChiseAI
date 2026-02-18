@@ -15,12 +15,17 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode, urlparse, urlunparse
 from urllib.request import Request, urlopen
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from config.bootstrap import bootstrap
 
 DEFAULT_BASE_URL = "http://host.docker.internal:8012"
 DEFAULT_OUT_DIR = Path("_bmad-output/ci/woodpecker")
@@ -1095,6 +1100,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
+    bootstrap(load_env=True)
     parser = build_parser()
     args = parser.parse_args()
 
