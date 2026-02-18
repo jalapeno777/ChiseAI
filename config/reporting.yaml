@@ -1,0 +1,80 @@
+# Reporting configuration for ChiseAI
+# For PAPER-004: Daily paper trading health/performance reports
+
+# Paper health report thresholds
+paper_health:
+  # Maximum Redis error rate (percentage)
+  redis_error_rate_max_pct: 5.0
+
+  # Maximum validation failure rate (percentage)
+  validation_failure_max_pct: 10.0
+
+  # Maximum data freshness in seconds (how stale can data be)
+  data_freshness_max_seconds: 60
+
+# Output directory paths
+output:
+  # Base directory for all reports
+  base_dir: "./reports"
+
+  # Paper trading reports subdirectory
+  paper_dir: "./reports/paper"
+
+  # Daily reports subdirectory
+  daily_dir: "./reports/paper/daily"
+
+# Retention policy
+retention:
+  # Number of days to retain paper health reports
+  paper_health_days: 30
+
+  # Number of days to retain daily trading reports
+  daily_reports_days: 90
+
+  # Number of days to retain weekly reports
+  weekly_reports_days: 365
+
+  # Number of days to retain alerts
+  alerts_days: 180
+
+# Scheduling configuration
+scheduling:
+  # Check interval in seconds (how often to check if schedules are due)
+  check_interval_seconds: 60
+
+  # Default schedules (can be overridden programmatically)
+  default_schedules:
+    - name: "daily_paper_health"
+      report_type: "paper_health"
+      # Daily at 9:00 AM (after market opens)
+      cron_expression: "0 9 * * *"
+      enabled: true
+
+    - name: "daily_trading_summary"
+      report_type: "daily"
+      # Daily at 9:05 AM (after health report)
+      cron_expression: "5 9 * * *"
+      enabled: true
+
+    - name: "weekly_performance"
+      report_type: "weekly"
+      # Monday at 9:00 AM
+      cron_expression: "0 9 * * 1"
+      enabled: true
+
+# Discord notification settings
+discord:
+  # Maximum message length (Discord limit is 2000)
+  max_message_length: 1900
+
+  # Timeout for webhook requests in seconds
+  webhook_timeout_seconds: 30
+
+# Email notification settings (placeholder)
+email:
+  enabled: false
+  smtp_host: ""
+  smtp_port: 587
+  username: ""
+  password: ""
+  from_address: "reports@chiseai.com"
