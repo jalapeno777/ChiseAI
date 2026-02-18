@@ -1,0 +1,91 @@
+# Bybit API Endpoint Configuration
+# For PAPER-LIVE-001: Endpoint Validation & Live Data Harness
+#
+# Usage:
+#   Set environment variables to override:
+#   - BYBIT_API_KEY: Your Bybit API key
+#   - BYBIT_API_SECRET: Your Bybit API secret
+#   - BYBIT_MODE: Connection mode (testnet|live)
+#
+# Fallback logic:
+#   1. Try primary mode (BYBIT_MODE or default)
+#   2. If testnet auth fails, try live demo mode
+#   3. Log all attempts for debugging
+
+bybit:
+  # Endpoint definitions
+  endpoints:
+    testnet:
+      name: "Bybit Testnet (Sandbox)"
+      description: "Bybit V5 API test environment for development and testing"
+      rest_base_url: "https://api-testnet.bybit.com"
+      ws_public_url: "wss://stream-testnet.bybit.com/v5/public/linear"
+      ws_private_url: "wss://stream-testnet.bybit.com/v5/private"
+      environment: "testnet"
+      requires_auth: true
+      
+    live:
+      name: "Bybit Live (Production)"
+      description: "Bybit V5 API production environment"
+      rest_base_url: "https://api.bybit.com"
+      ws_public_url: "wss://stream.bybit.com/v5/public/linear"
+      ws_private_url: "wss://stream.bybit.com/v5/private"
+      environment: "live"
+      requires_auth: true
+      
+    live_demo:
+      name: "Bybit Live (Demo/Read-only)"
+      description: "Bybit V5 API production for public endpoints without auth"
+      rest_base_url: "https://api.bybit.com"
+      ws_public_url: "wss://stream.bybit.com/v5/public/linear"
+      ws_private_url: "wss://stream.bybit.com/v5/private"
+      environment: "live"
+      requires_auth: false  # Public endpoints only
+
+  # Configuration settings
+  settings:
+    # Default mode if BYBIT_MODE not set
+    default_mode: "testnet"
+    
+    # Request settings
+    recv_window_ms: 5000
+    timeout_seconds: 30
+    
+    # Retry settings
+    max_retries: 3
+    retry_delay_seconds: 1
+    
+    # Latency thresholds
+    latency_threshold_ms:
+      market_data: 100  # Target: <100ms for market data
+      authenticated: 500  # Target: <500ms for authenticated requests
+    
+    # Fallback behavior
+    fallback:
+      enabled: true
+      primary: "testnet"
+      fallback_order:
+        - "testnet"
+        - "live_demo"  # Fallback to live public endpoints
+        - "live"  # Last resort: try live with credentials
+
+  # Test configuration
+  test_symbols:
+    - "BTCUSDT"
+    - "ETHUSDT"
+
+  # Health check endpoints
+  health_checks:
+    public:
+      endpoint: "/v5/market/time"
+      method: "GET"
+    authenticated:
+      endpoint: "/v5/account/info"
+      method: "GET"
+
+  # Evidence capture settings
+  evidence:
+    capture_request_response: true
+    capture_latency: true
+    capture_timestamps: true
+    log_level: "INFO"
