@@ -11,6 +11,10 @@ from pathlib import Path
 
 import requests
 
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from config.bootstrap import bootstrap
+
 ISSUE_MARKER_PREFIX = "<!-- CHISEAI_CRON_CI_FAILURE:"
 MAX_BODY = 60000
 
@@ -32,7 +36,11 @@ def _repo_owner_name() -> tuple[str, str]:
 
 
 def _forge_url() -> str:
-    return (_env("CI_FORGE_URL") or _env("GITEA_BASE_URL") or "http://host.docker.internal:3000").rstrip("/")
+    return (
+        _env("CI_FORGE_URL")
+        or _env("GITEA_BASE_URL")
+        or "http://host.docker.internal:3000"
+    ).rstrip("/")
 
 
 def _api(owner: str, repo: str) -> str:
@@ -74,14 +82,22 @@ def _session() -> requests.Session | None:
         print("post_ci_failure_issue: GITEA_TOKEN not set; skipping", file=sys.stderr)
         return None
     s = requests.Session()
-    s.headers.update({"Authorization": f"token {token}", "Content-Type": "application/json"})
+    s.headers.update(
+        {"Authorization": f"token {token}", "Content-Type": "application/json"}
+    )
     return s
 
 
-def _find_open_issue_with_marker(s: requests.Session, api: str, marker: str) -> dict | None:
+def _find_open_issue_with_marker(
+    s: requests.Session, api: str, marker: str
+) -> dict | None:
     page = 1
     while True:
-        r = s.get(f"{api}/issues", params={"state": "open", "page": page, "limit": 50}, timeout=30)
+        r = s.get(
+            f"{api}/issues",
+            params={"state": "open", "page": page, "limit": 50},
+            timeout=30,
+        )
         r.raise_for_status()
         items = r.json()
         if not isinstance(items, list) or not items:
@@ -96,11 +112,14 @@ def _find_open_issue_with_marker(s: requests.Session, api: str, marker: str) -> 
 
 
 def main() -> int:
+    bootstrap(load_env=True)
     pipeline = _env("CI_PIPELINE_NUMBER") or "unknown"
     repo = _env("CI_REPO", "craig/ChiseAI")
     branch = _env("CI_COMMIT_BRANCH") or _env("WOODPECKER_COMMIT_BRANCH")
     if branch != "main":
-        print(f"post_ci_failure_issue: branch={branch!r}; only main cron failures are tracked")
+        print(
+            f"post_ci_failure_issue: branch={branch!r}; only main cron failures are tracked"
+        )
         return 0
 
     owner, repo_name = _repo_owner_name()
@@ -160,4 +179,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

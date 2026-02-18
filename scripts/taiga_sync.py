@@ -29,8 +29,12 @@ from chiseai.taiga_sync import (  # noqa: E402
     plan_and_sync_repo_to_taiga,
 )
 
+# Bootstrap for environment variables
+from config.bootstrap import bootstrap
+
 
 def main() -> int:
+    bootstrap(load_env=True)
     p = argparse.ArgumentParser(description="Sync ChiseAI repo stories to Taiga")
     p.add_argument(
         "--apply",

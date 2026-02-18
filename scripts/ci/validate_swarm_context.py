@@ -14,6 +14,11 @@ import re
 import subprocess
 import sys
 from collections.abc import Iterable
+from pathlib import Path
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from config.bootstrap import bootstrap
 
 CANONICAL_FILES = {
     "docs/bmm-workflow-status.yaml",
@@ -111,6 +116,7 @@ def _is_allowed_work_branch(branch: str) -> bool:
 
 
 def main() -> int:
+    bootstrap(load_env=True)
     env = dict(os.environ)
     ev = _event(env)
     pr_build = _is_pr(env)

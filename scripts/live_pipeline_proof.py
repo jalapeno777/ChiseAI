@@ -44,6 +44,8 @@ logger = logging.getLogger(__name__)
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
+from config.bootstrap import bootstrap
+
 from signal_generation.models import Signal, SignalDirection, SignalStatus
 
 
@@ -1027,6 +1029,8 @@ async def main() -> int:
     Returns:
         Exit code (0 for success, 1 for failure)
     """
+    bootstrap(load_env=True)
+
     try:
         proof = LivePipelineProof()
         evidence = await proof.run()

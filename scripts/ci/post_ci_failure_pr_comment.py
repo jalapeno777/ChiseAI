@@ -18,9 +18,14 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+from pathlib import Path
 from typing import Any, Literal, cast, overload
 
 import requests
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from config.bootstrap import bootstrap
 
 COMMENT_MARKER = "<!-- CHISEAI_CI_FAILURE -->"
 MAX_COMMENT_LENGTH = 20000  # Gitea limit
@@ -173,6 +178,7 @@ def _build_body(
 
 
 def main() -> int:
+    bootstrap(load_env=True)
     forge_url = _getenv("CI_FORGE_URL")
     owner = _getenv("CI_REPO_OWNER")
     repo = _getenv("CI_REPO_NAME")

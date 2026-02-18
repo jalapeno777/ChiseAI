@@ -21,6 +21,8 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from config.bootstrap import bootstrap
+
 from data_ingestion.ohlcv_fetcher import CCXTAdapter, OHLCVFetcher
 from data_ingestion.storage import InfluxDBStorage, StorageConfig
 from data_ingestion.timeframe_config import Timeframe, timeframe_from_string
@@ -339,6 +341,8 @@ async def main() -> int:
     Returns:
         Exit code (0 for success, 1 for failure)
     """
+    bootstrap(load_env=True)
+
     parser = argparse.ArgumentParser(
         description="OHLCV Ingestion Runner for ChiseAI",
         formatter_class=argparse.RawDescriptionHelpFormatter,

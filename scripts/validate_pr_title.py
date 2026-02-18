@@ -15,6 +15,11 @@ from __future__ import annotations
 
 import os
 import sys
+from pathlib import Path
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from config.bootstrap import bootstrap
 
 try:
     from scripts.story_id import contains_valid_story_id, extract_story_ids
@@ -142,6 +147,8 @@ def _get_pr_title(env: dict[str, str]) -> str:
 
 
 def main() -> int:
+    bootstrap(load_env=True)
+
     env = dict(os.environ)
     if not _is_pr_build(env):
         print("validate_pr_title: non-PR build; skipping")

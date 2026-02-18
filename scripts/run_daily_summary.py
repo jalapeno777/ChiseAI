@@ -25,6 +25,8 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
+from config.bootstrap import bootstrap
+
 from src.reporting.daily_scheduler import DailySummaryScheduler
 
 # Configure logging
@@ -184,6 +186,8 @@ async def main() -> int:
     Returns:
         Exit code (0 on success, 1 on error, 2 on config error)
     """
+    bootstrap(load_env=True)
+
     args = parse_args()
 
     if args.verbose:
