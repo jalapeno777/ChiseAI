@@ -4,13 +4,15 @@ Provides consistent environment variable loading with validation
 and default value support across the codebase.
 
 For CH-KIMI-DISCORD-001: Fix KIMI env loading
+For ST-ENV-001: Environment bootstrap system
 """
 
 from __future__ import annotations
 
 import logging
 import os
-from typing import Any, cast
+from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +111,10 @@ class EnvLoader:
         Returns:
             String value or default
         """
-        return cast(str | None, self.get(key, default, required, str))
+        result = self.get(key, default, required, str)
+        if result is None:
+            return None
+        return str(result)
 
     def get_int(
         self, key: str, default: int | None = None, required: bool = False
@@ -124,7 +129,10 @@ class EnvLoader:
         Returns:
             Integer value or default
         """
-        return cast(int | None, self.get(key, default, required, int))
+        result = self.get(key, default, required, int)
+        if result is None:
+            return None
+        return int(result)
 
     def get_float(
         self, key: str, default: float | None = None, required: bool = False
@@ -139,7 +147,10 @@ class EnvLoader:
         Returns:
             Float value or default
         """
-        return cast(float | None, self.get(key, default, required, float))
+        result = self.get(key, default, required, float)
+        if result is None:
+            return None
+        return float(result)
 
     def get_bool(self, key: str, default: bool = False, required: bool = False) -> bool:
         """Get boolean environment variable.
@@ -152,7 +163,10 @@ class EnvLoader:
         Returns:
             Boolean value or default
         """
-        return cast(bool, self.get(key, default, required, bool))
+        result = self.get(key, default, required, bool)
+        if result is None:
+            return default
+        return bool(result)
 
 
 # Global loader instances for common prefixes
@@ -188,3 +202,347 @@ def load_discord_config() -> dict[str, Any]:
         "default_channel": discord_loader.get_str("DEFAULT_CHANNEL", "trading-signals"),
         "guild_id": discord_loader.get_str("GUILD_ID"),  # Guild restriction
     }
+
+
+# =============================================================================
+# Environment Bootstrap System (ST-ENV-001)
+# =============================================================================
+
+
+def _load_dotenv_file(env_path: Path, override: bool = False) -> bool:
+    """Load environment variables from a .env file.
+
+    Supports both python-dotenv (if available) and manual fallback parsing.
+
+    Args:
+        env_path: Path to the .env file
+        override: Whether to override existing environment variables
+
+    Returns:
+        True if file was loaded successfully, False otherwise
+    """
+    if not env_path.exists():
+        return False
+
+    try:
+        # Try python-dotenv first
+        from dotenv import load_dotenv
+
+        load_dotenv(dotenv_path=env_path, override=override)
+        return True
+    except ImportError:
+        # Fall back to manual parsing
+        return _manual_load_dotenv(env_path, override)
+
+
+def _manual_load_dotenv(env_path: Path, override: bool = False) -> bool:
+    """Manually parse .env file if python-dotenv is not available.
+
+    Args:
+        env_path: Path to the .env file
+        override: Whether to override existing environment variables
+
+    Returns:
+        True if file was loaded successfully
+    """
+    try:
+        with open(env_path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if "=" in line:
+                    key, value = line.split("=", 1)
+                    key = key.strip()
+                    value = value.strip().strip("\"'")
+                    if override or key not in os.environ:
+                        os.environ[key] = value
+        return True
+    except Exception as e:
+        logger.warning(f"Failed to manually load {env_path}: {e}")
+        return False
+
+
+def bootstrap_environment(
+    env_file_path: str | None = None, override: bool = False
+) -> dict[str, Any]:
+    """Bootstrap environment with proper variable precedence.
+
+    Loads environment variables with the following precedence:
+    1. Existing process environment variables (highest priority - never override)
+    2. Explicit env file path if provided
+    3. Default .env file in repo root
+    4. Default .env file in current working directory
+
+    Args:
+        env_file_path: Optional explicit path to .env file
+        override: Whether to override existing env vars (use with caution)
+
+    Returns:
+        Dictionary with bootstrap summary:
+        - loaded_files: List of files that were loaded
+        - env_file_path: The explicit path provided (if any)
+        - override: Whether override mode was used
+
+    Note:
+        Never logs or exposes actual environment variable values.
+    """
+    loaded_files: list[str] = []
+    repo_root = Path(__file__).parent.parent.parent
+
+    # 1. Explicit env file path (highest priority after process env)
+    if env_file_path:
+        explicit_path = Path(env_file_path)
+        if _load_dotenv_file(explicit_path, override=override):
+            loaded_files.append(str(explicit_path.resolve()))
+            logger.info(f"Loaded environment from explicit file: {explicit_path}")
+
+    # 2. Default .env in repo root
+    repo_env = repo_root / ".env"
+    if (
+        repo_env.exists()
+        and str(repo_env.resolve()) not in loaded_files
+        and _load_dotenv_file(repo_env, override=override)
+    ):
+        loaded_files.append(str(repo_env.resolve()))
+        logger.info(f"Loaded environment from repo root: {repo_env}")
+
+    # 3. Default .env in current working directory
+    cwd_env = Path.cwd() / ".env"
+    if (
+        cwd_env.exists()
+        and str(cwd_env.resolve()) not in loaded_files
+        and str(cwd_env.resolve()) != str(repo_env.resolve())
+        and _load_dotenv_file(cwd_env, override=override)
+    ):
+        loaded_files.append(str(cwd_env.resolve()))
+        logger.info(f"Loaded environment from current directory: {cwd_env}")
+
+    summary = {
+        "loaded_files": loaded_files,
+        "env_file_path": env_file_path,
+        "override": override,
+    }
+
+    logger.info(f"Environment bootstrap complete. Loaded {len(loaded_files)} file(s)")
+    return summary
+
+
+# =============================================================================
+# Provider Discovery Functions (ST-ENV-001)
+# =============================================================================
+
+
+def discover_kimi_config() -> dict[str, Any]:
+    """Discover KIMI provider configuration from environment.
+
+    Checks for KIMI_API_KEY and KIMI_ENABLED environment variables.
+
+    Returns:
+        Dictionary with provider configuration:
+        - enabled: Whether provider is enabled
+        - api_key_present: Whether API key is present (not the value)
+        - base_url: Base URL for API calls
+        - model: Model identifier
+
+    Note:
+        Never includes actual API key values in output.
+    """
+    api_key = os.environ.get("KIMI_API_KEY", "").strip()
+    enabled_str = os.environ.get("KIMI_ENABLED", "true").lower()
+    enabled = enabled_str in ("true", "1", "yes", "on")
+
+    return {
+        "enabled": enabled and bool(api_key),
+        "api_key_present": bool(api_key),
+        "base_url": os.environ.get("KIMI_BASE_URL", "https://api.kimi.com/coding/v1"),
+        "model": os.environ.get("KIMI_MODEL", "k2p5"),
+    }
+
+
+def discover_zai_config() -> dict[str, Any]:
+    """Discover Z.ai (Zhipu) provider configuration from environment.
+
+    Checks for ZAI_API_KEY environment variable.
+
+    Returns:
+        Dictionary with provider configuration:
+        - enabled: Whether provider is enabled (key present)
+        - api_key_present: Whether API key is present (not the value)
+        - base_url: Base URL for API calls
+
+    Note:
+        Never includes actual API key values in output.
+    """
+    api_key = os.environ.get("ZAI_API_KEY", "").strip()
+
+    return {
+        "enabled": bool(api_key),
+        "api_key_present": bool(api_key),
+        "base_url": os.environ.get("ZAI_BASE_URL", "https://api.z.ai/v1"),
+    }
+
+
+def discover_zhipu_config() -> dict[str, Any]:
+    """Discover Zhipu AI provider configuration from environment.
+
+    Checks for ZHIPU_API_KEY, with fallback to ZAI_API_KEY.
+
+    Returns:
+        Dictionary with provider configuration:
+        - enabled: Whether provider is enabled (key present)
+        - api_key_present: Whether API key is present (not the value)
+        - base_url: Base URL for API calls
+        - model: Model identifier
+
+    Note:
+        Never includes actual API key values in output.
+    """
+    api_key = os.environ.get("ZHIPU_API_KEY", "").strip()
+    fallback_key = os.environ.get("ZAI_API_KEY", "").strip()
+
+    # Use ZHIPU_API_KEY if available, otherwise fall back to ZAI_API_KEY
+    key_present = bool(api_key) or bool(fallback_key)
+
+    return {
+        "enabled": key_present,
+        "api_key_present": key_present,
+        "base_url": os.environ.get(
+            "ZHIPU_BASE_URL", "https://open.bigmodel.cn/api/paas/v4"
+        ),
+        "model": os.environ.get("ZHIPU_MODEL", "glm-5"),
+    }
+
+
+def discover_minimax_config() -> dict[str, Any]:
+    """Discover MiniMax provider configuration from environment.
+
+    Checks for MINIMAX_API_KEY and MINIMAX_ENABLED environment variables.
+
+    Returns:
+        Dictionary with provider configuration:
+        - enabled: Whether provider is enabled
+        - api_key_present: Whether API key is present (not the value)
+        - base_url: Base URL for API calls
+        - model: Model identifier
+
+    Note:
+        Never includes actual API key values in output.
+    """
+    api_key = os.environ.get("MINIMAX_API_KEY", "").strip()
+    enabled_str = os.environ.get("MINIMAX_ENABLED", "true").lower()
+    enabled = enabled_str in ("true", "1", "yes", "on")
+
+    return {
+        "enabled": enabled and bool(api_key),
+        "api_key_present": bool(api_key),
+        "base_url": os.environ.get("MINIMAX_BASE_URL", "https://api.minimax.chat/v1"),
+        "model": os.environ.get("MINIMAX_MODEL", "abab6.5s"),
+    }
+
+
+def get_available_providers() -> list[str]:
+    """Get list of available LLM provider names.
+
+    Returns:
+        List of provider names that have API keys configured.
+        Possible values: "kimi", "zai", "zhipu", "minimax"
+
+    Note:
+        Only returns provider names, never includes API keys or secrets.
+    """
+    providers = []
+
+    if discover_kimi_config()["enabled"]:
+        providers.append("kimi")
+    if discover_zai_config()["enabled"]:
+        providers.append("zai")
+    if discover_zhipu_config()["enabled"]:
+        providers.append("zhipu")
+    if discover_minimax_config()["enabled"]:
+        providers.append("minimax")
+
+    return providers
+
+
+def diagnose_provider_availability() -> list[dict[str, Any]]:
+    """Diagnose availability of all LLM providers.
+
+    Returns structured diagnostic information about each provider
+    without revealing any API keys or secrets.
+
+    Returns:
+        List of dictionaries, each containing:
+        - provider: Provider name (e.g., "kimi", "zai")
+        - available: Boolean indicating if provider is available
+        - reason: String explaining why provider is not available (if applicable)
+        - config: Sanitized configuration (no secrets)
+
+    Example:
+        >>> diagnostics = diagnose_provider_availability()
+        >>> for d in diagnostics:
+        ...     status = "✓" if d["available"] else "✗"
+        ...     print(f"{status} {d['provider']}: {d.get('reason', 'OK')}")
+    """
+    results = []
+
+    # KIMI
+    kimi = discover_kimi_config()
+    kimi_diag: dict[str, Any] = {
+        "provider": "kimi",
+        "available": kimi["enabled"],
+        "config": {
+            "base_url": kimi["base_url"],
+            "model": kimi["model"],
+        },
+    }
+    if not kimi["api_key_present"]:
+        kimi_diag["reason"] = "KIMI_API_KEY not set"
+    elif not kimi["enabled"]:
+        kimi_diag["reason"] = "KIMI_ENABLED is false"
+    results.append(kimi_diag)
+
+    # Z.ai
+    zai = discover_zai_config()
+    zai_diag: dict[str, Any] = {
+        "provider": "zai",
+        "available": zai["enabled"],
+        "config": {
+            "base_url": zai["base_url"],
+        },
+    }
+    if not zai["api_key_present"]:
+        zai_diag["reason"] = "ZAI_API_KEY not set"
+    results.append(zai_diag)
+
+    # Zhipu
+    zhipu = discover_zhipu_config()
+    zhipu_diag: dict[str, Any] = {
+        "provider": "zhipu",
+        "available": zhipu["enabled"],
+        "config": {
+            "base_url": zhipu["base_url"],
+            "model": zhipu["model"],
+        },
+    }
+    if not zhipu["api_key_present"]:
+        zhipu_diag["reason"] = "ZHIPU_API_KEY (or ZAI_API_KEY fallback) not set"
+    results.append(zhipu_diag)
+
+    # MiniMax
+    minimax = discover_minimax_config()
+    minimax_diag: dict[str, Any] = {
+        "provider": "minimax",
+        "available": minimax["enabled"],
+        "config": {
+            "base_url": minimax["base_url"],
+            "model": minimax["model"],
+        },
+    }
+    if not minimax["api_key_present"]:
+        minimax_diag["reason"] = "MINIMAX_API_KEY not set"
+    elif not minimax["enabled"]:
+        minimax_diag["reason"] = "MINIMAX_ENABLED is false"
+    results.append(minimax_diag)
+
+    return results
