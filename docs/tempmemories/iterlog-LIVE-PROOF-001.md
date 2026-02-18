@@ -1,3 +1,12 @@
+---
+story_id: LIVE-PROOF-001
+story_title: Live-Proof Pass Results
+story_type: evidence
+status: completed
+created_at: 2026-02-18T15:09:56Z
+owner: main
+---
+
 # Live-Proof Pass Results - LIVE-PROOF-001
 
 **Story ID:** LIVE-PROOF-001  
