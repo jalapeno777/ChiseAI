@@ -11,20 +11,18 @@ it stays within the 100ms threshold.
 
 import asyncio
 import sys
-from pathlib import Path
+import os
 
-# Bootstrap environment first (must be before any env access)
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+# Add src to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+
 from config.bootstrap import bootstrap
-
-bootstrap(load_env=True)
-
-from brain.shadow_testing import (
+from src.brain.shadow_testing import (
     ShadowTestConfig,
     ShadowTester,
     run_shadow_test,
 )
-from brain.version import BrainVersion
+from src.brain.version import BrainVersion
 
 
 async def fast_brain(input_data):
@@ -189,6 +187,9 @@ async def demo_convenience_function():
 
 async def main():
     """Run all demonstrations."""
+    # Bootstrap environment first
+    bootstrap(load_env=True)
+
     print()
     print("*" * 70)
     print("SHADOW TESTING DEMONSTRATION")

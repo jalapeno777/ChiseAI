@@ -24,6 +24,8 @@ from config.bootstrap import bootstrap
 
 bootstrap(load_env=True)
 
+from config.bootstrap import bootstrap
+
 from ml.training.exporter import (
     DatasetExporter,
     DatasetInfo,
@@ -253,6 +255,8 @@ def print_info(info: DatasetInfo) -> None:
 
 def main() -> int:
     """Main entry point."""
+    bootstrap(load_env=True)
+
     parser = create_parser()
     args = parser.parse_args()
 

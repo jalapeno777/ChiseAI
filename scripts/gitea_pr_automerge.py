@@ -26,6 +26,11 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from pathlib import Path
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from config.bootstrap import bootstrap
 
 from config.bootstrap import bootstrap
 
@@ -208,6 +213,7 @@ def _try_merge_with_retry(
 
 
 def main() -> int:
+    bootstrap(load_env=True)
     # Environment variable defaults
     default_poll_interval = int(os.getenv("GITEA_POLL_INTERVAL", "60"))
     default_max_retries = int(os.getenv("GITEA_MAX_RETRIES", "3"))

@@ -19,9 +19,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from config.bootstrap import bootstrap
 
-# Bootstrap environment first (must be before any env access)
-bootstrap(load_env=True)
-
 from data.exchange.credential_resolver import (
     get_credential_resolution_status,
     resolve_bybit_credentials,
@@ -493,6 +490,8 @@ def run_auth_tests():
 
 def main():
     """Main entry point."""
+    bootstrap(load_env=True)
+
     # Ensure output directory exists
     os.makedirs("_bmad-output", exist_ok=True)
 

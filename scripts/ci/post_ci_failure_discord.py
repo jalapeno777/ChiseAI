@@ -10,7 +10,7 @@ import sys
 import urllib.request
 from pathlib import Path
 
-# Add src to path for config imports
+# Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 from config.bootstrap import bootstrap
 
@@ -59,7 +59,6 @@ def _post_discord(webhook_url: str, content: str) -> None:
 
 
 def main() -> int:
-    # Bootstrap environment first
     bootstrap(load_env=True)
     env = dict(os.environ)
     webhook = env.get("DISCORD_DEV_WEBHOOK_URL", "").strip()
