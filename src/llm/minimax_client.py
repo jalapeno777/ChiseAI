@@ -18,16 +18,7 @@ from typing import Any
 
 import aiohttp
 
-from llm.errors import (
-    AuthError,
-    NetworkError,
-    QuotaError,
-    RateLimitError,
-    ScopeError,
-    ServerError,
-    ValidationError,
-    classify_error,
-)
+from llm.errors import classify_error
 
 logger = logging.getLogger(__name__)
 
@@ -218,7 +209,7 @@ class MiniMaxClient:
                         return self._parse_response(data)
 
                     # Classify error for deterministic fallback behavior
-                    error = classify_error(
+                    classified_error = classify_error(
                         Exception(f"HTTP {response.status}"),
                         provider="MINIMAX",
                         status_code=response.status,
@@ -227,18 +218,25 @@ class MiniMaxClient:
 
                     # Handle specific error codes with classified errors
                     if response.status == 401:
-                        raise AuthError(
-                            "Authentication failed for MINIMAX", provider="MINIMAX"
+                        return MiniMaxResponse(
+                            success=False,
+                            error="Authentication failed for MINIMAX",
+                            raw_response={
+                                "status": response.status,
+                                "body": response_text,
+                                "error_type": "AuthError",
+                            },
                         )
                     elif response.status == 403:
-                        # Check for quota vs scope error
-                        if isinstance(error, (QuotaError, ScopeError)):
-                            raise error
-                        else:
-                            raise ScopeError(
-                                f"Permission denied for MINIMAX: {response_text[:200]}",
-                                provider="MINIMAX",
-                            )
+                        return MiniMaxResponse(
+                            success=False,
+                            error=f"Permission denied for MINIMAX: {response_text[:200]}",
+                            raw_response={
+                                "status": response.status,
+                                "body": response_text,
+                                "error_type": type(classified_error).__name__,
+                            },
+                        )
                     elif response.status == 429:
                         # Rate limited - retry with longer delay
                         logger.warning(
@@ -251,8 +249,14 @@ class MiniMaxClient:
                             )  # Longer delay for rate limits
                             delay *= 2
                             continue
-                        raise RateLimitError(
-                            "Rate limit exceeded for MINIMAX", provider="MINIMAX"
+                        return MiniMaxResponse(
+                            success=False,
+                            error="Rate limit exceeded for MINIMAX",
+                            raw_response={
+                                "status": response.status,
+                                "body": response_text,
+                                "error_type": "RateLimitError",
+                            },
                         )
                     elif response.status >= 500:
                         # Server error - retry
@@ -264,18 +268,25 @@ class MiniMaxClient:
                             await asyncio.sleep(delay)
                             delay *= 2
                             continue
-                        raise ServerError(
-                            f"Server error {response.status} from MINIMAX",
-                            provider="MINIMAX",
-                            status_code=response.status,
+                        return MiniMaxResponse(
+                            success=False,
+                            error=f"Server error {response.status} from MINIMAX",
+                            raw_response={
+                                "status": response.status,
+                                "body": response_text,
+                                "error_type": "ServerError",
+                            },
                         )
                     elif response.status in (400, 422):
                         # Validation error - don't retry
-                        raise ValidationError(
-                            f"Request validation failed for MINIMAX: "
-                            f"{response_text[:200]}",
-                            provider="MINIMAX",
-                            status_code=response.status,
+                        return MiniMaxResponse(
+                            success=False,
+                            error=f"HTTP {response.status}: {response_text[:500]}",
+                            raw_response={
+                                "status": response.status,
+                                "body": response_text,
+                                "error_type": "ValidationError",
+                            },
                         )
                     else:
                         # Unknown error
@@ -288,18 +299,6 @@ class MiniMaxClient:
                             },
                         )
 
-            except AuthError:
-                raise  # Re-raise auth errors for immediate fallback
-            except QuotaError:
-                raise  # Re-raise quota errors for immediate fallback
-            except ScopeError:
-                raise  # Re-raise scope errors for immediate fallback
-            except RateLimitError:
-                raise  # Re-raise rate limit errors for handler decision
-            except ValidationError:
-                raise  # Re-raise validation errors (don't retry)
-            except ServerError:
-                raise  # Re-raise server errors for handler decision
             except aiohttp.ClientError as e:
                 last_error = e
                 logger.warning(
@@ -310,9 +309,13 @@ class MiniMaxClient:
                     await asyncio.sleep(delay)
                     delay *= 2
                 else:
-                    raise NetworkError(
-                        f"Network error with MINIMAX: {e}", provider="MINIMAX"
-                    ) from e
+                    return MiniMaxResponse(
+                        success=False,
+                        error=f"Max retries exceeded. Last error: {e}",
+                        raw_response={
+                            "error_type": "NetworkError",
+                        },
+                    )
             except TimeoutError as e:
                 last_error = e
                 logger.warning(
@@ -322,9 +325,13 @@ class MiniMaxClient:
                     await asyncio.sleep(delay)
                     delay *= 2
                 else:
-                    raise NetworkError(
-                        f"Timeout error with MINIMAX: {e}", provider="MINIMAX"
-                    ) from e
+                    return MiniMaxResponse(
+                        success=False,
+                        error=f"Max retries exceeded. Last error: {e}",
+                        raw_response={
+                            "error_type": "NetworkError",
+                        },
+                    )
             except Exception as e:
                 last_error = e
                 logger.error(f"Unexpected error: {e}")

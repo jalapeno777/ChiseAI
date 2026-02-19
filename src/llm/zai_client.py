@@ -18,16 +18,7 @@ from typing import Any
 
 import aiohttp
 
-from llm.errors import (
-    AuthError,
-    NetworkError,
-    QuotaError,
-    RateLimitError,
-    ScopeError,
-    ServerError,
-    ValidationError,
-    classify_error,
-)
+from llm.errors import classify_error
 
 logger = logging.getLogger(__name__)
 
@@ -223,7 +214,7 @@ class ZaiClient:
                         return self._parse_response(data)
 
                     # Classify error for deterministic fallback behavior
-                    error = classify_error(
+                    classified_error = classify_error(
                         Exception(f"HTTP {response.status}"),
                         provider="ZAI",
                         status_code=response.status,
@@ -232,16 +223,25 @@ class ZaiClient:
 
                     # Handle specific error codes with classified errors
                     if response.status == 401:
-                        raise AuthError("Authentication failed for ZAI", provider="ZAI")
+                        return ZaiResponse(
+                            success=False,
+                            error="Authentication failed for ZAI",
+                            raw_response={
+                                "status": response.status,
+                                "body": response_text,
+                                "error_type": "AuthError",
+                            },
+                        )
                     elif response.status == 403:
-                        # Check for quota vs scope error
-                        if isinstance(error, (QuotaError, ScopeError)):
-                            raise error
-                        else:
-                            raise ScopeError(
-                                f"Permission denied for ZAI: {response_text[:200]}",
-                                provider="ZAI",
-                            )
+                        return ZaiResponse(
+                            success=False,
+                            error=f"Permission denied for ZAI: {response_text[:200]}",
+                            raw_response={
+                                "status": response.status,
+                                "body": response_text,
+                                "error_type": type(classified_error).__name__,
+                            },
+                        )
                     elif response.status == 429:
                         # Rate limited - retry with longer delay
                         logger.warning(
@@ -254,8 +254,14 @@ class ZaiClient:
                             )  # Longer delay for rate limits
                             delay *= 2
                             continue
-                        raise RateLimitError(
-                            "Rate limit exceeded for ZAI", provider="ZAI"
+                        return ZaiResponse(
+                            success=False,
+                            error="Rate limit exceeded for ZAI",
+                            raw_response={
+                                "status": response.status,
+                                "body": response_text,
+                                "error_type": "RateLimitError",
+                            },
                         )
                     elif response.status >= 500:
                         # Server error - retry
@@ -267,17 +273,25 @@ class ZaiClient:
                             await asyncio.sleep(delay)
                             delay *= 2
                             continue
-                        raise ServerError(
-                            f"Server error {response.status} from ZAI",
-                            provider="ZAI",
-                            status_code=response.status,
+                        return ZaiResponse(
+                            success=False,
+                            error=f"Server error {response.status} from ZAI",
+                            raw_response={
+                                "status": response.status,
+                                "body": response_text,
+                                "error_type": "ServerError",
+                            },
                         )
                     elif response.status in (400, 422):
                         # Validation error - don't retry
-                        raise ValidationError(
-                            f"Request validation failed for ZAI: {response_text[:200]}",
-                            provider="ZAI",
-                            status_code=response.status,
+                        return ZaiResponse(
+                            success=False,
+                            error=f"HTTP {response.status}: {response_text[:500]}",
+                            raw_response={
+                                "status": response.status,
+                                "body": response_text,
+                                "error_type": "ValidationError",
+                            },
                         )
                     else:
                         # Unknown error
@@ -290,18 +304,6 @@ class ZaiClient:
                             },
                         )
 
-            except AuthError:
-                raise  # Re-raise auth errors for immediate fallback
-            except QuotaError:
-                raise  # Re-raise quota errors for immediate fallback
-            except ScopeError:
-                raise  # Re-raise scope errors for immediate fallback
-            except RateLimitError:
-                raise  # Re-raise rate limit errors for handler decision
-            except ValidationError:
-                raise  # Re-raise validation errors (don't retry)
-            except ServerError:
-                raise  # Re-raise server errors for handler decision
             except aiohttp.ClientError as e:
                 last_error = e
                 logger.warning(
@@ -312,9 +314,13 @@ class ZaiClient:
                     await asyncio.sleep(delay)
                     delay *= 2
                 else:
-                    raise NetworkError(
-                        f"Network error with ZAI: {e}", provider="ZAI"
-                    ) from e
+                    return ZaiResponse(
+                        success=False,
+                        error=f"Max retries exceeded. Last error: {e}",
+                        raw_response={
+                            "error_type": "NetworkError",
+                        },
+                    )
             except TimeoutError as e:
                 last_error = e
                 logger.warning(
@@ -324,9 +330,13 @@ class ZaiClient:
                     await asyncio.sleep(delay)
                     delay *= 2
                 else:
-                    raise NetworkError(
-                        f"Timeout error with ZAI: {e}", provider="ZAI"
-                    ) from e
+                    return ZaiResponse(
+                        success=False,
+                        error=f"Max retries exceeded. Last error: {e}",
+                        raw_response={
+                            "error_type": "NetworkError",
+                        },
+                    )
             except Exception as e:
                 last_error = e
                 logger.error(f"Unexpected error: {e}")
