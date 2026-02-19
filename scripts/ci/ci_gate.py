@@ -14,7 +14,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-# Add src to path for config imports
+# Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 from config.bootstrap import bootstrap
 
@@ -181,7 +181,6 @@ def _print_exact_root_causes(root_cause_json: Path) -> None:
 
 
 def main() -> int:
-    # Bootstrap environment first
     bootstrap(load_env=True)
     env = dict(os.environ)
     CI_DIR.mkdir(parents=True, exist_ok=True)

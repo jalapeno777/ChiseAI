@@ -30,6 +30,10 @@ bootstrap(load_env=True)
 
 import psycopg2  # type: ignore[import-untyped]
 
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from config.bootstrap import bootstrap
+
 TABLES = ["forges", "orgs", "users", "repos", "secrets"]
 
 
@@ -104,6 +108,8 @@ def _insert_rows(
 
 
 def main() -> int:
+    bootstrap(load_env=True)
+
     sqlite_path = _env("SQLITE_PATH", default="/sqlite/woodpecker.sqlite")
 
     sq = _sqlite_connect(sqlite_path)

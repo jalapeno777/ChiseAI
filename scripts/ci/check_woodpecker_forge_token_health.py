@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse, urlunparse
 
-# Add src to path for config imports
+# Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 from config.bootstrap import bootstrap
 
@@ -183,8 +183,8 @@ def _collect_health(
 
 
 def main() -> int:
-    # Bootstrap environment first (must be before any env access)
     bootstrap(load_env=True)
+
     parser = argparse.ArgumentParser(
         description="Check Woodpecker forge token expiry drift and near-expiry risk"
     )

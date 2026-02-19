@@ -20,13 +20,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-# Add src to path
+# Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
 from config.bootstrap import bootstrap
-
-# Bootstrap environment first (must be before any env access)
-bootstrap(load_env=True)
 
 ITERLOG_DIR = Path("docs/tempmemories")
 OWNERSHIP_KEY = "bmad:chiseai:ownership"
@@ -240,6 +236,8 @@ def cmd_append_incident(args: argparse.Namespace) -> int:
 
 
 def main() -> int:
+    bootstrap(load_env=True)
+
     p = argparse.ArgumentParser(
         description="ChiseAI iterlog helper ops (ownership + incidents)"
     )

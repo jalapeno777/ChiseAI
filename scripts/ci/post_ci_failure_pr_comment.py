@@ -21,11 +21,11 @@ import sys
 from pathlib import Path
 from typing import Any, Literal, cast, overload
 
-# Add src to path for config imports
+import requests
+
+# Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 from config.bootstrap import bootstrap
-
-import requests
 
 COMMENT_MARKER = "<!-- CHISEAI_CI_FAILURE -->"
 MAX_COMMENT_LENGTH = 20000  # Gitea limit
@@ -178,7 +178,6 @@ def _build_body(
 
 
 def main() -> int:
-    # Bootstrap environment first (must be before any env access)
     bootstrap(load_env=True)
     forge_url = _getenv("CI_FORGE_URL")
     owner = _getenv("CI_REPO_OWNER")

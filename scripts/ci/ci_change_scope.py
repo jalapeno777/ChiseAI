@@ -13,7 +13,7 @@ from urllib.parse import quote
 from urllib.request import Request, urlopen
 from pathlib import Path
 
-# Add src to path for config imports
+# Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 from config.bootstrap import bootstrap
 
@@ -174,7 +174,6 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
-    # Bootstrap environment first (must be before any env access)
     bootstrap(load_env=True)
     args = build_parser().parse_args()
     paths = changed_files(args.base_ref)

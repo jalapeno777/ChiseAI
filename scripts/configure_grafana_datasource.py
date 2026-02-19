@@ -11,10 +11,8 @@ import sys
 import urllib.error
 import urllib.request
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from config.bootstrap import bootstrap
-
-# Bootstrap environment first (must be before any env access)
-bootstrap(load_env=True)
 
 GRAFANA_URL = os.getenv("GRAFANA_URL", "http://host.docker.internal:3001")
 GRAFANA_ADMIN_USER = os.getenv("GRAFANA_ADMIN_USER", "admin")
@@ -124,7 +122,9 @@ def list_datasources():
         return []
 
 
-if __name__ == "__main__":
+def main():
+    bootstrap(load_env=True)
+
     print("=== Grafana InfluxDB Datasource Configuration ===")
     print(f"Grafana URL: {GRAFANA_URL}")
     print(f"InfluxDB URL: {INFLUXDB_URL}")
@@ -151,3 +151,7 @@ if __name__ == "__main__":
     else:
         print("\n✗ Failed to create datasource")
         sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

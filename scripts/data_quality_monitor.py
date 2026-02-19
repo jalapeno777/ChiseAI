@@ -48,9 +48,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from config.bootstrap import bootstrap
 
-# Bootstrap environment first (must be before any env access)
-bootstrap(load_env=True)
-
 from operations.data_quality_monitoring import (
     DataQualityMonitor,
     DataSource,
@@ -420,6 +417,8 @@ def generate_dashboard(args: argparse.Namespace) -> int:
 
 def main() -> int:
     """Main entry point."""
+    bootstrap(load_env=True)
+
     parser = argparse.ArgumentParser(
         description="Data Quality Monitor for ChiseAI",
         formatter_class=argparse.RawDescriptionHelpFormatter,

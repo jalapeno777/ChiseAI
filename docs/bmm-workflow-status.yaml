@@ -4,10 +4,9 @@
 
 metadata:
   project_name: ChiseAI
-  version: "2.1.0"
-  last_updated: "2026-02-18T16:56:22Z"
+  version: "2.2.0"
+  last_updated: "2026-02-17T14:20:00Z"
   prd_location: docs/prd.md
-  live_proof_note: "LIVE-PROOF-FINAL completed successfully on 2026-02-18T16:56:22Z. All-green proof pack generated with 10 validation gates passed. Evidence bundle includes: live-proof-e2e-evidence.json, discord_integration_test_results.json, crontab_installation_proof.txt, workflow_status_update_proof.yaml. WebSocket auth functional for demo trading. Commit: 6e55045. See docs/tempmemories/iterlog-LIVE-PROOF-FINAL.md"
   prd_note: "Phased perps execution: continuous backtest -> Bybit demo paper -> Bitget live; Grafana-first ops UI; Binance used as reference market-structure venue. LLM integrations (Z.ai GLM-5, MiniMax 2.5) are separate capabilities, not Phase 1."
 
 # Current project phase
@@ -182,16 +181,15 @@ epics:
     description: Advanced neuro-symbolic AI features including hybrid reasoning, explainability, and adaptive learning
     sprint_id: q2-6
 
-  # EP-PAPER-002: Paper Trading Production Readiness (4 stories, 34 points)
-  - id: EP-PAPER-002
-    name: Paper Trading Production Readiness
+  # EP-PAPER-001: Paper Trading Loop Implementation (4 stories, 21 points)
+  - id: EP-PAPER-001
+    name: Paper Trading Loop Implementation
     status: completed
-    story_ids: [ST-PAPER-005, ST-PAPER-006, ST-PAPER-007, ST-PAPER-008]
+    story_ids: [ST-PAPER-001, ST-PAPER-002, ST-PAPER-003, ST-PAPER-004]
     story_count: 4
-    story_points: 34
-    description: Production-grade resilience, safety, market realism, and operational readiness for paper trading
-    sprint_id: PAPER-002
-    completion_date: "2026-02-17"
+    story_points: 21
+    description: End-to-end paper trading loop with risk controls and observability
+    sprint_id: PAPER-GATE-002
 
 # ============================================================
 # PHASE 1 STORIES (35 stories)
@@ -1621,96 +1619,74 @@ stories:
     fr_coverage: [FR-003, FR-004, FR-018]
     description: Create integration layer between neural and symbolic components
 
-  # EP-PAPER-002: Paper Trading Production Readiness (4 stories, 34 points)
-  - id: ST-PAPER-005
-    title: Circuit Breakers for External Dependencies
-    epic_id: EP-PAPER-002
-    sprint_id: PAPER-002
+  # EP-PAPER-001: Paper Trading Loop Implementation (4 stories, 21 points)
+  - id: ST-PAPER-001
+    title: Paper Order Simulator and Position Tracking
+    epic_id: EP-PAPER-001
+    sprint_id: PAPER-GATE-002
     status: completed
     validation_status: validated
     story_points: 8
     priority: P0-CRITICAL
-    description: Implement circuit breaker pattern for Redis and InfluxDB to prevent cascading failures
+    fr_coverage: [FR-027, FR-012, FR-013]
+    description: Simulate paper orders and track virtual positions with real-time PnL
     acceptance_criteria:
-      - Circuit breaker class with CLOSED, OPEN, HALF_OPEN states
-      - Redis operations wrapped with circuit breaker in paper_tracker.py
-      - Configurable thresholds: failure_count, timeout, half_open_max_calls
-      - Fail-fast behavior when circuit is OPEN
-      - State transitions logged
-      - 90%+ test coverage
-    implementation_notes:
-      - Module: src/common/circuit_breaker.py (539 lines)
-      - Tests: tests/test_common/test_circuit_breaker.py (588 lines, 97% coverage)
-      - Integration: src/portfolio/paper_tracker.py
-      - Documentation: docs/architecture/circuit-breaker-pattern.md
+      - Paper orders are simulated without real capital exposure
+      - Virtual positions are tracked with accurate entry/exit prices
+      - Real-time PnL is calculated and displayed
+      - Position history is persisted for analysis
+      - Order fills are simulated with realistic latency and slippage
 
-  - id: ST-PAPER-006
-    title: Kill-Switch Edge Case Coverage
-    epic_id: EP-PAPER-002
-    sprint_id: PAPER-002
+  - id: ST-PAPER-002
+    title: Paper Trading Risk Enforcer
+    epic_id: EP-PAPER-001
+    sprint_id: PAPER-GATE-002
     status: completed
     validation_status: validated
     story_points: 5
     priority: P0-CRITICAL
-    description: Comprehensive edge case handling and tests for kill-switch executor
+    fr_coverage: [FR-014, FR-016, FR-029]
+    description: Enforce risk controls during paper trading including position limits and drawdown guards
     acceptance_criteria:
-      - Redis failure during trigger handled gracefully
-      - Partial position closure failures tracked
-      - Concurrent trigger race conditions handled
-      - Exchange API outage recovery
-      - Retry logic with exponential backoff (3 retries)
-      - All edge cases tested
-    implementation_notes:
-      - Module: src/execution/kill_switch/retry_handler.py (284 lines)
-      - Extended: src/execution/kill_switch/executor.py
-      - Tests: tests/test_execution/test_kill_switch/test_executor_edge_cases.py (715 lines)
-      - Coverage: 93% on kill_switch module, 94 tests passing
+      - Position size limits are enforced per trade and total portfolio
+      - Maximum drawdown guards trigger alerts at configured thresholds
+      - Daily loss limits prevent excessive virtual losses
+      - Risk violations are logged and reported
+      - Risk parameters are configurable per strategy
 
-  - id: ST-PAPER-007
-    title: Paper Trading Market Realism
-    epic_id: EP-PAPER-002
-    sprint_id: PAPER-002
+  - id: ST-PAPER-003
+    title: Paper Trading Orchestrator and Loop
+    epic_id: EP-PAPER-001
+    sprint_id: PAPER-GATE-002
     status: completed
     validation_status: validated
-    story_points: 13
-    priority: P1-HIGH
-    description: "Implement realistic market simulation: slippage, latency, market impact, fill probability"
+    story_points: 5
+    priority: P0-CRITICAL
+    fr_coverage: [FR-027, FR-028, FR-030]
+    description: Orchestrate the paper trading loop from signal generation to order execution
     acceptance_criteria:
-      - Slippage model: base + volatility * size/ADV (2-5 bps realistic range)
-      - Latency simulation: normal distribution (submission 50±15ms, fill 100±30ms)
-      - Market impact: square-root formula for orders >0.1% ADV
-      - Fill probability based on order book depth
-      - Configuration system for per-symbol parameters
-      - 85%+ test coverage
-      - 1000 trade validation showing realistic distributions
-    implementation_notes:
-      - Modules: slippage_model.py (167), latency_model.py (209), market_impact.py (255), fill_probability.py (259)
-      - Config: config/market_realism.yaml (140 lines)
-      - Tests: tests/test_execution/test_paper/test_market_realism.py (1097 lines)
-      - Validation: Mean slippage 2.52 bps over 1000 trades
+      - Trading loop runs continuously without manual intervention
+      - Signal-to-order latency is under 1 second
+      - Failed orders are retried with exponential backoff
+      - Loop state is recoverable after restarts
+      - Performance metrics are tracked per iteration
 
-  - id: ST-PAPER-008
-    title: Critical Alerts and Operational Runbooks
-    epic_id: EP-PAPER-002
-    sprint_id: PAPER-002
+  - id: ST-PAPER-004
+    title: Paper Trading Observability and E2E Validation
+    epic_id: EP-PAPER-001
+    sprint_id: PAPER-GATE-002
     status: completed
     validation_status: validated
-    story_points: 8
-    priority: P1-HIGH
-    description: Production alerts and runbooks for paper trading operations
+    story_points: 3
+    priority: P0-CRITICAL
+    fr_coverage: [FR-031]
+    description: Provide full observability for paper trading with Grafana dashboards and E2E validation
     acceptance_criteria:
-      - Redis failure alert (CRITICAL severity)
-      - Paper-sync divergence alert (>5% difference)
-      - Validation failure rate alert (>10% in 5min window)
-      - Kill-switch trigger runbook
-      - Paper trading operations runbook
-      - Redis failure response runbook
-      - Alert hooks integrated into paper_tracker.py
-    implementation_notes:
-      - Extended: src/portfolio_risk/alerts/detector.py, types.py, formatter.py
-      - New: src/portfolio/paper_tracker.py (509 lines)
-      - Runbooks: docs/runbooks/kill-switch-trigger.md, paper-trading-operations.md, redis-failure-response.md
-      - Tests: 119 passing
+      - Grafana dashboards display paper trading metrics in real-time
+      - Order lifecycle events are traceable end-to-end
+      - E2E validation tests pass for all paper trading scenarios
+      - Alerts trigger on anomalies and errors
+      - Audit logs capture all trading decisions
 
 # ============================================================
 # ACTIVE SPRINTS
@@ -1893,14 +1869,14 @@ sprints:
     prs_merged: [PR-081]
     completion_date: "2026-02-15"
 
-  - id: PAPER-002
-    name: Paper Trading Production Readiness Sprint
+  # Paper Trading Loop Sprint
+  - id: PAPER-GATE-002
+    name: Paper Trading Loop Sprint
     status: completed
     story_count: 4
-    story_points: 34
-    mapped_stories: [ST-PAPER-005, ST-PAPER-006, ST-PAPER-007, ST-PAPER-008]
+    story_points: 21
+    mapped_stories: [ST-PAPER-001, ST-PAPER-002, ST-PAPER-003, ST-PAPER-004]
     completion_date: "2026-02-17"
-    notes: "All P0 and high-impact P1 gaps closed. 322 tests passing. Paper trading now production-ready."
 
 # ============================================================
 # SUMMARY COUNTS
@@ -1909,7 +1885,7 @@ sprints:
 summary:
   total_epics: 16
   total_stories: 72
-  total_story_points: 419
+  total_story_points: 406
   phase_1:
     epics: 8
     stories: 41
@@ -1917,4 +1893,4 @@ summary:
   phase_2_plus:
     epics: 8
     stories: 31
-    story_points: 251
+    story_points: 238

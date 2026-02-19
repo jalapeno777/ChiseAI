@@ -38,6 +38,12 @@ from typing import Any
 import aiohttp
 import yaml
 
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from config.bootstrap import bootstrap
+
+bootstrap(load_env=True)
+
 
 @dataclass
 class EndpointConfig:
