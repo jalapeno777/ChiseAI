@@ -454,13 +454,12 @@ RATIONALE: [One sentence explaining your confidence assessment]
             from llm import ZhipuClient
 
             client = ZhipuClient()
-            response = client.chat.completions.create(
-                model="glm-4.7",
+            response = client.chat(
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=150,
                 temperature=0.3,
             )
-            content = response.choices[0].message.content
+            content = response.content
             return self._parse_llm_response(content, analysis, "GLM-4.7 (Zhipu)")
         except ImportError:
             raise RuntimeError("ZhipuClient not available")
