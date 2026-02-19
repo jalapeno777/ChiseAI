@@ -1,0 +1,267 @@
+"""Paper trading position tracker.
+
+Tracks open and closed paper trading positions with PnL calculation.
+Provides position lifecycle management for paper trading.
+
+For PAPER-LOOP-001: Paper Trading Position Tracker
+"""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+import uuid
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from typing import Any
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class PaperPosition:
+    """A paper trading position.
+
+    Attributes:
+        position_id: Unique position identifier
+        symbol: Trading pair symbol (e.g., "BTC/USDT")
+        side: Position side ("long" or "short")
+        entry_price: Entry price
+        quantity: Position size in base currency
+        unrealized_pnl: Current unrealized PnL
+        realized_pnl: Realized PnL on close
+        opened_at: Position open timestamp
+        closed_at: Position close timestamp (if closed)
+        metadata: Additional position metadata
+    """
+
+    position_id: str
+    symbol: str
+    side: str
+    entry_price: float
+    quantity: float
+    unrealized_pnl: float = 0.0
+    realized_pnl: float = 0.0
+    opened_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    closed_at: datetime | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def is_open(self) -> bool:
+        """Check if position is still open."""
+        return self.closed_at is None
+
+    @property
+    def value(self) -> float:
+        """Calculate position value."""
+        return self.quantity * self.entry_price
+
+    def calculate_pnl(self, current_price: float) -> float:
+        """Calculate unrealized PnL at current price.
+
+        Args:
+            current_price: Current market price
+
+        Returns:
+            Unrealized PnL
+        """
+        if self.side == "long":
+            return (current_price - self.entry_price) * self.quantity
+        else:  # short
+            return (self.entry_price - current_price) * self.quantity
+
+
+class PaperPositionTracker:
+    """Tracks paper trading positions.
+
+    Manages position lifecycle:
+    - Opening positions from filled orders
+    - Tracking unrealized PnL
+    - Closing positions with realized PnL
+    - Maintaining position history
+
+    Attributes:
+        _open_positions: Dictionary of open positions by ID
+        _closed_positions: List of closed positions
+        _lock: Async lock for thread safety
+    """
+
+    def __init__(self) -> None:
+        """Initialize the position tracker."""
+        self._open_positions: dict[str, PaperPosition] = {}
+        self._closed_positions: list[PaperPosition] = []
+        self._lock = asyncio.Lock()
+
+        logger.info("PaperPositionTracker initialized")
+
+    async def open_position(
+        self,
+        symbol: str,
+        side: str,
+        entry_price: float,
+        quantity: float,
+        metadata: dict[str, Any] | None = None,
+    ) -> PaperPosition:
+        """Open a new position.
+
+        Args:
+            symbol: Trading pair symbol
+            side: Position side ("long" or "short")
+            entry_price: Entry price
+            quantity: Position size
+            metadata: Optional metadata
+
+        Returns:
+            New PaperPosition
+        """
+        async with self._lock:
+            position = PaperPosition(
+                position_id=str(uuid.uuid4()),
+                symbol=symbol.upper(),
+                side=side.lower(),
+                entry_price=entry_price,
+                quantity=quantity,
+                metadata=metadata or {},
+            )
+
+            self._open_positions[position.position_id] = position
+
+            logger.info(
+                f"Opened position: {position.position_id} "
+                f"{symbol} {side} @ {entry_price:.2f} "
+                f"qty={quantity:.6f}"
+            )
+
+            return position
+
+    async def close_position(
+        self,
+        position_id: str,
+        exit_price: float,
+    ) -> tuple[PaperPosition, float]:
+        """Close a position.
+
+        Args:
+            position_id: Position to close
+            exit_price: Exit price
+
+        Returns:
+            Tuple of (closed position, realized PnL)
+
+        Raises:
+            ValueError: If position not found or already closed
+        """
+        async with self._lock:
+            position = self._open_positions.get(position_id)
+            if position is None:
+                raise ValueError(f"Position {position_id} not found")
+
+            # Calculate realized PnL
+            realized_pnl = position.calculate_pnl(exit_price)
+            position.realized_pnl = realized_pnl
+            position.unrealized_pnl = 0.0
+            position.closed_at = datetime.now(UTC)
+
+            # Move to closed positions
+            del self._open_positions[position_id]
+            self._closed_positions.append(position)
+
+            logger.info(
+                f"Closed position: {position_id} "
+                f"PnL={realized_pnl:.4f} "
+                f"exit={exit_price:.2f}"
+            )
+
+            return position, realized_pnl
+
+    async def get_open_positions(self) -> list[PaperPosition]:
+        """Get all open positions.
+
+        Returns:
+            List of open positions
+        """
+        async with self._lock:
+            return list(self._open_positions.values())
+
+    async def get_closed_positions(self) -> list[PaperPosition]:
+        """Get all closed positions.
+
+        Returns:
+            List of closed positions
+        """
+        async with self._lock:
+            return self._closed_positions.copy()
+
+    async def get_position(self, position_id: str) -> PaperPosition | None:
+        """Get a specific position by ID.
+
+        Args:
+            position_id: Position ID
+
+        Returns:
+            Position or None if not found
+        """
+        async with self._lock:
+            return self._open_positions.get(position_id)
+
+    async def update_unrealized_pnl(
+        self,
+        position_id: str,
+        current_price: float,
+    ) -> float:
+        """Update unrealized PnL for a position.
+
+        Args:
+            position_id: Position to update
+            current_price: Current market price
+
+        Returns:
+            Updated unrealized PnL
+        """
+        async with self._lock:
+            position = self._open_positions.get(position_id)
+            if position is None:
+                raise ValueError(f"Position {position_id} not found")
+
+            position.unrealized_pnl = position.calculate_pnl(current_price)
+            return position.unrealized_pnl
+
+    async def get_portfolio_value(self) -> float:
+        """Calculate total portfolio value from open positions.
+
+        Returns:
+            Total value of all open positions
+        """
+        async with self._lock:
+            return sum(pos.value for pos in self._open_positions.values())
+
+    async def get_total_pnl(self) -> tuple[float, float]:
+        """Get total realized and unrealized PnL.
+
+        Returns:
+            Tuple of (realized_pnl, unrealized_pnl)
+        """
+        async with self._lock:
+            realized = sum(pos.realized_pnl for pos in self._closed_positions)
+            unrealized = sum(
+                pos.unrealized_pnl for pos in self._open_positions.values()
+            )
+            return realized, unrealized
+
+    async def clear_all(self) -> None:
+        """Clear all positions (for testing/reset)."""
+        async with self._lock:
+            self._open_positions.clear()
+            self._closed_positions.clear()
+            logger.info("All positions cleared")
+
+    def get_stats(self) -> dict[str, Any]:
+        """Get tracker statistics.
+
+        Returns:
+            Dictionary with stats
+        """
+        return {
+            "open_positions": len(self._open_positions),
+            "closed_positions": len(self._closed_positions),
+        }
