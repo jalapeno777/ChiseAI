@@ -46,11 +46,17 @@ from .models import (
     OrderSide,
     PaperFill,
     PaperOrder,
+    PaperTradeResult,
+    TradeStatus,
 )
 from .order_simulator import (
     MarketDataProvider,
     OrderSimulator,
     OrderSimulatorConfig,
+)
+from .position_tracker import (
+    PaperPosition,
+    PaperPositionTracker,
 )
 
 
@@ -101,9 +107,14 @@ __all__ = [
     # Models
     "PaperOrder",
     "PaperFill",
+    "PaperPosition",
+    "PaperTradeResult",
     "OrderState",
     "OrderType",
     "OrderSide",
+    "TradeStatus",
+    # Position tracking
+    "PaperPositionTracker",
     # Fill model
     "FillModel",
     "SlippageConfig",
