@@ -211,11 +211,6 @@ async def main() -> int:
     # Bootstrap environment first
     bootstrap(load_env=True)
 
-    """Main entry point.
-
-    Returns:
-        Exit code (0 for success, 1 for error)
-    """
     parser = argparse.ArgumentParser(
         description="Continuous Backtest Runner for ChiseAI",
         formatter_class=argparse.RawDescriptionHelpFormatter,
