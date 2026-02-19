@@ -1,43 +1,71 @@
+# Docker Compose for Daily Summary Cron Job
+# Story: ITEM-4-CRON-E2E
+#
+# This service runs the daily summary scheduler as a cron job
+# at midnight UTC every day.
+#
+# Usage:
+#   docker-compose -f docker-compose.daily-summary.yml up -d
+#   docker-compose -f docker-compose.daily-summary.yml logs -f
+
 version: '3.8'
 
 services:
-  daily-summary:
+  chiseai-daily-summary:
     build:
-      context: ../..
+      context: .
       dockerfile: infrastructure/docker/Dockerfile.daily-summary
-    image: chiseai-daily-summary:latest
     container_name: chiseai-daily-summary
-    networks:
-      - chiseai
-    environment:
-      # Discord webhooks
-      - DISCORD_TEST_WEBHOOK_URL=https://discord.com/api/webhooks/1448414669541736508/REDACTED_WEBHOOK_TOKEN_3
-      # InfluxDB connection
-      - INFLUXDB_URL=http://chiseai-influxdb:18087
-      - INFLUXDB_ORG=chiseai
-      - INFLUXDB_BUCKET=chiseai
-      - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/app:/app/src
-      # Lock file location for idempotency
-      - LOCK_FILE=/tmp/chiseai_daily_summary.lock
-    volumes:
-      # Mount logs directory for persistence
-      - daily-summary-logs:/app/logs
+    image: chiseai-daily-summary:latest
+    
+    # Labels for identification and governance
     labels:
       - "project=chiseai"
       - "service=daily-summary"
+      - "com.docker.compose.service=chiseai-daily-summary"
+    
+    # Connect to the chiseai network
+    networks:
+      - chiseai
+    
+    # Volume mounts
+    volumes:
+      # Mount the entire project for live code updates
+      - /home/tacopants/projects/ChiseAI:/app
+      # Named volume for persistent logs
+      - daily-summary-logs:/app/logs
+    
+    # Environment variables from .env file
+    env_file:
+      - .env
+    
+    # Additional environment variables
+    environment:
+      # Ensure Python output is unbuffered
+      - PYTHONUNBUFFERED=1
+      # Set Python path
+      - PYTHONPATH=/app
+      # Log file location
+      - LOG_FILE=/app/logs/daily_summary.log
+      # Lock file location
+      - LOCK_FILE=/tmp/chiseai_daily_summary.lock
+    
+    # Restart policy - restart on failure
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "pgrep", "cron"]
-      interval: 60s
-      timeout: 10s
-      start_period: 30s
-      retries: 3
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
+# Named volumes
 volumes:
   daily-summary-logs:
     driver: local
 
+# External network (managed by Terraform)
 networks:
   chiseai:
     external: true
