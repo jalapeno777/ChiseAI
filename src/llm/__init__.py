@@ -1,6 +1,7 @@
 """LLM integration module for ChiseAI.
 
 Provides clients for various LLM APIs including MiniMax, Z.ai, and KIMI.
+Also includes provider chain for automatic fallback between providers.
 """
 
 from config.env_loader import EnvLoader, kimi_loader, load_kimi_config
@@ -15,6 +16,13 @@ from llm.minimax_client import (
     MiniMaxConfig,
     MiniMaxMessage,
     MiniMaxResponse,
+)
+from llm.provider_chain import (
+    ErrorCategory,
+    LLMProviderChain,
+    LLMResponse,
+    ProviderError,
+    classify_error,
 )
 from llm.zai_client import (
     ZaiClient,
@@ -53,4 +61,10 @@ __all__ = [
     "ZaiRateLimitError",
     "ZaiServerError",
     "ZaiTimeoutError",
+    # Provider chain exports
+    "LLMProviderChain",
+    "LLMResponse",
+    "ProviderError",
+    "ErrorCategory",
+    "classify_error",
 ]
