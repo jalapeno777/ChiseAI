@@ -1,0 +1,71 @@
+# Docker Compose for Daily Summary Cron Job
+# Story: ITEM-4-CRON-E2E
+#
+# This service runs the daily summary scheduler as a cron job
+# at midnight UTC every day.
+#
+# Usage:
+#   docker-compose -f docker-compose.daily-summary.yml up -d
+#   docker-compose -f docker-compose.daily-summary.yml logs -f
+
+version: '3.8'
+
+services:
+  chiseai-daily-summary:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.daily-summary
+    container_name: chiseai-daily-summary
+    image: chiseai-daily-summary:latest
+    
+    # Labels for identification and governance
+    labels:
+      - "project=chiseai"
+      - "service=daily-summary"
+      - "com.docker.compose.service=chiseai-daily-summary"
+    
+    # Connect to the chiseai network
+    networks:
+      - chiseai
+    
+    # Volume mounts
+    volumes:
+      # Mount the entire project for live code updates
+      - /home/tacopants/projects/ChiseAI:/app
+      # Named volume for persistent logs
+      - daily-summary-logs:/app/logs
+    
+    # Environment variables from .env file
+    env_file:
+      - .env
+    
+    # Additional environment variables
+    environment:
+      # Ensure Python output is unbuffered
+      - PYTHONUNBUFFERED=1
+      # Set Python path
+      - PYTHONPATH=/app
+      # Log file location
+      - LOG_FILE=/app/logs/daily_summary.log
+      # Lock file location
+      - LOCK_FILE=/tmp/chiseai_daily_summary.lock
+    
+    # Restart policy - restart on failure
+    restart: unless-stopped
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# Named volumes
+volumes:
+  daily-summary-logs:
+    driver: local
+
+# External network (managed by Terraform)
+networks:
+  chiseai:
+    external: true
