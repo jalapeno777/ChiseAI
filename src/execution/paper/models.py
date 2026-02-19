@@ -35,6 +35,20 @@ class OrderState(Enum):
     EXPIRED = "expired"
 
 
+class TradeStatus(Enum):
+    """Trade execution status.
+
+    Statuses:
+        EXECUTED: Trade was successfully executed
+        REJECTED: Trade was rejected by risk gate
+        FAILED: Trade execution failed
+    """
+
+    EXECUTED = "executed"
+    REJECTED = "rejected"
+    FAILED = "failed"
+
+
 class OrderType(Enum):
     """Supported order types."""
 
@@ -332,3 +346,31 @@ class PaperFill:
             timestamp=datetime.fromisoformat(data["timestamp"]),
             metadata=data.get("metadata", {}),
         )
+
+
+@dataclass
+class PaperTradeResult:
+    """Result of a paper trade execution.
+
+    Attributes:
+        signal: The signal that triggered the trade
+        status: Trade execution status (EXECUTED, REJECTED, FAILED)
+        order: The placed order (if any)
+        position: The opened position (if any)
+        reject_reason: List of reasons for rejection
+        latency_ms: Total execution latency in milliseconds
+        correlation_id: Correlation ID for tracing
+    """
+
+    signal: Any
+    status: TradeStatus
+    order: PaperOrder | None = None
+    position: Any | None = None
+    reject_reason: list[str] | None = None
+    latency_ms: float = 0.0
+    correlation_id: str = ""
+
+    def __post_init__(self) -> None:
+        """Initialize default values."""
+        if self.reject_reason is None:
+            self.reject_reason = []
