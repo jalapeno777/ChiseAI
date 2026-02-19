@@ -26,9 +26,10 @@ htmlcov/
 src/*.egg-info/
 
 # BMM/BPB archived reports
-# Removed: _bmad-output/ (canonical artifacts, should be tracked)
 # Removed: docs/_archive/ (archived reports, should be tracked)
-_bmad-output/ci/
+_bmad-output/
+reports/
+logs/
 screenshots/
 .swarm-worktrees/
 .swarm-session.json
