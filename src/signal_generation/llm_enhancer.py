@@ -3,12 +3,15 @@
 Provides LLMConfidenceEnhancer class that uses LLM APIs to analyze
 base signals and provide enhanced confidence scores with rationale.
 
-Uses Z.ai (Zhipu) as primary client for speed, MiniMax as fallback.
+Uses LLMProviderChain for KIMI-first priority with automatic fallback:
+KIMI → Z.ai (GLM-5) → Zhipu → MiniMax
+
 Implements caching to avoid repeated calls for identical signal patterns.
 """
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import logging
@@ -23,27 +26,14 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Import LLM clients - graceful degradation if not available
-ZHIPU_AVAILABLE = False
-MINIMAX_AVAILABLE = False
-
-# Try to import Zhipu client (sync, preferred for speed)
+# Import LLMProviderChain for centralized provider management
 try:
-    from llm.zhipu_client import ZaiError, ZaiMessage, ZhipuClient
+    from llm.provider_chain import LLMProviderChain, LLMResponse
 
-    ZHIPU_AVAILABLE = True
+    PROVIDER_CHAIN_AVAILABLE = True
 except ImportError:
-    logger.debug("ZhipuClient not available")
-
-# Try to import MiniMax client (async, fallback)
-try:
-    import asyncio
-
-    from llm.minimax_client import MiniMaxClient, MiniMaxConfig, MiniMaxMessage
-
-    MINIMAX_AVAILABLE = True
-except ImportError:
-    logger.debug("MiniMaxClient not available")
+    logger.debug("LLMProviderChain not available")
+    PROVIDER_CHAIN_AVAILABLE = False
 
 
 @dataclass
@@ -60,6 +50,7 @@ class LLMEnhancementResult:
         latency_ms: Time taken for LLM call (ms)
         llm_provider: Which LLM provider was used
         cached: Whether result was retrieved from cache
+        fallback_reason: Reason for provider fallback (if applicable)
         timestamp: When enhancement was performed
     """
 
@@ -72,6 +63,7 @@ class LLMEnhancementResult:
     latency_ms: float
     llm_provider: str
     cached: bool = False
+    fallback_reason: str | None = None
     timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def to_dict(self) -> dict[str, Any]:
@@ -86,6 +78,7 @@ class LLMEnhancementResult:
             "latency_ms": round(self.latency_ms, 3),
             "llm_provider": self.llm_provider,
             "cached": self.cached,
+            "fallback_reason": self.fallback_reason,
             "timestamp": self.timestamp.isoformat(),
         }
 
@@ -229,20 +222,22 @@ class LLMCache:
 
 
 class LLMConfidenceEnhancer:
-    """Enhances signal confidence using LLM analysis.
+    """Enhances signal confidence using LLM analysis via ProviderChain.
 
     Features:
-    - Uses Z.ai (Zhipu) as primary client for synchronous speed
-    - Falls back to MiniMax if Z.ai unavailable
+    - Uses LLMProviderChain with KIMI-first priority
+    - Automatic fallback: KIMI → Z.ai → Zhipu → MiniMax
+    - Captures fallback reasons in provider traces
     - Caches results to avoid redundant LLM calls
     - Logs all LLM interactions with timestamps
     - Configurable via USE_LLM_ENHANCEMENT env var
 
     The enhancement process:
     1. Extract signal characteristics
-    2. Query LLM for market context interpretation
-    3. Get risk assessment and confidence adjustment
-    4. Blend: final = (base * 0.7) + (llm * 0.3)
+    2. Query LLM via ProviderChain (KIMI-first)
+    3. Capture fallback chain with reasons
+    4. Get risk assessment and confidence adjustment
+    5. Blend: final = (base * 0.7) + (llm * 0.3)
     """
 
     # System prompt for confidence enhancement
@@ -263,11 +258,15 @@ RISK_ASSESSMENT: <risk evaluation>
 CONFIDENCE_SCORE: <number 0-100>
 RATIONALE: <your reasoning>"""
 
+    # Default provider order: KIMI → Z.ai → Zhipu → MiniMax
+    DEFAULT_PROVIDER_ORDER = ["kimi", "zai", "zhipu", "minimax"]
+
     def __init__(
         self,
         use_llm: bool | None = None,
         cache_size: int = 1000,
         cache_ttl: int = 3600,
+        provider_order: list[str] | None = None,
     ):
         """Initialize LLM confidence enhancer.
 
@@ -275,22 +274,24 @@ RATIONALE: <your reasoning>"""
             use_llm: Whether to use LLM enhancement (from env if None)
             cache_size: Maximum cache entries
             cache_ttl: Cache TTL in seconds
+            provider_order: Custom provider order (default: KIMI → Z.ai → Zhipu → MiniMax)
         """
         self.use_llm = self._resolve_use_llm(use_llm)
         self.cache = LLMCache(max_size=cache_size, ttl_seconds=cache_ttl)
+        self._provider_order = provider_order or self.DEFAULT_PROVIDER_ORDER
 
-        # Initialize LLM clients
-        self._zhipu_client: ZhipuClient | None = None
-        self._minimax_client: MiniMaxClient | None = None
-        self._primary_provider: str = "none"
+        # Initialize LLMProviderChain
+        self._provider_chain: LLMProviderChain | None = None
+        self._successful_provider: str = "none"
+        self._fallback_reason: str | None = None
 
-        if self.use_llm:
-            self._init_clients()
+        if self.use_llm and PROVIDER_CHAIN_AVAILABLE:
+            self._init_provider_chain()
 
         self._interaction_log: list[dict[str, Any]] = []
         logger.info(
             f"LLMConfidenceEnhancer initialized: use_llm={self.use_llm}, "
-            f"provider={self._primary_provider}"
+            f"provider_order={self._provider_order}"
         )
 
     def _resolve_use_llm(self, override: bool | None) -> bool:
@@ -308,33 +309,19 @@ RATIONALE: <your reasoning>"""
         env_value = os.getenv("USE_LLM_ENHANCEMENT", "false").lower()
         return env_value in ("true", "1", "yes", "on")
 
-    def _init_clients(self) -> None:
-        """Initialize LLM clients based on availability."""
-        # Try Zhipu first (sync, faster)
-        if ZHIPU_AVAILABLE:
-            try:
-                self._zhipu_client = ZhipuClient()
-                self._primary_provider = "zhipu"
-                logger.info("ZhipuClient initialized as primary LLM provider")
-                return
-            except Exception as e:
-                logger.warning(f"Failed to initialize ZhipuClient: {e}")
-
-        # Fall back to MiniMax (async)
-        if MINIMAX_AVAILABLE:
-            try:
-                config = MiniMaxConfig()
-                if config.api_key:
-                    self._minimax_client = MiniMaxClient(config)
-                    self._primary_provider = "minimax"
-                    logger.info("MiniMaxClient initialized as fallback LLM provider")
-                else:
-                    logger.warning("MiniMax API key not configured")
-            except Exception as e:
-                logger.warning(f"Failed to initialize MiniMaxClient: {e}")
-
-        if self._primary_provider == "none":
-            logger.warning("No LLM clients available - enhancement will be disabled")
+    def _init_provider_chain(self) -> None:
+        """Initialize LLMProviderChain with configured provider order."""
+        try:
+            self._provider_chain = LLMProviderChain(
+                provider_order=self._provider_order,
+                max_retries=3,
+                retry_delay=1.0,
+            )
+            logger.info(
+                f"LLMProviderChain initialized with provider order: {self._provider_order}"
+            )
+        except Exception as e:
+            logger.warning(f"Failed to initialize LLMProviderChain: {e}")
             self.use_llm = False
 
     def enhance(
@@ -375,8 +362,8 @@ RATIONALE: <your reasoning>"""
             self._log_interaction(signal_input, cached_result, cache_hit=True)
             return cached_result
 
-        # If LLM disabled or no clients, return base confidence
-        if not self.use_llm or self._primary_provider == "none":
+        # If LLM disabled or no provider chain, return base confidence
+        if not self.use_llm or self._provider_chain is None:
             latency_ms = (time.perf_counter() - start_time) * 1000
             result = LLMEnhancementResult(
                 enhanced_confidence=signal.confidence * 100,
@@ -388,13 +375,14 @@ RATIONALE: <your reasoning>"""
                 latency_ms=latency_ms,
                 llm_provider="none",
                 cached=False,
+                fallback_reason=None,
             )
             self._log_interaction(signal_input, result, cache_hit=False)
             return result
 
-        # Call LLM for enhancement
+        # Call LLM via ProviderChain for enhancement
         try:
-            result = self._call_llm(signal_input)
+            result = self._call_llm_with_chain(signal_input)
             # Cache the result
             self.cache.set(cache_key, result)
             self._log_interaction(signal_input, result, cache_hit=False)
@@ -412,14 +400,15 @@ RATIONALE: <your reasoning>"""
                 risk_assessment="Error",
                 adjustment_recommendation="Use base confidence",
                 latency_ms=latency_ms,
-                llm_provider=self._primary_provider,
+                llm_provider="none",
                 cached=False,
+                fallback_reason=str(e),
             )
             self._log_interaction(signal_input, result, cache_hit=False, error=str(e))
             return result
 
-    def _call_llm(self, signal_input: SignalInput) -> LLMEnhancementResult:
-        """Call appropriate LLM client based on availability.
+    def _call_llm_with_chain(self, signal_input: SignalInput) -> LLMEnhancementResult:
+        """Call LLM via ProviderChain with fallback support.
 
         Args:
             signal_input: Signal data for analysis
@@ -428,124 +417,100 @@ RATIONALE: <your reasoning>"""
             LLMEnhancementResult from LLM analysis
         """
         start_time = time.perf_counter()
-
-        if self._primary_provider == "zhipu" and self._zhipu_client:
-            return self._call_zhipu(signal_input, start_time)
-        elif self._primary_provider == "minimax" and self._minimax_client:
-            return self._call_minimax(signal_input, start_time)
-        else:
-            raise RuntimeError("No LLM client available")
-
-    def _call_zhipu(
-        self, signal_input: SignalInput, start_time: float
-    ) -> LLMEnhancementResult:
-        """Call Zhipu (Z.ai) API for enhancement.
-
-        Args:
-            signal_input: Signal data for analysis
-            start_time: Start time for latency calculation
-
-        Returns:
-            LLMEnhancementResult
-        """
         prompt = self._build_prompt(signal_input)
 
-        try:
-            response = self._zhipu_client.chat(
-                messages=[
-                    ZaiMessage(role="system", content=self.SYSTEM_PROMPT),
-                    ZaiMessage(role="user", content=prompt),
-                ],
-                temperature=0.3,  # Lower temperature for more consistent analysis
-                max_tokens=500,
+        # Run async query through ProviderChain
+        async def _async_query():
+            if self._provider_chain is None:
+                raise RuntimeError("ProviderChain not initialized")
+            return await self._provider_chain.query(
+                prompt=prompt,
+                system_prompt=self.SYSTEM_PROMPT,
+                providers=self._provider_order,
             )
+
+        try:
+            # Get or create event loop
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # Already in async context, use nest_asyncio if available
+                    try:
+                        import nest_asyncio
+
+                        nest_asyncio.apply()
+                    except ImportError:
+                        pass
+                response = loop.run_until_complete(_async_query())
+            except RuntimeError:
+                # No event loop, create one
+                response = asyncio.run(_async_query())
 
             latency_ms = (time.perf_counter() - start_time) * 1000
 
-            # Parse response
-            content = response.content
-            parsed = self._parse_llm_response(content)
+            if response.success:
+                # Track successful provider and any fallback
+                self._successful_provider = response.provider
+                fallback_reason = self._extract_fallback_reason(response)
 
-            return LLMEnhancementResult(
-                enhanced_confidence=parsed["confidence_score"],
-                base_confidence=signal_input.confidence * 100,
-                rationale=parsed["rationale"],
-                market_context=parsed["market_context"],
-                risk_assessment=parsed["risk_assessment"],
-                adjustment_recommendation=(
-                    f"Adjust to {parsed['confidence_score']:.0f}%"
-                ),
-                latency_ms=latency_ms,
-                llm_provider="zhipu",
-                cached=False,
-            )
+                # Parse the content for structured fields
+                parsed = self._parse_llm_response(response.content)
 
-        except ZaiError as e:
-            logger.error(f"Zhipu API error: {e}")
+                return LLMEnhancementResult(
+                    enhanced_confidence=parsed.get(
+                        "confidence_score", response.confidence_score
+                    ),
+                    base_confidence=signal_input.confidence * 100,
+                    rationale=parsed.get(
+                        "rationale", response.rationale or "No rationale provided"
+                    ),
+                    market_context=parsed.get("market_context", ""),
+                    risk_assessment=parsed.get("risk_assessment", ""),
+                    adjustment_recommendation=f"Adjust to {parsed.get('confidence_score', response.confidence_score):.0f}%",
+                    latency_ms=latency_ms,
+                    llm_provider=response.provider,
+                    cached=False,
+                    fallback_reason=fallback_reason,
+                )
+            else:
+                # Provider chain failed - construct fallback reason from error
+                fallback_reason = self._format_fallback_reason(response)
+                raise RuntimeError(f"All providers failed: {fallback_reason}")
+
+        except Exception as e:
+            logger.error(f"ProviderChain query failed: {e}")
             raise
 
-    def _call_minimax(
-        self, signal_input: SignalInput, start_time: float
-    ) -> LLMEnhancementResult:
-        """Call MiniMax API for enhancement (async wrapper).
+    def _extract_fallback_reason(self, response: LLMResponse) -> str | None:
+        """Extract fallback reason from response if provider fallback occurred.
 
         Args:
-            signal_input: Signal data for analysis
-            start_time: Start time for latency calculation
+            response: LLMResponse from ProviderChain
 
         Returns:
-            LLMEnhancementResult
+            Fallback reason string or None if no fallback occurred
         """
-        prompt = self._build_prompt(signal_input)
+        if response.error:
+            return f"Fallback due to: {response.error.category.name if hasattr(response.error, 'category') else response.error.message}"
+        return None
 
-        async def _async_call():
-            await self._minimax_client.connect()
-            try:
-                response = await self._minimax_client.chat(
-                    messages=[
-                        MiniMaxMessage(role="system", content=self.SYSTEM_PROMPT),
-                        MiniMaxMessage(role="user", content=prompt),
-                    ],
-                    temperature=0.3,
-                    max_tokens=500,
-                )
-                return response
-            finally:
-                await self._minimax_client.close()
+    def _format_fallback_reason(self, response: LLMResponse) -> str:
+        """Format fallback reason for logging from failed response.
 
-        # Run async call in event loop
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # If already in async context, create new loop
-                import nest_asyncio
+        Args:
+            response: Failed LLMResponse
 
-                nest_asyncio.apply()
-            response = loop.run_until_complete(_async_call())
-        except RuntimeError:
-            # No event loop, create one
-            response = asyncio.run(_async_call())
-
-        latency_ms = (time.perf_counter() - start_time) * 1000
-
-        if not response.success:
-            raise RuntimeError(f"MiniMax API error: {response.error}")
-
-        # Parse response
-        content = response.content or ""
-        parsed = self._parse_llm_response(content)
-
-        return LLMEnhancementResult(
-            enhanced_confidence=parsed["confidence_score"],
-            base_confidence=signal_input.confidence * 100,
-            rationale=parsed["rationale"],
-            market_context=parsed["market_context"],
-            risk_assessment=parsed["risk_assessment"],
-            adjustment_recommendation=f"Adjust to {parsed['confidence_score']:.0f}%",
-            latency_ms=latency_ms,
-            llm_provider="minimax",
-            cached=False,
-        )
+        Returns:
+            Formatted fallback reason string
+        """
+        if response.error:
+            error_info = response.error
+            if hasattr(error_info, "category"):
+                return f"{error_info.category.name}: {error_info.message}"
+            return str(
+                error_info.message if hasattr(error_info, "message") else error_info
+            )
+        return "Unknown error"
 
     def _build_prompt(self, signal_input: SignalInput) -> str:
         """Build the user prompt for LLM analysis.
@@ -662,10 +627,17 @@ RATIONALE: <your reasoning>"""
         if error:
             log_entry["error"] = error
 
+        if result.fallback_reason:
+            log_entry["fallback_reason"] = result.fallback_reason
+            # Log provider trace with fallback reason
+            logger.info(
+                f"Provider fallback trace: {signal_input.token} - {result.fallback_reason}"
+            )
+
         self._interaction_log.append(log_entry)
 
-        # Also log to standard logger
-        logger.info(
+        # Also log to standard logger with provider info
+        log_msg = (
             f"LLM Enhancement: {signal_input.token} "
             f"[{signal_input.direction}] "
             f"base={signal_input.confidence:.1%} -> "
@@ -674,6 +646,9 @@ RATIONALE: <your reasoning>"""
             f"latency={result.latency_ms:.1f}ms "
             f"cached={cache_hit}"
         )
+        if result.fallback_reason:
+            log_msg += f" fallback='{result.fallback_reason[:50]}...'"
+        logger.info(log_msg)
 
     def get_interaction_log(self) -> list[dict[str, Any]]:
         """Get all logged LLM interactions.
@@ -699,17 +674,33 @@ RATIONALE: <your reasoning>"""
         """Check if LLM enhancement is available.
 
         Returns:
-            True if LLM clients are configured and ready
+            True if LLM provider chain is configured and ready
         """
-        return self.use_llm and self._primary_provider != "none"
+        return self.use_llm and self._provider_chain is not None
 
     def get_provider(self) -> str:
-        """Get the current LLM provider name.
+        """Get the last successful LLM provider name.
 
         Returns:
-            Provider name ("zhipu", "minimax", or "none")
+            Provider name (e.g., "KIMI K2.5", "GLM-5 (Z.ai)", "none")
         """
-        return self._primary_provider
+        return self._successful_provider
+
+    def get_provider_order(self) -> list[str]:
+        """Get the configured provider order.
+
+        Returns:
+            List of provider names in priority order
+        """
+        return self._provider_order.copy()
+
+    def get_fallback_reason(self) -> str | None:
+        """Get the fallback reason from the last enhancement call.
+
+        Returns:
+            Fallback reason string or None if no fallback occurred
+        """
+        return self._fallback_reason
 
     def calculate_blended_confidence(
         self, base_confidence: float, llm_confidence: float
