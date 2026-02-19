@@ -16,7 +16,6 @@ import argparse
 import asyncio
 import json
 import logging
-import os
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -25,9 +24,9 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from config.bootstrap import bootstrap
+from src.reporting.daily_scheduler import DailySummaryScheduler  # noqa: E402
 
-from src.reporting.daily_scheduler import DailySummaryScheduler
+from config.bootstrap import bootstrap  # noqa: E402
 
 # Configure logging
 logging.basicConfig(
@@ -163,12 +162,14 @@ async def run_health_check(scheduler: DailySummaryScheduler, json_output: bool) 
         print(f"  Timezone: {health['schedule']['timezone']}")
         print()
         print("Discord:")
-        print(
-            f"  Summaries webhook: {'✓ Configured' if health['discord']['summaries_webhook_configured'] else '✗ Not configured'}"
+        summaries_configured = health["discord"]["summaries_webhook_configured"]
+        test_configured = health["discord"]["test_webhook_configured"]
+        summaries_status = (
+            "✓ Configured" if summaries_configured else "✗ Not configured"
         )
-        print(
-            f"  Test webhook: {'✓ Configured' if health['discord']['test_webhook_configured'] else '✗ Not configured'}"
-        )
+        test_status = "✓ Configured" if test_configured else "✗ Not configured"
+        print(f"  Summaries webhook: {summaries_status}")
+        print(f"  Test webhook: {test_status}")
         print(f"  Connection: {'✓ OK' if health['discord']['healthy'] else '✗ Failed'}")
         if health["discord"].get("error"):
             print(f"  Error: {health['discord']['error']}")
@@ -271,6 +272,6 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         logger.info("Interrupted by user")
         sys.exit(130)
-    except Exception as e:
+    except Exception:
         logger.exception("Fatal error")
         sys.exit(1)
