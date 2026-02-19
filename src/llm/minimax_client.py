@@ -14,7 +14,7 @@ import json
 import logging
 import os
 from dataclasses import dataclass
-from typing import Any, AsyncIterator, cast
+from typing import Any
 
 import aiohttp
 
@@ -114,7 +114,7 @@ class MiniMaxClient:
         self.config = config or MiniMaxConfig()
         self._session: aiohttp.ClientSession | None = None
 
-    async def __aenter__(self) -> "MiniMaxClient":
+    async def __aenter__(self) -> MiniMaxClient:
         """Async context manager entry."""
         await self.connect()
         return self
@@ -232,9 +232,7 @@ class MiniMaxClient:
                         )
                     elif response.status == 403:
                         # Check for quota vs scope error
-                        if isinstance(error, QuotaError):
-                            raise error
-                        elif isinstance(error, ScopeError):
+                        if isinstance(error, (QuotaError, ScopeError)):
                             raise error
                         else:
                             raise ScopeError(
@@ -244,7 +242,8 @@ class MiniMaxClient:
                     elif response.status == 429:
                         # Rate limited - retry with longer delay
                         logger.warning(
-                            f"Rate limited (attempt {attempt + 1}/{self.config.max_retries})"
+                            f"Rate limited (attempt {attempt + 1}/"
+                            f"{self.config.max_retries})"
                         )
                         if attempt < self.config.max_retries - 1:
                             await asyncio.sleep(
@@ -258,7 +257,8 @@ class MiniMaxClient:
                     elif response.status >= 500:
                         # Server error - retry
                         logger.warning(
-                            f"Server error {response.status} (attempt {attempt + 1}/{self.config.max_retries})"
+                            f"Server error {response.status} (attempt {attempt + 1}/"
+                            f"{self.config.max_retries})"
                         )
                         if attempt < self.config.max_retries - 1:
                             await asyncio.sleep(delay)
@@ -272,7 +272,8 @@ class MiniMaxClient:
                     elif response.status in (400, 422):
                         # Validation error - don't retry
                         raise ValidationError(
-                            f"Request validation failed for MINIMAX: {response_text[:200]}",
+                            f"Request validation failed for MINIMAX: "
+                            f"{response_text[:200]}",
                             provider="MINIMAX",
                             status_code=response.status,
                         )
@@ -302,7 +303,8 @@ class MiniMaxClient:
             except aiohttp.ClientError as e:
                 last_error = e
                 logger.warning(
-                    f"Request failed (attempt {attempt + 1}/{self.config.max_retries}): {e}"
+                    f"Request failed (attempt {attempt + 1}/"
+                    f"{self.config.max_retries}): {e}"
                 )
                 if attempt < self.config.max_retries - 1:
                     await asyncio.sleep(delay)
@@ -310,8 +312,8 @@ class MiniMaxClient:
                 else:
                     raise NetworkError(
                         f"Network error with MINIMAX: {e}", provider="MINIMAX"
-                    )
-            except asyncio.TimeoutError as e:
+                    ) from e
+            except TimeoutError as e:
                 last_error = e
                 logger.warning(
                     f"Request timeout (attempt {attempt + 1}/{self.config.max_retries})"
@@ -322,7 +324,7 @@ class MiniMaxClient:
                 else:
                     raise NetworkError(
                         f"Timeout error with MINIMAX: {e}", provider="MINIMAX"
-                    )
+                    ) from e
             except Exception as e:
                 last_error = e
                 logger.error(f"Unexpected error: {e}")

@@ -19,6 +19,8 @@ class DiscordConfig:
         default_channel: Default channel for actionable alerts
         watchlist_channel: Channel for watchlist alerts (40-74% confidence)
         guild_id: Optional guild/server ID restriction for bot commands
+        summaries_channel_id: Discord channel ID for summary alerts
+        trading_channel_id: Discord channel ID for trading alerts
         rate_limit_per_minute: Max alerts per channel per minute
         enable_duplicate_suppression: Whether to suppress duplicate alerts
         alert_cooldown_seconds: Cooldown between same signal alerts
@@ -37,6 +39,9 @@ class DiscordConfig:
     default_channel: str = "trading-signals"
     watchlist_channel: str | None = "watchlist"
     guild_id: str | None = None  # Guild restriction for security
+    # Authoritative channel IDs for routing (Gate B fix)
+    summaries_channel_id: str = "1445752426563899492"
+    trading_channel_id: str = "1444447985378398459"
     rate_limit_per_minute: int = 10
     enable_duplicate_suppression: bool = True
     alert_cooldown_seconds: int = 60
@@ -65,6 +70,10 @@ class DiscordConfig:
             default_channel=config.get("default_channel", "trading-signals"),
             watchlist_channel=config.get("watchlist_channel"),
             guild_id=config.get("guild_id"),
+            summaries_channel_id=config.get(
+                "summaries_channel_id", "1445752426563899492"
+            ),
+            trading_channel_id=config.get("trading_channel_id", "1444447985378398459"),
             rate_limit_per_minute=config.get("rate_limit_per_minute", 10),
             enable_duplicate_suppression=config.get(
                 "enable_duplicate_suppression", True
@@ -89,6 +98,9 @@ class DiscordConfig:
             DISCORD_WEBHOOK_URL: Webhook URL
             DISCORD_DEFAULT_CHANNEL: Default channel name
             DISCORD_WATCHLIST_CHANNEL: Watchlist channel name
+            DISCORD_GUILD_ID: Guild/server ID for lock enforcement
+            DISCORD_SUMMARIES_CHANNEL_ID: Channel ID for summaries (#summaries)
+            DISCORD_TRADING_CHANNEL_ID: Channel ID for trading (#trading)
             DISCORD_RATE_LIMIT_PER_MINUTE: Rate limit per minute
 
         Returns:
@@ -96,12 +108,22 @@ class DiscordConfig:
         """
         import os
 
+        # Authoritative guild and channel IDs (Gate B fix)
+        # Guild ID: 1413522994810327134
+        # #summaries channel: 1445752426563899492
+        # #trading channel: 1444447985378398459
         return cls(
             bot_token=os.getenv("DISCORD_BOT_TOKEN"),
             webhook_url=os.getenv("DISCORD_WEBHOOK_URL"),
             default_channel=os.getenv("DISCORD_DEFAULT_CHANNEL", "trading-signals"),
             watchlist_channel=os.getenv("DISCORD_WATCHLIST_CHANNEL"),
             guild_id=os.getenv("DISCORD_GUILD_ID"),
+            summaries_channel_id=os.getenv(
+                "DISCORD_SUMMARIES_CHANNEL_ID", "1445752426563899492"
+            ),
+            trading_channel_id=os.getenv(
+                "DISCORD_TRADING_CHANNEL_ID", "1444447985378398459"
+            ),
             rate_limit_per_minute=int(os.getenv("DISCORD_RATE_LIMIT_PER_MINUTE", "10")),
             enable_duplicate_suppression=os.getenv(
                 "DISCORD_ENABLE_DUPLICATE_SUPPRESSION", "true"
@@ -134,6 +156,8 @@ class DiscordConfig:
             "default_channel": self.default_channel,
             "watchlist_channel": self.watchlist_channel,
             "guild_id": self.guild_id,
+            "summaries_channel_id": self.summaries_channel_id,
+            "trading_channel_id": self.trading_channel_id,
             "rate_limit_per_minute": self.rate_limit_per_minute,
             "enable_duplicate_suppression": self.enable_duplicate_suppression,
             "alert_cooldown_seconds": self.alert_cooldown_seconds,
@@ -146,3 +170,19 @@ class DiscordConfig:
             "batch_max_wait_ms": self.batch_max_wait_ms,
             "batch_enabled": self.batch_enabled,
         }
+
+    def get_channel_id_for_name(self, channel_name: str) -> str | None:
+        """Get authoritative channel ID for a channel name.
+
+        Args:
+            channel_name: Channel name (e.g., 'summaries', 'trading')
+
+        Returns:
+            Channel ID string or None if not found
+        """
+        name_lower = channel_name.lower()
+        if name_lower in ("summaries", "summary", "summaries_channel"):
+            return self.summaries_channel_id
+        elif name_lower in ("trading", "trading_channel", "trading-signals"):
+            return self.trading_channel_id
+        return None

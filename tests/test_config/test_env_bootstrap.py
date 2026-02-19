@@ -15,6 +15,8 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
+import pytest
+
 from src.config.env_loader import (
     bootstrap_environment,
     diagnose_provider_availability,
@@ -23,6 +25,9 @@ from src.config.env_loader import (
     discover_zai_config,
     discover_zhipu_config,
     get_available_providers,
+    get_postgres_connection_string,
+    is_running_in_container,
+    load_database_config,
 )
 
 
@@ -430,3 +435,137 @@ class TestSecurity:
 
             assert config["api_key_present"] is True
             assert "api_key" not in config or config.get("api_key") != secret_key
+
+
+class TestDatabaseConfig:
+    """Tests for database configuration loader (GATE-RECOVERY-001)."""
+
+    def test_is_running_in_container(self) -> None:
+        """Test container detection function."""
+        # This is a basic test - actual detection depends on environment
+        result = is_running_in_container()
+        assert isinstance(result, bool)
+
+    def test_load_database_config_basic(self) -> None:
+        """Test loading database config with all values set."""
+        with patch.dict(
+            os.environ,
+            {
+                "POSTGRES_HOST": "test-host",
+                "POSTGRES_PORT": "5433",
+                "POSTGRES_DB": "testdb",
+                "POSTGRES_USER": "testuser",
+                "POSTGRES_PASSWORD": "testpass",
+            },
+            clear=False,
+        ):
+            config = load_database_config()
+
+            assert config["host"] == "test-host"
+            assert config["port"] == 5433
+            assert config["database"] == "testdb"
+            assert config["user"] == "testuser"
+            assert config["password"] == "testpass"
+            assert isinstance(config["in_container"], bool)
+
+    def test_load_database_config_missing_password(self) -> None:
+        """Test that missing password raises ValueError."""
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("POSTGRES_PASSWORD", None)
+
+            with pytest.raises(ValueError, match="POSTGRES_PASSWORD"):
+                load_database_config()
+
+    def test_load_database_config_defaults(self) -> None:
+        """Test that defaults are applied when env vars not set."""
+        with patch.dict(
+            os.environ,
+            {"POSTGRES_PASSWORD": "testpass"},
+            clear=False,
+        ):
+            # Clear other vars
+            for key in [
+                "POSTGRES_HOST",
+                "POSTGRES_PORT",
+                "POSTGRES_DB",
+                "POSTGRES_USER",
+            ]:
+                os.environ.pop(key, None)
+
+            config = load_database_config()
+
+            assert config["password"] == "testpass"
+            # Should use defaults
+            assert config["port"] == 5434  # Default port
+            assert config["database"] == "chiseai"  # Default db
+            assert config["user"] == "chiseai"  # Default user
+
+    def test_load_database_config_invalid_port(self) -> None:
+        """Test handling of invalid port value."""
+        with patch.dict(
+            os.environ,
+            {
+                "POSTGRES_PASSWORD": "testpass",
+                "POSTGRES_PORT": "invalid",
+            },
+            clear=False,
+        ):
+            config = load_database_config()
+
+            # Should fall back to default
+            assert config["port"] == 5434
+
+    def test_load_database_config_custom_prefix(self) -> None:
+        """Test loading with custom prefix."""
+        with patch.dict(
+            os.environ,
+            {
+                "CUSTOM_HOST": "custom-host",
+                "CUSTOM_PORT": "5435",
+                "CUSTOM_DB": "customdb",
+                "CUSTOM_USER": "customuser",
+                "CUSTOM_PASSWORD": "custompass",
+            },
+            clear=False,
+        ):
+            config = load_database_config(prefix="CUSTOM_")
+
+            assert config["host"] == "custom-host"
+            assert config["port"] == 5435
+            assert config["database"] == "customdb"
+            assert config["user"] == "customuser"
+            assert config["password"] == "custompass"
+
+    def test_get_postgres_connection_string(self) -> None:
+        """Test building connection string."""
+        config = {
+            "host": "test-host",
+            "port": 5433,
+            "database": "testdb",
+            "user": "testuser",
+            "password": "testpass",
+        }
+
+        conn_str = get_postgres_connection_string(config)
+
+        assert conn_str == "postgresql://testuser:testpass@test-host:5433/testdb"
+
+    def test_get_postgres_connection_string_auto_load(self) -> None:
+        """Test that connection string auto-loads config when none provided."""
+        with patch.dict(
+            os.environ,
+            {
+                "POSTGRES_HOST": "auto-host",
+                "POSTGRES_PORT": "5436",
+                "POSTGRES_DB": "autodb",
+                "POSTGRES_USER": "autouser",
+                "POSTGRES_PASSWORD": "autopass",
+            },
+            clear=False,
+        ):
+            conn_str = get_postgres_connection_string()
+
+            assert "auto-host:5436" in conn_str
+            assert "autodb" in conn_str
+            assert "autouser" in conn_str
+            assert "autopass" in conn_str
