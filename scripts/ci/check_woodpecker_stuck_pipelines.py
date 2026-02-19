@@ -13,7 +13,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-# Add src to path for imports
+# Add src to path for config imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 from config.bootstrap import bootstrap
 
@@ -81,6 +81,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
+    # Bootstrap environment first
     bootstrap(load_env=True)
     args = build_parser().parse_args()
     token = args.token.strip()
