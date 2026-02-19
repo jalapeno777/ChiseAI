@@ -40,7 +40,6 @@ from llm.zhipu_client import (
     ZaiAuthError,
     ZaiError,
     ZaiRateLimitError,
-    ZaiResponse,
     ZaiServerError,
     ZaiTimeoutError,
     ZhipuClient,

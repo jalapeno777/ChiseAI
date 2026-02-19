@@ -312,7 +312,7 @@ class KimiClient:
                     # Handle specific error codes with classified errors
                     if response.status == 401:
                         raise AuthError(
-                            f"Authentication failed for KIMI", provider="KIMI"
+                            "Authentication failed for KIMI", provider="KIMI"
                         )
                     elif response.status == 403:
                         # Check for quota vs scope error
@@ -337,7 +337,7 @@ class KimiClient:
                             delay *= 2
                             continue
                         raise RateLimitError(
-                            f"Rate limit exceeded for KIMI", provider="KIMI"
+                            "Rate limit exceeded for KIMI", provider="KIMI"
                         )
                     elif response.status >= 500:
                         # Server error - retry

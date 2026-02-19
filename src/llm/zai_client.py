@@ -232,9 +232,7 @@ class ZaiClient:
 
                     # Handle specific error codes with classified errors
                     if response.status == 401:
-                        raise AuthError(
-                            f"Authentication failed for ZAI", provider="ZAI"
-                        )
+                        raise AuthError("Authentication failed for ZAI", provider="ZAI")
                     elif response.status == 403:
                         # Check for quota vs scope error
                         if isinstance(error, QuotaError):
@@ -258,7 +256,7 @@ class ZaiClient:
                             delay *= 2
                             continue
                         raise RateLimitError(
-                            f"Rate limit exceeded for ZAI", provider="ZAI"
+                            "Rate limit exceeded for ZAI", provider="ZAI"
                         )
                     elif response.status >= 500:
                         # Server error - retry
