@@ -24,6 +24,20 @@ bybit:
       environment: "testnet"
       requires_auth: true
       
+    demo:
+      name: "Bybit Demo (Paper Trading)"
+      description: "Bybit V5 API demo environment for paper trading. Uses demo endpoints for authenticated operations and mainnet for public market data."
+      rest_base_url: "https://api-demo.bybit.com"
+      ws_public_url: "wss://stream.bybit.com/v5/public/linear"  # Mainnet for public data
+      ws_private_url: "wss://stream-demo.bybit.com/v5/private"
+      environment: "demo"
+      requires_auth: true
+      notes: |
+        Demo mode uses:
+        - api-demo.bybit.com for all REST API calls (authenticated)
+        - stream-demo.bybit.com for private WebSocket (positions, fills)
+        - stream.bybit.com (mainnet) for public WebSocket (market data)
+
     live:
       name: "Bybit Live (Production)"
       description: "Bybit V5 API production environment"
@@ -32,7 +46,7 @@ bybit:
       ws_private_url: "wss://stream.bybit.com/v5/private"
       environment: "live"
       requires_auth: true
-      
+
     live_demo:
       name: "Bybit Live (Demo/Read-only)"
       description: "Bybit V5 API production for public endpoints without auth"
@@ -45,7 +59,7 @@ bybit:
   # Configuration settings
   settings:
     # Default mode if BYBIT_MODE not set
-    default_mode: "testnet"
+    default_mode: "demo"
     
     # Request settings
     recv_window_ms: 5000
@@ -65,9 +79,10 @@ bybit:
       enabled: true
       primary: "testnet"
       fallback_order:
-        - "testnet"
+        - "demo"       # Try demo first if demo credentials exist
+        - "testnet"    # Fallback to testnet
         - "live_demo"  # Fallback to live public endpoints
-        - "live"  # Last resort: try live with credentials
+        - "live"       # Last resort: try live with credentials
 
   # Test configuration
   test_symbols:

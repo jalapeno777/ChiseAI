@@ -646,7 +646,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
-    # Bootstrap environment first (must be before any env access)
+    # Bootstrap environment first
     bootstrap(load_env=True)
     parser = build_parser()
     args = parser.parse_args()

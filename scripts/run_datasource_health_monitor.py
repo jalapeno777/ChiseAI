@@ -23,7 +23,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from config.bootstrap import bootstrap
-
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
 
@@ -76,6 +75,7 @@ def _build_metrics_points(metrics_rows: list[dict[str, object]]) -> list[Point]:
 
 
 async def main():
+    # Bootstrap environment first
     bootstrap(load_env=True)
 
     parser = argparse.ArgumentParser(description="Run data source health monitoring")

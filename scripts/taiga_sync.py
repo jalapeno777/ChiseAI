@@ -25,9 +25,6 @@ if str(_SRC) not in sys.path:
 
 from config.bootstrap import bootstrap
 
-# Bootstrap environment first (must be before any env access)
-bootstrap(load_env=True)
-
 from chiseai.taiga_sync import (  # noqa: E402
     TaigaConfig,
     TaigaSyncError,
@@ -39,6 +36,7 @@ from config.bootstrap import bootstrap
 
 
 def main() -> int:
+    # Bootstrap environment first
     bootstrap(load_env=True)
     p = argparse.ArgumentParser(description="Sync ChiseAI repo stories to Taiga")
     p.add_argument(

@@ -34,7 +34,6 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from decimal import Decimal
-from pathlib import Path
 from typing import Any
 
 import aiohttp
@@ -47,12 +46,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Bootstrap environment first (must be before any env access)
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+# Add src to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+
 from config.bootstrap import bootstrap
-
-bootstrap(load_env=True)
-
 from data.exchange.bybit_connector import BybitConnector, BybitConfig
 from signal_generation.models import Signal, SignalDirection, SignalStatus
 
@@ -1252,6 +1249,9 @@ async def main() -> int:
     Returns:
         Exit code (0 for success)
     """
+    # Bootstrap environment first
+    bootstrap(load_env=True)
+
     test = LiveProofE2E()
     evidence = await test.run()
 

@@ -430,7 +430,7 @@ def discover_minimax_config() -> dict[str, Any]:
         Never includes actual API key values in output.
     """
     api_key = os.environ.get("MINIMAX_API_KEY", "").strip()
-    enabled_str = os.environ.get("MINIMAX_ENABLED", "true").lower()
+    enabled_str = os.environ.get("MINIMAX_ENABLED", "false").lower()
     enabled = enabled_str in ("true", "1", "yes", "on")
 
     return {
