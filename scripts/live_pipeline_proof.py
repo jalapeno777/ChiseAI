@@ -46,6 +46,16 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from config.bootstrap import bootstrap
 
+from llm.errors import (
+    AuthError,
+    NetworkError,
+    QuotaError,
+    RateLimitError,
+    ScopeError,
+    ServerError,
+    get_fallback_delay,
+    should_retry,
+)
 from signal_generation.models import Signal, SignalDirection, SignalStatus
 
 
@@ -309,9 +319,13 @@ class LLMConfidenceEnhancer:
         analysis: AnalysisResult,
         market_data: MarketData,
     ) -> LLMEnhancement:
-        """Enhance confidence using LLM.
+        """Enhance confidence using LLM with deterministic fallback chain.
 
         Fallback chain: KIMI 2.5 -> GLM-5 (Z.ai) -> GLM-4.7 (Zhipu) -> MiniMax.
+
+        Error classification determines fallback behavior:
+        - AuthError, QuotaError, ScopeError: immediate fallback (no retry)
+        - RateLimitError, ServerError, NetworkError: retry with backoff, then fallback
 
         Args:
             analysis: Technical analysis result
@@ -328,37 +342,63 @@ class LLMConfidenceEnhancer:
         # 1. Try KIMI 2.5 first (Primary)
         if self.kimi_api_key and self.kimi_enabled:
             try:
-                result = await self._query_kimi(prompt, analysis)
+                result = await self._query_kimi_with_retry(prompt, analysis)
                 result.latency_ms = (time.perf_counter() - start_time) * 1000
                 return result
+            except (AuthError, QuotaError, ScopeError) as e:
+                logger.warning(
+                    f"KIMI {type(e).__name__}: {e}, immediate fallback to GLM-5..."
+                )
+            except (RateLimitError, ServerError, NetworkError) as e:
+                logger.warning(f"KIMI {type(e).__name__}: {e}, fallback to GLM-5...")
             except Exception as e:
-                logger.warning(f"KIMI query failed: {e}, trying GLM-5 (Z.ai)...")
+                logger.warning(f"KIMI unexpected error: {e}, fallback to GLM-5...")
 
         # 2. Try GLM-5 via Z.ai (Secondary)
         if self.zai_api_key:
             try:
-                result = await self._query_zai(prompt, analysis)
+                result = await self._query_zai_with_retry(prompt, analysis)
                 result.latency_ms = (time.perf_counter() - start_time) * 1000
                 return result
+            except (AuthError, QuotaError, ScopeError) as e:
+                logger.warning(
+                    f"Z.ai {type(e).__name__}: {e}, immediate fallback to GLM-4.7..."
+                )
+            except (RateLimitError, ServerError, NetworkError) as e:
+                logger.warning(f"Z.ai {type(e).__name__}: {e}, fallback to GLM-4.7...")
             except Exception as e:
-                logger.warning(f"Z.ai query failed: {e}, trying GLM-4.7 (Zhipu)...")
+                logger.warning(f"Z.ai unexpected error: {e}, fallback to GLM-4.7...")
 
         # 3. Try GLM-4.7 via Zhipu (Tertiary)
         try:
-            result = await self._query_zhipu(prompt, analysis)
+            result = await self._query_zhipu_with_retry(prompt, analysis)
             result.latency_ms = (time.perf_counter() - start_time) * 1000
             return result
+        except (AuthError, QuotaError, ScopeError) as e:
+            logger.warning(
+                f"Zhipu {type(e).__name__}: {e}, immediate fallback to MiniMax..."
+            )
+        except (RateLimitError, ServerError, NetworkError) as e:
+            logger.warning(f"Zhipu {type(e).__name__}: {e}, fallback to MiniMax...")
         except Exception as e:
-            logger.warning(f"Zhipu query failed: {e}")
+            logger.warning(f"Zhipu unexpected error: {e}, fallback to MiniMax...")
 
         # 4. Fall back to MiniMax (Quaternary - disabled by default)
         if self.minimax_api_key and self.minimax_enabled:
             try:
-                result = await self._query_minimax(prompt, analysis)
+                result = await self._query_minimax_with_retry(prompt, analysis)
                 result.latency_ms = (time.perf_counter() - start_time) * 1000
                 return result
+            except (AuthError, QuotaError, ScopeError) as e:
+                logger.warning(
+                    f"MiniMax {type(e).__name__}: {e}, no more fallbacks available"
+                )
+            except (RateLimitError, ServerError, NetworkError) as e:
+                logger.warning(
+                    f"MiniMax {type(e).__name__}: {e}, no more fallbacks available"
+                )
             except Exception as e:
-                logger.warning(f"MiniMax query failed: {e}")
+                logger.warning(f"MiniMax unexpected error: {e}")
 
         # If all fail, return base confidence
         latency_ms = (time.perf_counter() - start_time) * 1000
@@ -489,6 +529,178 @@ RATIONALE: [One sentence explaining your confidence assessment]
                 content = data["choices"][0]["message"]["content"]
 
                 return self._parse_llm_response(content, analysis, "MiniMax")
+
+    async def _query_kimi_with_retry(
+        self, prompt: str, analysis: AnalysisResult, max_retries: int = 3
+    ) -> LLMEnhancement:
+        """Query KIMI K2.5 API with retry logic based on error classification.
+
+        Args:
+            prompt: The prompt to send
+            analysis: Analysis result for parsing
+            max_retries: Maximum number of retry attempts
+
+        Returns:
+            LLMEnhancement result
+
+        Raises:
+            AuthError, QuotaError, ScopeError: For non-retryable errors
+            RateLimitError, ServerError, NetworkError: For retryable errors
+        """
+        last_error: Exception | None = None
+
+        for attempt in range(max_retries):
+            try:
+                return await self._query_kimi(prompt, analysis)
+            except (AuthError, QuotaError, ScopeError):
+                raise  # Non-retryable: re-raise immediately
+            except (RateLimitError, ServerError, NetworkError) as e:
+                last_error = e
+                if should_retry(e, attempt, max_retries):
+                    delay = get_fallback_delay(e, attempt)
+                    logger.info(
+                        f"KIMI retry attempt {attempt + 1}/{max_retries}, waiting {delay:.1f}s"
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    raise  # Max retries exceeded
+            except Exception as e:
+                # Unknown error - classify and decide
+                raise NetworkError(f"KIMI request failed: {e}", provider="KIMI")
+
+        # Should not reach here, but just in case
+        if last_error:
+            raise last_error
+        raise NetworkError("KIMI max retries exceeded", provider="KIMI")
+
+    async def _query_zai_with_retry(
+        self, prompt: str, analysis: AnalysisResult, max_retries: int = 3
+    ) -> LLMEnhancement:
+        """Query Z.ai GLM-5 API with retry logic based on error classification.
+
+        Args:
+            prompt: The prompt to send
+            analysis: Analysis result for parsing
+            max_retries: Maximum number of retry attempts
+
+        Returns:
+            LLMEnhancement result
+
+        Raises:
+            AuthError, QuotaError, ScopeError: For non-retryable errors
+            RateLimitError, ServerError, NetworkError: For retryable errors
+        """
+        last_error: Exception | None = None
+
+        for attempt in range(max_retries):
+            try:
+                return await self._query_zai(prompt, analysis)
+            except (AuthError, QuotaError, ScopeError):
+                raise  # Non-retryable: re-raise immediately
+            except (RateLimitError, ServerError, NetworkError) as e:
+                last_error = e
+                if should_retry(e, attempt, max_retries):
+                    delay = get_fallback_delay(e, attempt)
+                    logger.info(
+                        f"Z.ai retry attempt {attempt + 1}/{max_retries}, waiting {delay:.1f}s"
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    raise  # Max retries exceeded
+            except Exception as e:
+                # Unknown error - classify and decide
+                raise NetworkError(f"Z.ai request failed: {e}", provider="ZAI")
+
+        # Should not reach here, but just in case
+        if last_error:
+            raise last_error
+        raise NetworkError("Z.ai max retries exceeded", provider="ZAI")
+
+    async def _query_zhipu_with_retry(
+        self, prompt: str, analysis: AnalysisResult, max_retries: int = 3
+    ) -> LLMEnhancement:
+        """Query Zhipu GLM-4.7 API with retry logic based on error classification.
+
+        Args:
+            prompt: The prompt to send
+            analysis: Analysis result for parsing
+            max_retries: Maximum number of retry attempts
+
+        Returns:
+            LLMEnhancement result
+
+        Raises:
+            AuthError, QuotaError, ScopeError: For non-retryable errors
+            RateLimitError, ServerError, NetworkError: For retryable errors
+        """
+        last_error: Exception | None = None
+
+        for attempt in range(max_retries):
+            try:
+                return await self._query_zhipu(prompt, analysis)
+            except (AuthError, QuotaError, ScopeError):
+                raise  # Non-retryable: re-raise immediately
+            except (RateLimitError, ServerError, NetworkError) as e:
+                last_error = e
+                if should_retry(e, attempt, max_retries):
+                    delay = get_fallback_delay(e, attempt)
+                    logger.info(
+                        f"Zhipu retry attempt {attempt + 1}/{max_retries}, waiting {delay:.1f}s"
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    raise  # Max retries exceeded
+            except Exception as e:
+                # Unknown error - classify and decide
+                raise NetworkError(f"Zhipu request failed: {e}", provider="ZHIPU")
+
+        # Should not reach here, but just in case
+        if last_error:
+            raise last_error
+        raise NetworkError("Zhipu max retries exceeded", provider="ZHIPU")
+
+    async def _query_minimax_with_retry(
+        self, prompt: str, analysis: AnalysisResult, max_retries: int = 3
+    ) -> LLMEnhancement:
+        """Query MiniMax API with retry logic based on error classification.
+
+        Args:
+            prompt: The prompt to send
+            analysis: Analysis result for parsing
+            max_retries: Maximum number of retry attempts
+
+        Returns:
+            LLMEnhancement result
+
+        Raises:
+            AuthError, QuotaError, ScopeError: For non-retryable errors
+            RateLimitError, ServerError, NetworkError: For retryable errors
+        """
+        last_error: Exception | None = None
+
+        for attempt in range(max_retries):
+            try:
+                return await self._query_minimax(prompt, analysis)
+            except (AuthError, QuotaError, ScopeError):
+                raise  # Non-retryable: re-raise immediately
+            except (RateLimitError, ServerError, NetworkError) as e:
+                last_error = e
+                if should_retry(e, attempt, max_retries):
+                    delay = get_fallback_delay(e, attempt)
+                    logger.info(
+                        f"MiniMax retry attempt {attempt + 1}/{max_retries}, waiting {delay:.1f}s"
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    raise  # Max retries exceeded
+            except Exception as e:
+                # Unknown error - classify and decide
+                raise NetworkError(f"MiniMax request failed: {e}", provider="MINIMAX")
+
+        # Should not reach here, but just in case
+        if last_error:
+            raise last_error
+        raise NetworkError("MiniMax max retries exceeded", provider="MINIMAX")
 
     def _parse_llm_response(
         self, content: str, analysis: AnalysisResult, provider: str
