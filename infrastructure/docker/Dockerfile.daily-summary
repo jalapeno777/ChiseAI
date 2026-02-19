@@ -12,6 +12,7 @@ LABEL description="Daily summary cron job for ChiseAI paper trading reports"
 RUN apt-get update && apt-get install -y \
     cron \
     curl \
+    procps \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -45,8 +46,8 @@ COPY config/ /app/config/
 # Ensure scripts are executable
 RUN chmod +x /app/scripts/cron/daily_summary.sh
 
-# Set Python path
-ENV PYTHONPATH=/app
+# Set Python path (include /app/src for config module access)
+ENV PYTHONPATH=/app:/app/src
 ENV PYTHONUNBUFFERED=1
 
 # Create log file with proper permissions
