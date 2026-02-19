@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  daily-summary:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.daily-summary
+    image: chiseai-daily-summary:latest
+    container_name: chiseai-daily-summary
+    networks:
+      - chiseai
+    environment:
+      # Discord webhooks
+      - DISCORD_TEST_WEBHOOK_URL=https://discord.com/api/webhooks/1448414669541736508/REDACTED_WEBHOOK_TOKEN_3
+      # InfluxDB connection
+      - INFLUXDB_URL=http://chiseai-influxdb:18087
+      - INFLUXDB_ORG=chiseai
+      - INFLUXDB_BUCKET=chiseai
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app:/app/src
+      # Lock file location for idempotency
+      - LOCK_FILE=/tmp/chiseai_daily_summary.lock
+    volumes:
+      # Mount logs directory for persistence
+      - daily-summary-logs:/app/logs
+    labels:
+      - "project=chiseai"
+      - "service=daily-summary"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pgrep", "cron"]
+      interval: 60s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+volumes:
+  daily-summary-logs:
+    driver: local
+
+networks:
+  chiseai:
+    external: true
