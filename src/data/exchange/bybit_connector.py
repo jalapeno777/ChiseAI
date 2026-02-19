@@ -4,6 +4,38 @@ Provides async HTTP client and WebSocket support for Bybit V5 API,
 including real-time pricing, fills, positions, and stop orders.
 
 For ST-DATA-002: Execution Market Data Ingestion - Bybit/Bitget
+
+BYBIT DEMO ROUTING POLICY
+=========================
+
+Authoritative Endpoints:
+- Demo REST base: https://api-demo.bybit.com
+- Demo private WS: wss://stream-demo.bybit.com/v5/private
+- Public market WS: wss://stream.bybit.com (mainnet for all public data)
+
+Routing Decision Matrix:
+
+| Operation Type | Protocol | Endpoint | Rationale |
+|----------------|----------|----------|-----------|
+| Market data (tickers, orderbook, klines) | REST | api-demo.bybit.com | Unauthenticated, standard HTTP |
+| Account info, positions, balances | REST | api-demo.bybit.com | Authenticated, synchronous query |
+| Order placement, modification, cancel | REST | api-demo.bybit.com | Authenticated, requires ack |
+| Execution/fill history | REST | api-demo.bybit.com | Authenticated, paginated query |
+| Real-time price updates | WebSocket | stream.bybit.com/v5/public | Public feed, lower latency |
+| Real-time position updates | WebSocket | stream-demo.bybit.com/v5/private | Private feed, requires auth |
+| Real-time fill notifications | WebSocket | stream-demo.bybit.com/v5/private | Private feed, requires auth |
+
+Demo Mode Behavior:
+- Uses demo REST for all authenticated operations
+- Uses demo private WebSocket for authenticated streaming
+- Uses mainnet public WebSocket for market data (shared across all modes)
+- Falls back to REST polling if WebSocket connection fails
+
+Fallback Strategy:
+1. Attempt WebSocket connection (preferred for real-time)
+2. If WS fails, fall back to REST polling (1-5s intervals)
+3. Log all fallback events with context
+4. Auto-retry WS connection with exponential backoff
 """
 
 from __future__ import annotations
