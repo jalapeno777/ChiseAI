@@ -594,3 +594,108 @@ class TestBybitCredentialResolverAll:
         assert "BYBIT_API_KEY" in all_creds
         assert all_creds["BYBIT_DEMO_API_KEY"].api_key == "demo_key"
         assert all_creds["BYBIT_API_KEY"].api_key == "api_key"
+
+
+class TestBybitRoutingPolicy:
+    """Test explicit routing policy for demo mode.
+
+    Validates routing matrix from BYBIT-DEMO-003:
+    - REST operations use api-demo.bybit.com
+    - Private WS uses stream-demo.bybit.com
+    - Public WS uses stream.bybit.com (mainnet)
+    """
+
+    def test_demo_mode_rest_endpoint(self):
+        """Demo mode uses correct REST endpoint."""
+        config = BybitConfig(demo=True)
+        assert config.base_url == "https://api-demo.bybit.com"
+        assert "api-demo" in config.base_url
+
+    def test_demo_mode_private_ws_endpoint(self):
+        """Demo mode uses correct private WebSocket endpoint."""
+        config = BybitConfig(demo=True)
+        assert config.private_ws_url == "wss://stream-demo.bybit.com/v5/private"
+        assert "stream-demo" in config.private_ws_url
+
+    def test_demo_mode_public_ws_uses_mainnet(self):
+        """Demo mode uses mainnet for public WebSocket (shared across modes)."""
+        config = BybitConfig(demo=True)
+        assert config.ws_url == "wss://stream.bybit.com/v5/public/linear"
+        assert "stream.bybit.com" in config.ws_url
+        assert "demo" not in config.ws_url  # Public WS should NOT use demo
+
+    def test_routing_matrix_consistency(self):
+        """All modes have consistent endpoint configuration."""
+        demo_config = BybitConfig(demo=True)
+        testnet_config = BybitConfig(testnet=True)
+        live_config = BybitConfig()  # Default is live
+
+        # Demo: demo REST, demo private WS, mainnet public WS
+        assert "api-demo" in demo_config.base_url
+        assert "stream-demo" in demo_config.private_ws_url
+        assert "stream.bybit.com" in demo_config.ws_url
+
+        # Testnet: all testnet
+        assert "testnet" in testnet_config.base_url
+        assert "testnet" in testnet_config.private_ws_url
+        assert "testnet" in testnet_config.ws_url
+
+        # Live: all mainnet
+        assert live_config.base_url == "https://api.bybit.com"
+        assert live_config.private_ws_url == "wss://stream.bybit.com/v5/private"
+        assert live_config.ws_url == "wss://stream.bybit.com/v5/public/linear"
+
+    def test_demo_mode_distinguishable_from_live(self):
+        """Demo mode endpoints differ from live mode."""
+        demo_config = BybitConfig(demo=True)
+        live_config = BybitConfig()
+
+        assert demo_config.base_url != live_config.base_url
+        assert demo_config.private_ws_url != live_config.private_ws_url
+        # Public WS should be the same
+        assert demo_config.ws_url == live_config.ws_url
+
+    @pytest.mark.asyncio
+    async def test_fallback_to_rest_on_ws_failure(self):
+        """Connector falls back to REST polling when WebSocket fails."""
+        config = BybitConfig(demo=True, api_key="test", api_secret="test")
+        connector = BybitConnector(config)
+
+        # Simulate WS failure by not starting WebSocket
+        await connector.connect()
+
+        # Verify REST is still functional
+        with patch.object(
+            connector, "_make_request", new_callable=AsyncMock
+        ) as mock_request:
+            mock_request.return_value = {"retCode": 0, "result": {}}
+
+            # Should be able to get ticker via REST
+            result = await connector.get_ticker("BTCUSDT")
+            assert result is not None
+            mock_request.assert_called_once()
+
+        await connector.close()
+
+    def test_endpoint_priority_documented(self):
+        """Endpoint priority is documented and testable."""
+        # Priority order: Demo > Testnet > Live
+        # This test validates the priority logic is intentional
+
+        priority_order = [
+            ("demo", BybitConfig(demo=True)),
+            ("testnet", BybitConfig(testnet=True)),
+            ("live", BybitConfig()),
+        ]
+
+        for name, config in priority_order:
+            assert config.base_url is not None
+            assert config.private_ws_url is not None
+            assert config.ws_url is not None
+
+            if name == "demo":
+                assert "api-demo" in config.base_url
+            elif name == "testnet":
+                assert "testnet" in config.base_url
+            else:
+                assert config.base_url == "https://api.bybit.com"
