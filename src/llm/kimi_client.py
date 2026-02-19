@@ -4,6 +4,7 @@ Provides async HTTP client for KIMI K2.5 model API with
 retry logic, error handling, and OpenAI-compatible request/response format.
 
 For CH-LLM-KIMI-001: KIMI K2.5 Integration
+For CH-KIMI-FIX-001: Model discovery and 403 handling
 """
 
 from __future__ import annotations
@@ -12,7 +13,7 @@ import asyncio
 import json
 import logging
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 import aiohttp
@@ -31,6 +32,8 @@ class KimiConfig:
         timeout: Request timeout in seconds
         max_retries: Maximum number of retry attempts
         retry_delay: Initial retry delay in seconds (exponential backoff)
+        accessible_models: List of models discovered from /models endpoint
+        model_discovery_enabled: Whether to query /models for available models
     """
 
     api_key: str | None = None
@@ -39,6 +42,8 @@ class KimiConfig:
     timeout: float = 30.0
     max_retries: int = 3
     retry_delay: float = 1.0
+    accessible_models: list[str] = field(default_factory=list)
+    model_discovery_enabled: bool = True
 
     def __post_init__(self) -> None:
         """Load API key from environment if not provided."""
@@ -126,6 +131,85 @@ class KimiClient:
             await self._session.close()
             self._session = None
 
+    async def discover_models(self) -> list[str]:
+        """Query the /models endpoint to discover accessible models.
+
+        Returns:
+            List of model IDs that are accessible with the current API key.
+            Empty list if discovery fails or is disabled.
+        """
+        if not self.config.api_key:
+            logger.warning("Cannot discover models: API key not configured")
+            return []
+
+        if not self.config.model_discovery_enabled:
+            logger.debug("Model discovery disabled")
+            return self.config.accessible_models
+
+        if self._session is None:
+            raise RuntimeError(
+                "Client not connected. Use 'async with' or call connect()"
+            )
+
+        try:
+            logger.info("Discovering accessible KIMI models from /models endpoint")
+            async with self._session.get(
+                f"{self.config.base_url}/models",
+                timeout=aiohttp.ClientTimeout(total=30),
+            ) as response:
+                response_text = await response.text()
+
+                if response.status == 200:
+                    try:
+                        data = json.loads(response_text)
+                        models = data.get("data", [])
+                        model_ids = [m.get("id", "unknown") for m in models]
+                        self.config.accessible_models = model_ids
+                        logger.info(
+                            f"Discovered {len(model_ids)} accessible model(s): {model_ids}"
+                        )
+                        return model_ids
+                    except json.JSONDecodeError as e:
+                        logger.error(f"Failed to parse /models response: {e}")
+                        return []
+                else:
+                    logger.warning(f"Failed to discover models: HTTP {response.status}")
+                    return []
+
+        except Exception as e:
+            logger.warning(f"Model discovery failed: {e}")
+            return []
+
+    def _select_model(self, requested_model: str | None = None) -> str:
+        """Select the model to use for requests.
+
+        Uses the requested model if available, otherwise falls back to
+        the first accessible model discovered from /models endpoint.
+
+        Args:
+            requested_model: Specific model to use, or None to use config default
+
+        Returns:
+            Model ID to use for the request
+        """
+        target = requested_model or self.config.model
+
+        # If we have accessible models and the target is not in the list,
+        # fall back to the first accessible model
+        if (
+            self.config.accessible_models
+            and target not in self.config.accessible_models
+        ):
+            fallback = self.config.accessible_models[0]
+            logger.warning(
+                f"Model '{target}' not in accessible models list. "
+                f"Falling back to '{fallback}'. "
+                f"Available: {self.config.accessible_models}"
+            )
+            return fallback
+
+        return target
+
     def _build_request_payload(
         self,
         messages: list[KimiMessage],
@@ -154,8 +238,12 @@ class KimiClient:
             }
             formatted_messages.append(msg_dict)
 
+        # Select model (with fallback to accessible models if needed)
+        selected_model = self._select_model()
+        logger.debug(f"Using model: {selected_model}")
+
         return {
-            "model": self.config.model,
+            "model": selected_model,
             "messages": formatted_messages,
             "temperature": temperature,
             "top_p": top_p,
@@ -209,6 +297,17 @@ class KimiClient:
                             raw_response={
                                 "status": response.status,
                                 "body": response_text,
+                            },
+                        )
+                    elif response.status == 403:
+                        # Permission denied - could be scope or model access issue
+                        error_msg = self._extract_403_error_message(response_text)
+                        return KimiResponse(
+                            success=False,
+                            error=f"Permission denied: {error_msg}",
+                            raw_response={
+                                "status": response.status,
+                                "body": response_text[:500],  # Limit size
                             },
                         )
                     elif response.status == 429:
@@ -288,6 +387,29 @@ class KimiClient:
             error=f"Max retries exceeded. Last error: {last_error}",
         )
 
+    def _extract_403_error_message(self, response_text: str) -> str:
+        """Extract a user-friendly error message from 403 response.
+
+        Args:
+            response_text: Raw response text from API
+
+        Returns:
+            Sanitized error message without sensitive details
+        """
+        try:
+            data = json.loads(response_text)
+            error = data.get("error", {})
+            message = error.get("message", "")
+            error_type = error.get("type", "")
+
+            # Return the API message if available (it's already sanitized)
+            if message:
+                return f"{message} (type: {error_type})"
+        except (json.JSONDecodeError, AttributeError):
+            pass
+
+        return "Model not accessible or insufficient API scope"
+
     def _parse_response(self, data: dict[str, Any]) -> KimiResponse:
         """Parse successful API response.
 
@@ -347,6 +469,10 @@ class KimiClient:
         Returns:
             KimiResponse with generated content or error
         """
+        # Discover accessible models if not already done
+        if self.config.model_discovery_enabled and not self.config.accessible_models:
+            await self.discover_models()
+
         payload = self._build_request_payload(
             messages=messages,
             temperature=temperature,
@@ -354,6 +480,9 @@ class KimiClient:
             max_tokens=max_tokens,
             stream=False,
         )
+
+        # Log the model being used
+        logger.info(f"KIMI request with model: {payload.get('model', 'unknown')}")
 
         return await self._make_request_with_retry(payload)
 
