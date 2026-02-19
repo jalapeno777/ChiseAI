@@ -3,6 +3,8 @@ Z.ai (Zhipu AI) GLM-5 Integration Client
 
 Provides OpenAI-compatible interface for Z.ai's GLM-5 model.
 Uses global endpoint: https://api.z.ai/api/paas/v4/chat/completions
+
+For CH-LLM-FALLBACK-002: Error classification integration
 """
 
 import os
@@ -15,6 +17,17 @@ from enum import Enum
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+
+from llm.errors import (
+    AuthError,
+    NetworkError,
+    QuotaError,
+    RateLimitError,
+    ScopeError,
+    ServerError,
+    ValidationError,
+    classify_error,
+)
 
 
 class ZaiError(Exception):
@@ -152,7 +165,7 @@ class ZhipuClient:
         }
 
     def _handle_error(self, response: requests.Response) -> None:
-        """Handle HTTP error responses."""
+        """Handle HTTP error responses using classified errors."""
         status_code = response.status_code
 
         try:
@@ -161,12 +174,44 @@ class ZhipuClient:
         except (json.JSONDecodeError, ValueError):
             error_msg = response.text or f"HTTP {status_code}"
 
+        # Classify error for deterministic fallback behavior
+        error = classify_error(
+            Exception(f"HTTP {status_code}"),
+            provider="ZHIPU",
+            status_code=status_code,
+            response_body=response.text,
+        )
+
         if status_code == 401:
-            raise ZaiAuthError(f"Authentication failed: {error_msg}")
+            raise AuthError(
+                f"Authentication failed for ZHIPU: {error_msg}", provider="ZHIPU"
+            )
         elif status_code == 429:
-            raise ZaiRateLimitError(f"Rate limit exceeded: {error_msg}")
+            raise RateLimitError(
+                f"Rate limit exceeded for ZHIPU: {error_msg}", provider="ZHIPU"
+            )
+        elif status_code == 403:
+            # Check for quota vs scope error
+            if isinstance(error, QuotaError):
+                raise error
+            elif isinstance(error, ScopeError):
+                raise error
+            else:
+                raise ScopeError(
+                    f"Permission denied for ZHIPU: {error_msg}", provider="ZHIPU"
+                )
+        elif status_code in (400, 422):
+            raise ValidationError(
+                f"Request validation failed for ZHIPU: {error_msg}",
+                provider="ZHIPU",
+                status_code=status_code,
+            )
         elif status_code >= 500:
-            raise ZaiServerError(f"Server error {status_code}: {error_msg}")
+            raise ServerError(
+                f"Server error {status_code} from ZHIPU",
+                provider="ZHIPU",
+                status_code=status_code,
+            )
         else:
             raise ZaiError(f"API error {status_code}: {error_msg}")
 
@@ -259,19 +304,19 @@ class ZhipuClient:
                     self._handle_error(response)
 
             except requests.exceptions.Timeout:
-                last_exception = ZaiTimeoutError(
-                    f"Request timed out after {self.timeout}s"
+                last_exception = NetworkError(
+                    f"Request timed out after {self.timeout}s", provider="ZHIPU"
                 )
-            except (ZaiRateLimitError, ZaiServerError) as e:
+            except (RateLimitError, ServerError) as e:
                 last_exception = e
                 # These are retryable, continue to next attempt
                 if attempt < self.max_retries:
                     wait_time = self.backoff_factor * (2**attempt)
                     time.sleep(wait_time)
-            except (ZaiAuthError, ZaiError):
-                raise  # Non-retryable errors
+            except (AuthError, QuotaError, ScopeError, ValidationError):
+                raise  # Non-retryable errors - re-raise for immediate fallback
             except requests.exceptions.RequestException as e:
-                last_exception = ZaiError(f"Request failed: {e}")
+                last_exception = NetworkError(f"Request failed: {e}", provider="ZHIPU")
                 if attempt < self.max_retries:
                     wait_time = self.backoff_factor * (2**attempt)
                     time.sleep(wait_time)
