@@ -4,6 +4,7 @@ Provides async HTTP client for GLM-5 model API with
 retry logic, error handling, and OpenAI-compatible request/response format.
 
 For CH-LLM-ZAI-001: Z.ai GLM-5 Integration
+For CH-LLM-FALLBACK-002: Error classification integration
 """
 
 from __future__ import annotations
@@ -16,6 +17,17 @@ from dataclasses import dataclass
 from typing import Any, cast
 
 import aiohttp
+
+from llm.errors import (
+    AuthError,
+    NetworkError,
+    QuotaError,
+    RateLimitError,
+    ScopeError,
+    ServerError,
+    ValidationError,
+    classify_error,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -210,16 +222,28 @@ class ZaiClient:
                         data = json.loads(response_text)
                         return self._parse_response(data)
 
-                    # Handle specific error codes
+                    # Classify error for deterministic fallback behavior
+                    error = classify_error(
+                        Exception(f"HTTP {response.status}"),
+                        provider="ZAI",
+                        status_code=response.status,
+                        response_body=response_text,
+                    )
+
+                    # Handle specific error codes with classified errors
                     if response.status == 401:
-                        return ZaiResponse(
-                            success=False,
-                            error="Authentication failed: Invalid API key",
-                            raw_response={
-                                "status": response.status,
-                                "body": response_text,
-                            },
-                        )
+                        raise AuthError("Authentication failed for ZAI", provider="ZAI")
+                    elif response.status == 403:
+                        # Check for quota vs scope error
+                        if isinstance(error, QuotaError):
+                            raise error
+                        elif isinstance(error, ScopeError):
+                            raise error
+                        else:
+                            raise ScopeError(
+                                f"Permission denied for ZAI: {response_text[:200]}",
+                                provider="ZAI",
+                            )
                     elif response.status == 429:
                         # Rate limited - retry with longer delay
                         logger.warning(
@@ -231,13 +255,8 @@ class ZaiClient:
                             )  # Longer delay for rate limits
                             delay *= 2
                             continue
-                        return ZaiResponse(
-                            success=False,
-                            error="Rate limit exceeded",
-                            raw_response={
-                                "status": response.status,
-                                "body": response_text,
-                            },
+                        raise RateLimitError(
+                            "Rate limit exceeded for ZAI", provider="ZAI"
                         )
                     elif response.status >= 500:
                         # Server error - retry
@@ -248,25 +267,41 @@ class ZaiClient:
                             await asyncio.sleep(delay)
                             delay *= 2
                             continue
-                        return ZaiResponse(
-                            success=False,
-                            error=f"Server error: {response.status}",
-                            raw_response={
-                                "status": response.status,
-                                "body": response_text,
-                            },
+                        raise ServerError(
+                            f"Server error {response.status} from ZAI",
+                            provider="ZAI",
+                            status_code=response.status,
+                        )
+                    elif response.status in (400, 422):
+                        # Validation error - don't retry
+                        raise ValidationError(
+                            f"Request validation failed for ZAI: {response_text[:200]}",
+                            provider="ZAI",
+                            status_code=response.status,
                         )
                     else:
-                        # Client error - don't retry
+                        # Unknown error
                         return ZaiResponse(
                             success=False,
-                            error=f"HTTP {response.status}: {response_text}",
+                            error=f"HTTP {response.status}: {response_text[:500]}",
                             raw_response={
                                 "status": response.status,
                                 "body": response_text,
                             },
                         )
 
+            except AuthError:
+                raise  # Re-raise auth errors for immediate fallback
+            except QuotaError:
+                raise  # Re-raise quota errors for immediate fallback
+            except ScopeError:
+                raise  # Re-raise scope errors for immediate fallback
+            except RateLimitError:
+                raise  # Re-raise rate limit errors for handler decision
+            except ValidationError:
+                raise  # Re-raise validation errors (don't retry)
+            except ServerError:
+                raise  # Re-raise server errors for handler decision
             except aiohttp.ClientError as e:
                 last_error = e
                 logger.warning(
@@ -275,6 +310,8 @@ class ZaiClient:
                 if attempt < self.config.max_retries - 1:
                     await asyncio.sleep(delay)
                     delay *= 2
+                else:
+                    raise NetworkError(f"Network error with ZAI: {e}", provider="ZAI")
             except asyncio.TimeoutError as e:
                 last_error = e
                 logger.warning(
@@ -283,6 +320,8 @@ class ZaiClient:
                 if attempt < self.config.max_retries - 1:
                     await asyncio.sleep(delay)
                     delay *= 2
+                else:
+                    raise NetworkError(f"Timeout error with ZAI: {e}", provider="ZAI")
             except Exception as e:
                 last_error = e
                 logger.error(f"Unexpected error: {e}")
