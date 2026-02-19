@@ -7,12 +7,11 @@ Uses global endpoint: https://api.z.ai/api/paas/v4/chat/completions
 For CH-LLM-FALLBACK-002: Error classification integration
 """
 
+import json
 import os
 import time
-import json
-from typing import Optional, Dict, Any, List, Union
 from dataclasses import dataclass
-from enum import Enum
+from typing import Any
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -67,7 +66,7 @@ class ZaiMessage:
     role: str  # "system", "user", "assistant"
     content: str
 
-    def to_dict(self) -> Dict[str, str]:
+    def to_dict(self) -> dict[str, str]:
         return {"role": self.role, "content": self.content}
 
 
@@ -79,8 +78,8 @@ class ZaiResponse:
     model: str
     content: str
     finish_reason: str
-    usage: Optional[Dict[str, int]] = None
-    raw_response: Optional[Dict[str, Any]] = None
+    usage: dict[str, int] | None = None
+    raw_response: dict[str, Any] | None = None
 
 
 class ZhipuClient:
@@ -102,9 +101,9 @@ class ZhipuClient:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        endpoint: Optional[str] = None,
-        model: Optional[str] = None,
+        api_key: str | None = None,
+        endpoint: str | None = None,
+        model: str | None = None,
         timeout: int = DEFAULT_TIMEOUT,
         max_retries: int = DEFAULT_MAX_RETRIES,
         backoff_factor: float = DEFAULT_BACKOFF_FACTOR,
@@ -123,7 +122,8 @@ class ZhipuClient:
         self.api_key = api_key or self._get_api_key_from_env()
         if not self.api_key:
             raise ZaiAuthError(
-                "API key required. Set ZHIPU_API_KEY or ZAI_API_KEY environment variable."
+                "API key required. Set ZHIPU_API_KEY or ZAI_API_KEY "
+                "environment variable."
             )
 
         self.endpoint = endpoint or self.DEFAULT_ENDPOINT
@@ -134,7 +134,7 @@ class ZhipuClient:
 
         self._session = self._create_session()
 
-    def _get_api_key_from_env(self) -> Optional[str]:
+    def _get_api_key_from_env(self) -> str | None:
         """Get API key from environment variables."""
         return os.getenv("ZHIPU_API_KEY") or os.getenv("ZAI_API_KEY")
 
@@ -156,7 +156,7 @@ class ZhipuClient:
 
         return session
 
-    def _get_headers(self) -> Dict[str, str]:
+    def _get_headers(self) -> dict[str, str]:
         """Get request headers with authorization."""
         return {
             "Authorization": f"Bearer {self.api_key}",
@@ -192,9 +192,7 @@ class ZhipuClient:
             )
         elif status_code == 403:
             # Check for quota vs scope error
-            if isinstance(error, QuotaError):
-                raise error
-            elif isinstance(error, ScopeError):
+            if isinstance(error, (QuotaError, ScopeError)):
                 raise error
             else:
                 raise ScopeError(
@@ -215,7 +213,7 @@ class ZhipuClient:
         else:
             raise ZaiError(f"API error {status_code}: {error_msg}")
 
-    def _parse_response(self, data: Dict[str, Any]) -> ZaiResponse:
+    def _parse_response(self, data: dict[str, Any]) -> ZaiResponse:
         """Parse API response into ZaiResponse object."""
         choices = data.get("choices", [])
         if not choices:
@@ -235,10 +233,10 @@ class ZhipuClient:
 
     def chat(
         self,
-        messages: List[Union[ZaiMessage, Dict[str, str]]],
+        messages: list[ZaiMessage | dict[str, str]],
         temperature: float = 0.7,
-        max_tokens: Optional[int] = None,
-        top_p: Optional[float] = None,
+        max_tokens: int | None = None,
+        top_p: float | None = None,
         stream: bool = False,
     ) -> ZaiResponse:
         """
@@ -287,7 +285,7 @@ class ZhipuClient:
         if top_p is not None:
             payload["top_p"] = top_p
 
-        last_exception: Optional[Exception] = None
+        last_exception: Exception | None = None
 
         for attempt in range(self.max_retries + 1):
             try:
@@ -326,7 +324,7 @@ class ZhipuClient:
             raise last_exception
         raise ZaiError("All retry attempts failed")
 
-    def simple_chat(self, prompt: str, system_prompt: Optional[str] = None) -> str:
+    def simple_chat(self, prompt: str, system_prompt: str | None = None) -> str:
         """
         Simple one-turn chat interface.
 
@@ -354,7 +352,7 @@ class ZhipuClient:
         """
         try:
             # Simple test request with minimal tokens
-            response = self.chat(
+            self.chat(
                 messages=[ZaiMessage(role="user", content="Hi")],
                 max_tokens=5,
             )

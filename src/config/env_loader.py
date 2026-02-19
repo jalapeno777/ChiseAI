@@ -204,6 +204,42 @@ def load_discord_config() -> dict[str, Any]:
     }
 
 
+def load_discord_config_with_ids() -> dict[str, Any]:
+    """Load Discord configuration with authoritative channel IDs.
+
+    Gate B fix: Loads authoritative channel IDs for routing.
+
+    Authoritative Discord Configuration:
+    - Guild ID: 1413522994810327134
+    - #summaries channel: 1445752426563899492
+    - #trading channel: 1444447985378398459
+
+    Environment variables:
+        DISCORD_BOT_TOKEN: Bot token
+        DISCORD_WEBHOOK_URL: Webhook URL
+        DISCORD_DEFAULT_CHANNEL: Default channel name
+        DISCORD_GUILD_ID: Guild/server ID for lock enforcement
+        DISCORD_SUMMARIES_CHANNEL_ID: Channel ID for summaries (#summaries)
+        DISCORD_TRADING_CHANNEL_ID: Channel ID for trading (#trading)
+
+    Returns:
+        Dictionary with Discord config values including channel IDs
+    """
+    return {
+        "bot_token": discord_loader.get_str("BOT_TOKEN"),
+        "webhook_url": discord_loader.get_str("WEBHOOK_URL"),
+        "default_channel": discord_loader.get_str("DEFAULT_CHANNEL", "trading-signals"),
+        "guild_id": discord_loader.get_str("GUILD_ID"),  # Guild restriction
+        # Authoritative channel IDs (Gate B fix)
+        "summaries_channel_id": discord_loader.get_str(
+            "SUMMARIES_CHANNEL_ID", "1445752426563899492"
+        ),
+        "trading_channel_id": discord_loader.get_str(
+            "TRADING_CHANNEL_ID", "1444447985378398459"
+        ),
+    }
+
+
 # =============================================================================
 # Environment Bootstrap System (ST-ENV-001)
 # =============================================================================
@@ -546,3 +582,139 @@ def diagnose_provider_availability() -> list[dict[str, Any]]:
     results.append(minimax_diag)
 
     return results
+
+
+# =============================================================================
+# Database Configuration Loader (GATE-RECOVERY-001)
+# =============================================================================
+
+
+def is_running_in_container() -> bool:
+    """Detect if running inside a Docker container.
+
+    Returns:
+        True if running inside a container, False otherwise.
+    """
+    # Check for .dockerenv file
+    if os.path.exists("/.dockerenv"):
+        return True
+
+    # Check cgroup for docker/containerd references
+    try:
+        with open("/proc/1/cgroup") as f:
+            cgroup_content = f.read()
+            if any(
+                marker in cgroup_content
+                for marker in ["docker", "containerd", "kubepods"]
+            ):
+                return True
+    except (FileNotFoundError, PermissionError):
+        pass
+
+    return False
+
+
+def load_database_config(
+    prefix: str = "POSTGRES_",
+    container_host_default: str = "chiseai-postgres",
+    host_host_default: str = "host.docker.internal",
+    port_default: int = 5434,
+    db_default: str = "chiseai",
+    user_default: str = "chiseai",
+) -> dict[str, Any]:
+    """Load unified database configuration from environment.
+
+    Reads database connection parameters from environment variables with
+    intelligent defaults based on execution context (container vs host).
+
+    Args:
+        prefix: Prefix for environment variables (default: "POSTGRES_")
+        container_host_default: Default host when running in container
+        host_host_default: Default host when running on host
+        port_default: Default port number
+        db_default: Default database name
+        user_default: Default username
+
+    Returns:
+        Dictionary with database configuration:
+        - host: Database host
+        - port: Database port
+        - database: Database name
+        - user: Username
+        - password: Password (required, no default)
+
+    Raises:
+        ValueError: If password is not set in environment
+
+    Example:
+        >>> config = load_database_config()
+        >>> print(f"Connecting to {config['host']}:{config['port']}")
+    """
+    # Detect execution context
+    in_container = is_running_in_container()
+
+    # Determine default host based on context
+    default_host = container_host_default if in_container else host_host_default
+
+    # Load from environment with defaults
+    host = os.environ.get(f"{prefix}HOST", default_host)
+    port_str = os.environ.get(f"{prefix}PORT", str(port_default))
+    database = os.environ.get(f"{prefix}DB", db_default)
+    user = os.environ.get(f"{prefix}USER", user_default)
+    password = os.environ.get(f"{prefix}PASSWORD")
+
+    # Validate password is set
+    if not password:
+        raise ValueError(
+            f"{prefix}PASSWORD environment variable is required but not set"
+        )
+
+    # Parse port as integer
+    try:
+        port = int(port_str)
+    except ValueError:
+        logger.warning(
+            f"Invalid {prefix}PORT value '{port_str}', using default {port_default}"
+        )
+        port = port_default
+
+    config = {
+        "host": host,
+        "port": port,
+        "database": database,
+        "user": user,
+        "password": password,
+        "in_container": in_container,
+    }
+
+    logger.debug(
+        f"Loaded database config: host={host}, port={port}, "
+        f"database={database}, user={user}, in_container={in_container}"
+    )
+
+    return config
+
+
+def get_postgres_connection_string(
+    config: dict[str, Any] | None = None,
+) -> str:
+    """Build PostgreSQL connection string from config.
+
+    Args:
+        config: Database config dict from load_database_config(),
+                or None to load fresh config
+
+    Returns:
+        PostgreSQL connection string
+
+    Example:
+        >>> conn_str = get_postgres_connection_string()
+        >>> # postgresql://user:pass@host:port/database
+    """
+    if config is None:
+        config = load_database_config()
+
+    return (
+        f"postgresql://{config['user']}:{config['password']}"
+        f"@{config['host']}:{config['port']}/{config['database']}"
+    )

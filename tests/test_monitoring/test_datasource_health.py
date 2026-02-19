@@ -6,6 +6,7 @@ For ST-OPS-008: Grafana Data Source Health Monitoring
 from __future__ import annotations
 
 import asyncio
+import os
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -182,7 +183,10 @@ class TestInfluxDBHealthChecker:
         mock_client.health = MagicMock(return_value=mock_health)
         mock_client.close = MagicMock()
 
-        with patch("influxdb_client.InfluxDBClient", return_value=mock_client):
+        with patch(
+            "influxdb_client.client.influxdb_client.InfluxDBClient",
+            return_value=mock_client,
+        ):
             is_healthy, response_time = await checker.check_health()
             assert is_healthy is True
             assert response_time is not None
@@ -197,7 +201,8 @@ class TestInfluxDBHealthChecker:
         # Mock InfluxDB client to fail
         with (
             patch(
-                "influxdb_client.InfluxDBClient", side_effect=Exception("No InfluxDB")
+                "influxdb_client.client.influxdb_client.InfluxDBClient",
+                side_effect=Exception("No InfluxDB"),
             ),
             # Mock aiohttp to also fail (simulating no HTTP access)
             patch("aiohttp.ClientSession", side_effect=Exception("No HTTP")),
@@ -604,6 +609,72 @@ class TestFactoryFunctions:
         assert config.username == "testuser"
         assert config.password == "testpass"
         assert config.check_interval_seconds == 120.0
+
+    def test_create_postgresql_config_from_env(self, monkeypatch):
+        """Test PostgreSQL config factory reads from environment."""
+        # Set environment variables
+        monkeypatch.setenv("POSTGRES_HOST", "env-host")
+        monkeypatch.setenv("POSTGRES_PORT", "5433")
+        monkeypatch.setenv("POSTGRES_DB", "envdb")
+        monkeypatch.setenv("POSTGRES_USER", "envuser")
+        monkeypatch.setenv("POSTGRES_PASSWORD", "envpass")
+
+        config = create_postgresql_config()
+        assert config.source_type == DataSourceType.POSTGRESQL
+        assert config.host == "env-host"
+        assert config.port == 5433
+        assert config.database == "envdb"
+        assert config.username == "envuser"
+        assert config.password == "envpass"
+
+    def test_create_postgresql_config_env_overrides(self, monkeypatch):
+        """Test that explicit args override environment variables."""
+        monkeypatch.setenv("POSTGRES_HOST", "env-host")
+        monkeypatch.setenv("POSTGRES_PORT", "5433")
+        monkeypatch.setenv("POSTGRES_PASSWORD", "envpass")
+
+        config = create_postgresql_config(
+            host="override-host",
+            port=5435,
+            password="override-pass",
+        )
+        assert config.host == "override-host"
+        assert config.port == 5435
+        assert config.password == "override-pass"
+
+    def test_create_postgresql_config_missing_password(self, monkeypatch):
+        """Test that missing password raises ValueError."""
+        monkeypatch.delenv("POSTGRES_PASSWORD", raising=False)
+
+        with pytest.raises(ValueError, match="POSTGRES_PASSWORD"):
+            create_postgresql_config()
+
+    def test_create_postgresql_config_uses_defaults_when_env_not_set(self, monkeypatch):
+        """Test that function uses defaults when env vars are not set.
+
+        Note: This tests the default behavior. The actual values depend on
+        whether POSTGRES_PORT is set in the environment.
+        """
+        monkeypatch.setenv("POSTGRES_PASSWORD", "testpass")
+        # Clear other env vars to test defaults
+        monkeypatch.delenv("POSTGRES_HOST", raising=False)
+        monkeypatch.delenv("POSTGRES_DB", raising=False)
+        monkeypatch.delenv("POSTGRES_USER", raising=False)
+
+        # When env vars are not set, the function should work with defaults
+        config = create_postgresql_config()
+        assert config.password == "testpass"
+        # Port will be either from env or default 5434
+        assert isinstance(config.port, int)
+        assert config.port > 0
+
+    def test_create_postgresql_config_uses_env_host_when_set(self, monkeypatch):
+        """Test that POSTGRES_HOST env var is respected when set."""
+        monkeypatch.setenv("POSTGRES_PASSWORD", "testpass")
+        monkeypatch.setenv("POSTGRES_HOST", "custom-env-host")
+
+        config = create_postgresql_config()
+        assert config.host == "custom-env-host"
 
     def test_create_default_monitor(self):
         """Test default monitor factory."""

@@ -118,23 +118,88 @@ async def main():
     parser.add_argument(
         "--postgres-user",
         type=str,
-        default=os.environ.get("POSTGRES_USER", "chiseai"),
-        help="PostgreSQL username",
+        default=os.environ.get("POSTGRES_USER"),
+        help="PostgreSQL username (overrides POSTGRES_USER env var)",
     )
     parser.add_argument(
         "--postgres-password",
         type=str,
         default=os.environ.get("POSTGRES_PASSWORD"),
-        help="PostgreSQL password",
+        help="PostgreSQL password (overrides POSTGRES_PASSWORD env var)",
+    )
+    parser.add_argument(
+        "--postgres-host",
+        type=str,
+        default=os.environ.get("POSTGRES_HOST"),
+        help="PostgreSQL host (overrides POSTGRES_HOST env var)",
+    )
+    parser.add_argument(
+        "--postgres-port",
+        type=int,
+        default=int(os.environ.get("POSTGRES_PORT", "5434")),
+        help="PostgreSQL port (overrides POSTGRES_PORT env var)",
+    )
+    parser.add_argument(
+        "--postgres-db",
+        type=str,
+        default=os.environ.get("POSTGRES_DB"),
+        help="PostgreSQL database name (overrides POSTGRES_DB env var)",
+    )
+    parser.add_argument(
+        "--check-once",
+        action="store_true",
+        help="Run health check once and exit (for testing)",
     )
     args = parser.parse_args()
+
+    # Build PostgreSQL config from environment + CLI overrides
+    pg_config = {}
+    if args.postgres_host:
+        pg_config["host"] = args.postgres_host
+    if args.postgres_port:
+        pg_config["port"] = args.postgres_port
+    if args.postgres_db:
+        pg_config["database"] = args.postgres_db
+    if args.postgres_user:
+        pg_config["username"] = args.postgres_user
+    if args.postgres_password:
+        pg_config["password"] = args.postgres_password
 
     # Create monitor with default ChiseAI configuration
     monitor = create_default_monitor(
         influxdb_token=args.influxdb_token,
-        postgres_username=args.postgres_user,
-        postgres_password=args.postgres_password,
+        postgres_username=pg_config.get("username"),
+        postgres_password=pg_config.get("password"),
     )
+
+    # Override PostgreSQL config if CLI args provided
+    if pg_config:
+        from monitoring.datasource_health import (
+            DataSourceType,
+            DatasourceConfig,
+            PostgreSQLHealthChecker,
+        )
+
+        # Get current config and update with overrides
+        current_cfg = monitor.datasource_configs.get(DataSourceType.POSTGRESQL)
+        if current_cfg:
+            new_cfg = DatasourceConfig(
+                source_type=DataSourceType.POSTGRESQL,
+                source_name=current_cfg.source_name,
+                host=pg_config.get("host", current_cfg.host),
+                port=pg_config.get("port", current_cfg.port),
+                database=pg_config.get("database", current_cfg.database),
+                username=pg_config.get("username", current_cfg.username),
+                password=pg_config.get("password", current_cfg.password),
+                check_interval_seconds=current_cfg.check_interval_seconds,
+                enabled=current_cfg.enabled,
+                reconnect_backoff_seconds=current_cfg.reconnect_backoff_seconds,
+                max_reconnect_attempts=current_cfg.max_reconnect_attempts,
+            )
+            monitor.datasource_configs[DataSourceType.POSTGRESQL] = new_cfg
+            monitor._checkers[DataSourceType.POSTGRESQL] = PostgreSQLHealthChecker(
+                new_cfg
+            )
 
     # Configure optional Influx export for Grafana datasource health dashboards.
     influx_client = None
@@ -206,6 +271,29 @@ async def main():
     # Start monitoring
     logger.info("Starting data source health monitoring...")
     logger.info(f"Monitoring InfluxDB (30s interval) and PostgreSQL (60s interval)")
+
+    # Check-once mode for testing
+    if args.check_once:
+        logger.info("Running single health check (check-once mode)...")
+        await monitor.check_now()
+
+        # Print results
+        metrics = monitor.get_all_metrics()
+        for source_type, source_metrics in metrics["datasources"].items():
+            status = "✓" if source_metrics["is_connected"] else "✗"
+            logger.info(
+                f"{status} {source_type}: {source_metrics['status']} "
+                f"(response_time={source_metrics.get('response_time_ms', 'N/A')}ms)"
+            )
+
+        # Exit with appropriate code
+        all_healthy = all(m["is_healthy"] for m in metrics["datasources"].values())
+        if all_healthy:
+            logger.info("All data sources are healthy!")
+            return 0
+        else:
+            logger.error("Some data sources are unhealthy!")
+            return 1
 
     await monitor.start_monitoring()
 

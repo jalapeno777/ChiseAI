@@ -15,7 +15,7 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 import aiohttp
@@ -56,7 +56,7 @@ class DeliveryResult:
 class BatchSignal:
     """A signal queued for batch delivery."""
 
-    signal: "Signal"
+    signal: Signal
     queued_at: float = field(default_factory=time.time)
     high_priority: bool = False
 
@@ -239,7 +239,7 @@ class DiscordBatchSender:
             f"max_batch_size={max_batch_size}, max_wait_ms={max_wait_ms}"
         )
 
-    async def send_signal(self, signal: "Signal") -> bool:
+    async def send_signal(self, signal: Signal) -> bool:
         """Queue signal for batch sending.
 
         High-confidence signals (>=90%) are sent immediately.
@@ -300,7 +300,7 @@ class DiscordBatchSender:
         results = await self._send_batch(signals)
         return results
 
-    async def _send_batch(self, signals: list["Signal"]) -> list[DeliveryResult]:
+    async def _send_batch(self, signals: list[Signal]) -> list[DeliveryResult]:
         """Send batch of signals in one webhook.
 
         Combines multiple signals into a single Discord embed.
@@ -322,52 +322,54 @@ class DiscordBatchSender:
 
         try:
             # Use aiohttp directly (rate limiter will handle throttling)
-            async with aiohttp.ClientSession() as session:
-                async with session.post(self.webhook_url, json=payload) as resp:
-                    latency_ms = (time.perf_counter() - start_time) * 1000
+            async with (
+                aiohttp.ClientSession() as session,
+                session.post(self.webhook_url, json=payload) as resp,
+            ):
+                latency_ms = (time.perf_counter() - start_time) * 1000
 
-                    if resp.status == 204:
-                        # Success
-                        logger.info(
-                            f"Batch sent successfully: {len(signals)} signals "
-                            f"in {latency_ms:.1f}ms"
+                if resp.status == 204:
+                    # Success
+                    logger.info(
+                        f"Batch sent successfully: {len(signals)} signals "
+                        f"in {latency_ms:.1f}ms"
+                    )
+                    return [
+                        DeliveryResult(
+                            signal_id=s.signal_id,
+                            success=True,
+                            latency_ms=latency_ms,
                         )
-                        return [
-                            DeliveryResult(
-                                signal_id=s.signal_id,
-                                success=True,
-                                latency_ms=latency_ms,
-                            )
-                            for s in signals
-                        ]
+                        for s in signals
+                    ]
 
-                    elif resp.status == 429:
-                        # Rate limited
-                        retry_after = float(resp.headers.get("Retry-After", "5"))
-                        logger.warning(f"Rate limited, retry_after={retry_after}s")
-                        return [
-                            DeliveryResult(
-                                signal_id=s.signal_id,
-                                success=False,
-                                latency_ms=latency_ms,
-                                error=f"Rate limited, retry after {retry_after}s",
-                            )
-                            for s in signals
-                        ]
+                elif resp.status == 429:
+                    # Rate limited
+                    retry_after = float(resp.headers.get("Retry-After", "5"))
+                    logger.warning(f"Rate limited, retry_after={retry_after}s")
+                    return [
+                        DeliveryResult(
+                            signal_id=s.signal_id,
+                            success=False,
+                            latency_ms=latency_ms,
+                            error=f"Rate limited, retry after {retry_after}s",
+                        )
+                        for s in signals
+                    ]
 
-                    else:
-                        body = await resp.text()
-                        error = f"HTTP {resp.status}: {body}"
-                        logger.error(f"Batch send failed: {error}")
-                        return [
-                            DeliveryResult(
-                                signal_id=s.signal_id,
-                                success=False,
-                                latency_ms=latency_ms,
-                                error=error,
-                            )
-                            for s in signals
-                        ]
+                else:
+                    body = await resp.text()
+                    error = f"HTTP {resp.status}: {body}"
+                    logger.error(f"Batch send failed: {error}")
+                    return [
+                        DeliveryResult(
+                            signal_id=s.signal_id,
+                            success=False,
+                            latency_ms=latency_ms,
+                            error=error,
+                        )
+                        for s in signals
+                    ]
 
         except Exception as e:
             latency_ms = (time.perf_counter() - start_time) * 1000
@@ -382,7 +384,7 @@ class DiscordBatchSender:
                 for s in signals
             ]
 
-    def _build_batch_embed(self, signals: list["Signal"]) -> dict[str, Any]:
+    def _build_batch_embed(self, signals: list[Signal]) -> dict[str, Any]:
         """Build Discord embed for batched signals.
 
         Args:
@@ -427,7 +429,7 @@ class DiscordBatchSender:
         return {
             "title": title,
             "fields": fields,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "color": 0x00FF00 if signals[0].direction.value == "long" else 0xFF0000,
         }
 
@@ -487,7 +489,7 @@ class OptimizedDiscordClient:
             f"batch_size={max_batch_size}, wait_ms={max_wait_ms}"
         )
 
-    async def emit_signal(self, signal: "Signal") -> DeliveryResult:
+    async def emit_signal(self, signal: Signal) -> DeliveryResult:
         """Emit signal with batching and rate limiting.
 
         Args:
@@ -532,7 +534,7 @@ class OptimizedDiscordClient:
             latency_ms=latency_ms,
         )
 
-    async def emit_batch(self, signals: list["Signal"]) -> list[DeliveryResult]:
+    async def emit_batch(self, signals: list[Signal]) -> list[DeliveryResult]:
         """Emit multiple signals efficiently.
 
         Args:

@@ -117,7 +117,7 @@ class KimiClient:
         self.config = config or KimiConfig()
         self._session: aiohttp.ClientSession | None = None
 
-    async def __aenter__(self) -> "KimiClient":
+    async def __aenter__(self) -> KimiClient:
         """Async context manager entry."""
         await self.connect()
         return self
@@ -178,7 +178,8 @@ class KimiClient:
                         model_ids = [m.get("id", "unknown") for m in models]
                         self.config.accessible_models = model_ids
                         logger.info(
-                            f"Discovered {len(model_ids)} accessible model(s): {model_ids}"
+                            f"Discovered {len(model_ids)} accessible model(s): "
+                            f"{model_ids}"
                         )
                         return model_ids
                     except json.JSONDecodeError as e:
@@ -316,9 +317,7 @@ class KimiClient:
                         )
                     elif response.status == 403:
                         # Check for quota vs scope error
-                        if isinstance(error, QuotaError):
-                            raise error
-                        elif isinstance(error, ScopeError):
+                        if isinstance(error, (QuotaError, ScopeError)):
                             raise error
                         else:
                             raise ScopeError(
@@ -328,7 +327,8 @@ class KimiClient:
                     elif response.status == 429:
                         # Rate limited - retry with longer delay
                         logger.warning(
-                            f"Rate limited (attempt {attempt + 1}/{self.config.max_retries})"
+                            f"Rate limited (attempt {attempt + 1}/"
+                            f"{self.config.max_retries})"
                         )
                         if attempt < self.config.max_retries - 1:
                             await asyncio.sleep(
@@ -342,7 +342,8 @@ class KimiClient:
                     elif response.status >= 500:
                         # Server error - retry
                         logger.warning(
-                            f"Server error {response.status} (attempt {attempt + 1}/{self.config.max_retries})"
+                            f"Server error {response.status} (attempt {attempt + 1}/"
+                            f"{self.config.max_retries})"
                         )
                         if attempt < self.config.max_retries - 1:
                             await asyncio.sleep(delay)
@@ -356,7 +357,8 @@ class KimiClient:
                     elif response.status in (400, 422):
                         # Validation error - don't retry
                         raise ValidationError(
-                            f"Request validation failed for KIMI: {response_text[:200]}",
+                            f"Request validation failed for KIMI: "
+                            f"{response_text[:200]}",
                             provider="KIMI",
                             status_code=response.status,
                         )
@@ -386,14 +388,17 @@ class KimiClient:
             except aiohttp.ClientError as e:
                 last_error = e
                 logger.warning(
-                    f"Request failed (attempt {attempt + 1}/{self.config.max_retries}): {e}"
+                    f"Request failed (attempt {attempt + 1}/"
+                    f"{self.config.max_retries}): {e}"
                 )
                 if attempt < self.config.max_retries - 1:
                     await asyncio.sleep(delay)
                     delay *= 2
                 else:
-                    raise NetworkError(f"Network error with KIMI: {e}", provider="KIMI")
-            except asyncio.TimeoutError as e:
+                    raise NetworkError(
+                        f"Network error with KIMI: {e}", provider="KIMI"
+                    ) from e
+            except TimeoutError as e:
                 last_error = e
                 logger.warning(
                     f"Request timeout (attempt {attempt + 1}/{self.config.max_retries})"
@@ -402,7 +407,9 @@ class KimiClient:
                     await asyncio.sleep(delay)
                     delay *= 2
                 else:
-                    raise NetworkError(f"Timeout error with KIMI: {e}", provider="KIMI")
+                    raise NetworkError(
+                        f"Timeout error with KIMI: {e}", provider="KIMI"
+                    ) from e
             except Exception as e:
                 last_error = e
                 logger.error(f"Unexpected error: {e}")
