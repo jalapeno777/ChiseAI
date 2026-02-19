@@ -23,7 +23,7 @@ from typing import Any
 from urllib.parse import urlencode, urlparse, urlunparse
 from urllib.request import Request, urlopen
 
-# Add src to path for imports
+# Add src to path for config imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 from config.bootstrap import bootstrap
 
@@ -1100,6 +1100,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
+    # Bootstrap environment first
     bootstrap(load_env=True)
     parser = build_parser()
     args = parser.parse_args()
