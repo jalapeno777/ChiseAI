@@ -29,23 +29,31 @@ logger = logging.getLogger(__name__)
 class SendResult:
     """Result of alert send attempt.
 
+    Gate B fix: Extended to track delivery method and guild validation.
+
     Attributes:
         success: Whether send was successful
         message_id: Discord message ID (if available)
         channel: Channel the alert was sent to
+        channel_id: Discord channel ID (if available)
         error: Error message if failed
         latency_ms: Time taken to send (ms)
         retries: Number of retry attempts
         suppressed: Whether alert was suppressed (duplicate/rate limited)
+        method: Delivery method used ('bot', 'webhook', or 'none')
+        guild_validated: Whether guild lock was validated
     """
 
     success: bool
     message_id: str | None = None
     channel: str | None = None
+    channel_id: str | None = None
     error: str | None = None
     latency_ms: float = 0.0
     retries: int = 0
     suppressed: bool = False
+    method: str = "none"
+    guild_validated: bool = False
 
 
 class AlertSender:
@@ -255,6 +263,8 @@ class AlertSender:
     ) -> SendResult:
         """Send message with exponential backoff retry.
 
+        Gate B fix: Uses DeliveryResult with channel ID tracking.
+
         Args:
             content: Message content
             channel: Target channel
@@ -263,38 +273,50 @@ class AlertSender:
         Returns:
             SendResult with status
         """
+        from discord_alerts.discord_client import DeliveryResult
+
         client = self._get_client()
 
         last_error = None
         for attempt in range(self.config.max_retries):
             try:
-                result = await client.send_message(
+                result: DeliveryResult = await client.send_message(
                     content=content,
                     channel=channel,
                     embeds=embeds,
                 )
 
-                if result["success"]:
+                if result.success:
                     return SendResult(
                         success=True,
-                        message_id=result.get("message_id"),
-                        channel=channel,
+                        message_id=result.message_id,
+                        channel=result.channel_name or channel,
+                        channel_id=result.channel_id,
                         retries=attempt,
+                        method=result.method,
+                        guild_validated=result.guild_validated,
                     )
 
                 # Check for rate limit response
-                if "retry_after" in result:
-                    retry_after = result["retry_after"]
-                    logger.warning(f"Rate limited, waiting {retry_after}s")
-                    await asyncio.sleep(retry_after)
-                    last_error = result.get("error", "Rate limited")
+                if result.error and "Rate limited" in result.error:
+                    # Extract retry_after from error message if present
+                    import re
+
+                    match = re.search(r"Retry after (\d+\.?\d*)", result.error)
+                    if match:
+                        retry_after = float(match.group(1))
+                        logger.warning(f"Rate limited, waiting {retry_after}s")
+                        await asyncio.sleep(retry_after)
+                    last_error = result.error
                     continue
 
                 # Other error
-                last_error = result.get("error", "Unknown error")
+                last_error = result.error or "Unknown error"
 
-                # Don't retry on certain errors
-                if result.get("status") in (400, 401, 403, 404):
+                # Don't retry on certain client errors
+                if result.error and any(
+                    code in result.error for code in ["400", "401", "403", "404"]
+                ):
                     break
 
             except Exception as e:

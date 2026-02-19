@@ -5,6 +5,7 @@ Provides a unified interface for multiple LLM providers with:
 - Automatic fallback between providers
 - Configurable provider priority
 - Proper async/sync handling
+- Metrics collection for burn-in observability
 
 Provider Priority (default):
 1. KIMI (K2.5) - Primary
@@ -16,17 +17,17 @@ Provider Priority (default):
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import os
 import re
-from dataclasses import dataclass, field
-from datetime import UTC, datetime
+import time
+from collections.abc import Callable, Coroutine
+from dataclasses import dataclass
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Any, Callable, Coroutine
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from signal_generation.models import Signal
+    from llm.observability import ChainMetrics, ProviderMetricsExporter
 
 logger = logging.getLogger(__name__)
 
@@ -245,6 +246,8 @@ class LLMProviderChain:
         provider_order: list[str] | None = None,
         max_retries: int = 3,
         retry_delay: float = 1.0,
+        enable_metrics: bool = True,
+        metrics_exporter: ProviderMetricsExporter | None = None,
     ):
         """Initialize the provider chain.
 
@@ -252,11 +255,22 @@ class LLMProviderChain:
             provider_order: Ordered list of provider names to try
             max_retries: Maximum retries per provider for retryable errors
             retry_delay: Initial retry delay (exponential backoff)
+            enable_metrics: Whether to collect metrics during burn-in
+            metrics_exporter: Optional exporter for InfluxDB integration
         """
         self.provider_order = provider_order or ["kimi", "zai", "zhipu", "minimax"]
         self.max_retries = max_retries
         self.retry_delay = retry_delay
         self._provider_stats: dict[str, dict[str, Any]] = {}
+
+        # Metrics collection for burn-in observability
+        self._enable_metrics = enable_metrics
+        self._metrics_exporter = metrics_exporter
+        self._chain_metrics: ChainMetrics | None = None
+        if enable_metrics:
+            from llm.observability import ChainMetrics
+
+            self._chain_metrics = ChainMetrics()
 
     def _is_provider_available(self, provider_name: str) -> tuple[bool, str | None]:
         """Check if a provider is available based on environment.
@@ -289,6 +303,120 @@ class LLMProviderChain:
 
         return True, None
 
+    def _record_attempt(self, provider_name: str, latency_ms: float = 0.0) -> None:
+        """Record a provider attempt for metrics.
+
+        Args:
+            provider_name: Name of the provider
+            latency_ms: Latency in milliseconds
+        """
+        if not self._enable_metrics or not self._chain_metrics:
+            return
+
+        config = PROVIDER_CONFIGS.get(provider_name)
+        provider_label = config.name if config else provider_name
+
+        metrics = self._chain_metrics.get_or_create_provider_metrics(
+            provider_name, provider_label
+        )
+        metrics.record_attempt(latency_ms)
+
+        if self._metrics_exporter:
+            self._metrics_exporter.log_burn_in_event(
+                "attempt", provider_name, {"latency_ms": latency_ms}
+            )
+
+    def _record_success(self, provider_name: str, latency_ms: float = 0.0) -> None:
+        """Record a successful provider response for metrics.
+
+        Args:
+            provider_name: Name of the provider
+            latency_ms: Latency in milliseconds
+        """
+        if not self._enable_metrics or not self._chain_metrics:
+            return
+
+        config = PROVIDER_CONFIGS.get(provider_name)
+        provider_label = config.name if config else provider_name
+
+        metrics = self._chain_metrics.get_or_create_provider_metrics(
+            provider_name, provider_label
+        )
+        metrics.record_success(latency_ms)
+        self._chain_metrics.record_query_success(provider_name)
+
+        if self._metrics_exporter:
+            self._metrics_exporter.log_burn_in_event(
+                "success", provider_name, {"latency_ms": latency_ms}
+            )
+            self._metrics_exporter.export_provider_metrics(metrics)
+
+    def _record_failure(
+        self,
+        provider_name: str,
+        error_category: ErrorCategory,
+        fallback_reason: str | None = None,
+    ) -> None:
+        """Record a failed provider response for metrics.
+
+        Args:
+            provider_name: Name of the provider
+            error_category: Category of the error
+            fallback_reason: Optional detailed reason for fallback
+        """
+        if not self._enable_metrics or not self._chain_metrics:
+            return
+
+        config = PROVIDER_CONFIGS.get(provider_name)
+        provider_label = config.name if config else provider_name
+
+        metrics = self._chain_metrics.get_or_create_provider_metrics(
+            provider_name, provider_label
+        )
+        metrics.record_failure(error_category, fallback_reason)
+        self._chain_metrics.record_fallback()
+
+        if self._metrics_exporter:
+            self._metrics_exporter.log_burn_in_event(
+                "failure",
+                provider_name,
+                {
+                    "error_category": error_category.name,
+                    "fallback_reason": fallback_reason,
+                },
+            )
+
+    def get_metrics_report(self) -> dict[str, Any]:
+        """Get a metrics report for burn-in monitoring.
+
+        Returns:
+            Dictionary with chain and provider metrics
+        """
+        if not self._chain_metrics:
+            return {"enabled": False, "message": "Metrics collection is disabled"}
+
+        return {
+            "enabled": True,
+            "metrics": self._chain_metrics.to_dict(),
+        }
+
+    def export_metrics(self) -> dict[str, Any] | None:
+        """Export current metrics to InfluxDB if exporter is configured.
+
+        Returns:
+            Export result or None if no exporter configured
+        """
+        if not self._metrics_exporter or not self._chain_metrics:
+            return None
+
+        result = self._metrics_exporter.export_chain_metrics(self._chain_metrics)
+
+        # Also export individual provider metrics
+        for metrics in self._chain_metrics.provider_metrics.values():
+            self._metrics_exporter.export_provider_metrics(metrics)
+
+        return result
+
     async def _query_with_retry(
         self,
         provider_name: str,
@@ -312,15 +440,31 @@ class LLMProviderChain:
 
         last_error: Exception | None = None
         delay = self.retry_delay
+        start_time = time.time()
 
         for attempt in range(self.max_retries):
+            # Record attempt
+            self._record_attempt(provider_name)
+
             try:
                 response = await query_fn(*args, **kwargs)
+                latency_ms = (time.time() - start_time) * 1000
+
                 if response.success:
+                    # Record success with latency
+                    self._record_success(provider_name, latency_ms)
                     return response
+
                 # If response has error but succeeded flag is False, check if retryable
                 if response.error and not response.error.retryable:
+                    # Record failure
+                    self._record_failure(
+                        provider_name,
+                        response.error.category,
+                        response.error.message,
+                    )
                     return response
+
                 last_error = Exception(
                     response.error.message if response.error else "Unknown error"
                 )
@@ -329,7 +473,12 @@ class LLMProviderChain:
                 error = classify_error(e)
 
                 if not error.retryable or attempt == self.max_retries - 1:
-                    # Non-retryable or last attempt
+                    # Non-retryable or last attempt - record failure
+                    self._record_failure(
+                        provider_name,
+                        error.category,
+                        error.message,
+                    )
                     return LLMResponse(
                         success=False,
                         provider=provider_label,
@@ -337,8 +486,9 @@ class LLMProviderChain:
                     )
 
                 logger.warning(
-                    f"{provider_label} attempt {attempt + 1}/{self.max_retries} failed: "
-                    f"{error.category.name} - {error.message}. Retrying in {delay:.1f}s..."
+                    f"{provider_label} attempt {attempt + 1}/{self.max_retries} "
+                    f"failed: {error.category.name} - {error.message}. "
+                    f"Retrying in {delay:.1f}s..."
                 )
                 await asyncio.sleep(delay)
                 delay *= 2  # Exponential backoff
@@ -394,9 +544,11 @@ class LLMProviderChain:
                 if not result.success:
                     error = classify_error(
                         Exception(result.error or "Unknown error"),
-                        result.raw_response.get("status")
-                        if result.raw_response
-                        else None,
+                        (
+                            result.raw_response.get("status")
+                            if result.raw_response
+                            else None
+                        ),
                     )
                     return LLMResponse(
                         success=False,
@@ -477,9 +629,11 @@ class LLMProviderChain:
                 if not result.success:
                     error = classify_error(
                         Exception(result.error or "Unknown error"),
-                        result.raw_response.get("status")
-                        if result.raw_response
-                        else None,
+                        (
+                            result.raw_response.get("status")
+                            if result.raw_response
+                            else None
+                        ),
                     )
                     return LLMResponse(
                         success=False,
@@ -639,9 +793,11 @@ class LLMProviderChain:
                 if not result.success:
                     error = classify_error(
                         Exception(result.error or "Unknown error"),
-                        result.raw_response.get("status")
-                        if result.raw_response
-                        else None,
+                        (
+                            result.raw_response.get("status")
+                            if result.raw_response
+                            else None
+                        ),
                     )
                     return LLMResponse(
                         success=False,
@@ -732,6 +888,10 @@ class LLMProviderChain:
         provider_list = providers or self.provider_order
         errors: list[tuple[str, ProviderError]] = []
 
+        # Record query start
+        if self._chain_metrics:
+            self._chain_metrics.record_query_start()
+
         for provider_name in provider_list:
             # Check if provider is available
             available, reason = self._is_provider_available(provider_name)
@@ -779,6 +939,10 @@ class LLMProviderChain:
             f"{name}: {err.category.name}" for name, err in errors
         )
         logger.error(f"All LLM providers failed: {error_summary}")
+
+        # Record query failure
+        if self._chain_metrics:
+            self._chain_metrics.record_query_failure()
 
         return LLMResponse(
             success=False,

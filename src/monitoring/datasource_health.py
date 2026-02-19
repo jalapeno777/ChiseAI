@@ -231,7 +231,7 @@ class InfluxDBHealthChecker:
         try:
             # Try to import influxdb client
             try:
-                from influxdb_client import InfluxDBClient
+                from influxdb_client.client.influxdb_client import InfluxDBClient
             except ImportError:
                 # Fallback: use HTTP request to health endpoint
                 return await self._check_health_http()
@@ -872,34 +872,83 @@ def create_influxdb_config(
 
 
 def create_postgresql_config(
-    host: str = "chiseai-postgres",
-    port: int = 5434,
-    database: str = "chiseai",
+    host: str | None = None,
+    port: int | None = None,
+    database: str | None = None,
     username: str | None = None,
     password: str | None = None,
     check_interval_seconds: float = 60.0,
 ) -> DatasourceConfig:
-    """Create PostgreSQL configuration.
+    """Create PostgreSQL configuration from environment variables.
+
+    Reads configuration from environment variables with intelligent defaults:
+    - POSTGRES_HOST: defaults to 'chiseai-postgres' in container, 'host.docker.internal' on host
+    - POSTGRES_PORT: defaults to 5434
+    - POSTGRES_DB: defaults to 'chiseai'
+    - POSTGRES_USER: defaults to 'chiseai'
+    - POSTGRES_PASSWORD: required, no default
 
     Args:
-        host: PostgreSQL host
-        port: PostgreSQL port
-        database: Database name
-        username: Username
-        password: Password
+        host: PostgreSQL host (overrides env var)
+        port: PostgreSQL port (overrides env var)
+        database: Database name (overrides env var)
+        username: Username (overrides env var)
+        password: Password (overrides env var)
         check_interval_seconds: Check interval
 
     Returns:
         DatasourceConfig for PostgreSQL
+
+    Raises:
+        ValueError: If POSTGRES_PASSWORD is not set and no password provided
     """
+    import os
+
+    # Detect if running in container
+    in_container = os.path.exists("/.dockerenv")
+    try:
+        with open("/proc/1/cgroup", "r") as f:
+            cgroup = f.read()
+            if any(m in cgroup for m in ["docker", "containerd", "kubepods"]):
+                in_container = True
+    except (FileNotFoundError, PermissionError):
+        pass
+
+    # Default host based on execution context
+    default_host = "chiseai-postgres" if in_container else "host.docker.internal"
+
+    # Read from environment with defaults
+    final_host = (
+        host if host is not None else os.environ.get("POSTGRES_HOST", default_host)
+    )
+    final_port = (
+        port if port is not None else int(os.environ.get("POSTGRES_PORT", "5434"))
+    )
+    final_database = (
+        database if database is not None else os.environ.get("POSTGRES_DB", "chiseai")
+    )
+    final_username = (
+        username if username is not None else os.environ.get("POSTGRES_USER", "chiseai")
+    )
+    final_password = (
+        password if password is not None else os.environ.get("POSTGRES_PASSWORD")
+    )
+
+    # Password is required
+    if not final_password:
+        raise ValueError(
+            "POSTGRES_PASSWORD environment variable is required but not set. "
+            "Please set it in your .env file or environment."
+        )
+
     return DatasourceConfig(
         source_type=DataSourceType.POSTGRESQL,
         source_name="ChiseAI PostgreSQL",
-        host=host,
-        port=port,
-        database=database,
-        username=username,
-        password=password,
+        host=final_host,
+        port=final_port,
+        database=final_database,
+        username=final_username,
+        password=final_password,
         check_interval_seconds=check_interval_seconds,
         reconnect_backoff_seconds=(2.0, 5.0, 10.0),
         max_reconnect_attempts=3,

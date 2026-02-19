@@ -243,11 +243,7 @@ def should_retry(error: LLMError, attempt: int, max_retries: int = 3) -> bool:
         return False
 
     # These errors SHOULD be retried
-    if isinstance(error, (RateLimitError, NetworkError, ServerError)):
-        return True
-
-    # Unknown errors: don't retry to be safe
-    return False
+    return isinstance(error, (RateLimitError, NetworkError, ServerError))
 
 
 def get_fallback_delay(error: LLMError, attempt: int, base_delay: float = 1.0) -> float:

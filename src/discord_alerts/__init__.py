@@ -26,4 +26,4 @@ from discord_alerts.config import DiscordConfig
 from discord_alerts.discord_client import DiscordClient
 from discord_alerts.duplicate_suppressor import DuplicateSuppressor
 from discord_alerts.rate_limiter import RateLimiter
-from discord_alerts.trade_notifier import TradeNotifier, TradeNotificationResult
+from discord_alerts.trade_notifier import TradeNotificationResult, TradeNotifier
