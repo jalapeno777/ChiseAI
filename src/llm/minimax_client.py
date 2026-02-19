@@ -228,7 +228,7 @@ class MiniMaxClient:
                     # Handle specific error codes with classified errors
                     if response.status == 401:
                         raise AuthError(
-                            f"Authentication failed for MINIMAX", provider="MINIMAX"
+                            "Authentication failed for MINIMAX", provider="MINIMAX"
                         )
                     elif response.status == 403:
                         # Check for quota vs scope error
@@ -253,7 +253,7 @@ class MiniMaxClient:
                             delay *= 2
                             continue
                         raise RateLimitError(
-                            f"Rate limit exceeded for MINIMAX", provider="MINIMAX"
+                            "Rate limit exceeded for MINIMAX", provider="MINIMAX"
                         )
                     elif response.status >= 500:
                         # Server error - retry
