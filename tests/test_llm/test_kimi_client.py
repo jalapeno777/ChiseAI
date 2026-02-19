@@ -53,6 +53,8 @@ class TestKimiConfig:
             assert config.max_retries == 3
             assert config.retry_delay == 1.0
             assert config.api_key is None
+            assert config.accessible_models == []
+            assert config.model_discovery_enabled is True
 
     def test_config_with_api_key(self):
         """Test configuration with explicit API key."""
@@ -70,6 +72,19 @@ class TestKimiConfig:
         with patch.dict(os.environ, {"KIMI_API_KEY": "env-key"}):
             config = KimiConfig(api_key="explicit-key")
             assert config.api_key == "explicit-key"
+
+    def test_config_with_accessible_models(self):
+        """Test configuration with accessible models list."""
+        config = KimiConfig(
+            api_key="test-key", accessible_models=["kimi-for-coding", "k2p5"]
+        )
+        assert config.accessible_models == ["kimi-for-coding", "k2p5"]
+        assert config.model_discovery_enabled is True
+
+    def test_config_disable_model_discovery(self):
+        """Test configuration with model discovery disabled."""
+        config = KimiConfig(api_key="test-key", model_discovery_enabled=False)
+        assert config.model_discovery_enabled is False
 
 
 class TestKimiClient:
@@ -476,6 +491,175 @@ class TestKimiClient:
         assert health["healthy"] is False
         assert health["connected"] is True
         assert health["error"] is not None
+
+    @pytest.mark.asyncio
+    async def test_discover_models_success(self, client):
+        """Test successful model discovery."""
+        mock_cm = create_mock_response(
+            status=200,
+            json_data={
+                "data": [
+                    {"id": "kimi-for-coding"},
+                    {"id": "k2p5"},
+                ]
+            },
+        )
+
+        mock_session = MagicMock()
+        mock_session.get = mock_cm
+        mock_session.closed = False
+
+        client._session = mock_session
+
+        models = await client.discover_models()
+
+        assert models == ["kimi-for-coding", "k2p5"]
+        assert client.config.accessible_models == ["kimi-for-coding", "k2p5"]
+
+    @pytest.mark.asyncio
+    async def test_discover_models_no_api_key(self):
+        """Test model discovery without API key."""
+        with patch.dict(os.environ, {}, clear=True):
+            client = KimiClient(KimiConfig(api_key=None))
+            models = await client.discover_models()
+            assert models == []
+
+    @pytest.mark.asyncio
+    async def test_discover_models_http_error(self, client):
+        """Test model discovery with HTTP error."""
+        mock_cm = create_mock_response(status=403, text_data='{"error": "Forbidden"}')
+
+        mock_session = MagicMock()
+        mock_session.get = mock_cm
+        mock_session.closed = False
+
+        client._session = mock_session
+
+        models = await client.discover_models()
+
+        assert models == []
+
+    def test_select_model_default(self, client):
+        """Test model selection with default."""
+        # No accessible models - should return default
+        model = client._select_model()
+        assert model == "k2p5"
+
+    def test_select_model_with_accessible_models(self, client):
+        """Test model selection falls back to accessible model."""
+        client.config.accessible_models = ["kimi-for-coding"]
+        # Requesting "k2p5" but only "kimi-for-coding" is accessible
+        model = client._select_model()
+        assert model == "kimi-for-coding"
+
+    def test_select_model_requested_available(self, client):
+        """Test model selection when requested model is available."""
+        client.config.accessible_models = ["kimi-for-coding", "k2p5"]
+        model = client._select_model("k2p5")
+        assert model == "k2p5"
+
+    def test_select_model_explicit_override(self, client):
+        """Test explicit model selection."""
+        client.config.accessible_models = ["kimi-for-coding"]
+        model = client._select_model("kimi-for-coding")
+        assert model == "kimi-for-coding"
+
+    @pytest.mark.asyncio
+    async def test_chat_403_error(self, client):
+        """Test handling of 403 permission denied error."""
+        mock_cm = create_mock_response(
+            status=403,
+            json_data={
+                "error": {"message": "Access denied", "type": "access_terminated_error"}
+            },
+        )
+
+        mock_session = MagicMock()
+        mock_session.post = mock_cm
+        mock_session.closed = False
+
+        client._session = mock_session
+        client.config.model_discovery_enabled = False  # Skip discovery
+
+        messages = [KimiMessage(role="user", content="Test")]
+        response = await client.chat(messages)
+
+        assert response.success is False
+        assert "Permission denied" in response.error
+        assert "access_terminated_error" in response.error
+
+    @pytest.mark.asyncio
+    async def test_chat_403_error_with_fallback(self, client):
+        """Test that chat tries model fallback on 403."""
+        call_count = 0
+
+        @asynccontextmanager
+        async def mock_cm(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            mock_response = MagicMock()
+            # Always return 403 to simulate scope issue
+            mock_response.status = 403
+
+            async def mock_text():
+                return json.dumps(
+                    {
+                        "error": {
+                            "message": "Model not accessible",
+                            "type": "model_access_error",
+                        }
+                    }
+                )
+
+            mock_response.text = mock_text
+            yield mock_response
+
+        mock_session = MagicMock()
+        mock_session.post = mock_cm
+        mock_session.closed = False
+
+        client._session = mock_session
+        client.config.model_discovery_enabled = False
+
+        messages = [KimiMessage(role="user", content="Test")]
+        response = await client.chat(messages)
+
+        assert response.success is False
+        assert "Permission denied" in response.error
+
+    @pytest.mark.asyncio
+    async def test_chat_with_model_discovery(self, client):
+        """Test that chat triggers model discovery."""
+        discovery_called = False
+        original_discover = client.discover_models
+
+        async def mock_discover():
+            nonlocal discovery_called
+            discovery_called = True
+            client.config.accessible_models = ["kimi-for-coding"]
+            return ["kimi-for-coding"]
+
+        client.discover_models = mock_discover
+
+        mock_cm = create_mock_response(
+            status=200,
+            json_data={
+                "choices": [{"message": {"content": "Hello"}, "finish_reason": "stop"}],
+                "usage": {},
+            },
+        )
+
+        mock_session = MagicMock()
+        mock_session.post = mock_cm
+        mock_session.closed = False
+
+        client._session = mock_session
+
+        messages = [KimiMessage(role="user", content="Test")]
+        response = await client.chat(messages)
+
+        assert discovery_called is True
+        assert response.success is True
 
 
 class TestKimiResponse:
