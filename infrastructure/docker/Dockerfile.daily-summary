@@ -1,0 +1,63 @@
+# Daily Summary Cron Service Dockerfile
+# Generates and sends daily trading summaries to Discord
+# Story: ITEM-4-CRON-E2E-validation
+
+FROM python:3.11-slim
+
+LABEL project=chiseai
+LABEL service=daily-summary
+LABEL com.docker.compose.service=daily-summary
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    cron \
+    curl \
+    procps \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app user
+RUN useradd -m -u 1000 app
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements and install Python dependencies
+COPY pyproject.toml ./
+RUN pip install --no-cache-dir \
+    aiohttp>=3.8.0 \
+    pyyaml>=6.0 \
+    influxdb-client>=1.40.0 \
+    python-dotenv>=1.0.0
+
+# Copy application code
+COPY src/ /app/src/
+COPY scripts/ /app/scripts/
+COPY config/ /app/config/
+COPY .env.example /app/.env
+
+# Create logs directory
+RUN mkdir -p /app/logs && chown -R app:app /app
+
+# Set up cron job for daily summary (run as root for cron daemon)
+RUN echo "0 0 * * * cd /app && python3 scripts/run_daily_summary.py >> /app/logs/daily_summary.log 2>&1" | crontab -
+
+# Environment defaults
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app:/app/src
+ENV LOG_DIR=/app/logs
+ENV LOCK_FILE=/tmp/chiseai_daily_summary.lock
+
+# Discord webhook (test channel - can be overridden)
+ENV DISCORD_TEST_WEBHOOK_URL=https://discord.com/api/webhooks/1448414669541736508/UeaEhvFppTSCw19FICgS8XEtZPDBSJ2hGyk9BZ1fjfToQDruw0YDIg4uLWVL3wr3kxmw
+
+# InfluxDB connection (using chiseai network)
+ENV INFLUXDB_URL=http://chiseai-influxdb:18087
+ENV INFLUXDB_ORG=chiseai
+ENV INFLUXDB_BUCKET=chiseai
+
+# Health check - verify cron is running and script is accessible
+HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
+    CMD pgrep cron > /dev/null && test -f /app/scripts/run_daily_summary.py || exit 1
+
+# Start cron in foreground (must run as root)
+CMD ["cron", "-f"]
