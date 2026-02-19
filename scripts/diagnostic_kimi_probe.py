@@ -41,10 +41,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Bootstrap environment first (must be before any env access)
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+<<<<<<< HEAD
+# Add src to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from config.bootstrap import bootstrap
 
+# Bootstrap environment first (must be before any env access)
 bootstrap(load_env=True)
 
 from config.env_loader import load_kimi_config
