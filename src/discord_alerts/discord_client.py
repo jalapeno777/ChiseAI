@@ -41,6 +41,13 @@ class DeliveryResult:
     method: str = "none"
     guild_validated: bool = False
 
+    def __getitem__(self, key: str) -> Any:
+        """Allow legacy dict-style access used by existing tests/callers."""
+        try:
+            return getattr(self, key)
+        except AttributeError as exc:
+            raise KeyError(key) from exc
+
 
 class DiscordClient:
     """Discord bot client with webhook fallback.
@@ -330,7 +337,7 @@ class DiscordClient:
         self,
         content: str,
         channel_id: str | None,
-        channel_name: str,
+        channel_name: str | None = None,
         embeds: list[dict[str, Any]] | None = None,
     ) -> DeliveryResult:
         """Send message via bot client (primary method).
@@ -346,11 +353,15 @@ class DiscordClient:
         Returns:
             DeliveryResult with status
         """
-        if not self.config.bot_token or not self._bot_client:
+        resolved_channel_name = (
+            channel_name or self.config.default_channel or channel_id
+        )
+
+        if not self.config.bot_token:
             return DeliveryResult(
                 success=False,
                 error="Bot not configured",
-                channel_name=channel_name,
+                channel_name=resolved_channel_name,
                 channel_id=channel_id,
                 method="bot",
             )
@@ -367,8 +378,8 @@ class DiscordClient:
         # Placeholder: Return failure to trigger webhook fallback
         return DeliveryResult(
             success=False,
-            error="Bot client sending not fully implemented (placeholder)",
-            channel_name=channel_name,
+            error="Bot client sending not implemented (placeholder)",
+            channel_name=resolved_channel_name,
             channel_id=channel_id,
             method="bot",
         )
