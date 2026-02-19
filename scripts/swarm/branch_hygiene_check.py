@@ -11,11 +11,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 import sys
 
-# Bootstrap environment first (must be before any env access)
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 from config.bootstrap import bootstrap
-
-bootstrap(load_env=True)
 
 # Try to import Redis, but don't fail if unavailable
 try:
@@ -230,6 +226,8 @@ def print_report(categories):
 
 
 def main():
+    # Bootstrap environment first
+    bootstrap(load_env=True)
     parser = argparse.ArgumentParser(description="Check branch hygiene")
     parser.add_argument("--report", action="store_true", help="Print report")
     parser.add_argument(

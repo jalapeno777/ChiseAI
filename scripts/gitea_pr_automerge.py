@@ -37,6 +37,8 @@ from config.bootstrap import bootstrap
 # Bootstrap environment first (must be before any env access)
 bootstrap(load_env=True)
 
+from config.bootstrap import bootstrap
+
 
 def _req_json(method: str, url: str, token: str, body: dict | None = None) -> dict:
     data = None
@@ -213,6 +215,7 @@ def _try_merge_with_retry(
 
 
 def main() -> int:
+    # Bootstrap environment first
     bootstrap(load_env=True)
     # Environment variable defaults
     default_poll_interval = int(os.getenv("GITEA_POLL_INTERVAL", "60"))

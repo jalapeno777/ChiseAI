@@ -37,7 +37,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-# Add src to path for imports
+# Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from config.bootstrap import bootstrap

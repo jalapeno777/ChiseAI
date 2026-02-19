@@ -47,7 +47,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from config.bootstrap import bootstrap
-
 from operations.data_quality_monitoring import (
     DataQualityMonitor,
     DataSource,
@@ -417,6 +416,7 @@ def generate_dashboard(args: argparse.Namespace) -> int:
 
 def main() -> int:
     """Main entry point."""
+    # Bootstrap environment first
     bootstrap(load_env=True)
 
     parser = argparse.ArgumentParser(

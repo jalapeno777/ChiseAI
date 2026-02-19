@@ -22,11 +22,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any, cast
 
-# Bootstrap environment first (must be before any env access)
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 from config.bootstrap import bootstrap
-
-bootstrap(load_env=True)
 
 SESSION_FILE = ".swarm-session.json"
 OWNERSHIP_KEY = "bmad:chiseai:ownership"
@@ -668,6 +664,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
+    # Bootstrap environment first
+    bootstrap(load_env=True)
     parser = build_parser()
     args = parser.parse_args()
     try:

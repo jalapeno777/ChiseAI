@@ -9,6 +9,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+# Add src to path for config imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
+from config.bootstrap import bootstrap
+
 import requests
 
 # Add src to path for imports
@@ -112,6 +116,7 @@ def _find_open_issue_with_marker(
 
 
 def main() -> int:
+    # Bootstrap environment first
     bootstrap(load_env=True)
     pipeline = _env("CI_PIPELINE_NUMBER") or "unknown"
     repo = _env("CI_REPO", "craig/ChiseAI")
