@@ -24,7 +24,7 @@ from urllib.parse import urlencode, urlparse, urlunparse
 from urllib.request import Request, urlopen
 
 # Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 from config.bootstrap import bootstrap
 
 DEFAULT_BASE_URL = "http://host.docker.internal:8012"

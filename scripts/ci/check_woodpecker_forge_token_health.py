@@ -24,7 +24,7 @@ from typing import Any
 from urllib.parse import urlparse, urlunparse
 
 # Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 from config.bootstrap import bootstrap
 
 
