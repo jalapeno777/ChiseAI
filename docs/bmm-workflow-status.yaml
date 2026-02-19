@@ -5,9 +5,16 @@
 metadata:
   project_name: ChiseAI
   version: "2.2.0"
-  last_updated: "2026-02-17T14:20:00Z"
+  last_updated: "2026-02-18T00:00:00Z"
   prd_location: docs/prd.md
   prd_note: "Phased perps execution: continuous backtest -> Bybit demo paper -> Bitget live; Grafana-first ops UI; Binance used as reference market-structure venue. LLM integrations (Z.ai GLM-5, MiniMax 2.5) are separate capabilities, not Phase 1."
+  recent_fixes:
+    - story_id: CH-KIMI-FIX-001
+      description: "KIMI client now handles 403 scope errors gracefully with model discovery from /models endpoint and intelligent fallback"
+      status: completed
+      merged_to_main: "2026-02-18"
+      pr: 187
+      notes: "External blocker: API key scope restricted to coding agents only. Fallback priority: requested model -> accessible models -> error"
 
 # Current project phase
 current_phase:
