@@ -25,6 +25,7 @@ DOC_ONLY_PREFIXES = (
 DOC_ONLY_FILES = {
     "AGENTS.md",
     "README.md",
+    ".gitignore",
 }
 
 
