@@ -166,6 +166,7 @@ class PaperTradingOrchestrator:
                         self._metrics["trades_rejected"] += 1
                     elif result.status == TradeStatus.FAILED:
                         self._metrics["trades_failed"] += 1
+                    # SKIPPED status doesn't increment any metric - just logged
 
             except asyncio.TimeoutError:
                 # No signals in queue, continue loop
@@ -229,7 +230,7 @@ class PaperTradingOrchestrator:
                     correlation_id=correlation_id,
                 )
 
-            # Step 2: Get market price for the signal's token
+            # Step 1.5: Get market price early (needed for position management)
             entry_price = self.order_simulator.market_data.get_price(signal.token)
             if entry_price is None or entry_price <= 0:
                 logger.warning(
@@ -245,7 +246,40 @@ class PaperTradingOrchestrator:
                     correlation_id=correlation_id,
                 )
 
-            # Step 3: Validate risk
+            # Step 1.6: Check for existing position and close if opposite signal
+            current_positions = await self.position_tracker.get_open_positions()
+            existing_position = None
+            for pos in current_positions:
+                if pos.symbol.upper() == signal.token.upper():
+                    existing_position = pos
+                    break
+
+            if existing_position:
+                # Check if signal is opposite direction
+                current_side = existing_position.side  # "long" or "short"
+                signal_side = signal.direction.value.lower()  # "long" or "short"
+
+                if current_side != signal_side:
+                    # Close existing position
+                    await self.close_position(
+                        existing_position.position_id, entry_price
+                    )
+                    logger.info(
+                        f"Closed position {existing_position.position_id} for {signal.token} "
+                        f"(opposite signal: {current_side} -> {signal_side})"
+                    )
+                else:
+                    # Same direction - skip this signal
+                    logger.debug(
+                        f"Already in {signal_side} position for {signal.token}, skipping"
+                    )
+                    return PaperTradeResult(
+                        signal=signal,
+                        status=TradeStatus.SKIPPED,
+                        correlation_id=correlation_id,
+                    )
+
+            # Step 2: Validate risk
             risk_start = time.perf_counter()
             current_positions = await self.position_tracker.get_open_positions()
 
