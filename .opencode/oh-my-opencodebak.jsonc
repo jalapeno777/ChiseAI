@@ -1,0 +1,62 @@
+{
+  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
+  "disabled_agents": [
+    "sisyphus","hephaestus","prometheus","oracle","librarian",
+    "explore","multimodal-looker","metis","momus","atlas"
+  ],
+  "agents": {
+    "aria": {
+      "model": "kimi-for-coding/k2p5_think"
+    },
+    "jarvis": {
+      "model": "kimi-for-coding/k2p5_think"
+    },
+    "merlin": {
+      "model": "kimi-for-coding/k2p5_think"
+    },
+    "dev": {
+      "model": "kimi-for-coding/k2p5"
+    },
+    "quickdev": {
+      "model": "zai-coding-plan/glm-4.7"
+    },
+    "senior-dev": {
+      "model": "kimi-for-coding/k2p5_think"
+    },
+    "research": {
+      "model": "zai-coding-plan/glm-4.7-flash"
+    },
+    "web-research": {
+      "model": "zai-coding-plan/glm-4.7-flash"
+    },
+    "critic": {
+      "model": "zai-coding-plan/glm-5"
+    },
+    "git-review-bot": {
+      "model": "zai-coding-plan/glm-5"
+    }
+  },
+  "categories": {
+    "visual-engineering": {
+      "model": "zai-coding-plan/glm-5"
+    },
+    "ultrabrain": {
+      "model": "kimi-for-coding/k2p5_think"
+    },
+    "deep": {
+      "model": "kimi-for-coding/k2p5_think"
+    },
+    "quick": {
+      "model": "zai-coding-plan/glm-4.7-flash"
+    },
+    "unspecified-low": {
+      "model": "kimi-for-coding/k2p5"
+    },
+    "unspecified-high": {
+      "model": "kimi-for-coding/k2p5_think"
+    },
+    "writing": {
+      "model": "kimi-for-coding/k2p5"
+    }
+  }
+}
