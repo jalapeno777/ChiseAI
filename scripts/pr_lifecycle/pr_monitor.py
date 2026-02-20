@@ -44,7 +44,7 @@ GITEA_OWNER = os.getenv("GITEA_OWNER", "craig")
 GITEA_REPO = os.getenv("GITEA_REPO", "ChiseAI")
 
 # Required CI context
-REQUIRED_CONTEXT = os.getenv("CHISE_REQUIRED_CONTEXT", "ci/woodpecker/pr/woodpecker")
+REQUIRED_CONTEXT = os.getenv("CHISE_REQUIRED_CONTEXT", "ci/woodpecker/pr/ci")
 
 
 class GiteaAPI:

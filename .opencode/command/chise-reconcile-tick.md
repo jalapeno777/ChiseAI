@@ -17,7 +17,7 @@ Command:
 python3 scripts/ops/merge_reconciler.py reconcile-tick \
   --owner "jarvis/reconcile" \
   --max-items 3 \
-  --required-context "ci/woodpecker/push/woodpecker" \
+  --required-context "ci/woodpecker/pr/ci" \
   --allow-merge
 ```
 

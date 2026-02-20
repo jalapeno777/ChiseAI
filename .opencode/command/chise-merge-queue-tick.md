@@ -17,7 +17,7 @@ Dry-run style tick (requeue/pending/fail classification only):
 python3 scripts/ops/merge_reconciler.py queue-tick \
   --owner "jarvis/queue" \
   --max-items 3 \
-  --required-context "ci/woodpecker/push/woodpecker"
+  --required-context "ci/woodpecker/pr/ci"
 ```
 
 Merge-enabled tick (Jarvis only):
@@ -33,6 +33,6 @@ python3 scripts/swarm/session.py verify \
 python3 scripts/ops/merge_reconciler.py queue-tick \
   --owner "jarvis/queue" \
   --max-items 3 \
-  --required-context "ci/woodpecker/push/woodpecker" \
+  --required-context "ci/woodpecker/pr/ci" \
   --allow-merge
 ```
