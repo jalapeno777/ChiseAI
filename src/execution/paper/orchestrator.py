@@ -229,7 +229,23 @@ class PaperTradingOrchestrator:
                     correlation_id=correlation_id,
                 )
 
-            # Step 2: Validate risk
+            # Step 2: Get market price for the signal's token
+            entry_price = self.order_simulator.market_data.get_price(signal.token)
+            if entry_price is None or entry_price <= 0:
+                logger.warning(
+                    f"No valid market price for {signal.token} (price={entry_price}). "
+                    f"Cannot create order (correlation_id={correlation_id})"
+                )
+                async with self._lock:
+                    self._metrics["trades_rejected"] += 1
+                return PaperTradeResult(
+                    signal=signal,
+                    status=TradeStatus.REJECTED,
+                    reject_reason=[f"No market price available for {signal.token}"],
+                    correlation_id=correlation_id,
+                )
+
+            # Step 3: Validate risk
             risk_start = time.perf_counter()
             current_positions = await self.position_tracker.get_open_positions()
 
@@ -237,6 +253,7 @@ class PaperTradingOrchestrator:
                 signal=signal,
                 portfolio_value=self.portfolio_value,
                 current_positions=current_positions,
+                entry_price=entry_price,
             )
 
             risk_latency_ms = (time.perf_counter() - risk_start) * 1000
@@ -255,10 +272,12 @@ class PaperTradingOrchestrator:
                     correlation_id=correlation_id,
                 )
 
-            # Step 3: Create order
-            order = self._create_order(signal, assessment.position_size, correlation_id)
+            # Step 4: Create order
+            order = self._create_order(
+                signal, assessment.position_size, entry_price, correlation_id
+            )
 
-            # Step 4: Place order (with latency check)
+            # Step 5: Place order (with latency check)
             order_start = time.perf_counter()
             filled_order = await self.order_simulator.place_order(
                 symbol=order.symbol,
@@ -361,6 +380,7 @@ class PaperTradingOrchestrator:
         self,
         signal: Signal,
         position_size: float,
+        entry_price: float,
         correlation_id: str,
     ) -> PaperOrder:
         """Create an order from a signal.
@@ -368,11 +388,19 @@ class PaperTradingOrchestrator:
         Args:
             signal: Trading signal
             position_size: Calculated position size
+            entry_price: Entry price for the order
             correlation_id: Correlation ID for tracing
 
         Returns:
             PaperOrder ready for placement
+
+        Raises:
+            ValueError: If entry_price is not positive
         """
+        # Validate entry price
+        if entry_price <= 0:
+            raise ValueError(f"Entry price must be positive, got: {entry_price}")
+
         # Map signal direction to order side
         side = OrderSide.BUY if signal.direction.value == "long" else OrderSide.SELL
 
@@ -383,6 +411,7 @@ class PaperTradingOrchestrator:
             side=side.value,  # Use string value, not enum
             order_type=OrderType.MARKET.value,  # Use string value, not enum
             quantity=position_size,
+            price=entry_price,  # Set the entry price
         )
 
         # Store correlation_id and stop-loss in metadata
@@ -393,7 +422,8 @@ class PaperTradingOrchestrator:
 
         logger.debug(
             f"Created {order.order_type} order: {order.symbol} "
-            f"{order.side} {order.quantity}"
+            f"{order.side} {order.quantity} @ ${entry_price:,.2f} "
+            f"(value=${order.quantity * entry_price:,.2f})"
         )
 
         return order

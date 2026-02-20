@@ -486,10 +486,83 @@ class TestExecuteTradingCycle:
 
         await _execute_trading_cycle(mock_loader, metrics)
 
-        # Verify market price was set
+        # Verify market price was set (using same format as signal.token: "BTC/USDT")
         mock_loader.paper_orchestrator.order_simulator.set_market_price.assert_called_once_with(
-            "BTCUSDT", 30000.0
+            "BTC/USDT", 30000.0
         )
+
+    @pytest.mark.asyncio
+    async def test_price_cache_populated_before_trading(
+        self,
+        mock_loader: MagicMock,
+        metrics: TradingActivityMetrics,
+    ) -> None:
+        """Test that price cache is populated before trading to prevent order rejection.
+
+        This is a regression test for BURNIN-001: Orders were rejected because
+        market_data.get_price() returned None due to empty price cache.
+        """
+        # Setup mock data with latest close price
+        mock_ohlcv = [
+            OHLCVData(
+                timestamp=1609459200000,
+                open_price=29000.0,
+                high_price=31000.0,
+                low_price=28000.0,
+                close_price=30500.0,  # Latest price
+                volume=100.0,
+            ),
+            OHLCVData(
+                timestamp=1609459260000,
+                open_price=30000.0,
+                high_price=32000.0,
+                low_price=29500.0,
+                close_price=31500.0,  # This is the latest price that should be cached
+                volume=150.0,
+            ),
+        ]
+        mock_loader.ohlcv_fetcher.fetch.return_value = mock_ohlcv
+
+        mock_signal = Signal(
+            token="BTC/USDT",
+            direction=SignalDirection.LONG,
+            confidence=0.85,
+            base_score=75.0,
+            timestamp=datetime.now(UTC),
+            status=SignalStatus.ACTIONABLE,
+            timeframe="1h",
+        )
+        mock_loader.signal_generator.generate_signal.return_value = mock_signal
+
+        mock_result = MagicMock()
+        mock_result.status.value = "executed"
+        mock_loader.paper_orchestrator.process_signal.return_value = mock_result
+
+        # Setup order_simulator with real market_data to verify price is set
+        from execution.paper.order_simulator import MarketDataProvider
+
+        real_market_data = MarketDataProvider()
+
+        # Create a mock order_simulator that wraps the real set_market_price behavior
+        mock_order_sim = MagicMock()
+        mock_order_sim.market_data = real_market_data
+
+        # Make set_market_price actually set the price in the real market_data
+        def side_effect_set_price(symbol, price):
+            real_market_data.set_price(symbol, price)
+
+        mock_order_sim.set_market_price.side_effect = side_effect_set_price
+        mock_loader.paper_orchestrator.order_simulator = mock_order_sim
+
+        await _execute_trading_cycle(mock_loader, metrics)
+
+        # Verify the latest price from OHLCV was set in the cache
+        # The price should be from the LAST candle (ohlcv_data[-1].close_price)
+        cached_price = real_market_data.get_price("BTC/USDT")
+        assert cached_price is not None, (
+            "Price cache should be populated before trading"
+        )
+        assert cached_price == 31500.0, f"Expected 31500.0, got {cached_price}"
 
 
 if __name__ == "__main__":

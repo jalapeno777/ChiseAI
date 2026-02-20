@@ -260,6 +260,119 @@ class TestSignalGeneratorIntegration:
         assert config.enable_caching is True
 
 
+class TestSignalGeneratorEntryPrice:
+    """Tests for signal generation entry_price metadata (BURNIN-001)."""
+
+    @patch("signal_generation.signal_generator.SignalGenerator._get_freshness_checker")
+    @patch("signal_generation.signal_generator.SignalGenerator._get_scorer")
+    def test_signal_metadata_contains_entry_price(
+        self, mock_get_scorer, mock_get_checker
+    ):
+        """Test that generated signal includes entry_price in metadata (BURNIN-001 fix).
+
+        Verifies the critical bug fix where entry_price was missing from signal
+        metadata, causing risk enforcer to default to 0.0 and reject orders.
+        """
+        from market_analysis.confluence.scorer import ConfluenceScore
+
+        # Mock freshness checker to return fresh result
+        mock_checker = MagicMock()
+        mock_checker.check_freshness.return_value = MagicMock(
+            is_fresh=True,
+            errors=[],
+            data_age_seconds=0.0,
+        )
+        mock_get_checker.return_value = mock_checker
+
+        # Mock confluence scorer to return a valid score
+        mock_scorer = MagicMock()
+        mock_confluence_score = MagicMock(spec=ConfluenceScore)
+        mock_confluence_score.direction_str = "LONG"
+        mock_confluence_score.confidence = 0.85
+        mock_confluence_score.score = 80.0
+        mock_confluence_score.contributing_factors = []
+        mock_confluence_score.signal_breakdown = {}
+        mock_confluence_score.metadata = {}
+        mock_confluence_score.multiplier_applied = 1.0
+        mock_confluence_score.multiplier_rationale = "test"
+        mock_scorer.calculate_score.return_value = mock_confluence_score
+        mock_get_scorer.return_value = mock_scorer
+
+        config = SignalGenerationConfig(enable_freshness_checks=True)
+        generator = SignalGenerator(config=config)
+
+        # Create mock OHLCV data
+        mock_ohlcv = [MagicMock(timestamp=1000, datetime_utc=datetime.now(UTC))]
+
+        from data_ingestion.timeframe_config import Timeframe
+
+        test_price = 65000.50
+        signal = generator.generate_signal(
+            token="BTC/USDT",
+            timeframe=Timeframe.HOUR_1,
+            ohlcv_data=mock_ohlcv,
+            current_price=test_price,
+        )
+
+        # Verify entry_price is in metadata
+        assert "entry_price" in signal.metadata, (
+            "entry_price missing from signal metadata"
+        )
+        assert signal.metadata["entry_price"] == test_price, (
+            f"entry_price mismatch: expected {test_price}, got {signal.metadata['entry_price']}"
+        )
+
+    @patch("signal_generation.signal_generator.SignalGenerator._get_freshness_checker")
+    @patch("signal_generation.signal_generator.SignalGenerator._get_scorer")
+    def test_signal_entry_price_none_when_not_provided(
+        self, mock_get_scorer, mock_get_checker
+    ):
+        """Test that entry_price is None when current_price not provided."""
+        from market_analysis.confluence.scorer import ConfluenceScore
+
+        # Mock freshness checker to return fresh result
+        mock_checker = MagicMock()
+        mock_checker.check_freshness.return_value = MagicMock(
+            is_fresh=True,
+            errors=[],
+            data_age_seconds=0.0,
+        )
+        mock_get_checker.return_value = mock_checker
+
+        # Mock confluence scorer to return a valid score
+        mock_scorer = MagicMock()
+        mock_confluence_score = MagicMock(spec=ConfluenceScore)
+        mock_confluence_score.direction_str = "LONG"
+        mock_confluence_score.confidence = 0.85
+        mock_confluence_score.score = 80.0
+        mock_confluence_score.contributing_factors = []
+        mock_confluence_score.signal_breakdown = {}
+        mock_confluence_score.metadata = {}
+        mock_confluence_score.multiplier_applied = 1.0
+        mock_confluence_score.multiplier_rationale = "test"
+        mock_scorer.calculate_score.return_value = mock_confluence_score
+        mock_get_scorer.return_value = mock_scorer
+
+        config = SignalGenerationConfig(enable_freshness_checks=True)
+        generator = SignalGenerator(config=config)
+
+        # Create mock OHLCV data
+        mock_ohlcv = [MagicMock(timestamp=1000, datetime_utc=datetime.now(UTC))]
+
+        from data_ingestion.timeframe_config import Timeframe
+
+        signal = generator.generate_signal(
+            token="BTC/USDT",
+            timeframe=Timeframe.HOUR_1,
+            ohlcv_data=mock_ohlcv,
+            # current_price not provided
+        )
+
+        # Verify entry_price is None when not provided
+        assert "entry_price" in signal.metadata
+        assert signal.metadata["entry_price"] is None
+
+
 class TestSignalGeneratorIndicatorSet:
     """Tests for signal generation with IndicatorSet conversion."""
 
