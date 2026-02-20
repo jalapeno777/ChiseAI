@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import pytest
+import sys
 from datetime import UTC, datetime, timedelta
 
-import sys
+import pytest
 
 sys.path.insert(0, "src")
 
@@ -13,7 +13,6 @@ from ml.calibration.data_collector import CalibrationDataCollector, CollectionRe
 from ml.calibration.models import (
     CalibrationConfig,
     CalibrationRecord,
-    CollectionWindow,
     SignalType,
 )
 from ml.calibration.storage import InMemoryCalibrationStorage
@@ -505,5 +504,6 @@ class TestCalibrationDataCollectorIntegration:
             )
             assert result.success
             assert result.record.confidence_bin == expected_bin, (
-                f"Expected bin {expected_bin} for prob {prob}, got {result.record.confidence_bin}"
+                f"Expected bin {expected_bin} for prob {prob}, "
+                f"got {result.record.confidence_bin}"
             )

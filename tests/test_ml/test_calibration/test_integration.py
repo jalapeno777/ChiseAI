@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 import sys
 
 sys.path.insert(0, "src")
@@ -70,7 +69,8 @@ class TestCalibrationIntegration:
             )
             assert result.success is True
             assert result.record.confidence_bin == expected_bin, (
-                f"Expected bin {expected_bin} for prob {prob}, got {result.record.confidence_bin}"
+                f"Expected bin {expected_bin} for prob {prob}, "
+                f"got {result.record.confidence_bin}"
             )
 
     def test_validation_errors(self):
