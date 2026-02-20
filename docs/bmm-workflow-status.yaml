@@ -1657,6 +1657,97 @@ stories:
     fr_coverage: [FR-003, FR-004, FR-018]
     description: Create integration layer between neural and symbolic components
 
+  # EP-NS-008: Autonomous Control Plane (6 stories, 42 points)
+  - id: ST-NS-038
+    title: Circuit Breaker Framework
+    epic_id: EP-NS-008
+    sprint_id: q2-7
+    status: planned
+    validation_status: not_started
+    story_points: 7
+    priority: P1-HIGH
+    fr_coverage: []
+    description: Implement circuit breaker pattern for fault isolation and graceful degradation
+    acceptance_criteria:
+      - Circuit breaker states defined (closed, open, half-open)
+      - Automatic failure detection and state transitions
+      - Configurable thresholds for state changes
+
+  - id: ST-NS-039
+    title: Retry Handler with Exponential Backoff
+    epic_id: EP-NS-008
+    sprint_id: q2-7
+    status: planned
+    validation_status: not_started
+    story_points: 7
+    priority: P1-HIGH
+    fr_coverage: []
+    description: Implement intelligent retry mechanism with exponential backoff and jitter
+    acceptance_criteria:
+      - Exponential backoff with configurable base and max delay
+      - Jitter to prevent thundering herd
+      - Max retry limits with circuit breaker integration
+
+  - id: ST-NS-040
+    title: Self-Healing Service Recovery
+    epic_id: EP-NS-008
+    sprint_id: q2-7
+    status: planned
+    validation_status: not_started
+    story_points: 7
+    priority: P1-HIGH
+    fr_coverage: []
+    description: Implement self-healing capabilities for automatic service recovery
+    acceptance_criteria:
+      - Health check integration for failure detection
+      - Automatic restart/recovery procedures
+      - Recovery success/failure logging and metrics
+
+  - id: ST-NS-041
+    title: Incident Management Framework
+    epic_id: EP-NS-008
+    sprint_id: q2-7
+    status: planned
+    validation_status: not_started
+    story_points: 7
+    priority: P1-HIGH
+    fr_coverage: []
+    description: Structured incident logging, response procedures, and post-mortem process
+    acceptance_criteria:
+      - Incident classification and severity levels
+      - Automated incident detection and alerting
+      - Post-mortem template and workflow
+
+  - id: ST-NS-042
+    title: Rollback Coordination System
+    epic_id: EP-NS-008
+    sprint_id: q2-7
+    status: planned
+    validation_status: not_started
+    story_points: 7
+    priority: P1-HIGH
+    fr_coverage: []
+    description: Coordinate rollbacks across services with verification steps
+    acceptance_criteria:
+      - Rollback triggers and authorization workflow
+      - Multi-service rollback coordination
+      - Rollback verification and health checks
+
+  - id: ST-NS-043
+    title: Observability and Monitoring Integration
+    epic_id: EP-NS-008
+    sprint_id: q2-7
+    status: planned
+    validation_status: not_started
+    story_points: 7
+    priority: P1-HIGH
+    fr_coverage: []
+    description: Unified observability for autonomous control plane operations
+    acceptance_criteria:
+      - Metrics export for control plane state
+      - Grafana dashboards for monitoring
+      - Alerting rules for control plane events
+
   # EP-PAPER-001: Paper Trading Loop Implementation (4 stories, 21 points)
   - id: ST-PAPER-001
     title: Paper Order Simulator and Position Tracking
