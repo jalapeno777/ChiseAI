@@ -237,7 +237,7 @@ def main() -> int:
     )
     p.add_argument("--title", default=None)
     p.add_argument("--body", default="")
-    p.add_argument("--required-context", default="ci/woodpecker/pr/woodpecker")
+    p.add_argument("--required-context", default="ci/woodpecker/pr/ci")
     p.add_argument(
         "--wait",
         action="store_true",
