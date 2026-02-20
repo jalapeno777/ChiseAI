@@ -770,5 +770,156 @@ class TestNoneTelemetry:
         assert orchestrator_none_telemetry.portfolio_value == initial_value + 150.0
 
 
+class TestOrderSimulatorInterface:
+    """Test that orchestrator calls order_simulator with correct interface (BURNIN-001 fix).
+
+    This test verifies the fix for the interface mismatch where orchestrator
+    was passing a PaperOrder object instead of individual parameters.
+    """
+
+    @pytest.mark.asyncio
+    async def test_process_signal_calls_place_order_with_individual_params(
+        self, orchestrator, mock_components, mock_signal
+    ):
+        """Test that place_order is called with individual parameters, not PaperOrder object."""
+        from execution.paper.models import RiskAssessment
+
+        # Setup risk enforcer to approve
+        mock_components["risk_enforcer"].validate_order = AsyncMock(
+            return_value=RiskAssessment(approved=True, position_size=0.1)
+        )
+
+        # Create a properly filled order to return
+        filled_order = PaperOrder(
+            symbol="BTC/USDT",
+            side="buy",
+            order_type="market",
+            quantity=0.1,
+            order_id="test-order-interface-001",
+            state=OrderState.FILLED,
+            filled_quantity=0.1,
+        )
+        # Add a fill to set avg_fill_price
+        from execution.paper.models import PaperFill
+
+        fill = PaperFill(
+            fill_id="fill-interface-001",
+            order_id="test-order-interface-001",
+            symbol="BTC/USDT",
+            side="buy",
+            quantity=0.1,
+            price=50000.0,
+        )
+        filled_order.add_fill(fill)
+
+        # Track the call arguments
+        call_kwargs = {}
+
+        async def capture_call(*args, **kwargs):
+            call_kwargs.update(kwargs)
+            return filled_order
+
+        mock_components["order_sim"].place_order = AsyncMock(side_effect=capture_call)
+
+        mock_position = MagicMock()
+        mock_position.position_id = "test-position-interface-001"
+        mock_position.symbol = "BTC/USDT"
+        mock_components["position_tracker"].open_position = AsyncMock(
+            return_value=mock_position
+        )
+
+        # Process signal
+        result = await orchestrator.process_signal(mock_signal)
+
+        # Verify the result
+        assert result.status == TradeStatus.EXECUTED
+
+        # Verify place_order was called with individual parameters, not PaperOrder
+        assert mock_components["order_sim"].place_order.called
+
+        # Verify all required parameters were passed
+        assert "symbol" in call_kwargs, "place_order should receive 'symbol' parameter"
+        assert "side" in call_kwargs, "place_order should receive 'side' parameter"
+        assert "order_type" in call_kwargs, (
+            "place_order should receive 'order_type' parameter"
+        )
+        assert "quantity" in call_kwargs, (
+            "place_order should receive 'quantity' parameter"
+        )
+        assert "price" in call_kwargs, "place_order should receive 'price' parameter"
+
+        # Verify parameter values
+        assert call_kwargs["symbol"] == "BTC/USDT"
+        assert call_kwargs["side"] == "buy"  # LONG -> buy
+        assert call_kwargs["order_type"] == "market"
+        assert call_kwargs["quantity"] == 0.1
+        assert call_kwargs["price"] is None  # Market orders have no price
+
+    @pytest.mark.asyncio
+    async def test_process_signal_short_calls_place_order_with_sell_side(
+        self, orchestrator, mock_components
+    ):
+        """Test that SHORT signals result in 'sell' side parameter."""
+        from execution.paper.models import RiskAssessment
+
+        # Create a SHORT signal
+        short_signal = Signal(
+            token="ETH/USDT",
+            direction=SignalDirection.SHORT,
+            confidence=0.85,
+            base_score=85.0,
+            timestamp=datetime.now(UTC),
+            status=SignalStatus.ACTIONABLE,
+            timeframe="1h",
+            stop_loss=3500.0,
+            signal_id="test-signal-short-001",
+        )
+
+        mock_components["risk_enforcer"].validate_order = AsyncMock(
+            return_value=RiskAssessment(approved=True, position_size=0.5)
+        )
+
+        filled_order = PaperOrder(
+            symbol="ETH/USDT",
+            side="sell",
+            order_type="market",
+            quantity=0.5,
+            order_id="test-order-short-001",
+            state=OrderState.FILLED,
+            filled_quantity=0.5,
+        )
+        from execution.paper.models import PaperFill
+
+        fill = PaperFill(
+            fill_id="fill-short-001",
+            order_id="test-order-short-001",
+            symbol="ETH/USDT",
+            side="sell",
+            quantity=0.5,
+            price=3000.0,
+        )
+        filled_order.add_fill(fill)
+
+        call_kwargs = {}
+
+        async def capture_call(*args, **kwargs):
+            call_kwargs.update(kwargs)
+            return filled_order
+
+        mock_components["order_sim"].place_order = AsyncMock(side_effect=capture_call)
+        mock_components["position_tracker"].open_position = AsyncMock(
+            return_value=MagicMock()
+        )
+
+        result = await orchestrator.process_signal(short_signal)
+
+        assert result.status == TradeStatus.EXECUTED
+        assert call_kwargs["side"] == "sell", (
+            "SHORT signals should result in 'sell' side"
+        )
+        assert call_kwargs["symbol"] == "ETH/USDT"
+        assert call_kwargs["quantity"] == 0.5
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
