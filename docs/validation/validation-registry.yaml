@@ -1054,7 +1054,7 @@ validations:
     title: Confidence Calibration Accuracy
     epic_id: EP-NS-004
     story_id: ST-NS-019
-    status: planned
+    status: validated
     description: Validate confidence calibration maintains ECE (Expected Calibration Error) below 0.10
     acceptance_criteria:
       - ECE is calculated correctly
@@ -1068,7 +1068,7 @@ validations:
     title: Training Data Generator
     epic_id: EP-NS-004
     story_id: ST-NS-020
-    status: planned
+    status: validated
     description: Validate training data generation for model improvement
     acceptance_criteria:
       - Training data is generated from historical signals and outcomes
