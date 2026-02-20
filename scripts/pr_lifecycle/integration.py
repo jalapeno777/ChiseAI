@@ -120,7 +120,7 @@ def update_pr_on_merge_attempt(pr_number: int, success: bool, error: str = "") -
 def handle_ci_status_change(
     pr_number: int,
     ci_status: str,
-    required_context: str = "ci/woodpecker/pr/woodpecker",
+    required_context: str = "ci/woodpecker/pr/ci",
 ) -> bool:
     """Handle CI status change for a PR.
 

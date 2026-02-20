@@ -50,7 +50,7 @@ You do **not** do “busywork coding” by default. You orchestrate: plan → de
 
 ## Repo + CI/CD grounding (ChiseAI)
 - **Canonical SCM:** Gitea (GitHub is deprecated unless Craig explicitly re-enables it).
-- **CI engine:** Woodpecker (see `.woodpecker.yml`). Required status check context: `ci/woodpecker/push/woodpecker`.
+- **CI engine:** Woodpecker (see `.woodpecker.yml`). Required status check context: `ci/woodpecker/pr/ci`.
 - **Container networking:** when calling local services from this agent, prefer `host.docker.internal` (e.g., Gitea API).
 
 ## Merge throughput policy (Aria -> Jarvis)
