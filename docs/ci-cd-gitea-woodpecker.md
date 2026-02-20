@@ -10,7 +10,7 @@ updated: 2026-02-15
 - **SCM (canonical):** Gitea
 - **CI engine:** Woodpecker
 - **Pipeline config:** `.woodpecker.yml`
-- **Required status check context:** `ci/woodpecker/push/woodpecker`
+- **Required status check context:** `ci/woodpecker/pr/ci`
 
 GitHub is **deprecated** for ChiseAI unless explicitly re-enabled by a human. Use the `gitea` remote for pushes/PRs.
 
@@ -38,7 +38,7 @@ The default pipeline runs:
 
 ## Required branch protections
 Configure `main` to require:
-- status context `ci/woodpecker/push/woodpecker`
+- status context `ci/woodpecker/pr/ci`
 - PRs for merge (no direct pushes to `main`)
 
 ## CI Gate Override Procedure
@@ -49,7 +49,7 @@ Overrides are **rare exceptions**, not the norm. The CI gates are designed to be
 > **Important:** The CI pipeline itself contains no built-in bypass mechanism. All overrides require explicit human action in Gitea.
 
 ### 1. Override Definition
-A CI gate override is the act of temporarily disabling or bypassing the `ci/woodpecker/push/woodpecker` status check requirement on a protected branch (typically `main`) to allow a merge that would otherwise be blocked by failing or incomplete CI checks.
+A CI gate override is the act of temporarily disabling or bypassing the `ci/woodpecker/pr/ci` status check requirement on a protected branch (typically `main`) to allow a merge that would otherwise be blocked by failing or incomplete CI checks.
 
 ### 2. Pre-Override Requirements
 Before requesting or performing an override, **all** of the following must be satisfied:
@@ -170,5 +170,5 @@ If `mypy .` fails with “There are no .py[i] files”, add a targeted `files = 
 ## Merge flow (expected)
 1. Push branch to Gitea: `git push gitea <branch>`
 2. Open PR in Gitea.
-3. Wait for `ci/woodpecker/push/woodpecker` to pass.
+3. Wait for `ci/woodpecker/pr/ci` to pass.
 4. Merge via Gitea UI or API (auto-merge bot recommended).
