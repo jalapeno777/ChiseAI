@@ -163,8 +163,11 @@ class PaperRiskEnforcer:
         # 5. Portfolio exposure check (warn at 80%)
         total_exposure = sum(pos.value for pos in current_positions)
         # Exclude current token's existing position (we're replacing it)
+        # Handle both 'symbol' (from position_tracker.PaperPosition) and 'token' (from risk_models.PaperPosition)
         existing_token_exposure = sum(
-            pos.value for pos in current_positions if pos.token == signal.token
+            pos.value
+            for pos in current_positions
+            if getattr(pos, "symbol", getattr(pos, "token", None)) == signal.token
         )
         adjusted_exposure = total_exposure - existing_token_exposure
         new_exposure = adjusted_exposure + position_value
