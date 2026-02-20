@@ -5,7 +5,7 @@
 metadata:
   project_name: ChiseAI
   version: "2.2.0"
-  last_updated: "2026-02-18T00:00:00Z"
+  last_updated: "2026-02-20T00:00:00Z"
   prd_location: docs/prd.md
   prd_note: "Phased perps execution: continuous backtest -> Bybit demo paper -> Bitget live; Grafana-first ops UI; Binance used as reference market-structure venue. LLM integrations (Z.ai GLM-5, MiniMax 2.5) are separate capabilities, not Phase 1."
   recent_fixes:
@@ -20,7 +20,7 @@ metadata:
 current_phase:
   phase: phase_2_plus
   status: in_progress
-  note: "Phase 2+ execution in progress. Learning & Improvement System (EP-NS-004) active with 2/4 stories completed, 1 in progress, 1 completed ahead of schedule."
+  note: "Phase 2+ execution in progress. Learning & Improvement System (EP-NS-004) completed with all 4 stories validated."
 
 # ============================================================
 # PHASE 1 EPICS (8 epics, 35 stories total)
@@ -146,7 +146,7 @@ epics:
   # EP-NS-004: Learning & Improvement System (4 stories, 28 points)
   - id: EP-NS-004
     name: Learning & Improvement System
-    status: in_progress
+    status: completed
     story_ids: [ST-NS-017, ST-NS-018, ST-NS-019, ST-NS-020]
     story_count: 4
     story_points: 28
@@ -155,7 +155,7 @@ epics:
     notes:
       - ST-NS-017 (Prediction Accuracy Tracking) - completed
       - ST-NS-018 (ML Feedback Loop) - completed and validated
-      - ST-NS-019 (Confidence Threshold Calibration) - in_progress (active branch exists)
+      - ST-NS-019 (Confidence Threshold Calibration) - completed (PR #214 merged 2026-02-20)
       - ST-NS-020 (Training Data Generator) - completed (PR #136 merged ahead of schedule)
 
   # EP-NS-005: User Experience & Interface (4 stories, 25 points)
@@ -1437,11 +1437,22 @@ stories:
     title: Confidence Threshold Calibration
     epic_id: EP-NS-004
     sprint_id: q2-3
-    status: planned
+    status: completed
+    validation_status: validated
     story_points: 6
     priority: P1-HIGH
     fr_coverage: [FR-019]
     description: Calibrate confidence thresholds based on performance
+    implementation_notes:
+      - InfluxDB telemetry exporter for calibration metrics (src/monitoring/calibration_exporter.py)
+      - Adjustment guardrails: velocity limits (max 5% change/day), cooldown period (24h between adjustments), oscillation detection (anti-whipsaw)
+      - Calibration health monitor with ECE alerting (src/monitoring/calibration_health_monitor.py)
+      - Grafana dashboard for calibration monitoring (infrastructure/grafana/dashboards/calibration/)
+      - 70 new tests with 80%+ coverage across calibration modules
+    notes:
+      - PR: #214
+      - Merged to main: 2026-02-20
+      - Commit: af3c9907fa08e42af3f9bb25e720793e783f6ba5
 
   - id: ST-NS-020
     title: Training Data Generator
