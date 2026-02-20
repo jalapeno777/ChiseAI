@@ -9,11 +9,11 @@ permission:
   task:
     "*": deny
     "jarvis": allow
-#    "architect": deny
-#    "dev": deny
-#    "tester": deny
-#    "reviewer": deny
-#    "git-*": deny
+    "architect": deny
+    "dev": deny
+    "tester": deny
+    "reviewer": deny
+    "git-*": deny
 ---
 
 # Aria — Primary Orchestrator Operating Manual

@@ -1923,14 +1923,6 @@ sprints:
     mapped_stories: [ST-PAPER-001, ST-PAPER-002, ST-PAPER-003, ST-PAPER-004]
     completion_date: "2026-02-17"
 
-# ============================================================
-# SUMMARY COUNTS
-
-# EP-NS-008 STORIES: Autonomous Control Plane (6 stories, 42 points)
-# Unified autonomy implementation per golden plan
-# ============================================================
-
-  # ST-NS-038: Circuit Breaker Registry & Telemetry
   - id: ST-NS-038
     title: Circuit Breaker Registry & Unified Telemetry
     epic_id: EP-NS-008
@@ -2203,6 +2195,7 @@ sprints:
         alert: "> 0 in 5-minute window"
 
 
+# SUMMARY COUNTS
 item_3_completion:
   story_id: BYBIT-DEMO-003
   status: completed
@@ -2244,6 +2237,7 @@ item_3_completion:
 # ============================================================
 
 # ============================================================
+
 
 summary:
   total_epics: 17
