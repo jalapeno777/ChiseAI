@@ -5,6 +5,8 @@
 **/*.tfvars
 # Terraform plan files (local execution artifacts)
 infrastructure/terraform/tfplan*
+# Experimental Terraform Dockerfiles
+infrastructure/terraform/Dockerfile.woodpecker-agent
 
 # Local secrets (kept outside repo)
 *infra-secrets*.txt
@@ -44,3 +46,6 @@ screenshots/
 .idea/
 *.swp
 *.swo
+
+# Utility scripts (not part of tracked codebase)
+scripts/archive_iterlog_to_qdrant.py
