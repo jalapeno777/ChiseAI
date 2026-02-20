@@ -1724,15 +1724,7 @@ validations:
     owner: validation-team
 
 # Global validation thresholds
-thresholds:
-  min_test_coverage: 80
-  max_lint_errors: 0
-  required_checks:
-    - status_sync
-    - ci_test
-    - security_scan
 
-# ============================================================
 # EP-NS-008 VALIDATIONS: Autonomous Control Plane
 # ============================================================
 
@@ -1827,3 +1819,16 @@ thresholds:
       - Dashboard JSON is version-controlled
     test_method: manual
     owner: ops-team
+
+# ============================================================
+# Global validation thresholds
+# ============================================================
+
+thresholds:
+  min_test_coverage: 80
+  max_lint_errors: 0
+  required_checks:
+    - status_sync
+    - ci_test
+    - security_scan
+

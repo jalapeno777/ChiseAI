@@ -1925,66 +1925,7 @@ sprints:
 
 # ============================================================
 # SUMMARY COUNTS
-# ============================================================
 
-summary:
-  total_epics: 17
-  total_stories: 78
-  total_story_points: 448
-  phase_1:
-    epics: 8
-    stories: 41
-    story_points: 157
-  phase_2_plus:
-    epics: 9
-    stories: 37
-    story_points: 280
-
-# ============================================================
-# ITEM 3 COMPLETION - BYBIT-DEMO-003
-# Finalized Bybit demo execution route with explicit WS/REST behavior
-# Merged to main: 2026-02-19
-# ============================================================
-
-item_3_completion:
-  story_id: BYBIT-DEMO-003
-  status: completed
-  merged_to_main: "2026-02-19"
-  main_sha: "257e703e35cab23cd51e64dc8766f9b492a15304"
-  pr_number: 189
-  pr_url: "http://localhost:3000/craig/ChiseAI/pulls/189"
-
-  routing_policy:
-    demo_rest: "https://api-demo.bybit.com"
-    demo_private_ws: "wss://stream-demo.bybit.com/v5/private"
-    public_ws: "wss://stream.bybit.com/v5/public/linear"
-
-  files_changed:
-    - path: "src/data/exchange/bybit_connector.py"
-      change: "Added explicit routing policy documentation"
-      lines: "+39 lines of docstring"
-    - path: "config/bybit_endpoints.yaml"
-      change: "Added demo endpoint configuration"
-      lines: "Updated"
-    - path: "tests/test_execution/test_bybit_connector.py"
-      change: "Added TestBybitRoutingPolicy test class"
-      lines: "+105 lines"
-    - path: "docs/runbooks/bybit-demo-routing.md"
-      change: "Created operator runbook"
-      lines: "+164 lines (new file)"
-
-  tests:
-    total: 41
-    passed: 41
-    new_routing_tests: 7
-
-  evidence:
-    ci_status: "green (pipeline #885)"
-    validation: "All tests pass, Black clean, config valid"
-
-  next_item: "Item 4 of 5"
-
-# ============================================================
 # EP-NS-008 STORIES: Autonomous Control Plane (6 stories, 42 points)
 # Unified autonomy implementation per golden plan
 # ============================================================
@@ -2260,3 +2201,65 @@ item_3_completion:
         dashboard: "Grafana / Dashboard Performance"
       - metric: "dashboard_load_errors"
         alert: "> 0 in 5-minute window"
+
+
+item_3_completion:
+  story_id: BYBIT-DEMO-003
+  status: completed
+  merged_to_main: "2026-02-19"
+  main_sha: "257e703e35cab23cd51e64dc8766f9b492a15304"
+  pr_number: 189
+  pr_url: "http://localhost:3000/craig/ChiseAI/pulls/189"
+
+  routing_policy:
+    demo_rest: "https://api-demo.bybit.com"
+    demo_private_ws: "wss://stream-demo.bybit.com/v5/private"
+    public_ws: "wss://stream.bybit.com/v5/public/linear"
+
+  files_changed:
+    - path: "src/data/exchange/bybit_connector.py"
+      change: "Added explicit routing policy documentation"
+      lines: "+39 lines of docstring"
+    - path: "config/bybit_endpoints.yaml"
+      change: "Added demo endpoint configuration"
+      lines: "Updated"
+    - path: "tests/test_execution/test_bybit_connector.py"
+      change: "Added TestBybitRoutingPolicy test class"
+      lines: "+105 lines"
+    - path: "docs/runbooks/bybit-demo-routing.md"
+      change: "Created operator runbook"
+      lines: "+164 lines (new file)"
+
+  tests:
+    total: 41
+    passed: 41
+    new_routing_tests: 7
+
+  evidence:
+    ci_status: "green (pipeline #885)"
+    validation: "All tests pass, Black clean, config valid"
+
+  next_item: "Item 4 of 5"
+
+# ============================================================
+
+# ============================================================
+
+summary:
+  total_epics: 17
+  total_stories: 78
+  total_story_points: 448
+  phase_1:
+    epics: 8
+    stories: 41
+    story_points: 157
+  phase_2_plus:
+    epics: 9
+    stories: 37
+    story_points: 280
+
+# ============================================================
+# ITEM 3 COMPLETION - BYBIT-DEMO-003
+# Finalized Bybit demo execution route with explicit WS/REST behavior
+# Merged to main: 2026-02-19
+# ============================================================
