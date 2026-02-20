@@ -672,5 +672,103 @@ class TestStartStop:
         await orchestrator.stop()
 
 
+class TestNoneTelemetry:
+    """Test orchestrator behavior when telemetry is None (BURNIN-001 fix)."""
+
+    @pytest.fixture
+    def orchestrator_none_telemetry(self, mock_components):
+        """Create an orchestrator with None telemetry collector."""
+        return PaperTradingOrchestrator(
+            signal_generator=mock_components["signal_gen"],
+            order_simulator=mock_components["order_sim"],
+            position_tracker=mock_components["position_tracker"],
+            risk_enforcer=mock_components["risk_enforcer"],
+            telemetry_collector=None,
+            kill_switch=mock_components["kill_switch"],
+            portfolio_value=10000.0,
+        )
+
+    @pytest.mark.asyncio
+    async def test_start_stop_with_none_telemetry(self, orchestrator_none_telemetry):
+        """Test orchestrator start/stop does not crash when telemetry is None."""
+        # Should not raise AttributeError
+        await orchestrator_none_telemetry.start()
+        assert orchestrator_none_telemetry._running is True
+        assert orchestrator_none_telemetry._processing_task is not None
+
+        await orchestrator_none_telemetry.stop()
+        assert orchestrator_none_telemetry._running is False
+
+    @pytest.mark.asyncio
+    async def test_process_signal_with_none_telemetry(
+        self, orchestrator_none_telemetry, mock_components, mock_signal
+    ):
+        """Test signal processing works when telemetry is None."""
+        from execution.paper.risk_models import RiskAssessment
+
+        mock_components["risk_enforcer"].validate_order = AsyncMock(
+            return_value=RiskAssessment(approved=True, position_size=0.1)
+        )
+
+        filled_order = PaperOrder(
+            symbol="BTC/USDT",
+            side="buy",
+            order_type="market",
+            quantity=0.1,
+            order_id="test-order-none-001",
+            state=OrderState.FILLED,
+            filled_quantity=0.1,
+        )
+        # Add a fill to set the avg_fill_price
+        from execution.paper.models import PaperFill
+
+        fill = PaperFill(
+            fill_id="fill-001",
+            order_id="test-order-none-001",
+            symbol="BTC/USDT",
+            side="buy",
+            quantity=0.1,
+            price=50000.0,
+        )
+        filled_order.add_fill(fill)
+        mock_components["order_sim"].place_order = AsyncMock(return_value=filled_order)
+
+        mock_position = MagicMock()
+        mock_position.position_id = "test-position-none-001"
+        mock_position.symbol = "BTC/USDT"
+        mock_components["position_tracker"].open_position = AsyncMock(
+            return_value=mock_position
+        )
+
+        # Process signal - should not crash with None telemetry
+        result = await orchestrator_none_telemetry.process_signal(mock_signal)
+
+        assert result.status == TradeStatus.EXECUTED
+        assert result.order is not None
+        assert result.position is not None
+
+    @pytest.mark.asyncio
+    async def test_close_position_with_none_telemetry(
+        self, orchestrator_none_telemetry, mock_components
+    ):
+        """Test position closing works when telemetry is None."""
+        mock_position = MagicMock()
+        mock_position.position_id = "test-pos-none-002"
+        mock_position.symbol = "BTC/USDT"
+
+        mock_components["position_tracker"].close_position = AsyncMock(
+            return_value=(mock_position, 150.0)
+        )
+
+        initial_value = orchestrator_none_telemetry.portfolio_value
+        result = await orchestrator_none_telemetry.close_position(
+            "test-pos-none-002", 51000.0
+        )
+
+        assert result is not None
+        assert result[1] == 150.0
+        assert orchestrator_none_telemetry.portfolio_value == initial_value + 150.0
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

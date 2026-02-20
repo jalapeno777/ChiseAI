@@ -250,7 +250,6 @@ class TradingModeLoader:
         try:
             exporter = ExecutionTelemetryExporter(
                 influxdb_client=None,  # Will work in dry-run mode
-                dry_run=True,
             )
             self.telemetry_collector = ExecutionCollector(
                 exporter=exporter,

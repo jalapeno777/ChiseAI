@@ -121,7 +121,8 @@ class PaperTradingOrchestrator:
         self._running = True
 
         # Start telemetry collector
-        await self.telemetry.start()
+        if self.telemetry:
+            await self.telemetry.start()
 
         # Start signal processing loop
         self._processing_task = asyncio.create_task(self._processing_loop())
@@ -141,7 +142,8 @@ class PaperTradingOrchestrator:
                 pass
 
         # Stop telemetry
-        await self.telemetry.stop()
+        if self.telemetry:
+            await self.telemetry.stop()
 
         logger.info("PaperTradingOrchestrator stopped")
 
@@ -370,21 +372,22 @@ class PaperTradingOrchestrator:
 
         # Create market order (could be extended for limit orders)
         order = PaperOrder(
+            order_id=str(uuid.uuid4()),
             symbol=signal.token,
-            side=side,
-            order_type=OrderType.MARKET,
+            side=side.value,  # Use string value, not enum
+            order_type=OrderType.MARKET.value,  # Use string value, not enum
             quantity=position_size,
-            correlation_id=correlation_id,
         )
 
-        # Store stop-loss in metadata
+        # Store correlation_id and stop-loss in metadata
+        order.metadata["correlation_id"] = correlation_id
         if signal.stop_loss:
             order.metadata["stop_loss"] = signal.stop_loss
             order.metadata["stop_loss_method"] = signal.stop_loss_method or "unknown"
 
         logger.debug(
-            f"Created {order.order_type.value} order: {order.symbol} "
-            f"{order.side.value} {order.quantity}"
+            f"Created {order.order_type} order: {order.symbol} "
+            f"{order.side} {order.quantity}"
         )
 
         return order
@@ -459,7 +462,8 @@ class PaperTradingOrchestrator:
             )
 
             # Update equity
-            await self.telemetry.set_equity(self.portfolio_value)
+            if self.telemetry:
+                await self.telemetry.set_equity(self.portfolio_value)
 
             logger.debug(f"Recorded position: {event.position_id}")
 
@@ -495,7 +499,8 @@ class PaperTradingOrchestrator:
 
             # Update portfolio value
             self.portfolio_value += realized_pnl
-            await self.telemetry.set_equity(self.portfolio_value)
+            if self.telemetry:
+                await self.telemetry.set_equity(self.portfolio_value)
 
             return position, realized_pnl
 
