@@ -441,6 +441,7 @@ class SignalGenerator:
                 "confluence_metadata": confluence_score.metadata,
                 "multiplier_applied": confluence_score.multiplier_applied,
                 "multiplier_rationale": confluence_score.multiplier_rationale,
+                "entry_price": current_price,
             },
         )
 
