@@ -9,6 +9,9 @@ Components:
 - storage: Redis time-series storage backend
 - data_collector: Main collector class for gathering calibration data
 - exporter: Parquet/CSV export functionality for ECE analysis
+- dynamic: Dynamic threshold adjustment with guardrails
+- telemetry_exporter: InfluxDB metrics export for Grafana
+- health_monitor: Calibration health monitoring and alerts
 
 Usage:
     from ml.calibration import CalibrationDataCollector, CalibrationRecord
@@ -31,31 +34,63 @@ Usage:
 
 from __future__ import annotations
 
-# Models
-from ml.calibration.models import (
-    CalibrationRecord,
-    CalibrationConfig,
-    SignalType,
-    CollectionWindow,
-)
-
-# Storage
-from ml.calibration.storage import (
-    CalibrationStorage,
-    RedisCalibrationStorage,
-    InMemoryCalibrationStorage,
-)
-
 # Data Collector
 from ml.calibration.data_collector import (
     CalibrationDataCollector,
     CollectionResult,
 )
 
+# Dynamic Threshold Adjuster
+from ml.calibration.dynamic import (
+    DEFAULT_COOLDOWN_MINUTES,
+    DEFAULT_VELOCITY_LIMIT,
+    ECE_DEGRADATION_THRESHOLD,
+    ECE_IMPROVEMENT_THRESHOLD,
+    MAX_ADJUSTMENT_PER_STEP,
+    MAX_THRESHOLD,
+    MIN_THRESHOLD,
+    AdjustmentGuardrails,
+    DynamicThresholdAdjuster,
+    ThresholdAdjustment,
+    calculate_optimal_adjustment,
+)
+
 # Exporter
 from ml.calibration.exporter import (
     CalibrationExporter,
     ExportFormat,
+)
+
+# Health Monitor
+from ml.calibration.health_monitor import (
+    ECE_ALERT_THRESHOLD,
+    ECE_CRITICAL_THRESHOLD,
+    AdjustmentFrequencyMetrics,
+    CalibrationAlert,
+    CalibrationHealthMonitor,
+    CalibrationStatus,
+)
+
+# Models
+from ml.calibration.models import (
+    CalibrationConfig,
+    CalibrationRecord,
+    CollectionWindow,
+    SignalType,
+)
+
+# Storage
+from ml.calibration.storage import (
+    CalibrationStorage,
+    InMemoryCalibrationStorage,
+    RedisCalibrationStorage,
+)
+
+# Telemetry Exporter
+from ml.calibration.telemetry_exporter import (
+    CalibrationHealthMetrics,
+    CalibrationTelemetryConfig,
+    CalibrationTelemetryExporter,
 )
 
 __all__ = [
@@ -74,4 +109,27 @@ __all__ = [
     # Exporter
     "CalibrationExporter",
     "ExportFormat",
+    # Dynamic Threshold Adjuster
+    "DynamicThresholdAdjuster",
+    "ThresholdAdjustment",
+    "AdjustmentGuardrails",
+    "calculate_optimal_adjustment",
+    "MIN_THRESHOLD",
+    "MAX_THRESHOLD",
+    "MAX_ADJUSTMENT_PER_STEP",
+    "ECE_DEGRADATION_THRESHOLD",
+    "ECE_IMPROVEMENT_THRESHOLD",
+    "DEFAULT_VELOCITY_LIMIT",
+    "DEFAULT_COOLDOWN_MINUTES",
+    # Telemetry Exporter
+    "CalibrationTelemetryExporter",
+    "CalibrationTelemetryConfig",
+    "CalibrationHealthMetrics",
+    # Health Monitor
+    "CalibrationHealthMonitor",
+    "CalibrationAlert",
+    "AdjustmentFrequencyMetrics",
+    "CalibrationStatus",
+    "ECE_ALERT_THRESHOLD",
+    "ECE_CRITICAL_THRESHOLD",
 ]
