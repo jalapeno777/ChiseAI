@@ -584,10 +584,14 @@ async def _execute_trading_cycle(
 
         # Step 2: Generate signals
         try:
+            # Extract current price from latest OHLCV data
+            current_price = ohlcv_data[-1].close_price if ohlcv_data else None
+
             signal = generator.generate_signal(
                 token=symbol,
                 timeframe=timeframe,
                 ohlcv_data=ohlcv_data,
+                current_price=current_price,
             )
             metrics.signals_generated += 1
             logger.debug(
