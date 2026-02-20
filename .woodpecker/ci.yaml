@@ -1,5 +1,7 @@
 when:
-  event: [ pull_request, manual, cron ]
+  - event: pull_request
+  - event: manual
+  - event: cron
 
 clone:
   git:
