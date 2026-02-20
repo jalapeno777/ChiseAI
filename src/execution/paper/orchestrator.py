@@ -16,6 +16,7 @@ import asyncio
 import logging
 import time
 import uuid
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -255,29 +256,46 @@ class PaperTradingOrchestrator:
                     break
 
             if existing_position:
-                # Check if signal is opposite direction
-                current_side = existing_position.side  # "long" or "short"
-                signal_side = signal.direction.value.lower()  # "long" or "short"
+                # Check if position should be closed due to time limit (for burn-in testing)
+                position_age_seconds = (
+                    datetime.now(UTC) - existing_position.opened_at
+                ).total_seconds()
 
-                if current_side != signal_side:
-                    # Close existing position
+                # Close if position is older than 60 seconds (for burn-in testing)
+                if position_age_seconds > 60:
                     await self.close_position(
-                        existing_position.position_id, entry_price
+                        existing_position.position_id, entry_price, reason="time_limit"
                     )
                     logger.info(
-                        f"Closed position {existing_position.position_id} for {signal.token} "
-                        f"(opposite signal: {current_side} -> {signal_side})"
+                        f"Time-based close: position {existing_position.position_id} "
+                        f"after {position_age_seconds:.0f}s"
                     )
+                    existing_position = None  # Allow new position to open
                 else:
-                    # Same direction - skip this signal
-                    logger.debug(
-                        f"Already in {signal_side} position for {signal.token}, skipping"
-                    )
-                    return PaperTradeResult(
-                        signal=signal,
-                        status=TradeStatus.SKIPPED,
-                        correlation_id=correlation_id,
-                    )
+                    # Check if signal is opposite direction
+                    current_side = existing_position.side  # "long" or "short"
+                    signal_side = signal.direction.value.lower()  # "long" or "short"
+
+                    if current_side != signal_side:
+                        # Close existing position
+                        await self.close_position(
+                            existing_position.position_id, entry_price
+                        )
+                        logger.info(
+                            f"Closed position {existing_position.position_id} for {signal.token} "
+                            f"(opposite signal: {current_side} -> {signal_side})"
+                        )
+                        existing_position = None  # Allow new position to open
+                    else:
+                        # Same direction - skip this signal
+                        logger.debug(
+                            f"Already in {signal_side} position for {signal.token}, skipping"
+                        )
+                        return PaperTradeResult(
+                            signal=signal,
+                            status=TradeStatus.SKIPPED,
+                            correlation_id=correlation_id,
+                        )
 
             # Step 2: Validate risk
             risk_start = time.perf_counter()
