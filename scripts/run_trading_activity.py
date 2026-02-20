@@ -616,12 +616,15 @@ async def _execute_trading_cycle(
         # Step 5: Execute paper trade via orchestrator
         try:
             # Set market price for order simulator
+            # Price must be set BEFORE process_signal is called
+            # Use the same symbol format as the signal (e.g., "BTC/USDT")
             if orchestrator.order_simulator:
                 current_price = ohlcv_data[-1].close_price if ohlcv_data else 50000.0
                 orchestrator.order_simulator.set_market_price(
-                    symbol.replace("/", ""),
+                    symbol,  # Use "BTC/USDT" format to match signal.token
                     current_price,
                 )
+                logger.debug(f"Set market price for {symbol}: {current_price}")
 
             # Submit signal for processing
             process_result = orchestrator.process_signal(signal)
