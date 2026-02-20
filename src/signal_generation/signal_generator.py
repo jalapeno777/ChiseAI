@@ -364,11 +364,49 @@ class SignalGenerator:
                 timeframe,  # type: ignore[arg-type]
             )
 
-            # Aggregate signals
+            # Convert IndicatorSet to list of IndicatorSignal objects
+            signals_list = []
             aggregator = SignalAggregator()
+            ts = int(time.time() * 1000)
+
+            # Extract RSI signal
+            if indicator_results.rsi is not None:
+                rsi_signal = aggregator.from_rsi(
+                    indicator_results.rsi,
+                    timeframe.value,
+                    timestamp=ts,
+                )
+                if rsi_signal is not None:
+                    signals_list.append(rsi_signal)
+
+            # Extract MACD signal
+            if indicator_results.macd is not None:
+                macd_signal = aggregator.from_macd(
+                    indicator_results.macd,
+                    timeframe.value,
+                    timestamp=ts,
+                )
+                if macd_signal is not None:
+                    signals_list.append(macd_signal)
+
+            # Extract Bollinger Bands signal
+            if (
+                indicator_results.bollinger_bands is not None
+                and current_price is not None
+            ):
+                bb_signal = aggregator.from_bollinger_bands(
+                    indicator_results.bollinger_bands,
+                    current_price,
+                    timeframe.value,
+                    timestamp=ts,
+                )
+                if bb_signal is not None:
+                    signals_list.append(bb_signal)
+
+            # Aggregate signals
             aggregated_signals = aggregator.aggregate(
-                indicator_results,  # type: ignore[arg-type]
-                timestamp=int(time.time() * 1000),
+                signals_list,
+                timestamp=ts,
             )
 
         # Calculate confluence score
