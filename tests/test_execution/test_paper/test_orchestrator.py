@@ -104,6 +104,9 @@ def mock_components():
 
     # Order simulator (mocked but returns real PaperOrder)
     order_sim = AsyncMock()
+    # Mock market_data provider with default price
+    order_sim.market_data = MagicMock()
+    order_sim.market_data.get_price = MagicMock(return_value=50000.0)
 
     # Position tracker
     position_tracker = AsyncMock()
@@ -853,7 +856,10 @@ class TestOrderSimulatorInterface:
         assert call_kwargs["side"] == "buy"  # LONG -> buy
         assert call_kwargs["order_type"] == "market"
         assert call_kwargs["quantity"] == 0.1
-        assert call_kwargs["price"] is None  # Market orders have no price
+        # Price should now be set from market data (BURNIN-001 fix)
+        assert call_kwargs["price"] == 50000.0, (
+            f"Price should be set from market data, got {call_kwargs['price']}"
+        )
 
     @pytest.mark.asyncio
     async def test_process_signal_short_calls_place_order_with_sell_side(
@@ -919,6 +925,255 @@ class TestOrderSimulatorInterface:
         )
         assert call_kwargs["symbol"] == "ETH/USDT"
         assert call_kwargs["quantity"] == 0.5
+
+
+class TestOrderPriceValidation:
+    """Test order price validation and value calculation (BURNIN-001 fix).
+
+    These tests verify that:
+    1. Entry price is retrieved from market data before validation
+    2. Price is passed to validate_order() and _create_order()
+    3. Order value is calculated correctly (non-zero)
+    4. Orders are rejected when no valid price is available
+    """
+
+    @pytest.mark.asyncio
+    async def test_order_created_with_valid_price(
+        self, orchestrator, mock_components, mock_signal
+    ):
+        """Test that PaperOrder is created with a valid price."""
+        from execution.paper.models import RiskAssessment
+
+        # Setup market price
+        mock_components["order_sim"].market_data.get_price = MagicMock(return_value=50000.0)
+
+        mock_components["risk_enforcer"].validate_order = AsyncMock(
+            return_value=RiskAssessment(approved=True, position_size=0.1)
+        )
+
+        # Capture the order that is created
+        created_order = None
+
+        async def capture_place_order(*args, **kwargs):
+            nonlocal created_order
+            # Create the order that would be returned
+            from execution.paper.models import PaperFill
+
+            order = PaperOrder(
+                symbol=kwargs["symbol"],
+                side=kwargs["side"],
+                order_type=kwargs["order_type"],
+                quantity=kwargs["quantity"],
+                price=kwargs.get("price"),
+                order_id="test-order-price-001",
+                state=OrderState.FILLED,
+                filled_quantity=kwargs["quantity"],
+            )
+            # Add a fill
+            fill = PaperFill(
+                fill_id="fill-price-001",
+                order_id="test-order-price-001",
+                symbol=kwargs["symbol"],
+                side=kwargs["side"],
+                quantity=kwargs["quantity"],
+                price=50000.0,
+            )
+            order.add_fill(fill)
+            created_order = order
+            return order
+
+        mock_components["order_sim"].place_order = AsyncMock(side_effect=capture_place_order)
+        mock_components["position_tracker"].open_position = AsyncMock(
+            return_value=MagicMock()
+        )
+
+        result = await orchestrator.process_signal(mock_signal)
+
+        # Verify order was created with correct price
+        assert result.status == TradeStatus.EXECUTED
+        assert created_order is not None
+        assert created_order.price == 50000.0, f"Expected price=50000.0, got {created_order.price}"
+
+    @pytest.mark.asyncio
+    async def test_validate_order_receives_entry_price(
+        self, orchestrator, mock_components, mock_signal
+    ):
+        """Test that validate_order is called with entry_price parameter."""
+        from execution.paper.models import RiskAssessment
+
+        expected_price = 55000.0
+        mock_components["order_sim"].market_data.get_price = MagicMock(return_value=expected_price)
+
+        call_kwargs = {}
+
+        async def capture_validate(*args, **kwargs):
+            call_kwargs.update(kwargs)
+            return RiskAssessment(approved=True, position_size=0.1)
+
+        mock_components["risk_enforcer"].validate_order = AsyncMock(side_effect=capture_validate)
+
+        filled_order = PaperOrder(
+            symbol="BTC/USDT",
+            side="buy",
+            order_type="market",
+            quantity=0.1,
+            price=expected_price,
+            order_id="test-order-price-002",
+            state=OrderState.FILLED,
+            filled_quantity=0.1,
+        )
+        from execution.paper.models import PaperFill
+
+        fill = PaperFill(
+            fill_id="fill-price-002",
+            order_id="test-order-price-002",
+            symbol="BTC/USDT",
+            side="buy",
+            quantity=0.1,
+            price=expected_price,
+        )
+        filled_order.add_fill(fill)
+        mock_components["order_sim"].place_order = AsyncMock(return_value=filled_order)
+        mock_components["position_tracker"].open_position = AsyncMock(return_value=MagicMock())
+
+        result = await orchestrator.process_signal(mock_signal)
+
+        assert result.status == TradeStatus.EXECUTED
+        assert "entry_price" in call_kwargs, "validate_order should receive 'entry_price' parameter"
+        assert call_kwargs["entry_price"] == expected_price, (
+            f"Expected entry_price={expected_price}, got {call_kwargs.get('entry_price')}"
+        )
+
+    @pytest.mark.asyncio
+    async def test_order_rejected_when_no_market_price(
+        self, orchestrator, mock_components, mock_signal
+    ):
+        """Test that order is rejected when no market price is available."""
+        # Mock no price available
+        mock_components["order_sim"].market_data.get_price = MagicMock(return_value=None)
+
+        result = await orchestrator.process_signal(mock_signal)
+
+        # Should be rejected due to no price
+        assert result.status == TradeStatus.REJECTED
+        assert any("market price" in reason.lower() for reason in result.reject_reason)
+
+        # Should not have called risk enforcer or placed order
+        mock_components["risk_enforcer"].validate_order.assert_not_called()
+        mock_components["order_sim"].place_order.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_order_rejected_when_price_is_zero(
+        self, orchestrator, mock_components, mock_signal
+    ):
+        """Test that order is rejected when market price is zero."""
+        # Mock zero price
+        mock_components["order_sim"].market_data.get_price = MagicMock(return_value=0.0)
+
+        result = await orchestrator.process_signal(mock_signal)
+
+        # Should be rejected due to invalid price
+        assert result.status == TradeStatus.REJECTED
+        assert any("market price" in reason.lower() for reason in result.reject_reason)
+
+    @pytest.mark.asyncio
+    async def test_order_rejected_when_price_is_negative(
+        self, orchestrator, mock_components, mock_signal
+    ):
+        """Test that order is rejected when market price is negative."""
+        # Mock negative price (edge case)
+        mock_components["order_sim"].market_data.get_price = MagicMock(return_value=-100.0)
+
+        result = await orchestrator.process_signal(mock_signal)
+
+        # Should be rejected due to invalid price
+        assert result.status == TradeStatus.REJECTED
+        assert any("market price" in reason.lower() for reason in result.reject_reason)
+
+    @pytest.mark.asyncio
+    async def test_order_value_calculated_correctly(
+        self, orchestrator, mock_components, mock_signal
+    ):
+        """Test that order notional value is calculated correctly (price * quantity)."""
+        from execution.paper.models import RiskAssessment
+
+        price = 50000.0
+        quantity = 0.1
+        expected_value = price * quantity  # $5,000
+
+        mock_components["order_sim"].market_data.get_price = MagicMock(return_value=price)
+        mock_components["risk_enforcer"].validate_order = AsyncMock(
+            return_value=RiskAssessment(approved=True, position_size=quantity)
+        )
+
+        # Capture the placed order parameters
+        call_kwargs = {}
+
+        async def capture_call(*args, **kwargs):
+            call_kwargs.update(kwargs)
+            order = PaperOrder(
+                symbol=kwargs["symbol"],
+                side=kwargs["side"],
+                order_type=kwargs["order_type"],
+                quantity=kwargs["quantity"],
+                price=kwargs.get("price"),
+                order_id="test-order-value-001",
+                state=OrderState.FILLED,
+                filled_quantity=kwargs["quantity"],
+            )
+            from execution.paper.models import PaperFill
+
+            fill = PaperFill(
+                fill_id="fill-value-001",
+                order_id="test-order-value-001",
+                symbol=kwargs["symbol"],
+                side=kwargs["side"],
+                quantity=kwargs["quantity"],
+                price=price,
+            )
+            order.add_fill(fill)
+            return order
+
+        mock_components["order_sim"].place_order = AsyncMock(side_effect=capture_call)
+        mock_components["position_tracker"].open_position = AsyncMock(return_value=MagicMock())
+
+        result = await orchestrator.process_signal(mock_signal)
+
+        assert result.status == TradeStatus.EXECUTED
+        assert call_kwargs["price"] == price
+        assert call_kwargs["quantity"] == quantity
+        # Verify notional value would be correct
+        notional_value = call_kwargs["price"] * call_kwargs["quantity"]
+        assert notional_value == expected_value, (
+            f"Expected value=${expected_value}, got ${notional_value}"
+        )
+
+    @pytest.mark.asyncio
+    async def test_create_order_raises_on_invalid_price(self, orchestrator, mock_signal):
+        """Test that _create_order raises ValueError when price is invalid."""
+        with pytest.raises(ValueError) as exc_info:
+            orchestrator._create_order(
+                signal=mock_signal,
+                position_size=0.1,
+                entry_price=0.0,  # Invalid price
+                correlation_id="test-corr-invalid",
+            )
+        assert "Entry price must be positive" in str(exc_info.value)
+
+    def test_create_order_succeeds_with_valid_price(self, orchestrator, mock_signal):
+        """Test that _create_order succeeds with valid price and sets it on order."""
+        valid_price = 50000.0
+
+        order = orchestrator._create_order(
+            signal=mock_signal,
+            position_size=0.1,
+            entry_price=valid_price,
+            correlation_id="test-corr-valid",
+        )
+
+        assert order.price == valid_price, f"Expected price={valid_price}, got {order.price}"
+        assert order.quantity == 0.1
+        assert order.symbol == mock_signal.token
 
 
 if __name__ == "__main__":
