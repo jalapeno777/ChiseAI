@@ -5,7 +5,7 @@
 metadata:
   project_name: ChiseAI
   version: "2.2.0"
-  last_updated: "2026-02-17"
+  last_updated: "2026-02-20"
 
 # Validation entries
 validations:
@@ -1731,3 +1731,99 @@ thresholds:
     - status_sync
     - ci_test
     - security_scan
+
+# ============================================================
+# EP-NS-008 VALIDATIONS: Autonomous Control Plane
+# ============================================================
+
+  - id: V-NS-038
+    title: Circuit Breaker Registry & Telemetry Validation
+    epic_id: EP-NS-008
+    story_id: ST-NS-038
+    status: planned
+    description: Validate centralized circuit breaker registry consolidates all service circuit breakers with real-time telemetry to InfluxDB
+    acceptance_criteria:
+      - Registry provides CRUD operations for circuit breakers
+      - State persisted in Redis with PostgreSQL backup
+      - Telemetry exports every 15s to InfluxDB with correct tags
+      - Dashboard shows real-time circuit breaker states
+      - Bulk operations complete within 1 second
+      - Unit test coverage >=85%
+    test_method: automated
+    owner: devops-team
+
+  - id: V-NS-039
+    title: Retry Coordinator with Budget Management Validation
+    epic_id: EP-NS-008
+    story_id: ST-NS-039
+    status: planned
+    description: Validate intelligent retry coordinator with exponential backoff, jitter, and retry budget management
+    acceptance_criteria:
+      - Exponential backoff with configurable delays works correctly
+      - Jitter prevents thundering herd scenarios
+      - Per-service retry budgets prevent retry storms
+      - Integration with circuit breaker registry prevents retries when open
+      - Retry metrics are exported correctly
+    test_method: automated
+    owner: devops-team
+
+  - id: V-NS-040
+    title: Self-Healing Engine with Sandboxing Validation
+    epic_id: EP-NS-008
+    story_id: ST-NS-040
+    status: planned
+    description: Validate self-healing engine with sandboxed actions and automatic rollback capability
+    acceptance_criteria:
+      - Engine recognizes 10+ failure patterns
+      - Healing actions execute in sandboxed environment
+      - Failed healing actions roll back within 30 seconds
+      - Max 3 healing attempts per hour per service enforced
+      - Human approval required for P0 or live trading impact
+    test_method: automated
+    owner: devops-team
+
+  - id: V-NS-041
+    title: Incident Manager with Auto-Remediation Validation
+    epic_id: EP-NS-008
+    story_id: ST-NS-041
+    status: planned
+    description: Validate incident management system with automated creation, severity classification, and remediation
+    acceptance_criteria:
+      - Incidents auto-created from system events
+      - Severity classification P0-P3 is accurate
+      - P0 and P1 incidents notify on-call immediately
+      - Incident status transitions are tracked
+      - Post-mortem template generated on resolution
+    test_method: automated
+    owner: ops-team
+
+  - id: V-NS-042
+    title: Rollback Coordinator with Pre-flight Validation
+    epic_id: EP-NS-008
+    story_id: ST-NS-042
+    status: planned
+    description: Validate system-wide rollback coordinator with pre-flight checks and step-by-step execution
+    acceptance_criteria:
+      - Pre-conditions validated before rollback execution
+      - Rollback executes in steps with verification
+      - Completes within 60 seconds for standard operations
+      - Post-rollback health checks verify stability
+      - Full audit trail maintained
+    test_method: automated
+    owner: devops-team
+
+  - id: V-NS-043
+    title: Unified Dashboard & Alerting Validation
+    epic_id: EP-NS-008
+    story_id: ST-NS-043
+    status: planned
+    description: Validate unified Grafana dashboard with real-time telemetry and alerting for autonomous control plane
+    acceptance_criteria:
+      - Dashboard shows all control plane components
+      - Real-time updates refresh every 5 seconds
+      - Alerting rules fire correctly for defined conditions
+      - Dashboard loads within 3 seconds
+      - Mobile-responsive layout works
+      - Dashboard JSON is version-controlled
+    test_method: manual
+    owner: ops-team
