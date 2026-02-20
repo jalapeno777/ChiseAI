@@ -1,0 +1,10 @@
+require_label: "HUMAN-APPROVED"
+sensitive_paths:
+  - "AGENTS.md"
+  - "opencode.jsonc"
+  - ".opencode/**"
+  - "docs/policy/**"
+  - "src/governance/**"
+  - "src/execution/**"
+  - "src/strategy_dsl/**"
+  - "src/risk/**"

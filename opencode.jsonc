@@ -35,7 +35,7 @@
           "options": {
             "thinking": {
               "type": "enabled",
-              "budgetTokens": 4000
+              "budgetTokens": 12000
             }
           }
         }
@@ -67,7 +67,7 @@
           "limit": { "context": 262144, "output": 32768 },
           "modalities": { "input": ["text", "image", "video"], "output": ["text"] },
           "options": {
-            "thinking": { "type": "enabled", "budget_tokens": 16000 },
+            "thinking": { "type": "enabled", "budgetTokens": 16000 },
             "interleaved": { "field": "reasoning_content" }
           }
         }
@@ -132,12 +132,17 @@
         "qdrant*": true,
         "redis_state*": true,
         "duckduckgo*": true,
-        "*": true,
         "read": true,
         "list": true,
         "glob": true,
         "grep": true,
         "webfetch": true,
+        "call_omo_agent": true,
+        "slashcommand": true,
+        "skill": true,
+        "skill_mcp": true,
+        "interactive_bash": false,
+        "apply_patch": false,
         "bash": false,
         "edit": false,
         "write": false,
