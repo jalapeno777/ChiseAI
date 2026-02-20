@@ -260,7 +260,13 @@ class PaperTradingOrchestrator:
 
             # Step 4: Place order (with latency check)
             order_start = time.perf_counter()
-            filled_order = await self.order_simulator.place_order(order)
+            filled_order = await self.order_simulator.place_order(
+                symbol=order.symbol,
+                side=order.side,
+                order_type=order.order_type,
+                quantity=order.quantity,
+                price=order.price,
+            )
             order_latency_ms = (time.perf_counter() - order_start) * 1000
 
             if order_latency_ms > self.TARGET_SIGNAL_TO_ORDER_MS:
