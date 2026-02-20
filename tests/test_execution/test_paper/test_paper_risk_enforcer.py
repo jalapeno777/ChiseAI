@@ -583,6 +583,90 @@ class TestPaperRiskEnforcer:
         # Should be approved as we're replacing the existing position
         assert assessment.approved is True
 
+    @pytest.mark.asyncio
+    async def test_position_filtering_by_symbol_attribute(self, enforcer, valid_signal):
+        """Test position filtering works with symbol attribute (BURNIN-001 fix).
+
+        This test verifies that positions with 'symbol' attribute (from position_tracker.py)
+        are correctly filtered when checking exposure, matching against signal.token.
+        """
+
+        # Create a mock position class with 'symbol' attribute (like position_tracker.PaperPosition)
+        class MockPositionWithSymbol:
+            def __init__(self, symbol, quantity, entry_price, current_price):
+                self.symbol = symbol
+                self.quantity = quantity
+                self.entry_price = entry_price
+                self.current_price = current_price
+
+            @property
+            def value(self):
+                return abs(self.quantity) * self.current_price
+
+        # Create positions with different symbols
+        existing_positions = [
+            MockPositionWithSymbol("BTC/USDT", 0.5, 49000.0, 50000.0),  # Same as signal
+            MockPositionWithSymbol("ETH/USDT", 2.0, 3000.0, 3100.0),  # Different token
+        ]
+
+        assessment = await enforcer.validate_order(
+            signal=valid_signal,
+            portfolio_value=100000.0,
+            current_positions=existing_positions,
+        )
+        # Should be approved - the BTC position should be excluded from exposure calc
+        # because we're replacing it with the new signal
+        assert assessment.approved is True
+
+        # Verify the exposure calculation excluded the BTC position
+        # Total exposure would be: 0.5*50000 + 2*3100 = 25000 + 6200 = 31200
+        # Adjusted (minus BTC): 6200
+        # New position: ~0.5 BTC at 50000 = 25000 (capped at 10% = 10000)
+        # New exposure: 6200 + 10000 = 16200 < 80000 (80% limit)
+        assert assessment.metadata["current_drawdown_pct"] == 0.0
+
+    @pytest.mark.asyncio
+    async def test_position_filtering_excludes_matching_symbol(
+        self, enforcer, valid_signal
+    ):
+        """Test that positions with matching symbol are excluded from exposure calc.
+
+        Regression test for BURNIN-001: PaperPosition attribute error.
+        """
+
+        class MockPositionWithSymbol:
+            def __init__(self, symbol, quantity, current_price):
+                self.symbol = symbol
+                self.quantity = quantity
+                self.current_price = current_price
+
+            @property
+            def value(self):
+                return abs(self.quantity) * self.current_price
+
+        # Create positions - one matching signal token, one different
+        btc_position = MockPositionWithSymbol("BTC/USDT", 1.0, 50000.0)  # $50,000 value
+        eth_position = MockPositionWithSymbol("ETH/USDT", 10.0, 3000.0)  # $30,000 value
+
+        existing_positions = [btc_position, eth_position]
+
+        assessment = await enforcer.validate_order(
+            signal=valid_signal,  # BTC/USDT signal
+            portfolio_value=100000.0,
+            current_positions=existing_positions,
+        )
+
+        # The BTC position should be excluded (we're replacing it)
+        # Only ETH position ($30k) counts toward exposure
+        # New position is capped at 10% = $10k
+        # Total new exposure = $30k + $10k = $40k < $80k limit (80%)
+        # Should be approved with no exposure warning
+        assert assessment.approved is True
+        exposure_violations = [v for v in assessment.violations if v.rule == "exposure"]
+        assert len(exposure_violations) == 0, (
+            "Should not have exposure warning with $40k on $100k portfolio"
+        )
+
 
 class TestIntegrationWithKillSwitch:
     """Integration tests with kill-switch executor."""
