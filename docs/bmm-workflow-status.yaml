@@ -1458,7 +1458,7 @@ stories:
     title: Training Data Generator
     epic_id: EP-NS-004
     sprint_id: q2-3
-    status: planned
+    status: completed
     story_points: 6
     priority: P1-HIGH
     fr_coverage: [FR-020]
