@@ -576,6 +576,137 @@ class TestPositionManagement:
         assert result[1] == 150.0  # Realized PnL
         assert orchestrator.portfolio_value == initial_value + 150.0
 
+    @pytest.mark.asyncio
+    async def test_opposite_signal_closes_existing_position(
+        self, orchestrator, mock_components, mock_signal
+    ):
+        """Test that opposite signal closes existing position (BURNIN-001 fix)."""
+        from execution.paper.models import RiskAssessment
+
+        # Setup: Create an existing SHORT position
+        existing_position = MagicMock()
+        existing_position.position_id = "existing-pos-001"
+        existing_position.symbol = "BTC/USDT"
+        existing_position.side = "short"
+
+        # Mock get_open_positions to return the existing position
+        mock_components["position_tracker"].get_open_positions = AsyncMock(
+            return_value=[existing_position]
+        )
+        mock_components["position_tracker"].close_position = AsyncMock(
+            return_value=(existing_position, 100.0)
+        )
+
+        # Setup risk enforcer and order simulator for new position
+        mock_components["risk_enforcer"].validate_order = AsyncMock(
+            return_value=RiskAssessment(approved=True, position_size=0.1)
+        )
+
+        filled_order = PaperOrder(
+            symbol="BTC/USDT",
+            side=OrderSide.BUY,
+            order_type=OrderType.MARKET,
+            quantity=0.1,
+            order_id="test-order-opp-001",
+            state=OrderState.FILLED,
+            filled_quantity=0.1,
+            avg_fill_price=50000.0,
+        )
+        mock_components["order_sim"].place_order = AsyncMock(return_value=filled_order)
+
+        mock_position = MagicMock()
+        mock_position.position_id = "new-pos-001"
+        mock_position.symbol = "BTC/USDT"
+        mock_components["position_tracker"].open_position = AsyncMock(
+            return_value=mock_position
+        )
+
+        # Process a LONG signal (opposite of existing SHORT)
+        result = await orchestrator.process_signal(mock_signal)
+
+        # Verify existing position was closed
+        mock_components["position_tracker"].close_position.assert_called_once()
+        call_args = mock_components["position_tracker"].close_position.call_args
+        assert call_args.kwargs["position_id"] == existing_position.position_id
+        assert call_args.kwargs["exit_price"] == 50000.0
+
+        # Verify new position was opened
+        mock_components["position_tracker"].open_position.assert_called_once()
+
+        # Verify trade was executed
+        assert result.status == TradeStatus.EXECUTED
+
+    @pytest.mark.asyncio
+    async def test_same_direction_signal_skipped(
+        self, orchestrator, mock_components, mock_signal
+    ):
+        """Test that same direction signal is skipped (BURNIN-001 fix)."""
+        # Setup: Create an existing LONG position
+        existing_position = MagicMock()
+        existing_position.position_id = "existing-pos-002"
+        existing_position.symbol = "BTC/USDT"
+        existing_position.side = "long"
+
+        # Mock get_open_positions to return the existing position
+        mock_components["position_tracker"].get_open_positions = AsyncMock(
+            return_value=[existing_position]
+        )
+
+        # Process a LONG signal (same as existing position)
+        result = await orchestrator.process_signal(mock_signal)
+
+        # Verify signal was skipped
+        assert result.status == TradeStatus.SKIPPED
+        assert result.correlation_id is not None
+
+        # Verify no position was closed or opened
+        mock_components["position_tracker"].close_position.assert_not_called()
+        mock_components["position_tracker"].open_position.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_no_existing_position_opens_new(
+        self, orchestrator, mock_components, mock_signal
+    ):
+        """Test that new position is opened when no existing position."""
+        from execution.paper.models import RiskAssessment
+
+        # Mock no existing positions
+        mock_components["position_tracker"].get_open_positions = AsyncMock(
+            return_value=[]
+        )
+
+        mock_components["risk_enforcer"].validate_order = AsyncMock(
+            return_value=RiskAssessment(approved=True, position_size=0.1)
+        )
+
+        filled_order = PaperOrder(
+            symbol="BTC/USDT",
+            side=OrderSide.BUY,
+            order_type=OrderType.MARKET,
+            quantity=0.1,
+            order_id="test-order-new-001",
+            state=OrderState.FILLED,
+            filled_quantity=0.1,
+            avg_fill_price=50000.0,
+        )
+        mock_components["order_sim"].place_order = AsyncMock(return_value=filled_order)
+
+        mock_position = MagicMock()
+        mock_position.position_id = "new-pos-002"
+        mock_position.symbol = "BTC/USDT"
+        mock_components["position_tracker"].open_position = AsyncMock(
+            return_value=mock_position
+        )
+
+        # Process signal with no existing position
+        result = await orchestrator.process_signal(mock_signal)
+
+        # Verify position was opened
+        mock_components["position_tracker"].open_position.assert_called_once()
+
+        # Verify trade was executed
+        assert result.status == TradeStatus.EXECUTED
+
 
 class TestConcurrency:
     """Test concurrent signal processing."""
@@ -945,7 +1076,9 @@ class TestOrderPriceValidation:
         from execution.paper.models import RiskAssessment
 
         # Setup market price
-        mock_components["order_sim"].market_data.get_price = MagicMock(return_value=50000.0)
+        mock_components["order_sim"].market_data.get_price = MagicMock(
+            return_value=50000.0
+        )
 
         mock_components["risk_enforcer"].validate_order = AsyncMock(
             return_value=RiskAssessment(approved=True, position_size=0.1)
@@ -982,7 +1115,9 @@ class TestOrderPriceValidation:
             created_order = order
             return order
 
-        mock_components["order_sim"].place_order = AsyncMock(side_effect=capture_place_order)
+        mock_components["order_sim"].place_order = AsyncMock(
+            side_effect=capture_place_order
+        )
         mock_components["position_tracker"].open_position = AsyncMock(
             return_value=MagicMock()
         )
@@ -992,7 +1127,9 @@ class TestOrderPriceValidation:
         # Verify order was created with correct price
         assert result.status == TradeStatus.EXECUTED
         assert created_order is not None
-        assert created_order.price == 50000.0, f"Expected price=50000.0, got {created_order.price}"
+        assert created_order.price == 50000.0, (
+            f"Expected price=50000.0, got {created_order.price}"
+        )
 
     @pytest.mark.asyncio
     async def test_validate_order_receives_entry_price(
@@ -1002,7 +1139,9 @@ class TestOrderPriceValidation:
         from execution.paper.models import RiskAssessment
 
         expected_price = 55000.0
-        mock_components["order_sim"].market_data.get_price = MagicMock(return_value=expected_price)
+        mock_components["order_sim"].market_data.get_price = MagicMock(
+            return_value=expected_price
+        )
 
         call_kwargs = {}
 
@@ -1010,7 +1149,9 @@ class TestOrderPriceValidation:
             call_kwargs.update(kwargs)
             return RiskAssessment(approved=True, position_size=0.1)
 
-        mock_components["risk_enforcer"].validate_order = AsyncMock(side_effect=capture_validate)
+        mock_components["risk_enforcer"].validate_order = AsyncMock(
+            side_effect=capture_validate
+        )
 
         filled_order = PaperOrder(
             symbol="BTC/USDT",
@@ -1034,12 +1175,16 @@ class TestOrderPriceValidation:
         )
         filled_order.add_fill(fill)
         mock_components["order_sim"].place_order = AsyncMock(return_value=filled_order)
-        mock_components["position_tracker"].open_position = AsyncMock(return_value=MagicMock())
+        mock_components["position_tracker"].open_position = AsyncMock(
+            return_value=MagicMock()
+        )
 
         result = await orchestrator.process_signal(mock_signal)
 
         assert result.status == TradeStatus.EXECUTED
-        assert "entry_price" in call_kwargs, "validate_order should receive 'entry_price' parameter"
+        assert "entry_price" in call_kwargs, (
+            "validate_order should receive 'entry_price' parameter"
+        )
         assert call_kwargs["entry_price"] == expected_price, (
             f"Expected entry_price={expected_price}, got {call_kwargs.get('entry_price')}"
         )
@@ -1050,7 +1195,9 @@ class TestOrderPriceValidation:
     ):
         """Test that order is rejected when no market price is available."""
         # Mock no price available
-        mock_components["order_sim"].market_data.get_price = MagicMock(return_value=None)
+        mock_components["order_sim"].market_data.get_price = MagicMock(
+            return_value=None
+        )
 
         result = await orchestrator.process_signal(mock_signal)
 
@@ -1082,7 +1229,9 @@ class TestOrderPriceValidation:
     ):
         """Test that order is rejected when market price is negative."""
         # Mock negative price (edge case)
-        mock_components["order_sim"].market_data.get_price = MagicMock(return_value=-100.0)
+        mock_components["order_sim"].market_data.get_price = MagicMock(
+            return_value=-100.0
+        )
 
         result = await orchestrator.process_signal(mock_signal)
 
@@ -1101,7 +1250,9 @@ class TestOrderPriceValidation:
         quantity = 0.1
         expected_value = price * quantity  # $5,000
 
-        mock_components["order_sim"].market_data.get_price = MagicMock(return_value=price)
+        mock_components["order_sim"].market_data.get_price = MagicMock(
+            return_value=price
+        )
         mock_components["risk_enforcer"].validate_order = AsyncMock(
             return_value=RiskAssessment(approved=True, position_size=quantity)
         )
@@ -1135,7 +1286,9 @@ class TestOrderPriceValidation:
             return order
 
         mock_components["order_sim"].place_order = AsyncMock(side_effect=capture_call)
-        mock_components["position_tracker"].open_position = AsyncMock(return_value=MagicMock())
+        mock_components["position_tracker"].open_position = AsyncMock(
+            return_value=MagicMock()
+        )
 
         result = await orchestrator.process_signal(mock_signal)
 
@@ -1149,7 +1302,9 @@ class TestOrderPriceValidation:
         )
 
     @pytest.mark.asyncio
-    async def test_create_order_raises_on_invalid_price(self, orchestrator, mock_signal):
+    async def test_create_order_raises_on_invalid_price(
+        self, orchestrator, mock_signal
+    ):
         """Test that _create_order raises ValueError when price is invalid."""
         with pytest.raises(ValueError) as exc_info:
             orchestrator._create_order(
@@ -1171,7 +1326,9 @@ class TestOrderPriceValidation:
             correlation_id="test-corr-valid",
         )
 
-        assert order.price == valid_price, f"Expected price={valid_price}, got {order.price}"
+        assert order.price == valid_price, (
+            f"Expected price={valid_price}, got {order.price}"
+        )
         assert order.quantity == 0.1
         assert order.symbol == mock_signal.token
 

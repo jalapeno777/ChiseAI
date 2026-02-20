@@ -42,11 +42,13 @@ class TradeStatus(Enum):
         EXECUTED: Trade was successfully executed
         REJECTED: Trade was rejected by risk gate
         FAILED: Trade execution failed
+        SKIPPED: Trade skipped (e.g., already in position)
     """
 
     EXECUTED = "executed"
     REJECTED = "rejected"
     FAILED = "failed"
+    SKIPPED = "skipped"
 
 
 class OrderType(Enum):
