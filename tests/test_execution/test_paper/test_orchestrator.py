@@ -584,10 +584,15 @@ class TestPositionManagement:
         from execution.paper.models import RiskAssessment
 
         # Setup: Create an existing SHORT position
+        from datetime import UTC, datetime
+
         existing_position = MagicMock()
         existing_position.position_id = "existing-pos-001"
         existing_position.symbol = "BTC/USDT"
         existing_position.side = "short"
+        existing_position.opened_at = datetime.now(
+            UTC
+        )  # Fresh position, not time-expired
 
         # Mock get_open_positions to return the existing position
         mock_components["position_tracker"].get_open_positions = AsyncMock(
@@ -642,10 +647,15 @@ class TestPositionManagement:
     ):
         """Test that same direction signal is skipped (BURNIN-001 fix)."""
         # Setup: Create an existing LONG position
+        from datetime import UTC, datetime
+
         existing_position = MagicMock()
         existing_position.position_id = "existing-pos-002"
         existing_position.symbol = "BTC/USDT"
         existing_position.side = "long"
+        existing_position.opened_at = datetime.now(
+            UTC
+        )  # Fresh position, not time-expired
 
         # Mock get_open_positions to return the existing position
         mock_components["position_tracker"].get_open_positions = AsyncMock(
@@ -662,6 +672,68 @@ class TestPositionManagement:
         # Verify no position was closed or opened
         mock_components["position_tracker"].close_position.assert_not_called()
         mock_components["position_tracker"].open_position.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_time_based_position_close(
+        self, orchestrator, mock_components, mock_signal
+    ):
+        """Test that positions older than 60 seconds are closed (BURNIN-001 fix)."""
+        from datetime import UTC, datetime, timedelta
+        from execution.paper.models import RiskAssessment
+
+        # Setup: Create an existing LONG position that is OLD (older than 60 seconds)
+        old_position = MagicMock()
+        old_position.position_id = "old-pos-001"
+        old_position.symbol = "BTC/USDT"
+        old_position.side = "long"
+        old_position.opened_at = datetime.now(UTC) - timedelta(seconds=61)  # Expired
+
+        # Mock get_open_positions to return the old position
+        mock_components["position_tracker"].get_open_positions = AsyncMock(
+            return_value=[old_position]
+        )
+        mock_components["position_tracker"].close_position = AsyncMock(
+            return_value=(old_position, 50.0)
+        )
+
+        # Setup for new position after time-based close
+        mock_components["risk_enforcer"].validate_order = AsyncMock(
+            return_value=RiskAssessment(approved=True, position_size=0.1)
+        )
+
+        filled_order = PaperOrder(
+            symbol="BTC/USDT",
+            side=OrderSide.BUY,
+            order_type=OrderType.MARKET,
+            quantity=0.1,
+            order_id="test-order-time-001",
+            state=OrderState.FILLED,
+            filled_quantity=0.1,
+            avg_fill_price=50000.0,
+        )
+        mock_components["order_sim"].place_order = AsyncMock(return_value=filled_order)
+
+        mock_position = MagicMock()
+        mock_position.position_id = "new-pos-time-001"
+        mock_position.symbol = "BTC/USDT"
+        mock_components["position_tracker"].open_position = AsyncMock(
+            return_value=mock_position
+        )
+
+        # Process a LONG signal (same direction, but position is old)
+        result = await orchestrator.process_signal(mock_signal)
+
+        # Verify old position was closed due to time limit
+        mock_components["position_tracker"].close_position.assert_called_once()
+        call_args = mock_components["position_tracker"].close_position.call_args
+        assert call_args.kwargs["position_id"] == old_position.position_id
+        # Note: reason is logged by orchestrator, not passed to position_tracker
+
+        # Verify new position was opened
+        mock_components["position_tracker"].open_position.assert_called_once()
+
+        # Verify trade was executed
+        assert result.status == TradeStatus.EXECUTED
 
     @pytest.mark.asyncio
     async def test_no_existing_position_opens_new(
