@@ -101,9 +101,17 @@ class PaperOrder:
     fills: list[PaperFill] = field(default_factory=list)
     reject_reason: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
+    correlation_id: str = ""
+    avg_fill_price: float | None = None
 
     def __post_init__(self) -> None:
         """Validate and normalize order data."""
+        if isinstance(self.side, Enum):
+            self.side = str(self.side.value)
+
+        if isinstance(self.order_type, Enum):
+            self.order_type = str(self.order_type.value)
+
         # Normalize side to lowercase
         self.side = self.side.lower()
         if self.side not in ("buy", "sell"):
@@ -133,6 +141,9 @@ class PaperOrder:
             self.created_at = self.created_at.replace(tzinfo=timezone.utc)
         if self.updated_at.tzinfo is None:
             self.updated_at = self.updated_at.replace(tzinfo=timezone.utc)
+
+        if self.correlation_id:
+            self.metadata.setdefault("correlation_id", self.correlation_id)
 
     def is_active(self) -> bool:
         """Check if order is still active (can be filled)."""
@@ -167,6 +178,9 @@ class PaperOrder:
         else:
             self.state = OrderState.PARTIAL
 
+        total_value = sum(f.price * f.quantity for f in self.fills)
+        self.avg_fill_price = total_value / self.filled_quantity
+
         self.updated_at = datetime.now(timezone.utc)
 
     def reject(self, reason: str) -> None:
@@ -191,18 +205,6 @@ class PaperOrder:
             return True
         return False
 
-    @property
-    def avg_fill_price(self) -> float | None:
-        """Calculate average fill price.
-
-        Returns:
-            Average fill price or None if no fills
-        """
-        if not self.fills:
-            return None
-        total_value = sum(f.price * f.quantity for f in self.fills)
-        return total_value / self.filled_quantity
-
     def to_dict(self) -> dict[str, Any]:
         """Convert order to dictionary for serialization.
 
@@ -225,6 +227,7 @@ class PaperOrder:
             "reject_reason": self.reject_reason,
             "avg_fill_price": self.avg_fill_price,
             "metadata": self.metadata,
+            "correlation_id": self.metadata.get("correlation_id", self.correlation_id),
         }
 
     @classmethod
@@ -250,6 +253,8 @@ class PaperOrder:
             created_at=datetime.fromisoformat(data["created_at"]),
             updated_at=datetime.fromisoformat(data["updated_at"]),
             metadata=data.get("metadata", {}),
+            correlation_id=data.get("correlation_id", ""),
+            avg_fill_price=data.get("avg_fill_price"),
         )
         # Restore fills
         order.fills = [PaperFill.from_dict(f) for f in data.get("fills", [])]
@@ -374,3 +379,15 @@ class PaperTradeResult:
         """Initialize default values."""
         if self.reject_reason is None:
             self.reject_reason = []
+
+
+@dataclass
+class RiskAssessment:
+    """Compatibility risk assessment model used by orchestrator tests."""
+
+    approved: bool
+    violations: list[str] = field(default_factory=list)
+    position_size: float = 0.0
+    margin_required: float = 0.0
+    correlation_id: str = ""
+    metadata: dict[str, Any] = field(default_factory=dict)
