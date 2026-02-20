@@ -1093,7 +1093,7 @@ validations:
     test_method: manual
     owner: frontend-team
 
-  - id: V-NS-015
+  - id: V-NS-022
     title: Alert Configuration
     epic_id: EP-NS-005
     story_id: ST-NS-022
@@ -1136,7 +1136,7 @@ validations:
     owner: frontend-team
 
   # EP-NS-006: Infrastructure & Quality
-  - id: V-NS-016
+  - id: V-NS-029
     title: Test Coverage Compliance
     epic_id: EP-NS-006
     story_id: ST-NS-029
@@ -1150,7 +1150,7 @@ validations:
     test_method: automated
     owner: devops-team
 
-  - id: V-NS-017
+  - id: V-NS-028
     title: Security Scan Compliance
     epic_id: EP-NS-006
     story_id: ST-NS-028
