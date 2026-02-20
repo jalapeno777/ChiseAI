@@ -630,6 +630,17 @@ async def _execute_trading_cycle(
                 )
                 logger.debug(f"Set market price for {symbol}: {current_price}")
 
+            # Get initial closed position count before processing
+            initial_closed = 0
+            if orchestrator.position_tracker:
+                try:
+                    closed_positions = (
+                        await orchestrator.position_tracker.get_closed_positions()
+                    )
+                    initial_closed = len(closed_positions)
+                except Exception:
+                    initial_closed = 0
+
             # Submit signal for processing
             process_result = orchestrator.process_signal(signal)
             if inspect.isawaitable(process_result):
@@ -646,6 +657,21 @@ async def _execute_trading_cycle(
                 )
             elif result.status.value == "rejected":
                 logger.debug(f"Signal rejected by risk gate: {result.reject_reason}")
+
+            # Check for closed positions after processing
+            if orchestrator.position_tracker:
+                try:
+                    final_closed_positions = (
+                        await orchestrator.position_tracker.get_closed_positions()
+                    )
+                    final_closed = len(final_closed_positions)
+                    newly_closed = final_closed - initial_closed
+
+                    if newly_closed > 0:
+                        metrics.paper_trades_closed += newly_closed
+                        logger.info(f"Closed {newly_closed} position(s)")
+                except Exception as e:
+                    logger.debug(f"Failed to check closed positions: {e}")
 
         except Exception as e:
             logger.warning(f"Failed to execute paper trade: {e}")
