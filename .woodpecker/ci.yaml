@@ -118,10 +118,12 @@ steps:
 
           # Install system dependencies required by tests
           apt-get update && apt-get install -y jq ripgrep
-          pip install --no-cache-dir pytest pytest-asyncio pytest-cov pyyaml requests
+          pip install --no-cache-dir pytest pytest-asyncio pytest-cov pytest-forked pyyaml requests
           pip install --no-cache-dir ccxt influxdb-client asyncpg numpy scipy watchdog click websockets fastapi httpx
           pip install --no-cache-dir ccxt influxdb-client asyncpg numpy scipy watchdog click websockets fastapi
           if [ -x scripts/local-ci-checks.sh ]; then
+            # Set environment to indicate we're in CI with file descriptor constraints
+            export CI_FD_CONSTRAINTS=1
             if [ "${FULL_MODE}" = "1" ]; then
               ./scripts/local-ci-checks.sh
             else
