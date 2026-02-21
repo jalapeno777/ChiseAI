@@ -5,7 +5,7 @@
 metadata:
   project_name: ChiseAI
   version: "2.2.0"
-  last_updated: "2026-02-20T04:30:00Z"
+  last_updated: "2026-02-20T21:50:00Z"
   prd_location: docs/prd.md
   prd_note: "Phased perps execution: continuous backtest -> Bybit demo paper -> Bitget live; Grafana-first ops UI; Binance used as reference market-structure venue. LLM integrations (Z.ai GLM-5, MiniMax 2.5) are separate capabilities, not Phase 1."
   recent_fixes:
@@ -192,6 +192,21 @@ epics:
     story_points: 49
     description: Advanced neuro-symbolic AI features including hybrid reasoning, explainability, and adaptive learning
     sprint_id: q2-6
+
+  # EP-NS-008: Autonomous Control Plane (6 stories, 42 points)
+  - id: EP-NS-008
+    name: Autonomous Control Plane
+    status: planned
+    story_ids: [ST-NS-038, ST-NS-039, ST-NS-040, ST-NS-041, ST-NS-042, ST-NS-043]
+    story_count: 6
+    story_points: 42
+    description: Unified autonomous control plane for continuous operation, self-correction, and observability consolidating circuit breakers, retry handling, self-healing, incident management, and rollback coordination
+    sprint_id: q2-7
+    notes:
+      - Golden Plan: docs/architecture/autonomous-control-plane-golden-plan.md
+      - Party-mode synthesis with Critic, Dev, SeniorDev, Merlin roles
+      - Consolidates fragmented autonomy from EP-NS-004 completion
+      - Dependencies: ST-NS-017 through ST-NS-020 (completed)
 
   # EP-PAPER-001: Paper Trading Loop Implementation (4 stories, 21 points)
   - id: EP-PAPER-001
@@ -1642,6 +1657,97 @@ stories:
     fr_coverage: [FR-003, FR-004, FR-018]
     description: Create integration layer between neural and symbolic components
 
+  # EP-NS-008: Autonomous Control Plane (6 stories, 42 points)
+  - id: ST-NS-038
+    title: Circuit Breaker Framework
+    epic_id: EP-NS-008
+    sprint_id: q2-7
+    status: planned
+    validation_status: not_started
+    story_points: 7
+    priority: P1-HIGH
+    fr_coverage: []
+    description: Implement circuit breaker pattern for fault isolation and graceful degradation
+    acceptance_criteria:
+      - Circuit breaker states defined (closed, open, half-open)
+      - Automatic failure detection and state transitions
+      - Configurable thresholds for state changes
+
+  - id: ST-NS-039
+    title: Retry Handler with Exponential Backoff
+    epic_id: EP-NS-008
+    sprint_id: q2-7
+    status: planned
+    validation_status: not_started
+    story_points: 7
+    priority: P1-HIGH
+    fr_coverage: []
+    description: Implement intelligent retry mechanism with exponential backoff and jitter
+    acceptance_criteria:
+      - Exponential backoff with configurable base and max delay
+      - Jitter to prevent thundering herd
+      - Max retry limits with circuit breaker integration
+
+  - id: ST-NS-040
+    title: Self-Healing Service Recovery
+    epic_id: EP-NS-008
+    sprint_id: q2-7
+    status: planned
+    validation_status: not_started
+    story_points: 7
+    priority: P1-HIGH
+    fr_coverage: []
+    description: Implement self-healing capabilities for automatic service recovery
+    acceptance_criteria:
+      - Health check integration for failure detection
+      - Automatic restart/recovery procedures
+      - Recovery success/failure logging and metrics
+
+  - id: ST-NS-041
+    title: Incident Management Framework
+    epic_id: EP-NS-008
+    sprint_id: q2-7
+    status: planned
+    validation_status: not_started
+    story_points: 7
+    priority: P1-HIGH
+    fr_coverage: []
+    description: Structured incident logging, response procedures, and post-mortem process
+    acceptance_criteria:
+      - Incident classification and severity levels
+      - Automated incident detection and alerting
+      - Post-mortem template and workflow
+
+  - id: ST-NS-042
+    title: Rollback Coordination System
+    epic_id: EP-NS-008
+    sprint_id: q2-7
+    status: planned
+    validation_status: not_started
+    story_points: 7
+    priority: P1-HIGH
+    fr_coverage: []
+    description: Coordinate rollbacks across services with verification steps
+    acceptance_criteria:
+      - Rollback triggers and authorization workflow
+      - Multi-service rollback coordination
+      - Rollback verification and health checks
+
+  - id: ST-NS-043
+    title: Observability and Monitoring Integration
+    epic_id: EP-NS-008
+    sprint_id: q2-7
+    status: planned
+    validation_status: not_started
+    story_points: 7
+    priority: P1-HIGH
+    fr_coverage: []
+    description: Unified observability for autonomous control plane operations
+    acceptance_criteria:
+      - Metrics export for control plane state
+      - Grafana dashboards for monitoring
+      - Alerting rules for control plane events
+
   # EP-PAPER-001: Paper Trading Loop Implementation (4 stories, 21 points)
   - id: ST-PAPER-001
     title: Paper Order Simulator and Position Tracking
@@ -1805,12 +1911,12 @@ sprints:
 
   - id: q2-3
     name: Learning & Improvement System
-    status: in_progress
+    status: completed
     story_count: 4
     story_points: 28
     mapped_stories: [ST-NS-017, ST-NS-018, ST-NS-019, ST-NS-020]
-    completion_date: "2026-02-15"
-    notes: "ST-NS-017 and ST-NS-018 completed. ST-NS-020 completed ahead of schedule (PR #136). ST-NS-019 in progress."
+    completion_date: "2026-02-20"
+    notes: "All stories completed. ST-NS-019 merged via PR #214 on 2026-02-20."
 
   - id: q2-4
     name: User Experience & Interface
@@ -1832,6 +1938,13 @@ sprints:
     story_count: 7
     story_points: 49
     mapped_stories: [ST-NS-031, ST-NS-032, ST-NS-033, ST-NS-034, ST-NS-035, ST-NS-036, ST-NS-037]
+
+  - id: q2-7
+    name: Autonomous Control Plane
+    status: planned
+    story_count: 6
+    story_points: 42
+    mapped_stories: [ST-NS-038, ST-NS-039, ST-NS-040, ST-NS-041, ST-NS-042, ST-NS-043]
 
   # Phase 1 Sprints (completed)
   - id: p0-1
@@ -1901,29 +2014,279 @@ sprints:
     mapped_stories: [ST-PAPER-001, ST-PAPER-002, ST-PAPER-003, ST-PAPER-004]
     completion_date: "2026-02-17"
 
-# ============================================================
+  - id: ST-NS-038
+    title: Circuit Breaker Registry & Unified Telemetry
+    epic_id: EP-NS-008
+    sprint_id: q2-7
+    status: planned
+    validation_status: planned
+    story_points: 7
+    priority: P0-CRITICAL
+    fr_coverage: [FR-ACP-001, FR-ACP-002]
+    description: Implement centralized circuit breaker registry consolidating all existing circuit breakers into a unified management plane with real-time telemetry
+    scope_globs: ["src/autonomous_control_plane/components/circuit_breaker_registry.py", "src/autonomous_control_plane/telemetry/metrics.py"]
+    acceptance_criteria:
+      - Circuit breaker registry provides CRUD operations for all service circuit breakers
+      - Registry state is persisted in Redis with PostgreSQL backup
+      - Telemetry exports to InfluxDB every 15s with tags for service_name, state, failure_count
+      - Dashboard panel shows all circuit breaker states in real-time
+      - Bulk operations complete within 1 second
+      - API endpoints provide queryable circuit breaker health
+      - Unit test coverage >=85% with integration tests
+    test_strategy:
+      unit: "pytest tests/test_autonomous/test_circuit_breaker_registry.py -v"
+      integration: "pytest tests/test_autonomous/integration/test_cb_telemetry.py -v"
+      e2e: "scripts/e2e/test_circuit_breaker_lifecycle.py"
+    live_validation_gates:
+      - gate: "registry_startup"
+        check: "curl -f http://localhost:8000/health"
+        timeout: 30s
+      - gate: "telemetry_flow"
+        check: "influx query from bucket chiseai for circuit_breaker_state"
+        timeout: 60s
+    rollback_plan:
+      - action: "Disable circuit breaker automation"
+        command: "curl -X POST http://localhost:8000/api/v1/circuit-breakers/disable-auto"
+      - action: "Revert to local circuit breakers"
+        command: "kubectl rollout undo deployment/autonomous-control-plane"
+    observability:
+      - metric: "circuit_breaker_state_changes"
+        dashboard: "Autonomous Control Plane / Circuit Breakers"
+      - metric: "registry_query_latency_p99"
+        alert: "p99 > 100ms for 5 minutes"
+
+  # ST-NS-039: Retry Coordinator with Budget Management
+  - id: ST-NS-039
+    title: Retry Coordinator with Budget Management
+    epic_id: EP-NS-008
+    sprint_id: q2-7
+    status: planned
+    validation_status: planned
+    story_points: 7
+    priority: P0-CRITICAL
+    fr_coverage: [FR-ACP-003, FR-ACP-004]
+    description: Implement intelligent retry coordinator with exponential backoff, jitter, and retry budget management to prevent retry storms
+    scope_globs: ["src/autonomous_control_plane/components/retry_coordinator.py", "src/autonomous_control_plane/models/retry_policy.py"]
+    depends_on: [ST-NS-038]
+    acceptance_criteria:
+      - Retry coordinator supports exponential backoff with configurable base and max delay
+      - Jitter prevents thundering herd with random component added to delays
+      - Per-service retry budgets prevent retry storms with >100 retries per minute blocks
+      - Integration with circuit breaker registry prevents retries when circuit open
+      - Operation-level retry policies override global defaults
+      - Failed operations are queued for manual review after max retries
+      - Retry metrics exported including attempts, successes, budget_exceeded events
+    test_strategy:
+      unit: "pytest tests/test_autonomous/test_retry_coordinator.py -v"
+      load: "locust -f tests/load/retry_storm_prevention.py"
+      chaos: "pytest tests/chaos/test_retry_under_failure.py -v"
+    live_validation_gates:
+      - gate: "retry_budget_enforcement"
+        check: "scripts/validate_retry_budget.sh --max-rps=100"
+        timeout: 120s
+      - gate: "backoff_timing"
+        check: "pytest tests/e2e/test_retry_timing.py"
+        timeout: 60s
+    rollback_plan:
+      - action: "Disable retry coordination"
+        command: "curl -X POST http://localhost:8000/api/v1/retry/disable"
+      - action: "Revert to component-local retry logic"
+        command: "git checkout HEAD~1 -- src/execution/kill_switch/retry_handler.py"
+    observability:
+      - metric: "retry_attempts_total"
+        dashboard: "Autonomous Control Plane / Retry Activity"
+      - metric: "retry_budget_exceeded_rate"
+        alert: "> 5% of operations in 5-minute window"
+
+  # ST-NS-040: Self-Healing Engine with Action Sandboxing
+  - id: ST-NS-040
+    title: Self-Healing Engine with Action Sandboxing
+    epic_id: EP-NS-008
+    sprint_id: q2-7
+    status: planned
+    validation_status: planned
+    story_points: 8
+    priority: P0-CRITICAL
+    fr_coverage: [FR-ACP-005, FR-ACP-006]
+    description: Implement self-healing engine with pluggable healing actions, sandboxed execution, and rollback capability
+    scope_globs: ["src/autonomous_control_plane/components/self_healing_engine.py", "src/autonomous_control_plane/healing_actions/"]
+    depends_on: [ST-NS-039]
+    acceptance_criteria:
+      - Self-healing engine recognizes 10+ failure patterns including Redis disconnect and API timeout
+      - Healing actions execute in sandboxed environment with resource limits
+      - Failed healing actions are automatically rolled back within 30 seconds
+      - Max 3 healing attempts per hour per service to prevent flapping
+      - Healing actions require human approval for P0 severity or live trading impact
+      - Healing success and failure is logged with full context for post-mortem
+      - Healing activity dashboard shows recent actions and outcomes
+    test_strategy:
+      unit: "pytest tests/test_autonomous/test_self_healing.py -v"
+      sandbox: "pytest tests/security/test_healing_sandbox.py -v"
+      integration: "pytest tests/test_autonomous/integration/test_healing_rollback.py -v"
+    live_validation_gates:
+      - gate: "healing_action_sandbox"
+        check: "scripts/verify_healing_sandbox.sh"
+        timeout: 60s
+      - gate: "rollback_capability"
+        check: "pytest tests/e2e/test_healing_rollback.py"
+        timeout: 120s
+    rollback_plan:
+      - action: "Disable all self-healing"
+        command: "curl -X POST http://localhost:8000/api/v1/healing/disable"
+      - action: "Verify healing is disabled"
+        command: "curl http://localhost:8000/api/v1/healing/status"
+    incident_handling:
+      - trigger: "Healing action fails 3 times in 1 hour"
+        action: "Create P1 incident, escalate to on-call"
+      - trigger: "Healing rollback fails"
+        action: "Create P0 incident, immediate human escalation"
+    observability:
+      - metric: "healing_actions_executed"
+        dashboard: "Autonomous Control Plane / Self-Healing"
+      - metric: "healing_success_rate"
+        alert: "< 90% over 1 hour"
+
+  # ST-NS-041: Incident Manager with Auto-Remediation
+  - id: ST-NS-041
+    title: Incident Manager with Auto-Remediation
+    epic_id: EP-NS-008
+    sprint_id: q2-7
+    status: planned
+    validation_status: planned
+    story_points: 8
+    priority: P0-CRITICAL
+    fr_coverage: [FR-ACP-007, FR-ACP-008]
+    description: Implement structured incident management system with automated creation, severity classification, and remediation assignment
+    scope_globs: ["src/autonomous_control_plane/components/incident_manager.py", "src/autonomous_control_plane/models/incidents.py"]
+    depends_on: [ST-NS-040]
+    acceptance_criteria:
+      - Incidents are automatically created from system events
+      - Severity classification P0-P3 based on impact and urgency
+      - Auto-remediation attempts for P2 and P3 incidents with known solutions
+      - P0 and P1 incidents immediately notify on-call via Discord and Grafana On-Call
+      - Incident status transitions tracked from open to investigating to resolved
+      - Post-mortem template auto-generated on incident resolution
+      - Incident metrics exported including creation_rate, resolution_time, escalation_rate
+    test_strategy:
+      unit: "pytest tests/test_autonomous/test_incident_manager.py -v"
+      integration: "pytest tests/test_autonomous/integration/test_incident_lifecycle.py -v"
+      e2e: "scripts/e2e/test_incident_escalation.py"
+    live_validation_gates:
+      - gate: "incident_creation"
+        check: "scripts/trigger_test_incident.sh"
+        timeout: 30s
+      - gate: "escalation_delivery"
+        check: "scripts/verify_discord_notification.sh"
+        timeout: 60s
+    rollback_plan:
+      - action: "Disable auto-remediation"
+        command: "curl -X POST http://localhost:8000/api/v1/incidents/auto-remediation/disable"
+      - action: "Preserve incident history"
+        command: "pg_dump --table=incidents > backups/incidents_$(date +%Y%m%d).sql"
+    incident_handling:
+      - trigger: "P0 incident unresolved > 15 minutes"
+        action: "Escalate to engineering manager, page secondary on-call"
+      - trigger: "Incident creation rate > 10 per hour"
+        action: "Create P1 incident, system-wide health investigation"
+    observability:
+      - metric: "incidents_open_by_severity"
+        dashboard: "Autonomous Control Plane / Incident Management"
+      - metric: "incident_resolution_time_p95"
+        alert: "P1 > 30 minutes, P2 > 4 hours"
+
+  # ST-NS-042: Rollback Coordinator with Pre-flight Validation
+  - id: ST-NS-042
+    title: Rollback Coordinator with Pre-flight Validation
+    epic_id: EP-NS-008
+    sprint_id: q2-7
+    status: planned
+    validation_status: planned
+    story_points: 7
+    priority: P1-HIGH
+    fr_coverage: [FR-ACP-009, FR-ACP-010]
+    description: Implement system-wide rollback coordinator with pre-flight validation, step-by-step execution, and post-rollback health checks
+    scope_globs: ["src/autonomous_control_plane/components/rollback_coordinator.py", "src/autonomous_control_plane/models/rollback.py"]
+    depends_on: [ST-NS-041]
+    acceptance_criteria:
+      - Rollback coordinator validates pre-conditions before execution
+      - Rollback executes in steps with verification after each step
+      - Automatic rollback on canary gate failure
+      - Rollback completes within 60 seconds for standard operations
+      - Post-rollback health checks verify system stability
+      - Rollback history maintained with full audit trail
+      - Emergency rollback bypasses validation when force equals true
+    test_strategy:
+      unit: "pytest tests/test_autonomous/test_rollback_coordinator.py -v"
+      integration: "pytest tests/test_autonomous/integration/test_rollback_workflow.py -v"
+      chaos: "pytest tests/chaos/test_rollback_under_load.py -v"
+    live_validation_gates:
+      - gate: "pre_flight_validation"
+        check: "pytest tests/e2e/test_rollback.py::test_pre_flight_checks"
+        timeout: 60s
+      - gate: "rollback_timing"
+        check: "scripts/time_rollback.sh --max-seconds=60"
+        timeout: 90s
+    rollback_plan:
+      - action: "Execute emergency rollback"
+        command: "curl -X POST http://localhost:8000/api/v1/rollback/emergency"
+      - action: "Verify rollback completion"
+        command: "curl http://localhost:8000/api/v1/health"
+    incident_handling:
+      - trigger: "Rollback validation fails"
+        action: "Create P1 incident, require manual rollback approval"
+      - trigger: "Rollback execution fails"
+        action: "Create P0 incident, immediate escalation"
+    observability:
+      - metric: "rollback_execution_time"
+        dashboard: "Autonomous Control Plane / Rollbacks"
+      - metric: "rollback_success_rate"
+        alert: "< 95% over 24 hours"
+
+  # ST-NS-043: Unified Dashboard & Alerting Integration
+  - id: ST-NS-043
+    title: Unified Dashboard & Alerting Integration
+    epic_id: EP-NS-008
+    sprint_id: q2-7
+    status: planned
+    validation_status: planned
+    story_points: 5
+    priority: P1-HIGH
+    fr_coverage: [FR-ACP-011, FR-ACP-012]
+    description: Create unified Grafana dashboard for autonomous control plane with real-time telemetry, alerting rules, and operational runbook integration
+    scope_globs: ["infrastructure/grafana/dashboards/autonomous_control_plane.json", "src/autonomous_control_plane/telemetry/dashboard_sync.py"]
+    depends_on: [ST-NS-038, ST-NS-039, ST-NS-040, ST-NS-041, ST-NS-042]
+    acceptance_criteria:
+      - Dashboard shows control plane health, circuit breaker states, retry activity, healing actions, incidents
+      - Real-time updates refresh every 5 seconds via WebSocket
+      - Alerting rules for control plane down, circuit breaker open >5min, healing failure rate >10%
+      - Runbook links embedded in each panel for common issues
+      - Dashboard loads within 3 seconds
+      - Mobile-responsive layout for on-call access
+      - Dashboard JSON is version-controlled and deployable via Terraform
+    test_strategy:
+      visual: "playwright test tests/visual/dashboard_autonomous_control.spec.ts"
+      integration: "pytest tests/test_autonomous/integration/test_dashboard_telemetry.py -v"
+      e2e: "scripts/e2e/test_dashboard_load.sh"
+    live_validation_gates:
+      - gate: "dashboard_load_time"
+        check: "scripts/measure_dashboard_load.sh --max-seconds=3"
+        timeout: 30s
+      - gate: "alerting_rules_firing"
+        check: "scripts/test_alert_rule.sh --rule='ControlPlaneDown'"
+        timeout: 120s
+    rollback_plan:
+      - action: "Revert dashboard JSON"
+        command: "git checkout HEAD~1 -- infrastructure/grafana/dashboards/autonomous_control_plane.json"
+      - action: "Restart Grafana"
+        command: "docker restart chiseai-grafana"
+    observability:
+      - metric: "dashboard_query_latency"
+        dashboard: "Grafana / Dashboard Performance"
+      - metric: "dashboard_load_errors"
+        alert: "> 0 in 5-minute window"
+
+
 # SUMMARY COUNTS
-# ============================================================
-
-summary:
-  total_epics: 16
-  total_stories: 72
-  total_story_points: 406
-  phase_1:
-    epics: 8
-    stories: 41
-    story_points: 157
-  phase_2_plus:
-    epics: 8
-    stories: 31
-    story_points: 238
-
-# ============================================================
-# ITEM 3 COMPLETION - BYBIT-DEMO-003
-# Finalized Bybit demo execution route with explicit WS/REST behavior
-# Merged to main: 2026-02-19
-# ============================================================
-
 item_3_completion:
   story_id: BYBIT-DEMO-003
   status: completed
@@ -1961,3 +2324,27 @@ item_3_completion:
     validation: "All tests pass, Black clean, config valid"
 
   next_item: "Item 4 of 5"
+
+# ============================================================
+
+# ============================================================
+
+
+summary:
+  total_epics: 17
+  total_stories: 78
+  total_story_points: 448
+  phase_1:
+    epics: 8
+    stories: 41
+    story_points: 157
+  phase_2_plus:
+    epics: 9
+    stories: 37
+    story_points: 280
+
+# ============================================================
+# ITEM 3 COMPLETION - BYBIT-DEMO-003
+# Finalized Bybit demo execution route with explicit WS/REST behavior
+# Merged to main: 2026-02-19
+# ============================================================
