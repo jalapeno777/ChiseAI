@@ -10,6 +10,11 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+# Bootstrap for config and environment (ST-CI-005 compliance)
+from config.bootstrap import bootstrap
+
+bootstrap(load_env=True)
+
 from autonomous_git.gitreviewbot import GitReviewBot, GiteaClient
 
 
