@@ -4,8 +4,14 @@
 
 metadata:
   project_name: ChiseAI
-  version: "2.2.0"
-  last_updated: "2026-02-20T21:50:00Z"
+  version: "2.3.0"
+  last_updated: "2026-02-21T23:00:00Z"
+  recent_changes:
+    - change: "Added EP-AUTO-GIT-001: AI Swarm Autonomous PR Pipeline"
+      stories_added: 8
+      points_added: 47
+      deprecated: "ST-AUTO-GIT-001 through ST-AUTO-GIT-008"
+      reason: "Party mode re-evaluation for AI swarm autonomy"
   prd_location: docs/prd.md
   prd_note: "Phased perps execution: continuous backtest -> Bybit demo paper -> Bitget live; Grafana-first ops UI; Binance used as reference market-structure venue. LLM integrations (Z.ai GLM-5, MiniMax 2.5) are separate capabilities, not Phase 1."
   recent_fixes:
@@ -25,7 +31,7 @@ metadata:
 current_phase:
   phase: phase_2_plus
   status: in_progress
-  note: "Phase 2+ execution in progress. Learning & Improvement System (EP-NS-004) completed with all 4 stories validated."
+  note: "Phase 2+ execution in progress. Autonomous Control Plane (EP-NS-008) completed with all 6 stories validated. Paper trading canary deployment started 2026-02-21 with 7-day duration."
 
 # ============================================================
 # PHASE 1 EPICS (8 epics, 35 stories total)
@@ -211,6 +217,12 @@ epics:
       - Dependencies: ST-NS-017 through ST-NS-020 (completed)
       - Test Results: 235 tests passing, 0 failures, 3 skipped (P0 infrastructure tests)
       - Components: Circuit Breaker Registry, Retry Coordinator, Self-Healing Engine, Incident Manager, Rollback Coordinator, Unified Dashboard
+    deployment:
+      paper_canary:
+        start_date: "2026-02-21"
+        duration_days: 7
+        status: "in_progress"
+        expected_completion: "2026-02-28"
 
   # EP-PAPER-001: Paper Trading Loop Implementation (4 stories, 21 points)
   - id: EP-PAPER-001
@@ -221,6 +233,39 @@ epics:
     story_points: 21
     description: End-to-end paper trading loop with risk controls and observability
     sprint_id: PAPER-GATE-002
+
+  # EP-AUTO-GIT-001: AI Swarm Autonomous PR Pipeline (8 stories, 47 points)
+  - id: EP-AUTO-GIT-001
+    name: AI Swarm Autonomous PR Pipeline
+    status: planned
+    story_ids: [ST-AUTO-001, ST-AUTO-002, ST-AUTO-003, ST-AUTO-004, ST-AUTO-005, ST-AUTO-006, ST-AUTO-007, ST-AUTO-008]
+    story_count: 8
+    story_points: 47
+    description: Tiered automation pipeline enabling 10 AI agents to work autonomously with safe auto-approval for low-risk changes and human gates for critical paths
+    sprint_id: AUTO-GIT-001
+    timeline: "6 weeks"
+    notes:
+      - Golden Plan v3.0 created via party mode (Critic, Dev, SeniorDev, GitReviewBot)
+      - Replaces deprecated ST-AUTO-GIT-001 through ST-AUTO-GIT-008
+      - Three-path approach: SAFE (auto-approve), STANDARD (GitReviewBot), COMPLEX (human)
+      - Critical paths always require human approval (execution, infrastructure, secrets)
+      - Emergency stop mechanism via Redis key
+    acceptance_criteria:
+      - Safe path PRs auto-merge in <5 minutes with green CI
+      - Standard path PRs reviewed by GitReviewBot in <12 minutes
+      - Complex path PRs escalated to human with GitReviewBot pre-review
+      - 10 agents can work in parallel without conflicts
+      - Emergency stop disables all auto-merges within 30 seconds
+      - All actions logged to Redis with full audit trail
+    deprecated_stories:
+      - ST-AUTO-GIT-001 (replaced by infrastructure work)
+      - ST-AUTO-GIT-002 (replaced by simpler approach)
+      - ST-AUTO-GIT-003 (re-scoped to ST-AUTO-003)
+      - ST-AUTO-GIT-004 (re-scoped to tiered approach in ST-AUTO-002/ST-AUTO-004)
+      - ST-AUTO-GIT-005 (merged into ST-AUTO-007)
+      - ST-AUTO-GIT-006 (already exists, not part of this epic)
+      - ST-AUTO-GIT-007 (merged into ST-AUTO-007)
+      - ST-AUTO-GIT-008 (re-scoped to ST-AUTO-008)
 
 # ============================================================
 # PHASE 1 STORIES (35 stories)
@@ -1969,10 +2014,12 @@ sprints:
 
   - id: q2-7
     name: Autonomous Control Plane
-    status: planned
+    status: completed
     story_count: 6
     story_points: 42
     mapped_stories: [ST-NS-038, ST-NS-039, ST-NS-040, ST-NS-041, ST-NS-042, ST-NS-043]
+    completion_date: "2026-02-21"
+    notes: "All 6 stories completed via PR #223. EP-NS-008 Autonomous Control Plane epic fully delivered."
 
   # Phase 1 Sprints (completed)
   - id: p0-1
@@ -2313,6 +2360,278 @@ sprints:
       - metric: "dashboard_load_errors"
         alert: "> 0 in 5-minute window"
 
+  # ============================================================
+  # EP-AUTO-GIT-001 STORIES (8 stories, 47 points)
+  # AI Swarm Autonomous PR Pipeline
+  # ============================================================
+
+  # ST-AUTO-001: Path Analyzer Module
+  - id: ST-AUTO-001
+    title: Path Analyzer Module
+    epic_id: EP-AUTO-GIT-001
+    sprint_id: AUTO-GIT-001
+    status: planned
+    validation_status: planned
+    story_points: 5
+    priority: P0-CRITICAL
+    description: File classification system using regex + semantic analysis to categorize PRs as SAFE, STANDARD, or COMPLEX
+    scope_globs: ["scripts/pr_lifecycle/path_analyzer.py", "scripts/pr_lifecycle/path_rules.yaml"]
+    depends_on: []
+    acceptance_criteria:
+      - Classifies PRs into SAFE (docs/tests), STANDARD (non-critical source), COMPLEX (execution/infra/secrets)
+      - Uses regex patterns for initial classification with 99%+ accuracy
+      - Semantic analysis detects critical path modifications (kill_switch, live_gating, exchange connectors)
+      - Classification stored in Redis with confidence score and file list
+      - Classification completes in <2 seconds for PRs with <100 files
+      - False positive rate for critical paths is 0% (never misclassifies execution/infra as safe)
+      - Rules are configurable via YAML without code changes
+      - Audit log tracks all classifications with timestamp and rationale
+    test_strategy:
+      unit: "pytest tests/test_pr_lifecycle/test_path_analyzer.py -v"
+      integration: "pytest tests/test_pr_lifecycle/integration/test_classification_accuracy.py -v"
+    live_validation_gates:
+      - gate: "classification_accuracy"
+        check: "python3 scripts/test_path_analyzer_accuracy.py --sample=100"
+        threshold: ">99% accuracy"
+    rollback_plan:
+      - action: "Disable auto-classification"
+        command: "redis-cli SET bmad:chiseai:pr:auto_classify:enabled 0"
+      - action: "Revert to manual classification"
+        command: "All PRs default to STANDARD path until fixed"
+
+  # ST-AUTO-002: Safe Path Auto-Approval
+  - id: ST-AUTO-002
+    title: Safe Path Auto-Approval
+    epic_id: EP-AUTO-GIT-001
+    sprint_id: AUTO-GIT-001
+    status: planned
+    validation_status: planned
+    story_points: 3
+    priority: P0-CRITICAL
+    description: Auto-merge capability for SAFE-classified PRs with comprehensive safety checks
+    scope_globs: ["scripts/pr_lifecycle/auto_approval.py", "scripts/pr_lifecycle/safety_checks.py"]
+    depends_on: [ST-AUTO-001]
+    acceptance_criteria:
+      - Auto-merges SAFE PRs only when all CI checks pass (black, ruff, mypy, pytest, bandit)
+      - Requires story ID in PR title matching pattern (ST-*, CH-*, FT-*, etc.)
+      - Blocks auto-merge if coverage <80% or security scan finds issues
+      - Completes auto-merge within 5 minutes of CI success
+      - Posts PR comment with merge confirmation and audit trail link
+      - Emergency stop via Redis key disables all auto-merges within 30 seconds
+      - All auto-merge attempts logged to Redis with full context
+      - Rollback command available to revert any auto-merge within 1 hour
+    test_strategy:
+      unit: "pytest tests/test_pr_lifecycle/test_auto_approval.py -v"
+      e2e: "scripts/e2e/test_safe_path_auto_merge.sh"
+    live_validation_gates:
+      - gate: "auto_merge_speed"
+        check: "Measure time from CI success to merge"
+        threshold: "<5 minutes"
+    rollback_plan:
+      - action: "Disable auto-approval"
+        command: "redis-cli SET bmad:chiseai:pr:auto_approve:enabled 0"
+      - action: "Revert merges if needed"
+        command: "git revert <merge-commit> --no-edit"
+
+  # ST-AUTO-003: GitReviewBot Integration
+  - id: ST-AUTO-003
+    title: GitReviewBot Integration
+    epic_id: EP-AUTO-GIT-001
+    sprint_id: AUTO-GIT-001
+    status: planned
+    validation_status: planned
+    story_points: 8
+    priority: P0-CRITICAL
+    description: AI dual-role review system (SeniorDev + Critic) for STANDARD-classified PRs
+    scope_globs: ["scripts/pr_lifecycle/gitreviewbot.py", "scripts/pr_lifecycle/review_templates/"]
+    depends_on: [ST-AUTO-001]
+    acceptance_criteria:
+      - Reviews STANDARD-classified PRs using dual-role analysis (SeniorDev + Critic personas)
+      - Completes review within 10 minutes of PR submission
+      - Provides structured feedback: approve, request changes, or escalate to human
+      - Feedback includes specific issues with file/line references and fix suggestions
+      - Tracks review outcomes in Redis for continuous improvement
+      - Respects rate limits with exponential backoff (max 60 req/min to Gitea)
+      - Handles review failures gracefully with fallback to human notification
+      - Review history queryable by story_id, agent_id, and date range
+    test_strategy:
+      unit: "pytest tests/test_pr_lifecycle/test_gitreviewbot.py -v"
+      integration: "pytest tests/test_pr_lifecycle/integration/test_review_pipeline.py -v"
+    live_validation_gates:
+      - gate: "review_speed"
+        check: "Measure time from PR submission to review completion"
+        threshold: "<10 minutes"
+      - gate: "review_quality"
+        check: "Sample 20 reviews for accuracy"
+        threshold: ">85% agreement with human reviews"
+    rollback_plan:
+      - action: "Disable GitReviewBot"
+        command: "redis-cli SET bmad:chiseai:pr:gitreviewbot:enabled 0"
+      - action: "Fallback to human review"
+        command: "All STANDARD PRs escalate to human until fixed"
+
+  # ST-AUTO-004: Complex Path Human Gate
+  - id: ST-AUTO-004
+    title: Complex Path Human Gate
+    epic_id: EP-AUTO-GIT-001
+    sprint_id: AUTO-GIT-001
+    status: planned
+    validation_status: planned
+    story_points: 5
+    priority: P1-HIGH
+    description: Human approval workflow for COMPLEX-classified PRs with GitReviewBot pre-review
+    scope_globs: ["scripts/pr_lifecycle/human_gate.py", "scripts/pr_lifecycle/escalation_templates/"]
+    depends_on: [ST-AUTO-001, ST-AUTO-003]
+    acceptance_criteria:
+      - COMPLEX PRs require explicit human approval before merge (never auto-approved)
+      - GitReviewBot pre-reviews and provides summary for human reviewer
+      - Discord notification sent to #pr-reviews channel with PR summary and links
+      - Human reviewer can approve, request changes, or reject with comments
+      - Approval is recorded in Redis with reviewer identity and timestamp
+      - PR blocked from merge until human approval received
+      - Reminder notifications sent every 4 hours until reviewed
+      - Emergency override available for critical hotfixes with audit logging
+    test_strategy:
+      unit: "pytest tests/test_pr_lifecycle/test_human_gate.py -v"
+      e2e: "scripts/e2e/test_complex_path_workflow.sh"
+    live_validation_gates:
+      - gate: "human_review_time"
+        check: "Measure time from escalation to human approval"
+        target: "<4 hours median"
+    rollback_plan:
+      - action: "Disable human gate"
+        command: "Not applicable - human gate is safety requirement"
+      - action: "Emergency merge override"
+        command: "Documented in runbook with required approvals"
+
+  # ST-AUTO-005: Feedback Loop & Retry
+  - id: ST-AUTO-005
+    title: Feedback Loop & Retry
+    epic_id: EP-AUTO-GIT-001
+    sprint_id: AUTO-GIT-001
+    status: planned
+    validation_status: planned
+    story_points: 5
+    priority: P1-HIGH
+    description: Outcome tracking and continuous improvement system for PR reviews
+    scope_globs: ["scripts/pr_lifecycle/feedback_loop.py", "scripts/pr_lifecycle/outcome_tracker.py"]
+    depends_on: [ST-AUTO-002, ST-AUTO-003]
+    acceptance_criteria:
+      - Tracks all PR outcomes: merged, declined, escalated, abandoned
+      - Agents receive actionable feedback via Redis when PRs are declined
+      - Feedback includes specific issues, suggested fixes, and retry eligibility
+      - Agents can retry declined PRs by pushing fixes and commenting /retry
+      - Tracks retry success rates and time-to-resolution
+      - Identifies common failure patterns for process improvement
+      - Monthly report generated on review accuracy and agent performance
+      - Feedback latency <30 seconds from decline to agent notification
+    test_strategy:
+      unit: "pytest tests/test_pr_lifecycle/test_feedback_loop.py -v"
+      integration: "pytest tests/test_pr_lifecycle/integration/test_retry_workflow.py -v"
+    live_validation_gates:
+      - gate: "feedback_latency"
+        check: "Measure time from decline to agent notification"
+        threshold: "<30 seconds"
+    rollback_plan:
+      - action: "Disable feedback loop"
+        command: "redis-cli SET bmad:chiseai:pr:feedback:enabled 0"
+
+  # ST-AUTO-006: EP-NS-008 Integration
+  - id: ST-AUTO-006
+    title: EP-NS-008 Integration
+    epic_id: EP-AUTO-GIT-001
+    sprint_id: AUTO-GIT-001
+    status: planned
+    validation_status: planned
+    story_points: 8
+    priority: P1-HIGH
+    description: Circuit breaker, retry coordinator, and self-healing integration from Autonomous Control Plane
+    scope_globs: ["scripts/pr_lifecycle/circuit_breaker_integration.py", "scripts/pr_lifecycle/resilience/"]
+    depends_on: [ST-AUTO-001, ST-AUTO-002, ST-AUTO-003]
+    acceptance_criteria:
+      - Uses EP-NS-008 circuit breaker registry for Gitea API calls
+      - Circuit opens after 5 failures, recovers after 60 seconds
+      - Retry coordinator handles transient failures with exponential backoff
+      - Self-healing engine detects and recovers stuck PRs automatically
+      - Incident manager creates incidents for PR system failures
+      - Rollback coordinator can revert bad auto-merges
+      - All resilience patterns use existing EP-NS-008 infrastructure
+      - PR system continues operating during partial outages (degraded mode)
+    test_strategy:
+      unit: "pytest tests/test_pr_lifecycle/test_resilience.py -v"
+      chaos: "scripts/chaos/test_pr_system_resilience.sh"
+    live_validation_gates:
+      - gate: "circuit_breaker_functional"
+        check: "Simulate failures and verify circuit opens/closes"
+        threshold: "100% functional"
+    rollback_plan:
+      - action: "Disable resilience features"
+        command: "redis-cli SET bmad:chiseai:pr:resilience:enabled 0"
+
+  # ST-AUTO-007: 10-Agent Parallel Support
+  - id: ST-AUTO-007
+    title: 10-Agent Parallel Support
+    epic_id: EP-AUTO-GIT-001
+    sprint_id: AUTO-GIT-001
+    status: planned
+    validation_status: planned
+    story_points: 8
+    priority: P2-MEDIUM
+    description: Worktree isolation and parallel coordination for 10 simultaneous agents
+    scope_globs: ["scripts/swarm/parallel_coordinator.py", "scripts/swarm/worktree_manager.py"]
+    depends_on: [ST-AUTO-001, ST-AUTO-006]
+    acceptance_criteria:
+      - Supports 10 agents working simultaneously without git conflicts
+      - Each agent has isolated worktree with proper cleanup on completion
+      - Redis-based distributed locking prevents merge race conditions
+      - Agent ownership tracking via chise-claim-ownership command
+      - Automatic conflict detection and resolution for non-overlapping changes
+      - CI slot management prevents resource exhaustion (max 5 concurrent P1 pipelines)
+      - Agent coordination dashboard shows active agents and their PRs
+      - Graceful handling of agent failures with automatic cleanup
+    test_strategy:
+      stress: "scripts/stress/test_10_agent_parallel.sh"
+      integration: "pytest tests/test_swarm/test_parallel_coordination.py -v"
+    live_validation_gates:
+      - gate: "parallel_agents"
+        check: "Run 10 agents simultaneously for 1 hour"
+        threshold: "Zero conflicts, all PRs merged successfully"
+    rollback_plan:
+      - action: "Limit parallel agents"
+        command: "redis-cli SET bmad:chiseai:swarm:max_agents 5"
+
+  # ST-AUTO-008: Observability & Metrics
+  - id: ST-AUTO-008
+    title: Observability & Metrics
+    epic_id: EP-AUTO-GIT-001
+    sprint_id: AUTO-GIT-001
+    status: planned
+    validation_status: planned
+    story_points: 5
+    priority: P2-MEDIUM
+    description: Grafana dashboards, alerting, and SLO tracking for the PR automation pipeline
+    scope_globs: ["infrastructure/grafana/dashboards/pr_automation.json", "scripts/pr_lifecycle/metrics_exporter.py"]
+    depends_on: [ST-AUTO-001, ST-AUTO-002, ST-AUTO-003]
+    acceptance_criteria:
+      - Grafana dashboard shows PR pipeline health, throughput, and latency
+      - Metrics: PRs by path type, merge times, review accuracy, retry rates
+      - Alerting rules for stuck PRs (>30 min), high decline rate (>20%), system errors
+      - SLO tracking: 95% of SAFE PRs merge in <5 min, 90% of STANDARD in <12 min
+      - Agent performance dashboard shows throughput and success rates per agent
+      - Audit log viewer for compliance and debugging
+      - Dashboard loads within 3 seconds, updates every 10 seconds
+      - Mobile-responsive for on-call access
+    test_strategy:
+      visual: "playwright tests/visual/test_pr_dashboard.spec.ts"
+      integration: "pytest tests/test_pr_lifecycle/test_metrics.py -v"
+    live_validation_gates:
+      - gate: "dashboard_functional"
+        check: "Verify all panels load and display data"
+        threshold: "100% functional"
+    rollback_plan:
+      - action: "Revert dashboard JSON"
+        command: "git checkout HEAD~1 -- infrastructure/grafana/dashboards/pr_automation.json"
+
 
 # SUMMARY COUNTS
 item_3_completion:
@@ -2359,17 +2678,25 @@ item_3_completion:
 
 
 summary:
-  total_epics: 17
-  total_stories: 78
-  total_story_points: 448
+  total_epics: 18
+  total_stories: 86
+  total_story_points: 495
   phase_1:
     epics: 8
     stories: 41
     story_points: 157
   phase_2_plus:
-    epics: 9
-    stories: 37
-    story_points: 280
+    epics: 10
+    stories: 45
+    story_points: 338
+  epics_by_status:
+    completed: 9
+    in_progress: 0
+    planned: 9
+  stories_by_status:
+    completed: 41
+    in_progress: 0
+    planned: 45
 
 # ============================================================
 # ITEM 3 COMPLETION - BYBIT-DEMO-003
