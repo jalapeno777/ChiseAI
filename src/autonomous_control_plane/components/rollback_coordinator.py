@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any, Callable
 
 from src.autonomous_control_plane.models.incidents import (
@@ -441,6 +441,7 @@ class RollbackCoordinator:
         store: RollbackStore | None = None,
         incident_manager: IncidentManager | None = None,
         step_handlers: dict[str, Callable[[], dict[str, Any]]] | None = None,
+        redis_client=None,
     ):
         """Initialize rollback coordinator.
 
@@ -448,6 +449,7 @@ class RollbackCoordinator:
             store: Rollback operation storage backend
             incident_manager: IncidentManager for creating incidents on failure
             step_handlers: Custom step action handlers
+            redis_client: Redis client for distributed locking
         """
         self._store = store or InMemoryRollbackStore()
         self._incident_manager = incident_manager
@@ -455,6 +457,9 @@ class RollbackCoordinator:
         self._health_checker = PostRollbackHealthChecker()
         self._step_handlers = step_handlers or {}
         self._metrics = RollbackMetrics()
+        self._redis = redis_client
+        self._rollback_lock_key = "acp:rollback:lock"
+        self._rollback_lock_ttl = 70  # seconds, longer than SLA
 
         self._register_default_step_handlers()
 
@@ -529,6 +534,83 @@ class RollbackCoordinator:
             handler: Function that executes the action
         """
         self._step_handlers[action] = handler
+
+    async def _acquire_rollback_lock(self, operation_id: str) -> bool:
+        """Acquire distributed lock for rollback operation.
+
+        Args:
+            operation_id: ID of rollback operation attempting to acquire lock
+
+        Returns:
+            True if lock acquired, False otherwise
+        """
+        if not self._redis:
+            logger.warning("Redis not available, skipping distributed lock")
+            return True
+
+        try:
+            # Use SET with NX (only if not exists) and EX (expire)
+            acquired = await self._redis.set(
+                self._rollback_lock_key,
+                operation_id,
+                nx=True,  # Only set if not exists
+                ex=self._rollback_lock_ttl,
+            )
+
+            if acquired:
+                logger.info(f"Acquired rollback lock for operation {operation_id}")
+                return True
+            else:
+                # Check who holds the lock
+                current_holder = await self._redis.get(self._rollback_lock_key)
+                logger.warning(
+                    f"Could not acquire rollback lock, held by operation {current_holder}"
+                )
+                return False
+
+        except Exception as e:
+            logger.error(f"Error acquiring rollback lock: {e}")
+            # Fail open if Redis error (safer to allow rollback than block it)
+            return True
+
+    async def _release_rollback_lock(self, operation_id: str) -> None:
+        """Release distributed lock for rollback operation.
+
+        Args:
+            operation_id: ID of rollback operation releasing the lock
+        """
+        if not self._redis:
+            return
+
+        try:
+            # Only delete if we hold the lock (avoid releasing someone else's lock)
+            current_holder = await self._redis.get(self._rollback_lock_key)
+            if current_holder == operation_id:
+                await self._redis.delete(self._rollback_lock_key)
+                logger.info(f"Released rollback lock for operation {operation_id}")
+            else:
+                logger.warning(
+                    f"Cannot release lock: held by {current_holder}, "
+                    f"requested by {operation_id}"
+                )
+        except Exception as e:
+            logger.error(f"Error releasing rollback lock: {e}")
+
+    async def is_rollback_in_progress(self) -> bool:
+        """Check if a rollback is currently in progress.
+
+        Returns:
+            True if rollback lock is held by any operation
+        """
+        if not self._redis:
+            return False
+
+        try:
+            exists = await self._redis.exists(self._rollback_lock_key)
+            return bool(exists)
+        except Exception as e:
+            logger.error(f"Error checking rollback lock: {e}")
+            return False
 
     async def validate_rollback(
         self, target_state: str, force: bool = False
@@ -613,13 +695,18 @@ class RollbackCoordinator:
             metadata=metadata,
         )
 
-        # Track SLA
-        start_time = datetime.now(UTC)
-        sla_deadline = start_time + __import__("datetime").timedelta(
-            seconds=self.ROLLBACK_SLA_SECONDS
-        )
+        # Acquire distributed lock
+        if not await self._acquire_rollback_lock(operation.operation_id):
+            error_msg = "Another rollback is currently in progress"
+            await self._handle_rollback_failure(operation, error_msg)
+            return operation
 
         try:
+            # Track SLA
+            start_time = datetime.now(UTC)
+            sla_deadline = start_time + __import__("datetime").timedelta(
+                seconds=self.ROLLBACK_SLA_SECONDS
+            )
             # Step 1: Pre-flight validation
             if not force:
                 operation.mark_validating()
@@ -718,6 +805,10 @@ class RollbackCoordinator:
             logger.exception(f"Rollback execution failed: {e}")
             await self._handle_rollback_failure(operation, str(e))
             return operation
+
+        finally:
+            # Always release lock
+            await self._release_rollback_lock(operation.operation_id)
 
     async def _execute_step(
         self, step: RollbackStep, operation: RollbackOperation
