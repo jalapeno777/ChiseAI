@@ -1,0 +1,35 @@
+groups:
+  - name: autonomous_control_plane
+    rules:
+      - alert: ControlPlaneDown
+        expr: up{job="autonomous-control-plane"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Autonomous Control Plane is down"
+          description: "The autonomous control plane has been down for more than 1 minute."
+          runbook_url: "https://docs.chiseai.com/runbooks/autonomous_control_plane#control-plane-down"
+
+      - alert: CircuitBreakerOpenTooLong
+        expr: circuit_breaker_state == 1
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Circuit breaker has been open for >5 minutes"
+          description: "Circuit breaker has been in open state for more than 5 minutes, indicating persistent failures."
+          runbook_url: "https://docs.chiseai.com/runbooks/autonomous_control_plane#circuit-breaker-open"
+
+      - alert: HealingFailureRateHigh
+        expr: rate(healing_failures[5m]) / rate(healing_attempts[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Healing failure rate exceeds 10%"
+          description: "The healing failure rate has been above 10% for more than 2 minutes. Current rate: {{ $value | humanizePercentage }}"
+          runbook_url: "https://docs.chiseai.com/runbooks/autonomous_control_plane#high-healing-failure-rate"
