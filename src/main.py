@@ -6,6 +6,9 @@ API endpoints including ECE (Expected Calibration Error) queries.
 
 from __future__ import annotations
 
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
 from src.api.ece_router import router as ece_router
@@ -16,11 +19,55 @@ from src.autonomous_control_plane.api.v1.incidents import router as incidents_ro
 from src.autonomous_control_plane.api.v1.healing import router as healing_router
 from src.autonomous_control_plane.api.v1.rollback import router as rollback_router
 
-# Create FastAPI application
+# ACP startup and dependency verification - PM-BATCH-1
+from src.autonomous_control_plane.startup import (
+    create_acp_container,
+    get_acp_container,
+)
+
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan context manager.
+
+    Handles ACP container initialization and dependency verification.
+    Fails closed if critical dependencies are unavailable.
+    """
+    logger.info("Starting ChiseAI API...")
+
+    try:
+        # Create and initialize ACP container
+        # This will verify Redis and InfluxDB connectivity
+        container = create_acp_container()
+        await container.startup()
+
+        # Verify container is properly initialized
+        _ = get_acp_container()
+        logger.info("ACP container initialized successfully")
+
+    except RuntimeError as e:
+        # Dependency verification failed - log critical error and re-raise
+        logger.critical(f"Failed to start API: {e}")
+        raise
+    except Exception as e:
+        # Unexpected error during startup
+        logger.critical(f"Unexpected error during API startup: {e}")
+        raise
+
+    yield
+
+    # Shutdown
+    logger.info("Shutting down ChiseAI API...")
+
+
+# Create FastAPI application with lifespan
 app = FastAPI(
     title="ChiseAI API",
     description="API for ChiseAI trading strategy platform with Autonomous Control Plane",
     version="1.1.0",
+    lifespan=lifespan,
 )
 
 # Mount routers
