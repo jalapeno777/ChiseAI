@@ -1,12 +1,10 @@
 """Tests for Critic reviewer."""
 
 import pytest
-from datetime import datetime
 
 from autonomous_git.gitreviewbot.models import (
     Violation,
     Severity,
-    ReviewResult,
 )
 from autonomous_git.gitreviewbot.critic import CriticReviewer
 

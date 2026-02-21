@@ -8,7 +8,7 @@ from autonomous_git.gitreviewbot.models import (
     Severity,
     ReviewResult,
 )
-from autonomous_git.gitreviewbot.confidence import ConfidenceScorer, ConfidenceFactors
+from autonomous_git.gitreviewbot.confidence import ConfidenceScorer
 
 
 @pytest.fixture

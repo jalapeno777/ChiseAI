@@ -12,7 +12,6 @@ import pytest
 from src.llm.zhipu_client import (
     ZhipuClient,
     ZaiMessage,
-    ZaiError,
     ZaiAuthError,
 )
 

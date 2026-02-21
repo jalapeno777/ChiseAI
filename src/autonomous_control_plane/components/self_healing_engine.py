@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -28,7 +27,6 @@ from src.autonomous_control_plane.healing_actions.circuit_breaker_reset import (
     CircuitBreakerResetAction,
 )
 from src.autonomous_control_plane.models.healing import (
-    ActionPriority,
     FailurePatternMatch,
     FailurePatternType,
     HealingAttempt,
@@ -37,7 +35,6 @@ from src.autonomous_control_plane.models.healing import (
     HealingStats,
     HealingStatus,
     LogEntry,
-    ResourceLimits,
 )
 from src.common.circuit_breaker import CircuitBreakerRegistry
 

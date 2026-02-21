@@ -12,7 +12,6 @@ from unittest.mock import MagicMock, patch
 # Add src to path
 sys.path.insert(0, "/home/tacopants/projects/ChiseAI/src")
 
-from signal_generation.models import SignalDirection, SignalStatus
 from signal_generation.signal_generator import (
     SignalGenerationConfig,
     SignalGenerator,

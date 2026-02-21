@@ -7,7 +7,6 @@ management into existing automerge and CI workflows.
 
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 from typing import Any

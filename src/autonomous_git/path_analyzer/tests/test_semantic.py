@@ -1,6 +1,5 @@
 """Tests for semantic analysis module."""
 
-import pytest
 from autonomous_git.path_analyzer.semantic import (
     SemanticFlag,
     SemanticAnalyzer,

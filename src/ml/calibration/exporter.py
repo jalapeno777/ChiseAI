@@ -9,14 +9,14 @@ from __future__ import annotations
 import csv
 import json
 import logging
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     pass
 
-from ml.calibration.models import CalibrationRecord, CollectionWindow, SignalType
+from ml.calibration.models import CalibrationRecord, SignalType
 from ml.calibration.storage import CalibrationStorage, InMemoryCalibrationStorage
 
 logger = logging.getLogger(__name__)

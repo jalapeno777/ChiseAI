@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING, Any, cast
 if TYPE_CHECKING:
     from monitoring.datasource_health import (
         ConnectionMetrics,
-        ConnectionStatus,
         DataSourceType,
         DatasourceHealthAlert,
     )

@@ -13,9 +13,7 @@ from src.autonomous_control_plane.components.rollback_coordinator import (
     RollbackCoordinator,
 )
 from src.autonomous_control_plane.models.rollback import (
-    RollbackOperation,
     RollbackStatus,
-    ValidationResult,
 )
 
 router = APIRouter(prefix="/rollback", tags=["rollback"])

@@ -1,6 +1,5 @@
 """Tests for GitReviewBot models."""
 
-import pytest
 from datetime import datetime, timedelta
 
 from autonomous_git.gitreviewbot.models import (

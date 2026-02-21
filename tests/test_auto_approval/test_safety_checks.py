@@ -1,8 +1,6 @@
 """Tests for auto-approval safety checks."""
 
 import pytest
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock
 
 from src.autonomous_git.auto_approval.safety_checks import (
     SafetyChecker,

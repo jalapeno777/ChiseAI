@@ -51,7 +51,6 @@ from operations.data_quality_monitoring import (
     DataQualityMonitor,
     DataSource,
     DiscordAlertSender,
-    FreshnessMetrics,
     GapAlert,
     GrafanaDashboardQueries,
     InfluxDBExporter,

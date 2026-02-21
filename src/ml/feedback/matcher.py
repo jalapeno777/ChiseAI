@@ -21,15 +21,13 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from market_analysis.signal_storage.models import (
-        OutcomeRecord,
         SignalRecord,
-        SignalWithOutcome,
     )
 
 logger = logging.getLogger(__name__)

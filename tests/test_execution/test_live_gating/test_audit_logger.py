@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pytest
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 from execution.live_gating.audit_logger import (
     ApprovalAuditRecord,

@@ -313,7 +313,6 @@ def verify_data(query_api, bucket: str, environment: str) -> dict:
 def test_dashboard_api(grafana_url: str = "http://localhost:3001") -> bool:
     """Test that Grafana dashboards are accessible via API."""
     import urllib.request
-    import json
 
     dashboard_uids = ["chiseai-paper-execution", "chiseai-live-execution"]
 

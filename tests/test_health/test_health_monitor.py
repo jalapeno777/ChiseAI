@@ -4,8 +4,7 @@ For PAPER-003-001: Unified Health Monitoring System
 """
 
 import pytest
-from datetime import datetime, UTC, timedelta
-from unittest.mock import Mock, AsyncMock
+from datetime import datetime
 
 from src.health import ComponentType, HealthStatus
 from src.health.score_calculator import (
@@ -13,7 +12,7 @@ from src.health.score_calculator import (
     HealthScore,
     ScoreCalculator,
 )
-from src.health.history import HealthHistory, HealthSnapshot, TrendAnalysis
+from src.health.history import HealthHistory, HealthSnapshot
 from src.health.monitor import HealthMonitor
 
 

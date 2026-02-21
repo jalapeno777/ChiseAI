@@ -13,14 +13,13 @@ from __future__ import annotations
 
 import asyncio
 import unittest
-from datetime import UTC, datetime
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from execution.kill_switch.state import KillSwitchState
 from execution.paper.models import OrderState, PaperOrder, TradeStatus
 from execution.paper.test_trigger import TestTradeTrigger, TestTriggerResult
-from signal_generation.models import Signal, SignalDirection, SignalStatus
+from signal_generation.models import Signal, SignalDirection
 
 
 class MockKillSwitchExecutor:

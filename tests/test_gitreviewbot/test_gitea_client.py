@@ -1,9 +1,5 @@
 """Tests for Gitea client."""
 
-import pytest
-from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
-
 from autonomous_git.gitreviewbot.gitea_client import GiteaClient
 from autonomous_git.gitreviewbot.models import Decision, DecisionType
 

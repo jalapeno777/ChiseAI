@@ -15,7 +15,7 @@ from __future__ import annotations
 import asyncio
 import time
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -25,7 +25,6 @@ from execution.paper.models import (
     OrderState,
     OrderType,
     PaperOrder,
-    PaperTradeResult,
     TradeStatus,
 )
 from execution.paper.orchestrator import PaperTradingOrchestrator

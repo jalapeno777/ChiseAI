@@ -4,7 +4,6 @@ Tests for OrderState, PaperOrder, and PaperFill dataclasses.
 """
 
 import pytest
-from datetime import datetime, timezone
 
 from src.execution.paper.models import (
     OrderState,

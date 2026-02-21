@@ -3,8 +3,6 @@
 For PAPER-003-001: Unified Health Monitoring System
 """
 
-import pytest
-
 from src.health.score_calculator import (
     ComponentScore,
     HealthScore,

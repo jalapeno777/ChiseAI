@@ -1,8 +1,6 @@
 """Circuit Breaker Registry for centralized CB management."""
 
-import time
-import json
-from typing import Dict, Optional, List, Any
+from typing import Dict, Optional
 from datetime import datetime
 from src.autonomous_control_plane.models.circuit_breaker import (
     CircuitBreaker,

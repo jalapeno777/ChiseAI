@@ -5,11 +5,8 @@ ST-CHISE-003: Brain Promotion Packet - Evidence + Rollback
 """
 
 import json
-import tempfile
 from datetime import datetime
-from pathlib import Path
 
-import pytest
 
 from src.brain.promotion_packet import (
     ApprovalSignature,

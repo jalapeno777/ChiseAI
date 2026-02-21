@@ -1,9 +1,7 @@
 """Tests for auto-approval rate limiter."""
 
-import asyncio
 import pytest
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 from src.autonomous_git.auto_approval.rate_limiter import RateLimiter
 

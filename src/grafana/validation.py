@@ -6,7 +6,6 @@ ensuring they meet Grafana 10.x schema requirements before provisioning.
 
 import json
 import logging
-import os
 import shutil
 from dataclasses import dataclass, field
 from datetime import datetime, timezone

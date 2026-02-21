@@ -15,13 +15,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from unittest.mock import patch, MagicMock
 
-from src.autonomous_control_plane.healing_actions.base import (
-    BaseHealingAction,
-    SandboxTimeoutError,
-    SandboxResourceError,
-)
 from src.autonomous_control_plane.models.healing import (
     HealingContext,
     ResourceLimits,

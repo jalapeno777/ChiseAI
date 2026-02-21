@@ -1,13 +1,7 @@
 """Tests for SeniorDev reviewer."""
 
 import pytest
-from datetime import datetime
 
-from autonomous_git.gitreviewbot.models import (
-    Finding,
-    Severity,
-    ReviewResult,
-)
 from autonomous_git.gitreviewbot.senior_dev import SeniorDevReviewer
 
 

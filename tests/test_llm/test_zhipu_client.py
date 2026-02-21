@@ -5,8 +5,7 @@ Unit tests for Z.ai (Zhipu AI) GLM-5 client.
 import json
 import os
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-import requests
+from unittest.mock import Mock, patch
 
 from src.llm.zhipu_client import (
     ZhipuClient,
@@ -16,7 +15,6 @@ from src.llm.zhipu_client import (
     ZaiAuthError,
     ZaiRateLimitError,
     ZaiServerError,
-    ZaiTimeoutError,
 )
 
 

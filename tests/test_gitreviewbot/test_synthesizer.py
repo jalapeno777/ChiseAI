@@ -1,10 +1,8 @@
 """Tests for GitReviewBot synthesizer."""
 
 import pytest
-from datetime import datetime
 
 from autonomous_git.gitreviewbot.models import (
-    Decision,
     DecisionType,
     Finding,
     Violation,

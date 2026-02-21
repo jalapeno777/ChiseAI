@@ -5,7 +5,6 @@ Tests for SlippageConfig, LatencyConfig, and FillModel.
 
 import asyncio
 import pytest
-from datetime import datetime, timezone
 
 from src.execution.paper.fill_model import (
     SlippageConfig,
@@ -13,7 +12,7 @@ from src.execution.paper.fill_model import (
     FillModel,
     create_fill_model,
 )
-from src.execution.paper.models import PaperOrder, OrderState
+from src.execution.paper.models import PaperOrder
 
 
 class TestSlippageConfig:

@@ -1,8 +1,7 @@
 """Tests for Retry Coordinator (ST-NS-039)."""
 
 import pytest
-import asyncio
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 from src.autonomous_control_plane.models.retry_policy import (
     RetryPolicy,
     BackoffStrategy,

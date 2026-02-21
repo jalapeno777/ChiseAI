@@ -13,7 +13,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 if TYPE_CHECKING:
-    from fastapi.testclient import TestClient
+    pass
 
 
 # Fixtures

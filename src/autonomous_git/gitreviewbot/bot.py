@@ -1,6 +1,5 @@
 """Main GitReviewBot orchestrator."""
 
-import os
 import hashlib
 from typing import Optional, List, Dict, Any
 from datetime import datetime

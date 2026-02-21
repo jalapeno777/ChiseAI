@@ -12,7 +12,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field, field_validator
 
-from ml.training.features import FeatureValidator, TrendState
+from ml.training.features import FeatureValidator
 from ml.training.version import CURRENT_SCHEMA_VERSION, SchemaVersionManager
 
 

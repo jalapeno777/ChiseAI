@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Query review decisions and calibration data."""
 
-import os
 import sys
 import json
 import asyncio

@@ -1,13 +1,10 @@
 """Retry Coordinator with budget management for ST-NS-039."""
 
-import time
 import asyncio
 from typing import Callable, TypeVar, Optional, Any, Dict
 from datetime import datetime
 from src.autonomous_control_plane.models.retry_policy import (
     RetryPolicy,
-    BackoffStrategy,
-    JitterType,
 )
 
 T = TypeVar("T")

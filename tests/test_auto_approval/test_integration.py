@@ -11,12 +11,10 @@ from src.autonomous_git.auto_approval import (
     DiscordNotifier,
     load_config,
     AutoApprovalConfig,
-    process_safe_pr,
 )
 from src.autonomous_git.auto_approval.approver import (
     RiskLevel,
     RiskClassification,
-    is_auto_approval_disabled,
 )
 
 
