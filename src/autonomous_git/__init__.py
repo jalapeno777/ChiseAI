@@ -11,9 +11,9 @@ try:
         PathAnalysisCache,
     )
 
-    _path_analyzer_available = True
+    _PATH_ANALYZER_AVAILABLE = True
 except ImportError:
-    _path_analyzer_available = False
+    _PATH_ANALYZER_AVAILABLE = False
     RiskLevel = None
     RiskClassification = None
     PathAnalyzer = None
@@ -22,35 +22,88 @@ except ImportError:
     PathAnalysisCache = None
 
 # Auto-Approval (ST-AUTO-002)
-from .auto_approval import (
-    AutoApprover,
-    process_safe_pr,
-    SafetyChecker,
-    SafetyCheckResult,
-    RateLimiter,
-    ExclusionManager,
-    DiscordNotifier,
-    load_config,
-    AutoApprovalConfig,
+try:
+    from .auto_approval import (
+        AutoApprover,
+        process_safe_pr,
+        SafetyChecker,
+        SafetyCheckResult,
+        RateLimiter,
+        ExclusionManager,
+        DiscordNotifier,
+        load_config,
+        AutoApprovalConfig,
+    )
+
+    _AUTO_APPROVAL_AVAILABLE = True
+except ImportError:
+    _AUTO_APPROVAL_AVAILABLE = False
+    AutoApprover = None
+    process_safe_pr = None
+    SafetyChecker = None
+    SafetyCheckResult = None
+    RateLimiter = None
+    ExclusionManager = None
+    DiscordNotifier = None
+    load_config = None
+    AutoApprovalConfig = None
+
+# GitReviewBot (ST-AUTO-003)
+from .gitreviewbot import (
+    GitReviewBot,
+    review_pr,
+    ReviewResult,
+    Decision,
+    DecisionType,
+    Finding,
+    Violation,
+    ReviewFeedback,
+    SeniorDevReviewer,
+    CriticReviewer,
+    DecisionSynthesizer,
+    ConfidenceScorer,
+    CalibrationTracker,
+    GiteaClient,
 )
 
 __version__ = "0.1.0"
 
 __all__ = [
-    # Auto-Approval (always available)
-    "AutoApprover",
-    "process_safe_pr",
-    "SafetyChecker",
-    "SafetyCheckResult",
-    "RateLimiter",
-    "ExclusionManager",
-    "DiscordNotifier",
-    "load_config",
-    "AutoApprovalConfig",
+    # GitReviewBot (ST-AUTO-003)
+    "GitReviewBot",
+    "review_pr",
+    "ReviewResult",
+    "Decision",
+    "DecisionType",
+    "Finding",
+    "Violation",
+    "ReviewFeedback",
+    "SeniorDevReviewer",
+    "CriticReviewer",
+    "DecisionSynthesizer",
+    "ConfidenceScorer",
+    "CalibrationTracker",
+    "GiteaClient",
 ]
 
+# Add Auto-Approval exports if available
+if _AUTO_APPROVAL_AVAILABLE:
+    __all__.extend(
+        [
+            "AutoApprover",
+            "process_safe_pr",
+            "SafetyChecker",
+            "SafetyCheckResult",
+            "RateLimiter",
+            "ExclusionManager",
+            "DiscordNotifier",
+            "load_config",
+            "AutoApprovalConfig",
+        ]
+    )
+
 # Add Path Analyzer exports if available
-if _path_analyzer_available:
+if _PATH_ANALYZER_AVAILABLE:
     __all__.extend(
         [
             "RiskLevel",
