@@ -300,9 +300,9 @@ class TestTradeNotifierIntegration:
 
             # Verify fields
             field_names = [f["name"] for f in embed["fields"]]
-            assert any("Notional" in name for name in field_names), (
-                "Missing notional value field"
-            )
+            assert any(
+                "Notional" in name for name in field_names
+            ), "Missing notional value field"
             assert any("Margin" in name for name in field_names), "Missing margin field"
 
             print("✅ Notification format verification passed")
@@ -410,12 +410,12 @@ class TestTradeNotifierIntegration:
         notifier_no_url = TradeNotifier(webhook_url=None)
         health_no_url = await notifier_no_url.health_check()
 
-        assert health_no_url["healthy"] is False, (
-            "Should not be healthy without webhook"
-        )
-        assert health_no_url["webhook_configured"] is False, (
-            "Should report webhook not configured"
-        )
+        assert (
+            health_no_url["healthy"] is False
+        ), "Should not be healthy without webhook"
+        assert (
+            health_no_url["webhook_configured"] is False
+        ), "Should report webhook not configured"
 
         print("✅ Health check verified")
         print(f"   With webhook: {health}")

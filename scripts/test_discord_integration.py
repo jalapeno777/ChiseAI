@@ -101,9 +101,9 @@ class DiscordIntegrationTester:
             "target_guild_id": TARGET_GUILD_ID,
             "configured_guild_id": config.guild_id,
             "env_guild_id": env_guild_id,
-            "enforcement_status": "ENFORCED"
-            if config.guild_id == TARGET_GUILD_ID
-            else "NOT_ENFORCED",
+            "enforcement_status": (
+                "ENFORCED" if config.guild_id == TARGET_GUILD_ID else "NOT_ENFORCED"
+            ),
             "validation_tests": validation_results,
             "all_tests_passed": all_passed,
         }

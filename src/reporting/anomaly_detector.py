@@ -504,13 +504,13 @@ class AnomalyDetector:
         ).isoformat()
         end_time = datetime.now(UTC).isoformat()
 
-        query = f'''
+        query = f"""
         from(bucket: "{self._bucket}")
             |> range(start: {start_time}, stop: {end_time})
             |> filter(fn: (r) => r._measurement == "{measurement}")
             |> filter(fn: (r) => r._field == "{field}")
             |> aggregateWindow(every: 1h, fn: mean, createEmpty: false)
-        '''
+        """
 
         try:
             tables = query_api.query(query, org=self._org)
@@ -550,13 +550,13 @@ class AnomalyDetector:
         start_time = (datetime.now(UTC) - timedelta(hours=lookback_hours)).isoformat()
         end_time = datetime.now(UTC).isoformat()
 
-        query = f'''
+        query = f"""
         from(bucket: "{self._bucket}")
             |> range(start: {start_time}, stop: {end_time})
             |> filter(fn: (r) => r._measurement == "{measurement}")
             |> filter(fn: (r) => r._field == "{field}")
             |> mean()
-        '''
+        """
 
         try:
             tables = query_api.query(query, org=self._org)

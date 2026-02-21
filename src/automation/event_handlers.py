@@ -481,8 +481,9 @@ class OnRecoveryFailure(EventHandler):
         self,
         orchestrator: RecoveryOrchestrator,
         healing_engine: SelfHealingEngine,
-        escalation_handlers: list[Callable[[HealthEvent], Awaitable[None]]]
-        | None = None,
+        escalation_handlers: (
+            list[Callable[[HealthEvent], Awaitable[None]]] | None
+        ) = None,
     ):
         """Initialize failure handler.
 

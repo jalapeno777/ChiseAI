@@ -1159,12 +1159,16 @@ class LiveProofE2E:
         # Convert to dict
         evidence_dict = {
             "execution_id": self.evidence.execution_id,
-            "test_start_time": self.evidence.test_start_time.isoformat()
-            if self.evidence.test_start_time
-            else None,
-            "test_end_time": self.evidence.test_end_time.isoformat()
-            if self.evidence.test_end_time
-            else None,
+            "test_start_time": (
+                self.evidence.test_start_time.isoformat()
+                if self.evidence.test_start_time
+                else None
+            ),
+            "test_end_time": (
+                self.evidence.test_end_time.isoformat()
+                if self.evidence.test_end_time
+                else None
+            ),
             "total_latency_ms": round(self.evidence.total_latency_ms, 2),
             "status": self.evidence.status,
             "errors": self.evidence.errors,
@@ -1209,9 +1213,11 @@ class LiveProofE2E:
                 "status": self.evidence.signal.status,
                 "is_actionable": self.evidence.signal.is_actionable,
                 "threshold_met": self.evidence.signal.threshold_met,
-                "timestamp": self.evidence.signal.timestamp.isoformat()
-                if self.evidence.signal.timestamp
-                else None,
+                "timestamp": (
+                    self.evidence.signal.timestamp.isoformat()
+                    if self.evidence.signal.timestamp
+                    else None
+                ),
             },
             "paper_trade": {
                 "order_id": self.evidence.paper_trade.order_id,

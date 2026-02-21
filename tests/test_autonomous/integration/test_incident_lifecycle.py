@@ -38,7 +38,7 @@ class TestIncidentLifecycle:
     @pytest.mark.skip(reason="Async notification mocking complexity - tested manually")
     async def test_p0_incident_lifecycle_with_notifications(self, manager):
         """Test complete P0 incident lifecycle with notifications.
-        
+
         Note: Skipped due to async notification mocking complexity.
         Notifications are tested via template tests in unit tests.
         """
@@ -122,7 +122,7 @@ class TestIncidentLifecycle:
     @pytest.mark.skip(reason="Async remediation handler mocking complexity")
     async def test_p2_incident_with_auto_remediation(self, manager):
         """Test P2 incident with auto-remediation execution.
-        
+
         Note: Skipped due to async handler mocking complexity.
         Auto-remediation is verified via manual testing and logs.
         """

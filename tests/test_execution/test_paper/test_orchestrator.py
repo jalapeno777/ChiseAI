@@ -394,9 +394,9 @@ class TestLatencyRequirements:
         elapsed_ms = (time.perf_counter() - start) * 1000
 
         # Should be well under 500ms since mocks are instant
-        assert elapsed_ms < 500, (
-            f"Signal-to-order latency {elapsed_ms:.1f}ms exceeds 500ms"
-        )
+        assert (
+            elapsed_ms < 500
+        ), f"Signal-to-order latency {elapsed_ms:.1f}ms exceeds 500ms"
 
 
 class TestErrorHandling:
@@ -1046,12 +1046,12 @@ class TestOrderSimulatorInterface:
         # Verify all required parameters were passed
         assert "symbol" in call_kwargs, "place_order should receive 'symbol' parameter"
         assert "side" in call_kwargs, "place_order should receive 'side' parameter"
-        assert "order_type" in call_kwargs, (
-            "place_order should receive 'order_type' parameter"
-        )
-        assert "quantity" in call_kwargs, (
-            "place_order should receive 'quantity' parameter"
-        )
+        assert (
+            "order_type" in call_kwargs
+        ), "place_order should receive 'order_type' parameter"
+        assert (
+            "quantity" in call_kwargs
+        ), "place_order should receive 'quantity' parameter"
         assert "price" in call_kwargs, "place_order should receive 'price' parameter"
 
         # Verify parameter values
@@ -1060,9 +1060,9 @@ class TestOrderSimulatorInterface:
         assert call_kwargs["order_type"] == "market"
         assert call_kwargs["quantity"] == 0.1
         # Price should now be set from market data (BURNIN-001 fix)
-        assert call_kwargs["price"] == 50000.0, (
-            f"Price should be set from market data, got {call_kwargs['price']}"
-        )
+        assert (
+            call_kwargs["price"] == 50000.0
+        ), f"Price should be set from market data, got {call_kwargs['price']}"
 
     @pytest.mark.asyncio
     async def test_process_signal_short_calls_place_order_with_sell_side(
@@ -1123,9 +1123,9 @@ class TestOrderSimulatorInterface:
         result = await orchestrator.process_signal(short_signal)
 
         assert result.status == TradeStatus.EXECUTED
-        assert call_kwargs["side"] == "sell", (
-            "SHORT signals should result in 'sell' side"
-        )
+        assert (
+            call_kwargs["side"] == "sell"
+        ), "SHORT signals should result in 'sell' side"
         assert call_kwargs["symbol"] == "ETH/USDT"
         assert call_kwargs["quantity"] == 0.5
 
@@ -1199,9 +1199,9 @@ class TestOrderPriceValidation:
         # Verify order was created with correct price
         assert result.status == TradeStatus.EXECUTED
         assert created_order is not None
-        assert created_order.price == 50000.0, (
-            f"Expected price=50000.0, got {created_order.price}"
-        )
+        assert (
+            created_order.price == 50000.0
+        ), f"Expected price=50000.0, got {created_order.price}"
 
     @pytest.mark.asyncio
     async def test_validate_order_receives_entry_price(
@@ -1254,12 +1254,12 @@ class TestOrderPriceValidation:
         result = await orchestrator.process_signal(mock_signal)
 
         assert result.status == TradeStatus.EXECUTED
-        assert "entry_price" in call_kwargs, (
-            "validate_order should receive 'entry_price' parameter"
-        )
-        assert call_kwargs["entry_price"] == expected_price, (
-            f"Expected entry_price={expected_price}, got {call_kwargs.get('entry_price')}"
-        )
+        assert (
+            "entry_price" in call_kwargs
+        ), "validate_order should receive 'entry_price' parameter"
+        assert (
+            call_kwargs["entry_price"] == expected_price
+        ), f"Expected entry_price={expected_price}, got {call_kwargs.get('entry_price')}"
 
     @pytest.mark.asyncio
     async def test_order_rejected_when_no_market_price(
@@ -1369,9 +1369,9 @@ class TestOrderPriceValidation:
         assert call_kwargs["quantity"] == quantity
         # Verify notional value would be correct
         notional_value = call_kwargs["price"] * call_kwargs["quantity"]
-        assert notional_value == expected_value, (
-            f"Expected value=${expected_value}, got ${notional_value}"
-        )
+        assert (
+            notional_value == expected_value
+        ), f"Expected value=${expected_value}, got ${notional_value}"
 
     @pytest.mark.asyncio
     async def test_create_order_raises_on_invalid_price(
@@ -1398,9 +1398,9 @@ class TestOrderPriceValidation:
             correlation_id="test-corr-valid",
         )
 
-        assert order.price == valid_price, (
-            f"Expected price={valid_price}, got {order.price}"
-        )
+        assert (
+            order.price == valid_price
+        ), f"Expected price={valid_price}, got {order.price}"
         assert order.quantity == 0.1
         assert order.symbol == mock_signal.token
 

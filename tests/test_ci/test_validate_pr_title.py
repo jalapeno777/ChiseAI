@@ -18,9 +18,7 @@ def test_contains_valid_story_id_accepts_legacy_and_date_suffix_ids() -> None:
         "ST-CI-HEALTH-20260215F merge reconcile docs"
     )
     assert validate_pr_title._contains_valid_story_id("CH-CI-103 ci tweak")
-    assert validate_pr_title._contains_valid_story_id(
-        "PAPER-LOOP-001: order simulator"
-    )
+    assert validate_pr_title._contains_valid_story_id("PAPER-LOOP-001: order simulator")
     assert validate_pr_title._contains_valid_story_id("RECON-002 drift cleanup")
 
 

@@ -49,9 +49,9 @@ class TestFeedbackLoopIntegration:
                     signal_id=f"signal-{i}",
                     token="BTC" if i % 2 == 0 else "ETH",
                     timestamp=int(signal_time.timestamp() * 1000),
-                    direction=SignalDirection.LONG
-                    if i % 3 != 0
-                    else SignalDirection.SHORT,
+                    direction=(
+                        SignalDirection.LONG if i % 3 != 0 else SignalDirection.SHORT
+                    ),
                     confidence=0.6 + (i % 4) * 0.1,
                     entry_price=50000.0 + i * 100,
                     score=60.0 + (i % 5) * 8,

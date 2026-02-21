@@ -199,17 +199,17 @@ class HealingAttempt:
             "action_type": self.action_type,
             "status": self.status.value,
             "started_at": self.started_at.isoformat(),
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
             "attempt_number": self.attempt_number,
             "requires_approval": self.requires_approval,
             "approved_by": self.approved_by,
             "approved_at": self.approved_at.isoformat() if self.approved_at else None,
             "result": self.result.to_dict() if self.result else None,
-            "rollback_result": self.rollback_result.to_dict()
-            if self.rollback_result
-            else None,
+            "rollback_result": (
+                self.rollback_result.to_dict() if self.rollback_result else None
+            ),
         }
 
 

@@ -127,9 +127,9 @@ class PathAnalyzer:
                 path=path,
                 risk_level=RiskLevel.COMPLEX,
                 confidence=0.9,
-                pattern_matched=matched_pattern.description
-                if matched_pattern
-                else None,
+                pattern_matched=(
+                    matched_pattern.description if matched_pattern else None
+                ),
                 semantic_flags=[f.rule_name for f in semantic_flags],
             )
 
@@ -143,9 +143,9 @@ class PathAnalyzer:
                     path=path,
                     risk_level=risk,
                     confidence=conf * 0.9,
-                    pattern_matched=matched_pattern.description
-                    if matched_pattern
-                    else None,
+                    pattern_matched=(
+                        matched_pattern.description if matched_pattern else None
+                    ),
                     semantic_flags=[f.rule_name for f in semantic_flags],
                 )
 
@@ -153,9 +153,9 @@ class PathAnalyzer:
                 path=path,
                 risk_level=RiskLevel.SAFE,
                 confidence=0.95,
-                pattern_matched=matched_pattern.description
-                if matched_pattern
-                else None,
+                pattern_matched=(
+                    matched_pattern.description if matched_pattern else None
+                ),
                 semantic_flags=[],
             )
 

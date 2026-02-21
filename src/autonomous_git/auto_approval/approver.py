@@ -104,22 +104,24 @@ class ApprovalResult:
             "pr_number": self.pr_number,
             "message": self.message,
             "timestamp": self.timestamp,
-            "classification": {
-                "risk_level": self.classification.risk_level
+            "classification": (
+                {
+                    "risk_level": (
+                        self.classification.risk_level if self.classification else None
+                    ),
+                    "confidence": (
+                        self.classification.confidence if self.classification else None
+                    ),
+                    "reasoning": (
+                        self.classification.reasoning if self.classification else None
+                    ),
+                }
                 if self.classification
-                else None,
-                "confidence": self.classification.confidence
-                if self.classification
-                else None,
-                "reasoning": self.classification.reasoning
-                if self.classification
-                else None,
-            }
-            if self.classification
-            else None,
-            "safety_result": self.safety_result.to_dict()
-            if self.safety_result
-            else None,
+                else None
+            ),
+            "safety_result": (
+                self.safety_result.to_dict() if self.safety_result else None
+            ),
             "error_details": self.error_details,
         }
 
