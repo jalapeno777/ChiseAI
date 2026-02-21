@@ -295,9 +295,9 @@ class RetryOperation:
             "created_at": self.created_at.isoformat(),
             "status": self.status.name,
             "attempt_count": self.attempt_count,
-            "last_attempt_at": self.last_attempt_at.isoformat()
-            if self.last_attempt_at
-            else None,
+            "last_attempt_at": (
+                self.last_attempt_at.isoformat() if self.last_attempt_at else None
+            ),
             "last_error": self.last_error,
         }
 
