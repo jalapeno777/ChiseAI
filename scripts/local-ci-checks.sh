@@ -91,6 +91,13 @@ fi
 # Split by test directory to limit concurrent file opens
 echo "Running tests in batches to manage file descriptors..."
 
+# Check if we should use pytest-forked for file descriptor isolation
+FORKED_ARGS=""
+if [ "${CI_FD_CONSTRAINTS:-}" = "1" ] && python3 -c "import pytest_forked" >/dev/null 2>&1; then
+  echo "CI_FD_CONSTRAINTS=1 detected: using pytest-forked for process isolation"
+  FORKED_ARGS="--forked"
+fi
+
 # Discover test directories
 TEST_DIRS=()
 for dir in tests/*/; do
@@ -119,12 +126,14 @@ for batch_dir in "${TEST_DIRS[@]}"; do
       --cov=src \
       --cov-report=term-missing \
       --cov-append \
+      $FORKED_ARGS \
       --junitxml="_bmad-output/ci/pytest-junit-${batch_dir//\//_}.xml" \
       2>&1 || echo "$batch_dir" >> "$BATCH_TMP"
   else
     echo "pytest-cov not installed; running pytest without coverage enforcement" >&2
     python3 -m pytest \
       "$batch_dir" \
+      $FORKED_ARGS \
       --junitxml="_bmad-output/ci/pytest-junit-${batch_dir//\//_}.xml" \
       2>&1 || echo "$batch_dir" >> "$BATCH_TMP"
   fi
