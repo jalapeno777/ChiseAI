@@ -6,12 +6,9 @@ DynamicThresholdAdjuster, and related components.
 
 from __future__ import annotations
 
-import json
 import sys
-import tempfile
-from datetime import UTC, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 
-import numpy as np
 import pytest
 
 sys.path.insert(0, "src")
@@ -24,11 +21,7 @@ from ml.calibration.controller import (
 from ml.calibration.data_collector import CalibrationDataCollector
 from ml.calibration.dynamic import (
     DynamicThresholdAdjuster,
-    ThresholdAdjustment,
     calculate_optimal_adjustment,
-    ECE_DEGRADATION_THRESHOLD,
-    ECE_IMPROVEMENT_THRESHOLD,
-    MAX_ADJUSTMENT_PER_STEP,
     MAX_THRESHOLD,
     MIN_THRESHOLD,
 )

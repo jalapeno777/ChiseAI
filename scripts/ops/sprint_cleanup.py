@@ -26,7 +26,6 @@ import os
 import re
 import subprocess
 import sys
-import textwrap
 import urllib.error
 import urllib.parse
 import urllib.request

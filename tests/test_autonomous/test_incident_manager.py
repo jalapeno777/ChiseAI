@@ -16,8 +16,8 @@ from __future__ import annotations
 
 import asyncio
 import pytest
-from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime
+from unittest.mock import patch
 
 from src.autonomous_control_plane.components.incident_manager import (
     IncidentManager,
@@ -30,10 +30,7 @@ from src.autonomous_control_plane.models.incidents import (
     IncidentEvent,
     IncidentStatus,
     IncidentMetrics,
-    Notification,
-    NotificationChannel,
     PostMortem,
-    RemediationAction,
     Severity,
 )
 

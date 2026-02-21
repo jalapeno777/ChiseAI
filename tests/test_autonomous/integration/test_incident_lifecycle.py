@@ -9,18 +9,14 @@ from __future__ import annotations
 
 import asyncio
 import pytest
-from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 from src.autonomous_control_plane.components.incident_manager import (
     IncidentManager,
-    InMemoryIncidentStore,
 )
 from src.autonomous_control_plane.models.incidents import (
-    Incident,
     IncidentEvent,
     IncidentStatus,
-    RemediationAction,
     Severity,
 )
 

@@ -3,9 +3,8 @@
 import re
 from typing import List, Dict, Set, Optional, Tuple
 from dataclasses import dataclass
-from pathlib import Path
 
-from .patterns import PathPatternMatcher, SemanticRule
+from .patterns import PathPatternMatcher
 from .classification import RiskLevel
 
 

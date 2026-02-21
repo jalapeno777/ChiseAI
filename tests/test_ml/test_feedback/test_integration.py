@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import pytest
-import asyncio
 from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import sys
 

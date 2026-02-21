@@ -381,7 +381,6 @@ class TestBybitCredentialResolver:
         """Test that credentials are resolved in priority order."""
         from data.exchange.credential_resolver import (
             resolve_bybit_credentials,
-            BybitCredentialResolver,
         )
 
         # Set all three pairs - should use first priority

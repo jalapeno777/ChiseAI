@@ -101,8 +101,6 @@ def run_brain_evaluation(output_path: Path | None = None) -> dict[str, Any]:
     try:
         # Import brain evaluation modules
         from brain.batch_evaluator import (
-            BatchEvaluator,
-            EvaluationPersistence,
             run_batch_evaluation,
         )
         from brain.versioning import VersionManager

@@ -1,7 +1,5 @@
 """Tests for auto-approval exclusions."""
 
-import pytest
-from pathlib import Path
 from unittest.mock import mock_open, patch
 
 from src.autonomous_git.auto_approval.exclusions import ExclusionManager, ExclusionList

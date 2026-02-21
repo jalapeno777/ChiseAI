@@ -5,7 +5,7 @@ For PAPER-003-003: Automated Reporting and Anomaly Detection
 
 import pytest
 from datetime import UTC, datetime, timedelta
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
+from unittest.mock import Mock, AsyncMock
 
 from src.reporting.anomaly_detector import AnomalyDetector
 from src.reporting.daily_generator import DailyReportGenerator

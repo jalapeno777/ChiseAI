@@ -8,10 +8,8 @@ of the daily_summary.sh cron script.
 
 import os
 import subprocess
-import tempfile
 import time
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 import pytest
 

@@ -5,10 +5,9 @@ Tests for TASK-ST-NS-026-03: Discord Webhook Optimization
 
 from __future__ import annotations
 
-import asyncio
 import time
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 

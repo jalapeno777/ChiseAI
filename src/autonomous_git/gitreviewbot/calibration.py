@@ -4,9 +4,9 @@ import json
 import hashlib
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 
-from .models import Decision, DecisionType, ReviewFeedback, CalibrationMetrics
+from .models import Decision, ReviewFeedback, CalibrationMetrics
 
 
 @dataclass

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Callable
 
 from src.autonomous_control_plane.models.incidents import (
@@ -21,18 +21,14 @@ from src.autonomous_control_plane.models.incidents import (
 if TYPE_CHECKING:
     from src.autonomous_control_plane.components.incident_manager import IncidentManager
 from src.autonomous_control_plane.models.rollback import (
-    AuditLogEntry,
     HealthCheck,
-    HealthCheckStatus,
     PostRollbackHealth,
     RollbackMetrics,
     RollbackOperation,
     RollbackStatus,
     RollbackStep,
-    RollbackStepStatus,
     RollbackStore,
     ValidationCheck,
-    ValidationCheckStatus,
     ValidationResult,
 )
 

@@ -1,8 +1,6 @@
 """Tests for cache module."""
 
-import pytest
 import time
-import json
 from autonomous_git.path_analyzer.cache import PathAnalysisCache
 
 

@@ -10,7 +10,6 @@ For: CH-KIMI-FIX-001
 """
 
 import asyncio
-import json
 import sys
 from pathlib import Path
 

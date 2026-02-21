@@ -26,7 +26,6 @@ import time
 from pathlib import Path
 from typing import Optional, Set
 from dataclasses import dataclass, asdict
-from datetime import datetime
 
 import requests
 from watchdog.observers import Observer

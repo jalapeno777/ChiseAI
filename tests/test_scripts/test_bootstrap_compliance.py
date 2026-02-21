@@ -12,7 +12,6 @@ from __future__ import annotations
 import ast
 import os
 from pathlib import Path
-from typing import Any
 
 import pytest
 

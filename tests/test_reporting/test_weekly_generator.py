@@ -8,7 +8,7 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import Mock
 
 from src.reporting.weekly_generator import WeeklyPerformanceReport
-from src.reporting.models import WeeklyReport, StrategyPerformance
+from src.reporting.models import WeeklyReport
 
 
 class TestWeeklyPerformanceReport:

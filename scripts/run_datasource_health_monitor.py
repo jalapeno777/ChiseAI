@@ -27,7 +27,6 @@ from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
 
 from monitoring.datasource_health import (
-    DataSourceHealthMonitor,
     DatasourceHealthAlert,
     create_default_monitor,
 )

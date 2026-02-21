@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import json
 import tempfile
-from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -21,11 +20,7 @@ from ml.training import (
     TrainingSample,
     TrainingDataset,
     FeatureValidator,
-    FeatureSpec,
-    FeatureType,
-    TrendState,
     StorageFormatManager,
-    DatasetMetadata,
     SchemaVersion,
     SchemaVersionManager,
     CURRENT_SCHEMA_VERSION,

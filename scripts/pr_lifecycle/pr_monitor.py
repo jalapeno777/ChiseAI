@@ -17,7 +17,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any
-from datetime import datetime, UTC
+from datetime import UTC
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
@@ -209,7 +209,7 @@ class PRMonitor:
 
     def is_pr_stuck(self, state: PRState) -> tuple[bool, str]:
         """Check if a PR appears to be stuck."""
-        from datetime import datetime, timedelta
+        from datetime import datetime
 
         if state.is_terminal():
             return False, ""

@@ -11,7 +11,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
-from .parser import RunbookParser, ParsedRunbook, RunbookStep
+from .parser import RunbookParser, RunbookStep
 
 
 @dataclass

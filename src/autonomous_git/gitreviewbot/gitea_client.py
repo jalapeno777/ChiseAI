@@ -5,9 +5,8 @@ import re
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import aiohttp
-import asyncio
 
-from .models import PRDetails, Decision, DecisionType, Finding, Violation
+from .models import PRDetails, Decision, DecisionType
 
 
 class GiteaClient:

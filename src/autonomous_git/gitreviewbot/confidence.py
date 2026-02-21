@@ -1,6 +1,5 @@
 """Confidence scoring for GitReviewBot decisions."""
 
-import math
 from typing import List, Optional
 from dataclasses import dataclass
 

@@ -33,7 +33,6 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from decimal import Decimal
 from typing import Any
 
 import aiohttp
@@ -50,8 +49,8 @@ logger = logging.getLogger(__name__)
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from config.bootstrap import bootstrap
-from data.exchange.bybit_connector import BybitConnector, BybitConfig
-from signal_generation.models import Signal, SignalDirection, SignalStatus
+from data.exchange.bybit_connector import BybitConnector
+from signal_generation.models import SignalDirection, SignalStatus
 
 
 @dataclass

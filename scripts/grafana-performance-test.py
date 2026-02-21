@@ -23,7 +23,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 # Bootstrap environment first (must be before any env access)
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))

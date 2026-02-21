@@ -21,7 +21,7 @@ from run_trading_activity import (
     TradingActivityMetrics,
     _execute_trading_cycle,
 )
-from config.trading_mode import TradingMode, TradingModeConfig
+from config.trading_mode import TradingModeConfig
 from signal_generation.models import Signal, SignalDirection, SignalStatus
 from data_ingestion.ohlcv_fetcher import OHLCVData
 from execution.paper.order_simulator import MarketDataProvider, OrderSimulator

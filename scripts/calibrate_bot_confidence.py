@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Calibrate bot confidence thresholds based on historical accuracy."""
 
-import os
 import sys
 import json
 import asyncio

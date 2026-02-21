@@ -11,11 +11,11 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from confidence.ece import ECEBin, ECECalculator, ECEResult, SignalType
+from confidence.ece import ECEBin, ECEResult, SignalType
 from confidence.ece_tracker import ECEHistoryPoint, ECEHistoryTracker, ECETrend
 
 if TYPE_CHECKING:

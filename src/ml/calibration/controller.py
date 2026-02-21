@@ -13,19 +13,15 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, TYPE_CHECKING
 
-import numpy as np
 import yaml
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
 
-    from ml.calibration.data_collector import CalibrationDataCollector
-    from ml.calibration.models import CalibrationRecord
     from ml.calibration.optimizer import ThresholdOptimizer
 
 logger = logging.getLogger(__name__)

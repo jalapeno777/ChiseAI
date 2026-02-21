@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from execution.canary.gate_evaluator import GateEvaluator
-from execution.canary.models import CanaryDeployment, CanaryStatus
+from execution.canary.models import CanaryDeployment
 
 
 @dataclass

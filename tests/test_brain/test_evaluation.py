@@ -3,14 +3,12 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
 import pytest
 
 from brain.evaluation import (
     BrainEvaluator,
-    EvaluationError,
     EvaluationMetrics,
     EvaluationResult,
     EvaluationStatus,

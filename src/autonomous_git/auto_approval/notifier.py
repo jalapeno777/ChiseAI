@@ -1,6 +1,5 @@
 """Discord notifications for auto-approval."""
 
-import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone

@@ -1,6 +1,5 @@
 """Tests for analyzer module."""
 
-import pytest
 from autonomous_git.path_analyzer.analyzer import (
     PathAnalyzer,
     analyze_paths,

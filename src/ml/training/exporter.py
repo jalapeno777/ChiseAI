@@ -21,7 +21,6 @@ import numpy as np
 
 from ml.training.pipeline import TrainingPipeline
 from ml.training.schema import TrainingSample
-from ml.training.storage_format import DatasetMetadata
 
 logger = logging.getLogger(__name__)
 

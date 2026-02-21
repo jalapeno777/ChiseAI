@@ -12,7 +12,7 @@ For GATE-RECOVERY-002: Discord Channel Routing Fix
 from __future__ import annotations
 
 import os
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 

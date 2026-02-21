@@ -21,8 +21,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from execution.kill_switch.executor import KillSwitchExecutor
-    from execution.paper.fill_model import FillModel
-    from execution.paper.models import PaperOrder, PaperTradeResult, RiskAssessment
+    from execution.paper.models import PaperOrder, PaperTradeResult
     from execution.paper.order_simulator import OrderSimulator
     from execution.paper.risk_enforcer import PaperRiskEnforcer
     from execution.telemetry.collector import ExecutionCollector

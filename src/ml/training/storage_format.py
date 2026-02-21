@@ -14,7 +14,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Protocol
 
-from ml.training.version import SchemaVersion, SchemaVersionManager
+from ml.training.version import SchemaVersionManager
 
 
 class FormatHandler(Protocol):

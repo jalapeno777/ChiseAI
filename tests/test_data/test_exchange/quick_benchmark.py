@@ -9,7 +9,7 @@ import time
 
 sys.path.insert(0, "src")
 
-from data.exchange.pooling import ExchangeConnectionPool, PooledBybitClient
+from data.exchange.pooling import ExchangeConnectionPool
 
 
 async def quick_benchmark():

@@ -531,7 +531,6 @@ class DashboardEmitter(SignalEmitter):
         Returns:
             EmissionResult with status
         """
-        import json
         import time
 
         start_time = time.perf_counter()

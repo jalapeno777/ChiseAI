@@ -39,13 +39,11 @@ from config.bootstrap import bootstrap
 from execution.canary import (
     CanaryDeployment,
     CanaryStatus,
-    GateEvaluator,
     create_canary_deployment,
     create_canary_monitor,
     create_canary_storage,
     create_promotion_packet_generator,
 )
-from execution.canary.storage import CanaryStorageWithPersistence
 
 
 def setup_mock_scenario(canary: CanaryDeployment, scenario: str) -> None:

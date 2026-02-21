@@ -385,7 +385,6 @@ class TestSignalGeneratorIndicatorSet:
         from market_analysis.indicators.calculator import IndicatorSet
 
         # Verify IndicatorSet is a dataclass with expected fields
-        import inspect
 
         # Check that IndicatorSet is defined with the fields we need
         assert hasattr(IndicatorSet, "__dataclass_fields__")
@@ -405,7 +404,6 @@ class TestSignalGeneratorIndicatorSet:
         """
         from market_analysis.confluence.signal_aggregator import SignalAggregator
         from market_analysis.indicators.calculator import IndicatorSet
-        from dataclasses import fields
 
         aggregator = SignalAggregator()
 

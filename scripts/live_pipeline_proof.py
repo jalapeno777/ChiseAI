@@ -28,11 +28,9 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from decimal import Decimal
 from typing import Any
 
 import aiohttp
-import requests
 
 # Configure logging
 logging.basicConfig(

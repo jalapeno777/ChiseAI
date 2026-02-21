@@ -12,35 +12,6 @@ from typing import Any
 
 import yaml
 
-from src.backtesting.dsl.models import (
-    StrategyDSL,
-    Timeframe,
-    StrategyCategory,
-    StrategyStatus,
-    MarketType,
-    EntryLogic,
-    IndicatorType,
-    Operator,
-    Direction,
-    RegimeType,
-    RegimeDetectionMethod,
-    VolatilityMethod,
-    TimeFilterType,
-    TimeFilterAction,
-    StopLossType,
-    TakeProfitType,
-    TrailingActivation,
-    TrailingDistanceType,
-    SizingMethod,
-    PyramidingTrigger,
-    OrderType,
-    CircuitBreakerTrigger,
-    CircuitBreakerAction,
-    RiskTier,
-    ApprovalStatus,
-    DayOfWeek,
-)
-
 
 @dataclass(frozen=True)
 class ValidationError:
