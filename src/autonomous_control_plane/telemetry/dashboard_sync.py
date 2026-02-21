@@ -75,7 +75,7 @@ class DashboardSyncServer:
         >>> await server.stop()
     """
 
-    DEFAULT_HOST = "0.0.0.0"
+    DEFAULT_HOST = "0.0.0.0"  # nosec: B104 - Dashboard server intentionally binds to all interfaces for containerized deployment
     DEFAULT_PORT = 8765
     UPDATE_INTERVAL = 5.0  # 5-second refresh as per AC
 
