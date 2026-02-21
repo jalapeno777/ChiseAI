@@ -173,7 +173,7 @@ class TestAppMetadata:
         """Test that app has correct version."""
         from main import app
 
-        assert app.version == "1.0.0"
+        assert app.version == "1.1.0"
 
     def test_openapi_schema_available(self, client: TestClient) -> None:
         """Test that OpenAPI schema is available at /openapi.json."""
@@ -182,7 +182,7 @@ class TestAppMetadata:
         assert response.status_code == 200
         schema = response.json()
         assert schema["info"]["title"] == "ChiseAI API"
-        assert schema["info"]["version"] == "1.0.0"
+        assert schema["info"]["version"] == "1.1.0"
 
     def test_docs_endpoint_available(self, client: TestClient) -> None:
         """Test that Swagger UI docs are available at /docs."""
