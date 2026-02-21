@@ -93,6 +93,11 @@ steps:
         set +e
         (
           set -euo pipefail
+          # Increase file descriptor and process limits for testing
+          ulimit -n 16384 || echo "Warning: could not increase file descriptor limit"
+          ulimit -u 2048 || echo "Warning: could not increase process limit"
+          echo "File descriptor limit: $(ulimit -n)"
+          echo "Process limit: $(ulimit -u)"
           EVENT="${CI_BUILD_EVENT:-${WOODPECKER_BUILD_EVENT:-${WOODPECKER_EVENT:-}}}"
           BRANCH="${CI_COMMIT_BRANCH:-${WOODPECKER_COMMIT_BRANCH:-}}"
           FULL_MODE=0
@@ -113,10 +118,12 @@ steps:
 
           # Install system dependencies required by tests
           apt-get update && apt-get install -y jq ripgrep
-          pip install --no-cache-dir pytest pytest-asyncio pytest-cov pyyaml requests
+          pip install --no-cache-dir pytest pytest-asyncio pytest-cov pytest-forked pyyaml requests
           pip install --no-cache-dir ccxt influxdb-client asyncpg numpy scipy watchdog click websockets fastapi httpx
           pip install --no-cache-dir ccxt influxdb-client asyncpg numpy scipy watchdog click websockets fastapi
           if [ -x scripts/local-ci-checks.sh ]; then
+            # Set environment to indicate we're in CI with file descriptor constraints
+            export CI_FD_CONSTRAINTS=1
             if [ "${FULL_MODE}" = "1" ]; then
               ./scripts/local-ci-checks.sh
             else

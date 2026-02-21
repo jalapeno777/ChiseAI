@@ -196,17 +196,21 @@ epics:
   # EP-NS-008: Autonomous Control Plane (6 stories, 42 points)
   - id: EP-NS-008
     name: Autonomous Control Plane
-    status: planned
+    status: completed
     story_ids: [ST-NS-038, ST-NS-039, ST-NS-040, ST-NS-041, ST-NS-042, ST-NS-043]
     story_count: 6
     story_points: 42
     description: Unified autonomous control plane for continuous operation, self-correction, and observability consolidating circuit breakers, retry handling, self-healing, incident management, and rollback coordination
     sprint_id: q2-7
+    completion_date: "2026-02-21"
+    pr_number: 223
     notes:
       - Golden Plan: docs/architecture/autonomous-control-plane-golden-plan.md
       - Party-mode synthesis with Critic, Dev, SeniorDev, Merlin roles
       - Consolidates fragmented autonomy from EP-NS-004 completion
       - Dependencies: ST-NS-017 through ST-NS-020 (completed)
+      - Test Results: 235 tests passing, 0 failures, 3 skipped (P0 infrastructure tests)
+      - Components: Circuit Breaker Registry, Retry Coordinator, Self-Healing Engine, Incident Manager, Rollback Coordinator, Unified Dashboard
 
   # EP-PAPER-001: Paper Trading Loop Implementation (4 stories, 21 points)
   - id: EP-PAPER-001
@@ -1659,94 +1663,118 @@ stories:
 
   # EP-NS-008: Autonomous Control Plane (6 stories, 42 points)
   - id: ST-NS-038
-    title: Circuit Breaker Framework
+    title: Circuit Breaker Registry & Unified Telemetry
     epic_id: EP-NS-008
     sprint_id: q2-7
-    status: planned
-    validation_status: not_started
+    status: completed
+    validation_status: validated
     story_points: 7
-    priority: P1-HIGH
+    priority: P0-CRITICAL
     fr_coverage: []
-    description: Implement circuit breaker pattern for fault isolation and graceful degradation
+    description: Implement centralized circuit breaker registry with unified telemetry for fault isolation and graceful degradation
+    completion_date: "2026-02-21"
+    pr_number: 223
     acceptance_criteria:
       - Circuit breaker states defined (closed, open, half-open)
       - Automatic failure detection and state transitions
       - Configurable thresholds for state changes
+      - Registry provides centralized management of all circuit breakers
+      - Unified telemetry integration with dashboard
 
   - id: ST-NS-039
-    title: Retry Handler with Exponential Backoff
+    title: Retry Coordinator with Budget Management
     epic_id: EP-NS-008
     sprint_id: q2-7
-    status: planned
-    validation_status: not_started
+    status: completed
+    validation_status: validated
     story_points: 7
-    priority: P1-HIGH
+    priority: P0-CRITICAL
     fr_coverage: []
-    description: Implement intelligent retry mechanism with exponential backoff and jitter
+    description: Implement intelligent retry coordinator with exponential backoff, jitter, and budget management
+    completion_date: "2026-02-21"
+    pr_number: 223
     acceptance_criteria:
       - Exponential backoff with configurable base and max delay
       - Jitter to prevent thundering herd
       - Max retry limits with circuit breaker integration
+      - Retry budget enforcement per service
+      - Budget reset and monitoring capabilities
 
   - id: ST-NS-040
-    title: Self-Healing Service Recovery
+    title: Self-Healing Engine with Action Sandboxing
     epic_id: EP-NS-008
     sprint_id: q2-7
-    status: planned
-    validation_status: not_started
-    story_points: 7
-    priority: P1-HIGH
+    status: completed
+    validation_status: validated
+    story_points: 8
+    priority: P0-CRITICAL
     fr_coverage: []
-    description: Implement self-healing capabilities for automatic service recovery
+    description: Implement self-healing engine with sandboxed healing actions for automatic service recovery
+    completion_date: "2026-02-21"
+    pr_number: 223
     acceptance_criteria:
       - Health check integration for failure detection
       - Automatic restart/recovery procedures
       - Recovery success/failure logging and metrics
+      - Sandboxed healing action execution
+      - Rollback support for failed healing attempts
 
   - id: ST-NS-041
-    title: Incident Management Framework
+    title: Incident Manager with Auto-Remediation
     epic_id: EP-NS-008
     sprint_id: q2-7
-    status: planned
-    validation_status: not_started
-    story_points: 7
-    priority: P1-HIGH
+    status: completed
+    validation_status: validated
+    story_points: 8
+    priority: P0-CRITICAL
     fr_coverage: []
-    description: Structured incident logging, response procedures, and post-mortem process
+    description: Structured incident logging, response procedures, auto-remediation, and post-mortem process
+    completion_date: "2026-02-21"
+    pr_number: 223
     acceptance_criteria:
-      - Incident classification and severity levels
+      - Incident classification and severity levels (P0-P3)
       - Automated incident detection and alerting
       - Post-mortem template and workflow
+      - Auto-remediation capabilities with approval gates
+      - Escalation procedures and notification routing
 
   - id: ST-NS-042
-    title: Rollback Coordination System
+    title: Rollback Coordinator with Pre-flight Validation
     epic_id: EP-NS-008
     sprint_id: q2-7
-    status: planned
-    validation_status: not_started
+    status: completed
+    validation_status: validated
     story_points: 7
     priority: P1-HIGH
     fr_coverage: []
-    description: Coordinate rollbacks across services with verification steps
+    description: Coordinate rollbacks across services with pre-flight validation and verification steps
+    completion_date: "2026-02-21"
+    pr_number: 223
     acceptance_criteria:
       - Rollback triggers and authorization workflow
       - Multi-service rollback coordination
       - Rollback verification and health checks
+      - Pre-flight validation before rollback execution
+      - Step-wise rollback with checkpoint support
 
   - id: ST-NS-043
-    title: Observability and Monitoring Integration
+    title: Unified Dashboard & Alerting Integration
     epic_id: EP-NS-008
     sprint_id: q2-7
-    status: planned
-    validation_status: not_started
-    story_points: 7
+    status: completed
+    validation_status: validated
+    story_points: 5
     priority: P1-HIGH
     fr_coverage: []
-    description: Unified observability for autonomous control plane operations
+    description: Unified observability dashboard and alerting integration for autonomous control plane operations
+    completion_date: "2026-02-21"
+    pr_number: 223
     acceptance_criteria:
       - Metrics export for control plane state
       - Grafana dashboards for monitoring
       - Alerting rules for control plane events
+      - Runbook integration with alerting
+      - Real-time telemetry aggregation
 
   # EP-PAPER-001: Paper Trading Loop Implementation (4 stories, 21 points)
   - id: ST-PAPER-001

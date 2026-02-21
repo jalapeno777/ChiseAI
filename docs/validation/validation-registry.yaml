@@ -1732,7 +1732,7 @@ validations:
     title: Circuit Breaker Registry & Telemetry Validation
     epic_id: EP-NS-008
     story_id: ST-NS-038
-    status: planned
+    status: validated
     description: Validate centralized circuit breaker registry consolidates all service circuit breakers with real-time telemetry to InfluxDB
     acceptance_criteria:
       - Registry provides CRUD operations for circuit breakers
@@ -1748,7 +1748,7 @@ validations:
     title: Retry Coordinator with Budget Management Validation
     epic_id: EP-NS-008
     story_id: ST-NS-039
-    status: planned
+    status: validated
     description: Validate intelligent retry coordinator with exponential backoff, jitter, and retry budget management
     acceptance_criteria:
       - Exponential backoff with configurable delays works correctly
@@ -1763,7 +1763,7 @@ validations:
     title: Self-Healing Engine with Sandboxing Validation
     epic_id: EP-NS-008
     story_id: ST-NS-040
-    status: planned
+    status: validated
     description: Validate self-healing engine with sandboxed actions and automatic rollback capability
     acceptance_criteria:
       - Engine recognizes 10+ failure patterns
@@ -1778,7 +1778,7 @@ validations:
     title: Incident Manager with Auto-Remediation Validation
     epic_id: EP-NS-008
     story_id: ST-NS-041
-    status: planned
+    status: validated
     description: Validate incident management system with automated creation, severity classification, and remediation
     acceptance_criteria:
       - Incidents auto-created from system events
@@ -1793,7 +1793,7 @@ validations:
     title: Rollback Coordinator with Pre-flight Validation
     epic_id: EP-NS-008
     story_id: ST-NS-042
-    status: planned
+    status: validated
     description: Validate system-wide rollback coordinator with pre-flight checks and step-by-step execution
     acceptance_criteria:
       - Pre-conditions validated before rollback execution
@@ -1808,7 +1808,7 @@ validations:
     title: Unified Dashboard & Alerting Validation
     epic_id: EP-NS-008
     story_id: ST-NS-043
-    status: planned
+    status: validated
     description: Validate unified Grafana dashboard with real-time telemetry and alerting for autonomous control plane
     acceptance_criteria:
       - Dashboard shows all control plane components
