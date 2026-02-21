@@ -237,7 +237,7 @@ epics:
   # EP-AUTO-GIT-001: AI Swarm Autonomous PR Pipeline (8 stories, 47 points)
   - id: EP-AUTO-GIT-001
     name: AI Swarm Autonomous PR Pipeline
-    status: planned
+    status: in_progress
     story_ids: [ST-AUTO-001, ST-AUTO-002, ST-AUTO-003, ST-AUTO-004, ST-AUTO-005, ST-AUTO-006, ST-AUTO-007, ST-AUTO-008]
     story_count: 8
     story_points: 47
@@ -1932,6 +1932,61 @@ stories:
     acceptance_criteria:
       - Reviews STANDARD-classified PRs using dual-role analysis
       - Completes review within 10 minutes of PR submission
+
+  # ST-AUTO-004: Complex Path Human Gate
+  - id: ST-AUTO-004
+    title: Complex Path Human Gate
+    epic_id: EP-AUTO-GIT-001
+    sprint_id: AUTO-GIT-001
+    status: planned
+    validation_status: planned
+    story_points: 5
+    priority: P1-HIGH
+    description: Human approval workflow for COMPLEX-classified PRs with GitReviewBot pre-review
+
+  # ST-AUTO-005: Feedback Loop & Retry
+  - id: ST-AUTO-005
+    title: Feedback Loop & Retry
+    epic_id: EP-AUTO-GIT-001
+    sprint_id: AUTO-GIT-001
+    status: planned
+    validation_status: planned
+    story_points: 5
+    priority: P1-HIGH
+    description: Outcome tracking and continuous improvement system for PR reviews
+
+  # ST-AUTO-006: EP-NS-008 Integration
+  - id: ST-AUTO-006
+    title: EP-NS-008 Integration
+    epic_id: EP-AUTO-GIT-001
+    sprint_id: AUTO-GIT-001
+    status: planned
+    validation_status: planned
+    story_points: 8
+    priority: P1-HIGH
+    description: Circuit breaker, retry coordinator, and self-healing integration from Autonomous Control Plane
+
+  # ST-AUTO-007: Metrics & Observability
+  - id: ST-AUTO-007
+    title: Metrics & Observability
+    epic_id: EP-AUTO-GIT-001
+    sprint_id: AUTO-GIT-001
+    status: planned
+    validation_status: planned
+    story_points: 8
+    priority: P2-MEDIUM
+    description: Grafana dashboards and alerting for the autonomous PR pipeline
+
+  # ST-AUTO-008: Agent Onboarding & Documentation
+  - id: ST-AUTO-008
+    title: Agent Onboarding & Documentation
+    epic_id: EP-AUTO-GIT-001
+    sprint_id: AUTO-GIT-001
+    status: planned
+    validation_status: planned
+    story_points: 5
+    priority: P2-MEDIUM
+    description: Documentation and onboarding materials for AI agents using the autonomous PR pipeline
 
 # ============================================================
 # ACTIVE SPRINTS
