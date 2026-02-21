@@ -13,7 +13,7 @@ import random
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from .models import PaperFill, PaperOrder
@@ -217,7 +217,7 @@ class FillModel:
         else:  # sell
             fill_price = market_price * (1 - slippage_multiplier)
 
-        return round(fill_price, 8)
+        return cast(float, round(fill_price, 8))
 
     def should_limit_order_fill(
         self,
