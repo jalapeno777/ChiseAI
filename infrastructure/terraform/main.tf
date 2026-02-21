@@ -630,12 +630,18 @@ resource "docker_container" "chiseai_api" {
     "REDIS_DB=0",
     "QDRANT_URL=http://chiseai-qdrant:6334",
     "CHISEAI_ENV=production",
-    "PYTHONPATH=/app:/app/scripts",
+    "PYTHONPATH=/app:/app/src:/app/scripts",
   ]
 
   ports {
     internal = 8000
     external = 8001
+  }
+
+  # ACP Dashboard Sync WebSocket (EP-NS-008)
+  ports {
+    internal = 8765
+    external = 8765
   }
 
   labels {
