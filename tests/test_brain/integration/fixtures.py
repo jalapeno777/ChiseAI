@@ -7,9 +7,8 @@ from __future__ import annotations
 
 import asyncio
 import pytest
-from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable, Coroutine, Dict, List, Optional
+from typing import Any, Callable, Coroutine, Dict, List
 
 from src.brain.batch_evaluator import (
     BatchEvaluator,
@@ -26,17 +25,12 @@ from src.brain.promotion_packet import (
 )
 from src.brain.rollback_handler import (
     RollbackHandler,
-    RollbackResult,
     RollbackStep,
-    RollbackTrigger,
 )
 from src.brain.shadow_testing import (
     ShadowTestConfig,
-    ShadowTestResult,
-    ShadowTester,
 )
 from src.brain.version import BrainVersion
-
 
 # =============================================================================
 # Brain Function Fixtures

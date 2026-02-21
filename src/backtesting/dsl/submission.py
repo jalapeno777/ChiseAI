@@ -14,16 +14,14 @@ from uuid import uuid4
 
 import yaml
 
-from src.backtesting.dsl.models import StrategyDSL
 from src.backtesting.dsl.validator import (
     DSLValidator,
     ValidationResult,
     ValidationError,
     ValidationWarning,
 )
-from src.backtesting.dsl.safety import SafetyChecker, check_safety
-from src.backtesting.dsl.fingerprint import compute_dsl_fingerprint, DSLFingerprint
-from src.backtesting.dsl.migration import get_config_version, migrate_config
+from src.backtesting.dsl.safety import SafetyChecker
+from src.backtesting.dsl.fingerprint import compute_dsl_fingerprint
 
 
 @dataclass(frozen=True)

@@ -6,14 +6,13 @@ Tests metrics export for Grafana dashboard visibility.
 from __future__ import annotations
 
 import pytest
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 from execution.live_gating.grafana_exporter import (
     LiveGatingGrafanaExporter,
     LiveGatingMetrics,
 )
-from execution.live_gating.gate_manager import LiveGateManager, LiveTradingState
 
 
 class TestLiveGatingMetrics:

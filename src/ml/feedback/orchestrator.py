@@ -28,9 +28,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from ml.feedback.analyzer import FeedbackAnalysisReport
-    from ml.feedback.matcher import MatchBatchResult, PredictionOutcomeMatch
-    from ml.feedback.updater import UpdateResult
+    from ml.feedback.matcher import PredictionOutcomeMatch
 
 logger = logging.getLogger(__name__)
 

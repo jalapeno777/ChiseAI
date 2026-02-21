@@ -10,7 +10,9 @@ MODULE_PATH = (
     / "ci"
     / "check_woodpecker_stuck_pipelines.py"
 )
-SPEC = importlib.util.spec_from_file_location("check_woodpecker_stuck_pipelines", MODULE_PATH)
+SPEC = importlib.util.spec_from_file_location(
+    "check_woodpecker_stuck_pipelines", MODULE_PATH
+)
 assert SPEC and SPEC.loader
 watchdog = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = watchdog

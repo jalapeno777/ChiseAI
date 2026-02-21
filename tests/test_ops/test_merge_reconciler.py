@@ -5,7 +5,9 @@ import json
 import sys
 from pathlib import Path
 
-MODULE_PATH = Path(__file__).resolve().parents[2] / "scripts" / "ops" / "merge_reconciler.py"
+MODULE_PATH = (
+    Path(__file__).resolve().parents[2] / "scripts" / "ops" / "merge_reconciler.py"
+)
 SPEC = importlib.util.spec_from_file_location("merge_reconciler", MODULE_PATH)
 assert SPEC and SPEC.loader
 merge_reconciler = importlib.util.module_from_spec(SPEC)
@@ -33,7 +35,9 @@ class FakeStore:
             return queue[start:]
         return queue[start : end + 1]
 
-    def acquire_lock(self, key: str, owner: str, ttl_seconds: int) -> bool:  # noqa: ARG002
+    def acquire_lock(
+        self, key: str, owner: str, ttl_seconds: int
+    ) -> bool:  # noqa: ARG002
         if self.lock_owner is not None:
             return False
         self.lock_owner = owner
@@ -59,7 +63,9 @@ class FakeGitea:
         assert sha == self.pr["head"]["sha"]
         return self.status
 
-    def merge_pr(self, pr_number: int, head_sha: str, delete_branch: bool = True) -> dict:  # noqa: ARG002
+    def merge_pr(
+        self, pr_number: int, head_sha: str, delete_branch: bool = True
+    ) -> dict:  # noqa: ARG002
         assert pr_number == int(self.pr["number"])
         assert head_sha == self.pr["head"]["sha"]
         self.merge_calls += 1
@@ -106,8 +112,18 @@ def test_required_context_state_success_and_failure() -> None:
 def test_process_item_ci_failure_emits_incident_and_requeues() -> None:
     store = FakeStore()
     gitea = FakeGitea(
-        pr={"number": 7, "state": "open", "merged": False, "head": {"sha": "abc123"}, "mergeable": True},
-        status={"statuses": [{"context": "ci/woodpecker/push/woodpecker", "state": "failure"}]},
+        pr={
+            "number": 7,
+            "state": "open",
+            "merged": False,
+            "head": {"sha": "abc123"},
+            "mergeable": True,
+        },
+        status={
+            "statuses": [
+                {"context": "ci/woodpecker/push/woodpecker", "state": "failure"}
+            ]
+        },
     )
     engine = merge_reconciler.MergeQueueEngine(store, gitea)
 
@@ -129,8 +145,18 @@ def test_process_item_ci_failure_emits_incident_and_requeues() -> None:
 def test_queue_tick_merges_when_green_and_allow_merge() -> None:
     store = FakeStore()
     gitea = FakeGitea(
-        pr={"number": 7, "state": "open", "merged": False, "head": {"sha": "abc123"}, "mergeable": True},
-        status={"statuses": [{"context": "ci/woodpecker/push/woodpecker", "state": "success"}]},
+        pr={
+            "number": 7,
+            "state": "open",
+            "merged": False,
+            "head": {"sha": "abc123"},
+            "mergeable": True,
+        },
+        status={
+            "statuses": [
+                {"context": "ci/woodpecker/push/woodpecker", "state": "success"}
+            ]
+        },
     )
     engine = merge_reconciler.MergeQueueEngine(store, gitea)
     store.enqueue(merge_reconciler.MERGE_QUEUE_KEY, _mk_item().to_json())

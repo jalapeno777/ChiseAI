@@ -441,9 +441,11 @@ class RiskAlertDetector:
                     "failed_orders": failed_orders,
                     "failure_rate_pct": failure_rate,
                     "failure_breakdown": failure_reasons,
-                    "most_common_reason": max(failure_reasons, key=failure_reasons.get)
-                    if failure_reasons
-                    else None,
+                    "most_common_reason": (
+                        max(failure_reasons, key=failure_reasons.get)
+                        if failure_reasons
+                        else None
+                    ),
                 },
             )
 

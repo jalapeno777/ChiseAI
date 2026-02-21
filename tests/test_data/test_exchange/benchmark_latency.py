@@ -17,8 +17,6 @@ from typing import Any
 
 from data.exchange.pooling import (
     ExchangeConnectionPool,
-    PooledBybitClient,
-    PoolMetrics,
 )
 
 

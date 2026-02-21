@@ -133,9 +133,9 @@ class TestPaperTradingE2E:
         assert position is not None, "Position update failed"
 
         elapsed = time.time() - start_time
-        assert elapsed < MAX_E2E_LATENCY_SECONDS, (
-            f"E2E latency {elapsed:.3f}s exceeds {MAX_E2E_LATENCY_SECONDS}s"
-        )
+        assert (
+            elapsed < MAX_E2E_LATENCY_SECONDS
+        ), f"E2E latency {elapsed:.3f}s exceeds {MAX_E2E_LATENCY_SECONDS}s"
 
         logger.info(f"E2E flow completed in {elapsed:.3f}s")
 
@@ -284,9 +284,9 @@ class TestPaperTradingE2E:
 
         success_count = sum(1 for r in results if not isinstance(r, Exception))
         assert success_count == 10, f"Only {success_count}/10 signals processed"
-        assert elapsed < MAX_E2E_LATENCY_SECONDS * 2, (
-            f"Batch processing took {elapsed:.3f}s"
-        )
+        assert (
+            elapsed < MAX_E2E_LATENCY_SECONDS * 2
+        ), f"Batch processing took {elapsed:.3f}s"
 
     @pytest.mark.asyncio
     async def test_health_trend_calculation(self, health_monitor):
@@ -354,12 +354,12 @@ class TestPaperTradingE2E:
         max_latency = max(latencies)
         p95_latency = sorted(latencies)[int(len(latencies) * 0.95)]
 
-        assert avg_latency < MAX_E2E_LATENCY_SECONDS, (
-            f"Avg latency {avg_latency:.3f}s exceeds limit"
-        )
-        assert p95_latency < MAX_E2E_LATENCY_SECONDS * 1.5, (
-            f"P95 latency {p95_latency:.3f}s exceeds limit"
-        )
+        assert (
+            avg_latency < MAX_E2E_LATENCY_SECONDS
+        ), f"Avg latency {avg_latency:.3f}s exceeds limit"
+        assert (
+            p95_latency < MAX_E2E_LATENCY_SECONDS * 1.5
+        ), f"P95 latency {p95_latency:.3f}s exceeds limit"
 
         logger.info(
             f"Latency under load: avg={avg_latency:.3f}s, "

@@ -13,7 +13,7 @@ Tests cover:
 from __future__ import annotations
 
 import pytest
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from confidence.threshold import (

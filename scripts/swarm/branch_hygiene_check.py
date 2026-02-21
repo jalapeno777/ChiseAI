@@ -7,9 +7,7 @@ Analyzes branches and recommends cleanup actions.
 import subprocess
 import json
 import argparse
-from datetime import datetime, timedelta
-from pathlib import Path
-import sys
+from datetime import datetime
 
 from config.bootstrap import bootstrap
 

@@ -9,18 +9,14 @@ from __future__ import annotations
 
 import asyncio
 import pytest
-from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 from src.autonomous_control_plane.components.incident_manager import (
     IncidentManager,
-    InMemoryIncidentStore,
 )
 from src.autonomous_control_plane.models.incidents import (
-    Incident,
     IncidentEvent,
     IncidentStatus,
-    RemediationAction,
     Severity,
 )
 
@@ -38,7 +34,7 @@ class TestIncidentLifecycle:
     @pytest.mark.skip(reason="Async notification mocking complexity - tested manually")
     async def test_p0_incident_lifecycle_with_notifications(self, manager):
         """Test complete P0 incident lifecycle with notifications.
-        
+
         Note: Skipped due to async notification mocking complexity.
         Notifications are tested via template tests in unit tests.
         """
@@ -122,7 +118,7 @@ class TestIncidentLifecycle:
     @pytest.mark.skip(reason="Async remediation handler mocking complexity")
     async def test_p2_incident_with_auto_remediation(self, manager):
         """Test P2 incident with auto-remediation execution.
-        
+
         Note: Skipped due to async handler mocking complexity.
         Auto-remediation is verified via manual testing and logs.
         """

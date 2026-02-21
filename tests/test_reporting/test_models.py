@@ -3,7 +3,6 @@
 For PAPER-003-003: Automated Reporting and Anomaly Detection
 """
 
-import pytest
 from datetime import UTC, datetime, timedelta
 
 from src.reporting.models import (

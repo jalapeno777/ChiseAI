@@ -289,9 +289,11 @@ class SlidingWindowRateLimiter:
             "current_requests": current_requests,
             "rejected_count": self.rejected_count,
             "total_requests": self.total_requests,
-            "utilization": (current_requests / self.max_requests * 100)
-            if self.max_requests > 0
-            else 0,
+            "utilization": (
+                (current_requests / self.max_requests * 100)
+                if self.max_requests > 0
+                else 0
+            ),
         }
 
     def reset(self) -> None:

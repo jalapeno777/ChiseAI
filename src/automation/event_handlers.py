@@ -19,7 +19,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from enum import Enum, StrEnum
+from enum import StrEnum
 from typing import Any
 
 from .recovery_orchestrator import (
@@ -27,7 +27,6 @@ from .recovery_orchestrator import (
     RecoveryContext,
     RecoveryOrchestrator,
     RecoveryResult,
-    RecoveryState,
     RecoveryType,
 )
 from .self_healing_engine import (
@@ -481,8 +480,9 @@ class OnRecoveryFailure(EventHandler):
         self,
         orchestrator: RecoveryOrchestrator,
         healing_engine: SelfHealingEngine,
-        escalation_handlers: list[Callable[[HealthEvent], Awaitable[None]]]
-        | None = None,
+        escalation_handlers: (
+            list[Callable[[HealthEvent], Awaitable[None]]] | None
+        ) = None,
     ):
         """Initialize failure handler.
 

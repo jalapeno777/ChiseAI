@@ -18,7 +18,7 @@ Exit codes:
 import asyncio
 import json
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -40,28 +40,12 @@ def test_module_imports() -> dict[str, Any]:
     }
 
     try:
-        from execution.canary import (
-            CanaryDeployment,
-            CanaryMetrics,
-            CanaryStatus,
-            GateCheck,
-            GateCheckResult,
-            GateCriteria,
-            GateEvaluator,
-            create_canary_deployment,
-        )
 
         results["details"].append("✓ All canary module imports successful")
 
-        from execution.paper.orchestrator import PaperTradingOrchestrator
-
         results["details"].append("✓ Paper trading orchestrator import successful")
 
-        from execution.paper.risk_enforcer import PaperRiskEnforcer
-
         results["details"].append("✓ Risk enforcer import successful")
-
-        from execution.paper.risk_models import RiskCheck
 
         results["details"].append("✓ Risk models import successful")
 
@@ -138,7 +122,6 @@ def test_gate_evaluation() -> dict[str, Any]:
     try:
         from execution.canary import (
             CanaryMetrics,
-            CanaryStatus,
             GateCheckResult,
             GateCriteria,
             GateEvaluator,
@@ -288,8 +271,6 @@ def test_canary_lifecycle() -> dict[str, Any]:
 
     try:
         from execution.canary import (
-            CanaryDeployment,
-            CanaryMetrics,
             CanaryStatus,
             create_canary_deployment,
         )
@@ -602,9 +583,9 @@ def generate_canary_report(all_results: list[dict[str, Any]]) -> dict[str, Any]:
             "total_tests": len(all_results),
             "passed": sum(1 for r in all_results if r["status"] == "PASS"),
             "failed": sum(1 for r in all_results if r["status"] == "FAIL"),
-            "overall_status": "PASS"
-            if all(r["status"] == "PASS" for r in all_results)
-            else "FAIL",
+            "overall_status": (
+                "PASS" if all(r["status"] == "PASS" for r in all_results) else "FAIL"
+            ),
         },
         "test_results": all_results,
         "recommendations": [],

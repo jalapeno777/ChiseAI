@@ -315,12 +315,12 @@ class TestSignalGeneratorEntryPrice:
         )
 
         # Verify entry_price is in metadata
-        assert "entry_price" in signal.metadata, (
-            "entry_price missing from signal metadata"
-        )
-        assert signal.metadata["entry_price"] == test_price, (
-            f"entry_price mismatch: expected {test_price}, got {signal.metadata['entry_price']}"
-        )
+        assert (
+            "entry_price" in signal.metadata
+        ), "entry_price missing from signal metadata"
+        assert (
+            signal.metadata["entry_price"] == test_price
+        ), f"entry_price mismatch: expected {test_price}, got {signal.metadata['entry_price']}"
 
     @patch("signal_generation.signal_generator.SignalGenerator._get_freshness_checker")
     @patch("signal_generation.signal_generator.SignalGenerator._get_scorer")
@@ -385,7 +385,6 @@ class TestSignalGeneratorIndicatorSet:
         from market_analysis.indicators.calculator import IndicatorSet
 
         # Verify IndicatorSet is a dataclass with expected fields
-        import inspect
 
         # Check that IndicatorSet is defined with the fields we need
         assert hasattr(IndicatorSet, "__dataclass_fields__")
@@ -405,7 +404,6 @@ class TestSignalGeneratorIndicatorSet:
         """
         from market_analysis.confluence.signal_aggregator import SignalAggregator
         from market_analysis.indicators.calculator import IndicatorSet
-        from dataclasses import fields
 
         aggregator = SignalAggregator()
 

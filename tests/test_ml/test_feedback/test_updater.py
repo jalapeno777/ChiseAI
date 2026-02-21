@@ -7,14 +7,13 @@ import tempfile
 import shutil
 from pathlib import Path
 from datetime import datetime, timezone
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import sys
 
 sys.path.insert(0, "src")
 
 from ml.feedback.updater import (
-    ModelType,
     ModelUpdater,
     ModelVersion,
     UpdateConfig,

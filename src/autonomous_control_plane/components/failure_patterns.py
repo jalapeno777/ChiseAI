@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import re
 from abc import ABC, abstractmethod
-from typing import Any
 
 from src.autonomous_control_plane.models.healing import (
     FailurePatternMatch,

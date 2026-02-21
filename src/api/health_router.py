@@ -452,9 +452,11 @@ async def get_acp_health() -> dict[str, Any]:
             try:
                 discord_health = _discord_initializer.get_health()
                 status["components"]["discord"] = {
-                    "status": "connected"
-                    if discord_health.get("connected")
-                    else "disconnected",
+                    "status": (
+                        "connected"
+                        if discord_health.get("connected")
+                        else "disconnected"
+                    ),
                     **discord_health,
                 }
             except Exception as e:
@@ -542,9 +544,11 @@ async def get_acp_components() -> dict[str, Any]:
                     {
                         "attempt_id": a.attempt_id,
                         "pattern_name": a.pattern_name,
-                        "created_at": a.created_at.isoformat()
-                        if hasattr(a, "created_at")
-                        else None,
+                        "created_at": (
+                            a.created_at.isoformat()
+                            if hasattr(a, "created_at")
+                            else None
+                        ),
                     }
                     for a in engine.get_pending_approvals()
                 ],
@@ -605,9 +609,11 @@ async def get_acp_components() -> dict[str, Any]:
                         "operation_id": o.operation_id,
                         "status": o.status.value,
                         "target_state": o.target_state,
-                        "created_at": o.created_at.isoformat()
-                        if hasattr(o, "created_at")
-                        else None,
+                        "created_at": (
+                            o.created_at.isoformat()
+                            if hasattr(o, "created_at")
+                            else None
+                        ),
                     }
                     for o in all_ops[:10]
                 ],
@@ -635,9 +641,11 @@ async def get_acp_components() -> dict[str, Any]:
             try:
                 discord_health = _discord_initializer.get_health()
                 components["discord"] = {
-                    "status": "connected"
-                    if discord_health.get("connected")
-                    else "disconnected",
+                    "status": (
+                        "connected"
+                        if discord_health.get("connected")
+                        else "disconnected"
+                    ),
                     **discord_health,
                 }
             except Exception as e:

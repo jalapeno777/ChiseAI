@@ -9,13 +9,11 @@ For PAPER-LOOP-001: Paper Trading Order Simulator
 
 from __future__ import annotations
 
-import asyncio
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Callable
+from typing import Any
 
-from .fill_model import FillModel, SlippageConfig, LatencyConfig, create_fill_model
+from .fill_model import FillModel, create_fill_model
 from .models import OrderState, PaperFill, PaperOrder
 
 

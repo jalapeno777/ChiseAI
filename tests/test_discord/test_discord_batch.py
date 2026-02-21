@@ -5,10 +5,9 @@ Tests for TASK-ST-NS-026-03: Discord Webhook Optimization
 
 from __future__ import annotations
 
-import asyncio
 import time
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -168,7 +167,9 @@ class TestDiscordBatchSender:
         with patch("aiohttp.ClientSession") as mock_session:
             mock_resp = AsyncMock()
             mock_resp.status = 204
-            mock_session.return_value.__aenter__.return_value.post.return_value.__aenter__.return_value = mock_resp
+            mock_session.return_value.__aenter__.return_value.post.return_value.__aenter__.return_value = (
+                mock_resp
+            )
 
             results = await batch_sender.flush()
 
@@ -188,7 +189,9 @@ class TestDiscordBatchSender:
         with patch("aiohttp.ClientSession") as mock_session:
             mock_resp = AsyncMock()
             mock_resp.status = 204
-            mock_session.return_value.__aenter__.return_value.post.return_value.__aenter__.return_value = mock_resp
+            mock_session.return_value.__aenter__.return_value.post.return_value.__aenter__.return_value = (
+                mock_resp
+            )
 
             for signal in signals:
                 await batch_sender.send_signal(signal)

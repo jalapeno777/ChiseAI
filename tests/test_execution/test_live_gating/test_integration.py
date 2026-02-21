@@ -17,7 +17,6 @@ from execution.live_gating import (
     LiveTradingState,
     PaperTradingEvidence,
     RiskEnforcer,
-    ValidationResult,
 )
 
 

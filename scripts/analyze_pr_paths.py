@@ -11,14 +11,12 @@ Usage:
 import sys
 import json
 import argparse
-from typing import List, Optional
 from pathlib import Path
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from autonomous_git.path_analyzer import (
-    PathAnalyzer,
     RiskLevel,
     analyze_paths,
 )
@@ -58,9 +56,7 @@ def format_result(result) -> str:
         icon = (
             "✓"
             if fc.risk_level == RiskLevel.SAFE
-            else "⚠"
-            if fc.risk_level == RiskLevel.MEDIUM_RISK
-            else "✗"
+            else "⚠" if fc.risk_level == RiskLevel.MEDIUM_RISK else "✗"
         )
         lines.append(f"  {icon} {fc.path}")
         lines.append(

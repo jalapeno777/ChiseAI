@@ -15,7 +15,6 @@ Usage:
 from __future__ import annotations
 
 import tempfile
-from pathlib import Path
 
 
 def demo_versioning() -> None:
@@ -24,7 +23,7 @@ def demo_versioning() -> None:
     print("DEMO 1: Brain Versioning (Semantic Versioning)")
     print("=" * 60)
 
-    from brain.versioning import BrainVersion, VersionManager
+    from brain.versioning import VersionManager
 
     with tempfile.TemporaryDirectory() as tmpdir:
         # Create version manager
@@ -65,7 +64,7 @@ def demo_evaluation() -> None:
     print("DEMO 2: Brain Evaluation Framework")
     print("=" * 60)
 
-    from brain.evaluation import BrainEvaluator, EvaluationMetrics
+    from brain.evaluation import BrainEvaluator
 
     # Create evaluator
     evaluator = BrainEvaluator()
@@ -139,7 +138,7 @@ def demo_promotion() -> None:
     print("DEMO 4: Promotion Gating")
     print("=" * 60)
 
-    from brain.promotion import PromotionGate, PromotionPacket, RequiredFieldStatus
+    from brain.promotion import PromotionGate, RequiredFieldStatus
 
     with tempfile.TemporaryDirectory() as tmpdir:
         # Create promotion gate

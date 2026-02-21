@@ -286,9 +286,9 @@ class ACPContainer:
                 "incident_manager": self._incident_manager is not None,
                 "rollback_coordinator": self._rollback_coordinator is not None,
             },
-            "healing_engine": self._healing_engine.get_status()
-            if self._healing_engine
-            else None,
+            "healing_engine": (
+                self._healing_engine.get_status() if self._healing_engine else None
+            ),
         }
 
 

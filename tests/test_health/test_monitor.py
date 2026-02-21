@@ -4,12 +4,11 @@ For PAPER-003-001: Unified Health Monitoring System
 """
 
 import pytest
-from datetime import datetime, UTC
-from unittest.mock import Mock, AsyncMock, MagicMock
+from unittest.mock import Mock, AsyncMock
 import asyncio
 
 from src.health.monitor import HealthMonitor
-from src.health import ComponentType, HealthStatus
+from src.health import ComponentType
 from src.health.score_calculator import HealthScore, ComponentScore
 
 

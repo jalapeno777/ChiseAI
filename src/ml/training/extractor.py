@@ -8,12 +8,12 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from market_analysis.signal_storage.interface import SignalStorageInterface
-    from market_analysis.signal_storage.models import SignalRecord, SignalWithOutcome
+    from market_analysis.signal_storage.models import SignalRecord
 
 logger = logging.getLogger(__name__)
 

@@ -17,13 +17,12 @@ import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-from confidence.ece import ECEResult
-from confidence.ece_tracker import ECEHistoryPoint, ECETrend
+from confidence.ece_tracker import ECEHistoryPoint
 
 logger = logging.getLogger(__name__)
 

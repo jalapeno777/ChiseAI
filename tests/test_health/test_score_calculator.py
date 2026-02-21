@@ -3,8 +3,6 @@
 For PAPER-003-001: Unified Health Monitoring System
 """
 
-import pytest
-
 from src.health.score_calculator import (
     ComponentScore,
     HealthScore,
@@ -99,9 +97,9 @@ class TestScoreCalculatorExtended:
         calculator = ScoreCalculator()
 
         for component in ComponentType:
-            assert component in calculator.COMPONENT_WEIGHTS, (
-                f"Missing weight for {component}"
-            )
+            assert (
+                component in calculator.COMPONENT_WEIGHTS
+            ), f"Missing weight for {component}"
 
     def test_orchestrator_high_score(self):
         """Test orchestrator score with good health."""

@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 import os
 from datetime import UTC, datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -466,9 +466,9 @@ class TestDashboardJSON:
         ]
 
         for panel in required_panels:
-            assert any(panel in title for title in panel_titles), (
-                f"Missing panel: {panel}"
-            )
+            assert any(
+                panel in title for title in panel_titles
+            ), f"Missing panel: {panel}"
 
     def test_dashboard_datasource_config(self):
         """Test dashboard datasource configuration."""

@@ -624,7 +624,6 @@ class ReportScheduler:
         """
         import json
         import os
-        from datetime import UTC
 
         # Create directory structure: reports/paper/daily/YYYY-MM-DD/
         report_dir = os.path.join(schedule.output_dir, "paper", "daily")

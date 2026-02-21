@@ -394,9 +394,9 @@ class NotificationDispatcher:
             "title": f"[{incident.severity.value}] {incident.title}",
             "message": incident.description,
             "image_url": None,
-            "state": "alerting"
-            if incident.severity in [Severity.P0, Severity.P1]
-            else "ok",
+            "state": (
+                "alerting" if incident.severity in [Severity.P0, Severity.P1] else "ok"
+            ),
             "link_to_upstream_details": None,
         }
 

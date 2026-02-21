@@ -48,7 +48,6 @@ from operations.backtest_runner import (
     BacktestKPIs,
     BacktestRunner,
     BacktestStatus,
-    Trade,
 )
 
 # Configure logging

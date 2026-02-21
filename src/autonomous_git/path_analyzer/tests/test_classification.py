@@ -1,6 +1,5 @@
 """Tests for classification module."""
 
-import pytest
 from autonomous_git.path_analyzer.classification import (
     RiskLevel,
     FileClassification,

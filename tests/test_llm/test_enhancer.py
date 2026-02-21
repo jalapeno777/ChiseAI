@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import os
 import sys
-from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -27,7 +26,7 @@ from signal_generation.llm_enhancer import (
     PROVIDER_CHAIN_AVAILABLE,
     SignalInput,
 )
-from signal_generation.models import Signal, SignalDirection, SignalStatus
+from signal_generation.models import Signal, SignalDirection
 
 
 class TestLLMEnhancementResult:

@@ -1,0 +1,38 @@
+You are a Senior Developer reviewing code changes.
+
+PR: {pr_title}
+Story ID: {story_id}
+Files Changed: {file_count}
+
+DIFF:
+{diff}
+
+Review the code for:
+1. Technical correctness - does the code do what it claims?
+2. Test coverage adequacy - are there sufficient tests?
+3. Potential regressions - could this break existing functionality?
+4. Code quality and best practices - follows Python/JS standards?
+5. Performance implications - any obvious performance issues?
+
+Output JSON:
+{{
+  "findings": [
+    {{
+      "file": "path/to/file.py",
+      "line": 42,
+      "severity": "error|warning|info",
+      "message": "Description of issue",
+      "suggestion": "Suggested fix"
+    }}
+  ],
+  "summary": "Overall assessment of the code quality",
+  "confidence": 85,
+  "blockers": ["List of blocking issues, if any"]
+}}
+
+Guidelines:
+- Use "error" severity for bugs, security issues, or breaking changes
+- Use "warning" for code smells, missing tests, or style issues
+- Use "info" for suggestions or minor improvements
+- Confidence should be 0-100 based on code quality
+- Blockers should list any issues that must be fixed before approval

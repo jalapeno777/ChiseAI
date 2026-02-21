@@ -21,7 +21,6 @@ from execution.canary.models import (
     CanaryDeployment,
     CanaryStatus,
     GateCheck,
-    GateCheckResult,
 )
 from execution.canary.rollback import RollbackHandler, RollbackResult
 

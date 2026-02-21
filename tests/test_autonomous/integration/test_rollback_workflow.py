@@ -12,10 +12,7 @@ These tests verify the end-to-end workflow including:
 
 from __future__ import annotations
 
-import asyncio
 import time
-from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -24,12 +21,9 @@ from src.autonomous_control_plane.components.rollback_coordinator import (
     RollbackCoordinator,
 )
 from src.autonomous_control_plane.models.incidents import (
-    Incident,
-    IncidentEvent,
     Severity,
 )
 from src.autonomous_control_plane.models.rollback import (
-    RollbackOperation,
     RollbackStatus,
     RollbackStepStatus,
     ValidationCheckStatus,
@@ -332,7 +326,6 @@ class TestRollbackWithIncidentManager:
         def failing_checker():
             from src.autonomous_control_plane.models.rollback import (
                 ValidationCheck,
-                ValidationCheckStatus,
             )
 
             check = ValidationCheck(name="failing", description="Failing check")

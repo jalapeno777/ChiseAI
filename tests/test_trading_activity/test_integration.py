@@ -25,7 +25,7 @@ from scripts.run_trading_activity import (
     run_trading_loop,
     _execute_trading_cycle,
 )
-from config.trading_mode import TradingMode, TradingModeConfig
+from config.trading_mode import TradingModeConfig
 from signal_generation.models import Signal, SignalDirection, SignalStatus
 
 

@@ -3,8 +3,6 @@ Integration tests for the runbook executor framework.
 """
 
 import json
-import pytest
-from pathlib import Path
 
 from runbooks.executor import RunbookExecutor
 from runbooks.parser import RunbookParser

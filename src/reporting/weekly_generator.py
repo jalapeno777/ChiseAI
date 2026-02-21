@@ -203,14 +203,14 @@ class WeeklyPerformanceReport:
         start_time = start_date.isoformat()
         end_time = end_date.isoformat()
 
-        query = f'''
+        query = f"""
         from(bucket: "{self._bucket}")
             |> range(start: {start_time}, stop: {end_time})
             |> filter(fn: (r) => r._measurement == "paper_portfolio")
             |> filter(fn: (r) => r._field == "total_pnl" or r._field == "win_count" 
                 or r._field == "loss_count" or r._field == "total_trades")
             |> aggregateWindow(every: 1d, fn: last, createEmpty: false)
-        '''
+        """
 
         try:
             tables = query_api.query(query, org=self._org)
@@ -267,13 +267,13 @@ class WeeklyPerformanceReport:
         start_time = start_date.isoformat()
         end_time = end_date.isoformat()
 
-        query = f'''
+        query = f"""
         from(bucket: "{self._bucket}")
             |> range(start: {start_time}, stop: {end_time})
             |> filter(fn: (r) => r._measurement == "paper_trades")
             |> filter(fn: (r) => r._field == "pnl")
             |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-        '''
+        """
 
         try:
             tables = query_api.query(query, org=self._org)

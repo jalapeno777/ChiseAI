@@ -505,9 +505,11 @@ class PaperTracker:
             "memory_positions": len(memory_state),
             "redis_positions": len(redis_state),
             "diverged_positions": diverged_count,
-            "last_sync": self._redis_health.last_successful_operation.isoformat()
-            if self._redis_health.last_successful_operation
-            else None,
+            "last_sync": (
+                self._redis_health.last_successful_operation.isoformat()
+                if self._redis_health.last_successful_operation
+                else None
+            ),
         }
 
     def reset_alert_timers(self) -> None:

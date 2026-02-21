@@ -39,13 +39,11 @@ from config.bootstrap import bootstrap
 from execution.canary import (
     CanaryDeployment,
     CanaryStatus,
-    GateEvaluator,
     create_canary_deployment,
     create_canary_monitor,
     create_canary_storage,
     create_promotion_packet_generator,
 )
-from execution.canary.storage import CanaryStorageWithPersistence
 
 
 def setup_mock_scenario(canary: CanaryDeployment, scenario: str) -> None:
@@ -300,9 +298,7 @@ def write_telemetry_summary(
         result_emoji = (
             "✅"
             if gate["result"] == "pass"
-            else "❌"
-            if gate["result"] == "fail"
-            else "⏳"
+            else "❌" if gate["result"] == "fail" else "⏳"
         )
         markdown += f"""### {gate["gate_name"]}
 
@@ -384,12 +380,12 @@ async def query_influxdb_for_canary_measurements(canary_id: str) -> list[dict]:
         client = InfluxDBClient(url=url, token=token, org=org)
         query_api = client.query_api()
 
-        query = f'''
+        query = f"""
         from(bucket: "{bucket}")
             |> range(start: -1h)
             |> filter(fn: (r) => r._measurement == "canary_deployment" or r._measurement == "canary_monitoring_check")
             |> filter(fn: (r) => r.canary_id == "{canary_id}")
-        '''
+        """
 
         tables = query_api.query(query)
         results = []
