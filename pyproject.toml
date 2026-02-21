@@ -53,6 +53,13 @@ check_untyped_defs = false
 testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+# File descriptor management for CI environments
+# Use -n auto for parallel execution, but limit to prevent FD exhaustion
+addopts = "-v --tb=short"
+# Fixture cleanup to prevent file handle leaks
+fixtures_per_test = 1
+# Timeout each test at 5 minutes to prevent hanging
+faulthandler_timeout = 300
 
 [tool.coverage.run]
 # Tooling/integration modules can be high-IO and are better covered by

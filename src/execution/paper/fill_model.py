@@ -13,7 +13,7 @@ import random
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from .models import PaperFill, PaperOrder
@@ -70,6 +70,66 @@ class LatencyConfig:
         """
         latency_ms = random.uniform(self.min_latency_ms, self.max_latency_ms)
         return latency_ms / 1000.0
+
+
+@dataclass
+class FillModelConfig:
+    """Combined configuration for fill model.
+
+    Combines slippage and latency configuration with a toggle
+    for market realism simulation.
+
+    Attributes:
+        min_slippage_pct: Minimum slippage percentage (e.g., 0.01 for 0.01%)
+        max_slippage_pct: Maximum slippage percentage (e.g., 0.05 for 0.05%)
+        volatility_factor: Multiplier for market volatility impact (default 1.0)
+        min_latency_ms: Minimum latency in milliseconds
+        max_latency_ms: Maximum latency in milliseconds
+        use_market_realism: Whether to use market realism (slippage + latency)
+    """
+
+    min_slippage_pct: float = 0.01
+    max_slippage_pct: float = 0.05
+    volatility_factor: float = 1.0
+    min_latency_ms: float = 50.0
+    max_latency_ms: float = 200.0
+    use_market_realism: bool = True
+
+    def __post_init__(self) -> None:
+        """Validate configuration."""
+        if self.min_slippage_pct < 0 or self.max_slippage_pct < 0:
+            raise ValueError("Slippage percentages must be non-negative")
+        if self.min_slippage_pct > self.max_slippage_pct:
+            raise ValueError("min_slippage_pct cannot exceed max_slippage_pct")
+        if self.volatility_factor < 0:
+            raise ValueError("volatility_factor must be non-negative")
+        if self.min_latency_ms < 0 or self.max_latency_ms < 0:
+            raise ValueError("Latency values must be non-negative")
+        if self.min_latency_ms > self.max_latency_ms:
+            raise ValueError("min_latency_ms cannot exceed max_latency_ms")
+
+    def to_slippage_config(self) -> SlippageConfig:
+        """Convert to SlippageConfig.
+
+        Returns:
+            SlippageConfig with this config's slippage parameters
+        """
+        return SlippageConfig(
+            min_slippage_pct=self.min_slippage_pct,
+            max_slippage_pct=self.max_slippage_pct,
+            volatility_factor=self.volatility_factor,
+        )
+
+    def to_latency_config(self) -> LatencyConfig:
+        """Convert to LatencyConfig.
+
+        Returns:
+            LatencyConfig with this config's latency parameters
+        """
+        return LatencyConfig(
+            min_latency_ms=self.min_latency_ms,
+            max_latency_ms=self.max_latency_ms,
+        )
 
 
 class FillModel:
@@ -157,7 +217,7 @@ class FillModel:
         else:  # sell
             fill_price = market_price * (1 - slippage_multiplier)
 
-        return round(fill_price, 8)
+        return cast(float, round(fill_price, 8))
 
     def should_limit_order_fill(
         self,
