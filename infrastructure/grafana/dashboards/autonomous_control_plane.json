@@ -12,6 +12,7 @@
       }
     ]
   },
+  "description": "Autonomous Control Plane Dashboard - Retry operations, circuit breakers, and self-healing metrics",
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
@@ -20,6 +21,7 @@
   "panels": [
     {
       "collapsed": false,
+      "datasource": "InfluxDB",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -28,453 +30,540 @@
       },
       "id": 1,
       "panels": [],
-      "title": "Self-Healing Engine Overview",
+      "title": "Retry Activity",
       "type": "row"
     },
     {
-      "cacheTimeout": null,
-      "colorBackground": false,
-      "colorValue": false,
-      "colors": ["#299c46", "rgba(237, 129, 40, 0.89)", "#d44a3a"],
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
       "datasource": "InfluxDB",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
-      "format": "none",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": true
-      },
+      "fill": 1,
+      "fillGradient": 0,
       "gridPos": {
-        "h": 4,
-        "w": 4,
+        "h": 8,
+        "w": 12,
         "x": 0,
         "y": 1
       },
+      "hiddenSeries": false,
       "id": 2,
-      "interval": null,
-      "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "name": "range to text",
-          "value": 2
-        }
-      ],
-      "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
       },
-      "tableColumn": "",
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.0.0",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
       "targets": [
         {
           "groupBy": [
             {
-              "params": ["$__interval"],
+              "params": [
+                "$__interval"
+              ],
               "type": "time"
             },
             {
-              "params": ["null"],
+              "params": [
+                "service"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "null"
+              ],
               "type": "fill"
             }
           ],
-          "measurement": "healing_attempts",
+          "measurement": "retry_attempts",
           "orderByTime": "ASC",
           "policy": "default",
-          "query": "SELECT count(\"value\") FROM \"healing_attempts\" WHERE $timeFilter",
-          "rawQuery": true,
           "refId": "A",
           "resultFormat": "time_series",
           "select": [
             [
               {
-                "params": ["value"],
+                "params": [
+                  "count"
+                ],
                 "type": "field"
               },
               {
                 "params": [],
-                "type": "mean"
+                "type": "sum"
               }
             ]
           ],
           "tags": []
         }
       ],
-      "thresholds": "",
-      "title": "Total Healing Attempts",
-      "type": "singlestat",
-      "valueFontSize": "80%",
-      "valueMaps": [
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Retry Attempts Total by Service",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
         {
-          "op": "=",
-          "text": "N/A",
-          "value": "null"
+          "format": "short",
+          "label": "Attempts",
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
         }
       ],
-      "valueName": "avg"
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     },
     {
-      "cacheTimeout": null,
-      "colorBackground": true,
-      "colorValue": false,
-      "colors": ["#d44a3a", "rgba(237, 129, 40, 0.89)", "#299c46"],
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
       "datasource": "InfluxDB",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
-      "format": "none",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": true
-      },
+      "fill": 1,
+      "fillGradient": 0,
       "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 4,
-        "y": 1
-      },
-      "id": 3,
-      "interval": null,
-      "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "name": "range to text",
-          "value": 2
-        }
-      ],
-      "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false
-      },
-      "tableColumn": "",
-      "targets": [
-        {
-          "query": "SELECT count(\"value\") FROM \"healing_attempts\" WHERE \"status\" = 'succeeded' AND $timeFilter",
-          "rawQuery": true,
-          "refId": "A"
-        }
-      ],
-      "thresholds": "0,1",
-      "title": "Successful Healings",
-      "type": "singlestat",
-      "valueFontSize": "80%",
-      "valueMaps": [
-        {
-          "op": "=",
-          "text": "0",
-          "value": "null"
-        }
-      ],
-      "valueName": "avg"
-    },
-    {
-      "cacheTimeout": null,
-      "colorBackground": true,
-      "colorValue": false,
-      "colors": ["#299c46", "rgba(237, 129, 40, 0.89)", "#d44a3a"],
-      "datasource": "InfluxDB",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
-      "format": "none",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": true
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 8,
-        "y": 1
-      },
-      "id": 4,
-      "interval": null,
-      "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "name": "range to text",
-          "value": 2
-        }
-      ],
-      "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false
-      },
-      "tableColumn": "",
-      "targets": [
-        {
-          "query": "SELECT count(\"value\") FROM \"healing_attempts\" WHERE \"status\" = 'failed' AND $timeFilter",
-          "rawQuery": true,
-          "refId": "A"
-        }
-      ],
-      "thresholds": "0,1",
-      "title": "Failed Healings",
-      "type": "singlestat",
-      "valueFontSize": "80%",
-      "valueMaps": [
-        {
-          "op": "=",
-          "text": "0",
-          "value": "null"
-        }
-      ],
-      "valueName": "avg"
-    },
-    {
-      "cacheTimeout": null,
-      "colorBackground": true,
-      "colorValue": false,
-      "colors": ["#299c46", "rgba(237, 129, 40, 0.89)", "#d44a3a"],
-      "datasource": "InfluxDB",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
-      "format": "none",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": true
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 4,
+        "h": 8,
+        "w": 12,
         "x": 12,
         "y": 1
       },
-      "id": 5,
-      "interval": null,
-      "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "name": "range to text",
-          "value": 2
-        }
-      ],
-      "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false
+      "hiddenSeries": false,
+      "id": 3,
+      "legend": {
+        "avg": true,
+        "current": true,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": true
       },
-      "tableColumn": "",
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.0.0",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
       "targets": [
         {
-          "query": "SELECT count(\"value\") FROM \"healing_attempts\" WHERE \"status\" = 'awaiting_approval' AND $timeFilter",
-          "rawQuery": true,
-          "refId": "A"
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "service"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "retry_success",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "count"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "sum"
+              }
+            ]
+          ],
+          "tags": []
         }
       ],
-      "thresholds": "0,1",
-      "title": "Pending Approvals",
-      "type": "singlestat",
-      "valueFontSize": "80%",
-      "valueMaps": [
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Retry Success Rate by Service",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
         {
-          "op": "=",
-          "text": "0",
-          "value": "null"
+          "format": "percentunit",
+          "label": "Success Rate",
+          "logBase": 1,
+          "max": "1",
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
         }
       ],
-      "valueName": "avg"
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     },
     {
-      "cacheTimeout": null,
-      "colorBackground": false,
-      "colorValue": false,
-      "colors": ["#299c46", "rgba(237, 129, 40, 0.89)", "#d44a3a"],
+      "aliasColors": {
+        "Budget Exceeded": "red"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
       "datasource": "InfluxDB",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
-      "format": "percent",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": true
-      },
+      "fill": 1,
+      "fillGradient": 0,
       "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 16,
-        "y": 1
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 9
       },
-      "id": 6,
-      "interval": null,
-      "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "name": "range to text",
-          "value": 2
-        }
-      ],
-      "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false
+      "hiddenSeries": false,
+      "id": 4,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
       },
-      "tableColumn": "",
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.0.0",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
       "targets": [
         {
-          "query": "SELECT sum(\"duration_seconds\") / count(\"duration_seconds\") FROM \"healing_attempts\" WHERE $timeFilter",
-          "rawQuery": true,
-          "refId": "A"
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "retry_budget_exceeded",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "count"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "sum"
+              }
+            ]
+          ],
+          "tags": []
         }
       ],
-      "thresholds": "",
-      "title": "Avg Healing Duration",
-      "type": "singlestat",
-      "valueFontSize": "80%",
-      "valueMaps": [
+      "thresholds": [
         {
-          "op": "=",
-          "text": "N/A",
-          "value": "null"
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "gt",
+          "value": 0,
+          "yaxis": "left"
         }
       ],
-      "valueName": "avg"
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Retry Budget Exceeded Rate",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "Count",
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "DLQ Depth": "orange"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "InfluxDB",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 9
+      },
+      "hiddenSeries": false,
+      "id": 5,
+      "legend": {
+        "avg": false,
+        "current": true,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.0.0",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "service"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "retry_dead_letter",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "count"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "sum"
+              }
+            ]
+          ],
+          "tags": []
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Dead Letter Queue Depth",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "Items",
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "collapsed": false,
+      "datasource": "InfluxDB",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "id": 6,
+      "panels": [],
+      "title": "Circuit Breakers",
+      "type": "row"
     },
     {
       "cacheTimeout": null,
       "colorBackground": true,
       "colorValue": false,
-      "colors": ["#d44a3a", "rgba(237, 129, 40, 0.89)", "#299c46"],
+      "colors": [
+        "#299c46",
+        "rgba(237, 129, 40, 0.89)",
+        "#d44a3a"
+      ],
       "datasource": "InfluxDB",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
       "format": "none",
       "gauge": {
         "maxValue": 100,
@@ -485,9 +574,9 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 20,
-        "y": 1
+        "w": 6,
+        "x": 0,
+        "y": 18
       },
       "id": 7,
       "interval": null,
@@ -521,130 +610,224 @@
         "fillColor": "rgba(31, 118, 189, 0.18)",
         "full": false,
         "lineColor": "rgb(31, 120, 193)",
-        "show": false
+        "show": false,
+        "ymax": null,
+        "ymin": null
       },
       "tableColumn": "",
       "targets": [
         {
-          "query": "SELECT count(\"value\") FROM \"healing_attempts\" WHERE \"status\" = 'rolled_back' AND $timeFilter",
-          "rawQuery": true,
-          "refId": "A"
+          "groupBy": [],
+          "measurement": "circuit_breaker_state",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "open_count"
+                ],
+                "type": "field"
+              }
+            ]
+          ],
+          "tags": []
         }
       ],
-      "thresholds": "0,1",
-      "title": "Rolled Back",
+      "thresholds": "1",
+      "title": "Open Circuits",
       "type": "singlestat",
       "valueFontSize": "80%",
       "valueMaps": [
         {
           "op": "=",
-          "text": "0",
+          "text": "N/A",
           "value": "null"
         }
       ],
-      "valueName": "avg"
+      "valueName": "current"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "InfluxDB",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 18,
+        "x": 6,
+        "y": 18
+      },
+      "hiddenSeries": false,
+      "id": 8,
+      "legend": {
+        "avg": false,
+        "current": true,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.0.0",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": true,
+      "targets": [
+        {
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "circuit_name"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "null"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "circuit_breaker_state",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "state_value"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "last"
+              }
+            ]
+          ],
+          "tags": []
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Circuit Breaker States",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "none",
+          "label": "State (0=Closed, 1=Open, 2=Half-Open)",
+          "logBase": 1,
+          "max": "2",
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     }
   ],
   "refresh": "30s",
   "schemaVersion": 27,
   "style": "dark",
-  "tags": ["autonomous", "healing", "self-healing", "incidents"],
+  "tags": [
+    "autonomous",
+    "control-plane",
+    "retry",
+    "circuit-breaker"
+  ],
   "templating": {
     "list": [
       {
         "current": {
-          "text": "All",
-          "value": "$__all"
+          "selected": false,
+          "text": "InfluxDB",
+          "value": "InfluxDB"
         },
+        "description": null,
+        "error": null,
         "hide": 0,
-        "includeAll": true,
-        "label": "Severity",
-        "multi": true,
-        "name": "severity",
-        "options": [
-          {
-            "selected": true,
-            "text": "All",
-            "value": "$__all"
-          },
-          {
-            "selected": false,
-            "text": "P0 - Critical",
-            "value": "P0"
-          },
-          {
-            "selected": false,
-            "text": "P1 - High",
-            "value": "P1"
-          },
-          {
-            "selected": false,
-            "text": "P2 - Medium",
-            "value": "P2"
-          },
-          {
-            "selected": false,
-            "text": "P3 - Low",
-            "value": "P3"
-          }
-        ],
-        "query": "P0,P1,P2,P3",
-        "type": "custom"
-      },
-      {
-        "current": {
-          "text": "All",
-          "value": "$__all"
-        },
-        "hide": 0,
-        "includeAll": true,
-        "label": "Status",
-        "multi": true,
-        "name": "status",
-        "options": [
-          {
-            "selected": true,
-            "text": "All",
-            "value": "$__all"
-          },
-          {
-            "selected": false,
-            "text": "Open",
-            "value": "open"
-          },
-          {
-            "selected": false,
-            "text": "Investigating",
-            "value": "investigating"
-          },
-          {
-            "selected": false,
-            "text": "Mitigated",
-            "value": "mitigated"
-          },
-          {
-            "selected": false,
-            "text": "Resolved",
-            "value": "resolved"
-          },
-          {
-            "selected": false,
-            "text": "Closed",
-            "value": "closed"
-          }
-        ],
-        "query": "open,investigating,mitigated,resolved,closed",
-        "type": "custom"
+        "includeAll": false,
+        "label": "Datasource",
+        "multi": false,
+        "name": "datasource",
+        "options": [],
+        "query": "influxdb",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
       }
     ]
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-1h",
     "to": "now"
   },
-  "timepicker": {},
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ]
+  },
   "timezone": "",
-  "title": "Autonomous Control Plane - Self-Healing & Incident Management",
-  "uid": "autonomous-healing",
-  "version": 2
+  "title": "Autonomous Control Plane",
+  "uid": "autonomous-control-plane",
+  "version": 1
 }
