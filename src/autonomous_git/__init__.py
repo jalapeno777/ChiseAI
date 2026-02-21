@@ -1,20 +1,116 @@
-"""Autonomous Git Pipeline module."""
+"""Autonomous Git module for PR automation."""
 
-# Path Analyzer exports
-from autonomous_git.path_analyzer import (
-    RiskLevel,
-    RiskClassification,
-    PathAnalyzer,
-    analyze_paths,
-    PathPatternMatcher,
-    PathAnalysisCache,
+# Path Analyzer (ST-AUTO-001)
+try:
+    from .path_analyzer import (
+        RiskLevel,
+        RiskClassification,
+        PathAnalyzer,
+        analyze_paths,
+        PathPatternMatcher,
+        PathAnalysisCache,
+    )
+
+    _PATH_ANALYZER_AVAILABLE = True
+except ImportError:
+    _PATH_ANALYZER_AVAILABLE = False
+    RiskLevel = None
+    RiskClassification = None
+    PathAnalyzer = None
+    analyze_paths = None
+    PathPatternMatcher = None
+    PathAnalysisCache = None
+
+# Auto-Approval (ST-AUTO-002)
+try:
+    from .auto_approval import (
+        AutoApprover,
+        process_safe_pr,
+        SafetyChecker,
+        SafetyCheckResult,
+        RateLimiter,
+        ExclusionManager,
+        DiscordNotifier,
+        load_config,
+        AutoApprovalConfig,
+    )
+
+    _AUTO_APPROVAL_AVAILABLE = True
+except ImportError:
+    _AUTO_APPROVAL_AVAILABLE = False
+    AutoApprover = None
+    process_safe_pr = None
+    SafetyChecker = None
+    SafetyCheckResult = None
+    RateLimiter = None
+    ExclusionManager = None
+    DiscordNotifier = None
+    load_config = None
+    AutoApprovalConfig = None
+
+# GitReviewBot (ST-AUTO-003)
+from .gitreviewbot import (
+    GitReviewBot,
+    review_pr,
+    ReviewResult,
+    Decision,
+    DecisionType,
+    Finding,
+    Violation,
+    ReviewFeedback,
+    SeniorDevReviewer,
+    CriticReviewer,
+    DecisionSynthesizer,
+    ConfidenceScorer,
+    CalibrationTracker,
+    GiteaClient,
 )
 
+__version__ = "0.1.0"
+
 __all__ = [
-    "RiskLevel",
-    "RiskClassification",
-    "PathAnalyzer",
-    "analyze_paths",
-    "PathPatternMatcher",
-    "PathAnalysisCache",
+    # GitReviewBot (ST-AUTO-003)
+    "GitReviewBot",
+    "review_pr",
+    "ReviewResult",
+    "Decision",
+    "DecisionType",
+    "Finding",
+    "Violation",
+    "ReviewFeedback",
+    "SeniorDevReviewer",
+    "CriticReviewer",
+    "DecisionSynthesizer",
+    "ConfidenceScorer",
+    "CalibrationTracker",
+    "GiteaClient",
 ]
+
+# Add Auto-Approval exports if available
+if _AUTO_APPROVAL_AVAILABLE:
+    __all__.extend(
+        [
+            "AutoApprover",
+            "process_safe_pr",
+            "SafetyChecker",
+            "SafetyCheckResult",
+            "RateLimiter",
+            "ExclusionManager",
+            "DiscordNotifier",
+            "load_config",
+            "AutoApprovalConfig",
+        ]
+    )
+
+# Add Path Analyzer exports if available
+if _PATH_ANALYZER_AVAILABLE:
+    __all__.extend(
+        [
+            "RiskLevel",
+            "RiskClassification",
+            "PathAnalyzer",
+            "analyze_paths",
+            "PathPatternMatcher",
+            "PathAnalysisCache",
+        ]
+    )

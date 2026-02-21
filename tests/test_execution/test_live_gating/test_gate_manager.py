@@ -10,7 +10,6 @@ from datetime import UTC, datetime, timedelta
 
 from execution.live_gating.gate_manager import (
     ApprovalPacket,
-    ApprovalRequest,
     LiveGateConfig,
     LiveGateManager,
     LiveTradingState,

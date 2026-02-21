@@ -3,16 +3,14 @@
 Tests for OrderSimulator, MarketDataProvider, and OrderSimulatorConfig.
 """
 
-import asyncio
 import pytest
-from datetime import datetime, timezone
 
 from src.execution.paper.order_simulator import (
     MarketDataProvider,
     OrderSimulator,
     OrderSimulatorConfig,
 )
-from src.execution.paper.models import OrderState, PaperOrder, PaperFill
+from src.execution.paper.models import OrderState, PaperOrder
 from src.execution.paper.fill_model import FillModel, SlippageConfig, LatencyConfig
 
 

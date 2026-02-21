@@ -68,9 +68,9 @@ class InjectionEvent:
             "timestamp": self.timestamp.isoformat(),
             "details": self.details,
             "recovered": self.recovered,
-            "recovery_time": self.recovery_time.isoformat()
-            if self.recovery_time
-            else None,
+            "recovery_time": (
+                self.recovery_time.isoformat() if self.recovery_time else None
+            ),
         }
 
 

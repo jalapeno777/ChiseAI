@@ -16,8 +16,8 @@ from __future__ import annotations
 
 import asyncio
 import pytest
-from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime
+from unittest.mock import patch
 
 from src.autonomous_control_plane.components.incident_manager import (
     IncidentManager,
@@ -30,10 +30,7 @@ from src.autonomous_control_plane.models.incidents import (
     IncidentEvent,
     IncidentStatus,
     IncidentMetrics,
-    Notification,
-    NotificationChannel,
     PostMortem,
-    RemediationAction,
     Severity,
 )
 
@@ -258,7 +255,7 @@ class TestAutoRemediation:
     @pytest.mark.skip(reason="Async mocking complexity - tested in integration tests")
     async def test_auto_execute_p2_incident(self):
         """Test auto-remediation executes for P2 incidents.
-        
+
         Note: This test is skipped due to async mocking complexity.
         The functionality is verified in integration tests.
         """
@@ -437,7 +434,9 @@ class TestStateTransitions:
         )
 
         incident = await manager.create_incident(event)
-        await manager.transition_status(incident.incident_id, IncidentStatus.INVESTIGATING)
+        await manager.transition_status(
+            incident.incident_id, IncidentStatus.INVESTIGATING
+        )
 
         updated = await manager.transition_status(
             incident.incident_id, IncidentStatus.MITIGATED
@@ -455,7 +454,9 @@ class TestStateTransitions:
         )
 
         incident = await manager.create_incident(event)
-        await manager.transition_status(incident.incident_id, IncidentStatus.INVESTIGATING)
+        await manager.transition_status(
+            incident.incident_id, IncidentStatus.INVESTIGATING
+        )
 
         updated = await manager.transition_status(
             incident.incident_id, IncidentStatus.RESOLVED
@@ -510,7 +511,9 @@ class TestStateTransitions:
         incident = await manager.create_incident(event)
 
         # Cannot go directly from open to closed
-        updated = await manager.transition_status(incident.incident_id, IncidentStatus.CLOSED)
+        updated = await manager.transition_status(
+            incident.incident_id, IncidentStatus.CLOSED
+        )
         # Should return incident without changing status
         assert updated is not None
         assert updated.status == IncidentStatus.OPEN

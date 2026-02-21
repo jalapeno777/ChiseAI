@@ -19,7 +19,6 @@ import ast
 import os
 import sys
 from pathlib import Path
-from typing import Any, Tuple
 
 # Scripts directory path
 SCRIPTS_DIR = Path(__file__).parent.parent

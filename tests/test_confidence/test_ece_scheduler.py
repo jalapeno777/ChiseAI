@@ -8,12 +8,12 @@ from __future__ import annotations
 
 import asyncio
 from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import pytest_asyncio
 
-from confidence.ece import ECECalculator, SignalType
+from confidence.ece import SignalType
 from confidence.ece_scheduler import (
     ECEUpdateResult,
     ECEScheduler,

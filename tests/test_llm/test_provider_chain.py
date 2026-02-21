@@ -10,8 +10,7 @@ Provider Priority: KIMI → GLM-5 → GLM-4.7 → MiniMax (disabled by default)
 
 import os
 import sys
-from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 

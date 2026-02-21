@@ -7,7 +7,7 @@ when connecting to exchange APIs.
 
 import asyncio
 import logging
-from typing import Dict, Optional, Any, List
+from typing import Dict, Optional, Any
 from dataclasses import dataclass
 from contextlib import asynccontextmanager
 import time

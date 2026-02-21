@@ -8,7 +8,6 @@ from __future__ import annotations
 import json
 import os
 import tempfile
-from datetime import UTC, datetime
 
 import numpy as np
 import pytest
@@ -19,7 +18,7 @@ import sys
 sys.path.insert(0, "src")
 
 from ml.calibration.data_collector import CalibrationDataCollector
-from ml.calibration.models import CalibrationConfig, CalibrationRecord, SignalType
+from ml.calibration.models import CalibrationConfig
 from ml.calibration.optimizer import (
     ECECurve,
     OptimizationResult,

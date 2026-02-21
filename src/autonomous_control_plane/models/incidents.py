@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any, Protocol
 
@@ -230,9 +230,9 @@ class PostMortem:
             "action_items": self.action_items,
             "lessons_learned": self.lessons_learned,
             "created_at": self.created_at.isoformat(),
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
         }
 
 
@@ -348,9 +348,11 @@ class Incident:
                 post_mortem.add_timeline_event(
                     action.executed_at,
                     f"Remediation action: {action.action_type} ({action.status})",
-                    "system"
-                    if action.auto_executed
-                    else (action.approved_by or "manual"),
+                    (
+                        "system"
+                        if action.auto_executed
+                        else (action.approved_by or "manual")
+                    ),
                 )
 
         if self.resolved_at:

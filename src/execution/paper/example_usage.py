@@ -7,7 +7,7 @@ For PAPER-LOOP-001: Paper Trading Order Simulator
 """
 
 import asyncio
-from src.execution.paper import create_simulator, OrderState
+from src.execution.paper import create_simulator
 
 
 async def demo_market_orders():

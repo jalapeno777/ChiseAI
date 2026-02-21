@@ -3,14 +3,11 @@
 from __future__ import annotations
 
 import time
-from datetime import datetime, timezone
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-import pytest
 
 from api.cache.cache_manager import CacheEntry, QueryCacheManager
-from api.cache.metrics import CacheMetricsCollector, CacheMetricsSnapshot
-from api.cache import CacheMetricsSnapshot as CacheMetrics
+from api.cache.metrics import CacheMetricsCollector
 from api.cache.strategies import CacheStrategy, QueryType, TTLStrategy
 
 

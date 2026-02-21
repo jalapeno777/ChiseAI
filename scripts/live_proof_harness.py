@@ -33,7 +33,6 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any
 
 import aiohttp
 import yaml
@@ -200,9 +199,9 @@ class BybitProofHarness:
                         success=success,
                         latency_ms=latency_ms,
                         timestamp=datetime.utcnow().isoformat(),
-                        error_message=""
-                        if success
-                        else data.get("retMsg", "Unknown error"),
+                        error_message=(
+                            "" if success else data.get("retMsg", "Unknown error")
+                        ),
                         request_details={"method": "GET", "url": url},
                         response_details={
                             "status": resp.status,

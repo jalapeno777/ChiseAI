@@ -30,7 +30,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, Callable, Protocol
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    pass
 
 logger = logging.getLogger(__name__)
 

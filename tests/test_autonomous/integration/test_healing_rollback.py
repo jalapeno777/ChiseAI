@@ -8,13 +8,11 @@ Acceptance Criteria:
 
 from __future__ import annotations
 
-import asyncio
 import pytest
 import time
-from datetime import UTC, datetime
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-from src.autonomous_control_plane import SelfHealingEngine, LogEntry
+from src.autonomous_control_plane import SelfHealingEngine
 from src.autonomous_control_plane.models.healing import (
     HealingAttempt,
     HealingResult,

@@ -7,8 +7,7 @@ import pytest
 from datetime import datetime, UTC, timedelta
 
 from src.health.history import HealthHistory, HealthSnapshot, TrendAnalysis
-from src.health.score_calculator import HealthScore, ComponentScore
-from src.health import ComponentType
+from src.health.score_calculator import HealthScore
 
 
 class TestHealthSnapshot:

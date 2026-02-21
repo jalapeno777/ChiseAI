@@ -22,7 +22,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import os
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
@@ -30,7 +29,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Protocol
 
 if TYPE_CHECKING:
-    from collections.abc import Coroutine
+    pass
 
 logger = logging.getLogger(__name__)
 

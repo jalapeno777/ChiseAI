@@ -8,7 +8,6 @@ For ST-EX-002: Bitget Live Trading Gating Implementation
 
 from __future__ import annotations
 
-import hashlib
 import logging
 import uuid
 from dataclasses import dataclass, field
@@ -17,7 +16,6 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from execution.kill_switch.state import KillSwitchConfig
     from execution.kill_switch.executor import KillSwitchExecutor
 
 logger = logging.getLogger(__name__)

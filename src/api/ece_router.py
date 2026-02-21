@@ -8,12 +8,11 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from confidence import ECEHistoryPoint, ECEHistoryTracker, ECETrend, SignalType
+from confidence import ECEHistoryTracker, SignalType
 
 logger = logging.getLogger(__name__)
 

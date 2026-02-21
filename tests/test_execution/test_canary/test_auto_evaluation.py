@@ -6,7 +6,7 @@ import json
 import tempfile
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -15,10 +15,9 @@ from execution.canary.models import (
     CanaryDeployment,
     CanaryMetrics,
     CanaryStatus,
-    GateCheckResult,
     GateCriteria,
 )
-from execution.canary.monitor import CanaryMonitor, MonitoringCheck
+from execution.canary.monitor import CanaryMonitor
 from execution.canary.promotion import PromotionPacket, PromotionPacketGenerator
 
 

@@ -7,7 +7,6 @@ For ST-NS-040: Self-Healing Engine with Action Sandboxing
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from datetime import UTC, datetime
 from typing import Any
@@ -68,12 +67,14 @@ class APIRetryAction(BaseHealingAction):
             "timestamp": datetime.now(UTC).isoformat(),
             "service": context.service,
             "action_type": self.action_type,
-            "endpoint": context.log_entry.metadata.get("endpoint")
-            if context.log_entry
-            else None,
-            "method": context.log_entry.metadata.get("method")
-            if context.log_entry
-            else None,
+            "endpoint": (
+                context.log_entry.metadata.get("endpoint")
+                if context.log_entry
+                else None
+            ),
+            "method": (
+                context.log_entry.metadata.get("method") if context.log_entry else None
+            ),
         }
 
         self._failed_request_context = state

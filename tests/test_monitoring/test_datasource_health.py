@@ -6,7 +6,6 @@ For ST-OPS-008: Grafana Data Source Health Monitoring
 from __future__ import annotations
 
 import asyncio
-import os
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 

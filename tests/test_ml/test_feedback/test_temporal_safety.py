@@ -16,7 +16,6 @@ from ml.feedback.orchestrator import (
     TemporalBoundary,
     TemporalSafetyMode,
 )
-from ml.feedback.matcher import PredictionOutcomeMatch
 from market_analysis.signal_storage.models import SignalRecord, SignalDirection
 
 

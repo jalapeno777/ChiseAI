@@ -13,8 +13,6 @@ import sys
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-import pytest
-
 # Import the module under test using importlib (similar to other CI tests)
 MODULE_PATH = (
     Path(__file__).resolve().parents[2] / "scripts" / "ci" / "run_brain_evaluation.py"
@@ -384,7 +382,6 @@ class TestOutputFormat:
 
     def test_results_json_structure(self, tmp_path: Path) -> None:
         """Verify results.json has expected structure."""
-        import subprocess
 
         versions = ["brain-test"]
         output_dir = tmp_path / "brain-eval"

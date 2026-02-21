@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-import pytest
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from starlette.testclient import TestClient
 
 from api.cache.cache_manager import QueryCacheManager

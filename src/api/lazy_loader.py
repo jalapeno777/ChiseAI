@@ -13,9 +13,9 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Protocol
+from typing import Any, Dict, List, Optional, Protocol
 
-from src.api.pagination import PageResult, TimeSeriesPaginator, CursorCodec
+from src.api.pagination import TimeSeriesPaginator
 
 logger = logging.getLogger(__name__)
 

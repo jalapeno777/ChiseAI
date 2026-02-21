@@ -16,6 +16,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 
 @dataclass
@@ -58,7 +59,7 @@ class BybitCredentials:
         """Check if API secret starts with expected demo prefix '3Nd'."""
         return self.api_secret.startswith("3Nd")
 
-    def get_prefix_validation(self) -> dict[str, any]:
+    def get_prefix_validation(self) -> dict[str, Any]:
         """Get prefix validation results for diagnostics.
 
         Returns:
@@ -238,7 +239,7 @@ class BybitCredentialResolver:
 
     def validate_credential_prefixes(
         self, credentials: BybitCredentials
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """Validate credential prefixes for diagnostic purposes.
 
         This is an informational check that does not block credential
@@ -252,7 +253,7 @@ class BybitCredentialResolver:
         """
         return credentials.get_prefix_validation()
 
-    def get_credential_status(self, load_env: bool = True) -> dict[str, any]:
+    def get_credential_status(self, load_env: bool = True) -> dict[str, Any]:
         """Get detailed status of credential resolution.
 
         Args:
@@ -332,7 +333,7 @@ def resolve_bybit_credentials(
 
 def get_credential_resolution_status(
     env_file_path: str | None = None,
-) -> dict[str, any]:
+) -> dict[str, Any]:
     """Get detailed credential resolution status.
 
     Args:

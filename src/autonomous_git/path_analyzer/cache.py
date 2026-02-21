@@ -4,7 +4,6 @@ import json
 import hashlib
 import time
 from typing import Optional, Dict, Any
-from dataclasses import dataclass
 
 
 class PathAnalysisCache:

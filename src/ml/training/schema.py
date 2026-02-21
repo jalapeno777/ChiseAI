@@ -12,7 +12,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field, field_validator
 
-from ml.training.features import FeatureValidator, TrendState
+from ml.training.features import FeatureValidator
 from ml.training.version import CURRENT_SCHEMA_VERSION, SchemaVersionManager
 
 
@@ -381,12 +381,14 @@ class TrainingDataset:
             "unlabeled_count": len(self.samples) - len(labeled),
             "unique_tokens": sorted(tokens),
             "unique_timeframes": sorted(timeframes),
-            "outcome_distribution": {
-                "wins": outcomes.count(1),
-                "losses": outcomes.count(0),
-            }
-            if outcomes
-            else None,
+            "outcome_distribution": (
+                {
+                    "wins": outcomes.count(1),
+                    "losses": outcomes.count(0),
+                }
+                if outcomes
+                else None
+            ),
             "win_rate": outcomes.count(1) / len(outcomes) if outcomes else None,
             "schema_version": self.version_manager.get_version_string(),
         }

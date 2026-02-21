@@ -9,7 +9,7 @@ For ST-EX-003: Kill-Switch Executor Implementation
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 

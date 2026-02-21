@@ -24,7 +24,7 @@ from scripts.run_trading_activity import (
     TradingActivityMetrics,
     _execute_trading_cycle,
 )
-from config.trading_mode import TradingMode, TradingModeConfig, ModuleType
+from config.trading_mode import TradingMode, TradingModeConfig
 from signal_generation.models import Signal, SignalDirection, SignalStatus
 from data_ingestion.ohlcv_fetcher import OHLCVData
 
@@ -559,9 +559,9 @@ class TestExecuteTradingCycle:
         # Verify the latest price from OHLCV was set in the cache
         # The price should be from the LAST candle (ohlcv_data[-1].close_price)
         cached_price = real_market_data.get_price("BTC/USDT")
-        assert cached_price is not None, (
-            "Price cache should be populated before trading"
-        )
+        assert (
+            cached_price is not None
+        ), "Price cache should be populated before trading"
         assert cached_price == 31500.0, f"Expected 31500.0, got {cached_price}"
 
 

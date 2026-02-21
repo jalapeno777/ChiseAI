@@ -475,9 +475,11 @@ class PaperTradingGrafanaExporter:
                     "symbol": trade.symbol,
                     "side": trade.side,
                     "trade_id": trade.trade_id,
-                    "outcome": "win"
-                    if trade.pnl > 0
-                    else ("loss" if trade.pnl < 0 else "neutral"),
+                    "outcome": (
+                        "win"
+                        if trade.pnl > 0
+                        else ("loss" if trade.pnl < 0 else "neutral")
+                    ),
                 },
                 "fields": {
                     "quantity": trade.quantity,

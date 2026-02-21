@@ -11,7 +11,7 @@ Target: 80%+ coverage
 import asyncio
 import pytest
 from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.automation import (
     EventType,
@@ -41,11 +41,7 @@ from src.automation.self_healing_engine import (
     DeploymentHealth,
     RedisReconnector,
     ExchangeFailover,
-    ServiceRestarter,
-    DataBackfillTrigger,
-    DeploymentRollback,
 )
-
 
 # ============================================================================
 # Fixtures

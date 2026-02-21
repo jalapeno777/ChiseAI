@@ -663,9 +663,9 @@ class TestPaperRiskEnforcer:
         # Should be approved with no exposure warning
         assert assessment.approved is True
         exposure_violations = [v for v in assessment.violations if v.rule == "exposure"]
-        assert len(exposure_violations) == 0, (
-            "Should not have exposure warning with $40k on $100k portfolio"
-        )
+        assert (
+            len(exposure_violations) == 0
+        ), "Should not have exposure warning with $40k on $100k portfolio"
 
 
 class TestIntegrationWithKillSwitch:

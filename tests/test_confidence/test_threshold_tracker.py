@@ -13,7 +13,7 @@ from __future__ import annotations
 import pytest
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 from confidence.threshold import (
     ModeSwitchRecord,
@@ -1016,11 +1016,11 @@ class TestThresholdTrackerIntegration:
 
         # Add adjustments at different times
         times = [
-            datetime.now(UTC) - timedelta(hours=1),    # Within 1 day
-            datetime.now(UTC) - timedelta(days=3),     # Within 7 days
-            datetime.now(UTC) - timedelta(days=10),    # Within 14 days
-            datetime.now(UTC) - timedelta(days=20),    # Within 30 days
-            datetime.now(UTC) - timedelta(days=45),    # Within 90 days
+            datetime.now(UTC) - timedelta(hours=1),  # Within 1 day
+            datetime.now(UTC) - timedelta(days=3),  # Within 7 days
+            datetime.now(UTC) - timedelta(days=10),  # Within 14 days
+            datetime.now(UTC) - timedelta(days=20),  # Within 30 days
+            datetime.now(UTC) - timedelta(days=45),  # Within 90 days
         ]
 
         for i, ts in enumerate(times):

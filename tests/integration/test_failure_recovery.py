@@ -147,9 +147,9 @@ class TestFailureRecovery:
         await injector.recover(event)
 
         elapsed = time.time() - start_time
-        assert elapsed < MAX_RECOVERY_TIME_SECONDS, (
-            f"Recovery took {elapsed:.2f}s, expected < {MAX_RECOVERY_TIME_SECONDS}s"
-        )
+        assert (
+            elapsed < MAX_RECOVERY_TIME_SECONDS
+        ), f"Recovery took {elapsed:.2f}s, expected < {MAX_RECOVERY_TIME_SECONDS}s"
 
     @pytest.mark.asyncio
     async def test_exchange_failure_fallback(self):

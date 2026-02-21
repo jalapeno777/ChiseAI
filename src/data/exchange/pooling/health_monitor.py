@@ -12,7 +12,7 @@ import logging
 import time
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Callable
 
 from data.exchange.pooling.connection_pool import ExchangeConnectionPool, PoolMetrics
 

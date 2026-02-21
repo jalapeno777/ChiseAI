@@ -18,7 +18,6 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -27,12 +26,9 @@ from config.bootstrap import bootstrap
 from execution.canary.gate_evaluator import GateEvaluator
 from execution.canary.models import (
     CanaryDeployment,
-    CanaryMetrics,
     CanaryStatus,
-    GateCriteria,
 )
 from execution.canary.monitor import CanaryMonitor
-from execution.canary.promotion import PromotionPacketGenerator
 
 
 def get_default_reports_dir() -> Path:

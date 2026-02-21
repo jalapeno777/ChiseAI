@@ -257,9 +257,9 @@ class TestIntegration:
         llm_mock.shutdown = AsyncMock()
 
         # Update mock_imports with our controlled mocks
-        mock_imports[
-            "src.signal_generation.signal_generator"
-        ].SignalGenerator = MagicMock(return_value=signal_mock)
+        mock_imports["src.signal_generation.signal_generator"].SignalGenerator = (
+            MagicMock(return_value=signal_mock)
+        )
         mock_imports["src.execution.paper.risk_enforcer"].RiskEnforcer = MagicMock(
             return_value=risk_mock
         )
@@ -328,9 +328,9 @@ class TestIntegration:
         orchestrator_mock = create_tracking_mock("orchestrator")
         llm_mock = create_tracking_mock("llm")
 
-        mock_imports[
-            "src.signal_generation.signal_generator"
-        ].SignalGenerator = MagicMock(return_value=signal_mock)
+        mock_imports["src.signal_generation.signal_generator"].SignalGenerator = (
+            MagicMock(return_value=signal_mock)
+        )
         mock_imports["src.execution.paper.risk_enforcer"].RiskEnforcer = MagicMock(
             return_value=risk_mock
         )

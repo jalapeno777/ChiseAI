@@ -216,8 +216,9 @@ class RunbookParser:
     def _strip_yaml_quotes(self, value: str) -> str:
         """Strip matching outer quotes from a YAML value."""
         if len(value) >= 2:
-            if (value.startswith('"') and value.endswith('"')) or \
-               (value.startswith("'") and value.endswith("'")):
+            if (value.startswith('"') and value.endswith('"')) or (
+                value.startswith("'") and value.endswith("'")
+            ):
                 return value[1:-1]
         return value
 
@@ -235,9 +236,9 @@ class RunbookParser:
                     command=step_data.get("command"),
                     script=step_data.get("script"),
                     description=step_data.get("description"),
-                    timeout=int(step_data["timeout"])
-                    if "timeout" in step_data
-                    else None,
+                    timeout=(
+                        int(step_data["timeout"]) if "timeout" in step_data else None
+                    ),
                     verify=step_data.get("verify"),
                 )
                 steps.append(step)
