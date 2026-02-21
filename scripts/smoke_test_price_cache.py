@@ -115,9 +115,9 @@ async def smoke_test_price_cache_populated():
     # Verify the price was set correctly
     expected_price = 31000.0  # Last OHLCV close price
     assert price_after is not None, "Price cache should be populated after cycle"
-    assert price_after == expected_price, (
-        f"Expected {expected_price}, got {price_after}"
-    )
+    assert (
+        price_after == expected_price
+    ), f"Expected {expected_price}, got {price_after}"
 
     # Verify the price was set BEFORE process_signal was called
     # Check that set_market_price was called with correct arguments

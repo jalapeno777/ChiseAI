@@ -638,15 +638,19 @@ class BurnInTest:
             },
             "health_checks": {
                 "total": len(self.metrics.health_checks),
-                "last_check": self.metrics.health_checks[-1]
-                if self.metrics.health_checks
-                else None,
+                "last_check": (
+                    self.metrics.health_checks[-1]
+                    if self.metrics.health_checks
+                    else None
+                ),
             },
             "verdict": verdict,
             "rationale": rationale,
-            "rollback_plan": "Revert to last known good version if NO-GO"
-            if verdict == "NO-GO"
-            else "N/A",
+            "rollback_plan": (
+                "Revert to last known good version if NO-GO"
+                if verdict == "NO-GO"
+                else "N/A"
+            ),
         }
 
         return report

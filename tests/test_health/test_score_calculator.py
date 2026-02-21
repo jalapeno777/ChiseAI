@@ -99,9 +99,9 @@ class TestScoreCalculatorExtended:
         calculator = ScoreCalculator()
 
         for component in ComponentType:
-            assert component in calculator.COMPONENT_WEIGHTS, (
-                f"Missing weight for {component}"
-            )
+            assert (
+                component in calculator.COMPONENT_WEIGHTS
+            ), f"Missing weight for {component}"
 
     def test_orchestrator_high_score(self):
         """Test orchestrator score with good health."""

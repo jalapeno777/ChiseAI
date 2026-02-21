@@ -592,7 +592,9 @@ class ProviderChainDiagnostic:
             if not kimi_first:
                 logger.warning("⚠️  KIMI is available but NOT selected first!")
         else:
-            logger.info("ℹ️  KIMI not available or disabled, checking fallback chain...")
+            logger.info(
+                "ℹ️  KIMI not available or disabled, checking fallback chain..."
+            )
 
         return {
             "environment": self.env_vars,

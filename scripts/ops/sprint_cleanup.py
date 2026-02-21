@@ -645,10 +645,12 @@ class RedisHelper:
             boundary_data = {
                 "sprint_id": sprint_id,
                 "started_at": datetime.now(timezone.utc).isoformat(),
-                "cleanup_timestamp": result.timestamp,
-                "issues_critical": result.critical_count,
-                "issues_warning": result.warning_count,
-                "repository_state": "ready" if not result.has_critical else "blocked",
+                "cleanup_timestamp": cleanup_result.timestamp,
+                "issues_critical": cleanup_result.critical_count,
+                "issues_warning": cleanup_result.warning_count,
+                "repository_state": (
+                    "ready" if not cleanup_result.has_critical else "blocked"
+                ),
             }
             self.client.lpush(REDIS_SPRINT_BOUNDARY, json.dumps(boundary_data))
             return True
@@ -1070,9 +1072,7 @@ class SprintCleanup:
                     icon = (
                         "❌"
                         if severity == IssueSeverity.CRITICAL
-                        else "⚠️"
-                        if severity == IssueSeverity.WARNING
-                        else "ℹ️"
+                        else "⚠️" if severity == IssueSeverity.WARNING else "ℹ️"
                     )
                     lines.append(f"{icon} [{issue.category}] {issue.description}")
                     lines.append(f"   Action: {issue.action}")
@@ -1119,9 +1119,7 @@ class SprintCleanup:
         emoji = (
             "🟢"
             if not self.result.has_critical and self.result.warning_count == 0
-            else "🟡"
-            if not self.result.has_critical
-            else "🔴"
+            else "🟡" if not self.result.has_critical else "🔴"
         )
 
         summary = f"""

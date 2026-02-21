@@ -82,16 +82,16 @@ class TestDashboardTelemetry:
         for panel in panels:
             if panel.get("type") != "row":  # Skip row panels
                 datasource = panel.get("datasource", "")
-                assert "InfluxDB" in str(datasource), (
-                    f"Panel {panel.get('title')} missing InfluxDB datasource"
-                )
+                assert "InfluxDB" in str(
+                    datasource
+                ), f"Panel {panel.get('title')} missing InfluxDB datasource"
 
     def test_dashboard_has_uid(self, dashboard):
         """Verify dashboard has a unique identifier."""
         assert "uid" in dashboard, "Dashboard missing UID"
-        assert dashboard["uid"] == "autonomous-healing", (
-            f"Unexpected UID: {dashboard['uid']}"
-        )
+        assert (
+            dashboard["uid"] == "autonomous-healing"
+        ), f"Unexpected UID: {dashboard['uid']}"
 
     def test_alert_rules_configured(self, alerts):
         """AC3: Verify 3 alert rules exist."""
@@ -109,9 +109,9 @@ class TestDashboardTelemetry:
             "CircuitBreakerOpenTooLong",
             "HealingFailureRateHigh",
         }
-        assert rule_names == expected_rules, (
-            f"Missing or unexpected rules: {rule_names}"
-        )
+        assert (
+            rule_names == expected_rules
+        ), f"Missing or unexpected rules: {rule_names}"
 
     def test_alert_rules_have_required_fields(self, alerts):
         """Verify alert rules have all required fields."""
@@ -126,9 +126,9 @@ class TestDashboardTelemetry:
 
             # Verify annotations include runbook_url
             annotations = rule.get("annotations", {})
-            assert "runbook_url" in annotations, (
-                f"Rule {rule.get('alert')} missing runbook_url"
-            )
+            assert (
+                "runbook_url" in annotations
+            ), f"Rule {rule.get('alert')} missing runbook_url"
             assert "summary" in annotations, f"Rule {rule.get('alert')} missing summary"
 
     def test_runbook_exists(self, runbook_path):
@@ -149,9 +149,9 @@ class TestDashboardTelemetry:
     def test_runbook_has_escalation_procedures(self, runbook_content):
         """Verify runbook includes escalation procedures."""
         assert "Escalation" in runbook_content, "Runbook missing escalation procedures"
-        assert "P0" in runbook_content or "severity" in runbook_content.lower(), (
-            "Runbook missing severity levels"
-        )
+        assert (
+            "P0" in runbook_content or "severity" in runbook_content.lower()
+        ), "Runbook missing severity levels"
 
     def test_runbook_links_in_alert_rules(self, alerts):
         """AC5: Verify alert rules reference runbook."""
@@ -161,9 +161,9 @@ class TestDashboardTelemetry:
         for rule in rules:
             annotations = rule.get("annotations", {})
             runbook_url = annotations.get("runbook_url", "")
-            assert "autonomous_control_plane" in runbook_url, (
-                f"Rule {rule.get('alert')} has invalid runbook URL"
-            )
+            assert (
+                "autonomous_control_plane" in runbook_url
+            ), f"Rule {rule.get('alert')} has invalid runbook URL"
 
     def test_terraform_deployable(self, dashboard_path):
         """AC6: Verify dashboard JSON is valid for Terraform deployment."""
@@ -185,9 +185,9 @@ class TestDashboardTelemetry:
     def test_dashboard_has_refresh_interval(self, dashboard):
         """Verify dashboard has a refresh interval configured."""
         assert "refresh" in dashboard, "Dashboard missing refresh interval"
-        assert dashboard["refresh"] == "30s", (
-            f"Unexpected refresh interval: {dashboard['refresh']}"
-        )
+        assert (
+            dashboard["refresh"] == "30s"
+        ), f"Unexpected refresh interval: {dashboard['refresh']}"
 
     def test_dashboard_has_time_range(self, dashboard):
         """Verify dashboard has default time range."""
@@ -204,18 +204,18 @@ class TestDashboardTelemetry:
         for rule in rules:
             expr = rule.get("expr", "")
             assert expr, f"Rule {rule.get('alert')} has empty expression"
-            assert len(expr) > 10, (
-                f"Rule {rule.get('alert')} expression seems too short"
-            )
+            assert (
+                len(expr) > 10
+            ), f"Rule {rule.get('alert')} expression seems too short"
 
     def test_runbook_has_useful_commands(self, runbook_content):
         """Verify runbook includes useful commands section."""
-        assert "Useful Commands" in runbook_content or "Commands" in runbook_content, (
-            "Runbook missing commands section"
-        )
-        assert "curl" in runbook_content or "kubectl" in runbook_content, (
-            "Runbook missing example commands"
-        )
+        assert (
+            "Useful Commands" in runbook_content or "Commands" in runbook_content
+        ), "Runbook missing commands section"
+        assert (
+            "curl" in runbook_content or "kubectl" in runbook_content
+        ), "Runbook missing example commands"
 
     def test_dashboard_panel_types_valid(self, dashboard):
         """Verify all panels have valid types."""
@@ -232,17 +232,17 @@ class TestDashboardTelemetry:
 
         for panel in panels:
             panel_type = panel.get("type", "")
-            assert panel_type in valid_types or panel_type, (
-                f"Panel {panel.get('title')} has invalid type: {panel_type}"
-            )
+            assert (
+                panel_type in valid_types or panel_type
+            ), f"Panel {panel.get('title')} has invalid type: {panel_type}"
 
     def test_dashboard_has_templating(self, dashboard):
         """Verify dashboard has template variables configured."""
         templating = dashboard.get("templating", {})
         list_vars = templating.get("list", [])
-        assert len(list_vars) >= 2, (
-            f"Expected at least 2 template variables, got {len(list_vars)}"
-        )
+        assert (
+            len(list_vars) >= 2
+        ), f"Expected at least 2 template variables, got {len(list_vars)}"
 
         var_names = {v.get("name") for v in list_vars}
         assert "severity" in var_names, "Missing 'severity' template variable"

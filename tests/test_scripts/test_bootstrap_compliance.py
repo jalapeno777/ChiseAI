@@ -534,9 +534,9 @@ class TestBootstrapComplianceReporting:
         # In check_env.py, bootstrap is called early in main()
         first_env_access = get_first_os_getenv_call(tree)
         if first_env_access:
-            assert call_line < first_env_access, (
-                "bootstrap() should be called before os.getenv()"
-            )
+            assert (
+                call_line < first_env_access
+            ), "bootstrap() should be called before os.getenv()"
 
 
 class TestBootstrapImportVariations:

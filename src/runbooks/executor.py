@@ -337,9 +337,11 @@ class RunbookExecutor:
                 stdout=result.stdout,
                 stderr=result.stderr,
                 execution_time_ms=execution_time_ms,
-                error_message=None
-                if result.returncode == 0
-                else f"Command failed with exit code {result.returncode}",
+                error_message=(
+                    None
+                    if result.returncode == 0
+                    else f"Command failed with exit code {result.returncode}"
+                ),
             )
 
         except subprocess.TimeoutExpired:
@@ -382,10 +384,13 @@ class RunbookExecutor:
     def _save_execution_log(self, result: ExecutionResult) -> Path:
         """Save execution result to log file."""
         import time
+
         timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
         # Add microseconds to ensure uniqueness for rapid successive executions
         unique_suffix = str(int(time.time() * 1000) % 1000).zfill(3)
-        log_file = self.log_dir / f"{result.runbook_name}_{timestamp}_{unique_suffix}.json"
+        log_file = (
+            self.log_dir / f"{result.runbook_name}_{timestamp}_{unique_suffix}.json"
+        )
 
         log_data = {
             "execution": result.to_dict(),

@@ -147,9 +147,9 @@ class TestSafetyChecker:
             }
 
             result = await checker._check_story_id(pr_data)
-            assert result.status == CheckStatus.PASSED, (
-                f"Title '{title}' should be valid"
-            )
+            assert (
+                result.status == CheckStatus.PASSED
+            ), f"Title '{title}' should be valid"
 
     @pytest.mark.asyncio
     async def test_run_checks_disabled_checks(self):

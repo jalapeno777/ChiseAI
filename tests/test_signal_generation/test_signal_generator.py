@@ -315,12 +315,12 @@ class TestSignalGeneratorEntryPrice:
         )
 
         # Verify entry_price is in metadata
-        assert "entry_price" in signal.metadata, (
-            "entry_price missing from signal metadata"
-        )
-        assert signal.metadata["entry_price"] == test_price, (
-            f"entry_price mismatch: expected {test_price}, got {signal.metadata['entry_price']}"
-        )
+        assert (
+            "entry_price" in signal.metadata
+        ), "entry_price missing from signal metadata"
+        assert (
+            signal.metadata["entry_price"] == test_price
+        ), f"entry_price mismatch: expected {test_price}, got {signal.metadata['entry_price']}"
 
     @patch("signal_generation.signal_generator.SignalGenerator._get_freshness_checker")
     @patch("signal_generation.signal_generator.SignalGenerator._get_scorer")

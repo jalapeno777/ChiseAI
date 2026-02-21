@@ -37,7 +37,6 @@ from src.brain.shadow_testing import (
 )
 from src.brain.version import BrainVersion
 
-
 # =============================================================================
 # Brain Function Fixtures
 # =============================================================================

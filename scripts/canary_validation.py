@@ -602,9 +602,9 @@ def generate_canary_report(all_results: list[dict[str, Any]]) -> dict[str, Any]:
             "total_tests": len(all_results),
             "passed": sum(1 for r in all_results if r["status"] == "PASS"),
             "failed": sum(1 for r in all_results if r["status"] == "FAIL"),
-            "overall_status": "PASS"
-            if all(r["status"] == "PASS" for r in all_results)
-            else "FAIL",
+            "overall_status": (
+                "PASS" if all(r["status"] == "PASS" for r in all_results) else "FAIL"
+            ),
         },
         "test_results": all_results,
         "recommendations": [],

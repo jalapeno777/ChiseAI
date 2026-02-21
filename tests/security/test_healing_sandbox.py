@@ -52,15 +52,15 @@ class TestSandboxResourceLimits:
         for action in actions:
             limits = action.get_resource_limits()
             assert limits.max_cpu_seconds > 0, f"{action.action_type} missing CPU limit"
-            assert limits.max_memory_mb > 0, (
-                f"{action.action_type} missing memory limit"
-            )
-            assert limits.max_execution_seconds > 0, (
-                f"{action.action_type} missing timeout"
-            )
-            assert limits.max_file_descriptors >= 0, (
-                f"{action.action_type} missing FD limit"
-            )
+            assert (
+                limits.max_memory_mb > 0
+            ), f"{action.action_type} missing memory limit"
+            assert (
+                limits.max_execution_seconds > 0
+            ), f"{action.action_type} missing timeout"
+            assert (
+                limits.max_file_descriptors >= 0
+            ), f"{action.action_type} missing FD limit"
 
     def test_resource_limits_values(self):
         """Test resource limits have reasonable values."""

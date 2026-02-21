@@ -25,7 +25,6 @@ import aiohttp
 import pytest
 import yaml
 
-
 # Load configuration
 CONFIG_PATH = Path(__file__).parent.parent.parent / "config" / "bybit_endpoints.yaml"
 

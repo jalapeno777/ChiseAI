@@ -536,9 +536,7 @@ class AsyncSignalProcessor:
             "confidence_tier": (
                 "high"
                 if signal.confidence >= 0.90
-                else "medium"
-                if signal.confidence >= 0.75
-                else "low"
+                else "medium" if signal.confidence >= 0.75 else "low"
             ),
         }
 

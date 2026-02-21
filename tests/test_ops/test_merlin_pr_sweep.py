@@ -7,7 +7,9 @@ from pathlib import Path
 
 import pytest
 
-MODULE_PATH = Path(__file__).resolve().parents[2] / "scripts" / "ops" / "merlin_pr_sweep.py"
+MODULE_PATH = (
+    Path(__file__).resolve().parents[2] / "scripts" / "ops" / "merlin_pr_sweep.py"
+)
 SPEC = importlib.util.spec_from_file_location("merlin_pr_sweep", MODULE_PATH)
 assert SPEC and SPEC.loader
 merlin_pr_sweep = importlib.util.module_from_spec(SPEC)
@@ -64,10 +66,14 @@ def test_build_supersession_comment_contains_direct_link() -> None:
     assert "http://host.docker.internal:3000/craig/ChiseAI/pulls/77" in comment
 
 
-def test_main_consolidation_mode_posts_comments(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+def test_main_consolidation_mode_posts_comments(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     calls: list[tuple[int, str]] = []
 
-    def fake_post(pr_number: int, comment: str, **kwargs: object) -> None:  # noqa: ANN003
+    def fake_post(
+        pr_number: int, comment: str, **kwargs: object
+    ) -> None:  # noqa: ANN003
         calls.append((pr_number, comment))
 
     monkeypatch.setenv("AGENT_ID", "merlin")

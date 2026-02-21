@@ -568,9 +568,9 @@ class TestScriptStructure:
         content = script.read_text()
 
         assert "LOCK_FILE=" in content, "Should define LOCK_FILE"
-        assert "chiseai_daily_summary.lock" in content, (
-            "Should use correct lock filename"
-        )
+        assert (
+            "chiseai_daily_summary.lock" in content
+        ), "Should use correct lock filename"
 
     def test_script_has_error_handling(self):
         """Test that script has error handling (set -euo pipefail)."""
