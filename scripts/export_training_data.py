@@ -270,7 +270,7 @@ def main() -> int:
     # Check for valid mode
     if args.stats:
         # Statistics mode
-        return show_statistics(args.stats)
+        return show_statistics(args.stats, verbose=args.verbose)
 
     if args.demo:
         # Demo mode
@@ -387,7 +387,7 @@ def export_for_model(args: argparse.Namespace) -> int:
         return 1
 
 
-def show_statistics(dataset_path: str) -> int:
+def show_statistics(dataset_path: str, verbose: bool = False) -> int:
     """Show statistics for existing dataset."""
     logger.info(f"Generating statistics for: {dataset_path}")
 
@@ -419,7 +419,7 @@ def show_statistics(dataset_path: str) -> int:
         return 0
 
     except Exception as e:
-        logger.error(f"Statistics generation failed: {e}", exc_info=args.verbose)
+        logger.error(f"Statistics generation failed: {e}", exc_info=verbose)
         return 1
 
 
