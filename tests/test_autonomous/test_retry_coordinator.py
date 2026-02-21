@@ -579,7 +579,9 @@ class TestMetricsExport:
 
         metrics = coordinator.get_metrics()
         assert metrics["total_successes"] == 1
-        assert metrics["success_rate"] == 1.0
+        # Success rate is 0 when no retry attempts were needed (immediate success)
+        # This is because attempts are only recorded for retries with backoff
+        assert metrics["success_rate"] == 0
 
     @pytest.mark.asyncio
     async def test_metrics_after_failure(self, coordinator):
@@ -601,6 +603,39 @@ class TestMetricsExport:
         metrics = coordinator.get_metrics()
         assert metrics["total_failures"] >= 1
         assert metrics["total_dlq"] >= 1
+
+    @pytest.mark.asyncio
+    async def test_metrics_success_rate_with_retries(self, coordinator):
+        """Test success rate calculation when retries were attempted."""
+        call_count = 0
+
+        async def fail_then_succeed():
+            nonlocal call_count
+            call_count += 1
+            if call_count < 3:
+                raise Exception(f"Failure #{call_count}")
+            return "success"
+
+        policy = RetryPolicy(
+            max_attempts=5,
+            base_delay_ms=10,
+            jitter_type=JitterType.NONE,
+        )
+
+        result = await coordinator.execute_with_retry(
+            service_name="success_rate_test",
+            operation_name="test_op",
+            func=fail_then_succeed,
+            policy=policy,
+        )
+        assert result == "success"
+
+        metrics = coordinator.get_metrics()
+        # 2 retry attempts before success
+        assert metrics["total_attempts"] == 2
+        assert metrics["total_successes"] == 1
+        # Success rate = successes / attempts = 1/2 = 0.5
+        assert metrics["success_rate"] == 0.5
 
 
 class TestEdgeCases:
