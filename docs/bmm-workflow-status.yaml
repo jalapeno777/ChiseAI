@@ -1904,6 +1904,16 @@ stories:
       - Classifies PRs into SAFE (docs/tests), STANDARD (non-critical source), COMPLEX (execution/infra/secrets)
       - Uses regex patterns for initial classification with 99%+ accuracy
       - Classification completes in <2 seconds for PRs with <100 files
+    validation:
+      - type: unit_test
+        command: "pytest tests/test_pr_lifecycle/test_path_analyzer.py -v"
+        coverage_threshold: 85
+      - type: integration
+        command: "pytest tests/test_pr_lifecycle/integration/test_classification_accuracy.py -v"
+      - type: lint
+        command: "ruff check scripts/pr_lifecycle/path_analyzer.py"
+      - type: security
+        command: "bandit scripts/pr_lifecycle/path_analyzer.py"
 
   # ST-AUTO-002: Safe Path Auto-Approval
   - id: ST-AUTO-002
@@ -1918,6 +1928,14 @@ stories:
     acceptance_criteria:
       - Auto-merges SAFE PRs only when all CI checks pass
       - Completes auto-merge within 5 minutes of CI success
+    validation:
+      - type: unit_test
+        command: "pytest tests/test_pr_lifecycle/ -v --tb=short"
+        coverage_threshold: 80
+      - type: lint
+        command: "ruff check scripts/pr_lifecycle/"
+      - type: security
+        command: "bandit -r scripts/pr_lifecycle/"
 
   # ST-AUTO-003: GitReviewBot Integration
   - id: ST-AUTO-003
@@ -1932,6 +1950,14 @@ stories:
     acceptance_criteria:
       - Reviews STANDARD-classified PRs using dual-role analysis
       - Completes review within 10 minutes of PR submission
+    validation:
+      - type: unit_test
+        command: "pytest tests/test_pr_lifecycle/ -v --tb=short"
+        coverage_threshold: 80
+      - type: lint
+        command: "ruff check scripts/pr_lifecycle/"
+      - type: security
+        command: "bandit -r scripts/pr_lifecycle/"
 
   # ST-AUTO-004: Complex Path Human Gate
   - id: ST-AUTO-004
@@ -1943,6 +1969,14 @@ stories:
     story_points: 5
     priority: P1-HIGH
     description: Human approval workflow for COMPLEX-classified PRs with GitReviewBot pre-review
+    validation:
+      - type: unit_test
+        command: "pytest tests/test_pr_lifecycle/ -v --tb=short"
+        coverage_threshold: 80
+      - type: lint
+        command: "ruff check scripts/pr_lifecycle/"
+      - type: security
+        command: "bandit -r scripts/pr_lifecycle/"
 
   # ST-AUTO-005: Feedback Loop & Retry
   - id: ST-AUTO-005
@@ -1954,6 +1988,14 @@ stories:
     story_points: 5
     priority: P1-HIGH
     description: Outcome tracking and continuous improvement system for PR reviews
+    validation:
+      - type: unit_test
+        command: "pytest tests/test_pr_lifecycle/ -v --tb=short"
+        coverage_threshold: 80
+      - type: lint
+        command: "ruff check scripts/pr_lifecycle/"
+      - type: security
+        command: "bandit -r scripts/pr_lifecycle/"
 
   # ST-AUTO-006: EP-NS-008 Integration
   - id: ST-AUTO-006
@@ -1965,6 +2007,14 @@ stories:
     story_points: 8
     priority: P1-HIGH
     description: Circuit breaker, retry coordinator, and self-healing integration from Autonomous Control Plane
+    validation:
+      - type: unit_test
+        command: "pytest tests/test_pr_lifecycle/ -v --tb=short"
+        coverage_threshold: 80
+      - type: lint
+        command: "ruff check scripts/pr_lifecycle/"
+      - type: security
+        command: "bandit -r scripts/pr_lifecycle/"
 
   # ST-AUTO-007: Metrics & Observability
   - id: ST-AUTO-007
@@ -1976,6 +2026,14 @@ stories:
     story_points: 8
     priority: P2-MEDIUM
     description: Grafana dashboards and alerting for the autonomous PR pipeline
+    validation:
+      - type: unit_test
+        command: "pytest tests/test_pr_lifecycle/ -v --tb=short"
+        coverage_threshold: 80
+      - type: lint
+        command: "ruff check scripts/pr_lifecycle/"
+      - type: security
+        command: "bandit -r scripts/pr_lifecycle/"
 
   # ST-AUTO-008: Agent Onboarding & Documentation
   - id: ST-AUTO-008
@@ -1987,6 +2045,14 @@ stories:
     story_points: 5
     priority: P2-MEDIUM
     description: Documentation and onboarding materials for AI agents using the autonomous PR pipeline
+    validation:
+      - type: unit_test
+        command: "pytest tests/test_pr_lifecycle/ -v --tb=short"
+        coverage_threshold: 80
+      - type: lint
+        command: "ruff check scripts/pr_lifecycle/"
+      - type: security
+        command: "bandit -r scripts/pr_lifecycle/"
 
 # ============================================================
 # ACTIVE SPRINTS
