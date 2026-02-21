@@ -368,7 +368,9 @@ print(json.dumps(result))
         Returns:
             Rollback result
         """
-        start_time = asyncio.get_event_loop().time()
+        import time
+
+        start_time = time.time()
 
         logger.info(f"Rolling back healing action {self.action_type}")
 
@@ -382,7 +384,7 @@ print(json.dumps(result))
 
         try:
             rollback_details = self._rollback_impl(context, self._captured_state)
-            duration = asyncio.get_event_loop().time() - start_time
+            duration = time.time() - start_time
 
             success = rollback_details.get("success", False)
 
@@ -401,7 +403,7 @@ print(json.dumps(result))
             )
 
         except Exception as e:
-            duration = asyncio.get_event_loop().time() - start_time
+            duration = time.time() - start_time
             logger.exception(f"Rollback of {self.action_type} threw exception: {e}")
 
             return RollbackResult(
