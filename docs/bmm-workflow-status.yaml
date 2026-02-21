@@ -1890,6 +1890,49 @@ stories:
       - Alerts trigger on anomalies and errors
       - Audit logs capture all trading decisions
 
+  # ST-AUTO-001: Path Analyzer Module
+  - id: ST-AUTO-001
+    title: Path Analyzer Module
+    epic_id: EP-AUTO-GIT-001
+    sprint_id: AUTO-GIT-001
+    status: completed
+    validation_status: validated
+    story_points: 5
+    priority: P0-CRITICAL
+    description: File classification system using regex + semantic analysis to categorize PRs as SAFE, STANDARD, or COMPLEX
+    acceptance_criteria:
+      - Classifies PRs into SAFE (docs/tests), STANDARD (non-critical source), COMPLEX (execution/infra/secrets)
+      - Uses regex patterns for initial classification with 99%+ accuracy
+      - Classification completes in <2 seconds for PRs with <100 files
+
+  # ST-AUTO-002: Safe Path Auto-Approval
+  - id: ST-AUTO-002
+    title: Safe Path Auto-Approval
+    epic_id: EP-AUTO-GIT-001
+    sprint_id: AUTO-GIT-001
+    status: completed
+    validation_status: validated
+    story_points: 3
+    priority: P0-CRITICAL
+    description: Auto-merge capability for SAFE-classified PRs with comprehensive safety checks
+    acceptance_criteria:
+      - Auto-merges SAFE PRs only when all CI checks pass
+      - Completes auto-merge within 5 minutes of CI success
+
+  # ST-AUTO-003: GitReviewBot Integration
+  - id: ST-AUTO-003
+    title: GitReviewBot Integration
+    epic_id: EP-AUTO-GIT-001
+    sprint_id: AUTO-GIT-001
+    status: completed
+    validation_status: validated
+    story_points: 8
+    priority: P0-CRITICAL
+    description: AI dual-role review system (SeniorDev + Critic) for STANDARD-classified PRs
+    acceptance_criteria:
+      - Reviews STANDARD-classified PRs using dual-role analysis
+      - Completes review within 10 minutes of PR submission
+
 # ============================================================
 # ACTIVE SPRINTS
 # ============================================================
