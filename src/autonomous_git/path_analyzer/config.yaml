@@ -1,0 +1,56 @@
+path_patterns:
+  safe:
+    - pattern: "^docs/.*\\.md$"
+      description: "Documentation files"
+    - pattern: "^\\.opencode/skills/.*\\.md$"
+      description: "Skill documentation"
+    - pattern: "^tests/.*\\.py$"
+      description: "Test files"
+    - pattern: "^tests/.*\\.yaml$"
+      description: "Test configuration"
+    - pattern: ".*\\.md$"
+      description: "Markdown files"
+    - pattern: "^LICENSE.*$"
+      description: "License files"
+    - pattern: "^\\.gitignore$"
+      description: "Git ignore file"
+    - pattern: "^README.*$"
+      description: "Readme files"
+    - pattern: "^CONTRIBUTING.*$"
+      description: "Contributing guidelines"
+    - pattern: "^CHANGELOG.*$"
+      description: "Changelog files"
+    
+  complex:
+    - pattern: "^\\.woodpecker\\.yml$"
+      description: "CI/CD configuration"
+    - pattern: "^infrastructure/terraform/.*"
+      description: "Infrastructure code"
+    - pattern: "^src/.*/__init__\\.py$"
+      description: "Package initialization files"
+    - pattern: "^AGENTS\\.md$"
+      description: "Agent configuration"
+    - pattern: "^\\.opencode/agent/.*"
+      description: "Agent files"
+    - pattern: "^docs/bmm-workflow-status\\.yaml$"
+      description: "Workflow status"
+    - pattern: "^scripts/swarm/.*"
+      description: "Swarm scripts"
+    - pattern: "^src/common/__init__\\.py$"
+      description: "Common package init"
+    
+  semantic_rules:
+    - name: cross_module_import
+      pattern: "from\\s+src\\.([^\\.]+)\\.import"
+      threshold: 2
+      action: flag_for_review
+    - name: test_deletion
+      pattern: ".*_test\\.py$"
+      action: flag_for_review
+    - name: security_sensitive
+      pattern: "(password|secret|token|key)\\s*="
+      action: flag_for_review
+    - name: complex_init
+      pattern: "__init__\\.py$"
+      threshold: 5
+      action: flag_for_review
