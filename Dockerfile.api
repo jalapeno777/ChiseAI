@@ -1,0 +1,55 @@
+# ChiseAI API Dockerfile with Autonomous Control Plane (EP-NS-008)
+# Base API image for ChiseAI services
+
+FROM python:3.11-slim
+
+LABEL project=chiseai
+LABEL service=chiseai-api
+LABEL com.docker.compose.service=chiseai-api
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN groupadd -r app && useradd -r -g app app
+
+# Set working directory
+WORKDIR /app
+
+# Install Python dependencies
+RUN pip install --no-cache-dir \
+    fastapi>=0.100.0 \
+    uvicorn[standard]>=0.23.0 \
+    websockets>=12.0 \
+    redis>=5.0.0 \
+    influxdb-client>=1.40.0 \
+    asyncpg>=0.29.0 \
+    numpy>=1.24.0 \
+    python-dotenv>=1.0.0 \
+    ccxt>=4.0.0
+
+# Copy application code
+COPY src/ /app/src/
+COPY scripts/ /app/scripts/
+
+# Set proper permissions
+RUN chown -R app:app /app
+USER app
+
+# Environment
+ENV PYTHONPATH=/app:/app/src:/app/scripts
+ENV PYTHONUNBUFFERED=1
+ENV CHISEAI_ENV=production
+
+# Expose API port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
+
+# Run FastAPI application
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]

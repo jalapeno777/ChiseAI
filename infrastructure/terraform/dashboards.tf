@@ -36,6 +36,12 @@ resource "grafana_dashboard" "datasource_health" {
   overwrite   = true
 }
 
+resource "grafana_dashboard" "autonomous_control_plane" {
+  config_json = file("${local.dashboards_path}/autonomous_control_plane.json")
+  folder      = grafana_folder.chiseai.id
+  overwrite   = true
+}
+
 # ChiseAI folder for organizing dashboards
 resource "grafana_folder" "chiseai" {
   title = "ChiseAI"
@@ -64,11 +70,12 @@ resource "grafana_data_source" "influxdb" {
 output "dashboard_uids" {
   description = "UIDs of created dashboards"
   value = {
-    data_freshness    = grafana_dashboard.data_freshness.uid
-    backtest_kpis     = grafana_dashboard.backtest_kpis.uid
-    paper_execution   = grafana_dashboard.paper_execution.uid
-    live_execution    = grafana_dashboard.live_execution.uid
-    datasource_health = grafana_dashboard.datasource_health.uid
+    data_freshness           = grafana_dashboard.data_freshness.uid
+    backtest_kpis            = grafana_dashboard.backtest_kpis.uid
+    paper_execution          = grafana_dashboard.paper_execution.uid
+    live_execution           = grafana_dashboard.live_execution.uid
+    datasource_health        = grafana_dashboard.datasource_health.uid
+    autonomous_control_plane = grafana_dashboard.autonomous_control_plane.uid
   }
 }
 
