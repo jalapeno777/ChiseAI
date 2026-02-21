@@ -421,22 +421,18 @@ class DeadLetterQueue:
                 total_count = total_result.scalar()
 
                 # By service
-                service_result = conn.execute(
-                    text(f"""
+                service_result = conn.execute(text(f"""
                         SELECT service_name, COUNT(*) as count
                         FROM {self._table_name}
                         GROUP BY service_name
-                    """)
-                )
+                    """))
                 by_service = {row.service_name: row.count for row in service_result}
 
                 # Pending count
-                pending_result = conn.execute(
-                    text(f"""
+                pending_result = conn.execute(text(f"""
                         SELECT COUNT(*) FROM {self._table_name}
                         WHERE status = 'DLQ'
-                    """)
-                )
+                    """))
                 pending_count = pending_result.scalar()
 
                 return {
