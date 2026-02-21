@@ -1,0 +1,34 @@
+auto_approval:
+  enabled: true
+  
+  rate_limits:
+    max_per_hour: 10
+    max_consecutive: 3
+    consecutive_pause_duration: 300  # seconds
+  
+  merge_strategy: squash  # or "merge"
+  
+  safety_checks:
+    require_green_ci: true
+    require_story_id: true
+    check_merge_conflicts: true
+  
+  exclusions:
+    paths:
+      - "docs/security/*.md"
+      - "docs/compliance/*.md"
+      - "AGENTS.md"
+      - ".woodpecker.yml"
+      - "docs/bmm-workflow-status.yaml"
+      - "infrastructure/terraform/**"
+    authors:
+      - "external-contributor"
+    title_patterns:
+      - "HOTFIX.*manual"
+      - "EMERGENCY.*"
+      - "SECURITY.*"
+  
+  notifications:
+    discord_channel: "#git-activity"
+    alert_channel: "#alerts"
+    rate_limit: "1 per 5 minutes"
