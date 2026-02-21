@@ -93,6 +93,8 @@ steps:
         set +e
         (
           set -euo pipefail
+          # Increase file descriptor limits for testing
+          ulimit -n 4096 || echo "Warning: could not increase file descriptor limit"
           EVENT="${CI_BUILD_EVENT:-${WOODPECKER_BUILD_EVENT:-${WOODPECKER_EVENT:-}}}"
           BRANCH="${CI_COMMIT_BRANCH:-${WOODPECKER_COMMIT_BRANCH:-}}"
           FULL_MODE=0
