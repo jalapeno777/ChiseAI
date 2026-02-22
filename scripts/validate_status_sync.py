@@ -112,7 +112,7 @@ def validate_workflow_status(data: dict[str, Any], result: ValidationResult) -> 
     if has_sprints:
         _validate_sprints(data.get("sprints", []), result)
 
-    # Validate stories if present (including launch_stories)
+    # Validate stories if present (includes both stories and launch_stories)
     all_stories = data.get("stories", []) + data.get("launch_stories", [])
     if all_stories:
         _validate_stories(all_stories, data.get("epics", []), result)
@@ -262,7 +262,9 @@ def extract_story_ids(data: dict[str, Any]) -> set[str]:
     """Extract all story IDs from workflow status data."""
     story_ids: set[str] = set()
 
-    for story in data.get("stories", []) + data.get("launch_stories", []):
+    # Include both stories and launch_stories
+    all_stories = data.get("stories", []) + data.get("launch_stories", [])
+    for story in all_stories:
         if isinstance(story, dict) and "id" in story:
             story_ids.add(story["id"])
 
