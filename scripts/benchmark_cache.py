@@ -58,7 +58,7 @@ def benchmark_cache_performance():
         cache_key = cache_manager.get_cache_key(query)
 
         # Simulate slow InfluxDB query (100ms)
-        def slow_query():
+        def slow_query(name=name):
             time.sleep(0.1)
             return {"data": f"result_for_{name}"}
 
@@ -98,7 +98,7 @@ def benchmark_cache_performance():
             result = cache_manager.get(cache_key)
             if result is None:
                 # Shouldn't happen, but just in case
-                def slow_query():
+                def slow_query(name=name):
                     time.sleep(0.1)
                     return {"data": f"result_for_{name}"}
 
