@@ -9,15 +9,13 @@ This module tests the MemoryDeduplicationEngine class including:
 - Statistics tracking
 """
 
-import pytest
 from datetime import UTC, datetime
-from unittest.mock import MagicMock, patch
 
 from src.governance.memory.deduplication import (
-    MemoryDeduplicationEngine,
+    FEATURE_FLAG_KEY,
     DeduplicationConfig,
     DeduplicationStats,
-    FEATURE_FLAG_KEY,
+    MemoryDeduplicationEngine,
 )
 
 
