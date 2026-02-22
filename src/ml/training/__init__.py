@@ -12,6 +12,7 @@ Components:
 - exporter: Dataset export for ML frameworks
 - retraining_trigger: Automatic retraining triggers (ECE, performance, scheduled)
 - training_orchestrator: Training workflow orchestration with trigger integration
+- pipeline_integration: Training pipeline integration with feedback loop and model registry (ST-LAUNCH-012)
 
 Usage:
     from ml.training import (
@@ -155,6 +156,23 @@ from ml.training.training_orchestrator import (
     TrainingStatus,
 )
 
+# Pipeline integration components (ST-LAUNCH-012)
+from ml.training.pipeline_integration import (
+    AsyncJobScheduler,
+    DataFetchError,
+    FeedbackLoopDataFetcher,
+    GrafanaMetricsExporter,
+    Hyperparameters,
+    ModelRegistrationError,
+    TrainingData,
+    TrainingDataFetcher,
+    TrainingExecutionError,
+    TrainingJob,
+    TrainingJobStatus,
+    TrainingPipelineError,
+    TrainingPipelineIntegration,
+)
+
 __all__ = [
     # Schema
     "TrainingSample",
@@ -219,4 +237,18 @@ __all__ = [
     "TrainingRun",
     "TrainingState",
     "TrainingStatus",
+    # Pipeline Integration (ST-LAUNCH-012)
+    "TrainingPipelineIntegration",
+    "TrainingJob",
+    "TrainingJobStatus",
+    "Hyperparameters",
+    "TrainingData",
+    "AsyncJobScheduler",
+    "FeedbackLoopDataFetcher",
+    "GrafanaMetricsExporter",
+    "TrainingPipelineError",
+    "DataFetchError",
+    "TrainingExecutionError",
+    "ModelRegistrationError",
+    "TrainingDataFetcher",
 ]

@@ -22,6 +22,7 @@ class FeatureFlags:
         retraining_deduplication: Enable 24h deduplication window
         retraining_pre_validation: Enable pre-training quality validation
         retraining_discord_alerts: Enable Discord alerts on triggers
+        launch_training_pipeline_enabled: Enable training pipeline integration
     """
 
     # Retraining trigger flags
@@ -31,6 +32,9 @@ class FeatureFlags:
     retraining_deduplication: bool = True
     retraining_pre_validation: bool = True
     retraining_discord_alerts: bool = True
+
+    # Training pipeline integration (ST-LAUNCH-012)
+    launch_training_pipeline_enabled: bool = True
 
     @classmethod
     def from_env(cls) -> FeatureFlags:
@@ -43,6 +47,7 @@ class FeatureFlags:
             FEATURE_RETRAINING_DEDUPLICATION: Enable deduplication (default: true)
             FEATURE_RETRAINING_PRE_VALIDATION: Enable pre-validation (default: true)
             FEATURE_RETRAINING_DISCORD_ALERTS: Enable Discord alerts (default: true)
+            LAUNCH_TRAINING_PIPELINE_ENABLED: Enable training pipeline (default: true)
 
         Returns:
             FeatureFlags instance with values from environment
@@ -72,6 +77,9 @@ class FeatureFlags:
             retraining_discord_alerts=_get_bool_env(
                 "FEATURE_RETRAINING_DISCORD_ALERTS", True
             ),
+            launch_training_pipeline_enabled=_get_bool_env(
+                "LAUNCH_TRAINING_PIPELINE_ENABLED", True
+            ),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -83,6 +91,7 @@ class FeatureFlags:
             "retraining_deduplication": self.retraining_deduplication,
             "retraining_pre_validation": self.retraining_pre_validation,
             "retraining_discord_alerts": self.retraining_discord_alerts,
+            "launch_training_pipeline_enabled": self.launch_training_pipeline_enabled,
         }
 
 
