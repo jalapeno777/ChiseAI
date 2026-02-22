@@ -12,6 +12,7 @@ For ST-NS-040: Self-Healing Engine with Action Sandboxing
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
 import resource
@@ -143,7 +144,7 @@ class BaseHealingAction(ABC):
         return False
 
     def execute(self, context: HealingContext) -> HealingResult:
-        """Execute the healing action with sandboxing and rollback support.
+        """Execute the healing action with sandboxing, timeout, and rollback support.
 
         Args:
             context: Execution context
@@ -151,6 +152,19 @@ class BaseHealingAction(ABC):
         Returns:
             Healing result
         """
+        # Defense-in-depth: Check kill switch via context
+        if context.kill_switch_active:
+            logger.critical(
+                f"Kill switch active, blocking {self.action_type} for {context.service}"
+            )
+            return HealingResult(
+                success=False,
+                action_id=context.action_id,
+                action_type=self.action_type,
+                service=context.service,
+                error="Master kill switch is active",
+            )
+
         self._execution_start_time = datetime.now(UTC)
         start_time = asyncio.get_event_loop().time()
 
@@ -160,14 +174,20 @@ class BaseHealingAction(ABC):
             f"(attempt {context.attempt_number})"
         )
 
+        # Execute with timeout enforcement
+        limits = self.get_resource_limits()
+        timeout_seconds = min(limits.max_execution_seconds, 60.0)  # Cap at 60s
+
         try:
             # Capture pre-healing state for rollback
             self._captured_state = self._capture_state(context)
             logger.debug(f"Captured pre-healing state: {self._captured_state}")
 
-            # Execute with sandboxing
-            limits = self.get_resource_limits()
-            result = self._execute_sandboxed(context, limits)
+            result = asyncio.get_event_loop().run_until_complete(
+                asyncio.wait_for(
+                    self._execute_async(context, limits), timeout=timeout_seconds
+                )
+            )
 
             duration = asyncio.get_event_loop().time() - start_time
 
@@ -205,6 +225,27 @@ class BaseHealingAction(ABC):
                     pre_state=self._captured_state,
                 )
 
+        except asyncio.TimeoutError:
+            duration = asyncio.get_event_loop().time() - start_time
+            error_msg = (
+                f"Healing action {self.action_type} timed out after {timeout_seconds}s"
+            )
+            logger.critical(error_msg)
+
+            # Attempt rollback on timeout
+            rollback_result = self.rollback(context, None)
+
+            return HealingResult(
+                success=False,
+                action_id=context.action_id,
+                action_type=self.action_type,
+                service=context.service,
+                duration_seconds=duration,
+                error=error_msg,
+                details={"rollback": rollback_result.to_dict()},
+                pre_state=self._captured_state,
+            )
+
         except Exception as e:
             duration = asyncio.get_event_loop().time() - start_time
             logger.exception(f"Healing action {self.action_type} threw exception: {e}")
@@ -233,6 +274,26 @@ class BaseHealingAction(ABC):
                 },
                 pre_state=self._captured_state,
             )
+
+    async def _execute_async(
+        self, context: HealingContext, limits: ResourceLimits
+    ) -> dict[str, Any]:
+        """Async wrapper for sandboxed execution.
+
+        This allows us to use asyncio.wait_for for timeout enforcement.
+
+        Args:
+            context: Execution context
+            limits: Resource limits
+
+        Returns:
+            Execution result dictionary
+        """
+        # Run the synchronous _execute_sandboxed in thread pool
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(
+            None, self._execute_sandboxed, context, limits
+        )
 
     def _execute_sandboxed(
         self,
@@ -314,8 +375,6 @@ class BaseHealingAction(ABC):
             # Parse result from stdout
             output = stdout.decode("utf-8", errors="replace").strip()
             try:
-                import json
-
                 result = json.loads(output)
                 return result
             except json.JSONDecodeError:
