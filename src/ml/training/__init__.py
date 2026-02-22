@@ -10,6 +10,8 @@ Components:
 - extractor: Feature extraction from signals and market data
 - pipeline: End-to-end training data pipeline
 - exporter: Dataset export for ML frameworks
+- retraining_trigger: Automatic retraining triggers (ECE, performance, scheduled)
+- training_orchestrator: Training workflow orchestration with trigger integration
 
 Usage:
     from ml.training import (
@@ -121,6 +123,38 @@ from ml.training.version import (
     SchemaVersionManager,
 )
 
+# Retraining trigger components
+from ml.training.retraining_trigger import (
+    DeduplicationStore,
+    DataQualityValidator,
+    DiscordNotifier,
+    ECE_TRIGGER_THRESHOLD,
+    ECETriggerConfig,
+    ECERetriever,
+    InMemoryDeduplicationStore,
+    MIN_DATA_QUALITY_PCT,
+    MIN_TRADES_FOR_PERFORMANCE,
+    PERFORMANCE_WIN_RATE_THRESHOLD,
+    PerformanceRetriever,
+    PerformanceTriggerConfig,
+    RedisDeduplicationStore,
+    RetrainingTrigger,
+    RetrainingTriggerConfig,
+    ScheduledTriggerConfig,
+    TriggerResult,
+    TriggerStatus,
+    TriggerType,
+)
+
+# Training orchestrator components
+from ml.training.training_orchestrator import (
+    OrchestratorConfig,
+    TrainingOrchestrator,
+    TrainingRun,
+    TrainingState,
+    TrainingStatus,
+)
+
 __all__ = [
     # Schema
     "TrainingSample",
@@ -159,4 +193,30 @@ __all__ = [
     "ExportFormat",
     "ModelType",
     "export_from_samples",
+    # Retraining Trigger
+    "RetrainingTrigger",
+    "RetrainingTriggerConfig",
+    "ECETriggerConfig",
+    "PerformanceTriggerConfig",
+    "ScheduledTriggerConfig",
+    "TriggerType",
+    "TriggerStatus",
+    "TriggerResult",
+    "DeduplicationStore",
+    "InMemoryDeduplicationStore",
+    "RedisDeduplicationStore",
+    "DataQualityValidator",
+    "DiscordNotifier",
+    "ECERetriever",
+    "PerformanceRetriever",
+    "ECE_TRIGGER_THRESHOLD",
+    "PERFORMANCE_WIN_RATE_THRESHOLD",
+    "MIN_TRADES_FOR_PERFORMANCE",
+    "MIN_DATA_QUALITY_PCT",
+    # Training Orchestrator
+    "TrainingOrchestrator",
+    "OrchestratorConfig",
+    "TrainingRun",
+    "TrainingState",
+    "TrainingStatus",
 ]
