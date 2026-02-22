@@ -41,6 +41,7 @@ def set_discord_initializer(initializer: Any) -> None:
     global _discord_initializer
     _discord_initializer = initializer
 
+
 # Global ACP container and Discord initializer (set by startup.py)
 _acp_container: Any | None = None
 _discord_initializer: Any | None = None

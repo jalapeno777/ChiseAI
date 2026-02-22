@@ -528,9 +528,9 @@ class DiscordClient:
         base_health = {
             "consecutive_failures": self._consecutive_failures,
             "is_disabled": self.is_disabled,
-            "disabled_remaining_minutes": self._get_disabled_remaining_minutes()
-            if self.is_disabled
-            else 0.0,
+            "disabled_remaining_minutes": (
+                self._get_disabled_remaining_minutes() if self.is_disabled else 0.0
+            ),
             "rate_limit_backoff_seconds": self._rate_limit_backoff_seconds,
         }
 

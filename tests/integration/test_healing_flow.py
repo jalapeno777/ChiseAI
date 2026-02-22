@@ -26,9 +26,9 @@ async def test_healing_triggered_by_error_log(acp_container, mock_redis):
     result = await engine.process_log_entry(log_entry)
 
     # Assert
-    assert result is not None, (
-        "Healing should be triggered for Redis disconnect pattern"
-    )
+    assert (
+        result is not None
+    ), "Healing should be triggered for Redis disconnect pattern"
     assert result.action_type is not None
 
 
