@@ -107,6 +107,9 @@ class FailurePatternMatcher:
         # Select best match based on priority (higher is better) then confidence
         best_match = max(matches, key=lambda m: (m.priority, m.confidence))
 
+        assert best_match.pattern_type is not None, (
+            "Best match should have a pattern_type"
+        )
         logger.debug(
             f"Best match: {best_match.pattern_type.value} "
             f"(priority={best_match.priority}, confidence={best_match.confidence:.2f})"

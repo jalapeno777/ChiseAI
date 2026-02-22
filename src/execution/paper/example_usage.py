@@ -129,10 +129,10 @@ async def demo_limit_orders():
 
     # Check order status
     updated_order = sim.get_order(limit_buy.order_id)
-    print(f"Limit buy order state: {updated_order.state.value}")
-
-    if updated_order.fills:
-        print(f"Filled at: ${updated_order.fills[0].price:,.2f}")
+    if updated_order:
+        print(f"Limit buy order state: {updated_order.state.value}")
+        if updated_order.fills:
+            print(f"Filled at: ${updated_order.fills[0].price:,.2f}")
 
     # Update market price to trigger limit sell
     print("\n--- Market price rises to $3250 ---")
@@ -142,7 +142,8 @@ async def demo_limit_orders():
     print(f"New fills created: {len(fills)}")
 
     updated_sell = sim.get_order(limit_sell.order_id)
-    print(f"Limit sell order state: {updated_sell.state.value}")
+    if updated_sell:
+        print(f"Limit sell order state: {updated_sell.state.value}")
 
 
 async def demo_order_cancellation():

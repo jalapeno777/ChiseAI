@@ -117,8 +117,9 @@ async def list_incidents(
         try:
             severity_filter = Severity(severity.upper())
         except ValueError as e:
+            # Use integer status code directly since status module might not be available
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=400,  # HTTP_400_BAD_REQUEST
                 detail=f"Invalid severity: {severity}",
             ) from e
 

@@ -772,7 +772,10 @@ class TrainingPipelineIntegration:
             while self._listening:
                 try:
                     # Evaluate all triggers
-                    results = await self._trigger.evaluate_all()
+                    if self._trigger:
+                        results = await self._trigger.evaluate_all()
+                    else:
+                        results = []
 
                     # Handle any triggered events
                     for result in results:

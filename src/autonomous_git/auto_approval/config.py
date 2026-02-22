@@ -133,7 +133,8 @@ def load_config(config_path: str | None = None) -> AutoApprovalConfig:
 
     # Override with environment variables
     if os.getenv("AUTO_APPROVAL_ENABLED"):
-        config.enabled = os.getenv("AUTO_APPROVAL_ENABLED").lower() == "true"
+        enabled_str = os.getenv("AUTO_APPROVAL_ENABLED")
+        config.enabled = enabled_str.lower() == "true" if enabled_str else False
     if os.getenv("GITEA_URL"):
         config.gitea_url = os.getenv("GITEA_URL")
     if os.getenv("GITEA_TOKEN"):
