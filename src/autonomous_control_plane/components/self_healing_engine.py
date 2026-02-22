@@ -110,6 +110,11 @@ class SelfHealingEngine:
         self._healing_history: list[HealingAttempt] = []
         self._max_history = 1000
 
+        # Global healing budget
+        self.GLOBAL_BUDGET_KEY = "acp:healing:global_budget"
+        self.GLOBAL_BUDGET_MAX = 20  # healings per hour
+        self.GLOBAL_BUDGET_WINDOW_SECONDS = 3600  # 1 hour
+
         logger.info(
             f"SelfHealingEngine initialized (trading_mode={trading_mode}, "
             f"patterns={self._pattern_matcher.pattern_count})"
@@ -174,6 +179,103 @@ class SelfHealingEngine:
         result = await self._execute_healing(attempt, match, log_entry)
         return result
 
+    async def _check_global_budget(self) -> bool:
+        """Check if global healing budget is available.
+
+        Returns:
+            True if budget available, False if exhausted
+        """
+        if not self._redis:
+            # Without Redis, can't enforce global budget - allow healing
+            return True
+
+        try:
+            # Get current count
+            count_str = await self._redis.get(self.GLOBAL_BUDGET_KEY)
+            if count_str is None:
+                # No count means budget is fresh (full)
+                return True
+
+            count = int(count_str)
+            if count >= self.GLOBAL_BUDGET_MAX:
+                logger.warning(
+                    f"Global healing budget exhausted: {count}/{self.GLOBAL_BUDGET_MAX} "
+                    f"healings in last hour"
+                )
+                return False
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Error checking global budget: {e}")
+            # Fail open on error (allow healing)
+            return True
+
+    async def _consume_budget(self) -> None:
+        """Consume one unit from the global healing budget."""
+        if not self._redis:
+            return
+
+        try:
+            # Increment counter
+            count = await self._redis.incr(self.GLOBAL_BUDGET_KEY)
+
+            # Set expiry on first increment (when count == 1)
+            if count == 1:
+                await self._redis.expire(
+                    self.GLOBAL_BUDGET_KEY, self.GLOBAL_BUDGET_WINDOW_SECONDS
+                )
+
+            logger.debug(f"Consumed global budget: {count}/{self.GLOBAL_BUDGET_MAX}")
+
+        except Exception as e:
+            logger.error(f"Error consuming global budget: {e}")
+
+    def get_global_budget_status(self) -> dict[str, Any]:
+        """Get current global budget status.
+
+        Returns:
+            Budget status dict
+        """
+        # Run async check in sync context for status
+        try:
+            import asyncio
+
+            loop = asyncio.get_event_loop()
+
+            async def get_status():
+                if not self._redis:
+                    return {
+                        "enabled": False,
+                        "reason": "Redis not available",
+                        "max": self.GLOBAL_BUDGET_MAX,
+                        "window_seconds": self.GLOBAL_BUDGET_WINDOW_SECONDS,
+                    }
+
+                count_str = await self._redis.get(self.GLOBAL_BUDGET_KEY)
+                count = int(count_str) if count_str else 0
+                ttl = await self._redis.ttl(self.GLOBAL_BUDGET_KEY)
+
+                return {
+                    "enabled": True,
+                    "current": count,
+                    "max": self.GLOBAL_BUDGET_MAX,
+                    "remaining": max(0, self.GLOBAL_BUDGET_MAX - count),
+                    "window_seconds": self.GLOBAL_BUDGET_WINDOW_SECONDS,
+                    "ttl_seconds": ttl
+                    if ttl > 0
+                    else self.GLOBAL_BUDGET_WINDOW_SECONDS,
+                }
+
+            return loop.run_until_complete(get_status())
+        except RuntimeError:
+            # No event loop
+            return {
+                "enabled": self._redis is not None,
+                "max": self.GLOBAL_BUDGET_MAX,
+                "window_seconds": self.GLOBAL_BUDGET_WINDOW_SECONDS,
+            }
+
     async def _execute_healing(
         self,
         attempt: HealingAttempt,
@@ -190,6 +292,22 @@ class SelfHealingEngine:
         Returns:
             Updated healing attempt
         """
+        # Check global budget first
+        if not await self._check_global_budget():
+            logger.warning(
+                f"Skipping healing for {attempt.service}: global budget exhausted"
+            )
+            attempt.status = HealingStatus.FAILED
+            error_result = HealingResult(
+                success=False,
+                action_id=attempt.attempt_id,
+                action_type=attempt.action_type,
+                service=attempt.service,
+                error="Global healing budget exhausted",
+            )
+            attempt.complete(error_result)
+            return attempt
+
         # Get action class
         action_class = self.PATTERN_TO_ACTION.get(match.pattern_type)
         if not action_class:
@@ -205,6 +323,9 @@ class SelfHealingEngine:
                 )
             )
             return attempt
+
+        # Consume budget before executing
+        await self._consume_budget()
 
         # Create action instance
         action = action_class()
@@ -419,6 +540,7 @@ class SelfHealingEngine:
             "pending_approvals": len(self._pending_approvals),
             "total_attempts": self._stats.total_attempts,
             "stats": self._stats.to_dict(),
+            "global_budget": self.get_global_budget_status(),
         }
 
     def get_pending_approvals(self) -> list[HealingAttempt]:
