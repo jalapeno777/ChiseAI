@@ -1,0 +1,48 @@
+# Docker Compose for testing Circuit Breaker Registry
+# ST-NS-038: Circuit Breaker Registry & Unified Telemetry
+#
+# Usage:
+#   docker-compose -f docker-compose.test.yml up -d
+#   python -m pytest tests/test_autonomous/ -v
+#   docker-compose -f docker-compose.test.yml down
+
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: cb-test-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - cb-test-network
+
+  influxdb:
+    image: influxdb:2.7-alpine
+    container_name: cb-test-influxdb
+    ports:
+      - "8086:8086"
+    environment:
+      - INFLUXDB_DB=chiseai
+      - INFLUXDB_ADMIN_USER=admin
+      - INFLUXDB_ADMIN_PASSWORD=admin123
+      - INFLUXDB_USER=chiseai
+      - INFLUXDB_USER_PASSWORD=chiseai123
+    networks:
+      - cb-test-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: cb-test-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=chiseai
+      - POSTGRES_USER=chiseai
+      - POSTGRES_PASSWORD=chiseai123
+    networks:
+      - cb-test-network
+
+networks:
+  cb-test-network:
+    driver: bridge
