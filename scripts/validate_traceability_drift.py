@@ -197,7 +197,7 @@ def check_fr_traceability(
 ) -> None:
     """Check FR traceability from PRD to stories."""
     prd_frs = extract_frs_from_prd(prd_content)
-    stories = workflow_data.get("stories", [])
+    stories = workflow_data.get("stories", []) + workflow_data.get("launch_stories", [])
     fr_coverage = extract_fr_coverage_from_stories(stories)
     covered_frs = set(fr_coverage.keys())
 
@@ -235,7 +235,7 @@ def check_validation_registry_coverage(
 ) -> None:
     """Check validation registry coverage for stories."""
     validations = validation_data.get("validations", [])
-    stories = workflow_data.get("stories", [])
+    stories = workflow_data.get("stories", []) + workflow_data.get("launch_stories", [])
     epics = workflow_data.get("epics", [])
 
     # Build set of story IDs with validations
@@ -325,7 +325,7 @@ def check_epic_consistency(
 ) -> None:
     """Check epic status consistency with child stories."""
     epics = workflow_data.get("epics", [])
-    stories = workflow_data.get("stories", [])
+    stories = workflow_data.get("stories", []) + workflow_data.get("launch_stories", [])
 
     # Build story lookup
     story_map: dict[str, dict[str, Any]] = {}
@@ -410,7 +410,7 @@ def check_phase_sprint_consistency(
     """Check phase and sprint metadata consistency."""
     current_phase = workflow_data.get("current_phase", {})
     epics = workflow_data.get("epics", [])
-    stories = workflow_data.get("stories", [])
+    stories = workflow_data.get("stories", []) + workflow_data.get("launch_stories", [])
 
     phase_id = current_phase.get("phase")
     phase_status = current_phase.get("status")
