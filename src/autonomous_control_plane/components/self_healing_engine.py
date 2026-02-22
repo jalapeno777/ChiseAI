@@ -65,6 +65,9 @@ class SelfHealingEngine:
     # Maximum healing attempts per hour per service (anti-flap)
     MAX_ATTEMPTS_PER_HOUR = 3
 
+    # Master kill switch key in Redis - presence of this key disables all healing
+    KILL_SWITCH_KEY = "acp:healing:kill_switch"
+
     # Mapping from failure pattern types to healing actions
     PATTERN_TO_ACTION: dict[FailurePatternType, type[BaseHealingAction]] = {
         FailurePatternType.REDIS_DISCONNECT: RedisRestartAction,
@@ -85,10 +88,19 @@ class SelfHealingEngine:
             trading_mode: Current trading mode (paper/live/production)
             redis_client: Redis client for state tracking
             enable_approval_gates: Whether to enable human approval gates
+
+        Raises:
+            RuntimeError: If trading_mode is "production" and redis_client is None
         """
         self._trading_mode = trading_mode
         self._redis = redis_client
         self._enable_approval_gates = enable_approval_gates
+
+        # In production, Redis is mandatory
+        if trading_mode == "production" and redis_client is None:
+            raise RuntimeError(
+                "Redis is mandatory in production mode for SelfHealingEngine"
+            )
 
         # Initialize pattern matcher
         self._pattern_matcher = FailurePatternMatcher()
@@ -116,6 +128,35 @@ class SelfHealingEngine:
             f"SelfHealingEngine initialized (trading_mode={trading_mode}, "
             f"patterns={self._pattern_matcher.pattern_count})"
         )
+
+    async def _is_kill_switch_active(self) -> bool:
+        """Check if master kill switch is active.
+
+        Returns:
+            True if healing should be disabled globally
+        """
+        if not self._redis:
+            # In production, fail closed (assume kill switch active if no Redis)
+            if self._trading_mode == "production":
+                logger.critical(
+                    "CRITICAL: Redis unavailable in production, assuming kill switch ACTIVE"
+                )
+                return True  # Fail closed
+            return False  # Fail open in non-production
+
+        try:
+            # Check if kill switch key exists (value doesn't matter, presence = ON)
+            exists = await self._redis.exists(self.KILL_SWITCH_KEY)
+            return bool(exists)
+        except Exception as e:
+            logger.error(f"Error checking kill switch: {e}")
+            # In production, fail closed on error
+            if self._trading_mode == "production":
+                logger.critical(
+                    "CRITICAL: Kill switch check failed in production, assuming ACTIVE"
+                )
+                return True
+            return False  # Fail open in non-production
 
     async def process_log_entry(self, log_entry: LogEntry) -> HealingAttempt | None:
         """Process a log entry and trigger healing if pattern matches.
