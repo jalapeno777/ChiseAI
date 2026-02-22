@@ -7,6 +7,7 @@ This package provides machine learning optimization capabilities:
 - scheduler: Automated optimization scheduling with volatility adaptation
 - feedback: ML feedback loop for prediction-outcome analysis and model improvement
 - training: Training data schema and storage for ML model retraining
+- models: Model registry for versioning, storage, and retrieval
 
 Usage:
     import sys
@@ -23,6 +24,9 @@ Usage:
         ModelUpdater,
         TrainingSample,
         TrainingDataset,
+        ModelRegistry,
+        ModelMetadata,
+        ModelVersion,
     )
 """
 
@@ -86,6 +90,16 @@ from ml.scheduler import (
     ScheduleFrequency,
     VolatilityMonitor,
     VolatilityRegime,
+)
+from ml.models import (
+    FilesystemBackend,
+    ModelMetadata,
+    ModelRegistry,
+    ModelRegistryFactory,
+    ModelVersion,
+    S3Backend,
+    SemanticVersion,
+    StorageBackend,
 )
 from ml.training import (
     FEATURE_GROUPS,
@@ -186,4 +200,11 @@ __all__ = [
     "DatasetMetadata",
     "SchemaVersion",
     "SchemaVersionManager",
+    # Models
+    "ModelRegistry",
+    "ModelRegistryFactory",
+    "FilesystemBackend",
+    "S3Backend",
+    "StorageBackend",
+    "SemanticVersion",
 ]
