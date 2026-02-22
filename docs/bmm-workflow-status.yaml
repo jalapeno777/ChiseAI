@@ -2989,8 +2989,8 @@ sprints:
     title: WebSocket Circuit Breaker
     epic_id: EP-LAUNCH-001
     sprint_id: LAUNCH-SPRINT-1
-    status: planned
-    validation_status: planned
+    status: completed
+    validation_status: validated
     story_points: 3
     priority: P0-CRITICAL
     fr_coverage: [FR-029, NFR-008]
