@@ -55,6 +55,8 @@ import aiohttp
 import websockets
 from websockets.exceptions import ConnectionClosed, InvalidStatusCode
 
+from data.exchange.bybit_safety import SecurityException, validate_endpoint_url
+
 logger = logging.getLogger(__name__)
 
 
@@ -89,7 +91,10 @@ class BybitConfig:
         - Demo mode (demo=True): Uses api-demo.bybit.com for REST and
           stream-demo.bybit.com for private WS, but mainnet for public WS
         - Testnet mode (testnet=True, demo=False): Uses testnet endpoints
-        - Live mode (both False): Uses mainnet endpoints
+        - Live mode (both False): RAISES SecurityException (production blocked)
+
+        Raises:
+            SecurityException: If demo=False and testnet=False (production mode)
         """
         if self.demo:
             # Demo mode: demo endpoints for REST and private WS,
@@ -104,6 +109,22 @@ class BybitConfig:
             self.base_url = "https://api-testnet.bybit.com"
             self.ws_url = "wss://stream-testnet.bybit.com/v5/public/linear"
             self.private_ws_url = "wss://stream-testnet.bybit.com/v5/private"
+        else:
+            # Production mode is NOT allowed - raise SecurityException
+            raise SecurityException(
+                "PRODUCTION ENDPOINT DETECTED: Production mode is not allowed. "
+                "Only demo or testnet endpoints are permitted. "
+                "Set demo=True or testnet=True to use safe endpoints.",
+                endpoint=self.base_url,
+                operation="BybitConfig.__post_init__",
+            )
+
+        # Validate that all endpoints are safe (demo/testnet only)
+        validate_endpoint_url(self.base_url)
+        validate_endpoint_url(self.private_ws_url)
+        # Public WS can be mainnet for market data, but still validate
+        if "private" in self.ws_url:
+            validate_endpoint_url(self.ws_url)
 
     @classmethod
     def from_env(cls, load_env: bool = True) -> BybitConfig:
