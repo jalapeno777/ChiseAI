@@ -223,7 +223,7 @@ class DynamicThresholdConfig:
     oscillation_direction_changes: int = OSCILLATION_DIRECTION_CHANGES
     min_samples: int = MIN_SAMPLES_FOR_ADJUSTMENT
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate configuration."""
         if not 0.0 <= self.min_threshold <= 1.0:
             msg = f"min_threshold must be in [0, 1], got {self.min_threshold}"

@@ -41,9 +41,9 @@ class FileClassification:
     risk_level: RiskLevel
     confidence: float
     pattern_matched: str | None = None
-    semantic_flags: list[str] = None
+    semantic_flags: list[str] = None  # type: ignore[assignment]
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.semantic_flags is None:
             object.__setattr__(self, "semantic_flags", [])
 

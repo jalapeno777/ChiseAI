@@ -244,7 +244,7 @@ class PRHealthMonitor:
 
     def trigger_recovery_actions(self, scan_results: dict[str, Any]) -> dict[str, Any]:
         """Trigger automatic recovery actions based on scan results."""
-        actions = {
+        actions: dict[str, list[dict[str, Any]]] = {
             "triggered": [],
             "failed": [],
             "skipped": [],

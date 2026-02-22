@@ -259,7 +259,7 @@ def get_fallback_delay(error: LLMError, attempt: int, base_delay: float = 1.0) -
     """
     if isinstance(error, RateLimitError):
         # Use Retry-After header if available, otherwise exponential backoff
-        if error.retry_after:
+        if error.retry_after is not None:
             return float(error.retry_after)
         # Rate limits get longer delays
         return base_delay * (2 ** (attempt + 1))

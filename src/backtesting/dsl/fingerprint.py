@@ -111,7 +111,8 @@ def _canonical_form(config: dict[str, Any]) -> dict[str, Any]:
     Returns:
         Canonical form dictionary
     """
-    return _normalize_value(config)
+    result: dict[str, Any] = _normalize_value(config)
+    return result
 
 
 def compute_dsl_fingerprint(config: dict[str, Any]) -> str:

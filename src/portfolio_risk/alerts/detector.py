@@ -371,7 +371,7 @@ class RiskAlertDetector:
                     affected_positions.append(key)
 
         if divergences:
-            max_divergence = max(d["divergence_pct"] for d in divergences)
+            max_divergence: float = max(d["divergence_pct"] for d in divergences)
 
             return RiskAlert(
                 alert_type=AlertType.PAPER_SYNC_DIVERGENCE,
@@ -442,7 +442,7 @@ class RiskAlertDetector:
                     "failure_rate_pct": failure_rate,
                     "failure_breakdown": failure_reasons,
                     "most_common_reason": (
-                        max(failure_reasons, key=failure_reasons.get)
+                        max(failure_reasons.items(), key=lambda x: x[1])[0]
                         if failure_reasons
                         else None
                     ),

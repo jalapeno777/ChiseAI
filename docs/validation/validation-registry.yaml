@@ -1955,7 +1955,7 @@ validations:
     title: Bybit Environment Assertions Validation
     epic_id: EP-LAUNCH-001
     story_id: ST-LAUNCH-001
-    status: planned
+    status: validated
     description: Validate Bybit connector environment assertions ensuring demo-only operation
     acceptance_criteria:
       - Production endpoint access raises SecurityException 100% of time
@@ -1970,7 +1970,7 @@ validations:
     title: WebSocket Circuit Breaker Validation
     epic_id: EP-LAUNCH-001
     story_id: ST-LAUNCH-002
-    status: planned
+    status: validated
     description: Validate WebSocket circuit breaker with automatic REST fallback
     acceptance_criteria:
       - Circuit opens after 5 failures within 60 seconds
@@ -1985,7 +1985,7 @@ validations:
     title: Order Idempotency Validation
     epic_id: EP-LAUNCH-001
     story_id: ST-LAUNCH-003
-    status: planned
+    status: validated
     description: Validate order idempotency preventing duplicate order execution
     acceptance_criteria:
       - Duplicate clientOrderId rejected with DuplicateOrderException
@@ -2000,7 +2000,7 @@ validations:
     title: Scheduler Verification Validation
     epic_id: EP-LAUNCH-001
     story_id: ST-LAUNCH-004
-    status: planned
+    status: validated
     description: Validate scheduler health monitoring and automatic recovery
     acceptance_criteria:
       - All schedulers start automatically on boot within 30 seconds
@@ -2031,7 +2031,7 @@ validations:
     title: Signal-to-Outcome Pipeline Validation
     epic_id: EP-LAUNCH-002
     story_id: ST-LAUNCH-006
-    status: planned
+    status: validated
     description: Validate signal-to-outcome pipeline capturing trade results
     acceptance_criteria:
       - 100% of trades have outcomes captured
@@ -2046,7 +2046,7 @@ validations:
     title: Feature Extractor Validation
     epic_id: EP-LAUNCH-002
     story_id: ST-LAUNCH-007
-    status: planned
+    status: validated
     description: Validate feature extraction from OHLCV and technical indicators
     acceptance_criteria:
       - 10+ features extracted per signal
@@ -2076,7 +2076,7 @@ validations:
     title: ECE Calculator Validation
     epic_id: EP-LAUNCH-002
     story_id: ST-LAUNCH-009
-    status: planned
+    status: validated
     description: Validate ECE calculation from actual trade outcomes
     acceptance_criteria:
       - ECE formula matches reference implementation
@@ -2091,7 +2091,7 @@ validations:
     title: Dynamic Threshold Adjustment Validation
     epic_id: EP-LAUNCH-002
     story_id: ST-LAUNCH-010
-    status: planned
+    status: validated
     description: Validate auto-threshold adjustment with guardrails
     acceptance_criteria:
       - Velocity limits enforce max 5% change per day
@@ -2218,7 +2218,7 @@ validations:
     title: Outcome Capture Service Validation
     epic_id: EP-LAUNCH-005
     story_id: ST-LAUNCH-018
-    status: planned
+    status: validated
     description: Validate outcome capture service receives and stores Bybit fill events
     acceptance_criteria:
       - WebSocket listener connects to Bybit private stream

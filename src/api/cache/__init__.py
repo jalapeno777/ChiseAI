@@ -120,7 +120,7 @@ def cached(ttl_seconds: int = 300, max_size: int = 1000):
 
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> T:
             # Create key from function name and arguments
             key_data = {"func": func.__name__, "args": args, "kwargs": kwargs}
 

@@ -516,7 +516,7 @@ class DashboardOptimizer:
             List of OptimizationResult for each dashboard
         """
         dashboards_dir = Path(dashboards_dir)
-        results = []
+        results: list[OptimizationResult] = []
 
         if not dashboards_dir.exists():
             logger.warning(f"Dashboards directory does not exist: {dashboards_dir}")

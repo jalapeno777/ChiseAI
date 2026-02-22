@@ -302,6 +302,7 @@ class PaperRiskEnforcer:
         # Get stop loss distance
         entry_price = signal.metadata.get("entry_price", 0.0)
         stop_loss = signal.stop_loss
+        position_size: float = 0.0
 
         if entry_price > 0 and stop_loss and stop_loss > 0:
             # Calculate position size based on risk amount and stop distance

@@ -236,10 +236,10 @@ class CSVHandler:
             return True
 
         # Get all fieldnames from all samples
-        fieldnames = set()
+        fieldnames_set: set[str] = set()
         for sample in data:
-            fieldnames.update(sample.keys())
-        fieldnames = sorted(fieldnames)
+            fieldnames_set.update(sample.keys())
+        fieldnames: list[str] = sorted(fieldnames_set)
 
         with open(path, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -264,7 +264,7 @@ class CSVHandler:
             reader = csv.DictReader(f)
             for row in reader:
                 # Convert numeric strings to numbers
-                converted = {}
+                converted: dict[str, Any] = {}
                 for key, value in row.items():
                     if value == "":
                         converted[key] = None
@@ -489,8 +489,10 @@ class StorageFormatManager:
                 timeframes.add(sample["timeframe"])
 
         # Calculate statistics
-        outcomes = [s.get("outcome") for s in data if s.get("outcome") is not None]
-        pnl_values = [
+        outcomes: list[Any] = [
+            s.get("outcome") for s in data if s.get("outcome") is not None
+        ]
+        pnl_values: list[Any] = [
             s.get("pnl_percent") for s in data if s.get("pnl_percent") is not None
         ]
 

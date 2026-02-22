@@ -18,7 +18,7 @@ from signal_generation.signal_generator import (
 )
 
 
-def smoke_test_entry_price_fix():
+def smoke_test_entry_price_fix() -> bool:
     """Run smoke test for entry_price fix."""
     print("=" * 60)
     print("SMOKE TEST: BURNIN-001 Signal Entry Price Fix")

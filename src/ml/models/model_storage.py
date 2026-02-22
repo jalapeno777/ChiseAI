@@ -8,7 +8,9 @@ Provides pluggable storage backends for model artifacts:
 from __future__ import annotations
 
 import json
-import pickle
+
+import joblib
+
 import shutil
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -206,8 +208,7 @@ class FilesystemBackend(StorageBackend):
 
         # Save model artifact
         model_path = model_dir / "model.pkl"
-        with open(model_path, "wb") as f:
-            pickle.dump(model, f)
+        joblib.dump(model, model_path)
 
         # Save metadata
         metadata_path = model_dir / "metadata.json"
@@ -236,8 +237,7 @@ class FilesystemBackend(StorageBackend):
 
         # Load model
         model_path = model_dir / "model.pkl"
-        with open(model_path, "rb") as f:
-            model = pickle.load(f)
+        model = joblib.load(model_path)
 
         return model, metadata
 

@@ -428,7 +428,7 @@ class InMemoryOutcomeDataStore:
         >>> records = await store.fetch_prediction_outcomes()
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize empty in-memory store."""
         self._records: list[PredictionOutcomeRecord] = []
 

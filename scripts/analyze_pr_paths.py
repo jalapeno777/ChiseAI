@@ -17,12 +17,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from autonomous_git.path_analyzer import (
+    RiskClassification,
     RiskLevel,
     analyze_paths,
 )
 
 
-def format_result(result) -> str:
+def format_result(result: RiskClassification) -> str:
     """Format analysis result for display."""
     lines = [
         "=" * 60,
@@ -56,7 +57,9 @@ def format_result(result) -> str:
         icon = (
             "✓"
             if fc.risk_level == RiskLevel.SAFE
-            else "⚠" if fc.risk_level == RiskLevel.MEDIUM_RISK else "✗"
+            else "⚠"
+            if fc.risk_level == RiskLevel.MEDIUM_RISK
+            else "✗"
         )
         lines.append(f"  {icon} {fc.path}")
         lines.append(
@@ -72,7 +75,7 @@ def format_result(result) -> str:
     return "\n".join(lines)
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(
         description="Analyze PR file paths for risk classification",

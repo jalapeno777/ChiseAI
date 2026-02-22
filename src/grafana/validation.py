@@ -529,7 +529,7 @@ class DashboardValidator:
         if not self.provisioning_dir:
             raise ValueError("provisioning_dir must be set to validate all dashboards")
 
-        results = []
+        results: list[ValidationResult] = []
 
         if not self.provisioning_dir.exists():
             logger.warning(

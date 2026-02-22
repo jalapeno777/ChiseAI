@@ -70,7 +70,7 @@ class CalibrationRecord:
     strategy_id: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate the record after initialization."""
         # Validate predicted_prob is in valid range
         if not 0.0 <= self.predicted_prob <= 1.0:

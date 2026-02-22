@@ -20,7 +20,7 @@ from discord_alerts.discord_client import DiscordClient  # noqa: E402
 from llm.kimi_client import KimiClient, KimiConfig  # noqa: E402
 
 
-def test_kimi_env_loading():
+def test_kimi_env_loading() -> bool:
     """Test KIMI environment loading."""
     print("\n=== Testing KIMI Environment Loading ===")
 
@@ -45,7 +45,7 @@ def test_kimi_env_loading():
     return True
 
 
-def test_discord_guild_lock():
+def test_discord_guild_lock() -> bool:
     """Test Discord guild lock functionality."""
     print("\n=== Testing Discord Guild Lock ===")
 
@@ -74,7 +74,7 @@ def test_discord_guild_lock():
     return True
 
 
-def test_integration():
+def test_integration() -> bool:
     """Test integration of both fixes."""
     print("\n=== Testing Integration ===")
 
@@ -104,7 +104,7 @@ def test_integration():
     return True
 
 
-def main():
+def main() -> int:
     """Run all verification tests."""
     print("=" * 60)
     print("CH-KIMI-DISCORD-001 Fix Verification")

@@ -182,7 +182,7 @@ class CircuitBreakerStateModel:
     def from_dict(cls, data: dict[str, Any]) -> CircuitBreakerStateModel:
         """Create from dictionary."""
 
-        def parse_datetime(value) -> datetime:
+        def parse_datetime(value: Any) -> datetime:
             if isinstance(value, str):
                 return datetime.fromisoformat(value)
             elif isinstance(value, (int, float)):

@@ -497,7 +497,7 @@ class TestTradeTrigger:
         Returns:
             Dictionary with readiness status and details
         """
-        checks = {
+        checks: dict[str, Any] = {
             "kill_switch_armed": False,
             "orchestrator_ready": False,
             "portfolio_value_ok": False,

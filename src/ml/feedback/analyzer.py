@@ -442,7 +442,8 @@ class FeedbackAnalyzer:
 
         # Check PnL if available
         if hasattr(match.outcome, "pnl"):
-            return match.outcome.pnl > 0
+            pnl: float = match.outcome.pnl
+            return pnl > 0
 
         # Check outcome type
         if hasattr(match.outcome, "outcome_type"):
@@ -456,7 +457,8 @@ class FeedbackAnalyzer:
             elif outcome_type == OutcomeType.MANUAL_CLOSE:
                 # For manual close, check PnL
                 if hasattr(match.outcome, "pnl"):
-                    return match.outcome.pnl > 0
+                    pnl: float = match.outcome.pnl
+                    return pnl > 0
 
         return False
 
@@ -651,7 +653,7 @@ class FeedbackAnalyzer:
         Returns:
             List of drift indicators
         """
-        indicators = []
+        indicators: list[DriftIndicator] = []
 
         if not self._baseline_metrics:
             return indicators

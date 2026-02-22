@@ -87,6 +87,7 @@ class SlippageModel:
         # Base slippage in decimal
         base_slippage = self.config.base_slippage_bps / 10000
         size_ratio = 0.0
+        total_slippage: float = base_slippage
 
         # If no ADV data, use spread-based estimate
         if avg_daily_volume <= 0:

@@ -126,7 +126,7 @@ class KPICalculator:
         gross_loss = abs(sum(trade.pnl for trade in trades if trade.pnl < 0))
 
         if gross_loss == 0:
-            return gross_profit > 0 if gross_profit else 0.0
+            return float(gross_profit) if gross_profit > 0 else 0.0
 
         return gross_profit / gross_loss
 
