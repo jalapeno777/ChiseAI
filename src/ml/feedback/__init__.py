@@ -28,18 +28,6 @@ Usage:
 
 from __future__ import annotations
 
-# Outcome Capture components (ST-LAUNCH-018)
-from ml.feedback.bybit_fill_listener import (
-    BybitFillListener,
-    BybitListenerConfig,
-    ConnectionState,
-)
-from ml.feedback.outcome_capture_service import (
-    CaptureMetrics,
-    OutcomeCaptureConfig,
-    OutcomeCaptureService,
-)
-
 # Matcher components
 from ml.feedback.matcher import (
     MatchBatchResult,
