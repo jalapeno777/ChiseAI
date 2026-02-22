@@ -436,16 +436,19 @@ RATIONALE: [One sentence explaining your confidence assessment]
         # Z.ai uses OpenAI-compatible API
         url = "https://api.z.ai/v1/chat/completions"
 
-        async with aiohttp.ClientSession() as session, session.post(
-            url,
-            headers={"Authorization": f"Bearer {self.zai_api_key}"},
-            json={
-                "model": "glm-5",
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 150,
-                "temperature": 0.3,
-            },
-        ) as resp:
+        async with (
+            aiohttp.ClientSession() as session,
+            session.post(
+                url,
+                headers={"Authorization": f"Bearer {self.zai_api_key}"},
+                json={
+                    "model": "glm-5",
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 150,
+                    "temperature": 0.3,
+                },
+            ) as resp,
+        ):
             if resp.status != 200:
                 error_text = await resp.text()
                 raise RuntimeError(f"Z.ai API error: {error_text}")
@@ -461,16 +464,19 @@ RATIONALE: [One sentence explaining your confidence assessment]
         """Query KIMI K2.5 API."""
         url = "https://api.kimi.com/coding/v1/chat/completions"
 
-        async with aiohttp.ClientSession() as session, session.post(
-            url,
-            headers={"Authorization": f"Bearer {self.kimi_api_key}"},
-            json={
-                "model": "k2p5",
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 150,
-                "temperature": 0.3,
-            },
-        ) as resp:
+        async with (
+            aiohttp.ClientSession() as session,
+            session.post(
+                url,
+                headers={"Authorization": f"Bearer {self.kimi_api_key}"},
+                json={
+                    "model": "k2p5",
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 150,
+                    "temperature": 0.3,
+                },
+            ) as resp,
+        ):
             if resp.status != 200:
                 error_text = await resp.text()
                 raise RuntimeError(f"KIMI API error: {error_text}")
@@ -505,16 +511,19 @@ RATIONALE: [One sentence explaining your confidence assessment]
         """Query MiniMax API."""
         url = "https://api.minimaxi.chat/v1/text/chatcompletion_v2"
 
-        async with aiohttp.ClientSession() as session, session.post(
-            url,
-            headers={"Authorization": f"Bearer {self.minimax_api_key}"},
-            json={
-                "model": "MiniMax-Text-01",
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 150,
-                "temperature": 0.3,
-            },
-        ) as resp:
+        async with (
+            aiohttp.ClientSession() as session,
+            session.post(
+                url,
+                headers={"Authorization": f"Bearer {self.minimax_api_key}"},
+                json={
+                    "model": "MiniMax-Text-01",
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 150,
+                    "temperature": 0.3,
+                },
+            ) as resp,
+        ):
             if resp.status != 200:
                 error_text = await resp.text()
                 raise RuntimeError(f"MiniMax API error: {error_text}")
@@ -1007,10 +1016,13 @@ _Proof completed at {datetime.now(UTC).isoformat()}_"""
         if not self.webhook_url:
             return {"success": False, "error": "No webhook URL"}
 
-        async with aiohttp.ClientSession() as session, session.post(
-            self.webhook_url,
-            json={"content": content},
-        ) as resp:
+        async with (
+            aiohttp.ClientSession() as session,
+            session.post(
+                self.webhook_url,
+                json={"content": content},
+            ) as resp,
+        ):
             if resp.status == 204:
                 return {"success": True, "message_id": None}
             else:

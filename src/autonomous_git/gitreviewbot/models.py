@@ -58,9 +58,7 @@ class ReviewResult(BaseModel):
     confidence: float = Field(..., ge=0, le=100, description="Confidence score 0-100")
     blockers: list[str] = Field(default_factory=list, description="Blocking issues")
     reviewed_at: datetime = Field(default_factory=datetime.utcnow)
-    duration_ms: int | None = Field(
-        None, description="Review duration in milliseconds"
-    )
+    duration_ms: int | None = Field(None, description="Review duration in milliseconds")
 
 
 class Decision(BaseModel):

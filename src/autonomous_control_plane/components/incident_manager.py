@@ -350,11 +350,14 @@ class NotificationDispatcher:
         }
 
         try:
-            async with aiohttp.ClientSession() as session, session.post(
-                self._discord_webhook,
-                json=payload,
-                timeout=aiohttp.ClientTimeout(total=10),
-            ) as response:
+            async with (
+                aiohttp.ClientSession() as session,
+                session.post(
+                    self._discord_webhook,
+                    json=payload,
+                    timeout=aiohttp.ClientTimeout(total=10),
+                ) as response,
+            ):
                 if response.status in (200, 204):
                     logger.info(
                         f"Discord notification sent for incident {incident.incident_id}"
@@ -364,9 +367,7 @@ class NotificationDispatcher:
                         content=content,
                     )
                 else:
-                    logger.warning(
-                        f"Discord notification failed: {response.status}"
-                    )
+                    logger.warning(f"Discord notification failed: {response.status}")
         except Exception as e:
             logger.exception(f"Failed to send Discord notification: {e}")
 

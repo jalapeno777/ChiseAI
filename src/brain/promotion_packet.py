@@ -336,13 +336,18 @@ def export_to_markdown(packet: PromotionPacket, filepath: str) -> None:
         lines.append("|--------|-------|")
         for metric_name, value in packet.summary_metrics.items():
             # Format based on metric type
-            if "rate" in metric_name.lower() or metric_name in [
-                "accuracy",
-                "precision",
-                "recall",
-                "f1",
-                "win_rate",
-            ] or "drawdown" in metric_name.lower():
+            if (
+                "rate" in metric_name.lower()
+                or metric_name
+                in [
+                    "accuracy",
+                    "precision",
+                    "recall",
+                    "f1",
+                    "win_rate",
+                ]
+                or "drawdown" in metric_name.lower()
+            ):
                 formatted_value = f"{value:.2%}"
             else:
                 formatted_value = f"{value:.4f}"

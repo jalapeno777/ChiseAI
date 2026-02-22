@@ -269,9 +269,10 @@ class InfluxDBHealthChecker:
             import aiohttp
 
             url = f"http://{self.config.host}:{self.config.port}/health"
-            async with aiohttp.ClientSession() as session, session.get(
-                url, timeout=aiohttp.ClientTimeout(total=5)
-            ) as response:
+            async with (
+                aiohttp.ClientSession() as session,
+                session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as response,
+            ):
                 response_time_ms = (time.time() - start_time) * 1000
                 is_healthy = response.status == 200
                 return is_healthy, response_time_ms

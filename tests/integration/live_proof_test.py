@@ -144,9 +144,12 @@ class TestBybitAuthentication:
             "X-BAPI-SIGN": signature,
         }
 
-        async with aiohttp.ClientSession() as session, session.get(
-            url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)
-        ) as resp:
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(
+                url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)
+            ) as resp,
+        ):
             data = await resp.json()
 
             # retCode 0 = success
@@ -181,9 +184,12 @@ class TestBybitAuthentication:
             "X-BAPI-SIGN": signature,
         }
 
-        async with aiohttp.ClientSession() as session, session.get(
-            url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)
-        ) as resp:
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(
+                url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)
+            ) as resp,
+        ):
             data = await resp.json()
 
             # retCode 0 = success
@@ -301,11 +307,14 @@ class TestBybitMarketData:
 
         url = f"{base_url}/v5/market/tickers"
 
-        async with aiohttp.ClientSession() as session, session.get(
-            url,
-            params={"category": "linear", "symbol": symbol},
-            timeout=aiohttp.ClientTimeout(total=10),
-        ) as resp:
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(
+                url,
+                params={"category": "linear", "symbol": symbol},
+                timeout=aiohttp.ClientTimeout(total=10),
+            ) as resp,
+        ):
             data = await resp.json()
 
             # Check response structure

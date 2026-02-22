@@ -779,9 +779,7 @@ class BacktestRunner:
                 timestamp=start_time,
                 status=BacktestStatus.FAILED,
                 error_message=str(e),
-                execution_time_seconds=(
-                    datetime.now(UTC) - start_time
-                ).total_seconds(),
+                execution_time_seconds=(datetime.now(UTC) - start_time).total_seconds(),
             )
 
     async def _execute_backtest_func(

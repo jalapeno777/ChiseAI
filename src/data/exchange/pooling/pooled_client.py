@@ -139,13 +139,16 @@ class PooledExchangeClient:
         if signed:
             headers.update(self._sign_request(method, endpoint, params))
 
-        async with self._pool.get_connection() as conn, conn.session.request(
-            method,
-            url,
-            params=params if method == "GET" else None,
-            json=params if method != "GET" else None,
-            headers=headers,
-        ) as response:
+        async with (
+            self._pool.get_connection() as conn,
+            conn.session.request(
+                method,
+                url,
+                params=params if method == "GET" else None,
+                json=params if method != "GET" else None,
+                headers=headers,
+            ) as response,
+        ):
             response.raise_for_status()
             return await response.json()
 

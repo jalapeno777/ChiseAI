@@ -177,9 +177,7 @@ class PathPatternMatcher:
             for r in patterns_config.get("semantic_rules", [])
         ]
 
-    def classify_path(
-        self, path: str
-    ) -> tuple[PatternType | None, Pattern | None]:
+    def classify_path(self, path: str) -> tuple[PatternType | None, Pattern | None]:
         """
         Classify a single path.
 

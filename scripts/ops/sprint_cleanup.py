@@ -239,9 +239,7 @@ class GitHelper:
                 info.last_commit_date = datetime.fromisoformat(
                     out.replace("Z", "+00:00")
                 )
-                info.days_inactive = (
-                    datetime.now(UTC) - info.last_commit_date
-                ).days
+                info.days_inactive = (datetime.now(UTC) - info.last_commit_date).days
             except ValueError:
                 pass
 
