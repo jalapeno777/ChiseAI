@@ -24,16 +24,16 @@ from config.bootstrap import bootstrap
 
 bootstrap(load_env=True)
 
-from config.bootstrap import bootstrap
-from ml.training.exporter import (
+from config.bootstrap import bootstrap  # noqa: E402
+from ml.training.exporter import (  # noqa: E402
     DatasetExporter,
     DatasetInfo,
     ExportFormat,
     ModelType,
 )
-from ml.training.extractor import FeatureExtractor
-from ml.training.pipeline import TrainingPipeline
-from ml.training.schema import TrainingSample
+from ml.training.extractor import FeatureExtractor  # noqa: E402
+from ml.training.pipeline import TrainingPipeline  # noqa: E402
+from ml.training.schema import TrainingSample  # noqa: E402
 
 logger = logging.getLogger(__name__)
 

@@ -35,8 +35,14 @@ logger = logging.getLogger(__name__)
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from config.bootstrap import bootstrap
-from execution.canary import (
+from config.bootstrap import bootstrap  # noqa: E402
+from execution.canary import (  # noqa: E402
+    CanaryDeployment,
+    CanaryStatus,
+    create_canary_deployment,
+    create_canary_monitor,
+    create_canary_storage,
+    create_promotion_packet_generator,
     CanaryDeployment,
     CanaryStatus,
     create_canary_deployment,
@@ -298,7 +304,9 @@ def write_telemetry_summary(
         result_emoji = (
             "✅"
             if gate["result"] == "pass"
-            else "❌" if gate["result"] == "fail" else "⏳"
+            else "❌"
+            if gate["result"] == "fail"
+            else "⏳"
         )
         markdown += f"""### {gate["gate_name"]}
 

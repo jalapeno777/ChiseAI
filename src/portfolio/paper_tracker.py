@@ -745,4 +745,4 @@ class PaperTracker:
 
 
 # Import timedelta for _clean_old_failures
-from datetime import timedelta
+from datetime import timedelta  # noqa: E402

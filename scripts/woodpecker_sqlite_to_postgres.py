@@ -28,11 +28,11 @@ from config.bootstrap import bootstrap
 
 bootstrap(load_env=True)
 
-import psycopg2  # type: ignore[import-untyped]
+import psycopg2  # type: ignore[import-untyped]  # noqa: E402
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-from config.bootstrap import bootstrap
+from config.bootstrap import bootstrap  # noqa: E402
 
 TABLES = ["forges", "orgs", "users", "repos", "secrets"]
 

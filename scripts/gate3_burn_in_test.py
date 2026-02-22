@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from config.bootstrap import bootstrap
+from config.bootstrap import bootstrap  # noqa: E402
 
 
 @dataclass

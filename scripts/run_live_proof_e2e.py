@@ -48,9 +48,9 @@ logger = logging.getLogger(__name__)
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from config.bootstrap import bootstrap
-from data.exchange.bybit_connector import BybitConnector
-from signal_generation.models import SignalDirection, SignalStatus
+from config.bootstrap import bootstrap  # noqa: E402
+from data.exchange.bybit_connector import BybitConnector  # noqa: E402
+from signal_generation.models import SignalDirection, SignalStatus  # noqa: E402
 
 
 @dataclass

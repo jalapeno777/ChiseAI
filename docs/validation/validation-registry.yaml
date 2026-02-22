@@ -1946,6 +1946,270 @@ validations:
     owner: security-team
 
 # ============================================================
+# LAUNCH VALIDATIONS (17 validations for 17 stories)
+# Paper Trading with ML Optimization - Target: March 7, 2026
+# ============================================================
+
+  # EP-LAUNCH-001: Bybit Safety & Infrastructure (5 validations)
+  - id: V-LAUNCH-001
+    title: Bybit Environment Assertions Validation
+    epic_id: EP-LAUNCH-001
+    story_id: ST-LAUNCH-001
+    status: planned
+    description: Validate Bybit connector environment assertions ensuring demo-only operation
+    acceptance_criteria:
+      - Production endpoint access raises SecurityException 100% of time
+      - Demo endpoint validation passes for all API calls
+      - Kill switch integration responds within 5 seconds
+      - Audit logs capture all order operations with complete metadata
+      - Logs queryable by timestamp and type with <100ms latency
+    test_method: automated
+    owner: execution-team
+
+  - id: V-LAUNCH-002
+    title: WebSocket Circuit Breaker Validation
+    epic_id: EP-LAUNCH-001
+    story_id: ST-LAUNCH-002
+    status: planned
+    description: Validate WebSocket circuit breaker with automatic REST fallback
+    acceptance_criteria:
+      - Circuit opens after 5 failures within 60 seconds
+      - REST fallback activates within 2 seconds of circuit open
+      - Circuit transitions to HALF_OPEN after 60 seconds
+      - Full recovery cycle completes within 120 seconds
+      - Metrics exported to InfluxDB within 15 seconds
+    test_method: automated
+    owner: execution-team
+
+  - id: V-LAUNCH-003
+    title: Order Idempotency Validation
+    epic_id: EP-LAUNCH-001
+    story_id: ST-LAUNCH-003
+    status: planned
+    description: Validate order idempotency preventing duplicate order execution
+    acceptance_criteria:
+      - Duplicate clientOrderId rejected with DuplicateOrderException
+      - Original order response returned for duplicate requests
+      - Redis TTL enforces 24-hour idempotency window
+      - Cross-token orders not deduplicated
+      - Idempotency keys expired automatically after TTL
+    test_method: automated
+    owner: execution-team
+
+  - id: V-LAUNCH-004
+    title: Scheduler Verification Validation
+    epic_id: EP-LAUNCH-001
+    story_id: ST-LAUNCH-004
+    status: planned
+    description: Validate scheduler health monitoring and automatic recovery
+    acceptance_criteria:
+      - All schedulers start automatically on boot within 30 seconds
+      - Crash recovery restores state from last checkpoint
+      - Missed jobs rescheduled without duplicate execution
+      - Health endpoint returns status for all schedulers
+      - Failed schedulers identified and alerted within 1 minute
+    test_method: automated
+    owner: devops-team
+
+  - id: V-LAUNCH-005
+    title: Safety Integration E2E Validation
+    epic_id: EP-LAUNCH-001
+    story_id: ST-LAUNCH-005
+    status: planned
+    description: Validate end-to-end safety workflows integration
+    acceptance_criteria:
+      - All safety scenarios pass with >=85% test coverage
+      - Kill switch closes all positions within 5 seconds
+      - Circuit breaker prevents WebSocket execution when OPEN
+      - Audit trail captures all safety events completely
+      - E2E test suite completes within 10 minutes
+    test_method: automated
+    owner: execution-team
+
+  # EP-LAUNCH-002: Feedback Loop & ML Pipeline (5 validations)
+  - id: V-LAUNCH-006
+    title: Signal-to-Outcome Pipeline Validation
+    epic_id: EP-LAUNCH-002
+    story_id: ST-LAUNCH-006
+    status: planned
+    description: Validate signal-to-outcome pipeline capturing trade results
+    acceptance_criteria:
+      - 100% of trades have outcomes captured
+      - Match accuracy >=95% for signal-outcome pairing
+      - Pipeline latency <1 hour from trade close to capture
+      - Database schema supports efficient querying
+      - All outcome types recorded (tp_hit, sl_hit, manual_close, expired)
+    test_method: automated
+    owner: ml-team
+
+  - id: V-LAUNCH-007
+    title: Feature Extractor Validation
+    epic_id: EP-LAUNCH-002
+    story_id: ST-LAUNCH-007
+    status: planned
+    description: Validate feature extraction from OHLCV and technical indicators
+    acceptance_criteria:
+      - 10+ features extracted per signal
+      - Feature extraction latency <200ms per signal
+      - OHLCV data freshness <5 minutes
+      - Technical indicators match reference implementations
+      - All features normalized to [0,1] range
+    test_method: automated
+    owner: ml-team
+
+  - id: V-LAUNCH-008
+    title: Prediction-Outcome Matcher Validation
+    epic_id: EP-LAUNCH-002
+    story_id: ST-LAUNCH-008
+    status: planned
+    description: Validate prediction-outcome matching with quality metrics
+    acceptance_criteria:
+      - Match rate >=95% for executed signals
+      - Precision, recall, F1 calculated per signal type
+      - Appropriate time windows per timeframe
+      - Unmatched outcomes flagged for review
+      - Metrics exported to InfluxDB
+    test_method: automated
+    owner: ml-team
+
+  - id: V-LAUNCH-009
+    title: ECE Calculator Validation
+    epic_id: EP-LAUNCH-002
+    story_id: ST-LAUNCH-009
+    status: planned
+    description: Validate ECE calculation from actual trade outcomes
+    acceptance_criteria:
+      - ECE formula matches reference implementation
+      - 10-bin calibration correctly implemented
+      - Daily updates complete within 5 minutes
+      - Per-signal-type and aggregated ECE available
+      - API response time <200ms
+    test_method: automated
+    owner: ml-team
+
+  - id: V-LAUNCH-010
+    title: Dynamic Threshold Adjustment Validation
+    epic_id: EP-LAUNCH-002
+    story_id: ST-LAUNCH-010
+    status: planned
+    description: Validate auto-threshold adjustment with guardrails
+    acceptance_criteria:
+      - Velocity limits enforce max 5% change per day
+      - Cooldown period prevents adjustments within 24 hours
+      - Oscillation detection triggers after 3+ direction changes
+      - ECE-based adjustments improve precision
+      - Manual override pauses auto-adjustment for 7 days
+    test_method: automated
+    owner: ml-team
+
+  # EP-LAUNCH-003: Training Integration & Model Ops (4 validations)
+  - id: V-LAUNCH-011
+    title: Model Retraining Trigger Validation
+    epic_id: EP-LAUNCH-003
+    story_id: ST-LAUNCH-011
+    status: planned
+    description: Validate automatic model retraining triggers
+    acceptance_criteria:
+      - ECE >0.15 triggers retraining within 5 minutes
+      - Win rate <55% over 20 trades triggers retraining
+      - Scheduled triggers execute within 1 hour of scheduled time
+      - Duplicate triggers within 24h are ignored
+      - Pre-training validation ensures data quality >90%
+    test_method: automated
+    owner: ml-team
+
+  - id: V-LAUNCH-012
+    title: Training Pipeline Integration Validation
+    epic_id: EP-LAUNCH-003
+    story_id: ST-LAUNCH-012
+    status: planned
+    description: Validate training pipeline with feature integration and model registry
+    acceptance_criteria:
+      - Features integrated with 70/15/15 train/val/test split
+      - Model registry versions with semantic versioning
+      - Incremental training completes within 4 hours
+      - Full retraining completes within 24 hours
+      - Model validation accuracy > baseline - 5%
+    test_method: automated
+    owner: ml-team
+
+  - id: V-LAUNCH-013
+    title: Model Validation & Rollback Validation
+    epic_id: EP-LAUNCH-003
+    story_id: ST-LAUNCH-013
+    status: planned
+    description: Validate model validation gates and automatic rollback
+    acceptance_criteria:
+      - Validation gates check accuracy, precision, recall, F1
+      - Shadow mode runs for 24 hours before promotion
+      - Automatic rollback completes within 5 minutes
+      - Current trades unaffected during rollback
+      - Validation history maintained with rollback events
+    test_method: automated
+    owner: ml-team
+
+  - id: V-LAUNCH-014
+    title: Training Lifecycle E2E Validation
+    epic_id: EP-LAUNCH-003
+    story_id: ST-LAUNCH-014
+    status: planned
+    description: Validate complete training lifecycle from trigger to deployment
+    acceptance_criteria:
+      - Full training flow completes successfully
+      - Trigger to deployment completes within 8 hours
+      - Rollback flow restores previous model
+      - Data quality failures abort training gracefully
+      - E2E test suite passes 100%
+    test_method: automated
+    owner: ml-team
+
+  # EP-LAUNCH-004: Launch Readiness & Validation (3 validations)
+  - id: V-LAUNCH-015
+    title: Load Testing & Performance Validation
+    epic_id: EP-LAUNCH-004
+    story_id: ST-LAUNCH-015
+    status: planned
+    description: Validate system performance under load
+    acceptance_criteria:
+      - 1000 signals/hour sustained with <1s latency
+      - 10,000 outcomes/hour with <50ms insert, <100ms query
+      - 1000 concurrent WebSocket connections
+      - Circuit breaker functions under load
+      - Daily ECE updates complete within 5 minutes
+    test_method: automated
+    owner: devops-team
+
+  - id: V-LAUNCH-016
+    title: Runbook Validation
+    epic_id: EP-LAUNCH-004
+    story_id: ST-LAUNCH-016
+    status: planned
+    description: Validate operational runbooks for safety and ML operations
+    acceptance_criteria:
+      - Safety runbook resolves issues within SLA
+      - ML operations runbook completes retraining successfully
+      - Rollback procedures complete within 5 minutes
+      - On-call procedures achieve <15min acknowledgment
+      - All runbook steps validated and documented
+    test_method: manual
+    owner: ops-team
+
+  - id: V-LAUNCH-017
+    title: Launch Readiness Go/No-Go Validation
+    epic_id: EP-LAUNCH-004
+    story_id: ST-LAUNCH-017
+    status: planned
+    description: Validate final launch readiness checklist and Go/No-Go decision
+    acceptance_criteria:
+      - All 11 launch readiness items pass
+      - All success criteria targets met
+      - Stakeholder sign-off obtained from all parties
+      - Launch decision documented
+      - Contingency plan activated if needed
+    test_method: manual
+    owner: product-team
+
+# ============================================================
 # Global validation thresholds
 # ============================================================
 

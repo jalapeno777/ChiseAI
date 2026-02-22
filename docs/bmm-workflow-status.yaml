@@ -267,6 +267,106 @@ epics:
       - ST-AUTO-GIT-007 (merged into ST-AUTO-007)
       - ST-AUTO-GIT-008 (re-scoped to ST-AUTO-008)
 
+  # ============================================================
+  # LAUNCH EPICS (4 epics, 54 points)
+  # Paper Trading with ML Optimization - Target: March 7, 2026
+  # ============================================================
+
+  # EP-LAUNCH-001: Bybit Safety & Infrastructure (5 stories, 14 points)
+  - id: EP-LAUNCH-001
+    name: Bybit Safety & Infrastructure
+    status: planned
+    story_ids: [ST-LAUNCH-001, ST-LAUNCH-002, ST-LAUNCH-003, ST-LAUNCH-004, ST-LAUNCH-005]
+    story_count: 5
+    story_points: 14
+    description: Bybit demo connector hardening with environment assertions, WebSocket circuit breaker, order idempotency, and comprehensive safety integration
+    sprint_id: LAUNCH-SPRINT-1
+    timeline: "4 days (Feb 21-24, 2026)"
+    notes:
+      - Party mode planning with Critic, Dev, SeniorDev, Merlin
+      - Critical path item - blocks signal-to-outcome pipeline
+      - Demo-only API - no live trading risk
+      - Dependencies: EP-NS-008 (completed)
+    deployment:
+      feature_flags:
+        - launch:safety:enabled
+        - launch:safety:circuit_breaker:enabled
+        - launch:safety:order_idempotency:enabled
+        - launch:safety:assertions:enabled
+      rollback_time: "<30s via Redis"
+
+  # EP-LAUNCH-002: Feedback Loop & ML Pipeline (5 stories, 18 points)
+  - id: EP-LAUNCH-002
+    name: Feedback Loop & ML Pipeline
+    status: planned
+    story_ids: [ST-LAUNCH-006, ST-LAUNCH-007, ST-LAUNCH-008, ST-LAUNCH-009, ST-LAUNCH-010]
+    story_count: 5
+    story_points: 18
+    description: Complete signal-to-outcome feedback loop with feature extraction, prediction-outcome matching, ECE calculation from actual trades, and dynamic threshold adjustment
+    sprint_id: LAUNCH-SPRINT-1-2
+    timeline: "6 days (Feb 24-Mar 2, 2026)"
+    notes:
+      - CRITICAL for launch - enables ML learning from day one
+      - Depends on EP-LAUNCH-001 for outcome capture
+      - Feature extractor stubs must be completed
+      - Auto-apply thresholds per Craig's decision
+    deployment:
+      feature_flags:
+        - launch:feedback:enabled
+        - launch:feedback:signal_capture:enabled
+        - launch:feedback:ece_updates:enabled
+        - launch:feedback:auto_threshold:enabled
+      rollback_time: "<30s via Redis"
+
+  # EP-LAUNCH-003: Training Integration & Model Ops (4 stories, 15 points)
+  - id: EP-LAUNCH-003
+    name: Training Integration & Model Ops
+    status: planned
+    story_ids: [ST-LAUNCH-011, ST-LAUNCH-012, ST-LAUNCH-013, ST-LAUNCH-014]
+    story_count: 4
+    story_points: 15
+    description: Model retraining automation with trigger conditions, training pipeline integration, validation gates, and automatic rollback on degradation
+    sprint_id: LAUNCH-SPRINT-2
+    timeline: "4 days (Mar 2-6, 2026)"
+    notes:
+      - CRITICAL for launch - model retraining must be automatic
+      - Shadow mode for 24h before promotion
+      - A/B testing framework for model comparison
+      - Depends on EP-LAUNCH-002 for training data
+    deployment:
+      feature_flags:
+        - launch:training:enabled
+        - launch:training:pipeline:enabled
+        - launch:training:auto_trigger:enabled
+        - launch:training:auto_rollback:enabled
+      rollback_time: "<60s via model registry"
+
+  # EP-LAUNCH-004: Launch Readiness & Validation (3 stories, 7 points)
+  - id: EP-LAUNCH-004
+    name: Launch Readiness & Validation
+    status: planned
+    story_ids: [ST-LAUNCH-015, ST-LAUNCH-016, ST-LAUNCH-017]
+    story_count: 3
+    story_points: 7
+    description: Final validation including load testing, runbook validation, documentation completion, and Go/No-Go decision process
+    sprint_id: LAUNCH-SPRINT-2
+    timeline: "2 days (Mar 6-7, 2026)"
+    notes:
+      - Final gate before declaring launch ready
+      - 100% launch checklist must pass
+      - Stakeholder sign-off required
+      - Go/No-Go decision documented
+    deployment:
+      canary_period: "14 days (extended per Craig's decision)"
+      launch_date: "2026-03-07"
+      success_criteria:
+        - ">95% trade execution rate"
+        - "<1h signal-to-outcome latency"
+        - "Daily ECE updates"
+        - ">99.5% uptime"
+        - "<5% false positive kill-switch"
+        - "80%+ test coverage"
+
 # ============================================================
 # PHASE 1 STORIES (35 stories)
 # ============================================================
@@ -2848,9 +2948,9 @@ item_3_completion:
 
 
 summary:
-  total_epics: 18
-  total_stories: 86
-  total_story_points: 495
+  total_epics: 22
+  total_stories: 103
+  total_story_points: 549
   phase_1:
     epics: 8
     stories: 41
@@ -2859,14 +2959,544 @@ summary:
     epics: 10
     stories: 45
     story_points: 338
+  launch_phase:
+    epics: 4
+    stories: 17
+    story_points: 54
+    target_date: "2026-03-07"
+    canary_duration_days: 14
   epics_by_status:
     completed: 9
     in_progress: 0
-    planned: 9
+    planned: 13
   stories_by_status:
     completed: 41
     in_progress: 0
-    planned: 45
+    planned: 62
+  launch_stories_by_epic:
+    EP-LAUNCH-001: 5
+    EP-LAUNCH-002: 5
+    EP-LAUNCH-003: 4
+    EP-LAUNCH-004: 3
+
+# ============================================================
+# LAUNCH STORIES (17 stories, 54 points)
+# Paper Trading with ML Optimization - Target: March 7, 2026
+# ============================================================
+
+  # EP-LAUNCH-001: Bybit Safety & Infrastructure (5 stories, 14 points)
+  - id: ST-LAUNCH-001
+    title: Bybit Environment Assertions
+    epic_id: EP-LAUNCH-001
+    sprint_id: LAUNCH-SPRINT-1
+    status: planned
+    validation_status: planned
+    story_points: 2
+    priority: P0-CRITICAL
+    fr_coverage: [FR-029, FR-DEV-001]
+    description: Implement environment assertions to ensure Bybit connector always operates in demo mode with comprehensive safety checks
+    scope_globs: ["src/data/exchange/bybit_connector.py", "src/data/exchange/credential_resolver.py", "tests/test_data_exchange/test_bybit_safety.py"]
+    depends_on: []
+    acceptance_criteria:
+      - Demo mode enforcement - Only demo/testnet endpoints are allowed, production endpoint access raises SecurityException
+      - Environment validation - All API calls are validated against allowed demo patterns with full audit trail
+      - Kill switch integration - Connector responds to kill switch triggers with position closure within 5 seconds
+      - Audit logging - All order operations logged with timestamp, order_id, price, quantity; logs queryable for 90 days
+    test_strategy:
+      unit: "pytest tests/test_data_exchange/test_bybit_safety.py -v"
+      integration: "pytest tests/test_execution/integration/test_bybit_safety.py -v"
+      e2e: "pytest tests/e2e/test_bybit_safety_flow.py -v"
+    live_validation_gates:
+      - gate: "demo_mode_enforced"
+        check: "Attempt production endpoint access"
+        threshold: "SecurityException raised 100% of time"
+    rollback_plan:
+      - action: "Disable safety assertions"
+        command: "redis-cli SET launch:safety:assertions:enabled 0"
+
+  - id: ST-LAUNCH-002
+    title: WebSocket Circuit Breaker
+    epic_id: EP-LAUNCH-001
+    sprint_id: LAUNCH-SPRINT-1
+    status: planned
+    validation_status: planned
+    story_points: 3
+    priority: P0-CRITICAL
+    fr_coverage: [FR-029, NFR-008]
+    description: Wire EP-NS-008 CircuitBreakerRegistry to Bybit WebSocket connection with automatic fallback to REST API
+    scope_globs: ["src/data/exchange/bybit_connector.py", "src/autonomous_control_plane/components/circuit_breaker_registry.py", "tests/test_execution/test_bybit_ws_circuit_breaker.py"]
+    depends_on: [ST-NS-038, ST-NS-039]
+    acceptance_criteria:
+      - Circuit breaker state machine - Opens after 5 failures in 60 seconds, suspends WebSocket connection
+      - Automatic recovery - Transitions to HALF_OPEN after 60 seconds, attempts test connection
+      - REST fallback - Uses REST API polling when circuit is OPEN, maintains data freshness <5s latency
+      - Telemetry export - Metrics exported to InfluxDB, Grafana dashboard updates within 15 seconds
+    test_strategy:
+      unit: "pytest tests/test_execution/test_bybit_ws_circuit_breaker.py -v"
+      integration: "pytest tests/test_execution/integration/test_circuit_breaker.py -v"
+      chaos: "pytest tests/chaos/test_websocket_resilience.py -v"
+    live_validation_gates:
+      - gate: "circuit_breaker_functional"
+        check: "Simulate 5 WebSocket failures"
+        threshold: "Circuit opens, REST fallback activates"
+    rollback_plan:
+      - action: "Disable circuit breaker"
+        command: "redis-cli SET launch:safety:circuit_breaker:enabled 0"
+
+  - id: ST-LAUNCH-003
+    title: Order Idempotency
+    epic_id: EP-LAUNCH-001
+    sprint_id: LAUNCH-SPRINT-1
+    status: planned
+    validation_status: planned
+    story_points: 3
+    priority: P0-CRITICAL
+    fr_coverage: [FR-029]
+    description: Implement order idempotency using clientOrderId with Redis-based deduplication to prevent duplicate orders
+    scope_globs: ["src/data/exchange/bybit_connector.py", "src/execution/order_idempotency.py", "tests/test_execution/test_order_idempotency.py"]
+    depends_on: []
+    acceptance_criteria:
+      - Client order ID generation - Unique ID generated with timestamp, token, random component for each order
+      - Duplicate detection - Orders with existing clientOrderId rejected with DuplicateOrderException, original response returned
+      - Redis TTL management - Idempotency keys stored with 24-hour TTL, automatic expiration
+      - Idempotency scope - Each token has independent idempotency space, cross-token orders not deduplicated
+    test_strategy:
+      unit: "pytest tests/test_execution/test_order_idempotency.py -v"
+      integration: "pytest tests/test_execution/integration/test_idempotency.py -v"
+      e2e: "pytest tests/e2e/test_duplicate_order_prevention.py -v"
+    live_validation_gates:
+      - gate: "duplicate_prevention"
+        check: "Submit same order twice with same clientOrderId"
+        threshold: "Second order rejected, first order returned"
+    rollback_plan:
+      - action: "Disable idempotency"
+        command: "redis-cli SET launch:safety:order_idempotency:enabled 0"
+
+  - id: ST-LAUNCH-004
+    title: Scheduler Verification
+    epic_id: EP-LAUNCH-001
+    sprint_id: LAUNCH-SPRINT-1
+    status: planned
+    validation_status: planned
+    story_points: 2
+    priority: P1-HIGH
+    fr_coverage: [FR-DEV-005]
+    description: Verify all schedulers (signal generation, ECE updates, retraining checks) start on boot and recover from crashes
+    scope_globs: ["src/execution/schedulers/scheduler_health_monitor.py", "scripts/ops/verify_schedulers.py", "tests/test_execution/test_scheduler_verification.py"]
+    depends_on: []
+    acceptance_criteria:
+      - Boot startup - All schedulers start automatically on application initialization, health checks pass within 30 seconds
+      - Crash recovery - Scheduler restarts automatically on failure, state restored from last checkpoint
+      - Job persistence - Missed jobs rescheduled on recovery, no duplicate executions
+      - Health monitoring - Status of all schedulers returned via health endpoint, failed schedulers identified
+    test_strategy:
+      unit: "pytest tests/test_execution/test_scheduler_verification.py -v"
+      integration: "pytest tests/test_execution/integration/test_scheduler_recovery.py -v"
+      e2e: "pytest tests/e2e/test_scheduler_lifecycle.py -v"
+    live_validation_gates:
+      - gate: "scheduler_health"
+        check: "Query health endpoint"
+        threshold: "All schedulers reporting healthy"
+    rollback_plan:
+      - action: "Restart schedulers"
+        command: "systemctl restart chiseai-schedulers"
+
+  - id: ST-LAUNCH-005
+    title: Safety Integration & E2E Tests
+    epic_id: EP-LAUNCH-001
+    sprint_id: LAUNCH-SPRINT-1
+    status: planned
+    validation_status: planned
+    story_points: 4
+    priority: P0-CRITICAL
+    fr_coverage: [FR-029]
+    description: Integrate all safety components and create comprehensive E2E tests for safety workflows
+    scope_globs: ["tests/e2e/test_bybit_safety_integration.py", "src/execution/safety_orchestrator.py"]
+    depends_on: [ST-LAUNCH-001, ST-LAUNCH-002, ST-LAUNCH-003]
+    acceptance_criteria:
+      - Safety E2E test - All scenarios pass (demo mode, CB, idempotency, kill switch), coverage >=85%
+      - Kill switch integration - All positions close within 5 seconds, trading suspended on trigger
+      - Circuit breaker safety - Signals not executed via WebSocket when circuit OPEN, REST fallback used
+      - Audit completeness - Full audit trail written for all safety events, queryable by timestamp and type
+    test_strategy:
+      unit: "pytest tests/test_execution/test_safety_orchestrator.py -v"
+      integration: "pytest tests/test_execution/integration/test_safety_integration.py -v"
+      e2e: "pytest tests/e2e/test_bybit_safety_integration.py -v"
+    live_validation_gates:
+      - gate: "safety_workflows"
+        check: "Execute safety E2E test suite"
+        threshold: "100% pass rate"
+    rollback_plan:
+      - action: "Disable safety master"
+        command: "redis-cli SET launch:safety:enabled 0"
+
+  # EP-LAUNCH-002: Feedback Loop & ML Pipeline (5 stories, 18 points)
+  - id: ST-LAUNCH-006
+    title: Signal-to-Outcome Pipeline
+    epic_id: EP-LAUNCH-002
+    sprint_id: LAUNCH-SPRINT-1
+    status: planned
+    validation_status: planned
+    story_points: 5
+    priority: P0-CRITICAL
+    fr_coverage: [FR-017, FR-018]
+    description: Create complete signal-to-outcome pipeline capturing TP/SL fills from Bybit execution and matching to original signals
+    scope_globs: ["src/ml/feedback/outcome_capture_service.py", "src/ml/feedback/signal_outcome_matcher.py", "src/ml/models/signal_outcome.py", "tests/test_ml/test_outcome_capture.py"]
+    depends_on: [ST-LAUNCH-001]
+    acceptance_criteria:
+      - Outcome capture service - Every filled order captured with signal_id, exit_price, pnl, timestamp
+      - Signal matching - Outcome matched to originating signal with >95% match confidence
+      - Database schema - signal_outcomes table exists with proper indexes, query latency <100ms
+      - Pipeline latency - Outcome available for ECE calculation within 1 hour, 99% capture rate
+      - Outcome types - Types recorded: tp_hit, sl_hit, manual_close, expired, each with metadata
+    test_strategy:
+      unit: "pytest tests/test_ml/test_outcome_capture.py -v"
+      integration: "pytest tests/test_ml/integration/test_bybit_outcomes.py -v"
+      e2e: "pytest tests/e2e/test_signal_to_outcome.py -v"
+    live_validation_gates:
+      - gate: "outcome_capture_rate"
+        check: "Execute 100 trades, verify capture"
+        threshold: ">=99% captured"
+    rollback_plan:
+      - action: "Disable outcome capture"
+        command: "redis-cli SET launch:feedback:signal_capture:enabled 0"
+    notes:
+      - CRITICAL for launch - enables ML learning from day one
+      - Fallback: CSV export if pipeline delays
+
+  - id: ST-LAUNCH-007
+    title: Feature Extractor Completion
+    epic_id: EP-LAUNCH-002
+    sprint_id: LAUNCH-SPRINT-1
+    status: planned
+    validation_status: planned
+    story_points: 4
+    priority: P0-CRITICAL
+    fr_coverage: [FR-020]
+    description: Complete the feature extractor stubs with OHLCV data integration, indicator calculation, and Markov state extraction
+    scope_globs: ["src/ml/training/extractor.py", "src/ml/features/ohlcv_loader.py", "src/ml/features/indicator_calculator.py", "tests/test_ml/test_feature_extractor.py"]
+    depends_on: []
+    acceptance_criteria:
+      - OHLCV data integration - Data loaded from InfluxDB, freshness validated <5 min old
+      - Technical indicator calculation - RSI, MACD, Bollinger Bands calculated correctly, match reference implementations
+      - Markov state extraction - Trend state extracted (bullish/bearish/neutral/transitional), probabilities returned
+      - Feature caching - Cached features returned within TTL (5 min), cache hit rate >80%
+      - Feature schema - Schema has 10+ features, all normalized to [0,1] range
+    test_strategy:
+      unit: "pytest tests/test_ml/test_feature_extractor.py -v"
+      integration: "pytest tests/test_ml/integration/test_influxdb_features.py -v"
+      e2e: "pytest tests/e2e/test_feature_extraction.py -v"
+    live_validation_gates:
+      - gate: "feature_extraction"
+        check: "Extract features for 100 signals"
+        threshold: "<200ms per signal, 10+ features"
+    rollback_plan:
+      - action: "Use cached features only"
+        command: "redis-cli SET launch:feedback:feature_extraction:enabled 0"
+    notes:
+      - Can start immediately (no dependencies)
+      - If delayed: Ship with 5 core features, add others post-launch
+
+  - id: ST-LAUNCH-008
+    title: Prediction-Outcome Matcher Enhancement
+    epic_id: EP-LAUNCH-002
+    sprint_id: LAUNCH-SPRINT-1
+    status: planned
+    validation_status: planned
+    story_points: 3
+    priority: P1-HIGH
+    fr_coverage: [FR-017, FR-018]
+    description: Enhance the existing matcher to work with outcome capture service and provide richer matching analytics
+    scope_globs: ["src/ml/feedback/matcher.py", "tests/test_ml/test_matcher_enhanced.py"]
+    depends_on: [ST-LAUNCH-006]
+    acceptance_criteria:
+      - Outcome integration - Outcomes matched to predictions with high accuracy, unmatched outcomes flagged
+      - Matching windows - Appropriate time windows per timeframe (1m:30min, 5m:2h, 15m:6h, 1h:24h, 4h:3d, 1d:7d)
+      - Match quality metrics - Precision, recall, F1 calculated per signal type, exported to InfluxDB
+      - Batch processing - All items processed in single transaction, partial failures handled gracefully
+    test_strategy:
+      unit: "pytest tests/test_ml/test_matcher_enhanced.py -v"
+      integration: "pytest tests/test_ml/integration/test_matcher_outcomes.py -v"
+      e2e: "pytest tests/e2e/test_prediction_matching.py -v"
+    live_validation_gates:
+      - gate: "match_accuracy"
+        check: "Verify 100 matches"
+        threshold: ">=95% accuracy"
+    rollback_plan:
+      - action: "Use simple matcher"
+        command: "redis-cli SET launch:feedback:matcher:enabled 0"
+
+  - id: ST-LAUNCH-009
+    title: ECE Calculator - Outcome-Based
+    epic_id: EP-LAUNCH-002
+    sprint_id: LAUNCH-SPRINT-2
+    status: planned
+    validation_status: planned
+    story_points: 3
+    priority: P0-CRITICAL
+    fr_coverage: [FR-019]
+    description: Create ECE calculator that computes Expected Calibration Error from actual outcomes with daily updates
+    scope_globs: ["src/ml/calibration/ece_calculator.py", "src/ml/calibration/ece_updater.py", "tests/test_ml/test_ece_calculator.py"]
+    depends_on: [ST-LAUNCH-006, ST-LAUNCH-008]
+    acceptance_criteria:
+      - ECE calculation - 10-bin calibration used (0-10%, 10-20%, ..., 90-100%), formula correctly implemented
+      - Per-signal-type ECE - Separate ECE per type (entry, exit, SL, TP), aggregated ECE provided
+      - Daily updates - ECE recalculated daily with new data, completes within 5 minutes
+      - Historical tracking - ECE trends available, degradation >0.15 triggers alert
+      - API endpoint - Current ECE and history returned, response time <200ms
+    test_strategy:
+      unit: "pytest tests/test_ml/test_ece_calculator.py -v"
+      integration: "pytest tests/test_ml/integration/test_ece_outcomes.py -v"
+      e2e: "pytest tests/e2e/test_ece_updates.py -v"
+    live_validation_gates:
+      - gate: "ece_accuracy"
+        check: "Calculate ECE for known dataset"
+        threshold: "Matches reference implementation"
+    rollback_plan:
+      - action: "Use static thresholds"
+        command: "redis-cli SET launch:feedback:ece_updates:enabled 0"
+
+  - id: ST-LAUNCH-010
+    title: Dynamic Threshold Adjustment
+    epic_id: EP-LAUNCH-002
+    sprint_id: LAUNCH-SPRINT-2
+    status: planned
+    validation_status: planned
+    story_points: 3
+    priority: P1-HIGH
+    fr_coverage: [FR-019]
+    description: Implement auto-threshold adjustment with velocity limits, cooldown periods, and oscillation detection
+    scope_globs: ["src/ml/calibration/dynamic_threshold.py", "src/ml/calibration/threshold_guardrails.py", "tests/test_ml/test_dynamic_threshold.py"]
+    depends_on: [ST-LAUNCH-009]
+    acceptance_criteria:
+      - Velocity limits - Max change ±5% per day, changes exceeding limit are capped
+      - Cooldown period - Adjustment deferred if within 24 hours of previous change, request logged
+      - Oscillation detection - 3+ direction changes in 7 days triggers freeze for 48 hours
+      - ECE-based adjustment - Threshold increased when ECE > 0.10 to improve precision, rationale logged
+      - Manual override - Auto-adjustment paused for 7 days when manual threshold set, override logged
+    test_strategy:
+      unit: "pytest tests/test_ml/test_dynamic_threshold.py -v"
+      integration: "pytest tests/test_ml/integration/test_threshold_ece.py -v"
+      e2e: "pytest tests/e2e/test_auto_threshold.py -v"
+    live_validation_gates:
+      - gate: "threshold_velocity"
+        check: "Attempt 10% adjustment"
+        threshold: "Capped at 5%"
+    rollback_plan:
+      - action: "Use fixed thresholds"
+        command: "redis-cli SET launch:feedback:auto_threshold:enabled 0"
+    notes:
+      - Auto-apply per Craig's decision (no human approval gate)
+
+  # EP-LAUNCH-003: Training Integration & Model Ops (4 stories, 15 points)
+  - id: ST-LAUNCH-011
+    title: Model Retraining Trigger
+    epic_id: EP-LAUNCH-003
+    sprint_id: LAUNCH-SPRINT-2
+    status: planned
+    validation_status: planned
+    story_points: 5
+    priority: P0-CRITICAL
+    fr_coverage: [FR-018, FR-020]
+    description: Implement automatic model retraining triggers based on ECE degradation, performance thresholds, and schedule
+    scope_globs: ["src/ml/training/retraining_trigger.py", "src/ml/training/training_orchestrator.py", "tests/test_ml/test_retraining_trigger.py"]
+    depends_on: [ST-LAUNCH-009]
+    acceptance_criteria:
+      - ECE-based trigger - Retraining triggered automatically when ECE > 0.15, alert sent to Discord
+      - Performance-based trigger - Retraining triggered when win rate <55% over 20 trades, reason logged
+      - Scheduled trigger - Retraining triggered at scheduled time, starts within 1 hour
+      - Trigger deduplication - New trigger queued if retraining in progress, duplicates within 24h ignored
+      - Pre-training validation - Training data quality validated, proceeds only if quality >90%
+    test_strategy:
+      unit: "pytest tests/test_ml/test_retraining_trigger.py -v"
+      integration: "pytest tests/test_ml/integration/test_trigger_scheduler.py -v"
+      e2e: "pytest tests/e2e/test_retraining_flow.py -v"
+    live_validation_gates:
+      - gate: "trigger_accuracy"
+        check: "Set ECE to 0.18, wait for trigger"
+        threshold: "Trigger fires within 5 minutes"
+    rollback_plan:
+      - action: "Disable auto-trigger"
+        command: "redis-cli SET launch:training:auto_trigger:enabled 0"
+    notes:
+      - CRITICAL for launch - model retraining must be automatic
+
+  - id: ST-LAUNCH-012
+    title: Training Pipeline Integration
+    epic_id: EP-LAUNCH-003
+    sprint_id: LAUNCH-SPRINT-2
+    status: planned
+    validation_status: planned
+    story_points: 4
+    priority: P0-CRITICAL
+    fr_coverage: [FR-020]
+    description: Integrate feature extractor, training data, and model registry for seamless training pipeline execution
+    scope_globs: ["src/ml/training/training_pipeline.py", "src/ml/models/model_registry.py", "tests/test_ml/test_training_pipeline.py"]
+    depends_on: [ST-LAUNCH-007, ST-LAUNCH-011]
+    acceptance_criteria:
+      - Feature integration - Feature extractor provides training data, split 70/15/15 train/validation/test
+      - Model registry - Model versioned with semantic versioning, metadata stored (hyperparams, metrics, timestamp)
+      - Incremental training - Only new data used (last 30 days), completes within 4 hours
+      - Full retraining - All historical data used, completes within 24 hours
+      - Model validation - Metrics computed on test set, passes if accuracy > baseline - 5%
+    test_strategy:
+      unit: "pytest tests/test_ml/test_training_pipeline.py -v"
+      integration: "pytest tests/test_ml/integration/test_pipeline_features.py -v"
+      e2e: "pytest tests/e2e/test_training_workflow.py -v"
+    live_validation_gates:
+      - gate: "pipeline_performance"
+        check: "Run training pipeline"
+        threshold: "Completes within SLA"
+    rollback_plan:
+      - action: "Disable training pipeline"
+        command: "redis-cli SET launch:training:pipeline:enabled 0"
+
+  - id: ST-LAUNCH-013
+    title: Model Validation & Rollback
+    epic_id: EP-LAUNCH-003
+    sprint_id: LAUNCH-SPRINT-2
+    status: planned
+    validation_status: planned
+    story_points: 3
+    priority: P1-HIGH
+    fr_coverage: [FR-018]
+    description: Implement model validation gates and automatic rollback on validation failure
+    scope_globs: ["src/ml/validation/model_validator.py", "src/ml/rollback/model_rollback.py", "tests/test_ml/test_model_validation.py"]
+    depends_on: [ST-LAUNCH-012]
+    acceptance_criteria:
+      - Validation gates - Accuracy, precision, recall, F1 checked, model must exceed thresholds
+      - A/B testing - Shadow mode runs for 24 hours, performance compared to current model
+      - Automatic rollback - Rollback to previous model when degradation >10% detected, completes in <5 minutes
+      - Rollback safety - Current trades not affected, new signals use rolled-back model
+      - Validation history - All validation results available, rollback events logged
+    test_strategy:
+      unit: "pytest tests/test_ml/test_model_validation.py -v"
+      integration: "pytest tests/test_ml/integration/test_validation_rollback.py -v"
+      e2e: "pytest tests/e2e/test_model_rollback.py -v"
+    live_validation_gates:
+      - gate: "rollback_performance"
+        check: "Trigger rollback"
+        threshold: "Completes <5 minutes"
+    rollback_plan:
+      - action: "Disable auto-rollback"
+        command: "redis-cli SET launch:training:auto_rollback:enabled 0"
+
+  - id: ST-LAUNCH-014
+    title: Training E2E Integration Test
+    epic_id: EP-LAUNCH-003
+    sprint_id: LAUNCH-SPRINT-2
+    status: planned
+    validation_status: planned
+    story_points: 3
+    priority: P0-CRITICAL
+    fr_coverage: [FR-018, FR-020]
+    description: Create comprehensive E2E test for the complete training lifecycle from trigger to deployment
+    scope_globs: ["tests/e2e/test_training_lifecycle.py", "tests/e2e/fixtures/training_test_data.py"]
+    depends_on: [ST-LAUNCH-011, ST-LAUNCH-012, ST-LAUNCH-013]
+    acceptance_criteria:
+      - Full training flow - All stages complete successfully, new model deployed
+      - Trigger to validation - Model trained, validated, deployed in <8 hours
+      - Rollback flow - Previous model restored on failure, system continues operating
+      - Data quality failure - Training aborted on poor data quality, alert sent with details
+    test_strategy:
+      e2e: "pytest tests/e2e/test_training_lifecycle.py -v"
+      integration: "pytest tests/test_ml/integration/test_full_pipeline.py -v"
+    live_validation_gates:
+      - gate: "training_lifecycle"
+        check: "Execute full training lifecycle"
+        threshold: "100% pass rate"
+    rollback_plan:
+      - action: "Use baseline model"
+        command: "redis-cli SET launch:training:enabled 0"
+
+  # EP-LAUNCH-004: Launch Readiness & Validation (3 stories, 7 points)
+  - id: ST-LAUNCH-015
+    title: Load Testing & Performance Validation
+    epic_id: EP-LAUNCH-004
+    sprint_id: LAUNCH-SPRINT-2
+    status: planned
+    validation_status: planned
+    story_points: 3
+    priority: P1-HIGH
+    fr_coverage: [NFR-001, NFR-002, NFR-006]
+    description: Execute load testing, performance validation, and stress tests to ensure launch readiness
+    scope_globs: ["tests/load/test_launch_readiness.py", "tests/performance/test_latency_requirements.py", "scripts/load_testing/launch_load_test.py"]
+    depends_on: [ST-LAUNCH-005, ST-LAUNCH-010, ST-LAUNCH-014]
+    acceptance_criteria:
+      - Signal generation load - 1000 signals/hour sustained, latency <1 second, no drops
+      - Database load - 10,000 outcomes/hour, insert <50ms, query <100ms
+      - WebSocket resilience - 1000 concurrent connections, circuit breaker functions, failover seamless
+      - ML pipeline performance - Daily ECE update <5 minutes, training pipeline within SLA
+    test_strategy:
+      load: "locust -f tests/load/test_launch_readiness.py --users 100 --run-time 1h"
+      performance: "pytest tests/performance/test_latency_requirements.py -v"
+      stress: "pytest tests/stress/test_extreme_load.py -v"
+    live_validation_gates:
+      - gate: "load_test_pass"
+        check: "Run full load test suite"
+        threshold: "All thresholds met"
+    rollback_plan:
+      - action: "Scale down"
+        command: "kubectl scale deployment chiseai --replicas=3"
+
+  - id: ST-LAUNCH-016
+    title: Runbook Validation & Documentation
+    epic_id: EP-LAUNCH-004
+    sprint_id: LAUNCH-SPRINT-2
+    status: planned
+    validation_status: planned
+    story_points: 2
+    priority: P1-HIGH
+    fr_coverage: [FR-DEV-005]
+    description: Validate all operational runbooks and ensure documentation is complete for launch
+    scope_globs: ["docs/runbooks/launch_runbook.md", "docs/runbooks/safety_procedures.md", "docs/runbooks/ml_operations.md"]
+    depends_on: [ST-LAUNCH-001, ST-LAUNCH-011, ST-LAUNCH-015]
+    acceptance_criteria:
+      - Safety runbook - Issue resolved within SLA when operator follows runbook, all steps validated
+      - ML operations runbook - Retraining completes successfully when operator follows runbook
+      - Rollback procedures - Rollback completes in <5 minutes, system returns to stable state
+      - On-call procedures - Alert acknowledged in <15 minutes, resolution documented
+    test_strategy:
+      validation: "python scripts/ops/validate_runbooks.py --scenario all"
+      walkthrough: "docs/runbooks/launch_runbook.md"
+    live_validation_gates:
+      - gate: "runbook_complete"
+        check: "Execute runbook validation"
+        threshold: "100% pass rate"
+    rollback_plan:
+      - action: "Use previous runbook version"
+        command: "git checkout HEAD~1 -- docs/runbooks/"
+
+  - id: ST-LAUNCH-017
+    title: Final E2E Validation & Go/No-Go
+    epic_id: EP-LAUNCH-004
+    sprint_id: LAUNCH-SPRINT-2
+    status: planned
+    validation_status: planned
+    story_points: 2
+    priority: P0-CRITICAL
+    fr_coverage: [FR-DEV-001, FR-DEV-002, FR-DEV-003]
+    description: Execute final end-to-end validation and Go/No-Go decision process
+    scope_globs: ["tests/e2e/test_launch_readiness.py", "scripts/launch_gates/go_no_go_checklist.py"]
+    depends_on: [ST-LAUNCH-005, ST-LAUNCH-010, ST-LAUNCH-014, ST-LAUNCH-015, ST-LAUNCH-016]
+    acceptance_criteria:
+      - Launch readiness checklist - All 11 items pass (safety, pipeline, features, ECE, thresholds, retraining, data, tests, coverage, runbooks, sign-off)
+      - Success criteria validation - All targets met (execution rate, latency, ECE updates, uptime, false positives, coverage)
+      - Stakeholder sign-off - Sign-off obtained from Engineering lead, Operations lead, Risk/compliance, Product owner
+      - Launch decision - Decision documented, launch proceeds or contingency activated
+    test_strategy:
+      e2e: "pytest tests/e2e/test_launch_readiness.py -v"
+      checklist: "python scripts/launch_gates/go_no_go_checklist.py"
+    live_validation_gates:
+      - gate: "launch_ready"
+        check: "Execute full validation"
+        threshold: "100% checklist complete"
+    rollback_plan:
+      - action: "Abort launch"
+        command: "redis-cli SET launch:status:go 0"
+    notes:
+      - Final gate before declaring launch ready
+      - Go/No-Go meeting on Day 14 (March 7, 2026)
 
 # ============================================================
 # ITEM 3 COMPLETION - BYBIT-DEMO-003

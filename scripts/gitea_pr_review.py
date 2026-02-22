@@ -27,7 +27,7 @@ from config.bootstrap import bootstrap
 # Bootstrap environment first (must be before any env access)
 bootstrap(load_env=True)
 
-from config.bootstrap import bootstrap
+from config.bootstrap import bootstrap  # noqa: E402
 
 
 def _req_json(method: str, url: str, token: str, body: dict | None = None) -> dict:

@@ -15,7 +15,7 @@ from config.bootstrap import bootstrap
 
 bootstrap(load_env=True)
 
-from autonomous_git.gitreviewbot import GiteaClient, GitReviewBot
+from autonomous_git.gitreviewbot import GiteaClient, GitReviewBot  # noqa: E402
 
 
 async def review_pr(
