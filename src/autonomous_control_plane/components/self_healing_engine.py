@@ -110,6 +110,9 @@ class SelfHealingEngine:
         self._healing_history: list[HealingAttempt] = []
         self._max_history = 1000
 
+        # Test mode flag for synthetic failure injection
+        self._test_mode = False
+
         logger.info(
             f"SelfHealingEngine initialized (trading_mode={trading_mode}, "
             f"patterns={self._pattern_matcher.pattern_count})"
@@ -126,6 +129,13 @@ class SelfHealingEngine:
         """
         if not self._enabled:
             logger.debug("Self-healing engine is disabled, skipping log entry")
+            return None
+
+        # Skip if not in test mode and entry is injected
+        if not getattr(self, "_test_mode", False) and log_entry.metadata.get(
+            "injected"
+        ):
+            logger.debug("Skipping injected log entry (test mode not enabled)")
             return None
 
         # Match against patterns
@@ -473,3 +483,17 @@ class SelfHealingEngine:
     def is_enabled(self) -> bool:
         """Check if engine is enabled."""
         return self._enabled
+
+    def enable_test_mode(self) -> None:
+        """Enable test mode - allows injected failures to be processed."""
+        self._test_mode = True
+        logger.info("SelfHealingEngine test mode enabled")
+
+    def disable_test_mode(self) -> None:
+        """Disable test mode."""
+        self._test_mode = False
+        logger.info("SelfHealingEngine test mode disabled")
+
+    def is_test_mode(self) -> bool:
+        """Check if test mode is enabled."""
+        return getattr(self, "_test_mode", False)
