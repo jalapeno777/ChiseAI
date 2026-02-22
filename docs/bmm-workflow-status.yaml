@@ -5,8 +5,13 @@
 metadata:
   project_name: ChiseAI
   version: "2.3.0"
-  last_updated: "2026-02-22T08:00:00Z"
+  last_updated: "2026-02-22T12:00:00Z"
   recent_changes:
+    - change: "BATCH 4: Completed ST-LAUNCH-005, ST-LAUNCH-008, ST-LAUNCH-011 - Full Scope Completion Path finished"
+      stories_completed: 3
+      points_completed: 14
+      epics_updated: [EP-LAUNCH-001, EP-LAUNCH-002, EP-LAUNCH-003]
+      prs_merged: [254, 255, 257]
     - change: "BATCH 3: Completed ST-LAUNCH-004, ST-LAUNCH-009, ST-LAUNCH-010"
       stories_completed: 3
       points_completed: 8
@@ -279,21 +284,20 @@ epics:
   # EP-LAUNCH-001: Bybit Safety & Infrastructure (5 stories, 14 points)
   - id: EP-LAUNCH-001
     name: Bybit Safety & Infrastructure
-    status: in_progress
+    status: completed
     story_ids: [ST-LAUNCH-001, ST-LAUNCH-002, ST-LAUNCH-003, ST-LAUNCH-004, ST-LAUNCH-005]
     story_count: 5
-    stories_completed: 4
+    stories_completed: 5
     story_points: 14
     description: Bybit demo connector hardening with environment assertions, WebSocket circuit breaker, order idempotency, and comprehensive safety integration
     notes:
-      - 4 of 5 stories completed (ST-LAUNCH-001, 002, 003, 004)
-      - 1 story remaining: ST-LAUNCH-005 (Safety Integration & E2E Tests)
-      - Party mode planning with Critic, Dev, SeniorDev, Merlin
-      - Critical path item - blocks signal-to-outcome pipeline
+      - All 5 stories completed (ST-LAUNCH-001, 002, 003, 004, 005)
+      - ST-LAUNCH-005: Safety Integration & E2E Tests merged via PR #254
+      - Epic completed on 2026-02-22 by Merlin (Batch 4 final integration)
       - Demo-only API - no live trading risk
       - Dependencies: EP-NS-008 (completed)
     sprint_id: LAUNCH-SPRINT-1
-    timeline: "4 days (Feb 21-24, 2026)"
+    timeline: "4 days (Feb 21-24, 2026) - COMPLETED"
     deployment:
       feature_flags:
         - launch:safety:enabled
@@ -305,20 +309,20 @@ epics:
   # EP-LAUNCH-002: Feedback Loop & ML Pipeline (5 stories, 18 points)
   - id: EP-LAUNCH-002
     name: Feedback Loop & ML Pipeline
-    status: in_progress
+    status: completed
     story_ids: [ST-LAUNCH-006, ST-LAUNCH-007, ST-LAUNCH-008, ST-LAUNCH-009, ST-LAUNCH-010]
     story_count: 5
-    stories_completed: 4
+    stories_completed: 5
     story_points: 18
     description: Complete signal-to-outcome feedback loop with feature extraction, prediction-outcome matching, ECE calculation from actual trades, and dynamic threshold adjustment
     sprint_id: LAUNCH-SPRINT-1-2
-    timeline: "6 days (Feb 24-Mar 2, 2026)"
+    timeline: "6 days (Feb 24-Mar 2, 2026) - COMPLETED"
     notes:
-      - 4 of 5 stories completed (ST-LAUNCH-006, 007, 009, 010)
-      - 1 story remaining: ST-LAUNCH-008 (Prediction-Outcome Matcher Enhancement)
-      - CRITICAL for launch - enables ML learning from day one
-      - Depends on EP-LAUNCH-001 for outcome capture
-      - Feature extractor stubs must be completed
+      - All 5 stories completed (ST-LAUNCH-006, 007, 008, 009, 010)
+      - ST-LAUNCH-008: Prediction-Outcome Matcher Enhancement merged via PR #255
+      - Epic completed on 2026-02-22 by Merlin (Batch 4 final integration)
+      - Enables ML learning from day one
+      - Depends on EP-LAUNCH-001 for outcome capture (completed)
       - Auto-apply thresholds per Craig's decision
     deployment:
       feature_flags:
@@ -331,18 +335,22 @@ epics:
   # EP-LAUNCH-003: Training Integration & Model Ops (4 stories, 15 points)
   - id: EP-LAUNCH-003
     name: Training Integration & Model Ops
-    status: planned
+    status: in_progress
     story_ids: [ST-LAUNCH-011, ST-LAUNCH-012, ST-LAUNCH-013, ST-LAUNCH-014]
     story_count: 4
+    stories_completed: 1
     story_points: 15
     description: Model retraining automation with trigger conditions, training pipeline integration, validation gates, and automatic rollback on degradation
     sprint_id: LAUNCH-SPRINT-2
     timeline: "4 days (Mar 2-6, 2026)"
     notes:
+      - 1 of 4 stories completed (ST-LAUNCH-011)
+      - ST-LAUNCH-011: Model Retraining Trigger merged via PR #257
+      - 3 stories remaining: ST-LAUNCH-012, ST-LAUNCH-013, ST-LAUNCH-014
       - CRITICAL for launch - model retraining must be automatic
       - Shadow mode for 24h before promotion
       - A/B testing framework for model comparison
-      - Depends on EP-LAUNCH-002 for training data
+      - Depends on EP-LAUNCH-002 for training data (completed)
     deployment:
       feature_flags:
         - launch:training:enabled
