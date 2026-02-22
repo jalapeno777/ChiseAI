@@ -893,9 +893,7 @@ def _generate_markdown_report(results: dict[str, Any], output_path: Path) -> Non
         status_symbol = (
             "✓"
             if item["status"] == "PASS"
-            else "⚠"
-            if item["status"] == "WARNING"
-            else "✗"
+            else "⚠" if item["status"] == "WARNING" else "✗"
         )
         lines.append(
             f"| {item['id']} | {item['name']} | {status_symbol} {item['status']} | {item.get('details', '')} |"

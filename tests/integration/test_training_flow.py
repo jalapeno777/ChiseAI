@@ -40,7 +40,7 @@ pytest_plugins = ["tests.e2e.fixtures.training_fixtures"]
 
 # Alias for fixture compatibility
 @pytest.fixture
-def reset_feature_flags(reset_feature_flags_fixture):
+def reset_feature_flags(reset_feature_flags_fixture):  # noqa: F811
     """Alias for reset_feature_flags_fixture."""
     yield
 

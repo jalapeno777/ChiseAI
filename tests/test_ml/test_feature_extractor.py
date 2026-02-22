@@ -631,9 +631,7 @@ class TestFeatureExtractor:
             new_callable=AsyncMock,
             return_value=[],
         ) as mock_load:
-            await extractor.extract_technical_indicators(
-                "BTC", "1h", timestamp
-            )
+            await extractor.extract_technical_indicators("BTC", "1h", timestamp)
             assert mock_load.called
 
         # Cache stats should show enabled (as int/float, not necessarily exactly 1)
