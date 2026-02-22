@@ -170,7 +170,6 @@ class TestTradingActivityIntegration:
 
         # Mock the cycle execution to count calls
         cycle_count = 0
-        original_execute = _execute_trading_cycle
 
         async def mock_execute(ldr, mtr):
             nonlocal cycle_count

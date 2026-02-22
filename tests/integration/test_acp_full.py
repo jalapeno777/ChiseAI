@@ -11,7 +11,6 @@ async def test_full_acp_lifecycle(acp_container, mock_redis):
     """Test full ACP lifecycle: log -> pattern match -> healing -> incident."""
     # Arrange
     engine = acp_container.self_healing_engine
-    incident_mgr = acp_container.incident_manager
 
     # Create log entry that matches pattern
     log_entry = LogEntry(

@@ -151,8 +151,8 @@ def export_dataset(
     """
     try:
         # Parse dates
-        start = datetime.strptime(start_date, "%Y-%m-%d")
-        end = datetime.strptime(end_date, "%Y-%m-%d")
+        datetime.strptime(start_date, "%Y-%m-%d")
+        datetime.strptime(end_date, "%Y-%m-%d")
     except ValueError as e:
         logger.error(f"Invalid date format: {e}")
         return 1

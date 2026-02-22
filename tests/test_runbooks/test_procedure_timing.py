@@ -61,7 +61,7 @@ steps:
         validator = RunbookValidator(runbooks_dir=runbooks_dir, dry_run=True)
 
         # Override the simulated time to be over SLA
-        with pytest.MonkeyPatch.context() as mp:
+        with pytest.MonkeyPatch.context():
             # In dry-run mode, the actual timing is simulated
             # The test verifies the structure is correct
             validator._validate_kill_switch_sla()

@@ -186,7 +186,7 @@ class TestTemporalSafety:
 
         # Simulate a prediction made "now" with outcome recorded later
         prediction_time = now - timedelta(hours=4)  # Safe
-        outcome_time = now - timedelta(minutes=30)  # Unsafe (after cutoff)
+        now - timedelta(minutes=30)  # Unsafe (after cutoff)
 
         match = MagicMock()
         match.signal = SignalRecord(
@@ -226,7 +226,7 @@ class TestTemporalSafety:
 
     def test_temporal_safety_mode_comparison(self) -> None:
         """Test different temporal safety modes."""
-        now = datetime.now(UTC)
+        datetime.now(UTC)
 
         # Strict mode: 2 hour buffer
         strict_config = OrchestratorConfig(

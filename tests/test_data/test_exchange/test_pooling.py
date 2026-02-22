@@ -199,7 +199,7 @@ class TestCompositeRateLimiter:
 
         composite = CompositeRateLimiter([limiter1, limiter2])
 
-        wait_time = await composite.acquire()
+        await composite.acquire()
 
         # Should acquire from both
         assert limiter1.tokens == 9.0
@@ -407,11 +407,11 @@ class TestLatencyImprovement:
         await pool.initialize()
 
         # Use a connection
-        async with pool.get_connection() as conn1:
+        async with pool.get_connection():
             pass
 
         # Get another connection (should be same one returned)
-        async with pool.get_connection() as conn2:
+        async with pool.get_connection():
             pass
 
         # Both should be from the pool (reused)

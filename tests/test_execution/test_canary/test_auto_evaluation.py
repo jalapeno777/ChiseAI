@@ -245,7 +245,7 @@ class TestArtifactGeneration:
         )
         canary.metrics = CanaryMetrics(total_trades=0)
 
-        with tempfile.TemporaryDirectory() as tmpdir:
+        with tempfile.TemporaryDirectory():
             with patch.object(Path, "mkdir", lambda *args, **kwargs: None):
                 with patch.object(Path, "write_text"):
                     artifacts = evaluator.generate_evaluation_artifact(canary)

@@ -97,7 +97,7 @@ class TestStatePointCreation:
     def test_create_state_point_disabled(self):
         """Test state point for disabled state."""
         exporter = LiveGatingGrafanaExporter()
-        now = datetime.now(UTC)
+        datetime.now(UTC)
 
         # Mock ImportError to force dict fallback
         with patch.dict("sys.modules", {"influxdb_client": None}):

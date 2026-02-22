@@ -274,7 +274,7 @@ class TestAutoRemediation:
                 metadata={"event_type": "service_unhealthy"},
             )
 
-            incident = await manager.create_incident(event)
+            await manager.create_incident(event)
 
             # Wait for async remediation to complete
             await asyncio.sleep(0.1)
@@ -299,7 +299,7 @@ class TestAutoRemediation:
                 metadata={"event_type": "redis_connection_failed"},
             )
 
-            incident = await manager.create_incident(event)
+            await manager.create_incident(event)
             await asyncio.sleep(0.1)
 
             # Handler should not be called for P0

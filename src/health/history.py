@@ -219,7 +219,7 @@ class HealthHistory:
         # Calculate changes
         now = datetime.now(UTC)
         one_hour_ago = now - timedelta(hours=1)
-        one_day_ago = now - timedelta(hours=24)
+        now - timedelta(hours=24)
 
         recent_1h = [s.score for s in snapshots if s.timestamp >= one_hour_ago]
         recent_24h = scores

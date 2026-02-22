@@ -369,7 +369,7 @@ class TestHealthMonitor:
     async def test_get_component_health(self, monitor):
         """Test getting component health."""
         await monitor.update_health()
-        score = monitor.get_component_health(ComponentType.REDIS)
+        monitor.get_component_health(ComponentType.REDIS)
         # May be None if Redis not configured
 
     def test_check_orchestrator_health_not_initialized(self, monitor):

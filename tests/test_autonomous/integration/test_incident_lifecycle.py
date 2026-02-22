@@ -456,7 +456,7 @@ class TestIncidentMetricsIntegration:
         event1 = IncidentEvent(
             event_type="service_unhealthy", source="svc1", message="Issue 1"
         )
-        inc1 = await manager.create_incident(event1)
+        await manager.create_incident(event1)
 
         event2 = IncidentEvent(
             event_type="service_unhealthy", source="svc2", message="Issue 2"

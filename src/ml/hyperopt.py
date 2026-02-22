@@ -437,7 +437,7 @@ class GeneticOptimizer(BaseOptimizer):
         self._trials = []
 
         # Create parameter name mapping
-        param_names = [c.name for c in param_constraints]
+        [c.name for c in param_constraints]
         param_map = {c.name: c for c in param_constraints}
 
         # Initialize population

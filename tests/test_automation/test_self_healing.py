@@ -485,7 +485,7 @@ class TestEventHandlers:
             metadata={"attempt_count": 3},
         )
 
-        result = await handler.handle(event)
+        await handler.handle(event)
 
         mock_escalation.assert_called_once()
 
@@ -722,7 +722,7 @@ class TestIntegration:
     async def test_cascading_failure_prevention(self):
         """Test that cascading failures are prevented."""
         orchestrator = RecoveryOrchestrator(max_attempts=2)
-        healing_engine = SelfHealingEngine()
+        SelfHealingEngine()
 
         # Register a failing recovery action
         async def failing_recovery(ctx):

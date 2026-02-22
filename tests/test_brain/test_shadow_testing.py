@@ -834,11 +834,11 @@ class TestEdgeCases:
 
         start = time.perf_counter()
         parallel_result = await parallel_tester.run_shadow_test(test_inputs[:5])
-        parallel_time = time.perf_counter() - start
+        time.perf_counter() - start
 
         start = time.perf_counter()
         sequential_result = await sequential_tester.run_shadow_test(test_inputs[:5])
-        sequential_time = time.perf_counter() - start
+        time.perf_counter() - start
 
         # Both should pass
         assert parallel_result.passed is True

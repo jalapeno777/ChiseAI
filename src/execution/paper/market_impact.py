@@ -103,7 +103,7 @@ class MarketImpact:
         impact = k * math.sqrt(size_ratio)
 
         # Convert to basis points range for validation
-        impact_bps = impact * 10000
+        impact * 10000
 
         # Apply min/max bounds
         min_impact = self.config.min_impact_bps / 10000

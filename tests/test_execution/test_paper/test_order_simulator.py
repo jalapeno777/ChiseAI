@@ -176,7 +176,7 @@ class TestOrderSimulator:
 
     def test_validate_order_limit_no_price(self):
         """Test validation of limit order without price."""
-        sim = OrderSimulator()
+        OrderSimulator()
 
         # PaperOrder validates in __post_init__, so we expect ValueError
         with pytest.raises(ValueError, match="Limit orders require positive price"):

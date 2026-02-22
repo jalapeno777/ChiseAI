@@ -424,7 +424,7 @@ class TestZhipuClientContextManager:
 
     def test_context_manager_closes_session(self):
         """Test session is closed on exit."""
-        with ZhipuClient(api_key="test-key") as client:
+        with ZhipuClient(api_key="test-key"):
             pass
         # Session should be closed after exit
 

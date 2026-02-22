@@ -631,7 +631,7 @@ class TestFeatureExtractor:
             new_callable=AsyncMock,
             return_value=[],
         ) as mock_load:
-            result1 = await extractor.extract_technical_indicators(
+            await extractor.extract_technical_indicators(
                 "BTC", "1h", timestamp
             )
             assert mock_load.called

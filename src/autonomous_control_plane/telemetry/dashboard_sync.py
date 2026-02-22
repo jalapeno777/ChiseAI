@@ -166,7 +166,7 @@ class DashboardSyncServer:
         try:
             async with websockets.serve(
                 self._handle_client, self.host, self.port
-            ) as server:
+            ):
                 logger.info(
                     f"WebSocket server listening on ws://{self.host}:{self.port}"
                 )

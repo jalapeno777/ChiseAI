@@ -324,7 +324,7 @@ class TestDiscordBatchIntegration:
 
         # Third request should work but with rate limiting
         # (depends on timing)
-        result = await limiter.acquire(1)
+        await limiter.acquire(1)
         # The limiter will allow it but will need to wait
 
         # Set retry-after to simulate server limit

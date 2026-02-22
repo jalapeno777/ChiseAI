@@ -234,7 +234,7 @@ async def test_e2e_failure_retry(reset_flags):
         max_retry_attempts=3,
     )
 
-    job = await integration.run_training_manual()
+    await integration.run_training_manual()
 
     # Wait for retries
     await asyncio.sleep(0.5)

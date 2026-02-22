@@ -89,7 +89,7 @@ class RunbookValidationGate:
 
         # Determine verdict
         sla_pass_rate = checks["sla_compliance"].get("pass_rate", 0.0)
-        scenario_pass_rate = checks["scenario_coverage"].get("pass_rate", 0.0)
+        checks["scenario_coverage"].get("pass_rate", 0.0)
 
         if (
             weighted_score >= self.MIN_OVERALL_SCORE

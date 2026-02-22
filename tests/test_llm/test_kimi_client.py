@@ -630,7 +630,6 @@ class TestKimiClient:
     async def test_chat_with_model_discovery(self, client):
         """Test that chat triggers model discovery."""
         discovery_called = False
-        original_discover = client.discover_models
 
         async def mock_discover():
             nonlocal discovery_called

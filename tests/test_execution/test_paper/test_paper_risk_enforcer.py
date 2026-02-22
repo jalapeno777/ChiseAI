@@ -356,7 +356,7 @@ class TestPaperRiskEnforcer:
     async def test_position_size_limit(self, enforcer, valid_signal):
         """Test that position size > 10% portfolio is rejected."""
         # Create a position that would exceed 10% of small portfolio
-        assessment = await enforcer.validate_order(
+        await enforcer.validate_order(
             signal=valid_signal,
             portfolio_value=1000.0,  # Small portfolio
             current_positions=[],

@@ -158,7 +158,7 @@ class GoNoGoChecklist:
         print("=" * 80)
         print("  CHISEAI LAUNCH READINESS: GO/NO-GO CHECKLIST")
         print("=" * 80)
-        print(f"Story: ST-LAUNCH-017")
+        print("Story: ST-LAUNCH-017")
         print(f"Timestamp: {datetime.utcnow().isoformat()}Z")
         print()
 
@@ -318,7 +318,7 @@ class GoNoGoChecklist:
     ) -> dict[str, Any]:
         """Evaluate signal generation performance."""
         # Check if performance validation passed
-        perf_passed = self.perf_results.get("verdict") == "PASS"
+        self.perf_results.get("verdict") == "PASS"
 
         # Simulate performance metrics
         signals_per_hour = 1200  # From load testing
@@ -349,7 +349,7 @@ class GoNoGoChecklist:
             details = f"{outcomes_per_hour}/h, insert {insert_latency}ms, query {query_latency}ms"
         else:
             status = "FAIL" if item["required"] else "WARNING"
-            details = f"Performance below target"
+            details = "Performance below target"
 
         return {
             "id": item["id"],
@@ -370,7 +370,7 @@ class GoNoGoChecklist:
             )
         else:
             status = "FAIL" if item["required"] else "WARNING"
-            details = f"WebSocket performance issues"
+            details = "WebSocket performance issues"
 
         return {
             "id": item["id"],
@@ -389,7 +389,7 @@ class GoNoGoChecklist:
             details = f"ECE update {ece_update_minutes}min, training within SLA"
         else:
             status = "FAIL" if item["required"] else "WARNING"
-            details = f"ML pipeline timing issues"
+            details = "ML pipeline timing issues"
 
         return {
             "id": item["id"],
@@ -401,7 +401,7 @@ class GoNoGoChecklist:
     def _eval_safety_runbook_sla(self, item: dict[str, Any]) -> dict[str, Any]:
         """Evaluate safety runbook SLA compliance."""
         # Use runbook validation results
-        runbook_score = self.runbook_results.get("overall_score", 0)
+        self.runbook_results.get("overall_score", 0)
 
         kill_switch_time = 15  # seconds
         circuit_breaker_time = 30  # seconds
@@ -411,7 +411,7 @@ class GoNoGoChecklist:
             details = f"Kill switch {kill_switch_time}s, circuit breaker {circuit_breaker_time}s"
         else:
             status = "FAIL" if item["required"] else "WARNING"
-            details = f"SLA targets not met"
+            details = "SLA targets not met"
 
         return {
             "id": item["id"],
@@ -469,7 +469,7 @@ class GoNoGoChecklist:
             )
         else:
             status = "FAIL" if item["required"] else "WARNING"
-            details = f"On-call SLA not met"
+            details = "On-call SLA not met"
 
         return {
             "id": item["id"],
@@ -501,13 +501,6 @@ class GoNoGoChecklist:
         # Check if all CI checks are passing
         all_passing = True
 
-        checks = [
-            "lint",
-            "type_check",
-            "unit_tests",
-            "integration_tests",
-            "security_scan",
-        ]
         failed_checks = []
 
         # In practice, query CI API

@@ -222,8 +222,8 @@ class TestValidationGate:
             model_path="/models/test.pkl",
         )
 
-        run1 = await gate.run_offline_validation(version.version_id)
-        run2 = await gate.run_offline_validation(version.version_id)
+        await gate.run_offline_validation(version.version_id)
+        await gate.run_offline_validation(version.version_id)
 
         history = gate.get_validation_history(version_id=version.version_id)
         # Should have at least 2 runs for this version

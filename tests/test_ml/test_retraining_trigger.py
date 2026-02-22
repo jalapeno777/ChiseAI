@@ -719,7 +719,7 @@ class TestDiscordAlerts:
             )
 
             mock_ece_retriever.get_latest_ece = AsyncMock(return_value=0.20)
-            result = await trigger.evaluate_ece_trigger()
+            await trigger.evaluate_ece_trigger()
 
             # Discord notifier should not be called due to feature flag
             mock_notifier.send_trigger_alert.assert_not_called()

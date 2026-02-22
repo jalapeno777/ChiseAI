@@ -103,7 +103,7 @@ class GitReviewBot:
         self._cache_diff_result(diff, pr_number, pr.files_changed, senior_dev_result)
 
         # Log for calibration
-        review_id = await self.calibration.log_review(decision)
+        await self.calibration.log_review(decision)
 
         # Post review to Gitea
         await self.gitea.post_review(pr_number, decision)

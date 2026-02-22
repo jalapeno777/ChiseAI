@@ -288,16 +288,10 @@ class Leaderboard:
 
         if score_a > score_b:
             winner = version_a
-            winner_score = score_a
-            loser_score = score_b
         elif score_b > score_a:
             winner = version_b
-            winner_score = score_b
-            loser_score = score_a
         else:
             winner = "tie"
-            winner_score = score_a
-            loser_score = score_b
 
         return {
             "version_a": version_a,

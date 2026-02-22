@@ -970,7 +970,6 @@ class TestMarketRealismValidation:
 
         # Expected: sqrt(0.01) = 0.1, but min_impact_bps=0 means no floor
         # The actual value should be close to 0.1
-        expected_impact = 0.1  # sqrt(0.01)
         # Allow for some tolerance since the config may have other factors
         assert 0.05 <= impact <= 0.15, f"Impact {impact} outside expected range"
 

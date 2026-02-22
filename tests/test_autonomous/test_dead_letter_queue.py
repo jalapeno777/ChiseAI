@@ -322,7 +322,7 @@ class TestDeadLetterQueueWithMockedDB:
             with patch("sqlalchemy.text") as mock_text:
                 mock_text.return_value = "INSERT_SQL"
 
-                item = dlq_with_db.enqueue(
+                dlq_with_db.enqueue(
                     service_name="test_service",
                     operation="test_op",
                     payload={"key": "value"},
@@ -434,8 +434,8 @@ class TestDeadLetterQueueWithMockedDB:
         mock_conn.execute.return_value = mock_result
         mock_engine.connect.return_value.__enter__.return_value = mock_conn
 
-        with patch("sqlalchemy.text") as mock_text:
-            items = dlq_with_db.list_pending(service_name="test_service", limit=10)
+        with patch("sqlalchemy.text"):
+            dlq_with_db.list_pending(service_name="test_service", limit=10)
 
             # Should include service filter in query
             mock_conn.execute.assert_called_once()

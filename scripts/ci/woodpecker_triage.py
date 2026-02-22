@@ -791,7 +791,7 @@ def _rewrite_dsn_host(dsn: str, new_host: str) -> str:
     if "@" in netloc:
         userinfo, hostport = netloc.rsplit("@", 1)
     else:
-        hostport = netloc
+        pass
     port = f":{parsed.port}" if parsed.port else ""
     new_netloc = f"{userinfo + '@' if userinfo else ''}{new_host}{port}"
     return urlunparse(parsed._replace(netloc=new_netloc))

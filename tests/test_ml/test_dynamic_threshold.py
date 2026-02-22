@@ -808,7 +808,7 @@ class TestThresholdGuardrails:
 
     def test_detect_oscillation_with_changes(self, guardrails):
         """Test oscillation detection with direction changes."""
-        now = datetime.now(UTC)
+        datetime.now(UTC)
 
         # Create adjustments with 3 direction changes
         adjustments = [

@@ -623,7 +623,7 @@ class TestECEIntegration:
             # For well-calibrated: accuracy should match confidence
             # Create 20 samples per bin with accuracy ~ confidence
             n_correct = int(20 * confidence)
-            n_wrong = 20 - n_correct
+            20 - n_correct
 
             for i in range(20):
                 outcome = 1 if i < n_correct else 0

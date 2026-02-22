@@ -298,7 +298,7 @@ class ExchangeConnectionPool:
         start_time = time.monotonic()
 
         # Apply rate limiting
-        wait_time = await self.rate_limiter.acquire()
+        await self.rate_limiter.acquire()
 
         # Wait for semaphore (connection slot)
         await self._semaphore.acquire()

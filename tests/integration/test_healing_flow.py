@@ -96,7 +96,7 @@ async def test_healing_budget_enforced(acp_container, mock_redis):
     )
 
     # Act
-    result = await engine.process_log_entry(log_entry)
+    await engine.process_log_entry(log_entry)
 
     # Assert - if budget tracking exists, it should handle this gracefully
     # The test documents expected behavior; actual budget enforcement depends on implementation
@@ -137,7 +137,7 @@ async def test_kill_switch_blocks_healing(acp_container, mock_redis):
     )
 
     # Act
-    result = await engine.process_log_entry(log_entry)
+    await engine.process_log_entry(log_entry)
 
     # Assert
     # When engine is disabled, should return None

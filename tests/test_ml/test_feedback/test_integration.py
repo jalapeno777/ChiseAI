@@ -244,7 +244,7 @@ class TestFeedbackLoopIntegration:
         safe_signal_time = now - timedelta(hours=3)
         unsafe_signal_time = now - timedelta(minutes=30)
 
-        safe_signal = SignalRecord(
+        SignalRecord(
             signal_id="safe-signal",
             token="BTC",
             timestamp=int(safe_signal_time.timestamp() * 1000),
@@ -254,7 +254,7 @@ class TestFeedbackLoopIntegration:
             score=75.0,
         )
 
-        unsafe_signal = SignalRecord(
+        SignalRecord(
             signal_id="unsafe-signal",
             token="BTC",
             timestamp=int(unsafe_signal_time.timestamp() * 1000),

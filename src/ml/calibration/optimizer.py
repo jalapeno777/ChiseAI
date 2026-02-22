@@ -230,7 +230,6 @@ class ThresholdOptimizer:
         best_threshold = start
         min_ece = float("inf")
         best_sample_size = 0
-        best_idx = 0
 
         ece_values = []
         sample_sizes = []
@@ -259,7 +258,6 @@ class ThresholdOptimizer:
                 min_ece = ece
                 best_threshold = float(threshold)
                 best_sample_size = sample_size
-                best_idx = idx
 
         # Calculate confidence bin for optimal threshold
         from ml.calibration.models import CalibrationRecord
