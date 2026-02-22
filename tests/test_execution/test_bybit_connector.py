@@ -18,6 +18,7 @@ class TestBybitConfig:
     def test_default_config_raises_security_exception(self):
         """Test that default configuration (production mode) raises SecurityException."""
         from data.exchange.bybit_safety import SecurityException
+
         with pytest.raises(SecurityException) as exc_info:
             BybitConfig()
         assert "PRODUCTION ENDPOINT DETECTED" in str(exc_info.value)
@@ -627,10 +628,10 @@ class TestBybitRoutingPolicy:
     def test_routing_matrix_consistency(self):
         """All safe modes have consistent endpoint configuration."""
         from data.exchange.bybit_safety import SecurityException
-        
+
         demo_config = BybitConfig(demo=True)
         testnet_config = BybitConfig(testnet=True)
-        
+
         # Production mode is blocked
         with pytest.raises(SecurityException):
             BybitConfig()  # Would be live mode
@@ -648,9 +649,9 @@ class TestBybitRoutingPolicy:
     def test_demo_mode_distinguishable_from_live(self):
         """Demo mode endpoints are safe (production blocked)."""
         from data.exchange.bybit_safety import SecurityException
-        
+
         demo_config = BybitConfig(demo=True)
-        
+
         # Production mode is blocked
         with pytest.raises(SecurityException):
             BybitConfig()  # Would be live mode
@@ -684,7 +685,7 @@ class TestBybitRoutingPolicy:
     def test_endpoint_priority_documented(self):
         """Endpoint priority is documented and testable (production blocked)."""
         from data.exchange.bybit_safety import SecurityException
-        
+
         # Priority order: Demo > Testnet (Live is blocked for safety)
         # This test validates the priority logic is intentional
 
@@ -702,7 +703,7 @@ class TestBybitRoutingPolicy:
                 assert "api-demo" in config.base_url
             elif name == "testnet":
                 assert "testnet" in config.base_url
-        
+
         # Production mode raises SecurityException
         with pytest.raises(SecurityException):
             BybitConfig()  # Default would be live/production

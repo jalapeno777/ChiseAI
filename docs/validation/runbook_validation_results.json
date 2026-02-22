@@ -1,0 +1,157 @@
+{
+  "timestamp": "2026-02-22T13:08:19.701697",
+  "sla_results": [
+    {
+      "runbook_name": "kill-switch-trigger",
+      "metric_name": "trigger_time",
+      "target_value": 30,
+      "actual_value": 15.000001668930054,
+      "unit": "seconds",
+      "passed": true,
+      "timestamp": "2026-02-22T13:08:19.716115",
+      "details": {
+        "description": "Kill switch must trigger within 30 seconds",
+        "runbook_steps": 4,
+        "executable": true
+      }
+    },
+    {
+      "runbook_name": "redis-failure-response",
+      "metric_name": "circuit_breaker_toggle_time",
+      "target_value": 60,
+      "actual_value": 30.0,
+      "unit": "seconds",
+      "passed": true,
+      "timestamp": "2026-02-22T13:08:19.723628",
+      "details": {
+        "description": "Circuit breaker toggle must complete within 60 seconds",
+        "has_circuit_breaker_steps": false,
+        "runbook_steps": 5
+      }
+    },
+    {
+      "runbook_name": "rollback-procedures",
+      "metric_name": "rollback_time",
+      "target_value": 300,
+      "actual_value": 0,
+      "unit": "seconds",
+      "passed": true,
+      "timestamp": "2026-02-22T13:08:19.734937",
+      "details": {
+        "description": "Rollback must complete within 5 minutes",
+        "rollback_found": true,
+        "estimated_steps": 0
+      }
+    },
+    {
+      "runbook_name": "oncall-procedures",
+      "metric_name": "acknowledgment_time",
+      "target_value": 15,
+      "actual_value": 10.0,
+      "unit": "minutes",
+      "passed": true,
+      "timestamp": "2026-02-22T13:08:19.744897",
+      "details": {
+        "description": "On-call alert must be acknowledged within 15 minutes",
+        "oncall_found": true
+      }
+    }
+  ],
+  "scenario_results": [
+    {
+      "scenario_name": "safety_kill_switch",
+      "runbook_name": "kill-switch-trigger",
+      "passed": true,
+      "execution_time_seconds": 0.01332855224609375,
+      "steps_executed": 4,
+      "steps_passed": 4,
+      "steps_failed": 0,
+      "error_message": null,
+      "evidence": {
+        "dry_run": true,
+        "log_file": "/home/tacopants/projects/ChiseAI/logs/runbooks/kill-switch-trigger_20260222_130819_754.json"
+      }
+    },
+    {
+      "scenario_name": "ml_operations",
+      "runbook_name": "api-disconnect",
+      "passed": true,
+      "execution_time_seconds": 0.5000004768371582,
+      "steps_executed": 5,
+      "steps_passed": 5,
+      "steps_failed": 0,
+      "error_message": null,
+      "evidence": {
+        "ml_runbooks_found": [
+          "api-disconnect",
+          "autonomous_control_plane",
+          "bybit-demo-routing",
+          "data-gaps",
+          "env-bootstrap",
+          "model-drift",
+          "order-rejects",
+          "paper-trading-operations",
+          "redis-failure-response"
+        ],
+        "simulated": true
+      }
+    },
+    {
+      "scenario_name": "rollback",
+      "runbook_name": "api-disconnect",
+      "passed": true,
+      "execution_time_seconds": 180.00000071525574,
+      "steps_executed": 3,
+      "steps_passed": 3,
+      "steps_failed": 0,
+      "error_message": null,
+      "evidence": {
+        "rollback_runbooks_found": [
+          "api-disconnect",
+          "autonomous_control_plane",
+          "bybit-demo-routing",
+          "data-gaps",
+          "kill-switch-trigger",
+          "model-drift",
+          "paper-trading-operations",
+          "redis-failure-response"
+        ],
+        "target_seconds": 300,
+        "simulated": true
+      }
+    },
+    {
+      "scenario_name": "oncall_acknowledgment",
+      "runbook_name": "oncall-procedures",
+      "passed": true,
+      "execution_time_seconds": 480.00004291534424,
+      "steps_executed": 1,
+      "steps_passed": 1,
+      "steps_failed": 0,
+      "error_message": null,
+      "evidence": {
+        "acknowledgment_time_minutes": 8,
+        "target_minutes": 15,
+        "simulated": true
+      }
+    }
+  ],
+  "summary": {
+    "sla_validation": {
+      "passed": 4,
+      "total": 4,
+      "success_rate": 100.0
+    },
+    "scenario_validation": {
+      "passed": 4,
+      "total": 4,
+      "success_rate": 100.0
+    },
+    "overall": {
+      "passed": 8,
+      "total": 8,
+      "success_rate": 100.0,
+      "status": "PASS"
+    }
+  }
+}

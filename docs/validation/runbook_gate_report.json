@@ -1,0 +1,222 @@
+{
+  "gate_name": "runbook_validation",
+  "timestamp": "2026-02-22T13:08:27.577686",
+  "story_id": "ST-LAUNCH-016",
+  "verdict": "GO",
+  "rationale": "All criteria met (score: 84.2%, SLA: 100.0%)",
+  "overall_score": 0.8419,
+  "checks": {
+    "runbook_existence": {
+      "passed": true,
+      "score": 1.0,
+      "weight": 1.0,
+      "details": {
+        "total_runbooks": 10,
+        "required_count": 3,
+        "missing": []
+      }
+    },
+    "sla_compliance": {
+      "passed": true,
+      "score": 1.0,
+      "weight": 1.0,
+      "details": {
+        "sla_checks": [
+          {
+            "name": "kill_switch_trigger",
+            "target": 30,
+            "actual": 15,
+            "passed": true
+          },
+          {
+            "name": "circuit_breaker_toggle",
+            "target": 60,
+            "actual": 30,
+            "passed": true
+          },
+          {
+            "name": "rollback",
+            "target": 300,
+            "actual": 180,
+            "passed": true
+          },
+          {
+            "name": "oncall_acknowledgment",
+            "target": 15,
+            "actual": 8,
+            "passed": true
+          }
+        ]
+      }
+    },
+    "scenario_coverage": {
+      "passed": true,
+      "score": 1.0,
+      "weight": 0.9,
+      "details": {
+        "covered": [
+          "ml_operations",
+          "rollback",
+          "oncall",
+          "safety"
+        ],
+        "missing": []
+      }
+    },
+    "executable_steps": {
+      "passed": false,
+      "score": 0.3,
+      "weight": 0.8,
+      "details": {
+        "executable_count": 3,
+        "total_count": 10,
+        "runbooks": [
+          {
+            "name": "api-disconnect",
+            "executable": false,
+            "steps": 0
+          },
+          {
+            "name": "autonomous_control_plane",
+            "executable": false,
+            "steps": 0
+          },
+          {
+            "name": "bybit-demo-routing",
+            "executable": false,
+            "steps": 0
+          },
+          {
+            "name": "data-gaps",
+            "executable": false,
+            "steps": 0
+          },
+          {
+            "name": "env-bootstrap",
+            "executable": false,
+            "steps": 0
+          },
+          {
+            "name": "kill-switch-trigger",
+            "executable": true,
+            "steps": 4
+          },
+          {
+            "name": "model-drift",
+            "executable": false,
+            "steps": 0
+          },
+          {
+            "name": "order-rejects",
+            "executable": false,
+            "steps": 0
+          },
+          {
+            "name": "paper-trading-operations",
+            "executable": true,
+            "steps": 6
+          },
+          {
+            "name": "redis-failure-response",
+            "executable": true,
+            "steps": 5
+          }
+        ]
+      }
+    },
+    "documentation_completeness": {
+      "passed": true,
+      "score": 0.8,
+      "weight": 0.6,
+      "details": {
+        "runbooks": [
+          {
+            "name": "api-disconnect",
+            "has_title": true,
+            "has_category": true,
+            "has_severity": true,
+            "has_maintainers": true,
+            "score": 1.0
+          },
+          {
+            "name": "autonomous_control_plane",
+            "has_title": false,
+            "has_category": false,
+            "has_severity": false,
+            "has_maintainers": false,
+            "score": 0.0
+          },
+          {
+            "name": "bybit-demo-routing",
+            "has_title": false,
+            "has_category": false,
+            "has_severity": false,
+            "has_maintainers": false,
+            "score": 0.0
+          },
+          {
+            "name": "data-gaps",
+            "has_title": true,
+            "has_category": true,
+            "has_severity": true,
+            "has_maintainers": true,
+            "score": 1.0
+          },
+          {
+            "name": "env-bootstrap",
+            "has_title": true,
+            "has_category": true,
+            "has_severity": true,
+            "has_maintainers": true,
+            "score": 1.0
+          },
+          {
+            "name": "kill-switch-trigger",
+            "has_title": true,
+            "has_category": true,
+            "has_severity": true,
+            "has_maintainers": true,
+            "score": 1.0
+          },
+          {
+            "name": "model-drift",
+            "has_title": true,
+            "has_category": true,
+            "has_severity": true,
+            "has_maintainers": true,
+            "score": 1.0
+          },
+          {
+            "name": "order-rejects",
+            "has_title": true,
+            "has_category": true,
+            "has_severity": true,
+            "has_maintainers": true,
+            "score": 1.0
+          },
+          {
+            "name": "paper-trading-operations",
+            "has_title": true,
+            "has_category": true,
+            "has_severity": true,
+            "has_maintainers": true,
+            "score": 1.0
+          },
+          {
+            "name": "redis-failure-response",
+            "has_title": true,
+            "has_category": true,
+            "has_severity": true,
+            "has_maintainers": true,
+            "score": 1.0
+          }
+        ]
+      }
+    }
+  },
+  "thresholds": {
+    "min_overall_score": 0.8,
+    "min_sla_pass_rate": 0.75,
+    "min_scenario_pass_rate": 0.75
+  }
+}
