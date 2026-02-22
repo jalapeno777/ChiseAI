@@ -3710,19 +3710,26 @@ summary:
     epics: 5
     stories: 21
     story_points: 80
+    completed_stories: 18
+    planned_stories: 3
+    completed_story_points: 66
     target_date: "2026-03-14"
     original_target_date: "2026-03-07"
     canary_duration_days: 21
     timeline_option: "A"
     extension_reason: "Critical gaps identified in Party Mode validation - missing components need proper implementation"
+    readiness_state: "go_for_paper_launch"
+    operational_state: "pending_activation"
+    operational_state_note: "Launch-critical implementation and validation complete; runtime activation still required (deploy + feature flags + scheduler/services + smoke checks)."
+    last_execution_update: "2026-02-22"
   epics_by_status:
-    completed: 9
-    in_progress: 0
-    planned: 14
+    completed: 13
+    in_progress: 1
+    planned: 9
   stories_by_status:
-    completed: 41
+    completed: 59
     in_progress: 0
-    planned: 66
+    planned: 48
   launch_stories_by_epic:
     EP-LAUNCH-001: 5
     EP-LAUNCH-002: 5

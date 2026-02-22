@@ -40,18 +40,18 @@ class TestClientOrderIdGeneration:
         timestamp, symbol, random_part = parts
 
         # Timestamp should be 13 digits (milliseconds)
-        assert len(timestamp) == 13, (
-            f"Timestamp should be 13 digits, got {len(timestamp)}"
-        )
+        assert (
+            len(timestamp) == 13
+        ), f"Timestamp should be 13 digits, got {len(timestamp)}"
         assert timestamp.isdigit(), f"Timestamp should be numeric, got {timestamp}"
 
         # Symbol should match
         assert symbol == "BTCUSDT"
 
         # Random part should be 8 characters by default
-        assert len(random_part) == 8, (
-            f"Random part should be 8 chars, got {len(random_part)}"
-        )
+        assert (
+            len(random_part) == 8
+        ), f"Random part should be 8 chars, got {len(random_part)}"
 
     def test_generate_client_order_id_custom_length(self):
         """Test generation with custom random length."""
