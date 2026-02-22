@@ -3545,8 +3545,11 @@ summary:
     title: Outcome Capture Service Implementation
     epic_id: EP-LAUNCH-005
     sprint_id: LAUNCH-SPRINT-1
-    status: planned
-    validation_status: planned
+    status: completed
+    validation_status: validated
+    completion_date: "2026-02-21"
+    merge_commit: "3eaa16c268677f2fdd6274eaf85b7f2a015d1eab"
+    pr_number: 242
     story_points: 8
     priority: P0-CRITICAL
     fr_coverage: [FR-017, FR-018]
