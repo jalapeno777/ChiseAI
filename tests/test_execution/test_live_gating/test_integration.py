@@ -331,7 +331,7 @@ class TestGrafanaVisibility:
     def test_state_exported(self):
         """Test live trading state is exportable for Grafana."""
         manager = LiveGateManager()
-        exporter = LiveGatingGrafanaExporter(gate_manager=manager)
+        LiveGatingGrafanaExporter(gate_manager=manager)
 
         status = manager.get_status()
         assert "state" in status

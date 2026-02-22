@@ -50,7 +50,7 @@ async def calibrate(
     print("Feature: Threshold updates (requires Redis connection)")
 
     # Export to Grafana
-    grafana_data = await tracker.export_to_grafana(metrics)
+    await tracker.export_to_grafana(metrics)
     print("\n📤 Exported metrics to Grafana format")
 
     # Save report

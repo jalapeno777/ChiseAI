@@ -211,7 +211,7 @@ class TestThresholdController:
 
     def test_update_thresholds_dynamic_mode(self, controller):
         """Test threshold update in dynamic mode."""
-        result = controller.update_thresholds()
+        controller.update_thresholds()
         # May or may not update depending on data
 
         # Check audit log has entries for the attempt

@@ -336,7 +336,6 @@ class CalibrationDataCollector:
             stored_count = await storage.store_batch(calibration_records)
 
             # Create results for stored records in order
-            record_idx = 0
             for i, idx in enumerate(valid_indices):
                 record = calibration_records[i]
                 if i < stored_count:

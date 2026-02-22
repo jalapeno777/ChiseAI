@@ -499,7 +499,7 @@ class RedisCalibrationStorage(CalibrationStorage):
 
             for key in keys:
                 # Get count before deletion
-                count_before = client.zcard(key)
+                client.zcard(key)
                 # Remove records with score < before_score
                 removed = client.zremrangebyscore(key, 0, before_score)
                 deleted_count += removed

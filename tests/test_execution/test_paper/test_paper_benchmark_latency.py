@@ -86,7 +86,7 @@ async def run_latency_benchmark(num_iterations: int = 10) -> dict:
     kill_switch = MockKillSwitch()
 
     # Create orchestrator
-    orchestrator = PaperTradingOrchestrator(
+    PaperTradingOrchestrator(
         signal_generator=signal_gen,
         order_simulator=order_sim,
         position_tracker=position_tracker,
@@ -147,7 +147,7 @@ async def run_latency_benchmark(num_iterations: int = 10) -> dict:
 
         # Open position
         position_start = time.perf_counter()
-        position = await position_tracker.open_position(
+        await position_tracker.open_position(
             symbol=filled_order.symbol,
             side="long",
             entry_price=filled_order.avg_fill_price,

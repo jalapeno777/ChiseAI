@@ -159,7 +159,6 @@ class BurnInTest:
             True if all databases are accessible
         """
         logger.info("\n[Pre-burn-in] Testing database connectivity...")
-        all_ok = True
 
         # Test PostgreSQL - try multiple credential combinations
         pg_connected = False
@@ -220,7 +219,6 @@ class BurnInTest:
             self.metrics.add_incident(
                 "critical", "postgresql", f"Connection failed: {'; '.join(pg_attempts)}"
             )
-            all_ok = False
 
         # Test InfluxDB
         try:
@@ -240,7 +238,6 @@ class BurnInTest:
         except Exception as e:
             logger.error(f"✗ InfluxDB: {e}")
             self.metrics.add_incident("critical", "influxdb", str(e))
-            all_ok = False
 
         # Test Redis
         try:
@@ -432,7 +429,7 @@ class BurnInTest:
         """Collect provider metrics every 60 seconds."""
         while self._running:
             try:
-                elapsed = time.time() - self.metrics.start_time
+                time.time() - self.metrics.start_time
 
                 # Collect provider chain metrics
                 if self.provider_chain:

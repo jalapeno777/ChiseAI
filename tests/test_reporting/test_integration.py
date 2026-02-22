@@ -89,13 +89,13 @@ class TestReportingIntegration:
         scheduler = ReportScheduler(output_dir=str(tmp_path / "reports"))
 
         # Add schedules
-        daily_schedule = scheduler.add_schedule(
+        scheduler.add_schedule(
             name="daily_test",
             report_type="daily",
             cron_expression="0 9 * * *",
         )
 
-        weekly_schedule = scheduler.add_schedule(
+        scheduler.add_schedule(
             name="weekly_test",
             report_type="weekly",
             cron_expression="0 9 * * 1",
@@ -119,7 +119,7 @@ class TestReportingIntegration:
         scheduler = ReportScheduler(output_dir=str(tmp_path / "reports"))
 
         # Add a schedule
-        schedule = scheduler.add_schedule(
+        scheduler.add_schedule(
             name="integration_test",
             report_type="daily",
             cron_expression="0 9 * * *",

@@ -156,7 +156,7 @@ class TestLogTrade:
         """Test trade logging failure."""
         logger = LiveTradeAuditLogger()
 
-        with patch.object(logger, "_write_point", return_value=False) as mock_write:
+        with patch.object(logger, "_write_point", return_value=False):
             result = await logger.log_trade(
                 timestamp=datetime.now(UTC),
                 price=50000.0,

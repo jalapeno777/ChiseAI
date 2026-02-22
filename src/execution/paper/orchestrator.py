@@ -307,7 +307,7 @@ class PaperTradingOrchestrator:
                 entry_price=entry_price,
             )
 
-            risk_latency_ms = (time.perf_counter() - risk_start) * 1000
+            (time.perf_counter() - risk_start) * 1000
 
             if not assessment.approved:
                 logger.warning(

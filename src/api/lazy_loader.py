@@ -421,7 +421,7 @@ class LazyDataLoader:
             # Check if we have prefetched data for this range
             if self._current_data:
                 # Check if new range is within prefetched data
-                combined_range = TimeRange(
+                TimeRange(
                     start=new_range.start - self._prefetch_margin,
                     end=new_range.end + self._prefetch_margin,
                 )

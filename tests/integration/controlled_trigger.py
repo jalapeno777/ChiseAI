@@ -167,7 +167,7 @@ class TestTestTradeTrigger(unittest.TestCase):
 
     async def async_test_risk_enforcer_called(self) -> None:
         """Test that risk enforcer is called during signal processing."""
-        result = await self.trigger.trigger_test_trade(
+        await self.trigger.trigger_test_trade(
             symbol="BTCUSDT",
             direction="long",
         )
@@ -192,7 +192,7 @@ class TestTestTradeTrigger(unittest.TestCase):
             min_confidence=0.80,
         )
 
-        result = await trigger.trigger_test_trade(
+        await trigger.trigger_test_trade(
             symbol="BTCUSDT",
             direction="long",
         )
@@ -207,7 +207,7 @@ class TestTestTradeTrigger(unittest.TestCase):
     async def async_test_confidence_threshold(self) -> None:
         """Test that confidence threshold is enforced."""
         # Test with custom confidence
-        result = await self.trigger.trigger_test_trade(
+        await self.trigger.trigger_test_trade(
             symbol="BTCUSDT",
             direction="long",
             confidence=0.90,
@@ -280,7 +280,7 @@ class TestTestTradeTrigger(unittest.TestCase):
 
     async def async_test_short_direction(self) -> None:
         """Test short direction signal creation."""
-        result = await self.trigger.trigger_test_trade(
+        await self.trigger.trigger_test_trade(
             symbol="BTCUSDT",
             direction="short",
         )

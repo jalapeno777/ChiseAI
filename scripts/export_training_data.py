@@ -291,8 +291,8 @@ def main() -> int:
 def export_date_range(args: argparse.Namespace) -> int:
     """Export dataset for date range."""
     try:
-        start = datetime.strptime(args.start, "%Y-%m-%d")
-        end = datetime.strptime(args.end, "%Y-%m-%d")
+        datetime.strptime(args.start, "%Y-%m-%d")
+        datetime.strptime(args.end, "%Y-%m-%d")
     except ValueError as e:
         logger.error(f"Invalid date format: {e}")
         return 1

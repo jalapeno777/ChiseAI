@@ -433,10 +433,9 @@ class DiscordNotifier:
                 )
 
             # Send to training channel or specified channel
-            target_channel = channel_id or self.config.trading_channel_id
 
             # Create embed
-            embed = {
+            {
                 "title": title,
                 "description": f"Retraining trigger evaluation at {result.timestamp.isoformat()}",
                 "color": 0x00FF00 if result.triggered else 0xFFA500,

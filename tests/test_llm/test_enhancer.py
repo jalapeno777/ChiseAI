@@ -348,7 +348,7 @@ class TestProviderTraceLogging:
             enhancer = LLMConfidenceEnhancer(use_llm=True)
             enhancer._provider_chain = mock_chain
 
-            result = enhancer.enhance(mock_signal)
+            enhancer.enhance(mock_signal)
 
             # Check interaction log includes fallback reason
             interaction_log = enhancer.get_interaction_log()

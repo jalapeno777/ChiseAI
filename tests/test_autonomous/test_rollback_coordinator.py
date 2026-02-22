@@ -358,8 +358,8 @@ class TestRollbackCoordinator:
     async def test_list_operations(self, coordinator):
         """Test listing operations."""
         # Create multiple operations
-        op1 = await coordinator.execute_rollback(target_state="v1.2.3")
-        op2 = await coordinator.execute_rollback(target_state="v1.2.2")
+        await coordinator.execute_rollback(target_state="v1.2.3")
+        await coordinator.execute_rollback(target_state="v1.2.2")
 
         operations = await coordinator.list_operations()
 

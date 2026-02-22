@@ -332,7 +332,7 @@ class RunbookValidator:
                 f"  {status}: Rollback in {rollback_time:.0f}s (target: {target_seconds}s)"
             )
         else:
-            print(f"  ⚠ SKIP: No rollback procedures found in runbooks")
+            print("  ⚠ SKIP: No rollback procedures found in runbooks")
 
     def _validate_oncall_sla(self) -> None:
         """Validate on-call acknowledgment meets SLA."""
@@ -384,7 +384,7 @@ class RunbookValidator:
                 f"  {status}: On-call acknowledgment in {acknowledgment_time:.0f}min (target: {target_minutes}min)"
             )
         else:
-            print(f"  ⚠ SKIP: No on-call procedures found in runbooks")
+            print("  ⚠ SKIP: No on-call procedures found in runbooks")
 
     def _run_scenario_tests(self) -> None:
         """Run scenario-based validation tests."""
@@ -711,7 +711,7 @@ def _generate_markdown_report(report: ValidationReport, output_path: Path) -> No
         "# Runbook Validation Results",
         "",
         f"**Generated:** {report.timestamp.isoformat()}",
-        f"**Story:** ST-LAUNCH-016",
+        "**Story:** ST-LAUNCH-016",
         "",
         "## Summary",
         "",

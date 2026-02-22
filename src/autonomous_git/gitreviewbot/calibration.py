@@ -284,7 +284,6 @@ class CalibrationTracker:
         if self.redis:
             # Scan for reviews in period
             reviews = []
-            pattern = f"{self.metrics_prefix}:review:*"
             # Simplified - in production would use Redis scan
             return reviews
         else:

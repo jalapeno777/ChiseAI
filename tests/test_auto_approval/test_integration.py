@@ -147,23 +147,23 @@ class TestModuleIntegration:
         # Create all components
         config = load_config()
 
-        rate_limiter = RateLimiter(
+        RateLimiter(
             max_per_hour=config.rate_limits.max_per_hour,
             max_consecutive=config.rate_limits.max_consecutive,
         )
 
-        safety_checker = SafetyChecker(
+        SafetyChecker(
             require_green_ci=config.safety_checks.require_green_ci,
             require_story_id=config.safety_checks.require_story_id,
         )
 
-        exclusion_manager = ExclusionManager(
+        ExclusionManager(
             paths=config.exclusions.paths,
             authors=config.exclusions.authors,
             title_patterns=config.exclusions.title_patterns,
         )
 
-        notifier = DiscordNotifier(
+        DiscordNotifier(
             channel=config.notifications.discord_channel,
             rate_limit=config.notifications.rate_limit,
         )

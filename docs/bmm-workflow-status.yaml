@@ -2500,6 +2500,63 @@ sprints:
     start_date: "2026-04-24"
     end_date: "2026-05-23"
 
+  # Accelerated Governance Sprints (8-week roadmap)
+  - id: GOV-ACCEL-W1
+    name: Governance Accelerated - Week 1 Data Collection
+    status: planned
+    story_count: 2
+    story_points: 10
+    mapped_stories: [ST-GOV-001, ST-GOV-MINI-001]
+    start_date: "2026-02-23"
+    end_date: "2026-03-01"
+    note: "Live paper-run data collection + retrieval baseline"
+
+  - id: GOV-ACCEL-W2
+    name: Governance Accelerated - Week 2 Optimization
+    status: planned
+    story_count: 2
+    story_points: 11
+    mapped_stories: [ST-GOV-002, ST-GOV-MINI-002]
+    start_date: "2026-03-02"
+    end_date: "2026-03-08"
+    note: "First optimization pass based on Week 1 data"
+
+  - id: GOV-ACCEL-W3
+    name: Governance Accelerated - Week 3 Continuation
+    status: planned
+    story_count: 2
+    story_points: 13
+    mapped_stories: [ST-GOV-003, ST-GOV-004]
+    start_date: "2026-03-09"
+    end_date: "2026-03-15"
+
+  - id: GOV-ACCEL-W4
+    name: Governance Accelerated - Week 4 Continuation
+    status: planned
+    story_count: 2
+    story_points: 10
+    mapped_stories: [ST-GOV-005, ST-GOV-006]
+    start_date: "2026-03-16"
+    end_date: "2026-03-22"
+
+  - id: GOV-ACCEL-BW1
+    name: Governance Accelerated - Biweekly 1
+    status: planned
+    story_count: 2
+    story_points: 11
+    mapped_stories: [ST-GOV-007, ST-GOV-008]
+    start_date: "2026-03-23"
+    end_date: "2026-04-05"
+
+  - id: GOV-ACCEL-BW2
+    name: Governance Accelerated - Biweekly 2
+    status: planned
+    story_count: 2
+    story_points: 13
+    mapped_stories: [ST-GOV-009, ST-GOV-010]
+    start_date: "2026-04-06"
+    end_date: "2026-04-19"
+
   - id: ST-NS-038
     title: Circuit Breaker Registry & Unified Telemetry
     epic_id: EP-NS-008
@@ -3862,6 +3919,24 @@ launch_stories:
       - false_positive_rate: <5%
       - latency_p99: <100ms
 
+  - id: ST-GOV-MINI-001
+    title: Week 1 Audit Snapshot + Retrieval Baseline
+    epic_id: EP-GOV-001
+    sprint_id: GOV-ACCEL-W1
+    status: planned
+    validation_status: planned
+    story_points: 2
+    priority: P0-CRITICAL
+    fr_coverage: [FR-GOV-001]
+    description: Capture baseline metrics for retrieval latency, memory hit rate, and deduplication ratio during Week 1 paper-run data collection
+    governance_feature: GF-001-mini
+    acceptance_criteria:
+      - "Baseline retrieval latency captured - target: <200ms p95"
+      - "Memory hit rate baseline established - target: >80%"
+      - "Deduplication ratio baseline recorded - target: <5% duplicates"
+      - Week 1 paper-run data quality validated
+      - Baseline metrics stored in InfluxDB for trend analysis
+
   - id: ST-GOV-002
     title: Agent Constitution Artifact
     epic_id: EP-GOV-001
@@ -3883,6 +3958,24 @@ launch_stories:
       - schema_validation: pass
       - api_latency: <50ms
       - violation_detection_accuracy: 99%
+
+  - id: ST-GOV-MINI-002
+    title: Week 2 Optimization Feedback Loop
+    epic_id: EP-GOV-001
+    sprint_id: GOV-ACCEL-W2
+    status: planned
+    validation_status: planned
+    story_points: 3
+    priority: P0-CRITICAL
+    fr_coverage: [FR-GOV-002]
+    description: Establish optimization pipeline and execute first optimization pass using Week 1 paper-run data
+    governance_feature: GF-002-mini
+    acceptance_criteria:
+      - "Optimization pipeline active - processes metrics and generates recommendations"
+      - "First optimization pass complete using Week 1 data"
+      - "Measurable improvements documented - at least one KPI improved"
+      - Optimization recommendations stored in Redis for review
+      - Feedback loop latency under 5 minutes
 
   - id: ST-GOV-003
     title: Task Decomposition Sentinel
@@ -4062,13 +4155,14 @@ launch_stories:
 
 summary:
   total_epics: 24
-  total_stories: 117
-  total_story_points: 638
+  total_stories: 119
+  total_story_points: 643
   governance:
     epic: EP-GOV-001
-    stories: 10
-    story_points: 63
+    stories: 12
+    story_points: 68
     roadmap: docs/architecture/governance-rollout-roadmap.md
+    accelerated_roadmap: docs/roadmaps/governance-autonomy-accelerated.md
     phases:
       phase_1:
         stories: 4
@@ -4082,6 +4176,13 @@ summary:
         stories: 2
         points: 13
         dates: "2026-04-24 to 2026-05-23"
+    mini_stories:
+      - id: ST-GOV-MINI-001
+        points: 2
+        sprint: GOV-ACCEL-W1
+      - id: ST-GOV-MINI-002
+        points: 3
+        sprint: GOV-ACCEL-W2
   phase_1:
     epics: 8
     stories: 41

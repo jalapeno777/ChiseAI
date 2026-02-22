@@ -278,7 +278,7 @@ class DashboardOptimizer:
                 continue
 
             var_type = variable.get("type", "")
-            var_name = variable.get("name", "")
+            variable.get("name", "")
 
             # Add caching for query-based variables
             if var_type == "query":
@@ -465,7 +465,7 @@ class DashboardOptimizer:
             )
 
         # Check for variable caching
-        orig_vars = original.get("templating", {}).get("list", [])
+        original.get("templating", {}).get("list", [])
         opt_vars = optimized.get("templating", {}).get("list", [])
 
         cached_vars = sum(
@@ -475,7 +475,7 @@ class DashboardOptimizer:
             optimizations.append(f"variable_caching:{cached_vars}_variables")
 
         # Check for lazy loading
-        orig_panels = original.get("panels", [])
+        original.get("panels", [])
         opt_panels = optimized.get("panels", [])
 
         collapsed_rows = sum(

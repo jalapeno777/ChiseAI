@@ -347,7 +347,7 @@ class TestModelRegistry:
     def test_list_versions_by_status(self, registry):
         """Test listing versions filtered by status."""
         v1 = registry.register_model(model_id="model1", model_path="/models/m1.pkl")
-        v2 = registry.register_model(model_id="model2", model_path="/models/m2.pkl")
+        registry.register_model(model_id="model2", model_path="/models/m2.pkl")
 
         registry.promote_to_candidate(v1.version_id)
 

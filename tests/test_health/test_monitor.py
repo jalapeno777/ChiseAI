@@ -303,7 +303,6 @@ class TestHealthMonitorExtended:
         """Test get_health triggers update when stale."""
         # First update
         await monitor.update_health()
-        initial_time = monitor._last_update
 
         # Wait a bit (but not enough to trigger update)
         # Since update_interval is 30s, this should not trigger update

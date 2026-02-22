@@ -342,7 +342,7 @@ class LiveTradeAuditLogger:
         Returns:
             True if logged successfully
         """
-        record = ApprovalAuditRecord(
+        ApprovalAuditRecord(
             timestamp=packet.timestamp,
             approver_id=packet.approver_id,
             request_id=packet.request_id,
@@ -409,7 +409,7 @@ class LiveTradeAuditLogger:
             new_state.value if hasattr(new_state, "value") else str(new_state)
         )
 
-        record = StateChangeAuditRecord(
+        StateChangeAuditRecord(
             timestamp=datetime.now(UTC),
             old_state=old_state_str,
             new_state=new_state_str,

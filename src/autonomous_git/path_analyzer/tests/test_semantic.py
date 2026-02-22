@@ -106,7 +106,7 @@ class TestSemanticAnalyzer:
         flags = analyzer.analyze_file("module.py", content=content)
 
         # Should not flag function definitions
-        security_flags = [f for f in flags if f.rule_name == "security_sensitive"]
+        [f for f in flags if f.rule_name == "security_sensitive"]
         # This might flag due to the simple regex, but that's acceptable
         # for this implementation level
 
@@ -148,7 +148,7 @@ from typing import Dict
 
         flags = analyzer.analyze_cross_module_imports(files, contents)
         # With default threshold of 2, this should trigger
-        cross_flags = [f for f in flags if f.rule_name == "cross_module_import"]
+        [f for f in flags if f.rule_name == "cross_module_import"]
         # Depends on pattern matching, may or may not match
 
     def test_analyze_batch(self):

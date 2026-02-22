@@ -607,7 +607,7 @@ class TestTrainingPipelineE2E:
         """Test pipeline statistics tracking."""
         # Process signals
         signal_ids = [f"signal_{i}" for i in range(5)]
-        results = await pipeline.process_batch(signal_ids, batch_size=2)
+        await pipeline.process_batch(signal_ids, batch_size=2)
 
         # Verify stats
         stats = pipeline.get_stats()
@@ -896,7 +896,7 @@ class TestTrainingPipelineE2E:
         signal_ids = [f"signal_{i}" for i in range(20)]
 
         start_time = asyncio.get_event_loop().time()
-        results = await pipeline.process_batch(signal_ids, batch_size=5)
+        await pipeline.process_batch(signal_ids, batch_size=5)
         elapsed = asyncio.get_event_loop().time() - start_time
 
         # Should complete quickly with batching

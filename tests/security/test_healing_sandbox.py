@@ -250,7 +250,7 @@ class TestSandboxStateCapture:
         )
 
         # Capture state
-        pre_state = action._capture_state(context)
+        action._capture_state(context)
 
         # State should be stored
         assert action._captured_state is not None

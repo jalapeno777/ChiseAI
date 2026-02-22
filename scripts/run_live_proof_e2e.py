@@ -301,7 +301,6 @@ class TechnicalAnalyzer:
 
         # Simulate RSI based on price movement patterns
         # Using a simple approximation for demonstration
-        price = market_data.price
 
         # Calculate pseudo-RSI (would use real RSI in production)
         rsi = 50.0  # Neutral baseline

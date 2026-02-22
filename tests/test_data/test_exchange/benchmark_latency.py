@@ -194,7 +194,7 @@ class LatencyBenchmark:
 
         async def pooled_request() -> float:
             start = time.monotonic()
-            async with pool.get_connection() as conn:
+            async with pool.get_connection():
                 # Simulate request
                 pass
             return (time.monotonic() - start) * 1000
@@ -202,7 +202,7 @@ class LatencyBenchmark:
         # Non-pooled approach (new session each time)
         async def non_pooled_request() -> float:
             start = time.monotonic()
-            async with aiohttp.ClientSession() as session:
+            async with aiohttp.ClientSession():
                 # Simulate request setup
                 pass
             return (time.monotonic() - start) * 1000

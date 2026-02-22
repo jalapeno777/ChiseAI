@@ -41,7 +41,7 @@ class TestHealingRollbackTiming:
         )
 
         # Capture state first
-        pre_state = action._capture_state(context)
+        action._capture_state(context)
 
         # Execute healing (which will succeed in test mode)
         result = action.execute(context)
@@ -93,7 +93,7 @@ class TestHealingRollbackTiming:
         )
 
         # Capture pre-healing state
-        pre_state = action._capture_state(context)
+        action._capture_state(context)
 
         # Execute healing
         result = action.execute(context)

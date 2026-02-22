@@ -236,7 +236,7 @@ class TestECECalculator:
 
     def test_is_well_calibrated(self):
         """Test is_well_calibrated property."""
-        calc = ECECalculator()
+        ECECalculator()
 
         # Low ECE - well calibrated (default threshold 0.1)
         result_low = ECEResult(ece=0.05, n_bins=10, total_samples=100, bins=[])

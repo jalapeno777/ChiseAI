@@ -451,7 +451,7 @@ class AdaptivePaginator(TimeSeriesPaginator):
             return self.max_page_size
 
         # Estimate records per second
-        records_per_second = total_count / time_span
+        total_count / time_span
 
         # Target records for target duration
         # Assuming ~1ms per record for network/processing overhead

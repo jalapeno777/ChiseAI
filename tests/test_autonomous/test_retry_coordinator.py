@@ -143,10 +143,9 @@ class TestRetryCoordinator:
     @pytest.mark.asyncio
     async def test_jitter_distribution(self, coordinator):
         """Test jitter creates randomized delays."""
-        delays = []
 
         async def measure_jitter():
-            start = datetime.utcnow()
+            datetime.utcnow()
             raise Exception("Fail")
 
         policy = RetryPolicy(
@@ -157,9 +156,8 @@ class TestRetryCoordinator:
         )
 
         # Run multiple times to collect jitter samples
-        jitter_samples = []
         for _ in range(20):
-            start_time = datetime.utcnow()
+            datetime.utcnow()
             try:
                 await coordinator.execute_with_retry(
                     service_name=f"test_service_{_}",
@@ -271,7 +269,7 @@ class TestRetryCoordinator:
             return "success"
 
         # Default policy allows 3 attempts
-        default_policy = RetryPolicy(max_attempts=3, base_delay_ms=10)
+        RetryPolicy(max_attempts=3, base_delay_ms=10)
 
         # Operation policy allows only 1 attempt
         operation_policy = RetryPolicy(max_attempts=1, base_delay_ms=10)

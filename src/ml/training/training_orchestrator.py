@@ -374,7 +374,7 @@ class TrainingOrchestrator:
 
             # Check training interval
             if not force and not await self._check_training_interval():
-                last_run = self._run_history[-1] if self._run_history else None
+                self._run_history[-1] if self._run_history else None
                 error_msg = (
                     f"Training interval not met "
                     f"(min {self.config.min_training_interval_hours}h)"
