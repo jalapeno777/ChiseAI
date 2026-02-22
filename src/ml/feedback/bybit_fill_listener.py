@@ -21,9 +21,8 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import websockets
+from src.ml.models.signal_outcome import BybitFillEvent, SignalOutcome
 from websockets.exceptions import ConnectionClosed, InvalidStatus
-
-from ml.models.signal_outcome import BybitFillEvent, SignalOutcome
 
 logger = logging.getLogger(__name__)
 

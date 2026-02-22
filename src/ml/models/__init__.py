@@ -15,7 +15,7 @@ Usage:
 
 from __future__ import annotations
 
-from ml.models.signal_outcome import (
+from src.ml.models.signal_outcome import (
     BybitFillEvent,
     OutcomeMatchResult,
     OutcomeType,
