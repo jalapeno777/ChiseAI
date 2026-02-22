@@ -112,7 +112,7 @@ async def get_health() -> dict[str, Any]:
         raise HTTPException(
             status_code=500,
             detail=f"Failed to get health status: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/summary")
@@ -188,11 +188,11 @@ async def get_component_health(
                         status_code=404,
                         detail=f"Component '{component}' not found",
                     )
-            except ValueError:
+            except ValueError as e:
                 raise HTTPException(
                     status_code=400,
                     detail=f"Invalid component: '{component}'",
-                )
+                ) from e
 
         # Return all components
         return {
@@ -208,7 +208,7 @@ async def get_component_health(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to get component health: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/history")
@@ -251,7 +251,7 @@ async def get_health_history(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to get health history: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/trend")
@@ -304,7 +304,7 @@ async def get_health_trend(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to get health trend: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/alerts")
@@ -351,7 +351,7 @@ async def get_alert_history(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to get alert history: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/acp")

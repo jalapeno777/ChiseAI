@@ -502,8 +502,8 @@ RATIONALE: [One sentence explaining your confidence assessment]
             )
             content = response.content
             return self._parse_llm_response(content, analysis, "GLM-4.7 (Zhipu)")
-        except ImportError:
-            raise RuntimeError("ZhipuClient not available")
+        except ImportError as e:
+            raise RuntimeError("ZhipuClient not available") from e
 
     async def _query_minimax(
         self, prompt: str, analysis: AnalysisResult
@@ -569,7 +569,7 @@ RATIONALE: [One sentence explaining your confidence assessment]
                     raise  # Max retries exceeded
             except Exception as e:
                 # Unknown error - classify and decide
-                raise NetworkError(f"KIMI request failed: {e}", provider="KIMI")
+                raise NetworkError(f"KIMI request failed: {e}", provider="KIMI") from e
 
         # Should not reach here, but just in case
         if last_error:
@@ -612,7 +612,7 @@ RATIONALE: [One sentence explaining your confidence assessment]
                     raise  # Max retries exceeded
             except Exception as e:
                 # Unknown error - classify and decide
-                raise NetworkError(f"Z.ai request failed: {e}", provider="ZAI")
+                raise NetworkError(f"Z.ai request failed: {e}", provider="ZAI") from e
 
         # Should not reach here, but just in case
         if last_error:
@@ -655,7 +655,9 @@ RATIONALE: [One sentence explaining your confidence assessment]
                     raise  # Max retries exceeded
             except Exception as e:
                 # Unknown error - classify and decide
-                raise NetworkError(f"Zhipu request failed: {e}", provider="ZHIPU")
+                raise NetworkError(
+                    f"Zhipu request failed: {e}", provider="ZHIPU"
+                ) from e
 
         # Should not reach here, but just in case
         if last_error:
@@ -698,7 +700,9 @@ RATIONALE: [One sentence explaining your confidence assessment]
                     raise  # Max retries exceeded
             except Exception as e:
                 # Unknown error - classify and decide
-                raise NetworkError(f"MiniMax request failed: {e}", provider="MINIMAX")
+                raise NetworkError(
+                    f"MiniMax request failed: {e}", provider="MINIMAX"
+                ) from e
 
         # Should not reach here, but just in case
         if last_error:

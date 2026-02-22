@@ -479,8 +479,8 @@ class DatasetExporter:
         try:
             import pyarrow as pa
             import pyarrow.parquet as pq
-        except ImportError:
-            raise ImportError("pyarrow is required for Parquet export")
+        except ImportError as e:
+            raise ImportError("pyarrow is required for Parquet export") from e
 
         table = pa.Table.from_pylist(data)
         pq.write_table(
@@ -503,8 +503,8 @@ class DatasetExporter:
         """Export to HDF5 format."""
         try:
             import h5py
-        except ImportError:
-            raise ImportError("h5py is required for HDF5 export")
+        except ImportError as e:
+            raise ImportError("h5py is required for HDF5 export") from e
 
         if not data:
             # Create empty HDF5 file
@@ -651,8 +651,8 @@ class DatasetExporter:
         """
         try:
             import torch
-        except ImportError:
-            raise ImportError("PyTorch is required for pytorch export")
+        except ImportError as e:
+            raise ImportError("PyTorch is required for pytorch export") from e
 
         # Prepare feature matrix
         feature_names = self.FEATURE_COLUMNS
@@ -725,8 +725,8 @@ class DatasetExporter:
         """
         try:
             import tensorflow as tf
-        except ImportError:
-            raise ImportError("TensorFlow is required for tensorflow export")
+        except ImportError as e:
+            raise ImportError("TensorFlow is required for tensorflow export") from e
 
         # Prepare feature matrix
         feature_names = self.FEATURE_COLUMNS

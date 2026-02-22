@@ -349,16 +349,19 @@ epics:
     story_count: 3
     story_points: 7
     description: Final validation including load testing, runbook validation, documentation completion, and Go/No-Go decision process
-    sprint_id: LAUNCH-SPRINT-2
-    timeline: "2 days (Mar 6-7, 2026)"
+    sprint_id: LAUNCH-SPRINT-3
+    timeline: "3 days (Mar 12-14, 2026)"
     notes:
       - Final gate before declaring launch ready
       - 100% launch checklist must pass
       - Stakeholder sign-off required
       - Go/No-Go decision documented
+      - Extended timeline per Option A decision (Mar 14, 2026)
     deployment:
-      canary_period: "14 days (extended per Craig's decision)"
-      launch_date: "2026-03-07"
+      canary_period: "21 days (extended per Craig's decision - Option A)"
+      launch_date: "2026-03-14"
+      original_target: "2026-03-07"
+      extension_reason: "Critical gaps identified in validation - missing components need proper implementation"
       success_criteria:
         - ">95% trade execution rate"
         - "<1h signal-to-outcome latency"
@@ -366,6 +369,35 @@ epics:
         - ">99.5% uptime"
         - "<5% false positive kill-switch"
         - "80%+ test coverage"
+
+  # EP-LAUNCH-005: Missing Components (4 stories, 26 points)
+  # ADDED per Option A decision - critical gaps identified in validation
+  - id: EP-LAUNCH-005
+    name: Missing Components Implementation
+    status: planned
+    story_ids: [ST-LAUNCH-018, ST-LAUNCH-019, ST-LAUNCH-020, ST-LAUNCH-021]
+    story_count: 4
+    story_points: 26
+    description: Critical missing components identified during Party Mode validation - outcome capture service, model registry, load test infrastructure, and runbook creation
+    sprint_id: LAUNCH-SPRINT-1-2
+    timeline: "7 days (Feb 21 - Mar 1, 2026)"
+    notes:
+      - ADDED per Option A decision (extended timeline to Mar 14)
+      - These components were identified as missing during validation
+      - All are prerequisites for other launch stories
+      - Must be completed before dependent stories can proceed
+      - Parallel work possible with safety infrastructure
+    deployment:
+      feature_flags:
+        - launch:infrastructure:outcome_capture:enabled
+        - launch:infrastructure:model_registry:enabled
+        - launch:infrastructure:load_testing:enabled
+        - launch:infrastructure:runbooks:enabled
+      rollback_time: "<60s via Redis"
+    risks:
+      - Outcome capture service is critical path blocker
+      - Model registry required before any training stories
+      - Load testing infrastructure needed for validation
 
 # ============================================================
 # PHASE 1 STORIES (35 stories)
@@ -2948,9 +2980,9 @@ item_3_completion:
 
 
 summary:
-  total_epics: 22
-  total_stories: 103
-  total_story_points: 549
+  total_epics: 23
+  total_stories: 107
+  total_story_points: 575
   phase_1:
     epics: 8
     stories: 41
@@ -2960,24 +2992,29 @@ summary:
     stories: 45
     story_points: 338
   launch_phase:
-    epics: 4
-    stories: 17
-    story_points: 54
-    target_date: "2026-03-07"
-    canary_duration_days: 14
+    epics: 5
+    stories: 21
+    story_points: 80
+    target_date: "2026-03-14"
+    original_target_date: "2026-03-07"
+    canary_duration_days: 21
+    timeline_option: "A"
+    extension_reason: "Critical gaps identified in Party Mode validation - missing components need proper implementation"
   epics_by_status:
     completed: 9
     in_progress: 0
-    planned: 13
+    planned: 14
   stories_by_status:
     completed: 41
     in_progress: 0
-    planned: 62
+    planned: 66
   launch_stories_by_epic:
     EP-LAUNCH-001: 5
     EP-LAUNCH-002: 5
     EP-LAUNCH-003: 4
     EP-LAUNCH-004: 3
+    EP-LAUNCH-005: 4
+  option_a_note: "Extended timeline to 21 days (Mar 14) with full scope and 85% confidence"
 
 # ============================================================
 # LAUNCH STORIES (17 stories, 54 points)
@@ -3470,7 +3507,7 @@ summary:
   - id: ST-LAUNCH-017
     title: Final E2E Validation & Go/No-Go
     epic_id: EP-LAUNCH-004
-    sprint_id: LAUNCH-SPRINT-2
+    sprint_id: LAUNCH-SPRINT-3
     status: planned
     validation_status: planned
     story_points: 2
@@ -3478,7 +3515,7 @@ summary:
     fr_coverage: [FR-DEV-001, FR-DEV-002, FR-DEV-003]
     description: Execute final end-to-end validation and Go/No-Go decision process
     scope_globs: ["tests/e2e/test_launch_readiness.py", "scripts/launch_gates/go_no_go_checklist.py"]
-    depends_on: [ST-LAUNCH-005, ST-LAUNCH-010, ST-LAUNCH-014, ST-LAUNCH-015, ST-LAUNCH-016]
+    depends_on: [ST-LAUNCH-005, ST-LAUNCH-010, ST-LAUNCH-014, ST-LAUNCH-015, ST-LAUNCH-016, ST-LAUNCH-018, ST-LAUNCH-019, ST-LAUNCH-020, ST-LAUNCH-021]
     acceptance_criteria:
       - Launch readiness checklist - All 11 items pass (safety, pipeline, features, ECE, thresholds, retraining, data, tests, coverage, runbooks, sign-off)
       - Success criteria validation - All targets met (execution rate, latency, ECE updates, uptime, false positives, coverage)
@@ -3496,7 +3533,149 @@ summary:
         command: "redis-cli SET launch:status:go 0"
     notes:
       - Final gate before declaring launch ready
-      - Go/No-Go meeting on Day 14 (March 7, 2026)
+      - Go/No-Go meeting on Day 21 (March 14, 2026)
+      - Extended from March 7 per Option A decision
+
+  # ============================================================
+  # MISSING COMPONENTS - ADDED per Option A decision (26 points)
+  # Critical gaps identified during Party Mode validation
+  # ============================================================
+
+  - id: ST-LAUNCH-018
+    title: Outcome Capture Service Implementation
+    epic_id: EP-LAUNCH-005
+    sprint_id: LAUNCH-SPRINT-1
+    status: planned
+    validation_status: planned
+    story_points: 8
+    priority: P0-CRITICAL
+    fr_coverage: [FR-017, FR-018]
+    description: Create outcome capture service that listens to Bybit WebSocket fill events and stores trade outcomes for signal-to-outcome matching
+    scope_globs: ["src/ml/feedback/outcome_capture_service.py", "src/ml/feedback/bybit_fill_listener.py", "tests/test_ml/test_outcome_capture_service.py"]
+    depends_on: [ST-LAUNCH-001]
+    acceptance_criteria:
+      - WebSocket listener - Connects to Bybit private WebSocket, subscribes to execution channel
+      - Fill event parsing - Parses fill events to extract order_id, symbol, side, price, quantity, timestamp
+      - Outcome storage - Stores outcomes in signal_outcomes table with proper schema
+      - Signal matching - Matches fills to originating signals using order metadata
+      - Error handling - Handles missed events, reconnections, and duplicate fills
+      - Latency target - Outcomes available within 5 minutes of fill
+    test_strategy:
+      unit: "pytest tests/test_ml/test_outcome_capture_service.py -v"
+      integration: "pytest tests/test_ml/integration/test_bybit_websocket.py -v"
+      e2e: "pytest tests/e2e/test_fill_to_outcome.py -v"
+    live_validation_gates:
+      - gate: "capture_latency"
+        check: "Execute trade, measure capture time"
+        threshold: "<5 minutes"
+    rollback_plan:
+      - action: "Disable capture service"
+        command: "systemctl stop outcome-capture"
+    notes:
+      - CRITICAL PATH - blocks all feedback loop stories
+      - Must start on Day 1
+      - Fallback: CSV export if WebSocket issues
+
+  - id: ST-LAUNCH-019
+    title: Model Registry Implementation
+    epic_id: EP-LAUNCH-005
+    sprint_id: LAUNCH-SPRINT-1
+    status: planned
+    validation_status: planned
+    story_points: 8
+    priority: P0-CRITICAL
+    fr_coverage: [FR-018, FR-020]
+    description: Implement model registry for versioning, storing, and retrieving ML models with metadata and rollback support
+    scope_globs: ["src/ml/models/model_registry.py", "src/ml/models/model_storage.py", "tests/test_ml/test_model_registry.py"]
+    depends_on: []
+    acceptance_criteria:
+      - Model versioning - Semantic versioning (MAJOR.MINOR.PATCH) for all models
+      - Model storage - Stores model artifacts with metadata (hyperparams, metrics, timestamp)
+      - Model retrieval - Retrieves models by version or "latest" tag
+      - Rollback support - Can restore previous model version within 5 minutes
+      - Storage backend - Supports filesystem and S3 backends
+      - Model metadata - Tracks training data, performance metrics, creation date
+    test_strategy:
+      unit: "pytest tests/test_ml/test_model_registry.py -v"
+      integration: "pytest tests/test_ml/integration/test_registry_storage.py -v"
+      e2e: "pytest tests/e2e/test_model_lifecycle.py -v"
+    live_validation_gates:
+      - gate: "registry_functional"
+        check: "Store and retrieve model"
+        threshold: "<1 second retrieval"
+    rollback_plan:
+      - action: "Use filesystem backup"
+        command: "cp -r models/backup models/current"
+    notes:
+      - CRITICAL - required before any training stories
+      - Can work in parallel with safety stories
+      - Storage strategy must be decided (filesystem vs S3)
+
+  - id: ST-LAUNCH-020
+    title: Load Test Infrastructure
+    epic_id: EP-LAUNCH-005
+    sprint_id: LAUNCH-SPRINT-2
+    status: planned
+    validation_status: planned
+    story_points: 5
+    priority: P1-HIGH
+    fr_coverage: [NFR-001, NFR-002, NFR-006]
+    description: Create load testing infrastructure with Locust for signal generation, database, and WebSocket load testing
+    scope_globs: ["tests/load/test_launch_readiness.py", "tests/load/locustfile.py", "scripts/load_testing/launch_load_test.py"]
+    depends_on: [ST-LAUNCH-006, ST-LAUNCH-018]
+    acceptance_criteria:
+      - Signal generation load - 1000 signals/hour sustained with <1s latency
+      - Database load - 10,000 outcomes/hour with <50ms insert, <100ms query
+      - WebSocket load - 1000 concurrent connections with circuit breaker functional
+      - Load test automation - Automated load test execution with reporting
+      - Performance baselines - Establish performance baselines for all components
+    test_strategy:
+      load: "locust -f tests/load/locustfile.py --users 100 --run-time 1h"
+      stress: "pytest tests/stress/test_system_limits.py -v"
+    live_validation_gates:
+      - gate: "load_test_pass"
+        check: "Run full load test suite"
+        threshold: "All thresholds met"
+    rollback_plan:
+      - action: "Reduce load"
+        command: "kubectl scale deployment chiseai --replicas=3"
+    notes:
+      - Can use existing Locust infrastructure
+      - Start after outcome capture service complete
+      - Required for ST-LAUNCH-015
+
+  - id: ST-LAUNCH-021
+    title: Runbook Creation & Validation
+    epic_id: EP-LAUNCH-005
+    sprint_id: LAUNCH-SPRINT-2
+    status: planned
+    validation_status: planned
+    story_points: 5
+    priority: P1-HIGH
+    fr_coverage: [FR-DEV-005]
+    description: Create comprehensive operational runbooks for safety procedures, ML operations, and incident response
+    scope_globs: ["docs/runbooks/launch_runbook.md", "docs/runbooks/ml_operations.md", "docs/runbooks/incident_response.md", "scripts/ops/validate_runbooks.py"]
+    depends_on: [ST-LAUNCH-001, ST-LAUNCH-011, ST-LAUNCH-018]
+    acceptance_criteria:
+      - Safety runbook - Kill switch, circuit breaker, idempotency procedures documented
+      - ML operations runbook - Model retraining, validation, rollback procedures
+      - Incident response runbook - Escalation paths, emergency contacts, recovery steps
+      - Runbook validation - All runbooks tested with realistic scenarios
+      - On-call procedures - Alert acknowledgment, response procedures documented
+    test_strategy:
+      validation: "python scripts/ops/validate_runbooks.py --scenario all"
+      walkthrough: "docs/runbooks/launch_runbook.md"
+    live_validation_gates:
+      - gate: "runbook_complete"
+        check: "Execute runbook validation"
+        threshold: "100% pass rate"
+    rollback_plan:
+      - action: "Use previous runbook version"
+        command: "git checkout HEAD~1 -- docs/runbooks/"
+    notes:
+      - Required for ST-LAUNCH-016
+      - Can work in parallel with ML pipeline
+      - Must include emergency contact information
 
 # ============================================================
 # ITEM 3 COMPLETION - BYBIT-DEMO-003
