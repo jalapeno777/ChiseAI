@@ -62,9 +62,10 @@ class CircuitBreakerOpen(Exception):
         self.last_error = last_error
 
     def __str__(self) -> str:
+        message = super().__str__()
         if self.last_error:
-            return f"{self.args[0]} (last error: {self.last_error})"
-        return self.args[0]
+            return f"{message} (last error: {self.last_error})"
+        return message
 
 
 @dataclass
@@ -425,6 +426,8 @@ class CircuitBreakerRegistry:
 
     _instance: CircuitBreakerRegistry | None = None
     _lock = threading.Lock()
+    _breakers: dict[str, CircuitBreaker]
+    _registry_lock: threading.RLock
 
     def __new__(cls) -> CircuitBreakerRegistry:
         """Singleton pattern for global registry access."""
@@ -432,7 +435,8 @@ class CircuitBreakerRegistry:
             with cls._lock:
                 if cls._instance is None:
                     cls._instance = super().__new__(cls)
-                    cls._instance._breakers: dict[str, CircuitBreaker] = {}
+                    # Initialize instance attributes
+                    cls._instance._breakers = {}
                     cls._instance._registry_lock = threading.RLock()
         return cls._instance
 
