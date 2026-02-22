@@ -14,7 +14,7 @@ import pytest
 
 # Skip tests if influxdb_client not available
 try:
-    from influxdb_client import Point
+    import influxdb_client  # noqa: F401
 
     INFLUXDB_AVAILABLE = True
 except ImportError:
@@ -466,9 +466,9 @@ class TestDashboardJSON:
         ]
 
         for panel in required_panels:
-            assert any(
-                panel in title for title in panel_titles
-            ), f"Missing panel: {panel}"
+            assert any(panel in title for title in panel_titles), (
+                f"Missing panel: {panel}"
+            )
 
     def test_dashboard_datasource_config(self):
         """Test dashboard datasource configuration."""

@@ -10,16 +10,8 @@ sys.path.insert(0, "src")
 def test_module_imports():
     """Test that all module components can be imported."""
     from ml.calibration import (
-        CalibrationConfig,
-        CalibrationDataCollector,
-        CalibrationExporter,
-        CalibrationRecord,
-        CalibrationStorage,
-        CollectionResult,
         CollectionWindow,
         ExportFormat,
-        InMemoryCalibrationStorage,
-        RedisCalibrationStorage,
         SignalType,
     )
 

@@ -1,6 +1,5 @@
 """Tests for promotion workflow."""
 
-
 import pytest
 
 from ml.model_registry.registry import ModelRegistry, ModelType

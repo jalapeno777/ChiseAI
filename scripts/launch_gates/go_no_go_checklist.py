@@ -22,10 +22,9 @@ Story: ST-LAUNCH-017
 import argparse
 import json
 import sys
-import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 
 class GoNoGoChecklist:
