@@ -7,6 +7,12 @@ metadata:
   version: "2.4.0"
   last_updated: "2026-02-22T19:45:00Z"
   recent_changes:
+    - change: "GOVERNANCE-ROADMAP-001: Accelerated governance roadmap approved and documented"
+      timestamp: "2026-02-22T20:00:00Z"
+      accelerated_cadence: "Week 1 data collection, Week 2 optimization, weekly for 30 days, then biweekly"
+      governance_stories: "ST-GOV-001..010 + ST-GOV-MINI-001/002"
+      roadmap_docs: ["docs/roadmaps/index.md", "docs/roadmaps/governance-autonomy-accelerated.md"]
+      notes: "Optimized timeline for faster feedback loops and continuous improvement"
     - change: "MAINT-001: Status update - Main clean with 6 commits pushed, CI partial pass (Black/Bandit OK, Ruff/Mypy blocking, Pytest timeout), activation ACTIVE-HEALTHY"
       timestamp: "2026-02-22T19:45:00Z"
       main_status: "Clean, 6 commits pushed"
@@ -438,20 +444,21 @@ epics:
         - launch:infrastructure:runbooks:enabled
       rollback_time: "<60s via Redis"
 
-  # EP-GOV-001: Agent Swarm Governance Enhancement (10 stories, 63 points)
+  # EP-GOV-001: Agent Swarm Governance Enhancement (12 stories, 68 points)
   - id: EP-GOV-001
     name: Agent Swarm Governance Enhancement
     status: planned
-    story_ids: [ST-GOV-001, ST-GOV-002, ST-GOV-003, ST-GOV-004, ST-GOV-005, ST-GOV-006, ST-GOV-007, ST-GOV-008, ST-GOV-009, ST-GOV-010]
-    story_count: 10
-    story_points: 63
-    description: 10 additive governance features for safe autonomous operation including memory deduplication, constitution artifact, task decomposition, quality gates, health monitoring, and audit trails
+    story_ids: [ST-GOV-001, ST-GOV-002, ST-GOV-003, ST-GOV-004, ST-GOV-005, ST-GOV-006, ST-GOV-007, ST-GOV-008, ST-GOV-009, ST-GOV-010, ST-GOV-MINI-001, ST-GOV-MINI-002]
+    story_count: 12
+    story_points: 68
+    description: 10 additive governance features for safe autonomous operation including memory deduplication, constitution artifact, task decomposition, quality gates, health monitoring, and audit trails. Plus 2 mini-stories for Week 1-2 quick wins.
     notes:
       - Party Mode synthesis outcome - Merlin rollout strategy defined 2026-02-22
       - All features are additive and can be disabled via feature flags
-      - 30/60/90-day phased rollout with go/no-go gates
+      - Accelerated 8-week roadmap with weekly→biweekly cadence (supersedes 30/60/90-day plan)
       - Full integration with EP-AUTO-GIT-001 and EP-NS-008
     roadmap_document: docs/architecture/governance-rollout-roadmap.md
+    accelerated_roadmap: docs/roadmaps/governance-autonomy-accelerated.md
 
 # ============================================================
 # PHASE 1 STORIES (35 stories)

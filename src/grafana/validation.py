@@ -224,13 +224,13 @@ class DashboardValidator:
         warnings = []
 
         # Check required fields
-        for field in self.REQUIRED_FIELDS:
-            if field not in dashboard:
+        for field_name in self.REQUIRED_FIELDS:
+            if field_name not in dashboard:
                 errors.append(
                     ValidationError(
                         dashboard_file=dashboard_file,
-                        field=field,
-                        message=f"Missing required field: {field}",
+                        field=field_name,
+                        message=f"Missing required field: {field_name}",
                         severity="error",
                     )
                 )

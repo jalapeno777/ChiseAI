@@ -292,14 +292,14 @@ class PromotionPacket:
             "|-------|--------|-------------|",
         ]
 
-        for name, field in self.required_fields.items():
+        for name, field_name in self.required_fields.items():
             status_icon = {
                 RequiredFieldStatus.MISSING: "❌",
                 RequiredFieldStatus.PRESENT: "✅",
                 RequiredFieldStatus.VERIFIED: "✅✅",
-            }.get(field.status, "❌")
+            }.get(field_name.status, "❌")
             lines.append(
-                f"| {name} | {status_icon} {field.status.value} | {field.description} |"
+                f"| {name} | {status_icon} {field_name.status.value} | {field_name.description} |"
             )
 
         lines.extend(

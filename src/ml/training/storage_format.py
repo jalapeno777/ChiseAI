@@ -95,8 +95,7 @@ class ParquetHandler:
     def _check_pyarrow(self) -> bool:
         """Check if pyarrow is available."""
         try:
-            import pyarrow as pa
-            import pyarrow.parquet as pq
+            import pyarrow  # noqa: F401
 
             return True
         except ImportError:

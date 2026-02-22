@@ -82,10 +82,8 @@ from ml.hyperopt import (
 )
 from ml.models import (
     FilesystemBackend,
-    ModelMetadata,
     ModelRegistry,
     ModelRegistryFactory,
-    ModelVersion,
     S3Backend,
     SemanticVersion,
     StorageBackend,

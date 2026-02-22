@@ -18,8 +18,6 @@ Exit codes:
 
 import argparse
 import json
-import re
-import subprocess
 import sys
 import time
 from dataclasses import dataclass, field
@@ -30,8 +28,8 @@ from typing import Any
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from runbooks.parser import RunbookParser, ParsedRunbook
-from runbooks.executor import RunbookExecutor, ExecutionResult
+from runbooks.parser import RunbookParser
+from runbooks.executor import RunbookExecutor
 
 
 @dataclass

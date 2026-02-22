@@ -512,9 +512,9 @@ def validate_iteration_schema(data: dict[str, Any]) -> tuple[bool, list[str]]:
     errors = []
 
     required_fields = ["story_id", "phase", "status", "started_at"]
-    for field in required_fields:
-        if field not in data:
-            errors.append(f"Missing required field: {field}")
+    for field_name in required_fields:
+        if field_name not in data:
+            errors.append(f"Missing required field: {field_name}")
 
     if "phase" in data and data["phase"] not in VALID_PHASES:
         errors.append(
@@ -580,9 +580,9 @@ def validate_story_completeness(story_data: dict[str, Any]) -> tuple[bool, list[
         "started_at",
     ]
 
-    for field in required_fields:
-        if field not in story_data or not story_data[field]:
-            errors.append(f"Missing required field: {field}")
+    for field_name in required_fields:
+        if field_name not in story_data or not story_data[field_name]:
+            errors.append(f"Missing required field: {field_name}")
 
     # Check status is terminal
     status = story_data.get("status", "")

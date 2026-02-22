@@ -19,7 +19,6 @@ from typing import Any
 
 try:
     from fastapi import APIRouter, HTTPException, Query, status
-    from fastapi.responses import JSONResponse
 
     HAS_FASTAPI = True
 except ImportError:
