@@ -7,12 +7,12 @@ for brain version promotions.
 ST-CHISE-003: Brain Promotion Packet - Evidence + Rollback
 """
 
+import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-import json
 
 
 class PacketStatus(Enum):

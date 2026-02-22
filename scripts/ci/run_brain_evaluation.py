@@ -132,6 +132,7 @@ def run_batch_evaluation(
     try:
         # Import and use the BatchEvaluator
         import asyncio
+
         from src.brain.batch_evaluator import BatchEvaluator, EvaluationPersistence
 
         evaluator = BatchEvaluator(default_timeout_seconds=timeout)

@@ -15,7 +15,6 @@ from __future__ import annotations
 import time
 
 import pytest
-
 from src.autonomous_control_plane.components.incident_manager import IncidentManager
 from src.autonomous_control_plane.components.rollback_coordinator import (
     RollbackCoordinator,

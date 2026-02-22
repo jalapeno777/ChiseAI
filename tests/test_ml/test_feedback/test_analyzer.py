@@ -2,14 +2,20 @@
 
 from __future__ import annotations
 
-import pytest
+import sys
 from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
-import sys
+import pytest
 
 sys.path.insert(0, "src")
 
+from market_analysis.signal_storage.models import (
+    OutcomeRecord,
+    OutcomeType,
+    SignalDirection,
+    SignalRecord,
+)
 from ml.feedback.analyzer import (
     AccuracyBySignalType,
     AccuracyByTimeframe,
@@ -26,12 +32,6 @@ from ml.feedback.matcher import (
     MatchConfidence,
     MatchStatus,
     PredictionOutcomeMatch,
-)
-from market_analysis.signal_storage.models import (
-    OutcomeRecord,
-    OutcomeType,
-    SignalDirection,
-    SignalRecord,
 )
 
 

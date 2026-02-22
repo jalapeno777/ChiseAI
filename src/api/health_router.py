@@ -19,7 +19,6 @@ from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
-
 from src.health.monitor import HealthMonitor
 
 logger = logging.getLogger(__name__)

@@ -8,10 +8,10 @@ import json
 import os
 import subprocess
 import sys
+from pathlib import Path
 from urllib.error import URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
-from pathlib import Path
 
 # Add src to path for config imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))

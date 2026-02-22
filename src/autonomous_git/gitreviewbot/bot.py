@@ -1,17 +1,17 @@
 """Main GitReviewBot orchestrator."""
 
-import hashlib
-from typing import Optional, List, Dict, Any
-from datetime import datetime
 import asyncio
+import hashlib
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-from .models import Decision, PRDetails, CachedDiff
-from .senior_dev import SeniorDevReviewer
-from .critic import CriticReviewer
-from .synthesizer import DecisionSynthesizer
-from .confidence import ConfidenceScorer
 from .calibration import CalibrationTracker
+from .confidence import ConfidenceScorer
+from .critic import CriticReviewer
 from .gitea_client import GiteaClient
+from .models import CachedDiff, Decision, PRDetails
+from .senior_dev import SeniorDevReviewer
+from .synthesizer import DecisionSynthesizer
 
 
 class GitReviewBot:

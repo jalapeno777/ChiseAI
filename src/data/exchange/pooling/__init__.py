@@ -9,8 +9,8 @@ For ST-NS-026: Connection Pooling for Exchange APIs
 from data.exchange.pooling.connection_pool import (
     ConnectionContextManager,
     ExchangeConnectionPool,
-    PoolMetrics,
     PooledConnection,
+    PoolMetrics,
     TokenBucketRateLimiter,
 )
 from data.exchange.pooling.health_monitor import (

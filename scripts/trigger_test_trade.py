@@ -28,7 +28,6 @@ from typing import Any
 sys.path.insert(0, "src")
 
 from config.bootstrap import bootstrap
-
 from execution.kill_switch.executor import KillSwitchExecutor
 from execution.kill_switch.state import KillSwitchState
 from execution.paper.orchestrator import PaperTradingOrchestrator

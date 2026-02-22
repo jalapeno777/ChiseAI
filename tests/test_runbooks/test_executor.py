@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
-from runbooks.executor import RunbookExecutor, ExecutionResult, StepResult
+from runbooks.executor import ExecutionResult, RunbookExecutor, StepResult
 from runbooks.parser import RunbookStep
 
 

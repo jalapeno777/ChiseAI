@@ -8,7 +8,6 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, status
-
 from src.autonomous_control_plane.components.rollback_coordinator import (
     RollbackCoordinator,
 )

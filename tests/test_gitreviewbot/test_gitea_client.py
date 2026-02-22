@@ -194,7 +194,7 @@ class TestFormatReviewBody:
 
     def test_format_with_violations(self):
         """Test formatting with violations."""
-        from autonomous_git.gitreviewbot.models import Violation, Severity
+        from autonomous_git.gitreviewbot.models import Severity, Violation
 
         client = GiteaClient()
 

@@ -15,9 +15,9 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from datetime import UTC
 from pathlib import Path
 from typing import Any
-from datetime import UTC
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
@@ -27,7 +27,7 @@ from config.bootstrap import bootstrap
 bootstrap(load_env=True)
 
 # Import PR state manager
-from pr_state_manager import PRStateManager, PRState, _utc_now
+from pr_state_manager import PRState, PRStateManager, _utc_now
 
 # Default configuration
 DEFAULT_POLL_INTERVAL_SEC = int(os.getenv("CHISE_PR_POLL_INTERVAL_SEC", "30"))

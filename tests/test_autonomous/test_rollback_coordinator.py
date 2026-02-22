@@ -19,7 +19,6 @@ from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 import pytest
-
 from src.autonomous_control_plane.components.incident_manager import IncidentManager
 from src.autonomous_control_plane.components.rollback_coordinator import (
     InMemoryRollbackStore,

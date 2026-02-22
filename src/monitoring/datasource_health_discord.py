@@ -16,8 +16,8 @@ from typing import TYPE_CHECKING, Any, cast
 if TYPE_CHECKING:
     from monitoring.datasource_health import (
         ConnectionMetrics,
-        DataSourceType,
         DatasourceHealthAlert,
+        DataSourceType,
     )
 
 logger = logging.getLogger(__name__)

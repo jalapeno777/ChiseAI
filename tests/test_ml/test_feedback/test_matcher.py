@@ -2,26 +2,26 @@
 
 from __future__ import annotations
 
-import pytest
+import sys
 from unittest.mock import MagicMock
 
-import sys
+import pytest
 
 sys.path.insert(0, "src")
 
-from ml.feedback.matcher import (
-    MatchBatchResult,
-    MatchConfig,
-    MatchConfidence,
-    MatchStatus,
-    PredictionOutcomeMatch,
-    PredictionOutcomeMatcher,
-)
 from market_analysis.signal_storage.models import (
     OutcomeRecord,
     OutcomeType,
     SignalDirection,
     SignalRecord,
+)
+from ml.feedback.matcher import (
+    MatchBatchResult,
+    MatchConfidence,
+    MatchConfig,
+    MatchStatus,
+    PredictionOutcomeMatch,
+    PredictionOutcomeMatcher,
 )
 
 

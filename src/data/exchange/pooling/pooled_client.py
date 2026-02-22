@@ -18,7 +18,6 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
-
 from data.exchange.pooling.connection_pool import ExchangeConnectionPool, PoolMetrics
 
 logger = logging.getLogger(__name__)

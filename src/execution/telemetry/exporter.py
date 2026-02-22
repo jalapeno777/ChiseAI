@@ -280,8 +280,9 @@ class ExecutionTelemetryExporter:
             True if write successful
         """
         try:
-            from influxdb_client import Point
             from datetime import UTC, datetime
+
+            from influxdb_client import Point
 
             point = (
                 Point("test")

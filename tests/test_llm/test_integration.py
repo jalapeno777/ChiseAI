@@ -7,12 +7,12 @@ Use --run-integration flag to run these tests.
 
 import json
 import os
-import pytest
 
+import pytest
 from src.llm.zhipu_client import (
-    ZhipuClient,
-    ZaiMessage,
     ZaiAuthError,
+    ZaiMessage,
+    ZhipuClient,
 )
 
 

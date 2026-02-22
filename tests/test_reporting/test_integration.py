@@ -3,22 +3,22 @@
 For PAPER-003-003: Automated Reporting and Anomaly Detection
 """
 
-import pytest
 from datetime import UTC, datetime
 
+import pytest
 from src.reporting import (
-    DailyReportGenerator,
-    WeeklyPerformanceReport,
     AnomalyDetector,
+    DailyReportGenerator,
     ReportScheduler,
+    WeeklyPerformanceReport,
 )
 from src.reporting.models import (
-    DailyReport,
-    WeeklyReport,
     AnomalyAlert,
-    AnomalyType,
     AnomalySeverity,
+    AnomalyType,
+    DailyReport,
     ReportSchedule,
+    WeeklyReport,
 )
 
 
@@ -193,16 +193,16 @@ class TestReportingIntegration:
     def test_module_exports(self):
         """Test that all expected classes are exported."""
         from src.reporting import (
-            DailyReportGenerator,
-            WeeklyPerformanceReport,
-            AnomalyDetector,
-            ReportScheduler,
-            DailyReport,
-            WeeklyReport,
             AnomalyAlert,
+            AnomalyDetector,
+            DailyReport,
+            DailyReportGenerator,
             ReportSchedule,
-            TradeMetrics,
+            ReportScheduler,
             RiskMetrics,
+            TradeMetrics,
+            WeeklyPerformanceReport,
+            WeeklyReport,
         )
 
         # Verify all classes are importable

@@ -22,10 +22,10 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from config.bootstrap import bootstrap
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
 
+from config.bootstrap import bootstrap
 from monitoring.datasource_health import (
     DatasourceHealthAlert,
     create_default_monitor,
@@ -174,8 +174,8 @@ async def main():
     # Override PostgreSQL config if CLI args provided
     if pg_config:
         from monitoring.datasource_health import (
-            DataSourceType,
             DatasourceConfig,
+            DataSourceType,
             PostgreSQLHealthChecker,
         )
 

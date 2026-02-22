@@ -4,14 +4,14 @@ For ST-DATA-002: Execution Market Data Ingestion - Bybit/Bitget
 For ST-NS-026: Connection Pooling for Exchange APIs
 """
 
-from data.exchange.bybit_connector import BybitConfig, BybitConnector
 from data.exchange.bitget_connector import BitgetConfig, BitgetConnector
+from data.exchange.bybit_connector import BybitConfig, BybitConnector
 from data.exchange.pooling import (
+    ExchangeConnectionPool,
     PooledBitgetClient,
     PooledBybitClient,
-    ExchangeConnectionPool,
-    PoolMetrics,
     PoolHealthMonitor,
+    PoolMetrics,
 )
 
 __all__ = [

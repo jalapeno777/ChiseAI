@@ -8,6 +8,7 @@ For ST-EX-002: Bitget Live Trading Gating Implementation
 
 from __future__ import annotations
 
+from execution.live_gating.audit_logger import LiveTradeAuditLogger
 from execution.live_gating.gate_manager import (
     ApprovalPacket,
     ApprovalRequest,
@@ -16,9 +17,8 @@ from execution.live_gating.gate_manager import (
     LiveTradingState,
     PaperTradingEvidence,
 )
-from execution.live_gating.risk_enforcer import RiskEnforcer, ValidationResult
-from execution.live_gating.audit_logger import LiveTradeAuditLogger
 from execution.live_gating.grafana_exporter import LiveGatingGrafanaExporter
+from execution.live_gating.risk_enforcer import RiskEnforcer, ValidationResult
 
 __all__ = [
     # Gate Manager

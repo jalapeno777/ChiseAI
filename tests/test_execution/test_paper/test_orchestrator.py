@@ -580,10 +580,10 @@ class TestPositionManagement:
         self, orchestrator, mock_components, mock_signal
     ):
         """Test that opposite signal closes existing position (BURNIN-001 fix)."""
-        from execution.paper.models import RiskAssessment
-
         # Setup: Create an existing SHORT position
         from datetime import UTC, datetime
+
+        from execution.paper.models import RiskAssessment
 
         existing_position = MagicMock()
         existing_position.position_id = "existing-pos-001"
@@ -678,6 +678,7 @@ class TestPositionManagement:
     ):
         """Test that positions older than 60 seconds are closed (BURNIN-001 fix)."""
         from datetime import UTC, datetime, timedelta
+
         from execution.paper.models import RiskAssessment
 
         # Setup: Create an existing LONG position that is OLD (older than 60 seconds)

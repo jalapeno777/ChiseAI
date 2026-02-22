@@ -10,16 +10,16 @@ from enum import Enum
 from typing import Any
 
 from src.backtesting.dsl.models import (
-    StrategyDSL,
-    Metadata,
-    Universe,
-    Signals,
-    Filters,
-    Exits,
-    Sizing,
     ExecutionPolicy,
+    Exits,
+    Filters,
+    Metadata,
     RiskRules,
+    Signals,
+    Sizing,
+    StrategyDSL,
     TelemetryTags,
+    Universe,
 )
 
 

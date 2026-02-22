@@ -23,8 +23,6 @@ _SRC = _REPO_ROOT / "src"
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
-from config.bootstrap import bootstrap
-
 from chiseai.taiga_sync import (  # noqa: E402
     TaigaConfig,
     TaigaSyncError,

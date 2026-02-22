@@ -9,7 +9,6 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
-
 from src.brain.batch_evaluator import (
     BatchEvaluator,
     EvaluationPersistence,

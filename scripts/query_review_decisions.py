@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Query review decisions and calibration data."""
 
-import sys
-import json
-import asyncio
 import argparse
-from pathlib import Path
+import asyncio
+import json
+import sys
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Optional
 
 # Add src to path

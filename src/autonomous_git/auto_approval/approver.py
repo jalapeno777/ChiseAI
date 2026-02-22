@@ -3,13 +3,13 @@
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
 
 from .config import AutoApprovalConfig
-from .safety_checks import SafetyChecker, SafetyCheckResult
-from .rate_limiter import RateLimiter
 from .exclusions import ExclusionManager
 from .notifier import DiscordNotifier
+from .rate_limiter import RateLimiter
+from .safety_checks import SafetyChecker, SafetyCheckResult
 
 logger = logging.getLogger(__name__)
 

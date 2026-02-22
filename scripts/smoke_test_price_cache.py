@@ -5,8 +5,8 @@ This script verifies that the fix for the price cache empty bug works correctly.
 """
 
 import asyncio
-import sys
 import os
+import sys
 
 # Add src and scripts to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
@@ -17,14 +17,15 @@ from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from run_trading_activity import (
-    TradingModeLoader,
     TradingActivityMetrics,
+    TradingModeLoader,
     _execute_trading_cycle,
 )
+
 from config.trading_mode import TradingModeConfig
-from signal_generation.models import Signal, SignalDirection, SignalStatus
 from data_ingestion.ohlcv_fetcher import OHLCVData
 from execution.paper.order_simulator import MarketDataProvider, OrderSimulator
+from signal_generation.models import Signal, SignalDirection, SignalStatus
 
 
 async def smoke_test_price_cache_populated():

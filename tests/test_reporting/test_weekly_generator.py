@@ -3,12 +3,12 @@
 For PAPER-003-003: Automated Reporting and Anomaly Detection
 """
 
-import pytest
 from datetime import UTC, datetime, timedelta
 from unittest.mock import Mock
 
-from src.reporting.weekly_generator import WeeklyPerformanceReport
+import pytest
 from src.reporting.models import WeeklyReport
+from src.reporting.weekly_generator import WeeklyPerformanceReport
 
 
 class TestWeeklyPerformanceReport:

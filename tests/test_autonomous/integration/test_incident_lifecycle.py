@@ -8,9 +8,9 @@ Tests complete incident lifecycle from creation through resolution.
 from __future__ import annotations
 
 import asyncio
-import pytest
 from unittest.mock import MagicMock, patch
 
+import pytest
 from src.autonomous_control_plane.components.incident_manager import (
     IncidentManager,
 )

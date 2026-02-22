@@ -19,6 +19,7 @@ class TestCircuitBreakerAPI(unittest.TestCase):
         """Set up test fixtures."""
         # Create a fresh FastAPI app for each test
         from fastapi import FastAPI
+
         from autonomous_control_plane.api.v1.circuit_breakers import router
 
         self.app = FastAPI()

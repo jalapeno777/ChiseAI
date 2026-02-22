@@ -23,8 +23,8 @@ from config.bootstrap import bootstrap
 bootstrap(load_env=True)
 
 # Import PR state manager and monitor
-from pr_state_manager import PRStateManager, _utc_now
 from pr_monitor import PRMonitor
+from pr_state_manager import PRStateManager, _utc_now
 
 # Configuration
 DEFAULT_STUCK_THRESHOLD_MIN = int(os.getenv("CHISE_PR_STUCK_THRESHOLD_MIN", "30"))

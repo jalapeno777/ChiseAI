@@ -4,9 +4,9 @@ Branch hygiene checker for ChiseAI repository.
 Analyzes branches and recommends cleanup actions.
 """
 
-import subprocess
-import json
 import argparse
+import json
+import subprocess
 from datetime import datetime
 
 from config.bootstrap import bootstrap

@@ -2,11 +2,12 @@
 
 import os
 import re
-from typing import List, Optional, Dict, Any
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
 import aiohttp
 
-from .models import PRDetails, Decision, DecisionType
+from .models import Decision, DecisionType, PRDetails
 
 
 class GiteaClient:

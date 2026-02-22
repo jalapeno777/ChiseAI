@@ -5,8 +5,9 @@ Tests risk control validation and enforcement.
 
 from __future__ import annotations
 
-import pytest
 from datetime import UTC, datetime, timedelta
+
+import pytest
 
 from execution.live_gating.risk_enforcer import RiskEnforcer, ValidationResult
 

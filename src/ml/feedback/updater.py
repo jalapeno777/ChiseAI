@@ -606,9 +606,9 @@ class ModelUpdater:
         """Validate updated model."""
         from sklearn.metrics import (
             accuracy_score,
+            f1_score,
             precision_score,
             recall_score,
-            f1_score,
         )
 
         # Split validation data

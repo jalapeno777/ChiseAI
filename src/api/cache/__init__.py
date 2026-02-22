@@ -7,12 +7,12 @@ and reduce redundant database calls.
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from typing import Any, TypeVar
-from datetime import datetime, timedelta
 import hashlib
 import json
+from collections.abc import Callable
+from datetime import datetime, timedelta
 from functools import wraps
+from typing import Any, TypeVar
 
 from api.cache.metrics import CacheMetricsCollector, CacheMetricsSnapshot
 

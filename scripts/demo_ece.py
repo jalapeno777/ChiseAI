@@ -5,17 +5,16 @@ This script demonstrates ECE calculation for different scenarios
 and shows sample output.
 """
 
-import sys
 import os
+import sys
 
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from config.bootstrap import bootstrap
-
 import numpy as np
 
 from confidence.ece import ECECalculator, SignalType, calculate_ece
+from config.bootstrap import bootstrap
 
 
 def print_section(title: str) -> None:

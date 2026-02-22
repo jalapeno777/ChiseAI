@@ -19,8 +19,8 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
-from health.monitor import ComponentType, HealthMonitor
 
+from health.monitor import ComponentType, HealthMonitor
 from testing.chaos_engine import ChaosConfig, ChaosEngine, RecoveryResult
 from testing.failure_injector import (
     ErrorInjector,

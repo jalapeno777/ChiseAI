@@ -5,7 +5,6 @@ from __future__ import annotations
 import time
 from unittest.mock import MagicMock
 
-
 from api.cache.cache_manager import CacheEntry, QueryCacheManager
 from api.cache.metrics import CacheMetricsCollector
 from api.cache.strategies import CacheStrategy, QueryType, TTLStrategy

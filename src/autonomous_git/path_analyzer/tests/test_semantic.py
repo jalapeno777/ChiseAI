@@ -1,10 +1,10 @@
 """Tests for semantic analysis module."""
 
-from autonomous_git.path_analyzer.semantic import (
-    SemanticFlag,
-    SemanticAnalyzer,
-)
 from autonomous_git.path_analyzer.classification import RiskLevel
+from autonomous_git.path_analyzer.semantic import (
+    SemanticAnalyzer,
+    SemanticFlag,
+)
 
 
 class TestSemanticFlag:

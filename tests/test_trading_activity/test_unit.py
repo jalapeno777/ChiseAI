@@ -7,26 +7,27 @@ component initialization without external dependencies.
 from __future__ import annotations
 
 import asyncio
+import os
+
+# Add src to path
+import sys
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-# Add src to path
-import sys
-import os
-
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "scripts"))
 
 from scripts.run_trading_activity import (
-    TradingModeLoader,
     TradingActivityMetrics,
+    TradingModeLoader,
     _execute_trading_cycle,
 )
+
 from config.trading_mode import TradingMode, TradingModeConfig
-from signal_generation.models import Signal, SignalDirection, SignalStatus
 from data_ingestion.ohlcv_fetcher import OHLCVData
+from signal_generation.models import Signal, SignalDirection, SignalStatus
 
 
 class TestTradingModeLoader:

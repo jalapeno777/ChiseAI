@@ -10,16 +10,15 @@ import hashlib
 import hmac
 import json
 import os
+import ssl
 import sys
 import time
-import ssl
 from datetime import UTC, datetime
 
 # Add src to path for credential resolver
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from config.bootstrap import bootstrap
-
 from data.exchange.credential_resolver import (
     get_credential_resolution_status,
     resolve_bybit_credentials,

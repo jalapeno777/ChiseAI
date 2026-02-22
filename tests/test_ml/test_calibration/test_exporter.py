@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import json
 import os
-import pytest
+import sys
 import tempfile
 from datetime import UTC, datetime, timedelta
 
-import sys
+import pytest
 
 sys.path.insert(0, "src")
 

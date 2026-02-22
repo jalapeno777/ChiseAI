@@ -1,9 +1,9 @@
 """Redis caching layer for path analysis results."""
 
-import json
 import hashlib
+import json
 import time
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 
 class PathAnalysisCache:

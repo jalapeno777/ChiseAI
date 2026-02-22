@@ -7,24 +7,25 @@ Tests the complete signal → paper trade flow with mocked external dependencies
 from __future__ import annotations
 
 import asyncio
-from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock, patch, Mock
-
-import pytest
+import os
 
 # Add src to path
 import sys
-import os
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
+import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "scripts"))
 
 from scripts.run_trading_activity import (
-    TradingModeLoader,
     TradingActivityMetrics,
-    run_trading_loop,
+    TradingModeLoader,
     _execute_trading_cycle,
+    run_trading_loop,
 )
+
 from config.trading_mode import TradingModeConfig
 from signal_generation.models import Signal, SignalDirection, SignalStatus
 

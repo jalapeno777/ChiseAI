@@ -15,10 +15,10 @@ from data.exchange.pooling import (
     AdaptiveRateLimiter,
     CompositeRateLimiter,
     ExchangeConnectionPool,
-    PoolHealthMonitor,
-    PoolMetrics,
     PooledBitgetClient,
     PooledBybitClient,
+    PoolHealthMonitor,
+    PoolMetrics,
     SlidingWindowRateLimiter,
     TokenBucketRateLimiter,
 )

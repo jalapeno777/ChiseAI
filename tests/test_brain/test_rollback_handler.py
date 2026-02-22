@@ -1,10 +1,10 @@
 """Tests for rollback handler functionality."""
 
 import json
-import pytest
 from datetime import datetime
 from typing import List
 
+import pytest
 from src.brain.rollback_handler import (
     PostmortemReport,
     RollbackHandler,

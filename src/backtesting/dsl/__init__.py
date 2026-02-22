@@ -31,74 +31,69 @@ Example:
     print(f"Fingerprint: {result.fingerprint}")
 """
 
+from src.backtesting.dsl.fingerprint import (
+    ConfigDiff,
+    DiffEntry,
+    DSLFingerprint,
+    compute_dsl_fingerprint,
+    compute_dsl_fingerprint_short,
+    configs_equal,
+    diff_configs,
+)
+from src.backtesting.dsl.migration import (
+    DSLMigration,
+    can_migrate,
+    get_config_version,
+    migrate_config,
+)
 from src.backtesting.dsl.models import (
-    # Main DSL class
-    StrategyDSL,
+    Direction,
+    EntryLogic,
+    ExecutionPolicy,
+    Exits,
+    Filters,
+    Indicator,
+    IndicatorType,
+    MarketType,
     # Sections
     Metadata,
-    Universe,
-    Signals,
-    Filters,
-    Exits,
-    Sizing,
-    ExecutionPolicy,
+    Operator,
+    PositionLimits,
     RiskRules,
-    TelemetryTags,
+    Signals,
+    Sizing,
+    StopLoss,
     # Enums
     StrategyCategory,
+    # Main DSL class
+    StrategyDSL,
     StrategyStatus,
-    Timeframe,
-    MarketType,
-    EntryLogic,
-    IndicatorType,
-    Operator,
-    Direction,
     # Sub-models
     Symbol,
-    Indicator,
-    StopLoss,
     TakeProfit,
-    PositionLimits,
+    TelemetryTags,
+    Timeframe,
+    Universe,
 )
-
-from src.backtesting.dsl.validator import (
-    DSLValidator,
-    ValidationResult,
-    ValidationError,
-    ValidationWarning,
-)
-
 from src.backtesting.dsl.safety import (
+    SAFETY_CONSTRAINTS,
     SafetyChecker,
     check_safety,
     is_safe,
-    SAFETY_CONSTRAINTS,
 )
-
-from src.backtesting.dsl.fingerprint import (
-    compute_dsl_fingerprint,
-    compute_dsl_fingerprint_short,
-    diff_configs,
-    configs_equal,
-    DSLFingerprint,
-    ConfigDiff,
-    DiffEntry,
-)
-
-from src.backtesting.dsl.migration import (
-    DSLMigration,
-    migrate_config,
-    get_config_version,
-    can_migrate,
-)
-
 from src.backtesting.dsl.submission import (
     StrategySubmission,
     SubmissionResult,
+    check_strategy_safety,
     submit_strategy,
     submit_strategy_file,
     validate_strategy,
-    check_strategy_safety,
+)
+from src.backtesting.dsl.validator import (
+    DSLValidator,
+    ValidationError,
+    ValidationResult,
+    ValidationWarning,
 )
 
 __all__ = [

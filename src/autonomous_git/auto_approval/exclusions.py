@@ -4,8 +4,8 @@ import fnmatch
 import logging
 import re
 from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Any
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 import yaml
 

@@ -15,8 +15,8 @@ from ml.training.exporter import (
     ModelType,
     export_from_samples,
 )
-from ml.training.pipeline import TrainingPipeline
 from ml.training.extractor import FeatureExtractor
+from ml.training.pipeline import TrainingPipeline
 from ml.training.schema import TrainingSample
 
 

@@ -7,13 +7,12 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import tempfile
 
 import numpy as np
 import pytest
 import yaml
-
-import sys
 
 sys.path.insert(0, "src")
 

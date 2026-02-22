@@ -2,17 +2,29 @@
 
 from __future__ import annotations
 
-import pytest
-import tempfile
 import shutil
-from pathlib import Path
+import sys
+import tempfile
 from datetime import datetime, timezone
+from pathlib import Path
 from unittest.mock import MagicMock
 
-import sys
+import pytest
 
 sys.path.insert(0, "src")
 
+from market_analysis.signal_storage.models import (
+    OutcomeRecord,
+    OutcomeType,
+    SignalDirection,
+    SignalRecord,
+)
+from ml.feedback.analyzer import FeedbackAnalysisReport
+from ml.feedback.matcher import (
+    MatchConfidence,
+    MatchStatus,
+    PredictionOutcomeMatch,
+)
 from ml.feedback.updater import (
     ModelUpdater,
     ModelVersion,
@@ -20,18 +32,6 @@ from ml.feedback.updater import (
     UpdateResult,
     UpdateStatus,
     UpdateStrategy,
-)
-from ml.feedback.matcher import (
-    MatchConfidence,
-    MatchStatus,
-    PredictionOutcomeMatch,
-)
-from ml.feedback.analyzer import FeedbackAnalysisReport
-from market_analysis.signal_storage.models import (
-    OutcomeRecord,
-    OutcomeType,
-    SignalDirection,
-    SignalRecord,
 )
 
 

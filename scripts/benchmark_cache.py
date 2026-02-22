@@ -8,14 +8,14 @@ Run this script to verify cache hit rates and response times.
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 import time
+from pathlib import Path
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from api.cache import CacheStrategy, QueryCacheManager
 from config.bootstrap import bootstrap
-from api.cache import QueryCacheManager, CacheStrategy
 
 
 def benchmark_cache_performance():

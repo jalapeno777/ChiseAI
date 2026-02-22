@@ -22,7 +22,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from config.bootstrap import bootstrap
-
 from data_ingestion.ohlcv_fetcher import CCXTAdapter, OHLCVFetcher
 from data_ingestion.storage import InfluxDBStorage, StorageConfig
 from data_ingestion.timeframe_config import Timeframe, timeframe_from_string

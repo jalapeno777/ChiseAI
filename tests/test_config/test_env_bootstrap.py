@@ -16,7 +16,6 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-
 from src.config.env_loader import (
     bootstrap_environment,
     diagnose_provider_availability,

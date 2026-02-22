@@ -1,11 +1,11 @@
 """Auto-approval module for safe PRs."""
 
 from .approver import AutoApprover, process_safe_pr
-from .safety_checks import SafetyChecker, SafetyCheckResult
-from .rate_limiter import RateLimiter
+from .config import AutoApprovalConfig, load_config
 from .exclusions import ExclusionManager
 from .notifier import DiscordNotifier
-from .config import load_config, AutoApprovalConfig
+from .rate_limiter import RateLimiter
+from .safety_checks import SafetyChecker, SafetyCheckResult
 
 __version__ = "0.1.0"
 __all__ = [

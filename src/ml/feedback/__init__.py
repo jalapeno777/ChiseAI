@@ -24,16 +24,6 @@ Usage:
 
 from __future__ import annotations
 
-# Matcher components
-from ml.feedback.matcher import (
-    MatchBatchResult,
-    MatchConfig,
-    MatchConfidence,
-    MatchStatus,
-    PredictionOutcomeMatch,
-    PredictionOutcomeMatcher,
-)
-
 # Analyzer components
 from ml.feedback.analyzer import (
     AccuracyBySignalType,
@@ -48,15 +38,14 @@ from ml.feedback.analyzer import (
     RegimePerformance,
 )
 
-# Updater components
-from ml.feedback.updater import (
-    ModelType,
-    ModelUpdater,
-    ModelVersion,
-    UpdateConfig,
-    UpdateResult,
-    UpdateStatus,
-    UpdateStrategy,
+# Matcher components
+from ml.feedback.matcher import (
+    MatchBatchResult,
+    MatchConfidence,
+    MatchConfig,
+    MatchStatus,
+    PredictionOutcomeMatch,
+    PredictionOutcomeMatcher,
 )
 
 # Orchestrator components
@@ -67,6 +56,17 @@ from ml.feedback.orchestrator import (
     OrchestratorConfig,
     TemporalBoundary,
     TemporalSafetyMode,
+)
+
+# Updater components
+from ml.feedback.updater import (
+    ModelType,
+    ModelUpdater,
+    ModelVersion,
+    UpdateConfig,
+    UpdateResult,
+    UpdateStatus,
+    UpdateStrategy,
 )
 
 __all__ = [

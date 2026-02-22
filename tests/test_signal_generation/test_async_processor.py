@@ -2,8 +2,9 @@
 Tests for async signal processor.
 """
 
-import pytest
 import asyncio
+
+import pytest
 
 
 class TestAsyncProcessor:

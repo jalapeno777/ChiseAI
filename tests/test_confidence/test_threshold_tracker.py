@@ -10,10 +10,11 @@ Tests cover:
 
 from __future__ import annotations
 
-import pytest
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from confidence.threshold import (
     ModeSwitchRecord,
@@ -22,8 +23,8 @@ from confidence.threshold import (
     ThresholdMode,
 )
 from confidence.threshold_tracker import (
-    InMemoryThresholdTracker,
     InfluxDBThresholdTracker,
+    InMemoryThresholdTracker,
 )
 
 if TYPE_CHECKING:

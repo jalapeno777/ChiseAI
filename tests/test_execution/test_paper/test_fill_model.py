@@ -4,12 +4,12 @@ Tests for SlippageConfig, LatencyConfig, and FillModel.
 """
 
 import asyncio
-import pytest
 
+import pytest
 from src.execution.paper.fill_model import (
-    SlippageConfig,
-    LatencyConfig,
     FillModel,
+    LatencyConfig,
+    SlippageConfig,
     create_fill_model,
 )
 from src.execution.paper.models import PaperOrder

@@ -13,18 +13,6 @@ import pytest
 
 sys.path.insert(0, "/home/tacopants/projects/ChiseAI/src")
 
-from ml.training.extractor import (
-    ExtractedFeatures,
-    FeatureExtractor,
-    TechnicalIndicators,
-    MarketContext,
-)
-from ml.training.pipeline import (
-    PipelineConfig,
-    PipelineStats,
-    TrainingPipeline,
-)
-from ml.training.schema import TrainingSample
 from market_analysis.signal_storage.models import (
     OutcomeRecord,
     OutcomeType,
@@ -32,6 +20,18 @@ from market_analysis.signal_storage.models import (
     SignalRecord,
     SignalWithOutcome,
 )
+from ml.training.extractor import (
+    ExtractedFeatures,
+    FeatureExtractor,
+    MarketContext,
+    TechnicalIndicators,
+)
+from ml.training.pipeline import (
+    PipelineConfig,
+    PipelineStats,
+    TrainingPipeline,
+)
+from ml.training.schema import TrainingSample
 
 
 class TestPipelineStats:

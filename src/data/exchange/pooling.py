@@ -7,10 +7,10 @@ when connecting to exchange APIs.
 
 import asyncio
 import logging
-from typing import Dict, Optional, Any
-from dataclasses import dataclass
-from contextlib import asynccontextmanager
 import time
+from contextlib import asynccontextmanager
+from dataclasses import dataclass
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 

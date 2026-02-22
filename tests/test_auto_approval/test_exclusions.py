@@ -2,7 +2,7 @@
 
 from unittest.mock import mock_open, patch
 
-from src.autonomous_git.auto_approval.exclusions import ExclusionManager, ExclusionList
+from src.autonomous_git.auto_approval.exclusions import ExclusionList, ExclusionManager
 
 
 class TestExclusionManager:

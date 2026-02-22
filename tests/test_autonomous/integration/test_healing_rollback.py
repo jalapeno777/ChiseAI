@@ -8,23 +8,23 @@ Acceptance Criteria:
 
 from __future__ import annotations
 
-import pytest
 import time
 from unittest.mock import patch
 
+import pytest
 from src.autonomous_control_plane import SelfHealingEngine
-from src.autonomous_control_plane.models.healing import (
-    HealingAttempt,
-    HealingResult,
-    HealingStatus,
-    HealingContext,
-    RollbackResult,
+from src.autonomous_control_plane.healing_actions.circuit_breaker_reset import (
+    CircuitBreakerResetAction,
 )
 from src.autonomous_control_plane.healing_actions.redis_restart import (
     RedisRestartAction,
 )
-from src.autonomous_control_plane.healing_actions.circuit_breaker_reset import (
-    CircuitBreakerResetAction,
+from src.autonomous_control_plane.models.healing import (
+    HealingAttempt,
+    HealingContext,
+    HealingResult,
+    HealingStatus,
+    RollbackResult,
 )
 
 

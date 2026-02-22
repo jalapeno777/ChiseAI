@@ -8,9 +8,9 @@ Usage:
     python scripts/analyze_pr_paths.py --batch --input files.json
 """
 
-import sys
-import json
 import argparse
+import json
+import sys
 from pathlib import Path
 
 # Add src to path for imports

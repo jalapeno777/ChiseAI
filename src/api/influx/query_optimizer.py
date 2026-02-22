@@ -7,9 +7,9 @@ reducing data cardinality and improving performance through intelligent aggregat
 Target: <3s dashboard load time
 """
 
-from datetime import timedelta
-from typing import Optional, Dict, Any
 import re
+from datetime import timedelta
+from typing import Any, Dict, Optional
 
 
 class QueryOptimizer:

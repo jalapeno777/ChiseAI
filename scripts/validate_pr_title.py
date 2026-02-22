@@ -85,8 +85,8 @@ def _get_pr_title(env: dict[str, str]) -> str:
         or env.get("WOODPECKER_PULL_REQUEST", "").strip()
     )
     if pr_number:
-        import urllib.request
         import json
+        import urllib.request
 
         forge_url = env.get("CI_FORGE_URL", "").rstrip("/")
         repo = env.get("CI_REPO", "")

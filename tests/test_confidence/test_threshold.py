@@ -12,10 +12,12 @@ Tests cover:
 
 from __future__ import annotations
 
-import pytest
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+import pytest
+
+from confidence.ece_tracker import ECEHistoryPoint
 from confidence.threshold import (
     CalibrationResult,
     ModeSwitchRecord,
@@ -25,7 +27,6 @@ from confidence.threshold import (
     ThresholdManager,
     ThresholdMode,
 )
-from confidence.ece_tracker import ECEHistoryPoint
 
 if TYPE_CHECKING:
     pass

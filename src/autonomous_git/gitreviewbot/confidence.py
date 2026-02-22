@@ -1,9 +1,9 @@
 """Confidence scoring for GitReviewBot decisions."""
 
-from typing import List, Optional
 from dataclasses import dataclass
+from typing import List, Optional
 
-from .models import ReviewResult, Finding, Violation, Severity
+from .models import Finding, ReviewResult, Severity, Violation
 
 
 @dataclass

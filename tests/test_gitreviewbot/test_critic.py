@@ -2,11 +2,11 @@
 
 import pytest
 
-from autonomous_git.gitreviewbot.models import (
-    Violation,
-    Severity,
-)
 from autonomous_git.gitreviewbot.critic import CriticReviewer
+from autonomous_git.gitreviewbot.models import (
+    Severity,
+    Violation,
+)
 
 
 @pytest.fixture

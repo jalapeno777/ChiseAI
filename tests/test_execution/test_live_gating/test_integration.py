@@ -5,8 +5,9 @@ Integration tests for the complete live gating workflow.
 
 from __future__ import annotations
 
-import pytest
 from datetime import UTC, datetime, timedelta
+
+import pytest
 
 from execution.live_gating import (
     ApprovalPacket,

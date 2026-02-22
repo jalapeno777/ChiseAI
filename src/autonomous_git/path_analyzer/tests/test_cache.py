@@ -1,6 +1,7 @@
 """Tests for cache module."""
 
 import time
+
 from autonomous_git.path_analyzer.cache import PathAnalysisCache
 
 

@@ -1,6 +1,7 @@
 """Test configuration for automation tests."""
 
 import asyncio
+
 import pytest
 
 # Configure pytest-asyncio

@@ -3,13 +3,13 @@
 For PAPER-003-001: Unified Health Monitoring System
 """
 
-import pytest
-from unittest.mock import Mock, AsyncMock
 import asyncio
+from unittest.mock import AsyncMock, Mock
 
-from src.health.monitor import HealthMonitor
+import pytest
 from src.health import ComponentType
-from src.health.score_calculator import HealthScore, ComponentScore
+from src.health.monitor import HealthMonitor
+from src.health.score_calculator import ComponentScore, HealthScore
 
 
 class TestHealthMonitorExtended:

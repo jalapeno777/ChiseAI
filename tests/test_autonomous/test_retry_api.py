@@ -17,15 +17,17 @@ For ST-NS-039: Retry Coordinator with Budget Management - Coverage Improvement
 
 from __future__ import annotations
 
+from unittest.mock import MagicMock, patch
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from unittest.mock import MagicMock, patch
-
+from src.autonomous_control_plane.api.v1.retry import (
+    get_retry_coordinator,
+    set_retry_coordinator,
+)
 from src.autonomous_control_plane.api.v1.retry import (
     router as retry_router,
-    set_retry_coordinator,
-    get_retry_coordinator,
 )
 from src.autonomous_control_plane.components.retry_coordinator import RetryCoordinator
 

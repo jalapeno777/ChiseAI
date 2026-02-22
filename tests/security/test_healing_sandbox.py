@@ -9,13 +9,13 @@ Acceptance Criteria:
 from __future__ import annotations
 
 import os
-import pytest
 import resource
 import subprocess
 import sys
 import tempfile
 import time
 
+import pytest
 from src.autonomous_control_plane.models.healing import (
     HealingContext,
     ResourceLimits,
@@ -27,14 +27,14 @@ class TestSandboxResourceLimits:
 
     def test_resource_limits_are_configured(self):
         """Test that healing actions have resource limits configured."""
-        from src.autonomous_control_plane.healing_actions.redis_restart import (
-            RedisRestartAction,
-        )
         from src.autonomous_control_plane.healing_actions.api_timeout_recovery import (
             APIRetryAction,
         )
         from src.autonomous_control_plane.healing_actions.circuit_breaker_reset import (
             CircuitBreakerResetAction,
+        )
+        from src.autonomous_control_plane.healing_actions.redis_restart import (
+            RedisRestartAction,
         )
 
         actions = [
@@ -265,14 +265,14 @@ class TestHealingActionRollback:
 
     def test_rollback_is_available(self):
         """Test that rollback is available for all healing actions."""
-        from src.autonomous_control_plane.healing_actions.redis_restart import (
-            RedisRestartAction,
-        )
         from src.autonomous_control_plane.healing_actions.api_timeout_recovery import (
             APIRetryAction,
         )
         from src.autonomous_control_plane.healing_actions.circuit_breaker_reset import (
             CircuitBreakerResetAction,
+        )
+        from src.autonomous_control_plane.healing_actions.redis_restart import (
+            RedisRestartAction,
         )
 
         actions = [

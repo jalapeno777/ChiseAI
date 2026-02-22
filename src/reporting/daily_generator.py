@@ -15,10 +15,10 @@ from typing import Any
 
 from .models import (
     DailyReport,
-    RiskMetrics,
-    TradeMetrics,
     PaperHealthMetrics,
     PaperHealthReport,
+    RiskMetrics,
+    TradeMetrics,
 )
 
 logger = logging.getLogger(__name__)

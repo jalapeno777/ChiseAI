@@ -8,9 +8,9 @@ remain integrated across the brain promotion system.
 
 from __future__ import annotations
 
-import pytest
 from typing import Any, Callable, Coroutine, Dict, List
 
+import pytest
 from src.brain.batch_evaluator import (
     BatchEvaluator,
     EvaluationResult,

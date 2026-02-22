@@ -174,8 +174,8 @@ class Gate3BurnInTest:
 
         # Initialize Discord client
         try:
-            from discord_alerts.discord_client import DiscordClient
             from discord_alerts.config import DiscordConfig
+            from discord_alerts.discord_client import DiscordClient
 
             config = DiscordConfig.from_env()
             self.discord_client = DiscordClient(config)

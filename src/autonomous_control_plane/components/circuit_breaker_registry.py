@@ -12,9 +12,8 @@ import json
 import logging
 import threading
 import time
-from typing import TYPE_CHECKING, Any, Callable
-
 from datetime import datetime
+from typing import TYPE_CHECKING, Any, Callable
 
 from autonomous_control_plane.config.settings import settings
 from autonomous_control_plane.models.circuit_breaker import (
@@ -28,8 +27,8 @@ from autonomous_control_plane.models.circuit_breaker import (
 )
 
 if TYPE_CHECKING:
-    from influxdb_client.client.influxdb_client import InfluxDBClient
     import redis
+    from influxdb_client.client.influxdb_client import InfluxDBClient
 
 logger = logging.getLogger(__name__)
 

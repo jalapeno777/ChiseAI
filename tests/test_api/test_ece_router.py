@@ -47,7 +47,7 @@ def sample_history_points():
 @pytest.fixture
 def sample_trend():
     """Create a sample ECE trend."""
-    from confidence import ECETrend, ECEHistoryPoint, SignalType
+    from confidence import ECEHistoryPoint, ECETrend, SignalType
 
     base_time = datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC)
     points = [
@@ -116,8 +116,9 @@ class TestListStrategies:
         )
 
         with patch("api.ece_router.get_ece_tracker", return_value=mock_tracker):
-            from api.ece_router import list_strategies
             from fastapi import HTTPException
+
+            from api.ece_router import list_strategies
 
             with pytest.raises(HTTPException) as exc_info:
                 await list_strategies()
@@ -191,8 +192,9 @@ class TestGetLatestECE:
         mock_tracker.get_latest_ece = AsyncMock(return_value=None)
 
         with patch("api.ece_router.get_ece_tracker", return_value=mock_tracker):
-            from api.ece_router import get_latest_ece
             from fastapi import HTTPException
+
+            from api.ece_router import get_latest_ece
 
             with pytest.raises(HTTPException) as exc_info:
                 await get_latest_ece("unknown_strategy", None)
@@ -205,8 +207,9 @@ class TestGetLatestECE:
     async def test_get_latest_ece_invalid_signal_type(self, mock_tracker):
         """Test 400 for invalid signal type."""
         with patch("api.ece_router.get_ece_tracker", return_value=mock_tracker):
-            from api.ece_router import get_latest_ece
             from fastapi import HTTPException
+
+            from api.ece_router import get_latest_ece
 
             with pytest.raises(HTTPException) as exc_info:
                 await get_latest_ece("test_strategy", "invalid_type")
@@ -221,8 +224,9 @@ class TestGetLatestECE:
         mock_tracker.get_latest_ece = AsyncMock(side_effect=Exception("DB error"))
 
         with patch("api.ece_router.get_ece_tracker", return_value=mock_tracker):
-            from api.ece_router import get_latest_ece
             from fastapi import HTTPException
+
+            from api.ece_router import get_latest_ece
 
             with pytest.raises(HTTPException) as exc_info:
                 await get_latest_ece("test_strategy", None)
@@ -290,8 +294,9 @@ class TestGetECEHistory:
     async def test_get_history_invalid_signal_type(self, mock_tracker):
         """Test 400 for invalid signal type."""
         with patch("api.ece_router.get_ece_tracker", return_value=mock_tracker):
-            from api.ece_router import get_ece_history
             from fastapi import HTTPException
+
+            from api.ece_router import get_ece_history
 
             with pytest.raises(HTTPException) as exc_info:
                 await get_ece_history("test_strategy", days=30, signal_type="bad_type")
@@ -326,7 +331,7 @@ class TestGetECETrend:
     @pytest.mark.asyncio
     async def test_get_trend_improving(self, mock_tracker):
         """Test trend with improving direction."""
-        from confidence import ECETrend, ECEHistoryPoint, SignalType
+        from confidence import ECEHistoryPoint, ECETrend, SignalType
 
         base_time = datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC)
         points = [
@@ -368,8 +373,9 @@ class TestGetECETrend:
         mock_tracker.get_trend = AsyncMock(return_value=None)
 
         with patch("api.ece_router.get_ece_tracker", return_value=mock_tracker):
-            from api.ece_router import get_ece_trend
             from fastapi import HTTPException
+
+            from api.ece_router import get_ece_trend
 
             with pytest.raises(HTTPException) as exc_info:
                 await get_ece_trend("test_strategy", days=30, signal_type=None)
@@ -381,8 +387,9 @@ class TestGetECETrend:
     async def test_get_trend_invalid_signal_type(self, mock_tracker):
         """Test 400 for invalid signal type."""
         with patch("api.ece_router.get_ece_tracker", return_value=mock_tracker):
-            from api.ece_router import get_ece_trend
             from fastapi import HTTPException
+
+            from api.ece_router import get_ece_trend
 
             with pytest.raises(HTTPException) as exc_info:
                 await get_ece_trend("test_strategy", days=30, signal_type="unknown")
@@ -445,8 +452,9 @@ class TestResponseModels:
 
     def test_history_response(self):
         """Test history response model."""
-        from api.ece_router import ECEHistoryResponse, ECEHistoryPointResponse
-        from datetime import datetime, UTC
+        from datetime import UTC, datetime
+
+        from api.ece_router import ECEHistoryPointResponse, ECEHistoryResponse
 
         point = ECEHistoryPointResponse(
             timestamp=datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC),

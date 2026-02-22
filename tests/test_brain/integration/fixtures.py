@@ -6,10 +6,10 @@ ST-CHISE-001.4: Add Integration Tests for Brain Promotion Flow
 from __future__ import annotations
 
 import asyncio
-import pytest
 from datetime import datetime
 from typing import Any, Callable, Coroutine, Dict, List
 
+import pytest
 from src.brain.batch_evaluator import (
     BatchEvaluator,
     EvaluationResult,
