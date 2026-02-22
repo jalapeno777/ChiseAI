@@ -183,8 +183,12 @@ class SelfHealingEngine:
         if not match.matched:
             return None
 
+        assert match.pattern_type is not None, (
+            "Matched pattern should have a pattern_type"
+        )
+        pattern_type: FailurePatternType = match.pattern_type
         logger.info(
-            f"Matched pattern {match.pattern_type.value} for {log_entry.source} "
+            f"Matched pattern {pattern_type.value} for {log_entry.source} "
             f"(confidence={match.confidence:.2f})"
         )
 
@@ -202,12 +206,12 @@ class SelfHealingEngine:
         # Create healing attempt
         attempt = HealingAttempt(
             service=service,
-            action_type=self._get_action_type(match.pattern_type),
+            action_type=self._get_action_type(pattern_type),
             attempt_number=self._get_attempt_count(service) + 1,
         )
 
         # Check if approval is required
-        action_class = self.PATTERN_TO_ACTION.get(match.pattern_type)
+        action_class = self.PATTERN_TO_ACTION.get(pattern_type)
         if action_class:
             temp_action = action_class()
             if temp_action.requires_human_approval(self._trading_mode):
@@ -337,6 +341,9 @@ class SelfHealingEngine:
         Returns:
             Updated healing attempt
         """
+        assert match.pattern_type is not None, "Match should have a pattern_type"
+        pattern_type: FailurePatternType = match.pattern_type
+
         # Check global budget first
         if not await self._check_global_budget():
             logger.warning(
@@ -354,9 +361,9 @@ class SelfHealingEngine:
             return attempt
 
         # Get action class
-        action_class = self.PATTERN_TO_ACTION.get(match.pattern_type)
+        action_class = self.PATTERN_TO_ACTION.get(pattern_type)
         if not action_class:
-            logger.error(f"No healing action for pattern {match.pattern_type.value}")
+            logger.error(f"No healing action for pattern {pattern_type.value}")
             attempt.status = HealingStatus.FAILED
             attempt.complete(
                 HealingResult(
@@ -364,7 +371,7 @@ class SelfHealingEngine:
                     action_id=attempt.attempt_id,
                     action_type=attempt.action_type,
                     service=attempt.service,
-                    error=f"No healing action for pattern {match.pattern_type.value}",
+                    error=f"No healing action for pattern {pattern_type.value}",
                 )
             )
             return attempt
@@ -380,7 +387,7 @@ class SelfHealingEngine:
             service=attempt.service,
             action_id=attempt.attempt_id,
             attempt_number=attempt.attempt_number,
-            triggered_by=match.pattern_type.value,
+            triggered_by=pattern_type.value,
             log_entry=log_entry,
             resource_limits=action.get_resource_limits(),
         )
@@ -402,7 +409,7 @@ class SelfHealingEngine:
             # Update stats
             self._stats.record_attempt(
                 attempt.service,
-                match.pattern_type.value,
+                pattern_type.value,
                 attempt.status,
             )
 
@@ -433,7 +440,7 @@ class SelfHealingEngine:
             attempt.complete(error_result)
             self._stats.record_attempt(
                 attempt.service,
-                match.pattern_type.value,
+                pattern_type.value,
                 attempt.status,
             )
 

@@ -14,7 +14,7 @@ import threading
 import time
 from collections.abc import Callable
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from autonomous_control_plane.config.settings import settings
 from autonomous_control_plane.models.circuit_breaker import (
@@ -146,7 +146,9 @@ class CircuitBreakerRegistry:
             pattern = f"{self._key_prefix}*"
             keys = self._redis.keys(pattern)
 
-            for key in keys:
+            # keys() returns either list or awaitable, but we're in sync context
+            # type: ignore[union-attr] - We know we're in sync context here
+            for key in cast(list, keys) if keys else []:
                 try:
                     data = self._redis.get(key)
                     if data:
