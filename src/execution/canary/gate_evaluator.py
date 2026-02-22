@@ -423,7 +423,7 @@ class GateEvaluator:
         emoji = status_emoji.get(status, "❓")
 
         lines = [
-            f"# Canary Evaluation Summary",
+            "# Canary Evaluation Summary",
             "",
             f"**Canary ID:** {summary['canary_id']}",
             f"**Strategy:** {summary['strategy_id']}",

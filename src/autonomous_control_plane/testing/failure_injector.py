@@ -154,14 +154,14 @@ class FailureInjector:
     def _generate_failure_message(self, scenario: FailureScenario, service: str) -> str:
         """Generate realistic failure message for scenario."""
         messages = {
-            FailureScenario.REDIS_DISCONNECT: f"Redis connection error: Connection refused to redis://localhost:6379",
-            FailureScenario.API_TIMEOUT: f"API timeout after 30s: POST /api/v1/orders",
-            FailureScenario.CIRCUIT_BREAKER_OPEN: f"Circuit breaker 'order_service' is OPEN after 5 failures",
-            FailureScenario.DATABASE_CONNECTION: f"Database connection failed: could not connect to postgres://db:5432",
-            FailureScenario.MEMORY_EXHAUSTION: f"Memory usage critical: 95% of 8GB limit exceeded",
-            FailureScenario.DISK_SPACE: f"Disk space low: 98% of 100GB used",
-            FailureScenario.CPU_SPIKE: f"CPU usage spike: 95% sustained for 60s",
-            FailureScenario.INFLUXDB_WRITE: f"InfluxDB write failed: rate limit exceeded",
+            FailureScenario.REDIS_DISCONNECT: "Redis connection error: Connection refused to redis://localhost:6379",
+            FailureScenario.API_TIMEOUT: "API timeout after 30s: POST /api/v1/orders",
+            FailureScenario.CIRCUIT_BREAKER_OPEN: "Circuit breaker 'order_service' is OPEN after 5 failures",
+            FailureScenario.DATABASE_CONNECTION: "Database connection failed: could not connect to postgres://db:5432",
+            FailureScenario.MEMORY_EXHAUSTION: "Memory usage critical: 95% of 8GB limit exceeded",
+            FailureScenario.DISK_SPACE: "Disk space low: 98% of 100GB used",
+            FailureScenario.CPU_SPIKE: "CPU usage spike: 95% sustained for 60s",
+            FailureScenario.INFLUXDB_WRITE: "InfluxDB write failed: rate limit exceeded",
             FailureScenario.SERVICE_UNHEALTHY: f"Health check failed for service '{service}'",
         }
         return messages.get(scenario, f"Unknown failure: {scenario.value}")

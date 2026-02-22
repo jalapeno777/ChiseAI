@@ -93,7 +93,7 @@ def demo_per_signal_type():
         predictions_by_type, outcomes_by_type, strategy_id="grid_btc_1h"
     )
 
-    print(f"Strategy: grid_btc_1h")
+    print("Strategy: grid_btc_1h")
     print(f"\n{'Signal Type':>15} {'Samples':>10} {'ECE':>10} {'Well Calibrated':>18}")
     print("-" * 60)
     for signal_type, result in results.items():
@@ -116,8 +116,8 @@ def demo_miscalibration():
     result = calc.calculate(predictions, outcomes, strategy_id="overconfident_strategy")
 
     print(f"Strategy: {result.strategy_id}")
-    print(f"All predictions: 90% confidence")
-    print(f"Actual accuracy: 50%")
+    print("All predictions: 90% confidence")
+    print("Actual accuracy: 50%")
     print(f"ECE: {result.ece:.4f}")
     print(f"Well calibrated: {result.is_well_calibrated}")
 
@@ -133,11 +133,11 @@ def demo_convenience_function():
 
     ece = calculate_ece(predictions, outcomes, n_bins=10)
 
-    print(f"Predictions: 10 predictions at 80% confidence")
-    print(f"Outcomes: 7 correct, 3 incorrect (70% accuracy)")
+    print("Predictions: 10 predictions at 80% confidence")
+    print("Outcomes: 7 correct, 3 incorrect (70% accuracy)")
     print(f"ECE: {ece:.4f}")
-    print(f"\nFormula: ECE = Σ(n_i/N) * |accuracy_i - confidence_i|")
-    print(f"        = 1.0 * |0.70 - 0.80|")
+    print("\nFormula: ECE = Σ(n_i/N) * |accuracy_i - confidence_i|")
+    print("        = 1.0 * |0.70 - 0.80|")
     print(f"        = {ece:.4f}")
 
 

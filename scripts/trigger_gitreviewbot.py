@@ -44,14 +44,14 @@ async def review_pr(
         print(f"🔍 Reviewing PR #{pr_number}...")
         decision = await bot.review_pr(pr_number, skip_cache=skip_cache)
 
-        print(f"\n✅ Review Complete")
+        print("\n✅ Review Complete")
         print(f"   Decision: {decision.decision.value}")
         print(f"   Confidence: {decision.confidence:.1f}%")
         print(f"   SeniorDev: {decision.senior_dev_confidence:.1f}%")
         print(f"   Critic: {decision.critic_confidence:.1f}%")
 
         if decision.blockers:
-            print(f"\n🚫 Blockers:")
+            print("\n🚫 Blockers:")
             for blocker in decision.blockers:
                 print(f"   - {blocker}")
 
@@ -70,9 +70,9 @@ async def review_pr(
                 )
 
         if decision.auto_merge_eligible:
-            print(f"\n✨ Auto-merge eligible!")
+            print("\n✨ Auto-merge eligible!")
 
-        print(f"\n📝 Summary:")
+        print("\n📝 Summary:")
         print(f"   {decision.summary}")
 
     except Exception as e:

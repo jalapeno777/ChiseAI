@@ -160,7 +160,7 @@ def log_to_redis(categories):
         # Log warnings
         for branch in categories["warning"]:
             r.hset(
-                f"bmad:chiseai:branch_hygiene:warned:behind",
+                "bmad:chiseai:branch_hygiene:warned:behind",
                 branch["name"],
                 json.dumps(
                     {
@@ -199,7 +199,7 @@ def print_report(categories):
         for branch in categories["critical"]:
             print(f"  {branch['name']}")
             print(f"    → {branch['issue']}")
-            print(f"    → Action: Delete (already merged)")
+            print("    → Action: Delete (already merged)")
 
     if categories["warning"]:
         print(f"\n🟡 WARNING ({len(categories['warning'])} branches):")
@@ -207,7 +207,7 @@ def print_report(categories):
             print(f"  {branch['name']}")
             for issue in branch["issues"]:
                 print(f"    ⚠️  {issue}")
-            print(f"    → Action: Update or delete")
+            print("    → Action: Update or delete")
 
     if categories["invalid_name"]:
         print(f"\n🟠 INVALID NAME ({len(categories['invalid_name'])} branches):")

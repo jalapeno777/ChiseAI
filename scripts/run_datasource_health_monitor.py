@@ -269,7 +269,7 @@ async def main():
 
     # Start monitoring
     logger.info("Starting data source health monitoring...")
-    logger.info(f"Monitoring InfluxDB (30s interval) and PostgreSQL (60s interval)")
+    logger.info("Monitoring InfluxDB (30s interval) and PostgreSQL (60s interval)")
 
     # Check-once mode for testing
     if args.check_once:

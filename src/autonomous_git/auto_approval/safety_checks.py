@@ -229,7 +229,7 @@ class SafetyChecker:
                 return CheckResult(
                     name="story_id",
                     status=CheckStatus.PASSED,
-                    message=f"Found story ID in PR title",
+                    message="Found story ID in PR title",
                     details={"pattern_matched": pattern, "title": title},
                 )
 

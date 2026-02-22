@@ -375,7 +375,7 @@ def check_epic_consistency(
                     f"all {len(child_statuses)} child stories are completed"
                 ),
                 entity_id=epic_id,
-                suggestion=f"Consider updating epic status to 'completed'",
+                suggestion="Consider updating epic status to 'completed'",
             )
 
         # Epic should be in_progress if any child is in_progress
@@ -387,7 +387,7 @@ def check_epic_consistency(
                     f"at least one child story is in_progress"
                 ),
                 entity_id=epic_id,
-                suggestion=f"Consider updating epic status to 'in_progress'",
+                suggestion="Consider updating epic status to 'in_progress'",
             )
 
         # Epic should be planned if all children are planned
@@ -399,7 +399,7 @@ def check_epic_consistency(
                     f"all child stories are planned"
                 ),
                 entity_id=epic_id,
-                suggestion=f"Consider updating epic status to 'planned'",
+                suggestion="Consider updating epic status to 'planned'",
             )
 
 
@@ -433,7 +433,7 @@ def check_phase_sprint_consistency(
                         f"current phase '{phase_id}' is '{phase_status}'"
                     ),
                     entity_id=epic.get("id"),
-                    suggestion=f"Consider updating phase status to 'in_progress'",
+                    suggestion="Consider updating phase status to 'in_progress'",
                 )
 
     # Collect all sprint references

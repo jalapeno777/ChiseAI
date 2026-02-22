@@ -320,20 +320,20 @@ def export_to_markdown(packet: PromotionPacket, filepath: str) -> None:
     lines = []
 
     # Header
-    lines.append(f"# Brain Promotion Packet")
-    lines.append(f"")
+    lines.append("# Brain Promotion Packet")
+    lines.append("")
     lines.append(f"**Candidate Version:** `{packet.candidate_version}`")
     lines.append(f"**Baseline Version:** `{packet.baseline_version}`")
     lines.append(f"**Status:** {packet.status.value.upper()}")
     lines.append(f"**Created:** {packet.created_at.strftime('%Y-%m-%d %H:%M:%S UTC')}")
-    lines.append(f"")
+    lines.append("")
 
     # Summary Metrics
-    lines.append(f"## Summary Metrics")
-    lines.append(f"")
+    lines.append("## Summary Metrics")
+    lines.append("")
     if packet.summary_metrics:
-        lines.append(f"| Metric | Value |")
-        lines.append(f"|--------|-------|")
+        lines.append("| Metric | Value |")
+        lines.append("|--------|-------|")
         for metric_name, value in packet.summary_metrics.items():
             # Format based on metric type
             if "rate" in metric_name.lower() or metric_name in [
@@ -352,39 +352,39 @@ def export_to_markdown(packet: PromotionPacket, filepath: str) -> None:
                 f"| {metric_name.replace('_', ' ').title()} | {formatted_value} |"
             )
     else:
-        lines.append(f"*No metrics available*")
-    lines.append(f"")
+        lines.append("*No metrics available*")
+    lines.append("")
 
     # Safety Checks
-    lines.append(f"## Safety Checks")
-    lines.append(f"")
+    lines.append("## Safety Checks")
+    lines.append("")
     if packet.safety_checks:
         for check_name, passed in packet.safety_checks.items():
             status = "✅ PASS" if passed else "❌ FAIL"
             lines.append(f"- {status} {check_name.replace('_', ' ').title()}")
     else:
-        lines.append(f"*No safety checks recorded*")
-    lines.append(f"")
+        lines.append("*No safety checks recorded*")
+    lines.append("")
 
     # Rollback Plan
-    lines.append(f"## Rollback Plan")
-    lines.append(f"")
+    lines.append("## Rollback Plan")
+    lines.append("")
     lines.append(packet.rollback_plan)
-    lines.append(f"")
+    lines.append("")
 
     # Approval Workflow
-    lines.append(f"## Approval Workflow")
-    lines.append(f"")
+    lines.append("## Approval Workflow")
+    lines.append("")
     lines.append(
         f"**Required Approvers:** {', '.join(packet.required_approvers) if packet.required_approvers else 'None specified'}"
     )
-    lines.append(f"")
+    lines.append("")
 
     if packet.signatures:
-        lines.append(f"### Signatures")
-        lines.append(f"")
-        lines.append(f"| Approver | Status | Timestamp | Comments |")
-        lines.append(f"|----------|--------|-----------|----------|")
+        lines.append("### Signatures")
+        lines.append("")
+        lines.append("| Approver | Status | Timestamp | Comments |")
+        lines.append("|----------|--------|-----------|----------|")
         for sig in packet.signatures:
             status_emoji = {
                 ApprovalStatus.PENDING: "⏳",
@@ -396,23 +396,23 @@ def export_to_markdown(packet: PromotionPacket, filepath: str) -> None:
                 f"| {sig.approver} | {status_emoji} {sig.status.value} | {sig.timestamp.strftime('%Y-%m-%d %H:%M')} | {comments} |"
             )
     else:
-        lines.append(f"*No signatures yet*")
-    lines.append(f"")
+        lines.append("*No signatures yet*")
+    lines.append("")
 
     # Completeness Check
-    lines.append(f"## Completeness Check")
-    lines.append(f"")
+    lines.append("## Completeness Check")
+    lines.append("")
     is_complete_result = is_complete(packet)
     if is_complete_result:
-        lines.append(f"✅ **Packet is complete**")
+        lines.append("✅ **Packet is complete**")
     else:
         missing = get_missing_fields(packet)
-        lines.append(f"❌ **Packet is incomplete**")
-        lines.append(f"")
-        lines.append(f"**Missing fields:**")
+        lines.append("❌ **Packet is incomplete**")
+        lines.append("")
+        lines.append("**Missing fields:**")
         for field_name in missing:
             lines.append(f"- {field_name}")
-    lines.append(f"")
+    lines.append("")
 
     # Write to file
     Path(filepath).parent.mkdir(parents=True, exist_ok=True)

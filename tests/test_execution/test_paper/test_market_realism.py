@@ -1053,13 +1053,13 @@ class TestMarketRealismValidation:
         ), f"Fill rate {fill_rate:.2%} too low. Expected at least 90%"
 
         # Print summary for validation
-        print(f"\n=== 1000 Trade Simulation Results ===")
+        print("\n=== 1000 Trade Simulation Results ===")
         print(f"Mean Slippage: {mean_slippage:.2f} bps")
         print(f"Slippage Range: {min(slippages):.2f} - {max(slippages):.2f} bps")
         print(f"Mean Latency: {mean_latency:.2f} ms")
         print(f"Latency Range: {min(latencies):.2f} - {max(latencies):.2f} ms")
         print(f"Fill Rate: {fill_rate:.2%}")
-        print(f"=====================================\n")
+        print("=====================================\n")
 
     @pytest.mark.skip(reason="PaperOrder API mismatch - requires order_id parameter")
     def test_performance_overhead(self):
@@ -1104,7 +1104,7 @@ class TestMarketRealismValidation:
         assert mean_time < 1.0, f"Mean overhead {mean_time:.3f}ms exceeds 1ms threshold"
         assert p95_time < 5.0, f"P95 overhead {p95_time:.3f}ms exceeds 5ms threshold"
 
-        print(f"\n=== Performance Results ===")
+        print("\n=== Performance Results ===")
         print(f"Mean overhead: {mean_time:.4f} ms")
         print(f"P95 overhead: {p95_time:.4f} ms")
-        print(f"===========================\n")
+        print("===========================\n")

@@ -134,7 +134,7 @@ async def run_canary_pipeline(
     """Run the canary monitoring pipeline and capture telemetry."""
 
     execution_timestamp = datetime.utcnow().isoformat() + "Z"
-    logger.info(f"=== Starting Canary Monitoring Pipeline ===")
+    logger.info("=== Starting Canary Monitoring Pipeline ===")
     logger.info(f"Canary ID: {canary_id}")
     logger.info(f"Strategy ID: {strategy_id}")
     logger.info(f"Scenario: {mock_scenario}")
@@ -492,7 +492,7 @@ Examples:
                 "No measurements found in InfluxDB (may need to wait for flush)"
             )
 
-    logger.info(f"\n=== Pipeline Complete ===")
+    logger.info("\n=== Pipeline Complete ===")
     logger.info(f"Telemetry file: {filepath}")
     logger.info(f"Final status: {telemetry['final_status']}")
 

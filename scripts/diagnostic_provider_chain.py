@@ -168,7 +168,7 @@ class ProviderChainDiagnostic:
                 else False
             )
             if kimi_should_fail:
-                logger.info(f"    -> KIMI FAILED (simulated)")
+                logger.info("    -> KIMI FAILED (simulated)")
                 attempts.append(
                     ProviderAttempt(
                         order=order,
@@ -180,7 +180,7 @@ class ProviderChainDiagnostic:
                     )
                 )
             else:
-                logger.info(f"    -> KIMI SELECTED")
+                logger.info("    -> KIMI SELECTED")
                 attempts.append(
                     ProviderAttempt(
                         order=order,
@@ -215,7 +215,7 @@ class ProviderChainDiagnostic:
                     else False
                 )
                 if zai_should_fail:
-                    logger.info(f"    -> ZAI FAILED (simulated)")
+                    logger.info("    -> ZAI FAILED (simulated)")
                     attempts.append(
                         ProviderAttempt(
                             order=order,
@@ -227,7 +227,7 @@ class ProviderChainDiagnostic:
                         )
                     )
                 else:
-                    logger.info(f"    -> ZAI SELECTED")
+                    logger.info("    -> ZAI SELECTED")
                     attempts.append(
                         ProviderAttempt(
                             order=order,
@@ -266,7 +266,7 @@ class ProviderChainDiagnostic:
                     else False
                 )
                 if zhipu_should_fail:
-                    logger.info(f"    -> ZHIPU FAILED (simulated)")
+                    logger.info("    -> ZHIPU FAILED (simulated)")
                     attempts.append(
                         ProviderAttempt(
                             order=order,
@@ -278,7 +278,7 @@ class ProviderChainDiagnostic:
                         )
                     )
                 else:
-                    logger.info(f"    -> ZHIPU SELECTED")
+                    logger.info("    -> ZHIPU SELECTED")
                     attempts.append(
                         ProviderAttempt(
                             order=order,
@@ -310,7 +310,7 @@ class ProviderChainDiagnostic:
             )
             if minimax_available:
                 logger.info(f"[{order}] MINIMAX: Attempting...")
-                logger.info(f"    -> MINIMAX SELECTED")
+                logger.info("    -> MINIMAX SELECTED")
                 attempts.append(
                     ProviderAttempt(
                         order=order,
@@ -627,11 +627,11 @@ class ProviderChainDiagnostic:
 
         all_passed = all(s["passed"] for s in scenarios.values())
         logger.info(f"All Scenarios Passed: {all_passed}")
-        logger.info(f"\nActual Environment:")
+        logger.info("\nActual Environment:")
         logger.info(f"  Final Provider: {self.validation.final_provider}")
         logger.info(f"  KIMI First Validated: {self.validation.kimi_first_validated}")
 
-        logger.info(f"\nScenario Results:")
+        logger.info("\nScenario Results:")
         for name, result in scenarios.items():
             status = "✅ PASS" if result["passed"] else "❌ FAIL"
             logger.info(f"  {name}: {status} -> {result['final_provider']}")

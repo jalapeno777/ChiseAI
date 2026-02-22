@@ -247,7 +247,7 @@ class BybitProofHarness:
         print(f"   URL: {url}")
 
         if not self.api_key or not self.api_secret:
-            print(f"   ⚠️  Skipping auth test - no API credentials provided")
+            print("   ⚠️  Skipping auth test - no API credentials provided")
             return TestResult(
                 test_name=f"auth_{mode}",
                 endpoint=url,
@@ -579,21 +579,21 @@ class BybitProofHarness:
         print(f"Passed: {passed} ✅")
         print(f"Failed: {failed} {'⚠️' if failed > 0 else ''}")
 
-        print(f"\n🔌 Endpoint URLs Tested:")
+        print("\n🔌 Endpoint URLs Tested:")
         for mode, urls in evidence.endpoint_urls.items():
             print(f"   {mode}:")
             print(f"      REST: {urls['rest']}")
             print(f"      WS Public: {urls['ws_public']}")
             print(f"      WS Private: {urls['ws_private']}")
 
-        print(f"\n🔐 Authentication Results:")
+        print("\n🔐 Authentication Results:")
         for mode, result in evidence.auth_results.items():
             status = "✅" if result["success"] else "❌"
             print(f"   {mode}: {status} {'OK' if result['success'] else 'FAILED'}")
             if not result["success"] and result["error"]:
                 print(f"      Error: {result['error']}")
 
-        print(f"\n📈 Market Data Evidence:")
+        print("\n📈 Market Data Evidence:")
         for symbol, modes in evidence.market_data.items():
             print(f"   {symbol}:")
             for mode, data in modes.items():
@@ -602,7 +602,7 @@ class BybitProofHarness:
                     f"      {mode}: {status} Price=${data.get('price', 'N/A')} ({data['latency_ms']:.2f}ms)"
                 )
 
-        print(f"\n⏱️  Latency Measurements:")
+        print("\n⏱️  Latency Measurements:")
         threshold = (
             self.config.get("settings", {})
             .get("latency_threshold_ms", {})
@@ -615,7 +615,7 @@ class BybitProofHarness:
         print(f"\n🎯 Selected Primary Mode: {evidence.selected_primary}")
 
         if evidence.notes:
-            print(f"\n📝 Notes:")
+            print("\n📝 Notes:")
             for note in evidence.notes:
                 print(f"   - {note}")
 
@@ -666,7 +666,7 @@ class BybitProofHarness:
         live_auth_ok = evidence.auth_results.get("live", {}).get("success", False)
 
         if not testnet_auth_ok and not live_auth_ok and self.api_key:
-            print(f"\n❌ CRITICAL: Both testnet and live authentication failed")
+            print("\n❌ CRITICAL: Both testnet and live authentication failed")
             return 2
         elif passed_tests < total_tests:
             print(f"\n⚠️  WARNING: Some tests failed ({passed_tests}/{total_tests})")

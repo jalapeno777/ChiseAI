@@ -85,7 +85,7 @@ def test_configuration() -> dict[str, Any]:
         assert criteria.duration_days == 7, "Duration should be 7 days"
         assert criteria.min_trades == 10, "Min trades should be 10"
 
-        results["details"].append(f"✓ Default gate criteria validated")
+        results["details"].append("✓ Default gate criteria validated")
         results["details"].append(f"  - Max drawdown: {criteria.max_drawdown_pct}%")
         results["details"].append(f"  - Min win rate: {criteria.min_win_rate_pct}%")
         results["details"].append(f"  - Duration: {criteria.duration_days} days")
@@ -371,7 +371,7 @@ async def test_budget_enforcement() -> dict[str, Any]:
         config = RiskCheck()
         enforcer = PaperRiskEnforcer(config=config)
 
-        results["details"].append(f"✓ Risk enforcer initialized")
+        results["details"].append("✓ Risk enforcer initialized")
         results["details"].append(
             f"  - Max position pct: {config.max_position_pct:.1%}"
         )
@@ -425,7 +425,7 @@ async def test_budget_enforcement() -> dict[str, Any]:
         )
 
         if assessment.approved:
-            results["details"].append(f"✓ Order approved")
+            results["details"].append("✓ Order approved")
             results["details"].append(
                 f"  - Position size: {assessment.position_size:.6f}"
             )
@@ -433,7 +433,7 @@ async def test_budget_enforcement() -> dict[str, Any]:
                 f"  - Margin required: ${assessment.margin_required:,.2f}"
             )
         else:
-            results["details"].append(f"⚠ Order rejected")
+            results["details"].append("⚠ Order rejected")
             for v in assessment.violations:
                 results["details"].append(f"  - {v.rule}: {v.message}")
 
@@ -469,13 +469,13 @@ async def test_budget_enforcement() -> dict[str, Any]:
         )
 
         if not low_conf_assessment.approved:
-            results["details"].append(f"✓ Low confidence order correctly rejected")
+            results["details"].append("✓ Low confidence order correctly rejected")
         else:
-            results["details"].append(f"⚠ Low confidence order was not rejected")
+            results["details"].append("⚠ Low confidence order was not rejected")
 
         # Get enforcer stats
         stats = enforcer.get_stats()
-        results["details"].append(f"✓ Enforcer stats retrieved")
+        results["details"].append("✓ Enforcer stats retrieved")
         results["details"].append(
             f"  - Total violations: {stats['violation_stats']['total_violations']}"
         )
@@ -542,7 +542,7 @@ def test_metrics_collection() -> dict[str, Any]:
             },
         }
 
-        results["details"].append(f"✓ Simulated canary metrics collected")
+        results["details"].append("✓ Simulated canary metrics collected")
         results["details"].append(f"  - Start equity: ${metrics.start_equity:,.2f}")
         results["details"].append(f"  - Current equity: ${metrics.current_equity:,.2f}")
         results["details"].append(f"  - Peak equity: ${metrics.peak_equity:,.2f}")
@@ -559,12 +559,12 @@ def test_metrics_collection() -> dict[str, Any]:
         metrics_dict = metrics.to_dict()
         assert "start_equity" in metrics_dict
         assert "win_rate_pct" in metrics_dict
-        results["details"].append(f"✓ Metrics serialization successful")
+        results["details"].append("✓ Metrics serialization successful")
 
         # Test deserialization
         restored = CanaryMetrics.from_dict(metrics_dict)
         assert restored.total_trades == metrics.total_trades
-        results["details"].append(f"✓ Metrics deserialization successful")
+        results["details"].append("✓ Metrics deserialization successful")
 
     except Exception as e:
         results["status"] = "FAIL"

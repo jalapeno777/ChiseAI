@@ -75,14 +75,14 @@ def smoke_test_entry_price_fix():
         )
 
         # Verify signal structure
-        print(f"\n1. Signal Generated:")
+        print("\n1. Signal Generated:")
         print(f"   Token: {signal.token}")
         print(f"   Direction: {signal.direction}")
         print(f"   Confidence: {signal.confidence:.2%}")
         print(f"   Status: {signal.status}")
 
         # Verify metadata contains entry_price
-        print(f"\n2. Metadata Check:")
+        print("\n2. Metadata Check:")
         if "entry_price" in signal.metadata:
             entry_price = signal.metadata["entry_price"]
             print(f"   ✓ entry_price FOUND: {entry_price}")
@@ -95,12 +95,12 @@ def smoke_test_entry_price_fix():
                 )
                 return False
         else:
-            print(f"   ✗ entry_price MISSING from metadata!")
+            print("   ✗ entry_price MISSING from metadata!")
             print(f"   Available keys: {list(signal.metadata.keys())}")
             return False
 
         # Test without current_price (should be None)
-        print(f"\n3. Test without current_price:")
+        print("\n3. Test without current_price:")
         signal_no_price = generator.generate_signal(
             token="ETH/USDT",
             timeframe=Timeframe.HOUR_1,
@@ -109,7 +109,7 @@ def smoke_test_entry_price_fix():
         )
 
         if signal_no_price.metadata.get("entry_price") is None:
-            print(f"   ✓ entry_price is None when not provided")
+            print("   ✓ entry_price is None when not provided")
         else:
             print(
                 f"   ✗ entry_price should be None, got: {signal_no_price.metadata.get('entry_price')}"
@@ -117,18 +117,18 @@ def smoke_test_entry_price_fix():
             return False
 
         # Verify risk enforcer can read entry_price correctly
-        print(f"\n4. Risk Enforcer Simulation:")
+        print("\n4. Risk Enforcer Simulation:")
         entry_price_for_risk = signal.metadata.get("entry_price", 0.0)
         if entry_price_for_risk > 0:
             print(f"   ✓ Risk enforcer reads entry_price: {entry_price_for_risk}")
-            print(f"   ✓ Position sizing can proceed correctly")
+            print("   ✓ Position sizing can proceed correctly")
         else:
             print(
-                f"   ✗ Risk enforcer would default to 0.0 - position sizing would fail!"
+                "   ✗ Risk enforcer would default to 0.0 - position sizing would fail!"
             )
             return False
 
-        print(f"\n" + "=" * 60)
+        print("\n" + "=" * 60)
         print("SMOKE TEST PASSED ✓")
         print("=" * 60)
         print("\nBURNIN-001 fix verified:")

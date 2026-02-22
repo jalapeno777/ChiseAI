@@ -131,7 +131,7 @@ def benchmark_cache_performance():
     # Performance targets
     print("Performance Targets:")
     print("-" * 60)
-    print(f"  Target hit rate: >70%")
+    print("  Target hit rate: >70%")
     print(f"  Achieved hit rate: {metrics.hit_rate:.1f}%")
     print(f"  Status: {'PASS ✓' if metrics.hit_rate >= 70 else 'FAIL ✗'}")
     print()

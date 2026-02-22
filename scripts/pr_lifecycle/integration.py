@@ -272,7 +272,7 @@ def main() -> int:
             print(f"Recorded merge attempt for PR #{args.pr_number}")
             return 0
         else:
-            print(f"Failed to record merge attempt", file=sys.stderr)
+            print("Failed to record merge attempt", file=sys.stderr)
             return 1
 
     return 0

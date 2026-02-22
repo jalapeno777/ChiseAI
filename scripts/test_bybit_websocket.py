@@ -329,7 +329,7 @@ def run_websocket_tests():
         if result["latency_ms"]:
             print(f"     Latency: {result['latency_ms']}ms")
         if result["message_received"]:
-            print(f"     Message received: Yes")
+            print("     Message received: Yes")
         if result["error"]:
             print(f"     Error: {result['error']}")
 

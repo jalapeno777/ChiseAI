@@ -398,7 +398,7 @@ class BaseHealingAction(ABC):
             Python script content
         """
         # This is a simplified version - in production would use proper IPC
-        return f"""
+        return """
 import json
 import sys
 import traceback
@@ -407,7 +407,7 @@ import traceback
 sys.stdout = open('/dev/null', 'w')
 sys.stderr = open('/dev/null', 'w')
 
-result = {{"success": True, "message": "Sandboxed execution placeholder"}}
+result = {"success": True, "message": "Sandboxed execution placeholder"}
 
 # Re-enable stdout for result
 sys.stdout = sys.__stdout__

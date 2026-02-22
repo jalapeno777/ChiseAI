@@ -1083,7 +1083,7 @@ class LivePipelineProof:
             "direction": analysis.direction.value.upper(),
             "rationale": analysis.rationale,
         }
-        logger.info(f"✓ Analysis complete")
+        logger.info("✓ Analysis complete")
         logger.info(f"  RSI: {analysis.indicators['rsi']}")
         logger.info(f"  MACD: {analysis.indicators['macd']}")
         logger.info(f"  Direction: {analysis.direction.value.upper()}")
@@ -1104,7 +1104,7 @@ class LivePipelineProof:
             "rationale": llm_enhancement.rationale,
             "latency_ms": round(llm_enhancement.latency_ms, 2),
         }
-        logger.info(f"✓ LLM enhancement complete")
+        logger.info("✓ LLM enhancement complete")
         logger.info(f"  Provider: {llm_enhancement.provider}")
         logger.info(f"  Base: {llm_enhancement.base_confidence:.1f}%")
         logger.info(f"  LLM: {llm_enhancement.llm_confidence:.1f}%")
@@ -1118,7 +1118,7 @@ class LivePipelineProof:
         self.evidence.timestamps["signal_start"] = datetime.now(UTC).isoformat()
 
         signal = self.signal_generator.generate(market_data, analysis, llm_enhancement)
-        logger.info(f"✓ Signal generated")
+        logger.info("✓ Signal generated")
         logger.info(f"  ID: {signal.signal_id[:8]}...")
         logger.info(f"  Token: {signal.token}")
         logger.info(f"  Direction: {signal.direction_str}")
@@ -1142,7 +1142,7 @@ class LivePipelineProof:
             "side": trade.side,
             "timestamp": trade.timestamp.isoformat(),
         }
-        logger.info(f"✓ Paper trade simulated")
+        logger.info("✓ Paper trade simulated")
         logger.info(f"  Order ID: {trade.order_id}")
         logger.info(f"  Entry: ${trade.entry_price:,.2f}")
         logger.info(f"  Size: {trade.position_size:.6f}")
@@ -1256,7 +1256,7 @@ async def main() -> int:
         print(
             f"Final Confidence: {evidence.llm_enhancement.get('final_confidence', 0):.1f}%"
         )
-        print(f"\nDiscord Notifications:")
+        print("\nDiscord Notifications:")
         for notif_type, details in evidence.discord_notifications.items():
             status = details.get("status", "unknown")
             print(f"  - {notif_type}: {status}")

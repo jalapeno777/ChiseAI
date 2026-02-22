@@ -157,7 +157,7 @@ class TestBybitAuthentication:
                 )
                 assert "result" in data
 
-                print(f"\nTestnet auth: OK")
+                print("\nTestnet auth: OK")
 
     @pytest.mark.asyncio
     async def test_live_authentication(self, config, api_credentials, recv_window):
@@ -194,7 +194,7 @@ class TestBybitAuthentication:
                     f"(retCode={data.get('retCode')})"
                 )
 
-                print(f"\nLive auth: OK")
+                print("\nLive auth: OK")
 
 
 class TestBybitMarketData:

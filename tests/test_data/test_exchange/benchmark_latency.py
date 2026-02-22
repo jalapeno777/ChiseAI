@@ -260,15 +260,15 @@ class LatencyBenchmark:
         acquisition_avg = results["acquisition"]["avg_ms"]
         target = 1000.0  # 1 second target
 
-        print(f"\nConnection Acquisition:")
+        print("\nConnection Acquisition:")
         print(f"  Average: {acquisition_avg:.2f}ms")
         print(f"  Target: <{target:.0f}ms")
         print(f"  Status: {'PASS' if acquisition_avg < target else 'FAIL'}")
 
         comparison = results["comparison"]
-        print(f"\nPool vs Non-Pool:")
+        print("\nPool vs Non-Pool:")
         print(f"  Improvement: {comparison['improvement_percent']:.1f}%")
-        print(f"  Target: >50% improvement")
+        print("  Target: >50% improvement")
         print(
             f"  Status: {'PASS' if comparison['improvement_percent'] > 50 else 'FAIL'}"
         )
