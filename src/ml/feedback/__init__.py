@@ -8,6 +8,8 @@ Components:
 - analyzer: Performance analysis and drift detection
 - updater: Model updates with version control
 - orchestrator: Full feedback loop coordination
+- outcome_capture: Real-time trade outcome capture from exchange fills
+- bybit_fill_listener: Bybit WebSocket fill event listener
 
 Usage:
     from ml.feedback import (
@@ -15,6 +17,8 @@ Usage:
         FeedbackAnalyzer,
         ModelUpdater,
         FeedbackOrchestrator,
+        OutcomeCaptureService,
+        BybitFillListener,
     )
 
     # Run complete feedback loop
@@ -23,6 +27,18 @@ Usage:
 """
 
 from __future__ import annotations
+
+# Outcome Capture components (ST-LAUNCH-018)
+from ml.feedback.bybit_fill_listener import (
+    BybitFillListener,
+    BybitListenerConfig,
+    ConnectionState,
+)
+from ml.feedback.outcome_capture_service import (
+    CaptureMetrics,
+    OutcomeCaptureConfig,
+    OutcomeCaptureService,
+)
 
 # Matcher components
 from ml.feedback.matcher import (
@@ -70,6 +86,13 @@ from ml.feedback.orchestrator import (
 )
 
 __all__ = [
+    # Outcome Capture (ST-LAUNCH-018)
+    "OutcomeCaptureService",
+    "OutcomeCaptureConfig",
+    "CaptureMetrics",
+    "BybitFillListener",
+    "BybitListenerConfig",
+    "ConnectionState",
     # Matcher
     "PredictionOutcomeMatcher",
     "MatchConfig",
