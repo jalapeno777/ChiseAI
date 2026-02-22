@@ -58,7 +58,7 @@ def generate_ws_signature(api_secret, expires):
     """Generate Bybit WebSocket signature."""
     signature = hmac.new(
         api_secret.encode("utf-8"),
-        f"GET/realtime{expires}".encode("utf-8"),
+        f"GET/realtime{expires}".encode(),
         hashlib.sha256,
     ).hexdigest()
     return signature

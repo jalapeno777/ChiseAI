@@ -9,7 +9,7 @@ Target: <3s dashboard load time
 
 import re
 from datetime import timedelta
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class QueryOptimizer:
@@ -59,9 +59,9 @@ class QueryOptimizer:
         self,
         query: str,
         time_range: timedelta,
-        measurement: Optional[str] = None,
-        fields: Optional[list] = None,
-        group_by: Optional[list] = None,
+        measurement: str | None = None,
+        fields: list | None = None,
+        group_by: list | None = None,
     ) -> str:
         """Optimize an InfluxDB query for performance.
 
@@ -92,9 +92,9 @@ class QueryOptimizer:
         self,
         base_query: str,
         aggregation: str,
-        measurement: Optional[str],
-        fields: Optional[list],
-        group_by: Optional[list],
+        measurement: str | None,
+        fields: list | None,
+        group_by: list | None,
     ) -> str:
         """Build query with appropriate aggregation.
 
@@ -195,8 +195,8 @@ class QueryOptimizer:
         return cache_hint + query
 
     def optimize_time_range(
-        self, panel_type: str, default_range: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, panel_type: str, default_range: str | None = None
+    ) -> dict[str, Any]:
         """Suggest optimal time range for a panel type.
 
         Args:
@@ -273,7 +273,7 @@ class QueryOptimizer:
 class DashboardQueryOptimizer:
     """Optimizes all queries in a Grafana dashboard JSON."""
 
-    def __init__(self, optimizer: Optional[QueryOptimizer] = None):
+    def __init__(self, optimizer: QueryOptimizer | None = None):
         """Initialize dashboard optimizer.
 
         Args:
@@ -281,7 +281,7 @@ class DashboardQueryOptimizer:
         """
         self.optimizer = optimizer or QueryOptimizer()
 
-    def optimize_dashboard(self, dashboard_json: Dict[str, Any]) -> Dict[str, Any]:
+    def optimize_dashboard(self, dashboard_json: dict[str, Any]) -> dict[str, Any]:
         """Optimize all queries in a dashboard.
 
         Args:
@@ -384,8 +384,8 @@ class DashboardQueryOptimizer:
 def optimize_grafana_query(
     query: str,
     time_range: str,
-    measurement: Optional[str] = None,
-    fields: Optional[list] = None,
+    measurement: str | None = None,
+    fields: list | None = None,
 ) -> str:
     """Convenience function to optimize a single query.
 

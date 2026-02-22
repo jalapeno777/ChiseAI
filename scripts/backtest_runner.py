@@ -37,7 +37,7 @@ import logging
 import os
 import signal
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 # Add src to path for imports
@@ -191,13 +191,13 @@ class BacktestRunnerService:
         if self.runner is None:
             return {
                 "status": "not_running",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
 
         # This would need to be enhanced to actually query the runner state
         return {
             "status": "running",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
 

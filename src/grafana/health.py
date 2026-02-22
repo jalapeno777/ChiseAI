@@ -7,7 +7,7 @@ dashboard validation status and system health.
 import json
 import logging
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from src.grafana.validation import DashboardValidator, HealthStatus
 
@@ -37,8 +37,8 @@ class DashboardHealthEndpoint:
     def __init__(
         self,
         provisioning_dir: str,
-        active_dir: Optional[str] = None,
-        failed_dir: Optional[str] = None,
+        active_dir: str | None = None,
+        failed_dir: str | None = None,
     ):
         """Initialize the health endpoint.
 
@@ -50,8 +50,8 @@ class DashboardHealthEndpoint:
         self.provisioning_dir = Path(provisioning_dir)
         self.active_dir = Path(active_dir) if active_dir else None
         self.failed_dir = Path(failed_dir) if failed_dir else None
-        self._validator: Optional[DashboardValidator] = None
-        self._last_status: Optional[HealthStatus] = None
+        self._validator: DashboardValidator | None = None
+        self._last_status: HealthStatus | None = None
 
     def _get_validator(self) -> DashboardValidator:
         """Get or create the dashboard validator."""
@@ -159,9 +159,9 @@ class DashboardHealthEndpoint:
 
 
 def create_health_endpoint(
-    provisioning_dir: Optional[str] = None,
-    active_dir: Optional[str] = None,
-    failed_dir: Optional[str] = None,
+    provisioning_dir: str | None = None,
+    active_dir: str | None = None,
+    failed_dir: str | None = None,
 ) -> DashboardHealthEndpoint:
     """Create a health endpoint with default paths.
 
@@ -201,8 +201,8 @@ def create_health_endpoint(
 # Simulated HTTP endpoint handler for integration
 def handle_health_request(
     provisioning_dir: str,
-    active_dir: Optional[str] = None,
-    failed_dir: Optional[str] = None,
+    active_dir: str | None = None,
+    failed_dir: str | None = None,
     force_refresh: bool = False,
 ) -> dict[str, Any]:
     """Handle a health check request.

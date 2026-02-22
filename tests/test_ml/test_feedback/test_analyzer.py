@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
 import pytest
@@ -252,7 +252,7 @@ class TestFeedbackAnalysisReport:
     def test_report_creation(self) -> None:
         """Test report creation."""
         report = FeedbackAnalysisReport(
-            analysis_time=datetime.now(timezone.utc),
+            analysis_time=datetime.now(UTC),
             total_matches=100,
             overall_accuracy=0.75,
         )
@@ -263,7 +263,7 @@ class TestFeedbackAnalysisReport:
     def test_to_dict(self) -> None:
         """Test conversion to dictionary."""
         report = FeedbackAnalysisReport(
-            analysis_time=datetime.now(timezone.utc),
+            analysis_time=datetime.now(UTC),
             total_matches=100,
             overall_accuracy=0.75,
             recommendations=["Test recommendation"],
@@ -491,7 +491,7 @@ class TestFeedbackAnalyzer:
     def test_generate_recommendations_low_accuracy(self, analyzer) -> None:
         """Test recommendations for low accuracy."""
         report = FeedbackAnalysisReport(
-            analysis_time=datetime.now(timezone.utc),
+            analysis_time=datetime.now(UTC),
             total_matches=100,
             overall_accuracy=0.4,  # Below 50%
         )
@@ -503,7 +503,7 @@ class TestFeedbackAnalyzer:
     def test_generate_recommendations_high_accuracy(self, analyzer) -> None:
         """Test recommendations for high accuracy."""
         report = FeedbackAnalysisReport(
-            analysis_time=datetime.now(timezone.utc),
+            analysis_time=datetime.now(UTC),
             total_matches=100,
             overall_accuracy=0.8,  # Above 70%
         )

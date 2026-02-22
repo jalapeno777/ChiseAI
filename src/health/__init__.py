@@ -31,7 +31,7 @@ class HealthStatus(Enum):
     RED = "red"  # 0-69: Critical
 
     @classmethod
-    def from_score(cls, score: float) -> "HealthStatus":
+    def from_score(cls, score: float) -> HealthStatus:
         """Get status from numeric score.
 
         Args:

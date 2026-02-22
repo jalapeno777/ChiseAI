@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fix the EP-NS-008 stories placement in bmm-workflow-status.yaml"""
 
-with open("docs/bmm-workflow-status.yaml", "r") as f:
+with open("docs/bmm-workflow-status.yaml") as f:
     lines = f.readlines()
 
 # Find the line where stories section ends (where summary comment starts)

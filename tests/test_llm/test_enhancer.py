@@ -133,7 +133,7 @@ class TestLLMConfidenceEnhancerInitialization:
 
         expected_order = ["kimi", "zai", "zhipu", "minimax"]
         assert enhancer.get_provider_order() == expected_order
-        assert enhancer.DEFAULT_PROVIDER_ORDER == expected_order
+        assert expected_order == enhancer.DEFAULT_PROVIDER_ORDER
 
     def test_custom_provider_order(self):
         """Test initialization with custom provider order."""

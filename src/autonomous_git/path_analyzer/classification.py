@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class RiskLevel(Enum):
@@ -26,7 +26,7 @@ class RiskLevel(Enum):
         return priorities[self]
 
     @classmethod
-    def from_highest(cls, levels: List["RiskLevel"]) -> "RiskLevel":
+    def from_highest(cls, levels: list["RiskLevel"]) -> "RiskLevel":
         """Return the highest risk level from a list."""
         if not levels:
             return cls.COMPLEX  # Default to most conservative
@@ -40,8 +40,8 @@ class FileClassification:
     path: str
     risk_level: RiskLevel
     confidence: float
-    pattern_matched: Optional[str] = None
-    semantic_flags: List[str] = None
+    pattern_matched: str | None = None
+    semantic_flags: list[str] = None
 
     def __post_init__(self):
         if self.semantic_flags is None:
@@ -54,15 +54,15 @@ class RiskClassification:
 
     risk_level: RiskLevel
     confidence: float
-    files: List[str]
-    file_classifications: List[FileClassification]
+    files: list[str]
+    file_classifications: list[FileClassification]
     reasoning: str
-    pr_number: Optional[int] = None
-    commit_sha: Optional[str] = None
-    timestamp: Optional[str] = None
-    analysis_duration_ms: Optional[float] = None
+    pr_number: int | None = None
+    commit_sha: str | None = None
+    timestamp: str | None = None
+    analysis_duration_ms: float | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "risk_level": self.risk_level.value,
@@ -86,7 +86,7 @@ class RiskClassification:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "RiskClassification":
+    def from_dict(cls, data: dict[str, Any]) -> "RiskClassification":
         """Create from dictionary."""
         file_classifications = [
             FileClassification(

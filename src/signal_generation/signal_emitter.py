@@ -10,7 +10,7 @@ import logging
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -152,7 +152,7 @@ class DiscordEmitter(SignalEmitter):
             confidence: Signal confidence score
             bypass_reason: Reason for bypassing the confidence filter
         """
-        timestamp = datetime.now(timezone.utc).isoformat()
+        timestamp = datetime.now(UTC).isoformat()
         logger.warning(
             f"CONFIDENCE_BYPASS: signal_id={signal_id} "
             f"confidence={confidence:.2%} "

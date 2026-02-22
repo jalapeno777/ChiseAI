@@ -13,7 +13,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Dict, List, Optional, Protocol
+from typing import Any, Protocol
 
 from src.api.pagination import TimeSeriesPaginator
 
@@ -93,16 +93,16 @@ class TimeRange:
 class LazyDataSet:
     """Dataset with lazy loading metadata."""
 
-    visible_data: List[Dict[str, Any]]
-    prefetched_before: List[Dict[str, Any]] = field(default_factory=list)
-    prefetched_after: List[Dict[str, Any]] = field(default_factory=list)
+    visible_data: list[dict[str, Any]]
+    prefetched_before: list[dict[str, Any]] = field(default_factory=list)
+    prefetched_after: list[dict[str, Any]] = field(default_factory=list)
     loading: bool = False
     complete: bool = False
     resolution: str = "raw"
-    time_range: Optional[TimeRange] = None
+    time_range: TimeRange | None = None
 
     @property
-    def all_data(self) -> List[Dict[str, Any]]:
+    def all_data(self) -> list[dict[str, Any]]:
         """Get all available data including prefetched."""
         return self.prefetched_before + self.visible_data + self.prefetched_after
 
@@ -120,7 +120,7 @@ class LazyDataSet:
 class CacheBackend(Protocol):
     """Protocol for cache backends."""
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """Get value from cache."""
         ...
 
@@ -137,11 +137,11 @@ class InMemoryCache:
     """Simple in-memory cache implementation."""
 
     def __init__(self, max_size: int = 100):
-        self._cache: Dict[str, tuple[Any, float]] = {}
+        self._cache: dict[str, tuple[Any, float]] = {}
         self._max_size = max_size
         self._lock = threading.RLock()
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         with self._lock:
             if key in self._cache:
                 value, expiry = self._cache[key]
@@ -169,7 +169,7 @@ class DataLoader(Protocol):
 
     def load(
         self, start_time: datetime, end_time: datetime, resolution: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Load data for a time range."""
         ...
 
@@ -182,7 +182,7 @@ class TimeSeriesDataLoader:
 
     def load(
         self, start_time: datetime, end_time: datetime, resolution: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Load all data for a time range."""
         all_data = []
 
@@ -196,11 +196,11 @@ class TimeSeriesDataLoader:
 class PrefetchState:
     """Tracks prefetch state for a viewport."""
 
-    before: Optional[TimeRange] = None
-    after: Optional[TimeRange] = None
+    before: TimeRange | None = None
+    after: TimeRange | None = None
     loading_before: bool = False
     loading_after: bool = False
-    last_update: Optional[datetime] = None
+    last_update: datetime | None = None
 
 
 class LazyDataLoader:
@@ -233,7 +233,7 @@ class LazyDataLoader:
     def __init__(
         self,
         paginator: TimeSeriesPaginator,
-        cache: Optional[CacheBackend] = None,
+        cache: CacheBackend | None = None,
         prefetch_margin: timedelta = timedelta(hours=1),
         stale_timeout: timedelta = timedelta(seconds=30),
         max_memory_records: int = 50000,
@@ -253,12 +253,12 @@ class LazyDataLoader:
         self._stale_timeout = stale_timeout
         self._max_memory_records = max_memory_records
 
-        self._current_data: Optional[LazyDataSet] = None
+        self._current_data: LazyDataSet | None = None
         self._prefetch_state = PrefetchState()
         self._lock = threading.RLock()
 
         # Background prefetch thread
-        self._prefetch_thread: Optional[threading.Thread] = None
+        self._prefetch_thread: threading.Thread | None = None
         self._prefetch_stop = threading.Event()
 
     def _make_cache_key(
@@ -369,7 +369,7 @@ class LazyDataLoader:
 
             return self._current_data
 
-    def _load_range(self, time_range: TimeRange) -> List[Dict[str, Any]]:
+    def _load_range(self, time_range: TimeRange) -> list[dict[str, Any]]:
         """Load data for a time range."""
         cache_key = self._make_cache_key(time_range.start, time_range.end, "raw")
 
@@ -516,7 +516,7 @@ class LazyDataLoader:
                 new_start, new_end, self._current_data.resolution
             )
 
-    def get_current_data(self) -> Optional[LazyDataSet]:
+    def get_current_data(self) -> LazyDataSet | None:
         """Get the current lazy dataset."""
         with self._lock:
             return self._current_data
@@ -550,7 +550,7 @@ class AsyncLazyDataLoader:
     def __init__(
         self,
         paginator: TimeSeriesPaginator,
-        cache: Optional[CacheBackend] = None,
+        cache: CacheBackend | None = None,
         prefetch_margin: timedelta = timedelta(hours=1),
         **kwargs,
     ):
@@ -585,7 +585,7 @@ class AsyncLazyDataLoader:
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self._sync_loader.on_pan, direction)
 
-    def get_current_data(self) -> Optional[LazyDataSet]:
+    def get_current_data(self) -> LazyDataSet | None:
         """Get current data."""
         return self._sync_loader.get_current_data()
 
@@ -599,7 +599,7 @@ class AsyncLazyDataLoader:
 
 
 def create_lazy_loader(
-    data: List[Dict[str, Any]],
+    data: list[dict[str, Any]],
     timestamp_field: str = "timestamp",
     page_size: int = 1000,
     **kwargs,

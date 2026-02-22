@@ -10,9 +10,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Awaitable, Callable
 
 from src.autonomous_control_plane.components.log_parsers import (
     BaseLogParser,
@@ -234,7 +234,7 @@ class LogMonitor:
 
                 self._queue.task_done()
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue
             except Exception as e:
                 logger.error(f"Dispatch loop error: {e}")
@@ -372,7 +372,7 @@ class LogWatcher:
 
             # Read new content
             async with asyncio.Lock():  # Prevent concurrent reads
-                with open(path, "r", encoding="utf-8", errors="replace") as f:
+                with open(path, encoding="utf-8", errors="replace") as f:
                     f.seek(self._last_position)
 
                     for line in f:

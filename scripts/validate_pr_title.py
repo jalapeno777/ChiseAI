@@ -24,7 +24,6 @@ from config.bootstrap import bootstrap
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from config.bootstrap import bootstrap
 
 # Bootstrap environment first (must be before any env access)
 bootstrap(load_env=True)

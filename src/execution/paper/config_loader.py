@@ -51,7 +51,7 @@ class MarketRealismConfig:
                 self._config = self._get_default_config()
                 return
 
-            with open(self.config_path, "r") as f:
+            with open(self.config_path) as f:
                 self._config = yaml.safe_load(f) or {}
 
             logger.info(f"Loaded market realism config from {self.config_path}")

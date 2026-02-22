@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
 
 import pytest
@@ -38,7 +38,7 @@ class TestFeedbackLoopIntegration:
     @pytest.fixture
     def sample_signals(self) -> list[SignalRecord]:
         """Create sample signals for testing."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         signals = []
 
         for i in range(200):
@@ -108,7 +108,7 @@ class TestFeedbackLoopIntegration:
         sample_outcomes,
     ) -> None:
         """Test end-to-end matching flow."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Create matches from signals and outcomes
         matches = []
@@ -143,7 +143,7 @@ class TestFeedbackLoopIntegration:
         sample_outcomes,
     ) -> None:
         """Test end-to-end analysis flow."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Create matches
         from ml.feedback.matcher import PredictionOutcomeMatch
@@ -182,7 +182,7 @@ class TestFeedbackLoopIntegration:
         sample_outcomes,
     ) -> None:
         """Test all components working together."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Step 1: Create matches
         from ml.feedback.matcher import PredictionOutcomeMatch
@@ -230,7 +230,7 @@ class TestFeedbackLoopIntegration:
         """Test temporal safety in complete flow."""
         from ml.feedback.orchestrator import TemporalBoundary
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Create boundary with 2-hour buffer
         boundary = TemporalBoundary(

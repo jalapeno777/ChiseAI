@@ -4,7 +4,7 @@ import hashlib
 import json
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .models import CalibrationMetrics, Decision, ReviewFeedback
 
@@ -18,10 +18,10 @@ class ReviewRecord:
     decision: str
     confidence: float
     timestamp: datetime
-    human_feedback: Optional[str] = None
-    human_override: Optional[str] = None
+    human_feedback: str | None = None
+    human_override: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "pr_number": self.pr_number,
             "review_id": self.review_id,
@@ -33,7 +33,7 @@ class ReviewRecord:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ReviewRecord":
+    def from_dict(cls, data: dict[str, Any]) -> "ReviewRecord":
         return cls(
             pr_number=data["pr_number"],
             review_id=data["review_id"],
@@ -51,7 +51,7 @@ class CalibrationTracker:
     def __init__(self, redis_client=None, metrics_prefix: str = "gitreviewbot"):
         self.redis = redis_client
         self.metrics_prefix = metrics_prefix
-        self._local_cache: List[ReviewRecord] = []
+        self._local_cache: list[ReviewRecord] = []
 
     def _review_key(self, pr_number: int, review_id: str) -> str:
         """Generate Redis key for review record."""
@@ -66,7 +66,7 @@ class CalibrationTracker:
         return f"{self.metrics_prefix}:metrics:{date.strftime('%Y-%m-%d')}"
 
     async def log_review(
-        self, decision: Decision, review_id: Optional[str] = None
+        self, decision: Decision, review_id: str | None = None
     ) -> str:
         """Log a review decision for calibration tracking."""
         review_id = review_id or self._generate_review_id(decision)
@@ -95,7 +95,7 @@ class CalibrationTracker:
         review_id: str,
         feedback_type: str,
         reviewer: str,
-        comment: Optional[str] = None,
+        comment: str | None = None,
     ) -> None:
         """Record human feedback on a bot review."""
         feedback = ReviewFeedback(
@@ -147,7 +147,7 @@ class CalibrationTracker:
     async def calculate_metrics(
         self,
         days: int = 7,
-        end_date: Optional[datetime] = None,
+        end_date: datetime | None = None,
     ) -> CalibrationMetrics:
         """Calculate calibration metrics for a period."""
         end_date = end_date or datetime.utcnow()
@@ -219,7 +219,7 @@ class CalibrationTracker:
             period_end=end_date,
         )
 
-    async def get_recommended_thresholds(self) -> Dict[str, float]:
+    async def get_recommended_thresholds(self) -> dict[str, float]:
         """Get recommended confidence thresholds based on calibration."""
         metrics = await self.calculate_metrics(days=30)
 
@@ -254,7 +254,7 @@ class CalibrationTracker:
                 "auto_merge": 97.0,
             }
 
-    async def export_to_grafana(self, metrics: CalibrationMetrics) -> Dict[str, Any]:
+    async def export_to_grafana(self, metrics: CalibrationMetrics) -> dict[str, Any]:
         """Export metrics in Grafana-compatible format."""
         return {
             "measurement": "gitreviewbot_calibration",
@@ -281,7 +281,7 @@ class CalibrationTracker:
         self,
         start: datetime,
         end: datetime,
-    ) -> List[ReviewRecord]:
+    ) -> list[ReviewRecord]:
         """Get all reviews within a time period."""
         if self.redis:
             # Scan for reviews in period
@@ -294,7 +294,7 @@ class CalibrationTracker:
             return [r for r in self._local_cache if start <= r.timestamp <= end]
 
     # Redis helper methods (async wrappers)
-    async def _redis_set(self, key: str, value: Dict[str, Any]) -> None:
+    async def _redis_set(self, key: str, value: dict[str, Any]) -> None:
         """Set value in Redis."""
         if self.redis:
             try:
@@ -303,7 +303,7 @@ class CalibrationTracker:
             except Exception:
                 pass
 
-    async def _redis_get(self, key: str) -> Optional[Dict[str, Any]]:
+    async def _redis_get(self, key: str) -> dict[str, Any] | None:
         """Get value from Redis."""
         if self.redis:
             try:
@@ -315,7 +315,7 @@ class CalibrationTracker:
                 return None
         return None
 
-    async def _redis_list_push(self, key: str, value: Dict[str, Any]) -> None:
+    async def _redis_list_push(self, key: str, value: dict[str, Any]) -> None:
         """Push value to Redis list."""
         if self.redis:
             try:

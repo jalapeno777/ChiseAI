@@ -9,7 +9,7 @@ For PAPER-LOOP-001: Paper Trading Order Simulator
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -97,8 +97,8 @@ class PaperOrder:
     state: OrderState = field(default=OrderState.PENDING)
     filled_quantity: float = field(default=0.0)
     remaining_quantity: float = field(default=0.0)
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     fills: list[PaperFill] = field(default_factory=list)
     reject_reason: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -139,9 +139,9 @@ class PaperOrder:
 
         # Ensure timestamps are timezone-aware
         if self.created_at.tzinfo is None:
-            self.created_at = self.created_at.replace(tzinfo=timezone.utc)
+            self.created_at = self.created_at.replace(tzinfo=UTC)
         if self.updated_at.tzinfo is None:
-            self.updated_at = self.updated_at.replace(tzinfo=timezone.utc)
+            self.updated_at = self.updated_at.replace(tzinfo=UTC)
 
         if self.correlation_id:
             self.metadata.setdefault("correlation_id", self.correlation_id)
@@ -182,7 +182,7 @@ class PaperOrder:
         total_value = sum(f.price * f.quantity for f in self.fills)
         self.avg_fill_price = total_value / self.filled_quantity
 
-        self.updated_at = datetime.now(timezone.utc)
+        self.updated_at = datetime.now(UTC)
 
     def reject(self, reason: str) -> None:
         """Mark order as rejected.
@@ -192,7 +192,7 @@ class PaperOrder:
         """
         self.state = OrderState.REJECTED
         self.reject_reason = reason
-        self.updated_at = datetime.now(timezone.utc)
+        self.updated_at = datetime.now(UTC)
 
     def cancel(self) -> bool:
         """Cancel the order if it can be cancelled.
@@ -202,7 +202,7 @@ class PaperOrder:
         """
         if self.state in (OrderState.PENDING, OrderState.PARTIAL):
             self.state = OrderState.CANCELLED
-            self.updated_at = datetime.now(timezone.utc)
+            self.updated_at = datetime.now(UTC)
             return True
         return False
 
@@ -287,7 +287,7 @@ class PaperFill:
     side: str
     quantity: float
     price: float
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -307,7 +307,7 @@ class PaperFill:
 
         # Ensure timestamp is timezone-aware
         if self.timestamp.tzinfo is None:
-            self.timestamp = self.timestamp.replace(tzinfo=timezone.utc)
+            self.timestamp = self.timestamp.replace(tzinfo=UTC)
 
     @property
     def notional_value(self) -> float:

@@ -5,7 +5,7 @@ from __future__ import annotations
 import shutil
 import sys
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -71,7 +71,7 @@ class TestModelVersion:
         version = ModelVersion(
             version_id="v1",
             model_id="test_model",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             performance_metrics={"accuracy": 0.75},
         )
 
@@ -84,7 +84,7 @@ class TestModelVersion:
         version = ModelVersion(
             version_id="v1",
             model_id="test_model",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             parent_version="v0",
             update_strategy=UpdateStrategy.INCREMENTAL,
             training_samples=1000,
@@ -134,7 +134,7 @@ class TestUpdateResult:
         version = ModelVersion(
             version_id="v1",
             model_id="test_model",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
 
         result = UpdateResult(
@@ -244,7 +244,7 @@ class TestModelUpdater:
         model.predict = MagicMock(return_value=[1] * 30)
 
         analysis_report = FeedbackAnalysisReport(
-            analysis_time=datetime.now(timezone.utc),
+            analysis_time=datetime.now(UTC),
             total_matches=150,
             overall_accuracy=0.6,  # Above 50%, should use normal strategy
         )
@@ -331,7 +331,7 @@ class TestModelUpdater:
         previous = ModelVersion(
             version_id="v1",
             model_id="test_model",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             performance_metrics={"accuracy": 0.7, "precision": 0.6},
         )
 

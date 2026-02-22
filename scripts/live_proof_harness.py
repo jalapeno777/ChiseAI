@@ -110,7 +110,7 @@ class BybitProofHarness:
     def _load_config(self) -> dict:
         """Load configuration from YAML file."""
         try:
-            with open(self.config_path, "r") as f:
+            with open(self.config_path) as f:
                 data = yaml.safe_load(f)
                 return data.get("bybit", {})
         except FileNotFoundError:

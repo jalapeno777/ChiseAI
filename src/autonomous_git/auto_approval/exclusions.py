@@ -5,7 +5,7 @@ import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import yaml
 
@@ -16,11 +16,11 @@ logger = logging.getLogger(__name__)
 class ExclusionList:
     """Exclusion list configuration."""
 
-    paths: List[str] = field(default_factory=list)
-    authors: List[str] = field(default_factory=list)
-    title_patterns: List[str] = field(default_factory=list)
+    paths: list[str] = field(default_factory=list)
+    authors: list[str] = field(default_factory=list)
+    title_patterns: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "paths": self.paths,
             "authors": self.authors,
@@ -33,10 +33,10 @@ class ExclusionManager:
 
     def __init__(
         self,
-        paths: Optional[List[str]] = None,
-        authors: Optional[List[str]] = None,
-        title_patterns: Optional[List[str]] = None,
-        config_path: Optional[str] = None,
+        paths: list[str] | None = None,
+        authors: list[str] | None = None,
+        title_patterns: list[str] | None = None,
+        config_path: str | None = None,
     ):
         """Initialize exclusion manager.
 
@@ -75,7 +75,7 @@ class ExclusionManager:
     def _load_from_file(self, config_path: str):
         """Load exclusions from YAML file."""
         try:
-            with open(config_path, "r") as f:
+            with open(config_path) as f:
                 data = yaml.safe_load(f)
 
             if (
@@ -166,7 +166,7 @@ class ExclusionManager:
                     return True
         return False
 
-    def are_files_excluded(self, files: List[str]) -> tuple[bool, List[str]]:
+    def are_files_excluded(self, files: list[str]) -> tuple[bool, list[str]]:
         """Check if any files in a list are excluded.
 
         Args:
@@ -214,7 +214,7 @@ class ExclusionManager:
         pr_number: int,
         title: str,
         author: str,
-        files: Optional[List[str]] = None,
+        files: list[str] | None = None,
     ) -> tuple[bool, str]:
         """Check if a PR is excluded from auto-approval.
 

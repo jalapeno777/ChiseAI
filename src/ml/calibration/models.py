@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -158,7 +158,7 @@ class CalibrationRecord:
         if timestamp_str:
             timestamp = datetime.fromisoformat(timestamp_str)
         else:
-            timestamp = datetime.now(timezone.utc)
+            timestamp = datetime.now(UTC)
 
         return cls(
             timestamp=timestamp,

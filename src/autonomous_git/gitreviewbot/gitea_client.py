@@ -3,7 +3,7 @@
 import os
 import re
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import aiohttp
 
@@ -15,10 +15,10 @@ class GiteaClient:
 
     def __init__(
         self,
-        base_url: Optional[str] = None,
-        token: Optional[str] = None,
-        owner: Optional[str] = None,
-        repo: Optional[str] = None,
+        base_url: str | None = None,
+        token: str | None = None,
+        owner: str | None = None,
+        repo: str | None = None,
     ):
         self.base_url = base_url or os.getenv("GITEA_URL", "http://localhost:3000")
         self.token = token or os.getenv("GITEA_TOKEN", "")
@@ -26,7 +26,7 @@ class GiteaClient:
         self.repo = repo or os.getenv("GITEA_REPO", "chiseai")
         self.bot_username = os.getenv("GITREVIEWBOT_USER", "GitReviewBot")
 
-        self._session: Optional[aiohttp.ClientSession] = None
+        self._session: aiohttp.ClientSession | None = None
 
     async def _get_session(self) -> aiohttp.ClientSession:
         """Get or create aiohttp session."""
@@ -85,7 +85,7 @@ class GiteaClient:
             labels=[label["name"] for label in data.get("labels", [])],
         )
 
-    async def get_pr_files(self, pr_number: int) -> List[Dict[str, Any]]:
+    async def get_pr_files(self, pr_number: int) -> list[dict[str, Any]]:
         """Get list of files changed in PR."""
         session = await self._get_session()
         url = self._api_url(f"/repos/{self.owner}/{self.repo}/pulls/{pr_number}/files")
@@ -118,8 +118,8 @@ class GiteaClient:
         self,
         pr_number: int,
         decision: Decision,
-        commit_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        commit_id: str | None = None,
+    ) -> dict[str, Any]:
         """Post a review to the PR."""
         session = await self._get_session()
         url = self._api_url(
@@ -231,7 +231,7 @@ class GiteaClient:
 
         return "\n".join(lines)
 
-    def _build_file_comments(self, decision: Decision) -> List[Dict[str, Any]]:
+    def _build_file_comments(self, decision: Decision) -> list[dict[str, Any]]:
         """Build file-level comments for the review."""
         comments = []
 
@@ -248,7 +248,7 @@ class GiteaClient:
 
         return comments
 
-    async def update_labels(self, pr_number: int, labels: List[str]) -> None:
+    async def update_labels(self, pr_number: int, labels: list[str]) -> None:
         """Update PR labels."""
         session = await self._get_session()
         url = self._api_url(
@@ -258,7 +258,7 @@ class GiteaClient:
         async with session.put(url, json={"labels": labels}) as response:
             response.raise_for_status()
 
-    async def add_labels(self, pr_number: int, labels: List[str]) -> None:
+    async def add_labels(self, pr_number: int, labels: list[str]) -> None:
         """Add labels to PR."""
         session = await self._get_session()
         url = self._api_url(
@@ -281,7 +281,7 @@ class GiteaClient:
             if response.status != 404:  # 404 = label didn't exist
                 response.raise_for_status()
 
-    async def get_pr_comments(self, pr_number: int) -> List[Dict[str, Any]]:
+    async def get_pr_comments(self, pr_number: int) -> list[dict[str, Any]]:
         """Get PR comments."""
         session = await self._get_session()
         url = self._api_url(
@@ -292,7 +292,7 @@ class GiteaClient:
             response.raise_for_status()
             return await response.json()
 
-    async def post_comment(self, pr_number: int, body: str) -> Dict[str, Any]:
+    async def post_comment(self, pr_number: int, body: str) -> dict[str, Any]:
         """Post a comment to the PR."""
         session = await self._get_session()
         url = self._api_url(
@@ -308,7 +308,7 @@ class GiteaClient:
         pr_number: int,
         merge_method: str = "merge",
         delete_branch: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Merge a PR."""
         session = await self._get_session()
         url = self._api_url(f"/repos/{self.owner}/{self.repo}/pulls/{pr_number}/merge")
@@ -322,7 +322,7 @@ class GiteaClient:
             response.raise_for_status()
             return await response.json()
 
-    async def get_check_runs(self, pr_number: int) -> List[Dict[str, Any]]:
+    async def get_check_runs(self, pr_number: int) -> list[dict[str, Any]]:
         """Get CI check runs for PR."""
         # First get the PR to get the head SHA
         pr = await self.get_pr(pr_number)
@@ -339,7 +339,7 @@ class GiteaClient:
             data = await response.json()
             return data.get("statuses", [])
 
-    def extract_story_id(self, pr_title: str) -> Optional[str]:
+    def extract_story_id(self, pr_title: str) -> str | None:
         """Extract story ID from PR title."""
         patterns = [
             r"(BRANCH-\d+)",

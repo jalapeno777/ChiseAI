@@ -50,7 +50,7 @@ def load_config(config_path: str | None = None) -> dict[str, Any]:
         try:
             import yaml
 
-            with open(config_path, "r") as f:
+            with open(config_path) as f:
                 file_config = yaml.safe_load(f)
 
             if file_config and "paper_health" in file_config:

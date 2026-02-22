@@ -168,7 +168,7 @@ class PaperTradingOrchestrator:
                         self._metrics["trades_failed"] += 1
                     # SKIPPED status doesn't increment any metric - just logged
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # No signals in queue, continue loop
                 continue
             except asyncio.CancelledError:

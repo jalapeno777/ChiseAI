@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
 
 import pytest
@@ -41,7 +41,7 @@ class TestTemporalSafety:
         assert boundary.buffer_hours == 2.0
 
         # Data cutoff should be at least 2 hours ago
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         min_cutoff = now - timedelta(hours=2, minutes=5)  # Allow 5 min tolerance
         assert boundary.data_cutoff_time <= now - timedelta(hours=2)
         assert boundary.data_cutoff_time >= min_cutoff
@@ -53,12 +53,12 @@ class TestTemporalSafety:
         assert boundary.buffer_hours == 1.0
 
         # Data cutoff should be at least 1 hour ago
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         assert boundary.data_cutoff_time <= now - timedelta(hours=1)
 
     def test_temporal_boundary_is_safe(self) -> None:
         """Test temporal boundary safety check."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         cutoff = now - timedelta(hours=2)
 
         boundary = TemporalBoundary(
@@ -81,7 +81,7 @@ class TestTemporalSafety:
 
     def test_enforce_temporal_safety_filters_future(self, strict_orchestrator) -> None:
         """Test that future data is filtered out."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         boundary = TemporalBoundary(
             data_cutoff_time=now - timedelta(hours=2),
             validation_start_time=now - timedelta(hours=2),
@@ -122,7 +122,7 @@ class TestTemporalSafety:
 
     def test_enforce_temporal_safety_all_safe(self, strict_orchestrator) -> None:
         """Test when all data is within safe window."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         boundary = TemporalBoundary(
             data_cutoff_time=now - timedelta(hours=2),
             validation_start_time=now - timedelta(hours=2),
@@ -151,7 +151,7 @@ class TestTemporalSafety:
 
     def test_enforce_temporal_safety_all_unsafe(self, strict_orchestrator) -> None:
         """Test when all data is outside safe window."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         boundary = TemporalBoundary(
             data_cutoff_time=now - timedelta(hours=2),
             validation_start_time=now - timedelta(hours=2),
@@ -181,7 +181,7 @@ class TestTemporalSafety:
 
     def test_no_data_leakage_in_training_window(self, strict_orchestrator) -> None:
         """Test that no future data leaks into training window."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         boundary = strict_orchestrator._calculate_temporal_boundary()
 
         # Simulate a prediction made "now" with outcome recorded later
@@ -204,7 +204,7 @@ class TestTemporalSafety:
 
     def test_validation_window_separation(self) -> None:
         """Test that validation window is separate from training window."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         cutoff = now - timedelta(hours=2)
 
         boundary = TemporalBoundary(
@@ -226,7 +226,7 @@ class TestTemporalSafety:
 
     def test_temporal_safety_mode_comparison(self) -> None:
         """Test different temporal safety modes."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Strict mode: 2 hour buffer
         strict_config = OrchestratorConfig(

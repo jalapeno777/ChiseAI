@@ -11,10 +11,11 @@ For testing purposes only - DO NOT USE IN PRODUCTION.
 
 import asyncio
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
-from typing import Any, Callable
+from typing import Any
 
 from src.autonomous_control_plane.models.healing import FailurePatternType, LogEntry
 

@@ -680,9 +680,7 @@ def create_health_event_from_datasource_alert(
     }
 
     # Determine event type
-    if alert.alert_type in ["disconnected", "reconnect_failed"]:
-        event_type = EventType.HEALTH_CRITICAL
-    elif alert.alert_type == "extended_downtime":
+    if alert.alert_type in ["disconnected", "reconnect_failed"] or alert.alert_type == "extended_downtime":
         event_type = EventType.HEALTH_CRITICAL
     else:
         event_type = EventType.HEALTH_WARNING

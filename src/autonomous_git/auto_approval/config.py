@@ -3,7 +3,6 @@
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional
 
 import yaml
 
@@ -30,9 +29,9 @@ class SafetyCheckConfig:
 class ExclusionConfig:
     """Exclusion list configuration."""
 
-    paths: List[str] = field(default_factory=list)
-    authors: List[str] = field(default_factory=list)
-    title_patterns: List[str] = field(default_factory=list)
+    paths: list[str] = field(default_factory=list)
+    authors: list[str] = field(default_factory=list)
+    title_patterns: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -56,16 +55,16 @@ class AutoApprovalConfig:
     notifications: NotificationConfig = field(default_factory=NotificationConfig)
 
     # Gitea configuration
-    gitea_url: Optional[str] = None
-    gitea_token: Optional[str] = None
-    gitea_repo_owner: Optional[str] = None
-    gitea_repo_name: Optional[str] = None
+    gitea_url: str | None = None
+    gitea_token: str | None = None
+    gitea_repo_owner: str | None = None
+    gitea_repo_name: str | None = None
 
     # Discord webhook
-    discord_webhook_url: Optional[str] = None
+    discord_webhook_url: str | None = None
 
 
-def load_config(config_path: Optional[str] = None) -> AutoApprovalConfig:
+def load_config(config_path: str | None = None) -> AutoApprovalConfig:
     """Load configuration from YAML file or environment variables.
 
     Args:
@@ -90,7 +89,7 @@ def load_config(config_path: Optional[str] = None) -> AutoApprovalConfig:
 
     # Load from YAML if file exists
     if config_path and Path(config_path).exists():
-        with open(config_path, "r") as f:
+        with open(config_path) as f:
             data = yaml.safe_load(f)
 
         if data and "auto_approval" in data:

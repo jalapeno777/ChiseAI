@@ -14,9 +14,9 @@ import argparse
 import json
 import os
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 # Add src to path for config imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
@@ -42,7 +42,7 @@ class CleanupHistory:
     """Query and report on cleanup history."""
 
     def __init__(self):
-        self.client: Optional[Any] = None
+        self.client: Any | None = None
         self.host = os.getenv("CHISE_REDIS_HOST", "host.docker.internal")
         self.port = int(os.getenv("CHISE_REDIS_PORT", "6380"))
         self.db = int(os.getenv("CHISE_REDIS_DB", "0"))
@@ -96,7 +96,7 @@ class CleanupHistory:
             return []
 
         summaries = []
-        today = datetime.now(timezone.utc)
+        today = datetime.now(UTC)
 
         for i in range(days):
             date = today - timedelta(days=i)
@@ -229,7 +229,7 @@ class CleanupHistory:
     def export_to_json(self, output_file: str, days: int = 30) -> bool:
         """Export cleanup history to JSON file."""
         data = {
-            "exported_at": datetime.now(timezone.utc).isoformat(),
+            "exported_at": datetime.now(UTC).isoformat(),
             "sprint_boundaries": self.get_sprint_boundaries(count=50),
             "daily_summaries": self.get_daily_summaries(days=days),
             "recent_logs": self.get_recent_logs(count=100),

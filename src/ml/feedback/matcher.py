@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
@@ -213,7 +213,7 @@ class PredictionOutcomeMatcher:
             PredictionOutcomeMatch with match result
         """
         if current_time_ms is None:
-            current_time_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+            current_time_ms = int(datetime.now(UTC).timestamp() * 1000)
 
         # Get matching window for this signal
         window_hours = self.config.get_window_for_signal(signal)
@@ -334,7 +334,7 @@ class PredictionOutcomeMatcher:
             MatchBatchResult with all match results
         """
         if current_time_ms is None:
-            current_time_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+            current_time_ms = int(datetime.now(UTC).timestamp() * 1000)
 
         result = MatchBatchResult(
             total_signals=len(signals),
@@ -385,7 +385,7 @@ class PredictionOutcomeMatcher:
             return []
 
         # Calculate time range
-        now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+        now_ms = int(datetime.now(UTC).timestamp() * 1000)
         min_time_ms = now_ms - int(max_age_hours * 3600 * 1000)
 
         # Get signals without outcomes

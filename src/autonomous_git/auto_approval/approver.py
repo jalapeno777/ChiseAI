@@ -2,8 +2,8 @@
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from .config import AutoApprovalConfig
 from .exclusions import ExclusionManager
@@ -33,9 +33,9 @@ class RiskClassification:
 
     risk_level: str
     confidence: float
-    files: List[str]
+    files: list[str]
     reasoning: str
-    pr_number: Optional[int] = None
+    pr_number: int | None = None
 
 
 async def get_path_classification(pr_number: int) -> RiskClassification:
@@ -93,11 +93,11 @@ class ApprovalResult:
     pr_number: int
     message: str
     timestamp: str
-    classification: Optional[RiskClassification] = None
-    safety_result: Optional[SafetyCheckResult] = None
-    error_details: Optional[Dict[str, Any]] = field(default_factory=dict)
+    classification: RiskClassification | None = None
+    safety_result: SafetyCheckResult | None = None
+    error_details: dict[str, Any] | None = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "success": self.success,
@@ -131,7 +131,7 @@ class AutoApprover:
 
     def __init__(
         self,
-        config: Optional[AutoApprovalConfig] = None,
+        config: AutoApprovalConfig | None = None,
         redis_client=None,
         gitea_client=None,
     ):
@@ -176,7 +176,7 @@ class AutoApprover:
         )
 
     async def process_pr(
-        self, pr_number: int, pr_data: Optional[Dict] = None
+        self, pr_number: int, pr_data: dict | None = None
     ) -> ApprovalResult:
         """Process a PR for auto-approval.
 
@@ -187,7 +187,7 @@ class AutoApprover:
         Returns:
             ApprovalResult with outcome
         """
-        timestamp = datetime.now(timezone.utc).isoformat()
+        timestamp = datetime.now(UTC).isoformat()
 
         # 1. Check emergency stop
         if await is_auto_approval_disabled(self.redis):
@@ -362,7 +362,7 @@ class AutoApprover:
         log_entry = {
             "event": "auto_approval",
             "pr_number": pr_number,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "risk_level": classification.risk_level,
             "confidence": classification.confidence,
             "files": classification.files,
@@ -383,7 +383,7 @@ class AutoApprover:
 
 
 async def process_safe_pr(
-    pr_number: int, config: Optional[AutoApprovalConfig] = None
+    pr_number: int, config: AutoApprovalConfig | None = None
 ) -> ApprovalResult:
     """Convenience function to process a single PR.
 

@@ -32,7 +32,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -113,7 +113,7 @@ def _get_incidents_key(story_id: str) -> str:
 
 def _get_current_timestamp() -> str:
     """Get current UTC timestamp in ISO format."""
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def _validate_phase(phase: str) -> None:

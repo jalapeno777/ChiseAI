@@ -354,7 +354,7 @@ class ECEScheduler:
         if self._task:
             try:
                 await asyncio.wait_for(self._task, timeout=5.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.warning("Scheduler task did not stop gracefully, cancelling...")
                 self._task.cancel()
                 try:
@@ -389,7 +389,7 @@ class ECEScheduler:
                         )
                         # Stop event was set
                         break
-                    except asyncio.TimeoutError:
+                    except TimeoutError:
                         # Time to run the update
                         pass
 

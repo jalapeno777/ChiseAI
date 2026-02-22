@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fix the EP-NS-008 stories placement properly."""
 
-with open("docs/bmm-workflow-status.yaml", "r") as f:
+with open("docs/bmm-workflow-status.yaml") as f:
     content = f.read()
 
 lines = content.split("\n")

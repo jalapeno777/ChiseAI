@@ -584,7 +584,7 @@ class DatasetExporter:
         import csv
 
         data = []
-        with open(path, "r", newline="", encoding="utf-8") as f:
+        with open(path, newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 converted = {}
@@ -611,7 +611,7 @@ class DatasetExporter:
 
     def _load_json(self, path: Path) -> list[dict[str, Any]]:
         """Load data from JSON."""
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             return json.load(f)
 
     def _load_hdf5(self, path: Path) -> list[dict[str, Any]]:

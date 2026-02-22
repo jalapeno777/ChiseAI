@@ -4,7 +4,7 @@ import asyncio
 import json
 import os
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .models import Finding, ReviewResult, Severity
 
@@ -15,13 +15,13 @@ class SeniorDevReviewer:
     def __init__(
         self,
         llm_client=None,
-        prompt_path: Optional[str] = None,
+        prompt_path: str | None = None,
         timeout_seconds: float = 30.0,
     ):
         self.llm_client = llm_client
         self.timeout_seconds = timeout_seconds
         self.prompt_path = prompt_path or self._default_prompt_path()
-        self._prompt_template: Optional[str] = None
+        self._prompt_template: str | None = None
 
     def _default_prompt_path(self) -> str:
         """Get default path to prompt file."""
@@ -32,7 +32,7 @@ class SeniorDevReviewer:
         """Load prompt template from file."""
         if self._prompt_template is None:
             try:
-                with open(self.prompt_path, "r") as f:
+                with open(self.prompt_path) as f:
                     self._prompt_template = f.read()
             except FileNotFoundError:
                 # Use default prompt if file not found
@@ -83,9 +83,9 @@ Guidelines:
     async def review(
         self,
         pr_title: str,
-        story_id: Optional[str],
+        story_id: str | None,
         diff: str,
-        files: List[str],
+        files: list[str],
     ) -> ReviewResult:
         """Perform SeniorDev review of PR."""
         start_time = datetime.utcnow()
@@ -116,7 +116,7 @@ Guidelines:
             # Parse response
             result = self._parse_response(response)
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             result = self._timeout_result()
         except Exception as e:
             result = self._error_result(str(e))
@@ -141,7 +141,7 @@ Guidelines:
             return await self.llm_client.complete(prompt)
         return self._mock_review(prompt, [])
 
-    def _parse_response(self, response: str) -> Dict[str, Any]:
+    def _parse_response(self, response: str) -> dict[str, Any]:
         """Parse LLM response into structured data."""
         try:
             # Extract JSON from response
@@ -179,7 +179,7 @@ Guidelines:
             "blockers": [],
         }
 
-    def _extract_json(self, text: str) -> Optional[str]:
+    def _extract_json(self, text: str) -> str | None:
         """Extract JSON from text."""
         # Look for JSON between triple backticks
         import re
@@ -197,7 +197,7 @@ Guidelines:
 
         return None
 
-    def _mock_review(self, diff: str, files: List[str]) -> str:
+    def _mock_review(self, diff: str, files: list[str]) -> str:
         """Generate mock review for testing."""
         findings = []
 
@@ -250,7 +250,7 @@ Guidelines:
             }
         )
 
-    def _timeout_result(self) -> Dict[str, Any]:
+    def _timeout_result(self) -> dict[str, Any]:
         """Result for timeout."""
         return {
             "findings": [
@@ -265,7 +265,7 @@ Guidelines:
             "blockers": ["Review timeout"],
         }
 
-    def _error_result(self, error: str) -> Dict[str, Any]:
+    def _error_result(self, error: str) -> dict[str, Any]:
         """Result for error."""
         return {
             "findings": [],

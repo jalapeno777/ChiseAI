@@ -2,7 +2,7 @@
 
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class RateLimiter:
 
     def _get_current_hour(self) -> str:
         """Get current hour as string for key generation."""
-        return datetime.now(timezone.utc).strftime("%Y%m%d%H")
+        return datetime.now(UTC).strftime("%Y%m%d%H")
 
     async def check_limits(self) -> bool:
         """Check if rate limits allow another approval.

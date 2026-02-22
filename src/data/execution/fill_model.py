@@ -9,7 +9,7 @@ For ST-DATA-002: Execution Market Data Ingestion - Bybit/Bitget
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 
@@ -63,7 +63,7 @@ class Fill:
 
         # Ensure timestamp is timezone-aware
         if self.timestamp.tzinfo is None:
-            self.timestamp = self.timestamp.replace(tzinfo=timezone.utc)
+            self.timestamp = self.timestamp.replace(tzinfo=UTC)
 
     @property
     def notional_value(self) -> Decimal:
@@ -157,7 +157,7 @@ class Fill:
 
         # Parse timestamp (Bybit uses milliseconds)
         timestamp_ms = int(response.get("execTime", 0))
-        timestamp = datetime.fromtimestamp(timestamp_ms / 1000, tz=timezone.utc)
+        timestamp = datetime.fromtimestamp(timestamp_ms / 1000, tz=UTC)
 
         # Determine fee currency from symbol
         fee_currency = response.get("feeCurrency", "USDT")
@@ -212,7 +212,7 @@ class Fill:
 
         # Parse timestamp (Bitget uses milliseconds)
         timestamp_ms = int(response.get("cTime", response.get("uTime", 0)))
-        timestamp = datetime.fromtimestamp(timestamp_ms / 1000, tz=timezone.utc)
+        timestamp = datetime.fromtimestamp(timestamp_ms / 1000, tz=UTC)
 
         # Determine fee currency
         fee_currency = response.get("feeCoin", "USDT")
@@ -257,7 +257,7 @@ class FillBatch:
     fills: list[Fill]
     exchange: str
     batch_timestamp: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc)
+        default_factory=lambda: datetime.now(UTC)
     )
 
     def __len__(self) -> int:

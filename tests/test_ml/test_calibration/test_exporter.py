@@ -63,7 +63,7 @@ class TestCalibrationExporter:
             assert os.path.exists(filepath)
 
             # Verify CSV content
-            with open(filepath, "r", newline="", encoding="utf-8") as f:
+            with open(filepath, newline="", encoding="utf-8") as f:
                 content = f.read()
                 assert "timestamp,signal_id,predicted_prob" in content
                 assert "test-sig-000" in content
@@ -85,7 +85,7 @@ class TestCalibrationExporter:
             assert os.path.exists(filepath)
 
             # Verify JSON content
-            with open(filepath, "r", encoding="utf-8") as f:
+            with open(filepath, encoding="utf-8") as f:
                 data = json.load(f)
                 assert "records" in data
                 assert "count" in data
@@ -141,7 +141,7 @@ class TestCalibrationExporter:
             )
             assert success is True
 
-            with open(filepath, "r", encoding="utf-8") as f:
+            with open(filepath, encoding="utf-8") as f:
                 data = json.load(f)
                 # Should only have records from last 2 hours
                 assert data["count"] <= 3
@@ -164,7 +164,7 @@ class TestCalibrationExporter:
             )
             assert success is True
 
-            with open(filepath, "r", encoding="utf-8") as f:
+            with open(filepath, encoding="utf-8") as f:
                 data = json.load(f)
                 # Should only have LONG records
                 for record in data["records"]:
@@ -184,7 +184,7 @@ class TestCalibrationExporter:
             success = await exporter.export_for_ece(filepath, ExportFormat.CSV)
             assert success is True
 
-            with open(filepath, "r", newline="", encoding="utf-8") as f:
+            with open(filepath, newline="", encoding="utf-8") as f:
                 content = f.read()
                 # Should only have confidence and outcome columns
                 assert "confidence,outcome" in content

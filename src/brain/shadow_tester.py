@@ -9,10 +9,11 @@ from __future__ import annotations
 import json
 import logging
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -267,7 +268,7 @@ class ShadowTester:
         Returns:
             ShadowTestResult with comparisons and latency metrics
         """
-        started_at = datetime.now(timezone.utc).isoformat()
+        started_at = datetime.now(UTC).isoformat()
 
         result = ShadowTestResult(
             shadow_version=shadow_version,
@@ -350,7 +351,7 @@ class ShadowTester:
 
         finally:
             # Complete test
-            result.completed_at = datetime.now(timezone.utc).isoformat()
+            result.completed_at = datetime.now(UTC).isoformat()
             if shadow_version in self._test_in_progress:
                 del self._test_in_progress[shadow_version]
 

@@ -7,9 +7,9 @@ step-by-step execution, and post-mortem reporting.
 import json
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum, auto
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -61,8 +61,8 @@ class RollbackResult:
     target_version: str
     steps_completed: int
     total_steps: int
-    error_message: Optional[str] = None
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    error_message: str | None = None
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     duration_seconds: float = 0.0
 
 
@@ -81,12 +81,12 @@ class PostmortemReport:
     """
 
     trigger: RollbackTrigger
-    timeline: List[Dict[str, Any]]
-    steps_executed: List[Dict[str, Any]]
+    timeline: list[dict[str, Any]]
+    steps_executed: list[dict[str, Any]]
     outcome: RollbackResult
     root_cause_analysis: str
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_json(self) -> str:
         """Export report to JSON format."""
@@ -197,21 +197,21 @@ class RollbackHandler:
     def __init__(
         self,
         ece_threshold: float = 0.15,
-        win_rate_threshold: Optional[float] = None,
-        max_drawdown_threshold: Optional[float] = None,
+        win_rate_threshold: float | None = None,
+        max_drawdown_threshold: float | None = None,
         active_trades_check: bool = True,
-        version_registry: Optional[List[str]] = None,
+        version_registry: list[str] | None = None,
     ):
         self.ece_threshold = ece_threshold
         self.win_rate_threshold = win_rate_threshold
         self.max_drawdown_threshold = max_drawdown_threshold
         self.active_trades_check = active_trades_check
         self.version_registry = version_registry or []
-        self._current_metrics: Dict[str, float] = {}
-        self._rollback_history: List[RollbackResult] = []
-        self._paused_step: Optional[int] = None
+        self._current_metrics: dict[str, float] = {}
+        self._rollback_history: list[RollbackResult] = []
+        self._paused_step: int | None = None
 
-    def update_metrics(self, metrics: Dict[str, float]) -> None:
+    def update_metrics(self, metrics: dict[str, float]) -> None:
         """Update current system metrics for trigger evaluation.
 
         Args:
@@ -219,7 +219,7 @@ class RollbackHandler:
         """
         self._current_metrics.update(metrics)
 
-    def check_triggers(self) -> List[RollbackTrigger]:
+    def check_triggers(self) -> list[RollbackTrigger]:
         """Evaluate all rollback trigger conditions.
 
         Returns:
@@ -303,8 +303,8 @@ class RollbackHandler:
     def execute_rollback(
         self,
         target_version: str,
-        steps: List[RollbackStep],
-        resume_from: Optional[int] = None,
+        steps: list[RollbackStep],
+        resume_from: int | None = None,
     ) -> RollbackResult:
         """Execute a step-by-step rollback.
 
@@ -316,7 +316,7 @@ class RollbackHandler:
         Returns:
             RollbackResult with execution details
         """
-        start_time = datetime.now(timezone.utc)
+        start_time = datetime.now(UTC)
         timeline = [
             {"timestamp": start_time.isoformat(), "description": "Rollback initiated"}
         ]
@@ -333,7 +333,7 @@ class RollbackHandler:
 
         timeline.append(
             {
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "description": "Pre-rollback validation passed",
             }
         )
@@ -358,7 +358,7 @@ class RollbackHandler:
                     completed_steps += 1
                     timeline.append(
                         {
-                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                            "timestamp": datetime.now(UTC).isoformat(),
                             "description": f"Step {step.step_number} completed: {step.description}",
                         }
                     )
@@ -367,7 +367,7 @@ class RollbackHandler:
                     logger.error(error_msg)
                     self._paused_step = step.step_number
 
-                    duration = (datetime.now(timezone.utc) - start_time).total_seconds()
+                    duration = (datetime.now(UTC) - start_time).total_seconds()
                     result = RollbackResult(
                         success=False,
                         target_version=target_version,
@@ -380,7 +380,7 @@ class RollbackHandler:
                     return result
 
             # All steps completed
-            duration = (datetime.now(timezone.utc) - start_time).total_seconds()
+            duration = (datetime.now(UTC) - start_time).total_seconds()
             result = RollbackResult(
                 success=True,
                 target_version=target_version,
@@ -393,7 +393,7 @@ class RollbackHandler:
 
             timeline.append(
                 {
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "description": "Rollback completed successfully",
                 }
             )
@@ -402,7 +402,7 @@ class RollbackHandler:
             return result
 
         except Exception as e:
-            duration = (datetime.now(timezone.utc) - start_time).total_seconds()
+            duration = (datetime.now(UTC) - start_time).total_seconds()
             error_msg = f"Unexpected error during rollback: {str(e)}"
             logger.exception(error_msg)
 
@@ -438,7 +438,7 @@ class RollbackHandler:
         self,
         target_version: str,
         force: bool = False,
-        steps: Optional[List[RollbackStep]] = None,
+        steps: list[RollbackStep] | None = None,
     ) -> RollbackResult:
         """Execute emergency rollback with optional force flag.
 
@@ -462,7 +462,7 @@ class RollbackHandler:
         # Force path - bypass some checks but still log
         logger.warning(f"EMERGENCY ROLLBACK (force=True) to {target_version}")
 
-        start_time = datetime.now(timezone.utc)
+        start_time = datetime.now(UTC)
 
         # Still verify target version exists (never bypass this)
         if target_version not in self.version_registry:
@@ -496,7 +496,7 @@ class RollbackHandler:
                 else:
                     break
 
-            duration = (datetime.now(timezone.utc) - start_time).total_seconds()
+            duration = (datetime.now(UTC) - start_time).total_seconds()
             success = completed_steps == len(steps)
 
             result = RollbackResult(
@@ -512,7 +512,7 @@ class RollbackHandler:
             return result
 
         except Exception as e:
-            duration = (datetime.now(timezone.utc) - start_time).total_seconds()
+            duration = (datetime.now(UTC) - start_time).total_seconds()
             result = RollbackResult(
                 success=False,
                 target_version=target_version,
@@ -524,7 +524,7 @@ class RollbackHandler:
             self._rollback_history.append(result)
             return result
 
-    def _get_default_rollback_steps(self) -> List[RollbackStep]:
+    def _get_default_rollback_steps(self) -> list[RollbackStep]:
         """Get default rollback steps for emergency rollback.
 
         Returns:
@@ -568,7 +568,7 @@ class RollbackHandler:
         trigger: RollbackTrigger,
         result: RollbackResult,
         root_cause_analysis: str = "",
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> PostmortemReport:
         """Generate a post-mortem report for rollback analysis.
 
@@ -623,7 +623,7 @@ class RollbackHandler:
         logger.info(f"Post-mortem report generated for {trigger.name}")
         return report
 
-    def get_rollback_history(self) -> List[RollbackResult]:
+    def get_rollback_history(self) -> list[RollbackResult]:
         """Get history of rollback operations.
 
         Returns:
@@ -631,7 +631,7 @@ class RollbackHandler:
         """
         return self._rollback_history.copy()
 
-    def get_paused_step(self) -> Optional[int]:
+    def get_paused_step(self) -> int | None:
         """Get the step number where rollback was paused.
 
         Returns:

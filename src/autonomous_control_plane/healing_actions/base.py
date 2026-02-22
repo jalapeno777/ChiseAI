@@ -224,7 +224,7 @@ class BaseHealingAction(ABC):
                     pre_state=self._captured_state,
                 )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             duration = asyncio.get_event_loop().time() - start_time
             error_msg = (
                 f"Healing action {self.action_type} timed out after {timeout_seconds}s"

@@ -23,7 +23,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
@@ -231,11 +231,11 @@ class FeedbackOrchestrator:
                 return self._current_iteration
 
         self._is_running = True
-        iteration_id = f"loop_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
+        iteration_id = f"loop_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}"
 
         result = LoopIterationResult(
             iteration_id=iteration_id,
-            start_time=datetime.now(timezone.utc),
+            start_time=datetime.now(UTC),
             status=LoopStatus.RUNNING,
         )
         self._current_iteration = result
@@ -281,7 +281,7 @@ class FeedbackOrchestrator:
                 f"{result.total_matches} matches in {result.duration_seconds:.1f}s"
             )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             result.status = LoopStatus.TIMEOUT
             result.errors.append(
                 f"Loop exceeded {self.config.max_loop_duration_hours} hour limit"
@@ -552,7 +552,7 @@ class FeedbackOrchestrator:
         Returns:
             TemporalBoundary with safe data cutoff
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Calculate buffer based on safety mode
         if self.config.temporal_safety_mode == TemporalSafetyMode.STRICT:
@@ -593,7 +593,7 @@ class FeedbackOrchestrator:
         safe_matches = []
         for match in matches:
             signal_time = datetime.fromtimestamp(
-                match.signal.timestamp / 1000, tz=timezone.utc
+                match.signal.timestamp / 1000, tz=UTC
             )
             if boundary.is_safe(signal_time):
                 safe_matches.append(match)
@@ -607,7 +607,7 @@ class FeedbackOrchestrator:
 
     def _finalize_iteration(self, result: LoopIterationResult) -> LoopIterationResult:
         """Finalize iteration result."""
-        result.end_time = datetime.now(timezone.utc)
+        result.end_time = datetime.now(UTC)
         result.duration_seconds = (result.end_time - result.start_time).total_seconds()
 
         # Check duration constraint

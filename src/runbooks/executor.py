@@ -9,7 +9,7 @@ import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from .parser import RunbookParser, RunbookStep
 
@@ -25,7 +25,7 @@ class StepResult:
     stderr: str
     execution_time_ms: float
     timestamp: datetime = field(default_factory=datetime.utcnow)
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
@@ -54,7 +54,7 @@ class ExecutionResult:
     total_steps: int
     passed_steps: int
     failed_steps: int
-    log_file: Optional[Path] = None
+    log_file: Path | None = None
 
     @property
     def execution_time_seconds(self) -> float:
@@ -87,9 +87,9 @@ class RunbookExecutor:
 
     def __init__(
         self,
-        runbooks_dir: Optional[Path] = None,
-        scripts_dir: Optional[Path] = None,
-        log_dir: Optional[Path] = None,
+        runbooks_dir: Path | None = None,
+        scripts_dir: Path | None = None,
+        log_dir: Path | None = None,
         dry_run: bool = False,
     ):
         """
@@ -150,7 +150,7 @@ class RunbookExecutor:
         return self.parser.list_runbooks()
 
     def execute(
-        self, runbook_name: str, dry_run: Optional[bool] = None
+        self, runbook_name: str, dry_run: bool | None = None
     ) -> ExecutionResult:
         """
         Execute a runbook by name.
@@ -401,7 +401,7 @@ class RunbookExecutor:
         return log_file
 
     def get_execution_history(
-        self, runbook_name: Optional[str] = None, limit: int = 10
+        self, runbook_name: str | None = None, limit: int = 10
     ) -> list[Path]:
         """Get list of execution log files."""
         if not self.log_dir.exists():

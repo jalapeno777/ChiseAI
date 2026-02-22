@@ -11,9 +11,10 @@ from __future__ import annotations
 
 import statistics
 import time
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable, Coroutine, Optional
+from typing import Any
 
 from src.brain.version import BrainVersion
 
@@ -122,8 +123,8 @@ class ShadowTestResult:
     candidate_predictions: list[Any]
     baseline_predictions: list[Any]
     timestamp: datetime
-    error_message: Optional[str] = None
-    config: Optional[ShadowTestConfig] = None
+    error_message: str | None = None
+    config: ShadowTestConfig | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
@@ -479,7 +480,7 @@ class ShadowTester:
         )
 
     def validate_latency_threshold(
-        self, latency_overhead_ms: float, threshold: Optional[float] = None
+        self, latency_overhead_ms: float, threshold: float | None = None
     ) -> bool:
         """Validate that latency overhead is within acceptable threshold.
 
