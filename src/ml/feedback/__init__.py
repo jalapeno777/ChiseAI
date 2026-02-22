@@ -73,6 +73,15 @@ from ml.feedback.updater import (
     UpdateStrategy,
 )
 
+# Signal Outcome Matcher (ST-LAUNCH-006)
+from ml.feedback.signal_outcome_matcher import (
+    SignalOutcomeMatcher,
+    SignalMatcherConfig,
+    MatcherMetrics,
+    MatchMetadata,
+    DEFAULT_MATCH_WINDOWS,
+)
+
 __all__ = [
     # Outcome Capture (ST-LAUNCH-018)
     "OutcomeCaptureService",
@@ -81,6 +90,12 @@ __all__ = [
     "BybitFillListener",
     "BybitListenerConfig",
     "ConnectionState",
+    # Signal Outcome Matcher (ST-LAUNCH-006)
+    "SignalOutcomeMatcher",
+    "SignalMatcherConfig",
+    "MatcherMetrics",
+    "MatchMetadata",
+    "DEFAULT_MATCH_WINDOWS",
     # Matcher
     "PredictionOutcomeMatcher",
     "MatchConfig",

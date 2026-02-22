@@ -15,14 +15,12 @@ from data.exchange.bybit_connector import BybitConfig, BybitConnector
 class TestBybitConfig:
     """Test BybitConfig dataclass."""
 
-    def test_default_config(self):
-        """Test default configuration values."""
-        config = BybitConfig()
-        assert config.api_key == ""
-        assert config.api_secret == ""
-        assert config.base_url == "https://api.bybit.com"
-        assert config.testnet is False
-        assert config.demo is False
+    def test_default_config_raises_security_exception(self):
+        """Test that default configuration (production mode) raises SecurityException."""
+        from data.exchange.bybit_safety import SecurityException
+        with pytest.raises(SecurityException) as exc_info:
+            BybitConfig()
+        assert "PRODUCTION ENDPOINT DETECTED" in str(exc_info.value)
 
     def test_testnet_config(self):
         """Test testnet configuration."""
@@ -45,10 +43,11 @@ class TestBybitConnector:
 
     @pytest.fixture
     def config(self):
-        """Create test configuration."""
+        """Create test configuration with demo mode (production blocked)."""
         return BybitConfig(
             api_key="test_key",
             api_secret="test_secret",
+            demo=True,
         )
 
     @pytest.fixture
@@ -295,7 +294,7 @@ class TestBybitWebSocket:
     @pytest.fixture
     def connector(self):
         """Create test connector."""
-        config = BybitConfig(api_key="test", api_secret="test")
+        config = BybitConfig(api_key="test", api_secret="test", demo=True)
         return BybitConnector(config)
 
     @pytest.mark.asyncio
@@ -338,7 +337,7 @@ class TestBybitSignature:
 
     def test_generate_signature(self):
         """Test HMAC signature generation."""
-        config = BybitConfig(api_key="key", api_secret="secret")
+        config = BybitConfig(api_key="key", api_secret="secret", demo=True)
         connector = BybitConnector(config)
 
         timestamp = "1704067200000"
@@ -349,7 +348,7 @@ class TestBybitSignature:
 
     def test_generate_signature_with_payload(self):
         """Test signature with payload."""
-        config = BybitConfig(api_key="key", api_secret="secret")
+        config = BybitConfig(api_key="key", api_secret="secret", demo=True)
         connector = BybitConnector(config)
 
         timestamp = "1704067200000"
@@ -486,16 +485,17 @@ class TestBybitCredentialResolver:
         assert status["selected"]["source"] == "BYBIT_DEMO_API_KEY"
         assert "masked_key" in status["selected"]
 
-    def test_bybit_config_from_env(self, clean_env, monkeypatch):
-        """Test BybitConfig.from_env factory method."""
-        monkeypatch.setenv("BYBIT_API_KEY", "api_key_value")
-        monkeypatch.setenv("BYBIT_API_SECRET", "api_secret_value")
+    def test_bybit_config_from_env_demo(self, clean_env, monkeypatch):
+        """Test BybitConfig.from_env factory method with demo credentials."""
+        monkeypatch.setenv("BYBIT_DEMO_API_KEY", "demo_key_value")
+        monkeypatch.setenv("BYBIT_DEMO_API_SECRET", "demo_secret_value")
 
         config = BybitConfig.from_env(load_env=False)
 
-        assert config.api_key == "api_key_value"
-        assert config.api_secret == "api_secret_value"
-        assert config.testnet is False
+        assert config.api_key == "demo_key_value"
+        assert config.api_secret == "demo_secret_value"
+        assert config.demo is True
+        assert "api-demo" in config.base_url
 
     def test_bybit_config_from_env_testnet(self, clean_env, monkeypatch):
         """Test BybitConfig.from_env with testnet credentials."""
@@ -516,15 +516,16 @@ class TestBybitCredentialResolver:
 
         assert "No Bybit credentials found" in str(exc_info.value)
 
-    def test_bybit_connector_from_env(self, clean_env, monkeypatch):
-        """Test BybitConnector.from_env factory method."""
-        monkeypatch.setenv("BYBIT_API_KEY", "connector_key")
-        monkeypatch.setenv("BYBIT_API_SECRET", "connector_secret")
+    def test_bybit_connector_from_env_demo(self, clean_env, monkeypatch):
+        """Test BybitConnector.from_env factory method with demo credentials."""
+        monkeypatch.setenv("BYBIT_DEMO_API_KEY", "demo_connector_key")
+        monkeypatch.setenv("BYBIT_DEMO_API_SECRET", "demo_connector_secret")
 
         connector = BybitConnector.from_env(load_env=False)
 
-        assert connector.config.api_key == "connector_key"
-        assert connector.config.api_secret == "connector_secret"
+        assert connector.config.api_key == "demo_connector_key"
+        assert connector.config.api_secret == "demo_connector_secret"
+        assert connector.config.demo is True
 
     def test_credential_prefix_validation(self):
         """Test that credentials can be validated for expected prefixes."""
@@ -624,10 +625,15 @@ class TestBybitRoutingPolicy:
         assert "demo" not in config.ws_url  # Public WS should NOT use demo
 
     def test_routing_matrix_consistency(self):
-        """All modes have consistent endpoint configuration."""
+        """All safe modes have consistent endpoint configuration."""
+        from data.exchange.bybit_safety import SecurityException
+        
         demo_config = BybitConfig(demo=True)
         testnet_config = BybitConfig(testnet=True)
-        live_config = BybitConfig()  # Default is live
+        
+        # Production mode is blocked
+        with pytest.raises(SecurityException):
+            BybitConfig()  # Would be live mode
 
         # Demo: demo REST, demo private WS, mainnet public WS
         assert "api-demo" in demo_config.base_url
@@ -639,20 +645,19 @@ class TestBybitRoutingPolicy:
         assert "testnet" in testnet_config.private_ws_url
         assert "testnet" in testnet_config.ws_url
 
-        # Live: all mainnet
-        assert live_config.base_url == "https://api.bybit.com"
-        assert live_config.private_ws_url == "wss://stream.bybit.com/v5/private"
-        assert live_config.ws_url == "wss://stream.bybit.com/v5/public/linear"
-
     def test_demo_mode_distinguishable_from_live(self):
-        """Demo mode endpoints differ from live mode."""
+        """Demo mode endpoints are safe (production blocked)."""
+        from data.exchange.bybit_safety import SecurityException
+        
         demo_config = BybitConfig(demo=True)
-        live_config = BybitConfig()
+        
+        # Production mode is blocked
+        with pytest.raises(SecurityException):
+            BybitConfig()  # Would be live mode
 
-        assert demo_config.base_url != live_config.base_url
-        assert demo_config.private_ws_url != live_config.private_ws_url
-        # Public WS should be the same
-        assert demo_config.ws_url == live_config.ws_url
+        # Demo endpoints use safe demo endpoints
+        assert "api-demo" in demo_config.base_url
+        assert "stream-demo" in demo_config.private_ws_url
 
     @pytest.mark.asyncio
     async def test_fallback_to_rest_on_ws_failure(self):
@@ -677,17 +682,18 @@ class TestBybitRoutingPolicy:
         await connector.close()
 
     def test_endpoint_priority_documented(self):
-        """Endpoint priority is documented and testable."""
-        # Priority order: Demo > Testnet > Live
+        """Endpoint priority is documented and testable (production blocked)."""
+        from data.exchange.bybit_safety import SecurityException
+        
+        # Priority order: Demo > Testnet (Live is blocked for safety)
         # This test validates the priority logic is intentional
 
-        priority_order = [
+        safe_configs = [
             ("demo", BybitConfig(demo=True)),
             ("testnet", BybitConfig(testnet=True)),
-            ("live", BybitConfig()),
         ]
 
-        for name, config in priority_order:
+        for name, config in safe_configs:
             assert config.base_url is not None
             assert config.private_ws_url is not None
             assert config.ws_url is not None
@@ -696,5 +702,7 @@ class TestBybitRoutingPolicy:
                 assert "api-demo" in config.base_url
             elif name == "testnet":
                 assert "testnet" in config.base_url
-            else:
-                assert config.base_url == "https://api.bybit.com"
+        
+        # Production mode raises SecurityException
+        with pytest.raises(SecurityException):
+            BybitConfig()  # Default would be live/production
