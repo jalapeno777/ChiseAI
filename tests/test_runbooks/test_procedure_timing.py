@@ -5,11 +5,9 @@ These tests validate that runbook procedures complete within expected timeframes
 """
 
 import time
-from pathlib import Path
 
 import pytest
-
-from scripts.ops.validate_runbooks import RunbookValidator, SLAResult
+from scripts.ops.validate_runbooks import RunbookValidator
 
 
 class TestKillSwitchTiming:

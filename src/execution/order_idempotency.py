@@ -11,7 +11,7 @@ import logging
 import secrets
 import string
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Protocol
 
 logger = logging.getLogger(__name__)
@@ -104,7 +104,7 @@ def generate_client_order_id(symbol: str, id_length: int = 8) -> str:
         '1704067200000_BTCUSDT_a3f9b2c1'
     """
     # Get current timestamp in milliseconds
-    timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
+    timestamp = int(datetime.now(UTC).timestamp() * 1000)
 
     # Generate cryptographically secure random string
     alphabet = string.ascii_lowercase + string.digits

@@ -80,6 +80,16 @@ from ml.hyperopt import (
 from ml.hyperopt import (
     OptimizationConfig as HyperoptConfig,
 )
+from ml.models import (
+    FilesystemBackend,
+    ModelMetadata,
+    ModelRegistry,
+    ModelRegistryFactory,
+    ModelVersion,
+    S3Backend,
+    SemanticVersion,
+    StorageBackend,
+)
 from ml.scheduler import (
     JobStatus,
     OptimizationScheduler,
@@ -90,16 +100,6 @@ from ml.scheduler import (
     ScheduleFrequency,
     VolatilityMonitor,
     VolatilityRegime,
-)
-from ml.models import (
-    FilesystemBackend,
-    ModelMetadata,
-    ModelRegistry,
-    ModelRegistryFactory,
-    ModelVersion,
-    S3Backend,
-    SemanticVersion,
-    StorageBackend,
 )
 from ml.training import (
     FEATURE_GROUPS,

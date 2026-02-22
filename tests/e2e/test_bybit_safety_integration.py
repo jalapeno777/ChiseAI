@@ -11,27 +11,22 @@ For ST-LAUNCH-005: Safety Integration & E2E Tests
 """
 
 import asyncio
+from unittest.mock import AsyncMock, MagicMock, Mock
+
 import pytest
-from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 # Import safety components
-from common.circuit_breaker import CircuitBreaker, CircuitBreakerOpen
+from common.circuit_breaker import CircuitBreaker
 from execution.kill_switch.executor import KillSwitchExecutor
 from execution.kill_switch.state import (
-    CloseResult,
-    CloseStatus,
     KillSwitchConfig,
     KillSwitchResult,
-    KillSwitchState,
 )
 from execution.order_idempotency import (
-    DuplicateOrderException,
     IdempotencyStore,
     generate_client_order_id,
 )
 from execution.safety_orchestrator import (
-    SafetyCheckResult,
     SafetyEventType,
     SafetyOrchestrator,
 )

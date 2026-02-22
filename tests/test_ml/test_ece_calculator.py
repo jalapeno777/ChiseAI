@@ -14,14 +14,13 @@ from __future__ import annotations
 
 import asyncio
 from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from confidence.ece import ECECalculator, SignalType
 from ml.calibration.ece_calculator import (
     ECECalculationRequest,
-    ECECalculationResponse,
     InMemoryOutcomeDataStore,
     OutcomeBasedECECalculator,
     PredictionOutcomeRecord,
@@ -30,9 +29,9 @@ from ml.calibration.ece_calculator import (
 from ml.calibration.ece_updater import (
     ECE_CRITICAL_THRESHOLD,
     ECE_DEGRADATION_THRESHOLD,
+    MAX_UPDATE_DURATION_SECONDS,
     ECEUpdateService,
     LoggingAlertHandler,
-    MAX_UPDATE_DURATION_SECONDS,
     UpdateConfig,
     create_default_service,
 )

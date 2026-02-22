@@ -62,6 +62,15 @@ from ml.feedback.orchestrator import (
     TemporalSafetyMode,
 )
 
+# Signal Outcome Matcher (ST-LAUNCH-006)
+from ml.feedback.signal_outcome_matcher import (
+    DEFAULT_MATCH_WINDOWS,
+    MatcherMetrics,
+    MatchMetadata,
+    SignalMatcherConfig,
+    SignalOutcomeMatcher,
+)
+
 # Updater components
 from ml.feedback.updater import (
     ModelType,
@@ -71,15 +80,6 @@ from ml.feedback.updater import (
     UpdateResult,
     UpdateStatus,
     UpdateStrategy,
-)
-
-# Signal Outcome Matcher (ST-LAUNCH-006)
-from ml.feedback.signal_outcome_matcher import (
-    SignalOutcomeMatcher,
-    SignalMatcherConfig,
-    MatcherMetrics,
-    MatchMetadata,
-    DEFAULT_MATCH_WINDOWS,
 )
 
 __all__ = [

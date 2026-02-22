@@ -27,18 +27,15 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from enum import Enum, auto
+from enum import Enum
 from typing import Any
 
 from ml.model_registry.registry import (
     ModelRegistry,
-    ModelStatus,
-    ModelType,
-    ModelVersion,
     PromotionCriteria,
 )
 from ml.rollback.automatic import RollbackManager, RollbackReason
-from ml.validation.gate import ValidationGate, ValidationRun, ValidationState
+from ml.validation.gate import ValidationGate, ValidationState
 
 logger = logging.getLogger(__name__)
 

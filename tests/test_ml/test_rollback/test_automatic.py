@@ -1,13 +1,13 @@
 """Tests for automatic rollback."""
 
+from datetime import UTC, datetime
+
 import pytest
-import asyncio
-from datetime import datetime, UTC
 
 from ml.model_registry.registry import ModelRegistry, ModelStatus, ModelType
 from ml.rollback.automatic import (
-    RollbackManager,
     RollbackConfig,
+    RollbackManager,
     RollbackReason,
     RollbackResult,
     RollbackState,

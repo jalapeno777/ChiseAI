@@ -9,10 +9,11 @@ For ST-NS-041: Incident Manager with Auto-Remediation
 from __future__ import annotations
 
 import asyncio
+import builtins
 import logging
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
-from typing import Any, List
+from typing import Any
 
 from src.autonomous_control_plane.models.incidents import (
     P0_EVENT_TYPES,
@@ -510,7 +511,7 @@ class InMemoryIncidentStore(IncidentStore):
         severity: Severity | None = None,
         source: str | None = None,
         limit: int = 100,
-    ) -> List[Incident]:
+    ) -> builtins.list[Incident]:
         """List incidents with optional filtering."""
         incidents = list(self._incidents.values())
 
@@ -533,7 +534,7 @@ class InMemoryIncidentStore(IncidentStore):
                 return True
             return False
 
-    async def get_all(self) -> List[Incident]:
+    async def get_all(self) -> builtins.list[Incident]:
         """Get all incidents."""
         return list(self._incidents.values())
 

@@ -12,8 +12,8 @@ from __future__ import annotations
 
 import asyncio
 import sys
-from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
 
 sys.path.insert(0, "/home/tacopants/projects/ChiseAI/src")
 
@@ -21,18 +21,12 @@ import pytest
 
 from config.feature_flags import FeatureFlags, reset_feature_flags, set_feature_flags
 from ml.training.pipeline_integration import (
-    FeedbackLoopDataFetcher,
-    GrafanaMetricsExporter,
     Hyperparameters,
     TrainingData,
-    TrainingJob,
     TrainingJobStatus,
     TrainingPipelineIntegration,
 )
 from ml.training.retraining_trigger import (
-    InMemoryDeduplicationStore,
-    RetrainingTrigger,
-    RetrainingTriggerConfig,
     TriggerResult,
     TriggerStatus,
     TriggerType,

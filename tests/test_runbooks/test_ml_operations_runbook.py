@@ -4,9 +4,10 @@ Tests for the ML Operations Runbook (ml_operations.md)
 Part of ST-LAUNCH-021: Runbook Creation & Validation
 """
 
-import pytest
 import re
 from pathlib import Path
+
+import pytest
 
 
 class TestMLOperationsRunbookStructure:

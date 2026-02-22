@@ -29,13 +29,11 @@ import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from enum import Enum, auto
+from enum import Enum
 from typing import Any, Protocol
 
 from ml.model_registry.registry import (
     ModelRegistry,
-    ModelStatus,
-    ModelType,
     ModelVersion,
 )
 
@@ -302,7 +300,7 @@ class RollbackManager:
                 timeout=self._config.max_rollback_time_seconds,
             )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             duration = (datetime.now(UTC) - started_at).total_seconds()
             result = RollbackResult(
                 success=False,
@@ -493,7 +491,7 @@ class RollbackManager:
                 timeout=self._config.max_rollback_time_seconds,
             )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             duration = (datetime.now(UTC) - started_at).total_seconds()
             result = RollbackResult(
                 success=False,

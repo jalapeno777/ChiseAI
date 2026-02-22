@@ -5,17 +5,11 @@ These tests validate that runbooks meet their SLA requirements.
 """
 
 import json
-import time
-from datetime import datetime
-from pathlib import Path
-from unittest.mock import Mock, patch
-
-import pytest
 
 from scripts.ops.validate_runbooks import (
     RunbookValidator,
-    SLAResult,
     ScenarioResult,
+    SLAResult,
     ValidationReport,
 )
 

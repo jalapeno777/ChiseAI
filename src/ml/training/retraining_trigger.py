@@ -25,7 +25,6 @@ from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
     from discord_alerts.config import DiscordConfig
-    from ml.training.pipeline import TrainingPipeline
 
 logger = logging.getLogger(__name__)
 

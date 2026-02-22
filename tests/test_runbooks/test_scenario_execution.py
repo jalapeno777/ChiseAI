@@ -5,14 +5,9 @@ These tests validate that scenarios can be executed successfully.
 """
 
 import time
-from pathlib import Path
-from unittest.mock import Mock, patch
-
-import pytest
 
 from scripts.ops.validate_runbooks import (
     RunbookValidator,
-    ScenarioResult,
 )
 
 

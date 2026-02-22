@@ -20,7 +20,7 @@ from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
-    from common.circuit_breaker import CircuitBreaker, CircuitBreakerState
+    from common.circuit_breaker import CircuitBreaker
     from execution.kill_switch.executor import KillSwitchExecutor
     from execution.order_idempotency import IdempotencyStore
 
@@ -320,13 +320,13 @@ class SafetyOrchestrator:
         if state_name == "OPEN":
             event = self._log_event(
                 SafetyEventType.CIRCUIT_BREAKER_CHECK,
-                f"Circuit breaker OPEN - blocking operation",
+                "Circuit breaker OPEN - blocking operation",
                 metadata,
                 success=False,
             )
             return SafetyCheckResult(
                 passed=False,
-                reason=f"Circuit breaker is OPEN",
+                reason="Circuit breaker is OPEN",
                 event=event,
             )
 

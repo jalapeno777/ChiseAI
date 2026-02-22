@@ -7,12 +7,12 @@ For ST-NS-041: Incident Manager with Auto-Remediation
 
 from __future__ import annotations
 
+import builtins
 import uuid
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any, List, Protocol
+from typing import Any, Protocol
 
 
 class Severity(StrEnum):
@@ -526,7 +526,7 @@ class IncidentStore(Protocol):
         severity: Severity | None = None,
         source: str | None = None,
         limit: int = 100,
-    ) -> List[Incident]:
+    ) -> builtins.list[Incident]:
         """List incidents with optional filtering."""
         ...
 
@@ -534,6 +534,6 @@ class IncidentStore(Protocol):
         """Delete an incident."""
         ...
 
-    async def get_all(self) -> List[Incident]:
+    async def get_all(self) -> builtins.list[Incident]:
         """Get all incidents."""
         ...

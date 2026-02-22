@@ -1,14 +1,14 @@
 """Tests for promotion workflow."""
 
-import pytest
-from datetime import datetime, UTC
 
-from ml.model_registry.registry import ModelRegistry, ModelStatus, ModelType
-from ml.rollback.automatic import RollbackManager, RollbackConfig, RollbackReason
+import pytest
+
+from ml.model_registry.registry import ModelRegistry, ModelType
+from ml.rollback.automatic import RollbackConfig, RollbackManager
 from ml.validation.gate import ValidationGate
 from ml.validation.promotion import (
-    PromotionWorkflow,
     PromotionRequestStatus,
+    PromotionWorkflow,
 )
 
 
