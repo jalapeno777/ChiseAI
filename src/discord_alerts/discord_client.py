@@ -9,8 +9,10 @@ For GATE-RECOVERY-002: Discord Channel Routing Fix
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -50,7 +52,7 @@ class DeliveryResult:
 
 
 class DiscordClient:
-    """Discord bot client with webhook fallback.
+    """Discord bot client with webhook fallback and rate limiting.
 
     Supports both bot token (for full bot functionality) and
     webhook URL (for simple message posting) authentication.
@@ -58,13 +60,24 @@ class DiscordClient:
     Implements Gate B fix: bot-send is primary, webhook is fallback.
     All sends enforce guild lock for security.
 
+    Features:
+        - Rate limiting with exponential backoff
+        - Automatic disable after MAX_CONSECUTIVE_FAILURES
+        - Manual re-enable via enable() method
+
     Attributes:
         config: Discord configuration
         is_connected: Whether client is connected
         _session: aiohttp ClientSession (created on first use)
         _bot_client: discord.py Client instance
         _guild_cache: Cache of resolved guild/channel IDs
+        _consecutive_failures: Count of consecutive send failures
+        _disabled_until: Timestamp when Discord will be re-enabled
+        _rate_limit_backoff_seconds: Current backoff interval
     """
+
+    MAX_CONSECUTIVE_FAILURES = 5
+    DISABLE_DURATION_MINUTES = 15
 
     def __init__(self, config: DiscordConfig):
         """Initialize Discord client.
@@ -77,6 +90,27 @@ class DiscordClient:
         self._session: Any | None = None
         self._bot_client: Any | None = None
         self._guild_cache: dict[str, Any] = {}
+        self._consecutive_failures = 0
+        self._disabled_until: datetime | None = None
+        self._rate_limit_backoff_seconds = 5  # Initial backoff
+
+    @property
+    def is_disabled(self) -> bool:
+        """Check if Discord is temporarily disabled due to failures.
+
+        Returns:
+            True if disabled, False otherwise. Auto-re-enables after duration.
+        """
+        if self._disabled_until is None:
+            return False
+        if datetime.now(UTC) >= self._disabled_until:
+            # Auto-re-enable after duration
+            self._disabled_until = None
+            self._consecutive_failures = 0
+            self._rate_limit_backoff_seconds = 5
+            logger.info("Discord auto-re-enabled after disable duration")
+            return False
+        return True
 
     async def _get_session(self) -> Any:
         """Get or create aiohttp session.
@@ -182,6 +216,72 @@ class DiscordClient:
             logger.warning("discord.py not installed, bot mode unavailable")
             return False
 
+    def _get_disabled_remaining_minutes(self) -> float:
+        """Get remaining disable time in minutes.
+
+        Returns:
+            Remaining minutes until re-enable, or 0.0 if not disabled
+        """
+        if self._disabled_until is None:
+            return 0.0
+        remaining = (self._disabled_until - datetime.now(UTC)).total_seconds()
+        return max(0.0, remaining / 60.0)
+
+    async def _handle_send_result(self, result: DeliveryResult) -> DeliveryResult:
+        """Handle send result, tracking failures and rate limits.
+
+        Args:
+            result: The delivery result to process
+
+        Returns:
+            The same result (potentially modified)
+        """
+        if not result.success:
+            self._consecutive_failures += 1
+
+            # Check if rate limited
+            if result.error and "rate limited" in result.error.lower():
+                await self._handle_rate_limit()
+
+            # Check for persistent failures
+            if self._consecutive_failures >= self.MAX_CONSECUTIVE_FAILURES:
+                await self._disable_due_to_failures()
+        else:
+            # Reset on success
+            if self._consecutive_failures > 0:
+                self._consecutive_failures = 0
+                self._rate_limit_backoff_seconds = 5  # Reset backoff
+
+        return result
+
+    async def _handle_rate_limit(self) -> None:
+        """Handle rate limit with exponential backoff."""
+        logger.warning(
+            f"Rate limited, backing off for {self._rate_limit_backoff_seconds}s"
+        )
+        await asyncio.sleep(self._rate_limit_backoff_seconds)
+        # Exponential backoff: 5s, 10s, 20s, 40s, max 300s
+        self._rate_limit_backoff_seconds = min(
+            self._rate_limit_backoff_seconds * 2, 300
+        )
+
+    async def _disable_due_to_failures(self) -> None:
+        """Disable Discord after persistent failures."""
+        self._disabled_until = datetime.now(UTC) + timedelta(
+            minutes=self.DISABLE_DURATION_MINUTES
+        )
+        logger.error(
+            f"Discord disabled for {self.DISABLE_DURATION_MINUTES} minutes "
+            f"due to {self._consecutive_failures} consecutive failures"
+        )
+
+    def enable(self) -> None:
+        """Manually re-enable Discord after being disabled."""
+        self._disabled_until = None
+        self._consecutive_failures = 0
+        self._rate_limit_backoff_seconds = 5
+        logger.info("Discord manually re-enabled")
+
     async def disconnect(self) -> None:
         """Disconnect from Discord and cleanup resources."""
         self.is_connected = False
@@ -208,6 +308,9 @@ class DiscordClient:
         Gate B fix: Uses authoritative channel IDs and enforces guild lock.
         Fallback chain: bot → webhook → log failure.
 
+        Implements rate limiting with exponential backoff and automatic
+        disable after MAX_CONSECUTIVE_FAILURES.
+
         Args:
             content: Message content
             channel: Target channel name (e.g., 'summaries', 'trading')
@@ -217,6 +320,15 @@ class DiscordClient:
         Returns:
             DeliveryResult with status and message info
         """
+        # Check if disabled due to persistent failures
+        if self.is_disabled:
+            remaining = self._get_disabled_remaining_minutes()
+            return DeliveryResult(
+                success=False,
+                error=f"Discord temporarily disabled ({remaining:.0f}m remaining)",
+                method="none",
+            )
+
         if not self.is_connected and not await self.connect():
             # Auto-connect on first send
             return DeliveryResult(
@@ -252,6 +364,7 @@ class DiscordClient:
                 content, target_channel_id, target_channel_name, embeds
             )
             if result.success:
+                result = await self._handle_send_result(result)
                 return result
             logger.warning(f"Bot send failed, trying webhook fallback: {result.error}")
 
@@ -261,16 +374,23 @@ class DiscordClient:
             result.channel_name = target_channel_name
             result.channel_id = target_channel_id
             result.guild_validated = guild_validated
+
+            # Track failures and handle rate limits
+            result = await self._handle_send_result(result)
             return result
 
         # Final fallback: Log failure
-        return DeliveryResult(
+        result = DeliveryResult(
             success=False,
             error="No valid Discord sending method available",
             channel_name=target_channel_name,
             channel_id=target_channel_id,
             guild_validated=guild_validated,
         )
+
+        # Track failures
+        result = await self._handle_send_result(result)
+        return result
 
     async def _send_via_webhook(
         self, content: str, embeds: list[dict[str, Any]] | None = None
@@ -403,33 +523,51 @@ class DiscordClient:
         """Check Discord connection health.
 
         Returns:
-            Dictionary with health status
+            Dictionary with health status including rate limit info
         """
+        base_health = {
+            "consecutive_failures": self._consecutive_failures,
+            "is_disabled": self.is_disabled,
+            "disabled_remaining_minutes": self._get_disabled_remaining_minutes()
+            if self.is_disabled
+            else 0.0,
+            "rate_limit_backoff_seconds": self._rate_limit_backoff_seconds,
+        }
+
         if not self.is_connected:
-            return {
-                "healthy": False,
-                "connected": False,
-                "error": "Not connected",
-            }
+            base_health.update(
+                {
+                    "healthy": False,
+                    "connected": False,
+                    "error": "Not connected",
+                }
+            )
+            return base_health
 
         # Test connection by validating webhook or bot status
         if self.config.webhook_url:
             webhook_valid = await self._validate_webhook()
-            return {
-                "healthy": webhook_valid,
-                "connected": self.is_connected,
-                "mode": "webhook",
-                "guild_restricted": self.config.guild_id is not None,
-                "error": None if webhook_valid else "Webhook validation failed",
-            }
+            base_health.update(
+                {
+                    "healthy": webhook_valid,
+                    "connected": self.is_connected,
+                    "mode": "webhook",
+                    "guild_restricted": self.config.guild_id is not None,
+                    "error": None if webhook_valid else "Webhook validation failed",
+                }
+            )
+            return base_health
 
-        return {
-            "healthy": self.is_connected,
-            "connected": self.is_connected,
-            "mode": "bot",
-            "guild_restricted": self.config.guild_id is not None,
-            "error": None,
-        }
+        base_health.update(
+            {
+                "healthy": self.is_connected,
+                "connected": self.is_connected,
+                "mode": "bot",
+                "guild_restricted": self.config.guild_id is not None,
+                "error": None,
+            }
+        )
+        return base_health
 
     def validate_guild(self, guild_id: str | None) -> bool:
         """Validate that the guild ID matches the configured restriction.

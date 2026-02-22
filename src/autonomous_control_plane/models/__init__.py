@@ -1,55 +1,24 @@
-"""Models for autonomous control plane.
+"""Models module for the autonomous control plane.
 
-For ST-NS-040: Self-Healing Engine with Action Sandboxing
-For ST-NS-041: Incident Manager with Auto-Remediation
+ST-NS-038: Circuit Breaker Registry & Unified Telemetry
 """
 
-from src.autonomous_control_plane.models.healing import (
-    ActionPriority,
-    FailurePatternMatch,
-    FailurePatternType,
-    HealingAttempt,
-    HealingContext,
-    HealingResult,
-    HealingStats,
-    HealingStatus,
-    LogEntry,
-    ResourceLimits,
-    RollbackResult,
-)
-from src.autonomous_control_plane.models.incidents import (
-    Incident,
-    IncidentEvent,
-    IncidentMetrics,
-    IncidentStatus,
-    Notification,
-    NotificationChannel,
-    PostMortem,
-    RemediationAction,
-    Severity,
+from autonomous_control_plane.models.circuit_breaker import (
+    CircuitBreakerConfig,
+    CircuitBreakerHealth,
+    CircuitBreakerMetrics,
+    CircuitBreakerState,
+    CircuitBreakerStateModel,
+    StateChangeEvent,
+    StateTransitionReason,
 )
 
 __all__ = [
-    # Healing models
-    "ActionPriority",
-    "FailurePatternMatch",
-    "FailurePatternType",
-    "HealingAttempt",
-    "HealingContext",
-    "HealingResult",
-    "HealingStats",
-    "HealingStatus",
-    "LogEntry",
-    "ResourceLimits",
-    "RollbackResult",
-    # Incident models
-    "Incident",
-    "IncidentEvent",
-    "IncidentMetrics",
-    "IncidentStatus",
-    "Notification",
-    "NotificationChannel",
-    "PostMortem",
-    "RemediationAction",
-    "Severity",
+    "CircuitBreakerConfig",
+    "CircuitBreakerHealth",
+    "CircuitBreakerMetrics",
+    "CircuitBreakerState",
+    "CircuitBreakerStateModel",
+    "StateChangeEvent",
+    "StateTransitionReason",
 ]

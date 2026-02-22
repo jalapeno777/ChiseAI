@@ -15,6 +15,7 @@ dependencies = [
     "pytest-asyncio>=0.21.0",
     "scipy>=1.10.0",
     "python-dotenv>=1.0.0",
+    "sqlalchemy>=2.0.0",
 ]
 
 [tool.black]
@@ -84,10 +85,11 @@ omit = [
 [tool.bandit]
 # Security scan exclusions - these patterns are acceptable for this codebase:
 # B101: assert_used - Acceptable in test files (182 issues, all in tests)
+# B104: hardcoded_bind_all_interfaces - 0.0.0.0 binding is standard for containerized services
 # B105: hardcoded_password_string - False positives on variable names like 'pass' (3 issues)
 # B107: hardcoded_password_default - False positives on default args (5 issues)
 # B110: try_except_pass - Intentional patterns for cleanup/compatibility (12 issues)
 # B311: random - Not used for cryptographic purposes (56 issues)
 # B404: import_subprocess - Required for runbook executor and healing actions (2 files)
 # B603: subprocess_without_shell_equals_true - Controlled subprocess usage (2 files)
-skips = ["B101", "B105", "B107", "B110", "B311", "B404", "B603"]
+skips = ["B101", "B104", "B105", "B107", "B110", "B311", "B404", "B603"]
