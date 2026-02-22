@@ -275,9 +275,10 @@ epics:
   # EP-LAUNCH-001: Bybit Safety & Infrastructure (5 stories, 14 points)
   - id: EP-LAUNCH-001
     name: Bybit Safety & Infrastructure
-    status: planned
+    status: in_progress
     story_ids: [ST-LAUNCH-001, ST-LAUNCH-002, ST-LAUNCH-003, ST-LAUNCH-004, ST-LAUNCH-005]
     story_count: 5
+    stories_completed: 2
     story_points: 14
     description: Bybit demo connector hardening with environment assertions, WebSocket circuit breaker, order idempotency, and comprehensive safety integration
     sprint_id: LAUNCH-SPRINT-1
@@ -298,9 +299,10 @@ epics:
   # EP-LAUNCH-002: Feedback Loop & ML Pipeline (5 stories, 18 points)
   - id: EP-LAUNCH-002
     name: Feedback Loop & ML Pipeline
-    status: planned
+    status: in_progress
     story_ids: [ST-LAUNCH-006, ST-LAUNCH-007, ST-LAUNCH-008, ST-LAUNCH-009, ST-LAUNCH-010]
     story_count: 5
+    stories_completed: 2
     story_points: 18
     description: Complete signal-to-outcome feedback loop with feature extraction, prediction-outcome matching, ECE calculation from actual trades, and dynamic threshold adjustment
     sprint_id: LAUNCH-SPRINT-1-2
@@ -2992,6 +2994,9 @@ launch_stories:
     sprint_id: LAUNCH-SPRINT-1
     status: completed
     validation_status: validated
+    completion_date: "2026-02-22"
+    merge_commit: "bf48587"
+    pr_number: 245
     story_points: 3
     priority: P0-CRITICAL
     fr_coverage: [FR-029, NFR-008]
@@ -3019,8 +3024,11 @@ launch_stories:
     title: Order Idempotency
     epic_id: EP-LAUNCH-001
     sprint_id: LAUNCH-SPRINT-1
-    status: planned
-    validation_status: planned
+    status: completed
+    validation_status: validated
+    completion_date: "2026-02-22"
+    merge_commit: "57818ba"
+    pr_number: 246
     story_points: 3
     priority: P0-CRITICAL
     fr_coverage: [FR-029]
@@ -3107,8 +3115,11 @@ launch_stories:
     title: Signal-to-Outcome Pipeline
     epic_id: EP-LAUNCH-002
     sprint_id: LAUNCH-SPRINT-1
-    status: planned
-    validation_status: planned
+    status: completed
+    validation_status: validated
+    completion_date: "2026-02-22"
+    merge_commit: "7dc761d"
+    pr_number: 247
     story_points: 5
     priority: P0-CRITICAL
     fr_coverage: [FR-017, FR-018]
@@ -3140,8 +3151,11 @@ launch_stories:
     title: Feature Extractor Completion
     epic_id: EP-LAUNCH-002
     sprint_id: LAUNCH-SPRINT-1
-    status: planned
-    validation_status: planned
+    status: completed
+    validation_status: validated
+    completion_date: "2026-02-22"
+    merge_commit: "8f033dc"
+    pr_number: 244
     story_points: 4
     priority: P0-CRITICAL
     fr_coverage: [FR-020]
