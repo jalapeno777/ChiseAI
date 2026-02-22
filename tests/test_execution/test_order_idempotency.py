@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import asyncio
 import re
-import time
 from unittest.mock import AsyncMock
 
 import pytest

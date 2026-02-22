@@ -8,11 +8,17 @@ For ST-LAUNCH-014: Training E2E Integration Test
 from __future__ import annotations
 
 import asyncio
-import pytest
-from datetime import UTC, datetime, timedelta
-from unittest.mock import Mock
 
-from ml.training.pipeline import PipelineStats, TrainingPipeline
+import pytest
+
+from config.feature_flags import FeatureFlags, reset_feature_flags, set_feature_flags
+from ml.model_registry.registry import (
+    ModelRegistry,
+    ModelStatus,
+    ModelType,
+    PromotionCriteria,
+)
+from ml.training.pipeline import PipelineStats
 from ml.training.retraining_trigger import (
     InMemoryDeduplicationStore,
     RetrainingTrigger,
@@ -27,13 +33,6 @@ from ml.training.training_orchestrator import (
     TrainingState,
     TrainingStatus,
 )
-from ml.model_registry.registry import (
-    ModelRegistry,
-    ModelStatus,
-    ModelType,
-    PromotionCriteria,
-)
-from config.feature_flags import FeatureFlags, reset_feature_flags, set_feature_flags
 
 # Import fixtures from training_fixtures
 pytest_plugins = ["tests.e2e.fixtures.training_fixtures"]
@@ -588,9 +587,9 @@ class TestEndToEndScenarios:
     async def test_full_training_workflow(self, reset_feature_flags):
         """Test complete training workflow from trigger to promotion."""
         from tests.e2e.fixtures.training_fixtures import (
+            MockDataProvider,
             MockECERetriever,
             MockPerformanceRetriever,
-            MockDataProvider,
             MockTrainingPipelineRunner,
             create_test_model_version,
             promote_to_champion,
@@ -650,10 +649,6 @@ class TestEndToEndScenarios:
     @pytest.mark.asyncio
     async def test_rollback_scenario(self, reset_feature_flags):
         """Test rollback scenario when new model fails."""
-        from tests.e2e.fixtures.training_fixtures import (
-            MockDataProvider,
-            MockTrainingPipelineRunner,
-        )
 
         # Create registry
         registry = ModelRegistry(

@@ -13,8 +13,6 @@ Tests:
 
 from __future__ import annotations
 
-import asyncio
-import json
 import time
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -26,7 +24,6 @@ from data.exchange.bybit_websocket import (
     BybitWebSocketManager,
     CircuitBreakerConfig,
     CircuitBreakerState,
-    StateTransitionReason,
     WebSocketCircuitBreakerState,
     WebSocketMetrics,
     create_websocket_manager_with_registry,

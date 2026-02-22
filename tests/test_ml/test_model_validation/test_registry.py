@@ -1,7 +1,8 @@
 """Tests for model registry."""
 
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, UTC
 
 from ml.model_registry.registry import (
     ModelRegistry,

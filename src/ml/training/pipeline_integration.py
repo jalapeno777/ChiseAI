@@ -28,12 +28,10 @@ from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
     from ml.feedback.orchestrator import FeedbackOrchestrator
-    from ml.model_registry.registry import ModelRegistry, ModelVersion
-    from ml.training.pipeline import TrainingPipeline
+    from ml.model_registry.registry import ModelRegistry
     from ml.training.retraining_trigger import (
         RetrainingTrigger,
         TriggerResult,
-        TriggerType,
     )
 
 logger = logging.getLogger(__name__)

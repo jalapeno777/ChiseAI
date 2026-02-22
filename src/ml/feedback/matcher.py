@@ -942,9 +942,7 @@ class PredictionOutcomeMatcher:
             else:
                 # Medium/Low confidence counts as false positive for quality metrics
                 metrics.false_positives += 1
-        elif match.status == MatchStatus.EXPIRED:
-            metrics.false_negatives += 1
-        elif match.status == MatchStatus.ERROR:
+        elif match.status == MatchStatus.EXPIRED or match.status == MatchStatus.ERROR:
             metrics.false_negatives += 1
 
         if match.outcome:

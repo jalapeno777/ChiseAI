@@ -20,7 +20,7 @@ from market_analysis.signal_storage.models import (
     SignalRecord,
 )
 from ml.features.indicator_calculator import IndicatorCalculator, IndicatorValues
-from ml.features.ohlcv_loader import OHLCVLoadResult, OHLCVLoader
+from ml.features.ohlcv_loader import OHLCVLoader, OHLCVLoadResult
 from ml.training.extractor import (
     ExtractedFeatures,
     FeatureCache,

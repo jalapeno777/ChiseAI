@@ -24,7 +24,6 @@ from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
     from discord_alerts.config import DiscordConfig
-    from ml.training.pipeline import TrainingPipeline
     from ml.training.retraining_trigger import RetrainingTrigger, TriggerResult
 
 logger = logging.getLogger(__name__)
@@ -479,7 +478,7 @@ class TrainingOrchestrator:
                         )
                         logger.error(f"Training failed: {run.error_message}")
 
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     run.state = TrainingState.FAILED
                     run.status = TrainingStatus.ERROR
                     run.error_message = f"Training timeout after {self.config.max_training_duration_hours}h"

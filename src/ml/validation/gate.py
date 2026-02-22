@@ -29,16 +29,14 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
-from enum import Enum, auto
+from datetime import UTC, datetime
+from enum import Enum
 from typing import Any, Protocol
 
-from ml.calibration.ece_calculator import OutcomeBasedECECalculator
 from ml.model_registry.registry import (
     ModelRegistry,
     ModelStatus,
     ModelType,
-    ModelVersion,
 )
 
 logger = logging.getLogger(__name__)

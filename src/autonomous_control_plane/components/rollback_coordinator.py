@@ -12,7 +12,7 @@ import asyncio
 import logging
 from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any, List, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from src.autonomous_control_plane.models.incidents import (
     IncidentEvent,
@@ -21,6 +21,8 @@ from src.autonomous_control_plane.models.incidents import (
 
 if TYPE_CHECKING:
     from src.autonomous_control_plane.components.incident_manager import IncidentManager
+import builtins
+
 from src.autonomous_control_plane.models.rollback import (
     HealthCheck,
     PostRollbackHealth,
@@ -368,7 +370,7 @@ class InMemoryRollbackStore(RollbackStore):
                 return True
             return False
 
-    async def get_all(self) -> List[RollbackOperation]:
+    async def get_all(self) -> builtins.list[RollbackOperation]:
         """Get all operations."""
         return list(self._operations.values())
 

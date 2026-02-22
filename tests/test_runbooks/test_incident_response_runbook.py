@@ -4,9 +4,9 @@ Tests for the Incident Response Runbook (incident_response.md)
 Part of ST-LAUNCH-021: Runbook Creation & Validation
 """
 
-import pytest
-import re
 from pathlib import Path
+
+import pytest
 
 
 class TestIncidentResponseRunbookStructure:

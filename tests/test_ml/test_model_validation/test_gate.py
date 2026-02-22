@@ -1,17 +1,18 @@
 """Tests for validation gate."""
 
-import pytest
 import asyncio
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 
-from ml.model_registry.registry import ModelRegistry, ModelStatus, ModelType
+import pytest
+
+from ml.model_registry.registry import ModelRegistry, ModelType
 from ml.validation.gate import (
-    ValidationGate,
+    ComparisonResult,
     ValidationConfig,
+    ValidationGate,
     ValidationMetrics,
     ValidationMode,
     ValidationState,
-    ComparisonResult,
 )
 
 

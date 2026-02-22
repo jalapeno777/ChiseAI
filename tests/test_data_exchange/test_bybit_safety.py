@@ -11,12 +11,11 @@ Tests:
 
 from __future__ import annotations
 
-import asyncio
 import os
 import sys
 import time
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime
+from unittest.mock import patch
 
 import pytest
 
@@ -24,14 +23,11 @@ import pytest
 sys.path.insert(0, "/home/tacopants/projects/ChiseAI/src")
 
 from data.exchange.bybit_safety import (
-    DEMO_ENDPOINTS,
     DEMO_PATTERNS,
-    PRODUCTION_ENDPOINTS,
     PRODUCTION_PATTERNS,
-    SecurityException,
     KillSwitchMonitor,
     KillSwitchStatus,
-    OrderAuditEntry,
+    SecurityException,
     _order_audit_log,
     audit_log_order_operation,
     get_audit_log,
@@ -243,7 +239,7 @@ class TestKillSwitch:
         with patch("data.exchange.bybit_safety.get_kill_switch_status") as mock_status:
             mock_status.return_value = KillSwitchStatus(
                 triggered=True,
-                triggered_at=datetime.now(timezone.utc).isoformat(),
+                triggered_at=datetime.now(UTC).isoformat(),
                 reason="Test trigger",
             )
 
