@@ -192,62 +192,61 @@ class KimiDiagnosticProbe:
         start_time = time.perf_counter()
 
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(
-                    self.MODELS_URL,
-                    headers={
-                        "Authorization": f"Bearer {self.api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    timeout=aiohttp.ClientTimeout(total=30),
-                ) as response:
-                    latency_ms = (time.perf_counter() - start_time) * 1000
+            async with aiohttp.ClientSession() as session, session.get(
+                self.MODELS_URL,
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json",
+                },
+                timeout=aiohttp.ClientTimeout(total=30),
+            ) as response:
+                latency_ms = (time.perf_counter() - start_time) * 1000
 
-                    self.results["models_endpoint"]["status_code"] = response.status
-                    self.results["models_endpoint"]["latency_ms"] = round(latency_ms, 2)
+                self.results["models_endpoint"]["status_code"] = response.status
+                self.results["models_endpoint"]["latency_ms"] = round(latency_ms, 2)
 
-                    # Capture non-sensitive headers
-                    self.results["models_endpoint"]["headers"] = {
-                        k: v
-                        for k, v in response.headers.items()
-                        if k.lower() not in ("authorization", "set-cookie")
-                    }
+                # Capture non-sensitive headers
+                self.results["models_endpoint"]["headers"] = {
+                    k: v
+                    for k, v in response.headers.items()
+                    if k.lower() not in ("authorization", "set-cookie")
+                }
 
-                    response_text = await response.text()
+                response_text = await response.text()
 
-                    if response.status == 200:
-                        try:
-                            data = json.loads(response_text)
-                            models = data.get("data", [])
-                            self.results["models_endpoint"]["models_available"] = [
-                                m.get("id", "unknown") for m in models
-                            ]
-                            self.results["models_endpoint"]["success"] = True
-                            logger.info(f"✓ Success - Status: {response.status}")
-                            logger.info(f"✓ Latency: {latency_ms:.2f}ms")
-                            logger.info(f"✓ Models available: {len(models)}")
-                            for model in models[:5]:  # Show first 5
-                                logger.info(f"  - {model.get('id', 'unknown')}")
-                            if len(models) > 5:
-                                logger.info(f"  ... and {len(models) - 5} more")
-                        except json.JSONDecodeError as e:
-                            self.results["models_endpoint"][
-                                "error"
-                            ] = f"JSON parse error: {e}"
-                            logger.error(f"✗ JSON parse error: {e}")
-                    else:
+                if response.status == 200:
+                    try:
+                        data = json.loads(response_text)
+                        models = data.get("data", [])
+                        self.results["models_endpoint"]["models_available"] = [
+                            m.get("id", "unknown") for m in models
+                        ]
+                        self.results["models_endpoint"]["success"] = True
+                        logger.info(f"✓ Success - Status: {response.status}")
+                        logger.info(f"✓ Latency: {latency_ms:.2f}ms")
+                        logger.info(f"✓ Models available: {len(models)}")
+                        for model in models[:5]:  # Show first 5
+                            logger.info(f"  - {model.get('id', 'unknown')}")
+                        if len(models) > 5:
+                            logger.info(f"  ... and {len(models) - 5} more")
+                    except json.JSONDecodeError as e:
                         self.results["models_endpoint"][
                             "error"
-                        ] = f"HTTP {response.status}: {response_text[:200]}"
-                        logger.error(f"✗ Failed - Status: {response.status}")
-                        logger.error(f"✗ Response: {response_text[:200]}")
+                        ] = f"JSON parse error: {e}"
+                        logger.error(f"✗ JSON parse error: {e}")
+                else:
+                    self.results["models_endpoint"][
+                        "error"
+                    ] = f"HTTP {response.status}: {response_text[:200]}"
+                    logger.error(f"✗ Failed - Status: {response.status}")
+                    logger.error(f"✗ Response: {response_text[:200]}")
 
         except aiohttp.ClientError as e:
             latency_ms = (time.perf_counter() - start_time) * 1000
             self.results["models_endpoint"]["latency_ms"] = round(latency_ms, 2)
             self.results["models_endpoint"]["error"] = f"Connection error: {e}"
             logger.error(f"✗ Connection error: {e}")
-        except asyncio.TimeoutError:
+        except TimeoutError:
             latency_ms = (time.perf_counter() - start_time) * 1000
             self.results["models_endpoint"]["latency_ms"] = round(latency_ms, 2)
             self.results["models_endpoint"]["error"] = "Request timeout (>30s)"
@@ -278,77 +277,76 @@ class KimiDiagnosticProbe:
         start_time = time.perf_counter()
 
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    self.CHAT_COMPLETIONS_URL,
-                    headers={
-                        "Authorization": f"Bearer {self.api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": model,
-                        "messages": [
-                            {
-                                "role": "user",
-                                "content": "Say 'KIMI diagnostic test successful'",
-                            }
-                        ],
-                        "max_tokens": 50,
-                        "temperature": 0.1,
-                    },
-                    timeout=aiohttp.ClientTimeout(total=30),
-                ) as response:
-                    latency_ms = (time.perf_counter() - start_time) * 1000
+            async with aiohttp.ClientSession() as session, session.post(
+                self.CHAT_COMPLETIONS_URL,
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": model,
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": "Say 'KIMI diagnostic test successful'",
+                        }
+                    ],
+                    "max_tokens": 50,
+                    "temperature": 0.1,
+                },
+                timeout=aiohttp.ClientTimeout(total=30),
+            ) as response:
+                latency_ms = (time.perf_counter() - start_time) * 1000
 
-                    self.results["chat_completions_endpoint"][
-                        "status_code"
-                    ] = response.status
-                    self.results["chat_completions_endpoint"]["latency_ms"] = round(
-                        latency_ms, 2
-                    )
+                self.results["chat_completions_endpoint"][
+                    "status_code"
+                ] = response.status
+                self.results["chat_completions_endpoint"]["latency_ms"] = round(
+                    latency_ms, 2
+                )
 
-                    # Capture non-sensitive headers
-                    self.results["chat_completions_endpoint"]["headers"] = {
-                        k: v
-                        for k, v in response.headers.items()
-                        if k.lower() not in ("authorization", "set-cookie")
-                    }
+                # Capture non-sensitive headers
+                self.results["chat_completions_endpoint"]["headers"] = {
+                    k: v
+                    for k, v in response.headers.items()
+                    if k.lower() not in ("authorization", "set-cookie")
+                }
 
-                    response_text = await response.text()
+                response_text = await response.text()
 
-                    if response.status == 200:
-                        try:
-                            data = json.loads(response_text)
-                            choices = data.get("choices", [])
-                            if choices:
-                                content = (
-                                    choices[0].get("message", {}).get("content", "")
-                                )
-                                preview = (
-                                    content[:200] if content else "(empty response)"
-                                )
-                            else:
-                                preview = "(no choices in response)"
+                if response.status == 200:
+                    try:
+                        data = json.loads(response_text)
+                        choices = data.get("choices", [])
+                        if choices:
+                            content = (
+                                choices[0].get("message", {}).get("content", "")
+                            )
+                            preview = (
+                                content[:200] if content else "(empty response)"
+                            )
+                        else:
+                            preview = "(no choices in response)"
 
-                            self.results["chat_completions_endpoint"][
-                                "response_preview"
-                            ] = preview
-                            self.results["chat_completions_endpoint"]["success"] = True
-                            logger.info(f"✓ Success - Status: {response.status}")
-                            logger.info(f"✓ Latency: {latency_ms:.2f}ms")
-                            logger.info(f"✓ Model: {model}")
-                            logger.info(f"✓ Response preview: {preview}")
-                        except json.JSONDecodeError as e:
-                            self.results["chat_completions_endpoint"][
-                                "error"
-                            ] = f"JSON parse error: {e}"
-                            logger.error(f"✗ JSON parse error: {e}")
-                    else:
+                        self.results["chat_completions_endpoint"][
+                            "response_preview"
+                        ] = preview
+                        self.results["chat_completions_endpoint"]["success"] = True
+                        logger.info(f"✓ Success - Status: {response.status}")
+                        logger.info(f"✓ Latency: {latency_ms:.2f}ms")
+                        logger.info(f"✓ Model: {model}")
+                        logger.info(f"✓ Response preview: {preview}")
+                    except json.JSONDecodeError as e:
                         self.results["chat_completions_endpoint"][
                             "error"
-                        ] = f"HTTP {response.status}: {response_text[:200]}"
-                        logger.error(f"✗ Failed - Status: {response.status}")
-                        logger.error(f"✗ Response: {response_text[:200]}")
+                        ] = f"JSON parse error: {e}"
+                        logger.error(f"✗ JSON parse error: {e}")
+                else:
+                    self.results["chat_completions_endpoint"][
+                        "error"
+                    ] = f"HTTP {response.status}: {response_text[:200]}"
+                    logger.error(f"✗ Failed - Status: {response.status}")
+                    logger.error(f"✗ Response: {response_text[:200]}")
 
         except aiohttp.ClientError as e:
             latency_ms = (time.perf_counter() - start_time) * 1000
@@ -359,7 +357,7 @@ class KimiDiagnosticProbe:
                 "error"
             ] = f"Connection error: {e}"
             logger.error(f"✗ Connection error: {e}")
-        except asyncio.TimeoutError:
+        except TimeoutError:
             latency_ms = (time.perf_counter() - start_time) * 1000
             self.results["chat_completions_endpoint"]["latency_ms"] = round(
                 latency_ms, 2

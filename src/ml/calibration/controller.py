@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
@@ -404,7 +404,7 @@ class ThresholdController:
             ece_after: ECE after change
         """
         change = ThresholdChange(
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             signal_type=signal_type,
             old_threshold=old_threshold,
             new_threshold=new_threshold,
@@ -499,7 +499,7 @@ class ThresholdController:
             Configured ThresholdController instance
         """
         try:
-            with open(config_path, "r") as f:
+            with open(config_path) as f:
                 config = yaml.safe_load(f)
         except Exception as e:
             logger.warning(f"Could not load config: {e}, using defaults")

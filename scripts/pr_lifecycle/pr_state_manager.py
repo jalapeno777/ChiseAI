@@ -124,7 +124,7 @@ class PRState:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, str]) -> "PRState":
+    def from_dict(cls, data: dict[str, str]) -> PRState:
         """Create PRState from dictionary retrieved from Redis."""
         return cls(
             pr_number=int(data.get("pr_number", 0)),
@@ -189,7 +189,7 @@ class PREvent:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "PREvent":
+    def from_dict(cls, data: dict[str, Any]) -> PREvent:
         return cls(
             timestamp=data.get("timestamp", ""),
             event_type=data.get("event_type", ""),

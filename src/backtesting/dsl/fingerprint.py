@@ -88,9 +88,7 @@ def _normalize_value(value: Any) -> Any:
     elif isinstance(value, float):
         # Normalize floats to avoid precision issues
         return round(value, 10)
-    elif isinstance(value, bool):
-        return value
-    elif isinstance(value, int):
+    elif isinstance(value, bool) or isinstance(value, int):
         return value
     elif value is None:
         return None

@@ -7,7 +7,6 @@ import json
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -16,7 +15,7 @@ from autonomous_git.gitreviewbot import CalibrationTracker
 
 
 async def query_decisions(
-    pr_number: Optional[int] = None,
+    pr_number: int | None = None,
     days: int = 7,
     output_format: str = "table",
 ) -> None:

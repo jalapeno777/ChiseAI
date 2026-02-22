@@ -29,7 +29,7 @@ import asyncio
 import logging
 import os
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Protocol
 
@@ -171,7 +171,7 @@ class QueueMetrics:
     active_backtests: int = 0
     completed_today: int = 0
     failed_today: int = 0
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def to_dict(self) -> dict[str, Any]:
         """Convert metrics to dictionary for InfluxDB."""
@@ -247,7 +247,7 @@ class CircuitBreaker:
         """Record a failed operation."""
         async with self._lock:
             self._failure_count += 1
-            self._last_failure_time = datetime.now(timezone.utc)
+            self._last_failure_time = datetime.now(UTC)
 
             if self._failure_count >= self.failure_threshold:
                 if self._state != CircuitBreakerState.OPEN:
@@ -270,7 +270,7 @@ class CircuitBreaker:
                 # Check if recovery timeout has elapsed
                 if self._last_failure_time:
                     elapsed = (
-                        datetime.now(timezone.utc) - self._last_failure_time
+                        datetime.now(UTC) - self._last_failure_time
                     ).total_seconds()
                     if elapsed >= self.recovery_timeout_seconds:
                         self._state = CircuitBreakerState.HALF_OPEN
@@ -566,7 +566,7 @@ class BacktestRunner:
         Returns:
             backtest_id: Unique identifier for this backtest
         """
-        backtest_id = f"{strategy_id}_{datetime.now(timezone.utc).isoformat()}"
+        backtest_id = f"{strategy_id}_{datetime.now(UTC).isoformat()}"
 
         await self._queue.put(
             {
@@ -575,11 +575,11 @@ class BacktestRunner:
                 "func": backtest_func,
                 "args": args,
                 "kwargs": kwargs,
-                "submitted_at": datetime.now(timezone.utc),
+                "submitted_at": datetime.now(UTC),
             }
         )
 
-        self._queue_start_times[backtest_id] = datetime.now(timezone.utc)
+        self._queue_start_times[backtest_id] = datetime.now(UTC)
 
         logger.info(f"Submitted backtest {backtest_id} for strategy {strategy_id}")
         return backtest_id
@@ -608,7 +608,7 @@ class BacktestRunner:
                         self._queue.get(),
                         timeout=1.0,
                     )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     continue
 
                 backtest_id = backtest_job["backtest_id"]
@@ -680,7 +680,7 @@ class BacktestRunner:
                     timeout=30.0,  # Report every 30 seconds
                 )
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue
             except asyncio.CancelledError:
                 logger.info("Monitor loop cancelled")
@@ -696,7 +696,7 @@ class BacktestRunner:
             QueueMetrics with current state
         """
         # Calculate processing lag
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         processing_lag = 0.0
 
         if self._queue_start_times:
@@ -735,7 +735,7 @@ class BacktestRunner:
         Returns:
             BacktestKPIs with calculated metrics
         """
-        start_time = datetime.now(timezone.utc)
+        start_time = datetime.now(UTC)
         backtest_id = f"bt_{strategy_id}_{start_time.timestamp()}"
 
         try:
@@ -761,7 +761,7 @@ class BacktestRunner:
             )
 
             # Calculate execution time
-            execution_time = (datetime.now(timezone.utc) - start_time).total_seconds()
+            execution_time = (datetime.now(UTC) - start_time).total_seconds()
             kpis.execution_time_seconds = execution_time
 
             # Persist to InfluxDB
@@ -780,7 +780,7 @@ class BacktestRunner:
                 status=BacktestStatus.FAILED,
                 error_message=str(e),
                 execution_time_seconds=(
-                    datetime.now(timezone.utc) - start_time
+                    datetime.now(UTC) - start_time
                 ).total_seconds(),
             )
 
@@ -841,8 +841,8 @@ class BacktestRunner:
             pnl = equity * (pnl_pct / 100)
 
             trade = Trade(
-                entry_time=datetime.now(timezone.utc),
-                exit_time=datetime.now(timezone.utc),
+                entry_time=datetime.now(UTC),
+                exit_time=datetime.now(UTC),
                 entry_price=100.0 + i,
                 exit_price=100.0 + i + (1 if pnl > 0 else -1),
                 direction=direction,
@@ -884,7 +884,7 @@ class BacktestRunner:
             BacktestKPIs with calculated metrics
         """
         if not timestamp:
-            timestamp = datetime.now(timezone.utc)
+            timestamp = datetime.now(UTC)
 
         if not trades or not equity_curve:
             return BacktestKPIs(
@@ -1120,7 +1120,7 @@ class BacktestRunner:
         Returns:
             Dictionary with trades, equity_curve, and metadata
         """
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
 
         logger.info(
             f"Running walk-forward backtest for {strategy_id} "
@@ -1128,7 +1128,7 @@ class BacktestRunner:
         )
 
         # Calculate date range
-        end_date = datetime.now(timezone.utc)
+        end_date = datetime.now(UTC)
         start_date = end_date - timedelta(days=window_days)
 
         # Load historical data
@@ -1430,14 +1430,14 @@ class BacktestRunner:
 
             # Handle timestamp conversion
             if isinstance(entry_ts, (int, float)):
-                entry_time = datetime.fromtimestamp(entry_ts / 1000, tz=timezone.utc)
+                entry_time = datetime.fromtimestamp(entry_ts / 1000, tz=UTC)
             else:
-                entry_time = datetime.now(timezone.utc)
+                entry_time = datetime.now(UTC)
 
             if isinstance(exit_ts, (int, float)):
-                exit_time = datetime.fromtimestamp(exit_ts / 1000, tz=timezone.utc)
+                exit_time = datetime.fromtimestamp(exit_ts / 1000, tz=UTC)
             else:
-                exit_time = datetime.now(timezone.utc)
+                exit_time = datetime.now(UTC)
 
             trades.append(
                 Trade(
@@ -1482,7 +1482,7 @@ async def run_backtest(
         trades=trades,
         equity_curve=equity_curve,
         strategy_id=strategy_id,
-        backtest_id=f"bt_{strategy_id}_{datetime.now(timezone.utc).timestamp()}",
+        backtest_id=f"bt_{strategy_id}_{datetime.now(UTC).timestamp()}",
     )
 
     await runner.persist_kpis(kpis)
@@ -1511,7 +1511,7 @@ async def generate_kpis(
         trades=trades,
         equity_curve=equity_curve,
         strategy_id=strategy_id,
-        backtest_id=f"bt_{strategy_id}_{datetime.now(timezone.utc).timestamp()}",
+        backtest_id=f"bt_{strategy_id}_{datetime.now(UTC).timestamp()}",
     )
 
 

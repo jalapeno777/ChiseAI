@@ -14,7 +14,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 # Configure logging
 logging.basicConfig(
@@ -61,7 +61,7 @@ class EvaluationResult:
     sharpe_ratio: float = 0.0
     max_drawdown: float = 0.0
     duration_seconds: float = 0.0
-    error_message: Optional[str] = None
+    error_message: str | None = None
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
     def __post_init__(self) -> None:
@@ -171,7 +171,7 @@ class Leaderboard:
     - Max drawdown (risk penalty)
     """
 
-    def __init__(self, config: Optional[LeaderboardConfig] = None) -> None:
+    def __init__(self, config: LeaderboardConfig | None = None) -> None:
         """Initialize leaderboard with optional custom config.
 
         Args:
@@ -313,7 +313,7 @@ class Leaderboard:
             ),
         }
 
-    def get_best(self) -> Optional[tuple[EvaluationResult, float]]:
+    def get_best(self) -> tuple[EvaluationResult, float] | None:
         """Get the best performing result.
 
         Returns:
@@ -356,7 +356,7 @@ class BatchEvaluator:
     async def _evaluate_single(
         self,
         brain_version: str,
-        timeout_seconds: Optional[float] = None,
+        timeout_seconds: float | None = None,
     ) -> EvaluationResult:
         """Evaluate a single brain version.
 
@@ -398,7 +398,7 @@ class BatchEvaluator:
                 duration_seconds=duration,
             )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             duration = max(0.0, (datetime.utcnow() - start_time).total_seconds())
             logger.warning(f"Evaluation timeout for {brain_version}")
             return EvaluationResult(
@@ -472,7 +472,7 @@ class BatchEvaluator:
     async def evaluate_batch(
         self,
         brain_versions: list[str],
-        timeout_seconds: Optional[float] = None,
+        timeout_seconds: float | None = None,
     ) -> list[EvaluationResult]:
         """Evaluate multiple brain versions in parallel.
 
@@ -603,7 +603,7 @@ class EvaluationPersistence:
         """
         filepath = Path(filepath)
 
-        with open(filepath, "r") as f:
+        with open(filepath) as f:
             data = json.load(f)
 
         results = [EvaluationResult.from_dict(r) for r in data.get("results", [])]
@@ -634,8 +634,8 @@ class EvaluationPersistence:
 
 def run_batch_evaluation(
     brain_versions: list[str],
-    timeout_seconds: Optional[float] = None,
-    output_path: Optional[Path] = None,
+    timeout_seconds: float | None = None,
+    output_path: Path | None = None,
 ) -> list[EvaluationResult]:
     """Convenience function to run batch evaluation synchronously.
 

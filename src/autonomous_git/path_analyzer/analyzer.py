@@ -1,8 +1,8 @@
 """Core analysis engine."""
 
 import time
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from .cache import PathAnalysisCache
 from .classification import FileClassification, RiskClassification, RiskLevel
@@ -15,9 +15,9 @@ class PathAnalyzer:
 
     def __init__(
         self,
-        config_path: Optional[str] = None,
-        cache: Optional[PathAnalysisCache] = None,
-        pattern_matcher: Optional[PathPatternMatcher] = None,
+        config_path: str | None = None,
+        cache: PathAnalysisCache | None = None,
+        pattern_matcher: PathPatternMatcher | None = None,
     ):
         """
         Initialize the path analyzer.
@@ -33,10 +33,10 @@ class PathAnalyzer:
 
     def analyze(
         self,
-        files: List[str],
-        pr_number: Optional[int] = None,
-        commit_sha: Optional[str] = None,
-        file_contents: Optional[Dict[str, str]] = None,
+        files: list[str],
+        pr_number: int | None = None,
+        commit_sha: str | None = None,
+        file_contents: dict[str, str] | None = None,
         use_cache: bool = True,
     ) -> RiskClassification:
         """
@@ -83,7 +83,7 @@ class PathAnalyzer:
             reasoning=reasoning,
             pr_number=pr_number,
             commit_sha=commit_sha,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             analysis_duration_ms=duration_ms,
         )
 
@@ -94,8 +94,8 @@ class PathAnalyzer:
         return result
 
     def _analyze_files(
-        self, files: List[str], file_contents: Optional[Dict[str, str]] = None
-    ) -> List[FileClassification]:
+        self, files: list[str], file_contents: dict[str, str] | None = None
+    ) -> list[FileClassification]:
         """Analyze each file and create classifications."""
         classifications = []
 
@@ -115,7 +115,7 @@ class PathAnalyzer:
         return classifications
 
     def _classify_single_file(
-        self, path: str, semantic_flags: List[Any]
+        self, path: str, semantic_flags: list[Any]
     ) -> FileClassification:
         """Classify a single file."""
         # Check pattern matching
@@ -180,7 +180,7 @@ class PathAnalyzer:
         )
 
     def _determine_overall_risk(
-        self, file_classifications: List[FileClassification]
+        self, file_classifications: list[FileClassification]
     ) -> RiskLevel:
         """Determine the overall risk level from all file classifications."""
         if not file_classifications:
@@ -191,7 +191,7 @@ class PathAnalyzer:
         return RiskLevel.from_highest(risk_levels)
 
     def _calculate_confidence(
-        self, file_classifications: List[FileClassification]
+        self, file_classifications: list[FileClassification]
     ) -> float:
         """Calculate overall confidence score."""
         if not file_classifications:
@@ -209,7 +209,7 @@ class PathAnalyzer:
         return round(weighted_sum / total_weight, 2) if total_weight > 0 else 0.5
 
     def _generate_reasoning(
-        self, file_classifications: List[FileClassification], overall_risk: RiskLevel
+        self, file_classifications: list[FileClassification], overall_risk: RiskLevel
     ) -> str:
         """Generate human-readable reasoning for the classification."""
         if not file_classifications:
@@ -252,11 +252,11 @@ class PathAnalyzer:
 
 # Convenience function for API
 def analyze_paths(
-    files: List[str],
-    pr_number: Optional[int] = None,
-    commit_sha: Optional[str] = None,
-    file_contents: Optional[Dict[str, str]] = None,
-    config_path: Optional[str] = None,
+    files: list[str],
+    pr_number: int | None = None,
+    commit_sha: str | None = None,
+    file_contents: dict[str, str] | None = None,
+    config_path: str | None = None,
     use_cache: bool = True,
 ) -> RiskClassification:
     """

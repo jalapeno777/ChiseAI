@@ -312,9 +312,8 @@ class TestCircuitBreakerContextManager:
         """Context manager records failure on exception."""
         cb = CircuitBreaker()
 
-        with pytest.raises(ValueError):
-            with cb:
-                raise ValueError("test")
+        with pytest.raises(ValueError), cb:
+            raise ValueError("test")
 
         assert cb.metrics.failure_count == 1
 
@@ -323,9 +322,8 @@ class TestCircuitBreakerContextManager:
         cb = CircuitBreaker(failure_threshold=1)
         cb.record_failure("error")
 
-        with pytest.raises(CircuitBreakerOpen):
-            with cb:
-                pass
+        with pytest.raises(CircuitBreakerOpen), cb:
+            pass
 
 
 class TestCircuitBreakerThreadSafety:

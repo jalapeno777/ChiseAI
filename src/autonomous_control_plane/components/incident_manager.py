@@ -10,8 +10,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
-from typing import Any, Callable
+from typing import Any
 
 from src.autonomous_control_plane.models.incidents import (
     P0_EVENT_TYPES,
@@ -349,24 +350,23 @@ class NotificationDispatcher:
         }
 
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    self._discord_webhook,
-                    json=payload,
-                    timeout=aiohttp.ClientTimeout(total=10),
-                ) as response:
-                    if response.status in (200, 204):
-                        logger.info(
-                            f"Discord notification sent for incident {incident.incident_id}"
-                        )
-                        return Notification(
-                            channel=NotificationChannel.DISCORD,
-                            content=content,
-                        )
-                    else:
-                        logger.warning(
-                            f"Discord notification failed: {response.status}"
-                        )
+            async with aiohttp.ClientSession() as session, session.post(
+                self._discord_webhook,
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=10),
+            ) as response:
+                if response.status in (200, 204):
+                    logger.info(
+                        f"Discord notification sent for incident {incident.incident_id}"
+                    )
+                    return Notification(
+                        channel=NotificationChannel.DISCORD,
+                        content=content,
+                    )
+                else:
+                    logger.warning(
+                        f"Discord notification failed: {response.status}"
+                    )
         except Exception as e:
             logger.exception(f"Failed to send Discord notification: {e}")
 

@@ -30,10 +30,10 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 # Add src to path for config imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
@@ -125,13 +125,13 @@ class BranchInfo:
 
     name: str
     last_commit: str
-    last_commit_date: Optional[datetime] = None
+    last_commit_date: datetime | None = None
     merged_to_main: bool = False
     commits_behind: int = 0
     commits_ahead: int = 0
     has_remote: bool = False
     is_valid_name: bool = True
-    naming_issue: Optional[str] = None
+    naming_issue: str | None = None
     days_inactive: int = 0
 
 
@@ -145,7 +145,7 @@ class WorktreeInfo:
     uncommitted_changes: bool = False
     untracked_files: list[str] = field(default_factory=list)
     has_session_file: bool = False
-    session_data: Optional[dict] = None
+    session_data: dict | None = None
 
 
 @dataclass
@@ -158,16 +158,16 @@ class PRInfo:
     head_branch: str
     base_branch: str
     is_merged: bool = False
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-    mergeable: Optional[bool] = None
-    mergeable_state: Optional[str] = None
+    created_at: str | None = None
+    updated_at: str | None = None
+    mergeable: bool | None = None
+    mergeable_state: str | None = None
 
 
 class GitHelper:
     """Helper class for git operations."""
 
-    def __init__(self, repo_root: Optional[Path] = None):
+    def __init__(self, repo_root: Path | None = None):
         self.repo_root = repo_root or self._find_repo_root()
 
     @staticmethod
@@ -240,7 +240,7 @@ class GitHelper:
                     out.replace("Z", "+00:00")
                 )
                 info.days_inactive = (
-                    datetime.now(timezone.utc) - info.last_commit_date
+                    datetime.now(UTC) - info.last_commit_date
                 ).days
             except ValueError:
                 pass
@@ -283,7 +283,7 @@ class GitHelper:
         return info
 
     @staticmethod
-    def _validate_branch_name(name: str) -> tuple[bool, Optional[str]]:
+    def _validate_branch_name(name: str) -> tuple[bool, str | None]:
         """Validate branch naming convention."""
         valid_patterns = [
             r"^feature/(ST|CH|FT|REWARD|REPO|SAFETY|BRANCH|PAPER|RECON)-\d+",
@@ -340,7 +340,7 @@ class GitHelper:
         if info.has_session_file:
             try:
                 info.session_data = json.loads(session_file.read_text())
-            except (json.JSONDecodeError, IOError):
+            except (OSError, json.JSONDecodeError):
                 pass
 
         # Check cleanliness
@@ -449,7 +449,7 @@ class GiteaHelper:
         base_url: str = DEFAULT_GITEA_BASE_URL,
         owner: str = DEFAULT_GITEA_OWNER,
         repo: str = DEFAULT_GITEA_REPO,
-        token: Optional[str] = None,
+        token: str | None = None,
     ):
         self.base_url = base_url.rstrip("/")
         self.owner = owner
@@ -457,7 +457,7 @@ class GiteaHelper:
         self.token = token or os.getenv("GITEA_TOKEN", "")
 
     def _api_request(
-        self, method: str, endpoint: str, data: Optional[dict] = None
+        self, method: str, endpoint: str, data: dict | None = None
     ) -> tuple[bool, Any]:
         """Make an API request to Gitea."""
         if not self.token:
@@ -520,7 +520,7 @@ class GiteaHelper:
 
         return prs
 
-    def get_pr(self, number: int) -> Optional[PRInfo]:
+    def get_pr(self, number: int) -> PRInfo | None:
         """Get a specific pull request."""
         success, data = self._api_request("GET", f"pulls/{number}")
 
@@ -545,7 +545,7 @@ class RedisHelper:
     """Helper for Redis operations."""
 
     def __init__(self):
-        self.client: Optional[Any] = None
+        self.client: Any | None = None
         self.host = os.getenv("CHISE_REDIS_HOST", "host.docker.internal")
         self.port = int(os.getenv("CHISE_REDIS_PORT", "6380"))
         self.db = int(os.getenv("CHISE_REDIS_DB", "0"))
@@ -584,7 +584,7 @@ class RedisHelper:
             return False
 
         entry = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "action": action,
             "details": json.dumps(details),
         }
@@ -603,7 +603,7 @@ class RedisHelper:
         try:
             payload = {
                 "state": state,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "data": json.dumps(data),
             }
             self.client.hset(REDIS_CLEANUP_STATE, "current", json.dumps(payload))
@@ -617,7 +617,7 @@ class RedisHelper:
             return False
 
         try:
-            date_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            date_key = datetime.now(UTC).strftime("%Y-%m-%d")
             summary = {
                 "timestamp": result.timestamp,
                 "dry_run": result.dry_run,
@@ -643,7 +643,7 @@ class RedisHelper:
         try:
             boundary_data = {
                 "sprint_id": sprint_id,
-                "started_at": datetime.now(timezone.utc).isoformat(),
+                "started_at": datetime.now(UTC).isoformat(),
                 "cleanup_timestamp": cleanup_result.timestamp,
                 "issues_critical": cleanup_result.critical_count,
                 "issues_warning": cleanup_result.warning_count,
@@ -667,7 +667,7 @@ class SprintCleanup:
         self.gitea = GiteaHelper()
         self.redis = RedisHelper()
         self.result = CleanupResult(
-            timestamp=datetime.now(timezone.utc).isoformat(), dry_run=dry_run
+            timestamp=datetime.now(UTC).isoformat(), dry_run=dry_run
         )
 
         # Set state in Redis
@@ -785,7 +785,7 @@ class SprintCleanup:
         else:
             print(f"  ⚠️  Found {len(dirty_worktrees)} worktrees with issues")
 
-    def _get_session_age(self, session_data: dict) -> Optional[timedelta]:
+    def _get_session_age(self, session_data: dict) -> timedelta | None:
         """Get the age of a session."""
         created_at = session_data.get("created_at")
         if not created_at:
@@ -793,7 +793,7 @@ class SprintCleanup:
 
         try:
             created = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
-            return datetime.now(timezone.utc) - created
+            return datetime.now(UTC) - created
         except ValueError:
             return None
 

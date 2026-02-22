@@ -215,9 +215,9 @@ class DashboardPerformanceTester:
 
         # Read dashboard
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 dashboard = json.load(f)
-        except (json.JSONDecodeError, IOError) as e:
+        except (OSError, json.JSONDecodeError) as e:
             return PerformanceResult(
                 dashboard_file=dashboard_file,
                 dashboard_uid="",

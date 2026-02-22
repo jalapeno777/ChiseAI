@@ -11,7 +11,7 @@ import argparse
 import asyncio
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -37,8 +37,8 @@ async def get_redis_client():
 
 
 async def get_logs(
-    limit: int = 100, pr_number: Optional[int] = None
-) -> List[Dict[str, Any]]:
+    limit: int = 100, pr_number: int | None = None
+) -> list[dict[str, Any]]:
     """Get auto-approval logs.
 
     Args:
@@ -81,7 +81,7 @@ async def get_logs(
         return []
 
 
-async def get_status() -> Dict[str, Any]:
+async def get_status() -> dict[str, Any]:
     """Get current auto-approval status.
 
     Returns:
@@ -120,7 +120,7 @@ async def get_status() -> Dict[str, Any]:
         return {}
 
 
-def format_log_entry(entry: Dict[str, Any], format_type: str) -> str:
+def format_log_entry(entry: dict[str, Any], format_type: str) -> str:
     """Format a log entry for display.
 
     Args:
@@ -169,7 +169,7 @@ def format_log_entry(entry: Dict[str, Any], format_type: str) -> str:
     return "\n".join(lines)
 
 
-def format_status(status: Dict[str, Any]) -> str:
+def format_status(status: dict[str, Any]) -> str:
     """Format status for display.
 
     Args:

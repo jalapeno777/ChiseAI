@@ -23,8 +23,7 @@ import os
 import random
 import sys
 import time
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
@@ -40,7 +39,7 @@ except ImportError:
 
 
 def get_influxdb_client(
-    url: Optional[str] = None, token: Optional[str] = None, org: Optional[str] = None
+    url: str | None = None, token: str | None = None, org: str | None = None
 ) -> InfluxDBClient:
     """Create InfluxDB client from environment or defaults."""
     url = url or os.getenv("INFLUXDB_URL", "http://localhost:18087")
@@ -58,7 +57,7 @@ def write_sample_orders(
     symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
     sides = ["buy", "sell"]
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     for i in range(count):
         order_id = f"order_{environment}_{int(time.time() * 1000)}_{i}"
@@ -150,7 +149,7 @@ def write_sample_portfolio_snapshots(
 ) -> None:
     """Write sample portfolio snapshots to InfluxDB."""
     base_equity = 100000.0
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     for i in range(count):
         # Generate equity curve with some random walk
@@ -202,7 +201,7 @@ def write_sample_positions(write_api, bucket: str, environment: str = "paper") -
         },
     ]
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     for pos in positions:
         unrealized_pnl = random.uniform(-200, 500)
@@ -228,7 +227,7 @@ def write_sample_kill_switch(
     write_api, bucket: str, environment: str = "live", triggered: bool = False
 ) -> None:
     """Write sample kill-switch state to InfluxDB."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     point = (
         Point("kill_switch")

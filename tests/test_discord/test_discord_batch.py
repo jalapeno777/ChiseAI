@@ -6,7 +6,7 @@ Tests for TASK-ST-NS-026-03: Discord Webhook Optimization
 from __future__ import annotations
 
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -34,7 +34,7 @@ def create_test_signal(
         direction=direction,
         confidence=confidence,
         base_score=75.0,
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         status=SignalStatus.ACTIONABLE,
         timeframe="1h",
     )

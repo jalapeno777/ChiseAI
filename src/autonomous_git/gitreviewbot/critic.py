@@ -5,7 +5,6 @@ import json
 import os
 import re
 from datetime import datetime
-from typing import List, Optional
 
 from .models import ReviewResult, Severity, Violation
 
@@ -45,13 +44,13 @@ class CriticReviewer:
     def __init__(
         self,
         llm_client=None,
-        prompt_path: Optional[str] = None,
+        prompt_path: str | None = None,
         timeout_seconds: float = 30.0,
     ):
         self.llm_client = llm_client
         self.timeout_seconds = timeout_seconds
         self.prompt_path = prompt_path or self._default_prompt_path()
-        self._prompt_template: Optional[str] = None
+        self._prompt_template: str | None = None
 
     def _default_prompt_path(self) -> str:
         """Get default path to prompt file."""
@@ -62,7 +61,7 @@ class CriticReviewer:
         """Load prompt template from file."""
         if self._prompt_template is None:
             try:
-                with open(self.prompt_path, "r") as f:
+                with open(self.prompt_path) as f:
                     self._prompt_template = f.read()
             except FileNotFoundError:
                 self._prompt_template = self._default_prompt()
@@ -105,15 +104,15 @@ Guidelines:
     async def review(
         self,
         pr_title: str,
-        story_id: Optional[str],
+        story_id: str | None,
         diff: str,
-        files: List[str],
+        files: list[str],
     ) -> ReviewResult:
         """Perform Critic review of PR."""
         start_time = datetime.utcnow()
 
-        violations: List[Violation] = []
-        blockers: List[str] = []
+        violations: list[Violation] = []
+        blockers: list[str] = []
 
         try:
             # Run static checks
@@ -136,7 +135,7 @@ Guidelines:
 
             summary = self._generate_summary(violations, compliance_score)
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             violations.append(
                 Violation(
                     rule="review_timeout",
@@ -173,10 +172,10 @@ Guidelines:
     def _run_static_checks(
         self,
         pr_title: str,
-        story_id: Optional[str],
+        story_id: str | None,
         diff: str,
-        files: List[str],
-    ) -> tuple[List[Violation], List[str]]:
+        files: list[str],
+    ) -> tuple[list[Violation], list[str]]:
         """Run static compliance checks."""
         violations = []
         blockers = []
@@ -247,10 +246,10 @@ Guidelines:
     async def _llm_review(
         self,
         pr_title: str,
-        story_id: Optional[str],
+        story_id: str | None,
         diff: str,
-        files: List[str],
-    ) -> List[Violation]:
+        files: list[str],
+    ) -> list[Violation]:
         """Run LLM-based compliance review."""
         prompt_template = await self._load_prompt()
 
@@ -269,7 +268,7 @@ Guidelines:
             return await self.llm_client.complete(prompt)
         return "{}"
 
-    def _parse_llm_response(self, response: str) -> List[Violation]:
+    def _parse_llm_response(self, response: str) -> list[Violation]:
         """Parse LLM response into violations."""
         violations = []
 
@@ -293,7 +292,7 @@ Guidelines:
 
         return violations
 
-    def _extract_json(self, text: str) -> Optional[str]:
+    def _extract_json(self, text: str) -> str | None:
         """Extract JSON from text."""
         import re
 
@@ -309,7 +308,7 @@ Guidelines:
 
         return None
 
-    def _calculate_compliance_score(self, violations: List[Violation]) -> float:
+    def _calculate_compliance_score(self, violations: list[Violation]) -> float:
         """Calculate compliance score from violations."""
         base_score = 100.0
 
@@ -323,7 +322,7 @@ Guidelines:
 
         return max(0.0, min(100.0, base_score))
 
-    def _generate_summary(self, violations: List[Violation], score: float) -> str:
+    def _generate_summary(self, violations: list[Violation], score: float) -> str:
         """Generate review summary."""
         error_count = sum(1 for v in violations if v.severity == Severity.ERROR)
         warning_count = sum(1 for v in violations if v.severity == Severity.WARNING)

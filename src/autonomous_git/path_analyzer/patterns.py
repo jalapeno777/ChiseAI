@@ -4,7 +4,7 @@ import re
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import yaml
 
@@ -39,7 +39,7 @@ class SemanticRule:
 
     name: str
     pattern: str
-    threshold: Optional[int] = None
+    threshold: int | None = None
     action: str = "flag_for_review"
     compiled: re.Pattern = None
 
@@ -55,16 +55,16 @@ class SemanticRule:
 class PathPatternMatcher:
     """Matches file paths against configured patterns."""
 
-    def __init__(self, config_path: Optional[str] = None):
+    def __init__(self, config_path: str | None = None):
         """Initialize with optional custom config path."""
         if config_path is None:
             config_path = Path(__file__).parent / "config.yaml"
 
         self.config_path = Path(config_path)
-        self._config: Dict[str, Any] = {}
-        self.safe_patterns: List[Pattern] = []
-        self.complex_patterns: List[Pattern] = []
-        self.semantic_rules: List[SemanticRule] = []
+        self._config: dict[str, Any] = {}
+        self.safe_patterns: list[Pattern] = []
+        self.complex_patterns: list[Pattern] = []
+        self.semantic_rules: list[SemanticRule] = []
         self._load_config()
 
     def _load_config(self) -> None:
@@ -73,7 +73,7 @@ class PathPatternMatcher:
             self._load_defaults()
             return
 
-        with open(self.config_path, "r") as f:
+        with open(self.config_path) as f:
             self._config = yaml.safe_load(f)
 
         self._validate_config()
@@ -179,7 +179,7 @@ class PathPatternMatcher:
 
     def classify_path(
         self, path: str
-    ) -> Tuple[Optional[PatternType], Optional[Pattern]]:
+    ) -> tuple[PatternType | None, Pattern | None]:
         """
         Classify a single path.
 
@@ -208,7 +208,7 @@ class PathPatternMatcher:
         pattern_type, _ = self.classify_path(path)
         return pattern_type == PatternType.COMPLEX
 
-    def get_semantic_rules(self) -> List[SemanticRule]:
+    def get_semantic_rules(self) -> list[SemanticRule]:
         """Get all semantic analysis rules."""
         return self.semantic_rules.copy()
 

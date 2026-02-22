@@ -202,7 +202,7 @@ class DSLValidator:
             )
 
         try:
-            with open(path, "r") as f:
+            with open(path) as f:
                 config = yaml.safe_load(f)
         except yaml.YAMLError as e:
             return ValidationResult(

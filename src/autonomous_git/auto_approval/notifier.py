@@ -3,8 +3,8 @@
 import json
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ class Notification:
     classification_confidence: float
     timestamp: str
     success: bool
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
 
 class DiscordNotifier:
@@ -28,7 +28,7 @@ class DiscordNotifier:
 
     def __init__(
         self,
-        webhook_url: Optional[str] = None,
+        webhook_url: str | None = None,
         channel: str = "#git-activity",
         alert_channel: str = "#alerts",
         rate_limit: str = "1 per 5 minutes",
@@ -55,7 +55,7 @@ class DiscordNotifier:
         self._parse_rate_limit(rate_limit)
 
         # In-memory rate limiting fallback
-        self._last_notification_time: Optional[datetime] = None
+        self._last_notification_time: datetime | None = None
 
     def _parse_rate_limit(self, rate_limit: str):
         """Parse rate limit string."""
@@ -97,7 +97,7 @@ class DiscordNotifier:
                 logger.warning(f"Redis rate limit check failed: {e}")
 
         # In-memory rate limiting
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if self._last_notification_time:
             elapsed = (now - self._last_notification_time).total_seconds()
             if elapsed < self._rate_limit_seconds:
@@ -133,7 +133,7 @@ class DiscordNotifier:
         )
 
         await self._send_webhook(message, self.channel)
-        self._last_notification_time = datetime.now(timezone.utc)
+        self._last_notification_time = datetime.now(UTC)
 
     async def notify_failure(
         self,
@@ -164,7 +164,7 @@ class DiscordNotifier:
         author: str,
         file_count: int,
         classification_confidence: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Format success notification message."""
         confidence_pct = int(classification_confidence * 100)
 
@@ -192,7 +192,7 @@ class DiscordNotifier:
                             "inline": True,
                         },
                     ],
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "footer": {
                         "text": "ChiseAI Auto-Approval",
                     },
@@ -206,7 +206,7 @@ class DiscordNotifier:
         pr_title: str,
         author: str,
         error_message: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Format failure notification message."""
         return {
             "content": f"🚨 Auto-approval failed for PR #{pr_number}",
@@ -227,7 +227,7 @@ class DiscordNotifier:
                             "inline": True,
                         },
                     ],
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "footer": {
                         "text": "ChiseAI Auto-Approval",
                     },
@@ -235,7 +235,7 @@ class DiscordNotifier:
             ],
         }
 
-    async def _send_webhook(self, payload: Dict[str, Any], channel: str):
+    async def _send_webhook(self, payload: dict[str, Any], channel: str):
         """Send webhook to Discord.
 
         Args:
@@ -252,22 +252,21 @@ class DiscordNotifier:
             # Import aiohttp here to avoid dependency issues
             import aiohttp
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    self.webhook_url,
-                    json=payload,
-                    headers={"Content-Type": "application/json"},
-                ) as response:
-                    if response.status == 204:
-                        logger.info(f"Discord notification sent to {channel}")
-                    elif response.status == 429:
-                        # Rate limited by Discord
-                        retry_after = int(response.headers.get("Retry-After", 60))
-                        logger.warning(
-                            f"Discord rate limited, retry after {retry_after}s"
-                        )
-                    else:
-                        logger.warning(f"Discord webhook returned {response.status}")
+            async with aiohttp.ClientSession() as session, session.post(
+                self.webhook_url,
+                json=payload,
+                headers={"Content-Type": "application/json"},
+            ) as response:
+                if response.status == 204:
+                    logger.info(f"Discord notification sent to {channel}")
+                elif response.status == 429:
+                    # Rate limited by Discord
+                    retry_after = int(response.headers.get("Retry-After", 60))
+                    logger.warning(
+                        f"Discord rate limited, retry after {retry_after}s"
+                    )
+                else:
+                    logger.warning(f"Discord webhook returned {response.status}")
         except ImportError:
             logger.warning("aiohttp not installed, cannot send Discord notifications")
         except Exception as e:

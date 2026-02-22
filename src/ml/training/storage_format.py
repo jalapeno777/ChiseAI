@@ -260,7 +260,7 @@ class CSVHandler:
         import csv
 
         data = []
-        with open(path, "r", newline="", encoding="utf-8") as f:
+        with open(path, newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 # Convert numeric strings to numbers
@@ -292,7 +292,7 @@ class CSVHandler:
         import csv
 
         try:
-            with open(path, "r", newline="", encoding="utf-8") as f:
+            with open(path, newline="", encoding="utf-8") as f:
                 reader = csv.reader(f)
                 rows = list(reader)
 
@@ -341,7 +341,7 @@ class JSONHandler:
         Returns:
             List of sample dictionaries
         """
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             return json.load(f)
 
     def validate(self, path: Path) -> tuple[bool, str]:
@@ -354,7 +354,7 @@ class JSONHandler:
             Tuple of (is_valid, message)
         """
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 data = json.load(f)
 
             if not isinstance(data, list):

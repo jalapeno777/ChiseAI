@@ -269,13 +269,12 @@ class InfluxDBHealthChecker:
             import aiohttp
 
             url = f"http://{self.config.host}:{self.config.port}/health"
-            async with aiohttp.ClientSession() as session:
-                async with session.get(
-                    url, timeout=aiohttp.ClientTimeout(total=5)
-                ) as response:
-                    response_time_ms = (time.time() - start_time) * 1000
-                    is_healthy = response.status == 200
-                    return is_healthy, response_time_ms
+            async with aiohttp.ClientSession() as session, session.get(
+                url, timeout=aiohttp.ClientTimeout(total=5)
+            ) as response:
+                response_time_ms = (time.time() - start_time) * 1000
+                is_healthy = response.status == 200
+                return is_healthy, response_time_ms
 
         except Exception as e:
             logger.debug(f"InfluxDB HTTP health check failed: {e}")
@@ -907,7 +906,7 @@ def create_postgresql_config(
     # Detect if running in container
     in_container = os.path.exists("/.dockerenv")
     try:
-        with open("/proc/1/cgroup", "r") as f:
+        with open("/proc/1/cgroup") as f:
             cgroup = f.read()
             if any(m in cgroup for m in ["docker", "containerd", "kubepods"]):
                 in_container = True

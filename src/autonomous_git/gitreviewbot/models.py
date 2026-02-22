@@ -2,7 +2,6 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -27,11 +26,11 @@ class Finding(BaseModel):
     """A technical finding from SeniorDev review."""
 
     file: str = Field(..., description="Path to the file")
-    line: Optional[int] = Field(None, description="Line number (1-indexed)")
+    line: int | None = Field(None, description="Line number (1-indexed)")
     severity: Severity = Field(..., description="Severity of the finding")
     message: str = Field(..., description="Description of the issue")
-    suggestion: Optional[str] = Field(None, description="Suggested fix")
-    code_snippet: Optional[str] = Field(None, description="Relevant code snippet")
+    suggestion: str | None = Field(None, description="Suggested fix")
+    code_snippet: str | None = Field(None, description="Relevant code snippet")
 
 
 class Violation(BaseModel):
@@ -40,7 +39,7 @@ class Violation(BaseModel):
     rule: str = Field(..., description="Rule that was violated")
     severity: Severity = Field(..., description="Severity of the violation")
     message: str = Field(..., description="Description of the violation")
-    file: Optional[str] = Field(None, description="File where violation occurred")
+    file: str | None = Field(None, description="File where violation occurred")
 
 
 class ReviewResult(BaseModel):
@@ -49,17 +48,17 @@ class ReviewResult(BaseModel):
     role: str = Field(
         ..., description="Role that performed the review (SeniorDev/Critic)"
     )
-    findings: List[Finding] = Field(
+    findings: list[Finding] = Field(
         default_factory=list, description="Technical findings"
     )
-    violations: List[Violation] = Field(
+    violations: list[Violation] = Field(
         default_factory=list, description="Compliance violations"
     )
     summary: str = Field(..., description="Overall assessment summary")
     confidence: float = Field(..., ge=0, le=100, description="Confidence score 0-100")
-    blockers: List[str] = Field(default_factory=list, description="Blocking issues")
+    blockers: list[str] = Field(default_factory=list, description="Blocking issues")
     reviewed_at: datetime = Field(default_factory=datetime.utcnow)
-    duration_ms: Optional[int] = Field(
+    duration_ms: int | None = Field(
         None, description="Review duration in milliseconds"
     )
 
@@ -73,16 +72,16 @@ class Decision(BaseModel):
     )
     senior_dev_confidence: float = Field(..., ge=0, le=100)
     critic_confidence: float = Field(..., ge=0, le=100)
-    blockers: List[str] = Field(default_factory=list)
-    findings: List[Finding] = Field(default_factory=list)
-    violations: List[Violation] = Field(default_factory=list)
+    blockers: list[str] = Field(default_factory=list)
+    findings: list[Finding] = Field(default_factory=list)
+    violations: list[Violation] = Field(default_factory=list)
     summary: str = Field(..., description="Decision reasoning")
     auto_merge_eligible: bool = Field(
         False, description="Whether auto-merge is allowed"
     )
     pr_number: int = Field(..., description="PR number")
     pr_title: str = Field(..., description="PR title")
-    story_id: Optional[str] = Field(None, description="Extracted story ID")
+    story_id: str | None = Field(None, description="Extracted story ID")
     decided_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -93,7 +92,7 @@ class ReviewFeedback(BaseModel):
     review_id: str
     feedback_type: str = Field(..., pattern="^(👍|👎|thumbs_up|thumbs_down)$")
     reviewer: str
-    comment: Optional[str] = None
+    comment: str | None = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -102,15 +101,15 @@ class PRDetails(BaseModel):
 
     number: int
     title: str
-    body: Optional[str] = None
+    body: str | None = None
     author: str
     branch: str
     base_branch: str
     state: str
     created_at: datetime
     updated_at: datetime
-    files_changed: List[str] = Field(default_factory=list)
-    labels: List[str] = Field(default_factory=list)
+    files_changed: list[str] = Field(default_factory=list)
+    labels: list[str] = Field(default_factory=list)
 
 
 class CalibrationMetrics(BaseModel):
@@ -135,7 +134,7 @@ class CachedDiff(BaseModel):
 
     diff_hash: str
     pr_number: int
-    files: List[str]
+    files: list[str]
     review_result: ReviewResult
     created_at: datetime = Field(default_factory=datetime.utcnow)
     ttl_seconds: int = Field(default=86400)  # 24 hours

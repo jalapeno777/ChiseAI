@@ -282,7 +282,7 @@ class ExchangeConnectionPool:
             session=session, acquired_at=0.0, exchange=self.exchange
         )
 
-    def get_connection(self) -> "ConnectionContextManager":
+    def get_connection(self) -> ConnectionContextManager:
         """Get a connection from the pool.
 
         Returns:

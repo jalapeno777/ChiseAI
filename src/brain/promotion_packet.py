@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class PacketStatus(Enum):
@@ -47,9 +47,9 @@ class ApprovalSignature:
     approver: str
     timestamp: datetime
     status: ApprovalStatus
-    comments: Optional[str] = None
+    comments: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "approver": self.approver,
@@ -59,7 +59,7 @@ class ApprovalSignature:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ApprovalSignature":
+    def from_dict(cls, data: dict[str, Any]) -> "ApprovalSignature":
         """Create from dictionary."""
         return cls(
             approver=data["approver"],
@@ -91,15 +91,15 @@ class PromotionPacket:
 
     candidate_version: str
     baseline_version: str
-    summary_metrics: Dict[str, float] = field(default_factory=dict)
-    safety_checks: Dict[str, bool] = field(default_factory=dict)
+    summary_metrics: dict[str, float] = field(default_factory=dict)
+    safety_checks: dict[str, bool] = field(default_factory=dict)
     rollback_plan: str = ""
-    required_approvers: List[str] = field(default_factory=list)
-    signatures: List[ApprovalSignature] = field(default_factory=list)
+    required_approvers: list[str] = field(default_factory=list)
+    signatures: list[ApprovalSignature] = field(default_factory=list)
     created_at: datetime = field(default_factory=datetime.utcnow)
     status: PacketStatus = PacketStatus.DRAFT
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
             "candidate_version": self.candidate_version,
@@ -114,7 +114,7 @@ class PromotionPacket:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "PromotionPacket":
+    def from_dict(cls, data: dict[str, Any]) -> "PromotionPacket":
         """Create from dictionary."""
         return cls(
             candidate_version=data["candidate_version"],
@@ -160,7 +160,7 @@ class PacketGenerator:
         "memory_within_bounds",
     ]
 
-    def __init__(self, rollback_template: Optional[str] = None):
+    def __init__(self, rollback_template: str | None = None):
         """
         Initialize the packet generator.
 
@@ -210,10 +210,10 @@ If critical issues are detected after promotion:
 
     def generate(
         self,
-        evaluation_results: Dict[str, Any],
-        leaderboard: Optional[Dict[str, Any]] = None,
+        evaluation_results: dict[str, Any],
+        leaderboard: dict[str, Any] | None = None,
         baseline_version: str = "unknown",
-        required_approvers: Optional[List[str]] = None,
+        required_approvers: list[str] | None = None,
     ) -> PromotionPacket:
         """
         Generate a promotion packet from evaluation results.
@@ -255,7 +255,7 @@ If critical issues are detected after promotion:
 
         return packet
 
-    def _extract_metrics(self, evaluation_results: Dict[str, Any]) -> Dict[str, float]:
+    def _extract_metrics(self, evaluation_results: dict[str, Any]) -> dict[str, float]:
         """Extract standard metrics from evaluation results."""
         metrics = {}
 
@@ -278,8 +278,8 @@ If critical issues are detected after promotion:
         return metrics
 
     def _extract_safety_checks(
-        self, evaluation_results: Dict[str, Any]
-    ) -> Dict[str, bool]:
+        self, evaluation_results: dict[str, Any]
+    ) -> dict[str, bool]:
         """Extract safety check results from evaluation results."""
         checks = {}
 
@@ -342,9 +342,7 @@ def export_to_markdown(packet: PromotionPacket, filepath: str) -> None:
                 "recall",
                 "f1",
                 "win_rate",
-            ]:
-                formatted_value = f"{value:.2%}"
-            elif "drawdown" in metric_name.lower():
+            ] or "drawdown" in metric_name.lower():
                 formatted_value = f"{value:.2%}"
             else:
                 formatted_value = f"{value:.4f}"
@@ -448,7 +446,7 @@ def is_complete(packet: PromotionPacket) -> bool:
     return len(get_missing_fields(packet)) == 0
 
 
-def get_missing_fields(packet: PromotionPacket) -> List[str]:
+def get_missing_fields(packet: PromotionPacket) -> list[str]:
     """
     Get a list of missing or invalid fields in a promotion packet.
 
@@ -490,7 +488,7 @@ def add_signature(
     packet: PromotionPacket,
     approver: str,
     status: ApprovalStatus,
-    comments: Optional[str] = None,
+    comments: str | None = None,
 ) -> PromotionPacket:
     """
     Add an approval signature to a promotion packet.

@@ -9,7 +9,6 @@ import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +106,7 @@ class DashboardOptimizer:
         self.query_optimizations: list[QueryOptimization] = []
 
     def optimize_file(
-        self, file_path: str | Path, output_path: Optional[str | Path] = None
+        self, file_path: str | Path, output_path: str | Path | None = None
     ) -> OptimizationResult:
         """Optimize a single dashboard JSON file.
 
@@ -122,7 +121,7 @@ class DashboardOptimizer:
         dashboard_file = file_path.name
 
         # Read original file
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             content = f.read()
             original_size = len(content.encode("utf-8"))
 
@@ -505,7 +504,7 @@ class DashboardOptimizer:
         return optimizations
 
     def optimize_all(
-        self, dashboards_dir: str | Path, output_dir: Optional[str | Path] = None
+        self, dashboards_dir: str | Path, output_dir: str | Path | None = None
     ) -> list[OptimizationResult]:
         """Optimize all dashboard files in a directory.
 
@@ -566,7 +565,7 @@ def create_optimizer(query_timeout: int = 30) -> DashboardOptimizer:
 
 def optimize_dashboards(
     dashboards_dir: str,
-    output_dir: Optional[str] = None,
+    output_dir: str | None = None,
     query_timeout: int = 30,
 ) -> list[OptimizationResult]:
     """Convenience function to optimize all dashboards in a directory.

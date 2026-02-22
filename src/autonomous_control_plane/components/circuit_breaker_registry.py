@@ -12,8 +12,9 @@ import json
 import logging
 import threading
 import time
+from collections.abc import Callable
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from autonomous_control_plane.config.settings import settings
 from autonomous_control_plane.models.circuit_breaker import (
@@ -51,8 +52,8 @@ class CircuitBreakerRegistry:
 
     def __new__(
         cls,
-        redis_client: "redis.Redis | None" = None,
-        influxdb_client: "InfluxDBClient | None" = None,
+        redis_client: redis.Redis | None = None,
+        influxdb_client: InfluxDBClient | None = None,
     ) -> CircuitBreakerRegistry:
         """Singleton pattern for global registry access."""
         if cls._instance is None:
@@ -67,8 +68,8 @@ class CircuitBreakerRegistry:
 
     def __init__(
         self,
-        redis_client: "redis.Redis | None" = None,
-        influxdb_client: "InfluxDBClient | None" = None,
+        redis_client: redis.Redis | None = None,
+        influxdb_client: InfluxDBClient | None = None,
     ):
         """Initialize the registry.
 

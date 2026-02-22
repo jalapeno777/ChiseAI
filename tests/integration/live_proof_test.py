@@ -32,7 +32,7 @@ CONFIG_PATH = Path(__file__).parent.parent.parent / "config" / "bybit_endpoints.
 def load_config():
     """Load endpoint configuration."""
     try:
-        with open(CONFIG_PATH, "r") as f:
+        with open(CONFIG_PATH) as f:
             data = yaml.safe_load(f)
             return data.get("bybit", {})
     except FileNotFoundError:
@@ -144,20 +144,19 @@ class TestBybitAuthentication:
             "X-BAPI-SIGN": signature,
         }
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)
-            ) as resp:
-                data = await resp.json()
+        async with aiohttp.ClientSession() as session, session.get(
+            url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)
+        ) as resp:
+            data = await resp.json()
 
-                # retCode 0 = success
-                assert data.get("retCode") == 0, (
-                    f"Testnet auth failed: {data.get('retMsg')} "
-                    f"(retCode={data.get('retCode')})"
-                )
-                assert "result" in data
+            # retCode 0 = success
+            assert data.get("retCode") == 0, (
+                f"Testnet auth failed: {data.get('retMsg')} "
+                f"(retCode={data.get('retCode')})"
+            )
+            assert "result" in data
 
-                print("\nTestnet auth: OK")
+            print("\nTestnet auth: OK")
 
     @pytest.mark.asyncio
     async def test_live_authentication(self, config, api_credentials, recv_window):
@@ -182,19 +181,18 @@ class TestBybitAuthentication:
             "X-BAPI-SIGN": signature,
         }
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)
-            ) as resp:
-                data = await resp.json()
+        async with aiohttp.ClientSession() as session, session.get(
+            url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)
+        ) as resp:
+            data = await resp.json()
 
-                # retCode 0 = success
-                assert data.get("retCode") == 0, (
-                    f"Live auth failed: {data.get('retMsg')} "
-                    f"(retCode={data.get('retCode')})"
-                )
+            # retCode 0 = success
+            assert data.get("retCode") == 0, (
+                f"Live auth failed: {data.get('retMsg')} "
+                f"(retCode={data.get('retCode')})"
+            )
 
-                print("\nLive auth: OK")
+            print("\nLive auth: OK")
 
 
 class TestBybitMarketData:
@@ -303,35 +301,34 @@ class TestBybitMarketData:
 
         url = f"{base_url}/v5/market/tickers"
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                url,
-                params={"category": "linear", "symbol": symbol},
-                timeout=aiohttp.ClientTimeout(total=10),
-            ) as resp:
-                data = await resp.json()
+        async with aiohttp.ClientSession() as session, session.get(
+            url,
+            params={"category": "linear", "symbol": symbol},
+            timeout=aiohttp.ClientTimeout(total=10),
+        ) as resp:
+            data = await resp.json()
 
-                # Check response structure
-                assert "retCode" in data
-                assert "retMsg" in data
-                assert "result" in data
+            # Check response structure
+            assert "retCode" in data
+            assert "retMsg" in data
+            assert "result" in data
 
-                result = data["result"]
-                assert "category" in result
-                assert "list" in result
+            result = data["result"]
+            assert "category" in result
+            assert "list" in result
 
-                tickers = result["list"]
-                assert isinstance(tickers, list)
+            tickers = result["list"]
+            assert isinstance(tickers, list)
 
-                if tickers:
-                    ticker = tickers[0]
-                    # Check required fields
-                    assert "symbol" in ticker
-                    assert "lastPrice" in ticker
-                    assert "bid1Price" in ticker
-                    assert "ask1Price" in ticker
+            if tickers:
+                ticker = tickers[0]
+                # Check required fields
+                assert "symbol" in ticker
+                assert "lastPrice" in ticker
+                assert "bid1Price" in ticker
+                assert "ask1Price" in ticker
 
-                    print(f"\n{mode}/{symbol} fields: {list(ticker.keys())}")
+                print(f"\n{mode}/{symbol} fields: {list(ticker.keys())}")
 
 
 class TestEndpointConfiguration:

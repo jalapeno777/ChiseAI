@@ -7,9 +7,10 @@ prefetching support for smooth scrolling experience.
 
 import base64
 import logging
+from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any, Dict, Iterator, List, Optional, Protocol
+from typing import Any, Protocol
 
 logger = logging.getLogger(__name__)
 
@@ -18,9 +19,9 @@ logger = logging.getLogger(__name__)
 class PageResult:
     """Result of a single page fetch operation."""
 
-    data: List[Dict[str, Any]]
-    next_cursor: Optional[str]
-    prev_cursor: Optional[str]
+    data: list[dict[str, Any]]
+    next_cursor: str | None
+    prev_cursor: str | None
     has_more: bool
     total_estimated: int
 
@@ -33,7 +34,7 @@ class DataSource(Protocol):
 
     def query_time_range(
         self, start_time: datetime, end_time: datetime, limit: int, offset: int
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Query data within a time range."""
         ...
 
@@ -45,13 +46,13 @@ class DataSource(Protocol):
 class InMemoryDataSource:
     """In-memory data source for testing."""
 
-    def __init__(self, data: List[Dict[str, Any]], timestamp_field: str = "timestamp"):
+    def __init__(self, data: list[dict[str, Any]], timestamp_field: str = "timestamp"):
         self._data = sorted(data, key=lambda x: x.get(timestamp_field, datetime.min))
         self._timestamp_field = timestamp_field
 
     def query_time_range(
         self, start_time: datetime, end_time: datetime, limit: int, offset: int
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Query data within a time range."""
         filtered = [
             d
@@ -147,17 +148,17 @@ class TimeSeriesPaginator:
         self.prefetch_pages = prefetch_pages
         self.timestamp_field = timestamp_field
         self.overlap_points = overlap_points
-        self._cache: Dict[str, PageResult] = {}
+        self._cache: dict[str, PageResult] = {}
         self._max_cache_size = 100
 
-    def _get_cache_key(self, cursor: Optional[str], direction: str = "next") -> str:
+    def _get_cache_key(self, cursor: str | None, direction: str = "next") -> str:
         """Generate cache key for a cursor."""
         if cursor is None:
             return f"start:{direction}"
         return f"{cursor}:{direction}"
 
     def _get_time_range_for_cursor(
-        self, cursor: Optional[str], page_size: int, direction: str = "next"
+        self, cursor: str | None, page_size: int, direction: str = "next"
     ) -> tuple[datetime, datetime, int]:
         """Calculate time range and offset for a cursor.
 
@@ -191,7 +192,7 @@ class TimeSeriesPaginator:
             logger.warning(f"Failed to decode cursor: {cursor}, error: {e}")
             return datetime(1970, 1, 1), datetime.now() + timedelta(days=365), 0
 
-    def get_page(self, cursor: Optional[str] = None) -> PageResult:
+    def get_page(self, cursor: str | None = None) -> PageResult:
         """Get a single page of data.
 
         Args:
@@ -389,7 +390,7 @@ class TimeSeriesPaginator:
         """
         return CursorCodec.encode(timestamp, 0)
 
-    def get_time_for_cursor(self, cursor: str) -> Optional[datetime]:
+    def get_time_for_cursor(self, cursor: str) -> datetime | None:
         """Get the timestamp for a cursor.
 
         Args:
@@ -463,7 +464,7 @@ class AdaptivePaginator(TimeSeriesPaginator):
 
 
 def create_paginator_from_data(
-    data: List[Dict[str, Any]], timestamp_field: str = "timestamp", **kwargs
+    data: list[dict[str, Any]], timestamp_field: str = "timestamp", **kwargs
 ) -> TimeSeriesPaginator:
     """Create a TimeSeriesPaginator from a list of data.
 

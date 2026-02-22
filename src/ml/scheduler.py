@@ -22,11 +22,12 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
     pass
@@ -692,7 +693,7 @@ class OptimizationScheduler:
                     self._stop_event.wait(),
                     timeout=60.0,  # Check every minute
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue
             except asyncio.CancelledError:
                 break
@@ -818,7 +819,7 @@ class OptimizationScheduler:
                 f"score={score:.4f}, improvement={record.improvement_pct:.1f}%"
             )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             record.status = JobStatus.FAILED
             record.error_message = f"Timeout after {job.config.job_timeout_hours} hours"
             job.failure_count += 1

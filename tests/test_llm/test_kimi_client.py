@@ -3,7 +3,6 @@
 For CH-LLM-KIMI-001: KIMI K2.5 Integration
 """
 
-import asyncio
 import json
 import os
 from contextlib import asynccontextmanager
@@ -392,7 +391,7 @@ class TestKimiClient:
             async def __aenter__(self):
                 nonlocal call_count
                 call_count += 1
-                raise asyncio.TimeoutError()
+                raise TimeoutError()
 
             async def __aexit__(self, *args):
                 return False

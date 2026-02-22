@@ -131,7 +131,7 @@ Examples:
     files = args.files or []
     if args.batch:
         try:
-            with open(args.input, "r") as f:
+            with open(args.input) as f:
                 batch_data = json.load(f)
                 if isinstance(batch_data, list):
                     files = batch_data

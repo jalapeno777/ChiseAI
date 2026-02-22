@@ -1,7 +1,6 @@
 """Decision synthesis engine for combining SeniorDev and Critic reviews."""
 
 from datetime import datetime
-from typing import List
 
 from .confidence import ConfidenceFactors, ConfidenceScorer
 from .models import Decision, DecisionType, Finding, ReviewResult, Violation
@@ -92,9 +91,9 @@ class DecisionSynthesizer:
 
     def _combine_blockers(
         self,
-        senior_dev_blockers: List[str],
-        critic_blockers: List[str],
-    ) -> List[str]:
+        senior_dev_blockers: list[str],
+        critic_blockers: list[str],
+    ) -> list[str]:
         """Combine blockers from both roles, removing duplicates."""
         combined = set(senior_dev_blockers) | set(critic_blockers)
         return sorted(list(combined))
@@ -102,7 +101,7 @@ class DecisionSynthesizer:
     def _determine_decision(
         self,
         confidence: float,
-        blockers: List[str],
+        blockers: list[str],
     ) -> DecisionType:
         """Determine the decision based on confidence and blockers."""
         # Blockers always result in REQUEST_CHANGES
@@ -124,7 +123,7 @@ class DecisionSynthesizer:
         self,
         decision: DecisionType,
         confidence_factors: ConfidenceFactors,
-        blockers: List[str],
+        blockers: list[str],
         ci_passed: bool,
     ) -> bool:
         """Check if PR is eligible for auto-merge."""
@@ -155,9 +154,9 @@ class DecisionSynthesizer:
         self,
         decision: DecisionType,
         confidence_factors: ConfidenceFactors,
-        blockers: List[str],
-        findings: List[Finding],
-        violations: List[Violation],
+        blockers: list[str],
+        findings: list[Finding],
+        violations: list[Violation],
     ) -> str:
         """Generate a human-readable summary of the decision."""
         parts = []

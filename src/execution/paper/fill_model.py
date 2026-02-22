@@ -12,7 +12,7 @@ import asyncio
 import random
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
@@ -344,7 +344,7 @@ class FillModel:
             side=order.side,
             quantity=fill_quantity,
             price=fill_price,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             metadata={
                 "slippage_min_pct": self.slippage_config.min_slippage_pct,
                 "slippage_max_pct": self.slippage_config.max_slippage_pct,

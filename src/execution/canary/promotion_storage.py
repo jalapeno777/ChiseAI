@@ -519,7 +519,7 @@ class PromotionPacketStorage:
 
     def _load_from_file(self, path: Path) -> StoredPromotionPacket:
         """Load stored packet from file."""
-        with open(path, "r") as f:
+        with open(path) as f:
             data = json.load(f)
         return StoredPromotionPacket.from_dict(data)
 

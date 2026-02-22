@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Optional
 
 
 class InvalidVersionError(ValueError):
@@ -47,8 +46,8 @@ class BrainVersion:
     major: int
     minor: int
     patch: int
-    prerelease: Optional[str] = None
-    build: Optional[str] = None
+    prerelease: str | None = None
+    build: str | None = None
 
     def __str__(self) -> str:
         """Convert version to string representation."""
@@ -140,7 +139,7 @@ def validate_version(version_str: str) -> BrainVersion:
     )
 
 
-def _compare_prerelease(a: Optional[str], b: Optional[str]) -> int:
+def _compare_prerelease(a: str | None, b: str | None) -> int:
     """Compare two pre-release identifiers.
 
     According to SemVer 2.0.0:

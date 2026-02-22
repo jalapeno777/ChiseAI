@@ -2,7 +2,6 @@
 
 import json
 from datetime import datetime
-from typing import List
 
 import pytest
 from src.brain.rollback_handler import (
@@ -401,7 +400,7 @@ class TestRollbackHandlerExecution:
         )
 
     @pytest.fixture
-    def sample_steps(self) -> List[RollbackStep]:
+    def sample_steps(self) -> list[RollbackStep]:
         """Create sample rollback steps."""
         return [
             RollbackStep(
@@ -553,7 +552,7 @@ class TestRollbackHandlerPauseResume:
         )
 
     @pytest.fixture
-    def failing_steps(self) -> List[RollbackStep]:
+    def failing_steps(self) -> list[RollbackStep]:
         """Create steps where step 2 will fail."""
 
         class FailingStep(RollbackStep):

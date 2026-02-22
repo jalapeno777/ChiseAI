@@ -8,9 +8,9 @@ import json
 import logging
 import shutil
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class ValidationResult:
     is_valid: bool
     errors: list[ValidationError] = field(default_factory=list)
     warnings: list[ValidationError] = field(default_factory=list)
-    validated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    validated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     @property
     def all_issues(self) -> list[ValidationError]:
@@ -49,7 +49,7 @@ class HealthStatus:
     valid_dashboards: int
     invalid_dashboards: int
     validation_status: str  # "all", "failed", "mixed"
-    last_validation: Optional[str] = None
+    last_validation: str | None = None
     malformed_dashboards: list[dict] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -133,9 +133,9 @@ class DashboardValidator:
 
     def __init__(
         self,
-        provisioning_dir: Optional[str] = None,
-        active_dir: Optional[str] = None,
-        failed_dir: Optional[str] = None,
+        provisioning_dir: str | None = None,
+        active_dir: str | None = None,
+        failed_dir: str | None = None,
     ):
         """Initialize the validator.
 
@@ -177,7 +177,7 @@ class DashboardValidator:
 
         # Try to parse JSON
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 content = f.read()
             dashboard = json.loads(content)
         except json.JSONDecodeError as e:
@@ -621,7 +621,7 @@ class DashboardValidator:
             valid_dashboards=valid_count,
             invalid_dashboards=invalid_count,
             validation_status=validation_status,
-            last_validation=datetime.now(timezone.utc).isoformat(),
+            last_validation=datetime.now(UTC).isoformat(),
             malformed_dashboards=malformed_dashboards,
         )
 

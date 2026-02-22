@@ -5,7 +5,7 @@ Runbook parser for extracting executable steps from markdown files.
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 
 @dataclass
@@ -13,11 +13,11 @@ class RunbookStep:
     """Represents a single executable step in a runbook."""
 
     name: str
-    command: Optional[str] = None
-    script: Optional[str] = None
-    description: Optional[str] = None
-    timeout: Optional[int] = None
-    verify: Optional[str] = None
+    command: str | None = None
+    script: str | None = None
+    description: str | None = None
+    timeout: int | None = None
+    verify: str | None = None
 
     def is_executable(self) -> bool:
         """Check if this step has an executable action."""
@@ -28,13 +28,13 @@ class RunbookStep:
 class RunbookMetadata:
     """Metadata extracted from runbook frontmatter."""
 
-    title: Optional[str] = None
-    category: Optional[str] = None
-    severity: Optional[str] = None
+    title: str | None = None
+    category: str | None = None
+    severity: str | None = None
     executable: bool = False
-    estimated_time: Optional[str] = None
+    estimated_time: str | None = None
     maintainers: list[str] = field(default_factory=list)
-    story_id: Optional[str] = None
+    story_id: str | None = None
     steps: list[dict[str, Any]] = field(default_factory=list)
 
 
@@ -62,7 +62,7 @@ class RunbookParser:
     FRONTMATTER_PATTERN = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
     CODE_BLOCK_PATTERN = re.compile(r"```bash\n(.*?)\n```", re.DOTALL)
 
-    def __init__(self, runbooks_dir: Optional[Path] = None):
+    def __init__(self, runbooks_dir: Path | None = None):
         """
         Initialize the parser.
 
@@ -173,7 +173,7 @@ class RunbookParser:
         """Parse steps array from YAML frontmatter."""
         steps = []
         in_steps = False
-        current_step: Optional[dict[str, Any]] = None
+        current_step: dict[str, Any] | None = None
         indent_level = 0
 
         for line in frontmatter.split("\n"):

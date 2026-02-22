@@ -24,7 +24,7 @@ import json
 import logging
 import shutil
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
@@ -275,7 +275,7 @@ class ModelUpdater:
             return result
 
         result.status = UpdateStatus.IN_PROGRESS
-        start_time = datetime.now(timezone.utc)
+        start_time = datetime.now(UTC)
 
         try:
             # Prepare training data
@@ -304,7 +304,7 @@ class ModelUpdater:
 
             # Calculate training time
             result.training_time_seconds = (
-                datetime.now(timezone.utc) - start_time
+                datetime.now(UTC) - start_time
             ).total_seconds()
 
             # Validate update
@@ -479,7 +479,7 @@ class ModelUpdater:
         version = ModelVersion(
             version_id=version_id,
             model_id=model_id,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             parent_version=parent_version,
             update_strategy=strategy,
             performance_metrics=metrics,
@@ -518,9 +518,7 @@ class ModelUpdater:
             import joblib
 
             joblib.dump(model, model_path)
-        elif model_type == ModelType.XGBOOST:
-            model.save_model(str(model_path))
-        elif model_type == ModelType.LIGHTGBM:
+        elif model_type == ModelType.XGBOOST or model_type == ModelType.LIGHTGBM:
             model.save_model(str(model_path))
         else:
             # Generic pickle fallback for internal model serialization

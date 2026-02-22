@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
@@ -337,7 +337,7 @@ class FeedbackAnalyzer:
             self._baseline_metrics = baseline_metrics
 
         report = FeedbackAnalysisReport(
-            analysis_time=datetime.now(timezone.utc),
+            analysis_time=datetime.now(UTC),
             total_matches=len(matches),
         )
 

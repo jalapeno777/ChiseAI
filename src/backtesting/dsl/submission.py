@@ -204,7 +204,7 @@ class StrategySubmission:
             )
 
         try:
-            with open(path, "r") as f:
+            with open(path) as f:
                 config = yaml.safe_load(f)
             return self.submit(config)
         except yaml.YAMLError as e:

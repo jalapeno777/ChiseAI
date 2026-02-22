@@ -7,7 +7,7 @@ DynamicThresholdAdjuster, and related components.
 from __future__ import annotations
 
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -40,7 +40,7 @@ def create_mock_records(signal_type: str, n: int = 50) -> list[CalibrationRecord
         actual_outcome = 1 if predicted_prob > 0.65 else 0
 
         record = CalibrationRecord(
-            timestamp=datetime.now(timezone.utc) - timedelta(hours=i),
+            timestamp=datetime.now(UTC) - timedelta(hours=i),
             signal_id=f"sig-{signal_type}-{i:04d}",
             predicted_prob=predicted_prob,
             actual_outcome=actual_outcome,
@@ -83,7 +83,7 @@ class TestThresholdChange:
     def test_creation(self):
         """Test creating a ThresholdChange."""
         change = ThresholdChange(
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             signal_type="LONG",
             old_threshold=0.60,
             new_threshold=0.70,
@@ -100,7 +100,7 @@ class TestThresholdChange:
     def test_to_dict(self):
         """Test converting to dictionary."""
         change = ThresholdChange(
-            timestamp=datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+            timestamp=datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC),
             signal_type="LONG",
             old_threshold=0.60,
             new_threshold=0.70,

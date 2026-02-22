@@ -29,7 +29,6 @@ from config.bootstrap import bootstrap
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
-from config.bootstrap import bootstrap
 
 COMMENT_MARKER = "<!-- CHISEAI_CI_FAILURE -->"
 MAX_COMMENT_LENGTH = 20000  # Gitea limit

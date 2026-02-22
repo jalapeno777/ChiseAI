@@ -8,7 +8,8 @@ remain integrated across the brain promotion system.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, Dict, List
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 import pytest
 from src.brain.batch_evaluator import (
@@ -51,8 +52,8 @@ class TestFullPromotionFlow:
     async def test_full_promotion_flow(
         self,
         fast_brain: Callable[[Any], Coroutine[Any, Any, Any]],
-        sample_test_inputs: List[Dict[str, Any]],
-        complete_evaluation_data: Dict[str, Any],
+        sample_test_inputs: list[dict[str, Any]],
+        complete_evaluation_data: dict[str, Any],
         packet_generator: PacketGenerator,
     ) -> None:
         """Test: Full Promotion Flow
@@ -133,7 +134,7 @@ class TestFullPromotionFlow:
     @pytest.mark.asyncio
     async def test_promotion_flow_with_leaderboard_ranking(
         self,
-        sample_evaluation_results: List[EvaluationResult],
+        sample_evaluation_results: list[EvaluationResult],
         packet_generator: PacketGenerator,
     ) -> None:
         """Test promotion flow includes leaderboard ranking."""
@@ -183,7 +184,7 @@ class TestFailedShadowTestBlocksPromotion:
         self,
         slow_brain: Callable[[Any], Coroutine[Any, Any, Any]],
         fast_brain: Callable[[Any], Coroutine[Any, Any, Any]],
-        sample_test_inputs: List[Dict[str, Any]],
+        sample_test_inputs: list[dict[str, Any]],
         packet_generator: PacketGenerator,
     ) -> None:
         """Test: Failed Shadow Test Blocks Promotion
@@ -248,7 +249,7 @@ class TestFailedShadowTestBlocksPromotion:
         self,
         medium_brain: Callable[[Any], Coroutine[Any, Any, Any]],
         fast_brain: Callable[[Any], Coroutine[Any, Any, Any]],
-        sample_test_inputs: List[Dict[str, Any]],
+        sample_test_inputs: list[dict[str, Any]],
     ) -> None:
         """Test that strict latency threshold causes failure."""
         candidate_version = BrainVersion(major=2, minor=0, patch=0)
@@ -283,7 +284,7 @@ class TestRollbackFlow:
     def test_ece_degradation_trigger_detection(
         self,
         rollback_handler: RollbackHandler,
-        ece_degradation_metrics: Dict[str, float],
+        ece_degradation_metrics: dict[str, float],
     ) -> None:
         """Test: Rollback Flow - ECE Degradation
 
@@ -303,7 +304,7 @@ class TestRollbackFlow:
     def test_win_rate_drop_trigger_detection(
         self,
         rollback_handler: RollbackHandler,
-        win_rate_drop_metrics: Dict[str, float],
+        win_rate_drop_metrics: dict[str, float],
     ) -> None:
         """Test win rate drop trigger detection."""
         rollback_handler.update_metrics(win_rate_drop_metrics)
@@ -314,7 +315,7 @@ class TestRollbackFlow:
     def test_max_drawdown_breach_trigger_detection(
         self,
         rollback_handler: RollbackHandler,
-        max_drawdown_breach_metrics: Dict[str, float],
+        max_drawdown_breach_metrics: dict[str, float],
     ) -> None:
         """Test max drawdown breach trigger detection."""
         rollback_handler.update_metrics(max_drawdown_breach_metrics)
@@ -325,7 +326,7 @@ class TestRollbackFlow:
     def test_safety_violation_trigger_detection(
         self,
         rollback_handler: RollbackHandler,
-        safety_violation_metrics: Dict[str, float],
+        safety_violation_metrics: dict[str, float],
     ) -> None:
         """Test safety violation trigger detection."""
         rollback_handler.update_metrics(safety_violation_metrics)
@@ -336,7 +337,7 @@ class TestRollbackFlow:
     def test_rollback_execution(
         self,
         rollback_handler_no_trade_check: RollbackHandler,
-        sample_rollback_steps: List[RollbackStep],
+        sample_rollback_steps: list[RollbackStep],
     ) -> None:
         """Test: Rollback Flow - Execute rollback steps
 
@@ -365,7 +366,7 @@ class TestRollbackFlow:
     def test_post_mortem_report_generation(
         self,
         rollback_handler_no_trade_check: RollbackHandler,
-        sample_rollback_steps: List[RollbackStep],
+        sample_rollback_steps: list[RollbackStep],
     ) -> None:
         """Test post-mortem report generation after rollback."""
         handler = rollback_handler_no_trade_check
@@ -414,7 +415,7 @@ class TestRollbackFlow:
     def test_rollback_fails_with_active_trades(
         self,
         rollback_handler: RollbackHandler,
-        sample_rollback_steps: List[RollbackStep],
+        sample_rollback_steps: list[RollbackStep],
     ) -> None:
         """Test rollback fails when active trades exist."""
         # Set up metrics with active trades
@@ -466,10 +467,10 @@ class TestEndToEndBrainUpgrade:
     async def test_complete_brain_upgrade_cycle(
         self,
         fast_brain: Callable[[Any], Coroutine[Any, Any, Any]],
-        sample_test_inputs: List[Dict[str, Any]],
+        sample_test_inputs: list[dict[str, Any]],
         packet_generator: PacketGenerator,
         rollback_handler_no_trade_check: RollbackHandler,
-        sample_rollback_steps: List[RollbackStep],
+        sample_rollback_steps: list[RollbackStep],
     ) -> None:
         """Test: End-to-End Brain Upgrade
 

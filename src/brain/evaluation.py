@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
@@ -251,7 +251,7 @@ class BrainEvaluator:
         Returns:
             EvaluationResult with metrics and status
         """
-        started_at = datetime.now(timezone.utc).isoformat()
+        started_at = datetime.now(UTC).isoformat()
 
         # Create initial result
         result = EvaluationResult(
@@ -286,7 +286,7 @@ class BrainEvaluator:
 
         finally:
             # Complete evaluation
-            completed_at = datetime.now(timezone.utc).isoformat()
+            completed_at = datetime.now(UTC).isoformat()
             result.completed_at = completed_at
             result.duration_seconds = self._calculate_duration(
                 result.started_at, completed_at

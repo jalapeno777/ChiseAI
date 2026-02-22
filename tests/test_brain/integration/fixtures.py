@@ -6,8 +6,9 @@ ST-CHISE-001.4: Add Integration Tests for Brain Promotion Flow
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable, Coroutine
 from datetime import datetime
-from typing import Any, Callable, Coroutine, Dict, List
+from typing import Any
 
 import pytest
 from src.brain.batch_evaluator import (
@@ -41,7 +42,7 @@ from src.brain.version import BrainVersion
 def fast_brain() -> Callable[[Any], Coroutine[Any, Any, Any]]:
     """Mock brain function with fast latency (< 10ms)."""
 
-    async def _brain(input_data: Any) -> Dict[str, Any]:
+    async def _brain(input_data: Any) -> dict[str, Any]:
         await asyncio.sleep(0.001)  # 1ms simulated latency
         return {
             "prediction": "buy",
@@ -56,7 +57,7 @@ def fast_brain() -> Callable[[Any], Coroutine[Any, Any, Any]]:
 def slow_brain() -> Callable[[Any], Coroutine[Any, Any, Any]]:
     """Mock brain function with slow latency (> 100ms)."""
 
-    async def _brain(input_data: Any) -> Dict[str, Any]:
+    async def _brain(input_data: Any) -> dict[str, Any]:
         await asyncio.sleep(0.15)  # 150ms simulated latency
         return {
             "prediction": "sell",
@@ -71,7 +72,7 @@ def slow_brain() -> Callable[[Any], Coroutine[Any, Any, Any]]:
 def medium_brain() -> Callable[[Any], Coroutine[Any, Any, Any]]:
     """Mock brain function with medium latency (~50ms)."""
 
-    async def _brain(input_data: Any) -> Dict[str, Any]:
+    async def _brain(input_data: Any) -> dict[str, Any]:
         await asyncio.sleep(0.05)  # 50ms simulated latency
         return {
             "prediction": "hold",
@@ -86,7 +87,7 @@ def medium_brain() -> Callable[[Any], Coroutine[Any, Any, Any]]:
 def failing_brain() -> Callable[[Any], Coroutine[Any, Any, Any]]:
     """Mock brain function that raises an exception."""
 
-    async def _brain(input_data: Any) -> Dict[str, Any]:
+    async def _brain(input_data: Any) -> dict[str, Any]:
         raise ValueError("Brain prediction failed")
 
     return _brain
@@ -127,7 +128,7 @@ def version_2_0_0_alpha() -> BrainVersion:
 
 
 @pytest.fixture
-def sample_test_inputs() -> List[Dict[str, Any]]:
+def sample_test_inputs() -> list[dict[str, Any]]:
     """Sample test inputs for brain evaluation."""
     return [
         {"symbol": "BTCUSDT", "price": 50000.0, "volume": 1000.0},
@@ -183,7 +184,7 @@ def strict_shadow_config(
 
 
 @pytest.fixture
-def sample_evaluation_results() -> List[EvaluationResult]:
+def sample_evaluation_results() -> list[EvaluationResult]:
     """Sample evaluation results for multiple brain versions."""
     return [
         EvaluationResult(
@@ -326,7 +327,7 @@ def rollback_handler_no_trade_check() -> RollbackHandler:
 
 
 @pytest.fixture
-def sample_rollback_steps() -> List[RollbackStep]:
+def sample_rollback_steps() -> list[RollbackStep]:
     """Sample rollback steps for testing."""
     return [
         RollbackStep(
@@ -388,7 +389,7 @@ def leaderboard() -> Leaderboard:
 
 
 @pytest.fixture
-def complete_evaluation_data() -> Dict[str, Any]:
+def complete_evaluation_data() -> dict[str, Any]:
     """Complete evaluation data for packet generation."""
     return {
         "version": "2.0.0",
@@ -414,7 +415,7 @@ def complete_evaluation_data() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def ece_degradation_metrics() -> Dict[str, float]:
+def ece_degradation_metrics() -> dict[str, float]:
     """Metrics that trigger ECE degradation rollback."""
     return {
         "ece": 0.20,  # Above 0.15 threshold
@@ -427,7 +428,7 @@ def ece_degradation_metrics() -> Dict[str, float]:
 
 
 @pytest.fixture
-def win_rate_drop_metrics() -> Dict[str, float]:
+def win_rate_drop_metrics() -> dict[str, float]:
     """Metrics that trigger win rate drop rollback."""
     return {
         "ece": 0.10,
@@ -440,7 +441,7 @@ def win_rate_drop_metrics() -> Dict[str, float]:
 
 
 @pytest.fixture
-def max_drawdown_breach_metrics() -> Dict[str, float]:
+def max_drawdown_breach_metrics() -> dict[str, float]:
     """Metrics that trigger max drawdown breach rollback."""
     return {
         "ece": 0.10,
@@ -453,7 +454,7 @@ def max_drawdown_breach_metrics() -> Dict[str, float]:
 
 
 @pytest.fixture
-def safety_violation_metrics() -> Dict[str, float]:
+def safety_violation_metrics() -> dict[str, float]:
     """Metrics that trigger safety violation rollback."""
     return {
         "ece": 0.10,

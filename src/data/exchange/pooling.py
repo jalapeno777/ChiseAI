@@ -10,7 +10,7 @@ import logging
 import time
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class PoolConfig:
 class ConnectionPool:
     """Generic connection pool for exchange connectors."""
 
-    def __init__(self, config: Optional[PoolConfig] = None):
+    def __init__(self, config: PoolConfig | None = None):
         """
         Initialize connection pool.
 
@@ -43,7 +43,7 @@ class ConnectionPool:
         self._lock = asyncio.Lock()
         self._total_connections: int = 0
         self._closed: bool = False
-        self._connection_factory: Optional[callable] = None
+        self._connection_factory: callable | None = None
 
     def set_connection_factory(self, factory: callable) -> None:
         """Set the factory function for creating connections."""
@@ -137,7 +137,7 @@ class ConnectionPool:
             self._total_connections = 0
             self._in_use.clear()
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get pool statistics."""
         return {
             "total_connections": self._total_connections,
@@ -151,11 +151,11 @@ class ConnectionPool:
 class PooledConnector:
     """Mixin for connectors that use connection pooling."""
 
-    _pools: Dict[str, ConnectionPool] = {}
+    _pools: dict[str, ConnectionPool] = {}
 
     @classmethod
     def get_pool(
-        cls, exchange: str, config: Optional[PoolConfig] = None
+        cls, exchange: str, config: PoolConfig | None = None
     ) -> ConnectionPool:
         """
         Get or create connection pool for an exchange.
@@ -179,7 +179,7 @@ class PooledConnector:
         cls._pools.clear()
 
     @classmethod
-    def get_all_stats(cls) -> Dict[str, Dict[str, Any]]:
+    def get_all_stats(cls) -> dict[str, dict[str, Any]]:
         """Get statistics for all pools."""
         return {exchange: pool.get_stats() for exchange, pool in cls._pools.items()}
 
@@ -195,7 +195,7 @@ class RateLimiter:
             calls_per_second: Maximum calls per second
         """
         self.min_interval = 1.0 / calls_per_second
-        self._last_call_time: Optional[float] = None
+        self._last_call_time: float | None = None
         self._lock = asyncio.Lock()
 
     async def acquire(self) -> None:

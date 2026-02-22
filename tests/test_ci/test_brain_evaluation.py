@@ -286,10 +286,9 @@ class TestMain:
             run_brain_evaluation,
             "detect_changed_files",
             return_value=["src/api/main.py"],
-        ):
-            with patch("sys.argv", ["run_brain_evaluation.py"]):
-                result = run_brain_evaluation.main()
-                assert result == 0
+        ), patch("sys.argv", ["run_brain_evaluation.py"]):
+            result = run_brain_evaluation.main()
+            assert result == 0
 
     def test_explicit_versions(self, tmp_path: Path) -> None:
         """Test running with explicit version list."""
@@ -304,12 +303,11 @@ class TestMain:
                 "versions": ["brain-v1"],
                 "details": [],
             },
+        ), patch(
+            "sys.argv", ["run_brain_evaluation.py", "--versions", "brain-v1"]
         ):
-            with patch(
-                "sys.argv", ["run_brain_evaluation.py", "--versions", "brain-v1"]
-            ):
-                result = run_brain_evaluation.main()
-                assert result == 0
+            result = run_brain_evaluation.main()
+            assert result == 0
 
     def test_force_flag(self) -> None:
         """Test that --force runs evaluation even without brain changes."""
@@ -317,22 +315,20 @@ class TestMain:
             run_brain_evaluation,
             "detect_changed_files",
             return_value=["src/api/main.py"],
-        ):
-            with patch.object(
-                run_brain_evaluation,
-                "run_batch_evaluation",
-                return_value={
-                    "versions_evaluated": 1,
-                    "successful": 1,
-                    "failed": 0,
-                    "results_file": "results.json",
-                    "versions": ["brain-abc1234"],
-                    "details": [],
-                },
-            ):
-                with patch("sys.argv", ["run_brain_evaluation.py", "--force"]):
-                    result = run_brain_evaluation.main()
-                    assert result == 0
+        ), patch.object(
+            run_brain_evaluation,
+            "run_batch_evaluation",
+            return_value={
+                "versions_evaluated": 1,
+                "successful": 1,
+                "failed": 0,
+                "results_file": "results.json",
+                "versions": ["brain-abc1234"],
+                "details": [],
+            },
+        ), patch("sys.argv", ["run_brain_evaluation.py", "--force"]):
+            result = run_brain_evaluation.main()
+            assert result == 0
 
 
 class TestOutputFormat:

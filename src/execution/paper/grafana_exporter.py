@@ -181,7 +181,7 @@ class PaperTradingGrafanaExporter:
             self._write_api = self._client.write_api()
         return self._write_api
 
-    async def export_position(self, position: "PaperPosition") -> bool:
+    async def export_position(self, position: PaperPosition) -> bool:
         """Export position metrics to InfluxDB.
 
         Args:
@@ -215,7 +215,7 @@ class PaperTradingGrafanaExporter:
             self._failed_exports += 1
             return False
 
-    def _create_position_point(self, position: "PaperPosition") -> Any:
+    def _create_position_point(self, position: PaperPosition) -> Any:
         """Create InfluxDB point for position metrics.
 
         Args:
@@ -577,7 +577,7 @@ class PaperTradingGrafanaExporter:
                 "time": datetime.now(UTC).isoformat(),
             }
 
-    async def export_all_positions(self, positions: list["PaperPosition"]) -> bool:
+    async def export_all_positions(self, positions: list[PaperPosition]) -> bool:
         """Export all positions in a batch.
 
         Args:

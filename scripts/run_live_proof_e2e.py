@@ -273,15 +273,14 @@ class BybitDataIngestion:
         """
         url = "https://api.bybit.com/v5/market/tickers"
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                url, params={"category": "linear", "symbol": symbol}
-            ) as resp:
-                data = await resp.json()
-                ticker = data.get("result", {}).get("list", [{}])[0]
-                price = float(ticker.get("lastPrice", 0))
-                timestamp_ms = int(ticker.get("time", 0))
-                return price, datetime.fromtimestamp(timestamp_ms / 1000, UTC)
+        async with aiohttp.ClientSession() as session, session.get(
+            url, params={"category": "linear", "symbol": symbol}
+        ) as resp:
+            data = await resp.json()
+            ticker = data.get("result", {}).get("list", [{}])[0]
+            price = float(ticker.get("lastPrice", 0))
+            timestamp_ms = int(ticker.get("time", 0))
+            return price, datetime.fromtimestamp(timestamp_ms / 1000, UTC)
 
 
 class TechnicalAnalyzer:
@@ -512,93 +511,90 @@ RATIONALE: [One sentence explaining your confidence assessment]
         url = "https://api.kimi.com/coding/v1/chat/completions"
         start_time = time.perf_counter()
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                url,
-                headers={"Authorization": f"Bearer {self.kimi_api_key}"},
-                json={
-                    "model": "k2p5",
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 150,
-                    "temperature": 0.3,
-                },
-            ) as resp:
-                if resp.status != 200:
-                    error_text = await resp.text()
-                    raise RuntimeError(
-                        f"KIMI API error: HTTP {resp.status} - {error_text}"
-                    )
+        async with aiohttp.ClientSession() as session, session.post(
+            url,
+            headers={"Authorization": f"Bearer {self.kimi_api_key}"},
+            json={
+                "model": "k2p5",
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 150,
+                "temperature": 0.3,
+            },
+        ) as resp:
+            if resp.status != 200:
+                error_text = await resp.text()
+                raise RuntimeError(
+                    f"KIMI API error: HTTP {resp.status} - {error_text}"
+                )
 
-                data = await resp.json()
-                content = data["choices"][0]["message"]["content"]
-                latency_ms = (time.perf_counter() - start_time) * 1000
+            data = await resp.json()
+            content = data["choices"][0]["message"]["content"]
+            latency_ms = (time.perf_counter() - start_time) * 1000
 
-                return {
-                    **self._parse_response(content),
-                    "latency_ms": latency_ms,
-                }
+            return {
+                **self._parse_response(content),
+                "latency_ms": latency_ms,
+            }
 
     async def _query_zai(self, prompt: str) -> dict[str, Any]:
         """Query Z.ai API."""
         url = "https://api.z.ai/v1/chat/completions"
         start_time = time.perf_counter()
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                url,
-                headers={"Authorization": f"Bearer {self.zai_api_key}"},
-                json={
-                    "model": "glm-5",
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 150,
-                    "temperature": 0.3,
-                },
-            ) as resp:
-                if resp.status != 200:
-                    error_text = await resp.text()
-                    raise RuntimeError(
-                        f"Z.ai API error: HTTP {resp.status} - {error_text}"
-                    )
+        async with aiohttp.ClientSession() as session, session.post(
+            url,
+            headers={"Authorization": f"Bearer {self.zai_api_key}"},
+            json={
+                "model": "glm-5",
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 150,
+                "temperature": 0.3,
+            },
+        ) as resp:
+            if resp.status != 200:
+                error_text = await resp.text()
+                raise RuntimeError(
+                    f"Z.ai API error: HTTP {resp.status} - {error_text}"
+                )
 
-                data = await resp.json()
-                content = data["choices"][0]["message"]["content"]
-                latency_ms = (time.perf_counter() - start_time) * 1000
+            data = await resp.json()
+            content = data["choices"][0]["message"]["content"]
+            latency_ms = (time.perf_counter() - start_time) * 1000
 
-                return {
-                    **self._parse_response(content),
-                    "latency_ms": latency_ms,
-                }
+            return {
+                **self._parse_response(content),
+                "latency_ms": latency_ms,
+            }
 
     async def _query_minimax(self, prompt: str) -> dict[str, Any]:
         """Query MiniMax API."""
         url = "https://api.minimaxi.chat/v1/text/chatcompletion_v2"
         start_time = time.perf_counter()
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                url,
-                headers={"Authorization": f"Bearer {self.minimax_api_key}"},
-                json={
-                    "model": "MiniMax-Text-01",
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 150,
-                    "temperature": 0.3,
-                },
-            ) as resp:
-                if resp.status != 200:
-                    error_text = await resp.text()
-                    raise RuntimeError(
-                        f"MiniMax API error: HTTP {resp.status} - {error_text}"
-                    )
+        async with aiohttp.ClientSession() as session, session.post(
+            url,
+            headers={"Authorization": f"Bearer {self.minimax_api_key}"},
+            json={
+                "model": "MiniMax-Text-01",
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 150,
+                "temperature": 0.3,
+            },
+        ) as resp:
+            if resp.status != 200:
+                error_text = await resp.text()
+                raise RuntimeError(
+                    f"MiniMax API error: HTTP {resp.status} - {error_text}"
+                )
 
-                data = await resp.json()
-                content = data["choices"][0]["message"]["content"]
-                latency_ms = (time.perf_counter() - start_time) * 1000
+            data = await resp.json()
+            content = data["choices"][0]["message"]["content"]
+            latency_ms = (time.perf_counter() - start_time) * 1000
 
-                return {
-                    **self._parse_response(content),
-                    "latency_ms": latency_ms,
-                }
+            return {
+                **self._parse_response(content),
+                "latency_ms": latency_ms,
+            }
 
     def _parse_response(self, content: str) -> dict[str, Any]:
         """Parse LLM response."""
@@ -897,18 +893,17 @@ _Evidence saved to _bmad-output/live-proof-e2e-evidence.json_
 """
 
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    self.webhook_url,
-                    json={"content": content},
-                ) as resp:
-                    if resp.status == 204:
-                        return {
-                            "status": "sent",
-                            "timestamp": datetime.now(UTC).isoformat(),
-                        }
-                    else:
-                        return {"status": "failed", "http_code": resp.status}
+            async with aiohttp.ClientSession() as session, session.post(
+                self.webhook_url,
+                json={"content": content},
+            ) as resp:
+                if resp.status == 204:
+                    return {
+                        "status": "sent",
+                        "timestamp": datetime.now(UTC).isoformat(),
+                    }
+                else:
+                    return {"status": "failed", "http_code": resp.status}
         except Exception as e:
             return {"status": "error", "error": str(e)}
 

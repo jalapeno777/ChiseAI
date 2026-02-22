@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -224,7 +224,7 @@ class VersionManager:
         if self._current_version:
             version_data = {
                 "version": str(self._current_version),
-                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(UTC).isoformat(),
             }
             with open(self._version_file, "w", encoding="utf-8") as f:
                 json.dump(version_data, f, indent=2)
@@ -232,7 +232,7 @@ class VersionManager:
         # Save version history
         history_data = {
             "versions": [entry.to_dict() for entry in self._version_history],
-            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(UTC).isoformat(),
         }
         with open(self._history_file, "w", encoding="utf-8") as f:
             json.dump(history_data, f, indent=2)
@@ -281,7 +281,7 @@ class VersionManager:
 
         entry = VersionEntry(
             version=version,
-            created_at=datetime.now(timezone.utc).isoformat(),
+            created_at=datetime.now(UTC).isoformat(),
             commit_hash=commit_hash,
             author=author,
             changelog=changelog,
@@ -382,7 +382,7 @@ class VersionManager:
         # Create new entry
         entry = VersionEntry(
             version=new_version,
-            created_at=datetime.now(timezone.utc).isoformat(),
+            created_at=datetime.now(UTC).isoformat(),
             commit_hash=commit_hash,
             author=author,
             changelog=changelog,

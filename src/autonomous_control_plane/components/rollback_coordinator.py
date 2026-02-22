@@ -10,8 +10,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from src.autonomous_control_plane.models.incidents import (
     IncidentEvent,
@@ -851,7 +852,7 @@ class RollbackCoordinator:
 
             return result
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             error_msg = f"Step '{step.name}' timed out after {step.timeout_seconds}s"
             step.mark_failed(error_msg)
             operation.add_audit_entry(error_msg, level="ERROR")

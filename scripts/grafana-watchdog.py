@@ -25,7 +25,6 @@ import sys
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Optional, Set
 
 from config.bootstrap import bootstrap
 
@@ -33,8 +32,6 @@ from config.bootstrap import bootstrap
 bootstrap(load_env=True)
 
 # Add src to path and bootstrap
-import sys
-from pathlib import Path
 
 import requests
 
@@ -52,7 +49,7 @@ class WatchdogConfig:
     grafana_url: str = "http://host.docker.internal:3001"
     grafana_user: str = "admin"
     grafana_password: str = "admin"
-    grafana_api_key: Optional[str] = None
+    grafana_api_key: str | None = None
     dashboards_path: str = "infrastructure/grafana/provisioning/dashboards"
     debounce_seconds: float = 5.0
     log_level: str = "INFO"
@@ -164,7 +161,7 @@ class DashboardChangeHandler(FileSystemEventHandler):
         self.config = config
         self.pending_reload = False
         self.last_reload_time = 0.0
-        self.known_files: Set[str] = set()
+        self.known_files: set[str] = set()
         self._scan_initial_files()
 
     def _scan_initial_files(self) -> None:
@@ -262,7 +259,7 @@ class GrafanaWatchdog:
     def __init__(self, config: WatchdogConfig):
         self.config = config
         self.grafana_api = GrafanaAPI(config)
-        self.observer: Optional[Observer] = None
+        self.observer: Observer | None = None
         self.running = False
 
         # Setup logging
@@ -375,7 +372,7 @@ def main():
 
     # Load configuration
     if args.config and os.path.exists(args.config):
-        with open(args.config, "r") as f:
+        with open(args.config) as f:
             config_data = json.load(f)
         config = WatchdogConfig(**config_data)
     else:

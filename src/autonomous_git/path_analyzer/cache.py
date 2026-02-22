@@ -3,7 +3,7 @@
 import hashlib
 import json
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class PathAnalysisCache:
@@ -22,11 +22,11 @@ class PathAnalysisCache:
         """
         self._redis = redis_client
         self._ttl = ttl
-        self._memory_cache: Dict[str, Dict[str, Any]] = {}
-        self._memory_timestamps: Dict[str, float] = {}
+        self._memory_cache: dict[str, dict[str, Any]] = {}
+        self._memory_timestamps: dict[str, float] = {}
 
     def _make_key(
-        self, pr_number: Optional[int], commit_sha: Optional[str], file_list_hash: str
+        self, pr_number: int | None, commit_sha: str | None, file_list_hash: str
     ) -> str:
         """Generate cache key."""
         if commit_sha:
@@ -40,8 +40,8 @@ class PathAnalysisCache:
         return hashlib.sha256(content.encode()).hexdigest()[:16]
 
     def get(
-        self, pr_number: Optional[int], commit_sha: Optional[str], files: list
-    ) -> Optional[Dict[str, Any]]:
+        self, pr_number: int | None, commit_sha: str | None, files: list
+    ) -> dict[str, Any] | None:
         """
         Get cached analysis result.
 
@@ -81,10 +81,10 @@ class PathAnalysisCache:
 
     def set(
         self,
-        pr_number: Optional[int],
-        commit_sha: Optional[str],
+        pr_number: int | None,
+        commit_sha: str | None,
         files: list,
-        result: Dict[str, Any],
+        result: dict[str, Any],
     ) -> bool:
         """
         Cache analysis result.
@@ -122,7 +122,7 @@ class PathAnalysisCache:
         return True
 
     def invalidate(
-        self, pr_number: Optional[int], commit_sha: Optional[str] = None
+        self, pr_number: int | None, commit_sha: str | None = None
     ) -> int:
         """
         Invalidate cache entries for a PR.
@@ -184,7 +184,7 @@ class PathAnalysisCache:
         self._memory_cache.clear()
         self._memory_timestamps.clear()
 
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         memory_entries = len(self._memory_cache)
         redis_entries = 0

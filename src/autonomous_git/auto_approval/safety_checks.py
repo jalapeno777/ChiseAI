@@ -3,8 +3,9 @@
 import logging
 import re
 from dataclasses import dataclass, field
+from datetime import UTC
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +39,7 @@ class CheckResult:
     name: str
     status: CheckStatus
     message: str = ""
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -46,11 +47,11 @@ class SafetyCheckResult:
     """Complete safety check results."""
 
     all_passed: bool
-    checks: List[CheckResult]
+    checks: list[CheckResult]
     pr_number: int
     timestamp: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "all_passed": self.all_passed,
@@ -92,7 +93,7 @@ class SafetyChecker:
         self.gitea = gitea_client
 
     async def run_checks(
-        self, pr_number: int, pr_data: Optional[Dict] = None
+        self, pr_number: int, pr_data: dict | None = None
     ) -> SafetyCheckResult:
         """Run all safety checks on a PR.
 
@@ -103,7 +104,7 @@ class SafetyChecker:
         Returns:
             SafetyCheckResult with all check results
         """
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         checks = []
 
@@ -130,17 +131,17 @@ class SafetyChecker:
             all_passed=all_passed,
             checks=checks,
             pr_number=pr_number,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
         )
 
-    async def _fetch_pr_data(self, pr_number: int) -> Dict:
+    async def _fetch_pr_data(self, pr_number: int) -> dict:
         """Fetch PR data from Gitea."""
         # This would call Gitea API
         # For now, return empty dict (will be mocked in tests)
         logger.debug(f"Fetching PR data for #{pr_number}")
         return {}
 
-    async def _check_merge_conflicts(self, pr_data: Dict) -> CheckResult:
+    async def _check_merge_conflicts(self, pr_data: dict) -> CheckResult:
         """Check if PR has merge conflicts."""
         if not self.check_merge_conflicts:
             return CheckResult(
@@ -167,7 +168,7 @@ class SafetyChecker:
             details={"mergeable": mergeable},
         )
 
-    async def _check_ci_status(self, pr_number: int, pr_data: Dict) -> CheckResult:
+    async def _check_ci_status(self, pr_number: int, pr_data: dict) -> CheckResult:
         """Check if CI is green."""
         if not self.require_green_ci:
             return CheckResult(
@@ -213,7 +214,7 @@ class SafetyChecker:
             details={"checks": status_checks},
         )
 
-    async def _check_story_id(self, pr_data: Dict) -> CheckResult:
+    async def _check_story_id(self, pr_data: dict) -> CheckResult:
         """Check if PR title contains story ID."""
         if not self.require_story_id:
             return CheckResult(
@@ -243,7 +244,7 @@ class SafetyChecker:
             },
         )
 
-    async def _check_branch_protection(self, pr_data: Dict) -> CheckResult:
+    async def _check_branch_protection(self, pr_data: dict) -> CheckResult:
         """Check if branch protection rules are satisfied."""
         # This would check if required reviews are met, etc.
         # For now, assume satisfied if we have PR data
@@ -257,7 +258,7 @@ class SafetyChecker:
             details={"base_branch": base_branch},
         )
 
-    async def _check_author_status(self, pr_data: Dict) -> CheckResult:
+    async def _check_author_status(self, pr_data: dict) -> CheckResult:
         """Check if PR author is allowed."""
         author = pr_data.get("user", {}).get("login", "unknown")
 

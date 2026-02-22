@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from influxdb_client import InfluxDBClient, Point
@@ -151,7 +151,7 @@ class BacktestKPIWriter:
             True if written successfully
         """
         if timestamp is None:
-            timestamp = datetime.now(timezone.utc)
+            timestamp = datetime.now(UTC)
 
         # Handle both pct and decimal formats
         max_drawdown = kpis.get("max_drawdown", 0.0)

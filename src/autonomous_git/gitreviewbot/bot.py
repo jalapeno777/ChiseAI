@@ -3,7 +3,7 @@
 import asyncio
 import hashlib
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .calibration import CalibrationTracker
 from .confidence import ConfidenceScorer
@@ -19,10 +19,10 @@ class GitReviewBot:
 
     def __init__(
         self,
-        gitea_client: Optional[GiteaClient] = None,
-        senior_dev: Optional[SeniorDevReviewer] = None,
-        critic: Optional[CriticReviewer] = None,
-        calibration: Optional[CalibrationTracker] = None,
+        gitea_client: GiteaClient | None = None,
+        senior_dev: SeniorDevReviewer | None = None,
+        critic: CriticReviewer | None = None,
+        calibration: CalibrationTracker | None = None,
         enable_auto_merge: bool = False,
         cache_ttl_seconds: int = 86400,
     ):
@@ -38,7 +38,7 @@ class GitReviewBot:
         self.synthesizer = DecisionSynthesizer(confidence_scorer)
 
         # Diff cache for cost reduction
-        self._diff_cache: Dict[str, CachedDiff] = {}
+        self._diff_cache: dict[str, CachedDiff] = {}
 
     async def review_pr(
         self,
@@ -194,7 +194,7 @@ class GitReviewBot:
                 f"⚠️ **Auto-merge failed**: {str(e)}\n\nManual merge required.",
             )
 
-    def _check_diff_cache(self, diff: str) -> Optional[CachedDiff]:
+    def _check_diff_cache(self, diff: str) -> CachedDiff | None:
         """Check if a similar diff is in cache."""
         diff_hash = self._hash_diff(diff)
 
@@ -214,7 +214,7 @@ class GitReviewBot:
         self,
         diff: str,
         pr_number: int,
-        files: List[str],
+        files: list[str],
         result,
     ) -> None:
         """Cache review result for a diff."""
@@ -283,14 +283,14 @@ class GitReviewBot:
         review_id: str,
         feedback_type: str,
         reviewer: str,
-        comment: Optional[str] = None,
+        comment: str | None = None,
     ) -> None:
         """Record human feedback on a review."""
         await self.calibration.record_feedback(
             pr_number, review_id, feedback_type, reviewer, comment
         )
 
-    async def get_calibration_metrics(self, days: int = 7) -> Dict[str, Any]:
+    async def get_calibration_metrics(self, days: int = 7) -> dict[str, Any]:
         """Get calibration metrics."""
         metrics = await self.calibration.calculate_metrics(days)
         return metrics.model_dump()
@@ -299,8 +299,8 @@ class GitReviewBot:
 # Convenience function for standalone usage
 async def review_pr(
     pr_number: int,
-    gitea_url: Optional[str] = None,
-    gitea_token: Optional[str] = None,
+    gitea_url: str | None = None,
+    gitea_token: str | None = None,
     enable_auto_merge: bool = False,
 ) -> Decision:
     """Review a PR with default configuration."""

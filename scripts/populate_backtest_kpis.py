@@ -26,7 +26,7 @@ from __future__ import annotations
 import argparse
 import random
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 # Bootstrap environment first (must be before any env access)
@@ -125,7 +125,7 @@ def populate_strategy_data(
     Returns:
         Number of records written
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     count = 0
 
     for day in range(days):

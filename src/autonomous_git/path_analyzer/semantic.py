@@ -2,7 +2,6 @@
 
 import re
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Set, Tuple
 
 from .classification import RiskLevel
 from .patterns import PathPatternMatcher
@@ -15,7 +14,7 @@ class SemanticFlag:
     rule_name: str
     message: str
     severity: str = "info"  # info, warning, critical
-    details: Dict = None
+    details: dict = None
 
     def __post_init__(self):
         if self.details is None:
@@ -25,13 +24,13 @@ class SemanticFlag:
 class SemanticAnalyzer:
     """Performs semantic analysis on file changes."""
 
-    def __init__(self, pattern_matcher: Optional[PathPatternMatcher] = None):
+    def __init__(self, pattern_matcher: PathPatternMatcher | None = None):
         """Initialize with optional pattern matcher."""
         self.pattern_matcher = pattern_matcher or PathPatternMatcher()
 
     def analyze_file(
-        self, path: str, content: Optional[str] = None
-    ) -> List[SemanticFlag]:
+        self, path: str, content: str | None = None
+    ) -> list[SemanticFlag]:
         """
         Analyze a single file for semantic issues.
 
@@ -74,8 +73,8 @@ class SemanticAnalyzer:
         return flags
 
     def analyze_cross_module_imports(
-        self, paths: List[str], contents: Optional[Dict[str, str]] = None
-    ) -> List[SemanticFlag]:
+        self, paths: list[str], contents: dict[str, str] | None = None
+    ) -> list[SemanticFlag]:
         """
         Analyze for cross-module imports across multiple files.
 
@@ -87,7 +86,7 @@ class SemanticAnalyzer:
             List of semantic flags
         """
         flags = []
-        module_imports: Dict[str, Set[str]] = {}
+        module_imports: dict[str, set[str]] = {}
 
         if contents is None:
             contents = {}
@@ -128,8 +127,8 @@ class SemanticAnalyzer:
         return flags
 
     def analyze_batch(
-        self, paths: List[str], contents: Optional[Dict[str, str]] = None
-    ) -> Dict[str, List[SemanticFlag]]:
+        self, paths: list[str], contents: dict[str, str] | None = None
+    ) -> dict[str, list[SemanticFlag]]:
         """
         Analyze multiple files.
 
@@ -159,7 +158,7 @@ class SemanticAnalyzer:
 
         return results
 
-    def _is_test_deletion(self, path: str, content: Optional[str]) -> bool:
+    def _is_test_deletion(self, path: str, content: str | None) -> bool:
         """Check if this is a test file deletion."""
         # If content is None/empty and path looks like a test file, it's likely deleted
         if content is None or content == "":
@@ -193,7 +192,7 @@ class SemanticAnalyzer:
                 return True
         return False
 
-    def _analyze_content(self, path: str, content: str) -> List[SemanticFlag]:
+    def _analyze_content(self, path: str, content: str) -> list[SemanticFlag]:
         """Analyze file content for semantic issues."""
         flags = []
 
@@ -207,7 +206,7 @@ class SemanticAnalyzer:
 
         return flags
 
-    def _check_security_patterns(self, path: str, content: str) -> List[SemanticFlag]:
+    def _check_security_patterns(self, path: str, content: str) -> list[SemanticFlag]:
         """Check for security-sensitive code patterns."""
         flags = []
 
@@ -237,7 +236,7 @@ class SemanticAnalyzer:
 
     def _check_architectural_patterns(
         self, path: str, content: str
-    ) -> List[SemanticFlag]:
+    ) -> list[SemanticFlag]:
         """Check for architectural concerns."""
         flags = []
 
@@ -257,7 +256,7 @@ class SemanticAnalyzer:
 
         return flags
 
-    def _extract_imports(self, content: str) -> Set[str]:
+    def _extract_imports(self, content: str) -> set[str]:
         """Extract module imports from Python content."""
         imports = set()
 
@@ -276,8 +275,8 @@ class SemanticAnalyzer:
         return imports
 
     def assess_risk_from_flags(
-        self, flags: List[SemanticFlag]
-    ) -> Tuple[RiskLevel, float, str]:
+        self, flags: list[SemanticFlag]
+    ) -> tuple[RiskLevel, float, str]:
         """
         Assess overall risk from semantic flags.
 

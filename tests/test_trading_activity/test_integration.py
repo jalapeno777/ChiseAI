@@ -201,7 +201,7 @@ class TestTradingActivityIntegration:
                         ),
                         timeout=2.0,
                     )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     pass
 
         # Verify multiple cycles ran

@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -137,7 +137,7 @@ class PromotionPacket:
             }
 
         if not self.created_at:
-            self.created_at = datetime.now(timezone.utc).isoformat()
+            self.created_at = datetime.now(UTC).isoformat()
 
         if isinstance(self.status, str):
             self.status = PromotionStatus(self.status)
@@ -194,7 +194,7 @@ class PromotionPacket:
             notes: Approval notes
         """
         self.approver = approver
-        self.approval_timestamp = datetime.now(timezone.utc).isoformat()
+        self.approval_timestamp = datetime.now(UTC).isoformat()
         self.approval_notes = notes
         self.status = PromotionStatus.APPROVED
 
@@ -206,7 +206,7 @@ class PromotionPacket:
             notes: Rejection notes
         """
         self.approver = approver
-        self.approval_timestamp = datetime.now(timezone.utc).isoformat()
+        self.approval_timestamp = datetime.now(UTC).isoformat()
         self.approval_notes = notes
         self.status = PromotionStatus.REJECTED
 
@@ -218,7 +218,7 @@ class PromotionPacket:
             notes: Override justification notes
         """
         self.approver = approver
-        self.approval_timestamp = datetime.now(timezone.utc).isoformat()
+        self.approval_timestamp = datetime.now(UTC).isoformat()
         self.approval_notes = notes
         self.status = PromotionStatus.OVERRIDDEN
 

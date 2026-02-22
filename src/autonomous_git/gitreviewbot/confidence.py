@@ -1,7 +1,6 @@
 """Confidence scoring for GitReviewBot decisions."""
 
 from dataclasses import dataclass
-from typing import List, Optional
 
 from .models import Finding, ReviewResult, Severity, Violation
 
@@ -92,7 +91,7 @@ class ConfidenceScorer:
             final_confidence=final_confidence,
         )
 
-    def _calculate_finding_penalty(self, findings: List[Finding]) -> float:
+    def _calculate_finding_penalty(self, findings: list[Finding]) -> float:
         """Calculate penalty from findings."""
         penalty = 0.0
         for finding in findings:
@@ -104,7 +103,7 @@ class ConfidenceScorer:
                 penalty += self.info_penalty
         return penalty
 
-    def _calculate_violation_penalty(self, violations: List[Violation]) -> float:
+    def _calculate_violation_penalty(self, violations: list[Violation]) -> float:
         """Calculate penalty from violations."""
         penalty = 0.0
         for violation in violations:
@@ -116,7 +115,7 @@ class ConfidenceScorer:
                 penalty += self.info_penalty
         return penalty
 
-    def _calculate_blocker_penalty(self, blockers: List[str]) -> float:
+    def _calculate_blocker_penalty(self, blockers: list[str]) -> float:
         """Calculate penalty from blockers."""
         return len(blockers) * self.blocker_penalty
 
@@ -143,7 +142,7 @@ class ConfidenceScorer:
         confidence: float,
         senior_dev_confidence: float,
         critic_confidence: float,
-        blockers: List[str],
+        blockers: list[str],
         ci_passed: bool = False,
     ) -> bool:
         """Check if PR is eligible for auto-merge."""
@@ -168,7 +167,7 @@ class ConfidenceScorer:
     def adjust_for_historical_accuracy(
         self,
         confidence: float,
-        historical_accuracy: Optional[float],
+        historical_accuracy: float | None,
     ) -> float:
         """Adjust confidence based on historical accuracy."""
         if historical_accuracy is None:

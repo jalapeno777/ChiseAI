@@ -10,7 +10,7 @@ import json
 import logging
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -185,7 +185,7 @@ class RollbackManager:
         history_file = self.storage_path / self.ROLLBACK_HISTORY_FILE
         data = {
             "rollbacks": [entry.to_dict() for entry in self._rollback_history],
-            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(UTC).isoformat(),
         }
         with open(history_file, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
@@ -210,7 +210,7 @@ class RollbackManager:
             RollbackError: If rollback fails
             RollbackTimeoutError: If rollback exceeds target duration
         """
-        started_at = datetime.now(timezone.utc).isoformat()
+        started_at = datetime.now(UTC).isoformat()
         start_time = time.perf_counter()
 
         result = RollbackResult(
@@ -257,7 +257,7 @@ class RollbackManager:
 
         finally:
             # Complete rollback
-            completed_at = datetime.now(timezone.utc).isoformat()
+            completed_at = datetime.now(UTC).isoformat()
             result.completed_at = completed_at
             result.duration_seconds = time.perf_counter() - start_time
             result.target_met = result.duration_seconds <= self.target_duration_seconds

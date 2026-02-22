@@ -12,7 +12,7 @@ import argparse
 import asyncio
 import logging
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ async def set_emergency_stop(reason: str, dry_run: bool = False) -> bool:
     Returns:
         True if successful
     """
-    timestamp = datetime.now(timezone.utc).isoformat()
+    timestamp = datetime.now(UTC).isoformat()
 
     if dry_run:
         logger.info("[DRY RUN] Would set emergency stop flag")

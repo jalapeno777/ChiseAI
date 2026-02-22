@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -53,7 +53,7 @@ class TestTemporalBoundary:
 
     def test_boundary_creation(self) -> None:
         """Test boundary creation."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         boundary = TemporalBoundary(
             data_cutoff_time=now - timedelta(hours=2),
             validation_start_time=now - timedelta(hours=2),
@@ -65,11 +65,11 @@ class TestTemporalBoundary:
 
     def test_is_safe(self) -> None:
         """Test timestamp safety check."""
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=2)
+        cutoff = datetime.now(UTC) - timedelta(hours=2)
         boundary = TemporalBoundary(
             data_cutoff_time=cutoff,
             validation_start_time=cutoff,
-            validation_end_time=datetime.now(timezone.utc),
+            validation_end_time=datetime.now(UTC),
             buffer_hours=2.0,
         )
 
@@ -83,7 +83,7 @@ class TestTemporalBoundary:
 
     def test_to_dict(self) -> None:
         """Test conversion to dictionary."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         boundary = TemporalBoundary(
             data_cutoff_time=now,
             validation_start_time=now,
@@ -104,7 +104,7 @@ class TestLoopIterationResult:
         """Test result creation."""
         result = LoopIterationResult(
             iteration_id="test-loop-001",
-            start_time=datetime.now(timezone.utc),
+            start_time=datetime.now(UTC),
             status=LoopStatus.RUNNING,
             total_matches=100,
         )
@@ -116,7 +116,7 @@ class TestLoopIterationResult:
         """Test conversion to dictionary."""
         result = LoopIterationResult(
             iteration_id="test-loop-001",
-            start_time=datetime.now(timezone.utc),
+            start_time=datetime.now(UTC),
             status=LoopStatus.COMPLETED,
             total_matches=100,
             errors=["Test error"],
@@ -190,7 +190,7 @@ class TestFeedbackOrchestrator:
 
         assert boundary.buffer_hours == 2.0
         # Cutoff should be 2 hours ago
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         assert boundary.data_cutoff_time < now
         assert boundary.data_cutoff_time > now - timedelta(hours=3)
 
@@ -205,7 +205,7 @@ class TestFeedbackOrchestrator:
 
     def test_enforce_temporal_safety(self, orchestrator) -> None:
         """Test temporal safety enforcement."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         boundary = TemporalBoundary(
             data_cutoff_time=now - timedelta(hours=2),
             validation_start_time=now - timedelta(hours=2),
@@ -244,7 +244,7 @@ class TestFeedbackOrchestrator:
         orchestrator._is_running = True
         orchestrator._current_iteration = LoopIterationResult(
             iteration_id="existing",
-            start_time=datetime.now(timezone.utc),
+            start_time=datetime.now(UTC),
             status=LoopStatus.RUNNING,
         )
 
@@ -310,7 +310,7 @@ class TestFeedbackOrchestrator:
         orchestrator._is_running = True
         orchestrator._current_iteration = LoopIterationResult(
             iteration_id="test-001",
-            start_time=datetime.now(timezone.utc),
+            start_time=datetime.now(UTC),
             status=LoopStatus.RUNNING,
         )
 
@@ -326,7 +326,7 @@ class TestFeedbackOrchestrator:
             orchestrator._iteration_history.append(
                 LoopIterationResult(
                     iteration_id=f"test-{i}",
-                    start_time=datetime.now(timezone.utc) - timedelta(hours=i),
+                    start_time=datetime.now(UTC) - timedelta(hours=i),
                     status=LoopStatus.COMPLETED if i % 2 == 0 else LoopStatus.FAILED,
                 )
             )
@@ -341,12 +341,12 @@ class TestFeedbackOrchestrator:
         orchestrator._iteration_history = [
             LoopIterationResult(
                 iteration_id="test-1",
-                start_time=datetime.now(timezone.utc),
+                start_time=datetime.now(UTC),
                 status=LoopStatus.COMPLETED,
             ),
             LoopIterationResult(
                 iteration_id="test-2",
-                start_time=datetime.now(timezone.utc) - timedelta(hours=1),
+                start_time=datetime.now(UTC) - timedelta(hours=1),
                 status=LoopStatus.FAILED,
             ),
         ]
@@ -387,7 +387,7 @@ class TestFeedbackOrchestrator:
         """Test iteration finalization."""
         result = LoopIterationResult(
             iteration_id="test-001",
-            start_time=datetime.now(timezone.utc) - timedelta(minutes=5),
+            start_time=datetime.now(UTC) - timedelta(minutes=5),
             status=LoopStatus.RUNNING,
         )
 

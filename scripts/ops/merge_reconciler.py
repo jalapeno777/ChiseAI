@@ -73,7 +73,7 @@ class MergeQueueItem:
         )
 
     @classmethod
-    def from_json(cls, raw: str) -> "MergeQueueItem":
+    def from_json(cls, raw: str) -> MergeQueueItem:
         obj = json.loads(raw)
         return cls(
             story_id=str(obj["story_id"]),

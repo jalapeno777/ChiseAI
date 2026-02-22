@@ -416,7 +416,7 @@ class RecoveryOrchestrator:
                 escalation_required=False,
             )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             # Timeout
             attempt.state = RecoveryState.FAILED
             attempt.completed_at = datetime.now(UTC)
