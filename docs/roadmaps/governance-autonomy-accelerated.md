@@ -17,24 +17,24 @@ This accelerated roadmap optimizes the governance rollout by front-loading data 
 
 ### Key Differences from Original Plan
 
-| Aspect | Original (90-day) | Accelerated (8-week) |
-|--------|-------------------|----------------------|
+| Aspect | Original (90-day) | Accelerated (Day 30 cadence) |
+|--------|-------------------|-----------------------------|
 | Data Collection | Starts Week 4 | Starts Week 1 |
 | First Optimization | Week 8 | Week 2 |
-| Cycle Cadence | Monthly phases | Weekly → Biweekly |
-| Total Duration | 90 days | 56 days |
+| Cycle Cadence | Monthly phases | Weekly → Biweekly (after Day 30) |
+| Total Duration | 90 days | ~6 weeks (to Day 30) |
 
 ## Week-by-Week First 6 Weeks
 
 ### Week 1: Foundation + Live Data (Feb 23 - Mar 1)
-**Stories:** ST-GOV-001, ST-GOV-MINI-001
+**Stories:** ST-GOV-MINI-001, ST-GOV-MINI-002
 **Theme:** Establish memory deduplication and capture baseline metrics
 
 | Day | Focus | Deliverable |
 |-----|-------|-------------|
-| 1-2 | ST-GOV-001: Memory Deduplication Engine setup | Core engine deployed |
-| 3-4 | ST-GOV-MINI-001: Audit Snapshot + Retrieval Baseline | Baseline metrics captured |
-| 5-7 | Live paper-run data collection | Week 1 dataset ready |
+| 1-3 | ST-GOV-MINI-001: Lightweight Audit Snapshot | Audit snapshot captured |
+| 4-5 | ST-GOV-MINI-002: Minimal Retrieval Baseline | Baseline metrics ready |
+| 6-7 | Live paper-run data collection | Week 1 dataset ready |
 
 **Go/No-Go Gate:**
 - [ ] Deduplication engine accuracy >=95%
@@ -42,13 +42,13 @@ This accelerated roadmap optimizes the governance rollout by front-loading data 
 - [ ] Week 1 paper-run data quality validated
 
 ### Week 2: Constitution + First Optimization (Mar 2 - Mar 8)
-**Stories:** ST-GOV-002, ST-GOV-MINI-002
+**Stories:** ST-GOV-001, ST-GOV-002
 **Theme:** Deploy constitution artifact and execute first optimization pass
 
 | Day | Focus | Deliverable |
 |-----|-------|-------------|
-| 1-3 | ST-GOV-002: Agent Constitution Artifact | Constitution v1.0.0 deployed |
-| 4-5 | ST-GOV-MINI-002: Optimization Feedback Loop | Optimization pipeline active |
+| 1-3 | ST-GOV-001: Memory Deduplication Engine setup | Core engine deployed |
+| 4-5 | ST-GOV-002: Agent Constitution Artifact | Constitution v1.0.0 deployed |
 | 6-7 | First optimization pass using Week 1 data | Optimization recommendations |
 
 **Go/No-Go Gate:**
@@ -80,18 +80,18 @@ This accelerated roadmap optimizes the governance rollout by front-loading data 
 - Retrieval Quality Evaluator with A/B testing
 - Swarm Health Sentinel with predictive alerts
 
-**Transition Note:** Biweekly optimization passes begin here.
+**Transition Note:** After Day 30 (approx Week 5): Biweekly optimization cycles begin.
 
 ## Post-30-Day Biweekly Model
 
-### Biweekly Cycle Structure
+### Biweekly Cycle Structure (After Day 30)
 
-| Week | Activity | Stories |
-|------|----------|---------|
-| 5-6 | Optimization Pass #2 | ST-GOV-007, ST-GOV-008 |
-| 7-8 | Optimization Pass #3 + Audit | ST-GOV-009, ST-GOV-010 |
+| Cycle | Activity | Stories |
+|-------|----------|---------|
+| Cycle 1 (Week 5-6) | Optimization Pass #2 | ST-GOV-007, ST-GOV-008 |
+| Cycle 2 (Week 7-8) | Optimization Pass #3 + Audit | ST-GOV-009, ST-GOV-010 |
 
-### Ongoing Cadence (Post-Week 8)
+### Ongoing Cadence (Post-Day 30)
 - **Biweekly Planning:** Select optimization targets based on metrics
 - **Week 1 of Cycle:** Implement improvements
 - **Week 2 of Cycle:** Measure impact, document learnings
@@ -123,7 +123,7 @@ This accelerated roadmap optimizes the governance rollout by front-loading data 
 - Retrieval precision >=85%
 - Zero critical bugs in governance features
 
-### Gate 5: Week 8 Complete (Full Autonomy)
+### Gate 5: Day 30 Complete (Full Autonomy)
 **Criteria:**
 - All 10 governance features operational
 - Audit trail exporting daily

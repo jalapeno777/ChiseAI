@@ -105,6 +105,9 @@ class RetryBudgetManager:
         limit: int,
     ) -> tuple[bool, int]:
         """Check and consume budget using Redis atomic operations."""
+        assert self._redis is not None, (
+            "_check_and_consume_redis should only be called when redis is set"
+        )
         key = self._get_budget_key(service_name)
 
         try:
@@ -197,6 +200,9 @@ class RetryBudgetManager:
         limit: int,
     ) -> dict[str, Any]:
         """Get budget status from Redis."""
+        assert self._redis is not None, (
+            "_get_budget_status_redis should only be called when redis is set"
+        )
         key = self._get_budget_key(service_name)
 
         try:

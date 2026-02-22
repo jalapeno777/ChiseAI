@@ -20,7 +20,7 @@ class GiteaClient:
         owner: str | None = None,
         repo: str | None = None,
     ):
-        self.base_url = base_url or os.getenv("GITEA_URL", "http://localhost:3000")
+        self.base_url: str = base_url or os.getenv("GITEA_URL", "http://localhost:3000")
         self.token = token or os.getenv("GITEA_TOKEN", "")
         self.owner = owner or os.getenv("GITEA_OWNER", "chiseai")
         self.repo = repo or os.getenv("GITEA_REPO", "chiseai")
