@@ -22,9 +22,9 @@
 
 ### Current Active Roadmap
 **[Governance Autonomy - Accelerated](./governance-autonomy-accelerated.md)**
-- Week 1-2: Foundation with rapid data feedback
-- Weeks 3-4: Weekly optimization cycles  
-- Weeks 5-6+: Biweekly optimization cadence
+- Week 1-2: Foundation with rapid data feedback + first optimization
+- Week 3-4: Weekly optimization cycles
+- After Day 30: Biweekly optimization cadence
 
 ### Related Documents
 - [Workflow Status](../bmm-workflow-status.yaml) - Authoritative story and epic tracking

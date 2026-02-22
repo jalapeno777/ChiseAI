@@ -194,6 +194,9 @@ class RetryMetricsCollector:
         fields: dict[str, Any],
     ) -> None:
         """Write data point to InfluxDB."""
+        if not self._influx:
+            return
+
         try:
             from influxdb_client.client.write_api import SYNCHRONOUS
 

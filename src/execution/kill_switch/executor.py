@@ -804,7 +804,8 @@ class KillSwitchExecutor:
                 },
                 "time": datetime.now(UTC).isoformat(),
             }
-            await self.influxdb_client.write_point(point)
+            if self.influxdb_client:
+                await self.influxdb_client.write_point(point)
 
         retry_config = RetryConfig(
             max_attempts=3,
@@ -859,7 +860,8 @@ class KillSwitchExecutor:
                 },
                 "time": result.timestamp.isoformat(),
             }
-            await self.influxdb_client.write_point(point)
+            if self.influxdb_client:
+                await self.influxdb_client.write_point(point)
 
         retry_config = RetryConfig(
             max_attempts=3,

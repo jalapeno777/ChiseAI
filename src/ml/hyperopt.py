@@ -470,7 +470,10 @@ class GeneticOptimizer(BaseOptimizer):
             # Create next generation
             population = self._evolve_population(evaluated, param_map)
 
-            logger.debug(f"Iteration {iteration}: best_score={best_trial.score:.4f}")
+            if best_trial:
+                logger.debug(
+                    f"Iteration {iteration}: best_score={best_trial.score:.4f}"
+                )
 
         # Calculate final results
         total_time = time.time() - start_time

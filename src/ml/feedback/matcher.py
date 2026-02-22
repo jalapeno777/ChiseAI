@@ -42,7 +42,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from market_analysis.signal_storage.models import (
@@ -664,7 +664,7 @@ class PredictionOutcomeMatcher:
 
         # Process results
         for i, match_result in enumerate(results):
-            if isinstance(match_result, Exception):
+            if isinstance(match_result, BaseException):
                 # Handle exception - log and track
                 signal = signals[i]
                 logger.error(
@@ -688,6 +688,7 @@ class PredictionOutcomeMatcher:
                 result.matches.append(error_match)
             else:
                 # Normal match result
+                assert isinstance(match_result, PredictionOutcomeMatch)
                 result.matches.append(match_result)
 
                 # Update counters
@@ -1038,7 +1039,10 @@ class PredictionOutcomeMatcher:
         Returns:
             Dictionary with metrics summary
         """
-        all_metrics = self.calculate_match_quality_metrics()
+        all_metrics = cast(
+            dict[SignalType, MatchQualityMetrics],
+            self.calculate_match_quality_metrics(),
+        )
 
         return {
             "overall_accuracy": round(self.get_overall_accuracy(), 4),
