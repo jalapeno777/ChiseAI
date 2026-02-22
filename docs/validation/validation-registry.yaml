@@ -2209,6 +2209,71 @@ validations:
     test_method: manual
     owner: product-team
 
+  # ============================================================
+  # MISSING COMPONENTS VALIDATIONS (4 validations for Option A)
+  # Added per extended timeline decision
+  # ============================================================
+
+  - id: V-LAUNCH-018
+    title: Outcome Capture Service Validation
+    epic_id: EP-LAUNCH-005
+    story_id: ST-LAUNCH-018
+    status: planned
+    description: Validate outcome capture service receives and stores Bybit fill events
+    acceptance_criteria:
+      - WebSocket listener connects to Bybit private stream
+      - Fill events parsed correctly within 5 minutes
+      - Outcomes stored in signal_outcomes table
+      - Signal matching accuracy >=95%
+      - Handles reconnections and missed events
+    test_method: automated
+    owner: ml-team
+
+  - id: V-LAUNCH-019
+    title: Model Registry Validation
+    epic_id: EP-LAUNCH-005
+    story_id: ST-LAUNCH-019
+    status: planned
+    description: Validate model registry stores, versions, and retrieves ML models
+    acceptance_criteria:
+      - Semantic versioning implemented correctly
+      - Model storage and retrieval <1 second
+      - Rollback to previous version <5 minutes
+      - Metadata tracking complete
+      - Storage backend functional (filesystem/S3)
+    test_method: automated
+    owner: ml-team
+
+  - id: V-LAUNCH-020
+    title: Load Test Infrastructure Validation
+    epic_id: EP-LAUNCH-005
+    story_id: ST-LAUNCH-020
+    status: planned
+    description: Validate load testing infrastructure can simulate production load
+    acceptance_criteria:
+      - 1000 signals/hour sustained with <1s latency
+      - 10,000 outcomes/hour database performance
+      - 1000 concurrent WebSocket connections
+      - Automated load test execution
+      - Performance baselines established
+    test_method: automated
+    owner: devops-team
+
+  - id: V-LAUNCH-021
+    title: Runbook Completeness Validation
+    epic_id: EP-LAUNCH-005
+    story_id: ST-LAUNCH-021
+    status: planned
+    description: Validate all operational runbooks are complete and tested
+    acceptance_criteria:
+      - Safety runbook covers all emergency scenarios
+      - ML operations runbook complete
+      - Incident response procedures documented
+      - All runbooks tested with realistic scenarios
+      - On-call procedures established
+    test_method: manual
+    owner: ops-team
+
 # ============================================================
 # Global validation thresholds
 # ============================================================

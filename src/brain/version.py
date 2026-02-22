@@ -118,7 +118,7 @@ def validate_version(version_str: str) -> BrainVersion:
         minor = int(groups["minor"])
         patch = int(groups["patch"])
     except ValueError as e:
-        raise InvalidVersionError(f"Invalid numeric component in version: {e}")
+        raise InvalidVersionError(f"Invalid numeric component in version: {e}") from e
 
     # Validate non-negative (regex ensures this, but double-check)
     if major < 0 or minor < 0 or patch < 0:

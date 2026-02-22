@@ -77,7 +77,7 @@ async def list_budgets() -> dict[str, Any]:
         raise HTTPException(
             status_code=500,
             detail=f"Failed to list budgets: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/budgets/{service}", response_model=dict[str, Any])
@@ -109,7 +109,7 @@ async def get_budget(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to get budget: {str(e)}",
-        )
+        ) from e
 
 
 @router.post("/budgets/{service}/reset", response_model=dict[str, Any])
@@ -141,7 +141,7 @@ async def reset_budget(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to reset budget: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/dead-letter", response_model=dict[str, Any])
@@ -179,7 +179,7 @@ async def list_dead_letter_items(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to list DLQ items: {str(e)}",
-        )
+        ) from e
 
 
 @router.post("/dead-letter/{item_id}/retry", response_model=dict[str, Any])
@@ -219,7 +219,7 @@ async def retry_dead_letter_item(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to retry DLQ item: {str(e)}",
-        )
+        ) from e
 
 
 @router.delete("/dead-letter/{item_id}", response_model=dict[str, Any])
@@ -259,7 +259,7 @@ async def delete_dead_letter_item(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to delete DLQ item: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/metrics", response_model=dict[str, Any])
@@ -286,7 +286,7 @@ async def get_metrics() -> dict[str, Any]:
         raise HTTPException(
             status_code=500,
             detail=f"Failed to get metrics: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/circuit-breakers", response_model=dict[str, Any])
@@ -316,4 +316,4 @@ async def get_circuit_breaker_states() -> dict[str, Any]:
         raise HTTPException(
             status_code=500,
             detail=f"Failed to get circuit breaker states: {str(e)}",
-        )
+        ) from e

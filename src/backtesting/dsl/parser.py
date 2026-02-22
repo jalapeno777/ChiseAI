@@ -120,8 +120,8 @@ class DSLParser:
                 # Try uppercase variant
                 try:
                     return enum_class[value.upper()]
-                except KeyError:
-                    raise ValueError(f"Invalid {enum_class.__name__}: {value}")
+                except KeyError as e:
+                    raise ValueError(f"Invalid {enum_class.__name__}: {value}") from e
         raise ValueError(f"Cannot parse {enum_class.__name__} from {type(value)}")
 
     @classmethod

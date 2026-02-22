@@ -356,12 +356,12 @@ class BaseHealingAction(ABC):
 
             try:
                 stdout, stderr = proc.communicate(timeout=limits.max_execution_seconds)
-            except subprocess.TimeoutExpired:
+            except subprocess.TimeoutExpired as e:
                 proc.kill()
                 proc.wait()
                 raise SandboxTimeoutError(
                     f"Healing action timed out after {limits.max_execution_seconds}s"
-                )
+                ) from e
 
             if proc.returncode != 0:
                 error_msg = stderr.decode("utf-8", errors="replace").strip()

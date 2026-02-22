@@ -107,21 +107,21 @@ async def list_incidents(
     if status:
         try:
             status_filter = IncidentStatus(status.lower())
-        except ValueError:
+        except ValueError as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid status: {status}",
-            )
+            ) from e
 
     severity_filter = None
     if severity:
         try:
             severity_filter = Severity(severity.upper())
-        except ValueError:
+        except ValueError as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid severity: {severity}",
-            )
+            ) from e
 
     incidents = await manager.list_incidents(
         status=status_filter,
@@ -194,11 +194,11 @@ async def create_incident(request: dict[str, Any]) -> dict[str, Any]:
     if "severity_hint" in request:
         try:
             severity_hint = Severity(request["severity_hint"].upper())
-        except ValueError:
+        except ValueError as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid severity: {request['severity_hint']}",
-            )
+            ) from e
 
     # Create event
     event = IncidentEvent(
@@ -241,11 +241,11 @@ async def update_incident_status(
     # Parse status
     try:
         new_status = IncidentStatus(request["status"].lower())
-    except ValueError:
+    except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid status: {request['status']}",
-        )
+        ) from e
 
     # Update status
     incident = await manager.transition_status(incident_id, new_status)

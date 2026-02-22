@@ -347,7 +347,7 @@ class RetryCoordinator:
                 except CircuitBreakerOpen as e:
                     operation.status = RetryStatus.CIRCUIT_OPEN
                     self._metrics.record_failure(service_name, "circuit_open")
-                    raise RetryAborted(f"Circuit breaker open: {e}")
+                    raise RetryAborted(f"Circuit breaker open: {e}") from e
 
             try:
                 # Attempt execution
@@ -392,7 +392,7 @@ class RetryCoordinator:
 
                     raise BudgetExceededError(
                         f"Retry budget exceeded for {service_name}"
-                    )
+                    ) from e
 
                 # Calculate backoff
                 backoff_ms = policy.calculate_delay(attempt)
