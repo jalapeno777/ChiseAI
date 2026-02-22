@@ -9,12 +9,15 @@ Components:
 - storage: Redis time-series storage backend
 - data_collector: Main collector class for gathering calibration data
 - exporter: Parquet/CSV export functionality for ECE analysis
-- dynamic: Dynamic threshold adjustment with guardrails
+- dynamic: Dynamic threshold adjustment with guardrails (hourly granularity)
+- dynamic_threshold: Dynamic threshold engine with daily granularity (ST-LAUNCH-010)
+- threshold_guardrails: Safety guardrails and manual override (ST-LAUNCH-010)
 - telemetry_exporter: InfluxDB metrics export for Grafana
 - health_monitor: Calibration health monitoring and alerts
 
 Usage:
     from ml.calibration import CalibrationDataCollector, CalibrationRecord
+    from ml.calibration import DynamicThresholdEngine, ThresholdGuardrails
 
     # Collect calibration data
     collector = CalibrationDataCollector()
@@ -27,6 +30,14 @@ Usage:
 
     # Get records for analysis
     records = collector.get_records(window="24h")
+
+    # Dynamic threshold adjustment with daily granularity
+    engine = DynamicThresholdEngine(ece_provider=ece_provider)
+    result = await engine.evaluate_and_adjust(
+        strategy_id="grid_btc_1h",
+        signal_type=SignalType.ENTRY,
+        current_threshold=0.65
+    )
 
     # Export for ECE analysis
     collector.export_to_parquet("calibration_data.parquet")
@@ -93,6 +104,34 @@ from ml.calibration.telemetry_exporter import (
     CalibrationTelemetryExporter,
 )
 
+# Dynamic Threshold Engine (ST-LAUNCH-010)
+from ml.calibration.dynamic_threshold import (
+    DynamicThresholdEngine,
+    DynamicThresholdConfig,
+    ThresholdAdjustmentRecord,
+    AdjustmentHistory,
+    ECEProvider,
+    MIN_THRESHOLD,
+    MAX_THRESHOLD,
+    MAX_DAILY_CHANGE_PERCENT,
+    ECE_ADJUSTMENT_THRESHOLD,
+    COOLDOWN_HOURS,
+    OSCILLATION_WINDOW_DAYS,
+    OSCILLATION_FREEZE_HOURS,
+    OSCILLATION_DIRECTION_CHANGES,
+)
+
+# Threshold Guardrails (ST-LAUNCH-010)
+from ml.calibration.threshold_guardrails import (
+    ThresholdGuardrails,
+    ManualOverride,
+    OverrideReason,
+    AuditLogEntry,
+    AuditEventType,
+    GuardrailConfig,
+    ThresholdStorage,
+)
+
 __all__ = [
     # Models
     "CalibrationRecord",
@@ -109,7 +148,7 @@ __all__ = [
     # Exporter
     "CalibrationExporter",
     "ExportFormat",
-    # Dynamic Threshold Adjuster
+    # Dynamic Threshold Adjuster (original)
     "DynamicThresholdAdjuster",
     "ThresholdAdjustment",
     "AdjustmentGuardrails",
@@ -132,4 +171,24 @@ __all__ = [
     "CalibrationStatus",
     "ECE_ALERT_THRESHOLD",
     "ECE_CRITICAL_THRESHOLD",
+    # Dynamic Threshold Engine (ST-LAUNCH-010)
+    "DynamicThresholdEngine",
+    "DynamicThresholdConfig",
+    "ThresholdAdjustmentRecord",
+    "AdjustmentHistory",
+    "ECEProvider",
+    "MAX_DAILY_CHANGE_PERCENT",
+    "ECE_ADJUSTMENT_THRESHOLD",
+    "COOLDOWN_HOURS",
+    "OSCILLATION_WINDOW_DAYS",
+    "OSCILLATION_FREEZE_HOURS",
+    "OSCILLATION_DIRECTION_CHANGES",
+    # Threshold Guardrails (ST-LAUNCH-010)
+    "ThresholdGuardrails",
+    "ManualOverride",
+    "OverrideReason",
+    "AuditLogEntry",
+    "AuditEventType",
+    "GuardrailConfig",
+    "ThresholdStorage",
 ]
