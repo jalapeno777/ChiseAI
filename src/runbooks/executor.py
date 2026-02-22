@@ -171,7 +171,7 @@ class RunbookExecutor:
 
         try:
             runbook = self.parser.parse(runbook_name)
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             self.logger.error(f"Runbook not found: {runbook_name}")
             return ExecutionResult(
                 runbook_name=runbook_name,

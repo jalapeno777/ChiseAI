@@ -168,7 +168,7 @@ Guidelines:
                     "confidence": float(data.get("confidence", 50.0)),
                     "blockers": data.get("blockers", []),
                 }
-        except Exception as e:
+        except Exception:
             pass
 
         # Fallback: return empty result
