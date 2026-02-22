@@ -3,7 +3,6 @@
 ST-NS-038: Circuit Breaker Registry & Unified Telemetry
 """
 
-import threading
 import time
 import unittest
 from unittest.mock import MagicMock, patch

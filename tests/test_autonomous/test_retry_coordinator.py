@@ -14,9 +14,7 @@ For ST-NS-039: Retry Coordinator with Budget Management
 
 from __future__ import annotations
 
-import asyncio
-from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import datetime
 
 import pytest
 from src.autonomous_control_plane.components.retry_coordinator import (
@@ -31,7 +29,7 @@ from src.autonomous_control_plane.models.retry_policy import (
     RetryAborted,
     RetryPolicy,
 )
-from src.common.circuit_breaker import CircuitBreaker, CircuitBreakerRegistry
+from src.common.circuit_breaker import CircuitBreakerRegistry
 
 
 class TestRetryCoordinator:

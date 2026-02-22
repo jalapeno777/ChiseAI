@@ -12,14 +12,12 @@ For ST-NS-039: Retry Coordinator with Budget Management - Coverage Improvement
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from unittest.mock import MagicMock, patch
 
-import pytest
 from src.autonomous_control_plane.components.retry_budget_manager import (
     RetryBudgetManager,
 )
-from src.autonomous_control_plane.models.retry_policy import RetryBudget
 
 
 class TestRetryBudgetManagerRedisErrors:

@@ -1,8 +1,6 @@
 """Full ACP pipeline integration tests."""
 
-import asyncio
 from datetime import datetime
-from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from src.autonomous_control_plane.models.healing import LogEntry

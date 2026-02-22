@@ -29,7 +29,7 @@ async def test_discord_initialization_retry():
 async def test_discord_rate_limit_handling():
     """Test Discord handles 429 rate limit."""
     from src.discord_alerts.config import DiscordConfig
-    from src.discord_alerts.discord_client import DeliveryResult, DiscordClient
+    from src.discord_alerts.discord_client import DiscordClient
 
     config = DiscordConfig(webhook_url="https://discord.com/api/webhooks/test")
     client = DiscordClient(config)
