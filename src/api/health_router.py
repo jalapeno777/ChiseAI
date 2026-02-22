@@ -77,17 +77,6 @@ def set_acp_container(container: Any) -> None:
     logger.info("ACP container registered with health API")
 
 
-def set_discord_initializer(initializer: Any) -> None:
-    """Set the global Discord initializer.
-
-    Args:
-        initializer: DiscordInitializer instance
-    """
-    global _discord_initializer
-    _discord_initializer = initializer
-    logger.info("Discord initializer registered with health API")
-
-
 @router.get("", response_model=dict[str, Any])
 async def get_health() -> dict[str, Any]:
     """Get current system health.

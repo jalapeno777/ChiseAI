@@ -43,12 +43,6 @@ from execution.canary import (  # noqa: E402
     create_canary_monitor,
     create_canary_storage,
     create_promotion_packet_generator,
-    CanaryDeployment,
-    CanaryStatus,
-    create_canary_deployment,
-    create_canary_monitor,
-    create_canary_storage,
-    create_promotion_packet_generator,
 )
 
 

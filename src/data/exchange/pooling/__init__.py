@@ -32,7 +32,6 @@ from data.exchange.pooling.rate_limiter import (
     RateLimitConfig,
     RateLimitState,
     SlidingWindowRateLimiter,
-    TokenBucketRateLimiter,
 )
 
 __all__ = [
