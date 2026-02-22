@@ -1,32 +1,17 @@
-"""Autonomous Control Plane.
+"""Autonomous Control Plane for ChiseAI.
 
-Self-healing engine with action sandboxing for automated failure recovery.
+Unified control plane consolidating fragmented resilience patterns
+into a cohesive, continuously operating, self-correcting system.
 
-For ST-NS-040: Self-Healing Engine with Action Sandboxing
+ST-NS-038: Circuit Breaker Registry & Unified Telemetry
+EP-NS-008: Autonomous Control Plane
 """
 
-from src.autonomous_control_plane.components import (
-    SelfHealingEngine,
-    FailurePatternMatcher,
-)
-from src.autonomous_control_plane.models import (
-    ActionPriority,
-    HealingAttempt,
-    HealingContext,
-    HealingResult,
-    HealingStatus,
-    LogEntry,
-    ResourceLimits,
-)
-
+__version__ = "0.1.0"
 __all__ = [
-    "SelfHealingEngine",
-    "FailurePatternMatcher",
-    "ActionPriority",
-    "HealingAttempt",
-    "HealingContext",
-    "HealingResult",
-    "HealingStatus",
-    "LogEntry",
-    "ResourceLimits",
+    "components",
+    "models",
+    "telemetry",
+    "api",
+    "config",
 ]
