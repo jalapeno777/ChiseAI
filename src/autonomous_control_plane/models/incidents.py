@@ -8,10 +8,11 @@ For ST-NS-041: Incident Manager with Auto-Remediation
 from __future__ import annotations
 
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any, Protocol
+from typing import Any, List, Protocol
 
 
 class Severity(StrEnum):
@@ -456,8 +457,8 @@ class IncidentMetrics:
         """Calculate resolution time statistics."""
         resolved = [i for i in incidents if i.resolved_at]
         if resolved:
-            times = [i.get_resolution_time_seconds() for i in resolved]
-            times = [t for t in times if t is not None]
+            raw_times = [i.get_resolution_time_seconds() for i in resolved]
+            times = [t for t in raw_times if t is not None]
             if times:
                 self.avg_resolution_time = sum(times) / len(times)
 
@@ -511,24 +512,28 @@ P3_EVENT_TYPES = {
 class IncidentStore(Protocol):
     """Protocol for incident storage backends."""
 
-    def save(self, incident: Incident) -> None:
+    async def save(self, incident: Incident) -> None:
         """Save or update an incident."""
         ...
 
-    def get(self, incident_id: str) -> Incident | None:
+    async def get(self, incident_id: str) -> Incident | None:
         """Get incident by ID."""
         ...
 
-    def list(
+    async def list(
         self,
         status: IncidentStatus | None = None,
         severity: Severity | None = None,
         source: str | None = None,
         limit: int = 100,
-    ) -> list[Incident]:
+    ) -> List[Incident]:
         """List incidents with optional filtering."""
         ...
 
-    def delete(self, incident_id: str) -> bool:
+    async def delete(self, incident_id: str) -> bool:
         """Delete an incident."""
+        ...
+
+    async def get_all(self) -> List[Incident]:
+        """Get all incidents."""
         ...

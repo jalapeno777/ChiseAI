@@ -12,7 +12,7 @@ import asyncio
 import logging
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, List
 
 from src.autonomous_control_plane.models.incidents import (
     P0_EVENT_TYPES,
@@ -349,6 +349,9 @@ class NotificationDispatcher:
             "embeds": [embed],
         }
 
+        if not self._discord_webhook:
+            return None
+
         try:
             async with (
                 aiohttp.ClientSession() as session,
@@ -487,7 +490,7 @@ class NotificationDispatcher:
 class InMemoryIncidentStore(IncidentStore):
     """In-memory implementation of incident storage."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize in-memory store."""
         self._incidents: dict[str, Incident] = {}
         self._lock = asyncio.Lock()
@@ -507,7 +510,7 @@ class InMemoryIncidentStore(IncidentStore):
         severity: Severity | None = None,
         source: str | None = None,
         limit: int = 100,
-    ) -> list[Incident]:
+    ) -> List[Incident]:
         """List incidents with optional filtering."""
         incidents = list(self._incidents.values())
 
@@ -530,7 +533,7 @@ class InMemoryIncidentStore(IncidentStore):
                 return True
             return False
 
-    async def get_all(self) -> list[Incident]:
+    async def get_all(self) -> List[Incident]:
         """Get all incidents."""
         return list(self._incidents.values())
 
