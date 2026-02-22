@@ -41,9 +41,9 @@ from .fill_model import (
     create_fill_model,
 )
 from .models import (
+    OrderSide,
     OrderState,
     OrderType,
-    OrderSide,
     PaperFill,
     PaperOrder,
     PaperTradeResult,

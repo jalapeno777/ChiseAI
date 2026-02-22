@@ -20,9 +20,9 @@ Usage:
     monitor.monitor_single_pr(123)
 """
 
-from .pr_state_manager import PRStateManager, PRState, PREvent
-from .pr_monitor import PRMonitor
 from .health_monitor import PRHealthMonitor
+from .pr_monitor import PRMonitor
+from .pr_state_manager import PREvent, PRState, PRStateManager
 from .recovery_handlers import RecoveryHandlers, RecoveryResult
 
 __all__ = [

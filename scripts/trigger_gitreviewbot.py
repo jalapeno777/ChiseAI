@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Trigger GitReviewBot for manual testing."""
 
+import argparse
+import asyncio
 import os
 import sys
-import asyncio
-import argparse
 from pathlib import Path
 
 # Add src to path
@@ -15,7 +15,7 @@ from config.bootstrap import bootstrap
 
 bootstrap(load_env=True)
 
-from autonomous_git.gitreviewbot import GitReviewBot, GiteaClient
+from autonomous_git.gitreviewbot import GiteaClient, GitReviewBot
 
 
 async def review_pr(

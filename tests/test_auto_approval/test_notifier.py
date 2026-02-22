@@ -1,8 +1,8 @@
 """Tests for auto-approval notifier."""
 
-import pytest
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from src.autonomous_git.auto_approval.notifier import DiscordNotifier
 
 

@@ -1,14 +1,15 @@
 """Tests for patterns module."""
 
-import pytest
 import tempfile
 from pathlib import Path
 
+import pytest
+
 from autonomous_git.path_analyzer.patterns import (
-    Pattern,
-    SemanticRule,
     PathPatternMatcher,
+    Pattern,
     PatternType,
+    SemanticRule,
 )
 
 

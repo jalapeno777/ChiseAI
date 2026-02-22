@@ -9,12 +9,14 @@ Target: 80%+ coverage
 """
 
 import asyncio
-import pytest
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from src.automation import (
     EventType,
+    HealingAction,
+    HealingStatus,
     HealthEvent,
     RecoveryAttempt,
     RecoveryContext,
@@ -24,23 +26,21 @@ from src.automation import (
     RecoveryType,
     SelfHealingEngine,
     SelfHealingResult,
-    HealingAction,
-    HealingStatus,
 )
 from src.automation.event_handlers import (
     EventRouter,
     OnHealthCritical,
     OnHealthWarning,
-    OnRecoverySuccess,
     OnRecoveryFailure,
+    OnRecoverySuccess,
     create_health_event_from_datasource_alert,
     create_health_event_from_execution_alert,
 )
 from src.automation.recovery_orchestrator import HealthLevel
 from src.automation.self_healing_engine import (
     DeploymentHealth,
-    RedisReconnector,
     ExchangeFailover,
+    RedisReconnector,
 )
 
 # ============================================================================
@@ -545,9 +545,9 @@ class TestHelperFunctions:
     def test_create_health_event_from_datasource_alert_critical(self):
         """Test creating health event from critical datasource alert."""
         from src.monitoring.datasource_health import (
+            AlertSeverity,
             DatasourceHealthAlert,
             DataSourceType,
-            AlertSeverity,
         )
 
         alert = DatasourceHealthAlert(
@@ -566,7 +566,7 @@ class TestHelperFunctions:
 
     def test_create_health_event_from_execution_alert(self):
         """Test creating health event from execution alert."""
-        from src.execution.health_monitor import DataGapAlert, AlertSeverity
+        from src.execution.health_monitor import AlertSeverity, DataGapAlert
 
         alert = DataGapAlert(
             source="bybit",

@@ -1,14 +1,15 @@
 """Integration tests for Discord alert delivery."""
 
+from unittest.mock import AsyncMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, AsyncMock, patch
 
 
 @pytest.mark.asyncio
 async def test_discord_initialization_retry():
     """Test Discord initialization with retry logic."""
-    from src.discord_alerts.discord_initializer import DiscordInitializer
     from src.discord_alerts.config import DiscordConfig
+    from src.discord_alerts.discord_initializer import DiscordInitializer
 
     config = DiscordConfig(webhook_url="https://discord.com/api/webhooks/test")
     initializer = DiscordInitializer(config)
@@ -27,8 +28,8 @@ async def test_discord_initialization_retry():
 @pytest.mark.asyncio
 async def test_discord_rate_limit_handling():
     """Test Discord handles 429 rate limit."""
-    from src.discord_alerts.discord_client import DiscordClient, DeliveryResult
     from src.discord_alerts.config import DiscordConfig
+    from src.discord_alerts.discord_client import DeliveryResult, DiscordClient
 
     config = DiscordConfig(webhook_url="https://discord.com/api/webhooks/test")
     client = DiscordClient(config)
@@ -60,8 +61,8 @@ async def test_discord_rate_limit_handling():
 @pytest.mark.asyncio
 async def test_discord_disabled_after_persistent_failures():
     """Test Discord disables after consecutive failures."""
-    from src.discord_alerts.discord_client import DiscordClient
     from src.discord_alerts.config import DiscordConfig
+    from src.discord_alerts.discord_client import DiscordClient
 
     config = DiscordConfig(webhook_url="https://discord.com/api/webhooks/test")
     client = DiscordClient(config)

@@ -1,21 +1,21 @@
 """Tests for auto-approval approver."""
 
-import pytest
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from src.autonomous_git.auto_approval.approver import (
-    AutoApprover,
-    process_safe_pr,
-    is_auto_approval_disabled,
-    RiskLevel,
-    RiskClassification,
     ApprovalResult,
+    AutoApprover,
+    RiskClassification,
+    RiskLevel,
+    is_auto_approval_disabled,
+    process_safe_pr,
 )
 from src.autonomous_git.auto_approval.config import AutoApprovalConfig
 from src.autonomous_git.auto_approval.safety_checks import (
-    SafetyCheckResult,
     CheckResult,
     CheckStatus,
+    SafetyCheckResult,
 )
 
 

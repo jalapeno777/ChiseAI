@@ -2,33 +2,33 @@
 
 from __future__ import annotations
 
-import pytest
+import sys
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock
 
-import sys
+import pytest
 
 sys.path.insert(0, "src")
 
-from ml.feedback import (
-    FeedbackOrchestrator,
-    FeedbackAnalyzer,
-    ModelUpdater,
-    PredictionOutcomeMatcher,
-    PredictionOutcomeMatch,
-    MatchConfig,
-    AnalysisConfig,
-    UpdateConfig,
-    OrchestratorConfig,
-    MatchStatus,
-    MatchConfidence,
-    LoopStatus,
-)
 from market_analysis.signal_storage.models import (
     OutcomeRecord,
     OutcomeType,
     SignalDirection,
     SignalRecord,
+)
+from ml.feedback import (
+    AnalysisConfig,
+    FeedbackAnalyzer,
+    FeedbackOrchestrator,
+    LoopStatus,
+    MatchConfidence,
+    MatchConfig,
+    MatchStatus,
+    ModelUpdater,
+    OrchestratorConfig,
+    PredictionOutcomeMatch,
+    PredictionOutcomeMatcher,
+    UpdateConfig,
 )
 
 

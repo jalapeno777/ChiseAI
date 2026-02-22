@@ -13,15 +13,14 @@ from typing import Any
 from uuid import uuid4
 
 import yaml
-
+from src.backtesting.dsl.fingerprint import compute_dsl_fingerprint
+from src.backtesting.dsl.safety import SafetyChecker
 from src.backtesting.dsl.validator import (
     DSLValidator,
-    ValidationResult,
     ValidationError,
+    ValidationResult,
     ValidationWarning,
 )
-from src.backtesting.dsl.safety import SafetyChecker
-from src.backtesting.dsl.fingerprint import compute_dsl_fingerprint
 
 
 @dataclass(frozen=True)

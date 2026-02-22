@@ -20,10 +20,10 @@ from ml.calibration.controller import (
 )
 from ml.calibration.data_collector import CalibrationDataCollector
 from ml.calibration.dynamic import (
-    DynamicThresholdAdjuster,
-    calculate_optimal_adjustment,
     MAX_THRESHOLD,
     MIN_THRESHOLD,
+    DynamicThresholdAdjuster,
+    calculate_optimal_adjustment,
 )
 from ml.calibration.models import CalibrationRecord, SignalType
 from ml.calibration.optimizer import ThresholdOptimizer

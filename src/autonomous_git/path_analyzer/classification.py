@@ -1,8 +1,8 @@
 """Risk classification enums and classes."""
 
-from enum import Enum
 from dataclasses import dataclass
-from typing import List, Optional, Dict, Any
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 
 class RiskLevel(Enum):

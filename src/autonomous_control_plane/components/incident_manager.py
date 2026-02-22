@@ -14,6 +14,9 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, Callable
 
 from src.autonomous_control_plane.models.incidents import (
+    P0_EVENT_TYPES,
+    P1_EVENT_TYPES,
+    P2_EVENT_TYPES,
     Incident,
     IncidentEvent,
     IncidentMetrics,
@@ -24,9 +27,6 @@ from src.autonomous_control_plane.models.incidents import (
     PostMortem,
     RemediationAction,
     Severity,
-    P0_EVENT_TYPES,
-    P1_EVENT_TYPES,
-    P2_EVENT_TYPES,
 )
 
 logger = logging.getLogger(__name__)

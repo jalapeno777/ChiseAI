@@ -1,11 +1,11 @@
 """Semantic analysis logic for path classification."""
 
 import re
-from typing import List, Dict, Set, Optional, Tuple
 from dataclasses import dataclass
+from typing import Dict, List, Optional, Set, Tuple
 
-from .patterns import PathPatternMatcher
 from .classification import RiskLevel
+from .patterns import PathPatternMatcher
 
 
 @dataclass

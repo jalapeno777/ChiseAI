@@ -20,10 +20,10 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from signal_generation.llm_enhancer import (
+    PROVIDER_CHAIN_AVAILABLE,
     LLMCache,
     LLMConfidenceEnhancer,
     LLMEnhancementResult,
-    PROVIDER_CHAIN_AVAILABLE,
     SignalInput,
 )
 from signal_generation.models import Signal, SignalDirection

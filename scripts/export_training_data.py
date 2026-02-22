@@ -25,15 +25,14 @@ from config.bootstrap import bootstrap
 bootstrap(load_env=True)
 
 from config.bootstrap import bootstrap
-
 from ml.training.exporter import (
     DatasetExporter,
     DatasetInfo,
     ExportFormat,
     ModelType,
 )
-from ml.training.pipeline import TrainingPipeline
 from ml.training.extractor import FeatureExtractor
+from ml.training.pipeline import TrainingPipeline
 from ml.training.schema import TrainingSample
 
 logger = logging.getLogger(__name__)

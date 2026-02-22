@@ -3,18 +3,18 @@
 For PAPER-003-003: Automated Reporting and Anomaly Detection
 """
 
-import pytest
 import asyncio
 from datetime import UTC, datetime
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import AsyncMock, Mock
 
-from src.reporting.scheduler import ReportScheduler
+import pytest
 from src.reporting.models import (
-    ReportSchedule,
     AnomalyAlert,
     AnomalySeverity,
     AnomalyType,
+    ReportSchedule,
 )
+from src.reporting.scheduler import ReportScheduler
 
 
 class TestReportScheduler:

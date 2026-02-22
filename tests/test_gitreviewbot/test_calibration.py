@@ -1,13 +1,14 @@
 """Tests for GitReviewBot calibration."""
 
-import pytest
 from datetime import datetime, timedelta
 
-from autonomous_git.gitreviewbot.models import Decision, DecisionType
+import pytest
+
 from autonomous_git.gitreviewbot.calibration import (
     CalibrationTracker,
     ReviewRecord,
 )
+from autonomous_git.gitreviewbot.models import Decision, DecisionType
 
 
 @pytest.fixture

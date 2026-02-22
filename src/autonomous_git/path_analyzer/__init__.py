@@ -1,9 +1,9 @@
 """Path Analyzer Module for PR risk classification."""
 
-from .classification import RiskLevel, RiskClassification
 from .analyzer import PathAnalyzer, analyze_paths
-from .patterns import PathPatternMatcher
 from .cache import PathAnalysisCache
+from .classification import RiskClassification, RiskLevel
+from .patterns import PathPatternMatcher
 
 __version__ = "0.1.0"
 __all__ = [

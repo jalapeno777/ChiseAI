@@ -2,11 +2,11 @@
 Tests for the runbook CLI module.
 """
 
+import argparse
 from pathlib import Path
 from unittest.mock import Mock, patch
-import argparse
 
-from runbooks.cli import cmd_list, cmd_execute, cmd_show, cmd_history, main
+from runbooks.cli import cmd_execute, cmd_history, cmd_list, cmd_show, main
 
 
 class TestCmdList:

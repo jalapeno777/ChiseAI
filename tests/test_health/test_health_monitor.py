@@ -3,17 +3,17 @@
 For PAPER-003-001: Unified Health Monitoring System
 """
 
-import pytest
 from datetime import datetime
 
+import pytest
 from src.health import ComponentType, HealthStatus
+from src.health.history import HealthHistory, HealthSnapshot
+from src.health.monitor import HealthMonitor
 from src.health.score_calculator import (
     ComponentScore,
     HealthScore,
     ScoreCalculator,
 )
-from src.health.history import HealthHistory, HealthSnapshot
-from src.health.monitor import HealthMonitor
 
 
 class TestHealthStatus:
@@ -245,10 +245,8 @@ class TestHealthHistory:
     @pytest.mark.asyncio
     async def test_calculate_trend(self, history):
         """Test trend calculation."""
-        from datetime import timedelta
-
         # Add some snapshots directly to bypass rate limiting
-        from datetime import UTC
+        from datetime import UTC, timedelta
 
         for i in range(5):
             snapshot = HealthSnapshot(

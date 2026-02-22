@@ -6,9 +6,9 @@ Stores to Redis and markdown fallback.
 
 import argparse
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
-import sys
 
 from config.bootstrap import bootstrap
 

@@ -2,15 +2,15 @@
 
 import pytest
 
+from autonomous_git.gitreviewbot.confidence import ConfidenceScorer
 from autonomous_git.gitreviewbot.models import (
     DecisionType,
     Finding,
-    Violation,
-    Severity,
     ReviewResult,
+    Severity,
+    Violation,
 )
 from autonomous_git.gitreviewbot.synthesizer import DecisionSynthesizer
-from autonomous_git.gitreviewbot.confidence import ConfidenceScorer
 
 
 @pytest.fixture

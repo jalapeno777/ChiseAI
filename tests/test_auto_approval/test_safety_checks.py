@@ -1,12 +1,11 @@
 """Tests for auto-approval safety checks."""
 
 import pytest
-
 from src.autonomous_git.auto_approval.safety_checks import (
-    SafetyChecker,
-    SafetyCheckResult,
     CheckResult,
     CheckStatus,
+    SafetyChecker,
+    SafetyCheckResult,
 )
 
 

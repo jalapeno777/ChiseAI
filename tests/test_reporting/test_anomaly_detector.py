@@ -3,10 +3,10 @@
 For PAPER-003-003: Automated Reporting and Anomaly Detection
 """
 
-import pytest
 from datetime import UTC, datetime, timedelta
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import AsyncMock, Mock
 
+import pytest
 from src.reporting.anomaly_detector import AnomalyDetector
 from src.reporting.models import AnomalyAlert, AnomalySeverity, AnomalyType
 

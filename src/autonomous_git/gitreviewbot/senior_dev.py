@@ -1,12 +1,12 @@
 """SeniorDev role - technical code review."""
 
-import os
-import json
 import asyncio
-from typing import List, Optional, Dict, Any
+import json
+import os
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-from .models import ReviewResult, Finding, Severity
+from .models import Finding, ReviewResult, Severity
 
 
 class SeniorDevReviewer:

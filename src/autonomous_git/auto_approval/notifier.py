@@ -1,10 +1,10 @@
 """Discord notifications for auto-approval."""
 
+import json
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any
-import json
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 

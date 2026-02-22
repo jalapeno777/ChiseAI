@@ -5,9 +5,10 @@ Tests audit trail logging for trades, approvals, and state changes.
 
 from __future__ import annotations
 
-import pytest
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from execution.live_gating.audit_logger import (
     ApprovalAuditRecord,

@@ -5,12 +5,12 @@ from pathlib import Path
 from unittest.mock import mock_open, patch
 
 from src.autonomous_git.auto_approval.config import (
-    load_config,
     AutoApprovalConfig,
-    RateLimitConfig,
-    SafetyCheckConfig,
     ExclusionConfig,
     NotificationConfig,
+    RateLimitConfig,
+    SafetyCheckConfig,
+    load_config,
 )
 
 

@@ -23,9 +23,9 @@ from typing import Any, Literal, cast, overload
 
 # Add src to path for config imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
-from config.bootstrap import bootstrap
-
 import requests
+
+from config.bootstrap import bootstrap
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))

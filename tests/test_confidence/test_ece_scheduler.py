@@ -15,8 +15,8 @@ import pytest_asyncio
 
 from confidence.ece import SignalType
 from confidence.ece_scheduler import (
-    ECEUpdateResult,
     ECEScheduler,
+    ECEUpdateResult,
     InMemoryPredictionOutcomeStore,
     PredictionOutcomePair,
     SchedulerConfig,

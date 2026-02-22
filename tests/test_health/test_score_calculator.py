@@ -3,12 +3,12 @@
 For PAPER-003-001: Unified Health Monitoring System
 """
 
+from src.health import ComponentType, HealthStatus
 from src.health.score_calculator import (
     ComponentScore,
     HealthScore,
     ScoreCalculator,
 )
-from src.health import ComponentType, HealthStatus
 
 
 class TestComponentScoreExtended:

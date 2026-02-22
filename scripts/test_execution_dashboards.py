@@ -18,11 +18,11 @@ Environment Variables:
     INFLUXDB_BUCKET: InfluxDB bucket (default: chiseai)
 """
 
+import argparse
 import os
+import random
 import sys
 import time
-import random
-import argparse
 from datetime import datetime, timezone
 from typing import Optional
 

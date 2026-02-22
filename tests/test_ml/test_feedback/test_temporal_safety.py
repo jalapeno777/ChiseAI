@@ -2,21 +2,21 @@
 
 from __future__ import annotations
 
-import pytest
+import sys
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock
 
-import sys
+import pytest
 
 sys.path.insert(0, "src")
 
+from market_analysis.signal_storage.models import SignalDirection, SignalRecord
 from ml.feedback.orchestrator import (
     FeedbackOrchestrator,
     OrchestratorConfig,
     TemporalBoundary,
     TemporalSafetyMode,
 )
-from market_analysis.signal_storage.models import SignalRecord, SignalDirection
 
 
 class TestTemporalSafety:

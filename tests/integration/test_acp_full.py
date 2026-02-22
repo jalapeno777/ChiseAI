@@ -1,10 +1,10 @@
 """Full ACP pipeline integration tests."""
 
-import pytest
 import asyncio
 from datetime import datetime
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
+import pytest
 from src.autonomous_control_plane.models.healing import LogEntry
 
 
@@ -40,8 +40,9 @@ async def test_full_acp_lifecycle(acp_container, mock_redis):
 @pytest.mark.asyncio
 async def test_acp_container_startup_verifies_dependencies(mock_redis, mock_influx):
     """Test that ACP container verifies dependencies on startup."""
-    from src.autonomous_control_plane.startup import ACPContainer
     from unittest.mock import patch
+
+    from src.autonomous_control_plane.startup import ACPContainer
 
     container = ACPContainer(
         trading_mode="paper",
@@ -57,17 +58,17 @@ async def test_acp_container_startup_verifies_dependencies(mock_redis, mock_infl
                 from src.autonomous_control_plane.components.circuit_breaker_registry import (
                     CircuitBreakerRegistry,
                 )
-                from src.autonomous_control_plane.components.retry_coordinator import (
-                    RetryCoordinator,
-                )
-                from src.autonomous_control_plane.components.self_healing_engine import (
-                    SelfHealingEngine,
-                )
                 from src.autonomous_control_plane.components.incident_manager import (
                     IncidentManager,
                 )
+                from src.autonomous_control_plane.components.retry_coordinator import (
+                    RetryCoordinator,
+                )
                 from src.autonomous_control_plane.components.rollback_coordinator import (
                     RollbackCoordinator,
+                )
+                from src.autonomous_control_plane.components.self_healing_engine import (
+                    SelfHealingEngine,
                 )
 
                 container._cb_registry = CircuitBreakerRegistry()

@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from starlette.testclient import TestClient
 
 from api.cache.cache_manager import QueryCacheManager
-from api.cache.middleware import CacheMiddleware, CachedInfluxClient
+from api.cache.middleware import CachedInfluxClient, CacheMiddleware
 
 
 class TestCacheMiddleware:

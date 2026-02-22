@@ -1,8 +1,8 @@
 """Tests for auto-approval rate limiter."""
 
-import pytest
 from unittest.mock import AsyncMock
 
+import pytest
 from src.autonomous_git.auto_approval.rate_limiter import RateLimiter
 
 

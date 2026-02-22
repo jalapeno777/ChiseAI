@@ -13,15 +13,15 @@ import pytest
 
 sys.path.insert(0, "/home/tacopants/projects/ChiseAI/src")
 
+from market_analysis.signal_storage.models import (
+    SignalDirection,
+    SignalRecord,
+)
 from ml.training.extractor import (
     ExtractedFeatures,
     FeatureExtractor,
     MarketContext,
     TechnicalIndicators,
-)
-from market_analysis.signal_storage.models import (
-    SignalDirection,
-    SignalRecord,
 )
 
 

@@ -11,16 +11,16 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from execution.paper.fill_model import FillModel, FillModelConfig
-from execution.paper.fill_probability import FillProbability, FillProbabilityConfig
-from execution.paper.latency_model import LatencyModel, LatencyConfig
-from execution.paper.market_impact import MarketImpact, MarketImpactConfig
-from execution.paper.models import OrderSide, OrderType, PaperOrder
-from execution.paper.slippage_model import SlippageModel, SlippageConfig
 from execution.paper.config_loader import (
     MarketRealismConfig,
     load_market_realism_config,
 )
+from execution.paper.fill_model import FillModel, FillModelConfig
+from execution.paper.fill_probability import FillProbability, FillProbabilityConfig
+from execution.paper.latency_model import LatencyConfig, LatencyModel
+from execution.paper.market_impact import MarketImpact, MarketImpactConfig
+from execution.paper.models import OrderSide, OrderType, PaperOrder
+from execution.paper.slippage_model import SlippageConfig, SlippageModel
 
 if TYPE_CHECKING:
     pass

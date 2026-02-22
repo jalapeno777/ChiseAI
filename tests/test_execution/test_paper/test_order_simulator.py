@@ -4,14 +4,13 @@ Tests for OrderSimulator, MarketDataProvider, and OrderSimulatorConfig.
 """
 
 import pytest
-
+from src.execution.paper.fill_model import FillModel, LatencyConfig, SlippageConfig
+from src.execution.paper.models import OrderState, PaperOrder
 from src.execution.paper.order_simulator import (
     MarketDataProvider,
     OrderSimulator,
     OrderSimulatorConfig,
 )
-from src.execution.paper.models import OrderState, PaperOrder
-from src.execution.paper.fill_model import FillModel, SlippageConfig, LatencyConfig
 
 
 class TestMarketDataProvider:

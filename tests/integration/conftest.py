@@ -1,8 +1,9 @@
 """Shared fixtures for integration tests."""
 
-import pytest
 import asyncio
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import AsyncMock, Mock
+
+import pytest
 
 
 @pytest.fixture
@@ -41,8 +42,9 @@ async def mock_influx():
 @pytest.fixture
 async def acp_container(mock_redis, mock_influx):
     """Create ACPContainer with mocked dependencies."""
+    from unittest.mock import AsyncMock, patch
+
     from src.autonomous_control_plane.startup import ACPContainer
-    from unittest.mock import patch, AsyncMock
 
     container = ACPContainer(
         trading_mode="paper",
@@ -56,17 +58,17 @@ async def acp_container(mock_redis, mock_influx):
         from src.autonomous_control_plane.components.circuit_breaker_registry import (
             CircuitBreakerRegistry,
         )
-        from src.autonomous_control_plane.components.retry_coordinator import (
-            RetryCoordinator,
-        )
-        from src.autonomous_control_plane.components.self_healing_engine import (
-            SelfHealingEngine,
-        )
         from src.autonomous_control_plane.components.incident_manager import (
             IncidentManager,
         )
+        from src.autonomous_control_plane.components.retry_coordinator import (
+            RetryCoordinator,
+        )
         from src.autonomous_control_plane.components.rollback_coordinator import (
             RollbackCoordinator,
+        )
+        from src.autonomous_control_plane.components.self_healing_engine import (
+            SelfHealingEngine,
         )
 
         container._cb_registry = CircuitBreakerRegistry()

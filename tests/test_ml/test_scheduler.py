@@ -16,8 +16,8 @@ from ml.scheduler import (
     OptimizationScheduler,
     ParameterDelta,
     ScheduleConfig,
-    ScheduleFrequency,
     ScheduledJob,
+    ScheduleFrequency,
     VolatilityMonitor,
     VolatilityRegime,
 )

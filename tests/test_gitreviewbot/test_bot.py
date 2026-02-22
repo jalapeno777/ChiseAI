@@ -1,15 +1,16 @@
 """Tests for GitReviewBot main bot."""
 
-import pytest
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
+from autonomous_git.gitreviewbot.bot import GitReviewBot
 from autonomous_git.gitreviewbot.models import (
     Decision,
     DecisionType,
     PRDetails,
 )
-from autonomous_git.gitreviewbot.bot import GitReviewBot
 
 
 @pytest.fixture
@@ -358,6 +359,7 @@ class TestDiffCache:
     def test_cache_ttl_expired(self):
         """Test expired cache entries are not returned."""
         from datetime import timedelta
+
         from autonomous_git.gitreviewbot.models import ReviewResult
 
         bot = GitReviewBot(cache_ttl_seconds=1)

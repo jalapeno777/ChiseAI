@@ -1,20 +1,20 @@
 """Tests for auto-approval module integration."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from src.autonomous_git.auto_approval import (
-    AutoApprover,
-    SafetyChecker,
-    RateLimiter,
-    ExclusionManager,
-    DiscordNotifier,
-    load_config,
     AutoApprovalConfig,
+    AutoApprover,
+    DiscordNotifier,
+    ExclusionManager,
+    RateLimiter,
+    SafetyChecker,
+    load_config,
 )
 from src.autonomous_git.auto_approval.approver import (
-    RiskLevel,
     RiskClassification,
+    RiskLevel,
 )
 
 

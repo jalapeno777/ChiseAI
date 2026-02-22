@@ -3,9 +3,9 @@
 For PAPER-003-001: Unified Health Monitoring System
 """
 
-import pytest
-from datetime import datetime, UTC, timedelta
+from datetime import UTC, datetime, timedelta
 
+import pytest
 from src.health.history import HealthHistory, HealthSnapshot, TrendAnalysis
 from src.health.score_calculator import HealthScore
 

@@ -10,10 +10,10 @@ import logging
 from pathlib import Path
 from typing import Any
 
+from execution.paper.fill_probability import FillProbabilityConfig
 from execution.paper.latency_model import LatencyConfig
 from execution.paper.market_impact import MarketImpactConfig
 from execution.paper.slippage_model import SlippageConfig
-from execution.paper.fill_probability import FillProbabilityConfig
 
 logger = logging.getLogger(__name__)
 

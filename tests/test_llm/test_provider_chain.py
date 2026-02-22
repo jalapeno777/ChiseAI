@@ -18,11 +18,11 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from llm.provider_chain import (
+    PROVIDER_CONFIGS,
     ErrorCategory,
     LLMProviderChain,
     LLMResponse,
     ProviderError,
-    PROVIDER_CONFIGS,
     classify_error,
 )
 

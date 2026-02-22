@@ -31,8 +31,9 @@ def test_module_imports():
 
 def test_calibration_record_creation():
     """Test creating a CalibrationRecord through the public API."""
-    from ml.calibration import CalibrationRecord, SignalType
     from datetime import UTC, datetime
+
+    from ml.calibration import CalibrationRecord, SignalType
 
     record = CalibrationRecord(
         timestamp=datetime.now(UTC),
@@ -65,7 +66,7 @@ def test_calibration_config_creation():
 
 def test_data_collector_creation():
     """Test creating a CalibrationDataCollector through the public API."""
-    from ml.calibration import CalibrationDataCollector, CalibrationConfig
+    from ml.calibration import CalibrationConfig, CalibrationDataCollector
 
     config = CalibrationConfig()
     collector = CalibrationDataCollector(config=config)

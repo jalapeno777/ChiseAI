@@ -16,15 +16,15 @@ from typing import Any
 from src.autonomous_control_plane.components.failure_pattern_matcher import (
     FailurePatternMatcher,
 )
-from src.autonomous_control_plane.healing_actions.base import BaseHealingAction
-from src.autonomous_control_plane.healing_actions.redis_restart import (
-    RedisRestartAction,
-)
 from src.autonomous_control_plane.healing_actions.api_timeout_recovery import (
     APIRetryAction,
 )
+from src.autonomous_control_plane.healing_actions.base import BaseHealingAction
 from src.autonomous_control_plane.healing_actions.circuit_breaker_reset import (
     CircuitBreakerResetAction,
+)
+from src.autonomous_control_plane.healing_actions.redis_restart import (
+    RedisRestartAction,
 )
 from src.autonomous_control_plane.models.healing import (
     FailurePatternMatch,

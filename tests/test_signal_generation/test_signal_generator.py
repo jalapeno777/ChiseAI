@@ -408,8 +408,9 @@ class TestSignalGeneratorIndicatorSet:
         aggregator = SignalAggregator()
 
         # Create a minimal IndicatorSet instance (with None values)
-        from data_ingestion.timeframe_config import Timeframe
         from unittest.mock import MagicMock
+
+        from data_ingestion.timeframe_config import Timeframe
 
         mock_timeframe = MagicMock(spec=Timeframe)
         mock_timeframe.value = "1h"

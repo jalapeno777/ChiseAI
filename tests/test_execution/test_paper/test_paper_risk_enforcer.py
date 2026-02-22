@@ -5,11 +5,10 @@ For PAPER-LOOP-001: Paper Trading Risk Enforcer
 
 from __future__ import annotations
 
-import pytest
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
 
-from signal_generation.models import Signal, SignalDirection, SignalStatus
+import pytest
 
 from execution.paper.risk_enforcer import PaperRiskEnforcer
 from execution.paper.risk_models import (
@@ -19,6 +18,7 @@ from execution.paper.risk_models import (
     RiskSeverity,
     RiskViolation,
 )
+from signal_generation.models import Signal, SignalDirection, SignalStatus
 
 
 class TestRiskCheck:

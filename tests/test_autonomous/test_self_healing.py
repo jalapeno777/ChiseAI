@@ -14,32 +14,31 @@ Acceptance Criteria:
 
 from __future__ import annotations
 
-import pytest
 from datetime import UTC, datetime
 from unittest.mock import patch
 
+import pytest
 from src.autonomous_control_plane import (
-    SelfHealingEngine,
     FailurePatternMatcher,
     LogEntry,
-)
-from src.autonomous_control_plane.models.healing import (
-    FailurePatternType,
-    ActionPriority,
+    SelfHealingEngine,
 )
 from src.autonomous_control_plane.components.failure_patterns import (
-    RedisDisconnectPattern,
     APITimeoutPattern,
     CircuitBreakerOpenPattern,
-    DatabaseConnectionPattern,
-    MemoryExhaustionPattern,
-    DiskSpacePattern,
     CPUSpikePattern,
-    InfluxDBWritePattern,
+    DatabaseConnectionPattern,
     DeadLetterQueuePattern,
+    DiskSpacePattern,
+    InfluxDBWritePattern,
+    MemoryExhaustionPattern,
+    RedisDisconnectPattern,
     ServiceUnhealthyPattern,
 )
-from src.autonomous_control_plane.models.healing import FailurePatternType
+from src.autonomous_control_plane.models.healing import (
+    ActionPriority,
+    FailurePatternType,
+)
 
 
 class TestFailurePatternDetection:
@@ -249,11 +248,11 @@ class TestSandboxResourceLimits:
 
     def test_resource_limits_configuration(self):
         """Test resource limits are properly configured."""
-        from src.autonomous_control_plane.healing_actions.redis_restart import (
-            RedisRestartAction,
-        )
         from src.autonomous_control_plane.healing_actions.api_timeout_recovery import (
             APIRetryAction,
+        )
+        from src.autonomous_control_plane.healing_actions.redis_restart import (
+            RedisRestartAction,
         )
 
         redis_action = RedisRestartAction()

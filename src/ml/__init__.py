@@ -28,41 +28,6 @@ Usage:
 
 from __future__ import annotations
 
-# Import from absolute paths (requires src/ in sys.path)
-# Note: hyperopt.OptimizationRecord and scheduler.OptimizationRecord are different classes
-from ml.hyperopt import (
-    BaseOptimizer,
-    BayesianOptimizer,
-    GeneticOptimizer,
-    HyperparameterOptimizer,
-    OptimizationConfig as HyperoptConfig,
-    OptimizationMethod,
-    OptimizationResult,
-    OptimizationTrial,
-    ParameterConstraint,
-    ParameterType,
-)
-from ml.scheduler import (
-    JobStatus,
-    OptimizationScheduler,
-    OptimizationTask,
-    ParameterDelta,
-    ScheduleConfig,
-    ScheduleFrequency,
-    ScheduledJob,
-    VolatilityMonitor,
-    VolatilityRegime,
-)
-from ml.walk_forward import (
-    AggregatedMetrics,
-    LookAheadBiasCheck,
-    TemporalWindow,
-    WalkForwardConfig,
-    WalkForwardEvaluator,
-    WalkForwardResult,
-    WindowMetrics,
-    WindowStatus,
-)
 from ml.feedback import (
     AccuracyBySignalType,
     AccuracyByTimeframe,
@@ -77,8 +42,8 @@ from ml.feedback import (
     LoopStatus,
     MarketRegime,
     MatchBatchResult,
-    MatchConfig,
     MatchConfidence,
+    MatchConfig,
     MatchStatus,
     ModelType,
     ModelUpdater,
@@ -94,19 +59,57 @@ from ml.feedback import (
     UpdateStatus,
     UpdateStrategy,
 )
+
+# Import from absolute paths (requires src/ in sys.path)
+# Note: hyperopt.OptimizationRecord and scheduler.OptimizationRecord are different classes
+from ml.hyperopt import (
+    BaseOptimizer,
+    BayesianOptimizer,
+    GeneticOptimizer,
+    HyperparameterOptimizer,
+    OptimizationMethod,
+    OptimizationResult,
+    OptimizationTrial,
+    ParameterConstraint,
+    ParameterType,
+)
+from ml.hyperopt import (
+    OptimizationConfig as HyperoptConfig,
+)
+from ml.scheduler import (
+    JobStatus,
+    OptimizationScheduler,
+    OptimizationTask,
+    ParameterDelta,
+    ScheduleConfig,
+    ScheduledJob,
+    ScheduleFrequency,
+    VolatilityMonitor,
+    VolatilityRegime,
+)
 from ml.training import (
+    FEATURE_GROUPS,
+    FEATURE_SPECS,
     DatasetMetadata,
     FeatureSpec,
     FeatureType,
     FeatureValidator,
-    FEATURE_GROUPS,
-    FEATURE_SPECS,
     SchemaVersion,
     SchemaVersionManager,
     StorageFormatManager,
     TrainingDataset,
     TrainingSample,
     TrendState,
+)
+from ml.walk_forward import (
+    AggregatedMetrics,
+    LookAheadBiasCheck,
+    TemporalWindow,
+    WalkForwardConfig,
+    WalkForwardEvaluator,
+    WalkForwardResult,
+    WindowMetrics,
+    WindowStatus,
 )
 
 __all__ = [

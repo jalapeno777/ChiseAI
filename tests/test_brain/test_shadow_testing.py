@@ -4,15 +4,15 @@ ST-CHISE-001.2: Add Shadow Testing Component with Latency Measurement
 """
 
 import asyncio
-import pytest
 from datetime import datetime
 from typing import Any
 
+import pytest
 from src.brain.shadow_testing import (
-    ShadowTestConfig,
-    ShadowTestResult,
     LatencyStatistics,
+    ShadowTestConfig,
     ShadowTester,
+    ShadowTestResult,
     run_shadow_test,
 )
 from src.brain.version import BrainVersion

@@ -4,13 +4,12 @@ Tests for OrderState, PaperOrder, and PaperFill dataclasses.
 """
 
 import pytest
-
 from src.execution.paper.models import (
+    OrderSide,
     OrderState,
     OrderType,
-    OrderSide,
-    PaperOrder,
     PaperFill,
+    PaperOrder,
 )
 
 

@@ -39,19 +39,19 @@ from config.trading_mode import ModuleType, TradingMode, TradingModeConfig
 # Trading components for actual wiring
 from data_ingestion.ohlcv_fetcher import OHLCVFetcher
 from data_ingestion.timeframe_config import Timeframe
-from signal_generation.signal_generator import SignalGenerator
-from signal_generation.models import SignalStatus
+from execution.kill_switch.executor import KillSwitchExecutor
 from execution.paper import (
     OrderSimulator,
     PaperPositionTracker,
     create_simulator,
 )
+from execution.paper.orchestrator import PaperTradingOrchestrator
 from execution.paper.risk_enforcer import PaperRiskEnforcer
 from execution.paper.risk_models import RiskCheck
-from execution.paper.orchestrator import PaperTradingOrchestrator
 from execution.telemetry.collector import ExecutionCollector
 from execution.telemetry.exporter import ExecutionTelemetryExporter
-from execution.kill_switch.executor import KillSwitchExecutor
+from signal_generation.models import SignalStatus
+from signal_generation.signal_generator import SignalGenerator
 
 # Configure logging
 logging.basicConfig(

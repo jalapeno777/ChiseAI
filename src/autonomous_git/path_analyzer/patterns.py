@@ -1,11 +1,12 @@
 """Path pattern configuration and matching."""
 
 import re
-import yaml
-from pathlib import Path
-from typing import List, Dict, Optional, Any, Tuple
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+import yaml
 
 
 class PatternType(Enum):

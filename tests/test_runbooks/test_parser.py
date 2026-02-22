@@ -2,9 +2,11 @@
 Tests for the runbook parser module.
 """
 
-import pytest
 from pathlib import Path
-from runbooks.parser import RunbookParser, RunbookStep, RunbookMetadata, ParsedRunbook
+
+import pytest
+
+from runbooks.parser import ParsedRunbook, RunbookMetadata, RunbookParser, RunbookStep
 
 
 class TestRunbookParser:

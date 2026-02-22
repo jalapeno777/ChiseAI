@@ -1,11 +1,11 @@
 """Integration tests for end-to-end healing flow."""
 
-import pytest
 import asyncio
 from datetime import datetime
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import AsyncMock, Mock, patch
 
-from src.autonomous_control_plane.models.healing import LogEntry, FailurePatternType
+import pytest
+from src.autonomous_control_plane.models.healing import FailurePatternType, LogEntry
 
 
 @pytest.mark.asyncio

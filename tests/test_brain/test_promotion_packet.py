@@ -7,7 +7,6 @@ ST-CHISE-003: Brain Promotion Packet - Evidence + Rollback
 import json
 from datetime import datetime
 
-
 from src.brain.promotion_packet import (
     ApprovalSignature,
     ApprovalStatus,

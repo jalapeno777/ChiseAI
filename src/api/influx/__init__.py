@@ -1,10 +1,10 @@
 """InfluxDB utilities for ChiseAI API."""
 
 from .query_optimizer import (
-    QueryOptimizer,
-    DashboardQueryOptimizer,
-    optimize_grafana_query,
     OPTIMIZED_QUERIES,
+    DashboardQueryOptimizer,
+    QueryOptimizer,
+    optimize_grafana_query,
 )
 
 __all__ = [

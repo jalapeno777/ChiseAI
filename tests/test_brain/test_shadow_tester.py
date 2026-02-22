@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 from unittest.mock import MagicMock
 
-
 from brain.shadow_tester import (
     LatencyMetrics,
     OutputComparison,

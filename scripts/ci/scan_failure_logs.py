@@ -9,9 +9,9 @@ Primary sources:
 
 from __future__ import annotations
 
-import xml.etree.ElementTree as ET
 import importlib.util
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 # Add src to path for config imports

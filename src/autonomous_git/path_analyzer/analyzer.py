@@ -2,12 +2,12 @@
 
 import time
 from datetime import datetime, timezone
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
-from .classification import RiskLevel, RiskClassification, FileClassification
+from .cache import PathAnalysisCache
+from .classification import FileClassification, RiskClassification, RiskLevel
 from .patterns import PathPatternMatcher, PatternType
 from .semantic import SemanticAnalyzer
-from .cache import PathAnalysisCache
 
 
 class PathAnalyzer:

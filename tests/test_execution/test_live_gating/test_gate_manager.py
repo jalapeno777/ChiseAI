@@ -5,8 +5,9 @@ Tests state transitions, approval flow, and kill-switch integration.
 
 from __future__ import annotations
 
-import pytest
 from datetime import UTC, datetime, timedelta
+
+import pytest
 
 from execution.live_gating.gate_manager import (
     ApprovalPacket,

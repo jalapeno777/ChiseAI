@@ -361,10 +361,11 @@ async def test_budget_enforcement() -> dict[str, Any]:
     }
 
     try:
+        from datetime import UTC, datetime
+
         from execution.paper.risk_enforcer import PaperRiskEnforcer
         from execution.paper.risk_models import RiskCheck
         from signal_generation.models import Signal, SignalDirection, SignalStatus
-        from datetime import datetime, UTC
 
         # Create risk enforcer with default config
         config = RiskCheck()

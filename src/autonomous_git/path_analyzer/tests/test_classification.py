@@ -1,9 +1,9 @@
 """Tests for classification module."""
 
 from autonomous_git.path_analyzer.classification import (
-    RiskLevel,
     FileClassification,
     RiskClassification,
+    RiskLevel,
 )
 
 

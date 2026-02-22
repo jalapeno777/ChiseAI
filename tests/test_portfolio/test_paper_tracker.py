@@ -5,7 +5,6 @@ For ST-PAPER-008: Paper Trading Alerts and Runbooks
 
 from datetime import UTC, datetime, timedelta
 
-
 from portfolio.paper_tracker import (
     PaperTracker,
     RedisHealthMetrics,

@@ -6,24 +6,24 @@ Tests TrainingSample, TrainingDataset, and related components.
 from __future__ import annotations
 
 import json
+
+# Import training module
+import sys
 import tempfile
 from pathlib import Path
 
 import pytest
 
-# Import training module
-import sys
-
 sys.path.insert(0, "/tmp/worktrees/ST-NS-020-dev/src")
 
 from ml.training import (
-    TrainingSample,
-    TrainingDataset,
+    CURRENT_SCHEMA_VERSION,
     FeatureValidator,
-    StorageFormatManager,
     SchemaVersion,
     SchemaVersionManager,
-    CURRENT_SCHEMA_VERSION,
+    StorageFormatManager,
+    TrainingDataset,
+    TrainingSample,
 )
 
 

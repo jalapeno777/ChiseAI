@@ -23,25 +23,26 @@ import logging
 import os
 import sys
 import time
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Optional, Set
-from dataclasses import dataclass, asdict
 
 from config.bootstrap import bootstrap
 
 # Bootstrap environment first (must be before any env access)
 bootstrap(load_env=True)
 
-import requests
-
 # Add src to path and bootstrap
 import sys
 from pathlib import Path
 
+import requests
+
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-from config.bootstrap import bootstrap
+from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler, FileSystemEvent
+
+from config.bootstrap import bootstrap
 
 
 @dataclass

@@ -18,7 +18,6 @@ from datetime import UTC, datetime
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from config.bootstrap import bootstrap
-
 from data.exchange.credential_resolver import (
     get_credential_resolution_status,
     resolve_bybit_credentials,

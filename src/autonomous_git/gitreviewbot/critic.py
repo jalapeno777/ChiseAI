@@ -1,13 +1,13 @@
 """Critic role - compliance and workflow review."""
 
+import asyncio
+import json
 import os
 import re
-import json
-import asyncio
-from typing import List, Optional
 from datetime import datetime
+from typing import List, Optional
 
-from .models import ReviewResult, Violation, Severity
+from .models import ReviewResult, Severity, Violation
 
 
 class CriticReviewer:

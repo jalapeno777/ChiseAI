@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING, Any, cast
 if TYPE_CHECKING:
     from market_analysis.signal_storage.interface import SignalStorageInterface
     from market_analysis.signal_storage.models import SignalWithOutcome
-
     from ml.training.extractor import ExtractedFeatures, FeatureExtractor
     from ml.training.schema import TrainingSample
 
