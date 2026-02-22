@@ -55,6 +55,18 @@ import aiohttp
 import websockets
 from websockets.exceptions import ConnectionClosed, InvalidStatusCode
 
+from data.exchange.bybit_safety import SecurityException, validate_endpoint_url
+from data.exchange.bybit_websocket import (
+    BybitWebSocketManager,
+    CircuitBreakerConfig,
+)
+from execution.order_idempotency import (
+    DuplicateOrderException,
+    IdempotencyStore,
+    generate_client_order_id,
+    get_default_store,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -89,7 +101,10 @@ class BybitConfig:
         - Demo mode (demo=True): Uses api-demo.bybit.com for REST and
           stream-demo.bybit.com for private WS, but mainnet for public WS
         - Testnet mode (testnet=True, demo=False): Uses testnet endpoints
-        - Live mode (both False): Uses mainnet endpoints
+        - Live mode (both False): RAISES SecurityException (production blocked)
+
+        Raises:
+            SecurityException: If demo=False and testnet=False (production mode)
         """
         if self.demo:
             # Demo mode: demo endpoints for REST and private WS,
@@ -104,6 +119,22 @@ class BybitConfig:
             self.base_url = "https://api-testnet.bybit.com"
             self.ws_url = "wss://stream-testnet.bybit.com/v5/public/linear"
             self.private_ws_url = "wss://stream-testnet.bybit.com/v5/private"
+        else:
+            # Production mode is NOT allowed - raise SecurityException
+            raise SecurityException(
+                "PRODUCTION ENDPOINT DETECTED: Production mode is not allowed. "
+                "Only demo or testnet endpoints are permitted. "
+                "Set demo=True or testnet=True to use safe endpoints.",
+                endpoint=self.base_url,
+                operation="BybitConfig.__post_init__",
+            )
+
+        # Validate that all endpoints are safe (demo/testnet only)
+        validate_endpoint_url(self.base_url)
+        validate_endpoint_url(self.private_ws_url)
+        # Public WS can be mainnet for market data, but still validate
+        if "private" in self.ws_url:
+            validate_endpoint_url(self.ws_url)
 
     @classmethod
     def from_env(cls, load_env: bool = True) -> BybitConfig:
@@ -193,13 +224,20 @@ class BybitConnector:
     HEARTBEAT_INTERVAL = 30  # seconds
     MAX_LATENCY_MS = 100  # milliseconds for real-time pricing
 
-    def __init__(self, config: BybitConfig | None = None) -> None:
+    def __init__(
+        self,
+        config: BybitConfig | None = None,
+        idempotency_store: IdempotencyStore | None = None,
+    ) -> None:
         """Initialize Bybit connector.
 
         Args:
             config: Bybit configuration (uses defaults if None)
+            idempotency_store: Idempotency store for order deduplication
+                (uses default store if None)
         """
         self.config = config or BybitConfig()
+        self._idempotency_store = idempotency_store or get_default_store()
         self._session: aiohttp.ClientSession | None = None
         self._ws: websockets.WebSocketClientProtocol | None = None
         self._private_ws: websockets.WebSocketClientProtocol | None = None
@@ -211,6 +249,15 @@ class BybitConnector:
         self._fill_callbacks: list[Callable[[dict[str, Any]], None]] = []
         self._heartbeat_task: asyncio.Task | None = None
         self._ws_task: asyncio.Task | None = None
+
+        # WebSocket circuit breaker manager (ST-LAUNCH-002)
+        self._ws_manager: BybitWebSocketManager | None = None
+        self._circuit_breaker_config = CircuitBreakerConfig(
+            failure_threshold=5,
+            timeout_seconds=60.0,
+            failure_window_seconds=60.0,
+            half_open_max_calls=3,
+        )
 
     @classmethod
     def from_env(cls, load_env: bool = True) -> BybitConnector:
@@ -273,6 +320,11 @@ class BybitConnector:
                 await self._ws_task
             except asyncio.CancelledError:
                 pass
+
+        # Stop WebSocket manager (ST-LAUNCH-002)
+        if self._ws_manager is not None:
+            await self._ws_manager.stop()
+            self._ws_manager = None
 
         # Close WebSocket
         if self._ws:
@@ -518,8 +570,9 @@ class BybitConnector:
         price: float | None = None,
         time_in_force: str = "GTC",
         reduce_only: bool = False,
+        client_order_id: str | None = None,
     ) -> dict[str, Any]:
-        """Place a new order.
+        """Place a new order with idempotency support.
 
         Args:
             symbol: Trading pair (e.g., "BTCUSDT")
@@ -529,10 +582,25 @@ class BybitConnector:
             price: Order price (required for Limit orders)
             time_in_force: Time in force ("GTC", "IOC", "FOK")
             reduce_only: Whether order should only reduce position
+            client_order_id: Optional client order ID (auto-generated if None)
 
         Returns:
-            Order result with order_id, price, quantity, etc.
+            Order result with order_id, client_order_id, price, quantity, etc.
+
+        Raises:
+            DuplicateOrderException: If the same order has already been submitted
         """
+        # Generate or use provided client order ID
+        if client_order_id is None:
+            client_order_id = generate_client_order_id(symbol)
+
+        # Check for duplicate orders
+        is_duplicate = await self._idempotency_store.check_duplicate(
+            symbol, client_order_id
+        )
+        if is_duplicate:
+            raise DuplicateOrderException(client_order_id, symbol)
+
         params: dict[str, Any] = {
             "category": "linear",
             "symbol": symbol,
@@ -541,30 +609,40 @@ class BybitConnector:
             "qty": str(quantity),
             "timeInForce": time_in_force,
             "reduceOnly": reduce_only,
+            "orderLinkId": client_order_id,  # Bybit's clientOrderId field
         }
 
         if order_type.lower() == "limit" and price is not None:
             params["price"] = str(price)
 
-        result = await self._make_request(
-            "POST",
-            "/v5/order/create",
-            params=params,
-            signed=True,
-        )
+        try:
+            result = await self._make_request(
+                "POST",
+                "/v5/order/create",
+                params=params,
+                signed=True,
+            )
 
-        # Extract and normalize result
-        order_data = result.get("result", {})
-        return {
-            "order_id": order_data.get("orderId", ""),
-            "symbol": symbol,
-            "side": side,
-            "order_type": order_type,
-            "quantity": quantity,
-            "price": price or 0.0,
-            "status": order_data.get("orderStatus", "Created"),
-            "raw_response": result,
-        }
+            # Mark order as submitted in idempotency store
+            await self._idempotency_store.mark_submitted(symbol, client_order_id)
+
+            # Extract and normalize result
+            order_data = result.get("result", {})
+            return {
+                "order_id": order_data.get("orderId", ""),
+                "client_order_id": client_order_id,
+                "symbol": symbol,
+                "side": side,
+                "order_type": order_type,
+                "quantity": quantity,
+                "price": price or 0.0,
+                "status": order_data.get("orderStatus", "Created"),
+                "raw_response": result,
+            }
+        except Exception:
+            # On failure, remove from idempotency store to allow retry
+            await self._idempotency_store.remove(symbol, client_order_id)
+            raise
 
     async def cancel_order(self, symbol: str, order_id: str) -> dict[str, Any]:
         """Cancel an existing order.
@@ -637,17 +715,42 @@ class BybitConnector:
 
     # === WebSocket Methods ===
 
-    async def start_websocket(self, symbols: list[str] | None = None) -> None:
+    async def start_websocket(
+        self,
+        symbols: list[str] | None = None,
+        use_circuit_breaker: bool = True,
+    ) -> None:
         """Start WebSocket connection for real-time data.
+
+        ST-LAUNCH-002: WebSocket Circuit Breaker Integration
 
         Args:
             symbols: List of symbols to subscribe to (e.g., ["BTCUSDT", "ETHUSDT"])
+            use_circuit_breaker: Whether to enable circuit breaker (default: True)
         """
         self._running = True
-        self._ws_task = asyncio.create_task(
-            self._websocket_loop(symbols or ["BTCUSDT"])
-        )
-        self._heartbeat_task = asyncio.create_task(self._heartbeat_loop())
+        symbols = symbols or ["BTCUSDT"]
+
+        if use_circuit_breaker:
+            # Use new circuit breaker WebSocket manager
+            self._ws_manager = BybitWebSocketManager(
+                ws_url=self.config.ws_url,
+                connector=self,
+                circuit_breaker_config=self._circuit_breaker_config,
+            )
+
+            # Transfer callbacks to manager
+            for callback in self._price_callbacks:
+                self._ws_manager.register_price_callback(callback)
+            for callback in self._message_callbacks:
+                self._ws_manager.register_message_callback(callback)
+
+            await self._ws_manager.start(symbols)
+            logger.info(f"WebSocket started with circuit breaker: {symbols}")
+        else:
+            # Legacy mode without circuit breaker
+            self._ws_task = asyncio.create_task(self._websocket_loop(symbols))
+            self._heartbeat_task = asyncio.create_task(self._heartbeat_loop())
 
     async def _websocket_loop(self, symbols: list[str]) -> None:
         """Main WebSocket connection loop with reconnection."""
@@ -890,3 +993,51 @@ class BybitConnector:
             "api_accessible": api_healthy,
             "timestamp": time.time(),
         }
+
+    # === Circuit Breaker Methods (ST-LAUNCH-002) ===
+
+    def get_circuit_breaker_state(self) -> dict[str, Any] | None:
+        """Get current circuit breaker state.
+
+        Returns:
+            Circuit breaker state dictionary or None if not initialized
+        """
+        if self._ws_manager is None:
+            return None
+        return self._ws_manager.get_state()
+
+    def force_circuit_open(self, reason: str = "manual") -> None:
+        """Manually force WebSocket circuit breaker to open.
+
+        Args:
+            reason: Reason for forcing open
+        """
+        if self._ws_manager is not None:
+            self._ws_manager.force_open(reason)
+            logger.warning(f"WebSocket circuit breaker manually opened: {reason}")
+
+    def force_circuit_closed(self, reason: str = "manual") -> None:
+        """Manually force WebSocket circuit breaker to closed.
+
+        Args:
+            reason: Reason for forcing closed
+        """
+        if self._ws_manager is not None:
+            self._ws_manager.force_close(reason)
+            logger.info(f"WebSocket circuit breaker manually closed: {reason}")
+
+    def reset_circuit_breaker(self) -> None:
+        """Reset WebSocket circuit breaker to initial state."""
+        if self._ws_manager is not None:
+            self._ws_manager.reset()
+            logger.info("WebSocket circuit breaker reset")
+
+    def is_websocket_healthy(self) -> bool:
+        """Check if WebSocket connection is healthy (circuit breaker aware).
+
+        Returns:
+            True if WebSocket is connected and circuit is closed or half-open
+        """
+        if self._ws_manager is None:
+            return False
+        return self._ws_manager.is_healthy()

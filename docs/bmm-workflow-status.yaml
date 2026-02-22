@@ -2935,87 +2935,6 @@ sprints:
         command: "git checkout HEAD~1 -- infrastructure/grafana/dashboards/pr_automation.json"
 
 
-# SUMMARY COUNTS
-item_3_completion:
-  story_id: BYBIT-DEMO-003
-  status: completed
-  merged_to_main: "2026-02-19"
-  main_sha: "257e703e35cab23cd51e64dc8766f9b492a15304"
-  pr_number: 189
-  pr_url: "http://localhost:3000/craig/ChiseAI/pulls/189"
-
-  routing_policy:
-    demo_rest: "https://api-demo.bybit.com"
-    demo_private_ws: "wss://stream-demo.bybit.com/v5/private"
-    public_ws: "wss://stream.bybit.com/v5/public/linear"
-
-  files_changed:
-    - path: "src/data/exchange/bybit_connector.py"
-      change: "Added explicit routing policy documentation"
-      lines: "+39 lines of docstring"
-    - path: "config/bybit_endpoints.yaml"
-      change: "Added demo endpoint configuration"
-      lines: "Updated"
-    - path: "tests/test_execution/test_bybit_connector.py"
-      change: "Added TestBybitRoutingPolicy test class"
-      lines: "+105 lines"
-    - path: "docs/runbooks/bybit-demo-routing.md"
-      change: "Created operator runbook"
-      lines: "+164 lines (new file)"
-
-  tests:
-    total: 41
-    passed: 41
-    new_routing_tests: 7
-
-  evidence:
-    ci_status: "green (pipeline #885)"
-    validation: "All tests pass, Black clean, config valid"
-
-  next_item: "Item 4 of 5"
-
-# ============================================================
-
-# ============================================================
-
-
-summary:
-  total_epics: 23
-  total_stories: 107
-  total_story_points: 575
-  phase_1:
-    epics: 8
-    stories: 41
-    story_points: 157
-  phase_2_plus:
-    epics: 10
-    stories: 45
-    story_points: 338
-  launch_phase:
-    epics: 5
-    stories: 21
-    story_points: 80
-    target_date: "2026-03-14"
-    original_target_date: "2026-03-07"
-    canary_duration_days: 21
-    timeline_option: "A"
-    extension_reason: "Critical gaps identified in Party Mode validation - missing components need proper implementation"
-  epics_by_status:
-    completed: 9
-    in_progress: 0
-    planned: 14
-  stories_by_status:
-    completed: 41
-    in_progress: 0
-    planned: 66
-  launch_stories_by_epic:
-    EP-LAUNCH-001: 5
-    EP-LAUNCH-002: 5
-    EP-LAUNCH-003: 4
-    EP-LAUNCH-004: 3
-    EP-LAUNCH-005: 4
-  option_a_note: "Extended timeline to 21 days (Mar 14) with full scope and 85% confidence"
-
 # ============================================================
 # LAUNCH STORIES (17 stories, 54 points)
 # Paper Trading with ML Optimization - Target: March 7, 2026
@@ -3026,14 +2945,24 @@ summary:
     title: Bybit Environment Assertions
     epic_id: EP-LAUNCH-001
     sprint_id: LAUNCH-SPRINT-1
-    status: planned
-    validation_status: planned
+    status: completed
+    validation_status: validated
     story_points: 2
     priority: P0-CRITICAL
     fr_coverage: [FR-029, FR-DEV-001]
     description: Implement environment assertions to ensure Bybit connector always operates in demo mode with comprehensive safety checks
     scope_globs: ["src/data/exchange/bybit_connector.py", "src/data/exchange/credential_resolver.py", "tests/test_data_exchange/test_bybit_safety.py"]
     depends_on: []
+    completion_date: "2026-02-22"
+    implementation_notes:
+      - SecurityException class implemented in bybit_safety.py with comprehensive error handling
+      - BybitConfig.__post_init__ modified to validate all endpoints are demo/testnet only
+      - Production endpoints (api.bybit.com, api.bytick.com) blocked with SecurityException
+      - Demo endpoints (api-demo.bybit.com, api-testnet.bybit.com) validated and allowed
+      - WebSocket endpoints validated for demo/testnet patterns
+      - 39 unit tests pass covering all endpoint validation scenarios
+      - Audit logging framework implemented for order operations
+      - Kill switch integration ready for position closure on trigger
     acceptance_criteria:
       - Demo mode enforcement - Only demo/testnet endpoints are allowed, production endpoint access raises SecurityException
       - Environment validation - All API calls are validated against allowed demo patterns with full audit trail
@@ -3043,6 +2972,11 @@ summary:
       unit: "pytest tests/test_data_exchange/test_bybit_safety.py -v"
       integration: "pytest tests/test_execution/integration/test_bybit_safety.py -v"
       e2e: "pytest tests/e2e/test_bybit_safety_flow.py -v"
+    test_results:
+      unit_tests: "39 passed, 0 failed"
+      coverage: "Demo endpoint validation, production blocking, audit logging, kill switch"
+      branch: "feature/ST-LAUNCH-001-demo-enforcement-fix"
+      commit_sha: "8086ae9"
     live_validation_gates:
       - gate: "demo_mode_enforced"
         check: "Attempt production endpoint access"
@@ -3055,8 +2989,8 @@ summary:
     title: WebSocket Circuit Breaker
     epic_id: EP-LAUNCH-001
     sprint_id: LAUNCH-SPRINT-1
-    status: planned
-    validation_status: planned
+    status: completed
+    validation_status: validated
     story_points: 3
     priority: P0-CRITICAL
     fr_coverage: [FR-029, NFR-008]
@@ -3685,3 +3619,40 @@ summary:
 # Finalized Bybit demo execution route with explicit WS/REST behavior
 # Merged to main: 2026-02-19
 # ============================================================
+
+summary:
+  total_epics: 23
+  total_stories: 107
+  total_story_points: 575
+  phase_1:
+    epics: 8
+    stories: 41
+    story_points: 157
+  phase_2_plus:
+    epics: 10
+    stories: 45
+    story_points: 338
+  launch_phase:
+    epics: 5
+    stories: 21
+    story_points: 80
+    target_date: "2026-03-14"
+    original_target_date: "2026-03-07"
+    canary_duration_days: 21
+    timeline_option: "A"
+    extension_reason: "Critical gaps identified in Party Mode validation - missing components need proper implementation"
+  epics_by_status:
+    completed: 9
+    in_progress: 0
+    planned: 14
+  stories_by_status:
+    completed: 41
+    in_progress: 0
+    planned: 66
+  launch_stories_by_epic:
+    EP-LAUNCH-001: 5
+    EP-LAUNCH-002: 5
+    EP-LAUNCH-003: 4
+    EP-LAUNCH-004: 3
+    EP-LAUNCH-005: 4
+  option_a_note: "Extended timeline to 21 days (Mar 14) with full scope and 85% confidence"
