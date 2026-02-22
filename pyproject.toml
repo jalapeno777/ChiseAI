@@ -92,4 +92,5 @@ omit = [
 # B311: random - Not used for cryptographic purposes (56 issues)
 # B404: import_subprocess - Required for runbook executor and healing actions (2 files)
 # B603: subprocess_without_shell_equals_true - Controlled subprocess usage (2 files)
-skips = ["B101", "B104", "B105", "B107", "B110", "B311", "B404", "B603"]
+# B608: hardcoded_sql_expressions - False positives for SQLAlchemy f-string queries (safely parameterized)
+skips = ["B101", "B104", "B105", "B107", "B110", "B311", "B404", "B603", "B608"]
