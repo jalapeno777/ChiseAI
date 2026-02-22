@@ -49,11 +49,12 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 
 import aiohttp
 import websockets
-from websockets.exceptions import ConnectionClosed, InvalidStatusCode
+from websockets.asyncio.client import ClientConnection as WebSocketClientProtocol
+from websockets.exceptions import ConnectionClosed, InvalidStatus
 
 logger = logging.getLogger(__name__)
 
@@ -201,8 +202,8 @@ class BybitConnector:
         """
         self.config = config or BybitConfig()
         self._session: aiohttp.ClientSession | None = None
-        self._ws: websockets.WebSocketClientProtocol | None = None
-        self._private_ws: websockets.WebSocketClientProtocol | None = None
+        self._ws: WebSocketClientProtocol | None = None
+        self._private_ws: WebSocketClientProtocol | None = None
         self._health = ConnectionHealth()
         self._reconnect_attempt = 0
         self._running = False
@@ -360,7 +361,7 @@ class BybitConnector:
                 json=params if method != "GET" else None,
                 headers=headers,
             ) as response:
-                data = await response.json()
+                data = cast(dict[str, Any], await response.json())
 
                 if response.status != 200 or data.get("retCode") != 0:
                     error_msg = data.get("retMsg", f"HTTP {response.status}")
@@ -695,11 +696,14 @@ class BybitConnector:
                         data = json.loads(message)
                         await self._handle_message(data)
                     except json.JSONDecodeError:
+                        # Handle bytes messages by decoding first
+                        if isinstance(message, bytes):
+                            message = message.decode("utf-8")
                         logger.warning(f"Invalid JSON: {message}")
 
         except ConnectionClosed as e:
             logger.warning(f"WebSocket closed: {e}")
-        except InvalidStatusCode as e:
+        except InvalidStatus as e:
             logger.error(f"WebSocket connection failed: {e}")
         except Exception as e:
             logger.error(f"WebSocket error: {e}")
@@ -731,9 +735,9 @@ class BybitConnector:
             self._health.last_heartbeat = time.time()
 
         # Call general message callbacks
-        for callback in self._message_callbacks:
+        for msg_callback in self._message_callbacks:
             try:
-                callback(data)
+                msg_callback(data)
             except Exception as e:
                 logger.error(f"Message callback error: {e}")
 
@@ -814,6 +818,9 @@ class BybitConnector:
                         data = json.loads(message)
                         await self._handle_private_message(data)
                     except json.JSONDecodeError:
+                        # Handle bytes messages by decoding first
+                        if isinstance(message, bytes):
+                            message = message.decode("utf-8")
                         logger.warning(f"Invalid JSON: {message}")
 
         except Exception as e:
