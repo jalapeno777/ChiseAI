@@ -623,16 +623,18 @@ class RunbookValidator:
             "scenario_validation": {
                 "passed": scenario_passed,
                 "total": scenario_total,
-                "success_rate": (scenario_passed / scenario_total * 100)
-                if scenario_total > 0
-                else 0,
+                "success_rate": (
+                    (scenario_passed / scenario_total * 100)
+                    if scenario_total > 0
+                    else 0
+                ),
             },
             "overall": {
                 "passed": overall_passed,
                 "total": overall_total,
-                "success_rate": (overall_passed / overall_total * 100)
-                if overall_total > 0
-                else 0,
+                "success_rate": (
+                    (overall_passed / overall_total * 100) if overall_total > 0 else 0
+                ),
                 "status": "PASS" if overall_passed == overall_total else "FAIL",
             },
         }

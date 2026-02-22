@@ -57,9 +57,7 @@ def format_result(result: RiskClassification) -> str:
         icon = (
             "✓"
             if fc.risk_level == RiskLevel.SAFE
-            else "⚠"
-            if fc.risk_level == RiskLevel.MEDIUM_RISK
-            else "✗"
+            else "⚠" if fc.risk_level == RiskLevel.MEDIUM_RISK else "✗"
         )
         lines.append(f"  {icon} {fc.path}")
         lines.append(

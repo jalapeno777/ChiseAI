@@ -233,14 +233,14 @@ class KimiDiagnosticProbe:
                         if len(models) > 5:
                             logger.info(f"  ... and {len(models) - 5} more")
                     except json.JSONDecodeError as e:
-                        self.results["models_endpoint"]["error"] = (
-                            f"JSON parse error: {e}"
-                        )
+                        self.results["models_endpoint"][
+                            "error"
+                        ] = f"JSON parse error: {e}"
                         logger.error(f"✗ JSON parse error: {e}")
                 else:
-                    self.results["models_endpoint"]["error"] = (
-                        f"HTTP {response.status}: {response_text[:200]}"
-                    )
+                    self.results["models_endpoint"][
+                        "error"
+                    ] = f"HTTP {response.status}: {response_text[:200]}"
                     logger.error(f"✗ Failed - Status: {response.status}")
                     logger.error(f"✗ Response: {response_text[:200]}")
 
@@ -304,9 +304,9 @@ class KimiDiagnosticProbe:
             ):
                 latency_ms = (time.perf_counter() - start_time) * 1000
 
-                self.results["chat_completions_endpoint"]["status_code"] = (
-                    response.status
-                )
+                self.results["chat_completions_endpoint"][
+                    "status_code"
+                ] = response.status
                 self.results["chat_completions_endpoint"]["latency_ms"] = round(
                     latency_ms, 2
                 )
@@ -339,14 +339,14 @@ class KimiDiagnosticProbe:
                         logger.info(f"✓ Model: {model}")
                         logger.info(f"✓ Response preview: {preview}")
                     except json.JSONDecodeError as e:
-                        self.results["chat_completions_endpoint"]["error"] = (
-                            f"JSON parse error: {e}"
-                        )
+                        self.results["chat_completions_endpoint"][
+                            "error"
+                        ] = f"JSON parse error: {e}"
                         logger.error(f"✗ JSON parse error: {e}")
                 else:
-                    self.results["chat_completions_endpoint"]["error"] = (
-                        f"HTTP {response.status}: {response_text[:200]}"
-                    )
+                    self.results["chat_completions_endpoint"][
+                        "error"
+                    ] = f"HTTP {response.status}: {response_text[:200]}"
                     logger.error(f"✗ Failed - Status: {response.status}")
                     logger.error(f"✗ Response: {response_text[:200]}")
 
@@ -355,27 +355,27 @@ class KimiDiagnosticProbe:
             self.results["chat_completions_endpoint"]["latency_ms"] = round(
                 latency_ms, 2
             )
-            self.results["chat_completions_endpoint"]["error"] = (
-                f"Connection error: {e}"
-            )
+            self.results["chat_completions_endpoint"][
+                "error"
+            ] = f"Connection error: {e}"
             logger.error(f"✗ Connection error: {e}")
         except TimeoutError:
             latency_ms = (time.perf_counter() - start_time) * 1000
             self.results["chat_completions_endpoint"]["latency_ms"] = round(
                 latency_ms, 2
             )
-            self.results["chat_completions_endpoint"]["error"] = (
-                "Request timeout (>30s)"
-            )
+            self.results["chat_completions_endpoint"][
+                "error"
+            ] = "Request timeout (>30s)"
             logger.error("✗ Request timeout (>30s)")
         except Exception as e:
             latency_ms = (time.perf_counter() - start_time) * 1000
             self.results["chat_completions_endpoint"]["latency_ms"] = round(
                 latency_ms, 2
             )
-            self.results["chat_completions_endpoint"]["error"] = (
-                f"Unexpected error: {e}"
-            )
+            self.results["chat_completions_endpoint"][
+                "error"
+            ] = f"Unexpected error: {e}"
             logger.error(f"✗ Unexpected error: {e}")
 
         logger.info("")

@@ -298,9 +298,7 @@ def write_telemetry_summary(
         result_emoji = (
             "✅"
             if gate["result"] == "pass"
-            else "❌"
-            if gate["result"] == "fail"
-            else "⏳"
+            else "❌" if gate["result"] == "fail" else "⏳"
         )
         markdown += f"""### {gate["gate_name"]}
 
