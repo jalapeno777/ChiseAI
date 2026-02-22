@@ -652,7 +652,6 @@ class FeatureExtractor:
 
             # Calculate indicators
             values = self._indicator_calculator.calculate_all(ohlcv_data)
-
             result: dict[str, float | None] = values.to_dict()
             return result
 
