@@ -55,6 +55,13 @@ import aiohttp
 import websockets
 from websockets.exceptions import ConnectionClosed, InvalidStatusCode
 
+from execution.order_idempotency import (
+    DuplicateOrderException,
+    IdempotencyStore,
+    generate_client_order_id,
+    get_default_store,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -193,13 +200,20 @@ class BybitConnector:
     HEARTBEAT_INTERVAL = 30  # seconds
     MAX_LATENCY_MS = 100  # milliseconds for real-time pricing
 
-    def __init__(self, config: BybitConfig | None = None) -> None:
+    def __init__(
+        self,
+        config: BybitConfig | None = None,
+        idempotency_store: IdempotencyStore | None = None,
+    ) -> None:
         """Initialize Bybit connector.
 
         Args:
             config: Bybit configuration (uses defaults if None)
+            idempotency_store: Idempotency store for order deduplication
+                (uses default store if None)
         """
         self.config = config or BybitConfig()
+        self._idempotency_store = idempotency_store or get_default_store()
         self._session: aiohttp.ClientSession | None = None
         self._ws: websockets.WebSocketClientProtocol | None = None
         self._private_ws: websockets.WebSocketClientProtocol | None = None
@@ -518,8 +532,9 @@ class BybitConnector:
         price: float | None = None,
         time_in_force: str = "GTC",
         reduce_only: bool = False,
+        client_order_id: str | None = None,
     ) -> dict[str, Any]:
-        """Place a new order.
+        """Place a new order with idempotency support.
 
         Args:
             symbol: Trading pair (e.g., "BTCUSDT")
@@ -529,10 +544,25 @@ class BybitConnector:
             price: Order price (required for Limit orders)
             time_in_force: Time in force ("GTC", "IOC", "FOK")
             reduce_only: Whether order should only reduce position
+            client_order_id: Optional client order ID (auto-generated if None)
 
         Returns:
-            Order result with order_id, price, quantity, etc.
+            Order result with order_id, client_order_id, price, quantity, etc.
+
+        Raises:
+            DuplicateOrderException: If the same order has already been submitted
         """
+        # Generate or use provided client order ID
+        if client_order_id is None:
+            client_order_id = generate_client_order_id(symbol)
+
+        # Check for duplicate orders
+        is_duplicate = await self._idempotency_store.check_duplicate(
+            symbol, client_order_id
+        )
+        if is_duplicate:
+            raise DuplicateOrderException(client_order_id, symbol)
+
         params: dict[str, Any] = {
             "category": "linear",
             "symbol": symbol,
@@ -541,30 +571,40 @@ class BybitConnector:
             "qty": str(quantity),
             "timeInForce": time_in_force,
             "reduceOnly": reduce_only,
+            "orderLinkId": client_order_id,  # Bybit's clientOrderId field
         }
 
         if order_type.lower() == "limit" and price is not None:
             params["price"] = str(price)
 
-        result = await self._make_request(
-            "POST",
-            "/v5/order/create",
-            params=params,
-            signed=True,
-        )
+        try:
+            result = await self._make_request(
+                "POST",
+                "/v5/order/create",
+                params=params,
+                signed=True,
+            )
 
-        # Extract and normalize result
-        order_data = result.get("result", {})
-        return {
-            "order_id": order_data.get("orderId", ""),
-            "symbol": symbol,
-            "side": side,
-            "order_type": order_type,
-            "quantity": quantity,
-            "price": price or 0.0,
-            "status": order_data.get("orderStatus", "Created"),
-            "raw_response": result,
-        }
+            # Mark order as submitted in idempotency store
+            await self._idempotency_store.mark_submitted(symbol, client_order_id)
+
+            # Extract and normalize result
+            order_data = result.get("result", {})
+            return {
+                "order_id": order_data.get("orderId", ""),
+                "client_order_id": client_order_id,
+                "symbol": symbol,
+                "side": side,
+                "order_type": order_type,
+                "quantity": quantity,
+                "price": price or 0.0,
+                "status": order_data.get("orderStatus", "Created"),
+                "raw_response": result,
+            }
+        except Exception:
+            # On failure, remove from idempotency store to allow retry
+            await self._idempotency_store.remove(symbol, client_order_id)
+            raise
 
     async def cancel_order(self, symbol: str, order_id: str) -> dict[str, Any]:
         """Cancel an existing order.
