@@ -222,7 +222,7 @@ def validate_validation_registry(
 ) -> None:
     """Validate validation registry coverage for stories."""
     validations = validation_data.get("validations", [])
-    stories = workflow_data.get("stories", [])
+    stories = workflow_data.get("stories", []) + workflow_data.get("launch_stories", [])
 
     # Build set of story IDs with validations
     validated_story_ids: set[str] = set()
@@ -328,8 +328,8 @@ def main() -> int:
     prd_frs = extract_frs_from_prd(prd_content)
     result.stats["total_frs"] = len(prd_frs)
 
-    # Extract FR coverage from stories
-    stories = workflow_data.get("stories", [])
+    # Extract FR coverage from stories (includes launch_stories)
+    stories = workflow_data.get("stories", []) + workflow_data.get("launch_stories", [])
     result.stats["total_stories"] = len(stories)
 
     fr_coverage = extract_fr_coverage_from_stories(stories)
