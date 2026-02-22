@@ -181,7 +181,10 @@ class DailyReport:
             "",
             "| Metric | Value |",
             "|--------|-------|",
-            f"| Max Drawdown | ${self.max_drawdown:,.2f} ({self.max_drawdown_pct:.1f}%) |",
+            (
+                f"| Max Drawdown | ${self.max_drawdown:,.2f} "
+                f"({self.max_drawdown_pct:.1f}%) |"
+            ),
             f"| Sharpe Ratio | {self.risk_metrics.sharpe_ratio:.2f} |",
             f"| Volatility | {self.risk_metrics.volatility:.2%} |",
             f"| Open Positions | {self.open_positions} |",
@@ -245,22 +248,43 @@ class WeeklyReport:
         lines = [
             "# 📈 Weekly Performance Report",
             "",
-            f"**Period:** {self.start_date.strftime('%Y-%m-%d')} to {self.end_date.strftime('%Y-%m-%d')}",
+            (
+                f"**Period:** {self.start_date.strftime('%Y-%m-%d')} to "
+                f"{self.end_date.strftime('%Y-%m-%d')}"
+            ),
             f"**Generated:** {self.generated_at.strftime('%Y-%m-%d %H:%M:%S UTC')}",
             "",
             "## 📊 Summary",
             "",
             "| Metric | Value | WoW Change |",
             "|--------|-------|------------|",
-            f"| Total PnL | ${self.total_pnl:,.2f} | {self.week_over_week_change.get('total_pnl', 0):+.1f}% |",
-            f"| Total Trades | {self.total_trades} | {self.week_over_week_change.get('total_trades', 0):+.1f}% |",
-            f"| Win Rate | {self.win_rate:.1f}% | {self.week_over_week_change.get('win_rate', 0):+.1f}% |",
-            f"| Avg Daily PnL | ${self.avg_daily_pnl:,.2f} | {self.week_over_week_change.get('avg_daily_pnl', 0):+.1f}% |",
+            (
+                f"| Total PnL | ${self.total_pnl:,.2f} | "
+                f"{self.week_over_week_change.get('total_pnl', 0):+.1f}% |"
+            ),
+            (
+                f"| Total Trades | {self.total_trades} | "
+                f"{self.week_over_week_change.get('total_trades', 0):+.1f}% |"
+            ),
+            (
+                f"| Win Rate | {self.win_rate:.1f}% | "
+                f"{self.week_over_week_change.get('win_rate', 0):+.1f}% |"
+            ),
+            (
+                f"| Avg Daily PnL | ${self.avg_daily_pnl:,.2f} | "
+                f"{self.week_over_week_change.get('avg_daily_pnl', 0):+.1f}% |"
+            ),
             "",
             "## 🏆 Best/Worst Days",
             "",
-            f"- **Best Day:** {self.best_day[0].strftime('%Y-%m-%d')} (${self.best_day[1]:,.2f})",
-            f"- **Worst Day:** {self.worst_day[0].strftime('%Y-%m-%d')} (${self.worst_day[1]:,.2f})",
+            (
+                f"- **Best Day:** {self.best_day[0].strftime('%Y-%m-%d')} "
+                f"(${self.best_day[1]:,.2f})"
+            ),
+            (
+                f"- **Worst Day:** {self.worst_day[0].strftime('%Y-%m-%d')} "
+                f"(${self.worst_day[1]:,.2f})"
+            ),
             "",
             "## ⚠️ Risk Metrics",
             "",
@@ -336,7 +360,10 @@ class AnomalyAlert:
         }.get(self.severity, "⚠️")
 
         lines = [
-            f"{emoji} **Anomaly Detected: {self.anomaly_type.value.replace('_', ' ').title()}**",
+            (
+                f"{emoji} **Anomaly Detected: "
+                f"{self.anomaly_type.value.replace('_', ' ').title()}**"
+            ),
             "",
             f"**Severity:** {self.severity.value.upper()}",
             f"**Detected:** {self.detected_at.strftime('%Y-%m-%d %H:%M:%S UTC')}",
@@ -505,6 +532,13 @@ class PaperHealthReport:
             "CRITICAL": "🚨",
         }.get(self.health_metrics.overall_health, "⚠️")
 
+        # Prepare last data update string to fit within line limit
+        last_data_update_str = (
+            self.health_metrics.last_data_update.strftime("%Y-%m-%d %H:%M:%S UTC")
+            if self.health_metrics.last_data_update
+            else "Never"
+        )
+
         lines = [
             "# 🏥 Paper Trading Health Report",
             "",
@@ -516,20 +550,46 @@ class PaperHealthReport:
             "",
             "| Check | Status | Value |",
             "|-------|--------|-------|",
-            f"| Redis Sync | {'✅ PASS' if self.health_metrics.redis_sync_pass else '❌ FAIL'} | {self.health_metrics.redis_sync_status} |",
-            f"| Validation | {'✅ PASS' if self.health_metrics.validation_pass else '❌ FAIL'} | {self.health_metrics.validation_failure_rate_pct:.1f}% failure rate |",
-            f"| Circuit Breaker | {'✅ PASS' if self.health_metrics.circuit_breaker_pass else '❌ FAIL'} | {self.health_metrics.circuit_breaker_state} |",
-            f"| Kill Switch | {'✅ PASS' if self.health_metrics.kill_switch_pass else '❌ FAIL'} | {'ARMED' if self.health_metrics.kill_switch_armed else 'disarmed'} |",
-            f"| Data Freshness | {'✅ PASS' if self.health_metrics.data_freshness_pass else '❌ FAIL'} | {self.health_metrics.data_freshness_seconds:.0f}s ago |",
+            (
+                f"| Redis Sync | "
+                f"{'✅ PASS' if self.health_metrics.redis_sync_pass else '❌ FAIL'} | "
+                f"{self.health_metrics.redis_sync_status} |"
+            ),
+            (
+                f"| Validation | "
+                f"{'✅ PASS' if self.health_metrics.validation_pass else '❌ FAIL'} | "
+                f"{self.health_metrics.validation_failure_rate_pct:.1f}% failure rate |"
+            ),
+            (
+                f"| Circuit Breaker | "
+                f"{'✅' if self.health_metrics.circuit_breaker_pass else '❌'} "
+                f"FAIL | {self.health_metrics.circuit_breaker_state} |"
+            ),
+            (
+                f"| Kill Switch | "
+                f"{'✅ PASS' if self.health_metrics.kill_switch_pass else '❌ FAIL'} | "
+                f"{'ARMED' if self.health_metrics.kill_switch_armed else 'disarmed'} |"
+            ),
+            (
+                f"| Data Freshness | "
+                f"{'✅' if self.health_metrics.data_freshness_pass else '❌'} "
+                f"FAIL | {self.health_metrics.data_freshness_seconds:.0f}s ago |"
+            ),
             "",
             "## 📊 System Metrics",
             "",
             "| Metric | Value |",
             "|--------|-------|",
             f"| Redis Error Rate | {self.health_metrics.redis_error_rate_pct:.2f}% |",
-            f"| Validation Failure Rate | {self.health_metrics.validation_failure_rate_pct:.2f}% |",
-            f"| Data Freshness | {self.health_metrics.data_freshness_seconds:.0f} seconds |",
-            f"| Last Data Update | {self.health_metrics.last_data_update.strftime('%Y-%m-%d %H:%M:%S UTC') if self.health_metrics.last_data_update else 'Never'} |",
+            (
+                f"| Validation Failure Rate | "
+                f"{self.health_metrics.validation_failure_rate_pct:.2f}% |"
+            ),
+            (
+                f"| Data Freshness | "
+                f"{self.health_metrics.data_freshness_seconds:.0f} seconds |"
+            ),
+            (f"| Last Data Update | {last_data_update_str} |"),
             "",
             "## 💰 Portfolio Summary",
             "",
