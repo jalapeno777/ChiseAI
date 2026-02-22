@@ -112,9 +112,10 @@ def validate_workflow_status(data: dict[str, Any], result: ValidationResult) -> 
     if has_sprints:
         _validate_sprints(data.get("sprints", []), result)
 
-    # Validate stories if present
-    if "stories" in data:
-        _validate_stories(data.get("stories", []), data.get("epics", []), result)
+    # Validate stories if present (including launch_stories)
+    all_stories = data.get("stories", []) + data.get("launch_stories", [])
+    if all_stories:
+        _validate_stories(all_stories, data.get("epics", []), result)
 
 
 def _validate_epics(epics: list[Any], result: ValidationResult) -> set[str]:
@@ -261,10 +262,9 @@ def extract_story_ids(data: dict[str, Any]) -> set[str]:
     """Extract all story IDs from workflow status data."""
     story_ids: set[str] = set()
 
-    if "stories" in data:
-        for story in data.get("stories", []):
-            if isinstance(story, dict) and "id" in story:
-                story_ids.add(story["id"])
+    for story in data.get("stories", []) + data.get("launch_stories", []):
+        if isinstance(story, dict) and "id" in story:
+            story_ids.add(story["id"])
 
     # Support both 'epics' (current) and 'sprints' (legacy) for story extraction
     if "epics" in data:
@@ -334,7 +334,7 @@ def validate_epic_status_consistency(
     An epic's status should reflect the aggregate status of its stories.
     """
     epics = workflow_data.get("epics", [])
-    stories = workflow_data.get("stories", [])
+    stories = workflow_data.get("stories", []) + workflow_data.get("launch_stories", [])
 
     if not isinstance(epics, list) or not isinstance(stories, list):
         return
@@ -412,7 +412,7 @@ def validate_validation_registry_completeness(
     Validate that every story has a corresponding validation entry
     and that completed stories have validated status.
     """
-    stories = workflow_data.get("stories", [])
+    stories = workflow_data.get("stories", []) + workflow_data.get("launch_stories", [])
     validations = validation_data.get("validations", [])
 
     if not isinstance(stories, list) or not isinstance(validations, list):

@@ -374,7 +374,7 @@ epics:
   # ADDED per Option A decision - critical gaps identified in validation
   - id: EP-LAUNCH-005
     name: Missing Components Implementation
-    status: planned
+    status: in_progress
     story_ids: [ST-LAUNCH-018, ST-LAUNCH-019, ST-LAUNCH-020, ST-LAUNCH-021]
     story_count: 4
     story_points: 26
@@ -3021,6 +3021,7 @@ summary:
 # Paper Trading with ML Optimization - Target: March 7, 2026
 # ============================================================
 
+launch_stories:
   # EP-LAUNCH-001: Bybit Safety & Infrastructure (5 stories, 14 points)
   - id: ST-LAUNCH-001
     title: Bybit Environment Assertions
