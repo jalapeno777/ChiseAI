@@ -3021,6 +3021,7 @@ summary:
 # Paper Trading with ML Optimization - Target: March 7, 2026
 # ============================================================
 
+launch_stories:
   # EP-LAUNCH-001: Bybit Safety & Infrastructure (5 stories, 14 points)
   - id: ST-LAUNCH-001
     title: Bybit Environment Assertions
