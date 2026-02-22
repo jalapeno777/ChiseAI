@@ -438,6 +438,21 @@ epics:
         - launch:infrastructure:runbooks:enabled
       rollback_time: "<60s via Redis"
 
+  # EP-GOV-001: Agent Swarm Governance Enhancement (10 stories, 63 points)
+  - id: EP-GOV-001
+    name: Agent Swarm Governance Enhancement
+    status: planned
+    story_ids: [ST-GOV-001, ST-GOV-002, ST-GOV-003, ST-GOV-004, ST-GOV-005, ST-GOV-006, ST-GOV-007, ST-GOV-008, ST-GOV-009, ST-GOV-010]
+    story_count: 10
+    story_points: 63
+    description: 10 additive governance features for safe autonomous operation including memory deduplication, constitution artifact, task decomposition, quality gates, health monitoring, and audit trails
+    notes:
+      - Party Mode synthesis outcome - Merlin rollout strategy defined 2026-02-22
+      - All features are additive and can be disabled via feature flags
+      - 30/60/90-day phased rollout with go/no-go gates
+      - Full integration with EP-AUTO-GIT-001 and EP-NS-008
+    roadmap_document: docs/architecture/governance-rollout-roadmap.md
+
 # ============================================================
 # PHASE 1 STORIES (35 stories)
 # ============================================================
@@ -2425,6 +2440,59 @@ sprints:
     mapped_stories: [ST-PAPER-001, ST-PAPER-002, ST-PAPER-003, ST-PAPER-004]
     completion_date: "2026-02-17"
 
+  # Governance Phase 1 Sprints
+  - id: GOV-PHASE1-001
+    name: Governance Foundation - Part 1
+    status: planned
+    story_count: 2
+    story_points: 13
+    mapped_stories: [ST-GOV-001, ST-GOV-002]
+    note: "Memory Deduplication Engine and Agent Constitution Artifact"
+    start_date: "2026-02-22"
+    end_date: "2026-03-08"
+
+  - id: GOV-PHASE1-002
+    name: Governance Foundation - Part 2
+    status: planned
+    story_count: 2
+    story_points: 13
+    mapped_stories: [ST-GOV-003, ST-GOV-004]
+    note: "Task Decomposition Sentinel and Meta-KPI Dashboard"
+    start_date: "2026-03-09"
+    end_date: "2026-03-24"
+
+  # Governance Phase 2 Sprints
+  - id: GOV-PHASE2-001
+    name: Governance Control Systems - Part 1
+    status: planned
+    story_count: 2
+    story_points: 13
+    mapped_stories: [ST-GOV-005, ST-GOV-006]
+    note: "Memory Consolidation Scheduler and Self-Review Quality Gate"
+    start_date: "2026-03-25"
+    end_date: "2026-04-08"
+
+  - id: GOV-PHASE2-002
+    name: Governance Control Systems - Part 2
+    status: planned
+    story_count: 2
+    story_points: 11
+    mapped_stories: [ST-GOV-007, ST-GOV-008]
+    note: "Retrieval Quality Evaluator and Swarm Health Sentinel"
+    start_date: "2026-04-09"
+    end_date: "2026-04-23"
+
+  # Governance Phase 3 Sprints
+  - id: GOV-PHASE3-001
+    name: Governance Full Autonomy
+    status: planned
+    story_count: 2
+    story_points: 13
+    mapped_stories: [ST-GOV-009, ST-GOV-010]
+    note: "Decision Audit Trail Export and Parallel Execution Optimizer"
+    start_date: "2026-04-24"
+    end_date: "2026-05-23"
+
   - id: ST-NS-038
     title: Circuit Breaker Registry & Unified Telemetry
     epic_id: EP-NS-008
@@ -3710,10 +3778,303 @@ launch_stories:
 # Merged to main: 2026-02-19
 # ============================================================
 
+# ============================================================
+# GOVERNANCE EPIC: EP-GOV-001 - Agent Swarm Governance Enhancement
+# 10 additive governance features for autonomous operation
+# Target: 90-day phased rollout starting 2026-02-22
+# Roadmap: docs/architecture/governance-rollout-roadmap.md
+# ============================================================
+
+  # EP-GOV-001: Agent Swarm Governance Enhancement (10 stories, 63 points)
+  - id: EP-GOV-001
+    name: Agent Swarm Governance Enhancement
+    status: planned
+    story_ids: [ST-GOV-001, ST-GOV-002, ST-GOV-003, ST-GOV-004, ST-GOV-005, ST-GOV-006, ST-GOV-007, ST-GOV-008, ST-GOV-009, ST-GOV-010]
+    story_count: 10
+    story_points: 63
+    description: 10 additive governance features for safe autonomous operation including memory deduplication, constitution artifact, task decomposition, quality gates, health monitoring, and audit trails
+    notes:
+      - Party Mode synthesis outcome - Merlin rollout strategy defined 2026-02-22
+      - All features are additive and can be disabled via feature flags
+      - 30/60/90-day phased rollout with go/no-go gates
+      - Full integration with EP-AUTO-GIT-001 and EP-NS-008
+    roadmap_document: docs/architecture/governance-rollout-roadmap.md
+    rollout:
+      phase_1:
+        name: "Foundation (Days 1-30)"
+        start_date: "2026-02-22"
+        end_date: "2026-03-24"
+        features: [GF-001, GF-002, GF-003, GF-004]
+        stories: [ST-GOV-001, ST-GOV-002, ST-GOV-003, ST-GOV-004]
+        story_points: 26
+      phase_2:
+        name: "Control Systems (Days 31-60)"
+        start_date: "2026-03-25"
+        end_date: "2026-04-23"
+        features: [GF-005, GF-006, GF-007, GF-008]
+        stories: [ST-GOV-005, ST-GOV-006, ST-GOV-007, ST-GOV-008]
+        story_points: 24
+      phase_3:
+        name: "Full Autonomy (Days 61-90)"
+        start_date: "2026-04-24"
+        end_date: "2026-05-23"
+        features: [GF-009, GF-010]
+        stories: [ST-GOV-009, ST-GOV-010]
+        story_points: 13
+    integration_with:
+      - epic: EP-AUTO-GIT-001
+        stories: [ST-AUTO-004, ST-AUTO-005, ST-AUTO-006, ST-AUTO-007]
+        notes: "Constitution enforcement, self-review, health monitoring, parallel optimization"
+      - epic: EP-NS-008
+        components: [circuit_breaker_registry, incident_manager, self_healing]
+        notes: "Swarm Health Sentinel integrates with ACP telemetry"
+
+  # Governance Stories - Phase 1: Foundation (Days 1-30)
+  - id: ST-GOV-001
+    title: Memory Deduplication Engine
+    epic_id: EP-GOV-001
+    sprint_id: GOV-PHASE1-001
+    status: planned
+    validation_status: planned
+    story_points: 5
+    priority: P0-CRITICAL
+    fr_coverage: [FR-GOV-001]
+    description: Detect and resolve semantic duplicate memories using Qdrant similarity with configurable thresholds
+    governance_feature: GF-001
+    acceptance_criteria:
+      - Detects semantic duplicates with ≥95% accuracy using Qdrant similarity
+      - Deduplication runs automatically before memory writes
+      - Configurable similarity threshold (default: 0.92 cosine similarity)
+      - Conflict resolution for near-duplicates with timestamps
+      - Performance: <100ms per deduplication check
+    test_strategy:
+      unit: "pytest tests/test_governance/test_deduplication.py -v"
+      integration: "pytest tests/test_governance/integration/test_similarity_accuracy.py -v"
+    validation_gates:
+      - coverage: 85
+      - false_positive_rate: <5%
+      - latency_p99: <100ms
+
+  - id: ST-GOV-002
+    title: Agent Constitution Artifact
+    epic_id: EP-GOV-001
+    sprint_id: GOV-PHASE1-001
+    status: planned
+    validation_status: planned
+    story_points: 8
+    priority: P0-CRITICAL
+    fr_coverage: [FR-GOV-002]
+    description: Codify agent behavior rules, decision boundaries, and escalation criteria as versioned artifact
+    governance_feature: GF-002
+    acceptance_criteria:
+      - Constitution stored as versioned artifact in docs/constitution/
+      - JSON schema for programmatic validation
+      - Runtime access via API: GET /api/v1/constitution
+      - Violation detection and alerting
+      - Human override capability with audit logging
+    validation_gates:
+      - schema_validation: pass
+      - api_latency: <50ms
+      - violation_detection_accuracy: 99%
+
+  - id: ST-GOV-003
+    title: Task Decomposition Sentinel
+    epic_id: EP-GOV-001
+    sprint_id: GOV-PHASE1-002
+    status: planned
+    validation_status: planned
+    story_points: 8
+    priority: P0-CRITICAL
+    fr_coverage: [FR-GOV-003]
+    description: Validate task decomposition against constitution bounds and detect scope conflicts
+    governance_feature: GF-003
+    acceptance_criteria:
+      - Validates task decomposition against constitution bounds
+      - Detects overly broad tasks (>5 story points requires approval)
+      - Enforces dependency declaration for all subtasks
+      - Blocks parallel execution of conflicting tasks
+      - Integration with existing Redis ownership system
+    validation_gates:
+      - task_validation_rate: 100% for >5 SP
+      - conflict_detection_accuracy: 90%
+      - api_latency: <200ms
+
+  - id: ST-GOV-004
+    title: Meta-KPI Dashboard
+    epic_id: EP-GOV-001
+    sprint_id: GOV-PHASE1-002
+    status: planned
+    validation_status: planned
+    story_points: 5
+    priority: P1-HIGH
+    fr_coverage: [FR-GOV-004]
+    description: Grafana dashboard for real-time governance metrics and feature effectiveness
+    governance_feature: GF-004
+    acceptance_criteria:
+      - Grafana dashboard: "Agent Governance Metrics"
+      - Real-time metrics for all Phase 1 features
+      - Alerting on governance failures
+      - Historical trend analysis (7-day, 30-day, 90-day)
+    validation_gates:
+      - dashboard_load_time: <3s
+      - metrics_refresh: 15s
+      - retention: 7_days
+
+  # Governance Stories - Phase 2: Control Systems (Days 31-60)
+  - id: ST-GOV-005
+    title: Memory Consolidation Scheduler
+    epic_id: EP-GOV-001
+    sprint_id: GOV-PHASE2-001
+    status: planned
+    validation_status: planned
+    story_points: 5
+    priority: P1-HIGH
+    fr_coverage: [FR-GOV-005]
+    description: Automate memory lifecycle management with scheduled archiving and promotion
+    governance_feature: GF-005
+    acceptance_criteria:
+      - Scheduled consolidation runs (daily at 2 AM UTC)
+      - Archives memories >90 days to cold storage
+      - Promotes high-value memories to "golden" set
+      - Configurable retention policies per memory type
+      - Rollback capability for 7 days post-consolidation
+    validation_gates:
+      - data_loss_incidents: 0
+      - rollback_time: <5min
+      - storage_reduction: ≥20%
+
+  - id: ST-GOV-006
+    title: Self-Review Quality Gate
+    epic_id: EP-GOV-001
+    sprint_id: GOV-PHASE2-001
+    status: planned
+    validation_status: planned
+    story_points: 8
+    priority: P1-HIGH
+    fr_coverage: [FR-GOV-006]
+    description: Automated self-review for all PRs with quality scoring and constitution alignment
+    governance_feature: GF-006
+    acceptance_criteria:
+      - Automated self-review for all PRs
+      - Quality score algorithm (style, coverage, security, constitution, docs)
+      - Blocks PR if quality score <80%
+      - Human can override with justification
+      - Integration with GitReviewBot (ST-AUTO-003)
+    validation_gates:
+      - false_negative_rate: <5%
+      - false_positive_rate: <10%
+      - review_time: <2min
+
+  - id: ST-GOV-007
+    title: Retrieval Quality Evaluator
+    epic_id: EP-GOV-001
+    sprint_id: GOV-PHASE2-002
+    status: planned
+    validation_status: planned
+    story_points: 5
+    priority: P2-MEDIUM
+    fr_coverage: [FR-GOV-007]
+    description: Monitor and improve memory retrieval accuracy with A/B testing
+    governance_feature: GF-007
+    acceptance_criteria:
+      - Tracks retrieval relevance scores
+      - A/B tests retrieval strategies
+      - Automatically tunes similarity thresholds
+      - Reports on retrieval accuracy
+    validation_gates:
+      - precision_at_5: ≥85%
+      - recall_at_10: ≥80%
+      - mrr: ≥0.75
+
+  - id: ST-GOV-008
+    title: Swarm Health Sentinel
+    epic_id: EP-GOV-001
+    sprint_id: GOV-PHASE2-002
+    status: planned
+    validation_status: planned
+    story_points: 6
+    priority: P1-HIGH
+    fr_coverage: [FR-GOV-008]
+    description: Monitor overall swarm health with predictive alerts and auto-remediation
+    governance_feature: GF-008
+    acceptance_criteria:
+      - Real-time health scoring per agent
+      - Aggregated swarm health score
+      - Predictive alerts (15 min before impact)
+      - Auto-remediation for known issues
+      - Integration with EP-NS-008 (ACP)
+    validation_gates:
+      - health_update_frequency: 60s
+      - alert_latency: <30s
+      - prediction_accuracy: ≥75%
+
+  # Governance Stories - Phase 3: Full Autonomy (Days 61-90)
+  - id: ST-GOV-009
+    title: Decision Audit Trail Export
+    epic_id: EP-GOV-001
+    sprint_id: GOV-PHASE3-001
+    status: planned
+    validation_status: planned
+    story_points: 5
+    priority: P2-MEDIUM
+    fr_coverage: [FR-GOV-009]
+    description: Complete audit trail for compliance with tamper-evident logging and 7-year retention
+    governance_feature: GF-009
+    acceptance_criteria:
+      - Exports all autonomous decisions to immutable storage
+      - Queryable by agent, time range, decision type, outcome
+      - Tamper-evident logging (hash chain)
+      - Automated daily exports to S3
+      - Retention: 7 years
+    validation_gates:
+      - audit_completeness: 100%
+      - integrity_verification: pass
+      - export_reliability: 100%
+
+  - id: ST-GOV-010
+    title: Parallel Execution Optimizer
+    epic_id: EP-GOV-001
+    sprint_id: GOV-PHASE3-001
+    status: planned
+    validation_status: planned
+    story_points: 8
+    priority: P2-MEDIUM
+    fr_coverage: [FR-GOV-010]
+    description: Maximize agent productivity while preventing conflicts through intelligent scheduling
+    governance_feature: GF-010
+    acceptance_criteria:
+      - Analyzes task dependencies automatically
+      - Optimizes parallel execution plans
+      - Resolves resource conflicts proactively
+      - Achieves ≥30% throughput improvement vs sequential
+      - Rollback capability if conflicts detected
+    validation_gates:
+      - throughput_improvement: ≥30%
+      - conflict_rate: <2%
+      - rollback_success_rate: 100%
+
 summary:
-  total_epics: 23
-  total_stories: 107
-  total_story_points: 575
+  total_epics: 24
+  total_stories: 117
+  total_story_points: 638
+  governance:
+    epic: EP-GOV-001
+    stories: 10
+    story_points: 63
+    roadmap: docs/architecture/governance-rollout-roadmap.md
+    phases:
+      phase_1:
+        stories: 4
+        points: 26
+        dates: "2026-02-22 to 2026-03-24"
+      phase_2:
+        stories: 4
+        points: 24
+        dates: "2026-03-25 to 2026-04-23"
+      phase_3:
+        stories: 2
+        points: 13
+        dates: "2026-04-24 to 2026-05-23"
   phase_1:
     epics: 8
     stories: 41
