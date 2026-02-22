@@ -61,6 +61,9 @@ addopts = "-v --tb=short"
 fixtures_per_test = 1
 # Timeout each test at 5 minutes to prevent hanging
 faulthandler_timeout = 300
+# Individual test timeout to prevent hangs (60 seconds per test)
+timeout = 60
+timeout_method = "signal"
 
 [tool.coverage.run]
 # Tooling/integration modules can be high-IO and are better covered by
