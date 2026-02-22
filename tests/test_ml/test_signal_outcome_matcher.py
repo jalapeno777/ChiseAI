@@ -11,23 +11,20 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID, uuid4
 
 import pytest
-
 from src.ml.feedback.signal_outcome_matcher import (
     DEFAULT_MATCH_WINDOWS,
-    MatchMetadata,
     MatcherMetrics,
+    MatchMetadata,
     SignalMatcherConfig,
     SignalOutcomeMatcher,
 )
 from src.ml.models.signal_outcome import (
-    OutcomeMatchResult,
     OutcomeType,
     SignalOutcome,
-    SignalOutcomeStatus,
 )
 
 
