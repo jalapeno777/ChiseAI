@@ -67,7 +67,7 @@ def register_new_pr(
         owned_by_agent=agent_id,
     )
 
-    success = state_mgr.register_pr(state)
+    success: bool = state_mgr.register_pr(state)
 
     if success and enable_monitoring:
         # Optionally start background monitoring
@@ -113,7 +113,8 @@ def update_pr_on_merge_attempt(pr_number: int, success: bool, error: str = "") -
             message=error or "Merge API call failed",
         )
 
-    return state_mgr.update_pr(state)
+    result: bool = state_mgr.update_pr(state)
+    return result
 
 
 def handle_ci_status_change(
@@ -161,7 +162,8 @@ def handle_ci_status_change(
             metadata={"ci_status": ci_status, "required_context": required_context},
         )
 
-    return state_mgr.update_pr(state)
+    result: bool = state_mgr.update_pr(state)
+    return result
 
 
 def is_pr_monitored(pr_number: int) -> bool:

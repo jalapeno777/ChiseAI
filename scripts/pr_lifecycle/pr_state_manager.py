@@ -613,6 +613,17 @@ def main() -> int:
             return 1
 
     elif args.cmd == "transition":
+        transition_result: bool = mgr.transition_state(
+            args.pr_number, args.to_state, args.triggered_by
+        )
+        if transition_result:
+            print(f"Transitioned PR #{args.pr_number} to {args.to_state}")
+            return 0
+        else:
+            print(f"Failed to transition PR #{args.pr_number}", file=sys.stderr)
+            return 1
+
+    elif args.cmd == "transition":
         if mgr.transition_state(args.pr_number, args.to_state, args.triggered_by):
             print(f"Transitioned PR #{args.pr_number} to {args.to_state}")
             return 0

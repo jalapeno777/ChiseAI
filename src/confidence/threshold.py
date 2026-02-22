@@ -68,7 +68,7 @@ class ThresholdConfig:
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate threshold configuration."""
         if not 0.0 <= self.current_threshold <= 1.0:
             msg = f"current_threshold must be in [0, 1], got {self.current_threshold}"

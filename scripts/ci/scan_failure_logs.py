@@ -13,6 +13,7 @@ import importlib.util
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from typing import Any
 
 # Add src to path for config imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
@@ -24,7 +25,7 @@ MAX_FAILURES = 10
 LOG_TAIL_LINES = 120
 
 
-def _load_triage_parser():
+def _load_triage_parser() -> Any | None:
     triage_path = Path(__file__).with_name("woodpecker_triage.py")
     if not triage_path.exists():
         return None

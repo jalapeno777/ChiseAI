@@ -653,7 +653,8 @@ class FeatureExtractor:
             # Calculate indicators
             values = self._indicator_calculator.calculate_all(ohlcv_data)
 
-            return values.to_dict()
+            result: dict[str, float | None] = values.to_dict()
+            return result
 
         except Exception as e:
             logger.warning(f"Indicator calculation failed: {e}")
@@ -775,7 +776,8 @@ class FeatureExtractor:
         try:
             signal = await self.signal_storage.get_signal_by_id(signal_id)
             if signal is not None:
-                return signal.score
+                score: float | None = signal.score
+                return score
         except Exception as e:
             logger.warning(f"Failed to extract confluence score: {e}")
 

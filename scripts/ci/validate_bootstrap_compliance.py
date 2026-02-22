@@ -404,7 +404,7 @@ def parse_allowlist_file(filepath: Path) -> set[str]:
     Returns:
         Set of allowlisted script paths
     """
-    allowlist = set()
+    allowlist: set[str] = set()
     if not filepath.exists():
         return allowlist
 

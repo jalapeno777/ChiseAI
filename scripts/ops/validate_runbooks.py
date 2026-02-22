@@ -70,7 +70,7 @@ class RunbookValidator:
         "incident_response.md",
     ]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.results: list[ValidationResult] = []
 
     def validate_all(self) -> RunbookValidationReport:
@@ -529,7 +529,7 @@ def print_report(report: RunbookValidationReport, verbose: bool = False) -> None
     print("=" * 70)
 
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser(
         description="Validate runbooks for ChiseAI platform"
     )

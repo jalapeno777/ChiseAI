@@ -546,12 +546,14 @@ class PaperTracker:
                 f"Circuit breaker open for get_position({symbol}), "
                 f"returning from memory"
             )
-            return self._positions.get(symbol)
+            result: dict[str, Any] | None = self._positions.get(symbol)
+            return result
         except Exception as e:
             logger.error(f"Redis error in get_position({symbol}): {e}")
             self.on_redis_failure(str(e), affected_operations=["get_position"])
             # Return from memory as fallback
-            return self._positions.get(symbol)
+            result: dict[str, Any] | None = self._positions.get(symbol)
+            return result
 
     def save_position(self, symbol: str, position: dict[str, Any]) -> bool:
         """Save position to Redis with circuit breaker protection.
@@ -665,7 +667,8 @@ class PaperTracker:
         Returns:
             Circuit breaker state dictionary
         """
-        return self._redis_circuit.get_state_dict()
+        state: dict[str, Any] = self._redis_circuit.get_state_dict()
+        return state
 
     def reset_circuit_breaker(self) -> None:
         """Reset the Redis circuit breaker (useful for testing/recovery)."""

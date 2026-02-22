@@ -2,7 +2,7 @@
 name: "senior-dev"
 description: "Senior development subagent for complex/4SP+ work: architecture, tricky debugging, cross-cutting refactors, infra/CI/deploy work."
 mode: all
-model: "kimi-for-coding/k2p5_think"
+model: "zai-coding-plan/glm-5"
 temperature: 0.15
 tools:
   task: true

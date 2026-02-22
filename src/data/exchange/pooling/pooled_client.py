@@ -150,7 +150,8 @@ class PooledExchangeClient:
             ) as response,
         ):
             response.raise_for_status()
-            return await response.json()
+            result: dict[str, Any] = await response.json()
+            return result
 
     def _sign_request(
         self, method: str, endpoint: str, params: dict[str, Any] | None = None

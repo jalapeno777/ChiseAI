@@ -204,8 +204,9 @@ class DSLMigration:
         Returns:
             Version string (defaults to "1.0.0")
         """
-        metadata = config.get("metadata", {})
-        return metadata.get("version", "1.0.0")
+        metadata: dict[str, Any] = config.get("metadata", {})
+        version: str = metadata.get("version", "1.0.0")
+        return version
 
     def set_version(self, config: dict[str, Any], version: str) -> dict[str, Any]:
         """Set version in config.
