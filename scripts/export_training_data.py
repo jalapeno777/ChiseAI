@@ -406,10 +406,10 @@ def show_statistics(dataset_path: str, verbose: bool = False) -> int:
         print(f"Win rate:          {stats.win_rate:.2%}")
         print(f"Avg PnL:           {stats.avg_pnl:+.2f}%")
         print(f"Max drawdown:      {stats.max_drawdown:+.2f}%")
-        print(f"\nOutcome distribution:")
+        print("\nOutcome distribution:")
         print(f"  Wins:            {stats.outcome_distribution.get('wins', 0)}")
         print(f"  Losses:          {stats.outcome_distribution.get('losses', 0)}")
-        print(f"\nFeature statistics (first 5):")
+        print("\nFeature statistics (first 5):")
         for i, (name, mean) in enumerate(list(stats.feature_means.items())[:5]):
             std = stats.feature_stds.get(name, 0)
             print(f"  {name}: mean={mean:.4f}, std={std:.4f}")

@@ -162,7 +162,7 @@ class PreFlightValidator:
             # Skip all checks in force mode
             for name, checker in self._health_checkers.items():
                 check = checker()
-                check.mark_skipped(f"Validation skipped (force=true)")
+                check.mark_skipped("Validation skipped (force=true)")
                 result.add_check(check)
             result.valid = True
             return result

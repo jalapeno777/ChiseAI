@@ -122,7 +122,7 @@ async def smoke_test_price_cache_populated():
 
     # Verify the price was set BEFORE process_signal was called
     # Check that set_market_price was called with correct arguments
-    print(f"\n4. Verifying price was set with correct symbol format...")
+    print("\n4. Verifying price was set with correct symbol format...")
 
     # The key should be "BTC/USDT" (matching signal.token format)
     price_with_slash = market_data.get_price("BTC/USDT")
@@ -139,12 +139,12 @@ async def smoke_test_price_cache_populated():
     print("\n" + "=" * 60)
     print("✅ SMOKE TEST PASSED!")
     print("=" * 60)
-    print(f"\nSummary:")
-    print(f"  - Price cache was empty before trading: ✓")
-    print(f"  - Price was populated from OHLCV data: ✓")
-    print(f"  - Price accessible with signal.token format ('BTC/USDT'): ✓")
+    print("\nSummary:")
+    print("  - Price cache was empty before trading: ✓")
+    print("  - Price was populated from OHLCV data: ✓")
+    print("  - Price accessible with signal.token format ('BTC/USDT'): ✓")
     print(f"  - Latest close price ({expected_price}) correctly cached: ✓")
-    print(f"  - Signal processed and trade executed: ✓")
+    print("  - Signal processed and trade executed: ✓")
 
     # Cleanup
     await loader.shutdown()

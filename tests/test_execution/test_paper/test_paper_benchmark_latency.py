@@ -61,7 +61,7 @@ async def run_latency_benchmark(num_iterations: int = 10) -> dict:
         Benchmark results
     """
     print(f"\n{'=' * 60}")
-    print(f"Paper Trading Orchestrator - Latency Benchmark")
+    print("Paper Trading Orchestrator - Latency Benchmark")
     print(f"{'=' * 60}")
     print(f"Iterations: {num_iterations}")
     print()
@@ -269,7 +269,7 @@ async def demonstrate_trade_flow():
         signal_id="demo-signal-001",
     )
 
-    print(f"1. Signal Generated:")
+    print("1. Signal Generated:")
     print(f"   Token: {signal.token}")
     print(f"   Direction: {signal.direction.value.upper()}")
     print(f"   Confidence: {signal.confidence:.1%}")
@@ -284,7 +284,7 @@ async def demonstrate_trade_flow():
         current_positions=[],
     )
 
-    print(f"2. Risk Assessment:")
+    print("2. Risk Assessment:")
     print(f"   Approved: {assessment.approved}")
     print(f"   Position Size: {assessment.position_size:.6f}")
     print(f"   Max Loss: ${assessment.max_loss_amount:.2f}")
@@ -301,7 +301,7 @@ async def demonstrate_trade_flow():
             quantity=assessment.position_size,
         )
 
-        print(f"3. Order Created:")
+        print("3. Order Created:")
         print(f"   Order ID: {order.order_id}")
         print(f"   Side: {order.side.value.upper()}")
         print(f"   Quantity: {order.quantity:.6f}")
@@ -313,7 +313,7 @@ async def demonstrate_trade_flow():
         order_sim = OrderSimulator(fill_model=fill_model)
         filled_order = await order_sim.place_order(order)
 
-        print(f"4. Order Filled:")
+        print("4. Order Filled:")
         print(f"   State: {filled_order.state.value.upper()}")
         print(f"   Filled Qty: {filled_order.filled_quantity:.6f}")
         print(f"   Avg Fill Price: ${filled_order.avg_fill_price:,.2f}")
@@ -332,7 +332,7 @@ async def demonstrate_trade_flow():
             },
         )
 
-        print(f"5. Position Opened:")
+        print("5. Position Opened:")
         print(f"   Position ID: {position.position_id}")
         print(f"   Side: {position.side.upper()}")
         print(f"   Entry Price: ${position.entry_price:,.2f}")
@@ -343,7 +343,7 @@ async def demonstrate_trade_flow():
         await position_tracker.update_position(position.position_id, 3100.0)
         position = await position_tracker.get_position(position.position_id)
 
-        print(f"6. Position Update (Price moved to $3,100):")
+        print("6. Position Update (Price moved to $3,100):")
         print(f"   Current Price: ${position.current_price:,.2f}")
         print(f"   Unrealized PnL: ${position.unrealized_pnl:,.2f}")
         print(f"   PnL %: {position.unrealized_pnl_pct:.2f}%")
@@ -354,7 +354,7 @@ async def demonstrate_trade_flow():
             position.position_id, 3050.0
         )
 
-        print(f"7. Position Closed (Exit at $3,050):")
+        print("7. Position Closed (Exit at $3,050):")
         print(f"   Realized PnL: ${realized_pnl:,.2f}")
         print(f"   Status: {'WIN' if realized_pnl > 0 else 'LOSS'}")
 

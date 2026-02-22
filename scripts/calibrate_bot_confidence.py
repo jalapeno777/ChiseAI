@@ -25,7 +25,7 @@ async def calibrate(
     # Calculate current metrics
     metrics = await tracker.calculate_metrics(days=days)
 
-    print(f"\nCurrent Performance:")
+    print("\nCurrent Performance:")
     print(f"  Total Reviews: {metrics.total_reviews}")
     print(f"  Accuracy Rate: {metrics.accuracy_rate:.1f}%")
     print(f"  Avg Confidence: {metrics.avg_confidence:.1f}%")
@@ -35,23 +35,23 @@ async def calibrate(
     # Get recommended thresholds
     recommended = await tracker.get_recommended_thresholds()
 
-    print(f"\n📈 Recommended Thresholds:")
+    print("\n📈 Recommended Thresholds:")
     print(f"  Approve:     {recommended['approve']:.1f}%")
     print(f"  Comment:     {recommended['comment']:.1f}%")
     print(f"  Auto-merge:  {recommended['auto_merge']:.1f}%")
 
     if dry_run:
-        print(f"\n🔍 Dry run - no changes applied")
+        print("\n🔍 Dry run - no changes applied")
         return
 
     # Apply new thresholds
-    print(f"\n✅ Applying new thresholds...")
+    print("\n✅ Applying new thresholds...")
     # Implementation would update Redis/config
     print("Feature: Threshold updates (requires Redis connection)")
 
     # Export to Grafana
     grafana_data = await tracker.export_to_grafana(metrics)
-    print(f"\n📤 Exported metrics to Grafana format")
+    print("\n📤 Exported metrics to Grafana format")
 
     # Save report
     report = {

@@ -212,7 +212,7 @@ async def cmd_status(args: argparse.Namespace) -> int:
         print("ℹ️  No canaries found")
         return 1
 
-    print(f"\n📋 Canary Status Summary")
+    print("\n📋 Canary Status Summary")
     print(f"   Total: {len(all_canaries)} | Active: {len(active_canaries)}")
     print()
 

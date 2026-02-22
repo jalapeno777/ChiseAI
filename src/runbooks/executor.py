@@ -206,7 +206,7 @@ class RunbookExecutor:
             self.logger.info(f"\nStep {i}/{len(runbook.steps)}: {step.name}")
 
             if not step.is_executable():
-                self.logger.info(f"  Skipping (no executable action)")
+                self.logger.info("  Skipping (no executable action)")
                 continue
 
             result = self._execute_step(step, dry_run)
@@ -247,7 +247,7 @@ class RunbookExecutor:
 
         # Summary
         self.logger.info(f"\n{'=' * 50}")
-        self.logger.info(f"Execution Summary")
+        self.logger.info("Execution Summary")
         self.logger.info(f"{'=' * 50}")
         self.logger.info(f"Total steps: {execution_result.total_steps}")
         self.logger.info(f"Passed: {passed}")
@@ -295,7 +295,7 @@ class RunbookExecutor:
                     success=False,
                     return_code=1,
                     stdout="",
-                    stderr=f"",
+                    stderr="",
                     execution_time_ms=(time.time() - start_time) * 1000,
                     error_message=f"Script not found: {script_path}",
                 )

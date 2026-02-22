@@ -327,10 +327,10 @@ def print_statistics(stats) -> None:
     print(f"Win Rate:       {stats.win_rate:.2%}")
     print(f"Avg PnL:        {stats.avg_pnl:.2f}%")
     print(f"Max Drawdown:   {stats.max_drawdown:.2f}%")
-    print(f"\nOutcome Distribution:")
+    print("\nOutcome Distribution:")
     print(f"  Wins:         {stats.outcome_distribution.get('wins', 0)}")
     print(f"  Losses:       {stats.outcome_distribution.get('losses', 0)}")
-    print(f"\nFeature Means:")
+    print("\nFeature Means:")
     for fname, mean in list(stats.feature_means.items())[:5]:
         print(f"  {fname}:      {mean:.4f}")
     print("-" * 50)

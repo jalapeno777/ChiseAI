@@ -1076,7 +1076,7 @@ class SprintCleanup:
                     lines.append(f"{icon} [{issue.category}] {issue.description}")
                     lines.append(f"   Action: {issue.action}")
                     if issue.auto_fixable:
-                        lines.append(f"   Auto-fixable: ✓")
+                        lines.append("   Auto-fixable: ✓")
                     lines.append("")
 
         # Actions taken

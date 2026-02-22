@@ -141,7 +141,7 @@ Examples:
                         file_contents = batch_data["contents"]
                 else:
                     print(
-                        f"Error: Invalid input format. Expected list or object with 'files' key",
+                        "Error: Invalid input format. Expected list or object with 'files' key",
                         file=sys.stderr,
                     )
                     sys.exit(1)

@@ -100,7 +100,7 @@ async def verify_model_fallback():
     config1 = KimiConfig(model="k2p5", accessible_models=[])
     client1 = KimiClient(config1)
     selected1 = client1._select_model()
-    print(f"Test 1 - No accessible models:")
+    print("Test 1 - No accessible models:")
     print(f"  Default: k2p5, Selected: {selected1}")
     assert selected1 == "k2p5", "Should use default when no accessible models"
     print("  ✓ PASS")
@@ -109,7 +109,7 @@ async def verify_model_fallback():
     config2 = KimiConfig(model="k2p5", accessible_models=["kimi-for-coding"])
     client2 = KimiClient(config2)
     selected2 = client2._select_model()
-    print(f"\nTest 2 - Default not accessible:")
+    print("\nTest 2 - Default not accessible:")
     print(f"  Default: k2p5, Accessible: {config2.accessible_models}")
     print(f"  Selected: {selected2}")
     assert selected2 == "kimi-for-coding", "Should fall back to accessible model"
@@ -119,7 +119,7 @@ async def verify_model_fallback():
     config3 = KimiConfig(model="k2p5", accessible_models=["kimi-for-coding", "k2p5"])
     client3 = KimiClient(config3)
     selected3 = client3._select_model()
-    print(f"\nTest 3 - Default is accessible:")
+    print("\nTest 3 - Default is accessible:")
     print(f"  Default: k2p5, Accessible: {config3.accessible_models}")
     print(f"  Selected: {selected3}")
     assert selected3 == "k2p5", "Should use default when it's accessible"
@@ -129,7 +129,7 @@ async def verify_model_fallback():
     config4 = KimiConfig(model="k2p5", accessible_models=["kimi-for-coding", "k2p5"])
     client4 = KimiClient(config4)
     selected4 = client4._select_model("kimi-for-coding")
-    print(f"\nTest 4 - Explicit model request:")
+    print("\nTest 4 - Explicit model request:")
     print(f"  Requested: kimi-for-coding, Accessible: {config4.accessible_models}")
     print(f"  Selected: {selected4}")
     assert selected4 == "kimi-for-coding", "Should use explicitly requested model"

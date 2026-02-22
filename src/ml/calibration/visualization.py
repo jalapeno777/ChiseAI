@@ -315,14 +315,14 @@ def create_grafana_panel_json(
         targets.append(
             {
                 "expr": f'ece_optimization{{signal_type="{signal_type}"}}',
-                "legendFormat": f"{{{{signal_type}}}} - Optimal Threshold",
+                "legendFormat": "{{signal_type}} - Optimal Threshold",
                 "refId": f"{signal_type}_threshold",
             }
         )
         targets.append(
             {
                 "expr": f'ece_optimization{{signal_type="{signal_type}"}}',
-                "legendFormat": f"{{{{signal_type}}}} - Min ECE",
+                "legendFormat": "{{signal_type}} - Min ECE",
                 "refId": f"{signal_type}_ece",
             }
         )

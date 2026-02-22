@@ -539,7 +539,7 @@ class PaperTradingGrafanaExporter:
             self._export_count += 1
             self._last_export_time = datetime.now(UTC)
 
-            logger.debug(f"Exported signal confidence distribution")
+            logger.debug("Exported signal confidence distribution")
             return True
 
         except Exception as e:

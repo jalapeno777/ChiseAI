@@ -233,7 +233,7 @@ class ExclusionManager:
 
         # Check title
         if self.is_title_excluded(title):
-            return True, f"Title matches exclusion pattern"
+            return True, "Title matches exclusion pattern"
 
         # Check files
         if files:

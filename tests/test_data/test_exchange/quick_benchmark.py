@@ -40,7 +40,7 @@ async def quick_benchmark():
     print(f"   Average: {avg_time:.2f}ms")
     print(f"   Min: {min(times):.2f}ms")
     print(f"   Max: {max(times):.2f}ms")
-    print(f"   Target: <20ms")
+    print("   Target: <20ms")
     print(f"   Status: {'PASS' if avg_time < 20 else 'FAIL'}")
 
     await pool.close_all()
@@ -51,7 +51,7 @@ async def quick_benchmark():
     print(f"   Pool Size: {metrics.pool_size}")
     print(f"   Total Requests: {metrics.total_requests}")
     print(f"   Success Rate: {metrics.success_rate:.1f}%")
-    print(f"   Status: PASS")
+    print("   Status: PASS")
 
     # Test 3: Rate limiting
     print("\n3. Rate Limiting Test")
@@ -81,8 +81,8 @@ async def quick_benchmark():
     print(
         f"\nConnection Acquisition: {avg_time:.2f}ms (Target: <20ms) - {'PASS' if avg_time < 20 else 'FAIL'}"
     )
-    print(f"Pool Metrics: Available and tracking correctly - PASS")
-    print(f"Rate Limiting: Pre-emptive limiting active - PASS")
+    print("Pool Metrics: Available and tracking correctly - PASS")
+    print("Rate Limiting: Pre-emptive limiting active - PASS")
     print("\nOverall: PASS - Connection pooling implemented successfully")
     print("=" * 60)
 

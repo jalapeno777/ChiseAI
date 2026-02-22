@@ -214,7 +214,7 @@ class BurnInTest:
                 pg_attempts.append(f"env_creds: {e}")
 
         if not pg_connected:
-            logger.error(f"✗ PostgreSQL: All connection attempts failed")
+            logger.error("✗ PostgreSQL: All connection attempts failed")
             for attempt in pg_attempts:
                 logger.error(f"  - {attempt}")
             self.metrics.add_incident(

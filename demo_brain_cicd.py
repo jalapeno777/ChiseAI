@@ -214,7 +214,7 @@ def demo_rollback() -> None:
 
         # Show statistics
         stats = manager.get_rollback_statistics()
-        print(f"\nRollback Statistics:")
+        print("\nRollback Statistics:")
         print(f"  Total rollbacks: {stats['total_rollbacks']}")
         print(f"  Successful: {stats['successful_rollbacks']}")
         print(f"  Target met %: {stats['target_met_percentage']:.1f}%")

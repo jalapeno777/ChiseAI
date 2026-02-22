@@ -215,7 +215,7 @@ Examples:
 
     args = parser.parse_args()
 
-    print(f"Connecting to InfluxDB...")
+    print("Connecting to InfluxDB...")
     writer = BacktestKPIWriter()
 
     # Health check
@@ -223,7 +223,7 @@ Examples:
         print("ERROR: InfluxDB health check failed")
         return 1
 
-    print(f"InfluxDB connection OK")
+    print("InfluxDB connection OK")
 
     strategies = []
     if args.multiple:
@@ -257,7 +257,7 @@ Examples:
 
     # Verify if requested
     if args.verify:
-        print(f"\nVerifying data...")
+        print("\nVerifying data...")
         for strategy_id, _, _ in strategies:
             results = writer.query_kpis(strategy_id=strategy_id, limit=5)
             print(f"  {strategy_id}: {len(results)} records found")

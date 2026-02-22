@@ -159,7 +159,7 @@ def main() -> None:
         max_windows=10,
     )
 
-    print(f"\nConfiguration:")
+    print("\nConfiguration:")
     print(f"  Train window: {config.train_days} days")
     print(f"  Test window: {config.test_days} days")
     print(f"  Step size: {config.step_days} days")
@@ -169,7 +169,7 @@ def main() -> None:
     start_date = datetime(2024, 1, 1)
     data = generate_sample_data(start_date, days=180, trend="up")
 
-    print(f"\nData:")
+    print("\nData:")
     print(f"  Total samples: {len(data)}")
     print(f"  Date range: {data[0]['timestamp']} to {data[-1]['timestamp']}")
 
@@ -177,7 +177,7 @@ def main() -> None:
     evaluator = WalkForwardEvaluator(config)
     strategy = SampleStrategy()
 
-    print(f"\nRunning walk-forward evaluation...")
+    print("\nRunning walk-forward evaluation...")
     print("-" * 70)
 
     result = evaluator.evaluate_strategy(
@@ -187,14 +187,14 @@ def main() -> None:
     )
 
     # Output results
-    print(f"\nEVALUATION RESULTS")
+    print("\nEVALUATION RESULTS")
     print("-" * 70)
     print(f"Strategy ID: {result.strategy_id}")
     print(f"Look-ahead bias check: {result.look_ahead_check.value}")
     print(f"Total evaluation time: {result.total_evaluation_time_seconds:.3f}s")
     print(f"Number of windows: {len(result.window_results)}")
 
-    print(f"\nPer-Window Results:")
+    print("\nPer-Window Results:")
     print("-" * 70)
     for i, window_result in enumerate(result.window_results):
         w = window_result.window
@@ -214,7 +214,7 @@ def main() -> None:
         elif window_result.error_message:
             print(f"  Error: {window_result.error_message}")
 
-    print(f"\nAggregated Metrics:")
+    print("\nAggregated Metrics:")
     print("-" * 70)
     agg = result.aggregated
     print(f"  Windows evaluated: {agg.window_count}")
@@ -232,7 +232,7 @@ def main() -> None:
         print(f"  Worst Window: #{agg.worst_window_index + 1}")
 
     # Output as JSON
-    print(f"\nJSON Output (truncated):")
+    print("\nJSON Output (truncated):")
     print("-" * 70)
     output = result.to_dict()
     # Truncate window_results for display

@@ -99,7 +99,7 @@ class ValidationResult:
                 print(f"  {fr_id}: Consider stories {', '.join(stories)}")
 
         if verbose:
-            print(f"\n📊 Summary Statistics:")
+            print("\n📊 Summary Statistics:")
             for key, value in self.stats.items():
                 print(f"  {key}: {value}")
 

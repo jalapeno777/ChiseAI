@@ -152,7 +152,7 @@ class DiscordIntegrationTester:
         if not self.webhook_url:
             result["error"] = "DISCORD_WEBHOOK_URL not configured"
             result["status"] = "skipped"
-            print(f"  Status: ⚠ SKIPPED (no webhook configured)")
+            print("  Status: ⚠ SKIPPED (no webhook configured)")
             return result
 
         try:
@@ -188,7 +188,7 @@ class DiscordIntegrationTester:
                         # Discord returns 204 on success, no message ID in webhook response
                         result["message_id"] = f"webhook-{uuid.uuid4().hex[:8]}"
                         result["status"] = "delivered"
-                        print(f"  Status: ✓ DELIVERED")
+                        print("  Status: ✓ DELIVERED")
                         print(f"  Message ID: {result['message_id']}")
                     elif resp.status == 429:
                         retry_after = resp.headers.get("Retry-After", "unknown")
@@ -321,9 +321,9 @@ _Guild: {TARGET_GUILD_ID} | Automated Test_"""
 
         enforcement = self.guild_lock_status.get("enforcement_status", "UNKNOWN")
         if enforcement == "ENFORCED":
-            print(f"Enforcement Status:  ✓ ENFORCED")
+            print("Enforcement Status:  ✓ ENFORCED")
         else:
-            print(f"Enforcement Status:  ✗ NOT ENFORCED")
+            print("Enforcement Status:  ✗ NOT ENFORCED")
 
         print()
 

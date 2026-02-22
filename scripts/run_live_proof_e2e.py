@@ -271,7 +271,7 @@ class BybitDataIngestion:
         Returns:
             Tuple of (price, timestamp)
         """
-        url = f"https://api.bybit.com/v5/market/tickers"
+        url = "https://api.bybit.com/v5/market/tickers"
 
         async with aiohttp.ClientSession() as session:
             async with session.get(
@@ -764,7 +764,7 @@ class BybitPaperTrader:
                         status="Filled",
                     )
                 )
-                logger.info(f"  [Trade] ✓ Order filled")
+                logger.info("  [Trade] ✓ Order filled")
 
                 # Stage 4: Close pending
                 lifecycle.append(
@@ -808,7 +808,7 @@ class BybitPaperTrader:
                         status="Closed",
                     )
                 )
-                logger.info(f"  [Trade] ✓ Position closed")
+                logger.info("  [Trade] ✓ Position closed")
 
             except Exception as e:
                 logger.error(f"  [Trade] ✗ Failed: {e}")
@@ -972,7 +972,7 @@ class LiveProofE2E:
         logger.info("=" * 70)
         logger.info(f"Status: {self.evidence.status.upper()}")
         logger.info(f"Total Latency: {self.evidence.total_latency_ms:.0f}ms")
-        logger.info(f"Evidence: _bmad-output/live-proof-e2e-evidence.json")
+        logger.info("Evidence: _bmad-output/live-proof-e2e-evidence.json")
 
         return self.evidence
 
@@ -1020,7 +1020,7 @@ class LiveProofE2E:
         logger.info("Running technical analysis...")
         analyzer = TechnicalAnalyzer()
         analysis = analyzer.analyze(btc_data)
-        logger.info(f"✓ Analysis complete:")
+        logger.info("✓ Analysis complete:")
         logger.info(f"  Direction: {analysis['direction'].value.upper()}")
         logger.info(f"  Confluence: {analysis['confluence_score']:.1f}")
 
@@ -1034,7 +1034,7 @@ class LiveProofE2E:
             price=btc_data.price,
         )
 
-        logger.info(f"✓ LLM enhancement complete:")
+        logger.info("✓ LLM enhancement complete:")
         logger.info(
             f"  Selected Provider: {self.evidence.llm_enhancement.selected_provider}"
         )
@@ -1075,7 +1075,7 @@ class LiveProofE2E:
             llm_evidence=self.evidence.llm_enhancement,
         )
 
-        logger.info(f"✓ Signal generated:")
+        logger.info("✓ Signal generated:")
         logger.info(f"  ID: {self.evidence.signal.signal_id}")
         logger.info(f"  Token: {self.evidence.signal.token}")
         logger.info(f"  Direction: {self.evidence.signal.direction}")
@@ -1087,7 +1087,7 @@ class LiveProofE2E:
 
         if not self.evidence.signal.threshold_met:
             logger.warning(
-                f"  ⚠ Confidence below 75% threshold - signal not actionable"
+                "  ⚠ Confidence below 75% threshold - signal not actionable"
             )
 
         logger.info("")
@@ -1110,7 +1110,7 @@ class LiveProofE2E:
                 market_data=btc_data,
             )
 
-        logger.info(f"✓ Trade lifecycle complete:")
+        logger.info("✓ Trade lifecycle complete:")
         logger.info(f"  Order ID: {self.evidence.paper_trade.order_id}")
         logger.info(f"  Symbol: {self.evidence.paper_trade.symbol}")
         logger.info(f"  Side: {self.evidence.paper_trade.side}")
@@ -1122,7 +1122,7 @@ class LiveProofE2E:
         )
 
         # Log lifecycle stages
-        logger.info(f"  Lifecycle stages:")
+        logger.info("  Lifecycle stages:")
         for stage in self.evidence.paper_trade.lifecycle:
             logger.info(
                 f"    - {stage.stage}: {stage.status} @ {stage.timestamp.strftime('%H:%M:%S.%f')[:-3]}"
