@@ -141,9 +141,9 @@ class MatchMetadata:
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for database storage."""
         return {
-            "matched_signal_id": str(self.matched_signal_id)
-            if self.matched_signal_id
-            else None,
+            "matched_signal_id": (
+                str(self.matched_signal_id) if self.matched_signal_id else None
+            ),
             "match_confidence": round(self.match_confidence, 4),
             "match_method": self.match_method,
             "match_timestamp": self.match_timestamp.isoformat(),
@@ -292,7 +292,6 @@ class SignalOutcomeMatcher:
 
         results: list[OutcomeMatchResult] = []
         batch_size = self.config.batch_size
-        offset = 0
         limit = limit or batch_size
 
         try:
@@ -422,11 +421,16 @@ class SignalOutcomeMatcher:
                         COUNT(*) as total_outcomes,
                         COUNT(signal_id) as matched_outcomes,
                         AVG(match_confidence) as avg_confidence,
-                        COUNT(CASE WHEN match_confidence >= 0.95 THEN 1 END) as high_confidence_matches,
-                        COUNT(CASE WHEN outcome_type = 'tp_hit' THEN 1 END) as tp_hits,
-                        COUNT(CASE WHEN outcome_type = 'sl_hit' THEN 1 END) as sl_hits,
-                        COUNT(CASE WHEN outcome_type = 'manual_close' THEN 1 END) as manual_closes,
-                        COUNT(CASE WHEN outcome_type = 'expired' THEN 1 END) as expired
+                        COUNT(CASE WHEN match_confidence >= 0.95
+                            THEN 1 END) as high_confidence_matches,
+                        COUNT(CASE WHEN outcome_type = 'tp_hit'
+                            THEN 1 END) as tp_hits,
+                        COUNT(CASE WHEN outcome_type = 'sl_hit'
+                            THEN 1 END) as sl_hits,
+                        COUNT(CASE WHEN outcome_type = 'manual_close'
+                            THEN 1 END) as manual_closes,
+                        COUNT(CASE WHEN outcome_type = 'expired'
+                            THEN 1 END) as expired
                     FROM signal_outcomes
                     WHERE fill_timestamp BETWEEN $1 AND $2
                     """,
@@ -577,7 +581,6 @@ class SignalOutcomeMatcher:
             # Find best match by confidence
             best_match = None
             best_confidence = 0.0
-            best_metadata = None
 
             for signal_with_outcome in signals:
                 signal = signal_with_outcome.signal
@@ -588,7 +591,7 @@ class SignalOutcomeMatcher:
                 if confidence > best_confidence:
                     best_confidence = confidence
                     best_match = signal
-                    best_metadata = metadata
+                    _ = metadata  # metadata used for debugging/logging
 
             # Check if confidence meets threshold
             if best_match and best_confidence >= self.config.min_confidence_threshold:
