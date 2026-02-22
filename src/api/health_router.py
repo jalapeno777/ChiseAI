@@ -29,6 +29,17 @@ router = APIRouter(prefix="/api/v1/health", tags=["health"])
 
 # Global monitor instance (initialized by application)
 _monitor: HealthMonitor | None = None
+_discord_initializer: Any | None = None
+
+
+def set_discord_initializer(initializer: Any) -> None:
+    """Set the global Discord initializer instance.
+
+    Args:
+        initializer: DiscordInitializer instance
+    """
+    global _discord_initializer
+    _discord_initializer = initializer
 
 # Global ACP container and Discord initializer (set by startup.py)
 _acp_container: Any | None = None

@@ -130,6 +130,13 @@ class SelfHealingEngine:
             logger.debug("Self-healing engine is disabled, skipping log entry")
             return None
 
+        # Skip if not in test mode and entry is injected
+        if not getattr(self, "_test_mode", False) and log_entry.metadata.get(
+            "injected"
+        ):
+            logger.debug("Skipping injected log entry (test mode not enabled)")
+            return None
+
         # Match against patterns
         match = self._pattern_matcher.match(log_entry)
         if not match.matched:
@@ -592,3 +599,17 @@ class SelfHealingEngine:
     def is_enabled(self) -> bool:
         """Check if engine is enabled."""
         return self._enabled
+
+    def enable_test_mode(self) -> None:
+        """Enable test mode - allows injected failures to be processed."""
+        self._test_mode = True
+        logger.info("SelfHealingEngine test mode enabled")
+
+    def disable_test_mode(self) -> None:
+        """Disable test mode."""
+        self._test_mode = False
+        logger.info("SelfHealingEngine test mode disabled")
+
+    def is_test_mode(self) -> bool:
+        """Check if test mode is enabled."""
+        return getattr(self, "_test_mode", False)
