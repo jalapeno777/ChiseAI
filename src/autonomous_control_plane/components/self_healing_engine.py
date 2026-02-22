@@ -307,9 +307,9 @@ class SelfHealingEngine:
                     "max": self.GLOBAL_BUDGET_MAX,
                     "remaining": max(0, self.GLOBAL_BUDGET_MAX - count),
                     "window_seconds": self.GLOBAL_BUDGET_WINDOW_SECONDS,
-                    "ttl_seconds": ttl
-                    if ttl > 0
-                    else self.GLOBAL_BUDGET_WINDOW_SECONDS,
+                    "ttl_seconds": (
+                        ttl if ttl > 0 else self.GLOBAL_BUDGET_WINDOW_SECONDS
+                    ),
                 }
 
             return loop.run_until_complete(get_status())

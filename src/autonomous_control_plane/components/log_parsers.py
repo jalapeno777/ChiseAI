@@ -339,8 +339,7 @@ class SimpleLogParser(BaseLogParser):
         ),
         # Standard timestamp with space separator
         re.compile(
-            r"(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+"
-            r"(\w+)\s+\[(\w+)\]\s+(.*)"
+            r"(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+" r"(\w+)\s+\[(\w+)\]\s+(.*)"
         ),
         # Timestamp in brackets
         re.compile(

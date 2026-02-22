@@ -926,9 +926,9 @@ class TestMarketRealismValidation:
         mean_slippage = statistics.mean(slippages)
 
         # Mean should be in realistic range (2-10 bps)
-        assert 1.0 <= mean_slippage <= 15.0, (
-            f"Mean slippage {mean_slippage} bps outside expected range"
-        )
+        assert (
+            1.0 <= mean_slippage <= 15.0
+        ), f"Mean slippage {mean_slippage} bps outside expected range"
 
     def test_latency_distribution_matches_config(self):
         """Verify latency distribution matches configured parameters."""
@@ -944,14 +944,14 @@ class TestMarketRealismValidation:
         std_latency = statistics.stdev(latencies)
 
         # Mean should be close to configured value (within 10%)
-        assert 40 <= mean_latency <= 60, (
-            f"Mean latency {mean_latency}ms outside expected range"
-        )
+        assert (
+            40 <= mean_latency <= 60
+        ), f"Mean latency {mean_latency}ms outside expected range"
 
         # Std should be reasonable (not too far from config)
-        assert 5 <= std_latency <= 30, (
-            f"Std latency {std_latency}ms outside expected range"
-        )
+        assert (
+            5 <= std_latency <= 30
+        ), f"Std latency {std_latency}ms outside expected range"
 
     def test_market_impact_formula_correctness(self):
         """Verify market impact formula is implemented correctly."""
@@ -1048,9 +1048,9 @@ class TestMarketRealismValidation:
             f"Min: {min(latencies):.2f}, Max: {max(latencies):.2f}"
         )
 
-        assert fill_rate >= 0.90, (
-            f"Fill rate {fill_rate:.2%} too low. Expected at least 90%"
-        )
+        assert (
+            fill_rate >= 0.90
+        ), f"Fill rate {fill_rate:.2%} too low. Expected at least 90%"
 
         # Print summary for validation
         print(f"\n=== 1000 Trade Simulation Results ===")
