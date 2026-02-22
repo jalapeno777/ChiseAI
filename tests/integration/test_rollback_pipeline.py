@@ -1,6 +1,5 @@
 """Integration tests for rollback pipeline."""
 
-
 import pytest
 
 

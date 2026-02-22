@@ -282,51 +282,59 @@ class TestMain:
 
     def test_no_brain_changes_no_force(self) -> None:
         """Test that evaluation is skipped when no brain changes."""
-        with patch.object(
-            run_brain_evaluation,
-            "detect_changed_files",
-            return_value=["src/api/main.py"],
-        ), patch("sys.argv", ["run_brain_evaluation.py"]):
+        with (
+            patch.object(
+                run_brain_evaluation,
+                "detect_changed_files",
+                return_value=["src/api/main.py"],
+            ),
+            patch("sys.argv", ["run_brain_evaluation.py"]),
+        ):
             result = run_brain_evaluation.main()
             assert result == 0
 
     def test_explicit_versions(self, tmp_path: Path) -> None:
         """Test running with explicit version list."""
-        with patch.object(
-            run_brain_evaluation,
-            "run_batch_evaluation",
-            return_value={
-                "versions_evaluated": 1,
-                "successful": 1,
-                "failed": 0,
-                "results_file": str(tmp_path / "results.json"),
-                "versions": ["brain-v1"],
-                "details": [],
-            },
-        ), patch(
-            "sys.argv", ["run_brain_evaluation.py", "--versions", "brain-v1"]
+        with (
+            patch.object(
+                run_brain_evaluation,
+                "run_batch_evaluation",
+                return_value={
+                    "versions_evaluated": 1,
+                    "successful": 1,
+                    "failed": 0,
+                    "results_file": str(tmp_path / "results.json"),
+                    "versions": ["brain-v1"],
+                    "details": [],
+                },
+            ),
+            patch("sys.argv", ["run_brain_evaluation.py", "--versions", "brain-v1"]),
         ):
             result = run_brain_evaluation.main()
             assert result == 0
 
     def test_force_flag(self) -> None:
         """Test that --force runs evaluation even without brain changes."""
-        with patch.object(
-            run_brain_evaluation,
-            "detect_changed_files",
-            return_value=["src/api/main.py"],
-        ), patch.object(
-            run_brain_evaluation,
-            "run_batch_evaluation",
-            return_value={
-                "versions_evaluated": 1,
-                "successful": 1,
-                "failed": 0,
-                "results_file": "results.json",
-                "versions": ["brain-abc1234"],
-                "details": [],
-            },
-        ), patch("sys.argv", ["run_brain_evaluation.py", "--force"]):
+        with (
+            patch.object(
+                run_brain_evaluation,
+                "detect_changed_files",
+                return_value=["src/api/main.py"],
+            ),
+            patch.object(
+                run_brain_evaluation,
+                "run_batch_evaluation",
+                return_value={
+                    "versions_evaluated": 1,
+                    "successful": 1,
+                    "failed": 0,
+                    "results_file": "results.json",
+                    "versions": ["brain-abc1234"],
+                    "details": [],
+                },
+            ),
+            patch("sys.argv", ["run_brain_evaluation.py", "--force"]),
+        ):
             result = run_brain_evaluation.main()
             assert result == 0
 

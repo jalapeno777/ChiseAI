@@ -28,9 +28,7 @@ class SemanticAnalyzer:
         """Initialize with optional pattern matcher."""
         self.pattern_matcher = pattern_matcher or PathPatternMatcher()
 
-    def analyze_file(
-        self, path: str, content: str | None = None
-    ) -> list[SemanticFlag]:
+    def analyze_file(self, path: str, content: str | None = None) -> list[SemanticFlag]:
         """
         Analyze a single file for semantic issues.
 

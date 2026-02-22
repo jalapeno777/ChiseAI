@@ -65,9 +65,7 @@ class CalibrationTracker:
         """Generate Redis key for daily metrics."""
         return f"{self.metrics_prefix}:metrics:{date.strftime('%Y-%m-%d')}"
 
-    async def log_review(
-        self, decision: Decision, review_id: str | None = None
-    ) -> str:
+    async def log_review(self, decision: Decision, review_id: str | None = None) -> str:
         """Log a review decision for calibration tracking."""
         review_id = review_id or self._generate_review_id(decision)
 

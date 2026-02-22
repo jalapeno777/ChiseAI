@@ -256,9 +256,7 @@ class FillBatch:
 
     fills: list[Fill]
     exchange: str
-    batch_timestamp: datetime = field(
-        default_factory=lambda: datetime.now(UTC)
-    )
+    batch_timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def __len__(self) -> int:
         """Return number of fills in batch."""

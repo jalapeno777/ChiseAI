@@ -192,14 +192,17 @@ class KimiDiagnosticProbe:
         start_time = time.perf_counter()
 
         try:
-            async with aiohttp.ClientSession() as session, session.get(
-                self.MODELS_URL,
-                headers={
-                    "Authorization": f"Bearer {self.api_key}",
-                    "Content-Type": "application/json",
-                },
-                timeout=aiohttp.ClientTimeout(total=30),
-            ) as response:
+            async with (
+                aiohttp.ClientSession() as session,
+                session.get(
+                    self.MODELS_URL,
+                    headers={
+                        "Authorization": f"Bearer {self.api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    timeout=aiohttp.ClientTimeout(total=30),
+                ) as response,
+            ):
                 latency_ms = (time.perf_counter() - start_time) * 1000
 
                 self.results["models_endpoint"]["status_code"] = response.status
@@ -277,25 +280,28 @@ class KimiDiagnosticProbe:
         start_time = time.perf_counter()
 
         try:
-            async with aiohttp.ClientSession() as session, session.post(
-                self.CHAT_COMPLETIONS_URL,
-                headers={
-                    "Authorization": f"Bearer {self.api_key}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "model": model,
-                    "messages": [
-                        {
-                            "role": "user",
-                            "content": "Say 'KIMI diagnostic test successful'",
-                        }
-                    ],
-                    "max_tokens": 50,
-                    "temperature": 0.1,
-                },
-                timeout=aiohttp.ClientTimeout(total=30),
-            ) as response:
+            async with (
+                aiohttp.ClientSession() as session,
+                session.post(
+                    self.CHAT_COMPLETIONS_URL,
+                    headers={
+                        "Authorization": f"Bearer {self.api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": model,
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": "Say 'KIMI diagnostic test successful'",
+                            }
+                        ],
+                        "max_tokens": 50,
+                        "temperature": 0.1,
+                    },
+                    timeout=aiohttp.ClientTimeout(total=30),
+                ) as response,
+            ):
                 latency_ms = (time.perf_counter() - start_time) * 1000
 
                 self.results["chat_completions_endpoint"][
@@ -319,12 +325,8 @@ class KimiDiagnosticProbe:
                         data = json.loads(response_text)
                         choices = data.get("choices", [])
                         if choices:
-                            content = (
-                                choices[0].get("message", {}).get("content", "")
-                            )
-                            preview = (
-                                content[:200] if content else "(empty response)"
-                            )
+                            content = choices[0].get("message", {}).get("content", "")
+                            preview = content[:200] if content else "(empty response)"
                         else:
                             preview = "(no choices in response)"
 

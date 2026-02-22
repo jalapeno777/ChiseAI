@@ -121,9 +121,7 @@ class PathAnalysisCache:
         self._memory_timestamps[key] = time.time()
         return True
 
-    def invalidate(
-        self, pr_number: int | None, commit_sha: str | None = None
-    ) -> int:
+    def invalidate(self, pr_number: int | None, commit_sha: str | None = None) -> int:
         """
         Invalidate cache entries for a PR.
 

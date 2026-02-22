@@ -592,9 +592,7 @@ class FeedbackOrchestrator:
         """
         safe_matches = []
         for match in matches:
-            signal_time = datetime.fromtimestamp(
-                match.signal.timestamp / 1000, tz=UTC
-            )
+            signal_time = datetime.fromtimestamp(match.signal.timestamp / 1000, tz=UTC)
             if boundary.is_safe(signal_time):
                 safe_matches.append(match)
             else:

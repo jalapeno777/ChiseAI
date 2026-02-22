@@ -252,19 +252,20 @@ class DiscordNotifier:
             # Import aiohttp here to avoid dependency issues
             import aiohttp
 
-            async with aiohttp.ClientSession() as session, session.post(
-                self.webhook_url,
-                json=payload,
-                headers={"Content-Type": "application/json"},
-            ) as response:
+            async with (
+                aiohttp.ClientSession() as session,
+                session.post(
+                    self.webhook_url,
+                    json=payload,
+                    headers={"Content-Type": "application/json"},
+                ) as response,
+            ):
                 if response.status == 204:
                     logger.info(f"Discord notification sent to {channel}")
                 elif response.status == 429:
                     # Rate limited by Discord
                     retry_after = int(response.headers.get("Retry-After", 60))
-                    logger.warning(
-                        f"Discord rate limited, retry after {retry_after}s"
-                    )
+                    logger.warning(f"Discord rate limited, retry after {retry_after}s")
                 else:
                     logger.warning(f"Discord webhook returned {response.status}")
         except ImportError:
