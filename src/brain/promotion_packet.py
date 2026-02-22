@@ -7,6 +7,7 @@ for brain version promotions.
 ST-CHISE-003: Brain Promotion Packet - Evidence + Rollback
 """
 
+import contextlib
 import json
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -270,10 +271,8 @@ If critical issues are detected after promotion:
             if metric_name in metrics_source:
                 value = metrics_source[metric_name]
                 # Ensure it's a float
-                try:
+                with contextlib.suppress(TypeError, ValueError):
                     metrics[metric_name] = float(value)
-                except (TypeError, ValueError):
-                    pass
 
         return metrics
 
@@ -378,9 +377,12 @@ def export_to_markdown(packet: PromotionPacket, filepath: str) -> None:
     # Approval Workflow
     lines.append("## Approval Workflow")
     lines.append("")
-    lines.append(
-        f"**Required Approvers:** {', '.join(packet.required_approvers) if packet.required_approvers else 'None specified'}"
+    approvers_str = (
+        ", ".join(packet.required_approvers)
+        if packet.required_approvers
+        else "None specified"
     )
+    lines.append(f"**Required Approvers:** {approvers_str}")
     lines.append("")
 
     if packet.signatures:
@@ -395,9 +397,14 @@ def export_to_markdown(packet: PromotionPacket, filepath: str) -> None:
                 ApprovalStatus.REJECTED: "❌",
             }.get(sig.status, "❓")
             comments = sig.comments or ""
-            lines.append(
-                f"| {sig.approver} | {status_emoji} {sig.status.value} | {sig.timestamp.strftime('%Y-%m-%d %H:%M')} | {comments} |"
+            timestamp_str = sig.timestamp.strftime("%Y-%m-%d %H:%M")
+            row_str = (
+                f"| {sig.approver} | "
+                f"{status_emoji} {sig.status.value} | "
+                f"{timestamp_str} | "
+                f"{comments} |"
             )
+            lines.append(row_str)
     else:
         lines.append("*No signatures yet*")
     lines.append("")
