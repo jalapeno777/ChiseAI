@@ -33,13 +33,13 @@ bootstrap(load_env=True)
 
 # Add src to path and bootstrap
 
-import requests
+import requests  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-from watchdog.events import FileSystemEvent, FileSystemEventHandler
-from watchdog.observers import Observer
+from watchdog.events import FileSystemEvent, FileSystemEventHandler  # noqa: E402
+from watchdog.observers import Observer  # noqa: E402
 
-from config.bootstrap import bootstrap
+from config.bootstrap import bootstrap  # noqa: E402
 
 
 @dataclass

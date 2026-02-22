@@ -376,4 +376,4 @@ class TestGrafanaVisibility:
 
 
 # Import patch for test files
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: E402

@@ -27,7 +27,7 @@ from config.bootstrap import bootstrap
 
 bootstrap(load_env=True)
 
-import aiohttp
+import aiohttp  # noqa: E402
 
 # Target guild ID for lock enforcement
 TARGET_GUILD_ID = "1413522994810327134"

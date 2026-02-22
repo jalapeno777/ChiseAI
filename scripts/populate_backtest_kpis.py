@@ -35,8 +35,8 @@ from config.bootstrap import bootstrap
 
 bootstrap(load_env=True)
 
-from backtesting.kpi_writer import BacktestKPIs, BacktestKPIWriter
-from config.bootstrap import bootstrap
+from backtesting.kpi_writer import BacktestKPIs, BacktestKPIWriter  # noqa: E402
+from config.bootstrap import bootstrap  # noqa: E402
 
 
 def generate_sample_kpis(

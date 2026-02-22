@@ -18,7 +18,7 @@ from config.bootstrap import bootstrap
 # Bootstrap environment first
 bootstrap(load_env=True)
 
-from pr_state_manager import PRState, PRStateManager, _utc_now
+from pr_state_manager import PRState, PRStateManager, _utc_now  # noqa: E402
 
 
 def register_new_pr(

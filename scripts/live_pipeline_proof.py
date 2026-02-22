@@ -42,8 +42,8 @@ logger = logging.getLogger(__name__)
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from config.bootstrap import bootstrap
-from llm.errors import (
+from config.bootstrap import bootstrap  # noqa: E402
+from llm.errors import (  # noqa: E402
     AuthError,
     NetworkError,
     QuotaError,
@@ -53,7 +53,7 @@ from llm.errors import (
     get_fallback_delay,
     should_retry,
 )
-from signal_generation.models import Signal, SignalDirection, SignalStatus
+from signal_generation.models import Signal, SignalDirection, SignalStatus  # noqa: E402
 
 
 @dataclass

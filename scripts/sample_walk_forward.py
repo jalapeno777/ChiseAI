@@ -18,7 +18,7 @@ from config.bootstrap import bootstrap
 
 bootstrap(load_env=True)
 
-from ml.walk_forward import (
+from ml.walk_forward import (  # noqa: E402
     LookAheadBiasCheck,
     WalkForwardConfig,
     WalkForwardEvaluator,

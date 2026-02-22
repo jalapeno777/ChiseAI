@@ -30,7 +30,7 @@ from chiseai.taiga_sync import (  # noqa: E402
 )
 
 # Bootstrap for environment variables
-from config.bootstrap import bootstrap
+from config.bootstrap import bootstrap  # noqa: E402
 
 
 def main() -> int:

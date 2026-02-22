@@ -19,7 +19,7 @@ from config.bootstrap import bootstrap
 
 bootstrap(load_env=True)
 
-from llm.kimi_client import KimiClient, KimiConfig
+from llm.kimi_client import KimiClient, KimiConfig  # noqa: E402
 
 
 async def verify_model_discovery():
