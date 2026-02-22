@@ -10,6 +10,7 @@ For ST-LAUNCH-018: Outcome Capture Service Implementation
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -192,10 +193,8 @@ class OutcomeCaptureService:
         # Cancel flush task
         if self._flush_task and not self._flush_task.done():
             self._flush_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._flush_task
-            except asyncio.CancelledError:
-                pass
 
         # Final flush of pending outcomes
         async with self._lock:

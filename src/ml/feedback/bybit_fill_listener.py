@@ -10,6 +10,7 @@ For ST-LAUNCH-018: Outcome Capture Service Implementation
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import hashlib
 import hmac
 import json
@@ -157,17 +158,13 @@ class BybitFillListener:
         # Cancel tasks
         if self._ws_task and not self._ws_task.done():
             self._ws_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._ws_task
-            except asyncio.CancelledError:
-                pass
 
         if self._heartbeat_task and not self._heartbeat_task.done():
             self._heartbeat_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._heartbeat_task
-            except asyncio.CancelledError:
-                pass
 
         # Close WebSocket
         if self._ws:
@@ -225,10 +222,8 @@ class BybitFillListener:
             return False
 
         # Check message timeout (2x heartbeat interval)
-        if self.state.time_since_last_message > self.config.heartbeat_interval * 2:
-            return False
-
-        return True
+        timeout_threshold = self.config.heartbeat_interval * 2
+        return self.state.time_since_last_message <= timeout_threshold
 
     async def _websocket_loop(self) -> None:
         """Main WebSocket connection loop with reconnection."""
@@ -336,7 +331,7 @@ class BybitFillListener:
                 logger.error(f"Authentication failed: {data}")
                 return False
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.error("Authentication timeout")
             return False
         except Exception as e:
@@ -388,10 +383,9 @@ class BybitFillListener:
             # Auth response (handled in _authenticate)
             pass
 
-        elif "success" in data:
+        elif "success" in data and data.get("success") is not True:
             # Subscription response
-            if data.get("success") is not True:
-                logger.warning(f"Operation failed: {data}")
+            logger.warning(f"Operation failed: {data}")
 
     async def _handle_execution(self, data: dict[str, Any]) -> None:
         """Handle execution/fill event.
