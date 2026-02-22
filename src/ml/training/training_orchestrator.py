@@ -94,9 +94,9 @@ class TrainingRun:
             "state": self.state.name,
             "status": self.status.name if self.status else None,
             "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
             "duration_seconds": self.duration_seconds,
             "model_version": self.model_version,
             "metrics": self.metrics,
@@ -365,9 +365,9 @@ class TrainingOrchestrator:
                 logger.warning("Training already in progress")
                 return TrainingRun(
                     run_id="rejected",
-                    trigger_type=trigger_result.trigger_type.name
-                    if trigger_result
-                    else "manual",
+                    trigger_type=(
+                        trigger_result.trigger_type.name if trigger_result else "manual"
+                    ),
                     state=TrainingState.IDLE,
                     status=TrainingStatus.ALREADY_RUNNING,
                     error_message="Training already in progress",
@@ -383,9 +383,9 @@ class TrainingOrchestrator:
                 logger.warning(error_msg)
                 return TrainingRun(
                     run_id="rejected",
-                    trigger_type=trigger_result.trigger_type.name
-                    if trigger_result
-                    else "manual",
+                    trigger_type=(
+                        trigger_result.trigger_type.name if trigger_result else "manual"
+                    ),
                     state=TrainingState.IDLE,
                     status=TrainingStatus.ERROR,
                     error_message=error_msg,
@@ -394,9 +394,9 @@ class TrainingOrchestrator:
             # Create run record
             run = TrainingRun(
                 run_id=self._generate_run_id(),
-                trigger_type=trigger_result.trigger_type.name
-                if trigger_result
-                else "manual",
+                trigger_type=(
+                    trigger_result.trigger_type.name if trigger_result else "manual"
+                ),
                 state=TrainingState.VALIDATING,
                 started_at=datetime.now(UTC),
             )
@@ -617,8 +617,8 @@ class TrainingOrchestrator:
             "successful_runs": successful_runs,
             "failed_runs": failed_runs,
             "success_rate": successful_runs / total_runs if total_runs > 0 else 0.0,
-            "current_state": self._current_run.state.name
-            if self._current_run
-            else "idle",
+            "current_state": (
+                self._current_run.state.name if self._current_run else "idle"
+            ),
             "is_monitoring": self._running,
         }
