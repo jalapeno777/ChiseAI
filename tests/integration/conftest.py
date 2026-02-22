@@ -42,7 +42,7 @@ async def mock_influx():
 @pytest.fixture
 async def acp_container(mock_redis, mock_influx):
     """Create ACPContainer with mocked dependencies."""
-    from unittest.mock import AsyncMock, patch
+    from unittest.mock import patch
 
     from src.autonomous_control_plane.startup import ACPContainer
 

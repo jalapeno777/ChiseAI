@@ -11,7 +11,6 @@ For ST-NS-039: Retry Coordinator with Budget Management
 
 from __future__ import annotations
 
-import asyncio
 
 import pytest
 from src.autonomous_control_plane.components.retry_coordinator import RetryCoordinator
@@ -21,8 +20,6 @@ from src.autonomous_control_plane.models.retry_policy import (
     RetryPolicy,
 )
 from src.common.circuit_breaker import (
-    CircuitBreaker,
-    CircuitBreakerOpen,
     CircuitBreakerRegistry,
     CircuitBreakerState,
 )

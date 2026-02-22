@@ -11,7 +11,6 @@ from autonomous_control_plane.components.circuit_breaker_registry import (
 )
 from autonomous_control_plane.models.circuit_breaker import (
     CircuitBreakerConfig,
-    CircuitBreakerHealth,
     CircuitBreakerState,
     CircuitBreakerStateModel,
 )

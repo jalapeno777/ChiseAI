@@ -13,8 +13,8 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import datetime
-from enum import Enum, StrEnum
-from typing import Any, Callable, Optional
+from enum import StrEnum
+from typing import Any, Callable
 
 from src.autonomous_control_plane.models.healing import FailurePatternType, LogEntry
 

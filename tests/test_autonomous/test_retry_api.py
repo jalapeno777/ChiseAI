@@ -17,7 +17,7 @@ For ST-NS-039: Retry Coordinator with Budget Management - Coverage Improvement
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi import FastAPI

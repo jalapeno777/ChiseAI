@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from sqlalchemy import Engine
-    from sqlalchemy.orm import Session
 
 from src.autonomous_control_plane.models.retry_policy import (
     DeadLetterQueueItem,
@@ -83,9 +82,7 @@ class DeadLetterQueue:
                 MetaData,
                 String,
                 Table,
-                create_engine,
                 inspect,
-                text,
             )
 
             metadata = MetaData()
