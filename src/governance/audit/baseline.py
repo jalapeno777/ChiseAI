@@ -9,9 +9,10 @@ including retrieval latency, memory hit rate, and deduplication ratio.
 
 import json
 import logging
+import time
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Optional, Protocol, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
@@ -375,7 +376,7 @@ class RetrievalBaseline:
         Returns:
             Dictionary of Redis keys that were written
         """
-        timestamp = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
+        timestamp_str = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
 
         # Define Redis keys
         baseline_key = BASELINE_CURRENT_KEY
