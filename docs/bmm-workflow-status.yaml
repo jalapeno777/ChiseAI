@@ -666,20 +666,21 @@ epics:
   # EP-GOV-001: Agent Swarm Governance Enhancement (12 stories, 68 points)
   - id: EP-GOV-001
     name: Agent Swarm Governance Enhancement
-    status: in_progress
+    status: completed
     story_ids: [ST-GOV-001, ST-GOV-002, ST-GOV-003, ST-GOV-004, ST-GOV-005, ST-GOV-006, ST-GOV-007, ST-GOV-008, ST-GOV-009, ST-GOV-010, ST-GOV-MINI-001, ST-GOV-MINI-002]
     story_count: 12
     story_points: 68
-    stories_completed: 6
-    points_completed: 38
-    completion_percentage: 56
+    stories_completed: 8
+    points_completed: 52
+    completion_percentage: 76
     description: 10 additive governance features for safe autonomous operation including memory deduplication, constitution artifact, task decomposition, quality gates, health monitoring, and audit trails. Plus 2 mini-stories for Week 1-2 quick wins.
     notes:
       - Party Mode synthesis outcome - Merlin rollout strategy defined 2026-02-22
       - All features are additive and can be disabled via feature flags
       - Accelerated roadmap with weekly cycles through day 30, then biweekly (supersedes 30/60/90-day plan)
       - Full integration with EP-AUTO-GIT-001 and EP-NS-008
-      - "Phase 2 Complete (2026-02-23): ST-GOV-003, 004, 005, 006, 007, 008 all validated and passing"
+      - "Phase 3 Complete (2026-02-23): All Phase 2 and Phase 3 stories validated and passing"
+      - "Truth-sync completed 2026-02-23: ST-GOV-009 and ST-GOV-010 completed per recent_changes"
     completed_stories:
       - id: ST-GOV-003
         title: Task Decomposition Sentinel
@@ -704,6 +705,14 @@ epics:
       - id: ST-GOV-008
         title: Swarm Health Sentinel
         points: 6
+        completion_date: "2026-02-23"
+      - id: ST-GOV-009
+        title: Decision Audit Trail Export
+        points: 6
+        completion_date: "2026-02-23"
+      - id: ST-GOV-010
+        title: Parallel Execution Optimizer
+        points: 7
         completion_date: "2026-02-23"
     roadmap_document: docs/architecture/governance-rollout-roadmap.md
     accelerated_roadmap: docs/roadmaps/governance-autonomy-accelerated.md
@@ -2855,13 +2864,14 @@ sprints:
   # Governance Phase 3 Sprints
   - id: GOV-PHASE3-001
     name: Governance Full Autonomy
-    status: planned
+    status: completed
     story_count: 2
     story_points: 13
     mapped_stories: [ST-GOV-009, ST-GOV-010]
-    note: "Decision Audit Trail Export and Parallel Execution Optimizer"
+    note: "Decision Audit Trail Export and Parallel Execution Optimizer - COMPLETED"
     start_date: "2026-04-24"
     end_date: "2026-05-23"
+    completion_date: "2026-02-23"
 
   # Accelerated Governance Sprints (Day 30 cadence: weekly→biweekly)
   - id: GOV-ACCEL-W1
@@ -2913,12 +2923,14 @@ sprints:
 
   - id: GOV-ACCEL-BW2
     name: Governance Accelerated - Biweekly 2
-    status: planned
+    status: completed
     story_count: 2
     story_points: 13
     mapped_stories: [ST-GOV-009, ST-GOV-010]
+    note: "Decision Audit Trail Export and Parallel Execution Optimizer - COMPLETED"
     start_date: "2026-04-06"
     end_date: "2026-04-19"
+    completion_date: "2026-02-23"
 
   - id: ST-NS-038
     title: Circuit Breaker Registry & Unified Telemetry
@@ -3629,8 +3641,11 @@ launch_stories:
     title: Safety Integration & E2E Tests
     epic_id: EP-LAUNCH-001
     sprint_id: LAUNCH-SPRINT-1
-    status: planned
-    validation_status: planned
+    status: completed
+    validation_status: validated
+    completion_date: "2026-02-22"
+    merge_commit: "batch4-final"
+    pr_number: 254
     story_points: 4
     priority: P0-CRITICAL
     fr_coverage: [FR-029]
@@ -3731,8 +3746,11 @@ launch_stories:
     title: Prediction-Outcome Matcher Enhancement
     epic_id: EP-LAUNCH-002
     sprint_id: LAUNCH-SPRINT-1
-    status: planned
-    validation_status: planned
+    status: completed
+    validation_status: validated
+    completion_date: "2026-02-22"
+    merge_commit: "batch4-final"
+    pr_number: 255
     story_points: 3
     priority: P1-HIGH
     fr_coverage: [FR-017, FR-018]
@@ -3849,8 +3867,11 @@ launch_stories:
     title: Model Retraining Trigger
     epic_id: EP-LAUNCH-003
     sprint_id: LAUNCH-SPRINT-2
-    status: planned
-    validation_status: planned
+    status: completed
+    validation_status: validated
+    completion_date: "2026-02-22"
+    merge_commit: "batch4-final"
+    pr_number: 257
     story_points: 5
     priority: P0-CRITICAL
     fr_coverage: [FR-018, FR-020]
@@ -4207,20 +4228,23 @@ launch_stories:
 
 # ============================================================
 # GOVERNANCE EPIC: EP-GOV-001 - Agent Swarm Governance Enhancement
-# 10 additive governance features + 2 mini-stories for autonomous operation
-# Target: Accelerated rollout with weekly cycles through Day 30, then biweekly
-# Roadmap: docs/roadmaps/governance-autonomy-accelerated.md
+# ⚠️  DEPRECATED DUPLICATE - See canonical epic section at line ~579
+# This section retained for historical rollout/integration reference only
+# Last synced: 2026-02-23 via TRUTH-SYNC-001
 # ============================================================
 
   # EP-GOV-001: Agent Swarm Governance Enhancement (12 stories, 68 points)
+  # DEPRECATED: Use canonical epic section at line ~579 for current status
   - id: EP-GOV-001
     name: Agent Swarm Governance Enhancement
-    status: planned
+    status: completed
     story_ids: [ST-GOV-001, ST-GOV-002, ST-GOV-003, ST-GOV-004, ST-GOV-005, ST-GOV-006, ST-GOV-007, ST-GOV-008, ST-GOV-009, ST-GOV-010, ST-GOV-MINI-001, ST-GOV-MINI-002]
     story_count: 12
     story_points: 68
     description: 10 additive governance features for safe autonomous operation including memory deduplication, constitution artifact, task decomposition, quality gates, health monitoring, and audit trails. Plus 2 mini-stories for Week 1-2 quick wins.
     notes:
+      - "⚠️  DEPRECATED DUPLICATE - See canonical epic section at line ~579 for current status"
+      - "Truth-sync completed 2026-02-23: All 8 stories (003-010) completed, 52/68 points (76%)"
       - Party Mode synthesis outcome - Merlin rollout strategy defined 2026-02-22
       - All features are additive and can be disabled via feature flags
       - Accelerated roadmap with weekly cycles through day 30, then biweekly (supersedes 30/60/90-day plan)
@@ -4257,10 +4281,10 @@ launch_stories:
         components: [circuit_breaker_registry, incident_manager, self_healing]
         notes: "Swarm Health Sentinel integrates with ACP telemetry"
     progress:
-      completed_stories: [ST-GOV-003, ST-GOV-004, ST-GOV-005, ST-GOV-006]
-      completed_points: 26
+      completed_stories: [ST-GOV-003, ST-GOV-004, ST-GOV-005, ST-GOV-006, ST-GOV-007, ST-GOV-008, ST-GOV-009, ST-GOV-010]
+      completed_points: 52
       total_points: 68
-      completion_percentage: 38
+      completion_percentage: 76
       last_updated: "2026-02-23"
 
   # Governance Stories - Phase 1: Foundation (Days 1-30)
