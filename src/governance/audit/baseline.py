@@ -380,7 +380,7 @@ class RetrievalBaseline:
 
         # Define Redis keys
         baseline_key = BASELINE_CURRENT_KEY
-        snapshot_key = f"{SNAPSHOT_KEY_PREFIX}{timestamp_str}"
+        snapshot_key = f"{SNAPSHOT_KEY_PREFIX}{timestamp}"
 
         # Prepare data for storage
         baseline_data = {
