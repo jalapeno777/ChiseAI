@@ -8,6 +8,7 @@ This module provides governance capabilities including:
 - Feature flag management
 - Task sentinel enforcement utilities
 - Swarm health monitoring and predictive alerting (ST-GOV-008)
+- Parallel execution optimization (ST-GOV-010)
 """
 
 from src.governance.audit import AuditSnapshot, RetrievalBaseline
@@ -20,6 +21,13 @@ from src.governance.health import (
     AgentHealthScore,
     SwarmHealthScore,
     HealthStatus,
+)
+from src.governance.parallel_optimizer import (
+    ParallelOptimizer,
+    OptimizerConfig,
+    OptimizableTask,
+    ExecutionPlan,
+    TaskPriority,
 )
 
 __all__ = [
@@ -35,4 +43,10 @@ __all__ = [
     "AgentHealthScore",
     "SwarmHealthScore",
     "HealthStatus",
+    # Parallel Optimizer (ST-GOV-010)
+    "ParallelOptimizer",
+    "OptimizerConfig",
+    "OptimizableTask",
+    "ExecutionPlan",
+    "TaskPriority",
 ]
