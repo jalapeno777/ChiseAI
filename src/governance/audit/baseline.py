@@ -9,9 +9,10 @@ including retrieval latency, memory hit rate, and deduplication ratio.
 
 import json
 import logging
+import time
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Optional, Protocol, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
@@ -379,7 +380,7 @@ class RetrievalBaseline:
 
         # Define Redis keys
         baseline_key = BASELINE_CURRENT_KEY
-        snapshot_key = f"{SNAPSHOT_KEY_PREFIX}{timestamp_str}"
+        snapshot_key = f"{SNAPSHOT_KEY_PREFIX}{timestamp}"
 
         # Prepare data for storage
         baseline_data = {
