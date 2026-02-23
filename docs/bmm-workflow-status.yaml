@@ -4028,13 +4028,23 @@ launch_stories:
       - "API latency: 0.02ms avg, 0.25ms max, 0.03ms p95 (well under 200ms target)"
       - "Task validation rate: 100% for >5 SP tasks"
       - "Conflict detection accuracy: 100%"
+    implementation_notes:
+      - Created src/governance/sentinel/task_sentinel.py (486 lines)
+      - Created src/governance/sentinel/conflict_detector.py (383 lines)
+      - Created src/governance/sentinel/dependency_validator.py (441 lines)
+      - Updated src/governance/sentinel/__init__.py (28 lines)
+      - Updated tests/test_governance/test_task_sentinel.py (841 lines)
+      - Implemented ConflictDetector with ownership conflict detection
+      - Implemented DependencyValidator with circular dependency detection
+      - Added topological sort for task execution ordering
+      - Full Redis integration for approval workflow
     test_results:
       total_tests: 103
       passed: 103
       failed: 0
       coverage_percent: 98
       coverage_target: 85
-      status: All tests pass, coverage exceeds target
+      status: "All tests pass, coverage exceeds target"
 
   - id: ST-GOV-004
     title: Meta-KPI Dashboard
@@ -4063,6 +4073,23 @@ launch_stories:
       - "4 feature exporters deployed (constitution, sentinel, memory, base)"
       - "Dashboard refresh: 15s"
       - "Historical trends: 7d/30d/90d supported"
+    implementation_notes:
+      - Created infrastructure/grafana/dashboards/governance_metrics.json (556 lines)
+      - Created src/governance/metrics/__init__.py (32 lines)
+      - Created src/governance/metrics/exporter.py (428 lines)
+      - Created tests/test_governance/test_metrics.py (703 lines)
+      - Dashboard includes 15 panels with 7d/30d/90d trend analysis
+      - Metrics exporter with 15s refresh interval
+      - InfluxDB integration with graceful fallback
+      - Feature flag control via Redis
+    dashboard_url: /d/governance-metrics-st-gov-004/agent-governance-metrics
+    test_results:
+      total_tests: 44
+      passed: 44
+      failed: 0
+      coverage_percent: 85
+      coverage_target: 80
+      status: "All tests pass, coverage exceeds target"
 
   # Governance Stories - Phase 2: Control Systems (Days 31-60)
   - id: ST-GOV-005
