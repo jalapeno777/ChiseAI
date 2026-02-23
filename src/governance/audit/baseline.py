@@ -380,7 +380,7 @@ class RetrievalBaseline:
 
         # Define Redis keys
         baseline_key = BASELINE_CURRENT_KEY
-        snapshot_key = f"{SNAPSHOT_KEY_PREFIX}{timestamp}"
+        snapshot_key = f"{SNAPSHOT_KEY_PREFIX}{timestamp_str}"
 
         # Prepare data for storage
         baseline_data = {
@@ -391,21 +391,13 @@ class RetrievalBaseline:
             "updated_at": datetime.now(UTC).isoformat(),
         }
 
-        snapshot_data = {
-            "timestamp": datetime.now(UTC).isoformat(),
-            "metrics": json.dumps(self.metrics),
-        }
-
-        # TODO: Implement actual Redis storage when client is available
-        # For now, return the keys and data that would be written
-        logger.info(f"Prepared Redis export for baseline: {baseline_key}")
-        logger.info(f"Prepared Redis export for snapshot: {snapshot_key}")
-
-        return {
+        # Build result dictionary
+        result: dict[str, str] = {
             "baseline_key": baseline_key,
             "baseline_data": json.dumps(baseline_data),
         }
 
+        # Add snapshot data if requested
         if store_snapshot:
             snapshot_data = {
                 "timestamp": datetime.now(UTC).isoformat(),
@@ -439,6 +431,10 @@ class RetrievalBaseline:
             except Exception as e:
                 logger.error(f"Failed to export to Redis: {e}")
                 result["error"] = str(e)
+        else:
+            # Log preparation without client
+            logger.info(f"Prepared Redis export for baseline: {baseline_key}")
+            logger.info(f"Prepared Redis export for snapshot: {snapshot_key}")
 
         return result
 

@@ -15,13 +15,19 @@ Test coverage:
 
 import json
 from datetime import UTC, datetime
+from unittest.mock import MagicMock
 
 import pytest
 from src.governance.audit.baseline import (
+    BASELINE_CURRENT_KEY,
     METRIC_THRESHOLDS,
+    SNAPSHOT_KEY_PREFIX,
+    SNAPSHOT_TTL_SECONDS,
     AuditSnapshot,
     RetrievalBaseline,
+    capture_week1_baseline,
     evaluate_metric,
+    get_all_metric_ratings,
 )
 
 
