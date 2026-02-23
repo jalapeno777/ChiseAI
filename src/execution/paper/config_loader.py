@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from execution.paper.fill_probability import FillProbabilityConfig
 from execution.paper.latency_model import LatencyConfig
@@ -203,16 +203,16 @@ class MarketRealismConfig:
         Returns:
             Dictionary with regime-specific adjustments
         """
-        regimes = self._config.get("volatility_regimes", {})
+        regimes = cast(dict[str, Any], self._config.get("volatility_regimes", {}))
 
         if volatility < 0.01:
-            return regimes.get("low", {})
+            return regimes.get("low", {})  # type: ignore[no-any-return]
         elif volatility < 0.05:
-            return regimes.get("normal", {})
+            return regimes.get("normal", {})  # type: ignore[no-any-return]
         elif volatility < 0.10:
-            return regimes.get("high", {})
+            return regimes.get("high", {})  # type: ignore[no-any-return]
         else:
-            return regimes.get("extreme", {})
+            return regimes.get("extreme", {})  # type: ignore[no-any-return]
 
     def get_all_symbol_configs(self) -> dict[str, dict[str, Any]]:
         """Get all symbol-specific configurations.
@@ -220,7 +220,7 @@ class MarketRealismConfig:
         Returns:
             Dictionary mapping symbols to their configs
         """
-        return self._config.get("symbols", {})
+        return self._config.get("symbols", {})  # type: ignore[no-any-return]
 
     def get_all_exchange_configs(self) -> dict[str, dict[str, Any]]:
         """Get all exchange-specific configurations.
@@ -228,7 +228,7 @@ class MarketRealismConfig:
         Returns:
             Dictionary mapping exchanges to their configs
         """
-        return self._config.get("exchanges", {})
+        return self._config.get("exchanges", {})  # type: ignore[no-any-return]
 
     def reload(self) -> None:
         """Reload configuration from file."""

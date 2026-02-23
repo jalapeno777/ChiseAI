@@ -7,7 +7,7 @@ signal features, labels, and metadata.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, cast
 from uuid import uuid4
 
 from pydantic import BaseModel, Field, field_validator
@@ -196,7 +196,7 @@ class TrainingSample(BaseModel):
         """
         validator = FeatureValidator()
         features = self.to_feature_dict()
-        return validator.validate_features(features)
+        return cast(tuple[bool, list[str]], validator.validate_features(features))
 
     def has_labels(self) -> bool:
         """Check if sample has labels (for supervised learning)."""
@@ -319,7 +319,7 @@ class TrainingDataset:
 
         data = [s.to_dict() for s in self.samples]
         handler = ParquetHandler()
-        return handler.export(data, Path(path))
+        return cast(bool, handler.export(data, Path(path)))
 
     def export_csv(self, path: str) -> bool:
         """Export dataset to CSV format.
@@ -336,7 +336,7 @@ class TrainingDataset:
 
         data = [s.to_dict() for s in self.samples]
         handler = CSVHandler()
-        return handler.export(data, Path(path))
+        return cast(bool, handler.export(data, Path(path)))
 
     def export_json(self, path: str) -> bool:
         """Export dataset to JSON format.

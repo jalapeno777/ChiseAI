@@ -12,7 +12,7 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
 from ml.training.version import SchemaVersionManager
 
@@ -184,7 +184,7 @@ class ParquetHandler:
         import pyarrow.parquet as pq
 
         table = pq.read_table(path)
-        return table.to_pylist()
+        return cast(list[dict[str, Any]], table.to_pylist())
 
     def validate(self, path: Path) -> tuple[bool, str]:
         """Validate Parquet file.
@@ -341,7 +341,7 @@ class JSONHandler:
             List of sample dictionaries
         """
         with open(path, encoding="utf-8") as f:
-            return json.load(f)
+            return cast(list[dict[str, Any]], json.load(f))
 
     def validate(self, path: Path) -> tuple[bool, str]:
         """Validate JSON file.

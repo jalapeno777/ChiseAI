@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 from . import ComponentType, HealthStatus
 
@@ -188,7 +188,7 @@ class ScoreCalculator:
         inactivity_minutes = last_success / 60
         score -= min(inactivity_minutes * 10, 30)
 
-        return max(0, min(100, score))
+        return cast(float, max(0, min(100, score)))
 
     def _calculate_data_source_score(self, health_data: dict[str, Any]) -> float:
         """Calculate score for data source component.
@@ -220,7 +220,7 @@ class ScoreCalculator:
         if health_data.get("circuit_breaker_open", False):
             score -= 30
 
-        return max(0, min(100, score))
+        return cast(float, max(0, min(100, score)))
 
     def _calculate_exchange_score(self, health_data: dict[str, Any]) -> float:
         """Calculate score for exchange connection.
@@ -254,7 +254,7 @@ class ScoreCalculator:
         gap_seconds = health_data.get("data_gap_seconds", 0)
         score -= min((gap_seconds / 10) * 10, 30)
 
-        return max(0, min(100, score))
+        return cast(float, max(0, min(100, score)))
 
     def _calculate_kill_switch_score(self, health_data: dict[str, Any]) -> float:
         """Calculate score for kill-switch component.
@@ -287,7 +287,7 @@ class ScoreCalculator:
         error_rate = health_data.get("error_rate", 0.0)
         score -= min(error_rate * 20, 40)
 
-        return max(0, min(100, score))
+        return cast(float, max(0, min(100, score)))
 
     def calculate_overall_score(
         self, component_scores: list[ComponentScore]

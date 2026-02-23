@@ -21,7 +21,7 @@ from collections.abc import Callable
 from contextlib import contextmanager, suppress
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any, Protocol, TypeVar, runtime_checkable
+from typing import Any, Protocol, TypeVar, cast, runtime_checkable
 from unittest.mock import patch
 
 logger = logging.getLogger(__name__)
@@ -711,13 +711,13 @@ class ErrorInjector(FailureInjector):
 
         condition = config.get("condition")
         if condition == "every_n":
-            n = config["kwargs"].get("n", 1)
+            n = cast(int, config["kwargs"].get("n", 1))
             return count % n == 0
         elif condition == "after_n":
-            n = config["kwargs"].get("n", 0)
+            n = cast(int, config["kwargs"].get("n", 0))
             return count > n
         else:
-            return random.random() < config["error_rate"]
+            return cast(bool, random.random() < cast(float, config["error_rate"]))
 
     def get_error(self, target: str) -> Exception:
         """Get the error to raise for target.
@@ -737,7 +737,7 @@ class ErrorInjector(FailureInjector):
         elif error_type == "timeout":
             return TimeoutError("Operation timed out")
         else:
-            exc_class = config.get("exception_class", Exception)
+            exc_class = cast(type[Exception], config.get("exception_class", Exception))
             return exc_class(f"Injected error for {target}")
 
     async def maybe_raise_error(self, target: str) -> None:
