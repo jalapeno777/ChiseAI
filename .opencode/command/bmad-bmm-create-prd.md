@@ -1,5 +1,6 @@
 ---
-description: 'Create a comprehensive PRD (Product Requirements Document) through structured workflow facilitation'
+name: 'create-prd'
+description: 'Create a PRD from scratch. Use when the user says 'lets create a product requirements document' or 'I want to create a new PRD''
 ---
 
 Execute the BMAD 'create-prd' workflow.
@@ -7,6 +8,7 @@ Execute the BMAD 'create-prd' workflow.
 CRITICAL: You must load and follow the workflow definition exactly.
 
 WORKFLOW INSTRUCTIONS:
+
 1. LOAD the workflow file from {project-root}/_bmad/bmm/workflows/2-plan-workflows/create-prd/workflow-create-prd.md
 2. READ its entire contents
 3. FOLLOW every step precisely as specified

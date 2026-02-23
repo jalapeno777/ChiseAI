@@ -1,5 +1,6 @@
 ---
-description: 'Guide human-centered design processes using empathy-driven methodologies. This workflow walks through the design thinking phases - Empathize, Define, Ideate, Prototype, and Test - to create solutions deeply rooted in user needs.'
+name: 'design-thinking'
+description: 'Guide human-centered design processes using empathy-driven methodologies. Use when the user says ""lets run design thinking"" or ""I want to apply design thinking""'
 ---
 
 Execute the BMAD 'design-thinking' workflow.
@@ -7,6 +8,7 @@ Execute the BMAD 'design-thinking' workflow.
 CRITICAL: You must load and follow the workflow definition exactly.
 
 WORKFLOW INSTRUCTIONS:
+
 1. LOAD the workflow file from {project-root}/_bmad/cis/workflows/design-thinking/workflow.yaml
 2. READ its entire contents
 3. FOLLOW every step precisely as specified

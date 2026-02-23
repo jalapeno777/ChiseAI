@@ -1,5 +1,6 @@
 ---
-description: 'Work with a peer UX Design expert to plan your applications UX patterns, look and feel.'
+name: 'create-ux-design'
+description: 'Plan UX patterns and design specifications. Use when the user says 'lets create UX design' or 'create UX specifications' or 'help me plan the UX''
 ---
 
 Execute the BMAD 'create-ux-design' workflow.
@@ -7,6 +8,7 @@ Execute the BMAD 'create-ux-design' workflow.
 CRITICAL: You must load and follow the workflow definition exactly.
 
 WORKFLOW INSTRUCTIONS:
+
 1. LOAD the workflow file from {project-root}/_bmad/bmm/workflows/2-plan-workflows/create-ux-design/workflow.md
 2. READ its entire contents
 3. FOLLOW every step precisely as specified

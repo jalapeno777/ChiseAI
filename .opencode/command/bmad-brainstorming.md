@@ -1,5 +1,6 @@
 ---
-description: 'Facilitate interactive brainstorming sessions using diverse creative techniques and ideation methods'
+name: 'brainstorming'
+description: 'Facilitate interactive brainstorming sessions using diverse creative techniques and ideation methods. Use when the user says 'help me brainstorm' or 'help me ideate'.'
 ---
 
 Execute the BMAD 'brainstorming' workflow.
@@ -7,6 +8,7 @@ Execute the BMAD 'brainstorming' workflow.
 CRITICAL: You must load and follow the workflow definition exactly.
 
 WORKFLOW INSTRUCTIONS:
+
 1. LOAD the workflow file from {project-root}/_bmad/core/workflows/brainstorming/workflow.md
 2. READ its entire contents
 3. FOLLOW every step precisely as specified
