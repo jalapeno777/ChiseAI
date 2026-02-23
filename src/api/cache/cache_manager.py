@@ -11,7 +11,7 @@ import pickle  # nosec B403
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, TypeVar
+from typing import Any, TypeVar, cast
 
 from api.cache.metrics import CacheMetricsCollector, CacheMetricsSnapshot
 from api.cache.strategies import CacheStrategy, QueryType, TTLStrategy
@@ -229,7 +229,7 @@ class QueryCacheManager:
         # Try cache first
         cached = self.get(query_key)
         if cached is not None:
-            return cached
+            return cast(T, cached)
 
         # Execute query
         start_time = time.time()
@@ -349,7 +349,7 @@ class QueryCacheManager:
         Returns:
             Cache key
         """
-        return self.cache_strategy.generate_cache_key(query)
+        return cast(str, self.cache_strategy.generate_cache_key(query))
 
     def get_ttl(self, query: str) -> int:
         """Get TTL for a query.
@@ -360,7 +360,7 @@ class QueryCacheManager:
         Returns:
             TTL in seconds
         """
-        return self.cache_strategy.get_ttl(query)
+        return cast(int, self.cache_strategy.get_ttl(query))
 
     def should_cache(self, query: str) -> bool:
         """Determine if a query should be cached.
@@ -371,7 +371,7 @@ class QueryCacheManager:
         Returns:
             True if query should be cached
         """
-        return self.cache_strategy.should_cache(query)
+        return cast(bool, self.cache_strategy.should_cache(query))
 
     def clear_memory_cache(self) -> int:
         """Clear in-memory cache.

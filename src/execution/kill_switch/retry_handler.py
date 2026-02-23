@@ -322,7 +322,7 @@ class RetryHandler:
         )
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize retry handler."""
         self._circuit_breakers: dict[str, CircuitBreaker] = {}
 
@@ -411,7 +411,7 @@ def with_retry(
     max_attempts: int = 3,
     base_delay_seconds: float = 1.0,
     retryable_exceptions: tuple[type[Exception], ...] = (Exception,),
-):
+) -> Callable[..., Any]:
     """Decorator for adding retry logic to async functions.
 
     Args:

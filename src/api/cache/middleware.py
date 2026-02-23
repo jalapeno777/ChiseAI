@@ -11,7 +11,7 @@ import json
 import logging
 import time
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -154,12 +154,12 @@ class CacheMiddleware(BaseHTTPMiddleware):
 
         if cache_key is None:
             # Not cacheable, proceed normally
-            return await call_next(request)
+            return cast(Response, await call_next(request))
 
         # Check for cache-bypass headers
         cache_control = request.headers.get("cache-control", "").lower()
         if "no-cache" in cache_control or "no-store" in cache_control:
-            return await call_next(request)
+            return cast(Response, await call_next(request))
 
         # Try to get from cache
         cached_response = self.cache_manager.get(cache_key)
@@ -202,7 +202,7 @@ class CacheMiddleware(BaseHTTPMiddleware):
                 media_type=response.media_type,
             )
 
-        return response
+        return cast(Response, response)
 
 
 class CachedInfluxClient:
@@ -316,8 +316,8 @@ class CachedInfluxClient:
         Returns:
             Number of entries invalidated
         """
-        return self.cache_manager.invalidate(pattern)
+        return cast(int, self.cache_manager.invalidate(pattern))
 
     def get_metrics(self) -> dict[str, Any]:
         """Get cache metrics."""
-        return self.cache_manager.get_stats()
+        return cast(dict[str, Any], self.cache_manager.get_stats())

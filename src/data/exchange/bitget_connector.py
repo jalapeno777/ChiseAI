@@ -18,11 +18,11 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 
 import aiohttp
 import websockets
-from websockets.exceptions import ConnectionClosed, InvalidStatusCode
+from websockets.exceptions import ConnectionClosed, InvalidStatus
 
 logger = logging.getLogger(__name__)
 
@@ -109,8 +109,8 @@ class BitgetConnector:
         """
         self.config = config or BitgetConfig()
         self._session: aiohttp.ClientSession | None = None
-        self._ws: websockets.WebSocketClientProtocol | None = None
-        self._private_ws: websockets.WebSocketClientProtocol | None = None
+        self._ws: Any | None = None  # WebSocketClientProtocol from websockets
+        self._private_ws: Any | None = None  # WebSocketClientProtocol from websockets
         self._health = ConnectionHealth()
         self._reconnect_attempt = 0
         self._running = False
@@ -268,7 +268,7 @@ class BitgetConnector:
                     raise ValueError(f"Bitget API error: {error_msg}")
 
                 self._health.last_message = time.time()
-                return data
+                return cast(dict[str, Any], data)
 
         except Exception as e:
             logger.error(f"Bitget API request failed: {e}")
@@ -605,11 +605,11 @@ class BitgetConnector:
                         data = json.loads(message)
                         await self._handle_message(data)
                     except json.JSONDecodeError:
-                        logger.warning(f"Invalid JSON: {message}")
+                        logger.warning(f"Invalid JSON: {message!r}")
 
         except ConnectionClosed as e:
             logger.warning(f"WebSocket closed: {e}")
-        except InvalidStatusCode as e:
+        except InvalidStatus as e:
             logger.error(f"WebSocket connection failed: {e}")
         except Exception as e:
             logger.error(f"WebSocket error: {e}")
@@ -646,9 +646,9 @@ class BitgetConnector:
                         logger.error(f"Price callback error: {e}")
 
         # Call general message callbacks
-        for callback in self._message_callbacks:
+        for callback in self._message_callbacks:  # type: ignore[assignment]
             try:
-                callback(data)
+                callback(data)  # type: ignore[call-arg, arg-type]
             except Exception as e:
                 logger.error(f"Message callback error: {e}")
 
@@ -740,7 +740,7 @@ class BitgetConnector:
                         data = json.loads(message)
                         await self._handle_private_message(data)
                     except json.JSONDecodeError:
-                        logger.warning(f"Invalid JSON: {message}")
+                        logger.warning(f"Invalid JSON: {message!r}")
 
         except Exception as e:
             logger.error(f"Private WebSocket error: {e}")

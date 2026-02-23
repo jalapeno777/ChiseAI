@@ -26,20 +26,20 @@ except ImportError:
 
     # Create dummy classes for type checking
     class APIRouter:
-        def get(self, *args, **kwargs):
-            def decorator(f):
+        def get(self, *args: Any, **kwargs: Any) -> Any:
+            def decorator(f: Any) -> Any:
                 return f
 
             return decorator
 
-        def post(self, *args, **kwargs):
-            def decorator(f):
+        def post(self, *args: Any, **kwargs: Any) -> Any:
+            def decorator(f: Any) -> Any:
                 return f
 
             return decorator
 
-        def put(self, *args, **kwargs):
-            def decorator(f):
+        def put(self, *args: Any, **kwargs: Any) -> Any:
+            def decorator(f: Any) -> Any:
                 return f
 
             return decorator
@@ -48,7 +48,7 @@ except ImportError:
         pass
 
     class Query:
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
             pass
 
 
