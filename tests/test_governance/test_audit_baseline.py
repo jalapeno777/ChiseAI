@@ -9,15 +9,15 @@ Test coverage:
 - Redis storage integration
 """
 
-import pytest
-from datetime import datetime, timezone
 import json
+from datetime import UTC, datetime
 
+import pytest
 from src.governance.audit.baseline import (
+    METRIC_THRESHOLDS,
     AuditSnapshot,
     RetrievalBaseline,
     evaluate_metric,
-    METRIC_THRESHOLDS,
 )
 
 
@@ -36,7 +36,7 @@ class TestAuditSnapshot:
 
     def test_snapshot_creation_custom_values(self) -> None:
         """Test creating a snapshot with custom values."""
-        custom_time = datetime(2026, 2, 22, 12, 0, 0, tzinfo=timezone.utc)
+        custom_time = datetime(2026, 2, 22, 12, 0, 0, tzinfo=UTC)
         snapshot = AuditSnapshot(
             timestamp=custom_time,
             component="memory",
@@ -63,6 +63,7 @@ class TestAuditSnapshot:
         assert snapshot.component == "retrieval"
         assert snapshot.metrics["latency_ms"] == 42.5
         assert snapshot.metrics["hit_count"] == 100
+        assert snapshot.snapshot_id is not None
         assert "retrieval-" in snapshot.snapshot_id
 
     def test_snapshot_to_dict(self) -> None:
@@ -326,7 +327,7 @@ class TestMetricThresholds:
 
     def test_threshold_levels_exist(self) -> None:
         """Test that all threshold levels are defined."""
-        for metric_name, thresholds in METRIC_THRESHOLDS.items():
+        for _metric_name, thresholds in METRIC_THRESHOLDS.items():
             assert "excellent" in thresholds
             assert "good" in thresholds
             assert "acceptable" in thresholds
