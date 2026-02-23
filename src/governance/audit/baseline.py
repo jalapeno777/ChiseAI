@@ -7,11 +7,11 @@ This module provides baseline metrics capture for system governance,
 including retrieval latency, memory hit rate, and deduplication ratio.
 """
 
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Optional
 import json
 import logging
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -28,11 +28,11 @@ class AuditSnapshot:
         metadata: Additional context about the snapshot
     """
 
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     component: str = "system"
     metrics: dict[str, Any] = field(default_factory=dict)
     metadata: dict[str, Any] = field(default_factory=dict)
-    snapshot_id: Optional[str] = None
+    snapshot_id: str | None = None
 
     def __post_init__(self) -> None:
         """Generate snapshot ID if not provided."""
@@ -40,7 +40,7 @@ class AuditSnapshot:
             self.snapshot_id = f"snapshot-{self.timestamp.strftime('%Y%m%d%H%M%S')}"
 
     def capture(
-        self, component: Optional[str] = None, **additional_metrics: Any
+        self, component: str | None = None, **additional_metrics: Any
     ) -> "AuditSnapshot":
         """
         Capture current system state as a snapshot.
@@ -62,7 +62,7 @@ class AuditSnapshot:
         self.metrics.update(additional_metrics)
 
         # Update timestamp to capture time
-        self.timestamp = datetime.now(timezone.utc)
+        self.timestamp = datetime.now(UTC)
         self.snapshot_id = f"{self.component}-{self.timestamp.strftime('%Y%m%d%H%M%S')}"
 
         logger.info(f"Captured audit snapshot: {self.snapshot_id}")
@@ -107,7 +107,7 @@ class RetrievalBaseline:
     """
 
     baseline_id: str = "default"
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     metrics: dict[str, float] = field(
         default_factory=lambda: {
             "retrieval_latency_ms": 0.0,
@@ -135,9 +135,9 @@ class RetrievalBaseline:
 
     def update_metrics(
         self,
-        retrieval_latency_ms: Optional[float] = None,
-        memory_hit_rate: Optional[float] = None,
-        deduplication_ratio: Optional[float] = None,
+        retrieval_latency_ms: float | None = None,
+        memory_hit_rate: float | None = None,
+        deduplication_ratio: float | None = None,
     ) -> None:
         """
         Update baseline metrics with new values.
@@ -177,7 +177,7 @@ class RetrievalBaseline:
             This is a skeleton implementation. Full Redis integration
             requires the redis_state tools or a Redis client instance.
         """
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
 
         # Define Redis keys
         baseline_key = "governance:audit:baseline:current"
@@ -192,7 +192,7 @@ class RetrievalBaseline:
         }
 
         snapshot_data = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "metrics": json.dumps(self.metrics),
         }
 
