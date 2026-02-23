@@ -322,8 +322,8 @@ class ConstitutionLoader:
         for line in lines[:20]:  # Check first 20 lines for metadata
             line = line.strip()
             if line.startswith("> **"):
-                # Parse metadata like: > **Version:** 1.0.0
-                match = re.match(r"> \*\*(\w+):\*\*\s*(.+)", line)
+                # Parse metadata like: > **Version:** 1.0.0 or > **Governed By:** ST-GOV-002
+                match = re.match(r"> \*\*([\w\s]+?):\*\*\s*(.+)", line)
                 if match:
                     key = match.group(1).lower().replace(" ", "_")
                     value = match.group(2).strip()

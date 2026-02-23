@@ -172,16 +172,19 @@ class MemoryMetricsExporter(BaseMetricsExporter):
 
         if total_retrievals > 0:
             hit_rate = (hits / total_retrievals) * 100
-            points.append(
-                MetricPoint(
-                    name="governance.memory.retrieval.hit_rate",
-                    value=hit_rate,
-                    metric_type=MetricType.GAUGE,
-                    timestamp=now,
-                    tags={"feature": "memory", "operation": "retrieval"},
-                    fields={"unit": "percent"},
-                )
+        else:
+            hit_rate = 0.0
+
+        points.append(
+            MetricPoint(
+                name="governance.memory.retrieval.hit_rate",
+                value=hit_rate,
+                metric_type=MetricType.GAUGE,
+                timestamp=now,
+                tags={"feature": "memory", "operation": "retrieval"},
+                fields={"unit": "percent"},
             )
+        )
 
         # 7. Optimization recommendations
         recommendations = self._get_recommendations_count()

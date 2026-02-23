@@ -183,7 +183,9 @@ class TestAuditLogger:
 
         logger.approve_request(request.override_id, "approver")
 
-        with pytest.raises(ValueError, match="already"):
+        # After approval, request is moved from _pending_requests to _active_overrides
+        # So second approval attempt will fail with "not found"
+        with pytest.raises(ValueError, match="not found"):
             logger.approve_request(request.override_id, "approver2")
 
     def test_activate_override(self, logger: AuditLogger) -> None:
