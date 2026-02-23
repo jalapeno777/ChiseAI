@@ -3982,8 +3982,8 @@ launch_stories:
     title: Task Decomposition Sentinel
     epic_id: EP-GOV-001
     sprint_id: GOV-PHASE1-002
-    status: planned
-    validation_status: planned
+    status: completed
+    validation_status: passed
     story_points: 8
     priority: P0-CRITICAL
     fr_coverage: [FR-GOV-003]
@@ -3999,13 +3999,30 @@ launch_stories:
       - task_validation_rate: 100% for >5 SP
       - conflict_detection_accuracy: 90%
       - api_latency: <200ms
+    implementation_notes:
+      - Created src/governance/sentinel/task_sentinel.py (486 lines)
+      - Created src/governance/sentinel/conflict_detector.py (383 lines)
+      - Created src/governance/sentinel/dependency_validator.py (441 lines)
+      - Updated src/governance/sentinel/__init__.py (28 lines)
+      - Updated tests/test_governance/test_task_sentinel.py (841 lines)
+      - Implemented ConflictDetector with ownership conflict detection
+      - Implemented DependencyValidator with circular dependency detection
+      - Added topological sort for task execution ordering
+      - Full Redis integration for approval workflow
+    test_results:
+      total_tests: 103
+      passed: 103
+      failed: 0
+      coverage_percent: 98
+      coverage_target: 85
+      status: "All tests pass, coverage exceeds target"
 
   - id: ST-GOV-004
     title: Meta-KPI Dashboard
     epic_id: EP-GOV-001
     sprint_id: GOV-PHASE1-002
-    status: planned
-    validation_status: planned
+    status: completed
+    validation_status: passed
     story_points: 5
     priority: P1-HIGH
     fr_coverage: [FR-GOV-004]
@@ -4020,6 +4037,23 @@ launch_stories:
       - dashboard_load_time: <3s
       - metrics_refresh: 15s
       - retention: 7_days
+    implementation_notes:
+      - Created infrastructure/grafana/dashboards/governance_metrics.json (556 lines)
+      - Created src/governance/metrics/__init__.py (32 lines)
+      - Created src/governance/metrics/exporter.py (428 lines)
+      - Created tests/test_governance/test_metrics.py (703 lines)
+      - Dashboard includes 15 panels with 7d/30d/90d trend analysis
+      - Metrics exporter with 15s refresh interval
+      - InfluxDB integration with graceful fallback
+      - Feature flag control via Redis
+    dashboard_url: /d/governance-metrics-st-gov-004/agent-governance-metrics
+    test_results:
+      total_tests: 44
+      passed: 44
+      failed: 0
+      coverage_percent: 85
+      coverage_target: 80
+      status: All tests pass, coverage exceeds target
 
   # Governance Stories - Phase 2: Control Systems (Days 31-60)
   - id: ST-GOV-005
