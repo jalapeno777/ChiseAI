@@ -1,5 +1,6 @@
 ---
-description: 'Orchestrates group discussions between all installed BMAD agents, enabling natural multi-agent conversations'
+name: 'party-mode'
+description: 'Orchestrates group discussions between all installed BMAD agents, enabling natural multi-agent conversations. Use when user requests 'party mode' only.'
 ---
 
 Execute the BMAD 'party-mode' workflow.
@@ -7,6 +8,7 @@ Execute the BMAD 'party-mode' workflow.
 CRITICAL: You must load and follow the workflow definition exactly.
 
 WORKFLOW INSTRUCTIONS:
+
 1. LOAD the workflow file from {project-root}/_bmad/core/workflows/party-mode/workflow.md
 2. READ its entire contents
 3. FOLLOW every step precisely as specified
