@@ -159,7 +159,7 @@ class GoNoGoChecklist:
         print("=" * 80)
         print("  CHISEAI LAUNCH READINESS: GO/NO-GO CHECKLIST")
         print("=" * 80)
-        print(f"Story: ST-LAUNCH-017")
+        print("Story: ST-LAUNCH-017")
         print(f"Timestamp: {datetime.utcnow().isoformat()}Z")
         print()
 
@@ -350,7 +350,7 @@ class GoNoGoChecklist:
             details = f"{outcomes_per_hour}/h, insert {insert_latency}ms, query {query_latency}ms"
         else:
             status = "FAIL" if item["required"] else "WARNING"
-            details = f"Performance below target"
+            details = "Performance below target"
 
         return {
             "id": item["id"],
@@ -371,7 +371,7 @@ class GoNoGoChecklist:
             )
         else:
             status = "FAIL" if item["required"] else "WARNING"
-            details = f"WebSocket performance issues"
+            details = "WebSocket performance issues"
 
         return {
             "id": item["id"],
@@ -390,7 +390,7 @@ class GoNoGoChecklist:
             details = f"ECE update {ece_update_minutes}min, training within SLA"
         else:
             status = "FAIL" if item["required"] else "WARNING"
-            details = f"ML pipeline timing issues"
+            details = "ML pipeline timing issues"
 
         return {
             "id": item["id"],
@@ -412,7 +412,7 @@ class GoNoGoChecklist:
             details = f"Kill switch {kill_switch_time}s, circuit breaker {circuit_breaker_time}s"
         else:
             status = "FAIL" if item["required"] else "WARNING"
-            details = f"SLA targets not met"
+            details = "SLA targets not met"
 
         return {
             "id": item["id"],
@@ -470,7 +470,7 @@ class GoNoGoChecklist:
             )
         else:
             status = "FAIL" if item["required"] else "WARNING"
-            details = f"On-call SLA not met"
+            details = "On-call SLA not met"
 
         return {
             "id": item["id"],

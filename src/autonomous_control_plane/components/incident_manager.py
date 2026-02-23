@@ -812,7 +812,7 @@ class IncidentManager:
         incident.resolve(resolution_notes)
 
         # Generate post-mortem
-        post_mortem = incident.generate_post_mortem()
+        _ = incident.generate_post_mortem()
         logger.info(f"Post-mortem generated for incident {incident_id}")
 
         await self._store.save(incident)

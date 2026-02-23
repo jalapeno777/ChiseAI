@@ -568,8 +568,8 @@ class TestFeatureFlagIntegration:
         set_feature_flags(custom_flags)
 
         # Get flags multiple times
-        flags1 = FeatureFlags.from_env()
-        flags2 = FeatureFlags.from_env()
+        _ = FeatureFlags.from_env()
+        _ = FeatureFlags.from_env()
 
         # from_env creates new instance, but our global should be set
         from config.feature_flags import get_feature_flags
