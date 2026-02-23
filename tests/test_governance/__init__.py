@@ -1,1 +1,1 @@
-"""Tests for ChiseAI governance module."""
+# Tests for governance modules
