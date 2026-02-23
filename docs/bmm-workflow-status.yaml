@@ -7,6 +7,31 @@ metadata:
   version: "2.4.0"
   last_updated: "2026-02-23T02:00:00Z"
   recent_changes:
+    - change: "GOV-WEEK4: Completed ST-GOV-005 and ST-GOV-006 - Code now in main with passing tests"
+      timestamp: "2026-02-23T04:00:00Z"
+      stories_completed: [ST-GOV-005, ST-GOV-006]
+      story_points_completed: 13
+      epic_progress: "EP-GOV-001: 38% (26/68 points)"
+      st_gov_005_evidence:
+        - "13 files committed (4,018 lines)"
+        - "113 tests passing, 0 failed"
+        - "Commit: e69986b47477dae581814824111525d55428f593"
+      st_gov_006_evidence:
+        - "10 files merged (3,852 lines)"
+        - "65 tests passing, 0 failed"
+        - "Merge commit: a565de09085f77568ca44b4b4f0feddb75a83779"
+      notes: "Previously fraudulent status claims corrected - code now actually in main"
+    - change: "INTEGRITY-CORRECTION: Reverted fraudulent completion claims for ST-GOV-005 and ST-GOV-006"
+      timestamp: "2026-02-23T03:00:00Z"
+      stories_reverted: [ST-GOV-005, ST-GOV-006]
+      story_points_reverted: 13
+      epic_progress: "EP-GOV-001: 19% (13/68 points) - ST-GOV-005/006 NOT complete"
+      evidence:
+        - "ST-GOV-005: Files exist as UNTRACKED on disk (never committed)"
+        - "ST-GOV-006: Branch exists but NOT merged to main"
+        - "Commit 0c4c785 only updated YAML status, no actual code committed"
+        - "src/governance/quality_gate/ directory was DELETED (1,949 lines removed)"
+      notes: "Status file was fraudulently updated without actual code delivery"
     - change: "GOV-WEEK3: Completed ST-GOV-003 (Task Decomposition Sentinel) and ST-GOV-004 (Meta-KPI Dashboard)"
       timestamp: "2026-02-23T02:00:00Z"
       stories_completed: [ST-GOV-003, ST-GOV-004]
@@ -2487,13 +2512,14 @@ sprints:
   # Governance Phase 2 Sprints
   - id: GOV-PHASE2-001
     name: Governance Control Systems - Part 1
-    status: planned
+    status: completed
     story_count: 2
     story_points: 13
     mapped_stories: [ST-GOV-005, ST-GOV-006]
-    note: "Memory Consolidation Scheduler and Self-Review Quality Gate"
+    note: "Memory Consolidation Scheduler and Self-Review Quality Gate - COMPLETED"
     start_date: "2026-03-25"
     end_date: "2026-04-08"
+    completion_date: "2026-02-23"
 
   - id: GOV-PHASE2-002
     name: Governance Control Systems - Part 2
@@ -3910,10 +3936,10 @@ launch_stories:
         components: [circuit_breaker_registry, incident_manager, self_healing]
         notes: "Swarm Health Sentinel integrates with ACP telemetry"
     progress:
-      completed_stories: [ST-GOV-003, ST-GOV-004]
-      completed_points: 13
+      completed_stories: [ST-GOV-003, ST-GOV-004, ST-GOV-005, ST-GOV-006]
+      completed_points: 26
       total_points: 68
-      completion_percentage: 19
+      completion_percentage: 38
       last_updated: "2026-02-23"
 
   # Governance Stories - Phase 1: Foundation (Days 1-30)
@@ -4098,6 +4124,8 @@ launch_stories:
     sprint_id: GOV-PHASE2-001
     status: completed
     validation_status: validated
+    completion_date: "2026-02-23"
+    merge_commit: "e69986b47477dae581814824111525d55428f593"
     story_points: 5
     priority: P1-HIGH
     fr_coverage: [FR-GOV-005]
@@ -4113,26 +4141,22 @@ launch_stories:
       - data_loss_incidents: 0
       - rollback_time: <5min
       - storage_reduction: ≥20%
-    completion_date: "2026-02-23"
     implementation_notes:
-      - "8 source files, 6 test files created (4,018 total lines)"
+      - "13 files added (4,018 lines) - all tracked in git"
       - "Scheduled consolidation: daily at 2 AM UTC via APScheduler"
       - "Memory archiver: archives >90 days to cold storage"
       - "Golden memory promoter: weighted scoring for high-value memories"
       - "Configurable retention policies per MemoryType"
       - "7-day rollback capability with Redis-backed recovery"
       - "CLI: scripts/governance/consolidation_scheduler.py"
+      - "Commit: e69986b47477dae581814824111525d55428f593"
     test_results:
       total_tests: 113
       passed: 113
       failed: 0
       coverage_percent: 85
       coverage_target: 80
-      status: "All tests pass"
-    live_gate_evidence:
-      data_loss_incidents: 0
-      rollback_time_seconds: 180
-      storage_reduction_percent: 23
+      status: "All tests pass, coverage exceeds target"
 
   - id: ST-GOV-006
     title: Self-Review Quality Gate
@@ -4140,6 +4164,8 @@ launch_stories:
     sprint_id: GOV-PHASE2-001
     status: completed
     validation_status: validated
+    completion_date: "2026-02-23"
+    merge_commit: "a565de09085f77568ca44b4b4f0feddb75a83779"
     story_points: 8
     priority: P1-HIGH
     fr_coverage: [FR-GOV-006]
@@ -4155,25 +4181,21 @@ launch_stories:
       - false_negative_rate: <5%
       - false_positive_rate: <10%
       - review_time: <2min
-    completion_date: "2026-02-23"
     implementation_notes:
-      - "7 source files, 4 test files created (3,852 total lines)"
+      - "10 files added (3,852 lines) - merged to main from feature branch"
       - "Quality scoring: Style 20%, Coverage 25%, Security 20%, Constitution 20%, Docs 15%"
       - "PR blocking: automatic block when quality score <80%"
       - "Human override: OverrideManager with approval workflow and justification"
       - "GitReviewBot integration: REST API + CLI script"
       - "CLI: scripts/governance/self_review.py"
+      - "Merge commit: a565de09085f77568ca44b4b4f0feddb75a83779"
     test_results:
       total_tests: 65
       passed: 65
       failed: 0
-      coverage_percent: 88
+      coverage_percent: 82
       coverage_target: 80
-      status: "All tests pass"
-    live_gate_evidence:
-      false_negative_rate_percent: 3.2
-      false_positive_rate_percent: 7.8
-      review_time_seconds_avg: 45
+      status: "All tests pass, coverage exceeds target"
 
   - id: ST-GOV-007
     title: Retrieval Quality Evaluator
