@@ -3,7 +3,7 @@
 import os
 import re
 from datetime import datetime
-from typing import Any
+from typing import Any, cast
 
 import aiohttp
 
@@ -151,7 +151,7 @@ class GiteaClient:
 
         async with session.post(url, json=payload) as response:
             response.raise_for_status()
-            return await response.json()
+            return cast(dict[str, Any], await response.json())
 
     def _format_review_body(self, decision: Decision) -> str:
         """Format the review body markdown."""
@@ -290,7 +290,7 @@ class GiteaClient:
 
         async with session.get(url) as response:
             response.raise_for_status()
-            return await response.json()
+            return cast(list[dict[str, Any]], await response.json())
 
     async def post_comment(self, pr_number: int, body: str) -> dict[str, Any]:
         """Post a comment to the PR."""
@@ -301,7 +301,7 @@ class GiteaClient:
 
         async with session.post(url, json={"body": body}) as response:
             response.raise_for_status()
-            return await response.json()
+            return cast(dict[str, Any], await response.json())
 
     async def merge_pr(
         self,
@@ -320,7 +320,7 @@ class GiteaClient:
 
         async with session.post(url, json=payload) as response:
             response.raise_for_status()
-            return await response.json()
+            return cast(dict[str, Any], await response.json())
 
     async def get_check_runs(self, pr_number: int) -> list[dict[str, Any]]:
         """Get CI check runs for PR."""
@@ -336,8 +336,8 @@ class GiteaClient:
             if response.status == 404:
                 return []
             response.raise_for_status()
-            data = await response.json()
-            return data.get("statuses", [])
+            data = cast(dict[str, Any], await response.json())
+            return cast(list[dict[str, Any]], data.get("statuses", []))
 
     def extract_story_id(self, pr_title: str) -> str | None:
         """Extract story ID from PR title."""

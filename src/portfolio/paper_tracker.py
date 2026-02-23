@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from common.circuit_breaker import CircuitBreaker, CircuitBreakerOpen
 
@@ -539,7 +539,7 @@ class PaperTracker:
                 symbol,
             )
             self.on_redis_success()
-            return position
+            return cast("dict[str, Any] | None", position)
         except CircuitBreakerOpen:
             # Circuit is open - fail fast and return from memory
             logger.warning(
@@ -552,8 +552,8 @@ class PaperTracker:
             logger.error(f"Redis error in get_position({symbol}): {e}")
             self.on_redis_failure(str(e), affected_operations=["get_position"])
             # Return from memory as fallback
-            result: dict[str, Any] | None = self._positions.get(symbol)
-            return result
+            fallback_result: dict[str, Any] | None = self._positions.get(symbol)
+            return fallback_result
 
     def save_position(self, symbol: str, position: dict[str, Any]) -> bool:
         """Save position to Redis with circuit breaker protection.

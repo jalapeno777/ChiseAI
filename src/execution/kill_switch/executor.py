@@ -789,7 +789,7 @@ class KillSwitchExecutor:
         if not self.influxdb_client or not self.config.log_to_influxdb:
             return False
 
-        async def _write():
+        async def _write() -> None:
             point = {
                 "measurement": self.config.influxdb_measurement,
                 "tags": {
