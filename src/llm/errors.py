@@ -17,6 +17,8 @@ For CH-LLM-FALLBACK-002: Harden fallback chain reliability
 
 from __future__ import annotations
 
+from typing import cast
+
 
 class LLMError(Exception):
     """Base exception for all LLM provider errors."""
@@ -262,11 +264,11 @@ def get_fallback_delay(error: LLMError, attempt: int, base_delay: float = 1.0) -
         if error.retry_after is not None:
             return float(error.retry_after)
         # Rate limits get longer delays
-        return base_delay * (2 ** (attempt + 1))
+        return cast(float, base_delay * (2 ** (attempt + 1)))
 
     if isinstance(error, (NetworkError, ServerError)):
         # Standard exponential backoff
-        return base_delay * (2**attempt)
+        return cast(float, base_delay * (2**attempt))
 
     return base_delay
 

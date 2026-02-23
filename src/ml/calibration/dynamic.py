@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
@@ -526,7 +526,9 @@ class DynamicThresholdAdjuster:
         Returns:
             True if ECE exceeds threshold (poor calibration)
         """
-        return self.controller.check_ece_degradation(signal_type, self.ece_threshold)
+        return cast(
+            bool, self.controller.check_ece_degradation(signal_type, self.ece_threshold)
+        )
 
     def calculate_adjustment(
         self,
@@ -567,12 +569,12 @@ class DynamicThresholdAdjuster:
 
         else:
             # ECE is acceptable, no adjustment needed
-            return current_threshold
+            return cast(float, current_threshold)
 
         # Clamp to valid range
         new_threshold = max(MIN_THRESHOLD, min(MAX_THRESHOLD, new_threshold))
 
-        return new_threshold
+        return cast(float, new_threshold)
 
     def get_current_ece(self, signal_type: str) -> float | None:
         """Get current ECE for a signal type.
@@ -583,7 +585,7 @@ class DynamicThresholdAdjuster:
         Returns:
             Current ECE value or None if not available
         """
-        return self.controller._last_ece.get(signal_type)
+        return cast(float | None, self.controller._last_ece.get(signal_type))
 
     def get_adjustment_summary(self) -> dict[str, Any]:
         """Get summary of adjustments made.

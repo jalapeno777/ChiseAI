@@ -128,7 +128,7 @@ class KPICalculator:
         if gross_loss == 0:
             return float(gross_profit) if gross_profit > 0 else 0.0
 
-        return gross_profit / gross_loss
+        return float(gross_profit / gross_loss)
 
     @staticmethod
     def calculate_average_trade(trades: list[Trade]) -> float:
@@ -143,7 +143,7 @@ class KPICalculator:
         if not trades:
             return 0.0
 
-        return sum(trade.pnl for trade in trades) / len(trades)
+        return float(sum(trade.pnl for trade in trades) / len(trades))
 
     @staticmethod
     def calculate_expectancy(trades: list[Trade]) -> float:

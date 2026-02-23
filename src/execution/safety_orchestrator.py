@@ -594,7 +594,7 @@ class SafetyOrchestrator:
             {"success": result},
         )
 
-        return result
+        return result  # type: ignore[no-any-return]
 
     async def disable_kill_switch(self) -> bool:
         """Disable the kill switch.
@@ -618,7 +618,7 @@ class SafetyOrchestrator:
             {"success": result},
         )
 
-        return result
+        return result  # type: ignore[no-any-return]
 
     async def reauthorize_kill_switch(self, signed_packet_id: str) -> bool:
         """Reauthorize the kill switch after trigger.
@@ -646,7 +646,7 @@ class SafetyOrchestrator:
             {"signed_packet_id": signed_packet_id, "success": result},
         )
 
-        return result
+        return result  # type: ignore[no-any-return]
 
     def get_kill_switch_state(self) -> str | None:
         """Get current kill switch state.

@@ -743,7 +743,7 @@ class BybitConnector:
             # Transfer callbacks to manager
             for callback in self._price_callbacks:
                 self._ws_manager.register_price_callback(callback)
-            for callback in self._message_callbacks:
+            for callback in self._message_callbacks:  # type: ignore[assignment]
                 self._ws_manager.register_message_callback(callback)
 
             await self._ws_manager.start(symbols)
@@ -1011,7 +1011,7 @@ class BybitConnector:
         """
         if self._ws_manager is None:
             return None
-        return self._ws_manager.get_state()
+        return cast(dict[str, Any], self._ws_manager.get_state())
 
     def force_circuit_open(self, reason: str = "manual") -> None:
         """Manually force WebSocket circuit breaker to open.
@@ -1047,4 +1047,4 @@ class BybitConnector:
         """
         if self._ws_manager is None:
             return False
-        return self._ws_manager.is_healthy()
+        return cast(bool, self._ws_manager.is_healthy())

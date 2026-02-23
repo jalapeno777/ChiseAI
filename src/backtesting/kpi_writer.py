@@ -14,7 +14,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS, WriteApi
@@ -185,7 +185,8 @@ class BacktestKPIWriter:
         Returns:
             InfluxDB Point
         """
-        return (
+        return cast(
+            Point,
             Point("backtest_kpis")
             .time(kpis.timestamp)
             .tag("strategy_id", kpis.strategy_id)
@@ -196,7 +197,7 @@ class BacktestKPIWriter:
             .field("win_rate", float(kpis.win_rate))
             .field("trade_count", int(kpis.trade_count))
             .field("total_pnl", float(kpis.total_pnl))
-            .field("timestamp", kpis.timestamp.isoformat())
+            .field("timestamp", kpis.timestamp.isoformat()),
         )
 
     def query_kpis(
@@ -265,8 +266,8 @@ class BacktestKPIWriter:
         """
         try:
             client = self._get_client()
-            health = client.health()
-            return health.status == "pass"
+            health = cast(dict[str, str], client.health())
+            return cast(bool, health.status == "pass")
         except Exception as e:
             print(f"Health check failed: {e}")
             return False

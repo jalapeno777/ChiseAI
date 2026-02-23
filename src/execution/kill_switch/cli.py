@@ -15,7 +15,7 @@ import click
 
 
 @click.group(name="kill-switch")
-def kill_switch_cli():
+def kill_switch_cli() -> None:
     """Kill-switch management commands."""
     pass
 

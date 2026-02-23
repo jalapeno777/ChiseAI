@@ -71,7 +71,9 @@ class TimeRange:
         """Check if this range overlaps with another."""
         return self.start < other.end and other.start < self.end
 
-    def is_adjacent_to(self, other: "TimeRange", threshold: timedelta = None) -> bool:
+    def is_adjacent_to(
+        self, other: "TimeRange", threshold: timedelta | None = None
+    ) -> bool:
         """Check if ranges are adjacent (with optional threshold)."""
         if threshold is None:
             threshold = timedelta(hours=1)
@@ -395,7 +397,7 @@ class LazyDataLoader:
         if self._prefetch_thread and self._prefetch_thread.is_alive():
             return
 
-        def prefetch_worker():
+        def prefetch_worker() -> None:
             try:
                 self.prefetch_adjacent(current_range)
             except Exception as e:
@@ -552,8 +554,8 @@ class AsyncLazyDataLoader:
         paginator: TimeSeriesPaginator,
         cache: CacheBackend | None = None,
         prefetch_margin: timedelta = timedelta(hours=1),
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         self._sync_loader = LazyDataLoader(
             paginator=paginator, cache=cache, prefetch_margin=prefetch_margin, **kwargs
         )
@@ -602,7 +604,7 @@ def create_lazy_loader(
     data: list[dict[str, Any]],
     timestamp_field: str = "timestamp",
     page_size: int = 1000,
-    **kwargs,
+    **kwargs: Any,
 ) -> LazyDataLoader:
     """Create a LazyDataLoader from a list of data.
 

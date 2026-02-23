@@ -257,7 +257,7 @@ class ExecutionHealthMonitor:
         # Send alert
         if self._alert_callback:
             try:
-                await self._alert_callback(alert)
+                await self._alert_callback(alert)  # type: ignore[misc]
             except Exception as e:
                 logger.error(f"Alert callback failed: {e}")
 
@@ -417,7 +417,7 @@ async def send_gap_alert_to_discord(
             embeds=[embed],
         )
 
-        return result
+        return result  # type: ignore[no-any-return]
 
     except Exception as e:
         logger.error(f"Failed to send Discord alert: {e}")

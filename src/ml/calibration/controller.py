@@ -16,12 +16,11 @@ import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import yaml
 
 if TYPE_CHECKING:
-
     from ml.calibration.optimizer import ThresholdOptimizer
 
 logger = logging.getLogger(__name__)
@@ -179,10 +178,10 @@ class ThresholdController:
             True if signal confidence exceeds threshold for its type
         """
         signal_type = signal.get("type", "LONG")
-        confidence = signal.get("confidence", 0.0)
+        confidence = cast(float, signal.get("confidence", 0.0))
 
         threshold = self.get_current_threshold(signal_type)
-        return confidence >= threshold
+        return cast(bool, confidence >= threshold)
 
     def get_current_threshold(self, signal_type: str) -> float:
         """Get active threshold for signal type.
@@ -354,7 +353,7 @@ class ThresholdController:
             current_ece = self.optimizer.calculate_ece(records)
             self._last_ece[signal_type] = current_ece
 
-            return current_ece > threshold
+            return cast(bool, current_ece > threshold)
 
         except Exception as e:
             logger.warning(f"ECE degradation check failed for {signal_type}: {e}")

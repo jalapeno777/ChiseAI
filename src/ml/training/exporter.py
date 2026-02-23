@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 
@@ -607,12 +607,12 @@ class DatasetExporter:
         import pyarrow.parquet as pq
 
         table = pq.read_table(path)
-        return table.to_pylist()
+        return cast(list[dict[str, Any]], table.to_pylist())
 
     def _load_json(self, path: Path) -> list[dict[str, Any]]:
         """Load data from JSON."""
         with open(path, encoding="utf-8") as f:
-            return json.load(f)
+            return cast(list[dict[str, Any]], json.load(f))
 
     def _load_hdf5(self, path: Path) -> list[dict[str, Any]]:
         """Load data from HDF5."""

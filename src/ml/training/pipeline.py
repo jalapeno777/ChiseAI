@@ -394,11 +394,11 @@ class TrainingPipeline:
             if sample.direction == "short":
                 pnl_pct = -pnl_pct
 
-            return round(pnl_pct, 4)
+            return cast(float, round(pnl_pct, 4))
 
         # Fallback to outcome PnL if available
         if hasattr(outcome, "pnl") and outcome.pnl is not None:
-            return round(outcome.pnl, 4)
+            return cast(float, round(outcome.pnl, 4))
 
         return None
 

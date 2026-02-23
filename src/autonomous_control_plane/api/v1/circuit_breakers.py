@@ -5,7 +5,7 @@ ST-NS-038: Circuit Breaker Registry & Unified Telemetry
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from fastapi import APIRouter, HTTPException, status
 
@@ -53,7 +53,7 @@ async def get_circuit_breaker(name: str) -> dict[str, Any]:
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Circuit breaker '{name}' not found",
         )
-    return state.to_dict()
+    return cast(dict[str, Any], state.to_dict())
 
 
 @router.post(
@@ -73,7 +73,7 @@ async def create_circuit_breaker(
         Created circuit breaker state
     """
     state = _registry.register(name, config or CircuitBreakerConfig())
-    return state.to_dict()
+    return cast(dict[str, Any], state.to_dict())
 
 
 @router.delete("/{name}", status_code=status.HTTP_204_NO_CONTENT)
@@ -251,7 +251,7 @@ async def get_circuit_breaker_health(name: str) -> dict[str, Any]:
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Circuit breaker '{name}' not found",
         )
-    return health.to_dict()
+    return cast(dict[str, Any], health.to_dict())
 
 
 @router.post("/telemetry/flush", response_model=dict[str, Any])

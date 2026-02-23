@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -388,8 +388,9 @@ class CalibrationDataCollector:
         storage = self._get_storage()
         import asyncio
 
-        records = asyncio.run(
-            storage.get_records(start_time, end_time, signal_type, limit)
+        records = cast(
+            list[CalibrationRecord],
+            asyncio.run(storage.get_records(start_time, end_time, signal_type, limit)),
         )
 
         return records
@@ -424,7 +425,10 @@ class CalibrationDataCollector:
 
         # Query storage
         storage = self._get_storage()
-        records = await storage.get_records(start_time, end_time, signal_type, limit)
+        records = cast(
+            list[CalibrationRecord],
+            await storage.get_records(start_time, end_time, signal_type, limit),
+        )
 
         return records
 
@@ -490,7 +494,7 @@ class CalibrationDataCollector:
         cutoff_time = datetime.now(UTC) - timedelta(days=retention_days)
 
         storage = self._get_storage()
-        deleted_count = await storage.delete_old_records(cutoff_time)
+        deleted_count = cast(int, await storage.delete_old_records(cutoff_time))
 
         logger.info(f"Cleaned up {deleted_count} old calibration records")
         return deleted_count
@@ -512,9 +516,12 @@ class CalibrationDataCollector:
         """
         try:
             from ml.calibration.exporter import CalibrationExporter, ExportFormat
+            import asyncio
 
             exporter = CalibrationExporter(self._get_storage())
-            return exporter.export(filepath, ExportFormat.PARQUET)
+            return cast(
+                bool, asyncio.run(exporter.export(filepath, ExportFormat.PARQUET))
+            )
 
         except Exception as e:
             logger.error(f"Failed to export to Parquet: {e}")
@@ -531,9 +538,10 @@ class CalibrationDataCollector:
         """
         try:
             from ml.calibration.exporter import CalibrationExporter, ExportFormat
+            import asyncio
 
             exporter = CalibrationExporter(self._get_storage())
-            return exporter.export(filepath, ExportFormat.CSV)
+            return cast(bool, asyncio.run(exporter.export(filepath, ExportFormat.CSV)))
 
         except Exception as e:
             logger.error(f"Failed to export to CSV: {e}")
@@ -551,12 +559,15 @@ class CalibrationDataCollector:
         """
         try:
             from ml.calibration.exporter import CalibrationExporter, ExportFormat
+            import asyncio
 
             export_format = (
                 ExportFormat.PARQUET if format == "parquet" else ExportFormat.CSV
             )
             exporter = CalibrationExporter(self._get_storage())
-            return exporter.export_for_ece(filepath, export_format)
+            return cast(
+                bool, asyncio.run(exporter.export_for_ece(filepath, export_format))
+            )
 
         except Exception as e:
             logger.error(f"Failed to export for ECE: {e}")
