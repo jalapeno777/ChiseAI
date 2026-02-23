@@ -2,7 +2,7 @@
 name: "quickdev"
 description: "Fast executor subagent for 1SP tasks: small fixes, quick investigations, small refactors, CI tweaks."
 mode: all
-model: "opencode/minimax-m2.5-free" # model: "minimax/MiniMax-M2.5"
+model: "zai-coding-plan/glm-4.7" # model: "minimax/MiniMax-M2.5"
 temperature: 0.35
 tools:
   task: true
