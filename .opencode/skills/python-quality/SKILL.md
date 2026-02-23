@@ -4,6 +4,8 @@ description: Repo-aware Python quality workflow. Uses whatever quality tooling i
 metadata:
   version: "2.0"
   opencode_min_version: "1.1.48"
+  author: "ChiseAI Team"
+  last_updated: "2026-02-23"
 ---
 
 # python-quality (repo-aware)

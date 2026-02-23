@@ -1,4 +1,14 @@
-# Skill: chiseai-sprint-cleanup
+---
+name: chiseai-sprint-cleanup
+description: Ensure repository hygiene before starting new sprint work through automated cleanup, branch hygiene checks, and main branch synchronization.
+metadata:
+  version: "1.0"
+  opencode_min_version: "1.1.60"
+  author: "ChiseAI Team"
+  last_updated: "2026-02-23"
+---
+
+# chiseai-sprint-cleanup
 
 ## Goal
 

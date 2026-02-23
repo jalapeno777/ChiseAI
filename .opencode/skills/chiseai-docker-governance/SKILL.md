@@ -2,8 +2,10 @@
 name: chiseai-docker-governance
 description: Docker networking, container governance, and connectivity standards for ChiseAI infrastructure.
 metadata:
-  version: "1.0"
+  version: "1.1"
   opencode_min_version: "1.1.60"
+  author: "ChiseAI Team"
+  last_updated: "2026-02-23"
 ---
 
 # chiseai-docker-governance
@@ -18,6 +20,14 @@ Ensure consistent Docker container networking and governance across ChiseAI infr
 - Testing dashboard endpoints
 - Debugging connectivity issues
 - Infrastructure changes
+- Deploying new services
+
+## When Not To Use
+
+- Application-level networking (use app-specific config)
+- External service connections (use appropriate SDKs)
+- Local development without Docker (no governance needed)
+- Third-party containers outside ChiseAI scope
 
 ## Network Configuration
 
@@ -66,3 +76,27 @@ Hook runs `scripts/validate_docker_connectivity.py` to check:
 - All containers on `chiseai` network
 - Required labels present
 - No protected container modifications
+
+## Exit Conditions
+
+- Container connected to `chiseai` network.
+- Required labels applied.
+- Connectivity tested and verified.
+- Protected container rules respected.
+
+## Troubleshooting/Safety
+
+- **Container can't reach host**: Use `host.docker.internal` instead of `localhost`.
+- **Network not found**: Create `chiseai` network first: `docker network create chiseai`.
+- **Label missing**: Add `--label "project=chiseai"` to docker run command.
+- **Protected container touched**: Stop immediately, get Captain Craig approval.
+
+## Related Skills
+
+- `chiseai-validation` - Pre-commit hook integration
+- `chiseai-memory-ops` - Redis container connectivity
+- `chiseai-git-workflow` - Pre-commit workflow
+
+## Related Commands
+
+- `.opencode/command/chise-precommit-gates.md` - Validates Docker governance
