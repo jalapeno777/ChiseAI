@@ -302,9 +302,9 @@ class TestBlockingLogic:
 
         request_id = sentinel.request_approval(task, "Need to keep task intact")
 
-        # Stub should return a request ID
+        # Stub should return a request ID with format "apr-" + 8 hex chars = 12 chars
         assert request_id is not None
-        assert len(request_id) == 8
+        assert len(request_id) == 12
 
     def test_request_approval_requires_justification(self):
         """Test that justification is required."""

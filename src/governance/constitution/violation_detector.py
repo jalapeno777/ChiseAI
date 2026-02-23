@@ -386,6 +386,7 @@ class ViolationDetector:
             violation_id: ID of the violation
             is_true_positive: Whether it was a true positive
         """
+        self._detection_stats["total_checked"] += 1
         if is_true_positive:
             self._detection_stats["true_positives"] += 1
         else:

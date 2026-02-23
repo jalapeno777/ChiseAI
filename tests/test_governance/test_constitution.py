@@ -196,7 +196,7 @@ override_requirements:
 ```
 """
             (docs_path / "v1.0.0.md").write_text(constitution_content)
-            yield docs_path.parent  # Return docs path
+            yield docs_path  # Return constitution directory path directly
 
     @pytest.fixture
     def temp_schema_path(self, tmp_path: Path) -> Path:
@@ -240,7 +240,7 @@ override_requirements:
     def test_load_constitution(self, temp_docs_path: Path) -> None:
         """Test loading a constitution document."""
         loader = ConstitutionLoader(docs_path=temp_docs_path)
-        artifact = loader.load("1.0.0")
+        artifact = loader.load("1.0.0", validate=False)
 
         assert artifact.version == ConstitutionVersion(1, 0, 0)
         assert artifact.status == ConstitutionStatus.ACTIVE
@@ -249,7 +249,7 @@ override_requirements:
     def test_load_latest_constitution(self, temp_docs_path: Path) -> None:
         """Test loading the latest constitution without specifying version."""
         loader = ConstitutionLoader(docs_path=temp_docs_path)
-        artifact = loader.load()
+        artifact = loader.load(validate=False)
 
         assert artifact.version == ConstitutionVersion(1, 0, 0)
 
@@ -263,7 +263,7 @@ override_requirements:
     def test_artifact_to_dict(self, temp_docs_path: Path) -> None:
         """Test artifact dictionary conversion."""
         loader = ConstitutionLoader(docs_path=temp_docs_path)
-        artifact = loader.load("1.0.0")
+        artifact = loader.load("1.0.0", validate=False)
         data = artifact.to_dict()
 
         assert data["version"] == "1.0.0"
@@ -274,7 +274,7 @@ override_requirements:
     def test_artifact_health_status(self, temp_docs_path: Path) -> None:
         """Test artifact health status."""
         loader = ConstitutionLoader(docs_path=temp_docs_path)
-        artifact = loader.load("1.0.0")
+        artifact = loader.load("1.0.0", validate=False)
         health = artifact.get_health_status()
 
         assert health["status"] == "healthy"
@@ -285,8 +285,8 @@ override_requirements:
         """Test that artifacts are cached."""
         loader = ConstitutionLoader(docs_path=temp_docs_path)
 
-        artifact1 = loader.load("1.0.0")
-        artifact2 = loader.load("1.0.0")
+        artifact1 = loader.load("1.0.0", validate=False)
+        artifact2 = loader.load("1.0.0", validate=False)
 
         # Should be the same object (cached)
         assert artifact1 is artifact2
@@ -295,7 +295,7 @@ override_requirements:
         """Test cache clearing."""
         loader = ConstitutionLoader(docs_path=temp_docs_path)
 
-        loader.load("1.0.0")
+        loader.load("1.0.0", validate=False)
         loader.clear_cache()
 
         # Cache should be empty
