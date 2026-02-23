@@ -81,6 +81,18 @@ skill(name="chiseai-git-workflow")          # Load git workflow skill
 **Then run:** `chise-emergency-merge-override` command
 **Why:** Documents the bypass procedure with required approvals
 
+### "I need to validate skill structure..."
+**Load:** `chiseai-skill-validation`
+**Why:** Ensures skills have proper structure before submission
+
+### "I need to check Grafana dashboards..."
+**Load:** `chiseai-metrics-dashboard`
+**Why:** Provides dashboard interaction patterns and metrics guidance
+
+### "I'm writing tests..."
+**Load:** `chiseai-testing-patterns`
+**Why:** Ensures tests meet coverage requirements and follow patterns
+
 ## 📋 Quick Skill Reference Table
 
 | Skill | Primary Use | Key Commands |
@@ -94,6 +106,9 @@ skill(name="chiseai-git-workflow")          # Load git workflow skill
 | `chiseai-incident-response` | Incident logging, post-mortems | `chise-incident-log`, `chise-postmortem-create` |
 | `chiseai-docker-governance` | Container/network config | N/A |
 | `chiseai-workflow-commands` | BMAD planning/implementation | All `bmad-*` commands |
+| `chiseai-skill-validation` | Skill structure validation | N/A |
+| `chiseai-metrics-dashboard` | Grafana dashboard interaction | N/A |
+| `chiseai-testing-patterns` | Testing patterns and coverage | N/A |
 | `python-quality` | Python code quality | N/A |
 
 ## 🔧 Skill Loading Pattern
@@ -431,3 +446,11 @@ docker run --network chiseai --name my-service [image]
 - The pre-commit hook `scripts/validate_docker_connectivity.py` verifies containers have the required label
 - Containers without the `project=chiseai` label will fail validation
 - Protected containers (tradedev, intelligent_ride, etc.) are exempt from this requirement
+
+---
+
+## Recent Skill Additions
+
+- `chiseai-skill-validation` - Validate skill structure and compliance
+- `chiseai-metrics-dashboard` - Grafana dashboard interaction guide
+- `chiseai-testing-patterns` - Testing patterns and best practices
