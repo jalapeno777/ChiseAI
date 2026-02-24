@@ -9,7 +9,7 @@ import json
 import subprocess
 from datetime import datetime
 
-from config.bootstrap import bootstrap
+from config.bootstrap import bootstrap, check_environment
 
 # Try to import Redis, but don't fail if unavailable
 try:
@@ -223,9 +223,33 @@ def print_report(categories):
             print(f"    ... and {len(categories['healthy']) - 5} more")
 
 
+def check_critical_environment():
+    """Verify critical environment variables are set."""
+    result = check_environment(
+        [
+            "REDIS_HOST",
+            "CHISE_REDIS_HOST",
+        ]
+    )
+
+    if not result["ok"]:
+        # Not a hard failure - Redis may use defaults
+        if not result["present"]:
+            print(
+                "WARN: No Redis host configured. Using default: host.docker.internal:6380",
+            )
+
+    for warning in result.get("warnings", []):
+        print(f"WARN: {warning}")
+
+
 def main():
     # Bootstrap environment first
     bootstrap(load_env=True)
+
+    # Check critical environment variables
+    check_critical_environment()
+
     parser = argparse.ArgumentParser(description="Check branch hygiene")
     parser.add_argument("--report", action="store_true", help="Print report")
     parser.add_argument(
