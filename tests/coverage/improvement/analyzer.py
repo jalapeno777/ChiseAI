@@ -120,7 +120,6 @@ class CoverageReport:
     critical_gaps: int = 0
     recommendations: list[str] = field(default_factory=list)
 
-    @property
     def is_compliant(self, threshold: float = 80.0) -> bool:
         """Check if coverage meets threshold.
 
