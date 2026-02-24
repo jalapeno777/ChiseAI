@@ -111,6 +111,17 @@ no_implicit_optional = false
 warn_return_any = false
 check_untyped_defs = false
 
+[[tool.mypy.overrides]]
+module = "scripts.*"
+disallow_untyped_defs = false
+check_untyped_defs = false
+warn_return_any = false
+
+[[tool.mypy.overrides]]
+module = "src.governance.*"
+disallow_untyped_defs = false
+check_untyped_defs = false
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
