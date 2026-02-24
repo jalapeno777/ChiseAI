@@ -1,0 +1,289 @@
+---
+metadata:
+  version: "1.0.0"
+  last_updated: "2026-02-24"
+  total_items: 14
+
+summary:
+  by_severity:
+    P0: 0
+    P1: 4
+    P2: 10
+  by_category:
+    ci_cd: 3
+    code_quality: 6
+    documentation: 2
+    infrastructure: 2
+    test_coverage: 1
+  by_status:
+    open: 11
+    in_progress: 1
+    done: 2
+
+debts:
+  - id: DEBT-CI-001
+    category: ci_cd
+    title: "Ruff lint violations (~60 blocking)"
+    description: "Unused imports, import ordering violations across src/"
+    severity: P1
+    owner: qa-team
+    due_batch: B
+    status: done
+    created_date: "2026-02-24"
+    completed_date: "2026-02-24"
+    evidence:
+      - "CI_REPORT_SPRINT_Q2_3.md: ~280 ruff warnings, ~60 blocking"
+      - "Merge commit fe7d7c1: B1 branch with 63 files fixed"
+      - "ruff check src/ tests/: 0 violations verified"
+    remediation:
+      approach: "Auto-fix with ruff check --fix, manual for complex"
+      estimated_hours: 4
+      acceptance_criteria:
+        - "ruff check src/ passes with 0 blocking issues"
+        - "CI gate re-enabled for ruff"
+
+  - id: DEBT-CI-002
+    category: ci_cd
+    title: "Mypy type checking failures (~45 blocking)"
+    description: "Untyped function definitions and type annotation violations"
+    severity: P1
+    owner: qa-team
+    due_batch: B
+    status: open
+    created_date: "2026-02-24"
+    evidence:
+      - "MAINT-001 status: ~45 mypy errors blocking CI"
+    remediation:
+      approach: "Add type annotations progressively, focus on public APIs first"
+      estimated_hours: 8
+      acceptance_criteria:
+        - "mypy src/ passes with 0 errors"
+        - "Type coverage >= 80% for public modules"
+
+  - id: DEBT-CI-003
+    category: ci_cd
+    title: "Lint gate made non-blocking"
+    description: "Hotfix #63 disabled lint gate blocking; needs re-enabling"
+    severity: P2
+    owner: qa-team
+    due_batch: B
+    status: done
+    created_date: "2026-02-24"
+    completed_date: "2026-02-24"
+    evidence:
+      - ".woodpecker/ci.yaml: Removed hardcoded 'echo 0' hotfix"
+      - "CI gate now properly reports actual exit code"
+      - "Ruff check is now blocking (removed || echo WARN pattern)"
+    remediation:
+      approach: "Fix underlying lint issues, then re-enable blocking in CI config"
+      estimated_hours: 2
+      acceptance_criteria:
+        - "All lint issues resolved"
+        - "allow_failure: true removed from lint step"
+        - "CI fails on lint violations"
+
+  - id: DEBT-CODE-001
+    category: code_quality
+    title: "Bootstrap compliance gaps"
+    description: "21 out of 59 scripts missing required bootstrap pattern"
+    severity: P2
+    owner: devops-team
+    due_batch: B
+    status: open
+    created_date: "2026-02-24"
+    evidence:
+      - "bootstrap_compliance_report.md: 21/59 scripts non-compliant"
+    remediation:
+      approach: "Add standard bootstrap header to each script"
+      estimated_hours: 6
+      acceptance_criteria:
+        - "100% of scripts have bootstrap pattern"
+        - "bootstrap_compliance_report.md shows 0 non-compliant"
+
+  - id: DEBT-CODE-002
+    category: code_quality
+    title: "Memory deduplication TODOs"
+    description: "5 unimplemented functions in memory deduplication module"
+    severity: P1
+    owner: ml-team
+    due_batch: B
+    status: open
+    created_date: "2026-02-24"
+    evidence:
+      - "src/governance/memory/deduplication.py: 5 TODO markers"
+    remediation:
+      approach: "Implement deduplication logic with hash-based comparison"
+      estimated_hours: 12
+      acceptance_criteria:
+        - "All 5 TODOs resolved"
+        - "Unit tests for deduplication functions"
+        - "Integration test with Redis backend"
+
+  - id: DEBT-CODE-003
+    category: code_quality
+    title: "PR pipeline TODOs"
+    description: "4 unimplemented GitReviewBot integrations"
+    severity: P1
+    owner: devops-team
+    due_batch: B
+    status: open
+    created_date: "2026-02-24"
+    evidence:
+      - "standard_path.py: GitReviewBot integration stubs"
+    remediation:
+      approach: "Complete GitReviewBot webhook handlers and review logic"
+      estimated_hours: 16
+      acceptance_criteria:
+        - "All 4 GitReviewBot integrations functional"
+        - "PR comments auto-generated on review"
+        - "End-to-end test with Gitea webhook"
+
+  - id: DEBT-CODE-004
+    category: code_quality
+    title: "Email delivery not implemented"
+    description: "Reporting scheduler has email delivery stub at line 503"
+    severity: P2
+    owner: devops-team
+    due_batch: B
+    status: open
+    created_date: "2026-02-24"
+    evidence:
+      - "reporting/scheduler.py:503: email delivery stub"
+    remediation:
+      approach: "Integrate SMTP or email service (SendGrid/AWS SES)"
+      estimated_hours: 8
+      acceptance_criteria:
+        - "Email delivery functional from scheduler"
+        - "Configuration via environment variables"
+        - "Test email sent successfully"
+
+  - id: DEBT-CODE-005
+    category: code_quality
+    title: "Pre-existing import issues"
+    description: "Import ordering and circular import problems"
+    severity: P2
+    owner: qa-team
+    due_batch: B
+    status: open
+    created_date: "2026-02-24"
+    evidence:
+      - "CI_REPORT_SPRINT_Q2_3.md: import-related warnings"
+    remediation:
+      approach: "Run isort, resolve circular dependencies"
+      estimated_hours: 4
+      acceptance_criteria:
+        - "isort --check-only passes"
+        - "No circular import errors in CI"
+
+  - id: DEBT-DOC-001
+    category: documentation
+    title: "No post-mortems created"
+    description: "docs/postmortems/ directory is empty"
+    severity: P2
+    owner: ops-team
+    due_batch: B
+    status: open
+    created_date: "2026-02-24"
+    evidence:
+      - "docs/postmortems/: empty directory"
+    remediation:
+      approach: "Create post-mortem template and populate for recent incidents"
+      estimated_hours: 6
+      acceptance_criteria:
+        - "Post-mortem template created"
+        - "At least 2 post-mortems written for recent incidents"
+        - "Directory contains .md files"
+
+  - id: DEBT-DOC-002
+    category: documentation
+    title: "Missing runbooks"
+    description: "docs/runbooks/ has gaps in operational procedures"
+    severity: P2
+    owner: ops-team
+    due_batch: C
+    status: open
+    created_date: "2026-02-24"
+    evidence:
+      - "docs/runbooks/: incomplete coverage"
+    remediation:
+      approach: "Document common operational procedures"
+      estimated_hours: 10
+      acceptance_criteria:
+        - "Runbook for incident response"
+        - "Runbook for deployment rollback"
+        - "Runbook for database recovery"
+
+  - id: DEBT-INFRA-001
+    category: infrastructure
+    title: "CI test timeout"
+    description: "Test suite timing out in CI pipeline"
+    severity: P2
+    owner: devops-team
+    due_batch: B
+    status: in_progress
+    created_date: "2026-02-24"
+    evidence:
+      - "MAINT-001: CI timeout investigation"
+    remediation:
+      approach: "Optimize test suite or increase timeout, parallelize tests"
+      estimated_hours: 6
+      acceptance_criteria:
+        - "CI tests complete within timeout window"
+        - "Test duration <= 15 minutes"
+
+  - id: DEBT-INFRA-002
+    category: infrastructure
+    title: "Environment setup issues"
+    description: "Bootstrap and environment configuration problems"
+    severity: P2
+    owner: devops-team
+    due_batch: B
+    status: open
+    created_date: "2026-02-24"
+    evidence:
+      - "bootstrap_compliance_report.md: environment issues"
+    remediation:
+      approach: "Standardize environment setup scripts and documentation"
+      estimated_hours: 8
+      acceptance_criteria:
+        - "One-command environment setup works"
+        - "Documentation updated"
+        - "Tested on clean machine"
+
+  - id: DEBT-TEST-001
+    category: test_coverage
+    title: "Test coverage gaps in ML modules"
+    description: "ML modules below 80% coverage threshold"
+    severity: P2
+    owner: ml-team
+    due_batch: B
+    status: open
+    created_date: "2026-02-24"
+    evidence:
+      - "coverage.json: ML modules < 80%"
+    remediation:
+      approach: "Add unit tests for ML pipeline components"
+      estimated_hours: 16
+      acceptance_criteria:
+        - "ML module coverage >= 80%"
+        - "All critical paths have tests"
+        - "coverage.json updated"
+
+  - id: DEBT-TEST-002
+    category: code_quality
+    title: "Placeholder tests"
+    description: "test_senior_dev.py has placeholder test at line 196"
+    severity: P2
+    owner: qa-team
+    due_batch: B
+    status: open
+    created_date: "2026-02-24"
+    evidence:
+      - "test_senior_dev.py:196: placeholder test"
+    remediation:
+      approach: "Replace placeholder with actual test implementation"
+      estimated_hours: 4
+      acceptance_criteria:
+        - "Placeholder removed"
+        - "Real test assertions implemented"
+        - "Test passes"

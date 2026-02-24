@@ -46,7 +46,7 @@ steps:
           if [ -n "$(printf '%s' "$CHANGED_PY" | tr -d '[:space:]')" ]; then
             echo "lint: checking changed python files only: ${CHANGED_PY}"
             black --check ${CHANGED_PY} || echo "WARN: black violations (non-blocking)"
-            ruff check ${CHANGED_PY} || echo "WARN: ruff violations (non-blocking)"
+            ruff check ${CHANGED_PY}
           else
             echo "lint: no changed python files; skipping black/ruff file checks"
           fi
