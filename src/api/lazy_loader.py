@@ -294,8 +294,9 @@ class LazyDataLoader:
 
             if cached is not None:
                 logger.debug(f"Cache hit for viewport: {start_time} - {end_time}")
+                # cached is known to be LazyDataSet from cache population
                 self._current_data = cached
-                return cached
+                return cached  # type: ignore[no-any-return]
 
             # Load data for viewport
             logger.info(f"Loading viewport data: {start_time} - {end_time}")

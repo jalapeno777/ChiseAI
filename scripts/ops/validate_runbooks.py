@@ -23,7 +23,22 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict, cast
+
+
+class SLARequirement(TypedDict):
+    """Type definition for SLA requirement entries."""
+
+    target_seconds: int
+    description: str
+
+
+class SLARequirementMinutes(TypedDict):
+    """Type definition for SLA requirement entries with minutes."""
+
+    target_minutes: int
+    description: str
+
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -211,7 +226,11 @@ class RunbookValidator:
                 simulated_time = 15.0
 
             elapsed = time.time() - start_time + simulated_time
-            target = self.SLA_REQUIREMENTS["kill_switch_trigger"]["target_seconds"]
+            target: float = float(
+                cast(
+                    int, self.SLA_REQUIREMENTS["kill_switch_trigger"]["target_seconds"]
+                )
+            )
 
             result = SLAResult(
                 runbook_name="kill-switch-trigger",
@@ -256,7 +275,12 @@ class RunbookValidator:
 
             # Simulate timing
             simulated_time = 30.0  # Simulated 30 seconds
-            target = self.SLA_REQUIREMENTS["circuit_breaker_toggle"]["target_seconds"]
+            target: float = float(
+                cast(
+                    int,
+                    self.SLA_REQUIREMENTS["circuit_breaker_toggle"]["target_seconds"],
+                )
+            )
 
             result = SLAResult(
                 runbook_name="redis-failure-response",
@@ -293,6 +317,7 @@ class RunbookValidator:
         # Look for rollback-related content in runbooks
         rollback_found = False
         rollback_time = 0.0
+        runbook: Any = None  # Initialize to satisfy type checker
 
         for runbook_name in self.parser.list_runbooks():
             try:
@@ -307,7 +332,9 @@ class RunbookValidator:
             except Exception:
                 continue
 
-        target_minutes = self.SLA_REQUIREMENTS["rollback"]["target_minutes"]
+        target_minutes: int = cast(
+            int, self.SLA_REQUIREMENTS["rollback"]["target_minutes"]
+        )
         target_seconds = target_minutes * 60
 
         result = SLAResult(
@@ -320,7 +347,9 @@ class RunbookValidator:
             details={
                 "description": self.SLA_REQUIREMENTS["rollback"]["description"],
                 "rollback_found": rollback_found,
-                "estimated_steps": len(runbook.steps) if rollback_found else 0,
+                "estimated_steps": len(runbook.steps)
+                if rollback_found and runbook
+                else 0,
             },
         )
 
@@ -357,9 +386,9 @@ class RunbookValidator:
             except Exception:
                 continue
 
-        target_minutes = self.SLA_REQUIREMENTS["oncall_acknowledgment"][
-            "target_minutes"
-        ]
+        target_minutes: int = cast(
+            int, self.SLA_REQUIREMENTS["oncall_acknowledgment"]["target_minutes"]
+        )
 
         result = SLAResult(
             runbook_name="oncall-procedures",
@@ -650,7 +679,7 @@ class RunbookValidator:
         print("=" * 70)
 
 
-def main():
+def main() -> int:
     """Main entry point for the validation script."""
     parser = argparse.ArgumentParser(
         description="Validate runbooks against SLA requirements and scenarios"
@@ -744,10 +773,10 @@ def _generate_markdown_report(report: ValidationReport, output_path: Path) -> No
         ]
     )
 
-    for result in report.scenario_results:
-        status = "✓ PASS" if result.passed else "✗ FAIL"
+    for scenario_result in report.scenario_results:
+        status = "✓ PASS" if scenario_result.passed else "✗ FAIL"
         lines.append(
-            f"| {result.scenario_name} | {result.runbook_name} | {result.steps_executed} | {result.steps_passed} | {result.execution_time_seconds:.1f} | {status} |"
+            f"| {scenario_result.scenario_name} | {scenario_result.runbook_name} | {scenario_result.steps_executed} | {scenario_result.steps_passed} | {scenario_result.execution_time_seconds:.1f} | {status} |"
         )
 
     lines.extend(
@@ -784,36 +813,36 @@ def _generate_markdown_report(report: ValidationReport, output_path: Path) -> No
         ]
     )
 
-    for result in report.scenario_results:
+    for scenario_result in report.scenario_results:
         lines.extend(
             [
-                f"#### {result.scenario_name}",
+                f"#### {scenario_result.scenario_name}",
                 "",
-                f"- **Runbook:** {result.runbook_name}",
-                f"- **Steps Executed:** {result.steps_executed}",
-                f"- **Steps Passed:** {result.steps_passed}",
-                f"- **Execution Time:** {result.execution_time_seconds:.1f}s",
-                f"- **Status:** {'✓ PASS' if result.passed else '✗ FAIL'}",
+                f"- **Runbook:** {scenario_result.runbook_name}",
+                f"- **Steps Executed:** {scenario_result.steps_executed}",
+                f"- **Steps Passed:** {scenario_result.steps_passed}",
+                f"- **Execution Time:** {scenario_result.execution_time_seconds:.1f}s",
+                f"- **Status:** {'✓ PASS' if scenario_result.passed else '✗ FAIL'}",
                 "",
             ]
         )
-        if result.error_message:
+        if scenario_result.error_message:
             lines.extend(
                 [
                     "**Error:**",
                     "",
-                    f"```\n{result.error_message}\n```",
+                    f"```\n{scenario_result.error_message}\n```",
                     "",
                 ]
             )
-        if result.evidence:
+        if scenario_result.evidence:
             lines.extend(
                 [
                     "**Evidence:**",
                     "",
                 ]
             )
-            for key, value in result.evidence.items():
+            for key, value in scenario_result.evidence.items():
                 lines.append(f"- {key}: {value}")
             lines.append("")
 
@@ -847,9 +876,11 @@ def _generate_markdown_report(report: ValidationReport, output_path: Path) -> No
                 lines.append(
                     f"- **{result.runbook_name}**: {result.metric_name} exceeds target"
                 )
-        for result in report.scenario_results:
-            if not result.passed:
-                lines.append(f"- **{result.scenario_name}**: Scenario test failed")
+        for scenario_result in report.scenario_results:
+            if not scenario_result.passed:
+                lines.append(
+                    f"- **{scenario_result.scenario_name}**: Scenario test failed"
+                )
         lines.append("")
 
     lines.extend(
