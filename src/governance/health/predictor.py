@@ -216,8 +216,10 @@ class HealthPredictor:
 
         # Calculate slope and intercept
         denominator = n * sum_xx - sum_x * sum_x
+        slope: float
+        intercept: float
         if denominator == 0:
-            slope = 0
+            slope = 0.0
             intercept = sum_y / n
         else:
             slope = (n * sum_xy - sum_x * sum_y) / denominator
@@ -276,7 +278,7 @@ class HealthPredictor:
         Returns:
             List of dimension-specific alerts
         """
-        alerts = []
+        alerts: list[HealthAlert] = []
 
         if len(history) < self.config.min_history_points:
             return alerts
@@ -464,10 +466,10 @@ class HealthPredictor:
 
                 if closest:
                     total_predictions += 1
-                    predicted = pred["predicted_score"]
-                    actual = closest.overall_score
+                    predicted: float = pred["predicted_score"]
+                    actual_score: float = closest.overall_score
 
-                    if abs(predicted - actual) <= tolerance:
+                    if abs(predicted - actual_score) <= tolerance:
                         accurate_predictions += 1
 
         if total_predictions == 0:

@@ -386,7 +386,7 @@ class LiveGatingGrafanaExporter:
 
         self._running = True
 
-        async def export_loop():
+        async def export_loop() -> None:
             while self._running:
                 try:
                     await self.export_metrics()
