@@ -1,0 +1,35 @@
+{
+  "input_shape": [
+    50,
+    5
+  ],
+  "output_size": 18,
+  "layers": [
+    {
+      "type": "lstm",
+      "units": 64,
+      "return_sequences": true
+    },
+    {
+      "type": "lstm",
+      "units": 32,
+      "return_sequences": false
+    },
+    {
+      "type": "dense",
+      "units": 32,
+      "activation": "relu"
+    },
+    {
+      "type": "dropout",
+      "rate": 0.3
+    },
+    {
+      "type": "dense",
+      "units": 18,
+      "activation": "softmax"
+    }
+  ],
+  "learning_rate": 0.001,
+  "loss": "categorical_crossentropy"
+}
