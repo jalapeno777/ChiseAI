@@ -11,11 +11,10 @@ Usage:
 """
 
 import asyncio
+import importlib.util
+import os
 import sys
 import time
-import os
-import importlib.util
-from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
 

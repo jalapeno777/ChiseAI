@@ -19,16 +19,6 @@ Usage:
 
 from __future__ import annotations
 
-# Use relative import to avoid circular import through src.ml prefix
-# When src/ is in sys.path, src.ml resolves to ml package, causing cycle
-from ml.models.signal_outcome import (
-    BybitFillEvent,
-    OutcomeMatchResult,
-    OutcomeType,
-    SignalOutcome,
-    SignalOutcomeStatus,
-)
-
 from ml.models.model_registry import (
     ModelRegistry,
     ModelRegistryFactory,
@@ -40,6 +30,16 @@ from ml.models.model_storage import (
     ModelVersion,
     S3Backend,
     StorageBackend,
+)
+
+# Use relative import to avoid circular import through src.ml prefix
+# When src/ is in sys.path, src.ml resolves to ml package, causing cycle
+from ml.models.signal_outcome import (
+    BybitFillEvent,
+    OutcomeMatchResult,
+    OutcomeType,
+    SignalOutcome,
+    SignalOutcomeStatus,
 )
 
 __all__ = [
