@@ -12,6 +12,7 @@ import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 
 from src.governance.parallel_optimizer.models import (
     BatchStatus,
@@ -44,7 +45,7 @@ class RollbackCheckpoint:
     task_states: dict[str, str] = field(default_factory=dict)
     git_state: dict[str, str] = field(default_factory=dict)
     file_states: dict[str, str] = field(default_factory=dict)
-    custom_data: dict[str, any] = field(default_factory=dict)
+    custom_data: dict[str, Any] = field(default_factory=dict)
 
     def to_json(self) -> str:
         """Serialize checkpoint to JSON."""

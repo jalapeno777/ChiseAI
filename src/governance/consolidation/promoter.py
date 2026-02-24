@@ -159,9 +159,11 @@ class GoldenMemoryPromoter:
         Returns:
             True if eligible for promotion
         """
-        meets_access = candidate.access_count >= self._config.golden_min_access_count
-        meets_age = candidate.age_days >= self._config.golden_min_age_days
-        meets_relevance = (
+        meets_access: bool = (
+            candidate.access_count >= self._config.golden_min_access_count
+        )
+        meets_age: bool = candidate.age_days >= self._config.golden_min_age_days
+        meets_relevance: bool = (
             candidate.relevance_score >= self._config.golden_min_relevance_score
         )
 

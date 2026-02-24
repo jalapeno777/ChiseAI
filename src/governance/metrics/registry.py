@@ -79,7 +79,7 @@ class MetricsRegistry:
             return
 
         self._exporters: dict[str, BaseMetricsExporter] = {}
-        self._stats = RegistryStats()
+        self._stats: RegistryStats = RegistryStats()
         self._influx_client: Any | None = None
         self._initialized = True
 

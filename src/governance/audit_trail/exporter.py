@@ -274,14 +274,16 @@ class AuditTrailExporter:
             export_data = self._build_export_data(entries, chain_state)
 
             # Write to file
-            content = self._serialize(export_data)
+            content_str: str = self._serialize(export_data)
 
             if self._config.compress:
-                content = gzip.compress(content.encode("utf-8"))
+                content: str | bytes = gzip.compress(content_str.encode("utf-8"))
                 file_path += ".gz"
+            else:
+                content = content_str
 
             with open(file_path, "wb" if self._config.compress else "w") as f:
-                f.write(content)
+                f.write(content)  # type: ignore[arg-type]
 
             # Calculate checksum
             result.checksum = self._calculate_checksum(
@@ -292,7 +294,9 @@ class AuditTrailExporter:
             result.file_size_bytes = (
                 os.path.getsize(file_path)
                 if os.path.exists(file_path)
-                else len(content) if isinstance(content, bytes) else len(content)
+                else len(content)
+                if isinstance(content, bytes)
+                else len(content)
             )
             result.chain_valid = chain_state is None or chain_state.get("valid", True)
             result.status = ExportStatus.COMPLETED
@@ -596,7 +600,7 @@ class LocalStorageBackend:
 
     def list_keys(self, prefix: str) -> list[str]:
         """List keys with prefix."""
-        keys = []
+        keys: list[str] = []
         prefix_path = os.path.join(self.base_path, prefix.lstrip("/"))
 
         if not os.path.exists(prefix_path):
