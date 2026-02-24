@@ -32,10 +32,9 @@ Example:
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, Protocol
 
@@ -543,10 +542,16 @@ class ValidationGate:
                 message = f"{metric_name}={value:.3f} >= {threshold:.3f} (PASS)"
                 level = ValidationLevel.INFO
             elif status == GateStatus.WARNING:
-                message = f"{metric_name}={value:.3f} below threshold {threshold:.3f} (WARNING)"
+                message = (
+                    f"{metric_name}={value:.3f} below threshold "
+                    f"{threshold:.3f} (WARNING)"
+                )
                 level = ValidationLevel.WARNING
             else:
-                message = f"{metric_name}={value:.3f} below threshold {threshold:.3f} (CRITICAL)"
+                message = (
+                    f"{metric_name}={value:.3f} below threshold "
+                    f"{threshold:.3f} (CRITICAL)"
+                )
                 level = ValidationLevel.CRITICAL
 
             gate_results.append(
@@ -860,7 +865,7 @@ class ShadowModeManager:
             false_negatives = 0
             wins = 0
 
-            for pred, outcome in zip(predictions, outcomes):
+            for pred, outcome in zip(predictions, outcomes, strict=False):
                 pred_value = pred.get("prediction", {}).get("direction", 0)
                 actual = outcome.get("direction", 0)
 
@@ -985,7 +990,8 @@ class DegradationDetector:
         self._degradation_events: list[dict[str, Any]] = []
 
         logger.info(
-            f"DegradationDetector initialized with threshold={self.DEGRADATION_THRESHOLD_PCT}%"
+            f"DegradationDetector initialized: "
+            f"threshold={self.DEGRADATION_THRESHOLD_PCT}%"
         )
 
     def set_baseline(self, model_version: str, metrics: dict[str, float]) -> None:
