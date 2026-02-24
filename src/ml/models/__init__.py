@@ -19,7 +19,9 @@ Usage:
 
 from __future__ import annotations
 
-from src.ml.models.signal_outcome import (
+# Use relative import to avoid circular import through src.ml prefix
+# When src/ is in sys.path, src.ml resolves to ml package, causing cycle
+from ml.models.signal_outcome import (
     BybitFillEvent,
     OutcomeMatchResult,
     OutcomeType,

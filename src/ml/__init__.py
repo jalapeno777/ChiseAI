@@ -32,37 +32,58 @@ Usage:
 
 from __future__ import annotations
 
-from ml.feedback import (
-    AccuracyBySignalType,
-    AccuracyByTimeframe,
-    AnalysisConfig,
-    DriftIndicator,
-    DriftSeverity,
-    FeatureImportanceChange,
-    FeedbackAnalysisReport,
-    FeedbackAnalyzer,
-    FeedbackOrchestrator,
-    LoopIterationResult,
-    LoopStatus,
-    MarketRegime,
-    MatchBatchResult,
-    MatchConfidence,
-    MatchConfig,
-    MatchStatus,
-    ModelType,
-    ModelUpdater,
-    ModelVersion,
-    OrchestratorConfig,
-    PredictionOutcomeMatch,
-    PredictionOutcomeMatcher,
-    RegimePerformance,
-    TemporalBoundary,
-    TemporalSafetyMode,
-    UpdateConfig,
-    UpdateResult,
-    UpdateStatus,
-    UpdateStrategy,
-)
+# Lazy import mapping for feedback module to avoid circular imports
+# The feedback module imports from src.ml.models.signal_outcome which
+# triggers ml.__init__ during import, causing a circular dependency.
+# Using PEP 562 __getattr__ for lazy loading resolves this.
+_FEEDBACK_EXPORTS = {
+    "AccuracyBySignalType",
+    "AccuracyByTimeframe",
+    "AnalysisConfig",
+    "DriftIndicator",
+    "DriftSeverity",
+    "FeatureImportanceChange",
+    "FeedbackAnalysisReport",
+    "FeedbackAnalyzer",
+    "FeedbackOrchestrator",
+    "LoopIterationResult",
+    "LoopStatus",
+    "MarketRegime",
+    "MatchBatchResult",
+    "MatchConfidence",
+    "MatchConfig",
+    "MatchStatus",
+    "ModelType",
+    "ModelUpdater",
+    "ModelVersion",
+    "OrchestratorConfig",
+    "PredictionOutcomeMatch",
+    "PredictionOutcomeMatcher",
+    "RegimePerformance",
+    "TemporalBoundary",
+    "TemporalSafetyMode",
+    "UpdateConfig",
+    "UpdateResult",
+    "UpdateStatus",
+    "UpdateStrategy",
+}
+
+
+def __getattr__(name: str):
+    """Lazy import for feedback module to avoid circular imports.
+
+    This PEP 562 __getattr__ allows the ml package to export symbols from
+    the feedback module without importing it at module initialization time,
+    breaking the circular import chain:
+        ml/__init__.py -> ml.feedback -> ml.feedback.signal_outcome_matcher
+        -> src.ml.models.signal_outcome -> ml/__init__.py (cycle)
+    """
+    if name in _FEEDBACK_EXPORTS:
+        from ml import feedback
+
+        return getattr(feedback, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
 
 # Import from absolute paths (requires src/ in sys.path)
 # Note: hyperopt.OptimizationRecord and scheduler.OptimizationRecord are different classes
@@ -155,7 +176,7 @@ __all__ = [
     "VolatilityMonitor",
     "VolatilityRegime",
     "OptimizationTask",
-    # Feedback
+    # Feedback (lazy loaded via __getattr__)
     "FeedbackOrchestrator",
     "OrchestratorConfig",
     "LoopStatus",
