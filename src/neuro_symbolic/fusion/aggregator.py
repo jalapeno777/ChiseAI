@@ -1,14 +1,13 @@
 """Signal aggregator for temporal alignment and confidence weighting."""
 
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any
 
 from src.neuro_symbolic.multimodal.types import (
     ModalityType,
     MultiModalSignal,
     SignalBatch,
-    TemporalContext,
 )
 
 
@@ -244,8 +243,6 @@ class SignalAggregator:
 
         aligned = []
         total_deviation = 0.0
-
-        window = timedelta(milliseconds=self.config.alignment_window_ms)
 
         for signal in signals:
             deviation = abs(

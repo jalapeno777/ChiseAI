@@ -5,10 +5,9 @@ This module provides a query engine for pattern matching, path finding,
 and complex graph queries on the knowledge graph.
 """
 
-from collections import deque
-from datetime import datetime
-from typing import Any, Optional
 import time
+from collections import deque
+from typing import Any
 
 from src.neuro_symbolic.knowledge_graph.graph import KnowledgeGraph
 from src.neuro_symbolic.knowledge_graph.models import (
@@ -42,9 +41,9 @@ class GraphQueryEngine:
 
     def find_node(
         self,
-        node_id: Optional[str] = None,
-        node_type: Optional[NodeType | str] = None,
-        properties: Optional[dict[str, Any]] = None,
+        node_id: str | None = None,
+        node_type: NodeType | str | None = None,
+        properties: dict[str, Any] | None = None,
     ) -> QueryResult:
         """
         Find nodes matching criteria.
@@ -95,7 +94,7 @@ class GraphQueryEngine:
     def find_neighbors(
         self,
         node_id: str,
-        edge_types: Optional[list[EdgeType | str]] = None,
+        edge_types: list[EdgeType | str] | None = None,
         min_confidence: float = 0.0,
         max_depth: int = 1,
         direction: str = "out",
@@ -201,7 +200,7 @@ class GraphQueryEngine:
         source_id: str,
         target_id: str,
         max_depth: int = 5,
-        edge_types: Optional[list[EdgeType | str]] = None,
+        edge_types: list[EdgeType | str] | None = None,
         min_confidence: float = 0.0,
     ) -> QueryResult:
         """
@@ -412,7 +411,7 @@ class GraphQueryEngine:
     def find_related(
         self,
         node_id: str,
-        relationship_types: Optional[list[EdgeType | str]] = None,
+        relationship_types: list[EdgeType | str] | None = None,
         min_confidence: float = 0.5,
         limit: int = 10,
     ) -> QueryResult:
@@ -487,9 +486,9 @@ class GraphQueryEngine:
 
     def find_clusters(
         self,
-        node_type: Optional[NodeType | str] = None,
+        node_type: NodeType | str | None = None,
         min_cluster_size: int = 3,
-        edge_types: Optional[list[EdgeType | str]] = None,
+        edge_types: list[EdgeType | str] | None = None,
     ) -> QueryResult:
         """
         Find clusters/communities in the graph.
@@ -596,7 +595,7 @@ class GraphQueryEngine:
         pattern_nodes: list[dict[str, Any]],
         pattern_edges: list[dict[str, Any]],
         candidates: dict[str, list[Node]],
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Try to match a pattern starting from a given node.
 

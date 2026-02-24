@@ -1,14 +1,12 @@
 """Tests for AES-256 Encryption."""
 
 import os
-import pytest
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 
+import pytest
 from src.security.encryption.aes256 import (
     AES256Encryptor,
-    KeyManager,
     EncryptedData,
-    EncryptionMode,
     KeyInfo,
 )
 
@@ -65,7 +63,7 @@ class TestKeyInfo:
         """Test creating key info."""
         info = KeyInfo(
             key_id="test-key",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         assert info.key_id == "test-key"
         assert info.is_active is True
@@ -76,16 +74,16 @@ class TestKeyInfo:
         # Not expired
         info = KeyInfo(
             key_id="test",
-            created_at=datetime.now(timezone.utc),
-            expires_at=datetime.now(timezone.utc) + timedelta(days=30),
+            created_at=datetime.now(UTC),
+            expires_at=datetime.now(UTC) + timedelta(days=30),
         )
         assert info.is_expired() is False
 
         # Expired
         expired_info = KeyInfo(
             key_id="expired",
-            created_at=datetime.now(timezone.utc) - timedelta(days=100),
-            expires_at=datetime.now(timezone.utc) - timedelta(days=1),
+            created_at=datetime.now(UTC) - timedelta(days=100),
+            expires_at=datetime.now(UTC) - timedelta(days=1),
         )
         assert expired_info.is_expired() is True
 
@@ -93,7 +91,7 @@ class TestKeyInfo:
         """Test key with no expiry date."""
         info = KeyInfo(
             key_id="no-expiry",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             expires_at=None,
         )
         assert info.is_expired() is False
@@ -338,7 +336,7 @@ class TestConvenienceFunctions:
 
     def test_encrypt_decrypt_functions_with_key(self):
         """Test convenience encrypt/decrypt functions with provided key."""
-        from src.security.encryption.aes256 import encrypt, decrypt
+        from src.security.encryption.aes256 import decrypt, encrypt
 
         key = os.urandom(32)
         plaintext = b"Test message"
@@ -349,7 +347,7 @@ class TestConvenienceFunctions:
 
     def test_encrypt_with_custom_key(self):
         """Test convenience function with custom key."""
-        from src.security.encryption.aes256 import encrypt, decrypt
+        from src.security.encryption.aes256 import decrypt, encrypt
 
         key = os.urandom(32)
         plaintext = b"Test message"

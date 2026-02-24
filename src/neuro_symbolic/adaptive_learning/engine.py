@@ -4,32 +4,32 @@ Main orchestration class that integrates feedback, model adaptation,
 and scheduling for continuous learning from market data.
 """
 
+import json
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Callable
 from datetime import datetime
 from pathlib import Path
-import numpy as np
-import json
+from typing import Any
 
-from src.neuro_symbolic.learning.base import (
-    LearningConfig,
-    FeedbackSignal,
-    PerformanceMetrics,
-    AdaptationResult,
-    AdaptationStatus,
-    TriggerCondition,
+import numpy as np
+from src.neuro_symbolic.adaptive_learning.adapter import (
+    AdapterConfig,
+    ModelAdapter,
 )
 from src.neuro_symbolic.adaptive_learning.feedback import (
     FeedbackIntegrator,
     IntegratorConfig,
 )
-from src.neuro_symbolic.adaptive_learning.adapter import (
-    ModelAdapter,
-    AdapterConfig,
-)
 from src.neuro_symbolic.adaptive_learning.scheduler import (
     LearningScheduler,
     SchedulerConfig,
+)
+from src.neuro_symbolic.learning.base import (
+    AdaptationResult,
+    AdaptationStatus,
+    FeedbackSignal,
+    LearningConfig,
+    PerformanceMetrics,
+    TriggerCondition,
 )
 
 
@@ -52,12 +52,12 @@ class EngineState:
     """State of the adaptive learning engine."""
 
     is_adapted: bool = False
-    last_adaptation: Optional[datetime] = None
+    last_adaptation: datetime | None = None
     total_adaptations: int = 0
     successful_adaptations: int = 0
     rollback_count: int = 0
     start_time: datetime = field(default_factory=datetime.now)
-    current_strategy: Optional[str] = None
+    current_strategy: str | None = None
     performance_trend: str = "unknown"
 
 
@@ -68,7 +68,7 @@ class AdaptiveLearningEngine:
     updates for continuous model improvement.
     """
 
-    def __init__(self, config: Optional[EngineConfig] = None):
+    def __init__(self, config: EngineConfig | None = None):
         """Initialize the adaptive learning engine.
 
         Args:
@@ -92,12 +92,12 @@ class AdaptiveLearningEngine:
         self.scheduler.set_adaptation_callback(self._execute_adaptation)
 
         # Internal state
-        self._model_parameters: Dict[str, np.ndarray] = {}
-        self._performance_buffer: List[PerformanceMetrics] = []
-        self._adaptation_history: List[AdaptationResult] = []
-        self._gradients_buffer: List[Dict[str, np.ndarray]] = []
+        self._model_parameters: dict[str, np.ndarray] = {}
+        self._performance_buffer: list[PerformanceMetrics] = []
+        self._adaptation_history: list[AdaptationResult] = []
+        self._gradients_buffer: list[dict[str, np.ndarray]] = []
 
-    def set_model_parameters(self, parameters: Dict[str, np.ndarray]) -> None:
+    def set_model_parameters(self, parameters: dict[str, np.ndarray]) -> None:
         """Set the model parameters to be adapted.
 
         Args:
@@ -106,15 +106,15 @@ class AdaptiveLearningEngine:
         self._model_parameters = parameters.copy()
         self.adapter.set_parameters(parameters)
 
-    def get_model_parameters(self) -> Dict[str, np.ndarray]:
+    def get_model_parameters(self) -> dict[str, np.ndarray]:
         """Get current model parameters."""
         return self.adapter.get_parameters()
 
     def adapt(
         self,
-        feedback: Optional[Dict[str, Any]] = None,
-        gradients: Optional[Dict[str, np.ndarray]] = None,
-        metrics: Optional[PerformanceMetrics] = None,
+        feedback: dict[str, Any] | None = None,
+        gradients: dict[str, np.ndarray] | None = None,
+        metrics: PerformanceMetrics | None = None,
     ) -> AdaptationResult:
         """Perform model adaptation based on feedback.
 
@@ -168,7 +168,7 @@ class AdaptiveLearningEngine:
 
         return result
 
-    def _process_feedback_dict(self, feedback: Dict[str, Any]) -> FeedbackSignal:
+    def _process_feedback_dict(self, feedback: dict[str, Any]) -> FeedbackSignal:
         """Process feedback dictionary into a signal."""
         strategy_id = feedback.get("strategy", "default")
 
@@ -190,7 +190,7 @@ class AdaptiveLearningEngine:
     def _compute_gradients_from_signal(
         self,
         signal: FeedbackSignal,
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, np.ndarray]:
         """Compute parameter gradients from a feedback signal."""
         gradients = {}
 
@@ -208,7 +208,7 @@ class AdaptiveLearningEngine:
 
         return gradients
 
-    def _aggregate_gradients(self) -> Dict[str, np.ndarray]:
+    def _aggregate_gradients(self) -> dict[str, np.ndarray]:
         """Aggregate buffered gradients."""
         if not self._gradients_buffer:
             return {}
@@ -241,7 +241,7 @@ class AdaptiveLearningEngine:
     def _execute_adaptation(
         self,
         trigger: TriggerCondition,
-        metadata: Dict[str, Any],
+        metadata: dict[str, Any],
     ) -> AdaptationResult:
         """Execute scheduled adaptation.
 
@@ -299,9 +299,9 @@ class AdaptiveLearningEngine:
     def process_outcome(
         self,
         strategy_id: str,
-        outcome: Dict[str, Any],
-        trade_id: Optional[str] = None,
-        symbol: Optional[str] = None,
+        outcome: dict[str, Any],
+        trade_id: str | None = None,
+        symbol: str | None = None,
     ) -> FeedbackSignal:
         """Process a trade outcome for learning.
 
@@ -341,9 +341,9 @@ class AdaptiveLearningEngine:
 
     def batch_process_outcomes(
         self,
-        outcomes: List[Dict[str, Any]],
+        outcomes: list[dict[str, Any]],
         strategy_id: str,
-    ) -> List[FeedbackSignal]:
+    ) -> list[FeedbackSignal]:
         """Process multiple trade outcomes.
 
         Args:
@@ -357,7 +357,7 @@ class AdaptiveLearningEngine:
 
     def get_performance_metrics(
         self,
-        strategy_id: Optional[str] = None,
+        strategy_id: str | None = None,
     ) -> PerformanceMetrics:
         """Get current performance metrics.
 
@@ -405,7 +405,7 @@ class AdaptiveLearningEngine:
 
     def schedule_update(
         self,
-        interval_hours: Optional[int] = None,
+        interval_hours: int | None = None,
         trigger: TriggerCondition = TriggerCondition.SCHEDULED,
     ) -> None:
         """Schedule a model update.
@@ -417,7 +417,7 @@ class AdaptiveLearningEngine:
         interval = interval_hours or self.config.scheduler_config.default_interval_hours
         self.scheduler.schedule_recurring(interval, trigger)
 
-    def check_and_adapt(self) -> Optional[AdaptationResult]:
+    def check_and_adapt(self) -> AdaptationResult | None:
         """Check if adaptation is needed and perform it.
 
         Returns:
@@ -430,7 +430,7 @@ class AdaptiveLearningEngine:
 
         return None
 
-    def rollback(self, checkpoint_id: Optional[str] = None) -> AdaptationResult:
+    def rollback(self, checkpoint_id: str | None = None) -> AdaptationResult:
         """Rollback to a previous model state.
 
         Args:
@@ -454,7 +454,7 @@ class AdaptiveLearningEngine:
         Returns:
             Checkpoint ID
         """
-        metrics = self.get_performance_metrics()
+        _metrics = self.get_performance_metrics()
         checkpoints = self.adapter.get_checkpoints()
         if checkpoints:
             return checkpoints[-1].checkpoint_id
@@ -472,7 +472,7 @@ class AdaptiveLearningEngine:
         """Get current engine state."""
         return self._state
 
-    def get_adaptation_history(self, limit: int = 100) -> List[AdaptationResult]:
+    def get_adaptation_history(self, limit: int = 100) -> list[AdaptationResult]:
         """Get recent adaptation history.
 
         Args:
@@ -551,7 +551,7 @@ class AdaptiveLearningEngine:
         # Load engine state
         state_file = path / "engine_state.json"
         if state_file.exists():
-            with open(state_file, "r") as f:
+            with open(state_file) as f:
                 state_dict = json.load(f)
 
             self._state.is_adapted = state_dict.get("is_adapted", False)
@@ -570,7 +570,7 @@ class AdaptiveLearningEngine:
                     state_dict["start_time"]
                 )
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get comprehensive engine status.
 
         Returns:

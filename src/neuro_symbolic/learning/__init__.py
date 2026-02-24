@@ -5,9 +5,9 @@ feedback integration, and model adaptation.
 """
 
 from src.neuro_symbolic.learning.base import (
-    LearningConfig,
-    FeedbackSignal,
     AdaptationResult,
+    FeedbackSignal,
+    LearningConfig,
     PerformanceMetrics,
 )
 

@@ -5,13 +5,13 @@ multi-modal signals from technical, sentiment, and on-chain sources.
 """
 
 from src.neuro_symbolic.multimodal.types import (
+    EncodedSignal,
+    FusionWeights,
     ModalityType,
+    MultiModalSignal,
+    SignalBatch,
     SignalMetadata,
     TemporalContext,
-    MultiModalSignal,
-    EncodedSignal,
-    SignalBatch,
-    FusionWeights,
 )
 
 __all__ = [

@@ -1,10 +1,12 @@
 """Shared fixtures for CI tests."""
-import pytest
-from pathlib import Path
 
+import pytest
 from scripts.ci.pipeline import (
-    PipelineConfig, CIPipeline, StageRunner,
-    LintStage, TestStage, SecurityStage
+    CIPipeline,
+    LintStage,
+    PipelineConfig,
+    SecurityStage,
+    TestStage,
 )
 
 

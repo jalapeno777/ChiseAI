@@ -6,11 +6,10 @@ value attribution and provides visual importance ranking.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional
-import logging
-import math
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +32,7 @@ class FeatureContribution:
     feature_name: str
     contribution_value: float  # SHAP-style value (can be positive or negative)
     base_value: float = 0.0  # Base/expected value
-    feature_value: Optional[float] = None  # Actual feature value
+    feature_value: float | None = None  # Actual feature value
     interaction_effects: dict[str, float] = field(default_factory=dict)
 
     @property
@@ -191,7 +190,7 @@ class FeatureImportanceAnalyzer:
     def __init__(
         self,
         method: ImportanceMethod = ImportanceMethod.SHAP,
-        feature_weights: Optional[dict[str, float]] = None,
+        feature_weights: dict[str, float] | None = None,
     ):
         """Initialize the feature importance analyzer.
 
@@ -211,7 +210,7 @@ class FeatureImportanceAnalyzer:
         features: dict[str, Any],
         prediction: float,
         base_value: float = 0.5,
-        model_output: Optional[dict[str, Any]] = None,
+        model_output: dict[str, Any] | None = None,
     ) -> FeatureImportanceResult:
         """Analyze feature contributions to a prediction.
 
@@ -277,7 +276,7 @@ class FeatureImportanceAnalyzer:
             List of FeatureImportanceResult objects.
         """
         results = []
-        for features, prediction in zip(feature_list, predictions):
+        for features, prediction in zip(feature_list, predictions, strict=False):
             result = self.analyze(features, prediction, base_value)
             results.append(result)
         return results
@@ -596,7 +595,7 @@ class FeatureImportanceAnalyzer:
         # Calculate total weight of present features
         present_weights = sum(
             self.feature_weights.get(name, 0.1)
-            for name in features.keys()
+            for name in features
             if isinstance(features.get(name), (int, float))
         )
 

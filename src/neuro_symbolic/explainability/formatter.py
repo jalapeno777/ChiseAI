@@ -6,11 +6,11 @@ technical vs. non-technical outputs and multiple format types.
 
 from __future__ import annotations
 
+import json
+import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional
-import logging
-import json
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -186,7 +186,7 @@ class ExplanationFormatter:
         "neutral": "➡️",
     }
 
-    def __init__(self, config: Optional[FormatterConfig] = None):
+    def __init__(self, config: FormatterConfig | None = None):
         """Initialize the explanation formatter.
 
         Args:
@@ -203,8 +203,8 @@ class ExplanationFormatter:
     def format(
         self,
         explanation: dict[str, Any],
-        audience: Optional[AudienceType] = None,
-        output_format: Optional[OutputFormat] = None,
+        audience: AudienceType | None = None,
+        output_format: OutputFormat | None = None,
     ) -> FormattedExplanation:
         """Format an explanation for a specific audience.
 
@@ -374,7 +374,7 @@ class ExplanationFormatter:
     def create_summary_only(
         self,
         explanation: dict[str, Any],
-        audience: Optional[AudienceType] = None,
+        audience: AudienceType | None = None,
     ) -> str:
         """Create a brief summary-only explanation.
 
@@ -590,9 +590,9 @@ class ExplanationFormatter:
 
         if output_format == OutputFormat.HTML:
             html_parts = ["<div class='explanation'>"]
-            for name, content in sections.items():
+            for _name, content in sections.items():
                 if content:
-                    html_parts.append(f"<div class='section {name}'>")
+                    html_parts.append("<div class='section'>")
                     html_parts.append(content.replace("\n", "<br>"))
                     html_parts.append("</div>")
             html_parts.append("</div>")
@@ -600,7 +600,7 @@ class ExplanationFormatter:
 
         # Text or Markdown
         parts = []
-        for name, content in sections.items():
+        for _name, content in sections.items():
             if content:
                 parts.append(content)
                 parts.append("")  # Empty line between sections

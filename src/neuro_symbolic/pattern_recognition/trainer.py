@@ -5,16 +5,15 @@ Provides training pipeline for pattern models including data preprocessing,
 augmentation, and model checkpointing.
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any, Callable, Union
-import json
-import numpy as np
 from datetime import datetime
+from pathlib import Path
+from typing import Any
 
+import numpy as np
 from src.neuro_symbolic.pattern_recognition.engine import (
     PatternRecognitionEngine,
-    PatternRecognitionConfig,
     PatternType,
 )
 
@@ -34,7 +33,7 @@ class TrainingConfig:
     augmentation_factor: int = 3
     noise_level: float = 0.01
     shuffle_data: bool = True
-    seed: Optional[int] = 42
+    seed: int | None = 42
 
 
 @dataclass
@@ -49,10 +48,10 @@ class TrainingResult:
     training_time_seconds: float
     best_epoch: int
     best_val_loss: float
-    checkpoint_path: Optional[str] = None
-    history: Dict[str, List[float]] = field(default_factory=dict)
+    checkpoint_path: str | None = None
+    history: dict[str, list[float]] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "epochs_completed": self.epochs_completed,
@@ -76,8 +75,8 @@ class PatternTrainer:
 
     def __init__(
         self,
-        engine: Optional[PatternRecognitionEngine] = None,
-        config: Optional[TrainingConfig] = None,
+        engine: PatternRecognitionEngine | None = None,
+        config: TrainingConfig | None = None,
     ):
         """Initialize pattern trainer.
 
@@ -89,13 +88,13 @@ class PatternTrainer:
         self.config = config or TrainingConfig()
         self._best_val_loss = float("inf")
         self._patience_counter = 0
-        self._checkpoints: List[str] = []
+        self._checkpoints: list[str] = []
 
     def preprocess_training_data(
         self,
-        raw_data: List[Dict[str, Any]],
-        sequence_length: Optional[int] = None,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+        raw_data: list[dict[str, Any]],
+        sequence_length: int | None = None,
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Preprocess raw data into training format.
 
         Args:
@@ -186,9 +185,9 @@ class PatternTrainer:
         self,
         X: np.ndarray,
         y: np.ndarray,
-        factor: Optional[int] = None,
-        noise_level: Optional[float] = None,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+        factor: int | None = None,
+        noise_level: float | None = None,
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Augment training data with noise and transformations.
 
         Args:
@@ -230,7 +229,7 @@ class PatternTrainer:
 
         return np.concatenate(X_aug, axis=0), np.concatenate(y_aug, axis=0)
 
-    def _time_warp(self, X: np.ndarray) -> Optional[np.ndarray]:
+    def _time_warp(self, X: np.ndarray) -> np.ndarray | None:
         """Apply time warping augmentation.
 
         Args:
@@ -264,8 +263,8 @@ class PatternTrainer:
     def create_synthetic_dataset(
         self,
         n_samples: int = 1000,
-        sequence_length: Optional[int] = None,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+        sequence_length: int | None = None,
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Create synthetic training data for pattern recognition.
 
         Args:
@@ -375,11 +374,11 @@ class PatternTrainer:
 
     def train(
         self,
-        X: Optional[np.ndarray] = None,
-        y: Optional[np.ndarray] = None,
-        raw_data: Optional[List[Dict[str, Any]]] = None,
-        n_synthetic: Optional[int] = None,
-        callbacks: Optional[List[Callable]] = None,
+        X: np.ndarray | None = None,
+        y: np.ndarray | None = None,
+        raw_data: list[dict[str, Any]] | None = None,
+        n_synthetic: int | None = None,
+        callbacks: list[Callable] | None = None,
     ) -> TrainingResult:
         """Train the pattern recognition model.
 
@@ -491,7 +490,6 @@ class PatternTrainer:
             return False
 
         best_checkpoint = None
-        best_loss = float("inf")
 
         for checkpoint_path in self._checkpoints:
             try:
@@ -514,7 +512,7 @@ class PatternTrainer:
         X: np.ndarray,
         y: np.ndarray,
         n_folds: int = 5,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Perform k-fold cross validation.
 
         Args:

@@ -4,20 +4,21 @@ Handles model parameter adjustments, hyperparameter optimization,
 and A/B testing for model variants.
 """
 
+import json
+from collections.abc import Callable
+from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Tuple, Callable, Union
 from datetime import datetime
 from pathlib import Path
-import json
-import numpy as np
-from copy import deepcopy
+from typing import Any
 
+import numpy as np
 from src.neuro_symbolic.learning.base import (
     AdaptationResult,
     AdaptationStatus,
-    PerformanceMetrics,
     LearningConfig,
     ModelCheckpoint,
+    PerformanceMetrics,
     TriggerCondition,
 )
 
@@ -30,7 +31,7 @@ class HyperparameterSpace:
     min_value: float
     max_value: float
     current_value: float
-    step: Optional[float] = None
+    step: float | None = None
     log_scale: bool = False
 
     def sample(self) -> float:
@@ -45,7 +46,7 @@ class HyperparameterSpace:
         """Clip value to valid range."""
         return max(self.min_value, min(self.max_value, value))
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "name": self.name,
@@ -62,12 +63,12 @@ class ABTestVariant:
     """Represents a variant in A/B testing."""
 
     variant_id: str
-    parameters: Dict[str, Any]
-    metrics: Optional[PerformanceMetrics] = None
+    parameters: dict[str, Any]
+    metrics: PerformanceMetrics | None = None
     sample_count: int = 0
     created_at: datetime = field(default_factory=datetime.now)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "variant_id": self.variant_id,
@@ -84,14 +85,14 @@ class ABTest:
 
     test_id: str
     control_variant: ABTestVariant
-    treatment_variants: List[ABTestVariant] = field(default_factory=list)
-    traffic_split: List[float] = field(
+    treatment_variants: list[ABTestVariant] = field(default_factory=list)
+    traffic_split: list[float] = field(
         default_factory=list
     )  # Probability for each variant
     status: str = "running"  # running, completed, cancelled
     started_at: datetime = field(default_factory=datetime.now)
-    completed_at: Optional[datetime] = None
-    winner_id: Optional[str] = None
+    completed_at: datetime | None = None
+    winner_id: str | None = None
     confidence_level: float = 0.95
 
     def __post_init__(self):
@@ -106,7 +107,7 @@ class ABTest:
         idx = np.random.choice(len(variants), p=self.traffic_split)
         return variants[idx]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "test_id": self.test_id,
@@ -131,7 +132,7 @@ class AdapterConfig:
     momentum: float = 0.9
     min_improvement: float = 0.01
     max_parameter_change: float = 0.5
-    checkpoint_dir: Optional[str] = None
+    checkpoint_dir: str | None = None
     max_checkpoints: int = 10
     ab_test_min_samples: int = 100
     ab_test_significance: float = 0.05
@@ -145,8 +146,8 @@ class ModelAdapter:
 
     def __init__(
         self,
-        config: Optional[AdapterConfig] = None,
-        learning_config: Optional[LearningConfig] = None,
+        config: AdapterConfig | None = None,
+        learning_config: LearningConfig | None = None,
     ):
         """Initialize the model adapter.
 
@@ -156,15 +157,15 @@ class ModelAdapter:
         """
         self.config = config or AdapterConfig()
         self.learning_config = learning_config or LearningConfig()
-        self._parameters: Dict[str, np.ndarray] = {}
-        self._hyperparameter_spaces: Dict[str, HyperparameterSpace] = {}
-        self._checkpoints: List[ModelCheckpoint] = []
-        self._adaptation_history: List[AdaptationResult] = []
-        self._ab_tests: Dict[str, ABTest] = {}
-        self._active_ab_test: Optional[str] = None
-        self._velocity: Dict[str, np.ndarray] = {}  # For momentum-based updates
+        self._parameters: dict[str, np.ndarray] = {}
+        self._hyperparameter_spaces: dict[str, HyperparameterSpace] = {}
+        self._checkpoints: list[ModelCheckpoint] = []
+        self._adaptation_history: list[AdaptationResult] = []
+        self._ab_tests: dict[str, ABTest] = {}
+        self._active_ab_test: str | None = None
+        self._velocity: dict[str, np.ndarray] = {}  # For momentum-based updates
 
-    def set_parameters(self, parameters: Dict[str, np.ndarray]) -> None:
+    def set_parameters(self, parameters: dict[str, np.ndarray]) -> None:
         """Set model parameters.
 
         Args:
@@ -174,7 +175,7 @@ class ModelAdapter:
         # Initialize velocity for momentum
         self._velocity = {k: np.zeros_like(v) for k, v in parameters.items()}
 
-    def get_parameters(self) -> Dict[str, np.ndarray]:
+    def get_parameters(self) -> dict[str, np.ndarray]:
         """Get current model parameters."""
         return deepcopy(self._parameters)
 
@@ -184,7 +185,7 @@ class ModelAdapter:
         min_value: float,
         max_value: float,
         current_value: float,
-        step: Optional[float] = None,
+        step: float | None = None,
         log_scale: bool = False,
     ) -> None:
         """Register a hyperparameter for optimization.
@@ -208,9 +209,9 @@ class ModelAdapter:
 
     def adapt(
         self,
-        gradients: Dict[str, np.ndarray],
-        metrics: Optional[PerformanceMetrics] = None,
-        trigger: Optional[TriggerCondition] = None,
+        gradients: dict[str, np.ndarray],
+        metrics: PerformanceMetrics | None = None,
+        trigger: TriggerCondition | None = None,
     ) -> AdaptationResult:
         """Adapt model parameters based on gradients.
 
@@ -223,7 +224,6 @@ class ModelAdapter:
             AdaptationResult describing the outcome
         """
         timestamp = datetime.now()
-        previous_params = deepcopy(self._parameters)
         previous_metrics = metrics
 
         try:
@@ -286,7 +286,7 @@ class ModelAdapter:
 
     def _create_checkpoint(
         self,
-        metrics: Optional[PerformanceMetrics] = None,
+        metrics: PerformanceMetrics | None = None,
     ) -> ModelCheckpoint:
         """Create a checkpoint of current state."""
         checkpoint_id = f"ckpt_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -298,7 +298,7 @@ class ModelAdapter:
             config=self.learning_config,
         )
 
-    def rollback(self, checkpoint_id: Optional[str] = None) -> AdaptationResult:
+    def rollback(self, checkpoint_id: str | None = None) -> AdaptationResult:
         """Rollback to a previous checkpoint.
 
         Args:
@@ -341,10 +341,10 @@ class ModelAdapter:
 
     def optimize_hyperparameters(
         self,
-        evaluation_fn: Callable[[Dict[str, float]], PerformanceMetrics],
+        evaluation_fn: Callable[[dict[str, float]], PerformanceMetrics],
         n_iterations: int = 10,
         method: str = "random",
-    ) -> Tuple[Dict[str, float], PerformanceMetrics]:
+    ) -> tuple[dict[str, float], PerformanceMetrics]:
         """Optimize hyperparameters.
 
         Args:
@@ -377,7 +377,7 @@ class ModelAdapter:
                     self._hyperparameter_spaces[name].current_value = value
 
         # Update model with best parameters
-        for name, value in best_params.items():
+        for name, _value in best_params.items():
             if name in self._parameters:
                 # For scalar hyperparameters that are part of model
                 pass  # Handled by learning rate adjustment in adapt()
@@ -387,8 +387,8 @@ class ModelAdapter:
     def create_ab_test(
         self,
         test_id: str,
-        treatment_params: List[Dict[str, Any]],
-        traffic_split: Optional[List[float]] = None,
+        treatment_params: list[dict[str, Any]],
+        traffic_split: list[float] | None = None,
     ) -> ABTest:
         """Create a new A/B test.
 
@@ -425,7 +425,7 @@ class ModelAdapter:
 
         return ab_test
 
-    def get_ab_test_variant(self, test_id: Optional[str] = None) -> ABTestVariant:
+    def get_ab_test_variant(self, test_id: str | None = None) -> ABTestVariant:
         """Get a variant for A/B testing.
 
         Args:
@@ -476,7 +476,7 @@ class ModelAdapter:
     def analyze_ab_test(
         self,
         test_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Analyze A/B test results.
 
         Args:
@@ -550,7 +550,7 @@ class ModelAdapter:
 
         return result
 
-    def get_active_ab_test(self) -> Optional[ABTest]:
+    def get_active_ab_test(self) -> ABTest | None:
         """Get the currently active A/B test."""
         if self._active_ab_test and self._active_ab_test in self._ab_tests:
             return self._ab_tests[self._active_ab_test]
@@ -575,7 +575,7 @@ class ModelAdapter:
     def get_adaptation_history(
         self,
         limit: int = 100,
-    ) -> List[AdaptationResult]:
+    ) -> list[AdaptationResult]:
         """Get recent adaptation history.
 
         Args:
@@ -586,11 +586,11 @@ class ModelAdapter:
         """
         return self._adaptation_history[-limit:]
 
-    def get_checkpoints(self) -> List[ModelCheckpoint]:
+    def get_checkpoints(self) -> list[ModelCheckpoint]:
         """Get all available checkpoints."""
         return self._checkpoints.copy()
 
-    def save(self, path: Union[str, Path]) -> None:
+    def save(self, path: str | Path) -> None:
         """Save adapter state to disk.
 
         Args:
@@ -621,7 +621,7 @@ class ModelAdapter:
         with open(path / "checkpoints_meta.json", "w") as f:
             json.dump(checkpoints_meta, f)
 
-    def load(self, path: Union[str, Path]) -> None:
+    def load(self, path: str | Path) -> None:
         """Load adapter state from disk.
 
         Args:
@@ -632,14 +632,14 @@ class ModelAdapter:
         # Load parameters
         params_file = path / "parameters.json"
         if params_file.exists():
-            with open(params_file, "r") as f:
+            with open(params_file) as f:
                 params_dict = json.load(f)
             self._parameters = {k: np.array(v) for k, v in params_dict.items()}
 
         # Load hyperparameter spaces
         spaces_file = path / "hyperparameters.json"
         if spaces_file.exists():
-            with open(spaces_file, "r") as f:
+            with open(spaces_file) as f:
                 spaces_dict = json.load(f)
             for name, data in spaces_dict.items():
                 self._hyperparameter_spaces[name] = HyperparameterSpace(**data)
