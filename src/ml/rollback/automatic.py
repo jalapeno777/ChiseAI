@@ -180,7 +180,8 @@ class RollbackManager:
         self._history: list[RollbackResult] = []
 
         logger.info(
-            f"RollbackManager initialized: auto_rollback={self._config.auto_rollback_enabled}, "
+            f"RollbackManager initialized: "
+            f"auto_rollback={self._config.auto_rollback_enabled}, "
             f"max_time={self._config.max_rollback_time_seconds}s"
         )
 
@@ -267,7 +268,9 @@ class RollbackManager:
                 completed_at=datetime.now(UTC),
                 duration_seconds=duration,
                 reason=reason,
-                message=f"No rollback target found for {failed_version.model_type.value}",
+                message=(
+                    f"No rollback target found for {failed_version.model_type.value}"
+                ),
                 evidence={"model_type": failed_version.model_type.value},
             )
             self._history.append(result)
@@ -312,7 +315,9 @@ class RollbackManager:
                 completed_at=datetime.now(UTC),
                 duration_seconds=duration,
                 reason=reason,
-                message=f"Rollback timeout after {self._config.max_rollback_time_seconds}s",
+                message=(
+                    f"Rollback timeout after {self._config.max_rollback_time_seconds}s"
+                ),
                 evidence={"timeout": True},
             )
             logger.error(f"Rollback timeout: {rollback_id}")
@@ -418,8 +423,8 @@ class RollbackManager:
         duration = (completed_at - started_at).total_seconds()
 
         logger.info(
-            f"Rollback completed: {failed_version.version_id} -> {target_version.version_id}, "
-            f"duration={duration:.2f}s"
+            f"Rollback completed: {failed_version.version_id} -> "
+            f"{target_version.version_id}, duration={duration:.2f}s"
         )
 
         return RollbackResult(
@@ -503,7 +508,9 @@ class RollbackManager:
                 completed_at=datetime.now(UTC),
                 duration_seconds=duration,
                 reason=RollbackReason.MANUAL,
-                message=f"Rollback timeout after {self._config.max_rollback_time_seconds}s",
+                message=(
+                    f"Rollback timeout after {self._config.max_rollback_time_seconds}s"
+                ),
                 evidence={"timeout": True},
             )
 
