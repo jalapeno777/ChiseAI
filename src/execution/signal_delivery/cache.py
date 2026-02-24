@@ -45,9 +45,9 @@ class SignalMetadataEntry:
         return {
             "signal_id": self.signal_id,
             "delivered": self.delivered,
-            "delivery_time": self.delivery_time.isoformat()
-            if self.delivery_time
-            else None,
+            "delivery_time": (
+                self.delivery_time.isoformat() if self.delivery_time else None
+            ),
             "latency_ms": round(self.latency_ms, 2),
             "target": self.target,
             "retry_count": self.retry_count,
@@ -55,7 +55,7 @@ class SignalMetadataEntry:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "SignalMetadataEntry":
+    def from_dict(cls, data: dict[str, Any]) -> SignalMetadataEntry:
         """Create from dictionary.
 
         Args:
@@ -245,7 +245,7 @@ class SignalMetadataCache:
             values = await self.redis.mget(keys)
 
             result: dict[str, SignalMetadataEntry | None] = {}
-            for signal_id, data in zip(signal_ids, values):
+            for signal_id, data in zip(signal_ids, values, strict=False):
                 if data is not None:
                     parsed = json.loads(data)
                     result[signal_id] = SignalMetadataEntry.from_dict(parsed)

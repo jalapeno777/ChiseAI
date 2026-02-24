@@ -6,9 +6,7 @@ to ensure dashboard load times under 3 seconds.
 
 from __future__ import annotations
 
-import asyncio
-from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -17,12 +15,10 @@ from dashboard.performance import (
     CacheStats,
     DashboardCache,
     LoadTimeMetric,
-    PerformanceAlert,
     PerformanceMonitor,
     PerformanceThresholds,
     QueryMetrics,
     QueryOptimizer,
-    QueryPlan,
     QueryType,
     cached_query,
     optimize_panel_query,

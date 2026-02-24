@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -44,12 +44,12 @@ class LatencyThresholds:
     p99_target_ms: float = 950.0
 
     @classmethod
-    def default(cls) -> "LatencyThresholds":
+    def default(cls) -> LatencyThresholds:
         """Get default thresholds."""
         return cls()
 
     @classmethod
-    def strict(cls) -> "LatencyThresholds":
+    def strict(cls) -> LatencyThresholds:
         """Get stricter thresholds."""
         return cls(
             warning_ms=300.0,

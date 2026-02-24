@@ -100,12 +100,16 @@ class QueryPlan:
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
-            "original_query": self.original_query[:200] + "..."
-            if len(self.original_query) > 200
-            else self.original_query,
-            "optimized_query": self.optimized_query[:200] + "..."
-            if len(self.optimized_query) > 200
-            else self.optimized_query,
+            "original_query": (
+                self.original_query[:200] + "..."
+                if len(self.original_query) > 200
+                else self.original_query
+            ),
+            "optimized_query": (
+                self.optimized_query[:200] + "..."
+                if len(self.optimized_query) > 200
+                else self.optimized_query
+            ),
             "optimizations": self.optimizations,
             "estimated_improvement": round(self.estimated_improvement, 2),
             "indexes_used": self.indexes_used,
@@ -201,7 +205,7 @@ class QueryOptimizer:
         optimized_query = query
 
         # Check for optimization patterns
-        for name, config in self.OPTIMIZATION_PATTERNS.items():
+        for _name, config in self.OPTIMIZATION_PATTERNS.items():
             if re.search(config["pattern"], query, re.IGNORECASE):
                 optimizations.append(config["fix"])
                 estimated_improvement += config["improvement"]
