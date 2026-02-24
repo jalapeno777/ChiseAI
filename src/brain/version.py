@@ -168,7 +168,7 @@ def _compare_prerelease(a: str | None, b: str | None) -> int:
     a_parts = a.split(".")
     b_parts = b.split(".")
 
-    for a_part, b_part in zip(a_parts, b_parts):
+    for a_part, b_part in zip(a_parts, b_parts, strict=False):
         # Determine if each part is numeric
         a_is_num = a_part.isdigit()
         b_is_num = b_part.isdigit()

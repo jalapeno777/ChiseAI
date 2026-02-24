@@ -10,14 +10,12 @@ Implements predictive health analysis with:
 Story: ST-GOV-008
 """
 
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Optional
-import logging
-import math
 
-from .scorer import AgentHealthScore, HealthStatus
+from .scorer import AgentHealthScore
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +51,7 @@ class HealthAlert:
     confidence: float  # 0.0 to 1.0
     message: str
     contributing_factors: list[str] = field(default_factory=list)
-    remediation_hint: Optional[str] = None
+    remediation_hint: str | None = None
     created_at: datetime = field(default_factory=datetime.utcnow)
 
     def to_dict(self) -> dict:
@@ -96,7 +94,7 @@ class HealthPredictor:
 
     def __init__(
         self,
-        config: Optional[PredictionConfig] = None,
+        config: PredictionConfig | None = None,
         history_window_hours: int = 2,
     ):
         """
@@ -213,7 +211,7 @@ class HealthPredictor:
         n = len(scores)
         sum_x = sum(timestamps)
         sum_y = sum(scores)
-        sum_xy = sum(x * y for x, y in zip(timestamps, scores))
+        sum_xy = sum(x * y for x, y in zip(timestamps, scores, strict=False))
         sum_xx = sum(x * x for x in timestamps)
 
         # Calculate slope and intercept
@@ -235,7 +233,8 @@ class HealthPredictor:
         y_mean = sum_y / n
         ss_tot = sum((y - y_mean) ** 2 for y in scores)
         ss_res = sum(
-            (y - (slope * x + intercept)) ** 2 for x, y in zip(timestamps, scores)
+            (y - (slope * x + intercept)) ** 2
+            for x, y in zip(timestamps, scores, strict=False)
         )
         r_squared = 1 - (ss_res / ss_tot) if ss_tot > 0 else 0
 
@@ -285,7 +284,7 @@ class HealthPredictor:
         latest = history[-1]
         horizon = timedelta(minutes=self.config.prediction_horizon_minutes)
 
-        for dim_name, dimension in latest.dimensions.items():
+        for dim_name, _dimension in latest.dimensions.items():
             # Get dimension score history
             dim_scores = []
             for score in history:
@@ -330,7 +329,7 @@ class HealthPredictor:
         confidence: float,
         horizon: timedelta,
         factors: list[str],
-        dimension: Optional[str] = None,
+        dimension: str | None = None,
     ) -> HealthAlert:
         """Create a health alert with proper formatting."""
         self._alert_counter += 1
@@ -480,7 +479,7 @@ class HealthPredictor:
         """Get recent predictions for an agent."""
         return self._prediction_history.get(agent_id, [])
 
-    def clear_history(self, agent_id: Optional[str] = None) -> None:
+    def clear_history(self, agent_id: str | None = None) -> None:
         """Clear prediction history."""
         if agent_id:
             self._prediction_history.pop(agent_id, None)

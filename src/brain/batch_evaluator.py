@@ -509,7 +509,7 @@ class BatchEvaluator:
 
         # Process results, converting exceptions to failed results
         processed_results: list[EvaluationResult] = []
-        for version, result in zip(brain_versions, results):
+        for version, result in zip(brain_versions, results, strict=False):
             if isinstance(result, Exception):
                 logger.error(f"Unexpected exception for {version}: {result}")
                 processed_results.append(

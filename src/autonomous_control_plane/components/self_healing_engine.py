@@ -183,9 +183,9 @@ class SelfHealingEngine:
         if not match.matched:
             return None
 
-        assert match.pattern_type is not None, (
-            "Matched pattern should have a pattern_type"
-        )
+        assert (
+            match.pattern_type is not None
+        ), "Matched pattern should have a pattern_type"
         pattern_type: FailurePatternType = match.pattern_type
         logger.info(
             f"Matched pattern {pattern_type.value} for {log_entry.source} "

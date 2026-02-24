@@ -9,19 +9,13 @@ Tests cover end-to-end integration of:
 - Threshold Tuner + Evaluator
 """
 
-import pytest
-from unittest.mock import MagicMock
-
 from src.governance.retrieval import (
-    RetrievalEvaluator,
-    RetrievalResult,
-    RetrievalMetrics,
-    RelevanceLabel,
     ABTester,
-    ThresholdTuner,
-    TunerConfig,
-    AdjustmentStrategy,
+    RelevanceLabel,
+    RetrievalEvaluator,
     RetrievalMetricsExporter,
+    RetrievalResult,
+    ThresholdTuner,
 )
 
 
@@ -315,7 +309,7 @@ class TestFullPipelineIntegration:
         exporter.record_threshold_adjustment()
 
         # 7. Analyze experiment
-        analysis = tester.analyze_experiment(exp_id)
+        tester.analyze_experiment(exp_id)
 
         # 8. Complete experiment
         tester.complete_experiment(exp_id)
@@ -394,9 +388,11 @@ class TestValidationGatesIntegration:
                     RetrievalResult(
                         doc_id=f"doc{i}_{j}",
                         score=0.95 - j * 0.05,
-                        relevance=RelevanceLabel.RELEVANT
-                        if is_relevant
-                        else RelevanceLabel.NOT_RELEVANT,
+                        relevance=(
+                            RelevanceLabel.RELEVANT
+                            if is_relevant
+                            else RelevanceLabel.NOT_RELEVANT
+                        ),
                     )
                 )
                 if is_relevant:

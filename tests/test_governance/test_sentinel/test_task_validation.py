@@ -1,12 +1,12 @@
 """Tests for Task Sentinel module (ST-GOV-003)."""
 
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
+import pytest
 from src.governance.sentinel.task_sentinel import (
-    TaskSentinel,
     SentinelConfig,
     TaskInfo,
+    TaskSentinel,
     ValidationResult,
 )
 
@@ -308,7 +308,6 @@ class TestTaskSentinel:
 
     def test_get_pending_approvals_with_redis(self):
         """Test getting pending approvals with Redis."""
-        import json
 
         mock_redis = MagicMock()
         mock_redis.get.return_value = b"true"

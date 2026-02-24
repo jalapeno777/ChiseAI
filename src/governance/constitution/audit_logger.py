@@ -81,14 +81,14 @@ class OverrideRequest:
             "created_at": self.created_at.isoformat(),
             "revoked_by": self.revoked_by,
             "revoked_at": self.revoked_at.isoformat() if self.revoked_at else None,
-            "rolled_back_at": self.rolled_back_at.isoformat()
-            if self.rolled_back_at
-            else None,
+            "rolled_back_at": (
+                self.rolled_back_at.isoformat() if self.rolled_back_at else None
+            ),
             "rolled_back_by": self.rolled_back_by,
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "OverrideRequest":
+    def from_dict(cls, data: dict[str, Any]) -> OverrideRequest:
         """Create from dictionary."""
         return cls(
             override_id=data["override_id"],
@@ -100,18 +100,24 @@ class OverrideRequest:
             expires_at=datetime.fromisoformat(data["expires_at"]),
             status=OverrideStatus(data["status"]),
             approver=data.get("approver"),
-            approved_at=datetime.fromisoformat(data["approved_at"])
-            if data.get("approved_at")
-            else None,
+            approved_at=(
+                datetime.fromisoformat(data["approved_at"])
+                if data.get("approved_at")
+                else None
+            ),
             actions_taken=data.get("actions_taken", []),
             created_at=datetime.fromisoformat(data["created_at"]),
             revoked_by=data.get("revoked_by"),
-            revoked_at=datetime.fromisoformat(data["revoked_at"])
-            if data.get("revoked_at")
-            else None,
-            rolled_back_at=datetime.fromisoformat(data["rolled_back_at"])
-            if data.get("rolled_back_at")
-            else None,
+            revoked_at=(
+                datetime.fromisoformat(data["revoked_at"])
+                if data.get("revoked_at")
+                else None
+            ),
+            rolled_back_at=(
+                datetime.fromisoformat(data["rolled_back_at"])
+                if data.get("rolled_back_at")
+                else None
+            ),
             rolled_back_by=data.get("rolled_back_by"),
         )
 

@@ -505,7 +505,7 @@ class TestMetricThresholds:
     def test_snapshot_ttl_is_30_days(self) -> None:
         """Test that snapshot TTL is 30 days."""
         expected_ttl = 30 * 24 * 60 * 60  # 30 days in seconds
-        assert SNAPSHOT_TTL_SECONDS == expected_ttl
+        assert expected_ttl == SNAPSHOT_TTL_SECONDS
 
     def test_baseline_key_constant(self) -> None:
         """Test that baseline key constant is correct."""
@@ -732,7 +732,7 @@ class TestRedisIntegration:
         mock_redis.hset.return_value = 1
         mock_redis.expire.return_value = True
 
-        key = snapshot.store_to_redis(mock_redis)
+        snapshot.store_to_redis(mock_redis)
 
         # Verify expire was called with 30-day TTL
         mock_redis.expire.assert_called_once()

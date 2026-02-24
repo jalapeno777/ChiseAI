@@ -13,11 +13,9 @@ Integration with existing governance metrics system.
 Story: ST-GOV-008
 """
 
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
-import logging
-import time
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +65,7 @@ class HealthMetrics:
         self,
         agent_id: str,
         score: float,
-        dimensions: Optional[dict[str, float]] = None,
+        dimensions: dict[str, float] | None = None,
     ) -> None:
         """
         Record per-agent health score.
@@ -137,7 +135,7 @@ class HealthMetrics:
         self,
         severity: str,
         alert_type: str,
-        agent_id: Optional[str] = None,
+        agent_id: str | None = None,
     ) -> None:
         """
         Record an alert event.
@@ -167,8 +165,8 @@ class HealthMetrics:
         self,
         success: bool,
         action_type: str,
-        agent_id: Optional[str] = None,
-        duration_ms: Optional[float] = None,
+        agent_id: str | None = None,
+        duration_ms: float | None = None,
     ) -> None:
         """
         Record a remediation attempt.
@@ -309,7 +307,7 @@ class HealthMetrics:
 
 
 # Singleton instance for convenience
-_metrics_instance: Optional[HealthMetrics] = None
+_metrics_instance: HealthMetrics | None = None
 
 
 def get_health_metrics() -> HealthMetrics:

@@ -37,6 +37,8 @@ from typing import Any
 
 # Add src to path for config imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
+import contextlib
+
 from config.bootstrap import bootstrap
 
 # Redis import with fallback
@@ -254,20 +256,16 @@ class GitHelper:
             "rev-list", "--count", f"{branch}..{MAIN_BRANCH_NAME}", check=False
         )
         if rc == 0 and out:
-            try:
+            with contextlib.suppress(ValueError):
                 info.commits_behind = int(out)
-            except ValueError:
-                pass
 
         # Commits ahead of main
         rc, out, _ = self.run(
             "rev-list", "--count", f"{MAIN_BRANCH_NAME}..{branch}", check=False
         )
         if rc == 0 and out:
-            try:
+            with contextlib.suppress(ValueError):
                 info.commits_ahead = int(out)
-            except ValueError:
-                pass
 
         # Check remote tracking
         rc, _, _ = self.run(
@@ -336,10 +334,8 @@ class GitHelper:
         info.has_session_file = session_file.exists()
 
         if info.has_session_file:
-            try:
+            with contextlib.suppress(OSError, json.JSONDecodeError):
                 info.session_data = json.loads(session_file.read_text())
-            except (OSError, json.JSONDecodeError):
-                pass
 
         # Check cleanliness
         self._check_worktree_cleanliness(info)

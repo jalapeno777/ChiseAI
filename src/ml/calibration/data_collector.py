@@ -515,8 +515,9 @@ class CalibrationDataCollector:
             True if export successful
         """
         try:
-            from ml.calibration.exporter import CalibrationExporter, ExportFormat
             import asyncio
+
+            from ml.calibration.exporter import CalibrationExporter, ExportFormat
 
             exporter = CalibrationExporter(self._get_storage())
             return cast(
@@ -537,8 +538,9 @@ class CalibrationDataCollector:
             True if export successful
         """
         try:
-            from ml.calibration.exporter import CalibrationExporter, ExportFormat
             import asyncio
+
+            from ml.calibration.exporter import CalibrationExporter, ExportFormat
 
             exporter = CalibrationExporter(self._get_storage())
             return cast(bool, asyncio.run(exporter.export(filepath, ExportFormat.CSV)))
@@ -558,8 +560,9 @@ class CalibrationDataCollector:
             True if export successful
         """
         try:
-            from ml.calibration.exporter import CalibrationExporter, ExportFormat
             import asyncio
+
+            from ml.calibration.exporter import CalibrationExporter, ExportFormat
 
             export_format = (
                 ExportFormat.PARQUET if format == "parquet" else ExportFormat.CSV

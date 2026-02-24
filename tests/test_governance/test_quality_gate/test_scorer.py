@@ -6,13 +6,12 @@ For ST-GOV-006: Self-Review Quality Gate
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
-
 from src.governance.quality_gate.scorer import (
-    ComponentScore,
     COMPONENT_WEIGHTS,
+    ComponentScore,
     QualityScore,
     QualityScorer,
     ScoreComponent,
@@ -400,9 +399,9 @@ class TestScoreComponentWeights:
     def test_weight_values_are_reasonable(self) -> None:
         """Test weight values are in reasonable range."""
         for comp, weight in COMPONENT_WEIGHTS.items():
-            assert 0 < weight <= 0.5, (
-                f"Weight for {comp} is {weight}, expected 0 < w <= 0.5"
-            )
+            assert (
+                0 < weight <= 0.5
+            ), f"Weight for {comp} is {weight}, expected 0 < w <= 0.5"
 
 
 class TestLiveValidationGates:

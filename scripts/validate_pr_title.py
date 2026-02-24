@@ -55,9 +55,7 @@ def _is_pr_build(env: dict[str, str]) -> bool:
     if env.get("WOODPECKER_PULL_REQUEST", "").strip():
         return True
     # Woodpecker 2.8+ uses CI_COMMIT_PULL_REQUEST for PR number
-    if env.get("CI_COMMIT_PULL_REQUEST", "").strip():
-        return True
-    return False
+    return bool(env.get("CI_COMMIT_PULL_REQUEST", "").strip())
 
 
 def _get_pr_title(env: dict[str, str]) -> str:

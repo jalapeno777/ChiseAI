@@ -13,6 +13,7 @@ Provides:
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 import time
@@ -409,10 +410,8 @@ class BybitWebSocketManager:
         for task in [self._ws_task, self._heartbeat_task, self._rest_fallback_task]:
             if task and not task.done():
                 task.cancel()
-                try:
+                with contextlib.suppress(asyncio.CancelledError):
                     await task
-                except asyncio.CancelledError:
-                    pass
 
         # Close WebSocket
         if self._ws:
@@ -734,10 +733,7 @@ class BybitWebSocketManager:
             return False
 
         # Check if we've received messages recently
-        if time.time() - self._last_message_time > self.HEARTBEAT_INTERVAL * 2:
-            return False
-
-        return True
+        return not time.time() - self._last_message_time > self.HEARTBEAT_INTERVAL * 2
 
 
 # Convenience function for integration with CircuitBreakerRegistry

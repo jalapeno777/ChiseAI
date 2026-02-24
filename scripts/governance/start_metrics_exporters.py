@@ -76,10 +76,10 @@ def get_influx_client() -> Any | None:
 
 def register_exporters(redis_client: Any | None, influx_client: Any | None) -> None:
     """Register all governance metrics exporters."""
-    from src.governance.metrics.registry import get_registry
     from src.governance.constitution.metrics_exporter import ConstitutionMetricsExporter
-    from src.governance.sentinel.metrics_exporter import SentinelMetricsExporter
     from src.governance.memory.metrics_exporter import MemoryMetricsExporter
+    from src.governance.metrics.registry import get_registry
+    from src.governance.sentinel.metrics_exporter import SentinelMetricsExporter
 
     registry = get_registry()
     registry.clear()

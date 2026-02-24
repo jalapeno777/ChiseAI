@@ -6,6 +6,7 @@ For ST-EX-001: Export execution metrics to InfluxDB for Grafana dashboards.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 from typing import TYPE_CHECKING, Any
 
@@ -109,10 +110,8 @@ class ExecutionTelemetryExporter:
 
         if self._flush_task and not self._flush_task.done():
             self._flush_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._flush_task
-            except asyncio.CancelledError:
-                pass
 
         # Final flush
         await self._flush_batch()

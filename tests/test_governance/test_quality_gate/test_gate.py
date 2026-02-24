@@ -5,27 +5,20 @@ For ST-GOV-006: Self-Review Quality Gate
 
 from __future__ import annotations
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import pytest
-
 from src.governance.quality_gate.gate import (
     BlockReason,
     QualityGate,
     QualityGateResult,
 )
-from src.governance.quality_gate.override import (
-    HumanOverride,
-    OverrideManager,
-    OverrideStatus,
-    RiskLevel,
-)
 from src.governance.quality_gate.scorer import (
+    COMPONENT_WEIGHTS,
     ComponentScore,
     QualityScore,
     QualityScorer,
     ScoreComponent,
-    COMPONENT_WEIGHTS,
 )
 
 

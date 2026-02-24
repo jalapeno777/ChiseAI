@@ -232,7 +232,7 @@ class TestAutoMergeEligibility:
             ci_passed=True,
         )
 
-        assert eligible == True
+        assert eligible
 
     def test_not_eligible_low_confidence(self, scorer):
         """Test not eligible with low confidence."""
@@ -244,7 +244,7 @@ class TestAutoMergeEligibility:
             ci_passed=True,
         )
 
-        assert eligible == False
+        assert not eligible
 
     def test_not_eligible_low_role_confidence(self, scorer):
         """Test not eligible with low role confidence."""
@@ -256,7 +256,7 @@ class TestAutoMergeEligibility:
             ci_passed=True,
         )
 
-        assert eligible == False
+        assert not eligible
 
     def test_not_eligible_with_blockers(self, scorer):
         """Test not eligible with blockers."""
@@ -268,7 +268,7 @@ class TestAutoMergeEligibility:
             ci_passed=True,
         )
 
-        assert eligible == False
+        assert not eligible
 
     def test_not_eligible_ci_failed(self, scorer):
         """Test not eligible when CI failed."""
@@ -280,7 +280,7 @@ class TestAutoMergeEligibility:
             ci_passed=False,
         )
 
-        assert eligible == False
+        assert not eligible
 
 
 class TestConfidenceTiers:

@@ -145,10 +145,7 @@ class DecisionSynthesizer:
             pass
 
         # CI must pass
-        if not ci_passed:
-            return False
-
-        return True
+        return ci_passed
 
     def _generate_summary(
         self,

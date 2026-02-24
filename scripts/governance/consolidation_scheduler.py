@@ -19,7 +19,6 @@ import argparse
 import json
 import logging
 import sys
-from datetime import UTC, datetime
 from pathlib import Path
 
 # Add project root to path
@@ -132,7 +131,7 @@ def cmd_rollback_batch(args: argparse.Namespace) -> int:
 
     stats = scheduler.rollback_batch(memory_ids, dry_run=args.dry_run)
 
-    print(f"\nResults:")
+    print("\nResults:")
     print(f"  Requested: {stats.operations_requested}")
     print(f"  Succeeded: {stats.operations_succeeded}")
     print(f"  Failed: {stats.operations_failed}")
@@ -151,7 +150,7 @@ def cmd_status(args: argparse.Namespace) -> int:
 
     # Config
     config = scheduler.get_config()
-    print(f"\nConfiguration:")
+    print("\nConfiguration:")
     print(f"  Schedule: Daily at {config.schedule_time.isoformat()} UTC")
     print(f"  Enabled: {scheduler.is_enabled()}")
     print(f"  Dry run: {config.dry_run}")
@@ -160,7 +159,7 @@ def cmd_status(args: argparse.Namespace) -> int:
     # Last run
     result = scheduler.get_last_result()
     if result:
-        print(f"\nLast Run:")
+        print("\nLast Run:")
         print(f"  Timestamp: {result.timestamp.isoformat()}")
         print(f"  Success: {result.success}")
         print(f"  Duration: {result.total_processing_time_seconds:.2f}s")
@@ -173,14 +172,14 @@ def cmd_status(args: argparse.Namespace) -> int:
 
     # Rollback window
     window = scheduler.get_rollback_window()
-    print(f"\nRollback Window:")
+    print("\nRollback Window:")
     print(f"  Start: {window.start_date.isoformat()}")
     print(f"  End: {window.end_date.isoformat()}")
     print(f"  Available memories: {window.available_memories}")
 
     # Live gates
     validation = scheduler.validate_live_gates()
-    print(f"\nLive Validation Gates:")
+    print("\nLive Validation Gates:")
     if "reason" in validation:
         print(f"  Status: {validation['reason']}")
     else:
@@ -230,7 +229,7 @@ def cmd_start_daemon(args: argparse.Namespace) -> int:
     """Start the scheduler daemon."""
     scheduler = create_scheduler(dry_run=args.dry_run)
 
-    print(f"\nStarting consolidation scheduler daemon...")
+    print("\nStarting consolidation scheduler daemon...")
     print(f"Schedule: Daily at {scheduler.get_config().schedule_time.isoformat()} UTC")
     print(f"Dry run: {args.dry_run}")
     print("\nPress Ctrl+C to stop\n")

@@ -10,15 +10,14 @@ Implements auto-remediation for known health issues with:
 Story: ST-GOV-008
 """
 
+import logging
+import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Optional, Callable
-import logging
-import time
 
-from .scorer import AgentHealthScore, HealthStatus
-from .predictor import HealthAlert, PredictionType, AlertSeverity
+from .predictor import AlertSeverity, HealthAlert, PredictionType
 
 logger = logging.getLogger(__name__)
 
@@ -59,10 +58,10 @@ class RemediationRecord:
     trigger: str  # What triggered this remediation
     status: RemediationStatus
     started_at: datetime
-    completed_at: Optional[datetime] = None
-    duration_ms: Optional[float] = None
-    error_message: Optional[str] = None
-    rollback_action: Optional[RemediationAction] = None
+    completed_at: datetime | None = None
+    duration_ms: float | None = None
+    error_message: str | None = None
+    rollback_action: RemediationAction | None = None
     metadata: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
@@ -74,14 +73,14 @@ class RemediationRecord:
             "trigger": self.trigger,
             "status": self.status.value,
             "started_at": self.started_at.isoformat(),
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
             "duration_ms": self.duration_ms,
             "error_message": self.error_message,
-            "rollback_action": self.rollback_action.value
-            if self.rollback_action
-            else None,
+            "rollback_action": (
+                self.rollback_action.value if self.rollback_action else None
+            ),
             "metadata": self.metadata,
         }
 
@@ -135,7 +134,7 @@ class HealthRemediator:
 
     def __init__(
         self,
-        config: Optional[RemediationConfig] = None,
+        config: RemediationConfig | None = None,
         redis_client=None,
     ):
         """
@@ -185,7 +184,7 @@ class HealthRemediator:
     def remediate(
         self,
         alert: HealthAlert,
-        agent_id: Optional[str] = None,
+        agent_id: str | None = None,
     ) -> RemediationRecord:
         """
         Attempt remediation based on a health alert.
@@ -335,7 +334,7 @@ class HealthRemediator:
         action: RemediationAction,
         trigger: str,
         status: RemediationStatus,
-        metadata: Optional[dict] = None,
+        metadata: dict | None = None,
     ) -> RemediationRecord:
         """Create a remediation record."""
         self._record_counter += 1

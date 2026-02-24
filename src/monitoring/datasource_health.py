@@ -728,7 +728,7 @@ class DataSourceHealthMonitor:
         """Stop monitoring all data sources."""
         self._running = False
 
-        for source_type, task in self._monitor_tasks.items():
+        for _source_type, task in self._monitor_tasks.items():
             task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await task

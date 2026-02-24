@@ -5,14 +5,14 @@ Test coverage for task size validation, feature flag integration,
 and blocking logic.
 """
 
-import pytest
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock
 
-from governance.sentinel import TaskSentinel, SentinelConfig
+import pytest
+
+from governance.sentinel import SentinelConfig, TaskSentinel
 from governance.sentinel.task_sentinel import (
-    TaskInfo,
-    ValidationResult,
     FEATURE_FLAG_KEY,
+    TaskInfo,
 )
 
 

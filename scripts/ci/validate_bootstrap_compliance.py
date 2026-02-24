@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import contextlib
 import os
 import sys
 from pathlib import Path
@@ -123,11 +124,9 @@ def get_first_os_environ_access(tree: ast.AST) -> int | None:
         Line number of first os.environ access, or None if not found
     """
     for node in ast.walk(tree):
-        if isinstance(node, ast.Attribute):
-            if node.attr == "environ":
-                if isinstance(node.value, ast.Name):
-                    if node.value.id == "os":
-                        return node.lineno
+        if isinstance(node, ast.Attribute) and node.attr == "environ":
+            if isinstance(node.value, ast.Name) and node.value.id == "os":
+                return node.lineno
     return None
 
 
@@ -254,10 +253,8 @@ class BootstrapComplianceChecker:
             script_path.name,
         ]
         # Add path relative to scripts/ if applicable
-        try:
+        with contextlib.suppress(ValueError):
             checks.append(str(script_path.relative_to(SCRIPTS_DIR)))
-        except ValueError:
-            pass
         return any(check in self.allowlist for check in checks)
 
     def check_script(self, script_path: Path) -> list[Violation]:

@@ -711,7 +711,7 @@ class CircuitBreakerRegistry:
         """
         with self._lock:
             result = {}
-            for name in self._registry.keys():
+            for name in self._registry:
                 health = self.get_health(name)
                 if health is not None:
                     result[name] = health

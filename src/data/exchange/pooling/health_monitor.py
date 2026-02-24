@@ -8,6 +8,7 @@ For ST-NS-026: Connection Pooling for Exchange APIs
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import time
 from collections import deque
@@ -148,10 +149,8 @@ class PoolHealthMonitor:
 
         if self._monitor_task:
             self._monitor_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._monitor_task
-            except asyncio.CancelledError:
-                pass
             self._monitor_task = None
 
         logger.info("Pool health monitoring stopped")

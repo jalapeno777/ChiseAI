@@ -14,6 +14,7 @@ For ST-NS-039: Retry Coordinator with Budget Management
 
 from __future__ import annotations
 
+import contextlib
 from datetime import datetime
 
 import pytest
@@ -158,15 +159,13 @@ class TestRetryCoordinator:
         # Run multiple times to collect jitter samples
         for _ in range(20):
             datetime.utcnow()
-            try:
+            with contextlib.suppress(MaxRetriesExceededError):
                 await coordinator.execute_with_retry(
                     service_name=f"test_service_{_}",
                     operation_name="test_op",
                     func=measure_jitter,
                     policy=policy,
                 )
-            except MaxRetriesExceededError:
-                pass
 
         # With jitter, each retry should have different timing
         # We can't measure exact delays, but we can verify the code path works
@@ -440,15 +439,13 @@ class TestBudgetManagerIntegration:
 
         # Generate some budget usage
         for i in range(3):
-            try:
+            with contextlib.suppress(MaxRetriesExceededError):
                 await coordinator.execute_with_retry(
                     service_name=f"service_{i}",
                     operation_name="test_op",
                     func=always_fail,
                     policy=policy,
                 )
-            except MaxRetriesExceededError:
-                pass
 
         budgets = coordinator.get_all_budgets()
         assert len(budgets) >= 3
@@ -476,15 +473,13 @@ class TestDLQOperations:
 
         policy = RetryPolicy(max_attempts=1, base_delay_ms=10)
 
-        try:
+        with contextlib.suppress(MaxRetriesExceededError):
             await coordinator.execute_with_retry(
                 service_name="dlq_list_test",
                 operation_name="test_op",
                 func=always_fail,
                 policy=policy,
             )
-        except MaxRetriesExceededError:
-            pass
 
         items = coordinator.get_dlq_items(service_name="dlq_list_test")
         assert isinstance(items, list)

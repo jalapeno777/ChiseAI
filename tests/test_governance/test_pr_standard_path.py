@@ -5,16 +5,17 @@ Story: ST-AUTO-004
 Epic: EP-AUTO-GIT-001
 """
 
-import pytest
 from datetime import datetime, timedelta
+
+import pytest
 
 # Import from the module under test
 from src.governance.pr_pipeline.standard_path import (
-    StandardPathHandler,
-    StandardPathConfig,
-    ReviewStatus,
     PRClassification,
     ReviewResult,
+    ReviewStatus,
+    StandardPathConfig,
+    StandardPathHandler,
 )
 
 

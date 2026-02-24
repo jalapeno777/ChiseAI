@@ -159,10 +159,7 @@ class ConfidenceScorer:
             return False
 
         # CI must pass
-        if not ci_passed:
-            return False
-
-        return True
+        return ci_passed
 
     def adjust_for_historical_accuracy(
         self,

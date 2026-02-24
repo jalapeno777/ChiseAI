@@ -289,10 +289,7 @@ class TimeSeriesPaginator:
                 page_data = data[-self.page_size :]
                 first_item = page_data[0]
                 first_ts = first_item.get(self.timestamp_field)
-                if first_ts:
-                    prev_cursor = CursorCodec.encode(first_ts, 0)
-                else:
-                    prev_cursor = None
+                prev_cursor = CursorCodec.encode(first_ts, 0) if first_ts else None
             else:
                 page_data = data
                 prev_cursor = None

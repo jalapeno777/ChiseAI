@@ -12,6 +12,7 @@ For ST-NS-040: Self-Healing Engine with Action Sandboxing
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 import os
@@ -383,10 +384,8 @@ class BaseHealingAction(ABC):
                 }
 
         finally:
-            try:
+            with contextlib.suppress(OSError):
                 os.unlink(script_path)
-            except OSError:
-                pass
 
     def _generate_sandbox_script(self, context: HealingContext) -> str:
         """Generate Python script for sandboxed execution.

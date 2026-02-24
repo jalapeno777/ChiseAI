@@ -75,16 +75,16 @@ class HumanOverride:
             "status": self.status.value,
             "approver": self.approver,
             "approved_at": self.approved_at.isoformat() if self.approved_at else None,
-            "activated_at": self.activated_at.isoformat()
-            if self.activated_at
-            else None,
+            "activated_at": (
+                self.activated_at.isoformat() if self.activated_at else None
+            ),
             "expires_at": self.expires_at.isoformat() if self.expires_at else None,
             "revoked_at": self.revoked_at.isoformat() if self.revoked_at else None,
             "revoked_by": self.revoked_by,
             "revoke_reason": self.revoke_reason,
-            "rolled_back_at": self.rolled_back_at.isoformat()
-            if self.rolled_back_at
-            else None,
+            "rolled_back_at": (
+                self.rolled_back_at.isoformat() if self.rolled_back_at else None
+            ),
             "rolled_back_by": self.rolled_back_by,
             "created_at": self.created_at.isoformat(),
             "audit_trail": self.audit_trail,

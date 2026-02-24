@@ -10,7 +10,7 @@ import gzip
 import json
 import logging
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any, Protocol, runtime_checkable
@@ -18,7 +18,6 @@ from typing import Any, Protocol, runtime_checkable
 from src.governance.audit_trail.query import (
     AuditTrailQuery,
     QueryFilter,
-    QueryResult,
     SortOrder,
 )
 from src.governance.audit_trail.trail import AuditTrailEntry
@@ -67,7 +66,7 @@ class S3Config:
     use_ssl: bool = True
 
     @classmethod
-    def from_env(cls) -> "S3Config":
+    def from_env(cls) -> S3Config:
         """Create S3Config from environment variables."""
         return cls(
             bucket=os.getenv("AUDIT_EXPORT_S3_BUCKET", "chiseai-audit-exports"),
@@ -147,9 +146,9 @@ class ExportResult:
             "entry_count": self.entry_count,
             "file_size_bytes": self.file_size_bytes,
             "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
             "error_message": self.error_message,
             "chain_valid": self.chain_valid,
             "checksum": self.checksum,
@@ -293,9 +292,7 @@ class AuditTrailExporter:
             result.file_size_bytes = (
                 os.path.getsize(file_path)
                 if os.path.exists(file_path)
-                else len(content)
-                if isinstance(content, bytes)
-                else len(content)
+                else len(content) if isinstance(content, bytes) else len(content)
             )
             result.chain_valid = chain_state is None or chain_state.get("valid", True)
             result.status = ExportStatus.COMPLETED

@@ -234,7 +234,7 @@ class TestLaunchReadinessChecklist:
         training_start = time.perf_counter()
 
         # Simulate training steps
-        for epoch in range(3):
+        for _epoch in range(3):
             await asyncio.sleep(0.2)  # 0.2s per epoch
 
         training_end = time.perf_counter()
@@ -780,7 +780,7 @@ class TestIntegrationFlow:
 
         states = ["closed", "open", "half_open", "closed"]
 
-        for i, state in enumerate(states):
+        for _i, state in enumerate(states):
             await asyncio.sleep(0.05)
             print(f"  ✓ Transition to: {state}")
 

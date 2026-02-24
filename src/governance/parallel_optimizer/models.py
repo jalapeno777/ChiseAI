@@ -10,7 +10,7 @@ Story: ST-GOV-010
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 
 class TaskPriority(str, Enum):
@@ -67,7 +67,7 @@ class OptimizableTask:
     priority: TaskPriority = TaskPriority.NORMAL
     estimated_duration_seconds: float = 60.0
     constitution_alignment: float = 1.0
-    agent_id: Optional[str] = None
+    agent_id: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __hash__(self) -> int:
@@ -98,8 +98,8 @@ class TaskBatch:
     batch_number: int
     tasks: list[OptimizableTask] = field(default_factory=list)
     status: BatchStatus = BatchStatus.PENDING
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
     parallel_safe: bool = True
 
     @property
@@ -150,14 +150,14 @@ class ExecutionPlan:
         """Number of batches in the plan."""
         return len(self.batches)
 
-    def get_batch(self, batch_number: int) -> Optional[TaskBatch]:
+    def get_batch(self, batch_number: int) -> TaskBatch | None:
         """Get a specific batch by number."""
         for batch in self.batches:
             if batch.batch_number == batch_number:
                 return batch
         return None
 
-    def get_task_status(self, task_id: str) -> Optional[TaskStatus]:
+    def get_task_status(self, task_id: str) -> TaskStatus | None:
         """Get the status of a specific task."""
         for batch in self.batches:
             for task in batch.tasks:
@@ -259,8 +259,8 @@ class OptimizationResult:
         message: Human-readable result message
     """
 
-    execution_plan: Optional[ExecutionPlan] = None
-    throughput_metrics: Optional[ThroughputMetrics] = None
-    conflict_analysis: Optional[ConflictAnalysis] = None
+    execution_plan: ExecutionPlan | None = None
+    throughput_metrics: ThroughputMetrics | None = None
+    conflict_analysis: ConflictAnalysis | None = None
     success: bool = False
     message: str = ""
