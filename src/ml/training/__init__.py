@@ -12,7 +12,8 @@ Components:
 - exporter: Dataset export for ML frameworks
 - retraining_trigger: Automatic retraining triggers (ECE, performance, scheduled)
 - training_orchestrator: Training workflow orchestration with trigger integration
-- pipeline_integration: Training pipeline integration with feedback loop and model registry (ST-LAUNCH-012)
+- pipeline_integration: Training pipeline integration with feedback loop
+  and model registry
 
 Usage:
     from ml.training import (
