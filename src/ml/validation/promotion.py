@@ -98,7 +98,9 @@ class PromotionRequest:
                 "min_recall": self.promotion_criteria.min_recall,
                 "min_f1": self.promotion_criteria.min_f1,
                 "max_ece": self.promotion_criteria.max_ece,
-                "require_human_approval": self.promotion_criteria.require_human_approval,
+                "require_human_approval": (
+                    self.promotion_criteria.require_human_approval
+                ),
             },
             "evidence": self.evidence,
         }
@@ -313,7 +315,10 @@ class PromotionWorkflow:
                 version_id=request.version_id,
                 previous_champion_id=None,
                 promoted_at=datetime.now(UTC),
-                message=f"Cannot approve: status is {request.status.value}, expected PENDING_APPROVAL",
+                message=(
+                    f"Cannot approve: status is {request.status.value}, "
+                    f"expected PENDING_APPROVAL"
+                ),
                 evidence={"request": request.to_dict()},
             )
 
@@ -359,7 +364,8 @@ class PromotionWorkflow:
 
         if request.status != PromotionRequestStatus.PENDING_APPROVAL:
             raise ValueError(
-                f"Cannot reject: status is {request.status.value}, expected PENDING_APPROVAL"
+                f"Cannot reject: status is {request.status.value}, "
+                f"expected PENDING_APPROVAL"
             )
 
         updated_request = PromotionRequest(

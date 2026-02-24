@@ -28,7 +28,7 @@ Example:
 from __future__ import annotations
 
 import asyncio
-import json
+import contextlib
 import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -359,20 +359,22 @@ class DiscordNotifier:
         try:
             import aiohttp
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
+            async with (
+                aiohttp.ClientSession() as session,
+                session.post(
                     self._webhook_url,
                     json=payload,
                     timeout=aiohttp.ClientTimeout(total=10),
-                ) as response:
-                    if response.status == 204:
-                        logger.info("Discord notification sent successfully")
-                        return True
-                    else:
-                        logger.warning(
-                            f"Discord notification failed: status={response.status}"
-                        )
-                        return False
+                ) as response,
+            ):
+                if response.status == 204:
+                    logger.info("Discord notification sent successfully")
+                    return True
+                else:
+                    logger.warning(
+                        f"Discord notification failed: status={response.status}"
+                    )
+                    return False
 
         except ImportError:
             logger.warning("aiohttp not installed, skipping Discord notification")
@@ -413,7 +415,7 @@ class DegradationMonitor:
         self._monitoring_active: dict[str, bool] = {}
 
         logger.info(
-            f"DegradationMonitor initialized with threshold={degradation_threshold_pct}%"
+            f"DegradationMonitor initialized: threshold={degradation_threshold_pct}%"
         )
 
     def set_baseline(self, model_version: str, metrics: dict[str, float]) -> None:
@@ -623,7 +625,10 @@ class RollbackManager:
                 failed_version=failed_version_id,
                 target_version=None,
                 status=RollbackStatus.FAILED,
-                reason=f"No rollback target available for {failed_version.model_type.value}",
+                reason=(
+                    "No rollback target available for "
+                    f"{failed_version.model_type.value}"
+                ),
             )
             await self._audit_storage.store_event(event)
             return event
@@ -674,7 +679,7 @@ class RollbackManager:
 
             return result
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             duration = (datetime.now(UTC) - started_at).total_seconds()
             event.status = RollbackStatus.TIMEOUT
             event.duration_seconds = duration
@@ -985,10 +990,8 @@ class ValidationHistoryAPI:
                 pass
 
         if end_date:
-            try:
+            with contextlib.suppress(ValueError):
                 end_dt = datetime.fromisoformat(end_date)
-            except ValueError:
-                pass
 
         events = await self._audit_storage.get_events(
             model_version=model_version,
