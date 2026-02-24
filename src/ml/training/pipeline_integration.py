@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum, auto
@@ -432,10 +433,8 @@ class AsyncJobScheduler:
         if job_id in self._running_tasks:
             task = self._running_tasks[job_id]
             task.cancel()
-            try:
+            with suppress(asyncio.CancelledError):
                 await task
-            except asyncio.CancelledError:
-                pass
 
             if job_id in self._jobs:
                 self._jobs[job_id].status = TrainingJobStatus.CANCELLED
@@ -731,7 +730,8 @@ class TrainingPipelineIntegration:
                 if job.retry_count <= job.max_retries and self._enable_retry:
                     job.status = TrainingJobStatus.RETRYING
                     logger.warning(
-                        f"Training job failed, retrying ({job.retry_count}/{job.max_retries}): {e}"
+                        f"Training job failed, retrying "
+                        f"({job.retry_count}/{job.max_retries}): {e}"
                     )
                     await asyncio.sleep(DEFAULT_RETRY_DELAY_SECONDS * job.retry_count)
                 else:
@@ -765,7 +765,8 @@ class TrainingPipelineIntegration:
 
         self._listening = True
         logger.info(
-            f"Started listening for retraining triggers (interval={poll_interval_seconds}s)"
+            "Started listening for retraining triggers "
+            f"(interval={poll_interval_seconds}s)"
         )
 
         async def listen_loop():
@@ -801,10 +802,8 @@ class TrainingPipelineIntegration:
 
         if self._listen_task:
             self._listen_task.cancel()
-            try:
+            with suppress(asyncio.CancelledError):
                 await self._listen_task
-            except asyncio.CancelledError:
-                pass
             self._listen_task = None
 
         logger.info("Stopped listening for retraining triggers")
