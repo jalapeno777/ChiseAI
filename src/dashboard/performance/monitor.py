@@ -6,7 +6,6 @@ when performance thresholds are exceeded.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -48,12 +47,12 @@ class PerformanceThresholds:
     slow_query_count_critical: int = 25
 
     @classmethod
-    def default(cls) -> "PerformanceThresholds":
+    def default(cls) -> PerformanceThresholds:
         """Get default thresholds."""
         return cls()
 
     @classmethod
-    def strict(cls) -> "PerformanceThresholds":
+    def strict(cls) -> PerformanceThresholds:
         """Get stricter thresholds for production."""
         return cls(
             load_time_warning_ms=1500.0,
@@ -270,7 +269,7 @@ class PerformanceMonitor:
         return result
 
     def check_alerts(
-        self, cache_stats: "CacheStats | None" = None
+        self, cache_stats: CacheStats | None = None
     ) -> list[PerformanceAlert]:
         """Check for performance alerts.
 
@@ -424,9 +423,11 @@ class PerformanceMonitor:
                     "count": len(recent),
                     "avg_ms": round(sum(load_times) / len(load_times), 2),
                     "max_ms": round(max(load_times), 2),
-                    "p95_ms": round(sorted(load_times)[int(len(load_times) * 0.95)], 2)
-                    if len(recent) > 20
-                    else round(max(load_times), 2),
+                    "p95_ms": (
+                        round(sorted(load_times)[int(len(load_times) * 0.95)], 2)
+                        if len(recent) > 20
+                        else round(max(load_times), 2)
+                    ),
                     "cache_hit_rate": round(
                         sum(1 for m in recent if m.cached) / len(recent) * 100, 2
                     ),
@@ -513,7 +514,7 @@ async def track_performance(
         def set_error(self, error: str) -> None:
             self.error = error
 
-        async def __aenter__(self) -> "PerformanceTracker":
+        async def __aenter__(self) -> PerformanceTracker:
             return self
 
         async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:

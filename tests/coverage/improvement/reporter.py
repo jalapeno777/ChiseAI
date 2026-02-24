@@ -9,7 +9,6 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass
-from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -44,12 +43,12 @@ class CoverageThresholds:
     fail_on_violation: bool = True
 
     @classmethod
-    def default(cls) -> "CoverageThresholds":
+    def default(cls) -> CoverageThresholds:
         """Get default thresholds."""
         return cls()
 
     @classmethod
-    def strict(cls) -> "CoverageThresholds":
+    def strict(cls) -> CoverageThresholds:
         """Get strict thresholds."""
         return cls(
             minimum_coverage=85.0,
@@ -57,7 +56,7 @@ class CoverageThresholds:
         )
 
     @classmethod
-    def ci(cls) -> "CoverageThresholds":
+    def ci(cls) -> CoverageThresholds:
         """Get CI thresholds."""
         return cls(
             minimum_coverage=80.0,
@@ -96,7 +95,7 @@ class CoverageReporter:
 
     def generate(
         self,
-        report: "CoverageReport",
+        report: CoverageReport,
         format: ReportFormat,
         output_path: str | None = None,
     ) -> str:
@@ -126,7 +125,7 @@ class CoverageReporter:
 
         return content
 
-    def _format_console(self, report: "CoverageReport") -> str:
+    def _format_console(self, report: CoverageReport) -> str:
         """Format report for console output.
 
         Args:
@@ -159,9 +158,7 @@ class CoverageReporter:
             status = (
                 "🔴"
                 if module.coverage_percent < 50
-                else "🟡"
-                if module.coverage_percent < 80
-                else "🟢"
+                else "🟡" if module.coverage_percent < 80 else "🟢"
             )
             critical = " [CRITICAL]" if module.critical_path else ""
             lines.append(
@@ -183,7 +180,7 @@ class CoverageReporter:
 
         return "\n".join(lines)
 
-    def _format_json(self, report: "CoverageReport") -> str:
+    def _format_json(self, report: CoverageReport) -> str:
         """Format report as JSON.
 
         Args:
@@ -199,7 +196,7 @@ class CoverageReporter:
         }
         return json.dumps(data, indent=2)
 
-    def _format_markdown(self, report: "CoverageReport") -> str:
+    def _format_markdown(self, report: CoverageReport) -> str:
         """Format report as Markdown.
 
         Args:
@@ -215,8 +212,8 @@ class CoverageReporter:
             "",
             "## Summary",
             "",
-            f"| Metric | Value |",
-            f"|--------|-------|",
+            "| Metric | Value |",
+            "|--------|-------|",
             f"| Overall Coverage | {report.overall_coverage:.2f}% |",
             f"| Total Gaps | {report.total_gaps} |",
             f"| Critical Gaps | {report.critical_gaps} |",
@@ -238,9 +235,7 @@ class CoverageReporter:
             status = (
                 "🔴"
                 if module.coverage_percent < 50
-                else "🟡"
-                if module.coverage_percent < 80
-                else "🟢"
+                else "🟡" if module.coverage_percent < 80 else "🟢"
             )
             critical = "Yes" if module.critical_path else "No"
             lines.append(
@@ -261,7 +256,7 @@ class CoverageReporter:
 
         return "\n".join(lines)
 
-    def _format_html(self, report: "CoverageReport") -> str:
+    def _format_html(self, report: CoverageReport) -> str:
         """Format report as HTML.
 
         Args:
@@ -273,9 +268,7 @@ class CoverageReporter:
         coverage_color = (
             "#28a745"
             if report.overall_coverage >= 80
-            else "#ffc107"
-            if report.overall_coverage >= 50
-            else "#dc3545"
+            else "#ffc107" if report.overall_coverage >= 50 else "#dc3545"
         )
 
         html = f"""
@@ -351,7 +344,7 @@ class CoverageReporter:
 
         logger.info(f"Wrote report to {path}")
 
-    def check_compliance(self, report: "CoverageReport") -> bool:
+    def check_compliance(self, report: CoverageReport) -> bool:
         """Check if coverage meets thresholds.
 
         Args:
@@ -384,7 +377,7 @@ class CoverageReporter:
 
         return True
 
-    def get_summary_for_ci(self, report: "CoverageReport") -> dict[str, Any]:
+    def get_summary_for_ci(self, report: CoverageReport) -> dict[str, Any]:
         """Get summary suitable for CI output.
 
         Args:

@@ -50,12 +50,12 @@ class GenerationConfig:
     prefetch_count: int = 10
 
     @classmethod
-    def default(cls) -> "GenerationConfig":
+    def default(cls) -> GenerationConfig:
         """Get default configuration."""
         return cls()
 
     @classmethod
-    def high_throughput(cls) -> "GenerationConfig":
+    def high_throughput(cls) -> GenerationConfig:
         """Get high throughput configuration."""
         return cls(
             max_latency_ms=1000.0,
@@ -64,7 +64,7 @@ class GenerationConfig:
         )
 
     @classmethod
-    def low_latency(cls) -> "GenerationConfig":
+    def low_latency(cls) -> GenerationConfig:
         """Get low latency configuration."""
         return cls(
             max_latency_ms=250.0,
@@ -211,7 +211,7 @@ class AsyncSignalGenerator:
                 signal=signal,
             )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             self._stats["total_failed"] += 1
             latency_ms = (datetime.now(UTC) - start_time).total_seconds() * 1000
 
@@ -261,7 +261,7 @@ class AsyncSignalGenerator:
             # Process batch concurrently
             tasks = [
                 self.generate(data, sig_id)
-                for data, sig_id in zip(batch_data, batch_ids)
+                for data, sig_id in zip(batch_data, batch_ids, strict=False)
             ]
             batch_results = await asyncio.gather(*tasks, return_exceptions=True)
 

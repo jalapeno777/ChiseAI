@@ -6,12 +6,12 @@ to improve throughput and reduce latency.
 
 from __future__ import annotations
 
-import asyncio
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -376,9 +376,9 @@ class PipelineOptimizer:
                     "current_latency_ms": bottleneck["avg_latency_ms"],
                     "potential_improvement": f"{bottleneck['optimization_potential']:.0f}ms",
                     "strategies": strategies,
-                    "priority": "high"
-                    if bottleneck["avg_latency_ms"] > 200
-                    else "medium",
+                    "priority": (
+                        "high" if bottleneck["avg_latency_ms"] > 200 else "medium"
+                    ),
                 }
             )
 

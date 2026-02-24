@@ -58,12 +58,12 @@ class DeliveryConfig:
     enable_monitoring: bool = True
 
     @classmethod
-    def default(cls) -> "DeliveryConfig":
+    def default(cls) -> DeliveryConfig:
         """Get default configuration."""
         return cls()
 
     @classmethod
-    def high_throughput(cls) -> "DeliveryConfig":
+    def high_throughput(cls) -> DeliveryConfig:
         """Get high throughput configuration."""
         return cls(
             max_latency_ms=2000.0,
@@ -72,7 +72,7 @@ class DeliveryConfig:
         )
 
     @classmethod
-    def low_latency(cls) -> "DeliveryConfig":
+    def low_latency(cls) -> DeliveryConfig:
         """Get low latency configuration."""
         return cls(
             max_latency_ms=500.0,
@@ -149,8 +149,8 @@ class AsyncSignalPipeline:
         self,
         redis_client: aioredis.Redis,
         config: DeliveryConfig | None = None,
-        metadata_cache: "SignalMetadataCache | None" = None,
-        latency_monitor: "LatencyMonitor | None" = None,
+        metadata_cache: SignalMetadataCache | None = None,
+        latency_monitor: LatencyMonitor | None = None,
     ):
         """Initialize signal delivery pipeline.
 
@@ -247,7 +247,7 @@ class AsyncSignalPipeline:
                     retries=attempt,
                 )
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 last_error = "Delivery timeout"
                 logger.warning(
                     f"Signal {signal_id} delivery timeout, attempt {attempt + 1}"
