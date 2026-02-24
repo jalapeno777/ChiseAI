@@ -10,6 +10,7 @@ import gzip
 import json
 import logging
 import os
+import tempfile
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum
