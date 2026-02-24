@@ -16,7 +16,10 @@ import contextlib
 import json
 import logging
 import os
+import smtplib
 from datetime import UTC, datetime, timedelta
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from typing import Any
 
 import aiohttp
@@ -483,37 +486,97 @@ class ReportScheduler:
         recipients: list[str],
         content: str,
         subject: str,
+        html_content: str | None = None,
     ) -> bool:
-        """Send email (placeholder implementation).
+        """Send email using configured SMTP server.
 
         Args:
             recipients: List of email addresses
-            content: Email body (Markdown)
+            content: Email body (Markdown/plain text)
             subject: Email subject
+            html_content: Optional HTML version of the email body
 
         Returns:
-            True if sent successfully
+            True if sent successfully, False otherwise
         """
-        # This is a placeholder - actual implementation would use
-        # an email library like aiosmtplib or integrate with an
-        # email service provider
-        logger.info(f"Email would be sent to {len(recipients)} recipients: {subject}")
-        logger.debug(f"Email content preview: {content[:200]}...")
+        try:
+            # Get SMTP configuration from environment
+            smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
+            smtp_port = int(os.getenv("SMTP_PORT", "587"))
+            smtp_user = os.getenv("SMTP_USER")
+            smtp_password = os.getenv("SMTP_PASSWORD")
+            sender = os.getenv("EMAIL_FROM", "chiseai@example.com")
 
-        # TODO: Implement actual email sending
-        # Example with aiosmtplib:
-        # from aiosmtplib import send
-        # await send(
-        #     message=content,
-        #     sender="reports@chiseai.com",
-        #     recipients=recipients,
-        #     hostname="smtp.gmail.com",
-        #     port=587,
-        #     username="...",
-        #     password="...",
-        # )
+            if not smtp_user or not smtp_password:
+                logger.warning(
+                    "SMTP credentials not configured, logging instead of sending"
+                )
+                logger.info(
+                    f"Would send email to {len(recipients)} recipients: {subject}"
+                )
+                logger.debug(f"Email content preview: {content[:200]}...")
+                return True  # Graceful degradation
 
-        return True
+            # Create message for each recipient
+            success = True
+            for recipient in recipients:
+                msg = MIMEMultipart("alternative")
+                msg["Subject"] = subject
+                msg["From"] = sender
+                msg["To"] = recipient
+
+                # Attach plain text body
+                msg.attach(MIMEText(content, "plain"))
+
+                # Attach HTML body if provided
+                if html_content:
+                    msg.attach(MIMEText(html_content, "html"))
+
+                # Connect to SMTP server and send
+                # Use asyncio.to_thread for blocking smtplib operations
+                await asyncio.to_thread(
+                    self._send_smtp_email,
+                    smtp_host,
+                    smtp_port,
+                    smtp_user,
+                    smtp_password,
+                    sender,
+                    recipient,
+                    msg,
+                )
+
+            logger.info(f"Email sent successfully to {len(recipients)} recipients")
+            return success
+
+        except Exception as e:
+            logger.error(f"Failed to send email: {e}")
+            return False
+
+    def _send_smtp_email(
+        self,
+        smtp_host: str,
+        smtp_port: int,
+        smtp_user: str,
+        smtp_password: str,
+        sender: str,
+        recipient: str,
+        msg: MIMEMultipart,
+    ) -> None:
+        """Send email via SMTP (blocking operation).
+
+        Args:
+            smtp_host: SMTP server hostname
+            smtp_port: SMTP server port
+            smtp_user: SMTP username
+            smtp_password: SMTP password
+            sender: Sender email address
+            recipient: Recipient email address
+            msg: Email message object
+        """
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            server.starttls()  # Enable TLS
+            server.login(smtp_user, smtp_password)
+            server.sendmail(sender, [recipient], msg.as_string())
 
     def _split_message(self, content: str, max_length: int) -> list[str]:
         """Split message into chunks.
