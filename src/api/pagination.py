@@ -227,7 +227,9 @@ class TimeSeriesPaginator:
             last_item = page_data[-1]
             last_ts = last_item.get(self.timestamp_field)
             if last_ts:
-                next_cursor = CursorCodec.encode(last_ts, offset + self.page_size)
+                next_cursor: str | None = CursorCodec.encode(
+                    last_ts, offset + self.page_size
+                )
             else:
                 next_cursor = cursor  # Keep same cursor if no timestamp
         else:
@@ -464,7 +466,9 @@ class AdaptivePaginator(TimeSeriesPaginator):
 
 
 def create_paginator_from_data(
-    data: list[dict[str, Any]], timestamp_field: str = "timestamp", **kwargs
+    data: list[dict[str, Any]],
+    timestamp_field: str = "timestamp",
+    **kwargs: Any,
 ) -> TimeSeriesPaginator:
     """Create a TimeSeriesPaginator from a list of data.
 
