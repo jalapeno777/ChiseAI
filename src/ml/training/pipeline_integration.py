@@ -22,6 +22,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum, auto
@@ -730,7 +731,8 @@ class TrainingPipelineIntegration:
                 if job.retry_count <= job.max_retries and self._enable_retry:
                     job.status = TrainingJobStatus.RETRYING
                     logger.warning(
-                        f"Training job failed, retrying ({job.retry_count}/{job.max_retries}): {e}"
+                        f"Training job failed, retrying "
+                        f"({job.retry_count}/{job.max_retries}): {e}"
                     )
                     await asyncio.sleep(DEFAULT_RETRY_DELAY_SECONDS * job.retry_count)
                 else:
@@ -764,7 +766,8 @@ class TrainingPipelineIntegration:
 
         self._listening = True
         logger.info(
-            f"Started listening for retraining triggers (interval={poll_interval_seconds}s)"
+            "Started listening for retraining triggers "
+            f"(interval={poll_interval_seconds}s)"
         )
 
         async def listen_loop():

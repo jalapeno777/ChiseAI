@@ -19,6 +19,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum, auto
@@ -330,9 +331,15 @@ class DataQualityValidator:
         is_valid = quality_pct >= self.min_quality_pct
 
         if is_valid:
-            message = f"Data quality {quality_pct:.1f}% meets threshold ({self.min_quality_pct}%)"
+            message = (
+                f"Data quality {quality_pct:.1f}% meets threshold "
+                f"({self.min_quality_pct}%)"
+            )
         else:
-            message = f"Data quality {quality_pct:.1f}% below threshold ({self.min_quality_pct}%)"
+            message = (
+                f"Data quality {quality_pct:.1f}% below threshold "
+                f"({self.min_quality_pct}%)"
+            )
 
         return is_valid, quality_pct, message
 
@@ -438,7 +445,9 @@ class DiscordNotifier:
             # Create embed
             {
                 "title": title,
-                "description": f"Retraining trigger evaluation at {result.timestamp.isoformat()}",
+                "description": (
+                    f"Retraining trigger evaluation at {result.timestamp.isoformat()}"
+                ),
                 "color": 0x00FF00 if result.triggered else 0xFFA500,
                 "fields": fields,
                 "timestamp": result.timestamp.isoformat(),
@@ -538,7 +547,10 @@ class RetrainingTrigger:
                     trigger_type=trigger_type,
                     status=TriggerStatus.SUPPRESSED,
                     triggered=False,
-                    message=f"ECE trigger suppressed (within {self.config.deduplication_window_hours}h window)",
+                    message=(
+                        "ECE trigger suppressed (within "
+                        f"{self.config.deduplication_window_hours}h window)"
+                    ),
                     timestamp=timestamp,
                     deduplication_key=f"retraining_trigger:last_fired:{trigger_type.name}",
                 )
@@ -637,7 +649,10 @@ class RetrainingTrigger:
                     trigger_type=trigger_type,
                     status=TriggerStatus.SUPPRESSED,
                     triggered=False,
-                    message=f"Performance trigger suppressed (within {self.config.deduplication_window_hours}h window)",
+                    message=(
+                        "Performance trigger suppressed (within "
+                        f"{self.config.deduplication_window_hours}h window)"
+                    ),
                     timestamp=timestamp,
                     deduplication_key=f"retraining_trigger:last_fired:{trigger_type.name}",
                 )
@@ -679,7 +694,10 @@ class RetrainingTrigger:
                 trigger_type=trigger_type,
                 status=TriggerStatus.NOT_TRIGGERED,
                 triggered=False,
-                message=f"Insufficient trades ({trade_count} < {self.config.performance_config.min_trades})",
+                message=(
+                    f"Insufficient trades ({trade_count} < "
+                    f"{self.config.performance_config.min_trades})"
+                ),
                 timestamp=timestamp,
                 metrics={
                     "win_rate": win_rate,
@@ -695,7 +713,8 @@ class RetrainingTrigger:
             status = TriggerStatus.TRIGGERED
             message = (
                 f"Win rate {win_rate:.1%} below threshold "
-                f"({self.config.performance_config.min_win_rate:.1%}) over {trade_count} trades"
+                f"({self.config.performance_config.min_win_rate:.1%}) over "
+                f"{trade_count} trades"
             )
             # Record trigger for deduplication
             if self._get_flags().retraining_deduplication:
@@ -704,7 +723,8 @@ class RetrainingTrigger:
             status = TriggerStatus.NOT_TRIGGERED
             message = (
                 f"Win rate {win_rate:.1%} above threshold "
-                f"({self.config.performance_config.min_win_rate:.1%}) over {trade_count} trades"
+                f"({self.config.performance_config.min_win_rate:.1%}) over "
+                f"{trade_count} trades"
             )
 
         result = TriggerResult(
@@ -773,7 +793,10 @@ class RetrainingTrigger:
                 trigger_type=trigger_type,
                 status=TriggerStatus.NOT_TRIGGERED,
                 triggered=False,
-                message=f"Not within 1 hour of scheduled time ({self.config.scheduled_config.schedule_time_utc} UTC)",
+                message=(
+                    "Not within 1 hour of scheduled time "
+                    f"({self.config.scheduled_config.schedule_time_utc} UTC)"
+                ),
                 timestamp=timestamp,
                 metrics={
                     "scheduled_time": self.config.scheduled_config.schedule_time_utc,
@@ -791,7 +814,10 @@ class RetrainingTrigger:
                     trigger_type=trigger_type,
                     status=TriggerStatus.SUPPRESSED,
                     triggered=False,
-                    message=f"Scheduled trigger suppressed (within {self.config.deduplication_window_hours}h window)",
+                    message=(
+                        "Scheduled trigger suppressed (within "
+                        f"{self.config.deduplication_window_hours}h window)"
+                    ),
                     timestamp=timestamp,
                     deduplication_key=f"retraining_trigger:last_fired:{trigger_type.name}",
                 )

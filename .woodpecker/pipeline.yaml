@@ -1,0 +1,93 @@
+# Woodpecker CI Pipeline for ChiseAI
+# ST-NS-030: CI/CD Pipeline Enhancement
+
+when:
+  - event: push
+    branch: [main, develop, feature/*]
+  - event: pull_request
+
+steps:
+  # Lint Stage
+  lint:
+    image: python:3.13
+    commands:
+      - pip install black ruff mypy
+      - black --check --diff src/ tests/
+      - ruff check src/ tests/
+      - mypy src/ --ignore-missing-imports || true
+    when:
+      - event: push
+      - event: pull_request
+
+  # Test Stage with Coverage
+  test:
+    image: python:3.13
+    environment:
+      - PYTHONPATH=/woodpecker/src/github.com/chiseai/chiseai
+    commands:
+      - pip install pytest pytest-cov pytest-xdist pytest-asyncio
+      - pip install -r requirements.txt || true
+      - pytest tests/ -v --cov=src --cov-report=xml --cov-report=term-missing -n4
+    when:
+      - event: push
+      - event: pull_request
+
+  # Security Scan
+  security:
+    image: python:3.13
+    commands:
+      - pip install bandit safety
+      - bandit -r src/ -f json || true
+      - safety check --json || true
+    when:
+      - event: push
+      - event: pull_request
+
+  # Build Stage
+  build:
+    image: python:3.13
+    commands:
+      - pip install build wheel
+      - python -m build
+    when:
+      - event: push
+        branch: [main, develop]
+
+  # Notify on failure
+  notify-failure:
+    image: plugins/slack
+    settings:
+      webhook:
+        from_secret: slack_webhook
+      channel: ci-alerts
+      template: |
+        ❌ Pipeline failed for {{repo.name}} on {{commit.branch}}
+        Commit: {{commit.sha}}
+        Author: {{commit.author}}
+        Message: {{commit.message}}
+    when:
+      - event: push
+        status: failure
+
+# Services for integration tests
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - 6379:6379
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: chiseai_test
+    ports:
+      - 5432:5432
+
+# Matrix builds for Python versions
+matrix:
+  PYTHON_VERSION:
+    - "3.11"
+    - "3.12"
+    - "3.13"

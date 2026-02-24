@@ -18,6 +18,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum, auto
@@ -217,7 +218,8 @@ class TrainingOrchestrator:
             self._discord = None
 
         logger.info(
-            f"TrainingOrchestrator initialized: auto_trigger={self.config.enable_auto_trigger}, "
+            "TrainingOrchestrator initialized: "
+            f"auto_trigger={self.config.enable_auto_trigger}, "
             f"min_interval={self.config.min_training_interval_hours}h"
         )
 
@@ -482,7 +484,10 @@ class TrainingOrchestrator:
                 except TimeoutError:
                     run.state = TrainingState.FAILED
                     run.status = TrainingStatus.ERROR
-                    run.error_message = f"Training timeout after {self.config.max_training_duration_hours}h"
+                    run.error_message = (
+                        "Training timeout after "
+                        f"{self.config.max_training_duration_hours}h"
+                    )
                     logger.error(run.error_message)
 
                 run.completed_at = datetime.now(UTC)
