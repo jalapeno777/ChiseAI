@@ -32,7 +32,7 @@ from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
 if TYPE_CHECKING:
-    from watchdog.observers.api import BaseObserver
+    pass
 
 
 @dataclass
