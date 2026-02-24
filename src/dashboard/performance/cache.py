@@ -123,7 +123,7 @@ class CacheKeyBuilder:
         if params:
             # Sort and hash params for consistent keys
             param_str = json.dumps(params, sort_keys=True)
-            param_hash = hashlib.md5(param_str.encode()).hexdigest()[:8]
+            param_hash = hashlib.sha256(param_str.encode()).hexdigest()[:8]
             base = f"{base}:{param_hash}"
 
         return base

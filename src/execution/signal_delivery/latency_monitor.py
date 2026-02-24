@@ -172,6 +172,34 @@ class LatencyMonitor:
         self._slow_count = 0
         self._total_count = 0
 
+    def record_latency(
+        self,
+        signal_id: str,
+        stage: str,
+        latency_ms: float,
+        success: bool = True,
+    ) -> bool:
+        """Record a latency measurement.
+
+        This is a convenience method for simple latency recording.
+
+        Args:
+            signal_id: Signal identifier
+            stage: Pipeline stage (e.g., "generation", "delivery")
+            latency_ms: Latency in milliseconds
+            success: Whether operation succeeded
+
+        Returns:
+            True if latency was slow (exceeded warning threshold)
+        """
+        metric = LatencyMetric(
+            signal_id=signal_id,
+            stage=stage,
+            latency_ms=latency_ms,
+            success=success,
+        )
+        return self.record(metric)
+
     def record(self, metric: LatencyMetric) -> bool:
         """Record a latency metric.
 
