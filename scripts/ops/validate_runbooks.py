@@ -347,9 +347,9 @@ class RunbookValidator:
             details={
                 "description": self.SLA_REQUIREMENTS["rollback"]["description"],
                 "rollback_found": rollback_found,
-                "estimated_steps": len(runbook.steps)
-                if rollback_found and runbook
-                else 0,
+                "estimated_steps": (
+                    len(runbook.steps) if rollback_found and runbook else 0
+                ),
             },
         )
 
