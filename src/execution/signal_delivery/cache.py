@@ -202,7 +202,7 @@ class SignalMetadataCache:
 
         try:
             result = await self.redis.delete(key)
-            return result > 0
+            return bool(result > 0)
         except Exception as e:
             logger.warning(f"Cache delete error for signal {signal_id}: {e}")
             return False
@@ -219,7 +219,7 @@ class SignalMetadataCache:
         key = self._build_key(signal_id)
 
         try:
-            return await self.redis.exists(key) > 0
+            return bool(await self.redis.exists(key) > 0)
         except Exception as e:
             logger.warning(f"Cache exists error for signal {signal_id}: {e}")
             return False
