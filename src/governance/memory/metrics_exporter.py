@@ -170,10 +170,7 @@ class MemoryMetricsExporter(BaseMetricsExporter):
             )
         )
 
-        if total_retrievals > 0:
-            hit_rate = (hits / total_retrievals) * 100
-        else:
-            hit_rate = 0.0
+        hit_rate = hits / total_retrievals * 100 if total_retrievals > 0 else 0.0
 
         points.append(
             MetricPoint(

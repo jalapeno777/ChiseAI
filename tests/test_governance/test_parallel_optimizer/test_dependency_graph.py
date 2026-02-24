@@ -5,15 +5,13 @@ Unit tests for dependency_graph.py covering graph building and analysis.
 """
 
 import pytest
-
+from src.governance.parallel_optimizer.dependency_graph import (
+    DependencyGraph,
+    DependencyGraphBuilder,
+    DependencyNode,
+)
 from src.governance.parallel_optimizer.models import (
     OptimizableTask,
-    TaskPriority,
-)
-from src.governance.parallel_optimizer.dependency_graph import (
-    DependencyGraphBuilder,
-    DependencyGraph,
-    DependencyNode,
 )
 
 

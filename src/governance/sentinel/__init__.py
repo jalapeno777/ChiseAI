@@ -16,32 +16,32 @@ Feature Flag: chise:feature_flags:governance:task_sentinel_active
 Story: ST-GOV-003
 """
 
-from .task_sentinel import (
-    TaskSentinel,
-    SentinelConfig,
-    TaskInfo,
-    ValidationResult,
-)
-from .dependency_checker import (
-    DependencyChecker,
-    DependencyDeclaration,
-    DependencyCheckResult,
-    Dependency,
-    DependencyType,
-)
-from .conflict_detector import (
-    ConflictDetector,
-    ScopeDeclaration,
-    ConflictCheckResult,
-    Conflict,
-    ConflictType,
-    ConflictSeverity,
-)
 from .approval_workflow import (
-    ApprovalWorkflow,
     ApprovalRequest,
     ApprovalResult,
     ApprovalStatus,
+    ApprovalWorkflow,
+)
+from .conflict_detector import (
+    Conflict,
+    ConflictCheckResult,
+    ConflictDetector,
+    ConflictSeverity,
+    ConflictType,
+    ScopeDeclaration,
+)
+from .dependency_checker import (
+    Dependency,
+    DependencyChecker,
+    DependencyCheckResult,
+    DependencyDeclaration,
+    DependencyType,
+)
+from .task_sentinel import (
+    SentinelConfig,
+    TaskInfo,
+    TaskSentinel,
+    ValidationResult,
 )
 
 __all__ = [

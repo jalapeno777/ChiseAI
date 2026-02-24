@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import contextlib
 import hashlib
 import hmac
 import json
@@ -147,17 +148,13 @@ class BitgetConnector:
         # Cancel background tasks
         if self._heartbeat_task and not self._heartbeat_task.done():
             self._heartbeat_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._heartbeat_task
-            except asyncio.CancelledError:
-                pass
 
         if self._ws_task and not self._ws_task.done():
             self._ws_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._ws_task
-            except asyncio.CancelledError:
-                pass
 
         # Close WebSocket
         if self._ws:
@@ -789,10 +786,7 @@ class BitgetConnector:
             return False
 
         # Check if we've received messages recently (2x heartbeat interval)
-        if self._health.time_since_last_message > self.HEARTBEAT_INTERVAL * 2:
-            return False
-
-        return True
+        return not self._health.time_since_last_message > self.HEARTBEAT_INTERVAL * 2
 
     async def health_check(self) -> dict[str, Any]:
         """Perform health check and return status.

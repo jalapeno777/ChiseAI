@@ -7,18 +7,16 @@ Leverages existing DependencyChecker from sentinel module.
 Story: ST-GOV-010
 """
 
-from dataclasses import dataclass, field
-from typing import Optional
 import logging
+from dataclasses import dataclass, field
 
 from src.governance.parallel_optimizer.models import (
     OptimizableTask,
-    TaskPriority,
 )
 from src.governance.sentinel.dependency_checker import (
+    Dependency,
     DependencyChecker,
     DependencyDeclaration,
-    Dependency,
     DependencyType,
 )
 
@@ -39,7 +37,7 @@ class DependencyNode:
     """
 
     task_id: str
-    task: Optional[OptimizableTask] = None
+    task: OptimizableTask | None = None
     dependencies: set[str] = field(default_factory=set)
     dependents: set[str] = field(default_factory=set)
     depth: int = 0

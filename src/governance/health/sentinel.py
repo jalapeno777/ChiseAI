@@ -13,32 +13,30 @@ Feature Flag: chise:feature_flags:governance:health_sentinel_active
 Story: ST-GOV-008
 """
 
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from typing import Optional
 import asyncio
 import logging
 import time
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 
-from .scorer import (
-    HealthScorer,
-    AgentHealthScore,
-    SwarmHealthScore,
-    HealthStatus,
-    DimensionConfig,
-)
+from .metrics import get_health_metrics
 from .predictor import (
-    HealthPredictor,
     HealthAlert,
+    HealthPredictor,
     PredictionConfig,
 )
 from .remediator import (
     HealthRemediator,
-    RemediationRecord,
     RemediationConfig,
+    RemediationRecord,
     RemediationStatus,
 )
-from .metrics import HealthMetrics, get_health_metrics
+from .scorer import (
+    AgentHealthScore,
+    HealthScorer,
+    HealthStatus,
+    SwarmHealthScore,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +117,7 @@ class HealthSentinel:
 
     def __init__(
         self,
-        config: Optional[HealthSentinelConfig] = None,
+        config: HealthSentinelConfig | None = None,
         redis_client=None,
     ):
         """
@@ -152,11 +150,11 @@ class HealthSentinel:
 
         # State tracking
         self._agent_health: dict[str, AgentHealthScore] = {}
-        self._swarm_health: Optional[SwarmHealthScore] = None
+        self._swarm_health: SwarmHealthScore | None = None
         self._active_alerts: list[HealthAlert] = []
         self._agent_metrics: dict[str, dict] = {}
         self._running = False
-        self._last_update: Optional[datetime] = None
+        self._last_update: datetime | None = None
 
     def update_agent_metrics(
         self,
@@ -247,7 +245,7 @@ class HealthSentinel:
             return []
 
         new_alerts = []
-        for agent_id, score in self._agent_health.items():
+        for agent_id, _score in self._agent_health.items():
             history = self.scorer.get_agent_history(agent_id, limit=20)
             alerts = self.predictor.predict(agent_id, history)
 
@@ -388,11 +386,11 @@ class HealthSentinel:
             recent_remediations=self.remediator.get_recent_remediations(limit=10),
         )
 
-    def get_agent_health(self, agent_id: str) -> Optional[AgentHealthScore]:
+    def get_agent_health(self, agent_id: str) -> AgentHealthScore | None:
         """Get health score for a specific agent."""
         return self._agent_health.get(agent_id)
 
-    def get_swarm_health(self) -> Optional[SwarmHealthScore]:
+    def get_swarm_health(self) -> SwarmHealthScore | None:
         """Get current swarm health score."""
         return self._swarm_health
 
@@ -512,7 +510,7 @@ class HealthSentinel:
         """Calculate current prediction accuracy."""
         actual_scores = {
             agent_id: self.scorer.get_agent_history(agent_id, limit=20)
-            for agent_id in self._agent_health.keys()
+            for agent_id in self._agent_health
         }
         return self.predictor.calculate_prediction_accuracy(actual_scores)
 

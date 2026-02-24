@@ -6,14 +6,13 @@ Story: ST-GOV-005
 
 import gzip
 import json
-import os
 import tempfile
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
-
+from src.governance.consolidation.archiver import ArchivedMemory
 from src.governance.consolidation.config import ConsolidationConfig, MemoryType
 from src.governance.consolidation.rollback import (
     RollbackManager,
@@ -21,7 +20,6 @@ from src.governance.consolidation.rollback import (
     RollbackStats,
     RollbackWindow,
 )
-from src.governance.consolidation.archiver import ArchivedMemory
 
 
 class TestRollbackOperation:

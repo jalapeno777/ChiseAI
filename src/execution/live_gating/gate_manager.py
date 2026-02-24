@@ -248,9 +248,7 @@ class ApprovalPacket:
         if not self.signature:
             return False
         # Basic format validation - signature should be hex or base64
-        if len(self.signature) < 16:
-            return False
-        return True
+        return not len(self.signature) < 16
 
 
 class LiveGateManager:

@@ -4,20 +4,19 @@ Test Health Remediator - Unit tests for auto-remediation (ST-GOV-008).
 Story: ST-GOV-008
 """
 
-import pytest
 from datetime import datetime, timedelta
 
-from src.governance.health.remediator import (
-    HealthRemediator,
-    RemediationRecord,
-    RemediationConfig,
-    RemediationAction,
-    RemediationStatus,
-)
 from src.governance.health.predictor import (
+    AlertSeverity,
     HealthAlert,
     PredictionType,
-    AlertSeverity,
+)
+from src.governance.health.remediator import (
+    HealthRemediator,
+    RemediationAction,
+    RemediationConfig,
+    RemediationRecord,
+    RemediationStatus,
 )
 
 
@@ -115,7 +114,7 @@ class TestHealthRemediator:
 
         # First remediation
         alert1 = create_alert(agent_id="agent-1")
-        record1 = remediator.remediate(alert1)
+        remediator.remediate(alert1)
 
         # Immediate second remediation should be blocked
         alert2 = create_alert(agent_id="agent-1")

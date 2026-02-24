@@ -434,9 +434,8 @@ class RetryCoordinator:
             CircuitBreakerOpen: If circuit is open
         """
         cb = self._circuit_breaker_registry.get(name)
-        if cb:
-            if not cb.can_execute():
-                raise CircuitBreakerOpen(f"Circuit '{name}' is {cb.state.name}")
+        if cb and not cb.can_execute():
+            raise CircuitBreakerOpen(f"Circuit '{name}' is {cb.state.name}")
 
     def _add_to_dlq(self, operation: RetryOperation, error_message: str) -> None:
         """Add failed operation to dead letter queue.

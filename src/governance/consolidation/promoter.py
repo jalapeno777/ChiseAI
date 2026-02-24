@@ -15,7 +15,6 @@ from typing import Any
 
 from src.governance.consolidation.config import (
     CONSOLIDATION_PREFIX,
-    MemoryPriority,
     MemoryType,
 )
 
@@ -196,7 +195,6 @@ class GoldenMemoryPromoter:
                 candidates = self._scan_candidates(batch)
                 stats.candidates_evaluated = len(candidates)
 
-                promoted_count = 0
                 for candidate in candidates:
                     # Calculate promotion score
                     score = candidate.calculate_promotion_score(

@@ -20,6 +20,7 @@ Usage:
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 from collections.abc import Callable
@@ -489,10 +490,8 @@ class OptimizationScheduler:
             self._scheduler_task.cancel()
 
         # Wait for cleanup
-        try:
+        with contextlib.suppress(asyncio.CancelledError):
             await asyncio.gather(*self._tasks.values(), return_exceptions=True)
-        except asyncio.CancelledError:
-            pass
 
         # Save state
         self._save_state()

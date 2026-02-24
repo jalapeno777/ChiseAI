@@ -7,12 +7,12 @@ and validates dependency completeness.
 Story: ST-GOV-003
 """
 
-from dataclasses import dataclass, field
-from enum import Enum
-from typing import Optional
 import fnmatch
 import json
 import logging
+from dataclasses import dataclass, field
+from enum import Enum
+
 import yaml
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class Dependency:
     task_id: str
     dependency_type: DependencyType
     scope_globs: list[str] = field(default_factory=list)
-    description: Optional[str] = None
+    description: str | None = None
 
 
 @dataclass
@@ -114,7 +114,7 @@ class DependencyChecker:
             print(f"Invalid: {result.message}")
     """
 
-    def __init__(self, known_tasks: Optional[dict[str, DependencyDeclaration]] = None):
+    def __init__(self, known_tasks: dict[str, DependencyDeclaration] | None = None):
         """
         Initialize the dependency checker.
 
@@ -150,7 +150,7 @@ class DependencyChecker:
                     self._reverse_graph[dep.task_id].add(task_id)
 
     def detect_circular_dependencies(
-        self, declarations: Optional[list[DependencyDeclaration]] = None
+        self, declarations: list[DependencyDeclaration] | None = None
     ) -> tuple[bool, list[list[str]]]:
         """
         Detect circular dependencies using DFS cycle detection.
@@ -285,7 +285,7 @@ class DependencyChecker:
     def check_dependencies(
         self,
         declarations: list[DependencyDeclaration],
-        required_scopes: Optional[dict[str, list[str]]] = None,
+        required_scopes: dict[str, list[str]] | None = None,
     ) -> DependencyCheckResult:
         """
         Comprehensive dependency validation.

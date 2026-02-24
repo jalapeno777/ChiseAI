@@ -343,7 +343,7 @@ class RollbackHandler:
         completed_steps = 0
 
         try:
-            for i, step in enumerate(steps):
+            for _i, step in enumerate(steps):
                 if step.step_number < start_step:
                     # Skip already completed steps
                     completed_steps += 1

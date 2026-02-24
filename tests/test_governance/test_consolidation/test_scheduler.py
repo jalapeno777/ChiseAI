@@ -4,18 +4,14 @@ Tests for Memory Consolidation Scheduler.
 Story: ST-GOV-005
 """
 
-from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from src.governance.consolidation.config import ConsolidationConfig
 from src.governance.consolidation.scheduler import (
     ConsolidationResult,
     MemoryConsolidationScheduler,
 )
-from src.governance.consolidation.archiver import ArchiveStats
-from src.governance.consolidation.promoter import PromotionStats
 
 
 class TestConsolidationResult:

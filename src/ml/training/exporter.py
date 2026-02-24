@@ -516,7 +516,7 @@ class DatasetExporter:
         # Separate features and labels
         feature_names = [
             k
-            for k in data[0].keys()
+            for k in data[0]
             if k
             not in [
                 "sample_id",

@@ -272,10 +272,9 @@ def main() -> int:
     logger.info(f"Evaluation results saved to {output_path}")
 
     # Check gates unless skipped
-    if not args.skip_gates:
-        if not check_evaluation_gates(evaluation_result):
-            logger.error("Evaluation failed promotion gates")
-            return 1
+    if not args.skip_gates and not check_evaluation_gates(evaluation_result):
+        logger.error("Evaluation failed promotion gates")
+        return 1
 
     if evaluation_result.get("success"):
         logger.info("Brain evaluation passed")

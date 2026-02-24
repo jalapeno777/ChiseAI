@@ -12,22 +12,14 @@ import logging
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
-
 from src.governance.quality_gate.gate import (
-    BlockReason,
     QualityGate,
-    QualityGateResult,
 )
 from src.governance.quality_gate.override import (
-    HumanOverride,
     OverrideManager,
-    OverrideStatus,
-    RiskLevel,
 )
 from src.governance.quality_gate.scorer import (
-    QualityScore,
     QualityScorer,
-    ScoreComponent,
 )
 
 logger = logging.getLogger(__name__)

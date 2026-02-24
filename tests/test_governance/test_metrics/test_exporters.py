@@ -4,20 +4,17 @@ Tests for Governance Metrics Exporters.
 Story: ST-GOV-004
 """
 
-import pytest
-from datetime import UTC, datetime
-from unittest.mock import MagicMock, patch
+from datetime import datetime
 
+from src.governance.constitution.metrics_exporter import ConstitutionMetricsExporter
+from src.governance.memory.metrics_exporter import MemoryMetricsExporter
 from src.governance.metrics.base_exporter import (
     BaseMetricsExporter,
     MetricPoint,
     MetricType,
-    ExportResult,
 )
 from src.governance.metrics.registry import MetricsRegistry, get_registry
-from src.governance.constitution.metrics_exporter import ConstitutionMetricsExporter
 from src.governance.sentinel.metrics_exporter import SentinelMetricsExporter
-from src.governance.memory.metrics_exporter import MemoryMetricsExporter
 
 
 class TestMetricPoint:

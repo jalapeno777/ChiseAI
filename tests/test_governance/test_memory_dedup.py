@@ -9,7 +9,6 @@ This module tests the MemoryDeduplicationEngine class including:
 - Statistics tracking
 """
 
-import pytest
 from datetime import UTC, datetime
 
 from src.governance.memory.deduplication import (

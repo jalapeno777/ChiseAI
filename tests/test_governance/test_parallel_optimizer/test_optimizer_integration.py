@@ -4,21 +4,15 @@ Integration Tests for Parallel Optimizer (ST-GOV-010).
 End-to-end tests for the main ParallelOptimizer class.
 """
 
-import pytest
-from datetime import datetime
 import time
 
+import pytest
 from src.governance.parallel_optimizer import (
-    ParallelOptimizer,
-    OptimizerConfig,
-    OptimizableTask,
-    TaskPriority,
     BatchStatus,
-    DependencyGraphBuilder,
-    ScopeConflictAnalyzer,
-    ExecutionScheduler,
-    RollbackManager,
-    ThroughputMeter,
+    OptimizableTask,
+    OptimizerConfig,
+    ParallelOptimizer,
+    TaskPriority,
     ThroughputComparator,
 )
 
@@ -172,9 +166,7 @@ class TestParallelOptimizerIntegration:
         fail_on = {"ST-001-api"}
 
         def failing_executor(task):
-            if task.task_id in fail_on:
-                return False
-            return True
+            return task.task_id not in fail_on
 
         result = optimizer.execute_plan(plan, failing_executor)
 
@@ -283,7 +275,7 @@ class TestParallelOptimizerIntegration:
             time.sleep(execution_times.get(task.task_id, 0.01))
             return True
 
-        result = optimizer.execute_plan(plan, timed_executor)
+        optimizer.execute_plan(plan, timed_executor)
 
         # Calculate theoretical throughput improvement
         sequential = sum(execution_times.values())

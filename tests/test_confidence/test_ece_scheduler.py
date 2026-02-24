@@ -616,7 +616,7 @@ class TestECECalculationWithScheduler:
 
         # Well-calibrated predictions: 80% confidence, 80% accuracy
         pairs = []
-        for i in range(80):
+        for _i in range(80):
             pairs.append(
                 PredictionOutcomePair(
                     prediction=0.8,
@@ -624,7 +624,7 @@ class TestECECalculationWithScheduler:
                     timestamp=datetime.now(UTC),
                 )
             )
-        for i in range(20):
+        for _i in range(20):
             pairs.append(
                 PredictionOutcomePair(
                     prediction=0.8,
@@ -653,7 +653,7 @@ class TestECECalculationWithScheduler:
         # Perfect calibration: predictions match actual accuracy
         pairs = []
         # 70% confidence with 70% accuracy
-        for i in range(70):
+        for _i in range(70):
             pairs.append(
                 PredictionOutcomePair(
                     prediction=0.7,
@@ -661,7 +661,7 @@ class TestECECalculationWithScheduler:
                     timestamp=datetime.now(UTC),
                 )
             )
-        for i in range(30):
+        for _i in range(30):
             pairs.append(
                 PredictionOutcomePair(
                     prediction=0.7,
@@ -688,7 +688,7 @@ class TestECECalculationWithScheduler:
 
         # Poor calibration: 90% confidence but only 50% accuracy
         pairs = []
-        for i in range(50):
+        for _i in range(50):
             pairs.append(
                 PredictionOutcomePair(
                     prediction=0.9,  # Very confident
@@ -696,7 +696,7 @@ class TestECECalculationWithScheduler:
                     timestamp=datetime.now(UTC),
                 )
             )
-        for i in range(50):
+        for _i in range(50):
             pairs.append(
                 PredictionOutcomePair(
                     prediction=0.9,  # Very confident

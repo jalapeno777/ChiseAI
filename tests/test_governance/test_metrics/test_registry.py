@@ -5,13 +5,11 @@ Story: ST-GOV-004
 """
 
 import pytest
-
-from src.governance.metrics.registry import MetricsRegistry, get_registry
 from src.governance.metrics.base_exporter import (
     BaseMetricsExporter,
     MetricPoint,
-    MetricType,
 )
+from src.governance.metrics.registry import get_registry
 
 
 class TestExporter(BaseMetricsExporter):

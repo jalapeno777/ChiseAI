@@ -355,7 +355,7 @@ class TestInMemoryThresholdTracker:
         tracker = InMemoryThresholdTracker()
 
         # Add adjustments for different strategies
-        for i in range(3):
+        for _i in range(3):
             adj = ThresholdAdjustment(
                 timestamp=datetime.now(UTC),
                 strategy_id="strategy_a",
@@ -365,7 +365,7 @@ class TestInMemoryThresholdTracker:
             )
             await tracker.record_adjustment(adj)
 
-        for i in range(2):
+        for _i in range(2):
             adj = ThresholdAdjustment(
                 timestamp=datetime.now(UTC),
                 strategy_id="strategy_b",

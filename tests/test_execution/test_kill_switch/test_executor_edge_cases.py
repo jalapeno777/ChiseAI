@@ -321,7 +321,7 @@ class TestKillSwitchEdgeCases:
             r
             for r in results
             if isinstance(r, type(results[0]))
-            and not r.metadata.get("error") == "already_triggered"
+            and r.metadata.get("error") != "already_triggered"
         ]
 
         # At most one should actually execute

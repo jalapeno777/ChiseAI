@@ -1,12 +1,11 @@
 """Tests for Dependency Checker module (ST-GOV-003)."""
 
 import pytest
-
 from src.governance.sentinel.dependency_checker import (
-    DependencyChecker,
-    DependencyDeclaration,
-    DependencyCheckResult,
     Dependency,
+    DependencyChecker,
+    DependencyCheckResult,
+    DependencyDeclaration,
     DependencyType,
 )
 

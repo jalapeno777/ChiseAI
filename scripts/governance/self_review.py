@@ -20,19 +20,16 @@ import logging
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from src.config.bootstrap import bootstrap
 from src.governance.quality_gate.gate import (
-    BlockReason,
     QualityGate,
-    QualityGateResult,
 )
 from src.governance.quality_gate.override import OverrideManager
-from src.governance.quality_gate.scorer import QualityScorer, ScoreComponent
+from src.governance.quality_gate.scorer import QualityScorer
 
 # Bootstrap environment
 bootstrap(load_env=True)
@@ -96,10 +93,7 @@ def cmd_evaluate(args: argparse.Namespace) -> int:
     )
 
     # Get changed files
-    if args.files:
-        changed_files = args.files
-    else:
-        changed_files = get_changed_files(args.pr_number, args.branch)
+    changed_files = args.files or get_changed_files(args.pr_number, args.branch)
 
     if not changed_files:
         print(
@@ -180,10 +174,7 @@ def cmd_score(args: argparse.Namespace) -> int:
     """Calculate quality score without blocking."""
     scorer = QualityScorer(passing_threshold=args.threshold)
 
-    if args.files:
-        changed_files = args.files
-    else:
-        changed_files = get_changed_files()
+    changed_files = args.files or get_changed_files()
 
     if not changed_files:
         print(

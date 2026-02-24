@@ -5,13 +5,12 @@ Unit tests for conflict_analyzer.py covering conflict detection and analysis.
 """
 
 import pytest
-
-from src.governance.parallel_optimizer.models import OptimizableTask
 from src.governance.parallel_optimizer.conflict_analyzer import (
-    ScopeConflictAnalyzer,
-    ConflictMatrix,
     ConflictAnalysis,
+    ConflictMatrix,
+    ScopeConflictAnalyzer,
 )
+from src.governance.parallel_optimizer.models import OptimizableTask
 
 
 class TestScopeConflictAnalyzer:

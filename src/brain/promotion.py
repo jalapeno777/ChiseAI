@@ -446,12 +446,11 @@ class PromotionGate:
             )
 
         # Check human approval
-        if require_human_approval:
-            if packet.status not in (
-                PromotionStatus.APPROVED,
-                PromotionStatus.OVERRIDDEN,
-            ):
-                return False, "Human approval required"
+        if require_human_approval and packet.status not in (
+            PromotionStatus.APPROVED,
+            PromotionStatus.OVERRIDDEN,
+        ):
+            return False, "Human approval required"
 
         return True, "Promotion allowed"
 

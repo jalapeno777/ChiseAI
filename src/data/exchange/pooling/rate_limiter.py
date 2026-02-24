@@ -479,11 +479,7 @@ class CompositeRateLimiter:
             True if all limiters granted tokens
         """
         # First check all can acquire
-        for limiter in self.limiters:
-            if not limiter.try_acquire():
-                # Release any acquired tokens
-                return False
-        return True
+        return all(limiter.try_acquire() for limiter in self.limiters)
 
     def get_metrics(self) -> dict[str, Any]:
         """Get combined metrics.

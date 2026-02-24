@@ -280,7 +280,4 @@ class SafetyChecker:
         Returns:
             True if story ID found
         """
-        for pattern in STORY_ID_PATTERNS:
-            if re.search(pattern, title):
-                return True
-        return False
+        return any(re.search(pattern, title) for pattern in STORY_ID_PATTERNS)

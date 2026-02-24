@@ -7,13 +7,12 @@ expiration of stale requests.
 Story: ST-GOV-003
 """
 
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from enum import Enum
-from typing import Optional
 import json
 import logging
 import uuid
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from enum import Enum
 
 logger = logging.getLogger(__name__)
 
@@ -43,11 +42,11 @@ class ApprovalRequest:
     justification: str
     requester: str
     status: ApprovalStatus = ApprovalStatus.PENDING
-    created_at: Optional[datetime] = None
-    expires_at: Optional[datetime] = None
-    approved_by: Optional[str] = None
-    approved_at: Optional[datetime] = None
-    rejection_reason: Optional[str] = None
+    created_at: datetime | None = None
+    expires_at: datetime | None = None
+    approved_by: str | None = None
+    approved_at: datetime | None = None
+    rejection_reason: str | None = None
     metadata: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
@@ -158,8 +157,8 @@ class ApprovalWorkflow:
         story_points: float,
         justification: str,
         requester: str,
-        timeout_hours: Optional[int] = None,
-        metadata: Optional[dict] = None,
+        timeout_hours: int | None = None,
+        metadata: dict | None = None,
     ) -> str:
         """
         Create a new approval request.
@@ -224,7 +223,7 @@ class ApprovalWorkflow:
         self,
         request_id: str,
         approver: str,
-        notes: Optional[str] = None,
+        notes: str | None = None,
     ) -> ApprovalResult:
         """
         Approve a pending request.
@@ -359,7 +358,7 @@ class ApprovalWorkflow:
             message=f"Task {request.task_id} rejected: {reason}",
         )
 
-    def cancel(self, request_id: str, reason: Optional[str] = None) -> ApprovalResult:
+    def cancel(self, request_id: str, reason: str | None = None) -> ApprovalResult:
         """
         Cancel a pending request.
 
@@ -414,7 +413,7 @@ class ApprovalWorkflow:
             message=f"Request cancelled: {reason or 'No reason provided'}",
         )
 
-    def get_request(self, request_id: str) -> Optional[ApprovalRequest]:
+    def get_request(self, request_id: str) -> ApprovalRequest | None:
         """
         Get an approval request by ID.
 

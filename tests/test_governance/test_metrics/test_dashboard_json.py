@@ -5,9 +5,9 @@ Story: ST-GOV-004
 """
 
 import json
-import pytest
 from pathlib import Path
 
+import pytest
 
 DASHBOARD_PATH = (
     Path(__file__).parent.parent.parent.parent
@@ -143,9 +143,9 @@ class TestDashboardJSON:
             for target in targets:
                 query = target.get("query", "")
                 if query:
-                    assert "governance" in query.lower(), (
-                        f"Query in panel '{panel.get('title')}' should reference governance bucket"
-                    )
+                    assert (
+                        "governance" in query.lower()
+                    ), f"Query in panel '{panel.get('title')}' should reference governance bucket"
 
     def _flatten_panels(self, panels):
         """Flatten nested panel structure."""

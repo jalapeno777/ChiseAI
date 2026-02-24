@@ -27,6 +27,7 @@ Example:
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -687,10 +688,8 @@ class ValidationGate:
             task = self._active_shadow_runs[run_id]
             task.cancel()
 
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await task
-            except asyncio.CancelledError:
-                pass
 
             logger.info(f"Cancelled validation: {run_id}")
             return True
