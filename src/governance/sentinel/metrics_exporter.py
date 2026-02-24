@@ -228,7 +228,7 @@ class SentinelMetricsExporter(BaseMetricsExporter):
         """Check if sentinel feature is enabled."""
         if self._redis_client:
             try:
-                val = self._redis_client.get(
+                val: bytes | str | None = self._redis_client.get(
                     "chise:feature_flags:governance:task_sentinel_active"
                 )
                 return val == b"true" or val == "true"

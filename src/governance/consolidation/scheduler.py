@@ -161,7 +161,9 @@ class MemoryConsolidationScheduler:
         # Check Redis feature flag
         if self._redis_client is not None:
             try:
-                flag = self._redis_client.get(self._config.feature_flag_key)
+                flag: bytes | str | None = self._redis_client.get(
+                    self._config.feature_flag_key
+                )
                 return flag == b"true" or flag == "true"
             except Exception as e:
                 logger.warning(f"Could not read feature flag: {e}")
@@ -356,11 +358,7 @@ class MemoryConsolidationScheduler:
         cleaned = 0
         try:
             # Scan for expired rollback keys
-            datetime.now(UTC) - (datetime.now(UTC) - datetime.now(UTC)).replace(
-                day=self._config.rollback_retention_days
-            )
-            # Simplified: clean based on TTL, which handles this automatically
-
+            # Note: TTL-based cleanup handles this automatically
             logger.debug("Rollback cleanup completed (TTL-based)")
         except Exception as e:
             logger.warning(f"Rollback cleanup error: {e}")

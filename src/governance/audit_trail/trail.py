@@ -124,7 +124,7 @@ class DecisionContext:
 
     def to_dict(self) -> dict[str, Any]:
         """Convert context to dictionary."""
-        result = {}
+        result: dict[str, Any] = {}
         if self.pr_id is not None:
             result["pr_id"] = self.pr_id
         if self.story_id is not None:
@@ -552,14 +552,15 @@ class AuditTrail:
 
         # Load entries from Redis if not in memory
         loaded_from_redis = False
+        entries: list[AuditTrailEntry]
         if (
             self._redis is not None
             and len(self._entries) < self._chain_state.chain_length
         ):
             try:
-                entries = self._redis.lrange(self.ENTRIES_KEY, 0, -1)
+                raw_entries = self._redis.lrange(self.ENTRIES_KEY, 0, -1)
                 self._entries = []
-                for entry_bytes in entries:
+                for entry_bytes in raw_entries:
                     entry_dict = json.loads(entry_bytes.decode())
                     self._entries.append(AuditTrailEntry.from_dict(entry_dict))
                 loaded_from_redis = True
