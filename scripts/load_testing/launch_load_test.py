@@ -180,7 +180,8 @@ class LoadTestRunner:
 
     def _parse_locust_stats(self, stats_json: dict[str, Any]) -> dict[str, Any]:
         """Parse locust statistics."""
-        parsed = {
+        endpoints: dict[str, Any] = {}
+        parsed: dict[str, Any] = {
             "total_requests": 0,
             "total_failures": 0,
             "success_rate": 0.0,
@@ -188,7 +189,7 @@ class LoadTestRunner:
             "p95_response_time_ms": 0.0,
             "p99_response_time_ms": 0.0,
             "requests_per_second": 0.0,
-            "endpoints": {},
+            "endpoints": endpoints,
         }
 
         if "stats" in stats_json:
@@ -215,14 +216,15 @@ class LoadTestRunner:
 
     def _evaluate_acceptance_criteria(self, stats: dict[str, Any]) -> dict[str, Any]:
         """Evaluate results against acceptance criteria."""
-        results = {
+        checks: dict[str, Any] = {}
+        results: dict[str, Any] = {
             "passed": True,
-            "checks": {},
+            "checks": checks,
         }
 
         # Check success rate
         success_rate = stats.get("success_rate", 0)
-        results["checks"]["success_rate"] = {
+        checks["success_rate"] = {
             "value": success_rate,
             "threshold": ACCEPTANCE_CRITERIA["min_success_rate"],
             "passed": success_rate >= ACCEPTANCE_CRITERIA["min_success_rate"],
@@ -234,7 +236,7 @@ class LoadTestRunner:
         # Signal generation latency
         signal_endpoint = endpoints.get("signal_generate", {})
         signal_latency = signal_endpoint.get("avg_response_time", 0)
-        results["checks"]["signal_latency"] = {
+        checks["signal_latency"] = {
             "value": signal_latency,
             "threshold": ACCEPTANCE_CRITERIA["signal_latency_ms"],
             "passed": signal_latency <= ACCEPTANCE_CRITERIA["signal_latency_ms"],
@@ -243,7 +245,7 @@ class LoadTestRunner:
         # Database insert latency
         db_insert_endpoint = endpoints.get("outcome_insert", {})
         db_insert_latency = db_insert_endpoint.get("avg_response_time", 0)
-        results["checks"]["db_insert_latency"] = {
+        checks["db_insert_latency"] = {
             "value": db_insert_latency,
             "threshold": ACCEPTANCE_CRITERIA["db_insert_latency_ms"],
             "passed": db_insert_latency <= ACCEPTANCE_CRITERIA["db_insert_latency_ms"],
@@ -252,14 +254,14 @@ class LoadTestRunner:
         # Database query latency
         db_query_endpoint = endpoints.get("outcome_query", {})
         db_query_latency = db_query_endpoint.get("avg_response_time", 0)
-        results["checks"]["db_query_latency"] = {
+        checks["db_query_latency"] = {
             "value": db_query_latency,
             "threshold": ACCEPTANCE_CRITERIA["db_query_latency_ms"],
             "passed": db_query_latency <= ACCEPTANCE_CRITERIA["db_query_latency_ms"],
         }
 
         # Overall pass/fail
-        results["passed"] = all(check["passed"] for check in results["checks"].values())
+        results["passed"] = all(check["passed"] for check in checks.values())
 
         return results
 
@@ -606,13 +608,14 @@ class LoadTestRunner:
 
     def _load_stats_from_csv(self, csv_prefix: str) -> dict[str, Any]:
         """Load statistics from locust CSV files."""
-        stats = {
+        endpoints: dict[str, Any] = {}
+        stats: dict[str, Any] = {
             "total_requests": 0,
             "total_failures": 0,
             "success_rate": 0.0,
             "avg_response_time_ms": 0.0,
             "requests_per_second": 0.0,
-            "endpoints": {},
+            "endpoints": endpoints,
         }
 
         try:
@@ -633,7 +636,7 @@ class LoadTestRunner:
 
                         stats["total_requests"] += requests
                         stats["total_failures"] += failures
-                        stats["endpoints"][name] = {
+                        endpoints[name] = {
                             "requests": requests,
                             "failures": failures,
                             "avg_response_time": avg_time,
@@ -650,7 +653,7 @@ class LoadTestRunner:
                 # Calculate weighted average
                 total_time = sum(
                     ep["avg_response_time"] * ep["requests"]
-                    for ep in stats["endpoints"].values()
+                    for ep in endpoints.values()
                 )
                 stats["avg_response_time_ms"] = total_time / stats["total_requests"]
 

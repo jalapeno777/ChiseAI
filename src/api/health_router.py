@@ -41,9 +41,8 @@ def set_discord_initializer(initializer: Any) -> None:
     _discord_initializer = initializer
 
 
-# Global ACP container and Discord initializer (set by startup.py)
+# Global ACP container (set by startup.py)
 _acp_container: Any | None = None
-_discord_initializer: Any | None = None
 
 
 def set_health_monitor(monitor: HealthMonitor) -> None:
@@ -367,23 +366,24 @@ async def get_acp_health() -> dict[str, Any]:
         }
 
     try:
-        status = {
+        components: dict[str, Any] = {}
+        status: dict[str, Any] = {
             "success": True,
             "timestamp": datetime.utcnow().isoformat(),
-            "components": {},
+            "components": components,
         }
 
         # SelfHealingEngine
         try:
             engine = _acp_container.self_healing_engine
-            status["components"]["healing_engine"] = {
+            components["healing_engine"] = {
                 "status": "healthy" if engine.is_enabled() else "disabled",
                 "enabled": engine.is_enabled(),
                 "pattern_count": engine.get_status().get("pattern_count", 0),
                 "pending_approvals": len(engine.get_pending_approvals()),
             }
         except Exception as e:
-            status["components"]["healing_engine"] = {
+            components["healing_engine"] = {
                 "status": "error",
                 "error": str(e),
             }
@@ -391,22 +391,22 @@ async def get_acp_health() -> dict[str, Any]:
         # LogMonitor
         try:
             monitor = _acp_container.log_monitor
-            status["components"]["log_monitor"] = {
+            components["log_monitor"] = {
                 "status": "running" if monitor._running else "stopped",
                 "watchers": len(monitor._watchers),
             }
         except Exception as e:
-            status["components"]["log_monitor"] = {"status": "error", "error": str(e)}
+            components["log_monitor"] = {"status": "error", "error": str(e)}
 
         # TriggerService
         try:
             trigger = _acp_container.trigger_service
-            status["components"]["trigger_service"] = {
+            components["trigger_service"] = {
                 "status": "running" if trigger._running else "stopped",
                 "triggers_last_minute": trigger.get_stats()["triggers_last_minute"],
             }
         except Exception as e:
-            status["components"]["trigger_service"] = {
+            components["trigger_service"] = {
                 "status": "error",
                 "error": str(e),
             }
@@ -421,13 +421,13 @@ async def get_acp_health() -> dict[str, Any]:
                 status=RollbackStatus.EXECUTING, limit=10
             )
             in_progress = len(operations) > 0
-            status["components"]["rollback_coordinator"] = {
+            components["rollback_coordinator"] = {
                 "status": "busy" if in_progress else "ready",
                 "rollback_in_progress": in_progress,
                 "operations_in_progress": len(operations),
             }
         except Exception as e:
-            status["components"]["rollback_coordinator"] = {
+            components["rollback_coordinator"] = {
                 "status": "error",
                 "error": str(e),
             }
@@ -436,13 +436,13 @@ async def get_acp_health() -> dict[str, Any]:
         try:
             cb_registry = _acp_container.circuit_breaker_registry
             breaker_states = cb_registry.get_all_states()
-            status["components"]["circuit_breakers"] = {
+            components["circuit_breakers"] = {
                 "status": "healthy",
                 "breaker_count": len(breaker_states),
                 "breakers": breaker_states,
             }
         except Exception as e:
-            status["components"]["circuit_breakers"] = {
+            components["circuit_breakers"] = {
                 "status": "error",
                 "error": str(e),
             }
@@ -451,7 +451,7 @@ async def get_acp_health() -> dict[str, Any]:
         if _discord_initializer:
             try:
                 discord_health = _discord_initializer.get_health()
-                status["components"]["discord"] = {
+                components["discord"] = {
                     "status": (
                         "connected"
                         if discord_health.get("connected")
@@ -460,9 +460,9 @@ async def get_acp_health() -> dict[str, Any]:
                     **discord_health,
                 }
             except Exception as e:
-                status["components"]["discord"] = {"status": "error", "error": str(e)}
+                components["discord"] = {"status": "error", "error": str(e)}
         else:
-            status["components"]["discord"] = {"status": "not_configured"}
+            components["discord"] = {"status": "not_configured"}
 
         # IncidentManager
         try:
@@ -472,13 +472,13 @@ async def get_acp_health() -> dict[str, Any]:
             open_incidents = [
                 i for i in all_incidents if i.status.value in ("open", "investigating")
             ]
-            status["components"]["incident_manager"] = {
+            components["incident_manager"] = {
                 "status": "healthy",
                 "total_incidents": len(all_incidents),
                 "open_incidents": len(open_incidents),
             }
         except Exception as e:
-            status["components"]["incident_manager"] = {
+            components["incident_manager"] = {
                 "status": "error",
                 "error": str(e),
             }
@@ -486,12 +486,12 @@ async def get_acp_health() -> dict[str, Any]:
         # DashboardSyncServer
         try:
             dashboard_sync = _acp_container.dashboard_sync
-            status["components"]["dashboard_sync"] = {
+            components["dashboard_sync"] = {
                 "status": "running" if dashboard_sync._running else "stopped",
                 "connected_clients": len(dashboard_sync._clients),
             }
         except Exception as e:
-            status["components"]["dashboard_sync"] = {
+            components["dashboard_sync"] = {
                 "status": "error",
                 "error": str(e),
             }

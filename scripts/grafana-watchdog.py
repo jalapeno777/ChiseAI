@@ -25,6 +25,7 @@ import sys
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Any
 
 from config.bootstrap import bootstrap
 
@@ -133,7 +134,7 @@ class GrafanaAPI:
             logging.error(f"Failed to reload Grafana dashboards: {e}")
             return False
 
-    def list_dashboards(self) -> list:
+    def list_dashboards(self) -> list[Any]:
         """List all dashboards from Grafana."""
         try:
             response = self.session.get(
@@ -143,7 +144,7 @@ class GrafanaAPI:
             )
 
             if response.status_code == 200:
-                return response.json()
+                return list(response.json())
             else:
                 logging.warning(f"Failed to list dashboards: {response.status_code}")
                 return []
@@ -172,9 +173,14 @@ class DashboardChangeHandler(FileSystemEventHandler):
                 self.known_files.add(str(json_file.resolve()))
         logging.info(f"Initial scan found {len(self.known_files)} dashboard files")
 
-    def _is_dashboard_file(self, path: str) -> bool:
+    def _is_dashboard_file(self, path: bytes | str) -> bool:
         """Check if path is a dashboard JSON file."""
-        return path.endswith(".json") and "/dashboards/" in path
+        # Convert bytes to str if necessary
+        if isinstance(path, bytes):
+            path_str = path.decode("utf-8")
+        else:
+            path_str = path
+        return path_str.endswith(".json") and "/dashboards/" in path_str
 
     def _should_reload(self) -> bool:
         """Check if enough time has passed since last reload."""
@@ -199,14 +205,22 @@ class DashboardChangeHandler(FileSystemEventHandler):
         else:
             logging.error("Dashboard reload failed - Grafana may need restart")
 
+    @staticmethod
+    def _path_to_str(path: bytes | str) -> str:
+        """Convert bytes path to string if necessary."""
+        if isinstance(path, bytes):
+            return path.decode("utf-8")
+        return path
+
     def on_created(self, event: FileSystemEvent) -> None:
         """Handle file creation events."""
         if event.is_directory:
             return
 
-        if self._is_dashboard_file(event.src_path):
-            logging.info(f"New dashboard file detected: {event.src_path}")
-            self.known_files.add(event.src_path)
+        src_path = self._path_to_str(event.src_path)
+        if self._is_dashboard_file(src_path):
+            logging.info(f"New dashboard file detected: {src_path}")
+            self.known_files.add(src_path)
             self._trigger_reload()
 
     def on_modified(self, event: FileSystemEvent) -> None:
@@ -214,8 +228,9 @@ class DashboardChangeHandler(FileSystemEventHandler):
         if event.is_directory:
             return
 
-        if self._is_dashboard_file(event.src_path):
-            logging.info(f"Dashboard file modified: {event.src_path}")
+        src_path = self._path_to_str(event.src_path)
+        if self._is_dashboard_file(src_path):
+            logging.info(f"Dashboard file modified: {src_path}")
             self._trigger_reload()
 
     def on_deleted(self, event: FileSystemEvent) -> None:
@@ -223,9 +238,10 @@ class DashboardChangeHandler(FileSystemEventHandler):
         if event.is_directory:
             return
 
-        if self._is_dashboard_file(event.src_path):
-            logging.info(f"Dashboard file deleted: {event.src_path}")
-            self.known_files.discard(event.src_path)
+        src_path = self._path_to_str(event.src_path)
+        if self._is_dashboard_file(src_path):
+            logging.info(f"Dashboard file deleted: {src_path}")
+            self.known_files.discard(src_path)
             self._trigger_reload()
 
     def on_moved(self, event: FileSystemEvent) -> None:
@@ -233,18 +249,21 @@ class DashboardChangeHandler(FileSystemEventHandler):
         if event.is_directory:
             return
 
-        src_is_dashboard = self._is_dashboard_file(event.src_path)
-        dest_is_dashboard = hasattr(event, "dest_path") and self._is_dashboard_file(
-            event.dest_path
-        )
+        src_path = self._path_to_str(event.src_path)
+        src_is_dashboard = self._is_dashboard_file(src_path)
+        dest_path: str | None = None
+        dest_is_dashboard = False
+        if hasattr(event, "dest_path"):
+            dest_path = self._path_to_str(event.dest_path)  # type: ignore[arg-type]
+            dest_is_dashboard = self._is_dashboard_file(dest_path)
 
         if src_is_dashboard or dest_is_dashboard:
             logging.info(
-                f"Dashboard file moved: {event.src_path} -> {getattr(event, 'dest_path', 'unknown')}"
+                f"Dashboard file moved: {src_path} -> {dest_path or 'unknown'}"
             )
-            self.known_files.discard(event.src_path)
-            if hasattr(event, "dest_path"):
-                self.known_files.add(event.dest_path)
+            self.known_files.discard(src_path)
+            if dest_path:
+                self.known_files.add(dest_path)
             self._trigger_reload()
 
     def check_pending_reload(self) -> None:
@@ -259,7 +278,7 @@ class GrafanaWatchdog:
     def __init__(self, config: WatchdogConfig):
         self.config = config
         self.grafana_api = GrafanaAPI(config)
-        self.observer: Observer | None = None
+        self.observer: Any = None
         self.running = False
 
         # Setup logging
@@ -354,7 +373,7 @@ class GrafanaWatchdog:
         self.logger.info("Watchdog stopped")
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     bootstrap(load_env=True)
 
