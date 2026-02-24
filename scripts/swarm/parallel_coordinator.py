@@ -18,25 +18,23 @@ import argparse
 import json
 import logging
 import sys
-import yaml
-from dataclasses import asdict
-from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
+
+import yaml
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from src.governance.parallel_optimizer import (
-    ParallelOptimizer,
-    OptimizerConfig,
-    OptimizableTask,
-    TaskPriority,
     ExecutionPlan,
-    ThroughputMetrics,
+    OptimizableTask,
+    OptimizerConfig,
+    ParallelOptimizer,
+    TaskPriority,
 )
-from src.governance.parallel_optimizer.dependency_graph import DependencyGraphBuilder
 from src.governance.parallel_optimizer.conflict_analyzer import ScopeConflictAnalyzer
+from src.governance.parallel_optimizer.dependency_graph import DependencyGraphBuilder
 
 logging.basicConfig(
     level=logging.INFO,
@@ -47,7 +45,7 @@ logger = logging.getLogger(__name__)
 
 def load_tasks_from_yaml(yaml_path: str) -> list[OptimizableTask]:
     """Load tasks from a YAML file."""
-    with open(yaml_path, "r") as f:
+    with open(yaml_path) as f:
         data = yaml.safe_load(f)
 
     tasks = []
@@ -96,9 +94,7 @@ def analyze_tasks(tasks: list[OptimizableTask]) -> dict[str, Any]:
         "conflicts": {
             "conflict_count": conflict_analyzer.get_conflict_count(tasks),
             "conflict_rate": conflict_analyzer.get_conflict_rate(tasks),
-            "conflict_pairs": [
-                list(pair) for pair in conflict_matrix.conflict_details.keys()
-            ],
+            "conflict_pairs": [list(pair) for pair in conflict_matrix.conflict_details],
         },
         "execution_layers": graph_builder.get_execution_layers(graph),
     }
@@ -295,13 +291,13 @@ def main():
                 print(f"\nPlan saved to: {args.output}")
 
         elif args.command == "validate":
-            with open(args.plan_file, "r") as f:
+            with open(args.plan_file) as f:
                 plan_dict = json.load(f)
 
             # Reconstruct minimal plan for validation
             tasks = []  # Would need to load from plan
             config = OptimizerConfig()
-            optimizer = ParallelOptimizer(config=config)
+            ParallelOptimizer(config=config)
 
             # Simple validation based on plan metrics
             issues = []
@@ -339,7 +335,7 @@ def main():
             print(f"Sequential Duration: {sequential_duration:.1f}s")
             print(f"Parallel Duration: {parallel_duration:.1f}s")
             print(f"Improvement: {improvement:.1f}%")
-            print(f"Target: 30.0%")
+            print("Target: 30.0%")
             print(f"Status: {'PASS' if improvement >= 30.0 else 'FAIL'}")
 
         return 0

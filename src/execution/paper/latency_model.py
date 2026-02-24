@@ -182,7 +182,9 @@ class LatencyModel:
         fill_latencies = [
             self.simulate_fill_notification_latency() for _ in range(samples)
         ]
-        total_latencies = [s + f for s, f in zip(submission_latencies, fill_latencies)]
+        total_latencies = [
+            s + f for s, f in zip(submission_latencies, fill_latencies, strict=False)
+        ]
 
         def calc_stats(data: list[float]) -> dict:
             mean = sum(data) / len(data)

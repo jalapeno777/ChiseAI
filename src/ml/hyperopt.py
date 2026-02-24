@@ -89,18 +89,14 @@ class ParameterConstraint:
                 return False
             if self.min_value is not None and value < self.min_value:
                 return False
-            if self.max_value is not None and value > self.max_value:
-                return False
-            return True
+            return not (self.max_value is not None and value > self.max_value)
 
         elif self.param_type == ParameterType.INTEGER:
             if not isinstance(value, int):
                 return False
             if self.min_value is not None and value < self.min_value:
                 return False
-            if self.max_value is not None and value > self.max_value:
-                return False
-            return True
+            return not (self.max_value is not None and value > self.max_value)
 
         elif self.param_type == ParameterType.CATEGORICAL:
             return value in self.choices

@@ -199,7 +199,7 @@ def test_websocket_private(url, api_key, api_secret, timeout=15):
                     ws.close()
 
                 # Alternative auth success check
-                if data.get("retCode") == 0 or data.get("success") == True:
+                if data.get("retCode") == 0 or data.get("success"):
                     result["authenticated"] = True
                     result["auth_response"] = json.dumps(data)[:300]
                     result["status"] = "success"

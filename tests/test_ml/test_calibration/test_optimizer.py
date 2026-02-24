@@ -659,7 +659,7 @@ class TestThresholdOptimizerIntegration:
             assert "thresholds" in top
 
             # Verify threshold structure
-            for signal_type, threshold_config in top["thresholds"].items():
+            for _signal_type, threshold_config in top["thresholds"].items():
                 assert "optimal_threshold" in threshold_config
                 assert "min_ece" in threshold_config
                 assert "sample_size" in threshold_config

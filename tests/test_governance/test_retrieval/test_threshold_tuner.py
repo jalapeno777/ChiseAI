@@ -10,18 +10,17 @@ Tests cover:
 - History tracking
 """
 
-import pytest
-from datetime import datetime, UTC
 from unittest.mock import MagicMock
 
+import pytest
 from src.governance.retrieval.threshold_tuner import (
-    ThresholdTuner,
-    ThresholdConfig,
-    TunerConfig,
-    TuningResult,
-    TuningHistory,
-    OptimizationGoal,
     AdjustmentStrategy,
+    OptimizationGoal,
+    ThresholdConfig,
+    ThresholdTuner,
+    TunerConfig,
+    TuningHistory,
+    TuningResult,
 )
 
 

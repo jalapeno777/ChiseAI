@@ -4,17 +4,17 @@ Test Health Sentinel - Integration tests for main orchestrator (ST-GOV-008).
 Story: ST-GOV-008
 """
 
-import pytest
-from datetime import datetime, timedelta
 import asyncio
+import contextlib
+from datetime import datetime
 
+import pytest
+from src.governance.health.scorer import HealthStatus
 from src.governance.health.sentinel import (
     HealthSentinel,
     HealthSentinelConfig,
     HealthSnapshot,
 )
-from src.governance.health.scorer import HealthStatus
-from src.governance.health.predictor import AlertSeverity
 
 
 class TestHealthSentinel:
@@ -83,7 +83,7 @@ class TestHealthSentinel:
         sentinel = HealthSentinel(config=config)
 
         # Add agent with declining health
-        now = datetime.utcnow()
+        datetime.utcnow()
         for i in range(5):
             metrics = {
                 "performance": {"task_completion_time": 30 + i * 20},
@@ -342,10 +342,8 @@ class TestMonitoringLoop:
 
         # Cancel the task
         task.cancel()
-        try:
+        with contextlib.suppress(asyncio.CancelledError):
             await task
-        except asyncio.CancelledError:
-            pass
 
         assert sentinel._running is False
 

@@ -7,11 +7,10 @@ conflicts, and blocks unsafe parallel execution.
 Story: ST-GOV-003
 """
 
-from dataclasses import dataclass, field
-from enum import Enum
-from typing import Optional
 import fnmatch
 import logging
+from dataclasses import dataclass, field
+from enum import Enum
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +64,7 @@ class Conflict:
     description: str
     affected_paths: list[str] = field(default_factory=list)
     affected_resources: list[str] = field(default_factory=list)
-    resolution_hint: Optional[str] = None
+    resolution_hint: str | None = None
 
 
 @dataclass
@@ -173,12 +172,10 @@ class ConflictDetector:
                 break
 
         # If they share significant prefix and one goes deeper
-        if common_prefix > 0 and (
-            common_prefix == len(parts1) - 1 or common_prefix == len(parts2) - 1
-        ):
-            return True
-
-        return False
+        return bool(
+            common_prefix > 0
+            and (common_prefix == len(parts1) - 1 or common_prefix == len(parts2) - 1)
+        )
 
     def _check_scope_overlap(
         self, scope1: ScopeDeclaration, scope2: ScopeDeclaration

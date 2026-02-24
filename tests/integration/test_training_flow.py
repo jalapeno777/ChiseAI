@@ -718,7 +718,7 @@ class TestEndToEndScenarios:
 
         # Start multiple concurrent trainings with small delays
         tasks = []
-        for i in range(3):
+        for _i in range(3):
             tasks.append(asyncio.create_task(orchestrator.run_training(force=True)))
             await asyncio.sleep(0.02)  # Small delay between starts
 

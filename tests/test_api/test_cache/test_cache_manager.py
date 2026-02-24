@@ -221,7 +221,7 @@ class TestCacheMetricsCollector:
         collector = CacheMetricsCollector(window_size=5)
 
         # Add more operations than window size
-        for i in range(10):
+        for _i in range(10):
             collector.record_hit(1.0)
 
         stats = collector.get_window_stats()

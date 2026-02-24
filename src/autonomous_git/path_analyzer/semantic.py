@@ -171,10 +171,7 @@ class SemanticAnalyzer:
             r"^tests?/.*",
             r".*/test_.*\.py$",
         ]
-        for pattern in test_patterns:
-            if re.match(pattern, path):
-                return True
-        return False
+        return any(re.match(pattern, path) for pattern in test_patterns)
 
     def _is_critical_modification(self, path: str) -> bool:
         """Check if path is a critical file."""
@@ -185,10 +182,7 @@ class SemanticAnalyzer:
             r"^\.opencode/agent/.*",
             r"^infrastructure/terraform/.*",
         ]
-        for pattern in critical_patterns:
-            if re.match(pattern, path):
-                return True
-        return False
+        return any(re.match(pattern, path) for pattern in critical_patterns)
 
     def _analyze_content(self, path: str, content: str) -> list[SemanticFlag]:
         """Analyze file content for semantic issues."""

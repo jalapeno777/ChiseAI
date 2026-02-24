@@ -4,20 +4,19 @@ Test Health Predictor - Unit tests for predictive alerting (ST-GOV-008).
 Story: ST-GOV-008
 """
 
-import pytest
 from datetime import datetime, timedelta
 
 from src.governance.health.predictor import (
-    HealthPredictor,
+    AlertSeverity,
     HealthAlert,
+    HealthPredictor,
     PredictionConfig,
     PredictionType,
-    AlertSeverity,
 )
 from src.governance.health.scorer import (
     AgentHealthScore,
-    HealthStatus,
     HealthDimension,
+    HealthStatus,
 )
 
 
@@ -132,9 +131,7 @@ class TestHealthPredictor:
         alerts = predictor.predict("agent-1", history)
 
         # Should predict threshold breach
-        threshold_alerts = [
-            a for a in alerts if a.prediction_type == PredictionType.THRESHOLD_BREACH
-        ]
+        [a for a in alerts if a.prediction_type == PredictionType.THRESHOLD_BREACH]
         # May or may not have alerts depending on confidence calculation
         assert isinstance(alerts, list)
 

@@ -7,18 +7,17 @@ allowing safe recovery and retry.
 Story: ST-GOV-010
 """
 
-from dataclasses import dataclass, field
-from typing import Callable, Optional
 import json
 import logging
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from datetime import datetime
 
 from src.governance.parallel_optimizer.models import (
-    OptimizableTask,
-    TaskBatch,
     BatchStatus,
-    ExecutionPlan,
+    OptimizableTask,
     RollbackResult,
+    TaskBatch,
 )
 
 logger = logging.getLogger(__name__)
@@ -145,9 +144,9 @@ class RollbackManager:
     def create_checkpoint(
         self,
         batch: TaskBatch,
-        git_state: Optional[dict[str, str]] = None,
-        file_states: Optional[dict[str, str]] = None,
-        custom_data: Optional[dict] = None,
+        git_state: dict[str, str] | None = None,
+        file_states: dict[str, str] | None = None,
+        custom_data: dict | None = None,
     ) -> RollbackCheckpoint:
         """
         Create a checkpoint before batch execution.
@@ -193,7 +192,7 @@ class RollbackManager:
     def rollback(
         self,
         batch: TaskBatch,
-        checkpoint: Optional[RollbackCheckpoint] = None,
+        checkpoint: RollbackCheckpoint | None = None,
         reason: str = "Execution failed",
     ) -> RollbackResult:
         """
@@ -266,7 +265,7 @@ class RollbackManager:
 
         return result
 
-    def _find_checkpoint_for_batch(self, batch_id: str) -> Optional[RollbackCheckpoint]:
+    def _find_checkpoint_for_batch(self, batch_id: str) -> RollbackCheckpoint | None:
         """Find the most recent checkpoint for a batch."""
         for cp in reversed(list(self._checkpoints.values())):
             if cp.batch_id == batch_id:
@@ -342,7 +341,7 @@ class BatchRollbackExecutor:
         batch: TaskBatch,
         task_executor: Callable[[OptimizableTask], bool],
         stop_on_failure: bool = True,
-    ) -> tuple[bool, Optional[RollbackResult]]:
+    ) -> tuple[bool, RollbackResult | None]:
         """
         Execute a batch with automatic rollback on failure.
 

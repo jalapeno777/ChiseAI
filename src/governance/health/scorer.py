@@ -10,12 +10,10 @@ Implements health scoring based on four weighted dimensions:
 Story: ST-GOV-008
 """
 
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Optional
-import logging
-import math
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +58,7 @@ class AgentHealthScore:
     dimensions: dict[str, HealthDimension]
     timestamp: datetime
     trend: str = "stable"  # "improving", "declining", "stable"
-    previous_score: Optional[float] = None
+    previous_score: float | None = None
 
     def is_healthy(self) -> bool:
         """Check if agent is healthy (score >= 70)."""
@@ -125,7 +123,7 @@ class HealthScorer:
 
     def __init__(
         self,
-        dimensions: Optional[dict[str, DimensionConfig]] = None,
+        dimensions: dict[str, DimensionConfig] | None = None,
         history_window_hours: int = 24,
     ):
         """
@@ -143,7 +141,7 @@ class HealthScorer:
         self,
         agent_id: str,
         metrics: dict[str, dict[str, float]],
-        previous_score: Optional[float] = None,
+        previous_score: float | None = None,
     ) -> AgentHealthScore:
         """
         Calculate health score for a single agent.
@@ -249,7 +247,7 @@ class HealthScorer:
 
         # Aggregate dimension scores
         dimension_avgs: dict[str, float] = {}
-        for dim_name in self.dimensions.keys():
+        for dim_name in self.dimensions:
             dim_scores = [
                 s.dimensions[dim_name].score
                 for s in agent_scores

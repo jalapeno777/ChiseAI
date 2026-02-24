@@ -150,10 +150,7 @@ class Fill:
         side = response.get("side", "Buy").lower()
 
         # Normalize side
-        if side in ("buy", "b"):
-            side = "buy"
-        else:
-            side = "sell"
+        side = "buy" if side in ("buy", "b") else "sell"
 
         # Parse timestamp (Bybit uses milliseconds)
         timestamp_ms = int(response.get("execTime", 0))
@@ -205,10 +202,7 @@ class Fill:
         side = response.get("side", "buy").lower()
 
         # Normalize side
-        if side in ("buy", "b", "long"):
-            side = "buy"
-        else:
-            side = "sell"
+        side = "buy" if side in ("buy", "b", "long") else "sell"
 
         # Parse timestamp (Bitget uses milliseconds)
         timestamp_ms = int(response.get("cTime", response.get("uTime", 0)))

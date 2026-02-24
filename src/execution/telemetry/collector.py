@@ -6,6 +6,7 @@ For ST-EX-001: Collects trade data and pushes KPIs to InfluxDB.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
@@ -70,10 +71,8 @@ class ExecutionCollector:
 
         if self._collection_task and not self._collection_task.done():
             self._collection_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._collection_task
-            except asyncio.CancelledError:
-                pass
 
         # Final KPI push
         await self._calculate_and_push_kpis()

@@ -4,12 +4,11 @@ Test Health Metrics - Unit tests for metrics exporter (ST-GOV-008).
 Story: ST-GOV-008
 """
 
-import pytest
 from datetime import datetime
 
 from src.governance.health.metrics import (
-    HealthMetrics,
     HealthMetricPoint,
+    HealthMetrics,
     get_health_metrics,
 )
 

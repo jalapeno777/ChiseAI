@@ -12,18 +12,18 @@ Governance Feature: GF-005
 """
 
 from src.governance.consolidation.archiver import (
-    ArchiveStats,
     ArchivedMemory,
+    ArchiveStats,
     MemoryArchiver,
 )
 from src.governance.consolidation.config import (
     CONSOLIDATION_PREFIX,
     LAST_RUN_KEY,
+    ROLLBACK_PREFIX,
     ConsolidationConfig,
     MemoryPriority,
     MemoryType,
     RetentionPolicy,
-    ROLLBACK_PREFIX,
 )
 from src.governance.consolidation.promoter import (
     GoldenMemoryPromoter,

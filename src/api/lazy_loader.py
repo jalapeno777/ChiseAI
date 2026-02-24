@@ -82,9 +82,7 @@ class TimeRange:
         if abs(self.end - other.start) <= threshold:
             return True
         # Check if this starts where other ends
-        if abs(self.end - other.start) <= threshold:
-            return True
-        return False
+        return abs(self.end - other.start) <= threshold
 
     def expand(self, by: timedelta) -> "TimeRange":
         """Expand the range by a timedelta on both sides."""

@@ -20,6 +20,7 @@ For ST-LAUNCH-012: Training Pipeline Integration
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -432,10 +433,8 @@ class AsyncJobScheduler:
         if job_id in self._running_tasks:
             task = self._running_tasks[job_id]
             task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await task
-            except asyncio.CancelledError:
-                pass
 
             if job_id in self._jobs:
                 self._jobs[job_id].status = TrainingJobStatus.CANCELLED
@@ -801,10 +800,8 @@ class TrainingPipelineIntegration:
 
         if self._listen_task:
             self._listen_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._listen_task
-            except asyncio.CancelledError:
-                pass
             self._listen_task = None
 
         logger.info("Stopped listening for retraining triggers")

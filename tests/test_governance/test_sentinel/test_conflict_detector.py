@@ -1,15 +1,14 @@
 """Tests for Conflict Detector module (ST-GOV-003)."""
 
-import pytest
 from unittest.mock import MagicMock
 
 from src.governance.sentinel.conflict_detector import (
-    ConflictDetector,
-    ScopeDeclaration,
-    ConflictCheckResult,
     Conflict,
-    ConflictType,
+    ConflictCheckResult,
+    ConflictDetector,
     ConflictSeverity,
+    ConflictType,
+    ScopeDeclaration,
 )
 
 

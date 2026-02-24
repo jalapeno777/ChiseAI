@@ -10,23 +10,20 @@ Provides REST API for:
 Story: ST-GOV-003
 """
 
-from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Optional
 import logging
+from datetime import datetime
 
-from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from .task_sentinel import TaskSentinel, TaskInfo, SentinelConfig
-from .dependency_checker import DependencyChecker, DependencyDeclaration
+from .approval_workflow import ApprovalWorkflow
 from .conflict_detector import (
     ConflictDetector,
     ScopeDeclaration,
-    ConflictSeverity,
 )
-from .approval_workflow import ApprovalWorkflow, ApprovalStatus
+from .dependency_checker import DependencyChecker, DependencyDeclaration
+from .task_sentinel import TaskInfo, TaskSentinel
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +44,8 @@ class ValidateTaskRequest(BaseModel):
     task_id: str = Field(..., description="Task identifier")
     story_points: float = Field(..., ge=0, description="Story points estimate")
     title: str = Field(..., description="Task title")
-    description: Optional[str] = Field(None, description="Task description")
-    assignee: Optional[str] = Field(None, description="Assigned agent/person")
+    description: str | None = Field(None, description="Task description")
+    assignee: str | None = Field(None, description="Assigned agent/person")
     labels: list[str] = Field(default_factory=list, description="Task labels")
 
 
@@ -70,8 +67,8 @@ class RequestApprovalRequest(BaseModel):
     story_points: float = Field(..., ge=0)
     justification: str = Field(..., min_length=10, description="Why task is oversized")
     requester: str
-    timeout_hours: Optional[int] = Field(None, description="Custom timeout")
-    metadata: Optional[dict] = Field(None, description="Additional metadata")
+    timeout_hours: int | None = Field(None, description="Custom timeout")
+    metadata: dict | None = Field(None, description="Additional metadata")
 
 
 class RequestApprovalResponse(BaseModel):
@@ -86,7 +83,7 @@ class ApproveTaskRequest(BaseModel):
     """Request to approve a task."""
 
     approver: str
-    notes: Optional[str] = None
+    notes: str | None = None
 
 
 class RejectTaskRequest(BaseModel):
@@ -105,15 +102,15 @@ class PendingApprovalResponse(BaseModel):
     justification: str
     requester: str
     status: str
-    created_at: Optional[str]
-    expires_at: Optional[str]
+    created_at: str | None
+    expires_at: str | None
 
 
 class CheckDependenciesRequest(BaseModel):
     """Request to check dependencies."""
 
     declarations: list[dict]
-    required_scopes: Optional[dict[str, list[str]]] = None
+    required_scopes: dict[str, list[str]] | None = None
 
 
 class CheckDependenciesResponse(BaseModel):
@@ -142,7 +139,7 @@ class ConflictDetail(BaseModel):
     description: str
     affected_paths: list[str]
     affected_resources: list[str]
-    resolution_hint: Optional[str]
+    resolution_hint: str | None
 
 
 class CheckConflictsResponse(BaseModel):
@@ -165,10 +162,10 @@ class HealthResponse(BaseModel):
 
 
 # Global instances (will be injected in production)
-_sentinel: Optional[TaskSentinel] = None
-_dependency_checker: Optional[DependencyChecker] = None
-_conflict_detector: Optional[ConflictDetector] = None
-_approval_workflow: Optional[ApprovalWorkflow] = None
+_sentinel: TaskSentinel | None = None
+_dependency_checker: DependencyChecker | None = None
+_conflict_detector: ConflictDetector | None = None
+_approval_workflow: ApprovalWorkflow | None = None
 
 
 def get_sentinel() -> TaskSentinel:

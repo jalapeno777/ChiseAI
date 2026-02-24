@@ -5,11 +5,10 @@ Unit tests for scheduler.py covering plan creation and batch scheduling.
 """
 
 import pytest
-
 from src.governance.parallel_optimizer.models import (
+    BatchStatus,
     OptimizableTask,
     TaskPriority,
-    BatchStatus,
 )
 from src.governance.parallel_optimizer.scheduler import (
     ExecutionScheduler,
@@ -165,7 +164,7 @@ class TestExecutionScheduler:
         # Next batch should wait until first completes
         completed = set(first_batch.task_ids)
         running = set(first_batch.task_ids)
-        next_batch = scheduler.get_next_batch(plan, completed, running)
+        scheduler.get_next_batch(plan, completed, running)
 
         # Should be None since dependencies might not be satisfied
         # (depends on specific plan structure)

@@ -17,6 +17,7 @@ Authoritative Endpoints:
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import os
 import re
@@ -262,10 +263,8 @@ class KillSwitchMonitor:
         self._running = False
         if self._task:
             self._task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._task
-            except asyncio.CancelledError:
-                pass
 
     async def _monitor_loop(self) -> None:
         """Main monitoring loop."""

@@ -22,7 +22,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Optional, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
@@ -455,21 +455,29 @@ class RetrievalEvaluator:
 
         # Calculate averages
         metrics = RetrievalMetrics(
-            precision_at_5=sum(precision_5_scores) / len(precision_5_scores)
-            if precision_5_scores
-            else 0.0,
-            precision_at_10=sum(precision_10_scores) / len(precision_10_scores)
-            if precision_10_scores
-            else 0.0,
-            recall_at_5=sum(recall_5_scores) / len(recall_5_scores)
-            if recall_5_scores
-            else 0.0,
-            recall_at_10=sum(recall_10_scores) / len(recall_10_scores)
-            if recall_10_scores
-            else 0.0,
-            mrr=sum(reciprocal_ranks) / len(reciprocal_ranks)
-            if reciprocal_ranks
-            else 0.0,
+            precision_at_5=(
+                sum(precision_5_scores) / len(precision_5_scores)
+                if precision_5_scores
+                else 0.0
+            ),
+            precision_at_10=(
+                sum(precision_10_scores) / len(precision_10_scores)
+                if precision_10_scores
+                else 0.0
+            ),
+            recall_at_5=(
+                sum(recall_5_scores) / len(recall_5_scores) if recall_5_scores else 0.0
+            ),
+            recall_at_10=(
+                sum(recall_10_scores) / len(recall_10_scores)
+                if recall_10_scores
+                else 0.0
+            ),
+            mrr=(
+                sum(reciprocal_ranks) / len(reciprocal_ranks)
+                if reciprocal_ranks
+                else 0.0
+            ),
             ndcg=sum(dcg_scores) / len(dcg_scores) if dcg_scores else 0.0,
             query_count=len(queries_to_evaluate),
         )

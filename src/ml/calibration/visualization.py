@@ -124,7 +124,7 @@ class ECECurveVisualizer:
             CurveVisualization ready for display
         """
         # Create data points
-        data_points = list(zip(curve.thresholds, curve.ece_values))
+        data_points = list(zip(curve.thresholds, curve.ece_values, strict=False))
 
         # Get optimal point
         optimal_point = None

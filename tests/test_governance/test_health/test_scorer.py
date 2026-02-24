@@ -4,17 +4,14 @@ Test Health Scorer - Unit tests for health scoring functionality (ST-GOV-008).
 Story: ST-GOV-008
 """
 
-import pytest
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from src.governance.health.scorer import (
-    HealthScorer,
-    AgentHealthScore,
-    SwarmHealthScore,
-    HealthStatus,
-    HealthDimension,
-    DimensionConfig,
     DEFAULT_DIMENSIONS,
+    AgentHealthScore,
+    DimensionConfig,
+    HealthScorer,
+    HealthStatus,
 )
 
 
@@ -351,7 +348,7 @@ class TestHistoryManagement:
         }
 
         # Score the same agent multiple times
-        for i in range(5):
+        for _i in range(5):
             scorer.score_agent("test-agent", metrics)
 
         history = scorer.get_agent_history("test-agent")

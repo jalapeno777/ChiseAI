@@ -319,10 +319,8 @@ async def main():
     exporter_task = asyncio.create_task(export_metrics_loop())
 
     # Wait for shutdown
-    try:
+    with contextlib.suppress(asyncio.CancelledError):
         await shutdown_event.wait()
-    except asyncio.CancelledError:
-        pass
 
     # Stop monitoring
     exporter_task.cancel()

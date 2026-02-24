@@ -7,12 +7,8 @@ For ST-GOV-002: Agent Constitution Artifact
 
 from __future__ import annotations
 
-from datetime import datetime
-
 import pytest
-
 from src.governance.constitution.violation_detector import (
-    AlertChannel,
     DiscordAlertChannel,
     Violation,
     ViolationDetector,
@@ -345,6 +341,6 @@ class TestViolationDetectionAccuracy:
 
         # Allow some tolerance for pattern matching
         false_positive_rate = false_positives / (total * 5)  # 5 rules
-        assert false_positive_rate < 0.01, (
-            f"False positive rate {false_positive_rate} >= 1%"
-        )
+        assert (
+            false_positive_rate < 0.01
+        ), f"False positive rate {false_positive_rate} >= 1%"

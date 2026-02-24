@@ -9,6 +9,7 @@ For PM-BATCH-2 CF-1: Log Monitor + Trigger Service
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
@@ -187,10 +188,8 @@ class LogMonitor:
         # Stop dispatch loop first
         if self._dispatch_task:
             self._dispatch_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._dispatch_task
-            except asyncio.CancelledError:
-                pass
             self._dispatch_task = None
 
         # Stop all watchers concurrently
@@ -200,7 +199,7 @@ class LogMonitor:
 
         if stop_tasks:
             results = await asyncio.gather(*stop_tasks, return_exceptions=True)
-            for watcher, result in zip(self._watchers.values(), results):
+            for watcher, result in zip(self._watchers.values(), results, strict=False):
                 if isinstance(result, Exception):
                     logger.error(
                         f"Error stopping watcher '{watcher.config.name}': {result}"
@@ -326,10 +325,8 @@ class LogWatcher:
 
         if self._watch_task:
             self._watch_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._watch_task
-            except asyncio.CancelledError:
-                pass
             self._watch_task = None
 
         logger.info(f"Stopped watcher '{self.config.name}'")

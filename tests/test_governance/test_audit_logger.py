@@ -10,7 +10,6 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 
 import pytest
-
 from src.governance.constitution.audit_logger import (
     AuditLogger,
     OverrideRequest,

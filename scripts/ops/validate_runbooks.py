@@ -28,8 +28,8 @@ from typing import Any
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from runbooks.parser import RunbookParser
 from runbooks.executor import RunbookExecutor
+from runbooks.parser import RunbookParser
 
 
 @dataclass

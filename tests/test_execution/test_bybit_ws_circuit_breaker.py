@@ -615,7 +615,7 @@ class TestCircuitBreakerStateTransitions:
         cb.metrics.half_open_calls = 0
 
         # Record successes
-        for i in range(3):
+        for _i in range(3):
             cb.record_success()
 
         assert cb.state == CircuitBreakerState.CLOSED

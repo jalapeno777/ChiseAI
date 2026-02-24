@@ -9,6 +9,9 @@ import pytest
 
 sys.path.insert(0, "src")
 
+import builtins
+import contextlib
+
 from ml.calibration.models import CalibrationConfig, CalibrationRecord, SignalType
 from ml.calibration.storage import (
     InMemoryCalibrationStorage,
@@ -346,10 +349,8 @@ class TestRedisCalibrationStorage:
             pytest.skip(f"Redis not available: {e}")
         finally:
             # Clean up
-            try:
+            with contextlib.suppress(builtins.BaseException):
                 await storage.close()
-            except:
-                pass
 
     @pytest.fixture
     def sample_record(self):

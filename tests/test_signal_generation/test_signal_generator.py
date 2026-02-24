@@ -420,7 +420,7 @@ class TestSignalGeneratorIndicatorSet:
         # Verify IndicatorSet is not iterable (this is the bug)
         try:
             list(indicator_set)
-            assert False, "IndicatorSet should not be iterable"
+            raise AssertionError("IndicatorSet should not be iterable")
         except TypeError:
             pass  # Expected - IndicatorSet is not a list/sequence
 

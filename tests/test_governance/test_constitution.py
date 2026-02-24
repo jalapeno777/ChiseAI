@@ -13,7 +13,6 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
-
 from src.governance.constitution.artifact import (
     ConstitutionArtifact,
     ConstitutionLoader,

@@ -25,8 +25,8 @@ from typing import Any
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from runbooks.parser import RunbookParser
 from runbooks.executor import RunbookExecutor
+from runbooks.parser import RunbookParser
 
 
 class RunbookValidationGate:
@@ -222,12 +222,14 @@ class RunbookValidationGate:
                 runbook = self.parser.parse(runbook_name)
                 content = runbook.raw_content.lower()
 
-                if any(
-                    term in content
-                    for term in ["kill", "switch", "emergency", "safety"]
+                if (
+                    any(
+                        term in content
+                        for term in ["kill", "switch", "emergency", "safety"]
+                    )
+                    and "safety" not in covered
                 ):
-                    if "safety" not in covered:
-                        covered.append("safety")
+                    covered.append("safety")
 
                 if any(term in content for term in ["ml", "model", "training"]):
                     if "ml_operations" not in covered:

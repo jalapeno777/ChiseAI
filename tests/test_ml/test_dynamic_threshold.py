@@ -819,7 +819,7 @@ class TestThresholdGuardrails:
             (0.60, 0.55),  # Decrease (change 3)
         ]
 
-        for i, (old, new) in enumerate(adjustments):
+        for _i, (old, new) in enumerate(adjustments):
             guardrails._adjustment_history.append(
                 guardrails.record_threshold_change(
                     strategy_id="grid_btc_1h",

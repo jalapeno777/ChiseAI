@@ -9,6 +9,7 @@ For ST-NS-043: Unified Dashboard & Alerting Integration
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 from dataclasses import dataclass, field
@@ -140,17 +141,13 @@ class DashboardSyncServer:
 
         if self._update_task:
             self._update_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._update_task
-            except asyncio.CancelledError:
-                pass
 
         if self._server:
             self._server.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._server
-            except asyncio.CancelledError:
-                pass
 
         # Close all client connections
         if WEBSOCKETS_AVAILABLE:

@@ -156,11 +156,9 @@ def get_first_os_environ_access(tree: ast.AST) -> int | None:
         Line number of first os.environ access, or None if not found
     """
     for node in ast.walk(tree):
-        if isinstance(node, ast.Attribute):
-            if node.attr == "environ":
-                if isinstance(node.value, ast.Name):
-                    if node.value.id == "os":
-                        return node.lineno
+        if isinstance(node, ast.Attribute) and node.attr == "environ":
+            if isinstance(node.value, ast.Name) and node.value.id == "os":
+                return node.lineno
     return None
 
 
@@ -423,14 +421,15 @@ class TestBootstrapCallOrdering:
         # If bootstrap is first statement in main(), it's compliant
         if main_func and main_func.body:
             first_stmt = main_func.body[0]
-            if isinstance(first_stmt, ast.Expr) and isinstance(
-                first_stmt.value, ast.Call
-            ):
-                if (
+            if (
+                isinstance(first_stmt, ast.Expr)
+                and isinstance(first_stmt.value, ast.Call)
+                and (
                     isinstance(first_stmt.value.func, ast.Name)
                     and first_stmt.value.func.id == "bootstrap"
-                ):
-                    return  # Bootstrap is first in main() - compliant!
+                )
+            ):
+                return  # Bootstrap is first in main() - compliant!
 
         # Otherwise, check line number ordering for module-level access
         first_getenv_line = get_first_os_getenv_call(tree)

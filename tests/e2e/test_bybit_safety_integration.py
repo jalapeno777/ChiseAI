@@ -502,7 +502,7 @@ class TestAuditTrail:
         orchestrator.clear_audit_trail()
 
         # Generate many events
-        for i in range(10):
+        for _i in range(10):
             await orchestrator.validate_demo_mode()
 
         # Get limited events

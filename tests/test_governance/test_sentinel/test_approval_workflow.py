@@ -1,15 +1,15 @@
 """Tests for Approval Workflow module (ST-GOV-003)."""
 
-import pytest
-from datetime import datetime, timedelta
-from unittest.mock import MagicMock, patch
 import json
+from datetime import datetime, timedelta
+from unittest.mock import MagicMock
 
+import pytest
 from src.governance.sentinel.approval_workflow import (
-    ApprovalWorkflow,
     ApprovalRequest,
     ApprovalResult,
     ApprovalStatus,
+    ApprovalWorkflow,
 )
 
 
@@ -145,7 +145,7 @@ class TestApprovalWorkflow:
         mock_redis = MagicMock()
         workflow = ApprovalWorkflow(redis_client=mock_redis)
 
-        request_id = workflow.request_approval(
+        workflow.request_approval(
             task_id="ST-001",
             story_points=8,
             justification="Valid justification",
