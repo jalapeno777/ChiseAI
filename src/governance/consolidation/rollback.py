@@ -343,7 +343,8 @@ class RollbackManager:
         try:
             data = self._redis_client.get(f"{ROLLBACK_PREFIX}:{memory_id}")
             if data:
-                return json.loads(data)
+                result: dict[str, Any] = json.loads(data)
+                return result
         except Exception as e:
             logger.error(f"Error getting rollback info for {memory_id}: {e}")
 

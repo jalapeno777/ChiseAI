@@ -211,7 +211,7 @@ class ConstitutionMetricsExporter(BaseMetricsExporter):
         """Check if constitution feature is enabled."""
         if self._redis_client:
             try:
-                val = self._redis_client.get(
+                val: bytes | str | None = self._redis_client.get(
                     "chise:feature_flags:governance:constitution_enabled"
                 )
                 return val == b"true" or val == "true"

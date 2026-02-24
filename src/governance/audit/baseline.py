@@ -347,10 +347,10 @@ class RetrievalBaseline:
                     and stats.entries_scanned > 0
                 ):
                     # Calculate ratio based on dedup stats
-                    unique = stats.entries_scanned - getattr(
-                        stats, "entries_to_remove", 0
-                    )
-                    return unique / stats.entries_scanned
+                    entries_scanned: int = stats.entries_scanned
+                    entries_to_remove: int = getattr(stats, "entries_to_remove", 0)
+                    unique = entries_scanned - entries_to_remove
+                    return float(unique) / float(entries_scanned)
             except Exception as e:
                 logger.warning(f"Failed to get dedup stats: {e}")
 
