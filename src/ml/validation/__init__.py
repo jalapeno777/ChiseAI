@@ -18,17 +18,46 @@ from ml.validation.promotion import (
     PromotionResult,
     PromotionWorkflow,
 )
+from ml.validation.model_validator import (
+    CompositeGateResult,
+    DefaultInfluxDBLogger,
+    DegradationDetector,
+    GateResult,
+    GateStatus,
+    ShadowComparisonResult,
+    ShadowModeConfig,
+    ShadowModeManager,
+    ValidationGate as ModelValidationGate,
+    ValidationLevel,
+    ValidationThresholds,
+    validate_model_metrics,
+)
 
 __all__ = [
+    # From gate.py
     "ComparisonResult",
-    "PromotionRequest",
-    "PromotionRequestStatus",
-    "PromotionResult",
-    "PromotionWorkflow",
     "ValidationConfig",
     "ValidationGate",
     "ValidationMetrics",
     "ValidationMode",
     "ValidationRun",
     "ValidationState",
+    # From promotion.py
+    "PromotionRequest",
+    "PromotionRequestStatus",
+    "PromotionResult",
+    "PromotionWorkflow",
+    # From model_validator.py
+    "CompositeGateResult",
+    "DefaultInfluxDBLogger",
+    "DegradationDetector",
+    "GateResult",
+    "GateStatus",
+    "ModelValidationGate",
+    "ShadowComparisonResult",
+    "ShadowModeConfig",
+    "ShadowModeManager",
+    "ValidationLevel",
+    "ValidationThresholds",
+    "validate_model_metrics",
 ]
