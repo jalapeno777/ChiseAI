@@ -5,10 +5,9 @@ Provides Conv1D, LSTM, and Dense layers for time series pattern recognition.
 """
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import Optional, Tuple, List
-import numpy as np
+from dataclasses import dataclass
 
+import numpy as np
 from src.neuro_symbolic.neural.activations import get_activation
 
 
@@ -28,13 +27,13 @@ class BaseLayer(ABC):
 
     def __init__(self, config: LayerConfig):
         self.config = config
-        self.weights: Optional[np.ndarray] = None
-        self.bias: Optional[np.ndarray] = None
+        self.weights: np.ndarray | None = None
+        self.bias: np.ndarray | None = None
         self.activation_fn, self.activation_deriv = get_activation(config.activation)
         self._initialized = False
 
     @abstractmethod
-    def initialize(self, seed: Optional[int] = None) -> None:
+    def initialize(self, seed: int | None = None) -> None:
         """Initialize layer weights."""
         pass
 
@@ -48,12 +47,12 @@ class BaseLayer(ABC):
         """Backward pass for gradient computation."""
         pass
 
-    def get_weights(self) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
+    def get_weights(self) -> tuple[np.ndarray | None, np.ndarray | None]:
         """Get layer weights and bias."""
         return self.weights, self.bias
 
     def set_weights(
-        self, weights: np.ndarray, bias: Optional[np.ndarray] = None
+        self, weights: np.ndarray, bias: np.ndarray | None = None
     ) -> None:
         """Set layer weights and bias."""
         self.weights = weights
@@ -66,10 +65,10 @@ class DenseLayer(BaseLayer):
 
     def __init__(self, config: LayerConfig):
         super().__init__(config)
-        self.last_input: Optional[np.ndarray] = None
-        self.last_activation: Optional[np.ndarray] = None
+        self.last_input: np.ndarray | None = None
+        self.last_activation: np.ndarray | None = None
 
-    def initialize(self, seed: Optional[int] = None) -> None:
+    def initialize(self, seed: int | None = None) -> None:
         """Initialize weights using Xavier/Glorot initialization."""
         if seed is not None:
             np.random.seed(seed)
@@ -138,10 +137,10 @@ class ConvLayer(BaseLayer):
         self.kernel_size: int = 3  # Default kernel size
         self.stride: int = 1
         self.padding: str = "same"
-        self.last_input: Optional[np.ndarray] = None
-        self.last_collected_inputs: Optional[np.ndarray] = None
+        self.last_input: np.ndarray | None = None
+        self.last_collected_inputs: np.ndarray | None = None
 
-    def initialize(self, seed: Optional[int] = None) -> None:
+    def initialize(self, seed: int | None = None) -> None:
         """Initialize convolutional filters."""
         if seed is not None:
             np.random.seed(seed)
@@ -260,28 +259,28 @@ class LSTMLayer(BaseLayer):
     def __init__(self, config: LayerConfig):
         super().__init__(config)
         self.return_sequences: bool = True
-        self.hidden_state: Optional[np.ndarray] = None
-        self.cell_state: Optional[np.ndarray] = None
+        self.hidden_state: np.ndarray | None = None
+        self.cell_state: np.ndarray | None = None
 
         # LSTM gates: forget, input, candidate, output
-        self.Wf: Optional[np.ndarray] = None  # Forget gate weights
-        self.Wi: Optional[np.ndarray] = None  # Input gate weights
-        self.Wc: Optional[np.ndarray] = None  # Candidate weights
-        self.Wo: Optional[np.ndarray] = None  # Output gate weights
+        self.Wf: np.ndarray | None = None  # Forget gate weights
+        self.Wi: np.ndarray | None = None  # Input gate weights
+        self.Wc: np.ndarray | None = None  # Candidate weights
+        self.Wo: np.ndarray | None = None  # Output gate weights
 
-        self.Uf: Optional[np.ndarray] = None  # Forget gate recurrent weights
-        self.Ui: Optional[np.ndarray] = None  # Input gate recurrent weights
-        self.Uc: Optional[np.ndarray] = None  # Candidate recurrent weights
-        self.Uo: Optional[np.ndarray] = None  # Output gate recurrent weights
+        self.Uf: np.ndarray | None = None  # Forget gate recurrent weights
+        self.Ui: np.ndarray | None = None  # Input gate recurrent weights
+        self.Uc: np.ndarray | None = None  # Candidate recurrent weights
+        self.Uo: np.ndarray | None = None  # Output gate recurrent weights
 
-        self.bf: Optional[np.ndarray] = None
-        self.bi: Optional[np.ndarray] = None
-        self.bc: Optional[np.ndarray] = None
-        self.bo: Optional[np.ndarray] = None
+        self.bf: np.ndarray | None = None
+        self.bi: np.ndarray | None = None
+        self.bc: np.ndarray | None = None
+        self.bo: np.ndarray | None = None
 
         self.cache: dict = {}
 
-    def initialize(self, seed: Optional[int] = None) -> None:
+    def initialize(self, seed: int | None = None) -> None:
         """Initialize LSTM weights."""
         if seed is not None:
             np.random.seed(seed)
@@ -479,9 +478,9 @@ class DropoutLayer(BaseLayer):
         config = LayerConfig(input_size=1, output_size=1)  # Placeholder
         super().__init__(config)
         self.rate = rate
-        self.mask: Optional[np.ndarray] = None
+        self.mask: np.ndarray | None = None
 
-    def initialize(self, seed: Optional[int] = None) -> None:
+    def initialize(self, seed: int | None = None) -> None:
         """Dropout doesn't have weights."""
         self._initialized = True
 

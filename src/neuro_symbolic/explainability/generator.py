@@ -6,10 +6,10 @@ natural language generation for reasoning chains.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional
-import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -157,7 +157,7 @@ class ExplanationGenerator:
         },
     }
 
-    def __init__(self, config: Optional[ExplanationConfig] = None):
+    def __init__(self, config: ExplanationConfig | None = None):
         """Initialize the explanation generator.
 
         Args:
@@ -259,7 +259,7 @@ class ExplanationGenerator:
         prediction: str,
         confidence: float,
         features: dict[str, Any],
-        timeframe: Optional[str] = None,
+        timeframe: str | None = None,
     ) -> ExplanationResult:
         """Generate an explanation for a price prediction.
 

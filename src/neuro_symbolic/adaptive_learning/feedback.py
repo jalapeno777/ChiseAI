@@ -3,17 +3,16 @@
 Processes trade outcomes and generates learning signals for model adaptation.
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Deque
-from datetime import datetime, timedelta
 from collections import deque
-import numpy as np
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Any
 
+import numpy as np
 from src.neuro_symbolic.learning.base import (
     FeedbackSignal,
-    SignalType,
     PerformanceMetrics,
-    LearningConfig,
+    SignalType,
 )
 
 
@@ -21,9 +20,9 @@ from src.neuro_symbolic.learning.base import (
 class FeedbackHistory:
     """Tracks historical feedback signals."""
 
-    signals: Deque[FeedbackSignal] = field(default_factory=lambda: deque(maxlen=1000))
-    rewards_by_strategy: Dict[str, Deque[float]] = field(default_factory=dict)
-    penalties_by_strategy: Dict[str, Deque[float]] = field(default_factory=dict)
+    signals: deque[FeedbackSignal] = field(default_factory=lambda: deque(maxlen=1000))
+    rewards_by_strategy: dict[str, deque[float]] = field(default_factory=dict)
+    penalties_by_strategy: dict[str, deque[float]] = field(default_factory=dict)
 
     def add_signal(self, signal: FeedbackSignal) -> None:
         """Add a feedback signal to history."""
@@ -39,7 +38,7 @@ class FeedbackHistory:
         elif signal.signal_type == SignalType.PENALTY:
             self.penalties_by_strategy[strategy].append(abs(signal.value))
 
-    def get_strategy_stats(self, strategy_id: str) -> Dict[str, float]:
+    def get_strategy_stats(self, strategy_id: str) -> dict[str, float]:
         """Get statistics for a specific strategy."""
         rewards = list(self.rewards_by_strategy.get(strategy_id, []))
         penalties = list(self.penalties_by_strategy.get(strategy_id, []))
@@ -83,7 +82,7 @@ class FeedbackIntegrator:
     for model adaptation.
     """
 
-    def __init__(self, config: Optional[IntegratorConfig] = None):
+    def __init__(self, config: IntegratorConfig | None = None):
         """Initialize the feedback integrator.
 
         Args:
@@ -91,16 +90,16 @@ class FeedbackIntegrator:
         """
         self.config = config or IntegratorConfig()
         self.history = FeedbackHistory()
-        self._pending_feedback: List[FeedbackSignal] = []
-        self._last_integration_time: Optional[datetime] = None
+        self._pending_feedback: list[FeedbackSignal] = []
+        self._last_integration_time: datetime | None = None
         self._integration_count: int = 0
 
     def process_trade_outcome(
         self,
         strategy_id: str,
-        outcome: Dict[str, Any],
-        trade_id: Optional[str] = None,
-        symbol: Optional[str] = None,
+        outcome: dict[str, Any],
+        trade_id: str | None = None,
+        symbol: str | None = None,
     ) -> FeedbackSignal:
         """Process a trade outcome and generate feedback signal.
 
@@ -204,9 +203,9 @@ class FeedbackIntegrator:
 
     def integrate_batch(
         self,
-        outcomes: List[Dict[str, Any]],
+        outcomes: list[dict[str, Any]],
         strategy_id: str,
-    ) -> List[FeedbackSignal]:
+    ) -> list[FeedbackSignal]:
         """Integrate a batch of trade outcomes.
 
         Args:
@@ -234,7 +233,7 @@ class FeedbackIntegrator:
     def compute_strategy_performance(
         self,
         strategy_id: str,
-        window: Optional[int] = None,
+        window: int | None = None,
     ) -> PerformanceMetrics:
         """Compute performance metrics for a strategy.
 
@@ -269,8 +268,8 @@ class FeedbackIntegrator:
         winning_trades = len(rewards)
 
         win_rate = winning_trades / total_trades if total_trades > 0 else 0.0
-        avg_win = np.mean(rewards) if rewards else 0.0
-        avg_loss = np.mean(penalties) if penalties else 0.0
+        _avg_win = np.mean(rewards) if rewards else 0.0
+        _avg_loss = np.mean(penalties) if penalties else 0.0
 
         # Profit factor
         profit_factor = (
@@ -321,8 +320,8 @@ class FeedbackIntegrator:
 
     def get_aggregated_feedback(
         self,
-        strategy_ids: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+        strategy_ids: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Get aggregated feedback across strategies.
 
         Args:
@@ -361,7 +360,7 @@ class FeedbackIntegrator:
             else None,
         }
 
-    def get_pending_feedback(self) -> List[FeedbackSignal]:
+    def get_pending_feedback(self) -> list[FeedbackSignal]:
         """Get and clear pending feedback signals.
 
         Returns:
@@ -392,8 +391,8 @@ class FeedbackIntegrator:
     def get_recent_signals(
         self,
         n: int = 100,
-        strategy_id: Optional[str] = None,
-    ) -> List[FeedbackSignal]:
+        strategy_id: str | None = None,
+    ) -> list[FeedbackSignal]:
         """Get the n most recent feedback signals.
 
         Args:

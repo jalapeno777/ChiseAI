@@ -6,11 +6,10 @@ metrics for explanation quality assessment.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional
-import logging
-import math
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +75,7 @@ class ConfidenceScore:
             min(1, self.overall_score + margin),
         )
 
-    def get_metric_by_name(self, name: str) -> Optional[ConfidenceMetric]:
+    def get_metric_by_name(self, name: str) -> ConfidenceMetric | None:
         """Get a specific metric by name."""
         for metric in self.metrics:
             if metric.name == name:
@@ -161,7 +160,7 @@ class ExplanationConfidenceScorer:
         "excellent_factors": 5,
     }
 
-    def __init__(self, config: Optional[ScoringConfig] = None):
+    def __init__(self, config: ScoringConfig | None = None):
         """Initialize the confidence scorer.
 
         Args:

@@ -8,10 +8,10 @@ convolutional and LSTM layers.
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any, Union
-import numpy as np
+from typing import Any
 
-from src.neuro_symbolic.neural.network import NeuralNetwork, NetworkConfig
+import numpy as np
+from src.neuro_symbolic.neural.network import NetworkConfig, NeuralNetwork
 
 
 class PatternType(Enum):
@@ -46,10 +46,10 @@ class PatternMatch:
     confidence: float
     start_idx: int
     end_idx: int
-    features: Dict[str, float] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    features: dict[str, float] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "pattern_type": self.pattern_type.value,
@@ -84,24 +84,21 @@ class PatternRecognitionEngine:
 
     PATTERN_NAMES = [p.value for p in PatternType if p != PatternType.UNKNOWN]
 
-    def __init__(self, config: Optional[PatternRecognitionConfig] = None):
+    def __init__(self, config: PatternRecognitionConfig | None = None):
         """Initialize pattern recognition engine.
 
         Args:
             config: Engine configuration. Uses defaults if None.
         """
         self.config = config or PatternRecognitionConfig()
-        self.network: Optional[NeuralNetwork] = None
+        self.network: NeuralNetwork | None = None
         self._build_network()
-        self._pattern_library: Dict[str, np.ndarray] = {}
+        self._pattern_library: dict[str, np.ndarray] = {}
         self._load_default_patterns()
 
     def _build_network(self) -> None:
         """Build the neural network for pattern recognition."""
         # Use a simpler architecture with Dense layers for reliability
-        # Flatten the sequence for dense layers
-        flattened_size = self.config.sequence_length * self.config.num_features
-
         network_config = NetworkConfig(
             input_shape=(self.config.sequence_length, self.config.num_features),
             output_size=self.config.num_pattern_classes,
@@ -242,7 +239,7 @@ class PatternRecognitionEngine:
 
     def preprocess_data(
         self,
-        data: Union[List[float], np.ndarray],
+        data: list[float] | np.ndarray,
         normalize: bool = True,
     ) -> np.ndarray:
         """Preprocess raw price data for pattern detection.
@@ -296,9 +293,9 @@ class PatternRecognitionEngine:
 
     def detect_patterns(
         self,
-        data: Union[List[float], np.ndarray],
+        data: list[float] | np.ndarray,
         return_all: bool = False,
-    ) -> Union[PatternMatch, List[PatternMatch], None]:
+    ) -> PatternMatch | list[PatternMatch] | None:
         """Detect patterns in price data.
 
         Args:
@@ -350,8 +347,8 @@ class PatternRecognitionEngine:
         return matches[0]
 
     def get_pattern_probabilities(
-        self, data: Union[List[float], np.ndarray]
-    ) -> Dict[str, float]:
+        self, data: list[float] | np.ndarray
+    ) -> dict[str, float]:
         """Get probability distribution over all patterns.
 
         Args:
@@ -367,12 +364,11 @@ class PatternRecognitionEngine:
             predictions = predictions[0]
 
         return {
-            name: float(prob) for name, prob in zip(self.PATTERN_NAMES, predictions)
+            name: float(prob)
+            for name, prob in zip(self.PATTERN_NAMES, predictions, strict=False)
         }
 
-    def compute_features(
-        self, data: Union[List[float], np.ndarray]
-    ) -> Dict[str, float]:
+    def compute_features(self, data: list[float] | np.ndarray) -> dict[str, float]:
         """Compute technical features for pattern analysis.
 
         Args:
@@ -431,7 +427,7 @@ class PatternRecognitionEngine:
         x: np.ndarray,
         y: np.ndarray,
         **kwargs,
-    ) -> Dict[str, List[float]]:
+    ) -> dict[str, list[float]]:
         """Train the pattern recognition model.
 
         Args:
@@ -447,7 +443,7 @@ class PatternRecognitionEngine:
 
         return self.network.fit(x, y, **kwargs)
 
-    def save(self, path: Union[str, Path]) -> None:
+    def save(self, path: str | Path) -> None:
         """Save engine state to disk.
 
         Args:
@@ -477,7 +473,7 @@ class PatternRecognitionEngine:
             json.dump(config_dict, f, indent=2)
 
     @classmethod
-    def load(cls, path: Union[str, Path]) -> "PatternRecognitionEngine":
+    def load(cls, path: str | Path) -> "PatternRecognitionEngine":
         """Load engine from saved state.
 
         Args:
@@ -490,7 +486,7 @@ class PatternRecognitionEngine:
 
         path = Path(path)
 
-        with open(path / "engine_config.json", "r") as f:
+        with open(path / "engine_config.json") as f:
             config_dict = json.load(f)
 
         config = PatternRecognitionConfig(**config_dict)
@@ -501,7 +497,7 @@ class PatternRecognitionEngine:
 
         return engine
 
-    def get_supported_patterns(self) -> List[str]:
+    def get_supported_patterns(self) -> list[str]:
         """Get list of supported pattern types.
 
         Returns:

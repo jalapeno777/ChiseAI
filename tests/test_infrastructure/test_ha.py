@@ -1,10 +1,9 @@
 """Tests for High Availability Infrastructure (NFR-006)."""
 
 import asyncio
-from datetime import UTC, datetime
+from datetime import datetime
 
 import pytest
-
 from src.infrastructure.ha.health_check import (
     HealthCheckConfig,
     HealthChecker,

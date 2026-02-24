@@ -1,18 +1,17 @@
 """Tests for TLS 1.3 Implementation."""
 
-import os
-import pytest
 import ssl
+from datetime import UTC
 
 from src.security.tls.tls13 import (
-    TLSVersion,
-    CipherSuite,
     CertificateInfo,
+    CipherSuite,
     TLSConfig,
     TLSContext,
     TLSServer,
-    create_default_tls_config,
+    TLSVersion,
     check_tls_support,
+    create_default_tls_config,
 )
 
 
@@ -51,19 +50,19 @@ class TestCertificateInfo:
 
     def test_certificate_info_expiry(self):
         """Test certificate expiry checking."""
-        from datetime import datetime, timezone, timedelta
+        from datetime import datetime, timedelta
 
         # Not expired
         info = CertificateInfo(
             path="cert.pem",
-            not_after=datetime.now(timezone.utc) + timedelta(days=30),
+            not_after=datetime.now(UTC) + timedelta(days=30),
         )
         assert info.is_expired() is False
 
         # Expired
         expired = CertificateInfo(
             path="cert.pem",
-            not_after=datetime.now(timezone.utc) - timedelta(days=1),
+            not_after=datetime.now(UTC) - timedelta(days=1),
         )
         assert expired.is_expired() is True
 
@@ -74,11 +73,11 @@ class TestCertificateInfo:
 
     def test_days_until_expiry(self):
         """Test days until expiry calculation."""
-        from datetime import datetime, timezone, timedelta
+        from datetime import datetime, timedelta
 
         info = CertificateInfo(
             path="cert.pem",
-            not_after=datetime.now(timezone.utc) + timedelta(days=10),
+            not_after=datetime.now(UTC) + timedelta(days=10),
         )
         # Allow for some timing variance
         assert info.days_until_expiry() >= 9

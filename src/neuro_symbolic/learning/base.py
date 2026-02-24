@@ -5,9 +5,10 @@ performance metrics, and adaptation results.
 """
 
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Dict, List, Optional, Any, Union
 from datetime import datetime
+from enum import Enum
+from typing import Any
+
 import numpy as np
 
 
@@ -53,7 +54,7 @@ class LearningConfig:
     enable_auto_rollback: bool = True
     validation_split: float = 0.2
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "learning_rate": self.learning_rate,
@@ -69,7 +70,7 @@ class LearningConfig:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "LearningConfig":
+    def from_dict(cls, data: dict[str, Any]) -> "LearningConfig":
         """Create from dictionary."""
         return cls(**{k: v for k, v in data.items() if hasattr(cls, k)})
 
@@ -85,9 +86,9 @@ class FeedbackSignal:
     value: float
     strategy_id: str
     timestamp: datetime = field(default_factory=datetime.now)
-    trade_id: Optional[str] = None
-    symbol: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    trade_id: str | None = None
+    symbol: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         """Validate signal after initialization."""
@@ -96,7 +97,7 @@ class FeedbackSignal:
         if self.signal_type == SignalType.PENALTY and self.value > 0:
             raise ValueError("Penalty signal must have non-positive value")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "signal_type": self.signal_type.value,
@@ -109,7 +110,7 @@ class FeedbackSignal:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "FeedbackSignal":
+    def from_dict(cls, data: dict[str, Any]) -> "FeedbackSignal":
         """Create from dictionary."""
         return cls(
             signal_type=SignalType(data["signal_type"]),
@@ -149,7 +150,7 @@ class PerformanceMetrics:
     max_drawdown: float = 0.0
     sample_count: int = 0
     timestamp: datetime = field(default_factory=datetime.now)
-    per_strategy: Dict[str, Dict[str, float]] = field(default_factory=dict)
+    per_strategy: dict[str, dict[str, float]] = field(default_factory=dict)
 
     def __post_init__(self):
         """Validate metrics after initialization."""
@@ -158,7 +159,7 @@ class PerformanceMetrics:
             if not 0.0 <= value <= 1.0:
                 raise ValueError(f"{attr} must be between 0 and 1, got {value}")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "accuracy": self.accuracy,
@@ -175,7 +176,7 @@ class PerformanceMetrics:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "PerformanceMetrics":
+    def from_dict(cls, data: dict[str, Any]) -> "PerformanceMetrics":
         """Create from dictionary."""
         return cls(
             accuracy=data.get("accuracy", 0.0),
@@ -257,20 +258,20 @@ class AdaptationResult:
 
     status: AdaptationStatus
     timestamp: datetime = field(default_factory=datetime.now)
-    previous_metrics: Optional[PerformanceMetrics] = None
-    new_metrics: Optional[PerformanceMetrics] = None
-    parameters_changed: Dict[str, Any] = field(default_factory=dict)
-    error_message: Optional[str] = None
+    previous_metrics: PerformanceMetrics | None = None
+    new_metrics: PerformanceMetrics | None = None
+    parameters_changed: dict[str, Any] = field(default_factory=dict)
+    error_message: str | None = None
     adaptation_id: str = ""
     rollback_available: bool = False
-    trigger: Optional[TriggerCondition] = None
+    trigger: TriggerCondition | None = None
 
     def __post_init__(self):
         """Generate adaptation ID if not provided."""
         if not self.adaptation_id:
             self.adaptation_id = f"adapt_{self.timestamp.strftime('%Y%m%d_%H%M%S')}"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "status": self.status.value,
@@ -287,7 +288,7 @@ class AdaptationResult:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "AdaptationResult":
+    def from_dict(cls, data: dict[str, Any]) -> "AdaptationResult":
         """Create from dictionary."""
         return cls(
             status=AdaptationStatus(data["status"]),
@@ -311,7 +312,7 @@ class AdaptationResult:
         return self.status == AdaptationStatus.SUCCESS
 
     @property
-    def improvement(self) -> Optional[float]:
+    def improvement(self) -> float | None:
         """Compute improvement in accuracy if both metrics available."""
         if self.previous_metrics and self.new_metrics:
             return self.new_metrics.accuracy - self.previous_metrics.accuracy
@@ -327,12 +328,12 @@ class ModelCheckpoint:
 
     checkpoint_id: str
     timestamp: datetime = field(default_factory=datetime.now)
-    parameters: Dict[str, np.ndarray] = field(default_factory=dict)
-    metrics: Optional[PerformanceMetrics] = None
-    config: Optional[LearningConfig] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    parameters: dict[str, np.ndarray] = field(default_factory=dict)
+    metrics: PerformanceMetrics | None = None
+    config: LearningConfig | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary (without numpy arrays)."""
         return {
             "checkpoint_id": self.checkpoint_id,
@@ -344,7 +345,7 @@ class ModelCheckpoint:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ModelCheckpoint":
+    def from_dict(cls, data: dict[str, Any]) -> "ModelCheckpoint":
         """Create from dictionary."""
         return cls(
             checkpoint_id=data["checkpoint_id"],

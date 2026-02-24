@@ -1,19 +1,18 @@
 """Tests for CI/CD Pipeline."""
 
-import pytest
-from datetime import datetime, timezone
-from unittest.mock import patch, MagicMock
+from datetime import UTC, datetime
+from unittest.mock import MagicMock, patch
 
 from scripts.ci.pipeline import (
+    CIPipeline,
+    LintStage,
+    PipelineConfig,
     PipelineStage,
     PipelineStatus,
-    StageResult,
-    PipelineConfig,
-    StageRunner,
-    LintStage,
-    TestStage,
     SecurityStage,
-    CIPipeline,
+    StageResult,
+    StageRunner,
+    TestStage,
 )
 
 
@@ -49,7 +48,7 @@ class TestStageResult:
         result = StageResult(
             stage=PipelineStage.LINT,
             status=PipelineStatus.SUCCESS,
-            start_time=datetime.now(timezone.utc),
+            start_time=datetime.now(UTC),
         )
         assert result.stage == PipelineStage.LINT
         assert result.status == PipelineStatus.SUCCESS
@@ -57,8 +56,8 @@ class TestStageResult:
 
     def test_result_to_dict(self):
         """Test serializing result to dict."""
-        start = datetime.now(timezone.utc)
-        end = datetime.now(timezone.utc)
+        start = datetime.now(UTC)
+        end = datetime.now(UTC)
         result = StageResult(
             stage=PipelineStage.TEST,
             status=PipelineStatus.SUCCESS,
@@ -80,7 +79,7 @@ class TestStageResult:
         result = StageResult(
             stage=PipelineStage.LINT,
             status=PipelineStatus.FAILED,
-            start_time=datetime.now(timezone.utc),
+            start_time=datetime.now(UTC),
             error="Linting failed",
         )
         assert result.status == PipelineStatus.FAILED
@@ -229,17 +228,17 @@ class TestCIPipeline:
         mock_lint.return_value = StageResult(
             stage=PipelineStage.LINT,
             status=PipelineStatus.SUCCESS,
-            start_time=datetime.now(timezone.utc),
+            start_time=datetime.now(UTC),
         )
         mock_test.return_value = StageResult(
             stage=PipelineStage.TEST,
             status=PipelineStatus.SUCCESS,
-            start_time=datetime.now(timezone.utc),
+            start_time=datetime.now(UTC),
         )
         mock_sec.return_value = StageResult(
             stage=PipelineStage.SECURITY,
             status=PipelineStatus.SUCCESS,
-            start_time=datetime.now(timezone.utc),
+            start_time=datetime.now(UTC),
         )
 
         report = ci_pipeline.run()
@@ -264,7 +263,7 @@ class TestCIPipeline:
             StageResult(
                 stage=PipelineStage.LINT,
                 status=PipelineStatus.SUCCESS,
-                start_time=datetime.now(timezone.utc),
+                start_time=datetime.now(UTC),
             )
         ]
         is_green = ci_pipeline.is_green()
@@ -275,7 +274,7 @@ class TestCIPipeline:
             StageResult(
                 stage=PipelineStage.LINT,
                 status=PipelineStatus.FAILED,
-                start_time=datetime.now(timezone.utc),
+                start_time=datetime.now(UTC),
             )
         ]
         is_green = ci_pipeline.is_green()
@@ -294,7 +293,7 @@ class TestCIPipeline:
             mock_lint.return_value = StageResult(
                 stage=PipelineStage.LINT,
                 status=PipelineStatus.SUCCESS,
-                start_time=datetime.now(timezone.utc),
+                start_time=datetime.now(UTC),
             )
             report = pipeline.run()
 

@@ -7,11 +7,11 @@ explanation summaries.
 
 from __future__ import annotations
 
+import json
+import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional
-import logging
-import json
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +84,9 @@ class PlotData:
         """Generate Vega-Lite bar chart spec."""
         data_values = [
             {"feature": label, "value": val, "color": color}
-            for label, val, color in zip(self.labels, self.y_data, self.colors)
+            for label, val, color in zip(
+                self.labels, self.y_data, self.colors, strict=False
+            )
         ]
 
         return {
@@ -132,7 +134,7 @@ class PlotData:
         """Generate waterfall data."""
         cumulative = 0
         data = []
-        for label, value in zip(self.labels, self.y_data):
+        for label, value in zip(self.labels, self.y_data, strict=False):
             cumulative += value
             data.append(
                 {
@@ -151,7 +153,9 @@ class PlotData:
             "data": {
                 "values": [
                     {"x": x, "y": y, "label": label}
-                    for x, y, label in zip(self.x_data, self.y_data, self.labels)
+                    for x, y, label in zip(
+                        self.x_data, self.y_data, self.labels, strict=False
+                    )
                 ]
             },
             "mark": "point",
@@ -248,7 +252,7 @@ class ExplanationVisualizer:
         "#084594",
     ]
 
-    def __init__(self, config: Optional[VisualizationConfig] = None):
+    def __init__(self, config: VisualizationConfig | None = None):
         """Initialize the visualizer.
 
         Args:
@@ -264,7 +268,7 @@ class ExplanationVisualizer:
         self,
         feature_importance: dict[str, float],
         title: str = "Feature Importance",
-        config: Optional[VisualizationConfig] = None,
+        config: VisualizationConfig | None = None,
     ) -> VisualizationResult:
         """Create a feature importance visualization.
 

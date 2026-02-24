@@ -4,19 +4,20 @@ Neural network model for pattern recognition.
 Provides a flexible neural network architecture for time series pattern analysis.
 """
 
+import json
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional, Dict, Any, Union, Callable
-import json
-import numpy as np
+from typing import Any
 
+import numpy as np
 from src.neuro_symbolic.neural.layers import (
     BaseLayer,
-    DenseLayer,
     ConvLayer,
-    LSTMLayer,
+    DenseLayer,
     DropoutLayer,
     LayerConfig,
+    LSTMLayer,
 )
 
 
@@ -26,7 +27,7 @@ class NetworkConfig:
 
     input_shape: tuple  # (sequence_length, features)
     output_size: int
-    layers: List[Dict[str, Any]] = field(default_factory=list)
+    layers: list[dict[str, Any]] = field(default_factory=list)
     learning_rate: float = 0.001
     loss: str = "mse"
 
@@ -37,16 +38,16 @@ class NeuralNetwork:
     Supports stacking of Conv1D, LSTM, and Dense layers for time series analysis.
     """
 
-    def __init__(self, config: Optional[NetworkConfig] = None):
+    def __init__(self, config: NetworkConfig | None = None):
         """Initialize neural network.
 
         Args:
             config: Network configuration. If None, creates default architecture.
         """
         self.config = config or self._default_config()
-        self.layers: List[BaseLayer] = []
+        self.layers: list[BaseLayer] = []
         self._build_network()
-        self.training_history: List[Dict[str, float]] = []
+        self.training_history: list[dict[str, float]] = []
 
     def _default_config(self) -> NetworkConfig:
         """Create default network configuration."""
@@ -153,7 +154,7 @@ class NeuralNetwork:
         self,
         predictions: np.ndarray,
         targets: np.ndarray,
-        loss_type: Optional[str] = None,
+        loss_type: str | None = None,
     ) -> float:
         """Compute loss between predictions and targets.
 
@@ -192,7 +193,7 @@ class NeuralNetwork:
         self,
         predictions: np.ndarray,
         targets: np.ndarray,
-        loss_type: Optional[str] = None,
+        loss_type: str | None = None,
     ) -> np.ndarray:
         """Compute gradient of loss w.r.t. predictions.
 
@@ -226,8 +227,8 @@ class NeuralNetwork:
         batch_size: int = 32,
         validation_split: float = 0.1,
         verbose: bool = True,
-        callbacks: Optional[List[Callable]] = None,
-    ) -> Dict[str, List[float]]:
+        callbacks: list[Callable] | None = None,
+    ) -> dict[str, list[float]]:
         """Train the network.
 
         Args:
@@ -299,8 +300,10 @@ class NeuralNetwork:
                     callback(epoch, train_loss, val_loss)
 
         self.training_history = [
-            {"epoch": i, "loss": l, "val_loss": vl}
-            for i, (l, vl) in enumerate(zip(history["loss"], history["val_loss"]))
+            {"epoch": i, "loss": loss_val, "val_loss": vl}
+            for i, (loss_val, vl) in enumerate(
+                zip(history["loss"], history["val_loss"], strict=False)
+            )
         ]
         return history
 
@@ -327,7 +330,7 @@ class NeuralNetwork:
         predictions = self.predict(x)
         return np.argmax(predictions, axis=-1)
 
-    def evaluate(self, x: np.ndarray, y: np.ndarray) -> Dict[str, float]:
+    def evaluate(self, x: np.ndarray, y: np.ndarray) -> dict[str, float]:
         """Evaluate network performance.
 
         Args:
@@ -350,7 +353,7 @@ class NeuralNetwork:
             "accuracy": accuracy,
         }
 
-    def save(self, path: Union[str, Path]) -> None:
+    def save(self, path: str | Path) -> None:
         """Save model weights and configuration.
 
         Args:
@@ -402,7 +405,7 @@ class NeuralNetwork:
             json.dump(weights_dict, f)
 
     @classmethod
-    def load(cls, path: Union[str, Path]) -> "NeuralNetwork":
+    def load(cls, path: str | Path) -> "NeuralNetwork":
         """Load model from saved state.
 
         Args:
@@ -414,7 +417,7 @@ class NeuralNetwork:
         path = Path(path)
 
         # Load configuration
-        with open(path / "config.json", "r") as f:
+        with open(path / "config.json") as f:
             config_dict = json.load(f)
 
         config = NetworkConfig(
@@ -428,7 +431,7 @@ class NeuralNetwork:
         network = cls(config)
 
         # Load weights
-        with open(path / "weights.json", "r") as f:
+        with open(path / "weights.json") as f:
             weights_dict = json.load(f)
 
         for i, layer in enumerate(network.layers):

@@ -1,14 +1,12 @@
 """Modality encoder for encoding different data types into unified representations."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 from src.neuro_symbolic.multimodal.types import (
     EncodedSignal,
     ModalityType,
     MultiModalSignal,
-    SignalMetadata,
-    TemporalContext,
 )
 
 

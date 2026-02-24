@@ -4,10 +4,9 @@ Activation functions for neural networks.
 Provides common activation functions with their derivatives for backpropagation.
 """
 
-from typing import Union
 import numpy as np
 
-ArrayLike = Union[np.ndarray, float]
+ArrayLike = np.ndarray | float
 
 
 def relu(x: ArrayLike) -> ArrayLike:
