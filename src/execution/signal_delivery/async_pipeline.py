@@ -11,7 +11,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar, cast
 
 if TYPE_CHECKING:
     import redis.asyncio as aioredis
@@ -312,7 +312,7 @@ class AsyncSignalPipeline:
                         )
                     )
                 else:
-                    results.append(result)
+                    results.append(cast(DeliveryResult[Any], result))
 
         return results
 
@@ -375,7 +375,8 @@ class AsyncSignalPipeline:
         """
         try:
             # Check Redis connectivity
-            await self.redis.ping()
+            # redis.ping() returns Awaitable[bool] but TYPE_CHECKING import confuses mypy
+            await self.redis.ping()  # type: ignore[misc]
 
             stats = self.get_stats()
 
