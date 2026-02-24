@@ -13,11 +13,10 @@ Tests cover:
 - Task 13.5: Audit history (90-day retention)
 """
 
-import asyncio
+import importlib.util
+import os
 import sys
 import time
-import os
-import importlib.util
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
