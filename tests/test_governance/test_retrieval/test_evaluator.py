@@ -10,16 +10,14 @@ Tests cover:
 - Human validation sampling
 """
 
-import pytest
-from datetime import datetime, UTC
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
+import pytest
 from src.governance.retrieval.evaluator import (
-    RetrievalEvaluator,
-    RetrievalResult,
-    RetrievalMetrics,
-    QueryEvaluation,
     RelevanceLabel,
+    RetrievalEvaluator,
+    RetrievalMetrics,
+    RetrievalResult,
 )
 
 

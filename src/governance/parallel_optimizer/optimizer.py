@@ -7,43 +7,37 @@ interface for task scheduling, conflict resolution, and throughput optimization.
 Story: ST-GOV-010
 """
 
-from dataclasses import dataclass, field
-from typing import Callable, Optional
 import logging
-import uuid
-from datetime import datetime
+from collections.abc import Callable
+from dataclasses import dataclass
 
-from src.governance.parallel_optimizer.models import (
-    OptimizableTask,
-    TaskPriority,
-    TaskBatch,
-    BatchStatus,
-    ExecutionPlan,
-    ThroughputMetrics,
-    ConflictAnalysis,
-    OptimizationResult,
+from src.governance.parallel_optimizer.conflict_analyzer import (
+    ConflictMatrix,
+    ScopeConflictAnalyzer,
 )
 from src.governance.parallel_optimizer.dependency_graph import (
-    DependencyGraphBuilder,
     DependencyGraph,
+    DependencyGraphBuilder,
 )
-from src.governance.parallel_optimizer.conflict_analyzer import (
-    ScopeConflictAnalyzer,
-    ConflictMatrix,
+from src.governance.parallel_optimizer.models import (
+    BatchStatus,
+    ConflictAnalysis,
+    ExecutionPlan,
+    OptimizableTask,
+    OptimizationResult,
+    ThroughputMetrics,
+)
+from src.governance.parallel_optimizer.rollback import (
+    BatchRollbackExecutor,
+    RollbackManager,
+    RollbackResult,
 )
 from src.governance.parallel_optimizer.scheduler import (
     ExecutionScheduler,
     SchedulingConfig,
 )
-from src.governance.parallel_optimizer.rollback import (
-    RollbackManager,
-    RollbackCheckpoint,
-    RollbackResult,
-    BatchRollbackExecutor,
-)
 from src.governance.parallel_optimizer.throughput import (
     ThroughputMeter,
-    ThroughputComparator,
 )
 
 logger = logging.getLogger(__name__)
@@ -108,7 +102,7 @@ class ParallelOptimizer:
 
     def __init__(
         self,
-        config: Optional[OptimizerConfig] = None,
+        config: OptimizerConfig | None = None,
         redis_client=None,
     ):
         """
@@ -134,7 +128,7 @@ class ParallelOptimizer:
         self._throughput_meter = ThroughputMeter()
 
         # Execution state
-        self._current_plan: Optional[ExecutionPlan] = None
+        self._current_plan: ExecutionPlan | None = None
         self._completed_tasks: set[str] = set()
         self._failed_tasks: set[str] = set()
 
@@ -165,8 +159,8 @@ class ParallelOptimizer:
     def optimize_parallel_schedule(
         self,
         tasks: list[OptimizableTask],
-        max_parallel: Optional[int] = None,
-        priority_weights: Optional[dict[str, float]] = None,
+        max_parallel: int | None = None,
+        priority_weights: dict[str, float] | None = None,
     ) -> ExecutionPlan:
         """
         Create an optimized parallel execution schedule.
@@ -192,7 +186,7 @@ class ParallelOptimizer:
     def create_execution_plan(
         self,
         tasks: list[OptimizableTask],
-        plan_id: Optional[str] = None,
+        plan_id: str | None = None,
     ) -> ExecutionPlan:
         """
         Create a complete execution plan for the given tasks.
@@ -237,7 +231,7 @@ class ParallelOptimizer:
             batch_executor = None
 
         all_success = True
-        last_rollback: Optional[RollbackResult] = None
+        last_rollback: RollbackResult | None = None
 
         # Execute batches sequentially (parallel within batch is external)
         for batch in plan.batches:
@@ -326,7 +320,7 @@ class ParallelOptimizer:
         self,
         success: bool,
         metrics: ThroughputMetrics,
-        rollback_result: Optional[RollbackResult],
+        rollback_result: RollbackResult | None,
     ) -> str:
         """Build a human-readable result message."""
         parts = []

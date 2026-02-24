@@ -12,7 +12,7 @@ import json
 import logging
 import uuid
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Any, Protocol, runtime_checkable
 
 from src.governance.audit_trail.decision import (
@@ -87,15 +87,17 @@ class HashChainState:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "HashChainState":
+    def from_dict(cls, data: dict[str, Any]) -> HashChainState:
         """Create chain state from dictionary."""
         return cls(
             last_hash=data.get("last_hash", "sha256:genesis"),
             chain_length=data.get("chain_length", 0),
             genesis_hash=data.get("genesis_hash", "sha256:genesis"),
-            last_timestamp=datetime.fromisoformat(data["last_timestamp"])
-            if "last_timestamp" in data
-            else datetime.now(UTC),
+            last_timestamp=(
+                datetime.fromisoformat(data["last_timestamp"])
+                if "last_timestamp" in data
+                else datetime.now(UTC)
+            ),
         )
 
 
@@ -184,7 +186,7 @@ class AuditTrailEntry:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "AuditTrailEntry":
+    def from_dict(cls, data: dict[str, Any]) -> AuditTrailEntry:
         """Create entry from dictionary."""
         return cls(
             decision_id=data["decision_id"],
@@ -567,10 +569,7 @@ class AuditTrail:
         # Get entries in chronological order
         # In-memory entries are appended (oldest first)
         # Redis entries are lpushed (newest first), so need reversal
-        if loaded_from_redis:
-            entries = list(reversed(self._entries))
-        else:
-            entries = self._entries
+        entries = list(reversed(self._entries)) if loaded_from_redis else self._entries
 
         # Determine starting point
         expected_prev = start_hash or "sha256:genesis"

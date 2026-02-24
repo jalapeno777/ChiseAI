@@ -9,6 +9,7 @@ For ST-DATA-002: Execution Market Data Ingestion - Bybit/Bitget
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -171,10 +172,8 @@ class ExecutionHealthMonitor:
 
         if self._monitor_task and not self._monitor_task.done():
             self._monitor_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._monitor_task
-            except asyncio.CancelledError:
-                pass
 
         logger.info("Execution health monitor stopped")
 

@@ -104,21 +104,20 @@ class RedisRestartAction(BaseHealingAction):
 
         # Step 1: Close existing connections
         try:
-            if self._redis_client:
-                if hasattr(self._redis_client, "close"):
-                    # Use close method directly if available
-                    if asyncio.iscoroutinefunction(self._redis_client.close):
-                        # Async close - schedule in event loop if one exists
-                        try:
-                            loop = asyncio.get_running_loop()
-                            loop.create_task(self._redis_client.close())
-                        except RuntimeError:
-                            # No event loop running - skip async close
-                            pass
-                    else:
-                        # Sync close
-                        self._redis_client.close()
-                    steps.append("closed_existing_connections")
+            if self._redis_client and hasattr(self._redis_client, "close"):
+                # Use close method directly if available
+                if asyncio.iscoroutinefunction(self._redis_client.close):
+                    # Async close - schedule in event loop if one exists
+                    try:
+                        loop = asyncio.get_running_loop()
+                        loop.create_task(self._redis_client.close())
+                    except RuntimeError:
+                        # No event loop running - skip async close
+                        pass
+                else:
+                    # Sync close
+                    self._redis_client.close()
+                steps.append("closed_existing_connections")
         except Exception as e:
             logger.warning(f"Error closing existing connections: {e}")
             steps.append(f"close_warning: {str(e)}")

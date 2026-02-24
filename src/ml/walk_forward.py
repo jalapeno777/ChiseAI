@@ -92,9 +92,9 @@ class TemporalWindow:
             True if no overlap exists
         """
         # Check if test periods overlap
-        if self.test_start < other.test_end and other.test_start < self.test_end:
-            return False
-        return True
+        return not (
+            self.test_start < other.test_end and other.test_start < self.test_end
+        )
 
     def contains_timestamp(self, ts: datetime, period: str = "test") -> bool:
         """Check if a timestamp falls within the specified period.

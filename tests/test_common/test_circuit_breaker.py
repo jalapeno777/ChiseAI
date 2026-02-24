@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import threading
 import time
 
@@ -224,10 +225,8 @@ class TestCircuitBreakerMetrics:
         cb = CircuitBreaker(failure_threshold=1)
         cb.record_failure("error")
 
-        try:
+        with contextlib.suppress(CircuitBreakerOpen):
             cb.call(lambda: "success")
-        except CircuitBreakerOpen:
-            pass
 
         assert cb.metrics.rejection_count == 1
 

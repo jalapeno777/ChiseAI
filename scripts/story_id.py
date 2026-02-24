@@ -62,10 +62,7 @@ def extract_story_ids(text: str) -> list[str]:
 
 def contains_valid_story_id(text: str) -> bool:
     """Return True when text contains an accepted story id with at least one digit."""
-    for token in extract_story_ids(text):
-        if any(ch.isdigit() for ch in token):
-            return True
-    return False
+    return any(any(ch.isdigit() for ch in token) for token in extract_story_ids(text))
 
 
 def has_story_id_token(text: str, story_id: str) -> bool:

@@ -9,9 +9,8 @@ Epic: EP-AUTO-GIT-001
 """
 
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Optional
 from datetime import datetime
+from enum import Enum
 
 
 class ReviewStatus(Enum):
@@ -42,10 +41,10 @@ class ReviewResult:
     classification: PRClassification
     review_comments: list[str] = field(default_factory=list)
     approved: bool = False
-    escalation_reason: Optional[str] = None
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    duration_seconds: Optional[float] = None
+    escalation_reason: str | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    duration_seconds: float | None = None
 
 
 @dataclass
@@ -72,7 +71,7 @@ class StandardPathHandler:
             await handler.escalate_to_human(pr_number=123, reason=result.escalation_reason)
     """
 
-    def __init__(self, config: Optional[StandardPathConfig] = None):
+    def __init__(self, config: StandardPathConfig | None = None):
         """
         Initialize the standard path handler.
 
@@ -110,7 +109,7 @@ class StandardPathHandler:
         self._active_reviews[pr_number] = result
         return result
 
-    async def get_review_status(self, pr_number: int) -> Optional[ReviewResult]:
+    async def get_review_status(self, pr_number: int) -> ReviewResult | None:
         """
         Get the current status of a PR review.
 
@@ -125,7 +124,7 @@ class StandardPathHandler:
         return self._active_reviews.get(pr_number)
 
     async def escalate_to_human(
-        self, pr_number: int, reason: str, assignees: Optional[list[str]] = None
+        self, pr_number: int, reason: str, assignees: list[str] | None = None
     ) -> bool:
         """
         Escalate a PR to human review (complex path).

@@ -19,6 +19,8 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "scripts"))
 
+import contextlib
+
 from scripts.run_trading_activity import (
     TradingActivityMetrics,
     TradingModeLoader,
@@ -192,7 +194,7 @@ class TestTradingActivityIntegration:
                 loader._running = True
 
                 # Run loop with timeout
-                try:
+                with contextlib.suppress(TimeoutError):
                     await asyncio.wait_for(
                         asyncio.gather(
                             run_trading_loop(loader, metrics, duration_seconds=5),
@@ -200,8 +202,6 @@ class TestTradingActivityIntegration:
                         ),
                         timeout=2.0,
                     )
-                except TimeoutError:
-                    pass
 
         # Verify multiple cycles ran
         assert cycle_count >= 2

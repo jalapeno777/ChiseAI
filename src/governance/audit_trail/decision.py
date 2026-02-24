@@ -107,7 +107,7 @@ class Decision:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Decision":
+    def from_dict(cls, data: dict[str, Any]) -> Decision:
         """Create decision from dictionary."""
         principles_data = data.get("constitution_principles", [])
         principles = [ConstitutionPrinciple(p) for p in principles_data]

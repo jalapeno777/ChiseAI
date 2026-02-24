@@ -293,9 +293,8 @@ class DashboardOptimizer:
                     variable["cacheDuration"] = self.VARIABLE_CACHE_TTL
 
             # Add caching for datasource variables
-            if var_type == "datasource":
-                if "cacheDuration" not in variable:
-                    variable["cacheDuration"] = self.VARIABLE_CACHE_TTL
+            if var_type == "datasource" and "cacheDuration" not in variable:
+                variable["cacheDuration"] = self.VARIABLE_CACHE_TTL
 
     def _add_lazy_loading(self, dashboard: dict) -> None:
         """Add lazy loading configuration for large dashboards.
@@ -526,10 +525,7 @@ class DashboardOptimizer:
         json_files = list(dashboards_dir.glob("*.json"))
 
         for json_file in json_files:
-            if output_dir:
-                output_path = Path(output_dir) / json_file.name
-            else:
-                output_path = None
+            output_path = Path(output_dir) / json_file.name if output_dir else None
 
             result = self.optimize_file(json_file, output_path)
             results.append(result)

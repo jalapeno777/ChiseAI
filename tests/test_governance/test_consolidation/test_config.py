@@ -4,7 +4,6 @@ Tests for Memory Consolidation Configuration.
 Story: ST-GOV-005
 """
 
-import pytest
 from datetime import time
 
 from src.governance.consolidation.config import (

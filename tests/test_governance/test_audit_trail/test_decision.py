@@ -6,8 +6,6 @@ ST-GOV-009: Decision Audit Trail Export
 
 from datetime import UTC, datetime
 
-import pytest
-
 from src.governance.audit_trail.decision import (
     ConstitutionPrinciple,
     Decision,

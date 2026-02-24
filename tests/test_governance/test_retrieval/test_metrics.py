@@ -10,13 +10,12 @@ Tests cover:
 - Summary generation
 """
 
-import pytest
-from datetime import datetime, UTC
+from datetime import datetime
 from unittest.mock import MagicMock
 
+import pytest
 from src.governance.retrieval.metrics import (
     RetrievalMetricsExporter,
-    RETRIEVAL_PREFIX,
 )
 
 

@@ -12,23 +12,23 @@ This module provides governance capabilities including:
 """
 
 from src.governance.audit import AuditSnapshot, RetrievalBaseline
-from src.governance.memory import MemoryDeduplicationEngine
-from src.governance.sentinel import SentinelConfig, TaskSentinel
 from src.governance.health import (
+    AgentHealthScore,
+    HealthScorer,
     HealthSentinel,
     HealthSentinelConfig,
-    HealthScorer,
-    AgentHealthScore,
-    SwarmHealthScore,
     HealthStatus,
+    SwarmHealthScore,
 )
+from src.governance.memory import MemoryDeduplicationEngine
 from src.governance.parallel_optimizer import (
-    ParallelOptimizer,
-    OptimizerConfig,
-    OptimizableTask,
     ExecutionPlan,
+    OptimizableTask,
+    OptimizerConfig,
+    ParallelOptimizer,
     TaskPriority,
 )
+from src.governance.sentinel import SentinelConfig, TaskSentinel
 
 __all__ = [
     "AuditSnapshot",

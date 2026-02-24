@@ -153,7 +153,7 @@ class TestDecisionSynthesizer:
             ci_passed=True,
         )
 
-        assert decision.auto_merge_eligible == True
+        assert decision.auto_merge_eligible
 
     def test_auto_merge_not_eligible_with_blockers(
         self, synthesizer, senior_dev_result, critic_result
@@ -172,7 +172,7 @@ class TestDecisionSynthesizer:
             ci_passed=True,
         )
 
-        assert decision.auto_merge_eligible == False
+        assert not decision.auto_merge_eligible
 
     def test_combine_blockers(self, synthesizer):
         """Test combining blockers from both roles."""

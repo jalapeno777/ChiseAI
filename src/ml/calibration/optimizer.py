@@ -234,7 +234,7 @@ class ThresholdOptimizer:
         ece_values = []
         sample_sizes = []
 
-        for idx, threshold in enumerate(thresholds):
+        for _idx, threshold in enumerate(thresholds):
             # Filter records above threshold
             filtered = [r for r in records if r.predicted_prob >= threshold]
             sample_size = len(filtered)

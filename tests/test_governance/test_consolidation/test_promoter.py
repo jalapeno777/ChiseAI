@@ -4,11 +4,9 @@ Tests for Golden Memory Promoter.
 Story: ST-GOV-005
 """
 
-from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
 
 import pytest
-
 from src.governance.consolidation.config import (
     ConsolidationConfig,
     MemoryType,
@@ -94,7 +92,7 @@ class TestPromotionCandidate:
             age_days=90,  # 3x minimum
         )
 
-        score = candidate.calculate_promotion_score(
+        candidate.calculate_promotion_score(
             min_access=5,
             min_age=30,
             min_relevance=0.85,

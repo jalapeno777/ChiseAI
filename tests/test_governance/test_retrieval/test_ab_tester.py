@@ -10,18 +10,16 @@ Tests cover:
 - Statistical significance analysis
 """
 
-import pytest
-from datetime import datetime, UTC
 from unittest.mock import MagicMock
 
+import pytest
 from src.governance.retrieval.ab_tester import (
     ABTester,
     Experiment,
-    ExperimentStatus,
     ExperimentResult,
-    ExperimentMetrics,
-    StrategyConfig,
+    ExperimentStatus,
     StatisticalResult,
+    StrategyConfig,
 )
 
 
@@ -443,7 +441,7 @@ class TestABTester:
             control="control",
             treatment="treatment",
         )
-        exp_id2 = tester.create_experiment(
+        tester.create_experiment(
             name="Test2",
             control="control",
             treatment="treatment",

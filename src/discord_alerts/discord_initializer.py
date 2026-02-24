@@ -10,6 +10,7 @@ For PM-BATCH-2: Discord Rate Limiting (QW-2)
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -165,10 +166,8 @@ class DiscordInitializer:
         """Cleanup and disconnect."""
         if self._health_check_task:
             self._health_check_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._health_check_task
-            except asyncio.CancelledError:
-                pass
         if self.client:
             await self.client.disconnect()
 
@@ -184,9 +183,7 @@ class DiscordInitializer:
         if not self.client.is_connected:
             return False
         # Check if client is disabled due to failures
-        if hasattr(self.client, "is_disabled") and self.client.is_disabled:
-            return False
-        return True
+        return not (hasattr(self.client, "is_disabled") and self.client.is_disabled)
 
     @property
     def mode(self) -> str:

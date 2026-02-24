@@ -8,11 +8,10 @@ Story: ST-GOV-005
 Governance Feature: GF-005
 """
 
-import json
 import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any, Callable
+from typing import Any
 
 from src.governance.consolidation.archiver import (
     ArchiveStats,
@@ -21,7 +20,6 @@ from src.governance.consolidation.archiver import (
 from src.governance.consolidation.config import (
     LAST_RUN_KEY,
     ConsolidationConfig,
-    MemoryType,
 )
 from src.governance.consolidation.promoter import (
     GoldenMemoryPromoter,
@@ -313,7 +311,7 @@ class MemoryConsolidationScheduler:
                 self._cleanup_expired_rollback_data()
 
             # 4. Calculate storage reduction
-            storage_after = self._archiver.get_cold_storage_size()
+            self._archiver.get_cold_storage_size()
             if storage_before > 0:
                 # Note: this is cold storage growth, actual reduction is
                 # from removing memories from active storage
@@ -358,9 +356,9 @@ class MemoryConsolidationScheduler:
         cleaned = 0
         try:
             # Scan for expired rollback keys
-            cutoff = datetime.now(UTC) - (
-                datetime.now(UTC) - datetime.now(UTC)
-            ).replace(day=self._config.rollback_retention_days)
+            datetime.now(UTC) - (datetime.now(UTC) - datetime.now(UTC)).replace(
+                day=self._config.rollback_retention_days
+            )
             # Simplified: clean based on TTL, which handles this automatically
 
             logger.debug("Rollback cleanup completed (TTL-based)")

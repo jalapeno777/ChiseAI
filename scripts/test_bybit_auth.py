@@ -86,10 +86,7 @@ def test_endpoint_http_lib(base_url, endpoint, api_key, api_secret):
     """Test endpoint using urllib (no requests dependency)."""
     # Try to sync with server time first
     server_time = get_server_timestamp(base_url)
-    if server_time:
-        timestamp = str(int(server_time))
-    else:
-        timestamp = str(int(time.time() * 1000))
+    timestamp = str(int(server_time)) if server_time else str(int(time.time() * 1000))
 
     recv_window = "10000"
     signature = generate_signature(api_secret, timestamp, api_key, recv_window)
@@ -168,10 +165,7 @@ def test_endpoint_requests(base_url, endpoint, api_key, api_secret):
     """Test endpoint using requests library."""
     # Try to sync with server time first
     server_time = get_server_timestamp(base_url)
-    if server_time:
-        timestamp = str(int(server_time))
-    else:
-        timestamp = str(int(time.time() * 1000))
+    timestamp = str(int(server_time)) if server_time else str(int(time.time() * 1000))
 
     recv_window = "10000"
     signature = generate_signature(api_secret, timestamp, api_key, recv_window)

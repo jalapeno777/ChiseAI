@@ -7,16 +7,13 @@ validation and monitoring.
 Story: ST-GOV-010
 """
 
-from dataclasses import dataclass, field
-from typing import Optional
 import logging
-import time
+from dataclasses import dataclass
 from datetime import datetime
 
 from src.governance.parallel_optimizer.models import (
     ExecutionPlan,
     TaskBatch,
-    BatchStatus,
     ThroughputMetrics,
 )
 
@@ -28,7 +25,7 @@ class ExecutionTiming:
     """Timing information for a single execution."""
 
     start_time: datetime
-    end_time: Optional[datetime] = None
+    end_time: datetime | None = None
     duration_seconds: float = 0.0
 
 
@@ -63,7 +60,7 @@ class ThroughputMeter:
 
     def __init__(self):
         """Initialize the throughput meter."""
-        self._execution_timing: Optional[ExecutionTiming] = None
+        self._execution_timing: ExecutionTiming | None = None
         self._batch_timings: dict[str, ExecutionTiming] = {}
         self._task_durations: dict[str, float] = {}
 
@@ -117,7 +114,7 @@ class ThroughputMeter:
         self,
         plan: ExecutionPlan,
         completed_tasks: set[str],
-        failed_tasks: Optional[set[str]] = None,
+        failed_tasks: set[str] | None = None,
         rollback_count: int = 0,
     ) -> ThroughputMetrics:
         """

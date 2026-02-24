@@ -639,10 +639,7 @@ class BybitProofHarness:
         all_results = []
 
         modes_to_test = []
-        if mode == "both":
-            modes_to_test = ["testnet", "live"]
-        else:
-            modes_to_test = [mode]
+        modes_to_test = ["testnet", "live"] if mode == "both" else [mode]
 
         self.evidence.mode_tested = ",".join(modes_to_test)
 

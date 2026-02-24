@@ -7,18 +7,16 @@ Leverages existing ConflictDetector from sentinel module.
 Story: ST-GOV-010
 """
 
-from dataclasses import dataclass, field
-from typing import Optional
 import logging
+from dataclasses import dataclass, field
 
 from src.governance.parallel_optimizer.models import (
-    OptimizableTask,
     ConflictAnalysis,
+    OptimizableTask,
 )
 from src.governance.sentinel.conflict_detector import (
     ConflictDetector,
     ConflictSeverity,
-    ConflictType,
     ScopeDeclaration,
 )
 

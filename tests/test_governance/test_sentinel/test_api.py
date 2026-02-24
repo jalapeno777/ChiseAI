@@ -1,8 +1,8 @@
 """Tests for Task Sentinel API (ST-GOV-003)."""
 
+from unittest.mock import MagicMock
+
 import pytest
-from unittest.mock import MagicMock, patch
-import json
 
 # We need to test the API endpoints
 # These tests use FastAPI TestClient but can run without Redis
@@ -280,11 +280,10 @@ class TestDependencyInjection:
     def test_get_sentinel_without_redis(self):
         """Test get_sentinel without Redis."""
         try:
-            from src.governance.sentinel.api import get_sentinel
-            from src.governance.sentinel import TaskSentinel
-
             # Reset global
             import src.governance.sentinel.api as api_module
+            from src.governance.sentinel import TaskSentinel
+            from src.governance.sentinel.api import get_sentinel
 
             api_module._sentinel = None
 
@@ -298,8 +297,8 @@ class TestDependencyInjection:
     def test_get_dependency_checker(self):
         """Test get_dependency_checker."""
         try:
-            from src.governance.sentinel.api import get_dependency_checker
             from src.governance.sentinel import DependencyChecker
+            from src.governance.sentinel.api import get_dependency_checker
 
             checker = get_dependency_checker()
 
@@ -310,8 +309,8 @@ class TestDependencyInjection:
     def test_get_conflict_detector(self):
         """Test get_conflict_detector."""
         try:
-            from src.governance.sentinel.api import get_conflict_detector
             from src.governance.sentinel import ConflictDetector
+            from src.governance.sentinel.api import get_conflict_detector
 
             detector = get_conflict_detector()
 
@@ -340,7 +339,7 @@ class TestErrorHandling:
 
             # App should have Exception handler
             assert Exception in app.exception_handlers or any(
-                issubclass(exc, Exception) for exc in app.exception_handlers.keys()
+                issubclass(exc, Exception) for exc in app.exception_handlers
             )
         except ImportError:
             pytest.skip("FastAPI not installed")

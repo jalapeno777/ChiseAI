@@ -29,6 +29,8 @@ if TYPE_CHECKING:
     from signal_generation.models import Signal
     from signal_generation.signal_generator import SignalGenerator
 
+import contextlib
+
 from execution.paper.models import (
     OrderSide,
     OrderState,
@@ -136,10 +138,8 @@ class PaperTradingOrchestrator:
         # Cancel processing task
         if self._processing_task and not self._processing_task.done():
             self._processing_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._processing_task
-            except asyncio.CancelledError:
-                pass
 
         # Stop telemetry
         if self.telemetry:

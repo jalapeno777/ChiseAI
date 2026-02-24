@@ -7,26 +7,24 @@ with conflict avoidance and dependency satisfaction.
 Story: ST-GOV-010
 """
 
-from dataclasses import dataclass, field
-from typing import Optional
 import logging
 import uuid
+from dataclasses import dataclass
 from datetime import datetime
 
-from src.governance.parallel_optimizer.models import (
-    OptimizableTask,
-    TaskPriority,
-    TaskBatch,
-    BatchStatus,
-    ExecutionPlan,
+from src.governance.parallel_optimizer.conflict_analyzer import (
+    ConflictMatrix,
+    ScopeConflictAnalyzer,
 )
 from src.governance.parallel_optimizer.dependency_graph import (
-    DependencyGraphBuilder,
     DependencyGraph,
+    DependencyGraphBuilder,
 )
-from src.governance.parallel_optimizer.conflict_analyzer import (
-    ScopeConflictAnalyzer,
-    ConflictMatrix,
+from src.governance.parallel_optimizer.models import (
+    BatchStatus,
+    ExecutionPlan,
+    OptimizableTask,
+    TaskBatch,
 )
 
 logger = logging.getLogger(__name__)
@@ -74,7 +72,7 @@ class ExecutionScheduler:
                 execute(task)
     """
 
-    def __init__(self, config: Optional[SchedulingConfig] = None):
+    def __init__(self, config: SchedulingConfig | None = None):
         """
         Initialize the execution scheduler.
 
@@ -88,7 +86,7 @@ class ExecutionScheduler:
     def create_execution_plan(
         self,
         tasks: list[OptimizableTask],
-        plan_id: Optional[str] = None,
+        plan_id: str | None = None,
     ) -> ExecutionPlan:
         """
         Create an optimized execution plan for the given tasks.
@@ -305,9 +303,9 @@ class ExecutionScheduler:
     def optimize_parallel_schedule(
         self,
         tasks: list[OptimizableTask],
-        conflict_matrix: Optional[ConflictMatrix] = None,
-        max_parallel: Optional[int] = None,
-        priority_weights: Optional[dict[str, float]] = None,
+        conflict_matrix: ConflictMatrix | None = None,
+        max_parallel: int | None = None,
+        priority_weights: dict[str, float] | None = None,
     ) -> ExecutionPlan:
         """
         Optimize parallel execution schedule.
@@ -350,7 +348,7 @@ class ExecutionScheduler:
         plan: ExecutionPlan,
         completed_tasks: set[str],
         running_tasks: set[str],
-    ) -> Optional[TaskBatch]:
+    ) -> TaskBatch | None:
         """
         Get the next batch that is ready to execute.
 

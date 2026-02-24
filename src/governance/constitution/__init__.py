@@ -18,17 +18,17 @@ from src.governance.constitution.artifact import (
     ConstitutionLoader,
     ConstitutionVersion,
 )
-from src.governance.constitution.violation_detector import (
-    Violation,
-    ViolationDetector,
-    ViolationSeverity,
-)
 from src.governance.constitution.audit_logger import (
     AuditLogger,
     OverrideRequest,
     OverrideStatus,
 )
 from src.governance.constitution.metrics_exporter import ConstitutionMetricsExporter
+from src.governance.constitution.violation_detector import (
+    Violation,
+    ViolationDetector,
+    ViolationSeverity,
+)
 
 __all__ = [
     # Artifact

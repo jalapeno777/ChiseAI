@@ -5,19 +5,15 @@ Unit tests for models.py covering all data classes and enums.
 """
 
 import pytest
-from datetime import datetime
-
 from src.governance.parallel_optimizer.models import (
+    BatchStatus,
+    ExecutionPlan,
+    OptimizableTask,
+    RollbackResult,
+    TaskBatch,
     TaskPriority,
     TaskStatus,
-    BatchStatus,
-    OptimizableTask,
-    TaskBatch,
-    ExecutionPlan,
-    ConflictAnalysis,
     ThroughputMetrics,
-    RollbackResult,
-    OptimizationResult,
 )
 
 

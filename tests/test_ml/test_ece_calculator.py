@@ -517,7 +517,7 @@ class TestECEUpdateService:
         result = await service.trigger_update()
 
         # Check that each strategy has per-signal-type results
-        for strategy_id, strategy_result in result.strategy_results.items():
+        for _strategy_id, strategy_result in result.strategy_results.items():
             if strategy_result.success:
                 assert len(strategy_result.per_signal_type) == 4  # All 4 signal types
 

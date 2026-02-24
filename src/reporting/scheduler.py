@@ -12,6 +12,7 @@ For PAPER-003-003: Automated Reporting and Anomaly Detection
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 import os
@@ -155,10 +156,8 @@ class ReportScheduler:
 
         if self._scheduler_task and not self._scheduler_task.done():
             self._scheduler_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._scheduler_task
-            except asyncio.CancelledError:
-                pass
 
         logger.info("Report scheduler stopped")
 
@@ -227,10 +226,7 @@ class ReportScheduler:
             return False
         if month != "*" and int(month) != now.month:
             return False
-        if day_of_week != "*" and int(day_of_week) != now.weekday():
-            return False
-
-        return True
+        return not (day_of_week != "*" and int(day_of_week) != now.weekday())
 
     async def _execute_schedule(
         self,

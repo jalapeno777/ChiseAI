@@ -14,21 +14,20 @@ Story: ST-GOV-003
 Phase: Week 1 Batch 1B
 """
 
-from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Optional
 import logging
 import time
+from dataclasses import dataclass, field
+from datetime import datetime
 
-from .dependency_checker import (
-    DependencyChecker,
-    DependencyDeclaration,
-    DependencyCheckResult,
-)
 from .conflict_detector import (
+    ConflictCheckResult,
     ConflictDetector,
     ScopeDeclaration,
-    ConflictCheckResult,
+)
+from .dependency_checker import (
+    DependencyChecker,
+    DependencyCheckResult,
+    DependencyDeclaration,
 )
 
 logger = logging.getLogger(__name__)
@@ -74,8 +73,8 @@ class TaskInfo:
     task_id: str
     story_points: float
     title: str
-    description: Optional[str] = None
-    assignee: Optional[str] = None
+    description: str | None = None
+    assignee: str | None = None
     labels: list[str] = field(default_factory=list)
     scope_globs: list[str] = field(default_factory=list)
     """Files/directories this task will modify."""
@@ -93,9 +92,9 @@ class ValidationResult:
     story_points: float
     max_allowed: int
     message: str
-    task_id: Optional[str] = None
-    dependency_result: Optional[DependencyCheckResult] = None
-    conflict_result: Optional[ConflictCheckResult] = None
+    task_id: str | None = None
+    dependency_result: DependencyCheckResult | None = None
+    conflict_result: ConflictCheckResult | None = None
     ownership_conflicts: list[dict] = field(default_factory=list)
     validation_latency_ms: float = 0.0
 
@@ -125,7 +124,7 @@ class TaskSentinel:
     def __init__(
         self,
         redis_client=None,
-        config: Optional[SentinelConfig] = None,
+        config: SentinelConfig | None = None,
     ):
         """
         Initialize the Task Sentinel.
@@ -136,7 +135,7 @@ class TaskSentinel:
         """
         self.redis_client = redis_client
         self.config = config or SentinelConfig()
-        self._enabled: Optional[bool] = None
+        self._enabled: bool | None = None
         self._dependency_checker = DependencyChecker()
         self._conflict_detector = ConflictDetector(redis_client=redis_client)
 
@@ -286,9 +285,9 @@ class TaskSentinel:
             requires_approval=requires_approval,
             story_points=task.story_points,
             max_allowed=max_sp,
-            message="; ".join(messages)
-            if messages
-            else f"Task '{task.task_id}' is valid",
+            message=(
+                "; ".join(messages) if messages else f"Task '{task.task_id}' is valid"
+            ),
             task_id=task.task_id,
             dependency_result=dep_result,
             conflict_result=conflict_result,
@@ -419,8 +418,8 @@ class TaskSentinel:
         if self.config.require_justification and not justification:
             raise ValueError("Justification required for oversized tasks")
 
-        import uuid
         import json
+        import uuid
 
         request_id = f"apr-{uuid.uuid4().hex[:8]}"
 

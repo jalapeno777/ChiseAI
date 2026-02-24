@@ -195,10 +195,7 @@ def generate_demo_samples(count: int) -> list[TrainingSample]:
 
         # Outcome (60% wins for realistic demo)
         outcome = 1 if random.random() < 0.6 else 0
-        if outcome == 1:
-            pnl = random.uniform(0.5, 15)
-        else:
-            pnl = random.uniform(-15, -0.5)
+        pnl = random.uniform(0.5, 15) if outcome == 1 else random.uniform(-15, -0.5)
 
         sample = TrainingSample(
             sample_id=f"signal-{i:08d}",
@@ -410,7 +407,7 @@ def show_statistics(dataset_path: str, verbose: bool = False) -> int:
         print(f"  Wins:            {stats.outcome_distribution.get('wins', 0)}")
         print(f"  Losses:          {stats.outcome_distribution.get('losses', 0)}")
         print("\nFeature statistics (first 5):")
-        for i, (name, mean) in enumerate(list(stats.feature_means.items())[:5]):
+        for _i, (name, mean) in enumerate(list(stats.feature_means.items())[:5]):
             std = stats.feature_stds.get(name, 0)
             print(f"  {name}: mean={mean:.4f}, std={std:.4f}")
         print("=" * 60)

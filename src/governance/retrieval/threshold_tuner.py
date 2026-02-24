@@ -21,7 +21,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Optional, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
@@ -439,7 +439,7 @@ class ThresholdTuner:
             < self._config.convergence_threshold
         ):
             self._iterations_without_improvement[threshold_name] += 1
-            logger.debug(f"Adjustment too small, skipping")
+            logger.debug("Adjustment too small, skipping")
             return None
 
         # Apply the adjustment

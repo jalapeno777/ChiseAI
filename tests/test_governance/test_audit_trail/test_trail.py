@@ -4,12 +4,9 @@ Tests for audit trail core implementation.
 ST-GOV-009: Decision Audit Trail Export
 """
 
-import hashlib
-import json
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 import pytest
-
 from src.governance.audit_trail.decision import DecisionOutcome, DecisionType
 from src.governance.audit_trail.trail import (
     AuditTrail,

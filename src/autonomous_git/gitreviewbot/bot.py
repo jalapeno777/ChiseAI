@@ -1,6 +1,7 @@
 """Main GitReviewBot orchestrator."""
 
 import asyncio
+import contextlib
 import hashlib
 from datetime import datetime
 from typing import Any
@@ -124,10 +125,7 @@ class GitReviewBot:
             if not checks:
                 return True  # No checks = pass by default
 
-            for check in checks:
-                if check.get("state") not in ("success", "pending"):
-                    return False
-            return True
+            return all(check.get("state") in ("success", "pending") for check in checks)
         except Exception:
             return False
 
@@ -151,16 +149,12 @@ class GitReviewBot:
 
         # Apply label changes
         for label in labels_to_remove:
-            try:
+            with contextlib.suppress(Exception):
                 await self.gitea.remove_label(pr_number, label)
-            except Exception:
-                pass
 
         for label in labels_to_add:
-            try:
+            with contextlib.suppress(Exception):
                 await self.gitea.add_labels(pr_number, [label])
-            except Exception:
-                pass
 
     async def _attempt_auto_merge(
         self,

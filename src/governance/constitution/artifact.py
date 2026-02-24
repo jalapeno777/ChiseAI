@@ -57,7 +57,7 @@ class ConstitutionVersion:
     patch: int
 
     @classmethod
-    def parse(cls, version_str: str) -> "ConstitutionVersion":
+    def parse(cls, version_str: str) -> ConstitutionVersion:
         """Parse a semantic version string.
 
         Args:
@@ -82,14 +82,14 @@ class ConstitutionVersion:
     def __str__(self) -> str:
         return f"{self.major}.{self.minor}.{self.patch}"
 
-    def __lt__(self, other: "ConstitutionVersion") -> bool:
+    def __lt__(self, other: ConstitutionVersion) -> bool:
         return (self.major, self.minor, self.patch) < (
             other.major,
             other.minor,
             other.patch,
         )
 
-    def __le__(self, other: "ConstitutionVersion") -> bool:
+    def __le__(self, other: ConstitutionVersion) -> bool:
         return self == other or self < other
 
 
@@ -363,9 +363,11 @@ class ConstitutionLoader:
                             category=row[0] if len(row) > 0 else "",
                             action=row[1] if len(row) > 1 else "",
                             constraints=row[2:] if len(row) > 2 else [],
-                            approval_required=row[2]
-                            if len(row) > 2 and category != "autonomous"
-                            else None,
+                            approval_required=(
+                                row[2]
+                                if len(row) > 2 and category != "autonomous"
+                                else None
+                            ),
                         )
                     )
 
@@ -384,7 +386,6 @@ class ConstitutionLoader:
         rows: list[list[str]] = []
         lines = content.split("\n")
         in_section = False
-        in_table = False
 
         for line in lines:
             # Check for section header
@@ -433,9 +434,9 @@ class ConstitutionLoader:
                         name=inv_match.group(2).strip(),
                         description=inv_match.group(3).strip(),
                         enforcement=EnforcementAction(inv_match.group(4)),
-                        exception=inv_match.group(5).strip()
-                        if inv_match.group(5)
-                        else None,
+                        exception=(
+                            inv_match.group(5).strip() if inv_match.group(5) else None
+                        ),
                     )
                 )
 
@@ -452,9 +453,9 @@ class ConstitutionLoader:
                         name=inv_match.group(2).strip(),
                         description=inv_match.group(3).strip(),
                         enforcement=EnforcementAction(inv_match.group(5)),
-                        exception=inv_match.group(6).strip()
-                        if inv_match.group(6)
-                        else None,
+                        exception=(
+                            inv_match.group(6).strip() if inv_match.group(6) else None
+                        ),
                     )
                 )
 
@@ -550,12 +551,14 @@ class ConstitutionLoader:
                             "level": int(step_match.group(1)),
                             "target": step_match.group(2),
                             "channel": step_match.group(3),
-                            "auto": step_match.group(4).lower() == "true"
-                            if step_match.group(4)
-                            else False,
-                            "delay_minutes": int(step_match.group(5))
-                            if step_match.group(5)
-                            else 0,
+                            "auto": (
+                                step_match.group(4).lower() == "true"
+                                if step_match.group(4)
+                                else False
+                            ),
+                            "delay_minutes": (
+                                int(step_match.group(5)) if step_match.group(5) else 0
+                            ),
                         }
                     )
 

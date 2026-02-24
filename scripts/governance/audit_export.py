@@ -19,7 +19,7 @@ import argparse
 import json
 import logging
 import sys
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 
 # Add project root to path

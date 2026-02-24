@@ -19,7 +19,7 @@ import random
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Callable, Optional, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
@@ -199,18 +199,18 @@ class Experiment:
             "experiment_id": self.experiment_id,
             "name": self.name,
             "description": self.description,
-            "control_strategy": self.control_strategy.to_dict()
-            if self.control_strategy
-            else None,
-            "treatment_strategy": self.treatment_strategy.to_dict()
-            if self.treatment_strategy
-            else None,
+            "control_strategy": (
+                self.control_strategy.to_dict() if self.control_strategy else None
+            ),
+            "treatment_strategy": (
+                self.treatment_strategy.to_dict() if self.treatment_strategy else None
+            ),
             "status": self.status.value,
             "created_at": self.created_at.isoformat(),
             "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
             "traffic_split": self.traffic_split,
             "target_sample_size": self.target_sample_size,
             "results_count": len(self.results),
@@ -223,20 +223,28 @@ class Experiment:
             experiment_id=data["experiment_id"],
             name=data["name"],
             description=data.get("description", ""),
-            control_strategy=StrategyConfig.from_dict(data["control_strategy"])
-            if data.get("control_strategy")
-            else None,
-            treatment_strategy=StrategyConfig.from_dict(data["treatment_strategy"])
-            if data.get("treatment_strategy")
-            else None,
+            control_strategy=(
+                StrategyConfig.from_dict(data["control_strategy"])
+                if data.get("control_strategy")
+                else None
+            ),
+            treatment_strategy=(
+                StrategyConfig.from_dict(data["treatment_strategy"])
+                if data.get("treatment_strategy")
+                else None
+            ),
             status=ExperimentStatus(data.get("status", "draft")),
             created_at=datetime.fromisoformat(data["created_at"]),
-            started_at=datetime.fromisoformat(data["started_at"])
-            if data.get("started_at")
-            else None,
-            completed_at=datetime.fromisoformat(data["completed_at"])
-            if data.get("completed_at")
-            else None,
+            started_at=(
+                datetime.fromisoformat(data["started_at"])
+                if data.get("started_at")
+                else None
+            ),
+            completed_at=(
+                datetime.fromisoformat(data["completed_at"])
+                if data.get("completed_at")
+                else None
+            ),
             traffic_split=data.get("traffic_split", 0.5),
             target_sample_size=data.get("target_sample_size", 1000),
         )

@@ -8,7 +8,7 @@ Governance Feature: GF-005
 """
 
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, time
+from datetime import time
 from enum import Enum
 from typing import Any
 

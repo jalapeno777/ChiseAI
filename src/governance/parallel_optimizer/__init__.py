@@ -52,46 +52,46 @@ Usage:
 Story: ST-GOV-010
 """
 
+from src.governance.parallel_optimizer.conflict_analyzer import (
+    ConflictMatrix,
+    ScopeConflictAnalyzer,
+)
+from src.governance.parallel_optimizer.dependency_graph import (
+    DependencyGraph,
+    DependencyGraphBuilder,
+    DependencyNode,
+)
 from src.governance.parallel_optimizer.models import (
+    BatchStatus,
+    ConflictAnalysis,
+    ExecutionPlan,
+    # Data classes
+    OptimizableTask,
+    OptimizationResult,
+    RollbackResult,
+    TaskBatch,
     # Enums
     TaskPriority,
     TaskStatus,
-    BatchStatus,
-    # Data classes
-    OptimizableTask,
-    TaskBatch,
-    ExecutionPlan,
-    ConflictAnalysis,
     ThroughputMetrics,
-    RollbackResult,
-    OptimizationResult,
 )
-from src.governance.parallel_optimizer.dependency_graph import (
-    DependencyGraphBuilder,
-    DependencyGraph,
-    DependencyNode,
+from src.governance.parallel_optimizer.optimizer import (
+    OptimizerConfig,
+    ParallelOptimizer,
 )
-from src.governance.parallel_optimizer.conflict_analyzer import (
-    ScopeConflictAnalyzer,
-    ConflictMatrix,
+from src.governance.parallel_optimizer.rollback import (
+    BatchRollbackExecutor,
+    RollbackCheckpoint,
+    RollbackHandler,
+    RollbackManager,
 )
 from src.governance.parallel_optimizer.scheduler import (
     ExecutionScheduler,
     SchedulingConfig,
 )
-from src.governance.parallel_optimizer.rollback import (
-    RollbackManager,
-    RollbackCheckpoint,
-    RollbackHandler,
-    BatchRollbackExecutor,
-)
 from src.governance.parallel_optimizer.throughput import (
-    ThroughputMeter,
     ThroughputComparator,
-)
-from src.governance.parallel_optimizer.optimizer import (
-    ParallelOptimizer,
-    OptimizerConfig,
+    ThroughputMeter,
 )
 
 __all__ = [

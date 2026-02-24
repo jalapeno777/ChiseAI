@@ -10,28 +10,28 @@ Provides tamper-evident logging of autonomous agent decisions with:
 - 7-year retention for compliance
 """
 
-from src.governance.audit_trail.trail import (
-    AuditTrail,
-    AuditTrailEntry,
-    DecisionContext,
-    HashChainState,
-)
 from src.governance.audit_trail.decision import (
+    ConstitutionPrinciple,
     Decision,
     DecisionOutcome,
     DecisionType,
-    ConstitutionPrinciple,
-)
-from src.governance.audit_trail.query import (
-    AuditTrailQuery,
-    QueryFilter,
-    QueryResult,
 )
 from src.governance.audit_trail.exporter import (
     AuditTrailExporter,
     ExportConfig,
     ExportResult,
     S3Config,
+)
+from src.governance.audit_trail.query import (
+    AuditTrailQuery,
+    QueryFilter,
+    QueryResult,
+)
+from src.governance.audit_trail.trail import (
+    AuditTrail,
+    AuditTrailEntry,
+    DecisionContext,
+    HashChainState,
 )
 
 __all__ = [

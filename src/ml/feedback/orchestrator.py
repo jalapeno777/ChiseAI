@@ -21,6 +21,7 @@ Usage:
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -330,10 +331,8 @@ class FeedbackOrchestrator:
         """Stop scheduled feedback loop execution."""
         if self._scheduled_task and not self._scheduled_task.done():
             self._scheduled_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._scheduled_task
-            except asyncio.CancelledError:
-                pass
             logger.info("Stopped scheduled feedback loop")
 
     def get_status(self) -> dict[str, Any]:

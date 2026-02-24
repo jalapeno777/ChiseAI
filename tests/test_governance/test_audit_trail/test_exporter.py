@@ -8,11 +8,8 @@ import gzip
 import json
 import os
 import tempfile
-from datetime import UTC, datetime, timedelta
-from pathlib import Path
 
 import pytest
-
 from src.governance.audit_trail.decision import DecisionOutcome, DecisionType
 from src.governance.audit_trail.exporter import (
     AuditTrailExporter,
@@ -160,9 +157,9 @@ class TestAuditTrailExporter:
                 decision_type=DecisionType.TASK_COMPLETE,
                 context={"iteration": i},
                 rationale=f"Task {i}",
-                outcome=DecisionOutcome.SUCCESS
-                if i % 2 == 0
-                else DecisionOutcome.FAILURE,
+                outcome=(
+                    DecisionOutcome.SUCCESS if i % 2 == 0 else DecisionOutcome.FAILURE
+                ),
             )
 
         query = AuditTrailQuery(in_memory_entries=trail._entries)

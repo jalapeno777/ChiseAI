@@ -329,7 +329,10 @@ class ECEHistoryTracker:
         x_mean = sum(x_vals) / n
         y_mean = avg_ece
 
-        numerator = sum((x - x_mean) * (y - y_mean) for x, y in zip(x_vals, ece_values))
+        numerator = sum(
+            (x - x_mean) * (y - y_mean)
+            for x, y in zip(x_vals, ece_values, strict=False)
+        )
         denominator = sum((x - x_mean) ** 2 for x in x_vals)
 
         slope = numerator / denominator if denominator != 0 else 0.0
