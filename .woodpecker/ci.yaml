@@ -60,9 +60,7 @@ steps:
         ) > _bmad-output/ci/lint.log 2>&1
         code=$?
         cat _bmad-output/ci/lint.log
-        # Hotfix: lint is non-blocking due to pre-existing technical debt on main
-        # TODO: Re-enable after REPO-LINT-REMEDIATION is merged
-        echo "0" > _bmad-output/ci/lint.status
+        echo "$code" > _bmad-output/ci/lint.status
         # Do not short-circuit the pipeline; ci-gate is the single fail point.
         exit 0
 

@@ -4,17 +4,16 @@ Pattern Inference for real-time pattern detection.
 Provides real-time pattern detection with confidence scoring and classification.
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Union, Callable, Tuple
-from collections import deque
-import numpy as np
 import time
+from collections import deque
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from typing import Any
 
+import numpy as np
 from src.neuro_symbolic.pattern_recognition.engine import (
     PatternRecognitionEngine,
-    PatternMatch,
     PatternType,
-    PatternRecognitionConfig,
 )
 
 
@@ -39,11 +38,11 @@ class InferenceResult:
     confidence: float
     timestamp: float
     inference_time_ms: float
-    features: Dict[str, float] = field(default_factory=dict)
-    probabilities: Dict[str, float] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    features: dict[str, float] = field(default_factory=dict)
+    probabilities: dict[str, float] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "pattern_type": self.pattern_type.value,
@@ -65,8 +64,8 @@ class PatternInference:
 
     def __init__(
         self,
-        engine: Optional[PatternRecognitionEngine] = None,
-        config: Optional[InferenceConfig] = None,
+        engine: PatternRecognitionEngine | None = None,
+        config: InferenceConfig | None = None,
     ):
         """Initialize pattern inference.
 
@@ -81,17 +80,17 @@ class PatternInference:
         self._buffer: deque = deque(maxlen=self.config.buffer_size)
 
         # Cache for results
-        self._cache: Dict[str, InferenceResult] = {}
-        self._cache_timestamps: Dict[str, float] = {}
+        self._cache: dict[str, InferenceResult] = {}
+        self._cache_timestamps: dict[str, float] = {}
 
         # Smoothing state
-        self._smoothed_probabilities: Optional[Dict[str, float]] = None
+        self._smoothed_probabilities: dict[str, float] | None = None
 
         # Performance metrics
         self._inference_times: deque = deque(maxlen=100)
         self._total_inferences = 0
 
-    def add_data_point(self, value: float, timestamp: Optional[float] = None) -> None:
+    def add_data_point(self, value: float, timestamp: float | None = None) -> None:
         """Add a single data point to the buffer.
 
         Args:
@@ -102,7 +101,7 @@ class PatternInference:
         self._buffer.append((ts, value))
 
     def add_batch(
-        self, values: List[float], timestamps: Optional[List[float]] = None
+        self, values: list[float], timestamps: list[float] | None = None
     ) -> None:
         """Add a batch of data points.
 
@@ -113,7 +112,7 @@ class PatternInference:
         if timestamps is None:
             timestamps = [time.time()] * len(values)
 
-        for ts, val in zip(timestamps, values):
+        for ts, val in zip(timestamps, values, strict=False):
             self.add_data_point(val, ts)
 
     def get_buffer_data(self) -> np.ndarray:
@@ -128,9 +127,9 @@ class PatternInference:
 
     def detect(
         self,
-        data: Optional[Union[List[float], np.ndarray]] = None,
+        data: list[float] | np.ndarray | None = None,
         use_buffer: bool = False,
-    ) -> Optional[InferenceResult]:
+    ) -> InferenceResult | None:
         """Detect patterns in data.
 
         Args:
@@ -200,9 +199,9 @@ class PatternInference:
 
     def detect_all(
         self,
-        data: Optional[Union[List[float], np.ndarray]] = None,
-        min_confidence: Optional[float] = None,
-    ) -> List[InferenceResult]:
+        data: list[float] | np.ndarray | None = None,
+        min_confidence: float | None = None,
+    ) -> list[InferenceResult]:
         """Detect all patterns above confidence threshold.
 
         Args:
@@ -275,7 +274,7 @@ class PatternInference:
                 last_detection = current_time
 
     def get_confidence_score(
-        self, data: Union[List[float], np.ndarray], pattern_type: PatternType
+        self, data: list[float] | np.ndarray, pattern_type: PatternType
     ) -> float:
         """Get confidence score for a specific pattern type.
 
@@ -290,8 +289,8 @@ class PatternInference:
         return probabilities.get(pattern_type.value, 0.0)
 
     def classify_pattern(
-        self, data: Union[List[float], np.ndarray]
-    ) -> Tuple[PatternType, float]:
+        self, data: list[float] | np.ndarray
+    ) -> tuple[PatternType, float]:
         """Classify the most likely pattern in data.
 
         Args:
@@ -315,8 +314,8 @@ class PatternInference:
         return pattern_type, best_pattern[1]
 
     def _smooth_probabilities(
-        self, probabilities: Dict[str, float]
-    ) -> Dict[str, float]:
+        self, probabilities: dict[str, float]
+    ) -> dict[str, float]:
         """Apply exponential smoothing to probabilities.
 
         Args:
@@ -339,7 +338,7 @@ class PatternInference:
         self._smoothed_probabilities = smoothed
         return smoothed
 
-    def _compute_cache_key(self, data: Union[List[float], np.ndarray]) -> str:
+    def _compute_cache_key(self, data: list[float] | np.ndarray) -> str:
         """Compute cache key for data.
 
         Args:
@@ -355,7 +354,7 @@ class PatternInference:
         key_data = data[-20:] if len(data) > 20 else data
         return f"pattern_{hash(key_data.tobytes())}"
 
-    def _get_cached_result(self, cache_key: str) -> Optional[InferenceResult]:
+    def _get_cached_result(self, cache_key: str) -> InferenceResult | None:
         """Get cached result if valid.
 
         Args:
@@ -397,7 +396,7 @@ class PatternInference:
                 del self._cache[k]
                 del self._cache_timestamps[k]
 
-    def get_performance_metrics(self) -> Dict[str, float]:
+    def get_performance_metrics(self) -> dict[str, float]:
         """Get inference performance metrics.
 
         Returns:

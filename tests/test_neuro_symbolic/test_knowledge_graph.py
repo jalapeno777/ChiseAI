@@ -12,7 +12,7 @@ import math
 from datetime import datetime, timedelta
 
 import pytest
-
+from src.neuro_symbolic.knowledge_graph.extractor import RelationshipExtractor
 from src.neuro_symbolic.knowledge_graph.graph import KnowledgeGraph
 from src.neuro_symbolic.knowledge_graph.models import (
     Edge,
@@ -21,17 +21,14 @@ from src.neuro_symbolic.knowledge_graph.models import (
     GraphMetrics,
     Node,
     NodeType,
-    QueryResult,
     RelationshipStrength,
     UpdateResult,
 )
-from src.neuro_symbolic.knowledge_graph.extractor import RelationshipExtractor
 from src.neuro_symbolic.knowledge_graph.query_engine import GraphQueryEngine
 from src.neuro_symbolic.knowledge_graph.updater import (
     ConflictResolutionStrategy,
     GraphUpdater,
 )
-
 
 # =============================================================================
 # Fixtures

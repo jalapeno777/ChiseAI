@@ -14,7 +14,6 @@ from src.neuro_symbolic.fusion.strategy_selector import (
     FusionStrategy,
     FusionStrategySelector,
     SelectorConfig,
-    StrategyPerformance,
 )
 from src.neuro_symbolic.multimodal.encoder import (
     EncodedSignal,
@@ -25,7 +24,6 @@ from src.neuro_symbolic.multimodal.types import (
     FusionWeights,
     ModalityType,
     MultiModalSignal,
-    SignalBatch,
     SignalMetadata,
     TemporalContext,
 )
@@ -669,7 +667,10 @@ class MultiModalFusionEngine:
         import math
 
         activation = sum(
-            v * a for v, a in zip(all_vectors, all_attention[: len(all_vectors)])
+            v * a
+            for v, a in zip(
+                all_vectors, all_attention[: len(all_vectors)], strict=False
+            )
         )
         activation = math.tanh(
             activation / len(all_vectors) * 5

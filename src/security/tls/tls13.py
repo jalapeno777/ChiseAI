@@ -1,13 +1,13 @@
 """TLS 1.3 Implementation for NFR-008 Security Hardening."""
 
+import contextlib
 import logging
-import ssl
 import os
+import ssl
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from pathlib import Path
-from typing import Optional, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -32,22 +32,22 @@ class CertificateInfo:
     """Information about a TLS certificate."""
 
     path: str
-    common_name: Optional[str] = None
-    issuer: Optional[str] = None
-    not_before: Optional[datetime] = None
-    not_after: Optional[datetime] = None
+    common_name: str | None = None
+    issuer: str | None = None
+    not_before: datetime | None = None
+    not_after: datetime | None = None
     is_valid: bool = False
-    serial_number: Optional[str] = None
+    serial_number: str | None = None
 
     def is_expired(self) -> bool:
         if self.not_after is None:
             return True
-        return datetime.now(timezone.utc) > self.not_after
+        return datetime.now(UTC) > self.not_after
 
-    def days_until_expiry(self) -> Optional[int]:
+    def days_until_expiry(self) -> int | None:
         if self.not_after is None:
             return None
-        delta = self.not_after - datetime.now(timezone.utc)
+        delta = self.not_after - datetime.now(UTC)
         return delta.days
 
     def to_dict(self) -> dict:
@@ -67,9 +67,9 @@ class CertificateInfo:
 class TLSConfig:
     """TLS 1.3 Configuration."""
 
-    cert_file: Optional[str] = None
-    key_file: Optional[str] = None
-    ca_file: Optional[str] = None
+    cert_file: str | None = None
+    key_file: str | None = None
+    ca_file: str | None = None
     min_version: TLSVersion = TLSVersion.TLS_1_3
     cipher_suites: list[CipherSuite] = field(
         default_factory=lambda: [
@@ -103,8 +103,8 @@ class TLSContext:
 
     def __init__(self, config: TLSConfig):
         self.config = config
-        self._context: Optional[ssl.SSLContext] = None
-        self._cert_info: Optional[CertificateInfo] = None
+        self._context: ssl.SSLContext | None = None
+        self._cert_info: CertificateInfo | None = None
 
     def create_server_context(self) -> ssl.SSLContext:
         """Create SSL context for server-side connections."""
@@ -155,17 +155,13 @@ class TLSContext:
 
         # Set TLS 1.3 ciphersuites if available
         if tls13_ciphers and hasattr(context, "set_ciphersuites"):
-            try:
+            with contextlib.suppress(ssl.SSLError):
                 context.set_ciphersuites(":".join(tls13_ciphers))
-            except ssl.SSLError:
-                pass  # Ignore if ciphersuites not supported
 
         # Set TLS 1.2 ciphers
         if tls12_ciphers:
-            try:
+            with contextlib.suppress(ssl.SSLError):
                 context.set_ciphers(":".join(tls12_ciphers))
-            except ssl.SSLError:
-                pass  # Ignore if ciphers not available
 
         # Set verification
         context.verify_mode = self.config.verify_mode
@@ -184,11 +180,9 @@ class TLSContext:
 
         try:
             # Try to load and parse the certificate
-            import socket
-            from datetime import datetime
-
             # Use openssl command if available
             import subprocess
+            from datetime import datetime
 
             result = subprocess.run(
                 [
@@ -225,9 +219,7 @@ class TLSContext:
                             info.not_before = datetime.strptime(
                                 date_str, "%b %d %H:%M:%S %Y %Z"
                             )
-                            info.not_before = info.not_before.replace(
-                                tzinfo=timezone.utc
-                            )
+                            info.not_before = info.not_before.replace(tzinfo=UTC)
                         except ValueError:
                             pass
                     elif line.startswith("notAfter="):
@@ -236,7 +228,7 @@ class TLSContext:
                             info.not_after = datetime.strptime(
                                 date_str, "%b %d %H:%M:%S %Y %Z"
                             )
-                            info.not_after = info.not_after.replace(tzinfo=timezone.utc)
+                            info.not_after = info.not_after.replace(tzinfo=UTC)
                         except ValueError:
                             pass
                     elif line.startswith("serial="):
@@ -249,11 +241,11 @@ class TLSContext:
 
         return info
 
-    def get_context(self) -> Optional[ssl.SSLContext]:
+    def get_context(self) -> ssl.SSLContext | None:
         """Get the current SSL context."""
         return self._context
 
-    def get_cert_info(self) -> Optional[CertificateInfo]:
+    def get_cert_info(self) -> CertificateInfo | None:
         """Get certificate information."""
         return self._cert_info
 
@@ -263,7 +255,7 @@ class TLSServer:
 
     def __init__(self, config: TLSConfig):
         self.config = config
-        self._context: Optional[TLSContext] = None
+        self._context: TLSContext | None = None
         self._running = False
 
     def initialize(self) -> TLSContext:
@@ -273,7 +265,7 @@ class TLSServer:
         logger.info("TLS server initialized with TLS 1.3")
         return self._context
 
-    def get_ssl_context(self) -> Optional[ssl.SSLContext]:
+    def get_ssl_context(self) -> ssl.SSLContext | None:
         """Get the underlying SSL context."""
         if self._context is None:
             return None
@@ -290,7 +282,7 @@ class TLSServer:
 
         return ssl_context.wrap_socket(sock, server_side=server_side)
 
-    def get_cert_info(self) -> Optional[CertificateInfo]:
+    def get_cert_info(self) -> CertificateInfo | None:
         """Get certificate information."""
         if self._context is None:
             return None
@@ -338,7 +330,7 @@ class TLSServer:
 
 
 def create_default_tls_config(
-    cert_file: str, key_file: str, ca_file: Optional[str] = None
+    cert_file: str, key_file: str, ca_file: str | None = None
 ) -> TLSConfig:
     """Create a default TLS 1.3 configuration."""
     return TLSConfig(

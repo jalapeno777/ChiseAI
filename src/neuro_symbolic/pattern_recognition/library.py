@@ -5,14 +5,14 @@ Provides database of known patterns with similarity matching and
 historical performance tracking.
 """
 
+import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Union, Tuple
-import json
-import numpy as np
+from typing import Any
 
-from src.neuro_symbolic.pattern_recognition.engine import PatternType, PatternMatch
+import numpy as np
+from src.neuro_symbolic.pattern_recognition.engine import PatternType
 
 
 @dataclass
@@ -23,13 +23,13 @@ class PatternTemplate:
     pattern_type: PatternType
     template_data: np.ndarray
     description: str = ""
-    tags: List[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
     min_occurrences: int = 5
     confidence_weight: float = 1.0
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary (excludes template_data)."""
         return {
             "pattern_id": self.pattern_id,
@@ -44,7 +44,7 @@ class PatternTemplate:
 
     @classmethod
     def from_dict(
-        cls, data: Dict[str, Any], template_data: np.ndarray
+        cls, data: dict[str, Any], template_data: np.ndarray
     ) -> "PatternTemplate":
         """Create from dictionary."""
         return cls(
@@ -69,12 +69,12 @@ class PatternOccurrence:
     timestamp: str
     data: np.ndarray
     confidence: float
-    outcome: Optional[str] = None  # "success", "failure", None
-    price_change_pct: Optional[float] = None
-    duration_bars: Optional[int] = None
+    outcome: str | None = None  # "success", "failure", None
+    price_change_pct: float | None = None
+    duration_bars: int | None = None
     notes: str = ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "occurrence_id": self.occurrence_id,
@@ -100,9 +100,9 @@ class PatternPerformance:
     avg_price_change: float = 0.0
     win_rate: float = 0.0
     avg_duration: float = 0.0
-    last_occurrence: Optional[str] = None
+    last_occurrence: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "pattern_type": self.pattern_type.value,
@@ -162,7 +162,7 @@ class PatternLibrary:
     - Pattern occurrence logging
     """
 
-    def __init__(self, storage_path: Optional[Union[str, Path]] = None):
+    def __init__(self, storage_path: str | Path | None = None):
         """Initialize pattern library.
 
         Args:
@@ -171,9 +171,9 @@ class PatternLibrary:
         self.storage_path = Path(storage_path) if storage_path else None
 
         # In-memory storage
-        self._templates: Dict[str, PatternTemplate] = {}
-        self._occurrences: List[PatternOccurrence] = []
-        self._performance: Dict[PatternType, PatternPerformance] = {}
+        self._templates: dict[str, PatternTemplate] = {}
+        self._occurrences: list[PatternOccurrence] = []
+        self._performance: dict[PatternType, PatternPerformance] = {}
 
         # Initialize default patterns
         self._initialize_default_patterns()
@@ -303,7 +303,7 @@ class PatternLibrary:
         """
         self._templates[template.pattern_id] = template
 
-    def get_template(self, pattern_id: str) -> Optional[PatternTemplate]:
+    def get_template(self, pattern_id: str) -> PatternTemplate | None:
         """Get a pattern template by ID.
 
         Args:
@@ -314,7 +314,7 @@ class PatternLibrary:
         """
         return self._templates.get(pattern_id)
 
-    def get_templates_by_type(self, pattern_type: PatternType) -> List[PatternTemplate]:
+    def get_templates_by_type(self, pattern_type: PatternType) -> list[PatternTemplate]:
         """Get all templates of a specific type.
 
         Args:
@@ -325,7 +325,7 @@ class PatternLibrary:
         """
         return [t for t in self._templates.values() if t.pattern_type == pattern_type]
 
-    def list_templates(self) -> List[str]:
+    def list_templates(self) -> list[str]:
         """List all template IDs.
 
         Returns:
@@ -338,7 +338,7 @@ class PatternLibrary:
         data: np.ndarray,
         top_k: int = 5,
         similarity_threshold: float = 0.5,
-    ) -> List[Tuple[PatternTemplate, float]]:
+    ) -> list[tuple[PatternTemplate, float]]:
         """Find patterns similar to the input data.
 
         Args:
@@ -411,9 +411,9 @@ class PatternLibrary:
 
     def get_occurrences(
         self,
-        pattern_type: Optional[PatternType] = None,
+        pattern_type: PatternType | None = None,
         limit: int = 100,
-    ) -> List[PatternOccurrence]:
+    ) -> list[PatternOccurrence]:
         """Get pattern occurrences.
 
         Args:
@@ -432,7 +432,7 @@ class PatternLibrary:
 
     def get_performance(
         self, pattern_type: PatternType
-    ) -> Optional[PatternPerformance]:
+    ) -> PatternPerformance | None:
         """Get performance metrics for a pattern type.
 
         Args:
@@ -443,7 +443,7 @@ class PatternLibrary:
         """
         return self._performance.get(pattern_type)
 
-    def get_all_performance(self) -> Dict[PatternType, PatternPerformance]:
+    def get_all_performance(self) -> dict[PatternType, PatternPerformance]:
         """Get performance metrics for all pattern types.
 
         Returns:
@@ -453,7 +453,7 @@ class PatternLibrary:
 
     def get_best_performing_patterns(
         self, min_occurrences: int = 5, top_k: int = 5
-    ) -> List[Tuple[PatternType, PatternPerformance]]:
+    ) -> list[tuple[PatternType, PatternPerformance]]:
         """Get patterns with best historical performance.
 
         Args:
@@ -488,7 +488,7 @@ class PatternLibrary:
             return True
         return False
 
-    def save(self, path: Optional[Union[str, Path]] = None) -> None:
+    def save(self, path: str | Path | None = None) -> None:
         """Save library to disk.
 
         Args:
@@ -526,7 +526,7 @@ class PatternLibrary:
         with open(save_path / "occurrences.json", "w") as f:
             json.dump(occurrences_data, f, indent=2)
 
-    def load(self, path: Optional[Union[str, Path]] = None) -> None:
+    def load(self, path: str | Path | None = None) -> None:
         """Load library from disk.
 
         Args:
@@ -541,10 +541,10 @@ class PatternLibrary:
         arrays_path = load_path / "template_arrays.json"
 
         if templates_path.exists() and arrays_path.exists():
-            with open(templates_path, "r") as f:
+            with open(templates_path) as f:
                 templates_data = json.load(f)
 
-            with open(arrays_path, "r") as f:
+            with open(arrays_path) as f:
                 template_arrays = json.load(f)
 
             for pattern_id, data in templates_data.items():
@@ -557,7 +557,7 @@ class PatternLibrary:
         # Load performance
         performance_path = load_path / "performance.json"
         if performance_path.exists():
-            with open(performance_path, "r") as f:
+            with open(performance_path) as f:
                 performance_data = json.load(f)
 
             for pattern_value, data in performance_data.items():
@@ -573,7 +573,7 @@ class PatternLibrary:
         # Load occurrences
         occurrences_path = load_path / "occurrences.json"
         if occurrences_path.exists():
-            with open(occurrences_path, "r") as f:
+            with open(occurrences_path) as f:
                 occurrences_data = json.load(f)
 
             for data in occurrences_data:
@@ -593,7 +593,7 @@ class PatternLibrary:
                 except (KeyError, ValueError):
                     continue
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get library statistics.
 
         Returns:

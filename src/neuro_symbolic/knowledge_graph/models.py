@@ -8,7 +8,7 @@ including nodes, edges, relationship types, and query results.
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 
 class NodeType(Enum):
@@ -103,7 +103,7 @@ class Node:
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
     confidence: float = 1.0
-    source: Optional[str] = None
+    source: str | None = None
 
     def update_property(self, key: str, value: Any) -> None:
         """Update a property and touch the timestamp."""
@@ -152,17 +152,15 @@ class Edge:
     confidence: float = 1.0
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
-    valid_from: Optional[datetime] = None
-    valid_until: Optional[datetime] = None
+    valid_from: datetime | None = None
+    valid_until: datetime | None = None
     evidence: list[str] = field(default_factory=list)
 
     def is_valid_at(self, timestamp: datetime) -> bool:
         """Check if edge is valid at given timestamp."""
         if self.valid_from and timestamp < self.valid_from:
             return False
-        if self.valid_until and timestamp > self.valid_until:
-            return False
-        return True
+        return not (self.valid_until and timestamp > self.valid_until)
 
     def add_evidence(self, evidence: str) -> None:
         """Add evidence supporting this relationship."""

@@ -8,23 +8,16 @@ Tests cover:
 - Base classes and data structures
 """
 
-import pytest
-import numpy as np
-from datetime import datetime, timedelta
-from unittest.mock import MagicMock, patch
-from pathlib import Path
 import tempfile
-import json
+from datetime import datetime
+from pathlib import Path
 
-from src.neuro_symbolic.learning.base import (
-    LearningConfig,
-    FeedbackSignal,
-    SignalType,
-    PerformanceMetrics,
-    AdaptationResult,
-    AdaptationStatus,
-    TriggerCondition,
-    ModelCheckpoint,
+import numpy as np
+import pytest
+from src.neuro_symbolic.adaptive_learning.adapter import (
+    AdapterConfig,
+    HyperparameterSpace,
+    ModelAdapter,
 )
 from src.neuro_symbolic.adaptive_learning.engine import (
     AdaptiveLearningEngine,
@@ -32,25 +25,25 @@ from src.neuro_symbolic.adaptive_learning.engine import (
     EngineState,
 )
 from src.neuro_symbolic.adaptive_learning.feedback import (
-    FeedbackIntegrator,
-    IntegratorConfig,
     FeedbackHistory,
-)
-from src.neuro_symbolic.adaptive_learning.adapter import (
-    ModelAdapter,
-    AdapterConfig,
-    ABTest,
-    ABTestVariant,
-    HyperparameterSpace,
+    FeedbackIntegrator,
 )
 from src.neuro_symbolic.adaptive_learning.scheduler import (
     LearningScheduler,
-    SchedulerConfig,
     ScheduledTask,
-    TriggerRule,
     ScheduleStatus,
+    TriggerRule,
 )
-
+from src.neuro_symbolic.learning.base import (
+    AdaptationResult,
+    AdaptationStatus,
+    FeedbackSignal,
+    LearningConfig,
+    ModelCheckpoint,
+    PerformanceMetrics,
+    SignalType,
+    TriggerCondition,
+)
 
 # =============================================================================
 # Base Classes Tests

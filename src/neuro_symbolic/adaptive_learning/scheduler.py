@@ -4,16 +4,17 @@ Schedules retraining based on performance degradation and manages
 trigger conditions for model updates.
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Callable, Tuple
 from datetime import datetime, timedelta
 from enum import Enum
-import numpy as np
+from typing import Any
 
+import numpy as np
 from src.neuro_symbolic.learning.base import (
-    PerformanceMetrics,
-    LearningConfig,
     AdaptationResult,
+    LearningConfig,
+    PerformanceMetrics,
     TriggerCondition,
 )
 
@@ -38,12 +39,12 @@ class ScheduledTask:
     status: ScheduleStatus = ScheduleStatus.PENDING
     priority: int = 0  # Higher = more important
     created_at: datetime = field(default_factory=datetime.now)
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    result: Optional[AdaptationResult] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    result: AdaptationResult | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "task_id": self.task_id,
@@ -70,7 +71,7 @@ class TriggerRule:
     threshold: float
     enabled: bool = True
     cooldown_minutes: int = 60
-    last_triggered: Optional[datetime] = None
+    last_triggered: datetime | None = None
     priority: int = 0
 
     def should_trigger(
@@ -109,7 +110,7 @@ class TriggerRule:
 
         return False
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "name": self.name,
@@ -132,11 +133,11 @@ class SchedulerStats:
     completed_tasks: int = 0
     failed_tasks: int = 0
     cancelled_tasks: int = 0
-    last_run: Optional[datetime] = None
-    next_scheduled: Optional[datetime] = None
+    last_run: datetime | None = None
+    next_scheduled: datetime | None = None
     avg_task_duration: float = 0.0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "total_tasks": self.total_tasks,
@@ -175,8 +176,8 @@ class LearningScheduler:
 
     def __init__(
         self,
-        config: Optional[SchedulerConfig] = None,
-        learning_config: Optional[LearningConfig] = None,
+        config: SchedulerConfig | None = None,
+        learning_config: LearningConfig | None = None,
     ):
         """Initialize the scheduler.
 
@@ -186,14 +187,14 @@ class LearningScheduler:
         """
         self.config = config or SchedulerConfig()
         self.learning_config = learning_config or LearningConfig()
-        self._task_queue: List[ScheduledTask] = []
-        self._completed_tasks: List[ScheduledTask] = []
-        self._trigger_rules: Dict[str, TriggerRule] = {}
-        self._performance_history: List[PerformanceMetrics] = []
-        self._baseline_metrics: Optional[PerformanceMetrics] = None
+        self._task_queue: list[ScheduledTask] = []
+        self._completed_tasks: list[ScheduledTask] = []
+        self._trigger_rules: dict[str, TriggerRule] = {}
+        self._performance_history: list[PerformanceMetrics] = []
+        self._baseline_metrics: PerformanceMetrics | None = None
         self._stats = SchedulerStats()
-        self._adaptation_callback: Optional[Callable] = None
-        self._last_adaptation_time: Optional[datetime] = None
+        self._adaptation_callback: Callable | None = None
+        self._last_adaptation_time: datetime | None = None
         self._daily_adaptation_count: int = 0
         self._last_day_reset: datetime = datetime.now()
 
@@ -257,7 +258,7 @@ class LearningScheduler:
             return True
         return False
 
-    def record_performance(self, metrics: PerformanceMetrics) -> List[TriggerCondition]:
+    def record_performance(self, metrics: PerformanceMetrics) -> list[TriggerCondition]:
         """Record performance metrics and check for triggers.
 
         Args:
@@ -300,9 +301,9 @@ class LearningScheduler:
     def schedule_task(
         self,
         trigger: TriggerCondition,
-        scheduled_time: Optional[datetime] = None,
+        scheduled_time: datetime | None = None,
         priority: int = 0,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> ScheduledTask:
         """Schedule a new learning task.
 
@@ -346,7 +347,7 @@ class LearningScheduler:
 
         return task
 
-    def get_next_task(self) -> Optional[ScheduledTask]:
+    def get_next_task(self) -> ScheduledTask | None:
         """Get the next task to execute.
 
         Returns:
@@ -362,7 +363,7 @@ class LearningScheduler:
 
         return self._task_queue.pop(0)
 
-    def execute_next_task(self) -> Optional[AdaptationResult]:
+    def execute_next_task(self) -> AdaptationResult | None:
         """Execute the next scheduled task.
 
         Returns:
@@ -477,7 +478,7 @@ class LearningScheduler:
             metadata={"recurring": True, "interval_hours": interval_hours},
         )
 
-    def check_performance_degradation(self) -> Optional[float]:
+    def check_performance_degradation(self) -> float | None:
         """Check if performance has degraded.
 
         Returns:
@@ -502,7 +503,7 @@ class LearningScheduler:
 
         return None
 
-    def should_update(self) -> Tuple[bool, Optional[TriggerCondition], str]:
+    def should_update(self) -> tuple[bool, TriggerCondition | None, str]:
         """Determine if an update should be performed.
 
         Returns:
@@ -545,11 +546,11 @@ class LearningScheduler:
                 return True
         return False
 
-    def get_pending_tasks(self) -> List[ScheduledTask]:
+    def get_pending_tasks(self) -> list[ScheduledTask]:
         """Get all pending tasks."""
         return self._task_queue.copy()
 
-    def get_completed_tasks(self, limit: int = 100) -> List[ScheduledTask]:
+    def get_completed_tasks(self, limit: int = 100) -> list[ScheduledTask]:
         """Get recent completed tasks.
 
         Args:
@@ -568,11 +569,11 @@ class LearningScheduler:
         """
         self._baseline_metrics = metrics
 
-    def get_baseline(self) -> Optional[PerformanceMetrics]:
+    def get_baseline(self) -> PerformanceMetrics | None:
         """Get current baseline metrics."""
         return self._baseline_metrics
 
-    def get_performance_trend(self, window: int = 50) -> Dict[str, Any]:
+    def get_performance_trend(self, window: int = 50) -> dict[str, Any]:
         """Analyze performance trend.
 
         Args:
@@ -621,7 +622,7 @@ class LearningScheduler:
         self._completed_tasks.clear()
         self._performance_history.clear()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert scheduler state to dictionary."""
         return {
             "config": {

@@ -5,9 +5,9 @@ This module provides functionality for incrementally updating the
 knowledge graph with new data, including conflict resolution.
 """
 
-from datetime import datetime
-from typing import Any, Optional
 import logging
+from datetime import datetime
+from typing import Any
 
 from src.neuro_symbolic.knowledge_graph.graph import KnowledgeGraph
 from src.neuro_symbolic.knowledge_graph.models import (
@@ -18,7 +18,6 @@ from src.neuro_symbolic.knowledge_graph.models import (
     NodeType,
     UpdateResult,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -138,9 +137,9 @@ class GraphUpdater:
         self,
         node_id: str,
         node_type: NodeType | str,
-        properties: Optional[dict[str, Any]] = None,
+        properties: dict[str, Any] | None = None,
         confidence: float = 1.0,
-        source: Optional[str] = None,
+        source: str | None = None,
     ) -> UpdateResult:
         """
         Add a single node to the graph.
@@ -178,10 +177,10 @@ class GraphUpdater:
         source_id: str,
         target_id: str,
         edge_type: EdgeType | str,
-        properties: Optional[dict[str, Any]] = None,
+        properties: dict[str, Any] | None = None,
         weight: float = 1.0,
         confidence: float = 1.0,
-        evidence: Optional[list[str]] = None,
+        evidence: list[str] | None = None,
         resolve_conflicts: bool = True,
     ) -> UpdateResult:
         """
@@ -317,8 +316,8 @@ class GraphUpdater:
 
     def batch_update(
         self,
-        nodes: Optional[list[dict[str, Any]]] = None,
-        edges: Optional[list[dict[str, Any]]] = None,
+        nodes: list[dict[str, Any]] | None = None,
+        edges: list[dict[str, Any]] | None = None,
         resolve_conflicts: bool = True,
     ) -> UpdateResult:
         """
@@ -479,10 +478,7 @@ class GraphUpdater:
             return True
 
         # Conflict if sources differ and both are specified
-        if existing.source and new.source and existing.source != new.source:
-            return True
-
-        return False
+        return bool(existing.source and new.source and existing.source != new.source)
 
     def _resolve_node_conflict(self, existing: Node, new: Node) -> None:
         """Resolve a node conflict based on the configured strategy."""

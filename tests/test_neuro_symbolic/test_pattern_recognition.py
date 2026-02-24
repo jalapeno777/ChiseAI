@@ -8,35 +8,33 @@ Tests cover:
 - PatternLibrary
 """
 
-import pytest
-import numpy as np
-from pathlib import Path
+import contextlib
 import tempfile
-import time
 
+import numpy as np
+import pytest
 from src.neuro_symbolic.pattern_recognition.engine import (
-    PatternRecognitionEngine,
-    PatternRecognitionConfig,
     PatternMatch,
+    PatternRecognitionConfig,
+    PatternRecognitionEngine,
     PatternType,
+)
+from src.neuro_symbolic.pattern_recognition.inference import (
+    InferenceConfig,
+    InferenceResult,
+    PatternInference,
+)
+from src.neuro_symbolic.pattern_recognition.library import (
+    PatternLibrary,
+    PatternOccurrence,
+    PatternPerformance,
+    PatternTemplate,
 )
 from src.neuro_symbolic.pattern_recognition.trainer import (
     PatternTrainer,
     TrainingConfig,
     TrainingResult,
 )
-from src.neuro_symbolic.pattern_recognition.inference import (
-    PatternInference,
-    InferenceConfig,
-    InferenceResult,
-)
-from src.neuro_symbolic.pattern_recognition.library import (
-    PatternLibrary,
-    PatternTemplate,
-    PatternOccurrence,
-    PatternPerformance,
-)
-
 
 # ============================================================================
 # Fixtures
@@ -785,20 +783,16 @@ class TestEdgeCases:
         data = [100, 101, np.nan, 102, 103]
 
         # Should handle gracefully
-        try:
+        with contextlib.suppress(Exception):
             result = engine.detect_patterns(data)
-        except Exception:
-            pass  # May raise, which is acceptable
 
     def test_infinite_values(self, engine):
         """Test with infinite values."""
         data = [100, 101, np.inf, 102, 103]
 
         # Should handle gracefully
-        try:
+        with contextlib.suppress(Exception):
             result = engine.detect_patterns(data)
-        except Exception:
-            pass  # May raise, which is acceptable
 
     def test_negative_prices(self, engine):
         """Test with negative prices."""

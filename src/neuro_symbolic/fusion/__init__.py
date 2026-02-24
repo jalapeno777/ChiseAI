@@ -1,18 +1,18 @@
 """Fusion module for multi-modal signal combination."""
 
-from src.neuro_symbolic.fusion.engine import (
-    MultiModalFusionEngine,
-    FusionResult,
-    FusionConfig,
-)
 from src.neuro_symbolic.fusion.aggregator import (
-    SignalAggregator,
-    AggregationConfig,
     AggregatedSignals,
+    AggregationConfig,
+    SignalAggregator,
+)
+from src.neuro_symbolic.fusion.engine import (
+    FusionConfig,
+    FusionResult,
+    MultiModalFusionEngine,
 )
 from src.neuro_symbolic.fusion.strategy_selector import (
-    FusionStrategySelector,
     FusionStrategy,
+    FusionStrategySelector,
     StrategyPerformance,
 )
 

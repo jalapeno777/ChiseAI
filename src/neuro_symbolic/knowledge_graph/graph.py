@@ -7,7 +7,7 @@ graph database for storing and managing market relationships.
 
 from collections import defaultdict
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from src.neuro_symbolic.knowledge_graph.models import (
     Edge,
@@ -54,9 +54,9 @@ class KnowledgeGraph:
         self,
         node_id: str,
         node_type: NodeType | str,
-        properties: Optional[dict[str, Any]] = None,
+        properties: dict[str, Any] | None = None,
         confidence: float = 1.0,
-        source: Optional[str] = None,
+        source: str | None = None,
     ) -> Node:
         """
         Add a node to the graph.
@@ -88,7 +88,7 @@ class KnowledgeGraph:
 
         return node
 
-    def get_node(self, node_id: str) -> Optional[Node]:
+    def get_node(self, node_id: str) -> Node | None:
         """
         Get a node by ID.
 
@@ -115,9 +115,9 @@ class KnowledgeGraph:
     def update_node(
         self,
         node_id: str,
-        properties: Optional[dict[str, Any]] = None,
-        confidence: Optional[float] = None,
-    ) -> Optional[Node]:
+        properties: dict[str, Any] | None = None,
+        confidence: float | None = None,
+    ) -> Node | None:
         """
         Update a node's properties.
 
@@ -214,11 +214,11 @@ class KnowledgeGraph:
         source_id: str,
         target_id: str,
         edge_type: EdgeType | str,
-        properties: Optional[dict[str, Any]] = None,
+        properties: dict[str, Any] | None = None,
         weight: float = 1.0,
         confidence: float = 1.0,
-        evidence: Optional[list[str]] = None,
-    ) -> Optional[Edge]:
+        evidence: list[str] | None = None,
+    ) -> Edge | None:
         """
         Add an edge between two nodes.
 
@@ -261,7 +261,7 @@ class KnowledgeGraph:
 
     def get_edge(
         self, source_id: str, target_id: str, edge_type: EdgeType | str
-    ) -> Optional[Edge]:
+    ) -> Edge | None:
         """
         Get an edge by source, target, and type.
 
@@ -302,10 +302,10 @@ class KnowledgeGraph:
         source_id: str,
         target_id: str,
         edge_type: EdgeType | str,
-        properties: Optional[dict[str, Any]] = None,
-        weight: Optional[float] = None,
-        confidence: Optional[float] = None,
-    ) -> Optional[Edge]:
+        properties: dict[str, Any] | None = None,
+        weight: float | None = None,
+        confidence: float | None = None,
+    ) -> Edge | None:
         """
         Update an edge's properties.
 
@@ -445,7 +445,7 @@ class KnowledgeGraph:
             List of outgoing edges
         """
         edges = []
-        for (src, tgt, etype), edge in self._edges.items():
+        for (src, _tgt, _etype), edge in self._edges.items():
             if src == node_id:
                 edges.append(edge)
         return edges
@@ -461,7 +461,7 @@ class KnowledgeGraph:
             List of incoming edges
         """
         edges = []
-        for (src, tgt, etype), edge in self._edges.items():
+        for (_src, tgt, _etype), edge in self._edges.items():
             if tgt == node_id:
                 edges.append(edge)
         return edges

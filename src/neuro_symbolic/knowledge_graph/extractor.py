@@ -6,9 +6,9 @@ relationships from market data including correlations, causalities,
 and temporal patterns.
 """
 
-from datetime import datetime
-from typing import Any, Optional
 import math
+from datetime import datetime
+from typing import Any
 
 from src.neuro_symbolic.knowledge_graph.models import (
     Edge,
@@ -56,8 +56,8 @@ class RelationshipExtractor:
         target_id: str,
         source_data: list[float],
         target_data: list[float],
-        metadata: Optional[dict[str, Any]] = None,
-    ) -> Optional[ExtractionResult]:
+        metadata: dict[str, Any] | None = None,
+    ) -> ExtractionResult | None:
         """
         Extract correlation relationship between two assets.
 
@@ -135,8 +135,8 @@ class RelationshipExtractor:
         source_data: list[float],
         target_data: list[float],
         max_lag: int = 5,
-        metadata: Optional[dict[str, Any]] = None,
-    ) -> Optional[ExtractionResult]:
+        metadata: dict[str, Any] | None = None,
+    ) -> ExtractionResult | None:
         """
         Extract causal relationship using Granger causality test.
 
@@ -207,8 +207,8 @@ class RelationshipExtractor:
         source_data: list[float],
         target_data: list[float],
         max_lag: int = 10,
-        metadata: Optional[dict[str, Any]] = None,
-    ) -> Optional[ExtractionResult]:
+        metadata: dict[str, Any] | None = None,
+    ) -> ExtractionResult | None:
         """
         Extract lead-lag relationship between two assets.
 
@@ -362,7 +362,7 @@ class RelationshipExtractor:
         influencer_events: list[dict[str, Any]],
         influenced_events: list[dict[str, Any]],
         time_window_seconds: float = 600.0,
-    ) -> Optional[ExtractionResult]:
+    ) -> ExtractionResult | None:
         """
         Extract influence relationship between event types.
 
@@ -456,7 +456,9 @@ class RelationshipExtractor:
         mean_y = sum(y) / n
 
         # Compute covariance and standard deviations
-        covariance = sum((xi - mean_x) * (yi - mean_y) for xi, yi in zip(x, y))
+        covariance = sum(
+            (xi - mean_x) * (yi - mean_y) for xi, yi in zip(x, y, strict=False)
+        )
         std_x = math.sqrt(sum((xi - mean_x) ** 2 for xi in x))
         std_y = math.sqrt(sum((yi - mean_y) ** 2 for yi in y))
 

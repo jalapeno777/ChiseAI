@@ -290,10 +290,8 @@ class FusionStrategySelector:
         context: dict[str, Any],
     ) -> FusionStrategy:
         """Select strategy based on historical performance."""
-        # Get context signature
-        context_signature = self._get_context_signature(
-            modality_coverage, signal_quality
-        )
+        # Get context signature (for potential future use)
+        _ = self._get_context_signature(modality_coverage, signal_quality)
 
         # Find best performing strategy for similar contexts
         candidates = []

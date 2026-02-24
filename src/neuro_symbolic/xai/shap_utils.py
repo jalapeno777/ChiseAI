@@ -6,11 +6,11 @@ and interaction detection for feature analysis.
 
 from __future__ import annotations
 
+import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional, Callable
-import logging
-import math
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class SHAPValue:
 
     feature_name: str
     value: float  # SHAP value (can be positive or negative)
-    feature_value: Optional[float] = None
+    feature_value: float | None = None
     base_value: float = 0.0
     interaction_value: float = 0.0
     std_error: float = 0.0
@@ -106,7 +106,7 @@ class SHAPResult:
         """Features sorted by absolute SHAP value."""
         return sorted(self.shap_values, key=lambda x: x.abs_value, reverse=True)
 
-    def get_feature_shap(self, feature_name: str) -> Optional[SHAPValue]:
+    def get_feature_shap(self, feature_name: str) -> SHAPValue | None:
         """Get SHAP value for a specific feature."""
         for sv in self.shap_values:
             if sv.feature_name == feature_name:
@@ -187,7 +187,7 @@ class SHAPCalculator:
         'rsi'
     """
 
-    def __init__(self, config: Optional[SHAPConfig] = None):
+    def __init__(self, config: SHAPConfig | None = None):
         """Initialize SHAP calculator.
 
         Args:
@@ -202,8 +202,8 @@ class SHAPCalculator:
     def calculate(
         self,
         features: dict[str, Any],
-        predict_fn: Optional[Callable] = None,
-        background_data: Optional[list[dict[str, Any]]] = None,
+        predict_fn: Callable | None = None,
+        background_data: list[dict[str, Any]] | None = None,
         base_value: float = 0.5,
     ) -> SHAPResult:
         """Calculate SHAP values for a prediction.
@@ -253,8 +253,8 @@ class SHAPCalculator:
     def calculate_batch(
         self,
         feature_list: list[dict[str, Any]],
-        predict_fn: Optional[Callable] = None,
-        background_data: Optional[list[dict[str, Any]]] = None,
+        predict_fn: Callable | None = None,
+        background_data: list[dict[str, Any]] | None = None,
         base_value: float = 0.5,
     ) -> list[SHAPResult]:
         """Calculate SHAP values for multiple instances.
@@ -277,8 +277,8 @@ class SHAPCalculator:
     def _kernel_shap(
         self,
         features: dict[str, Any],
-        predict_fn: Optional[Callable],
-        background_data: Optional[list[dict[str, Any]]],
+        predict_fn: Callable | None,
+        background_data: list[dict[str, Any]] | None,
         base_value: float,
     ) -> list[SHAPValue]:
         """Calculate SHAP values using kernel method."""
@@ -289,7 +289,6 @@ class SHAPCalculator:
         # In production, this would use the actual SHAP library
         shap_values = []
         feature_names = list(features.keys())
-        n_features = len(feature_names)
 
         # Calculate marginal contributions for each feature
         for name in feature_names:
@@ -317,8 +316,8 @@ class SHAPCalculator:
     def _sampling_shap(
         self,
         features: dict[str, Any],
-        predict_fn: Optional[Callable],
-        background_data: Optional[list[dict[str, Any]]],
+        predict_fn: Callable | None,
+        background_data: list[dict[str, Any]] | None,
         base_value: float,
     ) -> list[SHAPValue]:
         """Calculate SHAP values using sampling method."""
@@ -427,7 +426,7 @@ class InteractionDetector:
     def detect(
         self,
         features: dict[str, Any],
-        predict_fn: Optional[Callable] = None,
+        predict_fn: Callable | None = None,
         base_value: float = 0.5,
     ) -> list[InteractionResult]:
         """Detect feature interactions.
@@ -462,7 +461,7 @@ class InteractionDetector:
         name1: str,
         name2: str,
         features: dict[str, Any],
-        predict_fn: Optional[Callable],
+        predict_fn: Callable | None,
         base_value: float,
     ) -> InteractionResult:
         """Detect interaction between two features."""
@@ -480,11 +479,6 @@ class InteractionDetector:
         else:
             individual_2 = 0.0
 
-        # Estimate combined effect (with potential synergy)
-        # This is a simplified model - real SHAP interaction values
-        # would require more sophisticated calculation
-        combined_expected = individual_1 + individual_2
-
         # Add interaction term based on feature correlation
         if name1 == "rsi" and name2 == "macd":
             # RSI and MACD often have synergistic relationship
@@ -496,7 +490,6 @@ class InteractionDetector:
             interaction_value = 0.02
 
         synergy = interaction_value
-        actual_combined = combined_expected + synergy
 
         return InteractionResult(
             feature_1=name1,
@@ -514,7 +507,7 @@ class InteractionDetector:
     def get_top_interactions(
         self,
         features: dict[str, Any],
-        predict_fn: Optional[Callable] = None,
+        predict_fn: Callable | None = None,
         top_n: int = 5,
     ) -> list[InteractionResult]:
         """Get top N feature interactions.
