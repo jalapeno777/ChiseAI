@@ -11,9 +11,17 @@ import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any
+from typing import Any, TypedDict
 
 logger = logging.getLogger(__name__)
+
+
+class OptimizationPatternConfig(TypedDict):
+    """Configuration for a query optimization pattern."""
+
+    pattern: str
+    fix: str
+    improvement: int
 
 
 class QueryType(Enum):
@@ -128,7 +136,7 @@ class QueryOptimizer:
     """
 
     # Slow query patterns and their optimizations
-    OPTIMIZATION_PATTERNS = {
+    OPTIMIZATION_PATTERNS: dict[str, OptimizationPatternConfig] = {
         "select_star": {
             "pattern": r"SELECT\s+\*\s+FROM",
             "fix": "Replace SELECT * with specific columns",
