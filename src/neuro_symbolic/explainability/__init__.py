@@ -38,12 +38,12 @@ Usage:
 
 from __future__ import annotations
 
-from neuro_symbolic.explainability.generator import (
-    ExplanationConfig,
-    ExplanationGenerator,
-    ExplanationResult,
-    ExplanationType,
-    ReasoningStep,
+from neuro_symbolic.explainability.confidence_scorer import (
+    ConfidenceLevel,
+    ConfidenceMetric,
+    ConfidenceScore,
+    ExplanationConfidenceScorer,
+    ScoringConfig,
 )
 from neuro_symbolic.explainability.feature_importance import (
     FeatureContribution,
@@ -52,19 +52,19 @@ from neuro_symbolic.explainability.feature_importance import (
     ImportanceMethod,
     ImportanceVisualization,
 )
-from neuro_symbolic.explainability.confidence_scorer import (
-    ConfidenceLevel,
-    ConfidenceMetric,
-    ConfidenceScore,
-    ExplanationConfidenceScorer,
-    ScoringConfig,
-)
 from neuro_symbolic.explainability.formatter import (
     AudienceType,
     ExplanationFormatter,
     FormattedExplanation,
     FormatterConfig,
     OutputFormat,
+)
+from neuro_symbolic.explainability.generator import (
+    ExplanationConfig,
+    ExplanationGenerator,
+    ExplanationResult,
+    ExplanationType,
+    ReasoningStep,
 )
 
 __all__ = [

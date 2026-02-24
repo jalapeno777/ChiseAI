@@ -9,28 +9,26 @@ Tests cover:
 - End-to-end pipeline
 """
 
+from unittest.mock import Mock
+
 import pytest
-from datetime import datetime
-from unittest.mock import Mock, patch, MagicMock
-import numpy as np
+
+# Integration layer tests
+from src.neuro_symbolic.integration.layer import (
+    ComponentAdapter,
+    DataConverter,
+    Event,
+    EventBus,
+    EventType,
+    IntegrationError,
+    IntegrationLayer,
+)
 
 # Registry tests
 from src.neuro_symbolic.integration.registry import (
     ComponentRegistry,
-    ComponentInfo,
-    ComponentType,
     ComponentStatus,
-)
-
-# Integration layer tests
-from src.neuro_symbolic.integration.layer import (
-    EventBus,
-    EventType,
-    Event,
-    DataConverter,
-    ComponentAdapter,
-    IntegrationLayer,
-    IntegrationError,
+    ComponentType,
 )
 
 # Orchestrator tests
@@ -39,7 +37,6 @@ from src.neuro_symbolic.orchestrator.orchestrator import (
     OrchestratorConfig,
     OrchestratorResult,
 )
-
 
 # =============================================================================
 # Component Registry Tests

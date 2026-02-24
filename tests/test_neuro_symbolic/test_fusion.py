@@ -7,44 +7,41 @@ Tests cover:
 - FusionStrategySelector
 """
 
-import pytest
 from datetime import datetime, timedelta
-from unittest.mock import Mock, patch
 
-from src.neuro_symbolic.fusion.engine import (
-    MultiModalFusionEngine,
-    FusionConfig,
-    FusionResult,
-    fuse_signals,
-)
+import pytest
 from src.neuro_symbolic.fusion.aggregator import (
-    SignalAggregator,
-    AggregationConfig,
     AggregatedSignals,
+    SignalAggregator,
     aggregate_signals,
 )
+from src.neuro_symbolic.fusion.engine import (
+    FusionConfig,
+    FusionResult,
+    MultiModalFusionEngine,
+    fuse_signals,
+)
 from src.neuro_symbolic.fusion.strategy_selector import (
-    FusionStrategySelector,
     FusionStrategy,
+    FusionStrategySelector,
     SelectorConfig,
     StrategyPerformance,
     select_fusion_strategy,
 )
 from src.neuro_symbolic.multimodal.encoder import (
-    ModalityEncoder,
-    EncoderConfig,
     EncodedSignal,
+    EncoderConfig,
+    ModalityEncoder,
     encode_signal,
 )
 from src.neuro_symbolic.multimodal.types import (
+    FusionWeights,
     ModalityType,
+    MultiModalSignal,
+    SignalBatch,
     SignalMetadata,
     TemporalContext,
-    MultiModalSignal,
-    FusionWeights,
-    SignalBatch,
 )
-
 
 # ============================================================================
 # Fixtures

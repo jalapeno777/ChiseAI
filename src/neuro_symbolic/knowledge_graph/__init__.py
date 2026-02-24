@@ -12,19 +12,19 @@ Components:
     - GraphUpdater: Updates graph based on new data
 """
 
-from src.neuro_symbolic.knowledge_graph.graph import KnowledgeGraph
 from src.neuro_symbolic.knowledge_graph.extractor import RelationshipExtractor
+from src.neuro_symbolic.knowledge_graph.graph import KnowledgeGraph
+from src.neuro_symbolic.knowledge_graph.models import (
+    Edge,
+    EdgeType,
+    GraphMetrics,
+    Node,
+    NodeType,
+    QueryResult,
+    RelationshipStrength,
+)
 from src.neuro_symbolic.knowledge_graph.query_engine import GraphQueryEngine
 from src.neuro_symbolic.knowledge_graph.updater import GraphUpdater
-from src.neuro_symbolic.knowledge_graph.models import (
-    Node,
-    Edge,
-    NodeType,
-    EdgeType,
-    RelationshipStrength,
-    QueryResult,
-    GraphMetrics,
-)
 
 __all__ = [
     "KnowledgeGraph",

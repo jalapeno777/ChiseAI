@@ -12,15 +12,15 @@ Submodules:
 from __future__ import annotations
 
 from neuro_symbolic.xai.shap_utils import (
+    InteractionDetector,
     SHAPCalculator,
     SHAPConfig,
     SHAPResult,
-    InteractionDetector,
 )
 from neuro_symbolic.xai.visualization import (
     ExplanationVisualizer,
-    VisualizationConfig,
     PlotType,
+    VisualizationConfig,
 )
 
 __all__ = [

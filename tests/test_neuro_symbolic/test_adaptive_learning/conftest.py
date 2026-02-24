@@ -1,29 +1,22 @@
 """Shared fixtures for adaptive learning tests."""
 
-import pytest
 import numpy as np
-
-from src.neuro_symbolic.learning.base import (
-    LearningConfig,
-    FeedbackSignal,
-    SignalType,
-    PerformanceMetrics,
-)
-from src.neuro_symbolic.adaptive_learning.feedback import (
-    FeedbackIntegrator,
-    IntegratorConfig,
-)
+import pytest
 from src.neuro_symbolic.adaptive_learning.adapter import (
     ModelAdapter,
-    AdapterConfig,
-)
-from src.neuro_symbolic.adaptive_learning.scheduler import (
-    LearningScheduler,
-    SchedulerConfig,
 )
 from src.neuro_symbolic.adaptive_learning.engine import (
     AdaptiveLearningEngine,
     EngineConfig,
+)
+from src.neuro_symbolic.adaptive_learning.feedback import (
+    FeedbackIntegrator,
+)
+from src.neuro_symbolic.adaptive_learning.scheduler import (
+    LearningScheduler,
+)
+from src.neuro_symbolic.learning.base import (
+    LearningConfig,
 )
 
 

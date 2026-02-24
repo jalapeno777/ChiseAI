@@ -7,43 +7,38 @@ Tests cover:
 - HybridReasoningEngine: end-to-end hybrid reasoning
 """
 
-import pytest
+
 import numpy as np
-from unittest.mock import Mock, patch
-
-from src.neuro_symbolic.reasoning.neural_component import (
-    NeuralComponent,
-    NeuralOutput,
-    MarketFeatureExtractor,
-    PatternRecognizer,
-)
-
-from src.neuro_symbolic.reasoning.symbolic_component import (
-    SymbolicComponent,
-    SymbolicOutput,
-    RuleResult,
-    RuleType,
-    TrendDirection,
-    TrendRule,
-    VolumeRule,
-    MomentumRule,
-    VolatilityRule,
-    SupportResistanceRule,
-    InferenceEngine,
-    SymbolicRule,
-)
-
-from src.neuro_symbolic.reasoning.integration_layer import (
-    IntegrationLayer,
-    FusedResult,
-    ReasoningChain,
-    FusionStrategy,
-)
-
+import pytest
 from src.neuro_symbolic.reasoning.hybrid_engine import (
     HybridReasoningEngine,
     HybridReasoningResult,
     analyze_market_data,
+)
+from src.neuro_symbolic.reasoning.integration_layer import (
+    FusedResult,
+    FusionStrategy,
+    IntegrationLayer,
+    ReasoningChain,
+)
+from src.neuro_symbolic.reasoning.neural_component import (
+    MarketFeatureExtractor,
+    NeuralComponent,
+    NeuralOutput,
+    PatternRecognizer,
+)
+from src.neuro_symbolic.reasoning.symbolic_component import (
+    InferenceEngine,
+    MomentumRule,
+    RuleResult,
+    RuleType,
+    SupportResistanceRule,
+    SymbolicComponent,
+    SymbolicOutput,
+    TrendDirection,
+    TrendRule,
+    VolatilityRule,
+    VolumeRule,
 )
 
 # ============================================================================
