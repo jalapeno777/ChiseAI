@@ -303,7 +303,8 @@ class ValidationGate:
 
         if version.status != ModelStatus.CANDIDATE:
             raise ValueError(
-                f"Version must be in CANDIDATE status for validation, got {version.status.value}"
+                f"Version must be in CANDIDATE status for validation, "
+                f"got {version.status.value}"
             )
 
         duration = duration_hours or self._config.shadow_mode_duration_hours
@@ -618,7 +619,8 @@ class ValidationGate:
 
         if metrics.precision < self._config.precision_threshold:
             failures.append(
-                f"precision {metrics.precision:.3f} < {self._config.precision_threshold}"
+                f"precision {metrics.precision:.3f} < "
+                f"{self._config.precision_threshold}"
             )
 
         if metrics.recall < self._config.recall_threshold:

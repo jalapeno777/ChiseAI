@@ -12,12 +12,6 @@ from ml.validation.gate import (
     ValidationRun,
     ValidationState,
 )
-from ml.validation.promotion import (
-    PromotionRequest,
-    PromotionRequestStatus,
-    PromotionResult,
-    PromotionWorkflow,
-)
 from ml.validation.model_validator import (
     CompositeGateResult,
     DefaultInfluxDBLogger,
@@ -27,10 +21,18 @@ from ml.validation.model_validator import (
     ShadowComparisonResult,
     ShadowModeConfig,
     ShadowModeManager,
-    ValidationGate as ModelValidationGate,
     ValidationLevel,
     ValidationThresholds,
     validate_model_metrics,
+)
+from ml.validation.model_validator import (
+    ValidationGate as ModelValidationGate,
+)
+from ml.validation.promotion import (
+    PromotionRequest,
+    PromotionRequestStatus,
+    PromotionResult,
+    PromotionWorkflow,
 )
 
 __all__ = [

@@ -5,7 +5,11 @@ Provides automatic rollback on validation failure.
 
 from ml.rollback.automatic import (
     RollbackConfig as AutoRollbackConfig,
+)
+from ml.rollback.automatic import (
     RollbackManager as AutoRollbackManager,
+)
+from ml.rollback.automatic import (
     RollbackReason,
     RollbackResult,
     RollbackState,
