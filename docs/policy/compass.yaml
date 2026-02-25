@@ -52,7 +52,9 @@ approval_requirements:
     max_duration_hours: 48
   
   appeal_workflow:
-    enabled: true
+    # DEFERRED: Appeal workflow is documented but NOT implemented (AC-3 gap)
+    # This should be enabled in a follow-up story after implementation is complete
+    enabled: false
     consensus_required: 3
     agents:
       - critic
