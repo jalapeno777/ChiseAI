@@ -11,8 +11,8 @@ import logging
 from datetime import UTC, datetime
 from typing import Any
 
-from src.autonomous_control_plane.healing_actions.base import BaseHealingAction
-from src.autonomous_control_plane.models.healing import (
+from autonomous_control_plane.healing_actions.base import BaseHealingAction
+from autonomous_control_plane.models.healing import (
     ActionPriority,
     HealingContext,
     ResourceLimits,

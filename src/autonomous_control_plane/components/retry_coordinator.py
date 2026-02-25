@@ -19,11 +19,11 @@ import uuid
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any, TypeVar
 
-from src.autonomous_control_plane.components.dead_letter_queue import DeadLetterQueue
-from src.autonomous_control_plane.components.retry_budget_manager import (
+from autonomous_control_plane.components.dead_letter_queue import DeadLetterQueue
+from autonomous_control_plane.components.retry_budget_manager import (
     RetryBudgetManager,
 )
-from src.autonomous_control_plane.models.retry_policy import (
+from autonomous_control_plane.models.retry_policy import (
     BudgetExceededError,
     MaxRetriesExceededError,
     RetryAborted,
@@ -31,7 +31,7 @@ from src.autonomous_control_plane.models.retry_policy import (
     RetryPolicy,
     RetryStatus,
 )
-from src.common.circuit_breaker import CircuitBreakerOpen, CircuitBreakerRegistry
+from common.circuit_breaker import CircuitBreakerOpen, CircuitBreakerRegistry
 
 if TYPE_CHECKING:
     from influxdb_client import InfluxDBClient

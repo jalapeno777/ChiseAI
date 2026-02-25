@@ -15,11 +15,11 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from src.autonomous_control_plane.components.log_parsers import (
+from autonomous_control_plane.components.log_parsers import (
     BaseLogParser,
     SimpleLogParser,
 )
-from src.autonomous_control_plane.models.healing import LogEntry
+from autonomous_control_plane.models.healing import LogEntry
 
 logger = logging.getLogger(__name__)
 

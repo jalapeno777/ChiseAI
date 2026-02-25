@@ -16,7 +16,7 @@ from __future__ import annotations
 import re
 from abc import ABC, abstractmethod
 
-from src.autonomous_control_plane.models.healing import (
+from autonomous_control_plane.models.healing import (
     FailurePatternMatch,
     FailurePatternType,
     LogEntry,

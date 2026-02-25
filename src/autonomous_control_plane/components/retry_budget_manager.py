@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from redis import Redis
 
-from src.autonomous_control_plane.models.retry_policy import RetryBudget
+from autonomous_control_plane.models.retry_policy import RetryBudget
 
 logger = logging.getLogger(__name__)
 
