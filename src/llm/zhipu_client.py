@@ -18,13 +18,9 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from llm.errors import (
-    AuthError,
     NetworkError,
     QuotaError,
-    RateLimitError,
     ScopeError,
-    ServerError,
-    ValidationError,
     classify_error,
 )
 
@@ -183,13 +179,9 @@ class ZhipuClient:
         )
 
         if status_code == 401:
-            raise AuthError(
-                f"Authentication failed for ZHIPU: {error_msg}", provider="ZHIPU"
-            )
+            raise ZaiAuthError(f"Authentication failed for ZHIPU: {error_msg}")
         elif status_code == 429:
-            raise RateLimitError(
-                f"Rate limit exceeded for ZHIPU: {error_msg}", provider="ZHIPU"
-            )
+            raise ZaiRateLimitError(f"Rate limit exceeded for ZHIPU: {error_msg}")
         elif status_code == 403:
             # Check for quota vs scope error
             if isinstance(error, (QuotaError, ScopeError)):
@@ -199,22 +191,22 @@ class ZhipuClient:
                     f"Permission denied for ZHIPU: {error_msg}", provider="ZHIPU"
                 )
         elif status_code in (400, 422):
-            raise ValidationError(
-                f"Request validation failed for ZHIPU: {error_msg}",
-                provider="ZHIPU",
-                status_code=status_code,
-            )
-        elif status_code >= 500:
-            raise ServerError(
-                f"Server error {status_code} from ZHIPU",
-                provider="ZHIPU",
-                status_code=status_code,
-            )
-        else:
             raise ZaiError(f"API error {status_code}: {error_msg}")
+        elif status_code >= 500:
+            raise ZaiServerError(f"Server error {status_code} from ZHIPU: {error_msg}")
 
     def _parse_response(self, data: dict[str, Any]) -> ZaiResponse:
-        """Parse API response into ZaiResponse object."""
+        """Parse API response into ZaiResponse object.
+
+        Args:
+            data: JSON response data from API.
+
+        Returns:
+            Parsed ZaiResponse object.
+
+        Raises:
+            ZaiError: If response format is invalid.
+        """
         choices = data.get("choices", [])
         if not choices:
             raise ZaiError("No choices in response")
@@ -305,14 +297,17 @@ class ZhipuClient:
                 last_exception = NetworkError(
                     f"Request timed out after {self.timeout}s", provider="ZHIPU"
                 )
-            except (RateLimitError, ServerError) as e:
-                last_exception = e
+            except (ZaiRateLimitError, ZaiServerError) as e:
                 # These are retryable, continue to next attempt
                 if attempt < self.max_retries:
                     wait_time = self.backoff_factor * (2**attempt)
                     time.sleep(wait_time)
-            except (AuthError, QuotaError, ScopeError, ValidationError):
+                else:
+                    raise e  # Re-raise after exhausting retries
+            except (ZaiAuthError, QuotaError, ScopeError):
                 raise  # Non-retryable errors - re-raise for immediate fallback
+            except ZaiError:
+                raise  # Other ZaiError types - re-raise immediately
             except requests.exceptions.RequestException as e:
                 last_exception = NetworkError(f"Request failed: {e}", provider="ZHIPU")
                 if attempt < self.max_retries:
