@@ -51,9 +51,15 @@ metadata:
         - Circuit breaker threshold drift (mitigated: weekly review)
       next_steps:
         - Human approval of promotion packet
-        - Merge canary-close documentation
+        - Complete canary period (target: 2026-02-28)
+        - Finalize rollback runbook
         - Close EP-NS-008 epic
         - Archive NS stream
+      reconciliation_note:
+        timestamp: "2026-02-25T20:00:00Z"
+        actor: jarvis
+        action: final_reconciliation_cleanup
+        description: "Corrected next_steps to reflect docs already merged. Status remains GO-WITH-CONDITIONS pending open conditions."
     - timestamp: "2026-02-25T16:45:00Z"
       actor: jarvis
       action: ep-ns-008-batch1-completion
