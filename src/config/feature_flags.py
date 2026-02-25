@@ -15,14 +15,20 @@ from typing import Any
 class FeatureFlags:
     """Feature flags for ChiseAI components.
 
+    SAFETY-FIRST DESIGN: All safety-critical flags default to ENABLED (True).
+    Missing or invalid configuration values will NOT disable safety features.
+
+    To explicitly disable a flag, set the corresponding environment variable
+    to one of: 'false', '0', 'no', 'off' (case-insensitive).
+
     Attributes:
-        retraining_ece_trigger: Enable ECE-based retraining triggers
-        retraining_performance_trigger: Enable performance-based retraining triggers
-        retraining_scheduled_trigger: Enable scheduled retraining triggers
-        retraining_deduplication: Enable 24h deduplication window
-        retraining_pre_validation: Enable pre-training quality validation
+        retraining_ece_trigger: Enable ECE-based retraining triggers [SAFETY]
+        retraining_performance_trigger: Enable performance-based retraining triggers [SAFETY]
+        retraining_scheduled_trigger: Enable scheduled retraining triggers [SAFETY]
+        retraining_deduplication: Enable 24h deduplication window [SAFETY]
+        retraining_pre_validation: Enable pre-training quality validation [SAFETY]
         retraining_discord_alerts: Enable Discord alerts on triggers
-        launch_training_pipeline_enabled: Enable training pipeline integration
+        launch_training_pipeline_enabled: Enable training pipeline integration [SAFETY]
     """
 
     # Retraining trigger flags
@@ -54,9 +60,30 @@ class FeatureFlags:
         """
 
         def _get_bool_env(name: str, default: bool = True) -> bool:
-            """Get boolean from environment variable."""
-            value = os.getenv(name, str(default).lower())
-            return value.lower() in ("true", "1", "yes", "on")
+            """Get boolean from environment variable with fail-safe defaults.
+
+            SAFETY NOTE: All safety-critical flags default to True (enabled).
+            To disable a flag, explicitly set it to 'false', '0', 'no', or 'off'.
+            Invalid/malformed values will use the safe default (True).
+
+            Args:
+                name: Environment variable name
+                default: Default value if env var not set (always True for safety flags)
+
+            Returns:
+                Boolean value from environment or safe default
+            """
+            value = os.getenv(name)
+            if value is None:
+                # Env var not set - use safe default (True for safety flags)
+                return default
+
+            value_lower = value.lower().strip()
+            if value_lower in ("false", "0", "no", "off"):
+                return False
+            # Any other value (including empty string, whitespace, invalid)
+            # uses the safe default for safety-critical flags
+            return default
 
         return cls(
             retraining_ece_trigger=_get_bool_env(

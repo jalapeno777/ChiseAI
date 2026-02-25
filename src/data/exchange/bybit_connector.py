@@ -261,7 +261,7 @@ class BybitConnector:
             half_open_max_calls=3,
         )
 
-        # Time synchronization for authentication (PAPER-READY-P0-ACTUAL-FIX)
+        # Time synchronization for API authentication.
         self._time_offset_ms: int = 0
         self._last_time_sync: float = 0.0
 
@@ -396,6 +396,53 @@ class BybitConnector:
             hashlib.sha256,
         ).hexdigest()
 
+    async def _sync_server_time(self) -> None:
+        """Synchronize local time with Bybit server time.
+
+        Fetches the server time from Bybit API and calculates the offset
+        between local time and server time. This offset is used to adjust
+        timestamps in authenticated requests to prevent retCode 10003 errors
+        caused by clock skew.
+        """
+        if self._session is None:
+            return
+
+        try:
+            url = f"{self.config.base_url}/v5/market/time"
+            async with self._session.get(url) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    if data.get("retCode") == 0:
+                        result = data.get("result", {})
+                        # Try timeNano first (nanoseconds), fall back to timeSecond
+                        server_time_nano = result.get("timeNano", 0)
+                        if server_time_nano:
+                            server_time_ms = int(server_time_nano) // 1_000_000
+                        else:
+                            server_time_ms = int(result.get("timeSecond", 0)) * 1000
+
+                        local_time_ms = int(time.time() * 1000)
+                        self._time_offset_ms = server_time_ms - local_time_ms
+                        self._last_time_sync = time.time()
+
+                        logger.debug(
+                            f"Time sync complete: offset={self._time_offset_ms}ms, "
+                            f"server_time={server_time_ms}, local_time={local_time_ms}"
+                        )
+        except Exception as e:
+            logger.warning(f"Failed to sync server time: {e}")
+            # Continue with local time (offset remains 0)
+
+    def _get_timestamp(self) -> str:
+        """Get timestamp adjusted for server time offset.
+
+        Returns:
+            Timestamp string in milliseconds adjusted for server time
+        """
+        local_time_ms = int(time.time() * 1000)
+        adjusted_time_ms = local_time_ms + self._time_offset_ms
+        return str(adjusted_time_ms)
+
     async def _make_request(
         self,
         method: str,
@@ -428,10 +475,11 @@ class BybitConnector:
         payload = ""
 
         if signed:
-            # Sync time on first request or every 5 minutes
+            # Sync server time on first signed request or if stale (>5 minutes)
             if self._last_time_sync == 0 or (time.time() - self._last_time_sync) > 300:
                 await self._sync_server_time()
-            timestamp = str(self._get_timestamp())
+
+            timestamp = self._get_timestamp()
             headers["X-BAPI-TIMESTAMP"] = timestamp
             headers["X-BAPI-RECV-WINDOW"] = str(self.config.recv_window)
 
