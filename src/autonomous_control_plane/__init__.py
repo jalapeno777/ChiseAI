@@ -7,11 +7,11 @@ ST-NS-038: Circuit Breaker Registry & Unified Telemetry
 EP-NS-008: Autonomous Control Plane
 """
 
-from autonomous_control_plane.components.failure_pattern_matcher import (
-    FailurePatternMatcher,
-)
-from autonomous_control_plane.components.self_healing_engine import SelfHealingEngine
-from autonomous_control_plane.models.healing import LogEntry
+# Note: Imports deferred to avoid circular import issues
+# Import directly from submodules as needed:
+#   from autonomous_control_plane.config.settings import Settings
+#   from autonomous_control_plane.core.orchestrator import ACPOrchestrator
+#   from autonomous_control_plane.events.bus import EventBus
 
 __version__ = "0.1.0"
 __all__ = [
@@ -20,7 +20,6 @@ __all__ = [
     "telemetry",
     "api",
     "config",
-    "FailurePatternMatcher",
-    "LogEntry",
-    "SelfHealingEngine",
+    "core",
+    "events",
 ]
