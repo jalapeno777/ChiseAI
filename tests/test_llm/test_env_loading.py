@@ -171,11 +171,13 @@ class TestDiscordEnvLoading:
 
     def test_load_discord_config_without_guild_id(self):
         """Test loading Discord config without guild restriction."""
+        # Must clear=True to remove any existing DISCORD_GUILD_ID from environment
         with patch.dict(
             os.environ,
             {
                 "DISCORD_WEBHOOK_URL": "https://discord.com/api/webhooks/test",
             },
+            clear=True,
         ):
             config = load_discord_config()
 
