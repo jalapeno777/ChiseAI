@@ -7,6 +7,15 @@ metadata:
   version: "2.5.2"
   last_updated: "2026-02-25T12:00:00Z"
   recent_changes:
+    - timestamp: "2026-02-25T12:30:00Z"
+      actor: jarvis
+      action: agent_instruction_consistency_patch
+      description: "REPO-003: Updated agent instruction files with consistent merge authority wording per AGENTS.md"
+      files_changed:
+        - .opencode/agent/Dev.md
+        - .opencode/agent/Quickdev.md
+        - .opencode/agent/SeniorDev.md
+        - .opencode/agent/Juniordev.md
     - timestamp: "2026-02-25T12:00:00Z"
       actor: jarvis
       action: enforcement_window_start
