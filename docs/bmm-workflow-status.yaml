@@ -5,8 +5,28 @@
 metadata:
   project_name: ChiseAI
   version: "2.5.3"
-  last_updated: "2026-02-25T18:00:00Z"
+  last_updated: "2026-02-25T20:20:00Z"
   recent_changes:
+    - timestamp: "2026-02-25T20:20:00Z"
+      actor: merlin
+      action: merge
+      description: "ST-SOUL-001 merged to main via PR #271. Soul-Guided Compass Framework with constitutional governance, veto capability, and human approval gates. 19 tests passing, all CI checks green."
+      story_id: ST-SOUL-001
+      epic_id: EP-NS-009
+      pr_number: 271
+      merge_commit_sha: "bd8550cc87ed9fffeb638ab2c3ff66eeb5844593"
+      test_summary:
+        total: 19
+        passed: 19
+        failed: 0
+        skipped: 0
+      files_changed:
+        - docs/policy/compass.yaml
+        - docs/policy/human_approval.yaml
+        - scripts/ci/compass_gate.py
+        - scripts/ops/compass_apply.py
+        - tests/unit/governance/test_compass.py
+        - .woodpecker/ci.yaml
     - timestamp: "2026-02-25T22:00:00Z"
       actor: jarvis
       action: ep-ns-008-final-closeout
@@ -715,6 +735,24 @@ epics:
         actual_close_date: "2026-02-25"
         promotion_decision: GO
         open_conditions: []
+
+  # EP-NS-009: Soul/Reflect/Memory Stewardship (1 story, 8 points)
+  - id: EP-NS-009
+    name: Soul/Reflect/Memory Stewardship
+    status: completed
+    story_ids: [ST-SOUL-001]
+    story_count: 1
+    story_points: 8
+    description: Constitutional governance layer with Soul-Guided Compass framework for value alignment, veto capability, and human approval gates
+    sprint_id: q2-8
+    completion_date: "2026-02-25"
+    pr_number: 271
+    notes:
+      - Soul-Guided Compass Framework establishes constitutional governance
+      - Compass gate enforces policy on sensitive path changes
+      - Human approval required for high-impact changes
+      - 19 unit tests for compass logic, all passing
+      - Integration with Woodpecker CI for automated enforcement
 
   # EP-PAPER-001: Paper Trading Loop Implementation (4 stories, 21 points)
   - id: EP-PAPER-001
@@ -3454,6 +3492,55 @@ sprints:
         dashboard: "Grafana / Dashboard Performance"
       - metric: "dashboard_load_errors"
         alert: "> 0 in 5-minute window"
+
+  # ============================================================
+  # EP-NS-009 STORIES (1 story, 8 points)
+  # Soul/Reflect/Memory Stewardship
+  # ============================================================
+
+  # ST-SOUL-001: Soul-Guided Compass Framework
+  - id: ST-SOUL-001
+    title: Soul-Guided Compass Framework
+    epic_id: EP-NS-009
+    sprint_id: q2-8
+    status: completed
+    validation_status: validated
+    merge_date: "2026-02-25"
+    pr_numbers: [271]
+    story_points: 8
+    priority: P0-CRITICAL
+    fr_coverage: [FR-GOV-015, FR-GOV-016, FR-GOV-017]
+    description: Constitutional governance layer with value alignment compass, veto capability, and human approval gates for sensitive changes
+    scope_globs: ["docs/policy/compass.yaml", "docs/policy/human_approval.yaml", "scripts/ci/compass_gate.py", "scripts/ops/compass_apply.py", "tests/unit/governance/test_compass.py"]
+    depends_on: [ST-NS-043]
+    acceptance_criteria:
+      - compass.yaml defines constitutional values and principles with version-controlled policies
+      - compass_gate.py runs in CI and blocks PRs modifying sensitive paths without human approval
+      - 19 unit tests validate compass logic including veto scenarios
+      - human_approval.yaml documents approval requirements for high-impact changes
+      - compass_apply.py applies policies with dry-run capability for validation
+      - Integration with Woodpecker CI for automated enforcement on every PR
+    test_strategy:
+      unit: "pytest tests/unit/governance/test_compass.py -v"
+      integration: "python3 scripts/ci/compass_gate.py --test"
+      e2e: "python3 scripts/ops/compass_apply.py --dry-run"
+    live_validation_gates:
+      - gate: "compass_tests_pass"
+        check: "pytest tests/unit/governance/test_compass.py -v"
+        timeout: 60s
+      - gate: "compass_gate_valid"
+        check: "python3 scripts/ci/compass_gate.py --test"
+        timeout: 30s
+    rollback_plan:
+      - action: "Disable compass gate in CI"
+        command: "Edit .woodpecker/ci.yaml to comment out compass-gate step"
+      - action: "Revert policy changes"
+        command: "git checkout HEAD~1 -- docs/policy/"
+    observability:
+      - metric: "compass_gate_blocks"
+        dashboard: "CI/CD / Governance"
+      - metric: "human_approval_requests"
+        alert: "> 0 triggers review notification"
 
   # ============================================================
   # EP-AUTO-GIT-001 STORIES (8 stories, 47 points)
