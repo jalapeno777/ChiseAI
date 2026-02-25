@@ -71,6 +71,23 @@ Ensure all agent swarm operations follow consistent, safe Git practices that mai
 ### Emergency Override
 See `.opencode/command/chise-emergency-merge-override.md` for documented bypass procedure.
 
+### Merge Authority Consistency (AGENTS.md Reference)
+The merge authority rules here are consistent with `AGENTS.md` Git Safety Essentials:
+- **Workers**: Push branches + handoff evidence only; workers do NOT open PRs or merge to main
+- **Jarvis**: Orchestrates handoff to Merlin; coordinates worker completion
+- **Merlin**: Sole merge authority to main and branch cleanup authority
+
+## Command Selection Guide
+
+### Reconcile Commands - Which to Use?
+| Command | Purpose | When to Run |
+|---------|---------|-------------|
+| `chise-reconcile-tick` | Periodic drift detection | Every 15-30 mins via cron/loop |
+| `chise-merge-queue-process` | Process merge queue items | When PRs are ready to merge |
+| `chise-intake-triage` | Triage new work items | On new story/bug intake |
+
+**Key Distinction**: `chise-reconcile-tick` is for **detection and hygiene**, not for **actual merging or intake processing**. Use the specific commands for those operations.
+
 ## Session Isolation
 
 Use `scripts/swarm/session.py` for isolated worktree sessions:

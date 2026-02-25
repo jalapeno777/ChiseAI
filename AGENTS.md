@@ -158,6 +158,11 @@ When starting work:
   - `ST-*`, `CH-*`, `FT-*`, `REWARD-*`, `REPO-*`, `SAFETY-*`, `BRANCH-*`, `PAPER-*`, `RECON-*` (must include a digit)
 - Before switching branches, working tree must be clean
 
+### Merge Authority (Explicit Roles)
+- **Workers**: Push branches + handoff evidence only; workers do NOT open PRs or merge to main
+- **Jarvis**: Orchestrates handoff to Merlin; coordinates worker completion
+- **Merlin**: Sole merge authority to main and branch cleanup authority
+
 ---
 
 ## Docker & Container Connectivity (CRITICAL)

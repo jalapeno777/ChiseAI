@@ -25,3 +25,16 @@ Follow these steps exactly (do not skip):
    - Ensure working tree is clean (or explicitly approved to remain dirty).
    - Ensure no untracked secret files (for example `.env`) are present.
 
+5. Worker Completion Handoff Report (workers must provide before marking completed)
+   Required fields:
+   - `story_id`: Story identifier (e.g., ST-001)
+   - `branch`: Feature branch name (e.g., feature/ST-001-description)
+   - `head_sha`: Current commit SHA of branch tip
+   - `test_summary`: Test results summary (e.g., "pytest: 15 passed, 0 failed")
+   - `status_sync_proof`: Output of `python3 scripts/validate_status_sync.py --pr <number>`
+   - `blockers`: Any blocking issues or "None"
+   
+   Before marking `status=completed`, you MUST:
+   - Call `chise-release-ownership` to release scope locks
+   - Verify all EVIDENCE_REQUIRED from worker contract is documented
+
