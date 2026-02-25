@@ -7,6 +7,50 @@ metadata:
   version: "2.5.3"
   last_updated: "2026-02-25T14:55:00Z"
   recent_changes:
+    - timestamp: "2026-02-25T18:00:00Z"
+      actor: jarvis
+      action: canary_close
+      description: "EP-NS-008: Canary-close completed. All 6 stories verified, 235 tests passing, Batch 2 truth-sync confirmed. GO recommendation for ACP promotion."
+      story_id: EP-NS-008
+      epic_id: EP-NS-008
+      canary_decision: GO
+      confidence: HIGH
+      canary_period:
+        start_date: "2026-02-21"
+        expected_completion: "2026-02-28"
+        actual_close_date: "2026-02-25"
+        duration_days: 4
+      stories_verified:
+        - ST-NS-038: Circuit Breaker Registry
+        - ST-NS-039: Retry Coordinator
+        - ST-NS-040: Self-Healing Engine
+        - ST-NS-041: Incident Manager
+        - ST-NS-042: Rollback Coordinator
+        - ST-NS-043: Unified Dashboard
+      test_summary:
+        total: 235
+        passed: 235
+        failed: 0
+        skipped: 3
+      batch_2_truth_sync:
+        status: VERIFIED
+        date: "2026-02-25"
+        artifacts_created:
+          - docs/runbooks/acp-canary-batch2-outcomes.md
+          - docs/tempmemories/EP-NS-008-batch2-completion.md
+      files_changed:
+        - docs/promotion/EP-NS-008-canary-close-packet.md
+        - docs/validation/EP-NS-008-critic-audit.md
+      promotion_packet: docs/promotion/EP-NS-008-canary-close-packet.md
+      rollback_annex: docs/promotion/EP-NS-008-canary-close-packet.md#rollback-annex
+      residual_risks:
+        - Feature flag misconfiguration (mitigated: automated validation)
+        - Circuit breaker threshold drift (mitigated: weekly review)
+      next_steps:
+        - Human approval of promotion packet
+        - Merge canary-close documentation
+        - Close EP-NS-008 epic
+        - Archive NS stream
     - timestamp: "2026-02-25T14:55:00Z"
       actor: merlin
       action: infrastructure_recovery_phase_a
@@ -624,8 +668,10 @@ epics:
       paper_canary:
         start_date: "2026-02-21"
         duration_days: 7
-        status: "in_progress"
+        status: "completed"
         expected_completion: "2026-02-28"
+        canary_close_date: "2026-02-25"
+        promotion_decision: GO
 
   # EP-PAPER-001: Paper Trading Loop Implementation (4 stories, 21 points)
   - id: EP-PAPER-001
