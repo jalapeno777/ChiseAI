@@ -1,0 +1,152 @@
+---
+# Memory Stewardship Policy
+# Defines categories, promotion rules, and TTL management for agent memory
+
+version: "1.0.0"
+effective_date: "2026-02-25"
+
+# Memory Categories with storage destinations and TTLs
+memory_categories:
+  invariant:
+    description: "System invariants that must never be violated"
+    storage: qdrant
+    ttl: permanent
+    promotion_rule: immediate
+    priority: critical
+    
+  decision:
+    description: "Architectural and design decisions"
+    storage: qdrant
+    ttl: permanent
+    promotion_rule: occurrences
+    min_occurrences: 2
+    priority: high
+    
+  pattern:
+    description: "Reusable patterns and best practices"
+    storage: qdrant
+    ttl: permanent
+    promotion_rule: ci_impact
+    priority: high
+    
+  postmortem:
+    description: "Incident postmortems and lessons learned"
+    storage: qdrant
+    ttl: permanent
+    promotion_rule: immediate
+    priority: critical
+    
+  metric:
+    description: "Performance and operational metrics"
+    storage: redis
+    ttl_days: 30
+    promotion_rule: aggregate_only
+    priority: medium
+    
+  research:
+    description: "Research findings and background information"
+    storage: qdrant
+    ttl: permanent
+    promotion_rule: validated
+    priority: medium
+
+# Auto-Promotion Rules
+# Memories matching any rule are auto-promoted to Qdrant
+auto_promotion_rules:
+  - name: "duplicate_clustering"
+    description: "Observed 2+ times across stories"
+    condition: "occurrence_count >= 2"
+    
+  - name: "ci_impact"
+    description: "Caused or prevented CI failure/regression"
+    condition: "ci_failure == true OR ci_prevention == true"
+    
+  - name: "invariant_update"
+    description: "Updates an invariant or policy"
+    condition: "touches_invariant == true"
+    
+  - name: "execution_safety"
+    description: "Touches execution safety mechanisms"
+    condition: |
+      touches_kill_switch == true OR
+      touches_canary == true OR
+      touches_risk_limit == true
+
+# Deduplication Configuration
+deduplication:
+  # Similarity threshold for vector comparison (0.0 to 1.0)
+  similarity_threshold: 0.92
+  
+  # Minimum similarity to flag as potential contradiction
+  contradiction_threshold: 0.85
+  
+  # Maximum age in days to consider for deduplication
+  max_age_days: 30
+  
+  # Batch size for processing
+  batch_size: 100
+
+# TTL Management
+ttl_management:
+  # Default TTL for ephemeral memories in Redis
+  default_ephemeral_ttl_days: 7
+  
+  # Extended TTL for memories showing activity
+  active_memory_extension_days: 14
+  
+  # Grace period before deletion (allows recovery)
+  deletion_grace_period_hours: 24
+
+# Sweep Configuration
+sweep:
+  # How often to run the sweep (cron expression)
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  
+  # Dry run mode - log but don't promote
+  dry_run: false
+  
+  # Maximum memories to process per sweep
+  max_memories_per_sweep: 1000
+  
+  # Redis key patterns to scan
+  redis_patterns:
+    - "bmad:chiseai:iterlog:story:*"
+    - "bmad:chiseai:iterlog:story:*:decisions"
+    - "bmad:chiseai:iterlog:story:*:incidents"
+  
+  # Qdrant collection for promoted memories
+  qdrant_collection: "ChiseAI"
+
+# Contradiction Detection
+contradiction_detection:
+  enabled: true
+  
+  # Similarity range for potential contradictions
+  # (similar enough to be related, different enough to conflict)
+  similarity_range:
+    min: 0.75
+    max: 0.92
+  
+  # Keywords that indicate contradictory content
+  contradiction_keywords:
+    - "contradicts"
+    - "conflicts with"
+    - "overrides"
+    - "deprecated"
+    - "replaced by"
+    - "supersedes"
+
+# Evidence Tracking
+evidence_tracking:
+  # Required fields for promoted memories
+  required_fields:
+    - story_id
+    - timestamp
+    - agent
+  
+  # Optional evidence pointers
+  evidence_fields:
+    - pr_link
+    - commit_hash
+    - branch_name
+    - related_stories
