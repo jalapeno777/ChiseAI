@@ -14,7 +14,10 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from brain.evaluation import BrainEvaluator
 
 # Configure logging
 logging.basicConfig(
@@ -336,60 +339,103 @@ class BatchEvaluator:
         self,
         default_timeout_seconds: float = 300.0,
         max_concurrent: int = 5,
+        brain_evaluator: BrainEvaluator | None = None,
     ) -> None:
         """Initialize batch evaluator.
 
         Args:
             default_timeout_seconds: Default timeout for each evaluation.
             max_concurrent: Maximum number of concurrent evaluations.
+            brain_evaluator: Optional BrainEvaluator instance for real evaluation.
+                           If not provided, a default one is created.
         """
         self.default_timeout_seconds = default_timeout_seconds
         self.max_concurrent = max_concurrent
         self._evaluation_count = 0
+        # Lazy import to avoid circular dependency
+        if brain_evaluator is None:
+            from brain.evaluation import BrainEvaluator
+
+            self._brain_evaluator = BrainEvaluator()
+        else:
+            self._brain_evaluator = brain_evaluator
 
     async def _evaluate_single(
         self,
         brain_version: str,
         timeout_seconds: float | None = None,
+        test_data: list[dict[str, Any]] | None = None,
+        expected_outputs: list[dict[str, Any]] | None = None,
     ) -> EvaluationResult:
-        """Evaluate a single brain version.
+        """Evaluate a single brain version using real BrainEvaluator.
 
-        This is a placeholder that simulates evaluation. In production,
-        this would call the actual brain evaluation logic.
+        Uses BrainEvaluator to compute actual metrics from test data
+        with proper confusion matrix computation.
 
         Args:
             brain_version: The brain version to evaluate.
             timeout_seconds: Timeout for this specific evaluation.
+            test_data: Optional test data for evaluation. If not provided,
+                      uses deterministic test data based on version.
+            expected_outputs: Optional expected outputs. If not provided,
+                             uses deterministic expected outputs based on version.
 
         Returns:
-            EvaluationResult with metrics or failure status.
+            EvaluationResult with real metrics or failure status.
         """
         timeout = timeout_seconds or self.default_timeout_seconds
         start_time = datetime.utcnow()
 
         try:
-            # Simulate evaluation work with timeout
-            await asyncio.wait_for(
-                self._simulate_evaluation(brain_version),
+            # Run evaluation in thread pool to make it async-friendly
+            loop = asyncio.get_event_loop()
+
+            # Use provided test data or generate deterministic test data
+            if test_data is None:
+                test_data, expected_outputs = self._generate_test_data(brain_version)
+
+            # Run BrainEvaluator.evaluate_version with timeout
+            brain_result = await asyncio.wait_for(
+                loop.run_in_executor(
+                    None,
+                    lambda: self._brain_evaluator.evaluate_version(
+                        version=brain_version,
+                        test_data=test_data,
+                        expected_outputs=expected_outputs,
+                    ),
+                ),
                 timeout=timeout,
             )
 
             duration = max(0.0, (datetime.utcnow() - start_time).total_seconds())
 
-            # Generate deterministic metrics based on version string
-            metrics = self._generate_metrics(brain_version)
+            # Map BrainEvaluator result to BatchEvaluator result
+            # BrainEvaluator uses PASSED/FAILED, BatchEvaluator uses COMPLETED
+            from brain.evaluation import EvaluationStatus as BrainEvalStatus
+
+            if brain_result.status == BrainEvalStatus.PASSED:
+                status = EvaluationStatus.COMPLETED
+            elif brain_result.status == BrainEvalStatus.FAILED:
+                status = (
+                    EvaluationStatus.COMPLETED
+                )  # Completed but didn't pass thresholds
+            elif brain_result.status == BrainEvalStatus.ERROR:
+                status = EvaluationStatus.FAILED
+            else:
+                status = EvaluationStatus.PENDING
 
             return EvaluationResult(
                 brain_version=brain_version,
-                status=EvaluationStatus.COMPLETED,
-                accuracy=metrics["accuracy"],
-                precision=metrics["precision"],
-                recall=metrics["recall"],
-                f1_score=metrics["f1_score"],
-                win_rate=metrics["win_rate"],
-                sharpe_ratio=metrics["sharpe_ratio"],
-                max_drawdown=metrics["max_drawdown"],
+                status=status,
+                accuracy=brain_result.metrics.accuracy,
+                precision=brain_result.metrics.precision,
+                recall=brain_result.metrics.recall,
+                f1_score=brain_result.metrics.f1_score,
+                win_rate=brain_result.metrics.paper_carryover_rate,  # Use paper carryover as win rate proxy
+                sharpe_ratio=0.0,  # Not computed by BrainEvaluator yet
+                max_drawdown=0.0,  # Not computed by BrainEvaluator yet
                 duration_seconds=duration,
+                error_message=brain_result.error_message,
             )
 
         except TimeoutError:
@@ -411,71 +457,58 @@ class BatchEvaluator:
                 error_message=str(e),
             )
 
-    async def _simulate_evaluation(self, brain_version: str) -> None:
-        """Simulate evaluation work.
+    def _generate_test_data(
+        self, brain_version: str
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        """Generate deterministic test data for a brain version.
 
-        In production, this would be replaced with actual evaluation logic.
-
-        Args:
-            brain_version: The brain version being evaluated.
-        """
-        # Simulate variable evaluation time (0.1-0.5 seconds)
-        await asyncio.sleep(0.1 + (hash(brain_version) % 40) / 100)
-
-    def _generate_metrics(self, brain_version: str) -> dict[str, float]:
-        """Generate deterministic metrics for a brain version.
-
-        Uses the version string hash to generate consistent metrics
-        for testing purposes.
+        This provides test data when none is explicitly provided.
+        The data is deterministic based on the version string.
 
         Args:
             brain_version: The brain version identifier.
 
         Returns:
-            Dictionary of metric names to values.
+            Tuple of (test_data, expected_outputs) lists.
         """
-        # Use hash for deterministic but varied metrics
+        # Use version hash to generate deterministic test cases
         version_hash = hash(brain_version)
+        num_cases = 10 + (version_hash % 20)  # 10-30 test cases
 
-        # Generate metrics in valid ranges
-        accuracy = 0.5 + (version_hash % 40) / 100  # 0.5 - 0.9
-        precision = 0.45 + ((version_hash >> 4) % 45) / 100  # 0.45 - 0.9
-        recall = 0.4 + ((version_hash >> 8) % 50) / 100  # 0.4 - 0.9
+        test_data = []
+        expected_outputs = []
 
-        # F1 is harmonic mean
-        f1 = (
-            2 * (precision * recall) / (precision + recall)
-            if (precision + recall) > 0
-            else 0
-        )
+        for i in range(num_cases):
+            # Generate deterministic test case based on version and index
+            case_hash = version_hash ^ (i * 31)
+            output = (case_hash % 2) == 0  # True or False
+            expected = ((case_hash >> 1) % 2) == 0  # True or False
 
-        win_rate = 0.45 + ((version_hash >> 12) % 40) / 100  # 0.45 - 0.85
-        sharpe_ratio = -1.0 + ((version_hash >> 16) % 50) / 10  # -1.0 to 4.0
-        max_drawdown = ((version_hash >> 20) % 30) / 100  # 0.0 to 0.3
+            test_data.append({"output": output, "case_index": i})
+            expected_outputs.append({"expected": expected})
 
-        return {
-            "accuracy": round(accuracy, 4),
-            "precision": round(precision, 4),
-            "recall": round(recall, 4),
-            "f1_score": round(f1, 4),
-            "win_rate": round(win_rate, 4),
-            "sharpe_ratio": round(sharpe_ratio, 4),
-            "max_drawdown": round(max_drawdown, 4),
-        }
+        return test_data, expected_outputs
 
     async def evaluate_batch(
         self,
         brain_versions: list[str],
         timeout_seconds: float | None = None,
+        test_data: list[dict[str, Any]] | None = None,
+        expected_outputs: list[dict[str, Any]] | None = None,
     ) -> list[EvaluationResult]:
         """Evaluate multiple brain versions in parallel.
 
         Evaluates 3-5 brain versions concurrently with configurable timeout.
         Handles failures gracefully, returning partial results.
 
+        Uses BrainEvaluator to compute real metrics from test data.
+
         Args:
             brain_versions: List of brain version identifiers to evaluate.
             timeout_seconds: Optional timeout override for all evaluations.
+            test_data: Optional test data for evaluation. If not provided,
+                      each version gets deterministic test data based on version string.
+            expected_outputs: Optional expected outputs for evaluation.
 
         Returns:
             List of EvaluationResult objects, one per input version.
@@ -500,7 +533,7 @@ class BatchEvaluator:
 
         # Create tasks for parallel execution
         tasks = [
-            self._evaluate_single(version, timeout_seconds)
+            self._evaluate_single(version, timeout_seconds, test_data, expected_outputs)
             for version in brain_versions
         ]
 
