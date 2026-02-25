@@ -5,8 +5,38 @@
 metadata:
   project_name: ChiseAI
   version: "2.5.2"
-  last_updated: "2026-02-24T17:25:00Z"
+  last_updated: "2026-02-25T12:00:00Z"
   recent_changes:
+    - timestamp: "2026-02-25T12:00:00Z"
+      actor: jarvis
+      action: enforcement_window_start
+      description: "REPO-002: 1-week mandatory completion payload enforcement window started"
+      enforcement_start: "2026-02-25T12:00:00Z"
+      enforcement_end: "2026-03-04T12:00:00Z"
+      story_token: "REPO-002"
+      daily_checklist:
+        - "Verify all workers provide completion payload before handoff"
+        - "Check scope ownership releases"
+        - "Validate iterlog closes"
+        - "Run drift-check and log findings"
+    - timestamp: "2026-02-25T08:10:00Z"
+      actor: merlin
+      action: hardening_sync_workflow_patches
+      description: "BMAD-CORRECT-001: Workflow patch hardening finalized. 7 mandatory corrections applied to enforce BMAD workflow discipline."
+      commit_hash: "585223741e49bc8e5a90e15a173f9d792681e6d5"
+      branch: "feature/BMAD-CORRECT-001-workflow-fixes"
+      branch_deleted: true
+      cleanup_date: "2026-02-25T12:00:00Z"
+      files_changed:
+        - AGENTS.md: "Add explicit merge authority bullets (workers/Jarvis/Merlin roles)"
+        - chise-iterloop-close.md: "Add Worker Completion Handoff Report fields"
+        - chise-swarm-session.md: "Make --remove-worktree default with exception justification"
+        - chise-reconcile-tick.md: "Add When to use/Do not use clarifying boundaries"
+        - chiseai-worker-contracts: "Add Mandatory Completion Evidence section"
+        - chiseai-git-workflow: "Add reconcile command selection guide + merge authority consistency"
+        - chise-release-ownership.md: "New command for ownership release"
+        - chise-drift-check.md: "New command for drift detection"
+      notes: "Hardening sync complete. Anti-drift workflow rules now enforced across all BMAD operations."
     - timestamp: "2026-02-24T14:30:00Z"
       actor: jarvis
       action: truth_sync_launch_epics
