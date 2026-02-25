@@ -1,6 +1,13 @@
 # Woodpecker CI Pipeline for ChiseAI
 # ST-NS-030: CI/CD Pipeline Enhancement
 
+clone:
+  git:
+    image: woodpeckerci/plugin-git
+    settings:
+      remote:
+        from_secret: gitea_clone_url
+
 when:
   - event: push
     branch: [main, develop, feature/*]
