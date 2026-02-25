@@ -15,7 +15,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from src.autonomous_control_plane.models.incidents import (
+from autonomous_control_plane.models.incidents import (
     P0_EVENT_TYPES,
     P1_EVENT_TYPES,
     P2_EVENT_TYPES,

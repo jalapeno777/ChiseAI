@@ -13,20 +13,20 @@ import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from src.autonomous_control_plane.components.failure_pattern_matcher import (
+from autonomous_control_plane.components.failure_pattern_matcher import (
     FailurePatternMatcher,
 )
-from src.autonomous_control_plane.healing_actions.api_timeout_recovery import (
+from autonomous_control_plane.healing_actions.api_timeout_recovery import (
     APIRetryAction,
 )
-from src.autonomous_control_plane.healing_actions.base import BaseHealingAction
-from src.autonomous_control_plane.healing_actions.circuit_breaker_reset import (
+from autonomous_control_plane.healing_actions.base import BaseHealingAction
+from autonomous_control_plane.healing_actions.circuit_breaker_reset import (
     CircuitBreakerResetAction,
 )
-from src.autonomous_control_plane.healing_actions.redis_restart import (
+from autonomous_control_plane.healing_actions.redis_restart import (
     RedisRestartAction,
 )
-from src.autonomous_control_plane.models.healing import (
+from autonomous_control_plane.models.healing import (
     FailurePatternMatch,
     FailurePatternType,
     HealingAttempt,
@@ -36,7 +36,7 @@ from src.autonomous_control_plane.models.healing import (
     HealingStatus,
     LogEntry,
 )
-from src.common.circuit_breaker import CircuitBreakerRegistry
+from common.circuit_breaker import CircuitBreakerRegistry
 
 logger = logging.getLogger(__name__)
 

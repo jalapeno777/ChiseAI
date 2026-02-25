@@ -13,11 +13,11 @@ import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
-from src.autonomous_control_plane.components.log_monitor import LogMonitor
-from src.autonomous_control_plane.components.self_healing_engine import (
+from autonomous_control_plane.components.log_monitor import LogMonitor
+from autonomous_control_plane.components.self_healing_engine import (
     SelfHealingEngine,
 )
-from src.autonomous_control_plane.models.healing import LogEntry
+from autonomous_control_plane.models.healing import LogEntry
 
 logger = logging.getLogger(__name__)
 
