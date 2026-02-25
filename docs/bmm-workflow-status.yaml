@@ -4,9 +4,50 @@
 
 metadata:
   project_name: ChiseAI
-  version: "2.5.2"
-  last_updated: "2026-02-24T17:25:00Z"
+  version: "2.5.3"
+  last_updated: "2026-02-24T22:00:00Z"
   recent_changes:
+    - timestamp: "2026-02-25T00:00:00Z"
+      actor: jarvis
+      action: git_workflow_hardening
+      description: "Implemented git/worktree drift-prevention hardening patch set"
+      story_id: REPO-001
+      changes:
+        - "AGENTS.md: Added Merge Authority section with clear role definitions"
+        - "chise-iterloop-close.md: Added mandatory worker handoff report requirements"
+        - "chise-release-ownership.md: New command for releasing scope ownership"
+        - "chise-swarm-session.md: Made --remove-worktree the default behavior"
+        - "chise-reconcile-tick.md: Added When to use/Do not use disambiguation"
+        - "chise-drift-check.md: New lightweight drift detection command"
+        - "chiseai-worker-contracts/SKILL.md: Added mandatory completion evidence template"
+        - "chiseai-git-workflow/SKILL.md: Updated with ownership release and handoff requirements"
+      redis_writes:
+        - "bmad:chiseai:ownership - Scope ownership tracking"
+        - "bmad:chiseai:iterlog:story:<id> - Iteration logging"
+      qdrant_writes:
+        - "Type: decision - Merge authority workflow rules"
+        - "Type: pattern - Worker handoff payload format"
+        - "Type: anti-pattern - Branch/worktree drift prevention"
+      anti_drift_safeguards:
+        - "Workers must report 6-field handoff payload before close"
+        - "Merlin is sole merge authority for main"
+        - "Worktree cleanup is default (not optional)"
+        - "Ownership must be explicitly released"
+        - "Drift-check command for periodic validation"
+    - timestamp: "2026-02-24T22:00:00Z"
+      actor: worker
+      action: phase_4_completion
+      description: "Phase 4 release hygiene completed. BatchEvaluator P0 fix verified in main. Phase 3 audit upgraded to PRODUCTION_READY."
+      story_id: PHASE4-COMPLETION
+      batch_evaluator_fix: "verified_in_main"
+      phase3_audit_status: "PRODUCTION_READY"
+      branches_merged: 3
+      branches_cleaned: 12
+      worktrees_cleaned: 40
+      evidence:
+        - "BatchEvaluator now uses real BrainEvaluator"
+        - "362 brain tests passing"
+        - "Commits: 4122a0a, 3d8b210"
     - timestamp: "2026-02-24T14:30:00Z"
       actor: jarvis
       action: truth_sync_launch_epics
@@ -477,10 +518,14 @@ epics:
   # EP-AUTO-GIT-001: AI Swarm Autonomous PR Pipeline (8 stories, 47 points)
   - id: EP-AUTO-GIT-001
     name: AI Swarm Autonomous PR Pipeline
-    status: in_progress
+    status: completed
     story_ids: [ST-AUTO-001, ST-AUTO-002, ST-AUTO-003, ST-AUTO-004, ST-AUTO-005, ST-AUTO-006, ST-AUTO-007, ST-AUTO-008]
     story_count: 8
     story_points: 47
+    stories_completed: 8
+    story_points_completed: 47
+    completion_percentage: 100
+    completion_date: "2026-02-24"
     description: Tiered automation pipeline enabling 10 AI agents to work autonomously with safe auto-approval for low-risk changes and human gates for critical paths
     sprint_id: AUTO-GIT-001
     timeline: "6 weeks"
@@ -490,6 +535,7 @@ epics:
       - Three-path approach: SAFE (auto-approve), STANDARD (GitReviewBot), COMPLEX (human)
       - Critical paths always require human approval (execution, infrastructure, secrets)
       - Emergency stop mechanism via Redis key
+      - All 8 stories completed and validated per validation registry
     acceptance_criteria:
       - Safe path PRs auto-merge in <5 minutes with green CI
       - Standard path PRs reviewed by GitReviewBot in <12 minutes
@@ -1690,14 +1736,15 @@ stories:
 
   # EP-NS-003: Portfolio Risk Management (5 container stories + 6 split stories, 35 points)
   - id: ST-NS-012
-    title: Position Sizing Engine
+    title: Position Sizing Engine (DEPRECATED - superseded by ST-NS-012A, ST-NS-012B)
     epic_id: EP-NS-003
     sprint_id: q2-2
-    status: planned
+    status: deprecated
+    validation_status: deprecated
     story_points: 8
     priority: P0-CRITICAL
     fr_coverage: [FR-012]
-    description: Generate position sizing recommendations based on portfolio
+    description: "DEPRECATED: Split into ST-NS-012A (Position Sizing Core Engine) and ST-NS-012B (Position Sizing Integration & API)"
 
   - id: ST-NS-012A
     title: Position Sizing Core Engine
@@ -1736,14 +1783,15 @@ stories:
       - Sizing is recalculated when portfolio balance changes >5%
 
   - id: ST-NS-013
-    title: Stop-Loss Recommendation System
+    title: Stop-Loss Recommendation System (DEPRECATED - superseded by ST-NS-013A, ST-NS-013B)
     epic_id: EP-NS-003
     sprint_id: q2-2
-    status: planned
+    status: deprecated
+    validation_status: deprecated
     story_points: 7
     priority: P0-CRITICAL
     fr_coverage: [FR-013]
-    description: Provide stop-loss recommendations with each signal
+    description: "DEPRECATED: Split into ST-NS-013A (Stop-Loss Calculation Engine) and ST-NS-013B (Stop-Loss Integration & Signal Delivery)"
 
   - id: ST-NS-013A
     title: Stop-Loss Calculation Engine
@@ -1782,14 +1830,15 @@ stories:
       - Stop-loss hit tracking is implemented for outcome correlation
 
   - id: ST-NS-014
-    title: Portfolio Risk Exposure Monitor
+    title: Portfolio Risk Exposure Monitor (DEPRECATED - superseded by ST-NS-014A, ST-NS-014B)
     epic_id: EP-NS-003
     sprint_id: q2-2
-    status: planned
+    status: deprecated
+    validation_status: deprecated
     story_points: 7
     priority: P0-CRITICAL
     fr_coverage: [FR-014]
-    description: Monitor portfolio-level risk exposure in real-time
+    description: "DEPRECATED: Split into ST-NS-014A (Portfolio Data Collection & State Management) and ST-NS-014B (Risk Exposure Calculation & Dashboard)"
 
   - id: ST-NS-014A
     title: Portfolio Data Collection & State Management
@@ -2528,11 +2577,12 @@ stories:
     title: Complex Path Human Gate
     epic_id: EP-AUTO-GIT-001
     sprint_id: AUTO-GIT-001
-    status: planned
-    validation_status: planned
+    status: completed
+    validation_status: validated
     story_points: 5
     priority: P1-HIGH
     description: Human approval workflow for COMPLEX-classified PRs with GitReviewBot pre-review
+    completion_date: "2026-02-24"
     validation:
       - type: unit_test
         command: "pytest tests/test_pr_lifecycle/ -v --tb=short"
@@ -2547,11 +2597,12 @@ stories:
     title: Feedback Loop & Retry
     epic_id: EP-AUTO-GIT-001
     sprint_id: AUTO-GIT-001
-    status: planned
-    validation_status: planned
+    status: completed
+    validation_status: validated
     story_points: 5
     priority: P1-HIGH
     description: Outcome tracking and continuous improvement system for PR reviews
+    completion_date: "2026-02-24"
     validation:
       - type: unit_test
         command: "pytest tests/test_pr_lifecycle/ -v --tb=short"
@@ -2566,11 +2617,12 @@ stories:
     title: EP-NS-008 Integration
     epic_id: EP-AUTO-GIT-001
     sprint_id: AUTO-GIT-001
-    status: planned
-    validation_status: planned
+    status: completed
+    validation_status: validated
     story_points: 8
     priority: P1-HIGH
     description: Circuit breaker, retry coordinator, and self-healing integration from Autonomous Control Plane
+    completion_date: "2026-02-24"
     validation:
       - type: unit_test
         command: "pytest tests/test_pr_lifecycle/ -v --tb=short"
@@ -2585,11 +2637,12 @@ stories:
     title: Metrics & Observability
     epic_id: EP-AUTO-GIT-001
     sprint_id: AUTO-GIT-001
-    status: planned
-    validation_status: planned
+    status: completed
+    validation_status: validated
     story_points: 8
     priority: P2-MEDIUM
     description: Grafana dashboards and alerting for the autonomous PR pipeline
+    completion_date: "2026-02-24"
     validation:
       - type: unit_test
         command: "pytest tests/test_pr_lifecycle/ -v --tb=short"
@@ -2604,11 +2657,12 @@ stories:
     title: Agent Onboarding & Documentation
     epic_id: EP-AUTO-GIT-001
     sprint_id: AUTO-GIT-001
-    status: planned
-    validation_status: planned
+    status: completed
+    validation_status: validated
     story_points: 5
     priority: P2-MEDIUM
     description: Documentation and onboarding materials for AI agents using the autonomous PR pipeline
+    completion_date: "2026-02-24"
     validation:
       - type: unit_test
         command: "pytest tests/test_pr_lifecycle/ -v --tb=short"
