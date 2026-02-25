@@ -427,6 +427,54 @@ FORBIDDEN_GLOBS:
 - `chiseai-incident-response` - Incident template usage
 - `chiseai-git-workflow` - Session and branch management
 
+## Mandatory Completion Evidence
+
+Workers MUST provide the following evidence before reporting completion to Jarvis:
+
+### Required Payload Fields
+```yaml
+WORKER_COMPLETION_REPORT:
+  story_id: "ST-XXX"           # Story identifier
+  branch: "feature/ST-XXX-slug" # Exact branch name worked on
+  head_sha: "abc123"            # Git SHA of branch tip at completion
+  test_summary:                 # Test execution results
+    command: "pytest tests/..."
+    result: "passed|failed"
+    counts: "N passed, M failed, X skipped"
+    duration: "2.34s"
+  status_sync_proof:            # Validation output
+    command: "python3 scripts/validate_status_sync.py --pr N"
+    result: "PASS|FAIL"
+    details: "..."
+  blockers: "None"              # Or list of blocking issues
+```
+
+### Command Evidence Requirements
+For each claim in the report, provide:
+
+1. **Files Changed**: List with before/after line counts
+   - Command: `git diff --stat HEAD~N`
+   - Required: Show all modified files with `+/-` counts
+
+2. **Tests Passed**: Actual command output
+   - Command: `pytest tests/... -v`
+   - Required: Full output showing test names and pass/fail status
+
+3. **Status Sync Validated**: Proof of sync check
+   - Command: `python3 scripts/validate_status_sync.py --pr N`
+   - Required: Output showing "PASS" or specific failures
+
+4. **Branch State**: Current position
+   - Command: `git log --oneline -3 && git status -sb`
+   - Required: Show HEAD commit and working tree state
+
+### Handoff Protocol
+Before marking work complete:
+1. Run all verification commands and capture output
+2. Populate WORKER_COMPLETION_REPORT with exact values
+3. Include raw command output as evidence in handoff message
+4. Wait for Jarvis acknowledgment before releasing ownership
+
 ## Related Commands
 
 - `.opencode/command/chise-claim-ownership.md`

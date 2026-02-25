@@ -4,6 +4,18 @@ description: "ChiseAI: run queue processing + git hygiene reconciliation to dete
 disable-model-invocation: true
 ---
 
+## When to Use
+- **Periodic maintenance**: Run on a timer/cadence (Jarvis cleanup loop) every 15-30 minutes
+- **Early drift detection**: Prevent local-only branch drift and main divergence before it accumulates
+- **Pre-batch cleanup**: Before starting parallel batch work, ensure clean state
+- **Post-incident recovery**: After resolving conflicts, run to verify no lingering issues
+
+## Do Not Use
+- **As a merge queue**: Use `chise-merge-queue-process` for actual merge queue operations
+- **For intake triage**: Use `chise-intake-triage` for processing incoming work items
+- **For PR creation**: This is not for creating PRs; use Gitea CLI or web interface
+- **During active work**: Do not run while workers are actively editing (will cause interference)
+
 Use this command on a timer/cadence (Jarvis cleanup loop) to prevent local-only branch drift and main divergence.
 
 Prereqs:
