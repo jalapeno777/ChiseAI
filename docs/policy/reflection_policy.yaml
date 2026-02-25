@@ -1,0 +1,211 @@
+# Reflection Policy Configuration
+# Defines triggers, schemas, and promotion criteria for reflection loops
+
+policy_version: "1.0.0"
+last_updated: "2026-02-25"
+
+# Reflection Types and Triggers
+reflection_types:
+  micro:
+    description: "Per-action reflection stored in Redis"
+    trigger_events:
+      - tool_call
+      - file_edit
+      - command_execution
+      - test_run
+    storage: redis
+    ttl_days: 7
+    max_entries_per_story: 1000
+    schema_required: true
+    
+  meso:
+    description: "Per-story reflection at iteration closure"
+    trigger_events:
+      - iterloop_close
+      - story_complete
+      - pr_merge
+    storage: redis  # Primary storage
+    promotion_storage: qdrant  # Promoted if criteria met
+    ttl_days: 90
+    promotion_criteria:
+      min_coverage_delta: 0.05  # 5% coverage improvement
+      min_ci_pass_rate: 0.90
+      has_failures: true  # Promote if failures observed (for learning)
+      has_root_causes: true
+    schema_required: true
+    
+  macro:
+    description: "Daily/weekly retrospective with KPI trends"
+    trigger_events:
+      - daily_cron
+      - weekly_cron
+      - manual_trigger
+    storage: qdrant
+    retention_days: 365
+    aggregation_windows:
+      - daily
+      - weekly
+      - monthly
+    schema_required: true
+
+# Reflection Artifact Schema
+artifact_schema:
+  version: "1.0.0"
+  required_fields:
+    - story_id
+    - reflection_type
+    - timestamp
+    - what_changed
+  optional_fields:
+    - kpi_snapshot
+    - failures_observed
+    - root_causes
+    - next_automation_targets
+    - promotion_candidates
+  
+  field_definitions:
+    story_id:
+      type: string
+      pattern: "^ST-[A-Z]+-[0-9]+$"
+      description: "Story identifier"
+    
+    reflection_type:
+      type: string
+      enum: [micro, meso, macro]
+      description: "Type of reflection"
+    
+    timestamp:
+      type: string
+      format: iso8601
+      description: "UTC timestamp"
+    
+    what_changed:
+      type: string
+      max_length: 2000
+      description: "Summary of changes"
+    
+    kpi_snapshot:
+      type: object
+      properties:
+        ci_pass_rate:
+          type: number
+          minimum: 0
+          maximum: 1
+        coverage:
+          type: number
+          minimum: 0
+          maximum: 1
+        cycle_time_hours:
+          type: number
+          minimum: 0
+        test_count:
+          type: integer
+          minimum: 0
+        lines_changed:
+          type: integer
+      description: "Key performance indicators"
+    
+    failures_observed:
+      type: array
+      items:
+        type: object
+        properties:
+          type:
+            type: string
+            enum: [test_failure, ci_failure, lint_failure, merge_conflict, timeout]
+          timestamp:
+            type: string
+            format: iso8601
+          description:
+            type: string
+          severity:
+            type: string
+            enum: [low, medium, high, critical]
+      description: "List of observed failures"
+    
+    root_causes:
+      type: array
+      items:
+        type: object
+        properties:
+          category:
+            type: string
+            enum: [code_quality, test_coverage, dependency, infrastructure, process, knowledge_gap]
+          description:
+            type: string
+          contributing_factors:
+            type: array
+            items:
+              type: string
+      description: "Root cause analysis"
+    
+    next_automation_targets:
+      type: array
+      items:
+        type: object
+        properties:
+          target:
+            type: string
+          priority:
+            type: string
+            enum: [low, medium, high]
+          estimated_impact:
+            type: string
+      description: "Suggested automation improvements"
+    
+    promotion_candidates:
+      type: array
+      items:
+        type: object
+        properties:
+          story_id:
+            type: string
+          reason:
+            type: string
+          confidence:
+            type: number
+            minimum: 0
+            maximum: 1
+      description: "Stories recommended for promotion"
+
+# Redis Key Patterns
+redis_keys:
+  micro: "bmad:chiseai:reflection:micro:{story_id}"
+  meso: "bmad:chiseai:reflection:story:{story_id}"
+  macro_daily: "bmad:chiseai:reflection:macro:daily:{date}"
+  macro_weekly: "bmad:chiseai:reflection:macro:weekly:{year_week}"
+  kpi_snapshot: "bmad:chiseai:kpi:snapshot"
+
+# Qdrant Collection Configuration
+qdrant_config:
+  collection_name: "reflection_artifacts"
+  vector_size: 1536
+  distance_metric: "Cosine"
+  payload_schema:
+    story_id: keyword
+    reflection_type: keyword
+    timestamp: datetime
+    has_failures: bool
+
+# Automation Targets
+automation_rules:
+  - name: "coverage_regression_detection"
+    condition: "kpi_snapshot.coverage < previous_coverage * 0.95"
+    action: "flag_for_review"
+    
+  - name: "ci_failure_pattern"
+    condition: "failures_observed.count > 3 AND ci_pass_rate < 0.8"
+    action: "create_incident_log"
+    
+  - name: "promotion_candidate_auto"
+    condition: "kpi_snapshot.coverage > 0.85 AND ci_pass_rate > 0.95"
+    action: "suggest_promotion"
+
+# Logging Configuration
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  handlers:
+    - console
+    - file
+  file_path: "logs/reflection.log"
