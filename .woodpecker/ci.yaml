@@ -42,7 +42,7 @@ steps:
           set -euo pipefail
           python -V
           pip install --no-cache-dir black ruff mypy pytest pytest-cov pyyaml types-PyYAML types-requests || echo "WARN: pip install failed, continuing"
-          CHANGED_PY="$(python scripts/ci/ci_change_scope.py --mode changed-python | tr '\n' ' ')"
+          CHANGED_PY="$(git show --pretty='' --name-only HEAD | grep -E '\\.py$' | sort -u | tr '\n' ' ' || true)"
           if [ -n "$(printf '%s' "$CHANGED_PY" | tr -d '[:space:]')" ]; then
             echo "lint: checking changed python files only: ${CHANGED_PY}"
             black --check ${CHANGED_PY} || echo "WARN: black violations (non-blocking)"
@@ -74,7 +74,7 @@ steps:
         (
           set -euo pipefail
           pip install --no-cache-dir bandit
-          CHANGED_SCAN="$(python scripts/ci/ci_change_scope.py --mode changed-python | grep -E '^(src/|scripts/)' || true)"
+          CHANGED_SCAN="$(git show --pretty='' --name-only HEAD | grep -E '^(src/|scripts/).+\\.py$' | sort -u || true)"
           if [ -n "$(printf '%s' "$CHANGED_SCAN" | tr -d '[:space:]')" ]; then
             echo "security-scan: scanning changed files only: ${CHANGED_SCAN}"
             # Keep PR checks actionable by scanning changed executable code only.
