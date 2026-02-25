@@ -5,8 +5,27 @@
 metadata:
   project_name: ChiseAI
   version: "2.5.3"
-  last_updated: "2026-02-25T23:00:00Z"
+  last_updated: "2026-02-25T23:10:00Z"
   recent_changes:
+    - timestamp: "2026-02-25T23:10:00Z"
+      actor: merlin
+      action: merge_to_main
+      description: "ST-REFLECT-001: Reflection infrastructure merged to main"
+      story_id: ST-REFLECT-001
+      pr_number: 273
+      merge_commit_sha: "64983e4acc77926ccc2e2e46ab192ff690d8aac06"
+      files_changed:
+        - docs/policy/reflection_policy.yaml
+        - scripts/ops/reflection_runner.py
+        - scripts/ops/run_reflection.sh
+        - scripts/ops/test_reflection.py
+        - src/governance/reflection/__init__.py
+        - src/governance/reflection/artifacts.py
+        - src/governance/reflection/loops.py
+        - tests/unit/governance/test_reflection.py
+        - tests/unit/governance/test_reflection_standalone.py
+      ci_status: success
+      branch_deleted: true
     - timestamp: "2026-02-25T23:59:00Z"
       actor: jarvis
       action: phase_2_kickoff_status_sync
