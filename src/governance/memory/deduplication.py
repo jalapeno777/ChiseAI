@@ -8,6 +8,7 @@ Feature Flag: chise:feature_flags:governance:memory_dedup_enabled
 Default: Disabled (safe rollout)
 """
 
+import contextlib
 import hashlib
 import json
 import logging
@@ -157,9 +158,7 @@ class MemoryDeduplicationEngine:
         if hasattr(value, "_mock_name"):
             return False
         # Handle empty strings
-        if isinstance(value, str) and not value:
-            return False
-        return True
+        return not (isinstance(value, str) and not value)
 
     def _load_config_from_redis(self) -> DeduplicationConfig:
         """
@@ -421,7 +420,7 @@ class MemoryDeduplicationEngine:
             return 0.0
 
         # Compute dot product
-        dot_product = sum(a * b for a, b in zip(vec1, vec2))
+        dot_product = sum(a * b for a, b in zip(vec1, vec2, strict=False))
 
         # Compute magnitudes
         mag1 = sum(a * a for a in vec1) ** 0.5
@@ -554,10 +553,8 @@ class MemoryDeduplicationEngine:
                 if isinstance(payload, dict):
                     ts = payload.get("timestamp") or payload.get("created_at")
                     if ts:
-                        try:
+                        with contextlib.suppress(ValueError, TypeError):
                             timestamp = int(ts)
-                        except (ValueError, TypeError):
-                            pass
             return (-ttl, -timestamp)
 
         sorted_group = sorted(group, key=sort_key)
