@@ -1,7 +1,7 @@
 # Reflection Policy Configuration
 # Defines triggers, schemas, and promotion criteria for reflection loops
 
-policy_version: "1.0.0"
+policy_version: "1.1.0"
 last_updated: "2026-02-25"
 
 # Reflection Types and Triggers
@@ -200,6 +200,54 @@ automation_rules:
   - name: "promotion_candidate_auto"
     condition: "kpi_snapshot.coverage > 0.85 AND ci_pass_rate > 0.95"
     action: "suggest_promotion"
+
+# Feature Flags
+feature_flags:
+  reflection_runner:
+    description: "Controls whether reflection runner executes reflection loops"
+    redis_key: "chise:feature_flags:governance:reflection_enabled"
+    default_state: false  # Safe default: OFF (disabled)
+    scope: "governance"
+
+    # Operator procedures
+    operator_procedures:
+      enable:
+        command: "python3 scripts/ops/reflection_runner.py --enable"
+        description: "Enable reflection runner for production use"
+        requires_confirmation: true
+        confirmation_prompt: "Are you sure you want to enable reflection runner in production?"
+
+      disable:
+        command: "python3 scripts/ops/reflection_runner.py --disable"
+        description: "Disable reflection runner"
+        immediate_effect: true
+
+      check_status:
+        command: "python3 scripts/ops/reflection_runner.py --status"
+        description: "Check current feature flag state"
+
+    # Safety warnings
+    safety_warnings:
+      production_enable: |
+        WARNING: Enabling reflection runner in production will:
+        - Store reflection artifacts in Redis/Qdrant
+        - Potentially impact system performance
+        - Generate persistent data that may need cleanup
+
+        Ensure you have:
+        - Verified Redis/Qdrant connectivity
+        - Sufficient storage capacity
+        - Monitoring in place for the reflection system
+
+      testing_recommendation: |
+        For testing without affecting production data:
+        - Use --dry-run flag to bypass feature flag and use mock storage
+        - Verify functionality before enabling in production
+
+    # Bypass conditions
+    bypass_conditions:
+      dry_run: "--dry-run flag bypasses feature flag check (uses mock storage)"
+      schema_validation: "--validate flag bypasses feature flag check (read-only operation)"
 
 # Logging Configuration
 logging:
