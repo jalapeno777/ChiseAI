@@ -1,0 +1,17 @@
+**ST-HARDEN-001: Post-Merge Hardening Complete** ✅
+
+Hardening pass for ST-REFLECT-001 and ST-MEMORY-002 merges completed:
+
+🔧 Fixed governance circular import risks
+📋 Created memory sweep scheduling runbook + validation script
+🚦 Added reflection runner feature flags (safe default: OFF)
+
+All changes validated and ready for merge to main.
+
+Files changed: 6
+- src/governance/__init__.py (circular import fix)
+- src/governance/memory/__init__.py (relative imports)
+- docs/runbooks/memory-sweep-scheduling.md (new runbook)
+- scripts/ops/validate_memory_sweep_schedule.sh (new validation)
+- scripts/ops/reflection_runner.py (feature flags)
+- docs/policy/reflection_policy.yaml (flag documentation)
