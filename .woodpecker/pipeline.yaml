@@ -1,10 +1,16 @@
 # Woodpecker CI Pipeline for ChiseAI
 # ST-NS-030: CI/CD Pipeline Enhancement
 
+clone:
+  git:
+    image: woodpeckerci/plugin-git
+    settings:
+      remote:
+        from_secret: gitea_clone_url
+
 when:
   - event: push
-    branch: [main, develop, feature/*]
-  - event: pull_request
+    branch: [main, develop]
 
 steps:
   # Lint Stage
@@ -17,20 +23,18 @@ steps:
       - mypy src/ --ignore-missing-imports || true
     when:
       - event: push
-      - event: pull_request
 
   # Test Stage with Coverage
   test:
     image: python:3.13
     environment:
-      - PYTHONPATH=/woodpecker/src/github.com/chiseai/chiseai
+      PYTHONPATH: /woodpecker/src/github.com/chiseai/chiseai
     commands:
       - pip install pytest pytest-cov pytest-xdist pytest-asyncio
       - pip install -r requirements.txt || true
       - pytest tests/ -v --cov=src --cov-report=xml --cov-report=term-missing -n4
     when:
       - event: push
-      - event: pull_request
 
   # Security Scan
   security:
@@ -41,7 +45,6 @@ steps:
       - safety check --json || true
     when:
       - event: push
-      - event: pull_request
 
   # Build Stage
   build:
@@ -73,8 +76,6 @@ steps:
 services:
   redis:
     image: redis:7-alpine
-    ports:
-      - 6379:6379
 
   postgres:
     image: postgres:15-alpine
@@ -82,8 +83,6 @@ services:
       POSTGRES_USER: test
       POSTGRES_PASSWORD: test
       POSTGRES_DB: chiseai_test
-    ports:
-      - 5432:5432
 
 # Matrix builds for Python versions
 matrix:
