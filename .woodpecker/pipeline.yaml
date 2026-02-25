@@ -10,8 +10,7 @@ clone:
 
 when:
   - event: push
-    branch: [main, develop, feature/*]
-  - event: pull_request
+    branch: [main, develop]
 
 steps:
   # Lint Stage
@@ -24,7 +23,6 @@ steps:
       - mypy src/ --ignore-missing-imports || true
     when:
       - event: push
-      - event: pull_request
 
   # Test Stage with Coverage
   test:
@@ -37,7 +35,6 @@ steps:
       - pytest tests/ -v --cov=src --cov-report=xml --cov-report=term-missing -n4
     when:
       - event: push
-      - event: pull_request
 
   # Security Scan
   security:
@@ -48,7 +45,6 @@ steps:
       - safety check --json || true
     when:
       - event: push
-      - event: pull_request
 
   # Build Stage
   build:
