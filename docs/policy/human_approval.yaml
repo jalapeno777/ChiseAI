@@ -1,0 +1,55 @@
+---
+# Human Approval Policy
+# Defines sensitive paths requiring explicit human approval
+
+version: "1.0.0"
+
+# Sensitive Path Categories
+sensitive_paths:
+  critical_execution:
+    description: "Code that executes live trades"
+    paths:
+      - "src/execution/order_manager.py"
+      - "src/execution/position_manager.py"
+      - "src/execution/risk_engine.py"
+    approval_required: true
+    min_approvers: 1
+    
+  risk_limits:
+    description: "Risk limit configurations"
+    paths:
+      - "config/risk_limits.yaml"
+      - "config/position_limits.yaml"
+    approval_required: true
+    min_approvers: 1
+    
+  infrastructure:
+    description: "Infrastructure and deployment configs"
+    paths:
+      - "infrastructure/terraform/**/*"
+      - ".woodpecker.yml"
+    approval_required: true
+    min_approvers: 1
+    
+  secrets:
+    description: "Secrets and credentials"
+    paths:
+      - "**/*secret*"
+      - "**/*.env*"
+    approval_required: true
+    min_approvers: 2
+
+# Approval Workflow
+workflow:
+  steps:
+    1: "PR created with changes to sensitive paths"
+    2: "compass_apply.py auto-detects and applies COMPASS-VETO label"
+    3: "compass_gate.py blocks CI until HUMAN-APPROVED label added"
+    4: "Human reviewer assesses changes"
+    5: "If approved, HUMAN-APPROVED label added"
+    6: "compass_gate.py passes, CI continues"
+    7: "If appeal needed, 3-agent consensus triggered"
+  
+  escalation:
+    timeout_hours: 48
+    auto_escalate_to: "Captain Craig"

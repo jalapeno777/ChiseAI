@@ -1,0 +1,75 @@
+---
+# Soul-Guided Compass Policy
+# Constitutional governance layer with veto capability
+
+version: "1.0.0"
+effective_date: "2026-02-25"
+
+# Veto Principles - Changes touching these require COMPASS-VETO label
+veto_principles:
+  - execution_safety      # Order execution, position management
+  - risk_management       # Position sizing, stop-loss, drawdown limits
+  - infrastructure_core   # Terraform, CI/CD, secrets management
+  - financial_invariants  # Invariants that protect capital
+  - kill_switch_systems   # Emergency stop mechanisms
+
+# Veto Path Patterns - Glob patterns that trigger automatic COMPASS-VETO
+veto_paths:
+  execution:
+    - "src/execution/**/*.py"
+    - "src/trading/**/*.py"
+    - "src/position/**/*.py"
+  
+  risk:
+    - "src/risk/**/*.py"
+    - "src/portfolio/**/*.py"
+    - "**/kill_switch*"
+    - "**/position_sizing*"
+  
+  infrastructure:
+    - "infrastructure/terraform/**/*.tf"
+    - "infrastructure/terraform/**/*.tfvars"
+    - ".woodpecker.yml"
+    - ".github/workflows/*"
+  
+  secrets:
+    - "**/*secret*"
+    - "**/*.env*"
+    - "**/credentials*"
+    - "infrastructure/secrets/**/*"
+  
+  invariants:
+    - "docs/invariants/**/*"
+    - "**/invariant*"
+
+# Approval Requirements
+approval_requirements:
+  compass_veto_override:
+    label: "HUMAN-APPROVED"
+    approvers:
+      - Captain Craig (final authority)
+      - Merlin (with documented rationale)
+    max_duration_hours: 48
+  
+  appeal_workflow:
+    enabled: true
+    consensus_required: 3
+    agents:
+      - critic
+      - senior-dev
+      - merlin
+    timeout_minutes: 15
+
+# CI Gate Configuration
+ci_gate:
+  name: "compass-gate"
+  blocking: true
+  fail_on:
+    - compass_veto_present_without_approval
+    - sensitive_path_changed_without_label
+  
+# Auto-labeling Configuration  
+auto_label:
+  enabled: true
+  label_name: "COMPASS-VETO"
+  dry_run: false
