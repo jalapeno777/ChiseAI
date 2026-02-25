@@ -23,7 +23,7 @@ steps:
   test:
     image: python:3.13
     environment:
-      - PYTHONPATH=/woodpecker/src/github.com/chiseai/chiseai
+      PYTHONPATH: /woodpecker/src/github.com/chiseai/chiseai
     commands:
       - pip install pytest pytest-cov pytest-xdist pytest-asyncio
       - pip install -r requirements.txt || true
@@ -73,8 +73,6 @@ steps:
 services:
   redis:
     image: redis:7-alpine
-    ports:
-      - 6379:6379
 
   postgres:
     image: postgres:15-alpine
@@ -82,8 +80,6 @@ services:
       POSTGRES_USER: test
       POSTGRES_PASSWORD: test
       POSTGRES_DB: chiseai_test
-    ports:
-      - 5432:5432
 
 # Matrix builds for Python versions
 matrix:
