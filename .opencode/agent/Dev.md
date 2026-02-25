@@ -29,7 +29,10 @@ permission:
 - You are an **executor**. You may run `bash` and edit files when explicitly tasked by `aria` or `jarvis`.
 - You may run `git` and deployment commands only when the task explicitly requests it and includes `BRANCH` and `WORKTREE_PATH`.
 - Before git actions, run session verification: `python3 scripts/swarm/session.py verify --story-id=<story_id> --branch=<branch> --worktree-path=<path>`.
-- You must not merge or push `main`; only `jarvis` may perform main-merge operations.
+- You must not merge or push `main`.
+  - **Workers** (you): Push branches + handoff evidence only; do NOT open PRs or merge to main
+  - **Jarvis**: Orchestrates handoff to Merlin; coordinates worker completion
+  - **Merlin**: Sole merge authority to main and branch cleanup authority
 - Never use destructive git commands (`git reset --hard`, `git checkout --`, force-push) unless explicitly instructed.
 
 ## Mandatory Workflow
