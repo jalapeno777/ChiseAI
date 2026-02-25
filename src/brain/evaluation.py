@@ -305,44 +305,134 @@ class BrainEvaluator:
     ) -> EvaluationMetrics:
         """Compute evaluation metrics from test results.
 
-        This is a simplified implementation. In production, this would
-        run the actual brain model against test data.
+        Computes real accuracy, precision, recall, and F1 score from
+        actual predictions vs expected outputs.
+
+        Args:
+            test_data: Test cases with predictions (must contain 'output' key)
+            expected_outputs: Expected outputs for comparison (must contain 'expected' key)
+
+        Returns:
+            EvaluationMetrics with computed values
+
+        Raises:
+            EvaluationError: If data validation fails
         """
         if not test_data:
             return EvaluationMetrics()
 
-        # Simulate metric computation
-        # In production, this would:
-        # 1. Load the brain version
-        # 2. Run predictions on test_data
-        # 3. Compare with expected_outputs
-        # 4. Calculate true positives, false positives, etc.
+        if not expected_outputs:
+            # No ground truth to compare against
+            return EvaluationMetrics()
 
-        # Placeholder: Generate reasonable metrics for demonstration
-        import random
+        if len(test_data) != len(expected_outputs):
+            raise EvaluationError(
+                f"Test data length ({len(test_data)}) does not match "
+                f"expected outputs length ({len(expected_outputs)})"
+            )
 
-        random.seed(42)  # Reproducible for testing
+        # Compute confusion matrix components
+        tp, fp, tn, fn = self._compute_confusion_matrix(test_data, expected_outputs)
 
-        accuracy = random.uniform(0.75, 0.95)
-        precision = random.uniform(0.70, 0.95)
-        recall = random.uniform(0.70, 0.95)
-        f1_score = (
-            2 * (precision * recall) / (precision + recall)
-            if (precision + recall) > 0
-            else 0
-        )
+        # Compute metrics from confusion matrix
+        metrics = self._compute_metrics_from_confusion_matrix(tp, fp, tn, fn)
+
+        return metrics
+
+    def _compute_confusion_matrix(
+        self,
+        test_data: Sequence[dict[str, Any]],
+        expected_outputs: Sequence[dict[str, Any]],
+    ) -> tuple[int, int, int, int]:
+        """Compute confusion matrix components from test results.
+
+        Args:
+            test_data: Test cases with predictions
+            expected_outputs: Expected outputs for comparison
+
+        Returns:
+            Tuple of (true_positives, false_positives, true_negatives, false_negatives)
+
+        Note:
+            Assumes binary classification with positive class being truthy values.
+            For multi-class, positive is defined as non-zero/non-empty values.
+        """
+        tp = fp = tn = fn = 0
+
+        for i, test in enumerate(test_data):
+            if i >= len(expected_outputs):
+                break
+
+            actual = test.get("output")
+            expected = expected_outputs[i].get("expected")
+
+            # Convert to boolean (positive = truthy, negative = falsy)
+            actual_positive = bool(actual) if actual is not None else False
+            expected_positive = bool(expected) if expected is not None else False
+
+            if actual_positive and expected_positive:
+                tp += 1
+            elif actual_positive and not expected_positive:
+                fp += 1
+            elif not actual_positive and not expected_positive:
+                tn += 1
+            else:  # not actual_positive and expected_positive
+                fn += 1
+
+        return tp, fp, tn, fn
+
+    def _compute_metrics_from_confusion_matrix(
+        self,
+        tp: int,
+        fp: int,
+        tn: int,
+        fn: int,
+    ) -> EvaluationMetrics:
+        """Compute evaluation metrics from confusion matrix components.
+
+        Args:
+            tp: True positives
+            fp: False positives
+            tn: True negatives
+            fn: False negatives
+
+        Returns:
+            EvaluationMetrics with computed values
+        """
+        total = tp + fp + tn + fn
+
+        if total == 0:
+            return EvaluationMetrics()
+
+        # Accuracy: (TP + TN) / Total
+        accuracy = (tp + tn) / total
+
+        # Precision: TP / (TP + FP) - handles division by zero
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+
+        # Recall: TP / (TP + FN) - handles division by zero
+        recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+
+        # F1 Score: 2 * (Precision * Recall) / (Precision + Recall)
+        if precision + recall > 0:
+            f1_score = 2 * (precision * recall) / (precision + recall)
+        else:
+            f1_score = 0.0
+
+        # False Positive Rate: FP / (FP + TN)
+        false_positive_rate = fp / (fp + tn) if (fp + tn) > 0 else 0.0
 
         return EvaluationMetrics(
             accuracy=round(accuracy, 4),
             precision=round(precision, 4),
             recall=round(recall, 4),
             f1_score=round(f1_score, 4),
-            paper_carryover_rate=random.uniform(0.60, 0.90),
-            false_positive_rate=random.uniform(0.10, 0.30),
-            time_to_improvement=random.uniform(0.50, 0.80),
-            turnover_bias_alignment=random.uniform(0.70, 0.95),
-            compute_cost=random.uniform(0.30, 0.70),
-            safety_compliance=1.0,  # Always perfect in simulation
+            paper_carryover_rate=0.0,  # Placeholder - wired in future story
+            false_positive_rate=round(false_positive_rate, 4),
+            time_to_improvement=0.0,  # Placeholder
+            turnover_bias_alignment=0.0,  # Placeholder
+            compute_cost=0.0,  # Placeholder
+            safety_compliance=1.0,  # Default to perfect compliance
         )
 
     def _check_thresholds(self, metrics: EvaluationMetrics) -> bool:
