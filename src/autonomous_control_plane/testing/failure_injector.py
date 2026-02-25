@@ -17,7 +17,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
-from src.autonomous_control_plane.models.healing import FailurePatternType, LogEntry
+from autonomous_control_plane.models.healing import FailurePatternType, LogEntry
 
 logger = logging.getLogger(__name__)
 

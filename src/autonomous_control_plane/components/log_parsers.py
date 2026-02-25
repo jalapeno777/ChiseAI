@@ -17,7 +17,7 @@ from abc import ABC, abstractmethod
 from datetime import UTC, datetime
 from typing import Any, cast
 
-from src.autonomous_control_plane.models.healing import LogEntry
+from autonomous_control_plane.models.healing import LogEntry
 
 logger = logging.getLogger(__name__)
 

@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from sqlalchemy import Engine
 
-from src.autonomous_control_plane.models.retry_policy import (
+from autonomous_control_plane.models.retry_policy import (
     DeadLetterQueueItem,
     RetryStatus,
 )

@@ -25,7 +25,7 @@ from abc import ABC, abstractmethod
 from datetime import UTC, datetime
 from typing import Any
 
-from src.autonomous_control_plane.models.healing import (
+from autonomous_control_plane.models.healing import (
     ActionPriority,
     HealingContext,
     HealingResult,
