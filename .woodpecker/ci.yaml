@@ -191,6 +191,33 @@ steps:
         # Do not short-circuit the pipeline; ci-gate is the single fail point.
         exit 0
 
+  compass-apply:
+    image: python:3.11
+    environment:
+      CI_PR_LABELS: "${CI_COMMIT_PULL_REQUEST_LABELS:-}"
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir pyyaml
+          # Run compass apply to auto-label PRs based on changed files
+          echo "Running compass apply..."
+          CHANGED_FILES="$(git diff --name-only origin/main HEAD || true)"
+          if [ -n "$CHANGED_FILES" ]; then
+            echo "$CHANGED_FILES" | python3 scripts/ops/compass_apply.py
+          else
+            echo "No changed files detected, skipping compass apply"
+          fi
+        ) > _bmad-output/ci/compass-apply.log 2>&1
+        code=$?
+        cat _bmad-output/ci/compass-apply.log
+        echo "$code" > _bmad-output/ci/compass-apply.status
+        # Non-blocking: always exit 0 for auto-labeling
+        exit 0
+
   compass-gate:
     image: python:3.11
     environment:
