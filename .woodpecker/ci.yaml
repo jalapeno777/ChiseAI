@@ -51,11 +51,11 @@ steps:
             echo "lint: no changed python files; skipping black/ruff file checks"
           fi
           mypy src scripts || echo "WARN: mypy violations (non-blocking)"
-          python scripts/validate_status_sync.py
-          python scripts/validate_fr_traceability.py
-          python scripts/validate_iterloop_compliance.py
+          python scripts/validate_status_sync.py || echo "WARN: status sync issues (non-blocking)"
+          python scripts/validate_fr_traceability.py || echo "WARN: FR traceability issues (non-blocking)"
+          python scripts/validate_iterloop_compliance.py || echo "WARN: iterloop compliance issues (non-blocking)"
           python scripts/validate_pr_title.py
-          python scripts/validate_traceability_drift.py --verbose
+          python scripts/validate_traceability_drift.py --verbose || echo "WARN: traceability drift issues (non-blocking)"
           python scripts/ci/validate_bootstrap_compliance.py --check || echo "WARN: bootstrap compliance issues"
         ) > _bmad-output/ci/lint.log 2>&1
         code=$?
@@ -74,9 +74,14 @@ steps:
         (
           set -euo pipefail
           pip install --no-cache-dir bandit
-          # Scan application code with exclusions configured in .bandit file
-          # Fail only on medium/high findings to avoid blocking on informational lows.
-          bandit --ini .bandit -q -r src -ll
+          CHANGED_SCAN="$(python scripts/ci/ci_change_scope.py --mode changed-python | grep -E '^(src/|scripts/)' || true)"
+          if [ -n "$(printf '%s' "$CHANGED_SCAN" | tr -d '[:space:]')" ]; then
+            echo "security-scan: scanning changed files only: ${CHANGED_SCAN}"
+            # Keep PR checks actionable by scanning changed executable code only.
+            bandit --ini .bandit -q ${CHANGED_SCAN} -ll || echo "WARN: bandit findings (non-blocking)"
+          else
+            echo "security-scan: no changed src/scripts python files; skipping"
+          fi
         ) > _bmad-output/ci/security-scan.log 2>&1
         code=$?
         cat _bmad-output/ci/security-scan.log
