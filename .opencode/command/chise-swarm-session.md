@@ -24,7 +24,10 @@ Prereqs:
    - Use explicit branch in push/PR commands (never use `HEAD` inference).
 
 4. Close session (after merge or handoff)
-   - `python3 scripts/swarm/session.py close --enforce-merged`
+   - Default behavior (removes worktree after successful close):
+     - `python3 scripts/swarm/session.py close --enforce-merged --remove-worktree`
    - If intentionally handing off with an open PR and unmerged branch commits:
-     - `python3 scripts/swarm/session.py close --enforce-merged --allow-unmerged`
-   - Optional cleanup: `python3 scripts/swarm/session.py close --remove-worktree`
+     - `python3 scripts/swarm/session.py close --enforce-merged --allow-unmerged --remove-worktree`
+   - Exception (preserving worktree requires justification):
+     - `python3 scripts/swarm/session.py close --enforce-merged` (without --remove-worktree)
+     - Document justification: Why is the worktree being preserved? (e.g., "Pending manual verification", "Shared worktree with other agent")
