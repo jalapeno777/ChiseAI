@@ -12,7 +12,7 @@ import time
 from unittest.mock import patch
 
 import pytest
-from src.autonomous_control_plane import SelfHealingEngine
+from src.autonomous_control_plane.components.self_healing_engine import SelfHealingEngine
 from src.autonomous_control_plane.healing_actions.circuit_breaker_reset import (
     CircuitBreakerResetAction,
 )
