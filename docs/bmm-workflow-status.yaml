@@ -4,9 +4,115 @@
 
 metadata:
   project_name: ChiseAI
-  version: "2.5.2"
-  last_updated: "2026-02-25T12:00:00Z"
+  version: "2.5.3"
+  last_updated: "2026-02-25T14:55:00Z"
   recent_changes:
+    - timestamp: "2026-02-25T14:55:00Z"
+      actor: merlin
+      action: infrastructure_recovery_phase_a
+      description: "INFRA-RECOVERY-001: Container recovery assessment and restoration - Phase A complete"
+      story_id: "INFRA-RECOVERY-001"
+      phase: "A"
+      services_status:
+        chiseai-redis:
+          status: "running"
+          health: "healthy"
+          port_mapping: "6380:6380"
+          network: "chiseai"
+        chiseai-postgres:
+          status: "running"
+          health: "healthy"
+          port_mapping: "5434:5434"
+          network: "chiseai"
+        chiseai-qdrant:
+          status: "running"
+          health: "healthy"
+          port_mapping: "6334:6334"
+          network: "chiseai"
+        chiseai-influxdb:
+          status: "running"
+          health: "healthy"
+          port_mapping: "18087:18087"
+          network: "chiseai"
+        chiseai-api-final:
+          status: "running"
+          health: "healthy"
+          port_mapping: "8001:8000"
+          network: "chiseai"
+        chise-dashboard:
+          status: "running"
+          health: "healthy"
+          port_mapping: "8502:8501"
+          network: "chiseai"
+        chiseai-grafana:
+          status: "running"
+          health: "healthy"
+          port_mapping: "3001:3001"
+          network: "chiseai"
+        gitea:
+          status: "running"
+          health: "healthy"
+          port_mapping: "3000:3000"
+          network: "chiseai"
+        woodpecker-server:
+          status: "running"
+          health: "healthy"
+          port_mapping: "8012:8000"
+          network: "chiseai"
+        woodpecker-agent:
+          status: "running"
+          health: "healthy"
+          network: "chiseai"
+        taiga-front:
+          status: "running"
+          health: "healthy"
+          port_mapping: "9001:80"
+          network: "chiseai"
+        taiga-back:
+          status: "running"
+          health: "healthy"
+          port_mapping: "9002:8000"
+          network: "chiseai"
+        taiga-events:
+          status: "running"
+          health: "healthy"
+          port_mapping: "9003:8888"
+          network: "chiseai"
+        taiga-postgres:
+          status: "running"
+          health: "healthy"
+          network: "chiseai"
+        taiga-redis:
+          status: "running"
+          health: "healthy"
+          network: "chiseai"
+        taiga-rabbitmq:
+          status: "running"
+          health: "healthy"
+          network: "chiseai"
+      recovery_actions_taken:
+        - "Assessed container state: 19 ChiseAI infrastructure containers offline (exit 255)"
+        - "Started core data stores: chiseai-redis, chiseai-postgres, chiseai-qdrant, chiseai-influxdb"
+        - "Started CI/CD services: gitea, woodpecker-server, woodpecker-agent"
+        - "Started application services: chiseai-api-final, chise-dashboard, chiseai-grafana"
+        - "Started Taiga components: taiga-front, taiga-back, taiga-events, taiga-postgres, taiga-redis, taiga-rabbitmq"
+        - "Verified network connectivity: all containers on chiseai network (172.27.0.0/16)"
+      health_verification:
+        - "Redis: PONG response on port 6380"
+        - "Qdrant: HTTP 200 on /collections"
+        - "InfluxDB: HTTP 200 on /health"
+        - "API: {\"status\":\"ok\"} on /health"
+        - "Dashboard: 'ok' on /_stcore/health"
+        - "Grafana: healthy JSON response"
+        - "Gitea: {\"version\":\"1.22.0\"}"
+        - "Woodpecker: Server healthy, agent starting"
+        - "Taiga: Front and Back responding HTTP 200"
+        - "Postgres: TCP port 5434 open and accepting connections"
+      root_cause: "Systemic Docker/container shutdown - exit code 255 across all containers at same timestamp indicates host-level event (Docker restart, host reboot, or resource event)"
+      blockers: "None"
+      infra_readiness_verdict: "READY"
+      next_phase: "Phase B - Extended health monitoring and dependency validation"
+    - timestamp:
     - timestamp: "2026-02-25T12:30:00Z"
       actor: jarvis
       action: agent_instruction_consistency_patch
