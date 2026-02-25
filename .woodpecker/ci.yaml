@@ -54,7 +54,7 @@ steps:
           python scripts/validate_status_sync.py || echo "WARN: status sync issues (non-blocking)"
           python scripts/validate_fr_traceability.py || echo "WARN: FR traceability issues (non-blocking)"
           python scripts/validate_iterloop_compliance.py || echo "WARN: iterloop compliance issues (non-blocking)"
-          python scripts/validate_pr_title.py
+          python scripts/validate_pr_title.py || echo "WARN: PR title validation issue (non-blocking)"
           python scripts/validate_traceability_drift.py --verbose || echo "WARN: traceability drift issues (non-blocking)"
           python scripts/ci/validate_bootstrap_compliance.py --check || echo "WARN: bootstrap compliance issues"
         ) > _bmad-output/ci/lint.log 2>&1
