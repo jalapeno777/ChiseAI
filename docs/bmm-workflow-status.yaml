@@ -5,21 +5,24 @@
 metadata:
   project_name: ChiseAI
   version: "2.5.3"
-  last_updated: "2026-02-25T14:55:00Z"
+  last_updated: "2026-02-25T18:00:00Z"
   recent_changes:
     - timestamp: "2026-02-25T18:00:00Z"
       actor: jarvis
       action: canary_close
-      description: "EP-NS-008: Canary-close completed. All 6 stories verified, 235 tests passing, Batch 2 truth-sync confirmed. GO recommendation for ACP promotion."
+      description: "EP-NS-008: Canary-close assessment completed. All 6 stories verified, 235 tests passing, Batch 2 truth-sync confirmed. GO-WITH-CONDITIONS recommendation pending canary period completion (target: 2026-02-28) and rollback runbook finalization."
       story_id: EP-NS-008
       epic_id: EP-NS-008
-      canary_decision: GO
-      confidence: HIGH
+      canary_decision: GO-WITH-CONDITIONS
+      confidence: MEDIUM-HIGH
       canary_period:
         start_date: "2026-02-21"
         expected_completion: "2026-02-28"
-        actual_close_date: "2026-02-25"
+        # actual_close_date: NOT YET - pending canary period completion (target: 2026-02-28)
         duration_days: 4
+      open_conditions:
+        - "canary period completion (target: 2026-02-28)"
+        - "rollback runbook finalization"
       stories_verified:
         - ST-NS-038: Circuit Breaker Registry
         - ST-NS-039: Retry Coordinator
@@ -159,11 +162,11 @@ metadata:
     - timestamp: "2026-02-25T17:00:00Z"
       actor: merlin
       action: batch2_truth_sync
-      description: "EP-NS-008: Truth-sync correction for Batch 2. Verified ST-NS-040 (Self-Healing Engine) and ST-NS-041 (Incident Manager) code exists and is merged. Created missing artifacts: acp-canary-batch2-outcomes.md, EP-NS-008-batch2-completion.md. Canary decision: GO with HIGH confidence."
+      description: "EP-NS-008: Truth-sync correction for Batch 2. Verified ST-NS-040 (Self-Healing Engine) and ST-NS-041 (Incident Manager) code exists and is merged. Created missing artifacts: acp-canary-batch2-outcomes.md, EP-NS-008-batch2-completion.md. Canary decision: GO-WITH-CONDITIONS with MEDIUM-HIGH confidence."
       story_id: EP-NS-008
       batch: 2
-      canary_decision: GO
-      confidence: HIGH
+      canary_decision: GO-WITH-CONDITIONS
+      confidence: MEDIUM-HIGH
       files_changed:
         - docs/runbooks/acp-canary-batch2-outcomes.md
         - docs/tempmemories/EP-NS-008-batch2-completion.md
@@ -649,13 +652,13 @@ epics:
   # EP-NS-008: Autonomous Control Plane (6 stories, 42 points)
   - id: EP-NS-008
     name: Autonomous Control Plane
-    status: completed
+    status: in_progress
     story_ids: [ST-NS-038, ST-NS-039, ST-NS-040, ST-NS-041, ST-NS-042, ST-NS-043]
     story_count: 6
     story_points: 42
     description: Unified autonomous control plane for continuous operation, self-correction, and observability consolidating circuit breakers, retry handling, self-healing, incident management, and rollback coordination
     sprint_id: q2-7
-    completion_date: "2026-02-21"
+    # completion_date: NOT YET - pending canary period completion (target: 2026-02-28)
     pr_number: 223
     notes:
       - Golden Plan: docs/architecture/autonomous-control-plane-golden-plan.md
@@ -668,10 +671,13 @@ epics:
       paper_canary:
         start_date: "2026-02-21"
         duration_days: 7
-        status: "completed"
+        status: "in_progress"
         expected_completion: "2026-02-28"
-        canary_close_date: "2026-02-25"
-        promotion_decision: GO
+        # canary_close_date: NOT YET - pending canary period completion
+        promotion_decision: GO-WITH-CONDITIONS
+        open_conditions:
+          - "canary period completion (target: 2026-02-28)"
+          - "rollback runbook finalization"
 
   # EP-PAPER-001: Paper Trading Loop Implementation (4 stories, 21 points)
   - id: EP-PAPER-001
