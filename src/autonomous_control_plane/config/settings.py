@@ -65,11 +65,12 @@ class PostgreSQLConfig:
 class InfluxDBConfig:
     """InfluxDB configuration for telemetry."""
 
-    host: str = "host.docker.internal"
+    host: str = "chiseai-influxdb"
     port: int = 18087
     bucket: str = "chiseai"
     org: str = "chiseai"
-    token: str = "chiseai-token"
+    # Token from infrastructure/terraform/terraform.tfvars
+    token: str = "REDACTED_INFLUXDB_TOKEN"
 
     @property
     def url(self) -> str:
@@ -79,12 +80,14 @@ class InfluxDBConfig:
     @classmethod
     def from_env(cls) -> InfluxDBConfig:
         """Load from environment variables."""
+        # Default token from terraform.tfvars - can be overridden via env var
+        default_token = "REDACTED_INFLUXDB_TOKEN"
         return cls(
-            host=os.getenv("ACP_INFLUXDB_HOST", "host.docker.internal"),
+            host=os.getenv("ACP_INFLUXDB_HOST", "chiseai-influxdb"),
             port=int(os.getenv("ACP_INFLUXDB_PORT", "18087")),
             bucket=os.getenv("ACP_INFLUXDB_BUCKET", "chiseai"),
             org=os.getenv("ACP_INFLUXDB_ORG", "chiseai"),
-            token=os.getenv("ACP_INFLUXDB_TOKEN", "chiseai-token"),
+            token=os.getenv("ACP_INFLUXDB_TOKEN", default_token),
         )
 
 
@@ -123,9 +126,7 @@ class Settings:
     cb_health_check_interval: float = 30.0
 
     # API settings
-    api_host: str = (
-        "0.0.0.0"  # nosec B104 - 0.0.0.0 binding is standard for containerized services
-    )
+    api_host: str = "0.0.0.0"  # nosec B104 - 0.0.0.0 binding is standard for containerized services
     api_port: int = 8000
     api_reload: bool = False
 
@@ -155,9 +156,7 @@ class Settings:
                 "ACP_CB_MEASUREMENT", "circuit_breaker_state"
             ),
             cb_health_check_interval=float(os.getenv("ACP_CB_HEALTH_INTERVAL", "30.0")),
-            api_host=os.getenv(
-                "ACP_API_HOST", "0.0.0.0"
-            ),  # nosec B104 - 0.0.0.0 binding is standard for containerized services
+            api_host=os.getenv("ACP_API_HOST", "0.0.0.0"),  # nosec B104 - 0.0.0.0 binding is standard for containerized services
             api_port=int(os.getenv("ACP_API_PORT", "8000")),
             api_reload=os.getenv("ACP_API_RELOAD", "false").lower() == "true",
         )
@@ -184,6 +183,78 @@ class Settings:
                 "flush_interval_seconds": self.telemetry.flush_interval_seconds,
                 "enabled": self.telemetry.enabled,
             },
+        }
+
+    def check_redis_connection(self) -> tuple[bool, str]:
+        """Check Redis connection health.
+
+        Returns:
+            Tuple of (is_healthy, message)
+        """
+        try:
+            import redis as redis_lib
+
+            client = redis_lib.Redis(
+                host=self.redis.host,
+                port=self.redis.port,
+                db=self.redis.db,
+                password=self.redis.password,
+                socket_timeout=self.redis.socket_timeout,
+                socket_connect_timeout=self.redis.socket_connect_timeout,
+                decode_responses=True,
+            )
+            result = client.ping()
+            if result:
+                return (
+                    True,
+                    f"Redis connection successful to {self.redis.host}:{self.redis.port}",
+                )
+            return (
+                False,
+                f"Redis ping returned False for {self.redis.host}:{self.redis.port}",
+            )
+        except ImportError:
+            return False, "Redis library not installed"
+        except Exception as e:
+            return False, f"Redis connection failed: {e}"
+
+    def check_influxdb_connection(self) -> tuple[bool, str]:
+        """Check InfluxDB connection health.
+
+        Returns:
+            Tuple of (is_healthy, message)
+        """
+        try:
+            import urllib.request
+            import urllib.error
+
+            url = f"{self.influxdb.url}/api/v2/buckets"
+            headers = {"Authorization": f"Token {self.influxdb.token}"}
+
+            req = urllib.request.Request(url, headers=headers, method="GET")
+            with urllib.request.urlopen(req, timeout=10) as response:
+                if response.status == 200:
+                    return (
+                        True,
+                        f"InfluxDB connection successful to {self.influxdb.host}:{self.influxdb.port}",
+                    )
+                return False, f"InfluxDB returned status {response.status}"
+        except ImportError:
+            return False, "urllib not available"
+        except urllib.error.HTTPError as e:
+            return False, f"InfluxDB HTTP error {e.code}: {e.reason}"
+        except Exception as e:
+            return False, f"InfluxDB connection failed: {e}"
+
+    def check_all_connections(self) -> dict[str, tuple[bool, str]]:
+        """Check all persistence connections.
+
+        Returns:
+            Dictionary mapping service name to (is_healthy, message) tuple
+        """
+        return {
+            "redis": self.check_redis_connection(),
+            "influxdb": self.check_influxdb_connection(),
         }
 
 
