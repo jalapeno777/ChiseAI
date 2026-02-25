@@ -21,7 +21,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.autonomous_control_plane import SelfHealingEngine
+from src.autonomous_control_plane.components.self_healing_engine import SelfHealingEngine
 from src.autonomous_control_plane.components.incident_manager import IncidentManager
 from src.autonomous_control_plane.components.rollback_coordinator import (
     RollbackCoordinator,
