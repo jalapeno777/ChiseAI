@@ -13,6 +13,8 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any, Protocol
 
+from pydantic import BaseModel, Field
+
 
 class RollbackStatus(StrEnum):
     """Status of a rollback operation."""
@@ -671,3 +673,262 @@ class RollbackMetrics:
             "p95_duration_seconds": self.p95_duration_seconds,
             "by_target_state": self.by_target_state,
         }
+
+
+# =============================================================================
+# Pydantic API Models (for FastAPI request/response schemas)
+# =============================================================================
+
+
+class RollbackRequest(BaseModel):
+    """Request model for rollback operations.
+
+    Attributes:
+        target_state: Target state to rollback to
+        force: If True, bypass pre-flight validation
+        initiated_by: Who/what initiated the rollback
+        metadata: Additional metadata for the operation
+    """
+
+    target_state: str = Field(..., description="Target state to rollback to")
+    force: bool = Field(
+        default=False, description="Bypass pre-flight validation if True"
+    )
+    initiated_by: str = Field(
+        default="api", description="Who/what initiated the rollback"
+    )
+    metadata: dict[str, Any] = Field(
+        default_factory=dict, description="Additional metadata"
+    )
+
+
+class ValidationCheckItem(BaseModel):
+    """Validation check item for API responses.
+
+    Attributes:
+        check_id: Unique check identifier
+        name: Human-readable check name
+        description: Detailed description
+        status: Check status (pending, pass, fail, skipped)
+        message: Result message
+        details: Additional structured data
+        executed_at: ISO format timestamp
+        duration_seconds: How long the check took
+    """
+
+    check_id: str
+    name: str
+    description: str
+    status: str
+    message: str
+    details: dict[str, Any]
+    executed_at: str | None
+    duration_seconds: float
+
+
+class RollbackValidationResponse(BaseModel):
+    """Response model for rollback validation endpoint.
+
+    Attributes:
+        can_rollback: Whether rollback is possible
+        reason: Human-readable explanation
+        validation_checks: List of individual validation checks
+        errors: List of error messages if validation failed
+        warnings: List of warnings (non-blocking)
+        executed_at: ISO format timestamp
+        duration_seconds: Total validation time
+    """
+
+    can_rollback: bool = Field(..., description="Whether rollback is possible")
+    reason: str = Field(..., description="Human-readable explanation")
+    validation_checks: list[ValidationCheckItem] = Field(
+        default_factory=list, description="Individual validation checks"
+    )
+    errors: list[str] = Field(
+        default_factory=list, description="Error messages if validation failed"
+    )
+    warnings: list[str] = Field(
+        default_factory=list, description="Warnings (non-blocking)"
+    )
+    executed_at: str | None = Field(default=None, description="ISO format timestamp")
+    duration_seconds: float = Field(default=0.0, description="Total validation time")
+
+
+class RollbackStepItem(BaseModel):
+    """Rollback step item for API responses.
+
+    Attributes:
+        step_id: Unique step identifier
+        name: Human-readable step name
+        description: Detailed description
+        action: Action type identifier
+        status: Step status
+        order: Execution order
+        started_at: ISO format timestamp
+        completed_at: ISO format timestamp
+        error_message: Error message if failed
+        execution_result: Result data
+        timeout_seconds: Maximum time allowed
+        duration_seconds: Actual duration
+    """
+
+    step_id: str
+    name: str
+    description: str
+    action: str
+    status: str
+    order: int
+    started_at: str | None
+    completed_at: str | None
+    error_message: str | None
+    execution_result: dict[str, Any]
+    timeout_seconds: float
+    duration_seconds: float
+
+
+class RollbackResponse(BaseModel):
+    """Response model for rollback execution endpoint.
+
+    Attributes:
+        rollback_id: Unique operation identifier
+        target_state: Target state rolled back to
+        status: Operation status
+        steps: List of rollback steps
+        validation_result: Pre-flight validation result
+        post_rollback_health: Post-rollback health verification
+        created_at: ISO format timestamp
+        started_at: ISO format timestamp
+        completed_at: ISO format timestamp
+        duration_seconds: Total execution time
+        initiated_by: Who initiated the rollback
+        force: Whether validation was bypassed
+        error_message: Error message if failed
+        audit_log: List of audit log entries
+    """
+
+    rollback_id: str = Field(..., description="Unique operation identifier")
+    target_state: str = Field(..., description="Target state rolled back to")
+    status: str = Field(..., description="Operation status")
+    steps: list[RollbackStepItem] = Field(
+        default_factory=list, description="Rollback steps"
+    )
+    validation_result: RollbackValidationResponse | None = Field(
+        default=None, description="Pre-flight validation result"
+    )
+    post_rollback_health: dict[str, Any] | None = Field(
+        default=None, description="Post-rollback health verification"
+    )
+    created_at: str = Field(..., description="ISO format timestamp")
+    started_at: str | None = Field(default=None, description="ISO format timestamp")
+    completed_at: str | None = Field(default=None, description="ISO format timestamp")
+    duration_seconds: float = Field(default=0.0, description="Total execution time")
+    initiated_by: str = Field(
+        default="system", description="Who initiated the rollback"
+    )
+    force: bool = Field(default=False, description="Whether validation was bypassed")
+    error_message: str | None = Field(
+        default=None, description="Error message if failed"
+    )
+    audit_log: list[dict[str, Any]] = Field(
+        default_factory=list, description="Audit log entries"
+    )
+
+
+class RollbackHistoryItem(BaseModel):
+    """History item for rollback operations.
+
+    Attributes:
+        rollback_id: Unique operation identifier
+        target_state: Target state rolled back to
+        status: Operation status
+        created_at: ISO format timestamp
+        completed_at: ISO format timestamp
+        duration_seconds: Total execution time
+        initiated_by: Who initiated the rollback
+        force: Whether validation was bypassed
+        error_message: Error message if failed
+    """
+
+    rollback_id: str = Field(..., description="Unique operation identifier")
+    target_state: str = Field(..., description="Target state rolled back to")
+    status: str = Field(..., description="Operation status")
+    created_at: str = Field(..., description="ISO format timestamp")
+    completed_at: str | None = Field(default=None, description="ISO format timestamp")
+    duration_seconds: float = Field(default=0.0, description="Total execution time")
+    initiated_by: str = Field(
+        default="system", description="Who initiated the rollback"
+    )
+    force: bool = Field(default=False, description="Whether validation was bypassed")
+    error_message: str | None = Field(
+        default=None, description="Error message if failed"
+    )
+
+
+class RollbackHistoryResponse(BaseModel):
+    """Response model for rollback history endpoint.
+
+    Attributes:
+        operations: List of rollback operations
+        total: Total number of operations
+        limit: Maximum results per page
+        offset: Pagination offset
+    """
+
+    operations: list[RollbackHistoryItem] = Field(
+        default_factory=list, description="Rollback operations"
+    )
+    total: int = Field(default=0, description="Total number of operations")
+    limit: int = Field(default=100, description="Maximum results per page")
+    offset: int = Field(default=0, description="Pagination offset")
+
+
+class RollbackMetricsResponse(BaseModel):
+    """Response model for rollback metrics endpoint.
+
+    Attributes:
+        total_operations: Total rollback operations executed
+        successful: Number of successful rollbacks
+        failed: Number of failed rollbacks
+        avg_duration_seconds: Average rollback duration
+        p95_duration_seconds: 95th percentile duration
+        by_target_state: Breakdown by target state
+    """
+
+    total_operations: int = Field(
+        default=0, description="Total rollback operations executed"
+    )
+    successful: int = Field(default=0, description="Number of successful rollbacks")
+    failed: int = Field(default=0, description="Number of failed rollbacks")
+    avg_duration_seconds: float = Field(
+        default=0.0, description="Average rollback duration"
+    )
+    p95_duration_seconds: float = Field(
+        default=0.0, description="95th percentile duration"
+    )
+    by_target_state: dict[str, dict[str, int]] = Field(
+        default_factory=dict, description="Breakdown by target state"
+    )
+
+
+class RollbackScheduleRequest(BaseModel):
+    """Request model for scheduling a rollback.
+
+    Attributes:
+        target_state: Target state to rollback to
+        scheduled_at: ISO format timestamp when to execute
+        force: If True, bypass pre-flight validation
+        initiated_by: Who/what initiated the rollback
+        metadata: Additional metadata
+    """
+
+    target_state: str = Field(..., description="Target state to rollback to")
+    scheduled_at: str = Field(..., description="ISO format timestamp when to execute")
+    force: bool = Field(
+        default=False, description="Bypass pre-flight validation if True"
+    )
+    initiated_by: str = Field(
+        default="api", description="Who/what initiated the rollback"
+    )
+    metadata: dict[str, Any] = Field(
+        default_factory=dict, description="Additional metadata"
+    )

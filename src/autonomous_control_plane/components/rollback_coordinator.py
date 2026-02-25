@@ -1056,6 +1056,128 @@ class RollbackCoordinator:
 
         return self._metrics
 
+    def can_rollback(self, target_state: str) -> tuple[bool, str]:
+        """Check if rollback to target state is possible.
+
+        This method performs a quick check without running full validation.
+        For detailed validation, use validate_rollback().
+
+        Args:
+            target_state: Target state to rollback to
+
+        Returns:
+            Tuple of (can_rollback: bool, reason: str)
+        """
+        # Check if target state is provided
+        if not target_state:
+            return False, "Target state cannot be empty"
+
+        # Check if target state is valid format
+        if not isinstance(target_state, str):
+            return False, "Target state must be a string"
+
+        # Check if another rollback is in progress
+        # Note: This is a synchronous check; for async check use is_rollback_in_progress()
+
+        # All basic checks passed
+        return True, f"Rollback to {target_state} appears possible"
+
+    async def get_rollback_history(
+        self,
+        target_state: str | None = None,
+        limit: int = 100,
+    ) -> list[RollbackOperation]:
+        """Get rollback history.
+
+        This is an alias for get_history() for API consistency.
+
+        Args:
+            target_state: Filter by target state
+            limit: Maximum results
+
+        Returns:
+            List of RollbackOperations
+        """
+        return await self.get_history(target_state, limit)
+
+    async def schedule_rollback(
+        self,
+        target_state: str,
+        scheduled_at: datetime,
+        force: bool = False,
+        initiated_by: str = "system",
+        metadata: dict[str, Any] | None = None,
+    ) -> RollbackOperation:
+        """Schedule a rollback for future execution.
+
+        Creates a rollback operation in PENDING state that can be
+        executed later via execute_scheduled_rollback().
+
+        Args:
+            target_state: Target state to rollback to
+            scheduled_at: When to execute the rollback
+            force: If True, bypass pre-flight validation
+            initiated_by: Who/what initiated the rollback
+            metadata: Additional metadata
+
+        Returns:
+            RollbackOperation in PENDING status
+        """
+        operation = await self.create_rollback_operation(
+            target_state=target_state,
+            initiated_by=initiated_by,
+            force=force,
+            metadata={
+                **(metadata or {}),
+                "scheduled": True,
+                "scheduled_at": scheduled_at.isoformat(),
+            },
+        )
+
+        # Operation is already in PENDING status from create_rollback_operation
+        operation.add_audit_entry(
+            f"Rollback scheduled for execution at {scheduled_at.isoformat()}",
+            actor=initiated_by,
+        )
+        await self._store.save(operation)  # type: ignore[func-returns-value]
+
+        logger.info(
+            f"Rollback to {target_state} scheduled for {scheduled_at.isoformat()}"
+        )
+
+        return operation
+
+    async def execute_scheduled_rollback(
+        self, operation_id: str
+    ) -> RollbackOperation | None:
+        """Execute a previously scheduled rollback.
+
+        Args:
+            operation_id: ID of the scheduled rollback operation
+
+        Returns:
+            RollbackOperation if found and executed, None otherwise
+        """
+        operation = await self.get_operation(operation_id)
+
+        if not operation:
+            logger.error(f"Scheduled rollback {operation_id} not found")
+            return None
+
+        if operation.status != RollbackStatus.PENDING:
+            logger.error(
+                f"Cannot execute rollback {operation_id}: status is {operation.status.value}"
+            )
+            return operation
+
+        # Execute the rollback
+        return await self.execute_rollback(
+            target_state=operation.target_state,
+            force=operation.force,
+            initiated_by=operation.initiated_by,
+            metadata=operation.metadata,
+        )
+
     def on_rollback_started(self, callback: Callable) -> None:
         """Register callback for rollback started event.
 
