@@ -261,6 +261,10 @@ class BybitConnector:
             half_open_max_calls=3,
         )
 
+        # Time synchronization for authentication (PAPER-READY-P0-ACTUAL-FIX)
+        self._time_offset_ms: int = 0
+        self._last_time_sync: float = 0.0
+
     @classmethod
     def from_env(cls, load_env: bool = True) -> BybitConnector:
         """Create connector with credentials from environment.
@@ -340,6 +344,39 @@ class BybitConnector:
 
         logger.info("Bybit connector closed")
 
+    async def _sync_server_time(self) -> None:
+        """Synchronize local time with Bybit server time.
+
+        Fetches server time from /v5/market/time and calculates
+        the offset between local and server time for authentication.
+        """
+        try:
+            response = await self._make_request("GET", "/v5/market/time")
+            result = response.get("result", {})
+            # Try nanoseconds first, fallback to seconds
+            server_time_ns = result.get("timeNano", 0)
+            if server_time_ns:
+                server_time_ms = server_time_ns // 1000000
+            else:
+                server_time_ms = result.get("timeSecond", 0) * 1000
+
+            local_time_ms = int(time.time() * 1000)
+            self._time_offset_ms = server_time_ms - local_time_ms
+            self._last_time_sync = time.time()
+
+            logger.debug(f"Time sync complete. Offset: {self._time_offset_ms}ms")
+        except Exception as e:
+            logger.warning(f"Time sync failed: {e}. Using local time.")
+            # Graceful fallback: continue with offset=0
+
+    def _get_timestamp(self) -> int:
+        """Get current timestamp adjusted for server time offset.
+
+        Returns:
+            Timestamp in milliseconds adjusted for server time offset.
+        """
+        return int(time.time() * 1000) + self._time_offset_ms
+
     def _generate_signature(self, timestamp: str, payload: str = "") -> str:
         """Generate HMAC signature for authenticated requests.
 
@@ -391,7 +428,10 @@ class BybitConnector:
         payload = ""
 
         if signed:
-            timestamp = str(int(time.time() * 1000))
+            # Sync time on first request or every 5 minutes
+            if self._last_time_sync == 0 or (time.time() - self._last_time_sync) > 300:
+                await self._sync_server_time()
+            timestamp = str(self._get_timestamp())
             headers["X-BAPI-TIMESTAMP"] = timestamp
             headers["X-BAPI-RECV-WINDOW"] = str(self.config.recv_window)
 
