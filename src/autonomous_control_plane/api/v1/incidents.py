@@ -52,8 +52,8 @@ except ImportError:
             pass
 
 
-from src.autonomous_control_plane.components.incident_manager import IncidentManager
-from src.autonomous_control_plane.models.incidents import (
+from autonomous_control_plane.components.incident_manager import IncidentManager
+from autonomous_control_plane.models.incidents import (
     IncidentEvent,
     IncidentStatus,
     Severity,

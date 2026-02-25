@@ -14,16 +14,16 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, cast
 
-from src.autonomous_control_plane.models.incidents import (
+from autonomous_control_plane.models.incidents import (
     IncidentEvent,
     Severity,
 )
 
 if TYPE_CHECKING:
-    from src.autonomous_control_plane.components.incident_manager import IncidentManager
+    from autonomous_control_plane.components.incident_manager import IncidentManager
 import builtins
 
-from src.autonomous_control_plane.models.rollback import (
+from autonomous_control_plane.models.rollback import (
     HealthCheck,
     PostRollbackHealth,
     RollbackMetrics,

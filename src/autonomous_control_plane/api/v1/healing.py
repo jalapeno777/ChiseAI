@@ -39,7 +39,7 @@ except ImportError:
         pass
 
 
-from src.autonomous_control_plane.components.self_healing_engine import (
+from autonomous_control_plane.components.self_healing_engine import (
     SelfHealingEngine,
 )
 

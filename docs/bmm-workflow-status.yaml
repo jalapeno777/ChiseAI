@@ -112,7 +112,25 @@ metadata:
       blockers: "None"
       infra_readiness_verdict: "READY"
       next_phase: "Phase B - Extended health monitoring and dependency validation"
-    - timestamp:
+    - timestamp: "2026-02-25T17:00:00Z"
+      actor: merlin
+      action: batch2_truth_sync
+      description: "EP-NS-008: Truth-sync correction for Batch 2. Verified ST-NS-040 (Self-Healing Engine) and ST-NS-041 (Incident Manager) code exists and is merged. Created missing artifacts: acp-canary-batch2-outcomes.md, EP-NS-008-batch2-completion.md. Canary decision: GO with HIGH confidence."
+      story_id: EP-NS-008
+      batch: 2
+      canary_decision: GO
+      confidence: HIGH
+      files_changed:
+        - docs/runbooks/acp-canary-batch2-outcomes.md
+        - docs/tempmemories/EP-NS-008-batch2-completion.md
+      correction_type: missing_artifacts
+      git_evidence:
+        - commit: ea6c8ae
+          story: ST-NS-040
+          description: "Implement Self-Healing Engine with Action Sandboxing"
+        - commit: 76aa127
+          story: ST-NS-041
+          description: "Implement Incident Manager with Auto-Remediation"
     - timestamp: "2026-02-25T12:30:00Z"
       actor: jarvis
       action: agent_instruction_consistency_patch
