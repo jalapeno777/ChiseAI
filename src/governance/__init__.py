@@ -9,44 +9,20 @@ This module provides governance capabilities including:
 - Task sentinel enforcement utilities
 - Swarm health monitoring and predictive alerting (ST-GOV-008)
 - Parallel execution optimization (ST-GOV-010)
+
+Note: To avoid circular imports, submodules must be imported directly.
+Do not add imports here that would cause import cycles.
+
+Example:
+    # Correct - import submodule directly
+    from governance.memory import MemoryDeduplicationEngine
+    from governance.audit import AuditSnapshot
+
+    # Avoid - this may cause circular imports
+    import governance  # then use governance.MemoryDeduplicationEngine
 """
 
-from src.governance.audit import AuditSnapshot, RetrievalBaseline
-from src.governance.health import (
-    AgentHealthScore,
-    HealthScorer,
-    HealthSentinel,
-    HealthSentinelConfig,
-    HealthStatus,
-    SwarmHealthScore,
-)
-from src.governance.memory import MemoryDeduplicationEngine
-from src.governance.parallel_optimizer import (
-    ExecutionPlan,
-    OptimizableTask,
-    OptimizerConfig,
-    ParallelOptimizer,
-    TaskPriority,
-)
-from src.governance.sentinel import SentinelConfig, TaskSentinel
+# This module is intentionally minimal to prevent circular imports.
+# Import submodules directly as needed.
 
-__all__ = [
-    "AuditSnapshot",
-    "RetrievalBaseline",
-    "MemoryDeduplicationEngine",
-    "TaskSentinel",
-    "SentinelConfig",
-    # Health Sentinel (ST-GOV-008)
-    "HealthSentinel",
-    "HealthSentinelConfig",
-    "HealthScorer",
-    "AgentHealthScore",
-    "SwarmHealthScore",
-    "HealthStatus",
-    # Parallel Optimizer (ST-GOV-010)
-    "ParallelOptimizer",
-    "OptimizerConfig",
-    "OptimizableTask",
-    "ExecutionPlan",
-    "TaskPriority",
-]
+__all__ = []
