@@ -5,6 +5,7 @@ trade outcomes from exchange fill events, enabling signal-to-outcome
 matching for ML feedback loops.
 
 For ST-LAUNCH-018: Outcome Capture Service Implementation
+For RECON-001: Trade Schema Reconciliation
 """
 
 from __future__ import annotations
@@ -36,6 +37,17 @@ class SignalOutcomeStatus(str, Enum):
     PARTIAL = "partial"  # Partial fill
     ERROR = "error"  # Error processing outcome
     MATCHED = "matched"  # Successfully matched to signal
+    CLOSED = "closed"  # Position closed with realized PnL
+
+
+class EntryReason(str, Enum):
+    """Reason for trade entry."""
+
+    SIGNAL_TRIGGER = "signal_trigger"  # Entry from signal trigger
+    MANUAL = "manual"  # Manual entry
+    DCA = "dca"  # Dollar-cost averaging entry
+    STOP_ENTRY = "stop_entry"  # Stop entry order filled
+    LIMIT_ENTRY = "limit_entry"  # Limit entry order filled
 
 
 @dataclass
@@ -47,7 +59,9 @@ class SignalOutcome:
         signal_id: UUID of the originating signal
         order_id: Exchange order ID
         symbol: Trading pair symbol (e.g., "BTCUSDT")
+        token: Token/coin symbol (alias for symbol base, e.g., "BTC")
         side: Trade side ("Buy" or "Sell")
+        direction: Position direction ("LONG" or "SHORT")
         fill_price: Execution price
         fill_quantity: Filled quantity
         fill_timestamp: When the fill occurred (UTC)
@@ -57,13 +71,24 @@ class SignalOutcome:
         status: Processing status
         created_at: When record was created
         metadata: Additional exchange-specific data
+
+        # RECON-001: New canonical trade outcome fields
+        entry_price: Entry price for the position
+        exit_price: Exit price (None if position still open)
+        entry_time: When position was entered (UTC)
+        exit_time: When position was exited (UTC, None if still open)
+        leverage: Leverage used (default 1.0 for spot)
+        entry_reason: Reason for entry (signal_trigger, manual, etc.)
+        position_size: Position size in base token
     """
 
     outcome_id: UUID = field(default_factory=uuid4)
     signal_id: UUID | None = None
     order_id: str = ""
     symbol: str = ""
+    token: str = ""  # Token/coin symbol (alias for symbol base)
     side: str = ""  # "Buy" or "Sell"
+    direction: str = ""  # "LONG" or "SHORT"
     fill_price: Decimal = field(default_factory=lambda: Decimal("0"))
     fill_quantity: Decimal = field(default_factory=lambda: Decimal("0"))
     fill_timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
@@ -73,6 +98,15 @@ class SignalOutcome:
     status: SignalOutcomeStatus = SignalOutcomeStatus.PENDING
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     metadata: dict[str, Any] = field(default_factory=dict)
+
+    # RECON-001: Canonical trade outcome fields
+    entry_price: Decimal = field(default_factory=lambda: Decimal("0"))
+    exit_price: Decimal | None = None
+    entry_time: datetime = field(default_factory=lambda: datetime.now(UTC))
+    exit_time: datetime | None = None
+    leverage: Decimal = field(default_factory=lambda: Decimal("1.0"))
+    entry_reason: str = ""  # EntryReason as string for flexibility
+    position_size: Decimal = field(default_factory=lambda: Decimal("0"))
 
     def __post_init__(self) -> None:
         """Validate and normalize values after initialization."""
@@ -86,6 +120,10 @@ class SignalOutcome:
         if self.side:
             self.side = self.side.capitalize()
 
+        # Normalize direction to UPPERCASE
+        if self.direction:
+            self.direction = self.direction.upper()
+
         # Ensure Decimal types
         if isinstance(self.fill_price, (int, float, str)):
             self.fill_price = Decimal(str(self.fill_price))
@@ -96,11 +134,50 @@ class SignalOutcome:
         if self.fee is not None and isinstance(self.fee, (int, float, str)):
             self.fee = Decimal(str(self.fee))
 
+        # RECON-001: Ensure new fields are Decimal types
+        if isinstance(self.entry_price, (int, float, str)):
+            self.entry_price = Decimal(str(self.entry_price))
+        if self.exit_price is not None and isinstance(
+            self.exit_price, (int, float, str)
+        ):
+            self.exit_price = Decimal(str(self.exit_price))
+        if isinstance(self.leverage, (int, float, str)):
+            self.leverage = Decimal(str(self.leverage))
+        if isinstance(self.position_size, (int, float, str)):
+            self.position_size = Decimal(str(self.position_size))
+
         # Ensure datetime is timezone-aware
         if self.fill_timestamp.tzinfo is None:
             self.fill_timestamp = self.fill_timestamp.replace(tzinfo=UTC)
         if self.created_at.tzinfo is None:
             self.created_at = self.created_at.replace(tzinfo=UTC)
+        if self.entry_time.tzinfo is None:
+            self.entry_time = self.entry_time.replace(tzinfo=UTC)
+        if self.exit_time is not None and self.exit_time.tzinfo is None:
+            self.exit_time = self.exit_time.replace(tzinfo=UTC)
+
+        # Derive token from symbol if not set
+        if not self.token and self.symbol:
+            # Extract base token from symbol (e.g., "BTCUSDT" -> "BTC")
+            for quote in ["USDT", "USD", "BUSD", "USDC"]:
+                if self.symbol.endswith(quote):
+                    self.token = self.symbol[: -len(quote)]
+                    break
+            else:
+                # Default: use symbol as token
+                self.token = self.symbol
+
+        # Derive direction from side if not set
+        if not self.direction and self.side:
+            self.direction = "LONG" if self.side == "Buy" else "SHORT"
+
+        # Sync entry_price with fill_price if entry_price is default
+        if self.entry_price == Decimal("0") and self.fill_price > 0:
+            self.entry_price = self.fill_price
+
+        # Sync position_size with fill_quantity if position_size is default
+        if self.position_size == Decimal("0") and self.fill_quantity > 0:
+            self.position_size = self.fill_quantity
 
     @property
     def fill_value(self) -> Decimal:
@@ -108,14 +185,43 @@ class SignalOutcome:
         return self.fill_price * self.fill_quantity
 
     @property
+    def position_value(self) -> Decimal:
+        """Calculate position value (entry_price * position_size)."""
+        return self.entry_price * self.position_size
+
+    @property
     def is_filled(self) -> bool:
         """Check if outcome represents a complete fill."""
         return self.status == SignalOutcomeStatus.FILLED
 
     @property
+    def is_closed(self) -> bool:
+        """Check if position is closed (has exit data)."""
+        return self.status == SignalOutcomeStatus.CLOSED or self.exit_price is not None
+
+    @property
     def has_signal_match(self) -> bool:
         """Check if this outcome is matched to a signal."""
         return self.signal_id is not None
+
+    @property
+    def realized_pnl(self) -> Decimal | None:
+        """Calculate realized PnL if position is closed."""
+        if self.exit_price is None or self.pnl is None:
+            return None
+        return self.pnl
+
+    @property
+    def unrealized_pnl(self) -> Decimal | None:
+        """Calculate unrealized PnL based on current price (if available in metadata)."""
+        current_price = self.metadata.get("current_price")
+        if current_price is None or self.exit_price is not None:
+            return None
+        current = Decimal(str(current_price))
+        if self.direction == "LONG":
+            return (current - self.entry_price) * self.position_size * self.leverage
+        else:
+            return (self.entry_price - current) * self.position_size * self.leverage
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization.
@@ -128,7 +234,9 @@ class SignalOutcome:
             "signal_id": str(self.signal_id) if self.signal_id else None,
             "order_id": self.order_id,
             "symbol": self.symbol,
+            "token": self.token,
             "side": self.side,
+            "direction": self.direction,
             "fill_price": str(self.fill_price),
             "fill_quantity": str(self.fill_quantity),
             "fill_timestamp": self.fill_timestamp.isoformat(),
@@ -138,6 +246,16 @@ class SignalOutcome:
             "status": self.status.value,
             "created_at": self.created_at.isoformat(),
             "metadata": self.metadata,
+            # RECON-001: New fields
+            "entry_price": str(self.entry_price),
+            "exit_price": str(self.exit_price) if self.exit_price is not None else None,
+            "entry_time": self.entry_time.isoformat(),
+            "exit_time": self.exit_time.isoformat()
+            if self.exit_time is not None
+            else None,
+            "leverage": str(self.leverage),
+            "entry_reason": self.entry_reason,
+            "position_size": str(self.position_size),
         }
 
     @classmethod
@@ -170,7 +288,9 @@ class SignalOutcome:
             signal_id=UUID(data["signal_id"]) if data.get("signal_id") else None,
             order_id=data.get("order_id", ""),
             symbol=data.get("symbol", ""),
+            token=data.get("token", ""),
             side=data.get("side", ""),
+            direction=data.get("direction", ""),
             fill_price=Decimal(data.get("fill_price", "0")),
             fill_quantity=Decimal(data.get("fill_quantity", "0")),
             fill_timestamp=(
@@ -188,6 +308,22 @@ class SignalOutcome:
                 else datetime.now(UTC)
             ),
             metadata=data.get("metadata", {}),
+            # RECON-001: New fields
+            entry_price=Decimal(data.get("entry_price", "0")),
+            exit_price=Decimal(data["exit_price"]) if data.get("exit_price") else None,
+            entry_time=(
+                datetime.fromisoformat(data["entry_time"])
+                if "entry_time" in data
+                else datetime.now(UTC)
+            ),
+            exit_time=(
+                datetime.fromisoformat(data["exit_time"])
+                if data.get("exit_time")
+                else None
+            ),
+            leverage=Decimal(data.get("leverage", "1.0")),
+            entry_reason=data.get("entry_reason", ""),
+            position_size=Decimal(data.get("position_size", "0")),
         )
 
     def to_db_dict(self) -> dict[str, Any]:
@@ -201,7 +337,9 @@ class SignalOutcome:
             "signal_id": str(self.signal_id) if self.signal_id else None,
             "order_id": self.order_id,
             "symbol": self.symbol,
+            "token": self.token,
             "side": self.side,
+            "direction": self.direction,
             "fill_price": float(self.fill_price),
             "fill_quantity": float(self.fill_quantity),
             "fill_timestamp": self.fill_timestamp,
@@ -211,6 +349,43 @@ class SignalOutcome:
             "status": self.status.value,
             "created_at": self.created_at,
             "metadata": self.metadata,
+            # RECON-001: New fields
+            "entry_price": float(self.entry_price),
+            "exit_price": float(self.exit_price)
+            if self.exit_price is not None
+            else None,
+            "entry_time": self.entry_time,
+            "exit_time": self.exit_time,
+            "leverage": float(self.leverage),
+            "entry_reason": self.entry_reason,
+            "position_size": float(self.position_size),
+        }
+
+    def to_notification_dict(self) -> dict[str, Any]:
+        """Convert to dictionary suitable for Discord notifications.
+
+        Returns:
+            Dictionary with notification-friendly formatting
+        """
+        return {
+            "outcome_id": str(self.outcome_id),
+            "signal_id": str(self.signal_id) if self.signal_id else None,
+            "order_id": self.order_id,
+            "symbol": self.symbol,
+            "token": self.token,
+            "direction": self.direction,
+            "entry_price": float(self.entry_price),
+            "exit_price": float(self.exit_price)
+            if self.exit_price is not None
+            else None,
+            "entry_time": self.entry_time.isoformat(),
+            "exit_time": self.exit_time.isoformat() if self.exit_time else None,
+            "pnl": float(self.pnl) if self.pnl is not None else None,
+            "leverage": float(self.leverage),
+            "position_size": float(self.position_size),
+            "entry_reason": self.entry_reason,
+            "status": self.status.value,
+            "is_closed": self.is_closed,
         }
 
 
@@ -277,6 +452,10 @@ class BybitFillEvent:
             fill_timestamp=datetime.fromtimestamp(self.exec_time / 1000, tz=UTC),
             fee=self.fee,
             status=SignalOutcomeStatus.FILLED,
+            # RECON-001: Set canonical fields from fill data
+            entry_price=self.price,
+            entry_time=datetime.fromtimestamp(self.exec_time / 1000, tz=UTC),
+            position_size=self.qty,
         )
 
 
@@ -310,3 +489,68 @@ class OutcomeMatchResult:
             "match_method": self.match_method,
             "error": self.error,
         }
+
+
+@dataclass
+class ReconciliationResult:
+    """Result of trade reconciliation between runtime and persistence.
+
+    Attributes:
+        total_executed: Total number of executed trades found
+        total_persisted: Total number of persisted outcomes found
+        matched_count: Number of trades with matching records
+        mismatched_trades: List of executed trades without persistence
+        missing_persistence: List of persisted records without execution
+        orphaned_records: List of orphaned persistence records
+        timestamp: When reconciliation was performed
+        errors: List of errors encountered during reconciliation
+    """
+
+    total_executed: int = 0
+    total_persisted: int = 0
+    matched_count: int = 0
+    mismatched_trades: list[dict[str, Any]] = field(default_factory=list)
+    missing_persistence: list[dict[str, Any]] = field(default_factory=list)
+    orphaned_records: list[dict[str, Any]] = field(default_factory=list)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
+    errors: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "total_executed": self.total_executed,
+            "total_persisted": self.total_persisted,
+            "matched_count": self.matched_count,
+            "mismatched_trades": self.mismatched_trades,
+            "missing_persistence": self.missing_persistence,
+            "orphaned_records": self.orphaned_records,
+            "timestamp": self.timestamp.isoformat(),
+            "errors": self.errors,
+        }
+
+    @property
+    def is_consistent(self) -> bool:
+        """Check if reconciliation shows consistent state."""
+        return (
+            self.total_executed == self.total_persisted
+            and len(self.mismatched_trades) == 0
+            and len(self.missing_persistence) == 0
+            and len(self.orphaned_records) == 0
+            and len(self.errors) == 0
+        )
+
+    def get_summary(self) -> str:
+        """Get human-readable summary of reconciliation."""
+        lines = [
+            "=== Trade Reconciliation Report ===",
+            f"Timestamp: {self.timestamp.isoformat()}",
+            f"Total Executed: {self.total_executed}",
+            f"Total Persisted: {self.total_persisted}",
+            f"Matched: {self.matched_count}",
+            f"Mismatched: {len(self.mismatched_trades)}",
+            f"Missing Persistence: {len(self.missing_persistence)}",
+            f"Orphaned Records: {len(self.orphaned_records)}",
+            f"Errors: {len(self.errors)}",
+            f"Status: {'CONSISTENT' if self.is_consistent else 'INCONSISTENT'}",
+        ]
+        return "\n".join(lines)
