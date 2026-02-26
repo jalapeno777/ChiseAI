@@ -46,7 +46,7 @@ def check_critical_environment() -> None:
         # But warn if neither variable is set
         if not result["present"]:
             print(
-                f"WARN: No Redis host configured. Using default: host.docker.internal:6380",
+                "WARN: No Redis host configured. Using default: host.docker.internal:6380",
                 file=sys.stderr,
             )
 
