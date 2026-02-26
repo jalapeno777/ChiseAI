@@ -71,6 +71,10 @@ logging.basicConfig(
 logger = logging.getLogger("reflection_runner")
 
 
+# Feature flag configuration
+FEATURE_FLAG_KEY = "chise:feature_flags:governance:reflection_enabled"
+
+
 def get_redis_client() -> Optional[Any]:
     """Get Redis client from environment or return None."""
     try:
@@ -95,6 +99,98 @@ def get_redis_client() -> Optional[Any]:
     except Exception as e:
         logger.warning(f"Could not connect to Redis: {e}")
         return None
+
+
+def check_feature_flag(redis_client: Optional[Any]) -> bool:
+    """
+    Check if reflection runner feature flag is enabled.
+
+    Returns True if enabled, False otherwise.
+    Safe default: OFF (disabled) when flag is not set or Redis unavailable.
+    """
+    if redis_client is None:
+        logger.warning(
+            "Redis unavailable - feature flag check failed, defaulting to disabled"
+        )
+        return False
+
+    try:
+        value = redis_client.get(FEATURE_FLAG_KEY)
+        if value is None:
+            logger.info(
+                f"Feature flag {FEATURE_FLAG_KEY} not set - defaulting to disabled"
+            )
+            return False
+
+        is_enabled = value.lower() in ("true", "1", "yes", "enabled")
+        logger.info(f"Feature flag {FEATURE_FLAG_KEY} = {value} (enabled={is_enabled})")
+        return is_enabled
+    except Exception as e:
+        logger.error(f"Error checking feature flag: {e}")
+        return False
+
+
+def set_feature_flag(redis_client: Optional[Any], enabled: bool) -> bool:
+    """
+    Set the reflection runner feature flag.
+
+    Args:
+        redis_client: Redis client instance
+        enabled: True to enable, False to disable
+
+    Returns:
+        True if successful, False otherwise
+    """
+    if redis_client is None:
+        logger.error("Redis unavailable - cannot set feature flag")
+        return False
+
+    try:
+        value = "true" if enabled else "false"
+        redis_client.set(FEATURE_FLAG_KEY, value)
+        logger.info(f"Feature flag {FEATURE_FLAG_KEY} set to {value}")
+        return True
+    except Exception as e:
+        logger.error(f"Error setting feature flag: {e}")
+        return False
+
+
+def get_feature_flag_status(redis_client: Optional[Any]) -> dict:
+    """
+    Get detailed feature flag status.
+
+    Returns dict with:
+        - key: Redis key used
+        - enabled: Current state (bool)
+        - raw_value: Raw value from Redis (or None)
+        - default: Whether using default value (bool)
+    """
+    status = {
+        "key": FEATURE_FLAG_KEY,
+        "enabled": False,
+        "raw_value": None,
+        "default": True,
+    }
+
+    if redis_client is None:
+        status["error"] = "Redis unavailable"
+        return status
+
+    try:
+        value = redis_client.get(FEATURE_FLAG_KEY)
+        status["raw_value"] = value
+
+        if value is None:
+            status["enabled"] = False
+            status["default"] = True
+        else:
+            status["enabled"] = value.lower() in ("true", "1", "yes", "enabled")
+            status["default"] = False
+
+    except Exception as e:
+        status["error"] = str(e)
+
+    return status
 
 
 def get_qdrant_client() -> Optional[Any]:
@@ -301,7 +397,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Run micro-reflection
+  # Run micro-reflection (requires --enable first or use --dry-run)
   %(prog)s --story-id ST-TEST-001 --type micro --action "tool_call" --result "success"
   
   # Run meso-reflection
@@ -313,8 +409,13 @@ Examples:
   # Validate artifact schema
   %(prog)s --validate artifact.json
   
-  # Dry run (no external storage)
+  # Dry run (no external storage, bypasses feature flag)
   %(prog)s --story-id ST-TEST-001 --type meso --what-changed "Test" --dry-run
+  
+  # Feature flag management
+  %(prog)s --status              # Check if reflection runner is enabled
+  %(prog)s --enable              # Enable reflection runner
+  %(prog)s --disable             # Disable reflection runner
         """,
     )
 
@@ -413,18 +514,70 @@ Examples:
         action="store_true",
         help="Enable verbose logging",
     )
+    parser.add_argument(
+        "--enable",
+        action="store_true",
+        help="Enable reflection runner (sets feature flag to true)",
+    )
+    parser.add_argument(
+        "--disable",
+        action="store_true",
+        help="Disable reflection runner (sets feature flag to false)",
+    )
+    parser.add_argument(
+        "--status",
+        action="store_true",
+        help="Check feature flag status and exit",
+    )
 
     args = parser.parse_args()
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
+    # Handle feature flag management commands
+    if args.enable or args.disable or args.status:
+        redis_client = get_redis_client()
+
+        if args.status:
+            status = get_feature_flag_status(redis_client)
+            print(f"Feature Flag Status:")
+            print(f"  Key: {status['key']}")
+            print(f"  Enabled: {status['enabled']}")
+            print(f"  Raw Value: {status['raw_value']}")
+            print(f"  Using Default: {status['default']}")
+            if "error" in status:
+                print(f"  Error: {status['error']}")
+            sys.exit(0)
+
+        if args.enable:
+            if redis_client is None:
+                logger.error("Cannot enable: Redis connection failed")
+                sys.exit(1)
+            if set_feature_flag(redis_client, True):
+                print("Reflection runner enabled successfully")
+                sys.exit(0)
+            else:
+                sys.exit(1)
+
+        if args.disable:
+            if redis_client is None:
+                logger.error("Cannot disable: Redis connection failed")
+                sys.exit(1)
+            if set_feature_flag(redis_client, False):
+                print("Reflection runner disabled successfully")
+                sys.exit(0)
+            else:
+                sys.exit(1)
+
     if args.validate:
         success = validate_schema(args.validate)
         sys.exit(0 if success else 1)
 
     if not args.type:
-        parser.error("--type is required (unless using --validate)")
+        parser.error(
+            "--type is required (unless using --validate, --enable, --disable, or --status)"
+        )
 
     if args.type == "micro":
         if not args.story_id:
@@ -456,6 +609,13 @@ Examples:
 
         if redis_client is None:
             logger.error("Redis connection failed. Use --dry-run for testing.")
+            sys.exit(1)
+
+        # Check feature flag - blocks execution if disabled
+        if not check_feature_flag(redis_client):
+            logger.error(
+                "Reflection runner is disabled. Use --enable to activate or --dry-run for testing."
+            )
             sys.exit(1)
 
     loops = ReflectionLoops(redis_client=redis_client, qdrant_client=qdrant_client)
