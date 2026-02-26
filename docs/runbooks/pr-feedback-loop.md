@@ -345,6 +345,192 @@ The feedback loop integrates with the PR lifecycle system:
 3. Weekly analysis generates suggestions
 4. Suggestions inform auto-approval criteria adjustments
 
+## Retry Handler
+
+The retry handler (`scripts/pr_lifecycle/retry_handler.py`) enables agents to retry declined PRs.
+
+### Retry Eligibility
+
+A PR is eligible for retry if:
+- It was declined (not rejected for code quality issues)
+- Within 72 hours of decline
+- Has not exceeded 3 retry attempts
+- Has new commits (fixes) since decline
+
+### Using /retry Comment
+
+Agents can retry a declined PR by commenting:
+
+```
+/retry
+Fixed the following issues:
+- Corrected the logic error in validation
+- Added missing test coverage
+- Updated documentation
+```
+
+### Retry Commands
+
+```bash
+# Check retry eligibility
+python3 scripts/pr_lifecycle/retry_handler.py check \
+    --pr-number 123 \
+    --head-sha abc123
+
+# Initiate a retry
+python3 scripts/pr_lifecycle/retry_handler.py initiate \
+    --pr-number 123 \
+    --story-id ST-TEST-001 \
+    --triggered-by agent-1 \
+    --fixes-description "Fixed validation logic" \
+    --head-sha abc123
+
+# Complete a retry (mark as success/failure)
+python3 scripts/pr_lifecycle/retry_handler.py complete \
+    --pr-number 123 \
+    --attempt-number 1 \
+    --success
+
+# Get retry metrics
+python3 scripts/pr_lifecycle/retry_handler.py metrics --days 30
+
+# Identify common failure patterns
+python3 scripts/pr_lifecycle/retry_handler.py patterns --days 30
+```
+
+## Agent Feedback Mechanism
+
+When PRs are declined, agents receive actionable feedback via Redis.
+
+### Feedback Structure
+
+Each feedback includes:
+- **Decline reason**: High-level reason for decline
+- **Specific issues**: Detailed list of problems found
+- **Suggested fixes**: Actionable recommendations
+- **Retry eligibility**: Whether the PR can be retried
+- **Documentation links**: Relevant documentation
+
+### Feedback Latency
+
+Target: <30 seconds from decline to agent notification
+
+### Sending Feedback
+
+```python
+from feedback_loop import FeedbackLoop
+
+feedback = FeedbackLoop()
+feedback.send_agent_feedback(
+    pr_number=123,
+    story_id="ST-TEST-001",
+    agent_name="agent-1",
+    decline_reason="Architecture mismatch",
+    specific_issues=[
+        "Solution doesn't align with system architecture",
+        "Missing error handling for edge cases",
+    ],
+    suggested_fixes=[
+        "Use the existing service layer pattern",
+        "Add try/except blocks for database operations",
+    ],
+    retry_eligible=True,
+    retry_conditions=[
+        "Must use service layer pattern",
+        "Must have 80%+ test coverage",
+    ],
+)
+```
+
+### Retrieving Feedback
+
+```bash
+# Get feedback for an agent (via Redis)
+redis-cli LRANGE bmad:chiseai:pr:feedback:agent:agent-1:feedbacks 0 9
+```
+
+## Monthly Reports
+
+Monthly reports provide comprehensive review accuracy and agent performance metrics.
+
+### Report Contents
+
+- **Volume metrics**: Total, merged, declined, rejected, abandoned, escalated PRs
+- **Review accuracy**: % of reviews that were correct (not rolled back)
+- **Agent performance**: Success rates per agent
+- **Time metrics**: Average and P95 time to merge
+- **Retry metrics**: Total retries, success rate
+- **Feedback metrics**: Number of feedbacks sent, average latency
+
+### Generating Monthly Reports
+
+```python
+from feedback_loop import FeedbackLoop
+
+feedback = FeedbackLoop()
+report = feedback.generate_monthly_report()
+
+print(f"Review Accuracy: {report.review_accuracy:.1f}%")
+print(f"Top Agent: {max(report.agent_performance.items(), key=lambda x: x[1]['success_rate'])}")
+```
+
+### Monthly Report Schedule
+
+Monthly reports are automatically generated on the 1st of each month at 09:00 UTC via Woodpecker cron job.
+
+## Outcome States
+
+The system tracks the following PR outcome states:
+
+| State | Description |
+|-------|-------------|
+| `merged` | PR was successfully merged |
+| `declined` | PR was closed after review (approach rejected) |
+| `rejected` | PR was rejected for code quality issues |
+| `abandoned` | PR was closed without review (inactivity) |
+| `escalated` | PR was forwarded to human review |
+| `rolled_back` | Merged PR was subsequently rolled back |
+
+### Recording Outcomes
+
+```python
+from outcome_tracker import OutcomeTracker
+
+tracker = OutcomeTracker()
+
+# Record a decline
+tracker.record_declined(
+    pr_number=123,
+    story_id="ST-TEST-001",
+    branch="feature/test",
+    head_sha="abc123",
+    opened_by_agent="agent-1",
+    reviewer="merlin",
+    decline_reason="Architecture mismatch",
+)
+
+# Record abandonment
+tracker.record_abandoned(
+    pr_number=124,
+    story_id="ST-TEST-002",
+    branch="feature/test-2",
+    head_sha="def456",
+    opened_by_agent="agent-2",
+    abandonment_reason="Inactive for 30 days",
+)
+
+# Record escalation
+tracker.record_escalated(
+    pr_number=125,
+    story_id="ST-TEST-003",
+    branch="feature/test-3",
+    head_sha="ghi789",
+    opened_by_agent="agent-3",
+    escalated_to="human-reviewer",
+    escalation_reason="Complex security implications",
+)
+```
+
 ## Future Enhancements
 
 Planned improvements:
@@ -353,6 +539,8 @@ Planned improvements:
 - Integration with incident response system
 - Historical trend analysis
 - Peer comparison metrics
+- Retry success prediction
+- Automated feedback generation
 
 ## Support
 
