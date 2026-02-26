@@ -15,6 +15,7 @@ import os
 import subprocess
 import sys
 import urllib.request
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -121,9 +122,6 @@ class RuleAdjustmentSuggestion:
             applied_at=data.get("applied_at", ""),
             applied_by=data.get("applied_by", ""),
         )
-
-
-from dataclasses import dataclass
 
 
 @dataclass
@@ -414,8 +412,8 @@ class FeedbackLoop:
         key = self._suggestion_key(suggestion.suggestion_id)
         data = suggestion.to_dict()
 
-        for field, value in data.items():
-            _redis_cli("HSET", key, field, str(value))
+        for field_name, value in data.items():
+            _redis_cli("HSET", key, field_name, str(value))
 
         _redis_cli("EXPIRE", key, str(REPORT_TTL_SECONDS))
 
@@ -574,8 +572,8 @@ class FeedbackLoop:
         key = self._report_key(report.report_id)
         data = report.to_dict()
 
-        for field, value in data.items():
-            _redis_cli("HSET", key, field, str(value))
+        for field_name, value in data.items():
+            _redis_cli("HSET", key, field_name, str(value))
 
         _redis_cli("EXPIRE", key, str(REPORT_TTL_SECONDS))
 
@@ -607,9 +605,6 @@ class FeedbackLoop:
         if not INFLUXDB_URL or not INFLUXDB_TOKEN:
             print("InfluxDB not configured, skipping export", file=sys.stderr)
             return False
-
-        timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-
         # Build line protocol
         lines = [
             f"pr_metrics,period=daily total_prs={metrics.total_prs}i,merged_prs={metrics.merged_prs}i,"
