@@ -432,22 +432,47 @@ def check_g7_observability(r: redis.Redis) -> Dict[str, Any]:
 
 
 def check_g8_pipeline(r: redis.Redis) -> Dict[str, Any]:
-    """G8: End-to-End Pipeline"""
+    """G8: End-to-End Pipeline - Burn-in Verdict Integration
+
+    Reads burn-in verdict from Redis string key bmad:chiseai:burnin:verdict.
+    Verdict values: "GO" or "NO-GO".
+    Verdict is authoritative for G8 status.
+    """
     try:
+        # Read burn-in verdict from Redis (stored as STRING, not hash)
+        verdict = r.get("bmad:chiseai:burnin:verdict")
+
+        # Get pipeline counts for context
         signals = len(r.keys("bmad:chiseai:signals:*"))
         outcomes = r.scard("bmad:chiseai:outcomes:index")
 
-        if signals > 0 and outcomes > 0:
+        if verdict is None:
+            # No verdict found - burn-in not completed
+            return {
+                "gate": "G8",
+                "status": "❓ UNKNOWN",
+                "detail": "No burn-in verdict found - burn-in not completed",
+            }
+        elif verdict == "GO":
+            # Burn-in passed - pipeline approved
             return {
                 "gate": "G8",
                 "status": "✅ PASS",
-                "detail": f"Flow working: {signals} signals → {outcomes} outcomes",
+                "detail": f"Burn-in verdict: GO | Pipeline: {signals} signals → {outcomes} outcomes",
+            }
+        elif verdict == "NO-GO":
+            # Burn-in failed - pipeline halted
+            return {
+                "gate": "G8",
+                "status": "❌ FAIL",
+                "detail": "Burn-in verdict: NO-GO | Pipeline halted",
             }
         else:
+            # Unexpected verdict value
             return {
                 "gate": "G8",
                 "status": "⚠️ CHECK",
-                "detail": f"Flow incomplete: {signals} signals, {outcomes} outcomes",
+                "detail": f"Unexpected verdict: '{verdict}' | Pipeline: {signals} signals → {outcomes} outcomes",
             }
     except redis.RedisError as e:
         logger.error(f"Redis error in G8: {e}")
