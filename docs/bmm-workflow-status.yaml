@@ -8,6 +8,24 @@ metadata:
   last_updated: "2026-02-26T00:00:00Z"
   recent_changes:
     - timestamp: "2026-02-26T00:00:00Z"
+      actor: jarvis
+      action: truth_sync_correction
+      description: "ST-AUTO-004/005 truth-sync: Stories confirmed in PLANNED status with NO implementation started. Prior assumptions of partial progress corrected. Dependencies on ST-AUTO-001/002/003 must complete first."
+      story_ids: [ST-AUTO-004, ST-AUTO-005]
+      epic_id: EP-AUTO-GIT-001
+      correction_type: status_clarification
+      previous_assumption: "Partial implementation existed"
+      actual_state:
+        ST-AUTO-004:
+          status: planned
+          implementation_started: false
+          files_created: []
+        ST-AUTO-005:
+          status: planned
+          implementation_started: false
+          files_created: []
+      impact: "ST-AUTO-006 Batch 1 can proceed with clear dependency chain"
+    - timestamp: "2026-02-26T00:00:00Z"
       actor: merlin
       action: merge_to_main
       description: "ST-HARDEN-001: Memory Sweep Scheduling Runbook merged to main"
