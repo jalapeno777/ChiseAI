@@ -92,8 +92,84 @@ def safe_int(value: Any, default: int = 0) -> int:
         return default
 
 
+def validate_outcome_data(r: redis.Redis) -> Dict[str, Any]:
+    """Validate that outcome data exists and is recent.
+
+    Returns validation status and warnings about data quality.
+    """
+    try:
+        outcomes = r.smembers("bmad:chiseai:outcomes:index")
+
+        if not outcomes:
+            return {
+                "valid": False,
+                "status": "NO_DATA",
+                "warning": "No outcome data found - trading may not be active",
+                "recommendation": "Verify trading system is running and recording outcomes",
+                "outcome_count": 0,
+                "recent_count": 0,
+            }
+
+        # Check for recent outcomes (within 24 hours)
+        recent_count = 0
+        current_time = datetime.now(timezone.utc).timestamp()
+
+        for outcome_id in list(outcomes)[:20]:  # Sample first 20
+            try:
+                outcome = r.hgetall(f"bmad:chiseai:outcomes:{outcome_id}")
+                if outcome:
+                    timestamp = outcome.get("timestamp") or outcome.get("created_at")
+                    if timestamp:
+                        try:
+                            outcome_time = float(timestamp)
+                            if current_time - outcome_time < 86400:  # Within 24h
+                                recent_count += 1
+                        except (ValueError, TypeError):
+                            pass
+            except Exception:
+                pass
+
+        outcome_count = len(outcomes)
+
+        if recent_count == 0 and outcome_count > 0:
+            return {
+                "valid": True,
+                "status": "STALE_DATA",
+                "warning": f"{outcome_count} outcomes but none recent - data may be stale",
+                "recommendation": "Check if trading is still active",
+                "outcome_count": outcome_count,
+                "recent_count": 0,
+            }
+
+        return {
+            "valid": True,
+            "status": "HEALTHY",
+            "warning": None,
+            "recommendation": None,
+            "outcome_count": outcome_count,
+            "recent_count": recent_count,
+        }
+    except Exception as e:
+        logger.error(f"Outcome validation error: {e}")
+        return {
+            "valid": False,
+            "status": "ERROR",
+            "warning": f"Could not validate outcome data: {e}",
+            "recommendation": "Check Redis connectivity",
+            "outcome_count": 0,
+            "recent_count": 0,
+        }
+
+
 def calculate_pnl(r: redis.Redis) -> Dict[str, Any]:
-    """Calculate daily PnL from outcomes with robust error handling."""
+    """Calculate daily PnL from outcomes with robust error handling and validation.
+
+    Self-validation: Checks that outcome data exists and is recent.
+    Reports warnings when data may be stale or incomplete.
+    """
+    # First validate the data
+    validation = validate_outcome_data(r)
+
     try:
         # Get outcomes from last 24h
         outcomes = r.smembers("bmad:chiseai:outcomes:index")
@@ -106,6 +182,9 @@ def calculate_pnl(r: redis.Redis) -> Dict[str, Any]:
                 "losses": 0,
                 "win_rate": 0.0,
                 "total_trades": 0,
+                "data_status": validation["status"],
+                "data_warning": validation.get("warning"),
+                "data_recommendation": validation.get("recommendation"),
             }
 
         total_pnl = 0.0
@@ -157,13 +236,34 @@ def calculate_pnl(r: redis.Redis) -> Dict[str, Any]:
             "losses": losses,
             "win_rate": round(win_rate, 1),
             "total_trades": total_trades,
+            "data_status": validation["status"],
+            "data_warning": validation.get("warning"),
+            "data_recommendation": validation.get("recommendation"),
         }
     except redis.RedisError as e:
         logger.error(f"Redis error during PnL calculation: {e}")
-        return {"pnl": 0.0, "wins": 0, "losses": 0, "win_rate": 0.0, "total_trades": 0}
+        return {
+            "pnl": 0.0,
+            "wins": 0,
+            "losses": 0,
+            "win_rate": 0.0,
+            "total_trades": 0,
+            "data_status": "ERROR",
+            "data_warning": f"Redis error: {e}",
+            "data_recommendation": "Check Redis connectivity",
+        }
     except Exception as e:
         logger.error(f"PnL calc error: {e}")
-        return {"pnl": 0.0, "wins": 0, "losses": 0, "win_rate": 0.0, "total_trades": 0}
+        return {
+            "pnl": 0.0,
+            "wins": 0,
+            "losses": 0,
+            "win_rate": 0.0,
+            "total_trades": 0,
+            "data_status": "ERROR",
+            "data_warning": f"Calculation error: {e}",
+            "data_recommendation": "Check outcome data format",
+        }
 
 
 def get_drawdown(r: redis.Redis) -> float:
@@ -224,11 +324,24 @@ def get_incidents_24h(r: redis.Redis) -> int:
 def format_executive_summary(
     pnl: Dict, drawdown: float, ece: str, incidents: int
 ) -> str:
-    """Format executive summary message."""
+    """Format executive summary message with data validation warnings."""
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
     # Determine PnL emoji
     pnl_emoji = "🟢" if pnl["pnl"] >= 0 else "🔴"
+
+    # Get data validation info
+    data_status = pnl.get("data_status", "UNKNOWN")
+    data_warning = pnl.get("data_warning")
+    data_recommendation = pnl.get("data_recommendation")
+
+    # Status emoji for data
+    status_emoji = {
+        "HEALTHY": "✅",
+        "STALE_DATA": "⏰",
+        "NO_DATA": "❓",
+        "ERROR": "❌",
+    }.get(data_status, "❓")
 
     lines = [
         f"**📈 Daily Executive Summary** | {timestamp}",
@@ -245,8 +358,21 @@ def format_executive_summary(
         f"**Operations:**",
         f"• Incidents (24h): {incidents}",
         f"",
-        f"_Next summary tomorrow_",
+        f"**Data Quality:** {status_emoji} {data_status}",
     ]
+
+    # Add warnings if present
+    if data_warning:
+        lines.append(f"⚠️ {data_warning}")
+    if data_recommendation:
+        lines.append(f"💡 {data_recommendation}")
+
+    lines.extend(
+        [
+            f"",
+            f"_Next summary tomorrow_",
+        ]
+    )
 
     return "\n".join(lines)
 
