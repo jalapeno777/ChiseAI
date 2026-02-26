@@ -27,9 +27,32 @@ DISCORD_BOT_TOKEN=your_bot_token_here
 # Discord Channel ID (for monitoring alerts)
 DISCORD_DEVELOPMENT_CHANNEL_ID=your_channel_id_here
 
-# Redis Connection (defaults shown)
-REDIS_HOST=host.docker.internal
-REDIS_PORT=6380
+# Redis Connection for Monitoring (container context per AGENTS.md)
+# Monitoring scripts always use host.docker.internal:6380 by default
+# These can be overridden if needed:
+MONITORING_REDIS_HOST=host.docker.internal
+MONITORING_REDIS_PORT=6380
+```
+
+## Redis Configuration for Container Context
+
+Per AGENTS.md, monitoring scripts run in container context and use:
+- Host: `host.docker.internal`
+- Port: `6380`
+
+### Environment Variable Precedence
+
+Monitoring scripts check Redis connection settings in this order:
+1. `MONITORING_REDIS_HOST` / `MONITORING_REDIS_PORT` (monitoring-specific)
+2. `REDIS_HOST` / `REDIS_PORT` (general app settings)
+3. Defaults: `host.docker.internal` / `6380`
+
+### Verification
+
+Test connection from container:
+```bash
+redis-cli -h host.docker.internal -p 6380 ping
+# Expected: PONG
 ```
 
 ## Enhanced Monitoring (New for ACTIVATION-001)
@@ -189,8 +212,9 @@ All monitoring logs are stored in:
 ### Redis connection errors
 
 1. Verify Redis is running: `redis-cli -h host.docker.internal -p 6380 ping`
-2. Check `REDIS_HOST` and `REDIS_PORT` in `.env`
+2. Check `MONITORING_REDIS_HOST` and `MONITORING_REDIS_PORT` in `.env` (monitoring-specific)
 3. For container context, use `host.docker.internal` not `localhost`
+4. If you need monitoring to use different Redis than the app, set `MONITORING_REDIS_*` vars
 
 ### Scripts return non-zero exit codes
 
