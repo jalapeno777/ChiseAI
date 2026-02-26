@@ -171,14 +171,20 @@ class TestDiscordEnvLoading:
 
     def test_load_discord_config_without_guild_id(self):
         """Test loading Discord config without guild restriction."""
-        # Must clear=True to remove any existing DISCORD_GUILD_ID from environment
-        with patch.dict(
-            os.environ,
-            {
-                "DISCORD_WEBHOOK_URL": "https://discord.com/api/webhooks/test",
-            },
-            clear=True,
-        ):
+        from config.env_loader import discord_loader
+
+        with patch.object(discord_loader, "get_str") as mock_get_str:
+            # Configure mock to return values based on key
+            def side_effect(key, default=None):
+                values = {
+                    "BOT_TOKEN": None,
+                    "WEBHOOK_URL": "https://discord.com/api/webhooks/test",
+                    "DEFAULT_CHANNEL": "trading-signals",
+                    "GUILD_ID": None,
+                }
+                return values.get(key, default)
+
+            mock_get_str.side_effect = side_effect
             config = load_discord_config()
 
             assert config["webhook_url"] == "https://discord.com/api/webhooks/test"
@@ -187,7 +193,16 @@ class TestDiscordEnvLoading:
 
     def test_load_discord_config_defaults(self):
         """Test loading Discord config with default values."""
-        with patch.dict(os.environ, {}, clear=True):
+        from config.env_loader import discord_loader
+
+        with patch.object(discord_loader, "get_str") as mock_get_str:
+            # Configure mock to return default values (all None except default_channel)
+            def side_effect(key, default=None):
+                if key == "DEFAULT_CHANNEL":
+                    return default if default is not None else "trading-signals"
+                return default
+
+            mock_get_str.side_effect = side_effect
             config = load_discord_config()
 
             assert config["bot_token"] is None
