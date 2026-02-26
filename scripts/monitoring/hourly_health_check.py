@@ -6,43 +6,45 @@ Posts summary to Discord #development or logs locally if Discord unavailable.
 
 import os
 import sys
-import json
 import asyncio
 import logging
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from typing import Optional
 import redis
 
-# Setup logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+# Load .env file for cron environment
+env_path = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"
 )
+if os.path.exists(env_path):
+    with open(env_path, "r") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, value = line.split("=", 1)
+                os.environ.setdefault(key, value)
+
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Discord configuration from environment
 DISCORD_CHANNEL_ID = os.getenv("DISCORD_DEVELOPMENT_CHANNEL_ID", "")
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN", "")
+DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
+REDIS_HOST = os.getenv(
+    "MONITORING_REDIS_HOST", os.getenv("REDIS_HOST", "host.docker.internal")
+)
+REDIS_PORT = int(os.getenv("MONITORING_REDIS_PORT", os.getenv("REDIS_PORT", "6380")))
 
-# Redis configuration
-REDIS_HOST = os.getenv("REDIS_HOST", "host.docker.internal")
-REDIS_PORT = int(os.getenv("REDIS_PORT", "6380"))
 
-
-def get_redis_client() -> Optional[redis.Redis]:
-    """Get Redis client with error handling."""
+def get_redis():
     try:
-        return redis.Redis(
-            host=REDIS_HOST,
-            port=REDIS_PORT,
-            decode_responses=True,
-            socket_connect_timeout=5,
-        )
+        return redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
     except Exception as e:
-        logger.error(f"Redis connection failed: {e}")
+        logger.error(f"Redis error: {e}")
         return None
 
 
-def check_scheduler_health() -> dict:
+def check_scheduler_health():
     """Check if scheduler process is running."""
     import subprocess
 
@@ -64,7 +66,7 @@ def check_scheduler_health() -> dict:
         return {"status": "⚠️", "running": False, "detail": f"Check failed: {e}"}
 
 
-def check_kill_switch(r: redis.Redis) -> dict:
+def check_kill_switch(r: redis.Redis):
     """Check kill switch state."""
     try:
         enabled = r.hget("bmad:chiseai:kill_switch", "enabled")
@@ -80,7 +82,7 @@ def check_kill_switch(r: redis.Redis) -> dict:
         return {"status": "❌", "armed": False, "detail": f"Error: {e}"}
 
 
-def check_daily_loss(r: redis.Redis) -> dict:
+def check_daily_loss(r: redis.Redis):
     """Check daily loss limit."""
     try:
         max_loss = r.hget("bmad:chiseai:daily_loss_limit", "max_loss_percent")
@@ -109,7 +111,7 @@ def check_daily_loss(r: redis.Redis) -> dict:
         }
 
 
-def get_metrics(r: redis.Redis) -> dict:
+def get_metrics(r: redis.Redis):
     """Get key metrics."""
     try:
         signals = len(r.keys("bmad:chiseai:signals:*"))
@@ -122,11 +124,9 @@ def get_metrics(r: redis.Redis) -> dict:
         return {"signals": 0, "outcomes": 0, "keys": 0}
 
 
-def format_hourly_message(
-    scheduler: dict, kill_switch: dict, daily_loss: dict, metrics: dict
-) -> str:
+def format_hourly_message(scheduler, kill_switch, daily_loss, metrics):
     """Format hourly health message."""
-    timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
     lines = [
         f"**🔥 Burn-in Hourly Check** | {timestamp}",
@@ -144,32 +144,47 @@ def format_hourly_message(
 
 
 async def post_to_discord(message: str) -> bool:
-    """Post message to Discord, return True if successful."""
-    if not DISCORD_CHANNEL_ID or not DISCORD_BOT_TOKEN:
-        logger.warning("Discord not configured - logging locally")
-        return False
+    """Post message to Discord via webhook or bot API, return True if successful."""
+    import aiohttp
 
-    try:
-        import aiohttp
+    # Try webhook first (more reliable)
+    if DISCORD_WEBHOOK_URL:
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    DISCORD_WEBHOOK_URL, json={"content": message}
+                ) as resp:
+                    if resp.status in (200, 204):
+                        logger.info("Discord webhook post successful")
+                        return True
+                    else:
+                        logger.warning(f"Discord webhook failed: {resp.status}")
+        except Exception as e:
+            logger.warning(f"Discord webhook error: {e}")
 
-        url = f"https://discord.com/api/v10/channels/{DISCORD_CHANNEL_ID}/messages"
-        headers = {
-            "Authorization": f"Bot {DISCORD_BOT_TOKEN}",
-            "Content-Type": "application/json",
-        }
-        payload = {"content": message}
+    # Fall back to bot API
+    if DISCORD_CHANNEL_ID and DISCORD_BOT_TOKEN:
+        try:
+            url = f"https://discord.com/api/v10/channels/{DISCORD_CHANNEL_ID}/messages"
+            headers = {
+                "Authorization": f"Bot {DISCORD_BOT_TOKEN}",
+                "Content-Type": "application/json",
+            }
+            payload = {"content": message}
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, headers=headers, json=payload) as resp:
-                if resp.status == 200:
-                    logger.info("Discord post successful")
-                    return True
-                else:
-                    logger.error(f"Discord post failed: {resp.status}")
-                    return False
-    except Exception as e:
-        logger.error(f"Discord post error: {e}")
-        return False
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, headers=headers, json=payload) as resp:
+                    if resp.status == 200:
+                        logger.info("Discord bot post successful")
+                        return True
+                    else:
+                        logger.error(f"Discord bot post failed: {resp.status}")
+        except Exception as e:
+            logger.error(f"Discord bot post error: {e}")
+    else:
+        logger.warning("Discord not configured - no webhook URL or bot token")
+
+    return False
 
 
 def log_locally(message: str) -> str:
@@ -177,7 +192,7 @@ def log_locally(message: str) -> str:
     log_dir = "logs/monitoring"
     os.makedirs(log_dir, exist_ok=True)
 
-    timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     log_path = f"{log_dir}/hourly-{timestamp}.log"
 
     with open(log_path, "w") as f:
@@ -193,7 +208,7 @@ async def main():
     logger.info("Starting hourly health check")
 
     # Connect to Redis
-    r = get_redis_client()
+    r = get_redis()
     if not r:
         message = "❌ **Hourly Check Failed**\nRedis connection failed"
         log_path = log_locally(message)
