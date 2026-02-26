@@ -202,22 +202,52 @@ def check_g7_observability(r: redis.Redis):
 
 
 def check_g8_pipeline(r: redis.Redis):
-    """G8: End-to-End Pipeline"""
+    """G8: Burn-in Verdict Check - Reads verdict from Redis"""
     try:
-        signals = len(r.keys("bmad:chiseai:signals:*"))
-        outcomes = r.scard("bmad:chiseai:outcomes:index")
+        # Check for burn-in verdict in Redis
+        verdict_data = r.hgetall("bmad:chiseai:burn_in:verdict")
 
-        if signals > 0 and outcomes > 0:
+        if not verdict_data:
+            # Fallback: check signals/outcomes as before
+            signals = len(r.keys("bmad:chiseai:signals:*"))
+            outcomes = r.scard("bmad:chiseai:outcomes:index")
+
+            if signals > 0 and outcomes > 0:
+                return {
+                    "gate": "G8",
+                    "status": "✅ PASS",
+                    "detail": f"Flow working: {signals} signals → {outcomes} outcomes (no burn-in verdict)",
+                }
+            else:
+                return {
+                    "gate": "G8",
+                    "status": "⚠️ CHECK",
+                    "detail": f"Flow incomplete: {signals} signals, {outcomes} outcomes (no burn-in verdict)",
+                }
+
+        verdict = verdict_data.get("verdict", "UNKNOWN")
+        rationale = verdict_data.get("rationale", "No rationale provided")
+        timestamp = verdict_data.get("timestamp", "unknown")
+        incident_count = verdict_data.get("incident_count", "0")
+        critical_count = verdict_data.get("critical_count", "0")
+
+        if verdict == "GO":
             return {
                 "gate": "G8",
                 "status": "✅ PASS",
-                "detail": f"Flow working: {signals} signals → {outcomes} outcomes",
+                "detail": f"Burn-in verdict: GO ({incident_count} incidents, {critical_count} critical) at {timestamp}",
+            }
+        elif verdict == "NO-GO":
+            return {
+                "gate": "G8",
+                "status": "❌ FAIL",
+                "detail": f"Burn-in verdict: NO-GO - {rationale} at {timestamp}",
             }
         else:
             return {
                 "gate": "G8",
                 "status": "⚠️ CHECK",
-                "detail": f"Flow incomplete: {signals} signals, {outcomes} outcomes",
+                "detail": f"Burn-in verdict: {verdict} - {rationale} at {timestamp}",
             }
     except Exception as e:
         return {"gate": "G8", "status": "❌ FAIL", "detail": str(e)}
