@@ -372,7 +372,152 @@ print(f"Emergency approvers: {gate.emergency_approvers}")
 
 ---
 
+## Human Gate Module (ST-AUTO-004)
+
+The `human_gate.py` module provides a focused implementation for managing COMPLEX PR human approval with Redis integration.
+
+### Key Features
+
+- **Redis State Storage**: All approval states stored in Redis with configurable TTL
+- **Discord Notifications**: Rich embed notifications to #pr-reviews channel
+- **Reminder Scheduling**: Automatic reminders every 4 hours until reviewed
+- **Emergency Override**: Authorized emergency bypass with audit logging
+
+### Redis Key Schema
+
+| Key Pattern | Type | Description |
+|-------------|------|-------------|
+| `bmad:chiseai:pr:human_gate:{pr_number}:status` | STRING | Current approval status |
+| `bmad:chiseai:pr:human_gate:{pr_number}:reviewer` | STRING | Reviewer username |
+| `bmad:chiseai:pr:human_gate:{pr_number}:timestamp` | STRING | ISO timestamp of last action |
+| `bmad:chiseai:pr:human_gate:{pr_number}:emergency_override` | STRING | Emergency justification |
+| `bmad:chiseai:pr:human_gate:{pr_number}:reminder_count` | STRING | Number of reminders sent |
+| `bmad:chiseai:pr:human_gate:{pr_number}:history` | LIST | JSON history of all actions |
+
+### Usage Examples
+
+```python
+from scripts.pr_lifecycle.human_gate import HumanGate
+
+# Initialize gate
+gate = HumanGate(
+    discord_webhook_url="https://discord.com/api/webhooks/...",
+    emergency_approvers=["admin1", "admin2"],
+    approval_timeout_hours=48,
+    reminder_interval_hours=4,
+)
+
+# Check PR status
+result = await gate.check_pr_status(pr_number=123, files=["src/critical.py"])
+print(f"Can merge: {result.can_merge}")
+
+# Request human approval
+await gate.request_approval(
+    pr_number=123,
+    pr_title="Critical infrastructure update",
+    pr_author="developer1",
+    pr_url="https://gitea.example.com/pr/123",
+    files=["infrastructure/terraform/main.tf"],
+    gitreviewbot_summary="GitReviewBot analysis here...",
+)
+
+# Record approval
+await gate.record_approval(
+    pr_number=123,
+    approver="senior-reviewer",
+    reason="Infrastructure changes look good",
+)
+
+# Emergency override (for critical hotfixes)
+await gate.emergency_override(
+    pr_number=123,
+    approver="admin1",
+    justification="Production outage requires immediate fix",
+)
+```
+
+### CLI Usage
+
+```bash
+# Check PR status
+python scripts/pr_lifecycle/human_gate.py 123 --files file1.py file2.py
+
+# Dry run mode (no actual Discord notifications)
+python scripts/pr_lifecycle/human_gate.py 123 --dry-run
+```
+
+### Escalation Templates
+
+Discord notification templates are stored in:
+- `scripts/pr_lifecycle/escalation_templates/initial_escalation.md`
+- `scripts/pr_lifecycle/escalation_templates/reminder.md`
+- `scripts/pr_lifecycle/escalation_templates/approval_confirmation.md`
+- `scripts/pr_lifecycle/escalation_templates/rejection_notice.md`
+
+---
+
 ## API Reference
+
+### HumanGate
+
+```python
+class HumanGate:
+    def __init__(
+        self,
+        redis_client=None,
+        discord_webhook_url: str | None = None,
+        emergency_approvers: list[str] | None = None,
+        approval_timeout_hours: int = 48,
+        reminder_interval_hours: int = 4,
+        dry_run: bool = False,
+    )
+    
+    async def check_pr_status(
+        self, pr_number: int, files: list[str] | None = None
+    ) -> HumanGateResult
+    
+    async def request_approval(
+        self,
+        pr_number: int,
+        pr_title: str,
+        pr_author: str,
+        pr_url: str,
+        files: list[str],
+        gitreviewbot_summary: str | None = None,
+    ) -> bool
+    
+    async def record_approval(
+        self,
+        pr_number: int,
+        approver: str,
+        reason: str | None = None,
+    ) -> ApprovalRecord
+    
+    async def record_rejection(
+        self,
+        pr_number: int,
+        reviewer: str,
+        reason: str,
+    ) -> ApprovalRecord
+    
+    async def record_changes_requested(
+        self,
+        pr_number: int,
+        reviewer: str,
+        comments: str,
+    ) -> ApprovalRecord
+    
+    async def emergency_override(
+        self,
+        pr_number: int,
+        approver: str,
+        justification: str,
+    ) -> ApprovalRecord
+    
+    async def send_reminder(self, pr_number: int) -> bool
+    
+    async def clear_approval_state(self, pr_number: int) -> bool
+```
 
 ### ComplexPathGate
 

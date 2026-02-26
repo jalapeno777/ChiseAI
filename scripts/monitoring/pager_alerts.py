@@ -10,6 +10,13 @@ Posts immediately to Discord with @here mention.
 
 import os
 import sys
+
+# Add project root to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
+
+# Load .env for cron context (must be before other imports)
+from scripts.monitoring import load_env  # noqa: F401, E402
+
 import asyncio
 import logging
 import subprocess
