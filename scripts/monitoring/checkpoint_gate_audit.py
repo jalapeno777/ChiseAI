@@ -13,11 +13,24 @@ from datetime import datetime, timezone
 from typing import Optional, Dict, List
 import redis
 
+# Load .env file for cron environment
+env_path = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"
+)
+if os.path.exists(env_path):
+    with open(env_path, "r") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, value = line.split("=", 1)
+                os.environ.setdefault(key, value)
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 DISCORD_CHANNEL_ID = os.getenv("DISCORD_DEVELOPMENT_CHANNEL_ID", "")
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN", "")
+DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
 REDIS_HOST = os.getenv(
     "MONITORING_REDIS_HOST", os.getenv("REDIS_HOST", "host.docker.internal")
 )
@@ -254,28 +267,48 @@ def format_checkpoint_message(checks: List[Dict]):
 
 
 async def post_discord(message: str):
-    """Post to Discord."""
-    if not DISCORD_CHANNEL_ID or not DISCORD_BOT_TOKEN:
+    """Post to Discord via webhook or bot API."""
+    import aiohttp
+
+    # Try webhook first (more reliable)
+    if DISCORD_WEBHOOK_URL:
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    DISCORD_WEBHOOK_URL, json={"content": message}
+                ) as resp:
+                    if resp.status in (200, 204):
+                        logger.info("Discord webhook post successful")
+                        return True
+                    else:
+                        logger.warning(f"Discord webhook failed: {resp.status}")
+        except Exception as e:
+            logger.warning(f"Discord webhook error: {e}")
+
+    # Fall back to bot API
+    if DISCORD_CHANNEL_ID and DISCORD_BOT_TOKEN:
+        try:
+            url = f"https://discord.com/api/v10/channels/{DISCORD_CHANNEL_ID}/messages"
+            headers = {
+                "Authorization": f"Bot {DISCORD_BOT_TOKEN}",
+                "Content-Type": "application/json",
+            }
+
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    url, headers=headers, json={"content": message}
+                ) as resp:
+                    if resp.status == 200:
+                        logger.info("Discord bot post successful")
+                        return True
+                    else:
+                        logger.error(f"Discord bot post failed: {resp.status}")
+        except Exception as e:
+            logger.error(f"Discord bot error: {e}")
+    else:
         logger.warning("Discord not configured")
-        return False
 
-    try:
-        import aiohttp
-
-        url = f"https://discord.com/api/v10/channels/{DISCORD_CHANNEL_ID}/messages"
-        headers = {
-            "Authorization": f"Bot {DISCORD_BOT_TOKEN}",
-            "Content-Type": "application/json",
-        }
-
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                url, headers=headers, json={"content": message}
-            ) as resp:
-                return resp.status == 200
-    except Exception as e:
-        logger.error(f"Discord error: {e}")
-        return False
+    return False
 
 
 def log_local(message: str):
