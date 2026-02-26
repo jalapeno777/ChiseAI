@@ -10,7 +10,6 @@ This module tests:
 from __future__ import annotations
 
 import json
-import os
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -27,47 +26,22 @@ if src_path not in sys.path:
     sys.path.insert(0, src_path)
 
 # Import modules under test
-from outcome_tracker import (
-    DEFAULT_TTL_SECONDS,
-    PROutcome,
-    OutcomeTracker,
-    SuccessMetrics,
-    _utc_now,
-)
 from feedback_loop import (
     FeedbackLoop,
     RuleAdjustmentSuggestion,
     WeeklyReport,
 )
-from pr_lifecycle.metrics import (
-    PRMetric,
-    PRPipelineMetrics,
-    MetricsExporter,
-    get_grafana_query,
-    get_all_grafana_queries,
-)
-
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "src"))
-
-# Import modules under test
 from outcome_tracker import (
-    DEFAULT_TTL_SECONDS,
-    PROutcome,
     OutcomeTracker,
+    PROutcome,
     SuccessMetrics,
-    _utc_now,
 )
-from feedback_loop import (
-    FeedbackLoop,
-    RuleAdjustmentSuggestion,
-    WeeklyReport,
-)
+
 from pr_lifecycle.metrics import (
-    PRMetric,
-    PRPipelineMetrics,
     MetricsExporter,
-    get_grafana_query,
+    PRPipelineMetrics,
     get_all_grafana_queries,
+    get_grafana_query,
 )
 
 
