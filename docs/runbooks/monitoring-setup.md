@@ -21,6 +21,8 @@ export REDIS_PORT="6380"
 ```bash
 chmod +x scripts/monitoring/hourly_health_check.py
 chmod +x scripts/monitoring/checkpoint_gate_audit.py
+chmod +x scripts/monitoring/scheduler_heartbeat.py
+chmod +x scripts/monitoring/trading_scheduler.py
 ```
 
 ### 2. Install Python dependencies
@@ -28,12 +30,93 @@ chmod +x scripts/monitoring/checkpoint_gate_audit.py
 pip install redis aiohttp websockets
 ```
 
-### 3. Configure cron (hourly + 6-hourly)
+### 3. Scheduler Heartbeat Setup
+
+The scheduler heartbeat recorder ensures the trading scheduler is properly tracked in Redis for monitoring gates.
+
+#### Option A: Cron-based (Recommended)
+Run the heartbeat once per minute via cron:
+
+```bash
+# Edit crontab
+crontab -e
+
+# Add this line (runs every minute):
+* * * * * cd /home/tacopants/projects/ChiseAI && python3 scripts/monitoring/scheduler_heartbeat.py >> logs/monitoring/scheduler_heartbeat.log 2>&1
+```
+
+#### Option B: Daemon Mode
+Run as a background daemon with 30-second intervals:
+
+```bash
+# Start daemon
+python3 scripts/monitoring/trading_scheduler.py start
+
+# Check status
+python3 scripts/monitoring/trading_scheduler.py status
+
+# Stop daemon
+python3 scripts/monitoring/trading_scheduler.py stop
+```
+
+#### Option C: Systemd Service
+Create `/etc/systemd/system/chiseai-scheduler.service`:
+
+```ini
+[Unit]
+Description=ChiseAI Trading Scheduler Heartbeat
+After=network.target
+
+[Service]
+Type=simple
+User=chiseai
+WorkingDirectory=/home/tacopants/projects/ChiseAI
+ExecStart=/usr/bin/python3 scripts/monitoring/trading_scheduler.py --foreground
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start:
+```bash
+sudo systemctl enable chiseai-scheduler
+sudo systemctl start chiseai-scheduler
+sudo systemctl status chiseai-scheduler
+```
+
+#### Verification
+Check that heartbeat is being recorded:
+```bash
+# Check heartbeat hash
+redis-cli -h host.docker.internal -p 6380 HGETALL bmad:chiseai:scheduler:heartbeat
+
+# Check last seen timestamp
+redis-cli -h host.docker.internal -p 6380 GET bmad:chiseai:scheduler:last_seen
+```
+
+Expected output:
+```
+1) "timestamp"
+2) "2026-02-26T12:34:56.789012+00:00"
+3) "status"
+4) "running"
+5) "pid"
+6) "12345"
+7) "hostname"
+8) "your-hostname"
+```
+
+### 3. Configure cron (scheduler + hourly + 6-hourly)
 ```bash
 # Edit crontab
 crontab -e
 
 # Add these lines:
+# Scheduler heartbeat (every minute)
+* * * * * cd /home/tacopants/projects/ChiseAI && python3 scripts/monitoring/scheduler_heartbeat.py >> logs/monitoring/scheduler_heartbeat.log 2>&1
+
 # Hourly health check (at minute 0)
 0 * * * * cd /home/tacopants/projects/ChiseAI && python3 scripts/monitoring/hourly_health_check.py >> logs/monitoring/cron.log 2>&1
 
@@ -48,6 +131,9 @@ mkdir -p logs/monitoring
 
 ### 5. Test scripts manually
 ```bash
+# Test scheduler heartbeat
+python3 scripts/monitoring/scheduler_heartbeat.py
+
 # Test hourly check
 python3 scripts/monitoring/hourly_health_check.py
 

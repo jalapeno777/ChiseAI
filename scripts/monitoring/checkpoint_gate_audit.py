@@ -45,34 +45,64 @@ def get_redis():
         return None
 
 
-def check_g1_scheduler():
-    """G1: Scheduler Continuity"""
+def check_g1_scheduler(r: redis.Redis):
+    """G1: Scheduler Continuity - Check Redis heartbeat"""
+    from datetime import datetime, timezone, timedelta
+
     try:
-        result = subprocess.run(
-            ["ps", "aux"], capture_output=True, text=True, timeout=5
-        )
-        running = any(
-            "trading_activity" in line or "scheduler" in line
-            for line in result.stdout.split("\n")
-            if "grep" not in line
-        )
+        heartbeat = r.hgetall("bmad:chiseai:scheduler:heartbeat")
 
-        state_exists = os.path.exists("data/optimization_schedule.json")
-
-        if running and state_exists:
+        if not heartbeat:
             return {
                 "gate": "G1",
-                "status": "✅ PASS",
-                "detail": "Process running, state file exists",
+                "status": "❌ FAIL",
+                "detail": "No scheduler heartbeat in Redis",
             }
-        elif state_exists:
+
+        timestamp_str = heartbeat.get("timestamp", "")
+        status = heartbeat.get("status", "unknown")
+        uptime_seconds = heartbeat.get("uptime_seconds", "")
+
+        if not timestamp_str:
+            return {
+                "gate": "G1",
+                "status": "❌ FAIL",
+                "detail": "Invalid heartbeat data",
+            }
+
+        # Parse timestamp and check age
+        last_heartbeat = datetime.fromisoformat(timestamp_str)
+        now = datetime.now(timezone.utc)
+        age_seconds = (now - last_heartbeat).total_seconds()
+
+        # Consider healthy if heartbeat within 2 minutes and status is running
+        max_age = 120  # seconds
+
+        if status != "running":
+            return {
+                "gate": "G1",
+                "status": "❌ FAIL",
+                "detail": f"Scheduler status: {status}",
+            }
+
+        if age_seconds > max_age:
             return {
                 "gate": "G1",
                 "status": "⚠️ CHECK",
-                "detail": "State exists, process not running",
+                "detail": f"Heartbeat stale: {age_seconds:.0f}s old",
             }
-        else:
-            return {"gate": "G1", "status": "❌ FAIL", "detail": "No process or state"}
+
+        # Build detail message
+        detail_parts = [f"Heartbeat {age_seconds:.0f}s ago"]
+        if uptime_seconds:
+            detail_parts.append(f"uptime: {int(uptime_seconds) // 60}m")
+
+        return {
+            "gate": "G1",
+            "status": "✅ PASS",
+            "detail": ", ".join(detail_parts),
+        }
+
     except Exception as e:
         return {"gate": "G1", "status": "❌ FAIL", "detail": str(e)}
 
@@ -259,7 +289,7 @@ def run_all_checks():
         return [{"gate": "ALL", "status": "❌ FAIL", "detail": "Redis unavailable"}]
 
     checks = [
-        check_g1_scheduler(),
+        check_g1_scheduler(r),
         check_g2_signal_cadence(r),
         check_g3_data_flow(r),
         check_g4_kill_switch(r),

@@ -44,24 +44,62 @@ def get_redis():
         return None
 
 
-def check_scheduler_health():
-    """Check if scheduler process is running."""
-    import subprocess
+def check_scheduler_health(r: redis.Redis):
+    """Check if scheduler is healthy based on Redis heartbeat."""
+    from datetime import datetime, timezone, timedelta
 
     try:
-        result = subprocess.run(
-            ["ps", "aux"], capture_output=True, text=True, timeout=5
-        )
-        running = any(
-            "trading_activity" in line or "scheduler" in line
-            for line in result.stdout.split("\n")
-            if "grep" not in line
-        )
+        heartbeat = r.hgetall("bmad:chiseai:scheduler:heartbeat")
+
+        if not heartbeat:
+            return {
+                "status": "❌",
+                "running": False,
+                "detail": "No heartbeat found in Redis",
+            }
+
+        timestamp_str = heartbeat.get("timestamp", "")
+        status = heartbeat.get("status", "unknown")
+
+        if not timestamp_str:
+            return {
+                "status": "⚠️",
+                "running": False,
+                "detail": "Invalid heartbeat data",
+            }
+
+        # Parse timestamp and check age
+        last_heartbeat = datetime.fromisoformat(timestamp_str)
+        now = datetime.now(timezone.utc)
+        age_seconds = (now - last_heartbeat).total_seconds()
+
+        # Consider healthy if heartbeat within 2 minutes and status is running
+        max_age = 120  # seconds
+
+        if status != "running":
+            return {
+                "status": "❌",
+                "running": False,
+                "detail": f"Scheduler status: {status}",
+            }
+
+        if age_seconds > max_age:
+            return {
+                "status": "⚠️",
+                "running": False,
+                "detail": f"Heartbeat stale: {age_seconds:.0f}s old",
+            }
+
+        # Get uptime if available
+        uptime_str = heartbeat.get("uptime_seconds", "")
+        uptime_info = f", uptime: {int(uptime_str) // 60}m" if uptime_str else ""
+
         return {
-            "status": "✅" if running else "❌",
-            "running": running,
-            "detail": "Process active" if running else "Process not found",
+            "status": "✅",
+            "running": True,
+            "detail": f"Heartbeat {age_seconds:.0f}s ago{uptime_info}",
         }
+
     except Exception as e:
         return {"status": "⚠️", "running": False, "detail": f"Check failed: {e}"}
 
@@ -216,7 +254,7 @@ async def main():
         return 1
 
     # Run checks
-    scheduler = check_scheduler_health()
+    scheduler = check_scheduler_health(r)
     kill_switch = check_kill_switch(r)
     daily_loss = check_daily_loss(r)
     metrics = get_metrics(r)
