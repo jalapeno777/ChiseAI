@@ -10,7 +10,7 @@ import asyncio
 import subprocess
 import logging
 from datetime import datetime, timezone
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Any
 import redis
 
 # Load .env file for cron environment
@@ -201,56 +201,55 @@ def check_g7_observability(r: redis.Redis):
         return {"gate": "G7", "status": "❌ FAIL", "detail": str(e)}
 
 
-def check_g8_pipeline(r: redis.Redis):
-    """G8: Burn-in Verdict Check - Reads verdict from Redis"""
+def check_g8_pipeline(r: redis.Redis) -> Dict[str, Any]:
+    """G8: End-to-End Pipeline - Burn-in Verdict Integration
+
+    Reads burn-in verdict from Redis string key bmad:chiseai:burnin:verdict.
+    Verdict values: "GO" or "NO-GO".
+    Verdict is authoritative for G8 status.
+    """
     try:
-        # Check for burn-in verdict in Redis
-        verdict_data = r.hgetall("bmad:chiseai:burn_in:verdict")
+        # Read burn-in verdict from Redis (stored as STRING, not hash)
+        verdict = r.get("bmad:chiseai:burnin:verdict")
 
-        if not verdict_data:
-            # Fallback: check signals/outcomes as before
-            signals = len(r.keys("bmad:chiseai:signals:*"))
-            outcomes = r.scard("bmad:chiseai:outcomes:index")
+        # Get pipeline counts for context
+        signals = len(r.keys("bmad:chiseai:signals:*"))
+        outcomes = r.scard("bmad:chiseai:outcomes:index")
 
-            if signals > 0 and outcomes > 0:
-                return {
-                    "gate": "G8",
-                    "status": "✅ PASS",
-                    "detail": f"Flow working: {signals} signals → {outcomes} outcomes (no burn-in verdict)",
-                }
-            else:
-                return {
-                    "gate": "G8",
-                    "status": "⚠️ CHECK",
-                    "detail": f"Flow incomplete: {signals} signals, {outcomes} outcomes (no burn-in verdict)",
-                }
-
-        verdict = verdict_data.get("verdict", "UNKNOWN")
-        rationale = verdict_data.get("rationale", "No rationale provided")
-        timestamp = verdict_data.get("timestamp", "unknown")
-        incident_count = verdict_data.get("incident_count", "0")
-        critical_count = verdict_data.get("critical_count", "0")
-
-        if verdict == "GO":
+        if verdict is None:
+            # No verdict found - burn-in not completed
+            return {
+                "gate": "G8",
+                "status": "❓ UNKNOWN",
+                "detail": "No burn-in verdict found - burn-in not completed",
+            }
+        elif verdict == "GO":
+            # Burn-in passed - pipeline approved
             return {
                 "gate": "G8",
                 "status": "✅ PASS",
-                "detail": f"Burn-in verdict: GO ({incident_count} incidents, {critical_count} critical) at {timestamp}",
+                "detail": f"Burn-in verdict: GO | Pipeline: {signals} signals → {outcomes} outcomes",
             }
         elif verdict == "NO-GO":
+            # Burn-in failed - pipeline halted
             return {
                 "gate": "G8",
                 "status": "❌ FAIL",
-                "detail": f"Burn-in verdict: NO-GO - {rationale} at {timestamp}",
+                "detail": "Burn-in verdict: NO-GO | Pipeline halted",
             }
         else:
+            # Unexpected verdict value
             return {
                 "gate": "G8",
                 "status": "⚠️ CHECK",
-                "detail": f"Burn-in verdict: {verdict} - {rationale} at {timestamp}",
+                "detail": f"Unexpected verdict: '{verdict}' | Pipeline: {signals} signals → {outcomes} outcomes",
             }
+    except redis.RedisError as e:
+        logger.error(f"Redis error in G8: {e}")
+        return {"gate": "G8", "status": "❌ FAIL", "detail": "Redis error"}
     except Exception as e:
-        return {"gate": "G8", "status": "❌ FAIL", "detail": str(e)}
+        logger.error(f"G8 check error: {e}")
+        return {"gate": "G8", "status": "❌ FAIL", "detail": str(e)[:50]}
 
 
 def run_all_checks():
