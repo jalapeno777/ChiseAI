@@ -7,6 +7,48 @@ metadata:
   version: "2.5.3"
   last_updated: "2026-02-25T23:00:00Z"
   recent_changes:
+    - timestamp: "2026-02-26T00:00:00Z"
+      actor: jarvis
+      action: truth_sync_evidence_correction
+      description: "Forensic audit evidence correction: ST-AUTO-004/005/006 actual merge dates and metrics corrected based on independent git evidence check"
+      story_ids: [ST-AUTO-004, ST-AUTO-005, ST-AUTO-006]
+      epic_id: EP-AUTO-GIT-001
+      reconciliation_type: "evidence_correction"
+      corrections:
+        ST-AUTO-004:
+          previous_claim:
+            merge_date: "2026-02-21"
+            files_changed: 3
+            lines_added: 1764
+          actual_evidence:
+            merge_date: "2026-02-26"
+            files_changed: 10
+            lines_added: 4972
+            merge_commit: "02237f6"
+            pr_number: 276
+        ST-AUTO-005:
+          previous_claim:
+            merge_date: "2026-02-21"
+            files_changed: 3
+            lines_added: 1382
+          actual_evidence:
+            merge_date: "2026-02-26"
+            files_changed: 8
+            lines_added: 3099
+            merge_commit: "9205ab1"
+            pr_number: 277
+        ST-AUTO-006:
+          previous_claim:
+            merge_date: "2026-02-21"
+            files_changed: 1
+            lines_added: 709
+          actual_evidence:
+            merge_date: "2026-02-26"
+            files_changed: 12
+            lines_added: 3940
+            merge_commit: "1b98e00"
+            pr_number: null
+      notes: "Previous truth_sync_forensic_audit entry contained inaccurate metrics. This correction supersedes the previous entry with verified git evidence."
     - timestamp: "2026-02-25T23:59:00Z"
       actor: jarvis
       action: phase_2_kickoff_status_sync
