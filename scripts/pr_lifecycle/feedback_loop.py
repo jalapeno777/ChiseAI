@@ -15,6 +15,7 @@ import os
 import subprocess
 import sys
 import urllib.request
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -121,9 +122,6 @@ class RuleAdjustmentSuggestion:
             applied_at=data.get("applied_at", ""),
             applied_by=data.get("applied_by", ""),
         )
-
-
-from dataclasses import dataclass
 
 
 @dataclass

@@ -22,8 +22,12 @@ logger = logging.getLogger(__name__)
 
 DISCORD_CHANNEL_ID = os.getenv("DISCORD_DEVELOPMENT_CHANNEL_ID", "")
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN", "")
-REDIS_HOST = os.getenv("REDIS_HOST", "host.docker.internal")
-REDIS_PORT = int(os.getenv("REDIS_PORT", "6380"))
+# Monitoring scripts use container-safe defaults per AGENTS.md
+# Precedence: MONITORING_REDIS_* > REDIS_* > defaults
+REDIS_HOST = os.getenv(
+    "MONITORING_REDIS_HOST", os.getenv("REDIS_HOST", "host.docker.internal")
+)
+REDIS_PORT = int(os.getenv("MONITORING_REDIS_PORT", os.getenv("REDIS_PORT", "6380")))
 
 ALERT_STATE_KEY = "bmad:chiseai:monitoring:pager_alerts:last_check"
 
