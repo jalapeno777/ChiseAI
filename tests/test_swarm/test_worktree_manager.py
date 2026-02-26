@@ -5,6 +5,7 @@ Tests for worktree_manager.py
 Story: ST-AUTO-007
 """
 
+import datetime as dt
 import json
 import os
 import subprocess
@@ -152,7 +153,9 @@ class TestWorktreeManager(unittest.TestCase):
             self.manager.list_worktrees()
 
     @patch("subprocess.run")
-    def test_create_worktree_new_branch(self, mock_run):
+    @patch("pathlib.Path.mkdir")
+    @patch("pathlib.Path.exists", return_value=True)
+    def test_create_worktree_new_branch(self, mock_exists, mock_mkdir, mock_run):
         """Test creating worktree with new branch."""
         # Mock branch does not exist
         mock_run.side_effect = [
@@ -161,21 +164,20 @@ class TestWorktreeManager(unittest.TestCase):
             MagicMock(returncode=0, stdout="abc123"),  # rev-parse
         ]
 
-        with patch.object(self.manager.worktree_root, "mkdir"):
-            with patch.object(self.manager.worktree_root, "exists", return_value=True):
-                info = self.manager.create_worktree(
-                    story_id="ST-TEST-001",
-                    agent="test-agent",
-                    branch="feature/ST-TEST-001-test",
-                    base_ref="main",
-                )
+        info = self.manager.create_worktree(
+            story_id="ST-TEST-001",
+            agent="test-agent",
+            branch="feature/ST-TEST-001-test",
+            base_ref="main",
+        )
 
         self.assertEqual(info.story_id, "ST-TEST-001")
         self.assertEqual(info.agent, "test-agent")
         self.assertEqual(info.branch, "feature/ST-TEST-001-test")
 
     @patch("subprocess.run")
-    def test_create_worktree_existing_branch(self, mock_run):
+    @patch("pathlib.Path.exists", return_value=True)
+    def test_create_worktree_existing_branch(self, mock_exists, mock_run):
         """Test creating worktree with existing branch."""
         mock_run.side_effect = [
             MagicMock(returncode=0),  # Branch exists
@@ -183,12 +185,11 @@ class TestWorktreeManager(unittest.TestCase):
             MagicMock(returncode=0, stdout="abc123"),  # rev-parse
         ]
 
-        with patch.object(self.manager.worktree_root, "exists", return_value=True):
-            info = self.manager.create_worktree(
-                story_id="ST-TEST-001",
-                agent="test-agent",
-                branch="feature/existing",
-            )
+        info = self.manager.create_worktree(
+            story_id="ST-TEST-001",
+            agent="test-agent",
+            branch="feature/existing",
+        )
 
         self.assertEqual(info.branch, "feature/existing")
 
@@ -233,7 +234,7 @@ class TestWorktreeManager(unittest.TestCase):
                 created_at="2026-02-26T10:00:00Z",
             ),
         ):
-            result = self.manager.cleanup_worktree("/tmp/test-worktree")
+            result = self.manager.cleanup_worktree("/tmp/test-worktree", force=True)
 
         self.assertTrue(result)
 
@@ -276,7 +277,7 @@ class TestWorktreeManager(unittest.TestCase):
                 last_heartbeat="2026-02-26T13:00:00Z",  # Recent
             ),
         ):
-            with patch("os.path.exists", return_value=True):
+            with patch("pathlib.Path.exists", return_value=True):
                 health = self.manager.check_worktree_health("/tmp/test-worktree")
 
         self.assertTrue(health["exists"])
@@ -291,6 +292,10 @@ class TestWorktreeManager(unittest.TestCase):
             MagicMock(returncode=0, stdout="M file.py"),  # status (has changes)
         ]
 
+        # Use a recent heartbeat timestamp so it's not stale
+        # Current time is 2026-02-26T19:xx, so use a timestamp within 30 minutes
+        recent_heartbeat = "2026-02-26T18:55:00Z"  # 5 minutes ago
+
         with patch.object(
             self.manager,
             "_get_worktree_by_path",
@@ -301,10 +306,10 @@ class TestWorktreeManager(unittest.TestCase):
                 story_id="ST-TEST-001",
                 agent="test-agent",
                 created_at="2026-02-26T10:00:00Z",
-                last_heartbeat="2026-02-26T13:00:00Z",
+                last_heartbeat=recent_heartbeat,
             ),
         ):
-            with patch("os.path.exists", return_value=True):
+            with patch("pathlib.Path.exists", return_value=True):
                 health = self.manager.check_worktree_health("/tmp/test-worktree")
 
         self.assertTrue(health["has_changes"])
