@@ -50,8 +50,13 @@ DEFAULT_REDIS_DB = 0
 HEARTBEAT_HASH_KEY = "bmad:chiseai:scheduler:heartbeat"
 LAST_SEEN_KEY = "bmad:chiseai:scheduler:last_seen"
 
-# TTL settings (5 minutes)
-HEARTBEAT_TTL_SECONDS = 300
+# TTL settings (2 minutes - should be 3-4x the expected interval)
+# Cron runs every minute, so TTL of 120s allows for 2 missed heartbeats
+HEARTBEAT_TTL_SECONDS = 120
+
+# Minimum heartbeat interval enforcement (seconds)
+MIN_HEARTBEAT_INTERVAL = 30
+MAX_HEARTBEAT_AGE_ALERT = 90  # Alert if heartbeat older than this
 
 
 def get_redis_client(
@@ -94,10 +99,50 @@ def get_redis_client(
         return None
 
 
+def check_heartbeat_health(redis_client: redis.Redis) -> dict[str, Any]:
+    """Check the health of the current heartbeat.
+
+    Args:
+        redis_client: Connected Redis client
+
+    Returns:
+        Dict with health status information
+    """
+    try:
+        heartbeat = redis_client.hgetall(HEARTBEAT_HASH_KEY)
+        if not heartbeat:
+            return {"healthy": False, "reason": "no_heartbeat", "age_seconds": None}
+
+        timestamp_str = heartbeat.get("timestamp", "")
+        if not timestamp_str:
+            return {
+                "healthy": False,
+                "reason": "invalid_timestamp",
+                "age_seconds": None,
+            }
+
+        last_heartbeat = datetime.fromisoformat(timestamp_str)
+        now = datetime.now(timezone.utc)
+        age_seconds = (now - last_heartbeat).total_seconds()
+
+        if age_seconds > MAX_HEARTBEAT_AGE_ALERT:
+            return {
+                "healthy": False,
+                "reason": "stale_heartbeat",
+                "age_seconds": age_seconds,
+            }
+
+        return {"healthy": True, "reason": None, "age_seconds": age_seconds}
+
+    except Exception as e:
+        return {"healthy": False, "reason": f"error: {e}", "age_seconds": None}
+
+
 def record_heartbeat(
     redis_client: redis.Redis,
     status: str = "running",
     metadata: dict[str, Any] | None = None,
+    force: bool = False,
 ) -> bool:
     """Record a scheduler heartbeat to Redis.
 
@@ -105,6 +150,7 @@ def record_heartbeat(
         redis_client: Connected Redis client
         status: Scheduler status ("running", "stopped", "error")
         metadata: Additional metadata to store
+        force: If True, skip minimum interval check
 
     Returns:
         True if successful, False otherwise
@@ -113,6 +159,30 @@ def record_heartbeat(
         timestamp = datetime.now(timezone.utc).isoformat()
         hostname = socket.gethostname()
         pid = os.getpid()
+
+        # Check last heartbeat time for minimum interval enforcement (unless forced)
+        if not force:
+            try:
+                last_seen = redis_client.get(LAST_SEEN_KEY)
+                if last_seen:
+                    last_dt = datetime.fromisoformat(last_seen)
+                    now = datetime.now(timezone.utc)
+                    elapsed = (now - last_dt).total_seconds()
+
+                    if elapsed < MIN_HEARTBEAT_INTERVAL:
+                        logger.debug(
+                            f"Skipping heartbeat - too soon ({elapsed:.1f}s < {MIN_HEARTBEAT_INTERVAL}s)"
+                        )
+                        return True  # Not an error, just skipping
+            except Exception:
+                pass  # Continue even if check fails
+
+        # Check if current heartbeat is stale and log warning
+        health = check_heartbeat_health(redis_client)
+        if not health["healthy"] and health["reason"] == "stale_heartbeat":
+            logger.warning(
+                f"ALERT: Heartbeat is stale ({health['age_seconds']:.0f}s > {MAX_HEARTBEAT_AGE_ALERT}s)"
+            )
 
         # Build heartbeat data
         heartbeat_data = {
