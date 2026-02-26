@@ -251,6 +251,172 @@ def format_provider_status(status: dict[str, Any]) -> str:
     return "not available"
 
 
+def check_environment(required_vars: list[str] | None = None) -> dict[str, Any]:
+    """Check that required environment variables are set.
+
+    Args:
+        required_vars: List of required environment variable names.
+                      If None, uses default critical vars.
+
+    Returns:
+        Dictionary with check results:
+        - ok: bool - True if all required vars are set
+        - missing: list - List of missing variable names
+        - present: list - List of present variable names
+        - warnings: list - List of warning messages
+
+    Raises:
+        EnvironmentError: If required variables are missing and raise_on_missing=True
+    """
+    if required_vars is None:
+        # Default critical variables for ChiseAI
+        required_vars = [
+            "REDIS_HOST",
+            "DB_URL",
+        ]
+
+    result = {
+        "ok": True,
+        "missing": [],
+        "present": [],
+        "warnings": [],
+    }
+
+    for var in required_vars:
+        value = os.getenv(var)
+        if value:
+            result["present"].append(var)
+            # Check for placeholder values
+            if value in ("placeholder", "changeme", "your_value_here", "xxx"):
+                result["warnings"].append(f"{var} appears to have a placeholder value")
+        else:
+            result["missing"].append(var)
+
+    if result["missing"]:
+        result["ok"] = False
+
+    return result
+
+
+def verify_chiseai_network() -> dict[str, Any]:
+    """Verify Docker chiseai network exists and required containers are connected.
+
+    Returns:
+        Dictionary with verification results:
+        - ok: bool - True if network exists and containers are connected
+        - network_exists: bool - Whether chiseai network exists
+        - containers: dict - Status of required containers
+        - errors: list - List of error messages
+    """
+    import subprocess
+
+    result = {
+        "ok": True,
+        "network_exists": False,
+        "containers": {},
+        "errors": [],
+    }
+
+    # Check if chiseai network exists
+    try:
+        proc = subprocess.run(
+            ["docker", "network", "inspect", "chiseai"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        result["network_exists"] = proc.returncode == 0
+    except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+        result["errors"].append(f"Could not check Docker network: {e}")
+        result["ok"] = False
+        return result
+
+    if not result["network_exists"]:
+        result["errors"].append("chiseai network does not exist")
+        result["ok"] = False
+        return result
+
+    # Check for required containers on the network
+    required_containers = [
+        "chiseai-redis",
+        "chiseai-postgres",
+    ]
+
+    try:
+        # Get list of containers on chiseai network
+        proc = subprocess.run(
+            [
+                "docker",
+                "network",
+                "inspect",
+                "chiseai",
+                "--format",
+                "{{range .Containers}}{{.Name}} {{end}}",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        connected = set(proc.stdout.strip().split()) if proc.returncode == 0 else set()
+
+        for container in required_containers:
+            result["containers"][container] = container in connected
+            if not result["containers"][container]:
+                result["errors"].append(
+                    f"{container} is not connected to chiseai network"
+                )
+                result["ok"] = False
+
+    except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+        result["errors"].append(f"Could not check container connectivity: {e}")
+        result["ok"] = False
+
+    return result
+
+
+def check_docker_connectivity() -> dict[str, Any]:
+    """Check Docker daemon connectivity and basic functionality.
+
+    Returns:
+        Dictionary with check results:
+        - ok: bool - True if Docker is accessible
+        - daemon_accessible: bool - Whether Docker daemon is accessible
+        - version: str - Docker version (if available)
+        - errors: list - List of error messages
+    """
+    import subprocess
+
+    result = {
+        "ok": False,
+        "daemon_accessible": False,
+        "version": None,
+        "errors": [],
+    }
+
+    try:
+        # Check Docker version
+        proc = subprocess.run(
+            ["docker", "version", "--format", "{{.Server.Version}}"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if proc.returncode == 0:
+            result["daemon_accessible"] = True
+            result["version"] = proc.stdout.strip()
+            result["ok"] = True
+        else:
+            result["errors"].append("Docker daemon not accessible")
+    except FileNotFoundError:
+        result["errors"].append("Docker command not found - is Docker installed?")
+    except subprocess.TimeoutExpired:
+        result["errors"].append("Docker command timed out")
+    except Exception as e:
+        result["errors"].append(f"Unexpected error checking Docker: {e}")
+
+    return result
+
+
 def print_diagnostics() -> int:
     """Print diagnostic output and return exit code.
 

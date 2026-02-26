@@ -25,6 +25,11 @@ project_root = os.path.dirname(
 )
 sys.path.insert(0, project_root)
 
+# Bootstrap environment first (must be before any env access)
+from config.bootstrap import bootstrap
+
+bootstrap(load_env=True)
+
 logger = logging.getLogger(__name__)
 
 
