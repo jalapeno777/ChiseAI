@@ -27,7 +27,7 @@ from config.bootstrap import bootstrap
 bootstrap(load_env=True)
 
 # Import PR state manager
-from pr_state_manager import PRState, PRStateManager, _utc_now  # noqa: E402
+from .pr_state_manager import PRState, PRStateManager, _utc_now  # noqa: E402
 
 # Default configuration
 DEFAULT_POLL_INTERVAL_SEC = int(os.getenv("CHISE_PR_POLL_INTERVAL_SEC", "30"))
