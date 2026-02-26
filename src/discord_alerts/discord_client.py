@@ -1,17 +1,24 @@
-"""Discord bot client wrapper.
+"""Discord bot client wrapper with P0 runtime hardening.
 
-Provides async Discord bot client with webhook fallback support,
-error handling, and reconnection logic.
+Provides async Discord bot client with:
+- Message queue for failed sends with Redis persistence
+- Hourly checkpoint message capability
+- Connection health monitoring with Redis storage
+- Automatic reconnection with exponential backoff
+- Message delivery confirmation tracking
 
 For ST-NS-009: Discord Alert Integration
 For GATE-RECOVERY-002: Discord Channel Routing Fix
+For P0-RUNTIME-HARDEN-003: Discord Continuity
 """
 
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
-from dataclasses import dataclass
+import uuid
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
@@ -51,8 +58,64 @@ class DeliveryResult:
             raise KeyError(key) from exc
 
 
+@dataclass
+class QueuedMessage:
+    """Message queued for retry with persistence support.
+
+    Attributes:
+        message_id: Unique identifier for this message
+        content: Message content
+        channel_id: Target channel ID
+        channel_name: Target channel name
+        embeds: Optional Discord embeds
+        priority: Priority level (1=high, 2=normal, 3=low)
+        created_at: When message was created
+        retry_count: Number of retry attempts
+        last_error: Last error message
+    """
+
+    content: str
+    channel_id: str | None = None
+    channel_name: str | None = None
+    embeds: list[dict[str, Any]] | None = None
+    priority: int = 2
+    message_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    retry_count: int = 0
+    last_error: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for Redis storage."""
+        return {
+            "message_id": self.message_id,
+            "content": self.content,
+            "channel_id": self.channel_id,
+            "channel_name": self.channel_name,
+            "embeds": self.embeds,
+            "priority": self.priority,
+            "created_at": self.created_at.isoformat(),
+            "retry_count": self.retry_count,
+            "last_error": self.last_error,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> QueuedMessage:
+        """Create from dictionary from Redis."""
+        return cls(
+            content=data["content"],
+            channel_id=data.get("channel_id"),
+            channel_name=data.get("channel_name"),
+            embeds=data.get("embeds"),
+            priority=data.get("priority", 2),
+            message_id=data.get("message_id", str(uuid.uuid4())),
+            created_at=datetime.fromisoformat(data["created_at"]),
+            retry_count=data.get("retry_count", 0),
+            last_error=data.get("last_error"),
+        )
+
+
 class DiscordClient:
-    """Discord bot client with webhook fallback and rate limiting.
+    """Discord bot client with webhook fallback and P0 hardening.
 
     Supports both bot token (for full bot functionality) and
     webhook URL (for simple message posting) authentication.
@@ -60,10 +123,12 @@ class DiscordClient:
     Implements Gate B fix: bot-send is primary, webhook is fallback.
     All sends enforce guild lock for security.
 
-    Features:
-        - Rate limiting with exponential backoff
-        - Automatic disable after MAX_CONSECUTIVE_FAILURES
-        - Manual re-enable via enable() method
+    P0 Hardening Features:
+        - Message queue for failed sends with Redis persistence
+        - Hourly checkpoint message capability
+        - Connection health monitoring with Redis storage
+        - Automatic reconnection with exponential backoff
+        - Message delivery confirmation tracking
 
     Attributes:
         config: Discord configuration
@@ -74,10 +139,21 @@ class DiscordClient:
         _consecutive_failures: Count of consecutive send failures
         _disabled_until: Timestamp when Discord will be re-enabled
         _rate_limit_backoff_seconds: Current backoff interval
+        _message_queue: Queue for failed messages
+        _checkpoint_task: Background checkpoint task
+        _health_check_task: Background health monitoring task
+        _retry_task: Background retry task
+        _delivery_confirmations: Tracking for confirmed deliveries
     """
 
     MAX_CONSECUTIVE_FAILURES = 5
     DISABLE_DURATION_MINUTES = 15
+    MAX_QUEUE_SIZE = 1000
+    MAX_RETRY_ATTEMPTS = 10
+    CHECKPOINT_INTERVAL_MINUTES = 60
+    HEALTH_CHECK_INTERVAL_SECONDS = 30
+    RETRY_INTERVAL_SECONDS = 60
+    REDIS_KEY_PREFIX = "discord:continuity"
 
     def __init__(self, config: DiscordConfig):
         """Initialize Discord client.
@@ -93,6 +169,20 @@ class DiscordClient:
         self._consecutive_failures = 0
         self._disabled_until: datetime | None = None
         self._rate_limit_backoff_seconds = 5  # Initial backoff
+
+        # P0 Hardening: Message queue and persistence
+        self._message_queue: asyncio.PriorityQueue[
+            tuple[int, datetime, QueuedMessage]
+        ] = asyncio.PriorityQueue()
+        self._queue_lock = asyncio.Lock()
+        self._checkpoint_task: asyncio.Task | None = None
+        self._health_check_task: asyncio.Task | None = None
+        self._retry_task: asyncio.Task | None = None
+        self._delivery_confirmations: dict[str, datetime] = {}
+        self._last_successful_send: datetime | None = None
+        self._total_messages_sent = 0
+        self._total_messages_failed = 0
+        self._total_messages_queued = 0
 
     @property
     def is_disabled(self) -> bool:
@@ -144,12 +234,16 @@ class DiscordClient:
             if self.config.bot_token and await self._connect_bot():
                 self.is_connected = True
                 logger.info("Discord client connected via bot token (primary)")
+                self._start_background_tasks()
+                await self._restore_queued_messages()
                 return True
 
             # Fallback: Try webhook (simpler, no gateway connection needed)
             if self.config.webhook_url and await self._validate_webhook():
                 self.is_connected = True
                 logger.info("Discord client connected via webhook (fallback)")
+                self._start_background_tasks()
+                await self._restore_queued_messages()
                 return True
 
             logger.error("No valid Discord authentication configured")
@@ -158,6 +252,311 @@ class DiscordClient:
         except Exception as e:
             logger.error(f"Discord connection failed: {e}")
             return False
+
+    def _start_background_tasks(self) -> None:
+        """Start background tasks for P0 hardening features."""
+        # Start checkpoint task
+        if self._checkpoint_task is None or self._checkpoint_task.done():
+            self._checkpoint_task = asyncio.create_task(self._checkpoint_loop())
+            logger.info("Started checkpoint task")
+
+        # Start health check task
+        if self._health_check_task is None or self._health_check_task.done():
+            self._health_check_task = asyncio.create_task(self._health_check_loop())
+            logger.info("Started health check task")
+
+        # Start retry task
+        if self._retry_task is None or self._retry_task.done():
+            self._retry_task = asyncio.create_task(self._retry_loop())
+            logger.info("Started retry task")
+
+    async def _checkpoint_loop(self) -> None:
+        """Send hourly checkpoint messages to verify continuity."""
+        while True:
+            try:
+                await asyncio.sleep(self.CHECKPOINT_INTERVAL_MINUTES * 60)
+
+                if not self.is_connected or self.is_disabled:
+                    logger.warning("Skipping checkpoint - Discord not available")
+                    continue
+
+                # Send checkpoint message
+                checkpoint_msg = (
+                    f"🔄 **Discord Continuity Checkpoint**\n"
+                    f"Time: {datetime.now(UTC).isoformat()}\n"
+                    f"Status: Connected ({self._get_connection_mode()})\n"
+                    f"Messages Sent (session): {self._total_messages_sent}\n"
+                    f"Queue Size: {self._message_queue.qsize()}\n"
+                    f"Consecutive Failures: {self._consecutive_failures}"
+                )
+
+                result = await self.send_message(
+                    content=checkpoint_msg,
+                    channel_id=self.config.summaries_channel_id,
+                )
+
+                if result.success:
+                    logger.info("Checkpoint message sent successfully")
+                    await self._store_checkpoint_status(True, None)
+                else:
+                    logger.warning(f"Checkpoint message failed: {result.error}")
+                    await self._store_checkpoint_status(False, result.error)
+
+            except asyncio.CancelledError:
+                logger.info("Checkpoint loop cancelled")
+                break
+            except Exception as e:
+                logger.error(f"Checkpoint loop error: {e}")
+                await asyncio.sleep(60)  # Retry in 1 minute on error
+
+    async def _health_check_loop(self) -> None:
+        """Monitor connection health and store metrics in Redis."""
+        while True:
+            try:
+                await asyncio.sleep(self.HEALTH_CHECK_INTERVAL_SECONDS)
+
+                health = await self.health_check()
+                await self._store_health_metrics(health)
+
+                # Check for stale connection (no messages in 2 hours)
+                if self._last_successful_send:
+                    time_since_last = datetime.now(UTC) - self._last_successful_send
+                    if time_since_last > timedelta(hours=2):
+                        logger.warning(
+                            f"No messages sent in {time_since_last.total_seconds() / 3600:.1f} hours"
+                        )
+                        await self._trigger_continuity_alert(time_since_last)
+
+                # Auto-reconnect if disconnected but not disabled
+                if not self.is_connected and not self.is_disabled:
+                    logger.info("Attempting auto-reconnect...")
+                    await self.connect()
+
+            except asyncio.CancelledError:
+                logger.info("Health check loop cancelled")
+                break
+            except Exception as e:
+                logger.error(f"Health check loop error: {e}")
+
+    async def _retry_loop(self) -> None:
+        """Process queued messages for retry."""
+        while True:
+            try:
+                await asyncio.sleep(self.RETRY_INTERVAL_SECONDS)
+
+                if not self.is_connected or self.is_disabled:
+                    continue
+
+                await self._process_message_queue()
+
+            except asyncio.CancelledError:
+                logger.info("Retry loop cancelled")
+                break
+            except Exception as e:
+                logger.error(f"Retry loop error: {e}")
+
+    async def _process_message_queue(self) -> None:
+        """Process queued messages for retry."""
+        processed = []
+
+        async with self._queue_lock:
+            # Get all messages from queue
+            temp_queue = []
+            while not self._message_queue.empty():
+                try:
+                    priority, created_at, msg = self._message_queue.get_nowait()
+                    temp_queue.append((priority, created_at, msg))
+                except asyncio.QueueEmpty:
+                    break
+
+            # Try to send each message
+            for priority, created_at, msg in temp_queue:
+                if msg.retry_count >= self.MAX_RETRY_ATTEMPTS:
+                    logger.warning(
+                        f"Message {msg.message_id} exceeded max retries, dropping"
+                    )
+                    self._total_messages_failed += 1
+                    continue
+
+                try:
+                    result = await self._send_queued_message(msg)
+                    if result.success:
+                        logger.info(
+                            f"Queued message {msg.message_id} sent successfully"
+                        )
+                        self._delivery_confirmations[msg.message_id] = datetime.now(UTC)
+                        processed.append(msg.message_id)
+                    else:
+                        # Re-queue with incremented retry count
+                        msg.retry_count += 1
+                        msg.last_error = result.error
+                        await self._message_queue.put((priority, created_at, msg))
+                        logger.warning(
+                            f"Message {msg.message_id} retry {msg.retry_count} failed: {result.error}"
+                        )
+                except Exception as e:
+                    logger.error(
+                        f"Error processing queued message {msg.message_id}: {e}"
+                    )
+                    msg.retry_count += 1
+                    msg.last_error = str(e)
+                    await self._message_queue.put((priority, created_at, msg))
+
+        if processed:
+            logger.info(f"Processed {len(processed)} queued messages")
+            await self._persist_queue_state()
+
+    async def _send_queued_message(self, msg: QueuedMessage) -> DeliveryResult:
+        """Send a queued message."""
+        return await self.send_message(
+            content=msg.content,
+            channel_id=msg.channel_id,
+            channel=msg.channel_name,
+            embeds=msg.embeds,
+        )
+
+    async def _queue_message(self, msg: QueuedMessage) -> bool:
+        """Queue a message for later retry.
+
+        Args:
+            msg: Message to queue
+
+        Returns:
+            True if queued successfully
+        """
+        async with self._queue_lock:
+            if self._message_queue.qsize() >= self.MAX_QUEUE_SIZE:
+                logger.error("Message queue full, dropping oldest message")
+                # Remove oldest message
+                try:
+                    self._message_queue.get_nowait()
+                except asyncio.QueueEmpty:
+                    pass
+
+            await self._message_queue.put((msg.priority, msg.created_at, msg))
+            self._total_messages_queued += 1
+
+        logger.info(f"Message {msg.message_id} queued for retry")
+        await self._persist_queue_state()
+        return True
+
+    async def _persist_queue_state(self) -> None:
+        """Persist queue state to Redis."""
+        try:
+            # Import here to avoid circular dependency
+            from redis_state import redis_state_lpush, redis_state_expire
+
+            # Get all messages from queue
+            messages = []
+            temp_items = []
+
+            async with self._queue_lock:
+                while not self._message_queue.empty():
+                    try:
+                        item = self._message_queue.get_nowait()
+                        temp_items.append(item)
+                        _, _, msg = item
+                        messages.append(msg.to_dict())
+                    except asyncio.QueueEmpty:
+                        break
+
+                # Restore queue
+                for item in temp_items:
+                    await self._message_queue.put(item)
+
+            # Store in Redis
+            redis_key = f"{self.REDIS_KEY_PREFIX}:queued_messages"
+
+            # Clear existing and store new
+            # Note: This is a simplified approach; production might use a Redis list
+            for msg_dict in messages[-100:]:  # Keep last 100
+                redis_state_lpush(redis_key, json.dumps(msg_dict), expire=86400)
+
+            logger.debug(f"Persisted {len(messages)} queued messages to Redis")
+
+        except Exception as e:
+            logger.error(f"Failed to persist queue state: {e}")
+
+    async def _restore_queued_messages(self) -> None:
+        """Restore queued messages from Redis on reconnect."""
+        try:
+            from redis_state import redis_state_lrange
+
+            redis_key = f"{self.REDIS_KEY_PREFIX}:queued_messages"
+            stored = redis_state_lrange(redis_key, 0, 99)
+
+            if stored:
+                restored_count = 0
+                for item in stored:
+                    try:
+                        msg_dict = json.loads(item)
+                        msg = QueuedMessage.from_dict(msg_dict)
+                        await self._queue_message(msg)
+                        restored_count += 1
+                    except Exception as e:
+                        logger.error(f"Failed to restore queued message: {e}")
+
+                logger.info(f"Restored {restored_count} queued messages from Redis")
+
+        except Exception as e:
+            logger.error(f"Failed to restore queued messages: {e}")
+
+    async def _store_checkpoint_status(self, success: bool, error: str | None) -> None:
+        """Store checkpoint status in Redis."""
+        try:
+            from redis_state import redis_state_hset
+
+            redis_key = f"{self.REDIS_KEY_PREFIX}:checkpoint"
+            redis_state_hset(
+                redis_key,
+                "last_checkpoint",
+                datetime.now(UTC).isoformat(),
+            )
+            redis_state_hset(redis_key, "success", str(success))
+            if error:
+                redis_state_hset(redis_key, "error", error)
+
+        except Exception as e:
+            logger.error(f"Failed to store checkpoint status: {e}")
+
+    async def _store_health_metrics(self, health: dict[str, Any]) -> None:
+        """Store health metrics in Redis."""
+        try:
+            from redis_state import redis_state_hset
+
+            redis_key = f"{self.REDIS_KEY_PREFIX}:health"
+            redis_state_hset(redis_key, "timestamp", datetime.now(UTC).isoformat())
+            redis_state_hset(redis_key, "metrics", json.dumps(health))
+            redis_state_hset(
+                redis_key,
+                "last_successful_send",
+                self._last_successful_send.isoformat()
+                if self._last_successful_send
+                else "",
+            )
+            redis_state_hset(redis_key, "total_sent", str(self._total_messages_sent))
+            redis_state_hset(
+                redis_key, "total_failed", str(self._total_messages_failed)
+            )
+            redis_state_hset(redis_key, "queue_size", str(self._message_queue.qsize()))
+
+        except Exception as e:
+            logger.error(f"Failed to store health metrics: {e}")
+
+    async def _trigger_continuity_alert(self, time_since_last: timedelta) -> None:
+        """Trigger alert when no messages sent for extended period."""
+        logger.error(
+            f"CONTINUITY ALERT: No Discord messages sent for {time_since_last.total_seconds() / 3600:.1f} hours"
+        )
+        # This could trigger external alerting (PagerDuty, etc.)
+
+    def _get_connection_mode(self) -> str:
+        """Get current connection mode."""
+        if self.config.bot_token and self._bot_client:
+            return "bot"
+        elif self.config.webhook_url:
+            return "webhook"
+        return "none"
 
     async def _validate_webhook(self) -> bool:
         """Validate webhook URL by making a test request.
@@ -248,6 +647,8 @@ class DiscordClient:
                 await self._disable_due_to_failures()
         else:
             # Reset on success
+            self._last_successful_send = datetime.now(UTC)
+            self._total_messages_sent += 1
             if self._consecutive_failures > 0:
                 self._consecutive_failures = 0
                 self._rate_limit_backoff_seconds = 5  # Reset backoff
@@ -284,6 +685,15 @@ class DiscordClient:
 
     async def disconnect(self) -> None:
         """Disconnect from Discord and cleanup resources."""
+        # Cancel background tasks
+        for task in [self._checkpoint_task, self._health_check_task, self._retry_task]:
+            if task and not task.done():
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+
         self.is_connected = False
 
         if self._session:
@@ -306,7 +716,7 @@ class DiscordClient:
         """Send a message to Discord.
 
         Gate B fix: Uses authoritative channel IDs and enforces guild lock.
-        Fallback chain: bot → webhook → log failure.
+        Fallback chain: bot → webhook → queue for retry.
 
         Implements rate limiting with exponential backoff and automatic
         disable after MAX_CONSECUTIVE_FAILURES.
@@ -323,17 +733,35 @@ class DiscordClient:
         # Check if disabled due to persistent failures
         if self.is_disabled:
             remaining = self._get_disabled_remaining_minutes()
+            # Queue message for later
+            msg = QueuedMessage(
+                content=content,
+                channel_id=channel_id,
+                channel_name=channel,
+                embeds=embeds,
+                priority=1,  # High priority for immediate retry
+            )
+            await self._queue_message(msg)
             return DeliveryResult(
                 success=False,
-                error=f"Discord temporarily disabled ({remaining:.0f}m remaining)",
+                error=f"Discord temporarily disabled ({remaining:.0f}m remaining), message queued",
                 method="none",
             )
 
         if not self.is_connected and not await self.connect():
             # Auto-connect on first send
+            # Queue message for retry
+            msg = QueuedMessage(
+                content=content,
+                channel_id=channel_id,
+                channel_name=channel,
+                embeds=embeds,
+                priority=1,
+            )
+            await self._queue_message(msg)
             return DeliveryResult(
                 success=False,
-                error="Failed to connect to Discord",
+                error="Failed to connect to Discord, message queued",
             )
 
         # Resolve authoritative channel ID
@@ -377,12 +805,33 @@ class DiscordClient:
 
             # Track failures and handle rate limits
             result = await self._handle_send_result(result)
+
+            # If failed, queue for retry
+            if not result.success:
+                msg = QueuedMessage(
+                    content=content,
+                    channel_id=target_channel_id,
+                    channel_name=target_channel_name,
+                    embeds=embeds,
+                    priority=2,
+                )
+                await self._queue_message(msg)
+
             return result
 
-        # Final fallback: Log failure
+        # Final fallback: Queue for retry
+        msg = QueuedMessage(
+            content=content,
+            channel_id=target_channel_id,
+            channel_name=target_channel_name,
+            embeds=embeds,
+            priority=2,
+        )
+        await self._queue_message(msg)
+
         result = DeliveryResult(
             success=False,
-            error="No valid Discord sending method available",
+            error="No valid Discord sending method available, message queued",
             channel_name=target_channel_name,
             channel_id=target_channel_id,
             guild_validated=guild_validated,
@@ -532,6 +981,16 @@ class DiscordClient:
                 self._get_disabled_remaining_minutes() if self.is_disabled else 0.0
             ),
             "rate_limit_backoff_seconds": self._rate_limit_backoff_seconds,
+            "queue_size": self._message_queue.qsize(),
+            "total_messages_sent": self._total_messages_sent,
+            "total_messages_failed": self._total_messages_failed,
+            "total_messages_queued": self._total_messages_queued,
+            "last_successful_send": (
+                self._last_successful_send.isoformat()
+                if self._last_successful_send
+                else None
+            ),
+            "connection_mode": self._get_connection_mode(),
         }
 
         if not self.is_connected:
@@ -596,3 +1055,74 @@ class DiscordClient:
                 f"Guild ID validation failed: {guild_id} != {self.config.guild_id}"
             )
         return allowed
+
+    async def get_delivery_status(self, message_id: str) -> dict[str, Any] | None:
+        """Get delivery confirmation status for a message.
+
+        Args:
+            message_id: The message ID to check
+
+        Returns:
+            Delivery status dict or None if not found
+        """
+        if message_id in self._delivery_confirmations:
+            return {
+                "message_id": message_id,
+                "delivered_at": self._delivery_confirmations[message_id].isoformat(),
+                "status": "delivered",
+            }
+
+        # Check queue
+        async with self._queue_lock:
+            temp_items = []
+            found = None
+
+            while not self._message_queue.empty():
+                try:
+                    item = self._message_queue.get_nowait()
+                    temp_items.append(item)
+                    _, _, msg = item
+                    if msg.message_id == message_id:
+                        found = {
+                            "message_id": message_id,
+                            "status": "queued",
+                            "retry_count": msg.retry_count,
+                            "created_at": msg.created_at.isoformat(),
+                        }
+                except asyncio.QueueEmpty:
+                    break
+
+            # Restore queue
+            for item in temp_items:
+                await self._message_queue.put(item)
+
+            return found
+
+    async def get_continuity_metrics(self) -> dict[str, Any]:
+        """Get continuity metrics for monitoring.
+
+        Returns:
+            Dictionary with continuity metrics
+        """
+        now = datetime.now(UTC)
+        time_since_last = None
+        if self._last_successful_send:
+            time_since_last = (now - self._last_successful_send).total_seconds()
+
+        return {
+            "timestamp": now.isoformat(),
+            "is_connected": self.is_connected,
+            "is_disabled": self.is_disabled,
+            "connection_mode": self._get_connection_mode(),
+            "last_successful_send": (
+                self._last_successful_send.isoformat()
+                if self._last_successful_send
+                else None
+            ),
+            "time_since_last_send_seconds": time_since_last,
+            "total_messages_sent": self._total_messages_sent,
+            "total_messages_failed": self._total_messages_failed,
+            "total_messages_queued": self._total_messages_queued,
+            "current_queue_size": self._message_queue.qsize(),
+            "consecutive_failures": self._consecutive_failures,
+        }
