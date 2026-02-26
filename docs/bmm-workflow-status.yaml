@@ -7,6 +7,31 @@ metadata:
   version: "2.5.4"
   last_updated: "2026-02-26T00:00:00Z"
   recent_changes:
+    - timestamp: "2026-02-26T04:00:48Z"
+      actor: merlin
+      action: merge_to_main
+      description: "ST-AUTO-004: Complex Path Human Gate merged to main"
+      story_id: ST-AUTO-004
+      pr_number: 276
+      merge_commit_sha: "2d5f2a39ace85cc850cf5c38a2558915d0a1c4d8"
+      files_changed:
+        - docs/runbooks/complex-path-human-gate.md
+        - scripts/pr_lifecycle/complex_path_gate.py
+        - scripts/pr_lifecycle/escalation_templates/approval_confirmation.md
+        - scripts/pr_lifecycle/escalation_templates/initial_escalation.md
+        - scripts/pr_lifecycle/escalation_templates/rejection_notice.md
+        - scripts/pr_lifecycle/escalation_templates/reminder.md
+        - scripts/pr_lifecycle/human_approval_workflow.py
+        - scripts/pr_lifecycle/human_gate.py
+        - tests/test_pr_lifecycle/test_complex_path_gate.py
+        - tests/test_pr_lifecycle/test_human_gate.py
+      test_summary:
+        total: 48
+        passed: 48
+        failed: 0
+        coverage: "~85%"
+      ci_status: success
+      branch_deleted: true
     - timestamp: "2026-02-26T00:00:00Z"
       actor: merlin
       action: merge_to_main
@@ -2865,8 +2890,11 @@ stories:
     title: Complex Path Human Gate
     epic_id: EP-AUTO-GIT-001
     sprint_id: AUTO-GIT-001
-    status: planned
-    validation_status: planned
+    status: completed
+    validation_status: validated
+    merge_date: "2026-02-26"
+    pr_numbers: [276]
+    merge_commit_sha: "2d5f2a39ace85cc850cf5c38a2558915d0a1c4d8"
     story_points: 5
     priority: P1-HIGH
     description: Human approval workflow for COMPLEX-classified PRs with GitReviewBot pre-review
@@ -3661,12 +3689,15 @@ sprints:
     title: Complex Path Human Gate
     epic_id: EP-AUTO-GIT-001
     sprint_id: AUTO-GIT-001
-    status: planned
-    validation_status: planned
+    status: completed
+    validation_status: validated
+    merge_date: "2026-02-26"
+    pr_numbers: [276]
+    merge_commit_sha: "2d5f2a39ace85cc850cf5c38a2558915d0a1c4d8"
     story_points: 5
     priority: P1-HIGH
     description: Human approval workflow for COMPLEX-classified PRs with GitReviewBot pre-review
-    scope_globs: ["scripts/pr_lifecycle/human_gate.py", "scripts/pr_lifecycle/escalation_templates/"]
+    scope_globs: ["scripts/pr_lifecycle/human_gate.py", "scripts/pr_lifecycle/escalation_templates/", "scripts/pr_lifecycle/complex_path_gate.py", "scripts/pr_lifecycle/human_approval_workflow.py"]
     depends_on: [ST-AUTO-001, ST-AUTO-003]
     acceptance_criteria:
       - COMPLEX PRs require explicit human approval before merge (never auto-approved)
@@ -3680,6 +3711,11 @@ sprints:
     test_strategy:
       unit: "pytest tests/test_pr_lifecycle/test_human_gate.py -v"
       e2e: "scripts/e2e/test_complex_path_workflow.sh"
+    test_summary:
+      total: 48
+      passed: 48
+      failed: 0
+      coverage: "~85%"
     live_validation_gates:
       - gate: "human_review_time"
         check: "Measure time from escalation to human approval"
