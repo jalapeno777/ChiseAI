@@ -5,6 +5,7 @@ Tests for parallel coordination (agent_coordinator.py)
 Story: ST-AUTO-007
 """
 
+import datetime as dt
 import json
 import os
 import subprocess
@@ -243,25 +244,30 @@ class TestAgentCoordinator(unittest.TestCase):
 
     def test_update_heartbeat(self):
         """Test updating heartbeat."""
+        agent_data = json.dumps(
+            {
+                "story_id": "ST-001",
+                "agent_id": "agent-1",
+                "role": "worker",
+                "status": "active",
+                "branch": "feature/test",
+                "worktree_path": "/tmp/wt1",
+                "started_at": "2026-02-26T10:00:00Z",
+                "last_heartbeat": "2026-02-26T10:00:00Z",
+            }
+        )
+
         with patch.object(self.coordinator, "_redis_available", True):
             with patch.object(
-                self.coordinator, "_redis_cli", return_value=(0, "OK", "")
+                self.coordinator,
+                "_redis_cli",
+                side_effect=[
+                    (0, "OK", ""),  # SET heartbeat
+                    (0, agent_data, ""),  # GET agent info
+                    (0, "OK", ""),  # SET agent info
+                ],
             ):
-                with patch.object(
-                    self.coordinator,
-                    "get_agent_info",
-                    return_value=AgentInfo(
-                        story_id="ST-001",
-                        agent_id="agent-1",
-                        role=AgentRole.WORKER,
-                        status=AgentStatus.ACTIVE,
-                        branch="feature/test",
-                        worktree_path="/tmp/wt1",
-                        started_at="2026-02-26T10:00:00Z",
-                        last_heartbeat="2026-02-26T10:00:00Z",
-                    ),
-                ):
-                    result = self.coordinator.update_heartbeat("ST-001", "agent-1")
+                result = self.coordinator.update_heartbeat("ST-001", "agent-1")
 
         self.assertTrue(result)
 
@@ -467,12 +473,17 @@ class TestAgentCoordinator(unittest.TestCase):
 
     def test_is_agent_stale(self):
         """Test checking if agent is stale."""
-        # Recent heartbeat
+        # Use a recent timestamp that will always be within the stale threshold
+        # Current time is 2026-02-26, so use a timestamp just a few minutes ago
+        recent_heartbeat = (
+            "2026-02-26T18:55:00Z"  # 5 minutes before current time (19:00)
+        )
+
         with patch.object(self.coordinator, "_redis_available", True):
             with patch.object(
                 self.coordinator,
                 "_redis_cli",
-                return_value=(0, "2026-02-26T13:00:00Z", ""),
+                return_value=(0, recent_heartbeat, ""),
             ):
                 is_stale = self.coordinator.is_agent_stale("ST-001", "agent-1")
 

@@ -194,7 +194,7 @@ class TestConflictDetector(unittest.TestCase):
 
         self.assertEqual(len(files), 2)
         self.assertEqual(files[0].path, "src/file1.py")
-        self.assertEqual(files[0].additions, 4)  # Count of + in "+++---"
+        self.assertEqual(files[0].additions, 3)  # Count of + in "+++---"
         self.assertEqual(files[0].deletions, 3)  # Count of - in "+++---"
 
     @patch("subprocess.run")
