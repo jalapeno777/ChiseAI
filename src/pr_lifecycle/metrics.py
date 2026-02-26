@@ -27,7 +27,7 @@ class PRMetric:
         """Export as Prometheus format."""
         label_str = ",".join(f'{k}="{v}"' for k, v in self.labels.items())
         if label_str:
-            return f"{name}{{{label_str}}} {self.value}"
+            return f"{self.name}{{{label_str}}} {self.value}"
         return f"{self.name} {self.value}"
 
     def to_influxdb_line(self) -> str:
