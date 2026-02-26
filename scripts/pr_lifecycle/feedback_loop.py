@@ -15,10 +15,13 @@ import os
 import subprocess
 import sys
 import urllib.request
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
+
+# Import outcome tracker (must be before bootstrap for path setup)
+from outcome_tracker import OutcomeTracker, SuccessMetrics
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
@@ -26,9 +29,6 @@ from config.bootstrap import bootstrap
 
 # Bootstrap environment first
 bootstrap(load_env=True)
-
-# Import outcome tracker
-from outcome_tracker import OutcomeTracker, SuccessMetrics
 
 # Redis key prefixes
 FEEDBACK_PREFIX = "bmad:chiseai:pr:feedback"
@@ -210,6 +210,160 @@ class WeeklyReport:
         )
 
 
+@dataclass
+class AgentFeedback:
+    """Feedback sent to agents when PRs are declined."""
+
+    pr_number: int
+    story_id: str
+    agent_name: str
+    feedback_id: str
+    created_at: str
+    decline_reason: str
+    specific_issues: list[str]
+    suggested_fixes: list[str]
+    retry_eligible: bool
+    retry_conditions: list[str]
+    documentation_links: list[str]
+    feedback_latency_seconds: float = 0.0
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "pr_number": str(self.pr_number),
+            "story_id": self.story_id,
+            "agent_name": self.agent_name,
+            "feedback_id": self.feedback_id,
+            "created_at": self.created_at,
+            "decline_reason": self.decline_reason,
+            "specific_issues": json.dumps(self.specific_issues),
+            "suggested_fixes": json.dumps(self.suggested_fixes),
+            "retry_eligible": "true" if self.retry_eligible else "false",
+            "retry_conditions": json.dumps(self.retry_conditions),
+            "documentation_links": json.dumps(self.documentation_links),
+            "feedback_latency_seconds": str(self.feedback_latency_seconds),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, str]) -> AgentFeedback:
+        return cls(
+            pr_number=int(data.get("pr_number", "0")),
+            story_id=data.get("story_id", ""),
+            agent_name=data.get("agent_name", ""),
+            feedback_id=data.get("feedback_id", ""),
+            created_at=data.get("created_at", ""),
+            decline_reason=data.get("decline_reason", ""),
+            specific_issues=json.loads(data.get("specific_issues", "[]")),
+            suggested_fixes=json.loads(data.get("suggested_fixes", "[]")),
+            retry_eligible=data.get("retry_eligible", "false").lower() == "true",
+            retry_conditions=json.loads(data.get("retry_conditions", "[]")),
+            documentation_links=json.loads(data.get("documentation_links", "[]")),
+            feedback_latency_seconds=float(data.get("feedback_latency_seconds", "0")),
+        )
+
+
+@dataclass
+class MonthlyReport:
+    """Monthly feedback report with review accuracy and agent performance."""
+
+    report_id: str
+    month_start: str
+    month_end: str
+    generated_at: str
+
+    # Volume metrics
+    total_prs: int = 0
+    merged_prs: int = 0
+    declined_prs: int = 0
+    rejected_prs: int = 0
+    abandoned_prs: int = 0
+    escalated_prs: int = 0
+
+    # Review accuracy metrics
+    review_accuracy: float = 0.0
+    auto_merge_success_rate: float = 0.0
+    overall_success_rate: float = 0.0
+    false_positive_rate: float = 0.0
+
+    # Agent performance
+    agent_performance: dict[str, dict[str, Any]] = field(default_factory=dict)
+
+    # Time metrics
+    avg_time_to_merge_minutes: float = 0.0
+    p95_time_to_merge_minutes: float = 0.0
+
+    # Retry metrics
+    total_retries: int = 0
+    successful_retries: int = 0
+    retry_success_rate: float = 0.0
+
+    # Feedback metrics
+    avg_feedback_latency_seconds: float = 0.0
+    feedbacks_sent: int = 0
+
+    # Insights and recommendations
+    insights: list[str] = field(default_factory=list)
+    recommendations: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "report_id": self.report_id,
+            "month_start": self.month_start,
+            "month_end": self.month_end,
+            "generated_at": self.generated_at,
+            "total_prs": self.total_prs,
+            "merged_prs": self.merged_prs,
+            "declined_prs": self.declined_prs,
+            "rejected_prs": self.rejected_prs,
+            "abandoned_prs": self.abandoned_prs,
+            "escalated_prs": self.escalated_prs,
+            "review_accuracy": self.review_accuracy,
+            "auto_merge_success_rate": self.auto_merge_success_rate,
+            "overall_success_rate": self.overall_success_rate,
+            "false_positive_rate": self.false_positive_rate,
+            "agent_performance": json.dumps(self.agent_performance),
+            "avg_time_to_merge_minutes": self.avg_time_to_merge_minutes,
+            "p95_time_to_merge_minutes": self.p95_time_to_merge_minutes,
+            "total_retries": self.total_retries,
+            "successful_retries": self.successful_retries,
+            "retry_success_rate": self.retry_success_rate,
+            "avg_feedback_latency_seconds": self.avg_feedback_latency_seconds,
+            "feedbacks_sent": self.feedbacks_sent,
+            "insights": json.dumps(self.insights),
+            "recommendations": json.dumps(self.recommendations),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, str]) -> MonthlyReport:
+        return cls(
+            report_id=data.get("report_id", ""),
+            month_start=data.get("month_start", ""),
+            month_end=data.get("month_end", ""),
+            generated_at=data.get("generated_at", ""),
+            total_prs=int(data.get("total_prs", "0")),
+            merged_prs=int(data.get("merged_prs", "0")),
+            declined_prs=int(data.get("declined_prs", "0")),
+            rejected_prs=int(data.get("rejected_prs", "0")),
+            abandoned_prs=int(data.get("abandoned_prs", "0")),
+            escalated_prs=int(data.get("escalated_prs", "0")),
+            review_accuracy=float(data.get("review_accuracy", "0")),
+            auto_merge_success_rate=float(data.get("auto_merge_success_rate", "0")),
+            overall_success_rate=float(data.get("overall_success_rate", "0")),
+            false_positive_rate=float(data.get("false_positive_rate", "0")),
+            agent_performance=json.loads(data.get("agent_performance", "{}")),
+            avg_time_to_merge_minutes=float(data.get("avg_time_to_merge_minutes", "0")),
+            p95_time_to_merge_minutes=float(data.get("p95_time_to_merge_minutes", "0")),
+            total_retries=int(data.get("total_retries", "0")),
+            successful_retries=int(data.get("successful_retries", "0")),
+            retry_success_rate=float(data.get("retry_success_rate", "0")),
+            avg_feedback_latency_seconds=float(
+                data.get("avg_feedback_latency_seconds", "0")
+            ),
+            feedbacks_sent=int(data.get("feedbacks_sent", "0")),
+            insights=json.loads(data.get("insights", "[]")),
+            recommendations=json.loads(data.get("recommendations", "[]")),
+        )
+
+
 class FeedbackLoop:
     """Analyzes PR outcomes and generates feedback."""
 
@@ -222,6 +376,174 @@ class FeedbackLoop:
 
     def _report_key(self, report_id: str) -> str:
         return f"{REPORT_PREFIX}:{report_id}"
+
+    def _feedback_key(self, feedback_id: str) -> str:
+        return f"{FEEDBACK_PREFIX}:agent:{feedback_id}"
+
+    def _monthly_report_key(self, report_id: str) -> str:
+        return f"{REPORT_PREFIX}:monthly:{report_id}"
+
+    def send_agent_feedback(
+        self,
+        pr_number: int,
+        story_id: str,
+        agent_name: str,
+        decline_reason: str,
+        specific_issues: list[str],
+        suggested_fixes: list[str],
+        retry_eligible: bool = True,
+        retry_conditions: list[str] | None = None,
+        documentation_links: list[str] | None = None,
+        decline_timestamp: str = "",
+    ) -> AgentFeedback | None:
+        """Send actionable feedback to an agent via Redis when PR is declined.
+
+        Args:
+            pr_number: The PR number
+            story_id: The story ID
+            agent_name: Name of the agent who opened the PR
+            decline_reason: High-level reason for decline
+            specific_issues: List of specific issues found
+            suggested_fixes: List of suggested fixes
+            retry_eligible: Whether the PR can be retried
+            retry_conditions: Conditions for retry eligibility
+            documentation_links: Links to relevant documentation
+            decline_timestamp: ISO timestamp of when PR was declined
+
+        Returns:
+            AgentFeedback if successful, None otherwise
+        """
+        feedback_id = f"feedback_{pr_number}_{_utc_now()}"
+        created_at = _utc_now()
+
+        # Calculate feedback latency
+        feedback_latency_seconds = 0.0
+        if decline_timestamp:
+            try:
+                declined = datetime.fromisoformat(
+                    decline_timestamp.replace("Z", "+00:00")
+                )
+                created = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+                feedback_latency_seconds = (created - declined).total_seconds()
+            except (ValueError, TypeError):
+                pass
+
+        feedback = AgentFeedback(
+            pr_number=pr_number,
+            story_id=story_id,
+            agent_name=agent_name,
+            feedback_id=feedback_id,
+            created_at=created_at,
+            decline_reason=decline_reason,
+            specific_issues=specific_issues,
+            suggested_fixes=suggested_fixes,
+            retry_eligible=retry_eligible,
+            retry_conditions=retry_conditions or [],
+            documentation_links=documentation_links or [],
+            feedback_latency_seconds=feedback_latency_seconds,
+        )
+
+        # Store in Redis
+        self._store_agent_feedback(feedback)
+
+        # Publish to agent's feedback channel
+        self._publish_agent_feedback(feedback)
+
+        return feedback
+
+    def _store_agent_feedback(self, feedback: AgentFeedback) -> None:
+        """Store agent feedback in Redis."""
+        key = self._feedback_key(feedback.feedback_id)
+        data = feedback.to_dict()
+
+        for field_name, value in data.items():
+            _redis_cli("HSET", key, field_name, str(value))
+
+        _redis_cli("EXPIRE", key, str(REPORT_TTL_SECONDS))
+
+        # Add to agent's feedback index
+        _redis_cli(
+            "LPUSH",
+            f"{FEEDBACK_PREFIX}:agent:{feedback.agent_name}:feedbacks",
+            feedback.feedback_id,
+        )
+        _redis_cli(
+            "EXPIRE",
+            f"{FEEDBACK_PREFIX}:agent:{feedback.agent_name}:feedbacks",
+            str(REPORT_TTL_SECONDS),
+        )
+
+        # Add to PR's feedback index
+        _redis_cli(
+            "SADD",
+            f"{FEEDBACK_PREFIX}:pr:{feedback.pr_number}",
+            feedback.feedback_id,
+        )
+        _redis_cli(
+            "EXPIRE",
+            f"{FEEDBACK_PREFIX}:pr:{feedback.pr_number}",
+            str(REPORT_TTL_SECONDS),
+        )
+
+    def _publish_agent_feedback(self, feedback: AgentFeedback) -> None:
+        """Publish feedback to Redis pub/sub for real-time notification."""
+        event = {
+            "type": "agent_feedback",
+            "feedback_id": feedback.feedback_id,
+            "pr_number": feedback.pr_number,
+            "story_id": feedback.story_id,
+            "agent_name": feedback.agent_name,
+            "retry_eligible": feedback.retry_eligible,
+            "timestamp": feedback.created_at,
+        }
+        _redis_cli(
+            "PUBLISH",
+            f"{FEEDBACK_PREFIX}:channel:{feedback.agent_name}",
+            json.dumps(event),
+        )
+
+    def get_agent_feedback(self, feedback_id: str) -> AgentFeedback | None:
+        """Retrieve agent feedback by ID."""
+        key = self._feedback_key(feedback_id)
+        result = _redis_cli("HGETALL", key)
+
+        if result.returncode != 0 or not result.stdout.strip():
+            return None
+
+        lines = result.stdout.strip().split("\n")
+        data: dict[str, str] = {}
+        for i in range(0, len(lines), 2):
+            if i + 1 < len(lines):
+                data[lines[i]] = lines[i + 1]
+
+        if not data:
+            return None
+
+        return AgentFeedback.from_dict(data)
+
+    def get_agent_feedbacks(
+        self, agent_name: str, limit: int = 10
+    ) -> list[AgentFeedback]:
+        """Get feedback history for an agent."""
+        result = _redis_cli(
+            "LRANGE",
+            f"{FEEDBACK_PREFIX}:agent:{agent_name}:feedbacks",
+            "0",
+            str(limit - 1),
+        )
+
+        if result.returncode != 0 or not result.stdout.strip():
+            return []
+
+        feedbacks = []
+        for line in result.stdout.strip().split("\n"):
+            line = line.strip()
+            if line:
+                feedback = self.get_agent_feedback(line)
+                if feedback:
+                    feedbacks.append(feedback)
+
+        return feedbacks
 
     def analyze_patterns(
         self,
@@ -580,6 +902,204 @@ class FeedbackLoop:
         # Add to reports index
         _redis_cli("SADD", f"{REPORT_PREFIX}:all", report.report_id)
         _redis_cli("EXPIRE", f"{REPORT_PREFIX}:all", str(REPORT_TTL_SECONDS))
+
+    def generate_monthly_report(
+        self,
+        month_start: datetime | None = None,
+    ) -> MonthlyReport:
+        """Generate a monthly feedback report with review accuracy and agent performance.
+
+        Args:
+            month_start: Start of month (defaults to first day of current month)
+
+        Returns:
+            MonthlyReport with comprehensive metrics
+        """
+        if month_start is None:
+            # Default to first day of current month
+            now = datetime.now(UTC)
+            month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        # Calculate month end
+        if month_start.month == 12:
+            month_end = month_start.replace(year=month_start.year + 1, month=1)
+        else:
+            month_end = month_start.replace(month=month_start.month + 1)
+
+        # Get metrics for the month
+        metrics = self.tracker.calculate_metrics(month_start, month_end)
+
+        # Get outcomes for detailed analysis
+        outcomes = self.tracker._get_outcomes_in_range(month_start, month_end)
+
+        # Count by outcome type
+        declined_count = sum(1 for o in outcomes if o.outcome == "declined")
+        abandoned_count = sum(1 for o in outcomes if o.outcome == "abandoned")
+        escalated_count = sum(1 for o in outcomes if o.outcome == "escalated")
+
+        # Calculate review accuracy
+        review_accuracy = 0.0
+        if metrics.merged_prs > 0:
+            stayed_merged = metrics.merged_prs - metrics.rolled_back_prs
+            review_accuracy = (stayed_merged / metrics.merged_prs) * 100
+
+        # Calculate false positive rate
+        false_positive_rate = 0.0
+        if metrics.merged_prs > 0:
+            false_positive_rate = (metrics.rolled_back_prs / metrics.merged_prs) * 100
+
+        # Calculate agent performance
+        agent_stats: dict[str, dict[str, Any]] = {}
+        for outcome in outcomes:
+            agent = outcome.opened_by_agent
+            if not agent:
+                continue
+
+            if agent not in agent_stats:
+                agent_stats[agent] = {
+                    "total_prs": 0,
+                    "merged": 0,
+                    "declined": 0,
+                    "rejected": 0,
+                    "abandoned": 0,
+                    "escalated": 0,
+                    "rolled_back": 0,
+                    "success_rate": 0.0,
+                }
+
+            agent_stats[agent]["total_prs"] += 1
+            if outcome.outcome == "merged":
+                agent_stats[agent]["merged"] += 1
+            elif outcome.outcome == "declined":
+                agent_stats[agent]["declined"] += 1
+            elif outcome.outcome == "rejected":
+                agent_stats[agent]["rejected"] += 1
+            elif outcome.outcome == "abandoned":
+                agent_stats[agent]["abandoned"] += 1
+            elif outcome.outcome == "escalated":
+                agent_stats[agent]["escalated"] += 1
+
+            if outcome.rolled_back:
+                agent_stats[agent]["rolled_back"] += 1
+
+        # Calculate success rates per agent
+        for agent, stats in agent_stats.items():
+            if stats["total_prs"] > 0:
+                stats["success_rate"] = (stats["merged"] / stats["total_prs"]) * 100
+
+        # Get retry metrics (simplified - would integrate with retry_handler)
+        retry_metrics = {"total_retries": 0, "successful_retries": 0}
+
+        # Get feedback metrics
+        feedback_result = _redis_cli("KEYS", f"{FEEDBACK_PREFIX}:agent:*:feedbacks")
+        feedbacks_sent = 0
+        if feedback_result.returncode == 0 and feedback_result.stdout.strip():
+            feedbacks_sent = len(feedback_result.stdout.strip().split("\n"))
+
+        # Calculate average feedback latency
+        avg_feedback_latency = 0.0
+        # Simplified - would calculate from stored feedbacks
+
+        # Generate insights
+        insights = []
+        if review_accuracy >= 95:
+            insights.append(f"Excellent review accuracy: {review_accuracy:.1f}%")
+        elif review_accuracy >= 90:
+            insights.append(f"Good review accuracy: {review_accuracy:.1f}%")
+        else:
+            insights.append(f"Review accuracy below target: {review_accuracy:.1f}%")
+
+        if metrics.rolled_back_prs > 0:
+            insights.append(
+                f"{metrics.rolled_back_prs} PR(s) rolled back ({false_positive_rate:.1f}% false positive rate)"
+            )
+
+        if escalated_count > 0:
+            insights.append(f"{escalated_count} PR(s) escalated to human review")
+
+        # Generate recommendations
+        recommendations = []
+        if false_positive_rate > 5:
+            recommendations.append(
+                "High false positive rate detected. Consider tightening auto-approval criteria."
+            )
+
+        if metrics.avg_time_to_merge_minutes > 120:
+            recommendations.append(
+                "Average time to merge exceeds 2 hours. Consider CI optimization."
+            )
+
+        # Find top performing agent
+        if agent_stats:
+            top_agent = max(agent_stats.items(), key=lambda x: x[1]["success_rate"])
+            recommendations.append(
+                f"Top performer: {top_agent[0]} with {top_agent[1]['success_rate']:.1f}% success rate"
+            )
+
+        report = MonthlyReport(
+            report_id=f"monthly_{month_start.strftime('%Y-%m')}",
+            month_start=month_start.isoformat().replace("+00:00", "Z"),
+            month_end=month_end.isoformat().replace("+00:00", "Z"),
+            generated_at=_utc_now(),
+            total_prs=metrics.total_prs,
+            merged_prs=metrics.merged_prs,
+            declined_prs=declined_count,
+            rejected_prs=metrics.rejected_prs,
+            abandoned_prs=abandoned_count,
+            escalated_prs=escalated_count,
+            review_accuracy=review_accuracy,
+            auto_merge_success_rate=metrics.auto_merge_success_rate,
+            overall_success_rate=metrics.overall_success_rate,
+            false_positive_rate=false_positive_rate,
+            agent_performance=agent_stats,
+            avg_time_to_merge_minutes=metrics.avg_time_to_merge_minutes,
+            p95_time_to_merge_minutes=metrics.p95_time_to_merge_minutes,
+            total_retries=retry_metrics["total_retries"],
+            successful_retries=retry_metrics["successful_retries"],
+            retry_success_rate=0.0,  # Would calculate from retry metrics
+            avg_feedback_latency_seconds=avg_feedback_latency,
+            feedbacks_sent=feedbacks_sent,
+            insights=insights,
+            recommendations=recommendations,
+        )
+
+        # Store report
+        self._store_monthly_report(report)
+
+        return report
+
+    def _store_monthly_report(self, report: MonthlyReport) -> None:
+        """Store a monthly report in Redis."""
+        key = self._monthly_report_key(report.report_id)
+        data = report.to_dict()
+
+        for field_name, value in data.items():
+            _redis_cli("HSET", key, field_name, str(value))
+
+        _redis_cli("EXPIRE", key, str(REPORT_TTL_SECONDS))
+
+        # Add to monthly reports index
+        _redis_cli("SADD", f"{REPORT_PREFIX}:monthly:all", report.report_id)
+        _redis_cli("EXPIRE", f"{REPORT_PREFIX}:monthly:all", str(REPORT_TTL_SECONDS))
+
+    def get_monthly_report(self, report_id: str) -> MonthlyReport | None:
+        """Get a stored monthly report."""
+        key = self._monthly_report_key(report_id)
+        result = _redis_cli("HGETALL", key)
+
+        if result.returncode != 0 or not result.stdout.strip():
+            return None
+
+        lines = result.stdout.strip().split("\n")
+        data: dict[str, str] = {}
+        for i in range(0, len(lines), 2):
+            if i + 1 < len(lines):
+                data[lines[i]] = lines[i + 1]
+
+        if not data:
+            return None
+
+        return MonthlyReport.from_dict(data)
 
     def get_report(self, report_id: str) -> WeeklyReport | None:
         """Get a stored report."""
