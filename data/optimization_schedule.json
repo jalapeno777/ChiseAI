@@ -1,0 +1,50 @@
+{
+  "jobs": {
+    "job_TEST-001_1772072747.949356": {
+      "job_id": "job_TEST-001_1772072747.949356",
+      "strategy_id": "TEST-001",
+      "status": "scheduled",
+      "config": {
+        "frequency": "weekly",
+        "day_of_week": 0,
+        "day_of_month": 1,
+        "hour": 2,
+        "minute": 0,
+        "timezone": "UTC",
+        "adaptive_enabled": true
+      },
+      "next_run_at": "2026-03-02T02:00:00",
+      "last_run_at": null,
+      "last_record_id": null,
+      "run_count": 0,
+      "success_count": 0,
+      "failure_count": 0,
+      "created_at": "2026-02-25T21:25:47.949408",
+      "paused_at": null
+    },
+    "job_TEST-001_1772072774.556703": {
+      "job_id": "job_TEST-001_1772072774.556703",
+      "strategy_id": "TEST-001",
+      "status": "scheduled",
+      "config": {
+        "frequency": "weekly",
+        "day_of_week": 0,
+        "day_of_month": 1,
+        "hour": 2,
+        "minute": 0,
+        "timezone": "UTC",
+        "adaptive_enabled": true
+      },
+      "next_run_at": "2026-03-02T02:00:00",
+      "last_run_at": null,
+      "last_record_id": null,
+      "run_count": 0,
+      "success_count": 0,
+      "failure_count": 0,
+      "created_at": "2026-02-25T21:26:14.556746",
+      "paused_at": null
+    }
+  },
+  "records": {},
+  "saved_at": "2026-02-25T21:26:15.571240"
+}
