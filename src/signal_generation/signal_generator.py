@@ -52,6 +52,9 @@ class SignalGenerationConfig:
     enable_stop_loss_calculation: bool = True
     enable_trailing_stop: bool = True
     trailing_stop_threshold: float = 0.85  # 85% confidence for trailing stop
+    dry_run_mode: bool = False
+    enable_heartbeat: bool = True
+    log_filtered_signals: bool = True
 
 
 class SignalCache:
@@ -641,3 +644,18 @@ class SignalGenerator:
 
         except Exception as e:
             logger.warning(f"Trailing stop calculation failed for {signal.token}: {e}")
+
+    def get_diagnostics(self) -> dict[str, Any]:
+        """Get signal generation diagnostics.
+
+        P0-RUNTIME-HARDEN-004: Added for monitoring signal generation health
+
+        Returns:
+            Dictionary with diagnostic information
+        """
+        return self._diagnostics.to_dict()
+
+    def reset_diagnostics(self) -> None:
+        """Reset diagnostics counters."""
+        self._diagnostics = SignalGenerationDiagnostics()
+        logger.info("SignalGenerator diagnostics reset")
