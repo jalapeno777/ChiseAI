@@ -63,39 +63,52 @@ def check_kill_switch_triggered(r: redis.Redis) -> Optional[str]:
 
 
 def check_scheduler_down(r: redis.Redis) -> Optional[str]:
-    """Check if scheduler has been down for >5 minutes."""
+    """Check if scheduler has been down for >5 minutes based on Redis heartbeat."""
     try:
-        # Check if process is running
-        result = subprocess.run(
-            ["ps", "aux"], capture_output=True, text=True, timeout=5
-        )
-        running = any(
-            "trading_activity" in line or "scheduler" in line
-            for line in result.stdout.split("\n")
-            if "grep" not in line
-        )
+        # Get heartbeat from Redis
+        heartbeat = r.hgetall("bmad:chiseai:scheduler:heartbeat")
+        now = datetime.now(timezone.utc)
 
-        if not running:
-            # Check when we last saw it running
+        if not heartbeat:
+            # No heartbeat found - check how long it's been missing
             last_seen = r.hget(ALERT_STATE_KEY, "scheduler_last_seen")
-            now = datetime.now(timezone.utc).isoformat()
 
             if last_seen:
                 last_dt = datetime.fromisoformat(last_seen)
-                elapsed = datetime.now(timezone.utc) - last_dt
+                elapsed = now - last_dt
 
                 if elapsed > timedelta(minutes=5):
-                    return f"⚠️ **ALERT: Scheduler down for {elapsed.seconds // 60} minutes**\nProcess not found. Check logs immediately."
+                    return f"⚠️ **ALERT: Scheduler heartbeat missing for {elapsed.seconds // 60} minutes**\nNo heartbeat in Redis. Check if scheduler is running."
             else:
-                # First time seeing it down
-                r.hset(ALERT_STATE_KEY, "scheduler_last_seen", now)
-        else:
-            # Scheduler is running, update last seen
-            r.hset(
-                ALERT_STATE_KEY,
-                "scheduler_last_seen",
-                datetime.now(timezone.utc).isoformat(),
-            )
+                # First time seeing no heartbeat
+                r.hset(ALERT_STATE_KEY, "scheduler_last_seen", now.isoformat())
+                r.expire(ALERT_STATE_KEY, 86400)  # 24 hour TTL
+
+            return None
+
+        # We have a heartbeat - check its age
+        timestamp_str = heartbeat.get("timestamp", "")
+        status = heartbeat.get("status", "unknown")
+
+        if not timestamp_str:
+            return "⚠️ **ALERT: Scheduler heartbeat has invalid timestamp**"
+
+        last_heartbeat = datetime.fromisoformat(timestamp_str)
+        elapsed = now - last_heartbeat
+
+        # Update last seen (we have a heartbeat, even if stale)
+        r.hset(ALERT_STATE_KEY, "scheduler_last_seen", now.isoformat())
+
+        # Check if heartbeat is stale (>5 minutes old)
+        if elapsed > timedelta(minutes=5):
+            return f"⚠️ **ALERT: Scheduler heartbeat stale for {elapsed.seconds // 60} minutes**\nLast heartbeat: {status}. Scheduler may be hung or stopped."
+
+        # Check if status is not running
+        if status != "running":
+            return f"⚠️ **ALERT: Scheduler status is '{status}'**\nScheduler is not in running state. Check logs immediately."
+
+        # Scheduler is healthy - clear any previous alert state
+        r.hdel(ALERT_STATE_KEY, "scheduler_last_seen")
 
     except Exception as e:
         logger.error(f"Scheduler check error: {e}")
