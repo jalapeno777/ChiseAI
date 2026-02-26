@@ -19,10 +19,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 # Add paths for imports
-scripts_path = str(
-    Path(__file__).parent.parent.parent.parent / "scripts" / "pr_lifecycle"
-)
-src_path = str(Path(__file__).parent.parent.parent.parent / "src")
+scripts_path = str(Path(__file__).parent.parent.parent / "scripts" / "pr_lifecycle")
+src_path = str(Path(__file__).parent.parent.parent / "src")
 if scripts_path not in sys.path:
     sys.path.insert(0, scripts_path)
 if src_path not in sys.path:
