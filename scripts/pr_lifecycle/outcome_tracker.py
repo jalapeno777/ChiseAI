@@ -44,7 +44,7 @@ class PROutcome:
     head_sha: str
 
     # Outcome
-    outcome: str  # merged, rejected, rolled_back, closed_unmerged
+    outcome: str  # merged, declined, rejected, rolled_back, abandoned, escalated, closed_unmerged
     outcome_reason: str = ""
 
     # Timing
@@ -379,6 +379,91 @@ class OutcomeTracker:
         )
         return self.record_outcome(outcome)
 
+    def record_declined(
+        self,
+        pr_number: int,
+        story_id: str,
+        branch: str,
+        head_sha: str,
+        opened_by_agent: str,
+        reviewer: str,
+        review_comment: str = "",
+        decline_reason: str = "",
+    ) -> bool:
+        """Record a PR decline outcome (distinct from rejected).
+
+        Declined means the PR was closed without merging after review,
+        typically because the approach was fundamentally flawed.
+        """
+        outcome = PROutcome(
+            pr_number=pr_number,
+            story_id=story_id,
+            branch=branch,
+            head_sha=head_sha,
+            outcome="declined",
+            review_decision="declined",
+            reviewer=reviewer,
+            review_comment=review_comment,
+            outcome_reason=decline_reason,
+            closed_at=_utc_now(),
+            opened_by_agent=opened_by_agent,
+        )
+        return self.record_outcome(outcome)
+
+    def record_abandoned(
+        self,
+        pr_number: int,
+        story_id: str,
+        branch: str,
+        head_sha: str,
+        opened_by_agent: str,
+        abandonment_reason: str = "",
+    ) -> bool:
+        """Record a PR abandonment outcome.
+
+        Abandoned means the PR was closed without merging and without
+        formal review, typically due to inactivity or agent giving up.
+        """
+        outcome = PROutcome(
+            pr_number=pr_number,
+            story_id=story_id,
+            branch=branch,
+            head_sha=head_sha,
+            outcome="abandoned",
+            outcome_reason=abandonment_reason,
+            closed_at=_utc_now(),
+            opened_by_agent=opened_by_agent,
+        )
+        return self.record_outcome(outcome)
+
+    def record_escalated(
+        self,
+        pr_number: int,
+        story_id: str,
+        branch: str,
+        head_sha: str,
+        opened_by_agent: str,
+        escalated_to: str,
+        escalation_reason: str = "",
+    ) -> bool:
+        """Record a PR escalation outcome.
+
+        Escalated means the PR was forwarded to human review
+        due to complexity, risk, or system limitations.
+        """
+        outcome = PROutcome(
+            pr_number=pr_number,
+            story_id=story_id,
+            branch=branch,
+            head_sha=head_sha,
+            outcome="escalated",
+            outcome_reason=escalation_reason,
+            closed_at=_utc_now(),
+            opened_by_agent=opened_by_agent,
+            reviewer=escalated_to,
+        )
+        return self.record_outcome(outcome)
+
     def record_rollback(
         self,
         pr_number: int,
@@ -438,6 +523,18 @@ class OutcomeTracker:
 
             elif outcome.outcome == "rejected":
                 metrics.rejected_prs += 1
+
+            elif outcome.outcome == "declined":
+                # Declined is tracked separately but counted in rejected for metrics
+                pass
+
+            elif outcome.outcome == "abandoned":
+                # Abandoned PRs are tracked but not counted as rejected
+                pass
+
+            elif outcome.outcome == "escalated":
+                # Escalated PRs are tracked but handled separately
+                pass
 
             if outcome.rolled_back:
                 metrics.rolled_back_prs += 1
