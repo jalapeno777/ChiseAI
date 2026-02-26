@@ -1,0 +1,503 @@
+# Monitoring Manifest
+# Documents what each monitoring check validates, expected behavior, and known limitations
+# Version: 1.0.0
+# Last Updated: 2026-02-26
+
+manifest_version: "1.0.0"
+last_updated: "2026-02-26"
+author: "ChiseAI Monitoring System"
+
+# ============================================================================
+# GATE DEFINITIONS
+# ============================================================================
+
+gates:
+  G1:
+    name: "Scheduler Continuity"
+    description: "Validates that the trading scheduler is running and reporting heartbeats"
+    validates:
+      - "Scheduler process is active"
+      - "Heartbeat data exists in Redis"
+      - "State file is present"
+    data_sources:
+      - source: "Process list (ps aux)"
+        key: "trading_activity or scheduler"
+      - source: "Redis"
+        key: "bmad:chiseai:scheduler:heartbeat"
+      - source: "Filesystem"
+        path: "data/optimization_schedule.json"
+    expected_behavior:
+      PASS: "Process running AND heartbeat data exists AND state file present"
+      CHECK: "State exists but process not detected OR heartbeat stale"
+      UNKNOWN: "No heartbeat data found (scheduler not configured)"
+      FAIL: "No process, no state, no heartbeat"
+    status_mapping:
+      HEALTHY: "PASS"
+      STATE_ONLY: "CHECK"
+      NO_HEARTBEAT_DATA: "UNKNOWN"
+      UNHEALTHY: "FAIL"
+    false_positive_risks:
+      - "Shows PASS when only state file exists but no actual process"
+      - "Does not verify heartbeat recency"
+    mitigation:
+      - "Always check for heartbeat data in Redis"
+      - "Verify process has reported within last 5 minutes"
+    known_limitations:
+      - "Process name matching may be brittle"
+      - "Does not verify scheduler is actually executing tasks"
+      - "State file existence does not guarantee valid state"
+
+  G2:
+    name: "Signal Cadence"
+    description: "Validates that trading signals are being generated and stored"
+    validates:
+      - "Signals exist in Redis"
+      - "Signals are recent (not stale)"
+    data_sources:
+      - source: "Redis"
+        pattern: "bmad:chiseai:signals:*"
+    expected_behavior:
+      PASS: "Signals exist AND at least one signal within last hour"
+      CHECK: "No signals found (may be normal during quiet periods)"
+      UNKNOWN: "Redis empty - signal pipeline not configured"
+      STALE: "Signals exist but none recent (>1 hour old)"
+    status_mapping:
+      HEALTHY: "PASS"
+      NO_SIGNALS: "UNKNOWN"
+      STALE_SIGNALS: "STALE"
+    false_positive_risks:
+      - "Shows PASS when signals exist but are all stale"
+      - "Does not distinguish between no signals and empty Redis"
+    mitigation:
+      - "Check signal timestamps for recency"
+      - "Distinguish between empty Redis and no recent signals"
+    known_limitations:
+      - "Cannot determine expected signal frequency"
+      - "Does not validate signal quality or correctness"
+      - "May show UNKNOWN during legitimate quiet periods"
+
+  G3:
+    name: "Data Flow Movement"
+    description: "Validates that trade outcomes are being recorded"
+    validates:
+      - "Outcomes exist in Redis"
+      - "Outcomes are recent"
+    data_sources:
+      - source: "Redis"
+        key: "bmad:chiseai:outcomes:index"
+        pattern: "bmad:chiseai:outcomes:{id}"
+    expected_behavior:
+      PASS: "Outcomes exist AND at least one within last 24 hours"
+      CHECK: "No outcomes found"
+      UNKNOWN: "No outcomes - trading may not be active"
+      STALE: "Outcomes exist but none recent (>24 hours)"
+    status_mapping:
+      HEALTHY: "PASS"
+      NO_OUTCOMES: "UNKNOWN"
+      STALE_OUTCOMES: "STALE"
+    false_positive_risks:
+      - "Shows PASS when outcomes exist but trading stopped"
+      - "Does not verify outcome data integrity"
+    mitigation:
+      - "Check outcome timestamps"
+      - "Verify recent trading activity"
+    known_limitations:
+      - "Cannot distinguish between no trading and recording failure"
+      - "Does not validate PnL calculations"
+      - "Outcomes may exist but pipeline could be broken"
+
+  G4:
+    name: "Kill Switch Active"
+    description: "Validates that the emergency kill switch is configured and ready"
+    validates:
+      - "Kill switch configuration exists in Redis"
+      - "Kill switch is enabled"
+      - "Kill switch has not been triggered"
+    data_sources:
+      - source: "Redis Hash"
+        key: "bmad:chiseai:kill_switch"
+        fields:
+          - enabled: "1 or 0"
+          - triggered: "1 or 0"
+    expected_behavior:
+      PASS: "enabled=1 AND triggered=0"
+      ALERT: "triggered=1 (trading halted)"
+      NOT_CONFIGURED: "enabled is null (not set up)"
+      CHECK: "enabled=0 (configured but disabled)"
+    status_mapping:
+      ARMED: "PASS"
+      TRIGGERED: "ALERT"
+      NOT_CONFIGURED: "NOT_CONFIGURED"
+      DISABLED: "CHECK"
+    false_positive_risks:
+      - "Shows CHECK when not configured (should be NOT_CONFIGURED)"
+      - "Does not verify kill switch actually works"
+    mitigation:
+      - "Explicitly distinguish between disabled and not configured"
+      - "Regular kill switch drills to verify functionality"
+    known_limitations:
+      - "Configuration presence does not guarantee functionality"
+      - "Cannot test kill switch without triggering it"
+      - "Does not verify kill switch mechanism is implemented"
+
+  G5:
+    name: "Daily Loss Guard"
+    description: "Validates that daily loss limits are configured and monitored"
+    validates:
+      - "Daily loss limit is configured"
+      - "Current loss is tracked"
+      - "Loss is within limits"
+    data_sources:
+      - source: "Redis Hash"
+        key: "bmad:chiseai:daily_loss_limit"
+        fields:
+          - max_loss_percent: "Maximum allowed loss percentage"
+          - current_loss: "Current day's loss amount"
+    expected_behavior:
+      PASS: "max_loss_percent set AND current_loss < max_loss_percent"
+      LIMIT_REACHED: "current_loss >= max_loss_percent"
+      NOT_CONFIGURED: "max_loss_percent is null"
+      CHECK: "max_loss_percent set but no current_loss data"
+    status_mapping:
+      WITHIN_LIMIT: "PASS"
+      LIMIT_REACHED: "ALERT"
+      NOT_CONFIGURED: "NOT_CONFIGURED"
+      NO_CURRENT_DATA: "CHECK"
+    false_positive_risks:
+      - "Shows CHECK when not configured (should be NOT_CONFIGURED)"
+      - "Does not verify loss calculation accuracy"
+    mitigation:
+      - "Explicit NOT_CONFIGURED status for missing config"
+      - "Cross-validate loss against trading records"
+    known_limitations:
+      - "Does not verify loss calculation methodology"
+      - "Cannot detect if limits are actually enforced"
+      - "Current loss may be stale"
+
+  G6:
+    name: "Bybit Connectivity"
+    description: "Validates connectivity to Bybit API"
+    validates:
+      - "Can establish TCP connection to api.bybit.com"
+      - "API responds to requests"
+    data_sources:
+      - source: "Network"
+        endpoint: "api.bybit.com:443"
+        protocol: "HTTPS"
+    expected_behavior:
+      PASS: "TCP connection successful AND HTTP 200 response"
+      FAIL: "Connection timeout OR connection refused"
+      CHECK: "Connected but unexpected response"
+    status_mapping:
+      HEALTHY: "PASS"
+      UNREACHABLE: "FAIL"
+      TIMEOUT: "FAIL"
+      RESPONDING: "CHECK"
+    false_positive_risks:
+      - "Shows PASS when API returns 200 but trading fails"
+      - "Does not test authenticated endpoints"
+    mitigation:
+      - "Test authenticated endpoints with API keys"
+      - "Monitor actual trading success rate"
+    known_limitations:
+      - "Only tests public endpoint (/v5/market/time)"
+      - "Does not test API authentication"
+      - "Network connectivity != trading functionality"
+      - "May pass during Bybit maintenance windows"
+
+  G7:
+    name: "Observability Health"
+    description: "Validates that Redis and observability infrastructure is healthy"
+    validates:
+      - "Redis is reachable"
+      - "Redis has been running for reasonable time"
+      - "Key count is reasonable"
+    data_sources:
+      - source: "Redis"
+        command: "PING, INFO server, DBSIZE"
+    expected_behavior:
+      PASS: "Redis ping OK AND uptime > 1 hour"
+      CHECK: "Redis OK but uptime < 1 hour (recent restart)"
+      FAIL: "Redis ping failed"
+    status_mapping:
+      HEALTHY: "PASS"
+      RECENT_RESTART: "CHECK"
+      UNHEALTHY: "FAIL"
+    false_positive_risks:
+      - "Shows PASS when Redis is up but data is stale"
+      - "Does not verify data integrity"
+    mitigation:
+      - "Monitor data freshness separately"
+      - "Check for data consistency"
+    known_limitations:
+      - "Redis health != application health"
+      - "Does not check memory usage or performance"
+      - "Does not verify data integrity"
+
+  G8:
+    name: "End-to-End Pipeline"
+    description: "Validates that the complete trading pipeline is functioning"
+    validates:
+      - "Signals are generated"
+      - "Signals flow through to outcomes"
+      - "Pipeline is not blocked"
+    data_sources:
+      - source: "Redis"
+        signals_pattern: "bmad:chiseai:signals:*"
+        outcomes_key: "bmad:chiseai:outcomes:index"
+    expected_behavior:
+      PASS: "Signals exist AND Outcomes exist"
+      CHECK: "Signals without outcomes OR no data"
+      FAIL: "Pipeline blocked (signals but no outcomes for extended period)"
+    status_mapping:
+      FLOWING: "PASS"
+      BLOCKED: "FAIL"
+      ORPHANED_OUTCOMES: "CHECK"
+      NO_DATA: "CHECK"
+    false_positive_risks:
+      - "Shows PASS when pipeline is slow but not broken"
+      - "Does not detect partial pipeline failures"
+    mitigation:
+      - "Monitor signal-to-outcome latency"
+      - "Track pipeline throughput"
+    known_limitations:
+      - "Cannot distinguish between slow pipeline and broken pipeline"
+      - "Does not validate signal quality"
+      - "May pass during low-activity periods"
+
+# ============================================================================
+# MONITORING SCRIPTS
+# ============================================================================
+
+scripts:
+  checkpoint_gate_audit:
+    path: "scripts/monitoring/checkpoint_gate_audit.py"
+    schedule: "Every 6 hours"
+    description: "Runs all G1-G8 gate checks and posts results"
+    gates_checked: ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8"]
+    self_validation:
+      - "Verifies Redis connectivity before checks"
+      - "Reports UNKNOWN when data is missing"
+      - "Distinguishes between NOT_CONFIGURED and CHECK"
+    limitations:
+      - "Does not track historical trends"
+      - "Single-point-in-time checks only"
+
+  hourly_health_check:
+    path: "scripts/monitoring/hourly_health_check.py"
+    schedule: "Every hour"
+    description: "Quick health check of critical systems"
+    checks: ["Scheduler", "Kill Switch", "Daily Loss", "Metrics"]
+    self_validation:
+      - "Validates Redis connection"
+      - "Reports data freshness"
+      - "Flags stale metrics"
+    limitations:
+      - "Limited to high-level checks"
+      - "Does not validate data correctness"
+
+  daily_executive_summary:
+    path: "scripts/monitoring/daily_executive_summary.py"
+    schedule: "Daily"
+    description: "Daily summary for executive review"
+    metrics: ["PnL", "Win Rate", "Drawdown", "ECE Drift", "Incidents"]
+    self_validation:
+      - "Validates outcome data exists"
+      - "Reports when metrics are unavailable"
+      - "Flags incomplete data"
+    limitations:
+      - "PnL calculation is simplified"
+      - "ECE drift is placeholder"
+      - "Does not validate trade data accuracy"
+
+  validate_monitoring:
+    path: "scripts/monitoring/validate_monitoring.py"
+    schedule: "On-demand or CI/CD"
+    description: "Validates that monitoring scripts report true state"
+    checks: ["False positive detection", "Data accuracy validation", "Status mapping verification"]
+    self_validation:
+      - "Cross-checks reported vs actual state"
+      - "Detects stale data"
+      - "Validates all gate statuses"
+    limitations:
+      - "Requires Redis connectivity"
+      - "Point-in-time validation only"
+
+# ============================================================================
+# STATUS DEFINITIONS
+# ============================================================================
+
+status_definitions:
+  PASS:
+    description: "Check passed - system is healthy"
+    icon: "✅"
+    color: "green"
+    action_required: false
+
+  FAIL:
+    description: "Check failed - immediate attention required"
+    icon: "❌"
+    color: "red"
+    action_required: true
+
+  CHECK:
+    description: "Check condition - manual review recommended"
+    icon: "⚠️"
+    color: "yellow"
+    action_required: true
+
+  UNKNOWN:
+    description: "Cannot determine status - data missing or incomplete"
+    icon: "❓"
+    color: "gray"
+    action_required: true
+    notes: "Used when monitoring cannot determine state (e.g., no heartbeat data)"
+
+  NOT_CONFIGURED:
+    description: "Component not configured - setup required"
+    icon: "⚙️"
+    color: "blue"
+    action_required: true
+    notes: "Used when a required component has not been set up"
+
+  ALERT:
+    description: "Critical condition detected"
+    icon: "🚨"
+    color: "red"
+    action_required: true
+
+  STALE:
+    description: "Data exists but is outdated"
+    icon: "⏰"
+    color: "orange"
+    action_required: true
+
+# ============================================================================
+# KNOWN ISSUES AND FALSE POSITIVES
+# ============================================================================
+
+known_issues:
+  - id: "FP-001"
+    title: "G1 shows PASS without heartbeat data"
+    description: "G1 may show PASS when only state file exists, even if no heartbeat"
+    affected_gates: ["G1"]
+    severity: "medium"
+    mitigation: "Always check for heartbeat data in Redis"
+    status: "mitigated"
+
+  - id: "FP-002"
+    title: "G2 shows CHECK instead of UNKNOWN for empty Redis"
+    description: "G2 shows CHECK when Redis is empty, should show UNKNOWN"
+    affected_gates: ["G2"]
+    severity: "low"
+    mitigation: "Updated to show UNKNOWN when no signals configured"
+    status: "fixed"
+
+  - id: "FP-003"
+    title: "G3 shows CHECK instead of UNKNOWN for no outcomes"
+    description: "G3 shows CHECK when no outcomes, should show UNKNOWN"
+    affected_gates: ["G3"]
+    severity: "low"
+    mitigation: "Updated to show UNKNOWN when no outcomes recorded"
+    status: "fixed"
+
+  - id: "FP-004"
+    title: "G4 shows CHECK instead of NOT_CONFIGURED"
+    description: "G4 shows CHECK when kill switch not set, should show NOT_CONFIGURED"
+    affected_gates: ["G4"]
+    severity: "medium"
+    mitigation: "Updated to show NOT_CONFIGURED when not set"
+    status: "fixed"
+
+  - id: "FP-005"
+    title: "G5 shows CHECK instead of NOT_CONFIGURED"
+    description: "G5 shows CHECK when loss limit not set, should show NOT_CONFIGURED"
+    affected_gates: ["G5"]
+    severity: "medium"
+    mitigation: "Updated to show NOT_CONFIGURED when not set"
+    status: "fixed"
+
+  - id: "FP-006"
+    title: "Stale data not detected"
+    description: "Checks may pass even when data is stale"
+    affected_gates: ["G2", "G3", "G7"]
+    severity: "medium"
+    mitigation: "Added timestamp validation in validation script"
+    status: "mitigated"
+
+# ============================================================================
+# VALIDATION PROCEDURES
+# ============================================================================
+
+validation_procedures:
+  pre_flight:
+    - "Run validate_monitoring.py to check for false positives"
+    - "Verify all gates have expected status"
+    - "Check for stale data warnings"
+
+  post_deployment:
+    - "Run checkpoint_gate_audit.py and verify output"
+    - "Cross-check reported metrics against actual system state"
+    - "Validate all status mappings are correct"
+
+  periodic:
+    - "Run validate_monitoring.py weekly"
+    - "Review known_issues for new false positives"
+    - "Update manifest with any new limitations found"
+
+# ============================================================================
+# REDIS KEY REFERENCE
+# ============================================================================
+
+redis_keys:
+  scheduler:
+    - key: "bmad:chiseai:scheduler:heartbeat"
+      type: "hash"
+      description: "Scheduler heartbeat data"
+      fields:
+        - timestamp: "Last heartbeat timestamp"
+        - status: "Scheduler status"
+    - key: "bmad:chiseai:scheduler:last_seen"
+      type: "string"
+      description: "Last time scheduler was seen"
+
+  signals:
+    - key: "bmad:chiseai:signals:*"
+      type: "hash"
+      description: "Individual signal data"
+      fields:
+        - timestamp: "Signal creation time"
+        - symbol: "Trading pair"
+        - direction: "LONG or SHORT"
+        - confidence: "Signal confidence score"
+
+  outcomes:
+    - key: "bmad:chiseai:outcomes:index"
+      type: "set"
+      description: "Index of all outcome IDs"
+    - key: "bmad:chiseai:outcomes:{id}"
+      type: "hash"
+      description: "Individual outcome data"
+      fields:
+        - timestamp: "Outcome time"
+        - entry_price: "Entry price"
+        - fill_price: "Fill price"
+        - direction: "LONG or SHORT"
+        - pnl: "Profit/loss"
+
+  safety:
+    - key: "bmad:chiseai:kill_switch"
+      type: "hash"
+      description: "Kill switch configuration"
+      fields:
+        - enabled: "1 if armed, 0 if disabled"
+        - triggered: "1 if triggered, 0 if not"
+        - triggered_at: "Timestamp when triggered"
+        - reason: "Reason for trigger"
+    - key: "bmad:chiseai:daily_loss_limit"
+      type: "hash"
+      description: "Daily loss limit configuration"
+      fields:
+        - max_loss_percent: "Maximum allowed loss %"
+        - current_loss: "Current day's loss $"
+        - last_updated: "Last update timestamp"
