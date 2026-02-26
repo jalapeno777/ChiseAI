@@ -25,7 +25,6 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -423,7 +422,7 @@ def validate_yaml_file(file_path: str, epic_id: str | None = None) -> dict[str, 
     }
 
     try:
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             data = yaml.safe_load(f)
     except Exception as e:
         result["errors"].append(f"Failed to parse YAML: {e}")
@@ -511,7 +510,7 @@ def cmd_verify(args: argparse.Namespace) -> int:
     else:
         print(f"Story ID: {result['story_id']}")
         print(f"Merge SHA: {result['merge_sha']}")
-        print(f"Checks:")
+        print("Checks:")
         for check, value in result["checks"].items():
             if isinstance(value, bool):
                 status = "✓" if value else "✗"
@@ -524,7 +523,7 @@ def cmd_verify(args: argparse.Namespace) -> int:
                 print(f"  {check}: {value}")
 
         if result["errors"]:
-            print(f"\nErrors:")
+            print("\nErrors:")
             for error in result["errors"]:
                 print(f"  ✗ {error}")
 
@@ -570,7 +569,7 @@ def cmd_validate_yaml(args: argparse.Namespace) -> int:
         print(f"Entries failed: {result['entries_failed']}")
 
         if result["errors"]:
-            print(f"\nErrors:")
+            print("\nErrors:")
             for error in result["errors"]:
                 if isinstance(error, dict):
                     print(f"  Entry: {error['entry']}")
