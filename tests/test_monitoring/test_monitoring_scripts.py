@@ -1,278 +1,133 @@
 """Tests for monitoring scripts."""
 
 import pytest
+import json
+from datetime import datetime, UTC
 from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime, timezone, timedelta
 
 
-class TestPagerAlerts:
-    """Test pager alert functionality."""
+class TestHourlyHealthCheck:
+    """Test hourly health check formatting and parsing."""
 
-    def test_kill_switch_triggered(self):
-        """Test kill switch detection when triggered."""
-        import sys
+    def test_format_hourly_message(self):
+        """Test message formatting."""
+        from scripts.monitoring.hourly_health_check import format_hourly_message
 
-        sys.path.insert(0, "/home/tacopants/projects/ChiseAI")
-        from scripts.monitoring.pager_alerts import check_kill_switch_triggered
+        scheduler = {"status": "✅", "detail": "Process active"}
+        kill_switch = {"status": "✅", "detail": "Armed"}
+        daily_loss = {"status": "✅", "detail": "Limit: 2.0%"}
+        metrics = {"signals": 5, "outcomes": 3, "keys": 487}
 
-        mock_redis = Mock()
-        mock_redis.hget.return_value = "1"  # Triggered
+        message = format_hourly_message(scheduler, kill_switch, daily_loss, metrics)
 
-        result = check_kill_switch_triggered(mock_redis)
-        assert result is not None
-        assert "KILL SWITCH TRIGGERED" in result
-        assert "CRITICAL" in result
+        assert "🔥 Burn-in Hourly Check" in message
+        assert "Process active" in message
+        assert "Armed" in message
+        assert "Signals: 5" in message
+        assert "Outcomes: 3" in message
 
-    def test_kill_switch_not_triggered(self):
-        """Test kill switch detection when not triggered."""
-        import sys
+    def test_check_scheduler_health_running(self):
+        """Test scheduler check when running."""
+        from scripts.monitoring.hourly_health_check import check_scheduler_health
 
-        sys.path.insert(0, "/home/tacopants/projects/ChiseAI")
-        from scripts.monitoring.pager_alerts import check_kill_switch_triggered
-
-        mock_redis = Mock()
-        mock_redis.hget.return_value = "0"  # Not triggered
-
-        result = check_kill_switch_triggered(mock_redis)
-        assert result is None
-
-    def test_kill_switch_redis_error(self):
-        """Test kill switch detection handles Redis errors gracefully."""
-        import sys
-
-        sys.path.insert(0, "/home/tacopants/projects/ChiseAI")
-        from scripts.monitoring.pager_alerts import check_kill_switch_triggered
-
-        mock_redis = Mock()
-        mock_redis.hget.side_effect = Exception("Redis connection error")
-
-        result = check_kill_switch_triggered(mock_redis)
-        assert result is None
-
-    def test_scheduler_down_detection(self):
-        """Test scheduler down detection when down for >5 min."""
-        import sys
-
-        sys.path.insert(0, "/home/tacopants/projects/ChiseAI")
-        from scripts.monitoring.pager_alerts import check_scheduler_down
-
-        mock_redis = Mock()
-        # Last seen 10 minutes ago
-        last_seen = (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat()
-        mock_redis.hget.return_value = last_seen
+        mock_output = "trading_activity --daemon"
 
         with patch("subprocess.run") as mock_run:
-            mock_run.return_value = Mock(stdout="", returncode=0)
-            result = check_scheduler_down(mock_redis)
+            mock_run.return_value = Mock(stdout=mock_output, returncode=0)
+            result = check_scheduler_health()
 
-        assert result is not None
-        assert "Scheduler down" in result or "down for" in result.lower()
+        assert result["running"] is True
+        assert result["status"] == "✅"
 
-    def test_scheduler_running(self):
-        """Test scheduler detection when running."""
-        import sys
-
-        sys.path.insert(0, "/home/tacopants/projects/ChiseAI")
-        from scripts.monitoring.pager_alerts import check_scheduler_down
+    def test_check_kill_switch_armed(self):
+        """Test kill switch check when armed."""
+        from scripts.monitoring.hourly_health_check import check_kill_switch
 
         mock_redis = Mock()
+        mock_redis.hget.side_effect = lambda key, field: {
+            ("bmad:chiseai:kill_switch", "enabled"): "1",
+            ("bmad:chiseai:kill_switch", "triggered"): "0",
+        }.get((key, field))
 
-        with patch("subprocess.run") as mock_run:
-            # Simulate scheduler process running
-            mock_run.return_value = Mock(
-                stdout="user 1234 0.0 0.1 12345 1234 ? S 00:00 trading_activity_scheduler",
-                returncode=0,
-            )
-            result = check_scheduler_down(mock_redis)
+        result = check_kill_switch(mock_redis)
 
-        assert result is None
+        assert result["armed"] is True
+        assert result["status"] == "✅"
 
-
-class TestSignalGrowthDetector:
-    """Test signal growth detector."""
-
-    def test_no_growth_warning(self):
-        """Test warning when no growth for 2+ hours."""
-        import sys
-
-        sys.path.insert(0, "/home/tacopants/projects/ChiseAI")
-        from scripts.monitoring.signal_growth_detector import check_signal_growth
+    def test_check_kill_switch_triggered(self):
+        """Test kill switch check when triggered."""
+        from scripts.monitoring.hourly_health_check import check_kill_switch
 
         mock_redis = Mock()
-        mock_redis.keys.return_value = ["signal1", "signal2"]  # 2 signals
-        mock_redis.get.side_effect = [
-            "2",  # last_count = 2
-            (
-                datetime.now(timezone.utc) - timedelta(hours=3)
-            ).isoformat(),  # last_alert 3h ago
+        mock_redis.hget.side_effect = lambda key, field: {
+            ("bmad:chiseai:kill_switch", "enabled"): "1",
+            ("bmad:chiseai:kill_switch", "triggered"): "1",
+        }.get((key, field))
+
+        result = check_kill_switch(mock_redis)
+
+        assert result["armed"] is False
+        assert result["status"] == "🚨"
+
+
+class TestCheckpointGateAudit:
+    """Test checkpoint audit formatting and parsing."""
+
+    def test_format_checkpoint_message(self):
+        """Test checkpoint message formatting."""
+        from scripts.monitoring.checkpoint_gate_audit import format_checkpoint_message
+
+        checks = [
+            {"gate": "G1", "status": "✅ PASS", "detail": "Running"},
+            {"gate": "G2", "status": "⚠️ CHECK", "detail": "No signals"},
+            {"gate": "G3", "status": "✅ PASS", "detail": "3 outcomes"},
         ]
 
-        result = check_signal_growth(mock_redis)
-        assert result is not None
-        assert "No signal growth" in result
-        assert "2+" in result or "2" in result
+        message = format_checkpoint_message(checks)
 
-    def test_growth_detected_no_warning(self):
-        """Test no warning when growth detected."""
-        import sys
+        assert "📊 Burn-in Checkpoint" in message
+        assert "2 ✅" in message  # pass count
+        assert "1 ⚠️" in message  # check count
+        assert "G1:" in message
+        assert "G2:" in message
 
-        sys.path.insert(0, "/home/tacopants/projects/ChiseAI")
-        from scripts.monitoring.signal_growth_detector import check_signal_growth
+    def test_run_all_checks_redis_fail(self):
+        """Test when Redis unavailable."""
+        from scripts.monitoring.checkpoint_gate_audit import run_all_checks
 
-        mock_redis = Mock()
-        mock_redis.keys.return_value = [
-            "signal1",
-            "signal2",
-            "signal3",
-        ]  # 3 signals now
-        mock_redis.get.side_effect = [
-            "2",  # last_count = 2
-            None,  # No previous alert
-        ]
+        with patch("scripts.monitoring.checkpoint_gate_audit.get_redis") as mock_get:
+            mock_get.return_value = None
+            result = run_all_checks()
 
-        result = check_signal_growth(mock_redis)
-        assert result is None
-
-    def test_first_run_stores_count(self):
-        """Test first run stores signal count."""
-        import sys
-
-        sys.path.insert(0, "/home/tacopants/projects/ChiseAI")
-        from scripts.monitoring.signal_growth_detector import check_signal_growth
-
-        mock_redis = Mock()
-        mock_redis.keys.return_value = ["signal1", "signal2"]
-        mock_redis.get.return_value = None  # No previous count
-
-        result = check_signal_growth(mock_redis)
-        assert result is None
-        mock_redis.set.assert_called_with(
-            "bmad:chiseai:monitoring:signal_growth:last_count", 2
-        )
+        assert len(result) == 1
+        assert result[0]["gate"] == "ALL"
+        assert "FAIL" in result[0]["status"]
 
 
-class TestDailyExecutiveSummary:
-    """Test daily executive summary."""
-
-    def test_calculate_pnl_with_trades(self):
-        """Test PnL calculation with trades."""
-        import sys
-
-        sys.path.insert(0, "/home/tacopants/projects/ChiseAI")
-        from scripts.monitoring.daily_executive_summary import calculate_pnl
-
-        mock_redis = Mock()
-        mock_redis.smembers.return_value = ["trade1", "trade2"]
-        mock_redis.hgetall.side_effect = [
-            {"entry_price": "100", "fill_price": "110", "direction": "LONG"},  # Win +10
-            {
-                "entry_price": "200",
-                "fill_price": "190",
-                "direction": "SHORT",
-            },  # Win +10
-        ]
-
-        result = calculate_pnl(mock_redis)
-
-        assert result["wins"] == 2
-        assert result["losses"] == 0
-        assert result["total_trades"] == 2
-        assert result["win_rate"] == 100.0
-
-    def test_calculate_pnl_no_trades(self):
-        """Test PnL calculation with no trades."""
-        import sys
-
-        sys.path.insert(0, "/home/tacopants/projects/ChiseAI")
-        from scripts.monitoring.daily_executive_summary import calculate_pnl
-
-        mock_redis = Mock()
-        mock_redis.smembers.return_value = set()
-
-        result = calculate_pnl(mock_redis)
-
-        assert result["total_trades"] == 0
-        assert result["win_rate"] == 0
-
-    def test_format_executive_summary(self):
-        """Test summary formatting."""
-        import sys
-
-        sys.path.insert(0, "/home/tacopants/projects/ChiseAI")
-        from scripts.monitoring.daily_executive_summary import format_executive_summary
-
-        pnl = {
-            "pnl": 1234.56,
-            "wins": 10,
-            "losses": 5,
-            "win_rate": 66.7,
-            "total_trades": 15,
-        }
-        drawdown = 100.0
-        ece = "Within bounds"
-        incidents = 2
-
-        result = format_executive_summary(pnl, drawdown, ece, incidents)
-
-        assert "Daily Executive Summary" in result
-        assert "$1,234.56" in result or "1234.56" in result
-        assert "66.7%" in result or "66.70%" in result
-        assert "Within bounds" in result
-        assert "2" in result
-
-
-class TestBurninCompletion:
-    """Test burn-in completion."""
-
-    def test_format_completion_message(self):
-        """Test completion message formatting."""
-        import sys
-
-        sys.path.insert(0, "/home/tacopants/projects/ChiseAI")
-        from scripts.monitoring.burnin_completion import format_completion_message
-
-        result = format_completion_message()
-
-        assert "BURN-IN COMPLETE" in result
-        assert "24-Hour Burn-in" in result
-        assert "All gates validated" in result
-        assert "Bybit demo trading" in result
-        assert "Next Steps" in result
-
-
-class TestEnvironmentVariables:
+class TestEnvironmentHandling:
     """Test environment variable handling."""
 
-    def test_default_redis_host(self):
-        """Test default Redis host is host.docker.internal."""
-        import sys
+    def test_discord_config_missing(self):
+        """Test behavior when Discord not configured."""
+        import os
+        import importlib
 
-        sys.path.insert(0, "/home/tacopants/projects/ChiseAI")
+        # Clear env vars
+        old_channel = os.environ.pop("DISCORD_DEVELOPMENT_CHANNEL_ID", None)
+        old_token = os.environ.pop("DISCORD_BOT_TOKEN", None)
 
-        # Clear env vars to test defaults
-        with patch.dict("os.environ", {}, clear=True):
-            # Re-import to get fresh defaults
-            if "scripts.monitoring.pager_alerts" in sys.modules:
-                del sys.modules["scripts.monitoring.pager_alerts"]
-            from scripts.monitoring.pager_alerts import REDIS_HOST, REDIS_PORT
+        try:
+            # Need to reload module to pick up new env vars
+            from scripts.monitoring import hourly_health_check
 
-            assert REDIS_HOST == "host.docker.internal"
-            assert REDIS_PORT == 6380
+            importlib.reload(hourly_health_check)
 
-    def test_env_override(self):
-        """Test environment variables can be overridden."""
-        import sys
-
-        sys.path.insert(0, "/home/tacopants/projects/ChiseAI")
-
-        with patch.dict(
-            "os.environ",
-            {"REDIS_HOST": "custom.redis.host", "REDIS_PORT": "1234"},
-            clear=True,
-        ):
-            if "scripts.monitoring.pager_alerts" in sys.modules:
-                del sys.modules["scripts.monitoring.pager_alerts"]
-            from scripts.monitoring.pager_alerts import REDIS_HOST, REDIS_PORT
-
-            assert REDIS_HOST == "custom.redis.host"
-            assert REDIS_PORT == 1234
+            # Should use empty strings as defaults
+            assert hourly_health_check.DISCORD_CHANNEL_ID == ""
+            assert hourly_health_check.DISCORD_BOT_TOKEN == ""
+        finally:
+            # Restore
+            if old_channel:
+                os.environ["DISCORD_DEVELOPMENT_CHANNEL_ID"] = old_channel
+            if old_token:
+                os.environ["DISCORD_BOT_TOKEN"] = old_token

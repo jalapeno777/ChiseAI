@@ -6,41 +6,41 @@ Posts detailed audit to Discord #development or logs locally.
 
 import os
 import sys
-
-# Add project root to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
-
-# Load .env for cron context (must be before other imports)
-from scripts.monitoring import load_env  # noqa: F401, E402
-
+import json
 import asyncio
 import subprocess
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from typing import Optional, Dict, List
 import redis
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
+# Configuration
 DISCORD_CHANNEL_ID = os.getenv("DISCORD_DEVELOPMENT_CHANNEL_ID", "")
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN", "")
-DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
-REDIS_HOST = os.getenv(
-    "MONITORING_REDIS_HOST", os.getenv("REDIS_HOST", "host.docker.internal")
-)
-REDIS_PORT = int(os.getenv("MONITORING_REDIS_PORT", os.getenv("REDIS_PORT", "6380")))
+REDIS_HOST = os.getenv("REDIS_HOST", "host.docker.internal")
+REDIS_PORT = int(os.getenv("REDIS_PORT", "6380"))
 
 
-def get_redis():
+def get_redis() -> Optional[redis.Redis]:
+    """Get Redis connection."""
     try:
-        return redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
+        return redis.Redis(
+            host=REDIS_HOST,
+            port=REDIS_PORT,
+            decode_responses=True,
+            socket_connect_timeout=5,
+        )
     except Exception as e:
         logger.error(f"Redis error: {e}")
         return None
 
 
-def check_g1_scheduler():
+def check_g1_scheduler() -> Dict:
     """G1: Scheduler Continuity"""
     try:
         result = subprocess.run(
@@ -52,6 +52,7 @@ def check_g1_scheduler():
             if "grep" not in line
         )
 
+        # Check state file
         state_exists = os.path.exists("data/optimization_schedule.json")
 
         if running and state_exists:
@@ -72,7 +73,7 @@ def check_g1_scheduler():
         return {"gate": "G1", "status": "❌ FAIL", "detail": str(e)}
 
 
-def check_g2_signal_cadence(r: redis.Redis):
+def check_g2_signal_cadence(r: redis.Redis) -> Dict:
     """G2: Signal Cadence"""
     try:
         count = len(r.keys("bmad:chiseai:signals:*"))
@@ -88,7 +89,7 @@ def check_g2_signal_cadence(r: redis.Redis):
         return {"gate": "G2", "status": "❌ FAIL", "detail": str(e)}
 
 
-def check_g3_data_flow(r: redis.Redis):
+def check_g3_data_flow(r: redis.Redis) -> Dict:
     """G3: Data Flow Movement"""
     try:
         count = r.scard("bmad:chiseai:outcomes:index")
@@ -104,7 +105,7 @@ def check_g3_data_flow(r: redis.Redis):
         return {"gate": "G3", "status": "❌ FAIL", "detail": str(e)}
 
 
-def check_g4_kill_switch(r: redis.Redis):
+def check_g4_kill_switch(r: redis.Redis) -> Dict:
     """G4: Kill Switch Active"""
     try:
         enabled = r.hget("bmad:chiseai:kill_switch", "enabled")
@@ -124,7 +125,7 @@ def check_g4_kill_switch(r: redis.Redis):
         return {"gate": "G4", "status": "❌ FAIL", "detail": str(e)}
 
 
-def check_g5_daily_loss(r: redis.Redis):
+def check_g5_daily_loss(r: redis.Redis) -> Dict:
     """G5: Daily Loss Guard"""
     try:
         max_loss = r.hget("bmad:chiseai:daily_loss_limit", "max_loss_percent")
@@ -136,41 +137,36 @@ def check_g5_daily_loss(r: redis.Redis):
         return {"gate": "G5", "status": "❌ FAIL", "detail": str(e)}
 
 
-def check_g6_bybit_connectivity():
-    """G6: Bybit Connectivity"""
+def check_g6_bybit_connectivity() -> Dict:
+    """G6: Bybit Connectivity - Simple HTTP check instead of WebSocket"""
     try:
-        import socket
+        import urllib.request
         import ssl
 
-        # Simple TCP connection test to Bybit API
-        host = "api.bybit.com"
-        port = 443
-        timeout = 5
+        # Test Bybit API connectivity via HTTP
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
 
-        context = ssl.create_default_context()
-        with socket.create_connection((host, port), timeout=timeout) as sock:
-            with context.wrap_socket(sock, server_hostname=host) as ssock:
-                # Send a simple HTTPS request
-                request = f"GET /v5/market/time HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n\r\n"
-                ssock.send(request.encode())
-                response = ssock.recv(1024).decode()
-                if "200 OK" in response or "HTTP/1.1" in response:
-                    return {
-                        "gate": "G6",
-                        "status": "✅ PASS",
-                        "detail": "API reachable",
-                    }
-                else:
-                    return {
-                        "gate": "G6",
-                        "status": "⚠️ CHECK",
-                        "detail": "API responded unexpectedly",
-                    }
+        req = urllib.request.Request(
+            "https://api.bybit.com/v5/market/time",
+            headers={"Accept": "application/json"},
+        )
+
+        with urllib.request.urlopen(req, timeout=5, context=ctx) as response:
+            if response.status == 200:
+                return {"gate": "G6", "status": "✅ PASS", "detail": "API reachable"}
+            else:
+                return {
+                    "gate": "G6",
+                    "status": "❌ FAIL",
+                    "detail": f"HTTP {response.status}",
+                }
     except Exception as e:
         return {"gate": "G6", "status": "❌ FAIL", "detail": str(e)[:50]}
 
 
-def check_g7_observability(r: redis.Redis):
+def check_g7_observability(r: redis.Redis) -> Dict:
     """G7: Observability Health"""
     try:
         ping = r.ping()
@@ -178,7 +174,7 @@ def check_g7_observability(r: redis.Redis):
         info = r.info("server")
         uptime = info.get("uptime_in_seconds", 0)
 
-        if ping and uptime > 3600:
+        if ping and uptime > 3600:  # >1 hour uptime
             return {
                 "gate": "G7",
                 "status": "✅ PASS",
@@ -196,9 +192,10 @@ def check_g7_observability(r: redis.Redis):
         return {"gate": "G7", "status": "❌ FAIL", "detail": str(e)}
 
 
-def check_g8_pipeline(r: redis.Redis):
+def check_g8_pipeline(r: redis.Redis) -> Dict:
     """G8: End-to-End Pipeline"""
     try:
+        # Check if we can do full flow
         signals = len(r.keys("bmad:chiseai:signals:*"))
         outcomes = r.scard("bmad:chiseai:outcomes:index")
 
@@ -218,7 +215,7 @@ def check_g8_pipeline(r: redis.Redis):
         return {"gate": "G8", "status": "❌ FAIL", "detail": str(e)}
 
 
-def run_all_checks():
+def run_all_checks() -> List[Dict]:
     """Run all G1-G8 checks."""
     r = get_redis()
     if not r:
@@ -238,9 +235,9 @@ def run_all_checks():
     return checks
 
 
-def format_checkpoint_message(checks: List[Dict]):
+def format_checkpoint_message(checks: List[Dict]) -> str:
     """Format checkpoint message."""
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
 
     pass_count = sum(1 for c in checks if "PASS" in c["status"])
     fail_count = sum(1 for c in checks if "FAIL" in c["status"])
@@ -261,55 +258,35 @@ def format_checkpoint_message(checks: List[Dict]):
     return "\n".join(lines)
 
 
-async def post_discord(message: str):
-    """Post to Discord via webhook or bot API."""
-    import aiohttp
-
-    # Try webhook first (more reliable)
-    if DISCORD_WEBHOOK_URL:
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    DISCORD_WEBHOOK_URL, json={"content": message}
-                ) as resp:
-                    if resp.status in (200, 204):
-                        logger.info("Discord webhook post successful")
-                        return True
-                    else:
-                        logger.warning(f"Discord webhook failed: {resp.status}")
-        except Exception as e:
-            logger.warning(f"Discord webhook error: {e}")
-
-    # Fall back to bot API
-    if DISCORD_CHANNEL_ID and DISCORD_BOT_TOKEN:
-        try:
-            url = f"https://discord.com/api/v10/channels/{DISCORD_CHANNEL_ID}/messages"
-            headers = {
-                "Authorization": f"Bot {DISCORD_BOT_TOKEN}",
-                "Content-Type": "application/json",
-            }
-
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    url, headers=headers, json={"content": message}
-                ) as resp:
-                    if resp.status == 200:
-                        logger.info("Discord bot post successful")
-                        return True
-                    else:
-                        logger.error(f"Discord bot post failed: {resp.status}")
-        except Exception as e:
-            logger.error(f"Discord bot error: {e}")
-    else:
+async def post_discord(message: str) -> bool:
+    """Post to Discord."""
+    if not DISCORD_CHANNEL_ID or not DISCORD_BOT_TOKEN:
         logger.warning("Discord not configured")
+        return False
 
-    return False
+    try:
+        import aiohttp
+
+        url = f"https://discord.com/api/v10/channels/{DISCORD_CHANNEL_ID}/messages"
+        headers = {
+            "Authorization": f"Bot {DISCORD_BOT_TOKEN}",
+            "Content-Type": "application/json",
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                url, headers=headers, json={"content": message}
+            ) as resp:
+                return resp.status == 200
+    except Exception as e:
+        logger.error(f"Discord error: {e}")
+        return False
 
 
-def log_local(message: str):
+def log_local(message: str) -> str:
     """Log locally."""
     os.makedirs("logs/monitoring", exist_ok=True)
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     path = f"logs/monitoring/checkpoint-{timestamp}.log"
 
     with open(path, "w") as f:
