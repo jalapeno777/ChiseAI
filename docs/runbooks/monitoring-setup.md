@@ -1,228 +1,143 @@
-# Monitoring Setup Guide
-
-This guide covers the setup and configuration of monitoring for the ChiseAI trading system.
+# Monitoring Setup Runbook
 
 ## Overview
-
-The monitoring system provides:
-- Real-time alerts for critical conditions
-- Daily executive summaries
-- Signal growth detection
-- Burn-in completion tracking
-
-## Prerequisites
-
-- Redis server running (default: host.docker.internal:6380)
-- Discord bot token configured in `.env`
-- Discord channel ID for notifications
+Automated monitoring for ACTIVATION-001 burn-in with Discord notifications.
 
 ## Environment Variables
 
-Add these to your `.env` file:
-
 ```bash
-# Discord Bot Token (for sending notifications)
-DISCORD_BOT_TOKEN=your_bot_token_here
+# Required for Discord (optional - falls back to local logs)
+export DISCORD_DEVELOPMENT_CHANNEL_ID="your-channel-id"
+export DISCORD_BOT_TOKEN="your-bot-token"
 
-# Discord Channel ID (for monitoring alerts)
-DISCORD_DEVELOPMENT_CHANNEL_ID=your_channel_id_here
-
-# Redis Connection for Monitoring (container context per AGENTS.md)
-# Monitoring scripts always use host.docker.internal:6380 by default
-# These can be overridden if needed:
-MONITORING_REDIS_HOST=host.docker.internal
-MONITORING_REDIS_PORT=6380
+# Redis connection (defaults shown)
+export REDIS_HOST="host.docker.internal"
+export REDIS_PORT="6380"
 ```
 
-## Redis Configuration for Container Context
+## Installation
 
-Per AGENTS.md, monitoring scripts run in container context and use:
-- Host: `host.docker.internal`
-- Port: `6380`
-
-### Environment Variable Precedence
-
-Monitoring scripts check Redis connection settings in this order:
-1. `MONITORING_REDIS_HOST` / `MONITORING_REDIS_PORT` (monitoring-specific)
-2. `REDIS_HOST` / `REDIS_PORT` (general app settings)
-3. Defaults: `host.docker.internal` / `6380`
-
-### Verification
-
-Test connection from container:
+### 1. Make scripts executable
 ```bash
-redis-cli -h host.docker.internal -p 6380 ping
-# Expected: PONG
+chmod +x scripts/monitoring/hourly_health_check.py
+chmod +x scripts/monitoring/checkpoint_gate_audit.py
 ```
 
-## Enhanced Monitoring (New for ACTIVATION-001)
-
-### Pager Alerts (Every 5 minutes)
-
-Monitors for critical conditions and sends immediate alerts:
-
+### 2. Install Python dependencies
 ```bash
-*/5 * * * * cd /home/tacopants/projects/ChiseAI && python3 scripts/monitoring/pager_alerts.py >> logs/monitoring/cron.log 2>&1
+pip install redis aiohttp websockets
 ```
 
-**Alerts for:**
-- Kill switch triggered
-- Scheduler down >5 min
-
-**Example Alert:**
-```
-@here 🚨 **CRITICAL: KILL SWITCH TRIGGERED** 🚨
-Trading has been halted. Immediate investigation required.
-```
-
-### Daily Executive Summary (09:00 daily)
-
-Posts daily summary to Discord:
-
+### 3. Configure cron (hourly + 6-hourly)
 ```bash
-0 9 * * * cd /home/tacopants/projects/ChiseAI && python3 scripts/monitoring/daily_executive_summary.py >> logs/monitoring/cron.log 2>&1
-```
+# Edit crontab
+crontab -e
 
-**Posts:**
-- PnL summary
-- Drawdown
-- Win rate
-- ECE drift
-- Incidents (24h)
-
-**Example Summary:**
-```
-**📈 Daily Executive Summary** | 2026-02-25 09:00 UTC
-
-**Performance:**
-• PnL: $1,234.56
-• Win Rate: 65.3% (42W / 22L)
-• Total Trades: 64
-
-**Risk Metrics:**
-• Drawdown: $123.45
-• ECE Drift: Within bounds
-
-**Operations:**
-• Incidents (24h): 0
-
-_Next summary tomorrow_
-```
-
-### Signal Growth Detector (Every 30 minutes)
-
-Warns if no signal growth for 2+ hours:
-
-```bash
-*/30 * * * * cd /home/tacopants/projects/ChiseAI && python3 scripts/monitoring/signal_growth_detector.py >> logs/monitoring/cron.log 2>&1
-```
-
-**Example Warning:**
-```
-⚠️ **WARNING: No signal growth for 2+ hours**
-Signal count stuck at 15. Check signal generation pipeline.
-```
-
-### Burn-in Completion (One-time at 24h)
-
-Auto-posts burn-in completion at the 24-hour mark:
-
-```bash
-# Run once at burn-in end time (2026-02-26T23:50:00Z)
-50 23 26 2 * cd /home/tacopants/projects/ChiseAI && python3 scripts/monitoring/burnin_completion.py >> logs/monitoring/cron.log 2>&1
-```
-
-**Example Completion Message:**
-```
-**🎉 BURN-IN COMPLETE** | 2026-02-26 23:50 UTC
-
-**24-Hour Burn-in Finished Successfully**
-
-**Final Status:** All gates validated
-**System:** Ready for Bybit demo trading
-
-**Next Steps:**
-• Review final checkpoint report
-• Confirm demo trading readiness
-• Schedule production deployment review
-
-_Monitoring will continue in operational mode_
-```
-
-## Complete Cron Schedule
-
-Add this to your crontab (`crontab -e`):
-
-```
-# Pager alerts (every 5 min)
-*/5 * * * * cd /home/tacopants/projects/ChiseAI && python3 scripts/monitoring/pager_alerts.py >> logs/monitoring/cron.log 2>&1
-
-# Hourly health check (if exists)
+# Add these lines:
+# Hourly health check (at minute 0)
 0 * * * * cd /home/tacopants/projects/ChiseAI && python3 scripts/monitoring/hourly_health_check.py >> logs/monitoring/cron.log 2>&1
 
-# Signal growth detector (every 30 min)
-*/30 * * * * cd /home/tacopants/projects/ChiseAI && python3 scripts/monitoring/signal_growth_detector.py >> logs/monitoring/cron.log 2>&1
-
-# 6-hour checkpoint (if exists)
+# 6-hour checkpoint (at 00:00, 06:00, 12:00, 18:00)
 0 */6 * * * cd /home/tacopants/projects/ChiseAI && python3 scripts/monitoring/checkpoint_gate_audit.py >> logs/monitoring/cron.log 2>&1
-
-# Daily executive summary (9 AM UTC)
-0 9 * * * cd /home/tacopants/projects/ChiseAI && python3 scripts/monitoring/daily_executive_summary.py >> logs/monitoring/cron.log 2>&1
-
-# Burn-in completion (one-time at 24h mark - adjust date as needed)
-50 23 26 2 * cd /home/tacopants/projects/ChiseAI && python3 scripts/monitoring/burnin_completion.py >> logs/monitoring/cron.log 2>&1
 ```
 
-## Manual Testing
-
-Test each script manually before enabling cron:
-
+### 4. Create log directory
 ```bash
-# Test pager alerts
-python3 scripts/monitoring/pager_alerts.py
-
-# Test daily summary
-python3 scripts/monitoring/daily_executive_summary.py
-
-# Test signal growth detector
-python3 scripts/monitoring/signal_growth_detector.py
-
-# Test burn-in completion
-python3 scripts/monitoring/burnin_completion.py
+mkdir -p logs/monitoring
 ```
 
-## Log Files
+### 5. Test scripts manually
+```bash
+# Test hourly check
+python3 scripts/monitoring/hourly_health_check.py
 
-All monitoring logs are stored in:
-- `logs/monitoring/cron.log` - Cron execution logs
-- `logs/monitoring/ALERT-*.log` - Alert fallback logs
-- `logs/monitoring/daily-summary-*.log` - Daily summary fallback logs
-- `logs/monitoring/WARNING-*.log` - Warning fallback logs
-- `logs/monitoring/BURNIN-COMPLETE.log` - Burn-in completion fallback log
+# Test checkpoint
+python3 scripts/monitoring/checkpoint_gate_audit.py
+```
+
+## Verification
+
+### Check cron is installed
+```bash
+which cron
+# or
+systemctl status cron
+```
+
+### List cron jobs
+```bash
+crontab -l
+```
+
+### View monitoring logs
+```bash
+# Recent logs
+ls -la logs/monitoring/
+
+# Hourly logs
+cat logs/monitoring/hourly-*.log
+
+# Checkpoint logs
+cat logs/monitoring/checkpoint-*.log
+```
+
+## Rollback / Disable
+
+### Remove cron jobs
+```bash
+crontab -e
+# Delete the monitoring lines
+```
+
+### Stop immediately
+```bash
+# Kill any running monitoring processes
+pkill -f hourly_health_check
+pkill -f checkpoint_gate_audit
+```
+
+### Clear logs (optional)
+```bash
+rm -rf logs/monitoring/*
+```
 
 ## Troubleshooting
 
-### Discord notifications not working
+### "Discord not configured" warning
+- Normal if DISCORD_CHANNEL_ID not set
+- Check logs/monitoring/ for local output
 
-1. Verify `DISCORD_BOT_TOKEN` is set correctly
-2. Verify `DISCORD_DEVELOPMENT_CHANNEL_ID` is correct
-3. Check bot has permission to post in the channel
-4. Check `logs/monitoring/` for fallback logs
+### Redis connection failed
+- Verify Redis running: `redis-cli -h host.docker.internal -p 6380 ping`
+- Check REDIS_HOST/REDIS_PORT env vars
 
-### Redis connection errors
+### Permission denied
+- Run: `chmod +x scripts/monitoring/*.py`
 
-1. Verify Redis is running: `redis-cli -h host.docker.internal -p 6380 ping`
-2. Check `MONITORING_REDIS_HOST` and `MONITORING_REDIS_PORT` in `.env` (monitoring-specific)
-3. For container context, use `host.docker.internal` not `localhost`
-4. If you need monitoring to use different Redis than the app, set `MONITORING_REDIS_*` vars
+## Message Formats
 
-### Scripts return non-zero exit codes
+### Hourly Message
+```
+**🔥 Burn-in Hourly Check** | 2026-02-26 12:00 UTC
 
-- Exit code 0: Success, no alerts
-- Exit code 1: Alert/warning condition detected (expected for pager alerts and signal growth)
+**Scheduler:** ✅ Process active
+**Kill Switch:** ✅ Armed
+**Daily Loss:** ✅ Limit: 2.0%
 
-## Related Documentation
+**Metrics:** Signals: 5 | Outcomes: 3 | Keys: 487
 
-- [Checkpoint Gate Audit](./checkpoint-gate-audit.md) - G1-G8 validation
-- [Health Checks](./health-checks.md) - System health monitoring
-- [Incident Response](../../AGENTS.md) - Incident logging procedures
+_Next check in 1 hour_
+```
+
+### Checkpoint Message
+```
+**📊 Burn-in Checkpoint (6h)** | 2026-02-26 12:00 UTC
+
+**Gate Status:** 7 ✅ | 1 ⚠️ | 0 ❌
+
+**G1:** ✅ PASS - Process running
+**G2:** ⚠️ CHECK - No signal growth
+...
+
+_Next checkpoint in 6 hours_
+```
