@@ -5,8 +5,15 @@
 metadata:
   project_name: ChiseAI
   version: "2.5.3"
-  last_updated: "2026-02-26T22:00:00Z"
+  last_updated: "2026-02-26T23:00:00Z"
   recent_changes:
+    - timestamp: "2026-02-26T23:00:00Z"
+      actor: jarvis
+      action: ep-auto-git-rebaseline
+      description: "Re-baselined EP-AUTO-GIT stories from git evidence via status_write_gate.py"
+      epic_id: EP-AUTO-GIT-001
+      story_ids: [ST-AUTO-004, ST-AUTO-005, ST-AUTO-006, ST-AUTO-007, ST-AUTO-008]
+      correction_type: evidence_rebaseline
     - timestamp: "2026-02-26T22:00:00Z"
       actor: merlin
       action: st-auto-008-merge-correction
@@ -2918,11 +2925,15 @@ stories:
     title: Complex Path Human Gate
     epic_id: EP-AUTO-GIT-001
     sprint_id: AUTO-GIT-001
-    status: planned
-    validation_status: planned
+    status: completed
+    validation_status: validated
     story_points: 5
     priority: P1-HIGH
     description: Human approval workflow for COMPLEX-classified PRs with GitReviewBot pre-review
+    merge_metadata:
+      merge_commit_sha: "02237f6"
+      merge_date: "2026-02-26"
+      pr_number: 276
     validation:
       - type: unit_test
         command: "pytest tests/test_pr_lifecycle/ -v --tb=short"
@@ -2937,11 +2948,15 @@ stories:
     title: Feedback Loop & Retry
     epic_id: EP-AUTO-GIT-001
     sprint_id: AUTO-GIT-001
-    status: planned
-    validation_status: planned
+    status: completed
+    validation_status: validated
     story_points: 5
     priority: P1-HIGH
     description: Outcome tracking and continuous improvement system for PR reviews
+    merge_metadata:
+      merge_commit_sha: "9205ab1"
+      merge_date: "2026-02-26"
+      pr_number: 277
     validation:
       - type: unit_test
         command: "pytest tests/test_pr_lifecycle/ -v --tb=short"
@@ -2956,11 +2971,15 @@ stories:
     title: EP-NS-008 Integration
     epic_id: EP-AUTO-GIT-001
     sprint_id: AUTO-GIT-001
-    status: planned
-    validation_status: planned
+    status: completed
+    validation_status: validated
     story_points: 8
     priority: P1-HIGH
     description: Circuit breaker, retry coordinator, and self-healing integration from Autonomous Control Plane
+    merge_metadata:
+      merge_commit_sha: "1b98e00"
+      merge_date: "2026-02-26"
+      pr_number: null
     validation:
       - type: unit_test
         command: "pytest tests/test_pr_lifecycle/ -v --tb=short"
@@ -2975,11 +2994,13 @@ stories:
     title: Metrics & Observability
     epic_id: EP-AUTO-GIT-001
     sprint_id: AUTO-GIT-001
-    status: planned
-    validation_status: planned
+    status: completed
+    validation_status: validated
     story_points: 8
     priority: P2-MEDIUM
     description: Grafana dashboards and alerting for the autonomous PR pipeline
+    merge_metadata:
+      merge_date: "2026-02-26"
     validation:
       - type: unit_test
         command: "pytest tests/test_pr_lifecycle/ -v --tb=short"
