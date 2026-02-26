@@ -164,6 +164,14 @@ class BurnInMetrics:
             "redis": {"checks": 0, "failures": 0},
         }
     )
+    data_path_health: dict[str, Any] = field(
+        default_factory=lambda: {
+            "postgresql_writable": False,
+            "signal_outcomes_table_exists": False,
+            "test_flow_successful": False,
+            "last_check": None,
+        }
+    )
 
     def add_incident(self, severity: str, component: str, message: str) -> None:
         """Record an incident."""
@@ -218,6 +226,13 @@ class BurnInTest:
         if not db_ok:
             logger.error("Database connectivity check failed - cannot proceed")
             return False
+
+        # Test data path integrity
+        data_path_ok = await self._test_data_path()
+        if not data_path_ok:
+            logger.warning(
+                "Data path verification had issues - will monitor during burn-in"
+            )
 
         # Initialize health monitor
         try:
@@ -363,6 +378,171 @@ class BurnInTest:
             "\n[Note] Continuing burn-in test - will monitor available components"
         )
         return True  # Continue with test regardless
+
+    async def _test_data_path(self) -> bool:
+        """Test data path integrity (PostgreSQL writability and signal flow).
+
+        Returns:
+            True if data path is functional
+        """
+        logger.info("\n[Pre-burn-in] Testing data path integrity...")
+
+        import uuid
+
+        config = {
+            "host": os.getenv("POSTGRES_HOST", "host.docker.internal"),
+            "port": int(os.getenv("POSTGRES_PORT", "5434")),
+            "database": os.getenv("POSTGRES_DB", "chiseai"),
+            "user": os.getenv("POSTGRES_USER", "chiseai"),
+            "password": os.getenv("POSTGRES_PASSWORD", "change-me"),
+        }
+
+        try:
+            import psycopg2
+
+            conn = psycopg2.connect(
+                host=config["host"],
+                port=config["port"],
+                database=config["database"],
+                user=config["user"],
+                password=config["password"],
+                connect_timeout=10,
+            )
+
+            with conn.cursor() as cur:
+                # Check if signal_outcomes table exists
+                cur.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables
+                        WHERE table_schema = 'public'
+                        AND table_name = 'signal_outcomes'
+                    );
+                """)
+                table_exists = cur.fetchone()[0]
+                self.metrics.data_path_health["signal_outcomes_table_exists"] = (
+                    table_exists
+                )
+
+                if not table_exists:
+                    logger.error("✗ signal_outcomes table does not exist")
+                    conn.close()
+                    return False
+
+                logger.info("✓ signal_outcomes table exists")
+
+                # Test write permission
+                test_signal_id = f"burnin_test_{uuid.uuid4().hex[:8]}"
+                try:
+                    cur.execute(
+                        """
+                        INSERT INTO signal_outcomes (signal_id, outcome, metadata)
+                        VALUES (%s, %s, %s)
+                        RETURNING id;
+                    """,
+                        (test_signal_id, "test", '{"burn_in_test": true}'),
+                    )
+                    inserted_id = cur.fetchone()[0]
+                    conn.commit()
+                    self.metrics.data_path_health["postgresql_writable"] = True
+                    logger.info(f"✓ PostgreSQL is writable (test id: {inserted_id})")
+
+                    # Verify the insert
+                    cur.execute(
+                        "SELECT * FROM signal_outcomes WHERE id = %s;", (inserted_id,)
+                    )
+                    record = cur.fetchone()
+                    if record:
+                        self.metrics.data_path_health["test_flow_successful"] = True
+                        logger.info("✓ Test record verified in database")
+
+                    # Clean up
+                    cur.execute(
+                        "DELETE FROM signal_outcomes WHERE id = %s;", (inserted_id,)
+                    )
+                    conn.commit()
+                    logger.info("✓ Test record cleaned up")
+
+                except Exception as e:
+                    logger.error(f"✗ Data path write test failed: {e}")
+                    conn.rollback()
+                    conn.close()
+                    return False
+
+            conn.close()
+
+            # Store data path health metrics in Redis
+            await self._store_data_path_metrics()
+
+            logger.info("✓ Data path integrity verified")
+            return True
+
+        except ImportError as e:
+            logger.error(f"✗ psycopg2 not available: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"✗ Data path test failed: {e}")
+            return False
+
+    async def _store_data_path_metrics(self) -> None:
+        """Store data path health metrics in Redis."""
+        try:
+            import redis
+
+            r = redis.Redis(
+                host="host.docker.internal",
+                port=6380,
+                socket_connect_timeout=5,
+                decode_responses=True,
+            )
+
+            if r.ping():
+                # Store data path health metrics
+                metrics_key = f"bmad:chiseai:burnin:data_path:{self.execution_id}"
+                r.hset(
+                    metrics_key,
+                    mapping={
+                        "postgresql_writable": str(
+                            self.metrics.data_path_health["postgresql_writable"]
+                        ),
+                        "signal_outcomes_table_exists": str(
+                            self.metrics.data_path_health[
+                                "signal_outcomes_table_exists"
+                            ]
+                        ),
+                        "test_flow_successful": str(
+                            self.metrics.data_path_health["test_flow_successful"]
+                        ),
+                        "timestamp": datetime.now(UTC).isoformat(),
+                    },
+                )
+                r.expire(metrics_key, 86400)  # 24 hour TTL
+
+                # Also store in a list for historical tracking
+                r.lpush(
+                    "bmad:chiseai:burnin:data_path:history",
+                    json.dumps(
+                        {
+                            "execution_id": self.execution_id,
+                            "postgresql_writable": self.metrics.data_path_health[
+                                "postgresql_writable"
+                            ],
+                            "signal_outcomes_table_exists": self.metrics.data_path_health[
+                                "signal_outcomes_table_exists"
+                            ],
+                            "test_flow_successful": self.metrics.data_path_health[
+                                "test_flow_successful"
+                            ],
+                            "timestamp": datetime.now(UTC).isoformat(),
+                        }
+                    ),
+                )
+                r.ltrim("bmad:chiseai:burnin:data_path:history", 0, 99)  # Keep last 100
+
+                logger.info("✓ Data path metrics stored in Redis")
+
+            r.close()
+        except Exception as e:
+            logger.warning(f"Could not store data path metrics in Redis: {e}")
 
     async def run(self) -> BurnInMetrics:
         """Run the burn-in test.
@@ -743,6 +923,7 @@ class BurnInTest:
                     else None
                 ),
             },
+            "data_path_health": self.metrics.data_path_health,
             "verdict": verdict,
             "rationale": rationale,
             "rollback_plan": (
@@ -841,6 +1022,14 @@ async def main():
     print(
         f"\nRisk Gate Adherence: {'PASS' if report['trades']['risk_violations'] == 0 else 'FAIL'}"
     )
+
+    print("\nData Path Health:")
+    data_path = report.get("data_path_health", {})
+    print(f"  - PostgreSQL Writable: {data_path.get('postgresql_writable', False)}")
+    print(
+        f"  - Signal Outcomes Table: {data_path.get('signal_outcomes_table_exists', False)}"
+    )
+    print(f"  - Test Flow Successful: {data_path.get('test_flow_successful', False)}")
 
     print("\n" + "=" * 60)
     print(f"VERDICT: {report['verdict']}")
