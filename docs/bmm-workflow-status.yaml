@@ -4,51 +4,26 @@
 
 metadata:
   project_name: ChiseAI
-  version: "2.5.4"
-  last_updated: "2026-02-26T00:00:00Z"
+  version: "2.5.3"
+  last_updated: "2026-02-25T23:30:00Z"
   recent_changes:
-    - timestamp: "2026-02-26T06:00:00Z"
+    - timestamp: "2026-02-25T23:30:00Z"
       actor: jarvis
-      action: story_completion
-      description: "ST-AUTO-005: Feedback Loop & Retry implementation complete, awaiting PR merge"
-      story_id: ST-AUTO-005
-      status: implementation_complete
-      branch: feature/ST-AUTO-005-feedback-loop-retry
-      head_sha: "20ac9e16ce316a0fa724c9e865887abeb51b478f"
-      test_summary: 30 passed, 0 failed
-      ci_status: pending
-    - timestamp: "2026-02-26T00:00:00Z"
-      actor: jarvis
-      action: truth_sync_correction
-      description: "ST-AUTO-004/005 truth-sync: Stories confirmed in PLANNED status with NO implementation started. Prior assumptions of partial progress corrected. Dependencies on ST-AUTO-001/002/003 must complete first."
-      story_ids: [ST-AUTO-004, ST-AUTO-005]
-      epic_id: EP-AUTO-GIT-001
-      correction_type: status_clarification
-      previous_assumption: "Partial implementation existed"
-      actual_state:
-        ST-AUTO-004:
-          status: planned
-          implementation_started: false
-          files_created: []
-        ST-AUTO-005:
-          status: planned
-          implementation_started: false
-          files_created: []
-      impact: "ST-AUTO-006 Batch 1 can proceed with clear dependency chain"
-    - timestamp: "2026-02-26T00:00:00Z"
-      actor: merlin
-      action: merge_to_main
-      description: "ST-HARDEN-001: Memory Sweep Scheduling Runbook merged to main"
+      action: post_merge_hardening
+      description: "ST-HARDEN-001: Post-merge hardening pass for ST-REFLECT-001 and ST-MEMORY-002"
       story_id: ST-HARDEN-001
-      pr_number: 275
-      merge_commit_sha: "72aeee5"
       files_changed:
-        - docs/runbooks/memory-sweep-scheduling.md
-        - scripts/ops/validate_memory_sweep_schedule.sh
         - src/governance/__init__.py
         - src/governance/memory/__init__.py
-      ci_status: success
-      branch_deleted: true
+        - docs/runbooks/memory-sweep-scheduling.md
+        - scripts/ops/validate_memory_sweep_schedule.sh
+        - scripts/ops/reflection_runner.py
+        - docs/policy/reflection_policy.yaml
+      hardening_scope:
+        - "Fixed governance circular import risks"
+        - "Activated memory sweep scheduling with runbook and validation"
+        - "Added reflection runner feature flags with safe default off"
+      status: completed
     - timestamp: "2026-02-25T23:15:00Z"
       actor: merlin
       action: merge_to_main
@@ -3723,11 +3698,8 @@ sprints:
     title: Feedback Loop & Retry
     epic_id: EP-AUTO-GIT-001
     sprint_id: AUTO-GIT-001
-    status: completed
-    validation_status: validated
-    implementation_date: "2026-02-26"
-    merge_date: "2026-02-26"
-    pr_number: pending
+    status: planned
+    validation_status: planned
     story_points: 5
     priority: P1-HIGH
     description: Outcome tracking and continuous improvement system for PR reviews
@@ -3745,18 +3717,6 @@ sprints:
     test_strategy:
       unit: "pytest tests/test_pr_lifecycle/test_feedback_loop.py -v"
       integration: "pytest tests/test_pr_lifecycle/integration/test_retry_workflow.py -v"
-    test_summary:
-      total: 30
-      passed: 30
-      failed: 0
-    files_changed:
-      - scripts/pr_lifecycle/feedback_loop.py
-      - scripts/pr_lifecycle/outcome_tracker.py
-      - scripts/pr_lifecycle/retry_handler.py
-      - src/pr_lifecycle/metrics.py
-      - src/pr_lifecycle/__init__.py
-      - tests/test_pr_lifecycle/test_feedback_loop.py
-      - docs/runbooks/pr-feedback-loop.md
     live_validation_gates:
       - gate: "feedback_latency"
         check: "Measure time from decline to agent notification"
