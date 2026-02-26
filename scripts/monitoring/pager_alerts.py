@@ -62,8 +62,50 @@ def check_kill_switch_triggered(r: redis.Redis) -> Optional[str]:
     return None
 
 
+def try_self_heal(r: redis.Redis) -> bool:
+    """Attempt to self-heal by writing a heartbeat if missing/stale.
+
+    Args:
+        r: Redis client
+
+    Returns:
+        True if self-healing was successful
+    """
+    try:
+        logger.info("Attempting self-heal: writing emergency heartbeat...")
+
+        # Import here to avoid circular dependency
+        sys.path.insert(
+            0,
+            os.path.dirname(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            ),
+        )
+        from scripts.monitoring.scheduler_heartbeat import record_heartbeat
+
+        success = record_heartbeat(r, status="running", force=True)
+        if success:
+            logger.info("Self-heal successful: emergency heartbeat written")
+            # Clear alert state since we recovered
+            r.hdel(ALERT_STATE_KEY, "scheduler_last_seen")
+            return True
+        else:
+            logger.error("Self-heal failed: could not write heartbeat")
+            return False
+
+    except Exception as e:
+        logger.error(f"Self-heal error: {e}")
+        return False
+
+
 def check_scheduler_down(r: redis.Redis) -> Optional[str]:
-    """Check if scheduler has been down for >5 minutes based on Redis heartbeat."""
+    """Check if scheduler has been down for >90 seconds based on Redis heartbeat.
+
+    Thresholds:
+    - 90s: First alert (warning)
+    - 180s: Critical alert + attempt self-heal
+    - 300s: Emergency alert
+    """
     try:
         # Get heartbeat from Redis
         heartbeat = r.hgetall("bmad:chiseai:scheduler:heartbeat")
@@ -78,7 +120,17 @@ def check_scheduler_down(r: redis.Redis) -> Optional[str]:
                 elapsed = now - last_dt
 
                 if elapsed > timedelta(minutes=5):
-                    return f"⚠️ **ALERT: Scheduler heartbeat missing for {elapsed.seconds // 60} minutes**\nNo heartbeat in Redis. Check if scheduler is running."
+                    # Try self-heal first
+                    if try_self_heal(r):
+                        return None  # Recovered
+                    return f"🚨 **CRITICAL: Scheduler heartbeat missing for {elapsed.seconds // 60} minutes**\nNo heartbeat in Redis. Self-heal failed. Manual intervention required."
+                elif elapsed > timedelta(seconds=180):
+                    # Try self-heal at 3 minutes
+                    if try_self_heal(r):
+                        return None  # Recovered
+                    return f"⚠️ **ALERT: Scheduler heartbeat missing for {elapsed.seconds // 60} minutes**\nNo heartbeat in Redis. Self-heal attempted but failed."
+                elif elapsed > timedelta(seconds=90):
+                    return f"⚠️ **WARNING: Scheduler heartbeat missing for {elapsed.seconds}s**\nNo heartbeat in Redis. Monitoring..."
             else:
                 # First time seeing no heartbeat
                 r.hset(ALERT_STATE_KEY, "scheduler_last_seen", now.isoformat())
@@ -99,9 +151,19 @@ def check_scheduler_down(r: redis.Redis) -> Optional[str]:
         # Update last seen (we have a heartbeat, even if stale)
         r.hset(ALERT_STATE_KEY, "scheduler_last_seen", now.isoformat())
 
-        # Check if heartbeat is stale (>5 minutes old)
+        # Check thresholds
         if elapsed > timedelta(minutes=5):
-            return f"⚠️ **ALERT: Scheduler heartbeat stale for {elapsed.seconds // 60} minutes**\nLast heartbeat: {status}. Scheduler may be hung or stopped."
+            # Try self-heal first
+            if try_self_heal(r):
+                return None  # Recovered
+            return f"🚨 **CRITICAL: Scheduler heartbeat stale for {elapsed.seconds // 60} minutes**\nLast heartbeat: {status}. Self-heal failed. Manual intervention required."
+        elif elapsed > timedelta(seconds=180):
+            # Try self-heal at 3 minutes
+            if try_self_heal(r):
+                return None  # Recovered
+            return f"⚠️ **ALERT: Scheduler heartbeat stale for {elapsed.seconds // 60} minutes**\nLast heartbeat: {status}. Self-heal attempted but failed."
+        elif elapsed > timedelta(seconds=90):
+            return f"⚠️ **WARNING: Scheduler heartbeat stale for {elapsed.seconds}s**\nLast heartbeat: {status}. Monitoring..."
 
         # Check if status is not running
         if status != "running":
