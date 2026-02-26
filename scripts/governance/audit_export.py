@@ -25,6 +25,11 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+# Bootstrap environment first (must be before any env access)
+from config.bootstrap import bootstrap
+
+bootstrap(load_env=True)
+
 from src.governance.audit_trail import (
     AuditTrail,
     AuditTrailExporter,

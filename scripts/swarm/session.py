@@ -22,9 +22,39 @@ import urllib.request
 from pathlib import Path
 from typing import Any, cast
 
-from config.bootstrap import bootstrap
+from config.bootstrap import bootstrap, check_environment
 
 SESSION_FILE = ".swarm-session.json"
+
+
+def check_critical_environment() -> None:
+    """Verify critical environment variables are set.
+
+    Raises:
+        SessionError: If required environment variables are missing.
+    """
+    # Session.py uses Redis for lease management
+    result = check_environment(
+        [
+            "REDIS_HOST",
+            "CHISE_REDIS_HOST",
+        ]
+    )
+
+    if not result["ok"]:
+        # Not a hard failure - Redis may use defaults
+        # But warn if neither variable is set
+        if not result["present"]:
+            print(
+                f"WARN: No Redis host configured. Using default: host.docker.internal:6380",
+                file=sys.stderr,
+            )
+
+    # Check for warnings
+    for warning in result.get("warnings", []):
+        print(f"WARN: {warning}", file=sys.stderr)
+
+
 OWNERSHIP_KEY = "bmad:chiseai:ownership"
 BRANCH_LEASE_PREFIX = "bmad:chiseai:branch-lease:"
 WORKTREE_LEASE_PREFIX = "bmad:chiseai:worktree-lease:"
@@ -666,6 +696,10 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> int:
     # Bootstrap environment first
     bootstrap(load_env=True)
+
+    # Check critical environment variables
+    check_critical_environment()
+
     parser = build_parser()
     args = parser.parse_args()
     try:
