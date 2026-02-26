@@ -5,7 +5,7 @@
 metadata:
   project_name: ChiseAI
   version: "2.5.3"
-  last_updated: "2026-02-25T23:00:00Z"
+  last_updated: "2026-02-26T18:05:00Z"
   recent_changes:
     - timestamp: "2026-02-26T00:00:00Z"
       actor: jarvis
@@ -49,6 +49,24 @@ metadata:
             merge_commit: "1b98e00"
             pr_number: null
       notes: "Previous truth_sync_forensic_audit entry contained inaccurate metrics. This correction supersedes the previous entry with verified git evidence."
+    - timestamp: "2026-02-26T18:00:00Z"
+      actor: merlin
+      action: ep-auto-git-guardrails-applied
+      description: "EP-AUTO-GIT: Applied Merlin-only authority guardrails to Redis. Truth-sync correction PR #279 merged to main."
+      story_id: ST-AUTO-TRUTH-SYNC
+      epic_id: EP-AUTO-GIT
+      pr_number: 279
+      merge_commit_sha: "8422ee97ed5174c19b9378dd75ada973badedc01"
+      redis_locks:
+        - key: "bmad:chiseai:ep:auto-git:merge_authority"
+          value: "merlin-only"
+        - key: "bmad:chiseai:ep:auto-git:pr_authority"
+          value: "merlin-only"
+        - key: "bmad:chiseai:ep:auto-git:status_authority"
+          value: "merlin-only"
+        - key: "bmad:chiseai:ep:auto-git:lock_timestamp"
+          value: "2026-02-26T18:00:00Z"
+      notes: "Enforced branch naming convention (feature/* prefix required by CI). Old PR #278 closed due to fix/* naming violation."
     - timestamp: "2026-02-25T23:59:00Z"
       actor: jarvis
       action: phase_2_kickoff_status_sync
