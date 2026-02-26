@@ -249,21 +249,37 @@ class TestOutcomeTracker:
     @patch("outcome_tracker._redis_cli")
     def test_calculate_metrics(self, mock_redis_cli):
         """Test calculating success metrics."""
+
         # Mock Redis responses for date index and outcome retrieval
-        mock_redis_cli.side_effect = [
-            # First call - SMEMBERS for date index
-            MagicMock(returncode=0, stdout="123\n124"),
-            # Second call - HGETALL for PR 123
-            MagicMock(
-                returncode=0,
-                stdout="pr_number\n123\nstory_id\nST-001\noutcome\nmerged\nauto_approved\ntrue\nrolled_back\nfalse\ntime_to_merge_minutes\n30.0",
-            ),
-            # Third call - HGETALL for PR 124
-            MagicMock(
-                returncode=0,
-                stdout="pr_number\n124\nstory_id\nST-002\noutcome\nrejected\nauto_approved\nfalse\nrolled_back\nfalse",
-            ),
-        ]
+        # The method iterates through each day in range, calling SMEMBERS for each
+        # We need to provide enough mock values for all calls
+        def mock_side_effect(*args, **kwargs):
+            cmd = args[0] if args else ""
+
+            if cmd == "SMEMBERS":
+                # First day has PRs, rest are empty
+                mock_call_count = mock_redis_cli.call_count
+                if mock_call_count == 1:
+                    return MagicMock(returncode=0, stdout="123\n124")
+                else:
+                    return MagicMock(returncode=0, stdout="")
+            elif cmd == "HGETALL":
+                # Return outcome data based on key
+                key = args[1] if len(args) > 1 else ""
+                if "123" in key:
+                    return MagicMock(
+                        returncode=0,
+                        stdout="pr_number\n123\nstory_id\nST-001\noutcome\nmerged\nauto_approved\ntrue\nrolled_back\nfalse\ntime_to_merge_minutes\n30.0",
+                    )
+                elif "124" in key:
+                    return MagicMock(
+                        returncode=0,
+                        stdout="pr_number\n124\nstory_id\nST-002\noutcome\nrejected\nauto_approved\nfalse\nrolled_back\nfalse",
+                    )
+
+            return MagicMock(returncode=0, stdout="")
+
+        mock_redis_cli.side_effect = mock_side_effect
 
         tracker = OutcomeTracker()
         end_date = datetime.now(UTC)
@@ -308,8 +324,11 @@ class TestFeedbackLoop:
         assert "concerns" in patterns
         assert "positives" in patterns
 
+    @patch("feedback_loop._redis_cli")
     @patch("feedback_loop.OutcomeTracker")
-    def test_generate_rule_adjustments_high_rollback(self, mock_tracker_class):
+    def test_generate_rule_adjustments_high_rollback(
+        self, mock_tracker_class, mock_redis_cli
+    ):
         """Test generating rule adjustments when rollback rate is high."""
         mock_tracker = MagicMock()
         mock_tracker_class.return_value = mock_tracker
@@ -324,6 +343,9 @@ class TestFeedbackLoop:
         )
         mock_tracker.calculate_metrics.return_value = mock_metrics
 
+        # Mock Redis calls for _store_suggestion
+        mock_redis_cli.return_value = MagicMock(returncode=0, stdout="OK")
+
         feedback = FeedbackLoop()
         suggestions = feedback.generate_rule_adjustments(days=7)
 
@@ -331,8 +353,11 @@ class TestFeedbackLoop:
         assert len(suggestions) > 0
         assert any(s.rule_type == "auto_approval" for s in suggestions)
 
+    @patch("feedback_loop._redis_cli")
     @patch("feedback_loop.OutcomeTracker")
-    def test_generate_rule_adjustments_low_rollback(self, mock_tracker_class):
+    def test_generate_rule_adjustments_low_rollback(
+        self, mock_tracker_class, mock_redis_cli
+    ):
         """Test generating rule adjustments when rollback rate is low."""
         mock_tracker = MagicMock()
         mock_tracker_class.return_value = mock_tracker
@@ -346,6 +371,9 @@ class TestFeedbackLoop:
             auto_approved_rolled_back=0,  # 0% rollback rate
         )
         mock_tracker.calculate_metrics.return_value = mock_metrics
+
+        # Mock Redis calls for _store_suggestion
+        mock_redis_cli.return_value = MagicMock(returncode=0, stdout="OK")
 
         feedback = FeedbackLoop()
         suggestions = feedback.generate_rule_adjustments(days=7)
@@ -587,23 +615,28 @@ class TestRetryLogic:
         mock_tracker = MagicMock()
         mock_tracker_class.return_value = mock_tracker
 
-        # Mock outcomes with transient failures
-        mock_outcomes = [
-            PROutcome(
-                pr_number=1,
-                story_id="ST-001",
-                branch="feature/test",
-                head_sha="abc",
-                outcome="merged",
-                ci_passed=True,
-            ),
-        ]
+        # Mock metrics with proper values (not MagicMock)
+        mock_metrics = SuccessMetrics(
+            period_start="2026-02-01T00:00:00Z",
+            period_end="2026-02-07T00:00:00Z",
+            total_prs=1,
+            merged_prs=1,
+            rejected_prs=0,
+            rolled_back_prs=0,
+            auto_approved_count=1,
+            auto_approved_rolled_back=0,
+            overall_success_rate=100.0,
+            auto_approved_success_rate=100.0,
+            avg_time_to_merge_minutes=30.0,
+        )
+        mock_tracker.calculate_metrics.return_value = mock_metrics
 
         # Test that transient failures are tracked
         feedback = FeedbackLoop()
         patterns = feedback.analyze_patterns(days=7)
 
         assert "total_prs" in patterns
+        assert patterns["total_prs"] == 1
 
 
 class TestIntegration:
