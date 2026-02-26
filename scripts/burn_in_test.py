@@ -34,6 +34,108 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Redis key for burn-in verdict
+BURN_IN_VERDICT_KEY = "bmad:chiseai:burn_in:verdict"
+
+
+def store_verdict_in_redis(
+    verdict: str,
+    rationale: str,
+    burn_in_id: str,
+    duration_seconds: float,
+    incident_count: int,
+    critical_count: int,
+    redis_host: str = "host.docker.internal",
+    redis_port: int = 6380,
+) -> bool:
+    """Store burn-in verdict in Redis.
+
+    Args:
+        verdict: "GO" or "NO-GO"
+        rationale: Explanation of the verdict
+        burn_in_id: The execution ID
+        duration_seconds: Actual duration of the test
+        incident_count: Total number of incidents
+        critical_count: Number of critical incidents
+        redis_host: Redis host
+        redis_port: Redis port
+
+    Returns:
+        True if stored successfully
+    """
+    try:
+        import redis
+
+        r = redis.Redis(
+            host=redis_host,
+            port=redis_port,
+            socket_connect_timeout=5,
+            decode_responses=True,
+        )
+
+        verdict_data = {
+            "verdict": verdict,
+            "rationale": rationale,
+            "timestamp": datetime.now(UTC).isoformat(),
+            "burn_in_id": burn_in_id,
+            "duration_seconds": str(duration_seconds),
+            "incident_count": str(incident_count),
+            "critical_count": str(critical_count),
+        }
+
+        r.hset(BURN_IN_VERDICT_KEY, mapping=verdict_data)
+        logger.info(f"✓ Verdict stored in Redis at {BURN_IN_VERDICT_KEY}")
+        r.close()
+        return True
+    except Exception as e:
+        logger.error(f"Failed to store verdict in Redis: {e}")
+        return False
+
+
+def read_verdict_from_redis(
+    redis_host: str = "host.docker.internal",
+    redis_port: int = 6380,
+) -> dict[str, Any] | None:
+    """Read burn-in verdict from Redis.
+
+    Args:
+        redis_host: Redis host
+        redis_port: Redis port
+
+    Returns:
+        Verdict data dictionary or None if not found/error
+    """
+    try:
+        import redis
+
+        r = redis.Redis(
+            host=redis_host,
+            port=redis_port,
+            socket_connect_timeout=5,
+            decode_responses=True,
+        )
+
+        data = r.hgetall(BURN_IN_VERDICT_KEY)
+        r.close()
+
+        if not data:
+            return None
+
+        # Convert numeric fields back to appropriate types
+        result = dict(data)
+        if "duration_seconds" in result:
+            result["duration_seconds"] = float(result["duration_seconds"])
+        if "incident_count" in result:
+            result["incident_count"] = int(result["incident_count"])
+        if "critical_count" in result:
+            result["critical_count"] = int(result["critical_count"])
+
+        return result
+    except Exception as e:
+        logger.error(f"Failed to read verdict from Redis: {e}")
+        return None
+
+
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
@@ -686,6 +788,16 @@ async def main():
     # Generate and save report
     report = test.generate_report()
     test.save_report(report)
+
+    # Store verdict in Redis
+    store_verdict_in_redis(
+        verdict=report["verdict"],
+        rationale=report["rationale"],
+        burn_in_id=report["burn_in_id"],
+        duration_seconds=report["duration_actual_seconds"],
+        incident_count=report["incidents"]["total"],
+        critical_count=report["incidents"]["critical"],
+    )
 
     # Print summary
     print("\n" + "=" * 60)
