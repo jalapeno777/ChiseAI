@@ -5,8 +5,22 @@
 metadata:
   project_name: ChiseAI
   version: "2.5.3"
-  last_updated: "2026-02-26T19:30:00Z"
+  last_updated: "2026-02-26T22:00:00Z"
   recent_changes:
+    - timestamp: "2026-02-26T22:00:00Z"
+      actor: merlin
+      action: st-auto-008-merge-correction
+      description: "ST-AUTO-008: Corrected workflow status to reflect actual merge state. Merge commit b68d93f already on main. Feature branch deleted."
+      story_id: ST-AUTO-008
+      epic_id: EP-AUTO-GIT-001
+      status: completed
+      merge_commit_sha: "b68d93f38ca7131f98cd51a5cbf031cf6034044c"
+      merge_date: "2026-02-26T07:57:00Z"
+      correction_type: "truth_sync"
+      previous_status: "implementation_complete"
+      new_status: "completed"
+      validation_status: "validated"
+      note: "Forensic verification revealed merge was already complete but workflow status was stale."
     - timestamp: "2026-02-26T19:30:00Z"
       actor: jarvis
       action: st-auto-007-kickoff
@@ -2980,8 +2994,8 @@ stories:
     title: Agent Onboarding & Documentation
     epic_id: EP-AUTO-GIT-001
     sprint_id: AUTO-GIT-001
-    status: implementation_complete
-    validation_status: pending_validation
+    status: completed
+    validation_status: validated
     story_points: 5
     priority: P2-MEDIUM
     description: Documentation and onboarding materials for AI agents using the autonomous PR pipeline
@@ -2989,14 +3003,22 @@ stories:
       - "Created 6 comprehensive documentation files (3,277 lines)"
       - "216 tests passing"
       - "Files: quickstart.md, workflow-paths.md, best-practices.md, troubleshooting.md, agent-autonomous-workflow.md, .opencode/agent/README.md"
+    merge_metadata:
+      merge_commit_sha: "b68d93f38ca7131f98cd51a5cbf031cf6034044c"
+      merge_date: "2026-02-26T07:57:00Z"
+      pr_number: null
+      note: "Merge was performed directly without PR. Feature branch fully merged to main."
     validation:
       - type: unit_test
         command: "pytest tests/test_pr_lifecycle/ -v --tb=short"
         coverage_threshold: 80
+        status: passed
       - type: lint
         command: "ruff check scripts/pr_lifecycle/"
+        status: passed
       - type: security
         command: "bandit -r scripts/pr_lifecycle/"
+        status: passed
 
 # ============================================================
 # ACTIVE SPRINTS
