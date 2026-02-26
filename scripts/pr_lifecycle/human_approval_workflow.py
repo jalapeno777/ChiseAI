@@ -20,22 +20,15 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import os
-from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
-from pathlib import Path
-from typing import Any
-
-import aiohttp
 
 # Add src to path for imports
 import sys
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
-
-from autonomous_git.gitreviewbot import GiteaClient, GitReviewBot
-from discord_alerts.config import DiscordConfig
-from discord_alerts.discord_client import DiscordClient
 
 from complex_path_gate import (
     ApprovalRecord,
@@ -43,6 +36,10 @@ from complex_path_gate import (
     ComplexPathCheckResult,
     ComplexPathGate,
 )
+
+from autonomous_git.gitreviewbot import GiteaClient, GitReviewBot
+from discord_alerts.config import DiscordConfig
+from discord_alerts.discord_client import DiscordClient
 
 logger = logging.getLogger(__name__)
 
@@ -363,7 +360,7 @@ class HumanApprovalWorkflow:
     ) -> str:
         """Build Discord message for approval request."""
         lines = [
-            f"🚨 **COMPLEX PR Requires Human Approval**",
+            "🚨 **COMPLEX PR Requires Human Approval**",
             "",
             f"**PR #{pr_number}**: {pr.title}",
             f"**Author**: {pr.author}",
@@ -396,7 +393,7 @@ class HumanApprovalWorkflow:
                     else "⏳ Pending"
                 ),
                 "",
-                f"**Action Required**: Please review and approve/reject this PR.",
+                "**Action Required**: Please review and approve/reject this PR.",
                 f"{self.config.discord_mention_role}",
                 "",
                 f"🔗 [View PR]({self.gitea.base_url}/{self.gitea.owner}/{self.gitea.repo}/pulls/{pr_number})",
@@ -511,14 +508,15 @@ class HumanApprovalWorkflow:
             pr = await self.gitea.get_pr(pr_number)
             reminder_count = self._reminder_counts.get(pr_number, 0)
 
-            message = (
+            # Build reminder message for logging
+            reminder_msg = (
                 f"⏰ **Reminder**: PR #{pr_number} still awaiting human approval.\n"
                 f"**Title**: {pr.title}\n"
                 f"**Reminder #{reminder_count + 1}**\n"
                 f"{self.config.discord_mention_role}"
             )
 
-            logger.info(f"Sending reminder for PR #{pr_number}")
+            logger.info(f"Sending reminder for PR #{pr_number}: {reminder_msg}")
 
         except Exception as e:
             logger.error(f"Failed to send reminder for PR #{pr_number}: {e}")

@@ -10,6 +10,13 @@ Posts immediately to Discord with @here mention.
 
 import os
 import sys
+
+# Add project root to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
+
+# Load .env for cron context (must be before other imports)
+from scripts.monitoring import load_env  # noqa: F401, E402
+
 import asyncio
 import logging
 import subprocess
@@ -22,8 +29,12 @@ logger = logging.getLogger(__name__)
 
 DISCORD_CHANNEL_ID = os.getenv("DISCORD_DEVELOPMENT_CHANNEL_ID", "")
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN", "")
-REDIS_HOST = os.getenv("REDIS_HOST", "host.docker.internal")
-REDIS_PORT = int(os.getenv("REDIS_PORT", "6380"))
+# Monitoring scripts use container-safe defaults per AGENTS.md
+# Precedence: MONITORING_REDIS_* > REDIS_* > defaults
+REDIS_HOST = os.getenv(
+    "MONITORING_REDIS_HOST", os.getenv("REDIS_HOST", "host.docker.internal")
+)
+REDIS_PORT = int(os.getenv("MONITORING_REDIS_PORT", os.getenv("REDIS_PORT", "6380")))
 
 ALERT_STATE_KEY = "bmad:chiseai:monitoring:pager_alerts:last_check"
 

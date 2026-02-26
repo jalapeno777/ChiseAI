@@ -26,11 +26,11 @@ Usage:
 
 from .metrics import (
     GRAFANA_QUERIES,
-    MetricsExporter,
     PRMetric,
     PRPipelineMetrics,
-    get_all_grafana_queries,
+    MetricsExporter,
     get_grafana_query,
+    get_all_grafana_queries,
 )
 
 __all__ = [
