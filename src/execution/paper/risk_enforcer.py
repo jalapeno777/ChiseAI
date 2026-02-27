@@ -287,13 +287,14 @@ class PaperRiskEnforcer:
 
         Uses fixed fractional sizing capped at max position percentage.
         Respects the 10% max position per token rule.
+        Rounds to exchange precision (3 decimals for most crypto pairs).
 
         Args:
             signal: Trading signal
             portfolio_value: Current portfolio value
 
         Returns:
-            Recommended position size in units
+            Recommended position size in units (rounded to 3 decimal places)
         """
         # Default risk per trade (1% of portfolio)
         default_risk_pct = 0.01
@@ -325,6 +326,10 @@ class PaperRiskEnforcer:
         if entry_price > 0:
             max_size = max_position_value / entry_price
             position_size = min(position_size, max_size)
+
+        # FIX: Round to 3 decimal places for exchange precision (e.g., BTCUSDT qtyStep=0.001)
+        # This prevents "Qty invalid" errors from Bybit
+        position_size = round(position_size, 3)
 
         return position_size
 
