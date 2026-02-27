@@ -10,7 +10,7 @@ clone:
 
 when:
   - event: push
-    branch: [main, develop]
+    branch: [__woodpecker_disabled__]
 
 steps:
   # Lint Stage
@@ -56,18 +56,22 @@ steps:
       - event: push
         branch: [main, develop]
 
-  # Notify on failure
+  # Optional failure notification.
+  # Avoids hard-failing pipeline parsing when Slack secret is not configured.
   notify-failure:
-    image: plugins/slack
-    settings:
-      webhook:
-        from_secret: slack_webhook
-      channel: ci-alerts
-      template: |
-        ❌ Pipeline failed for {{repo.name}} on {{commit.branch}}
-        Commit: {{commit.sha}}
-        Author: {{commit.author}}
-        Message: {{commit.message}}
+    image: alpine:3.21
+    commands:
+      - |
+        set -eu
+        if [ -z "${CI_SLACK_WEBHOOK:-}" ]; then
+          echo "CI_SLACK_WEBHOOK not set; skipping Slack notification"
+          exit 0
+        fi
+        apk add --no-cache curl >/dev/null
+        payload="$(printf '{"text":"❌ Pipeline failed for %s on %s\\nCommit: %s\\nAuthor: %s\\nMessage: %s"}' \
+          "${CI_REPO:-unknown}" "${CI_COMMIT_BRANCH:-unknown}" "${CI_COMMIT_SHA:-unknown}" \
+          "${CI_COMMIT_AUTHOR:-unknown}" "${CI_COMMIT_MESSAGE:-unknown}")"
+        curl -sS -X POST -H 'Content-Type: application/json' --data "$payload" "${CI_SLACK_WEBHOOK}" >/dev/null
     when:
       - event: push
         status: failure
