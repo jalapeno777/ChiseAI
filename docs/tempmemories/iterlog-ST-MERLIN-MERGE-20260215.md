@@ -10,7 +10,7 @@ started_at: "2026-02-15T02:36:33Z"
 acceptance_criteria:
   - "AC1: Local Merlin.md change is committed to feature/remediation-batch1."
   - "AC2: feature/remediation-batch1 is merged into main through Gitea with green required CI."
-  - "AC3: local main and gitea/main point to the same commit SHA."
+  - "AC3: local main and origin/main point to the same commit SHA."
 mem_scan:
   - AGENTS.md
   - .opencode/agent/Merlin.md

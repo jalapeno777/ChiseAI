@@ -43,8 +43,8 @@ def _resolve_base_ref(explicit: str | None) -> str | None:
     candidates = [explicit] if explicit else []
     candidates.extend(
         [
-            "refs/remotes/gitea/main",
-            "gitea/main",
+            "refs/remotes/origin/main",
+            "origin/main",
             "refs/remotes/origin/main",
             "origin/main",
             "main",

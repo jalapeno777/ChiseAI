@@ -51,11 +51,11 @@ python3 scripts/ops/merlin_pr_sweep.py \
 - Only prune branches that are merged to `main` or superseded with equivalent merged commit history.
 ```bash
 git branch --merged main | rg -v '(^\\*| main$)' | xargs -r git branch -d
-git fetch -p gitea
+git fetch -p origin
 ```
 - For remote branches, delete only after merged/superseded verification:
 ```bash
-git push gitea --delete <branch>
+git push origin --delete <branch>
 ```
 
 6. Report back to Jarvis

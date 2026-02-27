@@ -1,7 +1,12 @@
+# Woodpecker pipeline intentionally disabled.
+# CI remains enforced through non-Woodpecker providers/workflows.
 when:
-  - event: pull_request
-  - event: manual
-  - event: cron
+  event:
+    - pull_request
+    - manual
+    - cron
+  branch:
+    - __woodpecker_disabled__
 
 clone:
   git:

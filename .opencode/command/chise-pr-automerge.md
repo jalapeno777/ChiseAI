@@ -4,7 +4,7 @@ description: "ChiseAI: Merlin-only PR open/merge flow (green CI only). Uses scri
 disable-model-invocation: true
 ---
 
-Use this command for Merlin-managed PR operations: open/update PR and merge to `main` only after Woodpecker checks are green.
+Use this command for Merlin-managed PR operations: open/update PR and merge to `main` only after required CI checks are green.
 
 Prereqs:
 - Set `GITEA_TOKEN` (PAT) in env.
@@ -28,7 +28,7 @@ Prereqs:
    - Run `.opencode/command/chise-precommit-gates.md`
 
 3. Push branch to Gitea (if needed)
-   - `git push -u gitea "$BRANCH"`
+   - `git push -u origin "$BRANCH"`
 
 4. Open PR and enable auto-merge on green CI
    - If approvals are required, have the review bot approve first:
@@ -47,8 +47,8 @@ Prereqs:
 
 6. Sync local main and prune
    - `git switch main`
-   - `git pull --ff-only gitea main`
-   - `git fetch -p gitea`
+   - `git pull --ff-only origin main`
+   - `git fetch -p origin`
    - Delete local feature branch (safe): `git branch -d <branch>`
    - Close swarm session with anti-drift check:
      - `python3 scripts/swarm/session.py close --enforce-merged`

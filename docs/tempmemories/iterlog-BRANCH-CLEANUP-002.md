@@ -6,7 +6,7 @@ status: in_progress
 started_at: 2026-02-13T18:54:01Z
 acceptance_criteria:
   - AC1: Consolidate all intended dirty branch changes into main without dropping tracked changes
-  - AC2: main matches gitea/main after push/fetch verification
+  - AC2: main matches origin/main after push/fetch verification
   - AC3: Woodpecker CI is green or remaining failures have proven root cause + fix
   - AC4: Validate no data/functionality loss via targeted test + diff checks
   - AC5: Record decisions/learnings and close iteration log
