@@ -1,0 +1,95 @@
+# Discord Channel Routing Configuration
+# For ST-FINAL-CLOSURE-001: G5 - #trading Alert Routing
+
+# Channel IDs (authoritative)
+channels:
+  # Primary trading alerts channel
+  trading:
+    id: "1444447985378398459"
+    name: "#trading"
+    description: "Primary channel for trade open/close alerts"
+    alert_types:
+      - trade_open
+      - trade_close
+      - position_update
+    enabled: true
+
+  # Summaries and recaps channel
+  summaries:
+    id: "1445752426563899492"
+    name: "#summaries"
+    description: "Channel for periodic trading recaps and summaries"
+    alert_types:
+      - daily_recap
+      - weekly_recap
+      - performance_summary
+    enabled: true
+
+  # Signal alerts channel
+  signals:
+    id: "1444447985378398459"  # Same as trading for now
+    name: "#trading"
+    description: "Channel for signal generation alerts"
+    alert_types:
+      - actionable_signal
+      - watchlist_alert
+    enabled: true
+
+# Alert Routing Rules
+routing:
+  # Trade events
+  trade_opened:
+    channel: trading
+    priority: high
+    format: embed
+    enabled: true
+
+  trade_closed:
+    channel: trading
+    priority: high
+    format: embed
+    enabled: true
+
+  # Signal events
+  signal_generated:
+    channel: signals
+    priority: medium
+    format: embed
+    enabled: true
+    min_confidence: 0.40  # Only send if confidence >= 40%
+
+  # Recap events
+  daily_recap:
+    channel: summaries
+    priority: low
+    format: embed
+    schedule: "0 0 * * *"  # Daily at midnight UTC
+    enabled: true
+
+  weekly_recap:
+    channel: summaries
+    priority: low
+    format: embed
+    schedule: "0 0 * * 0"  # Weekly on Sunday midnight UTC
+    enabled: true
+
+# Rate Limiting
+rate_limits:
+  trading_channel:
+    max_per_minute: 10
+    max_per_hour: 100
+  summaries_channel:
+    max_per_minute: 5
+    max_per_hour: 50
+
+# Guild Configuration
+guild:
+  id: "1413522994810327134"
+  name: "ChiseAI"
+  restrict_to_guild: true
+
+# Webhook Configuration (optional - falls back to bot)
+webhooks:
+  trading:
+    url: ${DISCORD_WEBHOOK_URL}
+    enabled: true
