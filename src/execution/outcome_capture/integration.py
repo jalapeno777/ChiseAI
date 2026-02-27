@@ -458,6 +458,157 @@ class OutcomeCaptureIntegration:
                 error=str(e),
             )
 
+    async def on_position_close(
+        self,
+        position: Any,
+        exit_price: float,
+        realized_pnl: float,
+        correlation_id: str | None = None,
+        reason: str = "manual",
+    ) -> OutcomeCaptureResult:
+        """Handle position close - convert, notify, persist.
+
+        Args:
+            position: The closed position object
+            exit_price: The exit price
+            realized_pnl: The realized PnL
+            correlation_id: Correlation ID for tracing (from position metadata or new)
+            reason: Reason for closing the position
+
+        Returns:
+            OutcomeCaptureResult with outcome_id and correlation_id
+        """
+        from ml.models.signal_outcome import (
+            OutcomeType,
+            SignalOutcome,
+            SignalOutcomeStatus,
+        )
+
+        # Get or generate correlation_id
+        if correlation_id is None:
+            correlation_id = (
+                position.metadata.get("correlation_id") if position.metadata else None
+            )
+        if correlation_id is None:
+            correlation_id = self._generate_correlation_id()
+
+        try:
+            # Extract metadata from position
+            signal_id = (
+                position.metadata.get("signal_id") if position.metadata else None
+            )
+            order_id = position.metadata.get("order_id") if position.metadata else None
+            leverage = (
+                Decimal(str(position.metadata.get("leverage", 1.0)))
+                if position.metadata
+                else Decimal("1.0")
+            )
+
+            # Determine side from position side
+            side = "Buy" if position.side == "long" else "Sell"
+            direction = position.side.upper()
+
+            # Parse signal_id as UUID if valid, otherwise store in metadata
+            signal_uuid = None
+            if signal_id:
+                try:
+                    signal_uuid = UUID(signal_id)
+                except ValueError:
+                    # signal_id is not a valid UUID, store it in metadata instead
+                    logger.debug(
+                        f"signal_id '{signal_id}' is not a valid UUID, storing in metadata"
+                    )
+
+            # Create SignalOutcome for the closed position
+            outcome = SignalOutcome(
+                outcome_id=uuid4(),
+                signal_id=signal_uuid,
+                order_id=order_id or "",
+                symbol=position.symbol,
+                side=side,
+                direction=direction,
+                entry_price=Decimal(str(position.entry_price)),
+                exit_price=Decimal(str(exit_price)),
+                entry_time=position.opened_at,
+                exit_time=datetime.now(UTC),
+                pnl=Decimal(str(realized_pnl)),
+                position_size=Decimal(str(position.quantity)),
+                leverage=leverage,
+                fill_price=Decimal(
+                    str(exit_price)
+                ),  # For close, fill_price is exit_price
+                fill_quantity=Decimal(str(position.quantity)),
+                fill_timestamp=datetime.now(UTC),
+                outcome_type=OutcomeType.MANUAL_CLOSE
+                if reason == "manual"
+                else OutcomeType.UNKNOWN,
+                status=SignalOutcomeStatus.CLOSED,
+                metadata={
+                    "correlation_id": correlation_id,
+                    "close_reason": reason,
+                    "position_id": getattr(position, "position_id", ""),
+                    "original_signal_id": signal_id
+                    if signal_id and not signal_uuid
+                    else None,
+                },
+            )
+
+            logger.info(
+                f"Created close outcome: {outcome.outcome_id} for position {getattr(position, 'position_id', 'unknown')}"
+            )
+
+            # Send Discord close notification
+            discord_message_id = None
+            notifier = await self._get_notifier()
+            if notifier:
+                try:
+                    notification_result = await notifier.send_trade_close_notification(
+                        outcome
+                    )
+                    if notification_result.success:
+                        discord_message_id = notification_result.message_id
+                        logger.info(
+                            f"Discord close notification sent: {discord_message_id}"
+                        )
+                    else:
+                        logger.warning(
+                            f"Discord close notification failed: {notification_result.error}"
+                        )
+                except Exception as e:
+                    logger.error(f"Failed to send Discord close notification: {e}")
+
+            # Persist outcome
+            persisted, storage_type = await self._persist_outcome(outcome)
+            if not persisted:
+                logger.error("Failed to persist close outcome to any storage")
+                return OutcomeCaptureResult(
+                    success=False,
+                    outcome_id=str(outcome.outcome_id),
+                    correlation_id=correlation_id,
+                    discord_message_id=discord_message_id,
+                    error="Failed to persist close outcome",
+                )
+
+            logger.info(
+                f"Close outcome captured: {outcome.outcome_id} (correlation: {correlation_id})"
+            )
+
+            return OutcomeCaptureResult(
+                success=True,
+                outcome_id=str(outcome.outcome_id),
+                correlation_id=correlation_id,
+                discord_message_id=discord_message_id,
+                persisted_to=storage_type,
+            )
+
+        except Exception as e:
+            logger.exception("Failed to capture position close outcome")
+            return OutcomeCaptureResult(
+                success=False,
+                correlation_id=correlation_id,
+                error=str(e),
+            )
+
     async def close(self) -> None:
         """Close resources."""
         if self._trade_notifier:

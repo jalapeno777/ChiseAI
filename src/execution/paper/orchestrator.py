@@ -612,6 +612,41 @@ class PaperTradingOrchestrator:
             if self.telemetry:
                 await self.telemetry.set_equity(self.portfolio_value)
 
+            # Capture close outcome and send Discord notification
+            if self.outcome_capture:
+                try:
+                    # Get correlation_id from position metadata or generate new
+                    correlation_id = None
+                    if position and hasattr(position, "metadata") and position.metadata:
+                        correlation_id = position.metadata.get("correlation_id")
+
+                    result = await self.outcome_capture.on_position_close(
+                        position=position,
+                        exit_price=exit_price,
+                        realized_pnl=realized_pnl,
+                        correlation_id=correlation_id,
+                        reason=reason,
+                    )
+
+                    if result.success:
+                        if result.discord_message_id:
+                            logger.info(
+                                f"Discord close notification sent: {result.discord_message_id} "
+                                f"(outcome: {result.outcome_id})"
+                            )
+                        else:
+                            logger.debug(
+                                f"Close outcome captured: {result.outcome_id} "
+                                f"(no Discord notification)"
+                            )
+                    else:
+                        logger.warning(
+                            f"Failed to capture close outcome: {result.error}"
+                        )
+                except Exception as e:
+                    # Log error but don't block the close operation
+                    logger.error(f"Error capturing close outcome: {e}")
+
             return position, realized_pnl
 
         except Exception as e:
