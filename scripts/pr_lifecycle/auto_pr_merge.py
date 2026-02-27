@@ -13,6 +13,7 @@ import argparse
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -31,6 +32,7 @@ class Config:
     protected: set[str]
     allowed_authors: set[str]
     max_branch_age_min: int
+    source_branch: str
     dry_run: bool
 
 
@@ -48,6 +50,7 @@ def _cfg(dry_run: bool) -> Config:
         protected={x.strip() for x in protected_raw.split(",") if x.strip()},
         allowed_authors={x.strip() for x in authors_raw.split(",") if x.strip()},
         max_branch_age_min=int(os.getenv("CHISE_AUTOPR_MAX_BRANCH_AGE_MIN", "30")),
+        source_branch=os.getenv("CHISE_AUTOPR_SOURCE_BRANCH", "").strip(),
         dry_run=dry_run,
     )
 
@@ -124,7 +127,11 @@ def _any_pr_for_head(cfg: Config, head_branch: str) -> dict[str, Any] | None:
 def ensure_prs(cfg: Config) -> int:
     created = 0
     cutoff = datetime.now(UTC) - timedelta(minutes=cfg.max_branch_age_min)
-    for branch in list_branches(cfg):
+    branches = list_branches(cfg)
+    if cfg.source_branch:
+        branches = [b for b in branches if (b.get("name") or "").strip() == cfg.source_branch]
+
+    for branch in branches:
         name = str(branch.get("name", "")).strip()
         if not name or name in cfg.protected:
             continue
@@ -170,12 +177,41 @@ def _author_allowed(cfg: Config, pr: dict[str, Any]) -> bool:
     return author in cfg.allowed_authors
 
 
+def _pr_by_number(cfg: Config, number: int) -> dict[str, Any] | None:
+    out = _safe_req_json(cfg, "GET", f"{_repo_path(cfg)}/pulls/{number}")
+    return out if isinstance(out, dict) else None
+
+
+def _wait_until_mergeable(cfg: Config, number: int, attempts: int = 6) -> dict[str, Any] | None:
+    for _ in range(attempts):
+        pr = _pr_by_number(cfg, number)
+        if not pr:
+            return None
+        if pr.get("mergeable") is not None:
+            return pr
+        time.sleep(2)
+    return _pr_by_number(cfg, number)
+
+
 def auto_merge(cfg: Config) -> int:
     merged = 0
-    for pr in list_open_prs(cfg, base=cfg.default_base):
+    prs = list_open_prs(cfg, base=cfg.default_base)
+    if cfg.source_branch:
+        full_head = f"{cfg.owner}:{cfg.source_branch}"
+        prs = [
+            pr
+            for pr in prs
+            if ((pr.get("head") or {}).get("ref") == cfg.source_branch)
+            or ((pr.get("head") or {}).get("label") == full_head)
+        ]
+
+    for pr in prs:
         number = pr.get("number")
         if not number:
             continue
+        refreshed = _wait_until_mergeable(cfg, int(number))
+        if refreshed:
+            pr = refreshed
         if not _author_allowed(cfg, pr):
             continue
         if not _is_mergeable_clean(pr):
@@ -193,12 +229,16 @@ def auto_merge(cfg: Config) -> int:
             "merge_commit_id": "",
             "merge_message_field": f"Auto-merged PR #{number} (conflict-free)",
         }
-        result = _safe_req_json(
-            cfg, "POST", f"{_repo_path(cfg)}/pulls/{number}/merge", payload
-        )
-        if result is not None:
-            print(f"merged PR #{number}")
-            merged += 1
+        for attempt in range(4):
+            result = _safe_req_json(
+                cfg, "POST", f"{_repo_path(cfg)}/pulls/{number}/merge", payload
+            )
+            if result is not None:
+                print(f"merged PR #{number}")
+                merged += 1
+                break
+            # Gitea can briefly return 405 "Please try again later" while mergeability updates.
+            time.sleep(2 + attempt)
     return merged
 
 
