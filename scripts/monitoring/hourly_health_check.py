@@ -302,12 +302,86 @@ def get_metrics(r: redis.Redis) -> Dict[str, int]:
         return {"signals": 0, "outcomes": 0, "keys": 0}
 
 
+def check_discord_continuity(r: redis.Redis) -> Dict[str, Any]:
+    """Check Discord continuity status."""
+    try:
+        status = r.get("chise:discord:continuity:continuity_status")
+        last_success_at = r.get("chise:discord:continuity:last_success_at")
+        post_count = r.get("chise:discord:continuity:post_count_window")
+        failure_count = r.get("chise:discord:continuity:failure_count_window")
+
+        if status is None:
+            return {
+                "status": "⚠️",
+                "continuity_status": "unknown",
+                "last_success": "N/A",
+                "detail": "Not configured",
+            }
+
+        # Format last success time
+        last_success_display = "unknown"
+        if last_success_at:
+            try:
+                from datetime import datetime, timezone
+
+                last_dt = datetime.fromisoformat(last_success_at.replace("Z", "+00:00"))
+                now = datetime.now(timezone.utc)
+                seconds_ago = (now - last_dt).total_seconds()
+                if seconds_ago < 60:
+                    last_success_display = f"{int(seconds_ago)}s ago"
+                elif seconds_ago < 3600:
+                    last_success_display = f"{int(seconds_ago / 60)}m ago"
+                else:
+                    last_success_display = f"{int(seconds_ago / 3600)}h ago"
+            except Exception:
+                last_success_display = last_success_at[:19]
+
+        # Determine status emoji
+        if status == "healthy":
+            emoji = "✅"
+        elif status == "degraded":
+            emoji = "⚠️"
+        else:
+            emoji = "❌"
+
+        post_count_int = int(post_count or "0")
+        failure_count_int = int(failure_count or "0")
+        failure_rate = 0.0
+        if post_count_int > 0:
+            failure_rate = failure_count_int / post_count_int
+
+        return {
+            "status": emoji,
+            "continuity_status": status,
+            "last_success": last_success_display,
+            "failure_rate": f"{failure_rate:.1%}",
+            "detail": f"{status} | Last: {last_success_display} | Fail: {failure_rate:.1%}",
+        }
+    except redis.RedisError as e:
+        logger.error(f"Redis error checking Discord continuity: {e}")
+        return {
+            "status": "❌",
+            "continuity_status": "error",
+            "last_success": "N/A",
+            "detail": "Redis error",
+        }
+    except Exception as e:
+        logger.error(f"Discord continuity check error: {e}")
+        return {
+            "status": "❌",
+            "continuity_status": "error",
+            "last_success": "N/A",
+            "detail": f"Error: {e}",
+        }
+
+
 def format_hourly_message(
     scheduler: Dict,
     kill_switch: Dict,
     daily_loss: Dict,
     metrics: Dict,
     exec_stats: Optional[Dict[str, Any]] = None,
+    discord_continuity: Optional[Dict[str, Any]] = None,
 ) -> str:
     """Format hourly health message."""
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
@@ -326,6 +400,7 @@ def format_hourly_message(
         f"**Scheduler:** {scheduler['status']} {scheduler['detail']}",
         f"**Kill Switch:** {kill_switch['status']} {kill_switch['detail']}",
         f"**Daily Loss:** {daily_loss['status']} {daily_loss['detail']}",
+        f"**Discord:** {(discord_continuity or {}).get('status', '❓')} {(discord_continuity or {}).get('detail', 'No continuity data')}",
         f"",
         f"**Metrics:** Signals: {metrics['signals']} | Outcomes: {metrics['outcomes']} | Keys: {metrics['keys']}{exec_info}",
         f"",
@@ -502,9 +577,25 @@ def main() -> int:
             logger.error(f"Execution stats failed: {e}")
             exec_stats = {}
 
+        try:
+            discord_continuity = check_discord_continuity(r)
+        except Exception as e:
+            logger.error(f"Discord continuity check failed: {e}")
+            discord_continuity = {
+                "status": "❌",
+                "continuity_status": "error",
+                "last_success": "N/A",
+                "detail": f"Error: {e}",
+            }
+
         # Format message
         message = format_hourly_message(
-            scheduler, kill_switch, daily_loss, metrics, exec_stats
+            scheduler,
+            kill_switch,
+            daily_loss,
+            metrics,
+            exec_stats=exec_stats,
+            discord_continuity=discord_continuity,
         )
 
         # P0 HARDENING: Try Discord with retry, fallback to local
