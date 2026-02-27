@@ -7,6 +7,12 @@ metadata:
   version: "2.5.3"
   last_updated: "2026-02-26T23:50:00Z"
   recent_changes:
+    - timestamp: "2026-02-27T00:00:00Z"
+      actor: jarvis
+      action: party-mode-plan-documented
+      description: "Party-mode approved infrastructure cleanup plan documented. EP-INFRA-CLEANUP-001 epic with 4 planned stories added to backlog. Execution pending prioritization."
+      epic_id: EP-INFRA-CLEANUP-001
+      story_ids: [ST-TAIGA-001, ST-CONTAINER-001, ST-WORKFLOW-001, ST-CI-001]
     - timestamp: "2026-02-26T23:55:00Z"
       actor: senior-dev
       action: st-auto-control-enforcement-final
@@ -1137,6 +1143,16 @@ epics:
         completion_date: "2026-02-23"
     roadmap_document: docs/architecture/governance-rollout-roadmap.md
     accelerated_roadmap: docs/roadmaps/governance-autonomy-accelerated.md
+
+  # EP-INFRA-CLEANUP-001: Infrastructure Cleanup & Hardening Sprint (4 stories, TBD points)
+  - id: EP-INFRA-CLEANUP-001
+    name: Infrastructure Cleanup & Hardening Sprint
+    status: planned
+    story_ids: [ST-TAIGA-001, ST-CONTAINER-001, ST-WORKFLOW-001, ST-CI-001]
+    story_count: 4
+    story_points: TBD
+    description: Post-party-mode infrastructure cleanup focusing on Taiga cleanup, container governance, workflow hardening, and CI improvements
+    sprint_id: INFRA-CLEANUP-001
 
 # ============================================================
 # PHASE 1 STORIES (35 stories)
@@ -5153,6 +5169,75 @@ launch_stories:
       - throughput_improvement: ≥30%
       - conflict_rate: <2%
       - rollback_success_rate: 100%
+
+  # EP-INFRA-CLEANUP-001: Infrastructure Cleanup & Hardening Sprint (4 stories)
+  - id: ST-TAIGA-001
+    title: Taiga Project Cleanup and Reorganization
+    epic_id: EP-INFRA-CLEANUP-001
+    sprint_id: INFRA-CLEANUP-001
+    status: planned
+    validation_status: planned
+    story_points: TBD
+    priority: P1-HIGH
+    owner_role: merlin
+    description: Clean up Taiga project by removing obsolete user stories, consolidating duplicates, and reorganizing remaining stories to match current workflow state
+    acceptance_criteria:
+      - All deprecated stories marked and archived
+      - Duplicate stories consolidated with clear ownership
+      - Active stories reflect current repo state
+      - Taiga sync validated and working
+    dependency_notes: None
+
+  - id: ST-CONTAINER-001
+    title: Container Governance Audit and Enforcement
+    epic_id: EP-INFRA-CLEANUP-001
+    sprint_id: INFRA-CLEANUP-001
+    status: planned
+    validation_status: planned
+    story_points: TBD
+    priority: P0-CRITICAL
+    owner_role: jarvis
+    description: Audit all running containers for compliance with chiseai network governance, enforce Docker label standards, and document exceptions
+    acceptance_criteria:
+      - All ChiseAI containers on chiseai network verified
+      - project=chiseai label applied to all containers
+      - Protected containers inventory documented
+      - Pre-commit hook validation confirmed working
+    dependency_notes: Depends on infrastructure/terraform state
+
+  - id: ST-WORKFLOW-001
+    title: BMAD Workflow Hardening - Documentation Sync
+    epic_id: EP-INFRA-CLEANUP-001
+    sprint_id: INFRA-CLEANUP-001
+    status: planned
+    validation_status: planned
+    story_points: TBD
+    priority: P1-HIGH
+    owner_role: senior-dev
+    description: Synchronize all workflow documentation with actual implementation, update AGENTS.md references, and close documentation gaps identified in party mode
+    acceptance_criteria:
+      - AGENTS.md matches actual agent capabilities
+      - All workflow commands documented with examples
+      - Decision records updated with party-mode outcomes
+      - Validation registry synced with workflow-status
+    dependency_notes: None
+
+  - id: ST-CI-001
+    title: CI Pipeline Optimization and Flaky Test Remediation
+    epic_id: EP-INFRA-CLEANUP-001
+    sprint_id: INFRA-CLEANUP-001
+    status: planned
+    validation_status: planned
+    story_points: TBD
+    priority: P1-HIGH
+    owner_role: dev
+    description: Address CI pipeline timeouts, fix flaky tests, and optimize test execution order for faster feedback
+    acceptance_criteria:
+      - CI pipeline completes within 10 minutes
+      - Flaky tests identified and fixed or quarantined
+      - Test parallelization optimized
+      - Coverage reporting stable and accurate
+    dependency_notes: May require test infrastructure changes
 
 summary:
   total_epics: 24
