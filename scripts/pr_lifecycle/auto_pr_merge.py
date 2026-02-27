@@ -109,6 +109,18 @@ def _open_pr_for_head(cfg: Config, head_branch: str) -> dict[str, Any] | None:
     return None
 
 
+def _any_pr_for_head(cfg: Config, head_branch: str) -> dict[str, Any] | None:
+    out = _safe_req_json(cfg, "GET", f"{_repo_path(cfg)}/pulls?state=all")
+    prs = out if isinstance(out, list) else []
+    full_head = f"{cfg.owner}:{head_branch}"
+    for pr in prs:
+        head_ref = (pr.get("head") or {}).get("ref")
+        head_full = (pr.get("head") or {}).get("label")
+        if head_ref == head_branch or head_full == full_head:
+            return pr
+    return None
+
+
 def ensure_prs(cfg: Config) -> int:
     created = 0
     cutoff = datetime.now(UTC) - timedelta(minutes=cfg.max_branch_age_min)
@@ -126,7 +138,7 @@ def ensure_prs(cfg: Config) -> int:
                     continue
             except ValueError:
                 pass
-        if _open_pr_for_head(cfg, name):
+        if _any_pr_for_head(cfg, name):
             continue
 
         title = f"REPO-AUTO-PR-001 {name}"
