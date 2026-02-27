@@ -85,6 +85,7 @@ class PaperTradingOrchestrator:
         portfolio_value: float = 10000.0,
         trade_notifier: TradeNotifier | None = None,
         signal_consumer: SignalConsumer | None = None,
+        outcome_capture: Any | None = None,
     ):
         """Initialize paper trading orchestrator.
 
@@ -108,6 +109,7 @@ class PaperTradingOrchestrator:
         self.portfolio_value = portfolio_value
         self.trade_notifier = trade_notifier
         self._signal_consumer = signal_consumer
+        self.outcome_capture = outcome_capture
 
         self._running = False
         self._signal_queue: asyncio.Queue[Signal] = asyncio.Queue()
@@ -427,6 +429,21 @@ class PaperTradingOrchestrator:
                 async with self._lock:
                     self._metrics["trades_executed"] += 1
 
+                # Wire outcome_capture.on_trade_result() if configured
+                if self.outcome_capture:
+                    try:
+                        result_for_capture = PaperTradeResult(
+                            signal=signal,
+                            status=TradeStatus.EXECUTED,
+                            order=filled_order,
+                            position=position,
+                            latency_ms=total_latency_ms,
+                            correlation_id=correlation_id,
+                        )
+                        await self.outcome_capture.on_trade_result(result_for_capture)
+                    except Exception as e:
+                        logger.warning(f"outcome_capture.on_trade_result failed: {e}")
+
                 return PaperTradeResult(
                     signal=signal,
                     status=TradeStatus.EXECUTED,
@@ -654,6 +671,23 @@ class PaperTradingOrchestrator:
             self.portfolio_value += realized_pnl
             if self.telemetry:
                 await self.telemetry.set_equity(self.portfolio_value)
+
+            # Wire outcome_capture.on_position_close() if configured
+            if self.outcome_capture:
+                try:
+                    # Get correlation_id from position metadata if available
+                    correlation_id = None
+                    if position.metadata:
+                        correlation_id = position.metadata.get("correlation_id")
+                    await self.outcome_capture.on_position_close(
+                        position=position,
+                        exit_price=exit_price,
+                        realized_pnl=realized_pnl,
+                        reason=reason,
+                        correlation_id=correlation_id,
+                    )
+                except Exception as e:
+                    logger.warning(f"outcome_capture.on_position_close failed: {e}")
 
             # Send Discord notification if notifier is configured
             if self.trade_notifier:

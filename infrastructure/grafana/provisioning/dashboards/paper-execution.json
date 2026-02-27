@@ -506,7 +506,7 @@
             "type": "influxdb",
             "uid": "chiseai-influxdb"
           },
-          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"orders\")\n  |> filter(fn: (r) => r._field == \"order_id\")\n  |> filter(fn: (r) => r.environment == \"${environment}\")\n  |> count()",
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"paper_trades\")\n  |> filter(fn: (r) => r._field == \"order_id\")\n  |> filter(fn: (r) => r.environment == \"${environment}\")\n  |> count()",
           "refId": "A"
         }
       ],
@@ -565,7 +565,7 @@
             "type": "influxdb",
             "uid": "chiseai-influxdb"
           },
-          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"fills\")\n  |> filter(fn: (r) => r._field == \"fill_id\")\n  |> filter(fn: (r) => r.environment == \"${environment}\")\n  |> count()",
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"paper_positions\")\n  |> filter(fn: (r) => r._field == \"position_id\")\n  |> filter(fn: (r) => r.environment == \"${environment}\")\n  |> count()",
           "refId": "A"
         }
       ],
@@ -632,7 +632,7 @@
             "type": "influxdb",
             "uid": "chiseai-influxdb"
           },
-          "query": "orders = from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"orders\")\n  |> filter(fn: (r) => r._field == \"timestamp\")\n  |> filter(fn: (r) => r.environment == \"${environment}\")\n  |> group(columns: [\"order_id\"])\n\nfills = from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"fills\")\n  |> filter(fn: (r) => r._field == \"timestamp\")\n  |> filter(fn: (r) => r.environment == \"${environment}\")\n  |> group(columns: [\"order_id\"])\n\njoin(tables: {o: orders, f: fills}, on: [\"order_id\"], method: \"inner\")\n  |> map(fn: (r) => ({ r with _value: float(v: r.f__value) - float(v: r.o__value) }))\n  |> aggregateWindow(every: 5m, fn: mean, createEmpty: false)",
+          "query": "trades = from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"paper_trades\")\n  |> filter(fn: (r) => r._field == \"timestamp\")\n  |> filter(fn: (r) => r.environment == \"${environment}\")\n  |> group(columns: [\"trade_id\"])\n\npositions = from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"paper_positions\")\n  |> filter(fn: (r) => r._field == \"timestamp\")\n  |> filter(fn: (r) => r.environment == \"${environment}\")\n  |> group(columns: [\"trade_id\"])\n\njoin(tables: {t: trades, p: positions}, on: [\"trade_id\"], method: \"inner\")\n  |> map(fn: (r) => ({ r with _value: float(v: r.p__value) - float(v: r.t__value) }))\n  |> aggregateWindow(every: 5m, fn: mean, createEmpty: false)",
           "refId": "A"
         }
       ],
@@ -750,7 +750,7 @@
             "type": "influxdb",
             "uid": "chiseai-influxdb"
           },
-          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"orders\" or r._measurement == \"fills\")\n  |> filter(fn: (r) => r._field == \"order_id\" or r._field == \"side\" or r._field == \"price\" or r._field == \"size\" or r._field == \"symbol\" or r._field == \"timestamp\")\n  |> filter(fn: (r) => r.environment == \"${environment}\")\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> last()\n  |> keep(columns: [\"order_id\", \"side\", \"price\", \"size\", \"symbol\", \"timestamp\"])\n  |> rename(columns: {timestamp: \"Time\"})",
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"paper_trades\" or r._measurement == \"paper_positions\")\n  |> filter(fn: (r) => r._field == \"trade_id\" or r._field == \"side\" or r._field == \"price\" or r._field == \"size\" or r._field == \"symbol\" or r._field == \"timestamp\")\n  |> filter(fn: (r) => r.environment == \"${environment}\")\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> last()\n  |> keep(columns: [\"trade_id\", \"side\", \"price\", \"size\", \"symbol\", \"timestamp\"])\n  |> rename(columns: {timestamp: \"Time\"})",
           "refId": "A"
         }
       ],

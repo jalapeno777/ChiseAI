@@ -10,7 +10,7 @@ clone:
 
 when:
   - event: push
-    branch: [main, develop]
+    branch: [__woodpecker_disabled__]
 
 steps:
   # Lint Stage
