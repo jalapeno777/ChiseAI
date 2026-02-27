@@ -247,6 +247,17 @@ async def main():
     for alert in alerts:
         await send_alert(alert)
 
+    # Write cron evidence (this job runs every 5 minutes)
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from cron_evidence import write_cron_evidence
+
+        status = "error" if alerts else "success"
+        error_msg = alerts[0] if alerts else None
+        write_cron_evidence("pager", status=status, error_message=error_msg)
+    except Exception as e:
+        logger.warning(f"Failed to write cron evidence: {e}")
+
     return 0 if not alerts else 1
 
 
