@@ -3,6 +3,13 @@
 # 1) Create PRs for pushed non-protected branches
 # 2) Merge open PRs targeting main when conflict-free
 
+clone:
+  git:
+    image: woodpeckerci/plugin-git
+    settings:
+      remote:
+        from_secret: gitea_clone_url
+
 when:
   - event: push
     branch: [feature/**]
