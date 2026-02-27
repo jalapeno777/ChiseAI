@@ -23,6 +23,7 @@ steps:
         from_secret: gitea_token
       CHISE_AUTOPR_BASE: main
       CHISE_AUTOPR_PROTECTED_BRANCHES: main,develop
+      CHISE_AUTOPR_MAX_BRANCH_AGE_MIN: "30"
 
   - name: automerge-conflict-free
     image: python:3.11-slim
@@ -36,6 +37,7 @@ steps:
         from_secret: gitea_token
       CHISE_AUTOPR_BASE: main
       CHISE_AUTOPR_PROTECTED_BRANCHES: main,develop
+      CHISE_AUTOPR_MAX_BRANCH_AGE_MIN: "30"
       CHISE_AUTOMERGE_AUTHORS: chise-bot,craig
     depends_on:
       - auto-pr
