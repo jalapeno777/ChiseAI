@@ -687,12 +687,16 @@ class BybitConnector:
         if is_duplicate:
             raise DuplicateOrderException(client_order_id, symbol)
 
+        # FIX: Round quantity to 3 decimal places to comply with Bybit lot size requirements
+        # This prevents "Qty invalid" errors for pairs like BTCUSDT (qtyStep=0.001)
+        qty_rounded = round(float(quantity), 3)
+
         params: dict[str, Any] = {
             "category": "linear",
             "symbol": symbol,
             "side": side.capitalize(),
             "orderType": order_type.capitalize(),
-            "qty": str(quantity),
+            "qty": str(qty_rounded),
             "timeInForce": time_in_force,
             "reduceOnly": reduce_only,
             "orderLinkId": client_order_id,  # Bybit's clientOrderId field
