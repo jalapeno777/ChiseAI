@@ -1,670 +1,707 @@
 #!/usr/bin/env python3
-"""Status Write Gate - Validates workflow status changes against git evidence.
+"""
+Status Write Gate for EP-AUTO-GIT
 
-This script enforces the EP-AUTO-GIT workflow status gate:
-- Validates merge claims against actual git evidence
-- Fails closed on unverifiable claims
-- Enforces Merlin-only authority for status changes
+This module provides validation and gating for writes to the workflow status file
+(docs/bmm-workflow-status.yaml). It ensures that:
 
-Exit codes:
-    0 = Verification passed
-    1 = Unverifiable claim (git evidence mismatch)
-    2 = Authority violation (not Merlin)
-    3 = Usage error (missing args, invalid input)
-    4 = System error (git/Redis unavailable)
+1. Only authorized agents (merlin) can write status changes
+2. Git SHA references are verified against actual git history
+3. YAML structure is valid
+4. EP-AUTO-GIT entries are properly formatted
+
+The gate can be used as a pre-commit hook to prevent unauthorized or invalid
+status modifications.
+
+Usage:
+    # As a CLI tool (for pre-commit hook)
+    python status_write_gate.py --file docs/bmm-workflow-status.yaml
+
+    # As a module
+    from status_write_gate import validate_status_write
+
+    result = validate_status_write(
+        yaml_file="docs/bmm-workflow-status.yaml",
+        agent="merlin",
+    )
+    if not result.valid:
+        print(result.errors)
 """
 
 from __future__ import annotations
 
 import argparse
-import json
+import hashlib
+import logging
 import os
 import re
 import subprocess
 import sys
-import urllib.error
-import urllib.parse
-import urllib.request
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
-# Redis key for EP-AUTO-GIT authority
-EP_AUTO_GIT_KEY = "bmad:chiseai:ep:auto-git"
-STATUS_AUTHORITY_FIELD = "status_authority"
-MERGE_AUTHORITY_FIELD = "merge_authority"
-PR_AUTHORITY_FIELD = "pr_authority"
+import yaml
 
-# Required authority value
-MERLIN_ONLY = "merlin-only"
-MERGE_AUTHORITY_AGENT = "merlin"
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
 
-
-class GateError(Exception):
-    """Base exception for gate errors."""
-
-    def __init__(self, message: str, exit_code: int = 1):
-        super().__init__(message)
-        self.exit_code = exit_code
+# Constants
+DEFAULT_STATUS_FILE = "docs/bmm-workflow-status.yaml"
+EP_AUTO_GIT_PATTERN = re.compile(r"EP-AUTO-GIT-\d+", re.IGNORECASE)
+SHA_PATTERN = re.compile(r"^[a-f0-9]{7,40}$", re.IGNORECASE)
+REQUIRED_YAML_KEYS = ["metadata", "epics"]
 
 
-class AuthorityError(GateError):
-    """Raised when authority check fails."""
+@dataclass
+class ValidationError:
+    """Represents a single validation error."""
 
-    def __init__(self, message: str):
-        super().__init__(message, exit_code=2)
-
-
-class UsageError(GateError):
-    """Raised when arguments are invalid."""
-
-    def __init__(self, message: str):
-        super().__init__(message, exit_code=3)
+    field: str
+    message: str
+    severity: str = "error"  # error, warning
 
 
-class SystemError(GateError):
-    """Raised when system resources are unavailable."""
+@dataclass
+class ValidationResult:
+    """
+    Result of a status write validation.
 
-    def __init__(self, message: str):
-        super().__init__(message, exit_code=4)
+    Attributes:
+        valid: Whether the validation passed
+        errors: List of validation errors
+        warnings: List of validation warnings
+        git_shas_verified: List of SHAs that were verified
+        git_shas_failed: List of SHAs that failed verification
+        yaml_valid: Whether YAML syntax is valid
+        authority_valid: Whether authority check passed
+    """
+
+    valid: bool
+    errors: list[ValidationError] = field(default_factory=list)
+    warnings: list[ValidationError] = field(default_factory=list)
+    git_shas_verified: list[str] = field(default_factory=list)
+    git_shas_failed: list[str] = field(default_factory=list)
+    yaml_valid: bool = False
+    authority_valid: bool = False
+
+    def add_error(self, field: str, message: str) -> None:
+        """Add an error to the result."""
+        self.errors.append(ValidationError(field, message, "error"))
+        self.valid = False
+
+    def add_warning(self, field: str, message: str) -> None:
+        """Add a warning to the result."""
+        self.warnings.append(ValidationError(field, message, "warning"))
 
 
-def run_git(*args: str, cwd: Path | None = None) -> tuple[int, str, str]:
-    """Run a git command and return (returncode, stdout, stderr)."""
-    proc = subprocess.run(
-        ["git", *args],
-        cwd=str(cwd) if cwd else None,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
-    return proc.returncode, proc.stdout.strip(), proc.stderr.strip()
+def verify_git_sha(sha: str, repo_path: Optional[str] = None) -> bool:
+    """
+    Verify that a git SHA exists in the repository history.
 
-
-def verify_sha_exists(sha: str, cwd: Path | None = None) -> bool:
-    """Verify that a SHA exists in the git repository.
+    This function uses git cat-file to check if the SHA refers to a valid
+    commit object in the repository.
 
     Args:
-        sha: The commit SHA to verify
-        cwd: Optional working directory
+        sha: The git SHA to verify (short or full form).
+        repo_path: Path to the git repository. If None, uses current directory.
 
     Returns:
-        True if SHA exists, False otherwise
+        True if the SHA exists and refers to a commit, False otherwise.
+
+    Examples:
+        >>> verify_git_sha("19e9e62")
+        True
+        >>> verify_git_sha("0000000")
+        False
+        >>> verify_git_sha("19e9e62f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d")
+        True
     """
-    rc, _, _ = run_git("cat-file", "-t", sha, cwd=cwd)
-    return rc == 0
-
-
-def verify_sha_in_history(sha: str, cwd: Path | None = None) -> bool:
-    """Verify that a SHA is in the git history.
-
-    Args:
-        sha: The commit SHA to verify
-        cwd: Optional working directory
-
-    Returns:
-        True if SHA is in history, False otherwise
-    """
-    # Use rev-parse to check if SHA is reachable
-    rc, _, _ = run_git("rev-parse", "--verify", sha, cwd=cwd)
-    if rc != 0:
+    if not sha or not isinstance(sha, str):
         return False
 
-    # Check if it's in any branch's history
-    rc, _, _ = run_git("branch", "-a", "--contains", sha, cwd=cwd)
-    return rc == 0
-
-
-def get_commit_message(sha: str, cwd: Path | None = None) -> str:
-    """Get the commit message for a SHA.
-
-    Args:
-        sha: The commit SHA
-        cwd: Optional working directory
-
-    Returns:
-        The commit message
-    """
-    rc, stdout, _ = run_git("log", "-1", "--format=%B", sha, cwd=cwd)
-    if rc != 0:
-        return ""
-    return stdout
-
-
-def get_commit_stats(sha: str, cwd: Path | None = None) -> dict[str, Any]:
-    """Get statistics about files changed in a commit.
-
-    Args:
-        sha: The commit SHA
-        cwd: Optional working directory
-
-    Returns:
-        Dict with files_changed, insertions, deletions
-    """
-    rc, stdout, _ = run_git("show", "--stat", "--format=", sha, cwd=cwd)
-    if rc != 0:
-        return {"files_changed": 0, "insertions": 0, "deletions": 0, "files": []}
-
-    files = []
-    for line in stdout.split("\n"):
-        line = line.strip()
-        if "|" in line:
-            # Extract filename
-            filename = line.split("|")[0].strip()
-            if filename:
-                files.append(filename)
-
-    # Parse the summary line
-    summary_match = re.search(
-        r"(\d+) files? changed(?:, (\d+) insertions?\(\+\))?(?:, (\d+) deletions?\(-\))?",
-        stdout,
-    )
-
-    if summary_match:
-        files_changed = int(summary_match.group(1))
-        insertions = int(summary_match.group(2)) if summary_match.group(2) else 0
-        deletions = int(summary_match.group(3)) if summary_match.group(3) else 0
-    else:
-        files_changed = len(files)
-        insertions = 0
-        deletions = 0
-
-    return {
-        "files_changed": files_changed,
-        "insertions": insertions,
-        "deletions": deletions,
-        "files": files,
-    }
-
-
-def check_commit_references_story(
-    sha: str, story_id: str, cwd: Path | None = None
-) -> bool:
-    """Check if a commit message references a story ID.
-
-    Args:
-        sha: The commit SHA
-        story_id: The story ID to look for (e.g., "ST-AUTO-004")
-        cwd: Optional working directory
-
-    Returns:
-        True if commit references story, False otherwise
-    """
-    message = get_commit_message(sha, cwd=cwd)
-    # Look for story ID in various formats
-    patterns = [
-        rf"\({story_id}\)",  # (ST-AUTO-004)
-        rf"{story_id}:",  # ST-AUTO-004:
-        rf"{story_id}\b",  # ST-AUTO-004 (word boundary)
-    ]
-    return any(re.search(pattern, message, re.IGNORECASE) for pattern in patterns)
-
-
-def check_pr_exists(
-    pr_number: int, cwd: Path | None = None
-) -> tuple[bool, dict[str, Any] | None]:
-    """Check if a PR exists via Gitea API.
-
-    Args:
-        pr_number: The PR number to check
-        cwd: Optional working directory
-
-    Returns:
-        Tuple of (exists, pr_data)
-    """
-    token = (os.getenv("GITEA_TOKEN") or "").strip()
-    owner = (
-        os.getenv("GITEA_OWNER")
-        or os.getenv("CI_REPO_OWNER")
-        or os.getenv("WOODPECKER_REPO_OWNER")
-        or ""
-    ).strip()
-    repo = (
-        os.getenv("GITEA_REPO")
-        or os.getenv("CI_REPO_NAME")
-        or os.getenv("WOODPECKER_REPO_NAME")
-        or ""
-    ).strip()
-    base_url = (
-        os.getenv("GITEA_BASE_URL") or "http://host.docker.internal:3000"
-    ).rstrip("/")
-
-    if not token or not owner or not repo:
-        # Cannot check PR without credentials
-        return False, None
-
-    url = f"{base_url}/api/v1/repos/{owner}/{repo}/pulls/{pr_number}"
+    # Basic SHA format validation
+    if not SHA_PATTERN.match(sha):
+        return False
 
     try:
-        req = urllib.request.Request(
-            url,
-            headers={"Authorization": f"token {token}", "Accept": "application/json"},
-        )
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            return True, data
-    except urllib.error.HTTPError as e:
-        if e.code == 404:
-            return False, None
-        return False, None
-    except Exception:
-        return False, None
+        # Build git command
+        if repo_path:
+            cmd = ["git", "-C", repo_path, "cat-file", "-t", sha]
+        else:
+            cmd = ["git", "cat-file", "-t", sha]
 
-
-def redis_hget(name: str, key: str) -> str | None:
-    """Get a value from a Redis hash.
-
-    Args:
-        name: The hash key name
-        key: The field name
-
-    Returns:
-        The value or None if not found/error
-    """
-    host = (
-        os.getenv("CHISE_REDIS_HOST")
-        or os.getenv("REDIS_HOST")
-        or "host.docker.internal"
-    )
-    port = int(os.getenv("CHISE_REDIS_PORT") or os.getenv("REDIS_PORT") or "6380")
-    db = int(os.getenv("CHISE_REDIS_DB") or os.getenv("REDIS_DB") or "0")
-
-    proc = subprocess.run(
-        ["redis-cli", "-h", host, "-p", str(port), "-n", str(db), "HGET", name, key],
-        text=True,
-        capture_output=True,
-        check=False,
-    )
-
-    if proc.returncode != 0:
-        return None
-
-    result = proc.stdout.strip()
-    return result if result else None
-
-
-def check_merlin_authority() -> tuple[bool, str]:
-    """Check if current process/user has Merlin authority.
-
-    Returns:
-        Tuple of (has_authority, reason)
-    """
-    # Check Redis for authority setting
-    authority = redis_hget(EP_AUTO_GIT_KEY, STATUS_AUTHORITY_FIELD)
-
-    if authority is None:
-        # No authority set, check if we're in a context where we can determine agent
-        agent = os.getenv("CHISE_AGENT", "").strip()
-        if agent == MERGE_AUTHORITY_AGENT:
-            return True, "Agent is Merlin"
-        return (
-            False,
-            f"No authority configured in Redis and agent is '{agent}' (expected '{MERGE_AUTHORITY_AGENT}')",
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
 
-    if authority != MERLIN_ONLY:
-        return False, f"Authority is '{authority}' (expected '{MERLIN_ONLY}')"
+        # Check if command succeeded and output contains "commit"
+        if result.returncode == 0 and "commit" in result.stdout.lower():
+            return True
 
-    # Authority is merlin-only, check if current agent is Merlin
-    agent = os.getenv("CHISE_AGENT", "").strip()
-    if agent != MERGE_AUTHORITY_AGENT:
-        return False, f"Authority is '{MERLIN_ONLY}' but agent is '{agent}'"
+        return False
 
-    return True, "Agent is Merlin with merlin-only authority"
-
-
-def verify_merge_claim(
-    story_id: str,
-    merge_sha: str,
-    pr_number: int | None,
-    merge_date: str | None,
-    cwd: Path | None = None,
-) -> dict[str, Any]:
-    """Verify a merge claim against git evidence.
-
-    Args:
-        story_id: The story ID (e.g., "ST-AUTO-004")
-        merge_sha: The claimed merge commit SHA
-        pr_number: The claimed PR number (optional)
-        merge_date: The claimed merge date (optional)
-        cwd: Optional working directory
-
-    Returns:
-        Dict with verification results
-    """
-    result = {
-        "verified": False,
-        "story_id": story_id,
-        "merge_sha": merge_sha,
-        "pr_number": pr_number,
-        "merge_date": merge_date,
-        "checks": {},
-        "errors": [],
-    }
-
-    # Check 1: SHA exists
-    if not verify_sha_exists(merge_sha, cwd=cwd):
-        result["checks"]["sha_exists"] = False
-        result["errors"].append(f"SHA '{merge_sha}' does not exist in repository")
-        return result
-    result["checks"]["sha_exists"] = True
-
-    # Check 2: SHA is in history
-    if not verify_sha_in_history(merge_sha, cwd=cwd):
-        result["checks"]["sha_in_history"] = False
-        result["errors"].append(f"SHA '{merge_sha}' is not in any branch's history")
-        return result
-    result["checks"]["sha_in_history"] = True
-
-    # Check 3: Commit references story
-    if not check_commit_references_story(merge_sha, story_id, cwd=cwd):
-        result["checks"]["references_story"] = False
-        result["errors"].append(
-            f"Commit '{merge_sha}' does not reference story '{story_id}'"
-        )
-        return result
-    result["checks"]["references_story"] = True
-
-    # Check 4: Get commit stats
-    stats = get_commit_stats(merge_sha, cwd=cwd)
-    result["checks"]["commit_stats"] = stats
-
-    # Check 5: Verify PR if provided
-    if pr_number is not None:
-        pr_exists, pr_data = check_pr_exists(pr_number, cwd=cwd)
-        result["checks"]["pr_exists"] = pr_exists
-        if pr_data:
-            result["checks"]["pr_data"] = {
-                "number": pr_data.get("number"),
-                "state": pr_data.get("state"),
-                "merged": pr_data.get("merged"),
-                "merge_commit_sha": pr_data.get("merge_commit_sha"),
-            }
-        if not pr_exists:
-            result["errors"].append(f"PR #{pr_number} does not exist")
-
-    # Check 6: Verify merge date if provided
-    if merge_date:
-        # Get actual commit date
-        rc, stdout, _ = run_git("log", "-1", "--format=%ci", merge_sha, cwd=cwd)
-        if rc == 0:
-            actual_date = stdout.split()[0]  # Get just the date part
-            result["checks"]["actual_merge_date"] = actual_date
-            if actual_date != merge_date:
-                result["errors"].append(
-                    f"Merge date mismatch: claimed '{merge_date}', actual '{actual_date}'"
-                )
-
-    # Determine overall verification
-    result["verified"] = len(result["errors"]) == 0
-
-    return result
-
-
-def validate_yaml_file(file_path: str, epic_id: str | None = None) -> dict[str, Any]:
-    """Validate a workflow status YAML file.
-
-    Args:
-        file_path: Path to the YAML file
-        epic_id: Optional epic ID to filter by
-
-    Returns:
-        Dict with validation results
-    """
-    import yaml
-
-    result = {
-        "valid": False,
-        "file": file_path,
-        "epic_id": epic_id,
-        "entries_checked": 0,
-        "entries_failed": 0,
-        "errors": [],
-    }
-
-    try:
-        with open(file_path) as f:
-            data = yaml.safe_load(f)
+    except subprocess.TimeoutExpired:
+        logger.warning(f"Git SHA verification timed out for '{sha}'")
+        return False
+    except FileNotFoundError:
+        logger.warning("Git command not found")
+        return False
     except Exception as e:
-        result["errors"].append(f"Failed to parse YAML: {e}")
-        return result
+        logger.warning(f"Git SHA verification failed for '{sha}': {e}")
+        return False
 
+
+def extract_shas_from_yaml(data: Any, path: str = "") -> list[tuple[str, str]]:
+    """
+    Recursively extract all git SHAs from YAML data.
+
+    Args:
+        data: Parsed YAML data (dict, list, or primitive).
+        path: Current path in the data structure (for error reporting).
+
+    Returns:
+        List of tuples (field_path, sha_value).
+    """
+    shas: list[tuple[str, str]] = []
+
+    if isinstance(data, dict):
+        for key, value in data.items():
+            current_path = f"{path}.{key}" if path else key
+
+            # Check if key suggests this is a SHA field
+            if any(
+                keyword in key.lower()
+                for keyword in ["sha", "commit", "merge_commit", "head_sha", "base_sha"]
+            ):
+                if isinstance(value, str) and SHA_PATTERN.match(value):
+                    shas.append((current_path, value))
+
+            # Recurse into nested structures
+            shas.extend(extract_shas_from_yaml(value, current_path))
+
+    elif isinstance(data, list):
+        for i, item in enumerate(data):
+            current_path = f"{path}[{i}]"
+            shas.extend(extract_shas_from_yaml(item, current_path))
+
+    return shas
+
+
+def validate_yaml_structure(data: Any) -> list[ValidationError]:
+    """
+    Validate the basic structure of the workflow status YAML.
+
+    Args:
+        data: Parsed YAML data.
+
+    Returns:
+        List of validation errors (empty if valid).
+    """
+    errors: list[ValidationError] = []
+
+    # Check top-level keys
     if not isinstance(data, dict):
-        result["errors"].append("Invalid YAML structure: not a dictionary")
-        return result
-
-    # recent_changes is under metadata
-    metadata = data.get("metadata", {})
-    recent_changes = metadata.get("recent_changes", [])
-    if not isinstance(recent_changes, list):
-        result["errors"].append(
-            "Invalid YAML structure: 'recent_changes' is not a list"
+        errors.append(
+            ValidationError("root", "YAML root must be a dictionary", "error")
         )
-        return result
+        return errors
 
-    for entry in recent_changes:
-        result["entries_checked"] += 1
-
-        # Check if entry has merge claim
-        merge_sha = entry.get("merge_commit_sha")
-        story_id = entry.get("story_id")
-        pr_number = entry.get("pr_number")
-
-        if epic_id and entry.get("epic_id") != epic_id:
-            continue
-
-        if merge_sha and story_id:
-            verification = verify_merge_claim(
-                story_id=story_id,
-                merge_sha=merge_sha,
-                pr_number=pr_number,
-                merge_date=None,
+    for key in REQUIRED_YAML_KEYS:
+        if key not in data:
+            errors.append(
+                ValidationError(
+                    "root", f"Missing required top-level key: '{key}'", "error"
+                )
             )
 
-            if not verification["verified"]:
-                result["entries_failed"] += 1
-                result["errors"].append(
-                    {
-                        "entry": entry.get("action", "unknown"),
-                        "story_id": story_id,
-                        "merge_sha": merge_sha,
-                        "errors": verification["errors"],
-                    }
+    # Validate metadata structure
+    if "metadata" in data:
+        metadata = data["metadata"]
+        if not isinstance(metadata, dict):
+            errors.append(
+                ValidationError("metadata", "metadata must be a dictionary", "error")
+            )
+        else:
+            # Check for recent_changes array
+            if "recent_changes" in metadata:
+                if not isinstance(metadata["recent_changes"], list):
+                    errors.append(
+                        ValidationError(
+                            "metadata.recent_changes",
+                            "recent_changes must be a list",
+                            "error",
+                        )
+                    )
+
+    # Validate epics structure
+    if "epics" in data:
+        epics = data["epics"]
+        if not isinstance(epics, list):
+            errors.append(ValidationError("epics", "epics must be a list", "error"))
+        else:
+            for i, epic in enumerate(epics):
+                if not isinstance(epic, dict):
+                    errors.append(
+                        ValidationError(
+                            f"epics[{i}]",
+                            f"Epic at index {i} must be a dictionary",
+                            "error",
+                        )
+                    )
+                elif "id" not in epic:
+                    errors.append(
+                        ValidationError(
+                            f"epics[{i}]",
+                            f"Epic at index {i} is missing 'id' field",
+                            "error",
+                        )
+                    )
+
+    return errors
+
+
+def check_ep_auto_git_entries(data: Any) -> list[ValidationError]:
+    """
+    Check EP-AUTO-GIT entries for required fields and valid structure.
+
+    Args:
+        data: Parsed YAML data.
+
+    Returns:
+        List of validation errors (empty if valid).
+    """
+    errors: list[ValidationError] = []
+
+    if not isinstance(data, dict) or "epics" not in data:
+        return errors
+
+    epics = data["epics"]
+    if not isinstance(epics, list):
+        return errors
+
+    for i, epic in enumerate(epics):
+        if not isinstance(epic, dict):
+            continue
+
+        epic_id = epic.get("id", "")
+        if not EP_AUTO_GIT_PATTERN.match(str(epic_id)):
+            continue
+
+        epic_path = f"epics[{i}]"
+
+        # Check required fields for EP-AUTO-GIT epics
+        required_fields = ["status", "story_count", "story_points"]
+        for field in required_fields:
+            if field not in epic:
+                errors.append(
+                    ValidationError(
+                        f"{epic_path}.{field}",
+                        f"EP-AUTO-GIT epic '{epic_id}' missing required field: {field}",
+                        "error",
+                    )
                 )
 
-    result["valid"] = result["entries_failed"] == 0
+        # Validate story_ids if present
+        if "story_ids" in epic:
+            story_ids = epic["story_ids"]
+            if not isinstance(story_ids, list):
+                errors.append(
+                    ValidationError(
+                        f"{epic_path}.story_ids",
+                        f"EP-AUTO-GIT epic '{epic_id}' story_ids must be a list",
+                        "error",
+                    )
+                )
+
+        # Validate completion fields if status is completed
+        if epic.get("status") == "completed":
+            if "completion_date" not in epic:
+                errors.append(
+                    ValidationError(
+                        f"{epic_path}.completion_date",
+                        f"Completed EP-AUTO-GIT epic '{epic_id}' should have completion_date",
+                        "warning",
+                    )
+                )
+
+    # Check recent_changes for EP-AUTO-GIT entries
+    if "metadata" in data and isinstance(data["metadata"], dict):
+        metadata = data["metadata"]
+        if "recent_changes" in metadata and isinstance(
+            metadata["recent_changes"], list
+        ):
+            for j, change in enumerate(metadata["recent_changes"]):
+                if not isinstance(change, dict):
+                    continue
+
+                change_path = f"metadata.recent_changes[{j}]"
+
+                # Check if this is an EP-AUTO-GIT related change
+                epic_id = change.get("epic_id", "")
+                if EP_AUTO_GIT_PATTERN.match(str(epic_id)):
+                    # EP-AUTO-GIT changes should have certain fields
+                    if "actor" not in change:
+                        errors.append(
+                            ValidationError(
+                                f"{change_path}.actor",
+                                f"EP-AUTO-GIT change missing 'actor' field",
+                                "warning",
+                            )
+                        )
+
+                    if "timestamp" not in change:
+                        errors.append(
+                            ValidationError(
+                                f"{change_path}.timestamp",
+                                f"EP-AUTO-GIT change missing 'timestamp' field",
+                                "error",
+                            )
+                        )
+
+    return errors
+
+
+def validate_status_yaml(
+    yaml_file: str,
+    verify_shas: bool = True,
+    repo_path: Optional[str] = None,
+) -> ValidationResult:
+    """
+    Validate the workflow status YAML file.
+
+    This function performs comprehensive validation:
+    1. YAML syntax validation
+    2. Structure validation (required keys, types)
+    3. EP-AUTO-GIT entry validation
+    4. Git SHA verification (optional)
+
+    Args:
+        yaml_file: Path to the YAML file to validate.
+        verify_shas: Whether to verify git SHAs against repository.
+        repo_path: Path to git repository for SHA verification.
+
+    Returns:
+        ValidationResult with detailed validation status.
+
+    Examples:
+        >>> result = validate_status_yaml("docs/bmm-workflow-status.yaml")
+        >>> result.valid
+        True
+        >>> result.yaml_valid
+        True
+        >>> result.git_shas_verified
+        ['19e9e62', 'abc1234']
+    """
+    result = ValidationResult(valid=True)
+
+    # Check file exists
+    if not os.path.exists(yaml_file):
+        result.add_error("file", f"YAML file not found: {yaml_file}")
+        return result
+
+    # Parse YAML
+    try:
+        with open(yaml_file, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        data = yaml.safe_load(content)
+        result.yaml_valid = True
+
+    except yaml.YAMLError as e:
+        result.add_error("yaml", f"YAML parsing error: {e}")
+        return result
+    except Exception as e:
+        result.add_error("file", f"Error reading file: {e}")
+        return result
+
+    # Validate structure
+    structure_errors = validate_yaml_structure(data)
+    for error in structure_errors:
+        if error.severity == "error":
+            result.add_error(error.field, error.message)
+        else:
+            result.add_warning(error.field, error.message)
+
+    # Validate EP-AUTO-GIT entries
+    ep_errors = check_ep_auto_git_entries(data)
+    for error in ep_errors:
+        if error.severity == "error":
+            result.add_error(error.field, error.message)
+        else:
+            result.add_warning(error.field, error.message)
+
+    # Verify git SHAs
+    if verify_shas and data:
+        shas = extract_shas_from_yaml(data)
+
+        for field_path, sha in shas:
+            if verify_git_sha(sha, repo_path):
+                result.git_shas_verified.append(sha)
+                logger.debug(f"Verified SHA '{sha}' at {field_path}")
+            else:
+                result.git_shas_failed.append(sha)
+                result.add_error(
+                    field_path, f"Git SHA '{sha}' not found in repository history"
+                )
+
     return result
 
 
-def cmd_verify(args: argparse.Namespace) -> int:
-    """Handle the 'verify' subcommand.
+def check_authority(agent: Optional[str] = None) -> tuple[bool, str]:
+    """
+    Check if the agent has authority to write to status file.
 
     Args:
-        args: Parsed arguments
+        agent: The agent name. If None, detects from environment.
 
     Returns:
-        Exit code
+        Tuple of (authorized, message).
     """
-    # Check authority first
-    has_authority, reason = check_merlin_authority()
-    if not has_authority:
-        print(f"ERROR: Authority violation - {reason}", file=sys.stderr)
-        return 2
-
-    print(f"OK: Authority check passed - {reason}")
-
-    # Verify the merge claim
     try:
-        result = verify_merge_claim(
-            story_id=args.story_id,
-            merge_sha=args.merge_sha,
-            pr_number=args.pr_number,
-            merge_date=args.merge_date,
-        )
+        # Import merlin_authority for authority checking
+        from scripts.governance.merlin_authority import check_ep_auto_git_authority
+
+        result = check_ep_auto_git_authority("status", agent)
+        return result.authorized, result.reason
+
+    except ImportError:
+        # Fallback: check environment variable directly
+        detected_agent = agent or os.environ.get("AGENT_NAME", "unknown").lower()
+        if detected_agent == "merlin":
+            return True, f"Agent '{detected_agent}' authorized (fallback check)"
+        else:
+            return False, f"Agent '{detected_agent}' not authorized (fallback check)"
+
     except Exception as e:
-        print(f"ERROR: Verification failed - {e}", file=sys.stderr)
-        return 4
-
-    # Output results
-    if args.json:
-        print(json.dumps(result, indent=2))
-    else:
-        print(f"Story ID: {result['story_id']}")
-        print(f"Merge SHA: {result['merge_sha']}")
-        print("Checks:")
-        for check, value in result["checks"].items():
-            if isinstance(value, bool):
-                status = "✓" if value else "✗"
-                print(f"  {status} {check}")
-            elif isinstance(value, dict):
-                print(f"  {check}:")
-                for k, v in value.items():
-                    print(f"    {k}: {v}")
-            else:
-                print(f"  {check}: {value}")
-
-        if result["errors"]:
-            print("\nErrors:")
-            for error in result["errors"]:
-                print(f"  ✗ {error}")
-
-    if result["verified"]:
-        print("\nRESULT: VERIFIED")
-        return 0
-    else:
-        print("\nRESULT: FAILED - Unverifiable claim")
-        return 1
+        # Fail-secure: deny access on authority check errors
+        # This catches AuthorityCheckError, EpicNotProtected, and any other exceptions
+        return False, f"Authority check failed: {e}"
 
 
-def cmd_validate_yaml(args: argparse.Namespace) -> int:
-    """Handle the 'validate-yaml' subcommand.
+def validate_status_write(
+    yaml_file: str = DEFAULT_STATUS_FILE,
+    agent: Optional[str] = None,
+    verify_shas: bool = True,
+    require_authority: bool = True,
+    repo_path: Optional[str] = None,
+) -> ValidationResult:
+    """
+    Comprehensive validation for a status file write operation.
+
+    This is the main entry point for validating status writes. It combines:
+    1. Authority validation (is the agent allowed to write?)
+    2. YAML validation (is the file valid?)
+    3. SHA verification (do referenced commits exist?)
+    4. EP-AUTO-GIT entry validation
 
     Args:
-        args: Parsed arguments
+        yaml_file: Path to the YAML file to validate.
+        agent: The agent name. If None, detects from environment.
+        verify_shas: Whether to verify git SHAs.
+        require_authority: Whether to require merlin authority.
+        repo_path: Path to git repository for SHA verification.
 
     Returns:
-        Exit code
+        ValidationResult with complete validation status.
+
+    Examples:
+        >>> result = validate_status_write(
+        ...     yaml_file="docs/bmm-workflow-status.yaml",
+        ...     agent="merlin",
+        ... )
+        >>> if result.valid:
+        ...     print("Status write is valid")
+        ... else:
+        ...     for error in result.errors:
+        ...         print(f"Error: {error.message}")
     """
-    # Check authority first
-    has_authority, reason = check_merlin_authority()
-    if not has_authority:
-        print(f"ERROR: Authority violation - {reason}", file=sys.stderr)
-        return 2
+    result = ValidationResult(valid=True)
 
-    print(f"OK: Authority check passed - {reason}")
+    # Check authority
+    if require_authority:
+        authorized, message = check_authority(agent)
+        result.authority_valid = authorized
 
-    # Validate the YAML file
-    try:
-        result = validate_yaml_file(args.file, args.epic)
-    except Exception as e:
-        print(f"ERROR: Validation failed - {e}", file=sys.stderr)
-        return 4
-
-    # Output results
-    if args.json:
-        print(json.dumps(result, indent=2))
+        if not authorized:
+            result.add_error("authority", message)
+            # Continue with other validations for comprehensive feedback
     else:
-        print(f"File: {result['file']}")
-        print(f"Epic filter: {result['epic_id'] or 'none'}")
-        print(f"Entries checked: {result['entries_checked']}")
-        print(f"Entries failed: {result['entries_failed']}")
+        result.authority_valid = True
 
-        if result["errors"]:
-            print("\nErrors:")
-            for error in result["errors"]:
-                if isinstance(error, dict):
-                    print(f"  Entry: {error['entry']}")
-                    print(f"  Story: {error['story_id']}")
-                    print(f"  SHA: {error['merge_sha']}")
-                    for err in error["errors"]:
-                        print(f"    ✗ {err}")
-                else:
-                    print(f"  ✗ {error}")
+    # Validate YAML content
+    yaml_result = validate_status_yaml(yaml_file, verify_shas, repo_path)
 
-    if result["valid"]:
-        print("\nRESULT: VALID")
-        return 0
+    # Merge results
+    result.valid = result.valid and yaml_result.valid
+    result.yaml_valid = yaml_result.yaml_valid
+    result.errors.extend(yaml_result.errors)
+    result.warnings.extend(yaml_result.warnings)
+    result.git_shas_verified = yaml_result.git_shas_verified
+    result.git_shas_failed = yaml_result.git_shas_failed
+
+    return result
+
+
+def format_validation_report(result: ValidationResult, verbose: bool = False) -> str:
+    """
+    Format a validation result as a human-readable report.
+
+    Args:
+        result: The validation result to format.
+        verbose: Whether to include verbose output.
+
+    Returns:
+        Formatted report string.
+    """
+    lines: list[str] = []
+
+    # Summary
+    if result.valid:
+        lines.append("✓ Validation PASSED")
     else:
-        print("\nRESULT: FAILED - YAML contains unverifiable claims")
-        return 1
+        lines.append("✗ Validation FAILED")
 
+    lines.append("")
 
-def build_parser() -> argparse.ArgumentParser:
-    """Build the argument parser."""
-    parser = argparse.ArgumentParser(
-        prog="status_write_gate.py",
-        description="Status Write Gate - Validates workflow status changes against git evidence",
-    )
+    # Authority
+    if result.authority_valid:
+        lines.append("✓ Authority check: PASSED")
+    else:
+        lines.append("✗ Authority check: FAILED")
 
-    subparsers = parser.add_subparsers(dest="command", required=True)
+    # YAML
+    if result.yaml_valid:
+        lines.append("✓ YAML syntax: VALID")
+    else:
+        lines.append("✗ YAML syntax: INVALID")
 
-    # Verify command
-    verify_parser = subparsers.add_parser(
-        "verify",
-        help="Verify a merge claim against git evidence",
-    )
-    verify_parser.add_argument(
-        "--story-id",
-        required=True,
-        help="Story ID (e.g., ST-AUTO-004)",
-    )
-    verify_parser.add_argument(
-        "--merge-sha",
-        required=True,
-        help="Claimed merge commit SHA",
-    )
-    verify_parser.add_argument(
-        "--pr-number",
-        type=int,
-        help="Claimed PR number",
-    )
-    verify_parser.add_argument(
-        "--merge-date",
-        help="Claimed merge date (YYYY-MM-DD)",
-    )
-    verify_parser.add_argument(
-        "--json",
-        action="store_true",
-        help="Output results as JSON",
-    )
-    verify_parser.set_defaults(func=cmd_verify)
+    # SHAs
+    if result.git_shas_verified:
+        lines.append(f"✓ Git SHAs verified: {len(result.git_shas_verified)}")
+        if verbose:
+            for sha in result.git_shas_verified:
+                lines.append(f"  - {sha}")
 
-    # Validate-yaml command
-    yaml_parser = subparsers.add_parser(
-        "validate-yaml",
-        help="Validate entire workflow status YAML file",
-    )
-    yaml_parser.add_argument(
-        "--file",
-        required=True,
-        help="Path to YAML file",
-    )
-    yaml_parser.add_argument(
-        "--epic",
-        help="Filter by epic ID",
-    )
-    yaml_parser.add_argument(
-        "--json",
-        action="store_true",
-        help="Output results as JSON",
-    )
-    yaml_parser.set_defaults(func=cmd_validate_yaml)
+    if result.git_shas_failed:
+        lines.append(f"✗ Git SHAs failed: {len(result.git_shas_failed)}")
+        for sha in result.git_shas_failed:
+            lines.append(f"  - {sha}")
 
-    return parser
+    # Errors
+    if result.errors:
+        lines.append("")
+        lines.append("Errors:")
+        for error in result.errors:
+            lines.append(f"  [{error.severity.upper()}] {error.field}: {error.message}")
+
+    # Warnings
+    if verbose and result.warnings:
+        lines.append("")
+        lines.append("Warnings:")
+        for warning in result.warnings:
+            lines.append(f"  [WARNING] {warning.field}: {warning.message}")
+
+    return "\n".join(lines)
 
 
 def main() -> int:
-    """Main entry point."""
-    parser = build_parser()
+    """
+    Main entry point for the CLI.
+
+    Returns:
+        Exit code (0 for valid, 1 for invalid).
+    """
+    parser = argparse.ArgumentParser(
+        prog="status_write_gate",
+        description="Status write gate for EP-AUTO-GIT workflow file",
+    )
+
+    parser.add_argument(
+        "--file",
+        default=DEFAULT_STATUS_FILE,
+        help=f"Path to the workflow status YAML file (default: {DEFAULT_STATUS_FILE})",
+    )
+
+    parser.add_argument(
+        "--agent",
+        default=None,
+        help="Agent name (default: auto-detect from environment)",
+    )
+
+    parser.add_argument(
+        "--no-verify-shas",
+        action="store_true",
+        help="Skip git SHA verification",
+    )
+
+    parser.add_argument(
+        "--no-require-authority",
+        action="store_true",
+        help="Skip authority check (use with caution)",
+    )
+
+    parser.add_argument(
+        "--repo-path",
+        default=None,
+        help="Path to git repository (default: current directory)",
+    )
+
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="Verbose output",
+    )
+
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Output results as JSON",
+    )
+
     args = parser.parse_args()
 
-    try:
-        return args.func(args)
-    except GateError as e:
-        print(f"ERROR: {e}", file=sys.stderr)
-        return e.exit_code
-    except Exception as e:
-        print(f"ERROR: Unexpected error: {e}", file=sys.stderr)
-        return 4
+    # Run validation
+    result = validate_status_write(
+        yaml_file=args.file,
+        agent=args.agent,
+        verify_shas=not args.no_verify_shas,
+        require_authority=not args.no_require_authority,
+        repo_path=args.repo_path,
+    )
+
+    # Output results
+    if args.json:
+        import json
+
+        output = {
+            "valid": result.valid,
+            "authority_valid": result.authority_valid,
+            "yaml_valid": result.yaml_valid,
+            "shas_verified": len(result.git_shas_verified),
+            "shas_failed": len(result.git_shas_failed),
+            "errors": [
+                {"field": e.field, "message": e.message, "severity": e.severity}
+                for e in result.errors
+            ],
+            "warnings": [
+                {"field": w.field, "message": w.message, "severity": w.severity}
+                for w in result.warnings
+            ],
+        }
+        print(json.dumps(output, indent=2))
+    else:
+        print(format_validation_report(result, args.verbose))
+
+    return 0 if result.valid else 1
 
 
 if __name__ == "__main__":

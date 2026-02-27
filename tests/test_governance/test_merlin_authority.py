@@ -1,526 +1,697 @@
-"""Tests for Merlin Authority Enforcement Module.
+#!/usr/bin/env python3
+"""
+Comprehensive tests for merlin_authority module.
 
-ST-AUTO-CONTROL-001: Merlin-only authority enforcement tests.
+This test suite covers:
+- Exception classes
+- Agent detection (environment variable, process detection)
+- Authority settings parsing
+- Authority checks for different actions
+- Redis failure handling (fail-secure)
+- Decorator functionality
 """
 
+from __future__ import annotations
+
 import os
+import subprocess
 import sys
-from pathlib import Path
-from unittest.mock import patch
+import unittest
+from unittest.mock import MagicMock, patch
 
-import pytest
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
-# Add project root to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+# Create a mock redis_state module for testing
+mock_redis_state = MagicMock()
+sys.modules["redis_state"] = mock_redis_state
 
 from scripts.governance.merlin_authority import (
-    ActionType,
+    AuthorityAction,
     AuthorityCheckError,
-    AuthoritySettings,
+    AuthorityCheckResult,
+    AuthoritySetting,
     AuthorityViolation,
     EpicNotProtected,
+    _clear_cache,
+    _detect_agent_from_environment,
+    _detect_agent_from_process,
+    _get_cached,
+    _get_redis_authority_settings,
+    _parse_authority_setting,
+    _set_cached,
     check_ep_auto_git_authority,
     check_epic_authority,
-    clear_authority_cache,
     enforce_merlin_only,
-    get_authority_settings,
-    get_current_agent,
     is_merlin,
     require_merlin,
+    verify_git_sha,
 )
 
 
-class TestAgentDetection:
-    """Tests for agent identity detection."""
+class TestExceptionClasses(unittest.TestCase):
+    """Test the exception classes."""
 
-    def test_get_current_agent_from_env(self):
-        """Test agent detection from environment variable."""
-        with patch.dict(os.environ, {"CHISE_AGENT": "merlin"}):
-            assert get_current_agent() == "merlin"
+    def test_authority_violation_basic(self) -> None:
+        """Test AuthorityViolation with basic parameters."""
+        exc = AuthorityViolation(action="merge", agent="jarvis")
 
-    def test_get_current_agent_from_env_case_insensitive(self):
-        """Test agent detection is case insensitive."""
-        with patch.dict(os.environ, {"CHISE_AGENT": "MERLIN"}):
-            assert get_current_agent() == "merlin"
+        self.assertEqual(exc.action, "merge")
+        self.assertEqual(exc.agent, "jarvis")
+        self.assertIsNone(exc.epic_id)
+        self.assertIn("jarvis", str(exc))
+        self.assertIn("merge", str(exc))
 
-    def test_get_current_agent_defaults_to_unknown(self):
-        """Test agent defaults to unknown when not set."""
-        # Must also patch is_merlin's cached result by clearing env
-        with patch.dict(os.environ, {"CHISE_AGENT": ""}, clear=False):
-            # Force reload by creating a new check
-            agent = os.environ.get("CHISE_AGENT", "").lower() or "unknown"
-            assert agent == "unknown"
-
-    def test_is_merlin_true(self):
-        """Test is_merlin returns True when agent is merlin."""
-        with patch.dict(os.environ, {"CHISE_AGENT": "merlin"}):
-            assert is_merlin() is True
-
-    def test_is_merlin_false(self):
-        """Test is_merlin returns False when agent is not merlin."""
-        with patch.dict(os.environ, {"CHISE_AGENT": "senior-dev"}):
-            assert is_merlin() is False
-
-    def test_is_merlin_false_for_jarvis(self):
-        """Test is_merlin returns False for jarvis agent."""
-        with patch.dict(os.environ, {"CHISE_AGENT": "jarvis"}):
-            assert is_merlin() is False
-
-
-class TestAuthoritySettings:
-    """Tests for AuthoritySettings dataclass."""
-
-    def test_from_redis_hash(self):
-        """Test creating AuthoritySettings from Redis hash."""
-        data = {
-            "merge_authority": "merlin-only",
-            "pr_authority": "merlin-only",
-            "status_authority": "any",
-            "lock_timestamp": "2026-02-26T18:00:00Z",
-        }
-        settings = AuthoritySettings.from_redis_hash("EP-AUTO-GIT-001", data)
-
-        assert settings.epic_id == "EP-AUTO-GIT-001"
-        assert settings.merge_authority == "merlin-only"
-        assert settings.pr_authority == "merlin-only"
-        assert settings.status_authority == "any"
-        assert settings.lock_timestamp == "2026-02-26T18:00:00Z"
-
-    def test_from_redis_hash_defaults(self):
-        """Test AuthoritySettings uses defaults for missing fields."""
-        data = {}
-        settings = AuthoritySettings.from_redis_hash("EP-TEST-001", data)
-
-        assert settings.epic_id == "EP-TEST-001"
-        assert settings.merge_authority == "any"
-        assert settings.pr_authority == "any"
-        assert settings.status_authority == "any"
-        assert settings.lock_timestamp is None
-
-    def test_is_merlin_only_for_merge(self):
-        """Test is_merlin_only returns True for merge when merlin-only."""
-        settings = AuthoritySettings(
-            epic_id="EP-TEST-001",
-            merge_authority="merlin-only",
-            pr_authority="any",
-            status_authority="any",
+    def test_authority_violation_with_epic(self) -> None:
+        """Test AuthorityViolation with epic_id."""
+        exc = AuthorityViolation(
+            action="status", agent="worker-1", epic_id="EP-AUTO-GIT-001"
         )
-        assert settings.is_merlin_only(ActionType.MERGE) is True
-        assert settings.is_merlin_only(ActionType.PR_UPDATE) is False
-        assert settings.is_merlin_only(ActionType.STATUS_WRITE) is False
 
-    def test_is_merlin_only_for_all_actions(self):
-        """Test is_merlin_only for all action types."""
-        settings = AuthoritySettings(
-            epic_id="EP-TEST-001",
-            merge_authority="merlin-only",
-            pr_authority="merlin-only",
-            status_authority="merlin-only",
+        self.assertEqual(exc.epic_id, "EP-AUTO-GIT-001")
+        self.assertIn("EP-AUTO-GIT-001", str(exc))
+
+    def test_authority_violation_custom_message(self) -> None:
+        """Test AuthorityViolation with custom message."""
+        custom_msg = "Custom violation message"
+        exc = AuthorityViolation(action="merge", agent="test", message=custom_msg)
+
+        self.assertEqual(str(exc), custom_msg)
+
+    def test_epic_not_protected_basic(self) -> None:
+        """Test EpicNotProtected exception."""
+        exc = EpicNotProtected(epic_id="EP-UNKNOWN-001")
+
+        self.assertEqual(exc.epic_id, "EP-UNKNOWN-001")
+        self.assertIn("EP-UNKNOWN-001", str(exc))
+
+    def test_epic_not_protected_custom_message(self) -> None:
+        """Test EpicNotProtected with custom message."""
+        custom_msg = "Custom not protected message"
+        exc = EpicNotProtected(epic_id="EP-TEST", message=custom_msg)
+
+        self.assertEqual(str(exc), custom_msg)
+
+    def test_authority_check_error_basic(self) -> None:
+        """Test AuthorityCheckError with basic parameters."""
+        exc = AuthorityCheckError(reason="Redis timeout")
+
+        self.assertEqual(exc.reason, "Redis timeout")
+        self.assertIsNone(exc.original_error)
+        self.assertIn("Redis timeout", str(exc))
+
+    def test_authority_check_error_with_original(self) -> None:
+        """Test AuthorityCheckError with original exception."""
+        original = ConnectionError("Cannot connect")
+        exc = AuthorityCheckError(reason="Connection failed", original_error=original)
+
+        self.assertEqual(exc.original_error, original)
+        self.assertIn("ConnectionError", str(exc))
+
+
+class TestAuthorityEnums(unittest.TestCase):
+    """Test the authority enumeration classes."""
+
+    def test_authority_action_values(self) -> None:
+        """Test AuthorityAction enum values."""
+        self.assertEqual(AuthorityAction.MERGE.value, "merge")
+        self.assertEqual(AuthorityAction.PR.value, "pr")
+        self.assertEqual(AuthorityAction.STATUS.value, "status")
+
+    def test_authority_setting_values(self) -> None:
+        """Test AuthoritySetting enum values."""
+        self.assertEqual(AuthoritySetting.MERLIN_ONLY.value, "merlin-only")
+        self.assertEqual(AuthoritySetting.OPEN.value, "open")
+        self.assertEqual(AuthoritySetting.RESTRICTED.value, "restricted")
+
+
+class TestAuthorityCheckResult(unittest.TestCase):
+    """Test the AuthorityCheckResult dataclass."""
+
+    def test_result_creation(self) -> None:
+        """Test creating an AuthorityCheckResult."""
+        result = AuthorityCheckResult(
+            authorized=True,
+            action="merge",
+            agent="merlin",
+            epic_id="EP-AUTO-GIT-001",
+            setting="merlin-only",
+            reason="Agent is merlin",
         )
-        assert settings.is_merlin_only(ActionType.MERGE) is True
-        assert settings.is_merlin_only(ActionType.PR_UPDATE) is True
-        assert settings.is_merlin_only(ActionType.STATUS_WRITE) is True
+
+        self.assertTrue(result.authorized)
+        self.assertEqual(result.action, "merge")
+        self.assertEqual(result.agent, "merlin")
+        self.assertEqual(result.epic_id, "EP-AUTO-GIT-001")
+        self.assertEqual(result.setting, "merlin-only")
+        self.assertEqual(result.reason, "Agent is merlin")
 
 
-class TestActionType:
-    """Tests for ActionType enum."""
+class TestAgentDetection(unittest.TestCase):
+    """Test agent detection functionality."""
 
-    def test_from_string_valid(self):
-        """Test parsing valid action type strings."""
-        assert ActionType.from_string("merge") == ActionType.MERGE
-        assert ActionType.from_string("pr_update") == ActionType.PR_UPDATE
-        assert ActionType.from_string("status_write") == ActionType.STATUS_WRITE
+    def test_is_merlin_explicit(self) -> None:
+        """Test is_merlin with explicit agent name."""
+        self.assertTrue(is_merlin("merlin"))
+        self.assertTrue(is_merlin("MERLIN"))
+        self.assertTrue(is_merlin("Merlin"))
 
-    def test_from_string_invalid(self):
-        """Test parsing invalid action type raises error."""
-        with pytest.raises(ValueError, match="Invalid action type"):
-            ActionType.from_string("invalid_action")
+    def test_is_merlin_not_merlin(self) -> None:
+        """Test is_merlin returns False for non-merlin agents."""
+        self.assertFalse(is_merlin("jarvis"))
+        self.assertFalse(is_merlin("worker-1"))
+        self.assertFalse(is_merlin(""))
+
+    @patch.dict(os.environ, {"AGENT_NAME": "merlin"}, clear=True)
+    def test_detect_agent_from_environment_merlin(self) -> None:
+        """Test detecting merlin from environment variable."""
+        agent = _detect_agent_from_environment()
+        self.assertEqual(agent, "merlin")
+
+    @patch.dict(os.environ, {"AGENT_NAME": "jarvis"}, clear=True)
+    def test_detect_agent_from_environment_jarvis(self) -> None:
+        """Test detecting jarvis from environment variable."""
+        agent = _detect_agent_from_environment()
+        self.assertEqual(agent, "jarvis")
+
+    @patch.dict(os.environ, {}, clear=True)
+    def test_detect_agent_from_environment_empty(self) -> None:
+        """Test detection when environment variable is not set."""
+        # When AGENT_NAME is not set, it falls back to process detection
+        # which may return "unknown" or something from parent process
+        agent = _detect_agent_from_environment()
+        # Should return a string (either detected or "unknown")
+        self.assertIsInstance(agent, str)
+
+    @patch.dict(os.environ, {"AGENT_NAME": "  MERLIN  "}, clear=True)
+    def test_detect_agent_from_environment_whitespace(self) -> None:
+        """Test that whitespace is stripped from agent name."""
+        agent = _detect_agent_from_environment()
+        self.assertEqual(agent, "merlin")
+
+    @patch.dict(os.environ, {}, clear=True)
+    def test_is_merlin_from_environment(self) -> None:
+        """Test is_merlin detects from environment when no argument given."""
+        with patch.dict(os.environ, {"AGENT_NAME": "merlin"}):
+            self.assertTrue(is_merlin())
+
+        with patch.dict(os.environ, {"AGENT_NAME": "jarvis"}):
+            self.assertFalse(is_merlin())
 
 
-class TestAuthorityCheck:
-    """Tests for authority checking functions."""
+class TestCache(unittest.TestCase):
+    """Test the caching functionality."""
 
-    @patch("scripts.governance.merlin_authority._get_redis_hash")
-    def test_get_authority_settings_success(self, mock_get_hash):
-        """Test retrieving authority settings from Redis."""
-        mock_get_hash.return_value = {
+    def setUp(self) -> None:
+        """Clear cache before each test."""
+        _clear_cache()
+
+    def tearDown(self) -> None:
+        """Clear cache after each test."""
+        _clear_cache()
+
+    def test_cache_set_and_get(self) -> None:
+        """Test setting and getting cached values."""
+        _set_cached("test_key", "test_value")
+        value = _get_cached("test_key")
+        self.assertEqual(value, "test_value")
+
+    def test_cache_miss(self) -> None:
+        """Test getting non-existent cache key."""
+        value = _get_cached("non_existent_key")
+        self.assertIsNone(value)
+
+    def test_cache_expiration(self) -> None:
+        """Test that cache entries expire after TTL."""
+        import time
+
+        # Set a value
+        _set_cached("expire_key", "expire_value")
+
+        # Should exist immediately
+        self.assertEqual(_get_cached("expire_key"), "expire_value")
+
+        # Manually expire by setting timestamp in the past
+        # We need to access the internal cache to do this
+        from scripts.governance import merlin_authority
+
+        merlin_authority._authority_cache["expire_key"] = ("expire_value", 0)
+
+        # Should be expired now
+        value = _get_cached("expire_key")
+        self.assertIsNone(value)
+
+
+class TestParseAuthoritySetting(unittest.TestCase):
+    """Test authority setting parsing."""
+
+    def test_parse_merlin_only(self) -> None:
+        """Test parsing merlin-only setting."""
+        settings = {"merge_authority": "merlin-only"}
+        result = _parse_authority_setting(settings, "merge")
+        self.assertEqual(result, AuthoritySetting.MERLIN_ONLY)
+
+    def test_parse_open(self) -> None:
+        """Test parsing open setting."""
+        settings = {"pr_authority": "open"}
+        result = _parse_authority_setting(settings, "pr")
+        self.assertEqual(result, AuthoritySetting.OPEN)
+
+    def test_parse_unknown_defaults_to_restricted(self) -> None:
+        """Test that unknown settings default to restricted."""
+        settings = {"status_authority": "unknown-value"}
+        result = _parse_authority_setting(settings, "status")
+        self.assertEqual(result, AuthoritySetting.RESTRICTED)
+
+    def test_parse_missing_key(self) -> None:
+        """Test parsing when key is missing."""
+        settings = {}
+        result = _parse_authority_setting(settings, "merge")
+        self.assertEqual(result, AuthoritySetting.RESTRICTED)
+
+    def test_parse_case_insensitive(self) -> None:
+        """Test that parsing is case insensitive."""
+        settings = {"merge_authority": "MERLIN-ONLY"}
+        result = _parse_authority_setting(settings, "merge")
+        self.assertEqual(result, AuthoritySetting.MERLIN_ONLY)
+
+
+class TestRedisAuthoritySettings(unittest.TestCase):
+    """Test Redis authority settings retrieval."""
+
+    def setUp(self) -> None:
+        """Clear cache before each test."""
+        _clear_cache()
+
+    def tearDown(self) -> None:
+        """Clear cache after each test."""
+        _clear_cache()
+
+    @patch("redis_state.hgetall")
+    def test_get_settings_success(self, mock_hgetall) -> None:
+        """Test successful retrieval of authority settings."""
+        mock_hgetall.return_value = {
             "merge_authority": "merlin-only",
             "pr_authority": "merlin-only",
             "status_authority": "merlin-only",
-            "lock_timestamp": "2026-02-26T18:00:00Z",
         }
 
-        # Clear cache to ensure fresh read
-        clear_authority_cache()
+        settings = _get_redis_authority_settings("EP-AUTO-GIT-001")
 
-        settings = get_authority_settings("EP-AUTO-GIT-001", use_cache=False)
+        self.assertEqual(settings["merge_authority"], "merlin-only")
+        self.assertEqual(settings["pr_authority"], "merlin-only")
+        self.assertEqual(settings["status_authority"], "merlin-only")
 
-        assert settings.epic_id == "EP-AUTO-GIT-001"
-        assert settings.merge_authority == "merlin-only"
-        mock_get_hash.assert_called_once()
+    @patch("redis_state.hgetall")
+    def test_get_settings_empty_raises_epic_not_protected(self, mock_hgetall) -> None:
+        """Test that empty settings raise EpicNotProtected."""
+        mock_hgetall.return_value = {}
 
-    @patch("scripts.governance.merlin_authority._get_redis_hash")
-    def test_get_authority_settings_uses_cache(self, mock_get_hash):
-        """Test that authority settings are cached."""
-        mock_get_hash.return_value = {
-            "merge_authority": "merlin-only",
-            "lock_timestamp": "2026-02-26T18:00:00Z",
-        }
+        with self.assertRaises(EpicNotProtected) as context:
+            _get_redis_authority_settings("EP-UNKNOWN-001")
 
-        clear_authority_cache()
+        self.assertEqual(context.exception.epic_id, "EP-UNKNOWN-001")
+
+    @patch("redis_state.hgetall")
+    def test_get_settings_none_raises_epic_not_protected(self, mock_hgetall) -> None:
+        """Test that None settings raise EpicNotProtected."""
+        mock_hgetall.return_value = None
+
+        with self.assertRaises(EpicNotProtected):
+            _get_redis_authority_settings("EP-UNKNOWN-001")
+
+    @patch("redis_state.hgetall")
+    def test_get_settings_uses_cache(self, mock_hgetall) -> None:
+        """Test that settings are cached."""
+        mock_hgetall.return_value = {"merge_authority": "merlin-only"}
 
         # First call should hit Redis
-        get_authority_settings("EP-AUTO-GIT-001")
-        assert mock_get_hash.call_count == 1
+        settings1 = _get_redis_authority_settings("EP-AUTO-GIT-001")
+        self.assertEqual(mock_hgetall.call_count, 1)
 
         # Second call should use cache
-        get_authority_settings("EP-AUTO-GIT-001")
-        assert mock_get_hash.call_count == 1  # Still 1, not 2
+        settings2 = _get_redis_authority_settings("EP-AUTO-GIT-001")
+        self.assertEqual(mock_hgetall.call_count, 1)  # Still 1, not 2
+        self.assertEqual(settings1, settings2)
 
-    @patch("scripts.governance.merlin_authority._get_redis_hash")
-    def test_get_authority_settings_cache_bypass(self, mock_get_hash):
-        """Test that cache can be bypassed."""
-        mock_get_hash.return_value = {
-            "merge_authority": "merlin-only",
-            "lock_timestamp": "2026-02-26T18:00:00Z",
-        }
+    def test_get_settings_import_error(self) -> None:
+        """Test handling of import error for redis_state."""
+        # Create a mock module that raises ImportError on hgetall access
+        mock_module = MagicMock()
+        mock_module.hgetall.side_effect = ImportError("No module named 'redis_state'")
 
-        clear_authority_cache()
+        with patch.dict("sys.modules", {"redis_state": mock_module}):
+            with self.assertRaises(AuthorityCheckError) as context:
+                _get_redis_authority_settings("EP-AUTO-GIT-001")
 
-        # First call
-        get_authority_settings("EP-AUTO-GIT-001")
-        assert mock_get_hash.call_count == 1
+            self.assertIn("Redis module not available", str(context.exception))
 
-        # Second call with cache bypass
-        get_authority_settings("EP-AUTO-GIT-001", use_cache=False)
-        assert mock_get_hash.call_count == 2
+    @patch("redis_state.hgetall")
+    def test_get_settings_redis_error(self, mock_hgetall) -> None:
+        """Test handling of Redis errors."""
+        mock_hgetall.side_effect = ConnectionError("Redis connection failed")
 
-    @patch("scripts.governance.merlin_authority._get_redis_hash")
-    def test_check_epic_authority_merlin_allowed(self, mock_get_hash):
-        """Test that Merlin is authorized for merlin-only actions."""
-        mock_get_hash.return_value = {
-            "merge_authority": "merlin-only",
-            "lock_timestamp": "2026-02-26T18:00:00Z",
-        }
+        with self.assertRaises(AuthorityCheckError) as context:
+            _get_redis_authority_settings("EP-AUTO-GIT-001")
 
-        clear_authority_cache()
-
-        with patch.dict(os.environ, {"CHISE_AGENT": "merlin"}):
-            assert check_epic_authority("EP-AUTO-GIT-001", ActionType.MERGE) is True
-
-    @patch("scripts.governance.merlin_authority._get_redis_hash")
-    def test_check_epic_authority_non_merlin_denied(self, mock_get_hash):
-        """Test that non-Merlin is denied for merlin-only actions."""
-        mock_get_hash.return_value = {
-            "merge_authority": "merlin-only",
-            "lock_timestamp": "2026-02-26T18:00:00Z",
-        }
-
-        clear_authority_cache()
-
-        with patch.dict(os.environ, {"CHISE_AGENT": "senior-dev"}):
-            assert check_epic_authority("EP-AUTO-GIT-001", ActionType.MERGE) is False
-
-    @patch("scripts.governance.merlin_authority._get_redis_hash")
-    def test_check_epic_authority_unprotected_epic(self, mock_get_hash):
-        """Test that unprotected epics allow all actions."""
-        mock_get_hash.return_value = {}  # No lock_timestamp
-
-        clear_authority_cache()
-
-        with patch.dict(os.environ, {"CHISE_AGENT": "senior-dev"}):
-            # Should be allowed because epic is not protected
-            assert check_epic_authority("EP-UNPROTECTED-001", ActionType.MERGE) is True
-
-    @patch("scripts.governance.merlin_authority._get_redis_hash")
-    def test_check_epic_authority_any_allowed(self, mock_get_hash):
-        """Test that 'any' authority allows all agents."""
-        mock_get_hash.return_value = {
-            "merge_authority": "any",
-            "lock_timestamp": "2026-02-26T18:00:00Z",
-        }
-
-        clear_authority_cache()
-
-        with patch.dict(os.environ, {"CHISE_AGENT": "senior-dev"}):
-            assert check_epic_authority("EP-AUTO-GIT-001", ActionType.MERGE) is True
-
-    def test_check_ep_auto_git_authority_valid(self):
-        """Test check_ep_auto_git_authority with valid action."""
-        with patch(
-            "scripts.governance.merlin_authority.check_epic_authority"
-        ) as mock_check:
-            mock_check.return_value = True
-            result = check_ep_auto_git_authority("merge")
-            assert result is True
-            mock_check.assert_called_once_with("EP-AUTO-GIT-001", ActionType.MERGE)
-
-    def test_check_ep_auto_git_authority_invalid_action(self):
-        """Test check_ep_auto_git_authority with invalid action."""
-        with pytest.raises(ValueError, match="Invalid action type"):
-            check_ep_auto_git_authority("invalid_action")
+        self.assertIn("Failed to query Redis", str(context.exception))
 
 
-class TestEnforceMerlinOnly:
-    """Tests for enforce_merlin_only function."""
+class TestCheckEpicAuthority(unittest.TestCase):
+    """Test the check_epic_authority function."""
 
-    @patch("scripts.governance.merlin_authority._get_redis_hash")
-    def test_enforce_merlin_only_success(self, mock_get_hash):
-        """Test enforce_merlin_only succeeds for Merlin."""
-        mock_get_hash.return_value = {
-            "merge_authority": "merlin-only",
-            "lock_timestamp": "2026-02-26T18:00:00Z",
-        }
+    def setUp(self) -> None:
+        """Clear cache before each test."""
+        _clear_cache()
 
-        clear_authority_cache()
+    def tearDown(self) -> None:
+        """Clear cache after each test."""
+        _clear_cache()
 
-        with patch.dict(os.environ, {"CHISE_AGENT": "merlin"}):
-            # Should not raise
-            enforce_merlin_only(epic_id="EP-AUTO-GIT-001")
+    @patch("scripts.governance.merlin_authority._get_redis_authority_settings")
+    def test_check_merlin_authorized(self, mock_get_settings) -> None:
+        """Test that merlin is authorized for merlin-only actions."""
+        mock_get_settings.return_value = {"merge_authority": "merlin-only"}
 
-    @patch("scripts.governance.merlin_authority._get_redis_hash")
-    def test_enforce_merlin_only_violation(self, mock_get_hash):
-        """Test enforce_merlin_only raises AuthorityViolation for non-Merlin."""
-        mock_get_hash.return_value = {
+        result = check_epic_authority("merge", "EP-AUTO-GIT-001", "merlin")
+
+        self.assertTrue(result.authorized)
+        self.assertEqual(result.agent, "merlin")
+        self.assertEqual(result.action, "merge")
+
+    @patch("scripts.governance.merlin_authority._get_redis_authority_settings")
+    def test_check_non_merlin_denied(self, mock_get_settings) -> None:
+        """Test that non-merlin is denied for merlin-only actions."""
+        mock_get_settings.return_value = {"merge_authority": "merlin-only"}
+
+        result = check_epic_authority("merge", "EP-AUTO-GIT-001", "jarvis")
+
+        self.assertFalse(result.authorized)
+        self.assertEqual(result.agent, "jarvis")
+
+    @patch("scripts.governance.merlin_authority._get_redis_authority_settings")
+    def test_check_open_setting(self, mock_get_settings) -> None:
+        """Test that open setting allows all agents."""
+        mock_get_settings.return_value = {"pr_authority": "open"}
+
+        result = check_epic_authority("pr", "EP-AUTO-GIT-001", "any-agent")
+
+        self.assertTrue(result.authorized)
+
+    @patch("scripts.governance.merlin_authority._get_redis_authority_settings")
+    def test_check_restricted_setting(self, mock_get_settings) -> None:
+        """Test that restricted setting denies all agents."""
+        mock_get_settings.return_value = {"status_authority": "restricted"}
+
+        result = check_epic_authority("status", "EP-AUTO-GIT-001", "merlin")
+
+        self.assertFalse(result.authorized)
+
+    @patch("scripts.governance.merlin_authority._get_redis_authority_settings")
+    def test_check_auto_detect_agent(self, mock_get_settings) -> None:
+        """Test that agent is auto-detected when not provided."""
+        mock_get_settings.return_value = {"merge_authority": "merlin-only"}
+
+        with patch.dict(os.environ, {"AGENT_NAME": "test-agent"}):
+            result = check_epic_authority("merge", "EP-AUTO-GIT-001")
+            self.assertEqual(result.agent, "test-agent")
+
+    @patch("scripts.governance.merlin_authority._get_redis_authority_settings")
+    def test_check_epic_not_protected(self, mock_get_settings) -> None:
+        """Test that EpicNotProtected is raised for unprotected epics."""
+        from scripts.governance.merlin_authority import EpicNotProtected
+
+        mock_get_settings.side_effect = EpicNotProtected("EP-UNKNOWN")
+
+        with self.assertRaises(EpicNotProtected):
+            check_epic_authority("merge", "EP-UNKNOWN")
+
+
+class TestCheckEpAutoGitAuthority(unittest.TestCase):
+    """Test the check_ep_auto_git_authority convenience function."""
+
+    def setUp(self) -> None:
+        """Clear cache before each test."""
+        _clear_cache()
+
+    def tearDown(self) -> None:
+        """Clear cache after each test."""
+        _clear_cache()
+
+    @patch("scripts.governance.merlin_authority._get_redis_authority_settings")
+    def test_check_ep_auto_git(self, mock_get_settings) -> None:
+        """Test checking authority for EP-AUTO-GIT."""
+        mock_get_settings.return_value = {"merge_authority": "merlin-only"}
+
+        result = check_ep_auto_git_authority("merge", "merlin")
+
+        self.assertTrue(result.authorized)
+        self.assertEqual(result.epic_id, "EP-AUTO-GIT-001")
+
+
+class TestEnforceMerlinOnly(unittest.TestCase):
+    """Test the enforce_merlin_only function."""
+
+    def setUp(self) -> None:
+        """Clear cache before each test."""
+        _clear_cache()
+
+    def tearDown(self) -> None:
+        """Clear cache after each test."""
+        _clear_cache()
+
+    @patch("scripts.governance.merlin_authority._get_redis_authority_settings")
+    def test_enforce_merlin_succeeds(self, mock_get_settings) -> None:
+        """Test that enforcement succeeds for merlin."""
+        mock_get_settings.return_value = {"merge_authority": "merlin-only"}
+
+        result = enforce_merlin_only("merge", "EP-AUTO-GIT-001", "merlin")
+
+        self.assertTrue(result.authorized)
+
+    @patch("scripts.governance.merlin_authority._get_redis_authority_settings")
+    def test_enforce_non_merlin_raises(self, mock_get_settings) -> None:
+        """Test that enforcement raises for non-merlin."""
+        mock_get_settings.return_value = {"merge_authority": "merlin-only"}
+
+        with self.assertRaises(AuthorityViolation) as context:
+            enforce_merlin_only("merge", "EP-AUTO-GIT-001", "jarvis")
+
+        self.assertEqual(context.exception.action, "merge")
+        self.assertEqual(context.exception.agent, "jarvis")
+
+
+class TestRequireMerlinDecorator(unittest.TestCase):
+    """Test the @require_merlin decorator."""
+
+    def setUp(self) -> None:
+        """Clear cache before each test."""
+        _clear_cache()
+
+    def tearDown(self) -> None:
+        """Clear cache after each test."""
+        _clear_cache()
+
+    @patch("scripts.governance.merlin_authority._get_redis_authority_settings")
+    def test_decorator_allows_merlin(self, mock_get_settings) -> None:
+        """Test that decorator allows merlin to execute function."""
+        mock_get_settings.return_value = {"execute_authority": "merlin-only"}
+
+        @require_merlin(action="execute")
+        def protected_function():
+            return "success"
+
+        with patch.dict(os.environ, {"AGENT_NAME": "merlin"}):
+            result = protected_function()
+            self.assertEqual(result, "success")
+
+    @patch("scripts.governance.merlin_authority._get_redis_authority_settings")
+    def test_decorator_blocks_non_merlin(self, mock_get_settings) -> None:
+        """Test that decorator blocks non-merlin from executing function."""
+        mock_get_settings.return_value = {"execute_authority": "merlin-only"}
+
+        @require_merlin(action="execute")
+        def protected_function():
+            return "success"
+
+        with patch.dict(os.environ, {"AGENT_NAME": "jarvis"}):
+            with self.assertRaises(AuthorityViolation):
+                protected_function()
+
+    @patch("scripts.governance.merlin_authority._get_redis_authority_settings")
+    def test_decorator_preserves_function_metadata(self, mock_get_settings) -> None:
+        """Test that decorator preserves function name and docstring."""
+        mock_get_settings.return_value = {"test_authority": "merlin-only"}
+
+        @require_merlin(action="test")
+        def my_function():
+            """My docstring."""
+            return "result"
+
+        self.assertEqual(my_function.__name__, "my_function")
+        self.assertEqual(my_function.__doc__, "My docstring.")
+
+    @patch("scripts.governance.merlin_authority._get_redis_authority_settings")
+    def test_decorator_with_arguments(self, mock_get_settings) -> None:
+        """Test that decorated function can accept arguments."""
+        mock_get_settings.return_value = {"process_authority": "merlin-only"}
+
+        @require_merlin(action="process")
+        def process_data(data: str, count: int) -> str:
+            return f"{data}:{count}"
+
+        with patch.dict(os.environ, {"AGENT_NAME": "merlin"}):
+            result = process_data("test", 42)
+            self.assertEqual(result, "test:42")
+
+
+class TestVerifyGitSha(unittest.TestCase):
+    """Test the verify_git_sha function."""
+
+    @patch("subprocess.run")
+    def test_verify_valid_sha(self, mock_run) -> None:
+        """Test verifying a valid SHA."""
+        mock_run.return_value = MagicMock(returncode=0, stdout="commit\n", stderr="")
+
+        result = verify_git_sha("abc1234")
+        self.assertTrue(result)
+
+    @patch("subprocess.run")
+    def test_verify_invalid_sha(self, mock_run) -> None:
+        """Test verifying an invalid SHA."""
+        mock_run.return_value = MagicMock(
+            returncode=128, stdout="", stderr="fatal: Not a valid object name"
+        )
+
+        result = verify_git_sha("invalid")
+        self.assertFalse(result)
+
+    @patch("subprocess.run")
+    def test_verify_with_repo_path(self, mock_run) -> None:
+        """Test verifying SHA with custom repo path."""
+        mock_run.return_value = MagicMock(returncode=0, stdout="commit\n", stderr="")
+
+        result = verify_git_sha("abc1234", "/path/to/repo")
+        self.assertTrue(result)
+
+        # Verify the command was called with -C flag
+        call_args = mock_run.call_args[0][0]
+        self.assertIn("-C", call_args)
+        self.assertIn("/path/to/repo", call_args)
+
+    @patch("subprocess.run")
+    def test_verify_timeout(self, mock_run) -> None:
+        """Test handling of timeout."""
+        mock_run.side_effect = subprocess.TimeoutExpired(cmd=["git"], timeout=10)
+
+        result = verify_git_sha("abc1234")
+        self.assertFalse(result)
+
+    @patch("subprocess.run")
+    def test_verify_exception(self, mock_run) -> None:
+        """Test handling of general exceptions."""
+        mock_run.side_effect = Exception("Unexpected error")
+
+        result = verify_git_sha("abc1234")
+        self.assertFalse(result)
+
+    def test_verify_empty_sha(self) -> None:
+        """Test verifying empty SHA."""
+        result = verify_git_sha("")
+        self.assertFalse(result)
+
+    def test_verify_invalid_format(self) -> None:
+        """Test verifying SHA with invalid format."""
+        # SHA that's too short and doesn't match pattern
+        result = verify_git_sha("abc")
+        self.assertFalse(result)
+
+
+class TestFailSecureBehavior(unittest.TestCase):
+    """Test fail-secure behavior when Redis is unavailable."""
+
+    def setUp(self) -> None:
+        """Clear cache before each test."""
+        _clear_cache()
+
+    def tearDown(self) -> None:
+        """Clear cache after each test."""
+        _clear_cache()
+
+    @patch("redis_state.hgetall")
+    def test_fail_secure_on_redis_error(self, mock_hgetall) -> None:
+        """Test that access is denied when Redis raises an error."""
+        mock_hgetall.side_effect = ConnectionError("Redis unavailable")
+
+        with self.assertRaises(AuthorityCheckError):
+            check_ep_auto_git_authority("merge", "merlin")
+
+    @patch("redis_state.hgetall")
+    def test_fail_secure_on_redis_timeout(self, mock_hgetall) -> None:
+        """Test that access is denied when Redis times out."""
+        mock_hgetall.side_effect = TimeoutError("Redis timeout")
+
+        with self.assertRaises(AuthorityCheckError):
+            check_ep_auto_git_authority("merge", "merlin")
+
+    def test_fail_secure_on_import_error(self) -> None:
+        """Test that access is denied when redis_state cannot be imported."""
+        with patch.dict("sys.modules", {"redis_state": None}):
+            with self.assertRaises(AuthorityCheckError):
+                check_ep_auto_git_authority("merge", "merlin")
+
+
+class TestIntegration(unittest.TestCase):
+    """Integration tests for the complete workflow."""
+
+    def setUp(self) -> None:
+        """Clear cache before each test."""
+        _clear_cache()
+
+    def tearDown(self) -> None:
+        """Clear cache after each test."""
+        _clear_cache()
+
+    @patch("redis_state.hgetall")
+    def test_full_authorization_flow(self, mock_hgetall) -> None:
+        """Test complete authorization flow from check to enforcement."""
+        mock_hgetall.return_value = {
             "merge_authority": "merlin-only",
             "pr_authority": "merlin-only",
             "status_authority": "merlin-only",
-            "lock_timestamp": "2026-02-26T18:00:00Z",
         }
 
-        clear_authority_cache()
+        # Step 1: Check authority
+        result = check_ep_auto_git_authority("merge", "merlin")
+        self.assertTrue(result.authorized)
 
-        with patch.dict(os.environ, {"CHISE_AGENT": "senior-dev"}):
-            with pytest.raises(AuthorityViolation) as exc_info:
-                enforce_merlin_only(epic_id="EP-AUTO-GIT-001", action="merge")
+        # Step 2: Verify git SHA
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(
+                returncode=0, stdout="commit\n", stderr=""
+            )
+            sha_valid = verify_git_sha("19e9e62")
+            self.assertTrue(sha_valid)
 
-            assert "Only Merlin can perform this operation" in str(exc_info.value)
-            assert exc_info.value.action == "merge"
-            assert exc_info.value.epic_id == "EP-AUTO-GIT-001"
-            assert exc_info.value.agent == "senior-dev"
+        # Step 3: Enforce authority
+        enforcement_result = enforce_merlin_only("merge", "EP-AUTO-GIT-001", "merlin")
+        self.assertTrue(enforcement_result.authorized)
 
-    @patch("scripts.governance.merlin_authority._get_redis_hash")
-    def test_enforce_merlin_only_not_protected(self, mock_get_hash):
-        """Test enforce_merlin_only raises EpicNotProtected for unprotected epic."""
-        mock_get_hash.return_value = {}  # No lock_timestamp
-
-        clear_authority_cache()
-
-        with pytest.raises(EpicNotProtected) as exc_info:
-            enforce_merlin_only(epic_id="EP-UNPROTECTED-001")
-
-        assert "EP-UNPROTECTED-001" in str(exc_info.value)
-
-    @patch("scripts.governance.merlin_authority._get_redis_hash")
-    def test_enforce_merlin_only_redis_failure(self, mock_get_hash):
-        """Test enforce_merlin_only handles Redis failure."""
-        from scripts.governance.merlin_authority import AuthorityCheckError as ACE
-
-        mock_get_hash.side_effect = ACE("Redis connection failed")
-
-        clear_authority_cache()
-
-        with pytest.raises(AuthorityCheckError) as exc_info:
-            enforce_merlin_only(epic_id="EP-AUTO-GIT-001")
-
-        assert "Authority verification failed" in str(exc_info.value)
-
-
-class TestRequireMerlinDecorator:
-    """Tests for @require_merlin decorator."""
-
-    @patch("scripts.governance.merlin_authority._get_redis_hash")
-    def test_require_merlin_decorator_allows_merlin(self, mock_get_hash):
-        """Test decorator allows Merlin to execute function."""
-        mock_get_hash.return_value = {
+    @patch("redis_state.hgetall")
+    def test_unauthorized_flow_blocked(self, mock_hgetall) -> None:
+        """Test that unauthorized flow is properly blocked."""
+        mock_hgetall.return_value = {
             "merge_authority": "merlin-only",
-            "lock_timestamp": "2026-02-26T18:00:00Z",
         }
 
-        clear_authority_cache()
+        # Check authority for non-merlin
+        result = check_ep_auto_git_authority("merge", "worker-1")
+        self.assertFalse(result.authorized)
 
-        @require_merlin
-        def protected_function():
-            return "success"
-
-        with patch.dict(os.environ, {"CHISE_AGENT": "merlin"}):
-            result = protected_function()
-            assert result == "success"
-
-    @patch("scripts.governance.merlin_authority._get_redis_hash")
-    def test_require_merlin_decorator_blocks_non_merlin(self, mock_get_hash):
-        """Test decorator blocks non-Merlin from executing function."""
-        mock_get_hash.return_value = {
-            "merge_authority": "merlin-only",
-            "lock_timestamp": "2026-02-26T18:00:00Z",
-        }
-
-        clear_authority_cache()
-
-        @require_merlin
-        def protected_function():
-            return "success"
-
-        with patch.dict(os.environ, {"CHISE_AGENT": "senior-dev"}):
-            with pytest.raises(AuthorityViolation):
-                protected_function()
-
-    @patch("scripts.governance.merlin_authority._get_redis_hash")
-    def test_require_merlin_decorator_preserves_function_metadata(self, mock_get_hash):
-        """Test decorator preserves function name and docstring."""
-        mock_get_hash.return_value = {
-            "lock_timestamp": "2026-02-26T18:00:00Z",
-        }
-
-        clear_authority_cache()
-
-        @require_merlin
-        def my_function():
-            """My docstring."""
-            pass
-
-        assert my_function.__name__ == "my_function"
-        assert my_function.__doc__ == "My docstring."
-
-
-class TestExceptions:
-    """Tests for custom exception classes."""
-
-    def test_authority_violation_default_message(self):
-        """Test AuthorityViolation generates default message."""
-        with patch.dict(os.environ, {"CHISE_AGENT": "senior-dev"}):
-            exc = AuthorityViolation(action="merge", epic_id="EP-TEST-001")
-            assert "senior-dev" in str(exc)
-            assert "merge" in str(exc)
-            assert "EP-TEST-001" in str(exc)
-
-    def test_authority_violation_custom_message(self):
-        """Test AuthorityViolation accepts custom message."""
-        exc = AuthorityViolation(
-            action="merge",
-            epic_id="EP-TEST-001",
-            message="Custom error message",
-        )
-        assert str(exc) == "Custom error message"
-
-    def test_epic_not_protected_default_message(self):
-        """Test EpicNotProtected generates default message."""
-        exc = EpicNotProtected("EP-TEST-001")
-        assert "EP-TEST-001" in str(exc)
-        assert "not protected" in str(exc)
-
-    def test_authority_check_error(self):
-        """Test AuthorityCheckError stores reason."""
-        exc = AuthorityCheckError("Redis timeout")
-        assert exc.reason == "Redis timeout"
-        assert "Redis timeout" in str(exc)
-
-
-class TestRedisFailureHandling:
-    """Tests for Redis failure handling."""
-
-    @patch("scripts.governance.merlin_authority._get_redis_hash")
-    def test_check_epic_authority_denies_on_redis_failure(self, mock_get_hash):
-        """Test that authority check denies access when Redis fails."""
-        from scripts.governance.merlin_authority import AuthorityCheckError as ACE
-
-        mock_get_hash.side_effect = ACE("Redis connection failed")
-
-        clear_authority_cache()
-
-        # Should deny access when Redis fails (fail secure)
-        result = check_epic_authority("EP-AUTO-GIT-001", ActionType.MERGE)
-        assert result is False
-
-    @patch("scripts.governance.merlin_authority._get_redis_hash")
-    def test_get_authority_settings_uses_stale_cache_on_failure(self, mock_get_hash):
-        """Test that stale cache is used when Redis fails."""
-        # First, populate cache with successful response
-        mock_get_hash.return_value = {
-            "merge_authority": "merlin-only",
-            "lock_timestamp": "2026-02-26T18:00:00Z",
-        }
-
-        clear_authority_cache()
-        get_authority_settings("EP-AUTO-GIT-001")
-
-        # Now make Redis fail
-        mock_get_hash.side_effect = Exception("Redis connection failed")
-
-        # Should still return cached settings
-        settings = get_authority_settings("EP-AUTO-GIT-001")
-        assert settings.merge_authority == "merlin-only"
-
-
-class TestClearCache:
-    """Tests for cache clearing functionality."""
-
-    @patch("scripts.governance.merlin_authority._get_redis_hash")
-    def test_clear_authority_cache(self, mock_get_hash):
-        """Test that clear_authority_cache clears the cache."""
-        mock_get_hash.return_value = {
-            "merge_authority": "merlin-only",
-            "lock_timestamp": "2026-02-26T18:00:00Z",
-        }
-
-        # Populate cache
-        clear_authority_cache()
-        get_authority_settings("EP-AUTO-GIT-001")
-        assert mock_get_hash.call_count == 1
-
-        # Second call should use cache
-        get_authority_settings("EP-AUTO-GIT-001")
-        assert mock_get_hash.call_count == 1
-
-        # Clear cache
-        clear_authority_cache()
-
-        # Next call should hit Redis again
-        get_authority_settings("EP-AUTO-GIT-001")
-        assert mock_get_hash.call_count == 2
-
-
-class TestIntegrationWithStatusWriteGate:
-    """Tests demonstrating integration with status_write_gate.py."""
-
-    @patch("scripts.governance.merlin_authority._get_redis_hash")
-    def test_status_write_gate_integration_merlin(self, mock_get_hash):
-        """Test that Merlin can perform status write."""
-        mock_get_hash.return_value = {
-            "status_authority": "merlin-only",
-            "lock_timestamp": "2026-02-26T18:00:00Z",
-        }
-
-        clear_authority_cache()
-
-        # Simulate status_write_gate.py calling enforce_merlin_only
-        with patch.dict(os.environ, {"CHISE_AGENT": "merlin"}):
-            try:
-                enforce_merlin_only(epic_id="EP-AUTO-GIT-001", action="status_write")
-                # If we get here, authority check passed
-                status_write_allowed = True
-            except AuthorityViolation:
-                status_write_allowed = False
-
-            assert status_write_allowed is True
-
-    @patch("scripts.governance.merlin_authority._get_redis_hash")
-    def test_status_write_gate_integration_non_merlin(self, mock_get_hash):
-        """Test that non-Merlin cannot perform status write."""
-        mock_get_hash.return_value = {
-            "status_authority": "merlin-only",
-            "lock_timestamp": "2026-02-26T18:00:00Z",
-        }
-
-        clear_authority_cache()
-
-        # Simulate status_write_gate.py calling enforce_merlin_only
-        with patch.dict(os.environ, {"CHISE_AGENT": "senior-dev"}):
-            with pytest.raises(AuthorityViolation) as exc_info:
-                enforce_merlin_only(epic_id="EP-AUTO-GIT-001", action="status_write")
-
-            assert "Only Merlin can perform this operation" in str(exc_info.value)
+        # Enforcement should raise
+        with self.assertRaises(AuthorityViolation):
+            enforce_merlin_only("merge", "EP-AUTO-GIT-001", "worker-1")
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+    unittest.main(verbosity=2)
