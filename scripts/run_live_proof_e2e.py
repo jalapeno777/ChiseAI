@@ -232,7 +232,8 @@ class BybitDataIngestion:
             data = await self.connector.get_ticker(symbol)
             ticker_data = data.get("result", {}).get("list", [{}])[0]
             price = float(ticker_data.get("lastPrice", 0))
-            timestamp_ms = int(ticker_data.get("time", 0))
+            # FIX: Get timestamp from root response, not ticker list item
+            timestamp_ms = int(data.get("time", 0))
             data_timestamp = datetime.fromtimestamp(timestamp_ms / 1000, UTC)
         else:
             # Fallback to public API

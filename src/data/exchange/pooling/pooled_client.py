@@ -339,12 +339,16 @@ class PooledBybitClient(PooledExchangeClient):
         Returns:
             Order result
         """
+        # FIX: Round quantity to 3 decimal places to comply with Bybit lot size requirements
+        # This prevents "Qty invalid" errors for pairs like BTCUSDT (qtyStep=0.001)
+        qty_rounded = round(float(quantity), 3)
+
         params: dict[str, Any] = {
             "category": "linear",
             "symbol": symbol,
             "side": side.capitalize(),
             "orderType": order_type.capitalize(),
-            "qty": str(quantity),
+            "qty": str(qty_rounded),
             "timeInForce": time_in_force,
             "reduceOnly": reduce_only,
         }
