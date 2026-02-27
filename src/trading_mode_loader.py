@@ -249,6 +249,9 @@ class TradingModeLoader:
     async def _load_paper_orchestrator(self) -> Any | None:
         """Load the paper trading orchestrator module.
 
+        REMEDIATION-001: Uses BybitDemoConnector when demo credentials available,
+        otherwise falls back to OrderSimulator for simulated execution.
+
         Returns:
             Paper orchestrator instance or None if loading fails
         """
@@ -265,13 +268,33 @@ class TradingModeLoader:
             from src.execution.outcome_capture.integration import (
                 OutcomeCaptureIntegration,
             )
+            from src.execution.connectors.bybit_demo_connector import (
+                BybitDemoConnector,
+                BybitDemoConnectorFactory,
+            )
             from src.portfolio.paper_tracker import PaperPositionTracker
             from src.signal_generation.signal_generator import SignalGenerator
 
             # Create required components
             signal_generator = SignalGenerator()
             market_data = MarketDataProvider()
-            order_simulator = OrderSimulator(market_data=market_data)
+
+            # REMEDIATION-001: Use BybitDemoConnector if demo credentials available
+            # This provides authenticated execution to Bybit demo API
+            # Falls back to OrderSimulator if demo credentials not available
+            try:
+                order_executor = BybitDemoConnector.from_env(market_data=market_data)
+                logger.info(
+                    "Paper orchestrator: Using BybitDemoConnector "
+                    "(authenticated demo execution)"
+                )
+            except (ValueError, Exception) as e:
+                logger.warning(
+                    f"Bybit demo credentials not available ({e}). "
+                    "Falling back to OrderSimulator (simulated execution)."
+                )
+                order_executor = OrderSimulator(market_data=market_data)
+
             position_tracker = PaperPositionTracker()
             risk_enforcer = PaperRiskEnforcer()
             kill_switch = KillSwitchExecutor()
@@ -284,9 +307,10 @@ class TradingModeLoader:
             outcome_capture = OutcomeCaptureIntegration()
 
             # Initialize paper orchestrator with outcome capture
+            # REMEDIATION-001: order_executor is either BybitDemoConnector or OrderSimulator
             paper_orchestrator = PaperTradingOrchestrator(
                 signal_generator=signal_generator,
-                order_simulator=order_simulator,
+                order_simulator=order_executor,
                 position_tracker=position_tracker,
                 risk_enforcer=risk_enforcer,
                 telemetry_collector=telemetry,
