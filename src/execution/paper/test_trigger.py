@@ -253,7 +253,14 @@ class TestTradeTrigger:
                 )
 
             elif trade_result.status == TradeStatus.REJECTED:
-                error_msg = f"Trade rejected: {', '.join(trade_result.reject_reason)}"
+                # Handle both string and RiskViolation objects in reject_reason
+                reject_reasons = []
+                for reason in trade_result.reject_reason:
+                    if hasattr(reason, "message"):
+                        reject_reasons.append(reason.message)
+                    else:
+                        reject_reasons.append(str(reason))
+                error_msg = f"Trade rejected: {', '.join(reject_reasons)}"
                 logger.warning(error_msg)
 
                 self._log_audit_entry(
@@ -278,7 +285,15 @@ class TestTradeTrigger:
                 )
 
             else:  # FAILED
-                error_msg = f"Trade failed: {', '.join(trade_result.reject_reason)}"
+                # Handle both string and RiskViolation objects in reject_reason
+                fail_reasons = []
+                if trade_result.reject_reason:
+                    for reason in trade_result.reject_reason:
+                        if hasattr(reason, "message"):
+                            fail_reasons.append(reason.message)
+                        else:
+                            fail_reasons.append(str(reason))
+                error_msg = f"Trade failed: {', '.join(fail_reasons)}"
                 logger.error(error_msg)
 
                 self._log_audit_entry(
@@ -354,10 +369,12 @@ class TestTradeTrigger:
         # Calculate base score from confidence
         base_score = confidence * 100
 
-        # Build metadata with test indicator
+        # Build metadata with test indicator and entry price
+        # Use a default entry price for position sizing calculations
         signal_metadata = {
             "is_test_signal": True,
             "test_trigger_version": "1.0.0",
+            "entry_price": 85000.0,  # Default BTC price for position sizing
             **(metadata or {}),
         }
 

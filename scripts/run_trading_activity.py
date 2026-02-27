@@ -40,6 +40,7 @@ from config.trading_mode import ModuleType, TradingMode, TradingModeConfig
 from data_ingestion.ohlcv_fetcher import OHLCVFetcher
 from data_ingestion.timeframe_config import Timeframe
 from execution.kill_switch.executor import KillSwitchExecutor
+from execution.outcome_capture.integration import OutcomeCaptureIntegration
 from execution.paper import (
     OrderSimulator,
     PaperPositionTracker,
@@ -259,6 +260,9 @@ class TradingModeLoader:
             logger.warning(f"Failed to create telemetry collector: {e}")
             self.telemetry_collector = None
 
+        # Create outcome capture integration for Discord alerts
+        outcome_capture = OutcomeCaptureIntegration()
+
         self.paper_orchestrator = PaperTradingOrchestrator(
             signal_generator=self.signal_generator,
             order_simulator=self.order_simulator,
@@ -267,6 +271,7 @@ class TradingModeLoader:
             telemetry_collector=self.telemetry_collector,
             kill_switch=self.kill_switch,
             portfolio_value=self.config.paper_portfolio_value,
+            outcome_capture=outcome_capture,
         )
 
         await self.paper_orchestrator.start()
