@@ -1,11 +1,11 @@
 # Auto PR / Auto Merge Orchestration
-# Runs on a short cron and performs:
+# Runs on feature branch pushes and performs:
 # 1) Create PRs for pushed non-protected branches
 # 2) Merge open PRs targeting main when conflict-free
 
 when:
-  - event: cron
-    cron: "*/1 * * * *"
+  - event: push
+    branch: [feature/*]
 
 labels:
   project: chiseai
