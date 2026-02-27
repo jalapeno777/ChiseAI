@@ -60,24 +60,51 @@ def test_fast_required_includes_status_write_gate() -> None:
     assert "status-write-gate.status" in ci_gate.FAST_REQUIRED
 
 
-def test_ci_gate_fails_when_status_write_gate_fails(tmp_path: Path) -> None:
-    """Verify that ci_gate fails when status-write-gate.status is non-zero."""
+def test_ci_gate_fails_when_status_write_gate_fails(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Test that ci_gate fails (returns non-zero) when status-write-gate.status contains '1'."""
     ci_dir = tmp_path / "ci"
     ci_dir.mkdir(parents=True)
 
-    # Create all required status files with exit code 0
-    (ci_dir / "swarm-context.status").write_text("0", encoding="utf-8")
-    (ci_dir / "lint.status").write_text("0", encoding="utf-8")
-    (ci_dir / "security-scan.status").write_text("0", encoding="utf-8")
-    (ci_dir / "status-write-gate.status").write_text("1", encoding="utf-8")
+    # Create all required status files with success (0) except status-write-gate
+    for status_file in ci_gate.FAST_REQUIRED:
+        if status_file == "status-write-gate.status":
+            (ci_dir / status_file).write_text("1", encoding="utf-8")  # Failed
+        else:
+            (ci_dir / status_file).write_text("0", encoding="utf-8")  # Success
 
-    # Mock the CI_DIR
-    original_ci_dir = ci_gate.CI_DIR
-    try:
-        ci_gate.CI_DIR = ci_dir
-        result = ci_gate.main()
-        assert result == 1, (
-            f"Expected ci_gate to fail (return 1) when status-write-gate fails, got {result}"
-        )
-    finally:
-        ci_gate.CI_DIR = original_ci_dir
+    # Monkeypatch CI_DIR to use our temp directory
+    monkeypatch.setattr(ci_gate, "CI_DIR", ci_dir)
+
+    # Mock subprocess.run to avoid actual execution
+    monkeypatch.setattr(
+        ci_gate.subprocess,
+        "run",
+        lambda *args, **kwargs: CompletedProcess(args, 0, stdout="", stderr=""),
+    )
+
+    # Run ci_gate
+    result = ci_gate.main()
+
+    # Should return non-zero (failure) because status-write-gate.status is 1
+    assert result != 0, "ci_gate should fail when status-write-gate.status is 1"
+
+
+def test_ci_gate_passes_when_all_statuses_zero(tmp_path: Path, monkeypatch) -> None:
+    """Test that ci_gate passes (returns zero) when all fast required statuses are '0'."""
+    ci_dir = tmp_path / "ci"
+    ci_dir.mkdir(parents=True)
+
+    # Create all required status files with success (0)
+    for status_file in ci_gate.FAST_REQUIRED:
+        (ci_dir / status_file).write_text("0", encoding="utf-8")
+
+    # Monkeypatch CI_DIR to use our temp directory
+    monkeypatch.setattr(ci_gate, "CI_DIR", ci_dir)
+
+    # Run ci_gate
+    result = ci_gate.main()
+
+    # Should return zero (success) because all statuses are 0
+    assert result == 0, "ci_gate should pass when all statuses are 0"
