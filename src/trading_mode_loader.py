@@ -254,9 +254,45 @@ class TradingModeLoader:
         """
         try:
             from src.execution.paper.orchestrator import PaperTradingOrchestrator
+            from src.execution.paper.order_simulator import (
+                OrderSimulator,
+                MarketDataProvider,
+            )
+            from src.execution.paper.risk_enforcer import PaperRiskEnforcer
+            from src.execution.telemetry.collector import ExecutionCollector
+            from src.execution.telemetry.exporter import ExecutionTelemetryExporter
+            from src.execution.kill_switch.executor import KillSwitchExecutor
+            from src.execution.outcome_capture.integration import (
+                OutcomeCaptureIntegration,
+            )
+            from src.portfolio.paper_tracker import PaperPositionTracker
+            from src.signal_generation.signal_generator import SignalGenerator
 
-            # Initialize paper orchestrator
-            paper_orchestrator = PaperTradingOrchestrator()
+            # Create required components
+            signal_generator = SignalGenerator()
+            market_data = MarketDataProvider()
+            order_simulator = OrderSimulator(market_data=market_data)
+            position_tracker = PaperPositionTracker()
+            risk_enforcer = PaperRiskEnforcer()
+            kill_switch = KillSwitchExecutor()
+
+            # Create telemetry
+            telemetry_exporter = ExecutionTelemetryExporter()
+            telemetry = ExecutionCollector(exporter=telemetry_exporter)
+
+            # Create outcome capture integration for Discord alerts
+            outcome_capture = OutcomeCaptureIntegration()
+
+            # Initialize paper orchestrator with outcome capture
+            paper_orchestrator = PaperTradingOrchestrator(
+                signal_generator=signal_generator,
+                order_simulator=order_simulator,
+                position_tracker=position_tracker,
+                risk_enforcer=risk_enforcer,
+                telemetry_collector=telemetry,
+                kill_switch=kill_switch,
+                outcome_capture=outcome_capture,
+            )
 
             # Perform any async initialization if available
             if hasattr(paper_orchestrator, "initialize") and callable(

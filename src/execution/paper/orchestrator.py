@@ -81,6 +81,7 @@ class PaperTradingOrchestrator:
         telemetry_collector: ExecutionCollector,
         kill_switch: KillSwitchExecutor,
         portfolio_value: float = 10000.0,
+        outcome_capture: Any | None = None,
     ):
         """Initialize paper trading orchestrator.
 
@@ -92,6 +93,7 @@ class PaperTradingOrchestrator:
             telemetry_collector: Metrics collection
             kill_switch: Emergency kill switch
             portfolio_value: Starting portfolio value
+            outcome_capture: OutcomeCaptureIntegration for Discord alerts
         """
         self.signal_generator = signal_generator
         self.order_simulator = order_simulator
@@ -100,6 +102,7 @@ class PaperTradingOrchestrator:
         self.telemetry = telemetry_collector
         self.kill_switch = kill_switch
         self.portfolio_value = portfolio_value
+        self.outcome_capture = outcome_capture
 
         self._running = False
         self._signal_queue: asyncio.Queue[Signal] = asyncio.Queue()
@@ -361,6 +364,26 @@ class PaperTradingOrchestrator:
 
                 # Step 6: Record trade metrics
                 await self._record_trade(position, signal, correlation_id)
+
+                # Step 6.5: Capture outcome and send Discord alerts
+                if self.outcome_capture:
+                    try:
+                        await self.outcome_capture.on_trade_result(
+                            PaperTradeResult(
+                                signal=signal,
+                                status=TradeStatus.EXECUTED,
+                                order=filled_order,
+                                position=position,
+                                latency_ms=(time.perf_counter() - start_time) * 1000,
+                                correlation_id=correlation_id,
+                            )
+                        )
+                        logger.debug(
+                            f"Outcome captured for trade: {position.position_id}"
+                        )
+                    except Exception as e:
+                        # Log error but don't fail the trade
+                        logger.error(f"Failed to capture outcome: {e}")
 
                 # Calculate total latency
                 total_latency_ms = (time.perf_counter() - start_time) * 1000
