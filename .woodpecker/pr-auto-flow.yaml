@@ -7,9 +7,6 @@ when:
   - event: push
     branch: [feature/**]
 
-labels:
-  project: chiseai
-
 steps:
   - name: auto-pr
     image: python:3.11-slim
