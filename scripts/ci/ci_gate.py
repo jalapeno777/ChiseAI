@@ -23,6 +23,7 @@ FAST_REQUIRED = [
     "swarm-context.status",
     "lint.status",
     "security-scan.status",
+    "status-write-gate.status",
 ]
 FULL_REQUIRED = [
     "local-ci.status",
