@@ -225,16 +225,32 @@ class CanaryStorageWithPersistence(CanaryStorage):
         if self._influxdb:
             try:
                 from influxdb_client import Point
+                import os
 
                 record = CanaryRecord.from_deployment(deployment)
+
+                # Extract metrics for individual fields (for Grafana dashboard)
+                metrics = record.metrics
+                max_drawdown_pct = metrics.get("max_drawdown_pct", 0.0)
+                win_rate_pct = metrics.get("win_rate_pct", 0.0)
+                duration_days = (
+                    (record.end_time - record.start_time) / (24 * 60 * 60)
+                    if record.end_time > record.start_time
+                    else 0.0
+                )
+
                 point = (
                     Point("canary_deployment")
                     .tag("canary_id", record.canary_id)
                     .tag("strategy_id", record.strategy_id)
                     .tag("status", record.status)
+                    .tag("environment", os.getenv("ENVIRONMENT", "paper"))
                     .field("allocation_pct", record.allocation_pct)
                     .field("start_time", record.start_time)
                     .field("end_time", record.end_time)
+                    .field("max_drawdown_pct", max_drawdown_pct)
+                    .field("win_rate_pct", win_rate_pct)
+                    .field("duration_days", duration_days)
                     .field("metrics_json", json.dumps(record.metrics))
                     .field("metadata_json", json.dumps(record.metadata))
                 )
@@ -279,12 +295,14 @@ class CanaryStorageWithPersistence(CanaryStorage):
         if self._influxdb:
             try:
                 from influxdb_client import Point
+                import os
 
                 point = (
                     Point("canary_monitoring_check")
                     .tag("canary_id", check.canary_id)
                     .tag("status", check.status.value)
                     .tag("action_taken", check.action_taken)
+                    .tag("environment", os.getenv("ENVIRONMENT", "paper"))
                     .field("message", check.message)
                     .field("timestamp_epoch", check.timestamp)
                     .field(
@@ -296,6 +314,23 @@ class CanaryStorageWithPersistence(CanaryStorage):
                 self._get_write_api().write(
                     bucket=self._BUCKET, org=self._ORG, record=point
                 )
+
+                # Also write individual gate check records for Grafana dashboard
+                for gate_check in check.gate_checks:
+                    gate_point = (
+                        Point("canary_gate_check")
+                        .tag("canary_id", check.canary_id)
+                        .tag("gate_name", gate_check.gate_name)
+                        .tag("result", gate_check.result.value)
+                        .tag("environment", os.getenv("ENVIRONMENT", "paper"))
+                        .field("actual_value", gate_check.actual_value)
+                        .field("threshold_value", gate_check.threshold_value)
+                        .field("message", gate_check.message)
+                    )
+                    self._get_write_api().write(
+                        bucket=self._BUCKET, org=self._ORG, record=gate_point
+                    )
+
                 logger.info(
                     "Persisted monitoring check for canary %s to InfluxDB",
                     check.canary_id,
