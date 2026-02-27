@@ -22,6 +22,8 @@ from typing import TYPE_CHECKING, Any
 import aiohttp
 
 if TYPE_CHECKING:
+    from src.execution.paper.position_tracker import PaperPosition
+    from src.execution.paper.models import PaperOrder
     from src.ml.models.signal_outcome import SignalOutcome
 
 logger = logging.getLogger(__name__)
@@ -165,6 +167,82 @@ class TradeNotifier:
         if self._session and not self._session.closed:
             await self._session.close()
             self._session = None
+
+    @staticmethod
+    def create_outcome_from_paper_position(
+        position: PaperPosition,
+        order: PaperOrder | None = None,
+        signal_id: str | None = None,
+        pnl: float | None = None,
+        exit_price: float | None = None,
+    ) -> SignalOutcome:
+        """Create a SignalOutcome from a PaperPosition.
+
+        Factory method to convert paper trading position data into
+        the canonical SignalOutcome format for Discord notifications.
+
+        Args:
+            position: The paper trading position
+            order: Optional filled order for additional metadata
+            signal_id: Optional signal ID from the originating signal
+            pnl: Optional realized PnL (for closed positions)
+            exit_price: Optional exit price (for closed positions)
+
+        Returns:
+            SignalOutcome populated from position data
+        """
+        from src.ml.models.signal_outcome import (
+            SignalOutcome,
+            SignalOutcomeStatus,
+        )
+        from uuid import UUID
+        from decimal import Decimal
+
+        # Determine direction from position side
+        direction = "LONG" if position.side.lower() == "long" else "SHORT"
+        side = "Buy" if direction == "LONG" else "Sell"
+
+        # Extract signal_id from metadata if not provided
+        if signal_id is None and position.metadata:
+            signal_id = position.metadata.get("signal_id")
+
+        # Extract order_id from metadata if available
+        order_id = ""
+        if position.metadata:
+            order_id = position.metadata.get("order_id", "")
+        if order and not order_id:
+            order_id = order.order_id
+
+        # Determine status based on whether position is closed
+        if position.closed_at is not None or exit_price is not None:
+            status = SignalOutcomeStatus.CLOSED
+        else:
+            status = SignalOutcomeStatus.FILLED
+
+        # Build the outcome
+        outcome = SignalOutcome(
+            outcome_id=UUID(position.position_id) if position.position_id else None,
+            signal_id=UUID(signal_id) if signal_id else None,
+            order_id=order_id,
+            symbol=position.symbol,
+            side=side,
+            direction=direction,
+            fill_price=Decimal(str(position.entry_price)),
+            fill_quantity=Decimal(str(position.quantity)),
+            entry_price=Decimal(str(position.entry_price)),
+            position_size=Decimal(str(position.quantity)),
+            status=status,
+            metadata=position.metadata or {},
+        )
+
+        # Add close data if provided
+        if pnl is not None:
+            outcome.pnl = Decimal(str(pnl))
+        if exit_price is not None:
+            outcome.exit_price = Decimal(str(exit_price))
+            outcome.exit_time = position.closed_at
+
+        return outcome
 
     async def send_trade_open_notification(
         self,

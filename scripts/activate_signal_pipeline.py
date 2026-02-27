@@ -35,7 +35,6 @@ from execution.telemetry.collector import ExecutionCollector
 from execution.telemetry.exporter import ExecutionTelemetryExporter
 from execution.kill_switch.executor import KillSwitchExecutor
 from execution.kill_switch.state import KillSwitchState
-from execution.outcome_capture.integration import OutcomeCaptureIntegration
 from signal_generation.signal_generator import SignalGenerator
 
 
@@ -82,9 +81,6 @@ async def activate_pipeline():
     # Create kill switch
     kill_switch = KillSwitchExecutor()
 
-    # Create outcome capture integration for Discord alerts
-    outcome_capture = OutcomeCaptureIntegration()
-
     # Create orchestrator
     orchestrator = PaperTradingOrchestrator(
         signal_generator=signal_generator,
@@ -94,7 +90,6 @@ async def activate_pipeline():
         telemetry_collector=telemetry,
         kill_switch=kill_switch,
         portfolio_value=10000.0,
-        outcome_capture=outcome_capture,
     )
 
     # Start orchestrator
