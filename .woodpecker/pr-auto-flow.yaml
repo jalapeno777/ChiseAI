@@ -3,6 +3,13 @@
 # 1) Create PRs for pushed non-protected branches
 # 2) Merge open PRs targeting main when conflict-free
 
+clone:
+  git:
+    image: woodpeckerci/plugin-git
+    settings:
+      remote:
+        from_secret: gitea_clone_url
+
 when:
   - event: push
     branch: [feature/**]
@@ -21,6 +28,7 @@ steps:
       CHISE_AUTOPR_BASE: main
       CHISE_AUTOPR_PROTECTED_BRANCHES: main,develop
       CHISE_AUTOPR_MAX_BRANCH_AGE_MIN: "30"
+      CHISE_AUTOPR_SOURCE_BRANCH: ${CI_COMMIT_BRANCH}
 
   - name: automerge-conflict-free
     image: python:3.11-slim
@@ -35,6 +43,7 @@ steps:
       CHISE_AUTOPR_BASE: main
       CHISE_AUTOPR_PROTECTED_BRANCHES: main,develop
       CHISE_AUTOPR_MAX_BRANCH_AGE_MIN: "30"
+      CHISE_AUTOPR_SOURCE_BRANCH: ${CI_COMMIT_BRANCH}
       CHISE_AUTOMERGE_AUTHORS: chise-bot,craig
     depends_on:
       - auto-pr
