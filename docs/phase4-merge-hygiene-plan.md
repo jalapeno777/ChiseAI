@@ -47,8 +47,8 @@
 ### 1.2 Remote Branches (Gitea/Origin)
 
 ```
-remotes/gitea/HEAD -> gitea/main
-remotes/gitea/main
+remotes/gitea/HEAD -> origin/main
+remotes/origin/main
 remotes/origin/HEAD -> origin/main
 remotes/origin/feature/ST-BRAIN-001-brain-evaluation-real-metrics
 remotes/origin/main
@@ -504,8 +504,8 @@ git log --oneline main..<branch>
 + feature/ST-TEST-001-trust-repair
 * main
 + validation/PAPER-READY-day1
-  remotes/gitea/HEAD -> gitea/main
-  remotes/gitea/main
+  remotes/gitea/HEAD -> origin/main
+  remotes/origin/main
   remotes/origin/HEAD -> origin/main
   remotes/origin/feature/ST-BRAIN-001-brain-evaluation-real-metrics
   remotes/origin/main

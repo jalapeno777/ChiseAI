@@ -193,7 +193,7 @@ Merge queue + reconciliation utility for non-blocking swarm throughput while pre
 - Stores queued PR merge intents in Redis (`bmad:chiseai:merge-queue:main`)
 - Runs bounded queue ticks so Jarvis can merge green PRs without blocking worker development
 - Emits incidents for CI failures, merge conflicts, and branch/main drift
-- Performs git hygiene checks (local `main` vs `gitea/main`, local branches ahead of `main`)
+- Performs git hygiene checks (local `main` vs `origin/main`, local branches ahead of `main`)
 
 **Usage:**
 ```bash

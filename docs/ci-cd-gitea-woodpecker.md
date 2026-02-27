@@ -168,7 +168,7 @@ If `mypy .` fails with “There are no .py[i] files”, add a targeted `files = 
   - `sqlite3 /data/gitea/gitea.db "delete from access_token where name='<name>';"`
 
 ## Merge flow (expected)
-1. Push branch to Gitea: `git push gitea <branch>`
+1. Push branch to Gitea: `git push origin <branch>`
 2. Open PR in Gitea.
 3. Wait for `ci/woodpecker/pr/ci` to pass.
 4. Merge via Gitea UI or API (auto-merge bot recommended).

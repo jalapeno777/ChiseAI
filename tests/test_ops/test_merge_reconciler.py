@@ -185,7 +185,7 @@ def test_reconcile_git_hygiene_detects_main_unsynced(monkeypatch) -> None:
             return 0, "", ""
         if cmd == "rev-parse main":
             return 0, "aaa", ""
-        if cmd == "rev-parse refs/remotes/gitea/main":
+        if cmd == "rev-parse refs/remotes/origin/main":
             return 0, "bbb", ""
         if cmd == "for-each-ref --format=%(refname:short) refs/heads":
             return 0, "main\nfeature/x", ""

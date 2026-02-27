@@ -14,7 +14,7 @@ acceptance_criteria:
   - scripts/validate_status_sync.py passes
   - New/updated traceability checker passes locally and in CI
   - local CI gates pass (or non-blocking exceptions documented+justified)
-  - main and gitea/main synced after merge
+  - main and origin/main synced after merge
 ---
 
 ## Decisions

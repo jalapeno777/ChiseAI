@@ -445,7 +445,7 @@ def reconcile_git_hygiene(store: QueueStore) -> list[str]:
     _run_git("fetch", "--all", "--prune")
 
     rc_main, main_sha, _ = _run_git("rev-parse", "main")
-    rc_remote, remote_sha, _ = _run_git("rev-parse", "refs/remotes/gitea/main")
+    rc_remote, remote_sha, _ = _run_git("rev-parse", "refs/remotes/origin/main")
     if rc_main == 0 and rc_remote == 0 and main_sha != remote_sha:
         incident = Incident(
             kind="main_unsynced",
@@ -453,7 +453,7 @@ def reconcile_git_hygiene(store: QueueStore) -> list[str]:
             branch="main",
             pr_number=None,
             pipeline_number=None,
-            message="Local main is not synced to gitea/main",
+            message="Local main is not synced to origin/main",
             recommended_agent="jarvis",
             evidence={"main_sha": main_sha, "gitea_main_sha": remote_sha},
         )
