@@ -1,0 +1,41 @@
+# Auto PR / Auto Merge Orchestration
+# Runs on a short cron and performs:
+# 1) Create PRs for pushed non-protected branches
+# 2) Merge open PRs targeting main when conflict-free
+
+when:
+  - event: cron
+    cron: "*/1 * * * *"
+
+labels:
+  project: chiseai
+
+steps:
+  - name: auto-pr
+    image: python:3.11-slim
+    commands:
+      - python3 scripts/pr_lifecycle/auto_pr_merge.py ensure-prs
+    environment:
+      GITEA_BASE_URL: http://host.docker.internal:3000
+      GITEA_OWNER: craig
+      GITEA_REPO: ChiseAI
+      GITEA_TOKEN:
+        from_secret: gitea_token
+      CHISE_AUTOPR_BASE: main
+      CHISE_AUTOPR_PROTECTED_BRANCHES: main,develop
+
+  - name: automerge-conflict-free
+    image: python:3.11-slim
+    commands:
+      - python3 scripts/pr_lifecycle/auto_pr_merge.py automerge
+    environment:
+      GITEA_BASE_URL: http://host.docker.internal:3000
+      GITEA_OWNER: craig
+      GITEA_REPO: ChiseAI
+      GITEA_TOKEN:
+        from_secret: gitea_token
+      CHISE_AUTOPR_BASE: main
+      CHISE_AUTOPR_PROTECTED_BRANCHES: main,develop
+      CHISE_AUTOMERGE_AUTHORS: chise-bot,craig
+    depends_on:
+      - auto-pr
