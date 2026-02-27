@@ -7,6 +7,14 @@ metadata:
   version: "2.5.3"
   last_updated: "2026-02-26T23:50:00Z"
   recent_changes:
+    - timestamp: "2026-02-26T23:55:00Z"
+      actor: senior-dev
+      action: st-auto-control-enforcement-final
+      description: "ST-AUTO-CONTROL-003: Final fail-closed enforcement for status-write-gate. ci_gate.py now requires status-write-gate.status to be 0. Supersedes prior partial enforcement claims."
+      story_id: ST-AUTO-CONTROL-003
+      epic_id: EP-AUTO-GIT-001
+      correction_type: enforcement_final
+      note: "Fail-closed enforcement is now complete and tested."
     - timestamp: "2026-02-26T23:45:00Z"
       actor: jarvis
       action: st-auto-control-enforcement-wired
