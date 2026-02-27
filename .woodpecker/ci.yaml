@@ -237,6 +237,24 @@ steps:
           echo "No changed files detected, skipping compass gate"
         fi
 
+  status-write-gate:
+    image: python:3.11
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          echo "Running status write gate check..."
+          python3 scripts/governance/status_write_gate.py --file docs/bmm-workflow-status.yaml --epic EP-AUTO-GIT-001
+        ) > _bmad-output/ci/status-write-gate.log 2>&1
+        code=$?
+        cat _bmad-output/ci/status-write-gate.log
+        echo "$code" > _bmad-output/ci/status-write-gate.status
+        # Do not short-circuit the pipeline; ci-gate is the single fail point.
+        exit 0
+
   ci-gate:
     image: python:3.11
     environment:
