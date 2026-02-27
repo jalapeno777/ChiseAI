@@ -407,38 +407,85 @@ def check_g5_daily_loss(r: redis.Redis):
         return {"gate": "G5", "status": "❌ FAIL", "detail": str(e)}
 
 
-def check_g6_bybit_connectivity():
-    """G6: Bybit Connectivity"""
+def check_g6_discord_continuity(r: redis.Redis):
+    """G6: Discord Continuity - Track Discord message delivery health.
+
+    Reads continuity evidence keys from Redis:
+    - chise:discord:continuity:continuity_status
+    - chise:discord:continuity:last_success_at
+    - chise:discord:continuity:post_count_window
+    - chise:discord:continuity:failure_count_window
+
+    Status:
+    - PASS if status is "healthy"
+    - CHECK if status is "degraded"
+    - FAIL if status is "down" or keys don't exist
+    """
     try:
-        import socket
-        import ssl
+        # Read continuity keys from Redis
+        status = r.get("chise:discord:continuity:continuity_status")
+        last_success_at = r.get("chise:discord:continuity:last_success_at")
+        post_count = r.get("chise:discord:continuity:post_count_window")
+        failure_count = r.get("chise:discord:continuity:failure_count_window")
 
-        # Simple TCP connection test to Bybit API
-        host = "api.bybit.com"
-        port = 443
-        timeout = 5
+        # Check if keys exist
+        if status is None:
+            return {
+                "gate": "G6",
+                "status": "❌ FAIL",
+                "detail": "No continuity data in Redis - monitor not running?",
+            }
 
-        context = ssl.create_default_context()
-        with socket.create_connection((host, port), timeout=timeout) as sock:
-            with context.wrap_socket(sock, server_hostname=host) as ssock:
-                # Send a simple HTTPS request
-                request = f"GET /v5/market/time HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n\r\n"
-                ssock.send(request.encode())
-                response = ssock.recv(1024).decode()
-                if "200 OK" in response or "HTTP/1.1" in response:
-                    return {
-                        "gate": "G6",
-                        "status": "✅ PASS",
-                        "detail": "API reachable",
-                    }
+        # Calculate failure rate
+        post_count_int = int(post_count or "0")
+        failure_count_int = int(failure_count or "0")
+        failure_rate = 0.0
+        if post_count_int > 0:
+            failure_rate = failure_count_int / post_count_int
+
+        # Format last success time
+        last_success_display = "never"
+        if last_success_at:
+            try:
+                from datetime import datetime, timezone
+
+                last_dt = datetime.fromisoformat(last_success_at.replace("Z", "+00:00"))
+                now = datetime.now(timezone.utc)
+                seconds_ago = (now - last_dt).total_seconds()
+                if seconds_ago < 60:
+                    last_success_display = f"{int(seconds_ago)}s ago"
+                elif seconds_ago < 3600:
+                    last_success_display = f"{int(seconds_ago / 60)}m ago"
                 else:
-                    return {
-                        "gate": "G6",
-                        "status": "⚠️ CHECK",
-                        "detail": "API responded unexpectedly",
-                    }
+                    last_success_display = f"{int(seconds_ago / 3600)}h ago"
+            except Exception:
+                last_success_display = last_success_at
+
+        # Build detail message
+        detail = f"Status: {status} | Last success: {last_success_display} | Failure rate: {failure_rate:.1%} ({failure_count_int}/{post_count_int})"
+
+        # Determine gate status
+        if status == "healthy":
+            return {
+                "gate": "G6",
+                "status": "✅ PASS",
+                "detail": detail,
+            }
+        elif status == "degraded":
+            return {
+                "gate": "G6",
+                "status": "⚠️ CHECK",
+                "detail": detail,
+            }
+        else:  # down or unknown
+            return {
+                "gate": "G6",
+                "status": "❌ FAIL",
+                "detail": detail,
+            }
+
     except Exception as e:
-        return {"gate": "G6", "status": "❌ FAIL", "detail": str(e)[:50]}
+        return {"gate": "G6", "status": "❌ FAIL", "detail": f"Error: {str(e)[:50]}"}
 
 
 def check_g7_observability(r: redis.Redis):
@@ -526,7 +573,7 @@ def run_all_checks():
         check_g3_data_flow(r),
         check_g4_kill_switch(r),
         check_g5_daily_loss(r),
-        check_g6_bybit_connectivity(),
+        check_g6_discord_continuity(r),
         check_g7_observability(r),
         check_g8_pipeline(r),
     ]
