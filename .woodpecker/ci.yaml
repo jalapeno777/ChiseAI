@@ -247,7 +247,7 @@ steps:
         (
           set -euo pipefail
           echo "Running status write gate check..."
-          python3 scripts/governance/status_write_gate.py --file docs/bmm-workflow-status.yaml --epic EP-AUTO-GIT-001
+          python3 scripts/governance/status_write_gate.py --file docs/bmm-workflow-status.yaml
         ) > _bmad-output/ci/status-write-gate.log 2>&1
         code=$?
         cat _bmad-output/ci/status-write-gate.log
