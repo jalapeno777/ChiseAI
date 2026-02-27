@@ -83,6 +83,30 @@ def find_project_root() -> Path:
     return script_path.parent.parent.parent
 
 
+def get_job_name_from_path(script_path):
+    """Extract job name from script path for cron evidence tracking."""
+    job_mapping = {
+        "pager_alerts.py": "pager",
+        "signal_growth_detector.py": "signal-growth",
+        "hourly_health_check.py": "hourly-health",
+        "checkpoint_gate_audit.py": "checkpoint-audit",
+    }
+    basename = os.path.basename(script_path)
+    return job_mapping.get(basename)
+
+
+def write_cron_evidence(job_name, status, error_msg=None):
+    """Write cron execution evidence to Redis."""
+    try:
+        sys.path.insert(0, str(Path(__file__).parent))
+        from cron_evidence import write_cron_evidence as write_evidence
+
+        write_evidence(job_name, status=status, error_message=error_msg)
+        logger.info(f"Cron evidence written for {job_name}: {status}")
+    except Exception as e:
+        logger.warning(f"Failed to write cron evidence for {job_name}: {e}")
+
+
 def run_script(script_path: str, project_root: Path) -> int:
     """Run the specified monitoring script."""
     # Resolve script path
@@ -99,6 +123,11 @@ def run_script(script_path: str, project_root: Path) -> int:
     if not os.access(full_script_path, os.X_OK):
         logger.debug(f"Making script executable: {full_script_path}")
         os.chmod(full_script_path, 0o755)
+
+    # Determine job name for cron evidence
+    job_name = get_job_name_from_path(str(full_script_path))
+    if job_name:
+        logger.info(f"Job name for cron evidence: {job_name}")
 
     # Run the script
     logger.info(f"Running script: {full_script_path}")
@@ -122,16 +151,30 @@ def run_script(script_path: str, project_root: Path) -> int:
             logger.info(
                 f"Script completed successfully (exit code: {result.returncode})"
             )
+            # Write success evidence
+            if job_name:
+                write_cron_evidence(job_name, status="success")
         else:
             logger.error(f"Script failed (exit code: {result.returncode})")
+            # Write error evidence
+            if job_name:
+                error_msg = result.stderr[:500] if result.stderr else "Script failed"
+                write_cron_evidence(job_name, status="error", error_msg=error_msg)
 
         return result.returncode
 
     except subprocess.TimeoutExpired:
         logger.error(f"Script timed out after 5 minutes")
+        if job_name:
+            write_cron_evidence(
+                job_name, status="error", error_msg="Timeout after 5 minutes"
+            )
         return 1
     except Exception as e:
         logger.exception(f"Error running script: {e}")
+        if job_name:
+            write_cron_evidence(job_name, status="error", error_msg=str(e)[:500])
+        return 1
         return 1
 
 

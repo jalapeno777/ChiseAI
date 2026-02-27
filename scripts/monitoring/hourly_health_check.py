@@ -168,8 +168,64 @@ def get_metrics(r: redis.Redis) -> Dict[str, int]:
         return {"signals": 0, "outcomes": 0, "keys": 0}
 
 
+def check_cron_cadence(r: redis.Redis) -> Dict[str, Any]:
+    """Check cron job cadence status."""
+    try:
+        # Import cron evidence checker
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from cron_evidence import check_cron_cadence
+
+        results = check_cron_cadence(r)
+
+        if "error" in results:
+            return {
+                "status": "❌",
+                "overall": "ERROR",
+                "detail": f"Cron check failed: {results['error']}",
+                "jobs": {},
+            }
+
+        overall = results.get("overall_status", "UNKNOWN")
+        jobs = results.get("jobs", {})
+
+        # Count jobs by status
+        pass_count = sum(1 for j in jobs.values() if j.get("status") == "PASS")
+        check_count = sum(1 for j in jobs.values() if j.get("status") == "CHECK")
+        fail_count = sum(1 for j in jobs.values() if j.get("status") == "FAIL")
+
+        # Build summary
+        if overall == "PASS":
+            detail = f"All {pass_count} jobs on schedule"
+        elif overall == "CHECK":
+            detail = f"{pass_count} OK, {check_count} behind"
+        else:
+            detail = f"{fail_count} jobs failing"
+
+        return {
+            "status": "✅"
+            if overall == "PASS"
+            else ("⚠️" if overall == "CHECK" else "❌"),
+            "overall": overall,
+            "detail": detail,
+            "jobs": jobs,
+        }
+
+    except Exception as e:
+        logger.error(f"Cron cadence check error: {e}")
+        return {
+            "status": "❌",
+            "overall": "ERROR",
+            "detail": f"Error: {e}",
+            "jobs": {},
+        }
+
+
 def format_hourly_message(
-    scheduler: Dict, kill_switch: Dict, daily_loss: Dict, metrics: Dict
+    scheduler: Dict,
+    kill_switch: Dict,
+    daily_loss: Dict,
+    metrics: Dict,
+    cron_cadence: Dict,
 ) -> str:
     """Format hourly health message."""
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
@@ -180,6 +236,7 @@ def format_hourly_message(
         f"**Scheduler:** {scheduler['status']} {scheduler['detail']}",
         f"**Kill Switch:** {kill_switch['status']} {kill_switch['detail']}",
         f"**Daily Loss:** {daily_loss['status']} {daily_loss['detail']}",
+        f"**Cron Cadence:** {cron_cadence['status']} {cron_cadence['detail']}",
         f"",
         f"**Metrics:** Signals: {metrics['signals']} | Outcomes: {metrics['outcomes']} | Keys: {metrics['keys']}",
         f"",
@@ -320,8 +377,21 @@ def main() -> int:
             logger.error(f"Metrics check failed: {e}")
             metrics = {"signals": 0, "outcomes": 0, "keys": 0}
 
+        try:
+            cron_cadence = check_cron_cadence(r)
+        except Exception as e:
+            logger.error(f"Cron cadence check failed: {e}")
+            cron_cadence = {
+                "status": "❌",
+                "overall": "ERROR",
+                "detail": f"Error: {e}",
+                "jobs": {},
+            }
+
         # Format message
-        message = format_hourly_message(scheduler, kill_switch, daily_loss, metrics)
+        message = format_hourly_message(
+            scheduler, kill_switch, daily_loss, metrics, cron_cadence
+        )
 
         # Try Discord, fallback to local
         discord_ok = post_to_discord(message)
@@ -330,6 +400,21 @@ def main() -> int:
             logger.info(f"Discord unavailable - logged to {log_path}")
         else:
             logger.info("Discord post successful")
+
+        # Write cron evidence
+        try:
+            from cron_evidence import write_cron_evidence
+
+            has_fail = (
+                scheduler.get("running") is False and kill_switch.get("armed") is False
+            )
+            status = "error" if has_fail else "success"
+            error_msg = (
+                "Scheduler not running and kill switch not armed" if has_fail else None
+            )
+            write_cron_evidence("hourly-health", status=status, error_message=error_msg)
+        except Exception as e:
+            logger.warning(f"Failed to write cron evidence: {e}")
 
         # Return non-zero if critical checks failed
         if scheduler.get("running") is False and kill_switch.get("armed") is False:

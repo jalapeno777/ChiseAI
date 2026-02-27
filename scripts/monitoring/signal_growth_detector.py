@@ -143,7 +143,24 @@ async def main():
     warning = check_signal_growth(r)
     if warning:
         await send_warning(warning)
+        # Write cron evidence with error status
+        try:
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            from cron_evidence import write_cron_evidence
+
+            write_cron_evidence("signal-growth", status="error", error_message=warning)
+        except Exception as e:
+            logger.warning(f"Failed to write cron evidence: {e}")
         return 1  # Return non-zero to indicate warning condition
+
+    # Write cron evidence with success status
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from cron_evidence import write_cron_evidence
+
+        write_cron_evidence("signal-growth", status="success")
+    except Exception as e:
+        logger.warning(f"Failed to write cron evidence: {e}")
 
     return 0
 
