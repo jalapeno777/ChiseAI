@@ -20,10 +20,12 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from discord_alerts.trade_notifier import TradeNotifier
     from execution.kill_switch.executor import KillSwitchExecutor
     from execution.paper.models import PaperOrder, PaperTradeResult
     from execution.paper.order_simulator import OrderSimulator
     from execution.paper.risk_enforcer import PaperRiskEnforcer
+    from execution.paper.signal_consumer import SignalConsumer
     from execution.telemetry.collector import ExecutionCollector
     from portfolio.paper_tracker import PaperPositionTracker
     from signal_generation.models import Signal
@@ -81,6 +83,8 @@ class PaperTradingOrchestrator:
         telemetry_collector: ExecutionCollector,
         kill_switch: KillSwitchExecutor,
         portfolio_value: float = 10000.0,
+        trade_notifier: TradeNotifier | None = None,
+        signal_consumer: SignalConsumer | None = None,
     ):
         """Initialize paper trading orchestrator.
 
@@ -92,6 +96,8 @@ class PaperTradingOrchestrator:
             telemetry_collector: Metrics collection
             kill_switch: Emergency kill switch
             portfolio_value: Starting portfolio value
+            trade_notifier: Optional Discord trade notifier for alerts
+            signal_consumer: Optional SignalConsumer for Redis signal bridge
         """
         self.signal_generator = signal_generator
         self.order_simulator = order_simulator
@@ -100,6 +106,8 @@ class PaperTradingOrchestrator:
         self.telemetry = telemetry_collector
         self.kill_switch = kill_switch
         self.portfolio_value = portfolio_value
+        self.trade_notifier = trade_notifier
+        self._signal_consumer = signal_consumer
 
         self._running = False
         self._signal_queue: asyncio.Queue[Signal] = asyncio.Queue()
@@ -129,6 +137,10 @@ class PaperTradingOrchestrator:
         # Start signal processing loop
         self._processing_task = asyncio.create_task(self._processing_loop())
 
+        # Start signal consumer if provided
+        if self._signal_consumer:
+            await self._signal_consumer.start()
+
         logger.info("PaperTradingOrchestrator started")
 
     async def stop(self) -> None:
@@ -141,11 +153,39 @@ class PaperTradingOrchestrator:
             with contextlib.suppress(asyncio.CancelledError):
                 await self._processing_task
 
+        # Stop signal consumer if running
+        if self._signal_consumer:
+            await self._signal_consumer.stop()
+
         # Stop telemetry
         if self.telemetry:
             await self.telemetry.stop()
 
         logger.info("PaperTradingOrchestrator stopped")
+
+    async def start_consumer(self) -> None:
+        """Start the signal consumer independently.
+
+        This allows starting the Redis signal bridge without restarting
+        the entire orchestrator.
+        """
+        if self._signal_consumer:
+            await self._signal_consumer.start()
+            logger.info("Signal consumer started")
+        else:
+            logger.warning("No signal consumer configured")
+
+    async def stop_consumer(self) -> None:
+        """Stop the signal consumer independently.
+
+        This allows stopping the Redis signal bridge without stopping
+        the entire orchestrator.
+        """
+        if self._signal_consumer:
+            await self._signal_consumer.stop()
+            logger.info("Signal consumer stopped")
+        else:
+            logger.warning("No signal consumer configured")
 
     async def _processing_loop(self) -> None:
         """Main signal processing loop."""
@@ -516,6 +556,32 @@ class PaperTradingOrchestrator:
 
         logger.debug(f"Opened position: {position.position_id}")
 
+        # Send Discord notification if notifier is configured
+        if self.trade_notifier:
+            try:
+                outcome = self.trade_notifier.create_outcome_from_paper_position(
+                    position=position,
+                    order=filled_order,
+                    signal_id=signal.signal_id,
+                )
+                result = await self.trade_notifier.send_trade_open_notification(outcome)
+
+                if result.success:
+                    logger.info(
+                        f"Discord trade open alert sent: position={position.position_id} "
+                        f"message_id={result.message_id}"
+                    )
+                else:
+                    logger.warning(
+                        f"Discord trade open alert failed: position={position.position_id} "
+                        f"error={result.error}"
+                    )
+            except Exception as e:
+                logger.error(
+                    f"Failed to send Discord trade open notification: {e}",
+                    exc_info=True,
+                )
+
         return position
 
     async def _record_trade(
@@ -588,6 +654,37 @@ class PaperTradingOrchestrator:
             self.portfolio_value += realized_pnl
             if self.telemetry:
                 await self.telemetry.set_equity(self.portfolio_value)
+
+            # Send Discord notification if notifier is configured
+            if self.trade_notifier:
+                try:
+                    outcome = self.trade_notifier.create_outcome_from_paper_position(
+                        position=position,
+                        signal_id=position.metadata.get("signal_id")
+                        if position.metadata
+                        else None,
+                        pnl=realized_pnl,
+                        exit_price=exit_price,
+                    )
+                    result = await self.trade_notifier.send_trade_close_notification(
+                        outcome
+                    )
+
+                    if result.success:
+                        logger.info(
+                            f"Discord trade close alert sent: position={position_id} "
+                            f"message_id={result.message_id}"
+                        )
+                    else:
+                        logger.warning(
+                            f"Discord trade close alert failed: position={position_id} "
+                            f"error={result.error}"
+                        )
+                except Exception as e:
+                    logger.error(
+                        f"Failed to send Discord trade close notification: {e}",
+                        exc_info=True,
+                    )
 
             return position, realized_pnl
 

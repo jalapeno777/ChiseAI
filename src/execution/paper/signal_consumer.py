@@ -38,7 +38,7 @@ class SignalConsumer:
     """
 
     DEFAULT_POLL_INTERVAL = 5.0  # seconds
-    REDIS_KEY_PATTERN = "bmad:chiseai:signals:*"
+    REDIS_KEY_PATTERN = "bmad:chiseai:signals:*:*:*:*:*"
     PROCESSED_SET_KEY = "bmad:chiseai:signals:processed"
 
     def __init__(
