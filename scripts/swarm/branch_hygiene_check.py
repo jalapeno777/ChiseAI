@@ -7,7 +7,7 @@ Analyzes branches and recommends cleanup actions.
 import argparse
 import json
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone
 
 from config.bootstrap import bootstrap, check_environment
 
@@ -135,7 +135,7 @@ def analyze_branches():
             last_date = datetime.fromisoformat(
                 info["last_commit"].replace("Z", "+00:00")
             )
-            days_inactive = (datetime.now() - last_date).days
+            days_inactive = (datetime.now(timezone.utc) - last_date).days
             if days_inactive > 30:
                 issues.append(f"No activity for {days_inactive} days")
 
@@ -274,6 +274,82 @@ def main():
     if args.dry_run:
         print("\n🧪 DRY RUN - No changes made")
         print("Would delete:", [b["name"] for b in categories["critical"]])
+
+    if args.auto_clean:
+        print("\n🧹 AUTO-CLEAN: Deleting merged branches...")
+        deleted = []
+        errors = []
+
+        for branch in categories["critical"]:
+            branch_name = branch["name"]
+            try:
+                # Safety check: only delete if merged to main
+                result = subprocess.run(
+                    ["git", "branch", "--merged", "main", "--list", branch_name],
+                    capture_output=True,
+                    text=True,
+                )
+                if branch_name not in result.stdout:
+                    errors.append(f"{branch_name}: Not confirmed as merged to main")
+                    continue
+
+                # Delete the local branch
+                result = subprocess.run(
+                    ["git", "branch", "-d", branch_name],
+                    capture_output=True,
+                    text=True,
+                )
+
+                if result.returncode == 0:
+                    deleted.append(branch_name)
+                    print(f"  ✅ Deleted: {branch_name}")
+
+                    # Log to Redis
+                    if REDIS_AVAILABLE:
+                        try:
+                            r = redis.Redis(
+                                host="host.docker.internal", port=6380, db=0
+                            )
+                            r.hset(
+                                "bmad:chiseai:branch_hygiene:deleted:merged",
+                                branch_name,
+                                json.dumps(
+                                    {
+                                        "deleted_at": datetime.now().isoformat(),
+                                        "reason": "auto_clean_merged",
+                                        "method": "safe_delete",
+                                    }
+                                ),
+                            )
+                        except Exception as e:
+                            print(f"    Warning: Could not log to Redis: {e}")
+                else:
+                    errors.append(f"{branch_name}: {result.stderr}")
+                    print(f"  ❌ Failed: {branch_name} - {result.stderr}")
+
+            except Exception as e:
+                errors.append(f"{branch_name}: {str(e)}")
+                print(f"  ❌ Error: {branch_name} - {str(e)}")
+
+        print(f"\n📊 Summary:")
+        print(f"  Deleted: {len(deleted)} branches")
+        print(f"  Errors: {len(errors)} branches")
+
+        if deleted:
+            print(f"\n  Deleted branches:")
+            for b in deleted:
+                print(f"    - {b}")
+
+        if errors:
+            print(f"\n  Errors encountered:")
+            for e in errors:
+                print(f"    - {e}")
+
+        # Policy confirmation
+        print(f"\n🔒 Policy Compliance:")
+        print(f"  --force flag used: {'YES' if args.force else 'NO (safe mode)'}")
+        print(f"  Only merged branches deleted: YES")
+        print(f"  Safety verification: Double-checked merge status before deletion")
 
 
 if __name__ == "__main__":

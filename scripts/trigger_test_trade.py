@@ -30,6 +30,7 @@ sys.path.insert(0, "src")
 from config.bootstrap import bootstrap
 from execution.kill_switch.executor import KillSwitchExecutor
 from execution.kill_switch.state import KillSwitchState
+from execution.outcome_capture.integration import OutcomeCaptureIntegration
 from execution.paper.orchestrator import PaperTradingOrchestrator
 from execution.paper.order_simulator import OrderSimulator
 from execution.paper.risk_enforcer import PaperRiskEnforcer
@@ -370,6 +371,9 @@ async def main() -> int:
         exporter = ExecutionTelemetryExporter()
         telemetry = ExecutionCollector(exporter=exporter)
 
+        # Create outcome capture integration for Discord alerts
+        outcome_capture = OutcomeCaptureIntegration()
+
         # Create orchestrator
         orchestrator = PaperTradingOrchestrator(
             signal_generator=signal_generator,
@@ -379,6 +383,7 @@ async def main() -> int:
             telemetry_collector=telemetry,
             kill_switch=kill_switch,
             portfolio_value=args.portfolio_value,
+            outcome_capture=outcome_capture,
         )
 
         # Create test trigger

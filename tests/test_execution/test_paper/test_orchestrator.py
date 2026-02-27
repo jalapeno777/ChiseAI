@@ -393,9 +393,9 @@ class TestLatencyRequirements:
         elapsed_ms = (time.perf_counter() - start) * 1000
 
         # Should be well under 500ms since mocks are instant
-        assert (
-            elapsed_ms < 500
-        ), f"Signal-to-order latency {elapsed_ms:.1f}ms exceeds 500ms"
+        assert elapsed_ms < 500, (
+            f"Signal-to-order latency {elapsed_ms:.1f}ms exceeds 500ms"
+        )
 
 
 class TestErrorHandling:
@@ -574,6 +574,128 @@ class TestPositionManagement:
         assert result is not None
         assert result[1] == 150.0  # Realized PnL
         assert orchestrator.portfolio_value == initial_value + 150.0
+
+    @pytest.mark.asyncio
+    async def test_close_position_calls_outcome_capture(
+        self, orchestrator, mock_components
+    ):
+        """Test that close_position calls outcome_capture.on_position_close()."""
+        from datetime import UTC, datetime
+        from decimal import Decimal
+
+        from execution.outcome_capture.integration import OutcomeCaptureResult
+
+        # Create a mock position with all required attributes
+        mock_position = MagicMock()
+        mock_position.position_id = "test-pos-close-001"
+        mock_position.symbol = "BTC/USDT"
+        mock_position.side = "long"
+        mock_position.entry_price = 50000.0
+        mock_position.quantity = 0.1
+        mock_position.opened_at = datetime.now(UTC)
+        mock_position.metadata = {
+            "signal_id": "test-signal-close-001",
+            "order_id": "test-order-close-001",
+            "correlation_id": "test-corr-close-001",
+            "leverage": 2.0,
+        }
+
+        mock_components["position_tracker"].close_position = AsyncMock(
+            return_value=(mock_position, 150.0)  # $150 profit
+        )
+
+        # Create mock outcome_capture
+        mock_outcome_capture = AsyncMock()
+        mock_outcome_capture.on_position_close = AsyncMock(
+            return_value=OutcomeCaptureResult(
+                success=True,
+                outcome_id="test-outcome-001",
+                correlation_id="test-corr-close-001",
+                discord_message_id="123456789",
+                persisted_to="postgres",
+            )
+        )
+        orchestrator.outcome_capture = mock_outcome_capture
+
+        # Close the position
+        result = await orchestrator.close_position(
+            "test-pos-close-001", 51000.0, reason="test_close"
+        )
+
+        # Verify outcome_capture was called
+        assert result is not None
+        mock_outcome_capture.on_position_close.assert_called_once()
+
+        # Verify call arguments
+        call_args = mock_outcome_capture.on_position_close.call_args
+        assert call_args.kwargs["exit_price"] == 51000.0
+        assert call_args.kwargs["realized_pnl"] == 150.0
+        assert call_args.kwargs["reason"] == "test_close"
+        assert call_args.kwargs["correlation_id"] == "test-corr-close-001"
+
+    @pytest.mark.asyncio
+    async def test_close_position_outcome_capture_error_does_not_block(
+        self, orchestrator, mock_components
+    ):
+        """Test that errors in outcome capture don't block position close."""
+        mock_position = MagicMock()
+        mock_position.position_id = "test-pos-close-002"
+        mock_position.symbol = "BTC/USDT"
+        mock_position.side = "short"
+        mock_position.entry_price = 50000.0
+        mock_position.quantity = 0.1
+        mock_position.opened_at = datetime.now(UTC)
+        mock_position.metadata = {}
+
+        mock_components["position_tracker"].close_position = AsyncMock(
+            return_value=(mock_position, -50.0)  # $50 loss
+        )
+
+        # Create mock outcome_capture that raises exception
+        mock_outcome_capture = AsyncMock()
+        mock_outcome_capture.on_position_close = AsyncMock(
+            side_effect=Exception("Discord notification failed")
+        )
+        orchestrator.outcome_capture = mock_outcome_capture
+
+        initial_value = orchestrator.portfolio_value
+
+        # Close the position - should not raise despite outcome_capture error
+        result = await orchestrator.close_position("test-pos-close-002", 49000.0)
+
+        # Verify position was still closed
+        assert result is not None
+        assert result[1] == -50.0
+        assert orchestrator.portfolio_value == initial_value - 50.0
+
+        # Verify outcome_capture was called
+        mock_outcome_capture.on_position_close.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_close_position_without_outcome_capture(
+        self, orchestrator, mock_components
+    ):
+        """Test that close_position works when outcome_capture is None."""
+        mock_position = MagicMock()
+        mock_position.position_id = "test-pos-close-003"
+        mock_position.symbol = "BTC/USDT"
+
+        mock_components["position_tracker"].close_position = AsyncMock(
+            return_value=(mock_position, 100.0)
+        )
+
+        # Ensure outcome_capture is None
+        orchestrator.outcome_capture = None
+
+        initial_value = orchestrator.portfolio_value
+
+        # Close the position - should work without outcome_capture
+        result = await orchestrator.close_position("test-pos-close-003", 50500.0)
+
+        # Verify position was closed
+        assert result is not None
+        assert result[1] == 100.0
+        assert orchestrator.portfolio_value == initial_value + 100.0
 
     @pytest.mark.asyncio
     async def test_opposite_signal_closes_existing_position(
@@ -1046,12 +1168,12 @@ class TestOrderSimulatorInterface:
         # Verify all required parameters were passed
         assert "symbol" in call_kwargs, "place_order should receive 'symbol' parameter"
         assert "side" in call_kwargs, "place_order should receive 'side' parameter"
-        assert (
-            "order_type" in call_kwargs
-        ), "place_order should receive 'order_type' parameter"
-        assert (
-            "quantity" in call_kwargs
-        ), "place_order should receive 'quantity' parameter"
+        assert "order_type" in call_kwargs, (
+            "place_order should receive 'order_type' parameter"
+        )
+        assert "quantity" in call_kwargs, (
+            "place_order should receive 'quantity' parameter"
+        )
         assert "price" in call_kwargs, "place_order should receive 'price' parameter"
 
         # Verify parameter values
@@ -1060,9 +1182,9 @@ class TestOrderSimulatorInterface:
         assert call_kwargs["order_type"] == "market"
         assert call_kwargs["quantity"] == 0.1
         # Price should now be set from market data (BURNIN-001 fix)
-        assert (
-            call_kwargs["price"] == 50000.0
-        ), f"Price should be set from market data, got {call_kwargs['price']}"
+        assert call_kwargs["price"] == 50000.0, (
+            f"Price should be set from market data, got {call_kwargs['price']}"
+        )
 
     @pytest.mark.asyncio
     async def test_process_signal_short_calls_place_order_with_sell_side(
@@ -1123,9 +1245,9 @@ class TestOrderSimulatorInterface:
         result = await orchestrator.process_signal(short_signal)
 
         assert result.status == TradeStatus.EXECUTED
-        assert (
-            call_kwargs["side"] == "sell"
-        ), "SHORT signals should result in 'sell' side"
+        assert call_kwargs["side"] == "sell", (
+            "SHORT signals should result in 'sell' side"
+        )
         assert call_kwargs["symbol"] == "ETH/USDT"
         assert call_kwargs["quantity"] == 0.5
 
@@ -1199,9 +1321,9 @@ class TestOrderPriceValidation:
         # Verify order was created with correct price
         assert result.status == TradeStatus.EXECUTED
         assert created_order is not None
-        assert (
-            created_order.price == 50000.0
-        ), f"Expected price=50000.0, got {created_order.price}"
+        assert created_order.price == 50000.0, (
+            f"Expected price=50000.0, got {created_order.price}"
+        )
 
     @pytest.mark.asyncio
     async def test_validate_order_receives_entry_price(
@@ -1254,12 +1376,12 @@ class TestOrderPriceValidation:
         result = await orchestrator.process_signal(mock_signal)
 
         assert result.status == TradeStatus.EXECUTED
-        assert (
-            "entry_price" in call_kwargs
-        ), "validate_order should receive 'entry_price' parameter"
-        assert (
-            call_kwargs["entry_price"] == expected_price
-        ), f"Expected entry_price={expected_price}, got {call_kwargs.get('entry_price')}"
+        assert "entry_price" in call_kwargs, (
+            "validate_order should receive 'entry_price' parameter"
+        )
+        assert call_kwargs["entry_price"] == expected_price, (
+            f"Expected entry_price={expected_price}, got {call_kwargs.get('entry_price')}"
+        )
 
     @pytest.mark.asyncio
     async def test_order_rejected_when_no_market_price(
@@ -1369,9 +1491,9 @@ class TestOrderPriceValidation:
         assert call_kwargs["quantity"] == quantity
         # Verify notional value would be correct
         notional_value = call_kwargs["price"] * call_kwargs["quantity"]
-        assert (
-            notional_value == expected_value
-        ), f"Expected value=${expected_value}, got ${notional_value}"
+        assert notional_value == expected_value, (
+            f"Expected value=${expected_value}, got ${notional_value}"
+        )
 
     @pytest.mark.asyncio
     async def test_create_order_raises_on_invalid_price(
@@ -1398,9 +1520,9 @@ class TestOrderPriceValidation:
             correlation_id="test-corr-valid",
         )
 
-        assert (
-            order.price == valid_price
-        ), f"Expected price={valid_price}, got {order.price}"
+        assert order.price == valid_price, (
+            f"Expected price={valid_price}, got {order.price}"
+        )
         assert order.quantity == 0.1
         assert order.symbol == mock_signal.token
 

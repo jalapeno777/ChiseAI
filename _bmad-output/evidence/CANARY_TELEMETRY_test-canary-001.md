@@ -4,7 +4,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Execution Timestamp** | 2026-02-14T13:34:51.626401Z |
+| **Execution Timestamp** | 2026-02-27T14:09:32.206443Z |
 | **Canary ID** | test-canary-001 |
 | **Strategy ID** | test-strategy-v1 |
 | **Mock Scenario** | passing |
@@ -78,7 +78,7 @@ All gates passed - ready for promotion
 # Promotion Packet: test-strategy-v1
 
 **Packet ID:** packet-test-canary-001  
-**Generated:** 2026-02-14T08:34:58  
+**Generated:** 2026-02-27T09:09:32  
 **Status:** PENDING
 
 ---
@@ -155,7 +155,7 @@ Canary completed with 0.49% max drawdown and 66.67% win rate over 7 days
 
 ```json
 {
-  "execution_timestamp": "2026-02-14T13:34:51.626401Z",
+  "execution_timestamp": "2026-02-27T14:09:32.206443Z",
   "canary_id": "test-canary-001",
   "strategy_id": "test-strategy-v1",
   "mock_scenario": "passing",
@@ -186,7 +186,7 @@ Canary completed with 0.49% max drawdown and 66.67% win rate over 7 days
     {
       "gate_name": "duration",
       "result": "pass",
-      "actual_value": 8.000034722222223,
+      "actual_value": 8.0,
       "threshold_value": 7.0,
       "message": "PASS: Duration 8.00 days meets required 7 days"
     }
@@ -225,7 +225,7 @@ Canary completed with 0.49% max drawdown and 66.67% win rate over 7 days
             "actual_value": 0.4854,
             "threshold_value": 5.0,
             "message": "PASS: Drawdown 0.49% within threshold 5.00%",
-            "timestamp": 1771076098
+            "timestamp": 1772201372
           },
           {
             "gate_name": "min_win_rate",
@@ -233,7 +233,7 @@ Canary completed with 0.49% max drawdown and 66.67% win rate over 7 days
             "actual_value": 66.6667,
             "threshold_value": 55.0,
             "message": "PASS: Win rate 66.67% meets threshold 55.00%",
-            "timestamp": 1771076098
+            "timestamp": 1772201372
           },
           {
             "gate_name": "duration",
@@ -241,7 +241,7 @@ Canary completed with 0.49% max drawdown and 66.67% win rate over 7 days
             "actual_value": 8.0,
             "threshold_value": 7.0,
             "message": "PASS: Duration 8.00 days meets required 7 days",
-            "timestamp": 1771076098
+            "timestamp": 1772201372
           }
         ],
         "final_status": "passed"
@@ -274,7 +274,7 @@ Canary completed with 0.49% max drawdown and 66.67% win rate over 7 days
         "- Verify portfolio state consistency"
       ]
     },
-    "generated_at": 1771076098,
+    "generated_at": 1772201372,
     "approved_at": null,
     "approved_by": null,
     "metadata": {}
