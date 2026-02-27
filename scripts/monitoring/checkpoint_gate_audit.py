@@ -159,16 +159,75 @@ def check_g4_kill_switch(r: redis.Redis):
         return {"gate": "G4", "status": "❌ FAIL", "detail": str(e)}
 
 
-def check_g5_daily_loss(r: redis.Redis):
-    """G5: Daily Loss Guard"""
+def check_g5_cron_cadence(r: redis.Redis):
+    """G5: Cron Job Cadence Evidence
+
+    Verifies that all cron jobs are executing on their expected cadence:
+    - pager (5m = 300s)
+    - signal-growth (30m = 1800s)
+    - hourly-health (60m = 3600s)
+    - checkpoint-audit (6h = 21600s)
+
+    Reports PASS if all jobs executed within expected interval + 20% grace.
+    Reports FAIL if any job missed more than 2 consecutive expected runs.
+    """
     try:
-        max_loss = r.hget("bmad:chiseai:daily_loss_limit", "max_loss_percent")
-        if max_loss:
-            return {"gate": "G5", "status": "✅ PASS", "detail": f"Limit: {max_loss}%"}
-        else:
-            return {"gate": "G5", "status": "⚠️ CHECK", "detail": "Not configured"}
+        # Import cron evidence checker
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from cron_evidence import check_cron_cadence, format_cron_status
+
+        results = check_cron_cadence(r)
+
+        if "error" in results:
+            return {
+                "gate": "G5",
+                "status": "❌ FAIL",
+                "detail": f"Cron cadence check failed: {results['error']}",
+            }
+
+        overall = results.get("overall_status", "UNKNOWN")
+        jobs = results.get("jobs", {})
+
+        # Build detail string
+        job_details = []
+        for job_name, job_data in jobs.items():
+            status = job_data.get("status", "UNKNOWN")
+            elapsed = job_data.get("elapsed_seconds")
+            missed = job_data.get("missed_count", 0)
+
+            if elapsed is not None:
+                if elapsed < 60:
+                    time_str = f"{elapsed}s"
+                elif elapsed < 3600:
+                    time_str = f"{elapsed // 60}m"
+                else:
+                    time_str = f"{elapsed // 3600}h"
+
+                if missed > 0:
+                    job_details.append(
+                        f"{job_name}:{status}({time_str},missed={missed})"
+                    )
+                else:
+                    job_details.append(f"{job_name}:{status}({time_str})")
+            else:
+                job_details.append(f"{job_name}:{status}(no data)")
+
+        detail = " | ".join(job_details) if job_details else "No cron data available"
+
+        # Map overall status to gate status
+        if overall == "PASS":
+            return {"gate": "G5", "status": "✅ PASS", "detail": detail}
+        elif overall == "CHECK":
+            return {"gate": "G5", "status": "⚠️ CHECK", "detail": detail}
+        else:  # FAIL or UNKNOWN
+            return {"gate": "G5", "status": "❌ FAIL", "detail": detail}
+
     except Exception as e:
-        return {"gate": "G5", "status": "❌ FAIL", "detail": str(e)}
+        return {
+            "gate": "G5",
+            "status": "❌ FAIL",
+            "detail": f"Error checking cron cadence: {str(e)[:100]}",
+        }
 
 
 def check_g6_bybit_connectivity():
@@ -289,7 +348,7 @@ def run_all_checks():
         check_g2_signal_cadence(r),
         check_g3_data_flow(r),
         check_g4_kill_switch(r),
-        check_g5_daily_loss(r),
+        check_g5_cron_cadence(r),
         check_g6_bybit_connectivity(),
         check_g7_observability(r),
         check_g8_pipeline(r),
@@ -391,6 +450,20 @@ async def main():
         print(f"Discord unavailable - logged to {path}")
     else:
         print("Discord post successful")
+
+    # Write cron evidence
+    try:
+        from cron_evidence import write_cron_evidence
+
+        has_fail = any("FAIL" in c["status"] for c in checks)
+        status = "error" if has_fail else "success"
+        error_msg = None
+        if has_fail:
+            failed_gates = [c["gate"] for c in checks if "FAIL" in c["status"]]
+            error_msg = f"Gates failed: {', '.join(failed_gates)}"
+        write_cron_evidence("checkpoint-audit", status=status, error_message=error_msg)
+    except Exception as e:
+        logger.warning(f"Failed to write cron evidence: {e}")
 
     # Return non-zero if any FAIL
     if any("FAIL" in c["status"] for c in checks):
