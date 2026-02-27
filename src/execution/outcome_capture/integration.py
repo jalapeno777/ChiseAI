@@ -9,6 +9,7 @@ For ST-FINAL-CLOSURE-001: Blocker Closure
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -17,6 +18,27 @@ if TYPE_CHECKING:
     from execution.paper.models import PaperTradeResult
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class OutcomeCaptureResult:
+    """Result of outcome capture operation.
+
+    Attributes:
+        success: Whether capture succeeded
+        outcome_id: Unique outcome identifier
+        correlation_id: Correlation ID for tracing
+        discord_message_id: Discord message ID if alerted
+        persisted_to: Storage backend used
+        errors: List of errors if any
+    """
+
+    success: bool
+    outcome_id: str | None = None
+    correlation_id: str | None = None
+    discord_message_id: str | None = None
+    persisted_to: str | None = None
+    errors: list[str] | None = None
 
 
 class OutcomeCaptureIntegration:
