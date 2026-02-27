@@ -85,6 +85,56 @@ def get_redis_client() -> Any | None:
         return None
 
 
+def get_live_prices(redis_client: Any | None = None) -> dict[str, float]:
+    """Get live prices from Redis paper:market:prices.
+
+    Falls back to default prices if Redis unavailable or prices not found.
+
+    Returns:
+        Dictionary with symbol -> price mapping
+    """
+    defaults = {
+        "BTCUSDT": 85000.0,
+        "ETHUSDT": 3200.0,
+    }
+
+    try:
+        client = redis_client or get_redis_client()
+        if not client:
+            logger.warning("Redis unavailable, using default prices")
+            return defaults
+
+        # Try to get prices from Redis
+        prices = client.hgetall("paper:market:prices")
+        if not prices:
+            logger.warning("No prices in Redis, using defaults")
+            return defaults
+
+        # Convert to standard symbol format and float values
+        live_prices = {}
+        for symbol, price_str in prices.items():
+            try:
+                # Convert BTC/USDT -> BTCUSDT format
+                std_symbol = symbol.replace("/", "")
+                live_prices[std_symbol] = float(price_str)
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Invalid price for {symbol}: {price_str}, error: {e}")
+                continue
+
+        # Ensure we have at least BTC and ETH
+        if "BTCUSDT" not in live_prices:
+            live_prices["BTCUSDT"] = defaults["BTCUSDT"]
+        if "ETHUSDT" not in live_prices:
+            live_prices["ETHUSDT"] = defaults["ETHUSDT"]
+
+        logger.debug(f"Live prices: {live_prices}")
+        return live_prices
+
+    except Exception as e:
+        logger.warning(f"Failed to get live prices: {e}, using defaults")
+        return defaults
+
+
 def write_heartbeat() -> bool:
     """Write heartbeat to Redis and status file."""
     try:
@@ -394,13 +444,19 @@ def main():
     win_count = 8
     loss_count = 3
 
-    btc_price = 46000.0
-    eth_price = 2900.0
+    # Get live prices from Redis
+    live_prices = get_live_prices()
+    btc_price = live_prices.get("BTCUSDT", 85000.0)
+    eth_price = live_prices.get("ETHUSDT", 3200.0)
+    logger.info(
+        f"Initial prices from Redis: BTC=${btc_price:.2f}, ETH=${eth_price:.2f}"
+    )
 
     iteration = 0
     success_count = 0
     error_count = 0
     last_heartbeat = time.time()
+    last_price_update = time.time()
 
     try:
         while not shutdown_requested:
@@ -408,12 +464,28 @@ def main():
             logger.debug(f"Emission iteration {iteration}")
 
             try:
-                # Add some randomness to simulate live trading
+                # Refresh live prices every 30 seconds (not every iteration)
+                current_time = time.time()
+                if current_time - last_price_update >= 30:
+                    live_prices = get_live_prices()
+                    new_btc = live_prices.get("BTCUSDT", btc_price)
+                    new_eth = live_prices.get("ETHUSDT", eth_price)
+                    if new_btc != btc_price or new_eth != eth_price:
+                        logger.info(
+                            f"Price update: BTC=${new_btc:.2f} (was ${btc_price:.2f}), "
+                            f"ETH=${new_eth:.2f} (was ${eth_price:.2f})"
+                        )
+                    btc_price = new_btc
+                    eth_price = new_eth
+                    last_price_update = current_time
+
+                # Add some randomness to simulate live trading (small % of price)
                 portfolio_value += random.uniform(-50, 100)
                 total_pnl += random.uniform(-10, 20)
                 unrealized_pnl += random.uniform(-5, 10)
-                btc_price += random.uniform(-200, 200)
-                eth_price += random.uniform(-20, 20)
+                # Small random walk (0.1-0.5% of price) instead of fixed amounts
+                btc_price += btc_price * random.uniform(-0.005, 0.005)
+                eth_price += eth_price * random.uniform(-0.005, 0.005)
 
                 # Emit portfolio metrics
                 success = emit_portfolio_metrics(
