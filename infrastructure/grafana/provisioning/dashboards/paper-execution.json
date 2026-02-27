@@ -146,7 +146,7 @@
             "type": "influxdb",
             "uid": "chiseai-influxdb"
           },
-          "query": "from(bucket: \"${influxdb_bucket}\")\n  |\u003e range(start: -1h)\n  |\u003e filter(fn: (r) =\u003e r._measurement == \"kill_switch\")\n  |\u003e filter(fn: (r) =\u003e r._field == \"state\")\n  |\u003e filter(fn: (r) =\u003e r.environment == \"${environment}\")\n  |\u003e last()",
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"kill_switch\")\n  |> filter(fn: (r) => r._field == \"state\")\n  |> filter(fn: (r) => r.environment == \"${environment}\")\n  |> last()",
           "refId": "A"
         }
       ],
@@ -858,7 +858,7 @@
             "type": "influxdb",
             "uid": "chiseai-influxdb"
           },
-          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -7d)\n  |> filter(fn: (r) => r._measurement == \"canary_deployment\")\n  |> filter(fn: (r) => r._field == \"status\")\n  |> filter(fn: (r) => r.environment == \"${environment}\")\n  |> last()",
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -7d)\n  |> filter(fn: (r) => r._measurement == \"canary_deployment\")\n  |> filter(fn: (r) => r.environment == \"${environment}\")\n  |> filter(fn: (r) => r._field == \"allocation_pct\")\n  |> filter(fn: (r) => exists r.status)\n  |> last()\n  |> keep(columns: [\"_time\", \"status\"])\n  |> rename(columns: {status: \"_value\"})",
           "refId": "A"
         }
       ],
@@ -1124,7 +1124,7 @@
             "type": "influxdb",
             "uid": "chiseai-influxdb"
           },
-          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -7d)\n  |> filter(fn: (r) => r._measurement == \"canary_gate_check\")\n  |> filter(fn: (r) => r._field == \"gate_name\" or r._field == \"result\" or r._field == \"actual_value\" or r._field == \"threshold_value\" or r._field == \"message\")\n  |> filter(fn: (r) => r.environment == \"${environment}\")\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> last()\n  |> keep(columns: [\"gate_name\", \"result\", \"actual_value\", \"threshold_value\", \"message\"])\n  |> rename(columns: {gate_name: \"Gate\", result: \"Result\", actual_value: \"Actual\", threshold_value: \"Threshold\", message: \"Message\"})",
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -7d)\n  |> filter(fn: (r) => r._measurement == \"canary_gate_check\")\n  |> filter(fn: (r) => r._field == \"gate_name\" or r._field == \"result\" or r._field == \"actual_value\" or r._field == \"threshold_value\" or r._field == \"message\")\n  |> filter(fn: (r) => r.environment == \"${environment}\")\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> group()\n  |> sort(columns: [\"_time\"], desc: true)\n  |> limit(n: 20)\n  |> keep(columns: [\"gate_name\", \"result\", \"actual_value\", \"threshold_value\", \"message\"])\n  |> rename(columns: {gate_name: \"Gate\", result: \"Result\", actual_value: \"Actual\", threshold_value: \"Threshold\", message: \"Message\"})",
           "refId": "A"
         }
       ],
@@ -1322,7 +1322,7 @@
             "type": "influxdb",
             "uid": "chiseai-influxdb"
           },
-          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r._measurement == \"canary_deployment\")\n  |> filter(fn: (r) => r._field == \"canary_id\" or r._field == \"strategy_id\" or r._field == \"allocation_pct\" or r._field == \"start_time\" or r._field == \"total_trades\")\n  |> filter(fn: (r) => r.environment == \"${environment}\")\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> keep(columns: [\"canary_id\", \"strategy_id\", \"allocation_pct\", \"start_time\", \"total_trades\"])\n  |> rename(columns: {canary_id: \"Canary ID\", strategy_id: \"Strategy ID\", allocation_pct: \"Allocation %\", start_time: \"Start Time\", total_trades: \"Trades\"})",
+          "query": "from(bucket: \"${influxdb_bucket}\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r._measurement == \"canary_deployment\")\n  |> filter(fn: (r) => r._field == \"canary_id\" or r._field == \"strategy_id\" or r._field == \"allocation_pct\" or r._field == \"start_time\")\n  |> filter(fn: (r) => r.environment == \"${environment}\")\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> group()\n  |> sort(columns: [\"_time\"], desc: true)\n  |> limit(n: 20)\n  |> keep(columns: [\"canary_id\", \"strategy_id\", \"allocation_pct\", \"start_time\"])\n  |> rename(columns: {canary_id: \"Canary ID\", strategy_id: \"Strategy ID\", allocation_pct: \"Allocation %\", start_time: \"Start Time\"})",
           "refId": "A"
         }
       ],
