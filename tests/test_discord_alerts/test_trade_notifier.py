@@ -625,3 +625,271 @@ class TestSignalOutcomeIntegration:
 
         assert outcome_buy.direction == "LONG"
         assert outcome_sell.direction == "SHORT"
+
+
+class TestWebhookURLRouting:
+    """Test suite for webhook URL routing (DISCORD-TRADING-001)."""
+
+    @pytest.fixture
+    def notifier(self) -> TradeNotifier:
+        """Create a TradeNotifier instance for testing."""
+        return TradeNotifier(
+            webhook_url="https://discord.com/api/webhooks/test",
+            trading_channel_id="1444447985378398459",
+            max_retries=3,
+            retry_base_delay=0.1,
+            retry_max_delay=1.0,
+        )
+
+    def test_trading_webhook_url_priority(self) -> None:
+        """Test that DISCORD_TRADING_WEBHOOK_URL takes priority over DISCORD_WEBHOOK_URL."""
+        with patch.dict(
+            os.environ,
+            {
+                "DISCORD_TRADING_WEBHOOK_URL": "https://discord.com/api/webhooks/trading",
+                "DISCORD_WEBHOOK_URL": "https://discord.com/api/webhooks/general",
+            },
+            clear=True,
+        ):
+            notifier = TradeNotifier()
+            assert notifier.webhook_url == "https://discord.com/api/webhooks/trading"
+
+    def test_fallback_to_discord_webhook_url(self) -> None:
+        """Test fallback to DISCORD_WEBHOOK_URL when DISCORD_TRADING_WEBHOOK_URL is not set."""
+        with patch.dict(
+            os.environ,
+            {
+                "DISCORD_WEBHOOK_URL": "https://discord.com/api/webhooks/general",
+            },
+            clear=True,
+        ):
+            notifier = TradeNotifier()
+            assert notifier.webhook_url == "https://discord.com/api/webhooks/general"
+
+    def test_explicit_webhook_url_overrides_env(self) -> None:
+        """Test that explicit webhook_url parameter overrides environment variables."""
+        with patch.dict(
+            os.environ,
+            {
+                "DISCORD_TRADING_WEBHOOK_URL": "https://discord.com/api/webhooks/trading",
+                "DISCORD_WEBHOOK_URL": "https://discord.com/api/webhooks/general",
+            },
+            clear=True,
+        ):
+            notifier = TradeNotifier(
+                webhook_url="https://discord.com/api/webhooks/explicit"
+            )
+            assert notifier.webhook_url == "https://discord.com/api/webhooks/explicit"
+
+
+class TestTestTradeLabeling:
+    """Test suite for test trade labeling (DISCORD-TRADING-001)."""
+
+    @pytest.fixture
+    def notifier(self) -> TradeNotifier:
+        """Create a TradeNotifier instance for testing."""
+        return TradeNotifier(
+            webhook_url="https://discord.com/api/webhooks/test",
+            trading_channel_id="1444447985378398459",
+            max_retries=3,
+            retry_base_delay=0.1,
+            retry_max_delay=1.0,
+        )
+
+    def test_open_embed_test_prefix(self, notifier: TradeNotifier) -> None:
+        """Test that [TEST] prefix is added to open trade title when is_test=True."""
+        outcome = SignalOutcome(
+            symbol="BTCUSDT",
+            token="BTC",
+            side="Buy",
+            direction="LONG",
+            entry_price=Decimal("50000"),
+            position_size=Decimal("0.1"),
+            is_test=True,
+        )
+
+        embed = notifier._build_open_embed(outcome)
+        assert "[TEST]" in embed["title"]
+        assert "Trade Opened: BTC" in embed["title"]
+
+    def test_open_embed_no_test_prefix(self, notifier: TradeNotifier) -> None:
+        """Test that [TEST] prefix is NOT added when is_test=False."""
+        outcome = SignalOutcome(
+            symbol="BTCUSDT",
+            token="BTC",
+            side="Buy",
+            direction="LONG",
+            entry_price=Decimal("50000"),
+            position_size=Decimal("0.1"),
+            is_test=False,
+        )
+
+        embed = notifier._build_open_embed(outcome)
+        assert "[TEST]" not in embed["title"]
+        assert "Trade Opened: BTC" in embed["title"]
+
+    def test_close_embed_test_prefix(self, notifier: TradeNotifier) -> None:
+        """Test that [TEST] prefix is added to close trade title when is_test=True."""
+        outcome = SignalOutcome(
+            symbol="BTCUSDT",
+            token="BTC",
+            side="Buy",
+            direction="LONG",
+            entry_price=Decimal("50000"),
+            exit_price=Decimal("51000"),
+            position_size=Decimal("0.1"),
+            pnl=Decimal("100"),
+            status=SignalOutcomeStatus.CLOSED,
+            is_test=True,
+        )
+
+        embed = notifier._build_close_embed(outcome)
+        assert "[TEST]" in embed["title"]
+        assert "Trade Closed: BTC" in embed["title"]
+
+    def test_close_embed_no_test_prefix(self, notifier: TradeNotifier) -> None:
+        """Test that [TEST] prefix is NOT added when is_test=False."""
+        outcome = SignalOutcome(
+            symbol="BTCUSDT",
+            token="BTC",
+            side="Buy",
+            direction="LONG",
+            entry_price=Decimal("50000"),
+            exit_price=Decimal("51000"),
+            position_size=Decimal("0.1"),
+            pnl=Decimal("100"),
+            status=SignalOutcomeStatus.CLOSED,
+            is_test=False,
+        )
+
+        embed = notifier._build_close_embed(outcome)
+        assert "[TEST]" not in embed["title"]
+        assert "Trade Closed: BTC" in embed["title"]
+
+    def test_open_embed_test_indicator_in_footer(self, notifier: TradeNotifier) -> None:
+        """Test that test indicator emoji is in footer for test trades."""
+        outcome = SignalOutcome(
+            symbol="BTCUSDT",
+            token="BTC",
+            side="Buy",
+            direction="LONG",
+            entry_price=Decimal("50000"),
+            position_size=Decimal("0.1"),
+            is_test=True,
+        )
+
+        embed = notifier._build_open_embed(outcome)
+        assert "🧪" in embed["footer"]["text"]
+
+    def test_close_embed_test_indicator_in_footer(
+        self, notifier: TradeNotifier
+    ) -> None:
+        """Test that test indicator emoji is in footer for test trades."""
+        outcome = SignalOutcome(
+            symbol="BTCUSDT",
+            token="BTC",
+            side="Buy",
+            direction="LONG",
+            entry_price=Decimal("50000"),
+            exit_price=Decimal("51000"),
+            position_size=Decimal("0.1"),
+            pnl=Decimal("100"),
+            status=SignalOutcomeStatus.CLOSED,
+            is_test=True,
+        )
+
+        embed = notifier._build_close_embed(outcome)
+        assert "🧪" in embed["footer"]["text"]
+
+
+class TestDurationField:
+    """Test suite for duration field in close notifications."""
+
+    @pytest.fixture
+    def notifier(self) -> TradeNotifier:
+        """Create a TradeNotifier instance for testing."""
+        return TradeNotifier(
+            webhook_url="https://discord.com/api/webhooks/test",
+            trading_channel_id="1444447985378398459",
+            max_retries=3,
+            retry_base_delay=0.1,
+            retry_max_delay=1.0,
+        )
+
+    def test_duration_field_present_in_close_embed(
+        self,
+        notifier: TradeNotifier,
+    ) -> None:
+        """Test that duration field is present in close embed."""
+        from datetime import timedelta
+
+        entry_time = datetime.now(UTC)
+        exit_time = entry_time + timedelta(hours=2, minutes=30)
+
+        outcome = SignalOutcome(
+            symbol="BTCUSDT",
+            token="BTC",
+            side="Buy",
+            direction="LONG",
+            entry_price=Decimal("50000"),
+            exit_price=Decimal("51000"),
+            position_size=Decimal("0.1"),
+            pnl=Decimal("100"),
+            status=SignalOutcomeStatus.CLOSED,
+            entry_time=entry_time,
+            exit_time=exit_time,
+        )
+
+        embed = notifier._build_close_embed(outcome)
+        field_names = [f["name"] for f in embed["fields"]]
+        assert any("Duration" in name for name in field_names)
+
+    def test_duration_format_hours_minutes(
+        self,
+        notifier: TradeNotifier,
+    ) -> None:
+        """Test that duration is formatted correctly for hours and minutes."""
+        from datetime import timedelta
+
+        entry_time = datetime.now(UTC)
+        exit_time = entry_time + timedelta(hours=2, minutes=30)
+
+        outcome = SignalOutcome(
+            symbol="BTCUSDT",
+            token="BTC",
+            side="Buy",
+            direction="LONG",
+            entry_price=Decimal("50000"),
+            exit_price=Decimal("51000"),
+            position_size=Decimal("0.1"),
+            pnl=Decimal("100"),
+            status=SignalOutcomeStatus.CLOSED,
+            entry_time=entry_time,
+            exit_time=exit_time,
+        )
+
+        embed = notifier._build_close_embed(outcome)
+        duration_field = next(f for f in embed["fields"] if "Duration" in f["name"])
+        assert "2h 30m" in duration_field["value"]
+
+    def test_duration_not_present_when_exit_time_missing(
+        self,
+        notifier: TradeNotifier,
+    ) -> None:
+        """Test that duration field is not present when exit_time is missing."""
+        outcome = SignalOutcome(
+            symbol="BTCUSDT",
+            token="BTC",
+            side="Buy",
+            direction="LONG",
+            entry_price=Decimal("50000"),
+            position_size=Decimal("0.1"),
+            pnl=Decimal("100"),
+            status=SignalOutcomeStatus.CLOSED,
+            entry_time=datetime.now(UTC),
+            exit_time=None,
+        )
+
+        embed = notifier._build_close_embed(outcome)
+        field_names = [f["name"] for f in embed["fields"]]
+        assert not any("Duration" in name for name in field_names)
