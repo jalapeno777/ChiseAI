@@ -17,6 +17,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 
@@ -29,6 +30,7 @@ class Config:
     default_base: str
     protected: set[str]
     allowed_authors: set[str]
+    max_branch_age_min: int
     dry_run: bool
 
 
@@ -45,6 +47,7 @@ def _cfg(dry_run: bool) -> Config:
         default_base=os.getenv("CHISE_AUTOPR_BASE", "main"),
         protected={x.strip() for x in protected_raw.split(",") if x.strip()},
         allowed_authors={x.strip() for x in authors_raw.split(",") if x.strip()},
+        max_branch_age_min=int(os.getenv("CHISE_AUTOPR_MAX_BRANCH_AGE_MIN", "30")),
         dry_run=dry_run,
     )
 
@@ -106,15 +109,36 @@ def _open_pr_for_head(cfg: Config, head_branch: str) -> dict[str, Any] | None:
     return None
 
 
+def _any_pr_for_head(cfg: Config, head_branch: str) -> dict[str, Any] | None:
+    out = _safe_req_json(cfg, "GET", f"{_repo_path(cfg)}/pulls?state=all")
+    prs = out if isinstance(out, list) else []
+    full_head = f"{cfg.owner}:{head_branch}"
+    for pr in prs:
+        head_ref = (pr.get("head") or {}).get("ref")
+        head_full = (pr.get("head") or {}).get("label")
+        if head_ref == head_branch or head_full == full_head:
+            return pr
+    return None
+
+
 def ensure_prs(cfg: Config) -> int:
     created = 0
+    cutoff = datetime.now(UTC) - timedelta(minutes=cfg.max_branch_age_min)
     for branch in list_branches(cfg):
         name = str(branch.get("name", "")).strip()
         if not name or name in cfg.protected:
             continue
         if name.startswith("dependabot/"):
             continue
-        if _open_pr_for_head(cfg, name):
+        ts_raw = str(((branch.get("commit") or {}).get("timestamp") or "")).strip()
+        if ts_raw:
+            try:
+                ts = datetime.fromisoformat(ts_raw.replace("Z", "+00:00")).astimezone(UTC)
+                if ts < cutoff:
+                    continue
+            except ValueError:
+                pass
+        if _any_pr_for_head(cfg, name):
             continue
 
         title = f"REPO-AUTO-PR-001 {name}"
