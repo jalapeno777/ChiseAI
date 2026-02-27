@@ -349,6 +349,50 @@ def emit_portfolio_snapshot(
     return emit_line_protocol(line)
 
 
+def emit_order(
+    symbol: str = "BTCUSDT",
+    side: str = "buy",
+    price: float = 45000.0,
+    size: float = 0.1,
+) -> bool:
+    """Emit order metrics to InfluxDB."""
+    order_id = str(uuid.uuid4())[:8]
+    timestamp = f"{int(time.time())}000000000"
+
+    line = (
+        f"orders,environment=paper,symbol={symbol},side={side} "
+        f'order_id="{order_id}",'
+        f"price={price:.2f},"
+        f"size={size:.4f},"
+        f"timestamp={int(time.time())}.0 "
+        f"{timestamp}"
+    )
+
+    return emit_line_protocol(line)
+
+
+def emit_fill(
+    symbol: str = "BTCUSDT",
+    side: str = "buy",
+    price: float = 45000.0,
+    size: float = 0.1,
+) -> bool:
+    """Emit fill metrics to InfluxDB."""
+    fill_id = str(uuid.uuid4())[:8]
+    timestamp = f"{int(time.time())}000000000"
+
+    line = (
+        f"fills,environment=paper,symbol={symbol},side={side} "
+        f'fill_id="{fill_id}",'
+        f"price={price:.2f},"
+        f"size={size:.4f},"
+        f"timestamp={int(time.time())}.0 "
+        f"{timestamp}"
+    )
+
+    return emit_line_protocol(line)
+
+
 def emit_kill_switch(state: str = "ARMED") -> bool:
     """Emit kill_switch metrics."""
     timestamp = f"{int(time.time())}000000000"
@@ -535,7 +579,7 @@ def main():
                     else:
                         error_count += 1
 
-                # Occasionally emit a trade
+                # Occasionally emit a trade, order, and fill
                 if iteration % 5 == 0:
                     symbol = random.choice(["BTCUSDT", "ETHUSDT"])
                     side = random.choice(["buy", "sell"])
@@ -544,6 +588,20 @@ def main():
                     confidence = random.uniform(0.70, 0.95)
 
                     success = emit_trade(symbol, side, 0.1, price, pnl, confidence)
+                    if success:
+                        success_count += 1
+                    else:
+                        error_count += 1
+
+                    # Emit order for Order/Fill tracking
+                    success = emit_order(symbol, side, price, 0.1)
+                    if success:
+                        success_count += 1
+                    else:
+                        error_count += 1
+
+                    # Emit fill for Order/Fill tracking
+                    success = emit_fill(symbol, side, price, 0.1)
                     if success:
                         success_count += 1
                     else:
