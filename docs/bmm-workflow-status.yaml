@@ -5,8 +5,16 @@
 metadata:
   project_name: ChiseAI
   version: "2.5.3"
-  last_updated: "2026-02-26T23:00:00Z"
+  last_updated: "2026-02-26T23:45:00Z"
   recent_changes:
+    - timestamp: "2026-02-26T23:45:00Z"
+      actor: jarvis
+      action: st-auto-control-enforcement-wired
+      description: "ST-AUTO-CONTROL-001: Status write gate enforcement now integrated into CI pipeline. This closes the control-story gap by adding active validation for EP-AUTO-GIT merge/status claims."
+      story_id: ST-AUTO-CONTROL-001
+      epic_id: EP-AUTO-GIT-001
+      correction_type: enforcement_wiring
+      note: "Actual enforcement integration completed. status_write_gate.py now runs in CI to validate EP-AUTO-GIT entries with fail-closed behavior for unverifiable claims."
     - timestamp: "2026-02-26T23:00:00Z"
       actor: jarvis
       action: ep-auto-git-rebaseline
