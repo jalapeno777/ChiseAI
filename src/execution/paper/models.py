@@ -381,6 +381,51 @@ class PaperTradeResult:
         if self.reject_reason is None:
             self.reject_reason = []
 
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        from signal_generation.models import Signal
+
+        signal_dict = {}
+        if self.signal:
+            if isinstance(self.signal, Signal):
+                signal_dict = {
+                    "signal_id": self.signal.signal_id,
+                    "token": self.signal.token,
+                    "direction": self.signal.direction.value
+                    if hasattr(self.signal.direction, "value")
+                    else str(self.signal.direction),
+                    "confidence": self.signal.confidence,
+                }
+            else:
+                signal_dict = {"type": str(type(self.signal))}
+
+        position_dict = None
+        if self.position:
+            if hasattr(self.position, "to_dict"):
+                position_dict = self.position.to_dict()
+            elif hasattr(self.position, "__dict__"):
+                position_dict = {
+                    "position_id": getattr(self.position, "position_id", None),
+                    "symbol": getattr(self.position, "symbol", None),
+                    "side": getattr(self.position, "side", None),
+                    "entry_price": getattr(self.position, "entry_price", None),
+                    "quantity": getattr(self.position, "quantity", None),
+                }
+
+        return {
+            "signal": signal_dict,
+            "status": self.status.value
+            if hasattr(self.status, "value")
+            else str(self.status),
+            "order": self.order.to_dict() if self.order else None,
+            "position": position_dict,
+            "reject_reason": [str(r) for r in self.reject_reason]
+            if self.reject_reason
+            else [],
+            "latency_ms": self.latency_ms,
+            "correlation_id": self.correlation_id,
+        }
+
 
 @dataclass
 class RiskAssessment:

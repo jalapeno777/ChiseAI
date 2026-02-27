@@ -9,6 +9,14 @@ metadata:
   recent_changes:
     - timestamp: "2026-02-27T00:00:00Z"
       actor: jarvis
+      action: infra-cleanup-scope-correction
+      description: "EP-INFRA-CLEANUP-001 story scope corrected to match user requests: Taiga removal, container governance, workflow archiving, CI remediation"
+      epic_id: EP-INFRA-CLEANUP-001
+      story_ids: [ST-TAIGA-001, ST-CONTAINER-001, ST-WORKFLOW-001, ST-CI-001]
+      correction_type: scope_clarification
+      note: "This correction supersedes the earlier generic party-mode wording. Stories now explicitly map to: 1) Taiga removal, 2) Container governance, 3) Workflow archiving, 4) CI remediation"
+    - timestamp: "2026-02-27T00:00:00Z"
+      actor: jarvis
       action: party-mode-plan-documented
       description: "Party-mode approved infrastructure cleanup plan documented. EP-INFRA-CLEANUP-001 epic with 4 planned stories added to backlog. Execution pending prioritization."
       epic_id: EP-INFRA-CLEANUP-001
@@ -5172,58 +5180,64 @@ launch_stories:
 
   # EP-INFRA-CLEANUP-001: Infrastructure Cleanup & Hardening Sprint (4 stories)
   - id: ST-TAIGA-001
-    title: Taiga Project Cleanup and Reorganization
-    epic_id: EP-INFRA-CLEANUP-001
-    sprint_id: INFRA-CLEANUP-001
-    status: planned
-    validation_status: planned
-    story_points: TBD
-    priority: P1-HIGH
-    owner_role: merlin
-    description: Clean up Taiga project by removing obsolete user stories, consolidating duplicates, and reorganizing remaining stories to match current workflow state
-    acceptance_criteria:
-      - All deprecated stories marked and archived
-      - Duplicate stories consolidated with clear ownership
-      - Active stories reflect current repo state
-      - Taiga sync validated and working
-    dependency_notes: None
-
-  - id: ST-CONTAINER-001
-    title: Container Governance Audit and Enforcement
+    title: Remove Taiga Entirely from Infrastructure
     epic_id: EP-INFRA-CLEANUP-001
     sprint_id: INFRA-CLEANUP-001
     status: planned
     validation_status: planned
     story_points: TBD
     priority: P0-CRITICAL
-    owner_role: jarvis
-    description: Audit all running containers for compliance with chiseai network governance, enforce Docker label standards, and document exceptions
+    owner_role: merlin
+    description: Complete removal of Taiga from the infrastructure including all containers, Terraform definitions, and ensuring no project dependencies remain on Taiga services
     acceptance_criteria:
-      - All ChiseAI containers on chiseai network verified
-      - project=chiseai label applied to all containers
-      - Protected containers inventory documented
-      - Pre-commit hook validation confirmed working
-    dependency_notes: Depends on infrastructure/terraform state
+      - All Taiga containers (taiga-front, taiga-back, taiga-events, taiga-postgres, taiga-redis, taiga-rabbitmq) removed from Terraform
+      - Terraform state cleaned of all Taiga resources
+      - Verification that no project code or services depend on Taiga APIs or data
+      - All documentation referencing Taiga updated or removed
+      - Docker volumes and networks associated with Taiga cleaned up
+      - Confirmation that removal does not impact other chiseai network services
+    dependency_notes: Requires coordination with any teams using Taiga for project tracking; backup any critical data before removal
 
-  - id: ST-WORKFLOW-001
-    title: BMAD Workflow Hardening - Documentation Sync
+  - id: ST-CONTAINER-001
+    title: Container Governance - Bring Out-of-Category Containers Under Terraform
     epic_id: EP-INFRA-CLEANUP-001
     sprint_id: INFRA-CLEANUP-001
     status: planned
     validation_status: planned
     story_points: TBD
     priority: P1-HIGH
-    owner_role: senior-dev
-    description: Synchronize all workflow documentation with actual implementation, update AGENTS.md references, and close documentation gaps identified in party mode
+    owner_role: jarvis
+    description: Identify all containers not managed by Terraform (e.g., chiseai-daily-summary) and bring them under proper Terraform management with chiseai network and labels
     acceptance_criteria:
-      - AGENTS.md matches actual agent capabilities
-      - All workflow commands documented with examples
-      - Decision records updated with party-mode outcomes
-      - Validation registry synced with workflow-status
+      - Inventory of all running containers created with Terraform vs non-Terraform classification
+      - All non-Terraform ChiseAI containers identified (including chiseai-daily-summary)
+      - Terraform configurations created/updated for all out-of-category containers
+      - All containers properly connected to chiseai network
+      - All containers have project=chiseai label applied
+      - Validation that pre-commit hook passes after migration
+    dependency_notes: Depends on infrastructure/terraform state; may require state import for existing containers
+
+  - id: ST-WORKFLOW-001
+    title: Archive Workflow Status Entries Older Than 4 Days
+    epic_id: EP-INFRA-CLEANUP-001
+    sprint_id: INFRA-CLEANUP-001
+    status: planned
+    validation_status: planned
+    story_points: TBD
+    priority: P2-MEDIUM
+    owner_role: senior-dev
+    description: Archive workflow-status entries older than 4 days if fully completed; maintain archive in accessible location while preserving referential integrity
+    acceptance_criteria:
+      - Entries in metadata.recent_changes older than 4 days with status=completed identified
+      - Archive location created (e.g., docs/archives/workflow-status/)
+      - Archived entries moved to archive with original timestamps preserved
+      - Referential integrity maintained (epic_id, story_id links remain valid)
+      - Active workflow-status.yaml cleaned of archived entries
+      - Documentation updated explaining archive location and retention policy
     dependency_notes: None
 
   - id: ST-CI-001
-    title: CI Pipeline Optimization and Flaky Test Remediation
+    title: Full CI Check and Prioritized Remediation Plan
     epic_id: EP-INFRA-CLEANUP-001
     sprint_id: INFRA-CLEANUP-001
     status: planned
@@ -5231,13 +5245,15 @@ launch_stories:
     story_points: TBD
     priority: P1-HIGH
     owner_role: dev
-    description: Address CI pipeline timeouts, fix flaky tests, and optimize test execution order for faster feedback
+    description: Run full CI assessment, categorize all issues by severity (P0/P1/P2/P3), and create prioritized remediation plan
     acceptance_criteria:
-      - CI pipeline completes within 10 minutes
-      - Flaky tests identified and fixed or quarantined
-      - Test parallelization optimized
-      - Coverage reporting stable and accurate
-    dependency_notes: May require test infrastructure changes
+      - Full CI pipeline assessment completed across all stages
+      - All issues identified and categorized by severity (P0-CRITICAL, P1-HIGH, P2-MEDIUM, P3-LOW)
+      - Prioritized remediation plan created with estimated effort per issue
+      - Plan includes dependencies and sequencing recommendations
+      - Top 5 highest priority issues documented with root cause analysis
+      - Remediation plan reviewed and approved by merlin
+    dependency_notes: May require access to CI logs and test infrastructure; plan execution to be scheduled separately
 
 summary:
   total_epics: 24
