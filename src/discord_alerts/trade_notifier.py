@@ -105,14 +105,20 @@ class TradeNotifier:
 
         Args:
             webhook_url: Discord webhook URL
-                (reads from DISCORD_WEBHOOK_URL env if None)
+                (reads from DISCORD_TRADING_WEBHOOK_URL env first,
+                then falls back to DISCORD_WEBHOOK_URL if None)
             trading_channel_id: Discord channel ID for #trading
                 (reads from DISCORD_TRADING_CHANNEL_ID env if None)
             max_retries: Maximum retry attempts for failed deliveries
             retry_base_delay: Base delay for exponential backoff
             retry_max_delay: Maximum delay for exponential backoff
         """
-        self.webhook_url = webhook_url or os.getenv("DISCORD_WEBHOOK_URL")
+        # DISCORD-TRADING-001: Use DISCORD_TRADING_WEBHOOK_URL with fallback to DISCORD_WEBHOOK_URL
+        self.webhook_url = (
+            webhook_url
+            or os.getenv("DISCORD_TRADING_WEBHOOK_URL")
+            or os.getenv("DISCORD_WEBHOOK_URL")
+        )
         self.trading_channel_id = trading_channel_id or os.getenv(
             "DISCORD_TRADING_CHANNEL_ID", "1444447985378398459"
         )
@@ -127,7 +133,7 @@ class TradeNotifier:
         if not self.webhook_url:
             logger.warning(
                 "TradeNotifier initialized without webhook URL. "
-                "Set DISCORD_WEBHOOK_URL environment variable."
+                "Set DISCORD_TRADING_WEBHOOK_URL or DISCORD_WEBHOOK_URL environment variable."
             )
 
     async def _get_session(self) -> aiohttp.ClientSession:
@@ -239,8 +245,9 @@ class TradeNotifier:
         trade_emoji = self.TRADE_EMOJIS["open"]
         token = outcome.token or outcome.symbol.replace("USDT", "").replace("USD", "")
 
-        # Title
-        title = f"{trade_emoji} Trade Opened: {token}"
+        # Title with test indicator
+        test_prefix = "[TEST] " if outcome.is_test else ""
+        title = f"{test_prefix}{trade_emoji} Trade Opened: {token}"
 
         # Description with key details
         description_lines = [
@@ -320,15 +327,17 @@ class TradeNotifier:
         # Timestamp
         timestamp = datetime.now(UTC).isoformat()
 
+        # Footer with test indicator
+        test_indicator = "🧪 " if outcome.is_test else ""
+        footer_text = f"{test_indicator}Outcome ID: {str(outcome.outcome_id)[:8]}... | Paper Trading"
+
         return {
             "title": title,
             "description": description,
             "color": color,
             "fields": fields,
             "timestamp": timestamp,
-            "footer": {
-                "text": f"Outcome ID: {str(outcome.outcome_id)[:8]}... | Paper Trading"
-            },
+            "footer": {"text": footer_text},
         }
 
     def _build_close_embed(
@@ -360,8 +369,9 @@ class TradeNotifier:
         else:
             pnl_emoji = self.PNL_EMOJIS["neutral"]
 
-        # Title
-        title = f"{trade_emoji} Trade Closed: {token}"
+        # Title with test indicator
+        test_prefix = "[TEST] " if outcome.is_test else ""
+        title = f"{test_prefix}{trade_emoji} Trade Closed: {token}"
 
         # Exit price
         exit_price = outcome.exit_price or outcome.fill_price
@@ -456,15 +466,17 @@ class TradeNotifier:
         # Timestamp
         timestamp = datetime.now(UTC).isoformat()
 
+        # Footer with test indicator
+        test_indicator = "🧪 " if outcome.is_test else ""
+        footer_text = f"{test_indicator}Outcome ID: {str(outcome.outcome_id)[:8]}... | Paper Trading"
+
         return {
             "title": title,
             "description": description,
             "color": color,
             "fields": fields,
             "timestamp": timestamp,
-            "footer": {
-                "text": f"Outcome ID: {str(outcome.outcome_id)[:8]}... | Paper Trading"
-            },
+            "footer": {"text": footer_text},
         }
 
     def _format_duration(self, duration: Any) -> str:
@@ -622,9 +634,34 @@ class TradeNotifier:
             )
 
         webhook_url = self.webhook_url  # type: ignore[assignment]
-        async with session.post(webhook_url, json=payload) as resp:
-            if resp.status == 204:
-                # Success - Discord returns 204 No Content
+        # Append ?wait=true to get message ID in response
+        if "?" in webhook_url:
+            webhook_url_with_wait = f"{webhook_url}&wait=true"
+        else:
+            webhook_url_with_wait = f"{webhook_url}?wait=true"
+
+        async with session.post(webhook_url_with_wait, json=payload) as resp:
+            if resp.status == 200:
+                # Success with wait=true - Discord returns message object
+                try:
+                    message_data = await resp.json()
+                    message_id = message_data.get("id")
+                    logger.info(
+                        f"Trade notification sent successfully: message_id={message_id}"
+                    )
+                    return TradeNotificationResult(
+                        success=True,
+                        message_id=message_id,
+                        timestamp=datetime.now(UTC),
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to parse Discord response: {e}")
+                    return TradeNotificationResult(
+                        success=True,
+                        timestamp=datetime.now(UTC),
+                    )
+            elif resp.status == 204:
+                # Success - Discord returns 204 No Content (no wait=true)
                 logger.info("Trade notification sent successfully")
                 return TradeNotificationResult(
                     success=True,

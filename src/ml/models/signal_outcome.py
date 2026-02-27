@@ -80,6 +80,9 @@ class SignalOutcome:
         leverage: Leverage used (default 1.0 for spot)
         entry_reason: Reason for entry (signal_trigger, manual, etc.)
         position_size: Position size in base token
+
+        # DISCORD-TRADING-001: Test trade labeling
+        is_test: Whether this is a test trade (for test labeling in notifications)
     """
 
     outcome_id: UUID = field(default_factory=uuid4)
@@ -107,6 +110,9 @@ class SignalOutcome:
     leverage: Decimal = field(default_factory=lambda: Decimal("1.0"))
     entry_reason: str = ""  # EntryReason as string for flexibility
     position_size: Decimal = field(default_factory=lambda: Decimal("0"))
+
+    # DISCORD-TRADING-001: Test trade labeling
+    is_test: bool = False
 
     def __post_init__(self) -> None:
         """Validate and normalize values after initialization."""
@@ -256,6 +262,8 @@ class SignalOutcome:
             "leverage": str(self.leverage),
             "entry_reason": self.entry_reason,
             "position_size": str(self.position_size),
+            # DISCORD-TRADING-001: Test trade labeling
+            "is_test": self.is_test,
         }
 
     @classmethod
@@ -324,6 +332,8 @@ class SignalOutcome:
             leverage=Decimal(data.get("leverage", "1.0")),
             entry_reason=data.get("entry_reason", ""),
             position_size=Decimal(data.get("position_size", "0")),
+            # DISCORD-TRADING-001: Test trade labeling
+            is_test=data.get("is_test", False),
         )
 
     def to_db_dict(self) -> dict[str, Any]:
@@ -359,6 +369,8 @@ class SignalOutcome:
             "leverage": float(self.leverage),
             "entry_reason": self.entry_reason,
             "position_size": float(self.position_size),
+            # DISCORD-TRADING-001: Test trade labeling
+            "is_test": self.is_test,
         }
 
     def to_notification_dict(self) -> dict[str, Any]:
@@ -386,6 +398,8 @@ class SignalOutcome:
             "entry_reason": self.entry_reason,
             "status": self.status.value,
             "is_closed": self.is_closed,
+            # DISCORD-TRADING-001: Test trade labeling
+            "is_test": self.is_test,
         }
 
 
