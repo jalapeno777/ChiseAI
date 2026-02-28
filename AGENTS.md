@@ -158,6 +158,20 @@ When starting work:
   - `ST-*`, `CH-*`, `FT-*`, `REWARD-*`, `REPO-*`, `SAFETY-*`, `BRANCH-*`, `PAPER-*`, `RECON-*` (must include a digit)
 - Before switching branches, working tree must be clean
 
+### Session Context Contract (MANDATORY)
+- Every worker/orchestrator handoff that includes executable work MUST include:
+  - `STORY_ID`
+  - `AGENT_ID`
+  - `BRANCH`
+  - `WORKTREE_PATH`
+- Before git actions, verify session with explicit path:
+  - `python3 scripts/swarm/session.py verify --story-id "$STORY_ID" --branch "$BRANCH" --worktree-path "$WORKTREE_PATH" --check-canonical`
+- Before tests/lint/git commands, assert context:
+  - `python3 scripts/swarm/assert_session_context.py --story-id "$STORY_ID" --branch "$BRANCH" --worktree-path "$WORKTREE_PATH"`
+- Prefer running commands via session wrapper to force branch/worktree binding:
+  - `bash scripts/swarm/run_in_session.sh --story-id "$STORY_ID" --branch "$BRANCH" --worktree-path "$WORKTREE_PATH" -- <command ...>`
+- Never call `scripts/swarm/session.py verify` or `close` without `--worktree-path`.
+
 ### Merge Authority (Explicit Roles)
 - **Workers**: Push branches + handoff evidence only; workers do NOT open PRs or merge to main
 - **Jarvis**: Orchestrates handoff to Merlin; coordinates worker completion

@@ -43,6 +43,10 @@ permission:
   - capture failing command, exact error, and minimal repro
 - For any git action, require explicit `BRANCH` + `WORKTREE_PATH` and run:
   - `python3 scripts/swarm/session.py verify --story-id=<story_id> --branch=<branch> --worktree-path=<path> --check-canonical`
+- Before tests/lint/git actions, run:
+  - `python3 scripts/swarm/assert_session_context.py --story-id=<story_id> --branch=<branch> --worktree-path=<path>`
+- Prefer wrapper for all executable commands:
+  - `bash scripts/swarm/run_in_session.sh --story-id <story_id> --branch <branch> --worktree-path <path> -- <command ...>`
 - PR/merge authority is `merlin` only for branch-to-`main` operations.
 - Non-`merlin` agents may push, but must not open/update PRs.
 - Treat global-lock files as high risk:

@@ -36,6 +36,9 @@ permission:
 ## Scope + Lock Contract (required)
 - If the task does not include `SCOPE_GLOBS` and `LOCKS_REQUIRED`, ask once before starting.
 - If the task includes git actions, it must also include `BRANCH` and `WORKTREE_PATH`; run `python3 scripts/swarm/session.py verify --story-id=<story_id> --branch=<branch> --worktree-path=<path>` before any git command.
+- Required task contract tuple: `STORY_ID`, `AGENT_ID`, `BRANCH`, `WORKTREE_PATH`.
+- Before tests/lint/git actions, run context assertion: `python3 scripts/swarm/assert_session_context.py --story-id=<story_id> --branch=<branch> --worktree-path=<path>`.
+- Prefer session wrapper for executable commands: `bash scripts/swarm/run_in_session.sh --story-id <story_id> --branch <branch> --worktree-path <path> -- <command ...>`.
 - You must not merge or push `main`.
   - **Workers** (you): Push branches + handoff evidence only; do NOT open PRs or merge to main
   - **Jarvis**: Orchestrates handoff to Merlin; coordinates worker completion
