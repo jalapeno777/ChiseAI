@@ -14,8 +14,9 @@ Fail-Safe Mechanism:
 
 import asyncio
 import json
+import os
 from dataclasses import dataclass, field, asdict
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional, Any, Callable
 from enum import Enum
 import uuid
@@ -722,3 +723,592 @@ if __name__ == "__main__":
         print(f"\nBundle Hash: {bundle.bundle_hash}")
 
     asyncio.run(example())
+
+
+# Import all collectors for integrated harness
+try:
+    from scripts.validation.discord_evidence import DiscordEvidenceCollector
+    from scripts.validation.redis_deltas import RedisDeltaCollector
+    from scripts.validation.influx_evidence import InfluxEvidenceCollector
+    from scripts.validation.recap_validator import RecapValidator
+
+    COLLECTORS_AVAILABLE = True
+except ImportError:
+    COLLECTORS_AVAILABLE = False
+
+
+class IntegratedForensicHarness(ForensicHarness):
+    """Harness with all collectors integrated.
+
+    This harness provides a complete 30-minute proof loop with automatic
+    collection from all evidence sources:
+    - Redis (G1-G4): Scheduler heartbeat, signals, outcomes, kill switch
+    - Discord (G5): OPEN, CLOSE, RECAP messages
+    - InfluxDB (G6-G7): Orders, fills, canary deployment
+    - Recap Validator: Source verification for G5
+
+    Usage:
+        harness = IntegratedForensicHarness(duration_minutes=30)
+        result = await harness.run_integrated_proof_loop()
+        bundle = harness.generate_bundle()
+    """
+
+    def __init__(self, duration_minutes: int = 30):
+        """Initialize the integrated forensic harness.
+
+        Args:
+            duration_minutes: Total duration of the proof loop (default: 30)
+
+        Raises:
+            RuntimeError: If collector modules are not available
+        """
+        if not COLLECTORS_AVAILABLE:
+            raise RuntimeError(
+                "Collector modules not available. "
+                "Ensure all validation modules are installed."
+            )
+
+        super().__init__(
+            duration_minutes=duration_minutes,
+            snapshot_interval_minutes=5,
+        )
+
+        # Initialize collectors
+        self.redis_collector = RedisDeltaCollector()
+        self.discord_collector = DiscordEvidenceCollector(
+            bot_token=os.getenv("DISCORD_BOT_TOKEN"),
+            trading_channel_id=os.getenv("TRADING_CHANNEL_ID", "1444447985378398459"),
+        )
+        self.influx_collector = InfluxEvidenceCollector()
+        self.recap_validator = RecapValidator(
+            redis_collector=self.redis_collector, influx_collector=self.influx_collector
+        )
+
+        # Track baseline and final states
+        self._baseline_captured = False
+        self._final_captured = False
+
+    async def capture_baseline(self) -> Dict[str, Any]:
+        """Capture baseline state (T0) from all collectors.
+
+        Returns:
+            Dictionary containing baseline evidence from all sources
+        """
+        baseline = {
+            "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+            "label": "T0",
+        }
+
+        # Capture Redis baseline
+        try:
+            redis_baseline = await self.redis_collector.capture_baseline()
+            baseline["redis"] = redis_baseline
+        except Exception as e:
+            baseline["redis_error"] = str(e)
+
+        # Capture Discord baseline (messages before proof window)
+        try:
+            now = datetime.now(timezone.utc)
+            discord_messages = await self.discord_collector.collect_messages(
+                since=now - timedelta(minutes=30), until=now
+            )
+            baseline["discord"] = {
+                "message_count": len(discord_messages),
+                "messages": [m.to_dict() for m in discord_messages],
+            }
+        except Exception as e:
+            baseline["discord_error"] = str(e)
+
+        # Capture InfluxDB baseline
+        try:
+            orders = await self.influx_collector.query_orders(
+                since=datetime.now(timezone.utc) - timedelta(hours=1)
+            )
+            fills = await self.influx_collector.query_fills(
+                since=datetime.now(timezone.utc) - timedelta(hours=1)
+            )
+            baseline["influx"] = {
+                "orders": orders.to_dict() if hasattr(orders, "to_dict") else orders,
+                "fills": fills.to_dict() if hasattr(fills, "to_dict") else fills,
+            }
+        except Exception as e:
+            baseline["influx_error"] = str(e)
+
+        self._baseline_captured = True
+        return baseline
+
+    async def capture_snapshot(self, label: str) -> Dict[str, Any]:
+        """Capture a snapshot at the given label.
+
+        Args:
+            label: Snapshot label (e.g., "T5", "T10")
+
+        Returns:
+            Dictionary containing snapshot evidence
+        """
+        snapshot: Dict[str, Any] = {
+            "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+            "label": label,
+        }
+
+        # Capture Redis snapshot - use get_kill_switch_state for current state
+        try:
+            kill_switch_state = await self.redis_collector.get_kill_switch_state()
+            snapshot["redis"] = {
+                "kill_switch": kill_switch_state,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        except Exception as e:
+            snapshot["redis_error"] = str(e)
+
+        # Capture Discord snapshot
+        try:
+            now = datetime.now(timezone.utc)
+            discord_messages = await self.discord_collector.collect_messages(
+                since=now - timedelta(minutes=5), until=now
+            )
+            snapshot["discord"] = {
+                "message_count": len(discord_messages),
+                "messages": [m.to_dict() for m in discord_messages],
+            }
+        except Exception as e:
+            snapshot["discord_error"] = str(e)
+
+        # Capture InfluxDB snapshot
+        try:
+            orders = await self.influx_collector.query_orders(
+                since=datetime.now(timezone.utc) - timedelta(minutes=5)
+            )
+            fills = await self.influx_collector.query_fills(
+                since=datetime.now(timezone.utc) - timedelta(minutes=5)
+            )
+            snapshot["influx"] = {
+                "orders": orders.to_dict() if hasattr(orders, "to_dict") else orders,
+                "fills": fills.to_dict() if hasattr(fills, "to_dict") else fills,
+            }
+        except Exception as e:
+            snapshot["influx_error"] = str(e)
+
+        return snapshot
+
+    async def capture_final(self, baseline: Dict[str, Any]) -> Dict[str, Any]:
+        """Capture final state and compute deltas.
+
+        Args:
+            baseline: The baseline state captured at T0
+
+        Returns:
+            Dictionary containing final state and deltas
+        """
+        final: Dict[str, Any] = {
+            "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+            "label": "T30",
+        }
+
+        # Capture Redis final state and compute deltas
+        try:
+            redis_baseline = baseline.get("redis", {})
+            if redis_baseline:
+                redis_final = await self.redis_collector.capture_final(redis_baseline)
+                # Compute deltas from the evidence list
+                deltas: Dict[str, Any] = {}
+                for evidence in redis_final:
+                    deltas[evidence.index_name] = evidence.delta
+                final["redis"] = {
+                    "final_state": [e.to_dict() for e in redis_final],
+                    "deltas": deltas,
+                }
+            else:
+                final["redis"] = {"final_state": [], "deltas": {}}
+        except Exception as e:
+            final["redis_error"] = str(e)
+
+        # Capture Discord final state
+        try:
+            now = datetime.now(timezone.utc)
+            discord_messages = await self.discord_collector.collect_messages(
+                since=now - timedelta(minutes=30), until=now
+            )
+            final["discord"] = {
+                "message_count": len(discord_messages),
+                "messages": [m.to_dict() for m in discord_messages],
+            }
+
+            # Validate G5: Check for OPEN, CLOSE, RECAP messages
+            open_msgs = [m for m in discord_messages if m.content_type == "OPEN"]
+            close_msgs = [m for m in discord_messages if m.content_type == "CLOSE"]
+            recap_msgs = [m for m in discord_messages if m.content_type == "RECAP"]
+
+            final["discord_validation"] = {
+                "has_open": len(open_msgs) > 0,
+                "has_close": len(close_msgs) > 0,
+                "has_recap": len(recap_msgs) > 0,
+                "open_count": len(open_msgs),
+                "close_count": len(close_msgs),
+                "recap_count": len(recap_msgs),
+            }
+        except Exception as e:
+            final["discord_error"] = str(e)
+
+        # Capture InfluxDB final state
+        try:
+            orders = await self.influx_collector.query_orders(
+                since=datetime.now(timezone.utc) - timedelta(minutes=30)
+            )
+            fills = await self.influx_collector.query_fills(
+                since=datetime.now(timezone.utc) - timedelta(minutes=30)
+            )
+            canary = await self.influx_collector.query_canary(
+                since=datetime.now(timezone.utc) - timedelta(minutes=30)
+            )
+            final["influx"] = {
+                "orders": orders.to_dict() if hasattr(orders, "to_dict") else orders,
+                "fills": fills.to_dict() if hasattr(fills, "to_dict") else fills,
+                "canary": canary.to_dict() if hasattr(canary, "to_dict") else canary,
+            }
+        except Exception as e:
+            final["influx_error"] = str(e)
+
+        self._final_captured = True
+        return final
+
+    async def run_integrated_proof_loop(self) -> ProofResult:
+        """Run 30-minute proof loop with all collectors.
+
+        This method runs the complete proof loop:
+        1. Capture baseline (T0) from all collectors
+        2. Every 5 minutes: capture snapshot
+        3. At T30: capture final, evaluate all gates
+        4. Generate evidence bundle
+
+        Returns:
+            ProofResult with all evidence and gate evaluations
+        """
+        self.start_time = datetime.now(timezone.utc)
+        self.snapshots = []
+        self._running = True
+
+        # Step 1: Capture baseline (T0)
+        baseline = await self.capture_baseline()
+        t0_artifacts = await self._convert_baseline_to_artifacts(baseline)
+        self.snapshots.append(
+            Snapshot(
+                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                label="T0",
+                artifacts=t0_artifacts,
+            )
+        )
+
+        # Step 2: Capture snapshots every 5 minutes
+        labels = ["T5", "T10", "T15", "T20", "T25"]
+        for i, label in enumerate(labels):
+            if not self._running:
+                break
+
+            # Calculate wait time
+            elapsed = (datetime.now(timezone.utc) - self.start_time).total_seconds()
+            target_elapsed = (i + 1) * 5 * 60  # 5 minutes per interval
+            wait_seconds = max(0, target_elapsed - elapsed)
+
+            if wait_seconds > 0:
+                await asyncio.sleep(wait_seconds)
+
+            if not self._running:
+                break
+
+            snapshot_data = await self.capture_snapshot(label)
+            artifacts = await self._convert_snapshot_to_artifacts(snapshot_data)
+            self.snapshots.append(
+                Snapshot(
+                    timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                    label=label,
+                    artifacts=artifacts,
+                )
+            )
+
+        # Step 3: Capture final state (T30)
+        if self._running:
+            elapsed = (datetime.now(timezone.utc) - self.start_time).total_seconds()
+            target_elapsed = self.duration * 60
+            wait_seconds = max(0, target_elapsed - elapsed)
+
+            if wait_seconds > 0:
+                await asyncio.sleep(wait_seconds)
+
+            final_data = await self.capture_final(baseline)
+            final_artifacts = await self._convert_final_to_artifacts(final_data)
+            self.snapshots.append(
+                Snapshot(
+                    timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                    label="T30",
+                    artifacts=final_artifacts,
+                )
+            )
+
+        self.end_time = datetime.now(timezone.utc)
+        self._running = False
+
+        # Step 4: Evaluate all gates
+        timestamp_errors = self._validate_monotonic_timestamps()
+        gate_results = {}
+        for gate in GATE_REQUIREMENTS.keys():
+            gate_results[gate] = self.evaluate_gate(gate, GATE_REQUIREMENTS[gate])
+
+        # Overall status is PASS only if ALL gates PASS
+        overall_status = GateStatus.PASS
+        if timestamp_errors:
+            overall_status = GateStatus.FAIL
+        else:
+            for result in gate_results.values():
+                if result.status == GateStatus.FAIL:
+                    overall_status = GateStatus.FAIL
+                    break
+
+        self._proof_result = ProofResult(
+            start_time=self.start_time.isoformat(),
+            end_time=self.end_time.isoformat(),
+            snapshots=self.snapshots,
+            gate_results=gate_results,
+            overall_status=overall_status,
+        )
+
+        return self._proof_result
+
+    async def _convert_baseline_to_artifacts(
+        self, baseline: Dict[str, Any]
+    ) -> Dict[str, Artifact]:
+        """Convert baseline data to artifacts."""
+        artifacts = {}
+        timestamp = baseline.get(
+            "timestamp_utc", datetime.now(timezone.utc).isoformat()
+        )
+
+        # Redis artifacts (G1-G4)
+        if "redis" in baseline:
+            redis_data = baseline["redis"]
+            artifacts["scheduler_heartbeat"] = Artifact(
+                gate="G1",
+                artifact_type=ArtifactType.SCHEDULER_HEARTBEAT.value,
+                data=redis_data.get("heartbeat", {}),
+                source_path="redis://chiseai-redis:6380/scheduler:heartbeat",
+                captured_at=timestamp,
+            )
+            artifacts["signal_count_delta"] = Artifact(
+                gate="G2",
+                artifact_type=ArtifactType.SIGNAL_COUNT_DELTA.value,
+                data={"count": redis_data.get("signal_count", 0)},
+                source_path="redis://chiseai-redis:6380/signals:count",
+                captured_at=timestamp,
+            )
+            artifacts["outcome_count_delta"] = Artifact(
+                gate="G3",
+                artifact_type=ArtifactType.OUTCOME_COUNT_DELTA.value,
+                data={"count": redis_data.get("outcome_count", 0)},
+                source_path="redis://chiseai-redis:6380/outcomes:count",
+                captured_at=timestamp,
+            )
+            artifacts["kill_switch_state"] = Artifact(
+                gate="G4",
+                artifact_type=ArtifactType.KILL_SWITCH_STATE.value,
+                data=redis_data.get("kill_switch", {}),
+                source_path="redis://chiseai-redis:6380/killswitch:state",
+                captured_at=timestamp,
+            )
+
+        return artifacts
+
+    async def _convert_snapshot_to_artifacts(
+        self, snapshot: Dict[str, Any]
+    ) -> Dict[str, Artifact]:
+        """Convert snapshot data to artifacts."""
+        artifacts = {}
+        timestamp = snapshot.get(
+            "timestamp_utc", datetime.now(timezone.utc).isoformat()
+        )
+
+        # Redis artifacts
+        if "redis" in snapshot:
+            redis_data = snapshot["redis"]
+            artifacts["scheduler_heartbeat"] = Artifact(
+                gate="G1",
+                artifact_type=ArtifactType.SCHEDULER_HEARTBEAT.value,
+                data=redis_data.get("heartbeat", {}),
+                source_path="redis://chiseai-redis:6380/scheduler:heartbeat",
+                captured_at=timestamp,
+            )
+
+        # Discord artifacts
+        if "discord" in snapshot:
+            discord_data = snapshot["discord"]
+            messages = discord_data.get("messages", [])
+            for msg in messages:
+                content_type = msg.get("content_type", "").lower()
+                if content_type == "open":
+                    artifacts["discord_open_msg"] = Artifact(
+                        gate="G5",
+                        artifact_type=ArtifactType.DISCORD_MESSAGE.value,
+                        data=msg,
+                        source_path=f"discord://channel/{msg.get('channel_id', 'unknown')}/open",
+                        captured_at=timestamp,
+                    )
+                elif content_type == "close":
+                    artifacts["discord_close_msg"] = Artifact(
+                        gate="G5",
+                        artifact_type=ArtifactType.DISCORD_MESSAGE.value,
+                        data=msg,
+                        source_path=f"discord://channel/{msg.get('channel_id', 'unknown')}/close",
+                        captured_at=timestamp,
+                    )
+                elif content_type == "recap":
+                    artifacts["discord_recap_msg"] = Artifact(
+                        gate="G5",
+                        artifact_type=ArtifactType.DISCORD_MESSAGE.value,
+                        data=msg,
+                        source_path=f"discord://channel/{msg.get('channel_id', 'unknown')}/recap",
+                        captured_at=timestamp,
+                    )
+
+        # InfluxDB artifacts
+        if "influx" in snapshot:
+            influx_data = snapshot["influx"]
+            artifacts["influx_orders_query"] = Artifact(
+                gate="G6",
+                artifact_type=ArtifactType.INFLUX_QUERY.value,
+                data=influx_data.get("orders", {}),
+                source_path="influxdb://chiseai-influxdb:18087/orders",
+                captured_at=timestamp,
+            )
+            artifacts["influx_fills_query"] = Artifact(
+                gate="G6",
+                artifact_type=ArtifactType.INFLUX_QUERY.value,
+                data=influx_data.get("fills", {}),
+                source_path="influxdb://chiseai-influxdb:18087/fills",
+                captured_at=timestamp,
+            )
+
+        return artifacts
+
+    async def _convert_final_to_artifacts(
+        self, final: Dict[str, Any]
+    ) -> Dict[str, Artifact]:
+        """Convert final data to artifacts."""
+        artifacts = {}
+        timestamp = final.get("timestamp_utc", datetime.now(timezone.utc).isoformat())
+
+        # Redis artifacts with deltas
+        if "redis" in final:
+            redis_data = final["redis"]
+            deltas = redis_data.get("deltas", {})
+
+            artifacts["scheduler_heartbeat"] = Artifact(
+                gate="G1",
+                artifact_type=ArtifactType.SCHEDULER_HEARTBEAT.value,
+                data={
+                    "delta": deltas.get("heartbeat_delta", 0),
+                    **redis_data.get("final_state", {}).get("heartbeat", {}),
+                },
+                source_path="redis://chiseai-redis:6380/scheduler:heartbeat",
+                captured_at=timestamp,
+            )
+            artifacts["signal_count_delta"] = Artifact(
+                gate="G2",
+                artifact_type=ArtifactType.SIGNAL_COUNT_DELTA.value,
+                data={
+                    "delta": deltas.get("signal_delta", 0),
+                    "count": redis_data.get("final_state", {}).get("signal_count", 0),
+                },
+                source_path="redis://chiseai-redis:6380/signals:count",
+                captured_at=timestamp,
+            )
+            artifacts["outcome_count_delta"] = Artifact(
+                gate="G3",
+                artifact_type=ArtifactType.OUTCOME_COUNT_DELTA.value,
+                data={
+                    "delta": deltas.get("outcome_delta", 0),
+                    "count": redis_data.get("final_state", {}).get("outcome_count", 0),
+                },
+                source_path="redis://chiseai-redis:6380/outcomes:count",
+                captured_at=timestamp,
+            )
+            artifacts["kill_switch_state"] = Artifact(
+                gate="G4",
+                artifact_type=ArtifactType.KILL_SWITCH_STATE.value,
+                data={
+                    "delta": deltas.get("kill_switch_delta", 0),
+                    **redis_data.get("final_state", {}).get("kill_switch", {}),
+                },
+                source_path="redis://chiseai-redis:6380/killswitch:state",
+                captured_at=timestamp,
+            )
+
+        # Discord artifacts
+        if "discord" in final:
+            discord_data = final["discord"]
+            messages = discord_data.get("messages", [])
+            validation = final.get("discord_validation", {})
+
+            for msg in messages:
+                content_type = msg.get("content_type", "").lower()
+                if content_type == "open":
+                    artifacts["discord_open_msg"] = Artifact(
+                        gate="G5",
+                        artifact_type=ArtifactType.DISCORD_MESSAGE.value,
+                        data={**msg, "validated": validation.get("has_open", False)},
+                        source_path=f"discord://channel/{msg.get('channel_id', 'unknown')}/open",
+                        captured_at=timestamp,
+                    )
+                elif content_type == "close":
+                    artifacts["discord_close_msg"] = Artifact(
+                        gate="G5",
+                        artifact_type=ArtifactType.DISCORD_MESSAGE.value,
+                        data={**msg, "validated": validation.get("has_close", False)},
+                        source_path=f"discord://channel/{msg.get('channel_id', 'unknown')}/close",
+                        captured_at=timestamp,
+                    )
+                elif content_type == "recap":
+                    artifacts["discord_recap_msg"] = Artifact(
+                        gate="G5",
+                        artifact_type=ArtifactType.DISCORD_MESSAGE.value,
+                        data={**msg, "validated": validation.get("has_recap", False)},
+                        source_path=f"discord://channel/{msg.get('channel_id', 'unknown')}/recap",
+                        captured_at=timestamp,
+                    )
+
+        # InfluxDB artifacts
+        if "influx" in final:
+            influx_data = final["influx"]
+            artifacts["influx_orders_query"] = Artifact(
+                gate="G6",
+                artifact_type=ArtifactType.INFLUX_QUERY.value,
+                data=influx_data.get("orders", {}),
+                source_path="influxdb://chiseai-influxdb:18087/orders",
+                captured_at=timestamp,
+            )
+            artifacts["influx_fills_query"] = Artifact(
+                gate="G6",
+                artifact_type=ArtifactType.INFLUX_QUERY.value,
+                data=influx_data.get("fills", {}),
+                source_path="influxdb://chiseai-influxdb:18087/fills",
+                captured_at=timestamp,
+            )
+            if "canary" in influx_data:
+                artifacts["influx_canary_query"] = Artifact(
+                    gate="G7",
+                    artifact_type=ArtifactType.INFLUX_QUERY.value,
+                    data=influx_data.get("canary", {}),
+                    source_path="influxdb://chiseai-influxdb:18087/canary",
+                    captured_at=timestamp,
+                )
+
+        return artifacts
+
+    async def close(self):
+        """Close all collectors and release resources."""
+        # Close Discord collector (has close method)
+        try:
+            await self.discord_collector.close()
+        except Exception:
+            pass
+
+        # Redis and Influx collectors don't have close methods - they use
+        # connection pooling that cleans up automatically
