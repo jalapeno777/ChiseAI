@@ -330,7 +330,7 @@ class DiscordContinuityMonitor:
         """
         try:
             # Try to import redis_state
-            from redis_state import (
+            from tools.redis_state import (
                 redis_state_hset,
                 redis_state_lpush,
                 redis_state_expire,
@@ -414,7 +414,7 @@ class DiscordContinuityMonitor:
 
         # Store alert in Redis
         try:
-            from redis_state import redis_state_lpush
+            from tools.redis_state import redis_state_lpush
 
             alert_data = {
                 "type": alert_type,
@@ -449,7 +449,7 @@ class DiscordContinuityMonitor:
             Current metrics or None if not available
         """
         try:
-            from redis_state import redis_state_hget
+            from tools.redis_state import redis_state_hget
 
             redis_key = f"{self.REDIS_KEY_PREFIX}:metrics:current"
             data = redis_state_hget(redis_key, "data")
