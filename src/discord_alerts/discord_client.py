@@ -444,7 +444,7 @@ class DiscordClient:
         """Persist queue state to Redis."""
         try:
             # Import here to avoid circular dependency
-            from redis_state import redis_state_lpush, redis_state_expire
+            from tools.redis_state import redis_state_lpush, redis_state_expire
 
             # Get all messages from queue
             messages = []
@@ -480,7 +480,7 @@ class DiscordClient:
     async def _restore_queued_messages(self) -> None:
         """Restore queued messages from Redis on reconnect."""
         try:
-            from redis_state import redis_state_lrange
+            from tools.redis_state import redis_state_lrange
 
             redis_key = f"{self.REDIS_KEY_PREFIX}:queued_messages"
             stored = redis_state_lrange(redis_key, 0, 99)
@@ -504,7 +504,7 @@ class DiscordClient:
     async def _store_checkpoint_status(self, success: bool, error: str | None) -> None:
         """Store checkpoint status in Redis."""
         try:
-            from redis_state import redis_state_hset
+            from tools.redis_state import redis_state_hset
 
             redis_key = f"{self.REDIS_KEY_PREFIX}:checkpoint"
             redis_state_hset(
@@ -522,7 +522,7 @@ class DiscordClient:
     async def _store_health_metrics(self, health: dict[str, Any]) -> None:
         """Store health metrics in Redis."""
         try:
-            from redis_state import redis_state_hset
+            from tools.redis_state import redis_state_hset
 
             redis_key = f"{self.REDIS_KEY_PREFIX}:health"
             redis_state_hset(redis_key, "timestamp", datetime.now(UTC).isoformat())

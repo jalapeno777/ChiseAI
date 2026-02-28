@@ -325,7 +325,7 @@ def _get_redis_authority_settings(epic_id: str) -> dict[str, str]:
 
     try:
         # Import here to avoid dependency issues if Redis is not available
-        from redis_state import hgetall
+        from tools.redis_state import redis_state_hgetall as hgetall
 
         # Map epic_id to Redis key
         if epic_id == "EP-AUTO-GIT-001" or epic_id.startswith("EP-AUTO-GIT"):

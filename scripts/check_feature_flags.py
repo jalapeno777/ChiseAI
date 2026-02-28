@@ -60,7 +60,7 @@ def check_redis_hash_flag(key: str, field: str = "enabled") -> Tuple[str, str]:
                 f"""
 import sys
 sys.path.insert(0, '.')
-from redis_state import redis_state_hget
+from tools.redis_state import redis_state_hget
 value = redis_state_hget("{key}", "{field}")
 print(value if value else "NOT_FOUND")
 """,
@@ -94,7 +94,7 @@ def check_redis_string_flag(key: str) -> Tuple[str, str]:
                 f"""
 import sys
 sys.path.insert(0, '.')
-from redis_state import redis_state_get
+from tools.redis_state import redis_state_get
 value = redis_state_get("{key}")
 print(value if value else "NOT_FOUND")
 """,
