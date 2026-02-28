@@ -114,7 +114,9 @@ class TradeHistoryRecap:
                 "trades_count": len(trades),
             }
 
-        return await self._send_to_discord(content)
+        result = await self._send_to_discord(content)
+        result["trades_count"] = len(trades)
+        return result
 
     async def _query_trades_for_date(
         self,
@@ -161,7 +163,18 @@ class TradeHistoryRecap:
                 from src.ml.models.signal_outcome import SignalOutcome
 
                 for row in rows:
-                    trade = SignalOutcome.from_dict(dict(row))
+                    # Convert asyncpg Record to dict, handling native types
+                    row_dict = {}
+                    for key, value in row.items():
+                        if hasattr(value, "int") and not hasattr(value, "timestamp"):
+                            # asyncpg UUID object - convert to string
+                            row_dict[key] = str(value)
+                        elif hasattr(value, "isoformat"):
+                            # datetime object - convert to ISO string
+                            row_dict[key] = value.isoformat()
+                        else:
+                            row_dict[key] = value
+                    trade = SignalOutcome.from_dict(row_dict)
                     trades.append(trade)
 
             finally:
