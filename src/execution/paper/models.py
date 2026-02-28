@@ -104,6 +104,7 @@ class PaperOrder:
     metadata: dict[str, Any] = field(default_factory=dict)
     correlation_id: str = ""
     avg_fill_price: float | None = None
+    filled_at: datetime | None = None
 
     def __post_init__(self) -> None:
         """Validate and normalize order data."""
@@ -176,6 +177,7 @@ class PaperOrder:
         if self.remaining_quantity <= 0:
             self.state = OrderState.FILLED
             self.remaining_quantity = 0.0
+            self.filled_at = datetime.now(UTC)
         else:
             self.state = OrderState.PARTIAL
 
@@ -227,6 +229,7 @@ class PaperOrder:
             "fills": [f.to_dict() for f in self.fills],
             "reject_reason": self.reject_reason,
             "avg_fill_price": self.avg_fill_price,
+            "filled_at": self.filled_at.isoformat() if self.filled_at else None,
             "metadata": self.metadata,
             "correlation_id": self.metadata.get("correlation_id", self.correlation_id),
         }
@@ -256,6 +259,9 @@ class PaperOrder:
             metadata=data.get("metadata", {}),
             correlation_id=data.get("correlation_id", ""),
             avg_fill_price=data.get("avg_fill_price"),
+            filled_at=datetime.fromisoformat(data["filled_at"])
+            if data.get("filled_at")
+            else None,
         )
         # Restore fills
         order.fills = [PaperFill.from_dict(f) for f in data.get("fills", [])]
