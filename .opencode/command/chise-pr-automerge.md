@@ -13,22 +13,24 @@ Prereqs:
 - Set `STORY_ID` (required). Example: `export STORY_ID=ST-NS-001`
   - Accepted patterns include: `ST-*`, `CH-*`, `FT-*`, `REWARD-*`, `REPO-*`, `SAFETY-*`, `BRANCH-*`, `PAPER-*`, `RECON-*` (must contain a digit).
 - Set `BRANCH` (required). Example: `export BRANCH=feature/ST-NS-001-my-change`
+- Set `WORKTREE_PATH` (required). Example: `export WORKTREE_PATH=/tmp/worktrees/ST-NS-001-merlin`
 - Set `AGENT_ID=merlin` (required; non-Merlin PR submission is blocked by script policy).
 - Ensure a swarm session exists for this branch:
-  - `python3 scripts/swarm/session.py verify --story-id "$STORY_ID" --branch "$BRANCH" --check-canonical`
+  - `python3 scripts/swarm/session.py verify --story-id "$STORY_ID" --branch "$BRANCH" --worktree-path "$WORKTREE_PATH" --check-canonical`
  - Optional helper to derive `STORY_ID` from branch when omitted:
    - `export STORY_ID="$(python3 -c 'import re,os; b=os.environ.get(\"BRANCH\",\"\").upper(); m=re.search(r\"(?:ST|CH|FT|REWARD|REPO|SAFETY|BRANCH|PAPER|RECON)(?:-[A-Z0-9]+){1,}\", b); print(m.group(0) if m else \"\")')"`
 
 1. Safety gates (must not be on main)
-   - `git status -sb`
-   - `git branch --show-current`
+   - `python3 scripts/swarm/assert_session_context.py --story-id "$STORY_ID" --branch "$BRANCH" --worktree-path "$WORKTREE_PATH"`
+   - `(cd "$WORKTREE_PATH" && git status -sb)`
+   - `(cd "$WORKTREE_PATH" && git branch --show-current)`
    - If on `main`: create a feature branch first (no direct commits to `main`).
 
 2. Run local gates
    - Run `.opencode/command/chise-precommit-gates.md`
 
 3. Push branch to Gitea (if needed)
-   - `git push -u origin "$BRANCH"`
+   - `(cd "$WORKTREE_PATH" && git push -u origin "$BRANCH")`
 
 4. Open PR and enable auto-merge on green CI
    - If approvals are required, have the review bot approve first:
@@ -40,15 +42,15 @@ Prereqs:
    - Resolve PR number from Gitea UI/API and export it:
      - `export PR_NUMBER=<gitea-pr-number>`
    - Get head SHA:
-     - `HEAD_SHA=$(git rev-parse "$BRANCH")`
+     - `HEAD_SHA=$(cd "$WORKTREE_PATH" && git rev-parse "$BRANCH")`
    - Enqueue for reconcile loop:
      - `python3 scripts/ops/merge_reconciler.py enqueue --story-id "$STORY_ID" --branch "$BRANCH" --pr-number "$PR_NUMBER" --head-sha "$HEAD_SHA" --queued-by "${AGENT_ID:-jarvis}"`
    - Continue development in your assigned worktree; Merlin performs bounded reconcile ticks and merges on green.
 
 6. Sync local main and prune
-   - `git switch main`
-   - `git pull --ff-only origin main`
-   - `git fetch -p origin`
-   - Delete local feature branch (safe): `git branch -d <branch>`
+   - `(cd "$WORKTREE_PATH" && git switch main)`
+   - `(cd "$WORKTREE_PATH" && git pull --ff-only origin main)`
+   - `(cd "$WORKTREE_PATH" && git fetch -p origin)`
+   - Delete local feature branch (safe): `(cd "$WORKTREE_PATH" && git branch -d <branch>)`
    - Close swarm session with anti-drift check:
-     - `python3 scripts/swarm/session.py close --enforce-merged`
+     - `python3 scripts/swarm/session.py close --worktree-path "$WORKTREE_PATH" --enforce-merged`
