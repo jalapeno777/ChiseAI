@@ -645,6 +645,86 @@ class BybitConnector:
             signed=True,
         )
 
+    async def get_wallet_balance(
+        self,
+        account_type: str = "UNIFIED",
+        coin: str | None = None,
+    ) -> dict[str, Any]:
+        """Get wallet balance information.
+
+        Calls Bybit V5 /v5/account/wallet-balance endpoint to retrieve
+        account balance, equity, and unrealized PnL.
+
+        Args:
+            account_type: Account type ("UNIFIED", "CONTRACT", "SPOT")
+            coin: Specific coin to query (optional, queries all if None)
+
+        Returns:
+            Wallet balance data with:
+            - total_equity: Total account equity in USD
+            - available_balance: Available balance for trading
+            - unrealized_pnl: Unrealized profit/loss
+            - coin_balances: List of per-coin balances
+        """
+        params: dict[str, Any] = {"accountType": account_type}
+
+        if coin:
+            params["coin"] = coin
+
+        result = await self._make_request(
+            "GET",
+            "/v5/account/wallet-balance",
+            params=params,
+            signed=True,
+        )
+
+        # Extract and normalize balance data
+        result_data = result.get("result", {})
+        list_data = result_data.get("list", [])
+
+        if not list_data:
+            return {
+                "total_equity": 0.0,
+                "available_balance": 0.0,
+                "unrealized_pnl": 0.0,
+                "coin_balances": [],
+                "raw_response": result,
+            }
+
+        # Get the first account (usually the primary account)
+        account = list_data[0]
+
+        # Parse coin balances
+        coin_balances = []
+        for coin_data in account.get("coin", []):
+
+            def _parse_float(value: str | None) -> float:
+                """Parse float, handling empty strings and None."""
+                if not value:
+                    return 0.0
+                try:
+                    return float(value)
+                except (ValueError, TypeError):
+                    return 0.0
+
+            coin_balances.append(
+                {
+                    "coin": coin_data.get("coin", ""),
+                    "equity": _parse_float(coin_data.get("equity")),
+                    "available": _parse_float(coin_data.get("availableToWithdraw")),
+                    "unrealized_pnl": _parse_float(coin_data.get("unrealisedPnl")),
+                    "wallet_balance": _parse_float(coin_data.get("walletBalance")),
+                }
+            )
+
+        return {
+            "total_equity": float(account.get("totalEquity", "0")),
+            "available_balance": float(account.get("totalAvailableBalance", "0")),
+            "unrealized_pnl": float(account.get("totalPerpUPL", "0")),
+            "coin_balances": coin_balances,
+            "raw_response": result,
+        }
+
     # === Order Execution Methods ===
 
     async def place_order(

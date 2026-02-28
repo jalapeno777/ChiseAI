@@ -396,6 +396,58 @@ class BybitDemoConnector:
             "total_filled": round(total_filled, 8),
         }
 
+    async def get_wallet_balance(
+        self,
+        account_type: str = "UNIFIED",
+        coin: str | None = None,
+    ) -> dict[str, Any]:
+        """Get wallet balance from Bybit demo API.
+
+        This method makes an authenticated API call to retrieve the
+        demo account's wallet balance, equity, and unrealized PnL.
+        This provides proof that we're connected to real demo funds.
+
+        Args:
+            account_type: Account type ("UNIFIED", "CONTRACT", "SPOT")
+            coin: Specific coin to query (optional, queries all if None)
+
+        Returns:
+            Dictionary with:
+            - total_equity: Total account equity in USD
+            - available_balance: Available balance for trading
+            - unrealized_pnl: Unrealized profit/loss
+            - coin_balances: List of per-coin balances
+            - raw_response: Full API response
+        """
+        # Log provenance before balance query
+        logger.info(
+            f"DEMO BALANCE QUERY: Fetching wallet balance from Bybit demo API "
+            f"at {self.provenance.endpoint}"
+        )
+
+        try:
+            # Ensure connector is connected
+            if self.connector._session is None or self.connector._session.closed:
+                await self.connector.connect()
+
+            # Get balance from Bybit API
+            balance = await self.connector.get_wallet_balance(
+                account_type=account_type,
+                coin=coin,
+            )
+
+            logger.info(
+                f"DEMO BALANCE SUCCESS: Total equity=${balance.get('total_equity', 0):.2f}, "
+                f"Available=${balance.get('available_balance', 0):.2f}, "
+                f"Unrealized PnL=${balance.get('unrealized_pnl', 0):.2f}"
+            )
+
+            return balance
+
+        except Exception as e:
+            logger.error(f"DEMO BALANCE FAILED: {e}")
+            raise
+
     def get_provenance(self) -> DemoProvenance:
         """Get provenance information proving demo execution.
 
