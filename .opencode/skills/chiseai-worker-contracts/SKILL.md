@@ -449,6 +449,89 @@ WORKER_COMPLETION_REPORT:
   blockers: "None"              # Or list of blocking issues
 ```
 
+### Structured Issue Reporting
+
+Every completion MUST include a structured issues section. This data drives framework improvement prioritization.
+
+#### Why This Matters
+
+Your issue reports directly improve the system for everyone:
+
+1. **Mini BrainEval Ingestion**: All structured issues are scanned by Mini BrainEval during evaluation cycles
+2. **Recurring Pattern Detection**: Issues are grouped by fingerprint (issue_type + root_cause) to detect systemic problems
+3. **Framework Improvement Prioritization**: Improvements are ranked by:
+   - Frequency of recurrence (how often this issue type occurs)
+   - Total time lost across all occurrences
+   - Impact area (throughput = highest priority, then efficiency, accuracy, reliability)
+4. **Time Loss Tracking**: Aggregates time wasted across workers to identify highest-value automation targets
+
+#### Required Schema
+
+```yaml
+issue_type: string          # Category: ci_failure, merge_conflict, config_error, scope_conflict, dependency_issue, etc.
+root_cause: string          # Why did this happen? (technical cause)
+fix_applied: string         # What was done to resolve it?
+time_lost_minutes: integer  # Approximate time wasted due to this issue
+recurrence_hint: string     # How to prevent this next time? (actionable suggestion)
+impact_area: enum           # One of: throughput, efficiency, accuracy, reliability
+resolved: boolean           # Was the issue fully resolved?
+```
+
+#### Impact Area Definitions
+
+| Impact Area | Definition | Priority Weight |
+|-------------|------------|-----------------|
+| `throughput` | Blocks work from progressing at all | Highest |
+| `efficiency` | Slows down work but doesn't block | High |
+| `accuracy` | Causes incorrect results or outputs | Medium |
+| `reliability` | Causes intermittent or flaky behavior | Medium |
+
+#### Copy-Paste Template for Workers
+
+```markdown
+## Structured Issues
+
+issues:
+  - issue_type: ""
+    root_cause: ""
+    fix_applied: ""
+    time_lost_minutes: 0
+    recurrence_hint: ""
+    impact_area: "efficiency"  # throughput|efficiency|accuracy|reliability
+    resolved: true
+```
+
+#### Example: CI Failure
+
+```yaml
+## Structured Issues
+
+issues:
+  - issue_type: "ci_failure"
+    root_cause: "pytest-asyncio missing from requirements.txt"
+    fix_applied: "added pytest-asyncio>=0.21.0 to requirements.txt"
+    time_lost_minutes: 45
+    recurrence_hint: "run pip freeze > requirements.txt after adding new test dependencies"
+    impact_area: "efficiency"
+    resolved: true
+```
+
+#### Example: No Issues (Empty Sentinel)
+
+If no issues occurred during the iteration, use the empty sentinel:
+
+```yaml
+## Structured Issues
+
+issues: []
+```
+
+#### Validation
+
+Before marking completion:
+- Run: `python3 scripts/validate_iterloop_compliance.py --require-structured-issues`
+- Missing or malformed structured issues will block the completion gate
+
 ### Command Evidence Requirements
 For each claim in the report, provide:
 
