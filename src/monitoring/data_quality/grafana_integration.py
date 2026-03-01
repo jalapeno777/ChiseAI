@@ -30,7 +30,7 @@ class GrafanaMetricsExporter:
     def __init__(
         self,
         influx_client: Any | None = None,
-        influx_url: str = "http://localhost:8086",
+        influx_url: str | None = None,
         influx_token: str | None = None,
         influx_org: str = "chiseai",
         influx_bucket: str = "data_quality",

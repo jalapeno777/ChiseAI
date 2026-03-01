@@ -201,7 +201,10 @@ class DataQualityConfig:
                 True,
             ),
             # InfluxDB Configuration
-            influx_url=os.getenv("DQ_INFLUX_URL", "http://localhost:8086"),
+            influx_url=os.getenv(
+                "DQ_INFLUX_URL",
+                os.getenv("INFLUXDB_URL", "http://host.docker.internal:18087"),
+            ),
             influx_token=os.getenv("DQ_INFLUX_TOKEN", ""),
             influx_org=os.getenv("DQ_INFLUX_ORG", "chiseai"),
             influx_bucket=os.getenv("DQ_INFLUX_BUCKET", "data_quality"),
