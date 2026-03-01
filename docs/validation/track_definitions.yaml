@@ -1,0 +1,119 @@
+---
+# Paper Trading Validation Track Definitions
+# Story: PAPER-RECOVERY-001
+# Created: 2026-02-28
+
+tracks:
+  # Strategy Validation Tracks (S1-S6)
+  strategy:
+    S1:
+      name: "Signal Generation"
+      description: "Active strategy config explicit and versioned"
+      artifact_type: "redis_sorted_set"
+      artifact_key: "paper:index:signals"
+      validation_logic: "zcard > 0"
+      required: true
+      
+    S2:
+      name: "Order Creation"
+      description: "Risk constraints enforced at runtime"
+      artifact_type: "redis_sorted_set"
+      artifact_key: "paper:index:orders"
+      validation_logic: "zcard > 0"
+      required: true
+      
+    S3:
+      name: "Fill Execution"
+      description: "Minimum trade quality checks pass"
+      artifact_type: "redis_sorted_set"
+      artifact_key: "paper:index:fills"
+      validation_logic: "zcard > 0"
+      required: true
+      
+    S4:
+      name: "Outcome Capture"
+      description: "Strategy produces executable opportunities"
+      artifact_type: "redis_sorted_set"
+      artifact_key: "paper:index:outcomes"
+      validation_logic: "zcard > 0"
+      required: true
+      
+    S5:
+      name: "Recap Generation"
+      description: "Strategy outcome metrics computed from canonical outcomes"
+      artifact_type: "discord_message"
+      channel: "#trading"
+      message_type: "recap"
+      validation_logic: "message_id exists AND sourced_from_outcomes"
+      required: true
+      
+    S6:
+      name: "Kill Switch Monitoring"
+      description: "Strategy canary status recorded and queryable"
+      artifact_type: "influx_measurement"
+      measurement: "canary_deployment"
+      validation_logic: "row_count > 0"
+      required: true
+
+  # Engine Operations Tracks (E1-E5)
+  engine:
+    E1:
+      name: "Scheduler Heartbeat"
+      description: "Scheduler/worker heartbeat alive and monotonic"
+      artifact_type: "redis_hash"
+      artifact_key: "bmad:chiseai:scheduler:heartbeat"
+      validation_logic: "hash exists AND timestamp recent"
+      required: true
+      
+    E2:
+      name: "Signal Pipeline"
+      description: "Signal generation pipeline active"
+      artifact_type: "redis_sorted_set"
+      artifact_key: "paper:index:signals"
+      validation_logic: "delta > 0 over window"
+      required: true
+      
+    E3:
+      name: "Order Routing"
+      description: "Order routing/execution path active in paper mode"
+      artifact_type: "redis_sorted_set"
+      artifact_key: "paper:index:orders"
+      validation_logic: "delta > 0 over window"
+      required: true
+      
+    E4:
+      name: "Fill Handling"
+      description: "Fill handling and outcome capture active"
+      artifact_type: "redis_sorted_set"
+      artifact_key: "paper:index:fills"
+      validation_logic: "delta > 0 over window"
+      required: true
+      
+    E5:
+      name: "Error Rate"
+      description: "Error rate below defined threshold during proof window"
+      artifact_type: "influx_measurement"
+      measurement: "errors"
+      validation_logic: "error_rate < threshold"
+      threshold: 0.05
+      required: true
+
+# Gate to Track Mapping
+gate_mapping:
+  G1: ["E1"]
+  G2: ["S1", "E2"]
+  G3: ["S3", "E4"]
+  G4: ["S4"]
+  G5: ["S5"]
+  G6: ["S2", "S3"]
+  G7: ["S6"]
+  G8: ["S1", "S2", "S3", "S4", "S5", "S6"]
+
+# Evidence Schema Requirements
+evidence_schema:
+  required_fields:
+    - command
+    - exit_code
+    - timestamp_utc
+    - key_output_snippet
+    - artifact_or_log_path
