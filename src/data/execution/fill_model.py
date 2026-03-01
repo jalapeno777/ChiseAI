@@ -33,6 +33,10 @@ class Fill:
         fee_currency: Currency in which fee is denominated
         exchange: Exchange name - "bybit" or "bitget"
         metadata: Additional exchange-specific data
+
+        # ST-VENUE-001: Venue provenance fields
+        execution_venue: Where the trade was executed (e.g., "bybit_demo", "local_sim")
+        execution_mode: Mode of execution (e.g., "demo", "testnet", "production")
     """
 
     order_id: str
@@ -46,6 +50,10 @@ class Fill:
     fee_currency: str
     exchange: str  # bybit/bitget
     metadata: dict[str, Any] = field(default_factory=dict)
+
+    # ST-VENUE-001: Venue provenance fields
+    execution_venue: str = ""  # e.g., "bybit_demo", "local_sim"
+    execution_mode: str = ""  # e.g., "demo", "testnet", "production"
 
     def __post_init__(self) -> None:
         """Validate and normalize fill data."""
@@ -108,6 +116,9 @@ class Fill:
             "net_quantity": str(self.net_quantity),
             "net_value": str(self.net_value),
             "metadata": self.metadata,
+            # ST-VENUE-001: Venue provenance fields
+            "execution_venue": self.execution_venue,
+            "execution_mode": self.execution_mode,
         }
 
     @classmethod
@@ -132,6 +143,9 @@ class Fill:
             fee_currency=data["fee_currency"],
             exchange=data["exchange"],
             metadata=data.get("metadata", {}),
+            # ST-VENUE-001: Venue provenance fields
+            execution_venue=data.get("execution_venue", ""),
+            execution_mode=data.get("execution_mode", ""),
         )
 
     @classmethod
@@ -184,6 +198,9 @@ class Fill:
                 "seq": response.get("seq", 0),
                 "market_unit": response.get("marketUnit", ""),
             },
+            # ST-VENUE-001: Venue provenance fields - derive from context
+            execution_venue=response.get("execution_venue", "bybit"),
+            execution_mode=response.get("execution_mode", ""),
         )
 
     @classmethod
@@ -235,6 +252,9 @@ class Fill:
                 "force": response.get("force", ""),
                 "enter_point_source": response.get("enterPointSource", ""),
             },
+            # ST-VENUE-001: Venue provenance fields - derive from context
+            execution_venue=response.get("execution_venue", "bitget"),
+            execution_mode=response.get("execution_mode", ""),
         )
 
 
