@@ -145,7 +145,13 @@ OWNERSHIP_CHECK:
 BRANCH: feature/[STORY-ID]-[slug]
 WORKTREE_PATH: /tmp/worktrees/[STORY-ID]-[agent]
 
+TASK_CONTEXT:
+  STORY_ID: [STORY-ID]
+  AGENT_ID: [worker id]
+
 SESSION_VERIFY: python3 scripts/swarm/session.py verify --story-id=[STORY-ID] --branch=feature/[STORY-ID]-[slug] --worktree-path=/tmp/worktrees/[STORY-ID]-[agent]
+SESSION_ASSERT: python3 scripts/swarm/assert_session_context.py --story-id=[STORY-ID] --branch=feature/[STORY-ID]-[slug] --worktree-path=/tmp/worktrees/[STORY-ID]-[agent]
+SESSION_RUNNER: bash scripts/swarm/run_in_session.sh --story-id [STORY-ID] --branch feature/[STORY-ID]-[slug] --worktree-path /tmp/worktrees/[STORY-ID]-[agent] -- <command ...>
 
 MEMORY_CONTEXT:
   - Qdrant search "[topic]" found:

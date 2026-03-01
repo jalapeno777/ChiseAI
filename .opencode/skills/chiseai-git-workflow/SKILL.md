@@ -92,8 +92,10 @@ The merge authority rules here are consistent with `AGENTS.md` Git Safety Essent
 
 Use `scripts/swarm/session.py` for isolated worktree sessions:
 - `start` before any git work
-- `verify` before git actions  
+- `verify` before git actions (always pass `--worktree-path`)  
 - `close` when done
+- Before tests/lint/git commands, run `scripts/swarm/assert_session_context.py`
+- Prefer `scripts/swarm/run_in_session.sh` for command execution
 
 ## Exit Conditions
 
@@ -148,8 +150,13 @@ git checkout -b feature/[ST-XXX]-[subfeature-slug]
 ```bash
 python3 scripts/swarm/session.py start \
   --story-id=[ST-XXX] \
+  --agent=[agent-id] \
   --branch=feature/[ST-XXX]-[slug] \
-  --worktree-path=/tmp/worktrees/[ST-XXX]-[agent]
+  --worktree-root=.swarm-worktrees
+
+# Set WORKTREE_PATH from the printed "- worktree: ..." value
+export WORKTREE_PATH=/abs/path/from-session-start-output
+python3 scripts/swarm/session.py verify --story-id=[ST-XXX] --branch=feature/[ST-XXX]-[slug] --worktree-path="$WORKTREE_PATH" --check-canonical
 ```
 ```
 

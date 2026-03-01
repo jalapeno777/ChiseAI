@@ -252,10 +252,16 @@ OWNERSHIP_CHECK:
   - Check Redis: bmad:chiseai:ownership for [scope]
   - On conflict: STOP and report to me immediately
 
+TASK_CONTEXT:
+  - STORY_ID: [explicit story id]
+  - AGENT_ID: [worker id: quickdev|dev|senior-dev|merlin]
+
 BRANCH: [explicit branch name with story ID]
 WORKTREE_PATH: [isolated worktree path]
 
 SESSION_VERIFY: python3 scripts/swarm/session.py verify --story-id=<id> --branch=<branch> --worktree-path=<path>
+SESSION_ASSERT: python3 scripts/swarm/assert_session_context.py --story-id=<id> --branch=<branch> --worktree-path=<path>
+SESSION_RUNNER: bash scripts/swarm/run_in_session.sh --story-id <id> --branch <branch> --worktree-path <path> -- <command ...>
 
 MEMORY_CONTEXT:
   - Qdrant: [5-10 relevant decisions/patterns]
@@ -295,6 +301,8 @@ Before delegating, verify:
 - [ ] FORBIDDEN_GLOBS includes global-lock areas
 - [ ] BRANCH is explicit with story ID
 - [ ] WORKTREE_PATH is isolated
+- [ ] TASK_CONTEXT includes STORY_ID and AGENT_ID
+- [ ] SESSION_ASSERT + SESSION_RUNNER included in contract
 - [ ] MEMORY_CONTEXT has actual Qdrant findings
 - [ ] EXIT_CONDITIONS are clear
 - [ ] INCIDENT_TEMPLATE is copy-paste ready
