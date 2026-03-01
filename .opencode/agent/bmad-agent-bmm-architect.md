@@ -1,5 +1,5 @@
 ---
-name: 'architect'
+mode: all
 description: 'architect agent'
 ---
 

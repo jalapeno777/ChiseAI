@@ -1,5 +1,5 @@
 ---
-name: 'ux-designer'
+mode: all
 description: 'ux-designer agent'
 ---
 
