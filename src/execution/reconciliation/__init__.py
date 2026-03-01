@@ -7,12 +7,12 @@ from __future__ import annotations
 
 from execution.reconciliation.models import (
     CountDiscrepancy,
-    ReconciliationResult
+    ReconciliationResult,
     ReconciliationStatus,
 )
 from execution.reconciliation.service import (
-    OutcomeReconciliationService
-    ReconciliationConfig
+    OutcomeReconciliationService,
+    ReconciliationConfig,
 )
 
 __all__ = [
