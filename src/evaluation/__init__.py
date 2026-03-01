@@ -1,9 +1,10 @@
-"""
-Issue ingestion and parsing system for brain evaluation.
+"""Evaluation package.
 
 # SAFETY: No risk cap logic modified
 # SAFETY: No promotion gate logic modified
 # SAFETY: No live trading flow modified
+
+Combines issue ingestion primitives with mini BrainEval/repeated-issue tooling.
 """
 
 import hashlib
@@ -13,7 +14,7 @@ from enum import Enum
 
 
 class IssueCategory(Enum):
-    """Categories of issues that can be detected."""
+    """Categories of issues that can be detected for ingestion."""
 
     FILE_ACCESS = "file_access"
     DB_CONNECTIVITY = "db_connectivity"
@@ -33,13 +34,7 @@ class IssueSource(Enum):
 
 @dataclass
 class Issue:
-    """
-    Represents a detected issue from various sources.
-
-    # SAFETY: No risk cap logic modified
-    # SAFETY: No promotion gate logic modified
-    # SAFETY: No live trading flow modified
-    """
+    """Issue model used by ingestion/parsing paths."""
 
     category: IssueCategory
     description: str
@@ -53,43 +48,58 @@ class Issue:
     metadata: dict = field(default_factory=dict)
 
     def __post_init__(self):
-        """Generate fingerprint after initialization."""
         self.fingerprint = self._generate_fingerprint()
 
     def _generate_fingerprint(self) -> str:
-        """
-        Generate a unique fingerprint for deduplication.
-
-        Pattern: hash(category + normalized_description)
-        """
         normalized_desc = self._normalize_description(self.description)
         fingerprint_input = f"{self.category.value}:{normalized_desc}"
         return hashlib.sha256(fingerprint_input.encode()).hexdigest()[:16]
 
     @staticmethod
     def _normalize_description(description: str) -> str:
-        """
-        Normalize description for consistent fingerprinting.
-
-        - Lowercase
-        - Remove timestamps (before numbers to preserve pattern)
-        - Remove specific paths/numbers
-        """
         import re
 
         normalized = description.lower()
-        # Remove file paths
         normalized = re.sub(r"/[\w/.-]+", "<PATH>", normalized)
-        # Remove timestamps BEFORE numbers (timestamps contain numbers)
-        # Note: lowercase "t" because we already lowercased the string
-        normalized = re.sub(
-            r"\d{4}-\d{2}-\d{2}[t ]\d{2}:\d{2}:\d{2}", "<TIMESTAMP>", normalized
-        )
-        # Remove numbers (line numbers, ports, etc.)
+        normalized = re.sub(r"\d{4}-\d{2}-\d{2}[t ]\d{2}:\d{2}:\d{2}", "<TIMESTAMP>", normalized)
         normalized = re.sub(r"\b\d+\b", "<NUM>", normalized)
-        # Collapse whitespace
         normalized = re.sub(r"\s+", " ", normalized).strip()
         return normalized
 
 
-__all__ = ["Issue", "IssueCategory", "IssueSource"]
+from .fingerprinting import FingerprintCluster, FingerprintClusterer, IssueFingerprint
+from .mini_brain_eval import MiniBrainEval
+from .repeated_issue_detector import (
+    IssueCluster,
+    RepeatedIssueDetector,
+    RepeatedIssueReport,
+    TrendAnalysis,
+)
+from .schemas.mini_eval import (
+    Issue as MiniEvalIssue,
+    IssueCategory as MiniEvalIssueCategory,
+    IssueSeverity,
+    MiniEvalResult,
+    Mitigation,
+    MitigationResult,
+)
+
+__all__ = [
+    "Issue",
+    "IssueCategory",
+    "IssueSource",
+    "MiniBrainEval",
+    "RepeatedIssueDetector",
+    "RepeatedIssueReport",
+    "IssueCluster",
+    "TrendAnalysis",
+    "IssueFingerprint",
+    "FingerprintClusterer",
+    "FingerprintCluster",
+    "MiniEvalResult",
+    "MiniEvalIssue",
+    "MiniEvalIssueCategory",
+    "IssueSeverity",
+    "Mitigation",
+    "MitigationResult",
+]
