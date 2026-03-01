@@ -16,10 +16,11 @@ import json
 import os
 import re
 import uuid
+import yaml
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 
 
 @dataclass
@@ -33,6 +34,14 @@ class Issue:
     timestamp: Optional[str] = None
     line_number: Optional[int] = None
     context: str = ""
+    # Structured issue fields
+    root_cause: Optional[str] = None
+    fix_applied: Optional[str] = None
+    time_lost_minutes: Optional[int] = None
+    recurrence_hint: Optional[str] = None
+    impact_area: Optional[str] = None
+    resolved: Optional[bool] = None
+    is_structured: bool = False  # Flag to indicate structured vs regex
 
 
 @dataclass
@@ -177,6 +186,13 @@ class IssueDetector:
         # Extract timestamp from frontmatter if present
         timestamp = self._extract_timestamp(content)
 
+        # FIRST: Try to parse structured issues
+        structured_issues = self._scan_structured_issues(content, file_path, timestamp)
+        if structured_issues:
+            self.issues.extend(structured_issues)
+            return  # Use structured issues only, skip regex
+
+        # FALLBACK: Use regex patterns if no structured section found
         for line_num, line in enumerate(lines, 1):
             for issue_type, config in self.PATTERNS.items():
                 for pattern in config["patterns"]:
@@ -194,9 +210,101 @@ class IssueDetector:
                             timestamp=timestamp,
                             line_number=line_num,
                             context=context.strip(),
+                            is_structured=False,
                         )
                         self.issues.append(issue)
                         break  # Avoid duplicate detection for same line
+
+    def _scan_structured_issues(
+        self, content: str, file_path: Path, timestamp: Optional[str]
+    ) -> List[Issue]:
+        """Parse structured issues from markdown YAML section.
+
+        Returns empty list if no structured section or parsing fails.
+        """
+        issues: List[Issue] = []
+
+        # Find ## Structured Issues section
+        structured_match = re.search(
+            r"^##\s+Structured\s+Issues\s*\n(.*?)(?=^##\s|\Z)",
+            content,
+            re.MULTILINE | re.DOTALL,
+        )
+
+        if not structured_match:
+            return issues  # No structured section found
+
+        yaml_content = structured_match.group(1).strip()
+
+        try:
+            parsed = yaml.safe_load(yaml_content)
+            if not parsed or not isinstance(parsed, dict):
+                return issues
+
+            issues_list = parsed.get("issues", [])
+            if not issues_list:
+                return issues  # Empty issues list
+
+            for item in issues_list:
+                if not isinstance(item, dict):
+                    continue
+
+                # Map severity from structured fields or infer from issue_type
+                issue_type = item.get("issue_type", "unknown")
+                severity = self._infer_severity(issue_type, item.get("resolved", False))
+
+                # Build description from structured fields
+                description_parts = []
+                if item.get("root_cause"):
+                    description_parts.append(f"Root cause: {item['root_cause']}")
+                if item.get("fix_applied"):
+                    description_parts.append(f"Fix: {item['fix_applied']}")
+                description = "; ".join(description_parts) or issue_type
+
+                issue = Issue(
+                    issue_type=issue_type,
+                    severity=severity,
+                    description=description,
+                    source_file=str(file_path),
+                    timestamp=timestamp,
+                    line_number=None,  # Structured issues don't have line numbers
+                    context="",  # Structured issues don't have surrounding context
+                    root_cause=item.get("root_cause"),
+                    fix_applied=item.get("fix_applied"),
+                    time_lost_minutes=item.get("time_lost_minutes"),
+                    recurrence_hint=item.get("recurrence_hint"),
+                    impact_area=item.get("impact_area"),
+                    resolved=item.get("resolved"),
+                    is_structured=True,
+                )
+                issues.append(issue)
+
+        except yaml.YAMLError as e:
+            print(f"Warning: Failed to parse structured issues in {file_path}: {e}")
+            return []  # Return empty on parse error, will fallback to regex
+
+        return issues
+
+    def _infer_severity(self, issue_type: str, resolved: bool) -> str:
+        """Infer severity from issue_type and resolved status."""
+        # Check if issue_type matches known patterns
+        for pattern_type, config in self.PATTERNS.items():
+            if pattern_type == issue_type:
+                # Reduce severity if resolved
+                if resolved:
+                    severity_order = ["P0", "P1", "P2", "P3"]
+                    idx = severity_order.index(config["severity"])
+                    return severity_order[min(idx + 1, 3)]
+                return config["severity"]
+
+        # Default severity based on common patterns
+        if "blocker" in issue_type.lower():
+            return "P0"
+        if "failure" in issue_type.lower() or "error" in issue_type.lower():
+            return "P1"
+        if "warning" in issue_type.lower() or "slow" in issue_type.lower():
+            return "P2"
+        return "P3"
 
     def _extract_timestamp(self, content: str) -> Optional[str]:
         """Extract timestamp from file frontmatter."""

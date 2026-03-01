@@ -42,8 +42,35 @@ class RepeatedIssueAnalyzer:
         self.eval_dir = Path(eval_dir)
         self.clusters: Dict[str, IssueCluster] = {}
 
-    def normalize_description(self, description: str) -> str:
-        """Normalize an issue description for clustering."""
+    def is_structured_issue(self, issue: Dict[str, Any]) -> bool:
+        """Check if an issue is structured (parsed from YAML)."""
+        return issue.get("is_structured", False)
+
+    def normalize_description(
+        self, description: str, issue: Optional[Dict[str, Any]] = None
+    ) -> str:
+        """Normalize an issue description for clustering.
+
+        For structured issues: use issue_type + root_cause + impact_area + recurrence_hint
+        For regex issues: use existing normalization logic
+        """
+        # Check if this is a structured issue
+        if issue and self.is_structured_issue(issue):
+            # Use structured fields for deterministic normalization
+            parts = []
+            if issue.get("issue_type"):
+                parts.append(issue["issue_type"])
+            if issue.get("root_cause"):
+                parts.append(issue["root_cause"])
+            if issue.get("impact_area"):
+                parts.append(issue["impact_area"])
+            if issue.get("recurrence_hint"):
+                parts.append(issue["recurrence_hint"])
+
+            if parts:
+                return "|".join(parts).lower()
+
+        # Fallback to regex-based normalization
         # Convert to lowercase
         normalized = description.lower()
 
@@ -73,9 +100,29 @@ class RepeatedIssueAnalyzer:
 
         return normalized
 
-    def generate_cluster_id(self, normalized_desc: str, issue_type: str) -> str:
-        """Generate a unique ID for a cluster."""
-        content = f"{issue_type}:{normalized_desc}"
+    def generate_cluster_id(
+        self,
+        normalized_desc: str,
+        issue_type: str,
+        issue: Optional[Dict[str, Any]] = None,
+    ) -> str:
+        """Generate a unique ID for a cluster.
+
+        For structured issues: use stable fingerprint from structured fields
+        For regex issues: use description-based fingerprint
+        """
+        # For structured issues, use a more stable fingerprint
+        if issue and self.is_structured_issue(issue):
+            # Create deterministic fingerprint from structured fields
+            fingerprint_parts = [issue_type]
+            if issue.get("root_cause"):
+                fingerprint_parts.append(issue["root_cause"])
+            if issue.get("impact_area"):
+                fingerprint_parts.append(issue["impact_area"])
+            content = ":".join(fingerprint_parts)
+        else:
+            content = f"{issue_type}:{normalized_desc}"
+
         return hashlib.md5(content.encode()).hexdigest()[:12]
 
     def load_all_evaluations(self) -> List[Dict[str, Any]]:
@@ -113,11 +160,11 @@ class RepeatedIssueAnalyzer:
 
             for issue in eval_data.get("issues_found", []):
                 description = issue.get("description", "")
-                normalized = self.normalize_description(description)
+                normalized = self.normalize_description(description, issue)
                 issue_type = issue.get("issue_type", "unknown")
                 severity = issue.get("severity", "P3")
 
-                cluster_id = self.generate_cluster_id(normalized, issue_type)
+                cluster_id = self.generate_cluster_id(normalized, issue_type, issue)
 
                 if cluster_id not in self.clusters:
                     self.clusters[cluster_id] = IssueCluster(
@@ -250,7 +297,7 @@ class RepeatedIssueAnalyzer:
     ) -> str:
         """Save the report to a file."""
         if output_path is None:
-            output_path = self.eval_dir / "repeated_issues_report.json"
+            output_path = str(self.eval_dir / "repeated_issues_report.json")
 
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
