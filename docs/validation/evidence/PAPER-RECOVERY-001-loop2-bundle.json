@@ -1,0 +1,99 @@
+{
+  "bundle_id": "PAPER-RECOVERY-001-loop2",
+  "story_id": "PAPER-RECOVERY-001",
+  "loop": 2,
+  "timestamp_utc": "2026-03-01T02:03:56.582194Z",
+  "start_time": "2026-03-01T01:34:34Z",
+  "end_time": "2026-03-01T02:01:51Z",
+  "snapshots": {
+    "T0": {
+      "label": "T0",
+      "timestamp": "2026-03-01T01:34:34Z",
+      "signals": 56,
+      "orders": 74,
+      "fills": 38,
+      "outcomes": 38
+    },
+    "T5": {
+      "label": "T5",
+      "timestamp": "2026-03-01T01:39:07Z",
+      "signals": 96,
+      "orders": 74,
+      "fills": 38,
+      "outcomes": 38
+    },
+    "T10": {
+      "label": "T10",
+      "timestamp": "2026-03-01T01:43:40Z",
+      "signals": 136,
+      "orders": 74,
+      "fills": 38,
+      "outcomes": 38
+    },
+    "T15": {
+      "label": "T15",
+      "timestamp": "2026-03-01T01:48:13Z",
+      "signals": 176,
+      "orders": 74,
+      "fills": 38,
+      "outcomes": 38
+    },
+    "T20": {
+      "label": "T20",
+      "timestamp": "2026-03-01T01:52:46Z",
+      "signals": 216,
+      "orders": 74,
+      "fills": 38,
+      "outcomes": 38
+    },
+    "T25": {
+      "label": "T25",
+      "timestamp": "2026-03-01T01:57:19Z",
+      "signals": 256,
+      "orders": 74,
+      "fills": 38,
+      "outcomes": 38
+    },
+    "T30": {
+      "label": "T30",
+      "timestamp": "2026-03-01T02:01:51Z",
+      "signals": 296,
+      "orders": 74,
+      "fills": 38,
+      "outcomes": 38
+    }
+  },
+  "deltas": {
+    "signals": 240,
+    "orders": 0,
+    "fills": 0,
+    "outcomes": 0
+  },
+  "gate_results": {
+    "G1": "PASS",
+    "G2": "FAIL",
+    "G3": "FAIL",
+    "G4": "FAIL",
+    "G5": "FAIL",
+    "G6": "PASS",
+    "G7": "PASS",
+    "G8": "FAIL"
+  },
+  "overall_status": "BLOCKED_AFTER_2",
+  "gates_passed": 3,
+  "gates_total": 8,
+  "blocking_gates": [
+    "G2",
+    "G3",
+    "G4",
+    "G5",
+    "G8"
+  ],
+  "root_cause_analysis": {
+    "primary_issue": "OutcomePersistence Redis connection misconfiguration",
+    "detail": "Trading components connect to redis-server:6379 instead of host.docker.internal:6380",
+    "evidence": "Error logs show \"Error -2 connecting to redis-server:6379\"",
+    "impact": "Orders, fills, and outcomes not persisted to paper:index:* sorted sets"
+  },
+  "bundle_hash": "ea2599187ab28bdee616c1d574e93dd805e6ecc384bba720ef1f84b634661e65"
+}
