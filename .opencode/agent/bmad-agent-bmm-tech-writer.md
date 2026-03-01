@@ -1,5 +1,5 @@
 ---
-name: 'tech-writer'
+mode: all
 description: 'tech-writer agent'
 ---
 

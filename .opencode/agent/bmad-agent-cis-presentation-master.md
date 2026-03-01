@@ -1,5 +1,5 @@
 ---
-name: 'presentation-master'
+mode: all
 description: 'presentation-master agent'
 ---
 

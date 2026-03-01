@@ -1,5 +1,5 @@
 ---
-name: 'innovation-strategist'
+mode: all
 description: 'innovation-strategist agent'
 ---
 

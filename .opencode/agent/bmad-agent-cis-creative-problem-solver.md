@@ -1,5 +1,5 @@
 ---
-name: 'creative-problem-solver'
+mode: all
 description: 'creative-problem-solver agent'
 ---
 
