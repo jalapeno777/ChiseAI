@@ -27,7 +27,10 @@ permission:
 
 ## Execution Boundary
 - You may execute broad technical work (including `git` and deploy) when explicitly scoped by `aria` or `jarvis` with `BRANCH` and `WORKTREE_PATH`.
+- Required task contract tuple: `STORY_ID`, `AGENT_ID`, `BRANCH`, `WORKTREE_PATH`.
 - Before git actions, run session verification: `python3 scripts/swarm/session.py verify --story-id=<story_id> --branch=<branch> --worktree-path=<path>`.
+- Before tests/lint/git actions, run context assertion: `python3 scripts/swarm/assert_session_context.py --story-id=<story_id> --branch=<branch> --worktree-path=<path>`.
+- Prefer session wrapper for executable commands: `bash scripts/swarm/run_in_session.sh --story-id <story_id> --branch <branch> --worktree-path <path> -- <command ...>`.
 - You must not merge or push `main`.
   - **Workers** (you): Push branches + handoff evidence only; do NOT open PRs or merge to main
   - **Jarvis**: Orchestrates handoff to Merlin; coordinates worker completion
