@@ -5179,8 +5179,8 @@ launch_stories:
   - id: PAPER-RECOVERY-001
     title: Paper Trading 30-Minute Proof Loop Validation
     epic_id: EP-PAPER-001
-    status: in_progress
-    validation_status: loop_1_failed
+    status: blocked
+    validation_status: blocked_after_2_loops
     story_points: 3
     priority: P1-HIGH
     description: Run full 30-minute proof loop with 5-minute snapshots to validate paper trading data flow
@@ -5201,6 +5201,30 @@ launch_stories:
       emitter_success_count: 1614
       evidence_bundle: "_bmad-output/evidence/PAPER-RECOVERY-001-loop1-bundle.json"
       next_action: "Fix Redis host configuration and re-run Loop 2"
+    loop_2_results:
+      timestamp_start: "2026-03-01T01:33:00Z"
+      timestamp_end: "2026-03-01T02:03:00Z"
+      duration_minutes: 30
+      result: BLOCKED_AFTER_2
+      gates_passed: 3
+      gates_failed: 5
+      deltas:
+        signals: 240
+        orders: 0
+        fills: 0
+        outcomes: 0
+      gate_results:
+        G1: PASS  # Signals delta = 240
+        G2: FAIL  # Orders delta = 0
+        G3: FAIL  # Fills delta = 0
+        G4: FAIL  # Outcomes delta = 0
+        G5: FAIL  # No Discord messages
+        G6: PASS  # InfluxDB healthy
+        G7: PASS  # InfluxDB canary OK
+        G8: FAIL  # No burn-in verdict
+      root_cause: "OutcomePersistence fails to connect to Redis - uses 'redis-server:6379' instead of 'host.docker.internal:6380'. Trading activity creates paper:order:*, paper:fill:*, paper:outcome:* keys but OutcomePersistence cannot add them to paper:index:* sorted sets due to connection failure."
+      evidence_bundle: "docs/validation/evidence/PAPER-RECOVERY-001-loop2-bundle.json"
+      next_action: "HUMAN_ESCALATION_REQUIRED - Fix OutcomePersistence Redis configuration in src/execution/persistence/outcome_persistence.py or environment variables"
     acceptance_criteria:
       - G1: Signals delta > 0 (Redis paper:index:signals)
       - G2: Orders delta > 0 (Redis paper:index:orders)
