@@ -16,6 +16,7 @@ from autonomous_control_plane.components.circuit_breaker_registry import (
     CircuitBreakerRegistry,
 )
 from autonomous_control_plane.components.incident_manager import IncidentManager
+from autonomous_control_plane.components.log_monitor import LogMonitor
 from autonomous_control_plane.components.retry_coordinator import RetryCoordinator
 from autonomous_control_plane.components.rollback_coordinator import (
     RollbackCoordinator,
@@ -23,6 +24,8 @@ from autonomous_control_plane.components.rollback_coordinator import (
 from autonomous_control_plane.components.self_healing_engine import (
     SelfHealingEngine,
 )
+from autonomous_control_plane.telemetry.dashboard_sync import DashboardSyncServer
+from autonomous_control_plane.trigger_service import HealingTriggerService
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +91,9 @@ class ACPContainer:
         self._healing_engine: SelfHealingEngine | None = None
         self._incident_manager: IncidentManager | None = None
         self._rollback_coordinator: RollbackCoordinator | None = None
+        self._log_monitor: LogMonitor | None = None
+        self._trigger_service: HealingTriggerService | None = None
+        self._dashboard_sync: DashboardSyncServer | None = None
 
         self._initialized = True
         logger.info(f"ACPContainer created (trading_mode={trading_mode})")
@@ -174,6 +180,26 @@ class ACPContainer:
         logger.info("Initializing RollbackCoordinator...")
         self._rollback_coordinator = RollbackCoordinator(
             incident_manager=self._incident_manager,
+        )
+
+        # Step 6: Initialize LogMonitor
+        logger.info("Initializing LogMonitor...")
+        self._log_monitor = LogMonitor()
+
+        # Step 7: Initialize HealingTriggerService
+        logger.info("Initializing HealingTriggerService...")
+        self._trigger_service = HealingTriggerService(
+            log_monitor=self._log_monitor,
+            healing_engine=self._healing_engine,
+        )
+
+        # Step 8: Initialize DashboardSyncServer
+        logger.info("Initializing DashboardSyncServer...")
+        self._dashboard_sync = DashboardSyncServer(
+            circuit_breaker_registry=None,  # Will be wired later if needed
+            incident_manager=self._incident_manager,
+            healing_engine=self._healing_engine,
+            rollback_coordinator=self._rollback_coordinator,
         )
 
         logger.info("ACP component initialization complete")
@@ -270,6 +296,52 @@ class ACPContainer:
             )
         return self._rollback_coordinator
 
+    @property
+    def log_monitor(self) -> LogMonitor:
+        """Get the log monitor.
+
+        Returns:
+            LogMonitor instance
+
+        Raises:
+            RuntimeError: If components not initialized
+        """
+        if self._log_monitor is None:
+            raise RuntimeError("LogMonitor not initialized. Call startup() first.")
+        return self._log_monitor
+
+    @property
+    def trigger_service(self) -> HealingTriggerService:
+        """Get the healing trigger service.
+
+        Returns:
+            HealingTriggerService instance
+
+        Raises:
+            RuntimeError: If components not initialized
+        """
+        if self._trigger_service is None:
+            raise RuntimeError(
+                "HealingTriggerService not initialized. Call startup() first."
+            )
+        return self._trigger_service
+
+    @property
+    def dashboard_sync(self) -> DashboardSyncServer:
+        """Get the dashboard sync server.
+
+        Returns:
+            DashboardSyncServer instance
+
+        Raises:
+            RuntimeError: If components not initialized
+        """
+        if self._dashboard_sync is None:
+            raise RuntimeError(
+                "DashboardSyncServer not initialized. Call startup() first."
+            )
+        return self._dashboard_sync
+
     def get_status(self) -> dict[str, Any]:
         """Get overall ACP status.
 
@@ -285,6 +357,9 @@ class ACPContainer:
                 "self_healing_engine": self._healing_engine is not None,
                 "incident_manager": self._incident_manager is not None,
                 "rollback_coordinator": self._rollback_coordinator is not None,
+                "log_monitor": self._log_monitor is not None,
+                "trigger_service": self._trigger_service is not None,
+                "dashboard_sync": self._dashboard_sync is not None,
             },
             "healing_engine": (
                 self._healing_engine.get_status() if self._healing_engine else None

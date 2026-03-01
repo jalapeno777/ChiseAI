@@ -53,9 +53,14 @@ class ExecutionTelemetryExporter:
         influxdb_client: InfluxDBClient | None = None,
         bucket: str = "chiseai",
         org: str = "chiseai",
-        url: str = "http://localhost:8086",
+        url: str | None = None,
         token: str = "",  # nosec B107 - empty default for optional param
     ):
+        # Use environment variable or Docker-aware default
+        if url is None:
+            import os
+
+            url = os.getenv("INFLUXDB_URL", "http://host.docker.internal:18087")
         """Initialize telemetry exporter.
 
         Args:
