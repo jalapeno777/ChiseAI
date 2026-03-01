@@ -83,6 +83,12 @@ class SignalOutcome:
 
         # DISCORD-TRADING-001: Test trade labeling
         is_test: Whether this is a test trade (for test labeling in notifications)
+
+        # ST-VENUE-001: Venue provenance fields
+        execution_venue: Where the trade was executed (e.g., "bybit_demo", "local_sim")
+        execution_mode: Mode of execution (e.g., "demo", "testnet", "production")
+        execution_source: Source component that executed the trade (e.g., "bybit_demo_connector", "paper_trading")
+        venue_metadata: Additional venue-specific metadata
     """
 
     outcome_id: UUID = field(default_factory=uuid4)
@@ -113,6 +119,12 @@ class SignalOutcome:
 
     # DISCORD-TRADING-001: Test trade labeling
     is_test: bool = False
+
+    # ST-VENUE-001: Venue provenance fields
+    execution_venue: str = ""
+    execution_mode: str = ""
+    execution_source: str = ""
+    venue_metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Validate and normalize values after initialization."""
@@ -264,6 +276,11 @@ class SignalOutcome:
             "position_size": str(self.position_size),
             # DISCORD-TRADING-001: Test trade labeling
             "is_test": self.is_test,
+            # ST-VENUE-001: Venue provenance fields
+            "execution_venue": self.execution_venue,
+            "execution_mode": self.execution_mode,
+            "execution_source": self.execution_source,
+            "venue_metadata": self.venue_metadata,
         }
 
     @classmethod
@@ -334,6 +351,11 @@ class SignalOutcome:
             position_size=Decimal(data.get("position_size", "0")),
             # DISCORD-TRADING-001: Test trade labeling
             is_test=data.get("is_test", False),
+            # ST-VENUE-001: Venue provenance fields
+            execution_venue=data.get("execution_venue", ""),
+            execution_mode=data.get("execution_mode", ""),
+            execution_source=data.get("execution_source", ""),
+            venue_metadata=data.get("venue_metadata", {}),
         )
 
     def to_db_dict(self) -> dict[str, Any]:
@@ -371,6 +393,11 @@ class SignalOutcome:
             "position_size": float(self.position_size),
             # DISCORD-TRADING-001: Test trade labeling
             "is_test": self.is_test,
+            # ST-VENUE-001: Venue provenance fields
+            "execution_venue": self.execution_venue,
+            "execution_mode": self.execution_mode,
+            "execution_source": self.execution_source,
+            "venue_metadata": self.venue_metadata,
         }
 
     def to_notification_dict(self) -> dict[str, Any]:
@@ -400,6 +427,10 @@ class SignalOutcome:
             "is_closed": self.is_closed,
             # DISCORD-TRADING-001: Test trade labeling
             "is_test": self.is_test,
+            # ST-VENUE-001: Venue provenance fields
+            "execution_venue": self.execution_venue,
+            "execution_mode": self.execution_mode,
+            "execution_source": self.execution_source,
         }
 
 
