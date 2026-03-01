@@ -7,6 +7,27 @@ metadata:
   version: "2.5.3"
   last_updated: "2026-02-27T00:05:00Z"
   recent_changes:
+    - timestamp: "2026-03-01T04:30:00Z"
+      actor: merlin
+      action: remediation-package-complete
+      description: "REMEDIATION-001: Truthful Discord recap + reconciliation + venue provenance + Bybit-demo enforcement package merged to main"
+      story_id: REMEDIATION-001
+      merge_commit_shas:
+        - "43e093b"  # ST-VENUE-001
+        - "c5e45e1"  # HOTFIX-PAPER-API-REG-001
+      files_changed:
+        - src/ml/models/signal_outcome.py
+        - src/execution/reconciliation/
+        - src/paper_trading/
+        - src/execution/safety/
+        - tests/
+        - docs/runbooks/recap-semantics.md
+        - scripts/validation/verify_venue_provenance_live.py
+      test_summary:
+        total: 911
+        passed: 911
+        failed: 0
+        skipped: 8
     - timestamp: "2026-02-27T00:05:00Z"
       actor: merlin
       action: st-auto-truth-sync-merge
