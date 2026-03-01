@@ -5175,6 +5175,48 @@ launch_stories:
       - Remediation plan reviewed and approved by merlin
     dependency_notes: May require access to CI logs and test infrastructure; plan execution to be scheduled separately
 
+  # EP-PAPER-001: Paper Trading Recovery
+  - id: PAPER-RECOVERY-001
+    title: Paper Trading 30-Minute Proof Loop Validation
+    epic_id: EP-PAPER-001
+    status: in_progress
+    validation_status: loop_1_failed
+    story_points: 3
+    priority: P1-HIGH
+    description: Run full 30-minute proof loop with 5-minute snapshots to validate paper trading data flow
+    loop_1_results:
+      timestamp_start: "2026-03-01T00:21:25Z"
+      timestamp_end: "2026-03-01T00:53:49Z"
+      duration_minutes: 30
+      result: FAIL
+      gates_passed: 0
+      gates_failed: 8
+      deltas:
+        signals: 0
+        orders: 0
+        fills: 0
+        outcomes: 0
+      root_cause: "Redis connectivity failure in continuous_paper_emitter.py - emitter configured for 'redis-server:6379' but should use 'host.docker.internal:6380'"
+      emitter_iterations: 344
+      emitter_success_count: 1614
+      evidence_bundle: "_bmad-output/evidence/PAPER-RECOVERY-001-loop1-bundle.json"
+      next_action: "Fix Redis host configuration and re-run Loop 2"
+    acceptance_criteria:
+      - G1: Signals delta > 0 (Redis paper:index:signals)
+      - G2: Orders delta > 0 (Redis paper:index:orders)
+      - G3: Fills delta > 0 (Redis paper:index:fills)
+      - G4: Outcomes delta > 0 (Redis paper:index:outcomes)
+      - G5: Discord OPEN/CLOSE/RECAP messages exist
+      - G6: InfluxDB orders/fills queries return data
+      - G7: InfluxDB canary query returns data
+      - G8: Burn-in verdict artifact exists
+    implementation_notes:
+      - Loop 1 executed for full 30 minutes with T0-T30 snapshots
+      - Emitter ran successfully (344 iterations, 0 errors) but failed to connect to Redis
+      - No new data persisted to Redis indices during loop window
+      - All gates G1-G8 failed due to infrastructure connectivity issues
+      - Loop 2 required after fixing Redis configuration
+
 summary:
   total_epics: 24
   total_stories: 119
