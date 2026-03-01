@@ -114,8 +114,6 @@ Before hitting "delegate", verify:
 - [ ] MEMORY_CONTEXT has actual Qdrant findings
 - [ ] EXIT_CONDITIONS are clear
 - [ ] INCIDENT_TEMPLATE is copy-paste ready
-- [ ] Completion evidence template included
-- [ ] Worker understands handoff payload requirements
 
 ## Templates
 
@@ -145,13 +143,7 @@ OWNERSHIP_CHECK:
 BRANCH: feature/[STORY-ID]-[slug]
 WORKTREE_PATH: /tmp/worktrees/[STORY-ID]-[agent]
 
-TASK_CONTEXT:
-  STORY_ID: [STORY-ID]
-  AGENT_ID: [worker id]
-
 SESSION_VERIFY: python3 scripts/swarm/session.py verify --story-id=[STORY-ID] --branch=feature/[STORY-ID]-[slug] --worktree-path=/tmp/worktrees/[STORY-ID]-[agent]
-SESSION_ASSERT: python3 scripts/swarm/assert_session_context.py --story-id=[STORY-ID] --branch=feature/[STORY-ID]-[slug] --worktree-path=/tmp/worktrees/[STORY-ID]-[agent]
-SESSION_RUNNER: bash scripts/swarm/run_in_session.sh --story-id [STORY-ID] --branch feature/[STORY-ID]-[slug] --worktree-path /tmp/worktrees/[STORY-ID]-[agent] -- <command ...>
 
 MEMORY_CONTEXT:
   - Qdrant search "[topic]" found:
@@ -286,32 +278,6 @@ POST-EMERGENCY:
   - [ ] Post-mortem scheduled
   - [ ] Normal process review
   - [ ] Prevention measures documented
-```
-
-### Template 5: Mandatory Completion Evidence
-
-```markdown
-## MANDATORY COMPLETION EVIDENCE
-
-### Handoff Payload (REQUIRED)
-- **Story ID**: [ST-XXX]
-- **Branch**: [feature/ST-XXX-slug]
-- **Head SHA**: [full commit hash]
-- **Test Summary**: [N tests passed, X failed, coverage %]
-- **Status-Sync Proof**: [validation output or link]
-- **Blockers**: [None | list of blockers]
-
-### Work Evidence
-- Files changed: [list with +/-/modified counts]
-- Commands run: [with actual output]
-- Verification steps: [how to confirm correctness]
-
-### Completion Checklist
-- [ ] Local CI passed
-- [ ] Status sync validated
-- [ ] Working tree clean (or documented exception)
-- [ ] Ownership released (via chise-release-ownership)
-- [ ] Worktree cleanup completed (or scheduled)
 ```
 
 ## Examples

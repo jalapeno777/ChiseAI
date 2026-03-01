@@ -2,7 +2,7 @@
 name: "quickdev"
 description: "Fast executor subagent for 1SP tasks: small fixes, quick investigations, small refactors, CI tweaks."
 mode: all
-model: "zai-coding-plan/glm-4.7" # model: "minimax/MiniMax-M2.5"
+model: "kimi-for-coding/k2p5" # model: "minimax/MiniMax-M2.5"
 temperature: 0.35
 tools:
   task: true
@@ -36,13 +36,7 @@ permission:
 ## Scope + Lock Contract (required)
 - If the task does not include `SCOPE_GLOBS` and `LOCKS_REQUIRED`, ask once before starting.
 - If the task includes git actions, it must also include `BRANCH` and `WORKTREE_PATH`; run `python3 scripts/swarm/session.py verify --story-id=<story_id> --branch=<branch> --worktree-path=<path>` before any git command.
-- Required task contract tuple: `STORY_ID`, `AGENT_ID`, `BRANCH`, `WORKTREE_PATH`.
-- Before tests/lint/git actions, run context assertion: `python3 scripts/swarm/assert_session_context.py --story-id=<story_id> --branch=<branch> --worktree-path=<path>`.
-- Prefer session wrapper for executable commands: `bash scripts/swarm/run_in_session.sh --story-id <story_id> --branch <branch> --worktree-path <path> -- <command ...>`.
-- You must not merge or push `main`.
-  - **Workers** (you): Push branches + handoff evidence only; do NOT open PRs or merge to main
-  - **Jarvis**: Orchestrates handoff to Merlin; coordinates worker completion
-  - **Merlin**: Sole merge authority to main and branch cleanup authority
+- You must not merge or push `main`; only `jarvis` may perform main-merge operations.
 - Do not edit files outside `SCOPE_GLOBS`.
 - Treat canonical status files (`docs/bmm-workflow-status.yaml`, `docs/validation/validation-registry.yaml`) as single-writer global-lock files; lock usage is advisory and must be coordinated by `jarvis`.
 - If you discover the change is not 1SP, involves global-lock areas (CI/infra/governance/shared invariants), or has hidden dependencies, STOP and report back to `jarvis` for re-scoping.

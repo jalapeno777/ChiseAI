@@ -122,8 +122,6 @@ OUTPUT FORMAT:
   - group tasks into sequential "batches"
   - for each task: `scope_globs`, `locks_required`, and `depends_on`
 - For each executable git task, require explicit `BRANCH`, `WORKTREE_PATH`, and `SESSION_VERIFY` (`python3 scripts/swarm/session.py verify ...`).
-- For each executable task, require explicit tuple: `STORY_ID`, `AGENT_ID`, `BRANCH`, `WORKTREE_PATH`.
-- Require `SESSION_ASSERT` (`python3 scripts/swarm/assert_session_context.py ...`) and `SESSION_RUNNER` (`bash scripts/swarm/run_in_session.sh ...`) in every worker contract.
 - Use Jarvis's batch-table template (see `.opencode/agent/Jarvis.md` "Parallelization plan template").
 - Identify which worker agents you will spawn for each executable step.
 - No interactive menus in your response.
