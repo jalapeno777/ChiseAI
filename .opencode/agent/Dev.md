@@ -2,7 +2,7 @@
 name: "dev"
 description: "Development subagent. Implements features, runs tests, performs git/deploy steps when explicitly tasked by Aria or Jarvis."
 mode: all
-model: "zai-coding-plan/glm-5.0-fast"
+model: "zai-coding-plan/glm-5"
 temperature: 0.2
 tools:
   task: true
@@ -28,14 +28,8 @@ permission:
 ## Execution Boundary
 - You are an **executor**. You may run `bash` and edit files when explicitly tasked by `aria` or `jarvis`.
 - You may run `git` and deployment commands only when the task explicitly requests it and includes `BRANCH` and `WORKTREE_PATH`.
-- Required task contract tuple: `STORY_ID`, `AGENT_ID`, `BRANCH`, `WORKTREE_PATH`.
 - Before git actions, run session verification: `python3 scripts/swarm/session.py verify --story-id=<story_id> --branch=<branch> --worktree-path=<path>`.
-- Before tests/lint/git actions, run context assertion: `python3 scripts/swarm/assert_session_context.py --story-id=<story_id> --branch=<branch> --worktree-path=<path>`.
-- Prefer session wrapper for executable commands: `bash scripts/swarm/run_in_session.sh --story-id <story_id> --branch <branch> --worktree-path <path> -- <command ...>`.
-- You must not merge or push `main`.
-  - **Workers** (you): Push branches + handoff evidence only; do NOT open PRs or merge to main
-  - **Jarvis**: Orchestrates handoff to Merlin; coordinates worker completion
-  - **Merlin**: Sole merge authority to main and branch cleanup authority
+- You must not merge or push `main`; only `jarvis` may perform main-merge operations.
 - Never use destructive git commands (`git reset --hard`, `git checkout --`, force-push) unless explicitly instructed.
 
 ## Mandatory Workflow

@@ -105,33 +105,6 @@ python3 scripts/swarm/session.py verify --story-id ST-NS-001 --branch feature/ST
 python3 scripts/swarm/session.py close
 ```
 
-### swarm/assert_session_context.py
-
-Fail-fast guard that verifies the active execution context matches the expected
-story/worktree/branch tuple.
-
-**Usage:**
-```bash
-python3 scripts/swarm/assert_session_context.py \
-  --story-id ST-NS-001 \
-  --branch feature/ST-NS-001-scope \
-  --worktree-path /abs/path/to/worktree
-```
-
-### swarm/run_in_session.sh
-
-Wrapper that asserts session context, then runs a command from the assigned
-worktree.
-
-**Usage:**
-```bash
-bash scripts/swarm/run_in_session.sh \
-  --story-id ST-NS-001 \
-  --branch feature/ST-NS-001-scope \
-  --worktree-path /abs/path/to/worktree \
-  -- pytest
-```
-
 ### ci/swarm_triage.sh
 
 Replays Woodpecker wrapper logic locally for deterministic CI debugging:
@@ -220,7 +193,7 @@ Merge queue + reconciliation utility for non-blocking swarm throughput while pre
 - Stores queued PR merge intents in Redis (`bmad:chiseai:merge-queue:main`)
 - Runs bounded queue ticks so Jarvis can merge green PRs without blocking worker development
 - Emits incidents for CI failures, merge conflicts, and branch/main drift
-- Performs git hygiene checks (local `main` vs `origin/main`, local branches ahead of `main`)
+- Performs git hygiene checks (local `main` vs `gitea/main`, local branches ahead of `main`)
 
 **Usage:**
 ```bash

@@ -26,7 +26,6 @@ Merge-enabled tick (Jarvis only):
 python3 scripts/swarm/session.py verify \
   --story-id "${STORY_ID}" \
   --branch "${BRANCH}" \
-  --worktree-path "${WORKTREE_PATH}" \
   --check-canonical \
   --require-main-merge-authority \
   --acquire-main-merge-lock
