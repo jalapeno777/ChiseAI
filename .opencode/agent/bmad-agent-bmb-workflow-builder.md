@@ -1,5 +1,5 @@
 ---
-name: 'workflow-builder'
+mode: all
 description: 'workflow-builder agent'
 ---
 

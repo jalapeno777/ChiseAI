@@ -1,5 +1,5 @@
 ---
-name: 'design-thinking-coach'
+mode: all
 description: 'design-thinking-coach agent'
 ---
 

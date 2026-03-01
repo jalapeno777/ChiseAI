@@ -1,5 +1,5 @@
 ---
-name: 'analyst'
+mode: all
 description: 'analyst agent'
 ---
 
