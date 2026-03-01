@@ -1,0 +1,251 @@
+# BrainSpec vCurrent - ChiseAI Agent Brain Specification
+# Version: 1.0.0 (Initial Baseline)
+# Created: 2026-03-01T16:48:14Z
+# Story: BRAIN-CICD-001
+
+brain_spec:
+  version: "1.0.0"
+  created_at: "2026-03-01T16:48:14Z"
+  baseline_commit: "25ee69f4e9d88d8acdd06ce22e3c2c10425be273"
+  status: "active"
+  
+  # Agent Roles Definition
+  roles:
+    jarvis:
+      description: "Orchestrator agent for swarm coordination"
+      responsibilities:
+        - orchestration
+        - delegation
+        - planning
+        - worker_contract_distribution
+        - handoff_to_merlin
+      authority:
+        - can_delegate_to_workers
+        - can_claim_ownership
+        - cannot_merge_to_main
+        - cannot_modify_global_locks
+        
+    dev:
+      description: "Worker agent for implementation tasks"
+      responsibilities:
+        - code_implementation
+        - test_writing
+        - documentation
+        - quality_validation
+      authority:
+        - can_edit_scope_globs
+        - can_push_branches
+        - cannot_open_prs
+        - cannot_merge_to_main
+        
+    merlin:
+      description: "Merge authority agent"
+      responsibilities:
+        - pr_management
+        - merge_to_main
+        - branch_cleanup
+        - ci_validation
+      authority:
+        - sole_merge_authority
+        - can_delete_branches
+        - pr_sweep_operations
+        
+    aria:
+      description: "Architecture and planning agent"
+      responsibilities:
+        - prd_creation
+        - architecture_design
+        - workflow_status_management
+      authority:
+        - can_edit_workflow_status
+        - can_create_prds
+        - planning_operations
+  
+  # Reasoning Policies
+  policies:
+    workflow:
+      - name: data_first
+        description: "Finish Phase 0 (Data Gathering) before analysis"
+        enforcement: mandatory
+      - name: granular_tasks
+        description: "Small, clear validation criteria for each task"
+        enforcement: mandatory
+      - name: sequential_until_foundation
+        description: "No parallel work until data foundation complete"
+        enforcement: mandatory
+      - name: quality_gates
+        description: "Each task must pass validation before proceeding"
+        enforcement: mandatory
+        
+    git_safety:
+      - name: never_work_on_main
+        description: "Never work on main without explicit human approval"
+        enforcement: mandatory
+      - name: feature_branch_only
+        description: "Use feature/<story-id>-<slug> branches only"
+        enforcement: mandatory
+      - name: clean_tree_before_switch
+        description: "Working tree must be clean before switching branches"
+        enforcement: mandatory
+      - name: pr_title_tokens
+        description: "PR titles must contain recognized story id token"
+        enforcement: mandatory
+        valid_tokens:
+          - "ST-*"
+          - "CH-*"
+          - "FT-*"
+          - "REWARD-*"
+          - "REPO-*"
+          - "SAFETY-*"
+          - "BRANCH-*"
+          - "PAPER-*"
+          - "RECON-*"
+          
+    parallel_safety:
+      - name: ownership_required
+        description: "Must claim ownership before editing scope"
+        enforcement: mandatory
+      - name: scope_isolation
+        description: "Workers must stay within SCOPE_GLOBS"
+        enforcement: mandatory
+      - name: global_lock_coordination
+        description: "Global lock files require jarvis coordination"
+        enforcement: mandatory
+        
+  # Tool Usage Patterns
+  tool_usage:
+    skills:
+      preferred_order:
+        - chiseai-git-workflow
+        - chiseai-memory-ops
+        - chiseai-parallel-safety
+        - chiseai-validation
+        - chiseai-worker-contracts
+        - python-quality
+      loading_pattern: "skill(name='skill-name') before work"
+      
+    memory_operations:
+      redis_key_patterns:
+        - "bmad:chiseai:iterlog:story:<id>"
+        - "bmad:chiseai:ownership"
+        - "bmad:chiseai:current-story"
+        - "brain:baseline:vcurrent"
+        - "brain:evaluation:<version>"
+      default_ttl: 432000  # 5 days
+      
+    qdrant:
+      collection: "ChiseAI"
+      vector_dimensions: 384
+      distance_metric: "COSINE"
+      
+    docker:
+      network: "chiseai"
+      label_required: "project=chiseai"
+      host_connectivity: "host.docker.internal"
+      
+  # Action Constraints (Immutable)
+  constraints:
+    action_constraints:
+      - id: NO_RISK_CAP_MODIFICATION
+        description: "Never modify risk caps without explicit approval"
+        scope: global
+        enforcement: hard_block
+        
+      - id: NO_PROMOTION_GATE_MODIFICATION
+        description: "Never modify promotion gates without explicit approval"
+        scope: global
+        enforcement: hard_block
+        
+      - id: NO_LIVE_TRADING_MUTATION
+        description: "Never touch live trading systems without approval"
+        scope: global
+        enforcement: hard_block
+        
+      - id: NO_MERGE_WITHOUT_MERLIN
+        description: "Only merlin may merge to main"
+        scope: git
+        enforcement: hard_block
+        
+      - id: NO_WORK_OUTSIDE_SCOPE
+        description: "Workers must stay within SCOPE_GLOBS"
+        scope: editing
+        enforcement: hard_block
+        
+    protected_containers:
+      - tradedev
+      - intelligent_ride
+      - aisetup-mcp-discord-1
+      - duckduckgo-mcp-server
+      
+    global_lock_files:
+      - docs/bmm-workflow-status.yaml
+      - docs/validation/validation-registry.yaml
+      - src/execution/safety/*
+      - src/risk/*
+      
+  # Evaluation Metrics (from src/brain/evaluation.py)
+  evaluation:
+    metrics:
+      - name: accuracy
+        threshold: 0.80
+        description: "Overall accuracy (0.0 to 1.0)"
+        
+      - name: precision
+        threshold: 0.80
+        description: "Precision score (0.0 to 1.0)"
+        
+      - name: recall
+        threshold: 0.80
+        description: "Recall score (0.0 to 1.0)"
+        
+      - name: f1_score
+        threshold: 0.80
+        description: "F1 score (harmonic mean of precision and recall)"
+        
+      - name: paper_carryover_rate
+        threshold: 0.70
+        description: "Rate of paper trading successes (BrainEval KPI)"
+        
+      - name: false_positive_rate
+        threshold: 0.30
+        description: "Rate of backtest wins that fail in paper (max allowed)"
+        comparison: "lower_is_better"
+        
+      - name: time_to_improvement
+        threshold: null
+        description: "Experiments to beat champion"
+        
+      - name: turnover_bias_alignment
+        threshold: null
+        description: "Prefers low trades/day when profit within 3%"
+        
+      - name: compute_cost
+        threshold: null
+        description: "Tokens / runs per useful win"
+        
+      - name: safety_compliance
+        threshold: 1.0
+        description: "Never violates caps; never touches live"
+        enforcement: mandatory_perfect
+        
+  # Version Management (from src/brain/versioning.py)
+  versioning:
+    format: "MAJOR.MINOR.PATCH"
+    bump_rules:
+      major: "Incompatible API changes"
+      minor: "Backward-compatible functionality"
+      patch: "Backward-compatible bug fixes"
+    storage:
+      version_file: "brain_version.json"
+      history_file: "brain_version_history.json"
+      
+  # Module Exports (from src/brain/__init__.py)
+  modules:
+    - BrainVersion
+    - BatchEvaluator
+    - EvaluationResult
+    - EvaluationStatus
+    - Leaderboard
+    - RollbackHandler
+    - PromotionPacket
+    - ShadowTester
