@@ -49,6 +49,7 @@ from execution.paper import (
 from execution.paper.orchestrator import PaperTradingOrchestrator
 from execution.paper.risk_enforcer import PaperRiskEnforcer
 from execution.paper.risk_models import RiskCheck
+from execution.paper.signal_consumer import SignalConsumer
 from execution.telemetry.collector import ExecutionCollector
 from execution.telemetry.exporter import ExecutionTelemetryExporter
 from signal_generation.models import SignalStatus
@@ -263,6 +264,13 @@ class TradingModeLoader:
         # Create outcome capture integration for Discord alerts
         outcome_capture = OutcomeCaptureIntegration()
 
+        # Create signal consumer to bridge Redis signals to orchestrator
+        # Note: SignalConsumer will be started when orchestrator.start() is called
+        signal_consumer = SignalConsumer(
+            orchestrator=None,  # Will be set below
+            poll_interval=5.0,  # Poll every 5 seconds
+        )
+
         self.paper_orchestrator = PaperTradingOrchestrator(
             signal_generator=self.signal_generator,
             order_simulator=self.order_simulator,
@@ -272,10 +280,16 @@ class TradingModeLoader:
             kill_switch=self.kill_switch,
             portfolio_value=self.config.paper_portfolio_value,
             outcome_capture=outcome_capture,
+            signal_consumer=signal_consumer,
         )
 
+        # Wire the orchestrator to the signal consumer
+        signal_consumer.orchestrator = self.paper_orchestrator
+
         await self.paper_orchestrator.start()
-        logger.info("Paper trading orchestrator initialized and started")
+        logger.info(
+            "Paper trading orchestrator initialized and started with SignalConsumer"
+        )
 
     async def shutdown(self) -> None:
         """Shutdown all modules gracefully."""

@@ -386,7 +386,7 @@ class InfluxDBThresholdTracker(ThresholdHistoryTracker):
     def __init__(
         self,
         client: Any | None = None,
-        url: str = "http://localhost:8086",
+        url: str | None = None,
         token: str = "",  # nosec B107 - empty default for optional param
         org: str = "chiseai",
         bucket: str = "thresholds",

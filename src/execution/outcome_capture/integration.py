@@ -177,6 +177,9 @@ class OutcomeCaptureIntegration:
         position: Any,
         realized_pnl: float,
         outcome: Any | None = None,
+        exit_price: float | None = None,
+        reason: str = "manual",
+        correlation_id: str | None = None,
     ) -> dict[str, Any]:
         """Handle position closed event.
 
@@ -184,6 +187,9 @@ class OutcomeCaptureIntegration:
             position: Closed position
             realized_pnl: Realized PnL
             outcome: Optional SignalOutcome
+            exit_price: Exit price (for outcome creation)
+            reason: Reason for closure
+            correlation_id: Correlation ID for tracing
 
         Returns:
             Capture result dictionary
@@ -200,11 +206,15 @@ class OutcomeCaptureIntegration:
         try:
             # Create outcome if not provided
             if outcome is None:
-                outcome = self._create_outcome_from_position(position, realized_pnl)
+                outcome = self._create_outcome_from_position(
+                    position, realized_pnl, exit_price
+                )
 
-            # Persist the outcome
+            # Persist the outcome to Redis AND sync to PostgreSQL (async)
             persistence = self._get_persistence()
-            outcome_key = persistence.persist_outcome(outcome)
+            outcome_key = await persistence.persist_outcome_async(
+                outcome, correlation_id
+            )
             capture_result["outcome_key"] = outcome_key
 
             if outcome_key:
@@ -226,22 +236,32 @@ class OutcomeCaptureIntegration:
 
         return capture_result
 
+    # Alias for backward compatibility with orchestrator
+    on_position_close = on_position_closed
+
     def _create_outcome_from_position(
         self,
         position: Any,
         realized_pnl: float,
+        exit_price: float | None = None,
     ) -> Any:
         """Create SignalOutcome from position data.
 
         Args:
             position: Position object
             realized_pnl: Realized PnL
+            exit_price: Exit price (optional, uses position.exit_price if not provided)
 
         Returns:
             SignalOutcome instance
         """
         from decimal import Decimal
         from ml.models.signal_outcome import SignalOutcome, SignalOutcomeStatus
+
+        # Use provided exit_price or fall back to position attribute
+        final_exit_price = exit_price
+        if final_exit_price is None and hasattr(position, "exit_price"):
+            final_exit_price = position.exit_price
 
         return SignalOutcome(
             order_id=position.position_id,
@@ -251,8 +271,8 @@ class OutcomeCaptureIntegration:
             fill_price=Decimal(str(position.entry_price)),
             fill_quantity=Decimal(str(position.quantity)),
             entry_price=Decimal(str(position.entry_price)),
-            exit_price=Decimal(str(position.exit_price))
-            if hasattr(position, "exit_price")
+            exit_price=Decimal(str(final_exit_price))
+            if final_exit_price is not None
             else None,
             position_size=Decimal(str(position.quantity)),
             pnl=Decimal(str(realized_pnl)),

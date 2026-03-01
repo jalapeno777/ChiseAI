@@ -11,7 +11,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from src.api.ece_router import router as ece_router
-from src.api.health_router import router as health_router
+from src.api.health_router import router as health_router, set_health_monitor
+from src.api.paper_router import router as paper_router
 from src.autonomous_control_plane.api.v1.healing import router as healing_router
 
 # ACP (Autonomous Control Plane) routes - EP-NS-008
@@ -23,6 +24,7 @@ from src.autonomous_control_plane.startup import (
     create_acp_container,
     get_acp_container,
 )
+from src.health.monitor import HealthMonitor
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +47,18 @@ async def lifespan(app: FastAPI):
         # Verify container is properly initialized
         _ = get_acp_container()
         logger.info("ACP container initialized successfully")
+
+        # Create and register HealthMonitor
+        logger.info("Initializing HealthMonitor...")
+        health_monitor = HealthMonitor(
+            redis_client=container._redis_client,
+            influxdb_client=container._influx_client,
+        )
+        set_health_monitor(health_monitor)
+
+        # Start health monitoring
+        await health_monitor.start()
+        logger.info("HealthMonitor started successfully")
 
     except RuntimeError as e:
         # Dependency verification failed - log critical error and re-raise
@@ -72,6 +86,7 @@ app = FastAPI(
 # Mount routers
 app.include_router(ece_router)
 app.include_router(health_router)
+app.include_router(paper_router)
 
 # Mount ACP routers - EP-NS-008
 app.include_router(incidents_router)

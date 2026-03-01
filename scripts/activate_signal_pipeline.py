@@ -49,8 +49,8 @@ async def activate_pipeline():
         socket_connect_timeout=5,
     )
 
-    # Get existing signals
-    signal_keys = r.keys("bmad:chiseai:signals:2026-02-27:*")
+    # Get existing signals - use paper:signal:* pattern
+    signal_keys = r.keys("paper:signal:*")
     logger.info(f"Found {len(signal_keys)} signals from today")
 
     if not signal_keys:
