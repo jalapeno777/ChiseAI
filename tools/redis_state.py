@@ -30,8 +30,8 @@ def _get_redis_client():
     try:
         import redis
 
-        redis_host = os.getenv("REDIS_HOST", "localhost")
-        redis_port = int(os.getenv("REDIS_PORT", "6379"))
+        redis_host = os.getenv("REDIS_HOST", "host.docker.internal")
+        redis_port = int(os.getenv("REDIS_PORT", "6380"))
         redis_db = int(os.getenv("REDIS_DB", "0"))
         redis_password = os.getenv("REDIS_PASSWORD", None)
 
