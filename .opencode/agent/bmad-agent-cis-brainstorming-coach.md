@@ -1,5 +1,5 @@
 ---
-name: 'brainstorming-coach'
+mode: all
 description: 'brainstorming-coach agent'
 ---
 

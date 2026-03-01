@@ -1,5 +1,5 @@
 ---
-name: 'tea'
+mode: all
 description: 'tea agent'
 ---
 
