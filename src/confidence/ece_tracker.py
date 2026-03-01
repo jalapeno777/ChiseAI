@@ -95,11 +95,16 @@ class ECEHistoryTracker:
     def __init__(
         self,
         client: InfluxDBClient | None = None,
-        url: str = "http://localhost:8086",
+        url: str | None = None,
         token: str = "",  # nosec B107 - empty default for optional param
         org: str = "chiseai",
         bucket: str = "signals",
     ):
+        # Use environment variable or Docker-aware default
+        if url is None:
+            import os
+
+            url = os.getenv("INFLUXDB_URL", "http://host.docker.internal:18087")
         """Initialize ECE history tracker.
 
         Args:

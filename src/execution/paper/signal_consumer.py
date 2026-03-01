@@ -38,8 +38,8 @@ class SignalConsumer:
     """
 
     DEFAULT_POLL_INTERVAL = 5.0  # seconds
-    REDIS_KEY_PATTERN = "bmad:chiseai:signals:*:*:*:*:*"
-    PROCESSED_SET_KEY = "bmad:chiseai:signals:processed"
+    REDIS_KEY_PATTERN = "paper:signal:*"
+    PROCESSED_SET_KEY = "paper:signals:processed"
 
     def __init__(
         self,
@@ -157,6 +157,42 @@ class SignalConsumer:
         except Exception as e:
             logger.warning(f"Failed to update status for {redis_key}: {e}")
 
+    async def _get_signal_data(self, redis: Any, key: str) -> dict[str, Any] | None:
+        """Get signal data from Redis, handling both hash and string (JSON) formats.
+
+        Signals can be stored in two formats:
+        - Hash format (from continuous_signal_generator.py): Use HGETALL
+        - String format (from OutcomePersistence.persist_signal): Use GET + JSON parse
+
+        Args:
+            redis: Redis client
+            key: Signal key to retrieve
+
+        Returns:
+            Dictionary with signal data or None if not found/invalid
+        """
+        import json
+
+        try:
+            # First try hash format (HGETALL)
+            signal_data = await redis.hgetall(key)
+            if signal_data:
+                return signal_data
+
+            # If hash is empty, try string format (GET + JSON parse)
+            raw_data = await redis.get(key)
+            if raw_data:
+                return json.loads(raw_data)
+
+            return None
+
+        except json.JSONDecodeError as e:
+            logger.warning(f"Failed to parse JSON for signal {key}: {e}")
+            return None
+        except Exception as e:
+            logger.warning(f"Failed to get signal data for {key}: {e}")
+            return None
+
     async def _polling_loop(self) -> None:
         """Main polling loop for signal consumption."""
         while self._running:
@@ -201,8 +237,8 @@ class SignalConsumer:
             # Process each signal
             for key in signal_keys:
                 try:
-                    # Skip if already processed
-                    signal_data = await redis.hgetall(key)
+                    # Try to get signal data - handle both hash and string (JSON) formats
+                    signal_data = await self._get_signal_data(redis, key)
 
                     if not signal_data:
                         continue
