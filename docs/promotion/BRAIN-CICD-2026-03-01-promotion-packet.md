@@ -1,3 +1,14 @@
+---
+⚠️  **STATUS: INVALIDATED - Insufficient measurable evidence for promotion in this cycle.**
+
+This promotion packet was created without sufficient primary KPI measurement data.
+The Brain CI/CD cycle has been closed with a NO CHANGE decision.
+Do not action this packet without re-running the full cycle with measurable evidence.
+
+Invalidated on: 2026-03-01
+Reason: Primary KPI (paper_carryover_rate) is placeholder (0.0), no baseline exists
+---
+
 # Brain Promotion Packet: vNext-A (1.1.0-vnexta)
 
 **Packet ID:** BRAIN-CICD-2026-03-01  
