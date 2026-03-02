@@ -261,6 +261,14 @@ class BrainEvalIntegration:
 
         if self._redis_client is None:
             logger.warning("No Redis client, skipping iterlog ingestion")
+            # Update KPIs even when skipping due to no Redis
+            if update_kpis and self._brain_evaluator:
+                self._update_brain_eval_kpis_for_source("iterlog", metrics)
+                metrics.kpi_updates += 1
+            if update_kpis and self._mini_eval:
+                self._update_mini_eval_kpis_for_source("iterlog", metrics)
+                metrics.kpi_updates += 1
+            metrics.duration_seconds = (datetime.now(UTC) - start_time).total_seconds()
             return metrics
 
         try:
@@ -327,6 +335,15 @@ class BrainEvalIntegration:
             logger.error(f"Iterlog ingestion failed: {e}")
             metrics.items_failed += 1
 
+        # Update KPIs if requested
+        if update_kpis and self._brain_evaluator:
+            self._update_brain_eval_kpis_for_source("iterlog", metrics)
+            metrics.kpi_updates += 1
+
+        if update_kpis and self._mini_eval:
+            self._update_mini_eval_kpis_for_source("iterlog", metrics)
+            metrics.kpi_updates += 1
+
         metrics.duration_seconds = (datetime.now(UTC) - start_time).total_seconds()
 
         logger.info(
@@ -383,6 +400,15 @@ class BrainEvalIntegration:
         except Exception as e:
             logger.error(f"Tempmemory file ingestion failed: {e}")
             metrics.items_failed += 1
+
+        # Update KPIs if requested
+        if update_kpis and self._brain_evaluator:
+            self._update_brain_eval_kpis_for_source("tempmemory", metrics)
+            metrics.kpi_updates += 1
+
+        if update_kpis and self._mini_eval:
+            self._update_mini_eval_kpis_for_source("tempmemory", metrics)
+            metrics.kpi_updates += 1
 
         metrics.duration_seconds = (datetime.now(UTC) - start_time).total_seconds()
 
