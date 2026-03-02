@@ -1,0 +1,137 @@
+---
+# Workflow Status Archive Index
+# Master index for all archived workflow status entries
+# 
+# Generated: 2026-03-02
+# Retention Policy: Keep 7 days in active file, then archive
+
+archive_index:
+  version: "1.0"
+  created_date: "2026-03-02"
+  retention_policy:
+    active_file_keep_days: 7
+    archive_location: docs/archives/workflow-status/
+  
+  entries:
+    # February 26, 2026 entries
+    - story_id: ST-AUTO-CONTROL-003
+      action: st-auto-control-enforcement-final
+      archived_to: archive-2026-02.yaml
+      original_timestamp: "2026-02-26T23:55:00Z"
+      epic_id: EP-AUTO-GIT-001
+      actor: senior-dev
+      description: "Final fail-closed enforcement for status-write-gate"
+    
+    - story_id: ST-AUTO-CONTROL-001
+      action: st-auto-control-enforcement-wired
+      archived_to: archive-2026-02.yaml
+      original_timestamp: "2026-02-26T23:45:00Z"
+      epic_id: EP-AUTO-GIT-001
+      actor: jarvis
+      description: "Status write gate enforcement integrated into CI pipeline"
+    
+    - story_id: ST-AUTO-CONTROL-002
+      action: st-auto-control-enforcement-correction
+      archived_to: archive-2026-02.yaml
+      original_timestamp: "2026-02-26T23:50:00Z"
+      epic_id: EP-AUTO-GIT-001
+      actor: jarvis
+      description: "Corrected status-write-gate enforcement"
+    
+    - story_id: ST-AUTO-TRUTH-SYNC
+      action: ep-auto-git-guardrails-applied
+      archived_to: archive-2026-02.yaml
+      original_timestamp: "2026-02-26T18:00:00Z"
+      epic_id: EP-AUTO-GIT
+      actor: merlin
+      description: "Applied Merlin-only authority guardrails to Redis"
+    
+    # February 25, 2026 entries
+    - story_id: ST-REFLECT-001
+      action: phase_2_kickoff_status_sync
+      archived_to: archive-2026-02.yaml
+      original_timestamp: "2026-02-25T23:59:00Z"
+      epic_id: null
+      actor: jarvis
+      description: "Phase 2 kickoff status synchronization"
+    
+    - story_id: ST-SOUL-001
+      action: party-mode-audit-correction
+      archived_to: archive-2026-02.yaml
+      original_timestamp: "2026-02-25T23:00:00Z"
+      epic_id: EP-NS-009
+      actor: merlin
+      description: "Party-mode audit corrections completed"
+    
+    - story_id: EP-NS-008
+      action: ep-ns-008-final-closeout
+      archived_to: archive-2026-02.yaml
+      original_timestamp: "2026-02-25T22:00:00Z"
+      epic_id: EP-NS-008
+      actor: jarvis
+      description: "EP-NS-008 final closeout completed"
+    
+    - story_id: EP-NS-008
+      action: canary_close
+      archived_to: archive-2026-02.yaml
+      original_timestamp: "2026-02-25T18:00:00Z"
+      epic_id: EP-NS-008
+      actor: jarvis
+      description: "EP-NS-008 canary-close assessment completed"
+    
+    - story_id: EP-NS-008
+      action: ep-ns-008-batch1-completion
+      archived_to: archive-2026-02.yaml
+      original_timestamp: "2026-02-25T16:45:00Z"
+      epic_id: EP-NS-008
+      actor: jarvis
+      description: "EP-NS-008 Batch 1 all canary conditions resolved"
+    
+    - story_id: INFRA-RECOVERY-001
+      action: infrastructure_recovery_phase_a
+      archived_to: archive-2026-02.yaml
+      original_timestamp: "2026-02-25T14:55:00Z"
+      epic_id: null
+      actor: merlin
+      description: "INFRA-RECOVERY-001: Container recovery Phase A complete"
+    
+    - story_id: EP-NS-008
+      action: batch2_truth_sync
+      archived_to: archive-2026-02.yaml
+      original_timestamp: "2026-02-25T17:00:00Z"
+      epic_id: EP-NS-008
+      actor: merlin
+      description: "EP-NS-008 truth-sync correction for Batch 2"
+    
+    - story_id: REPO-003
+      action: agent_instruction_consistency_patch
+      archived_to: archive-2026-02.yaml
+      original_timestamp: "2026-02-25T12:30:00Z"
+      epic_id: null
+      actor: jarvis
+      description: "Updated agent instruction files with consistent merge authority wording"
+    
+    - story_id: REPO-002
+      action: enforcement_window_start
+      archived_to: archive-2026-02.yaml
+      original_timestamp: "2026-02-25T12:00:00Z"
+      epic_id: null
+      actor: jarvis
+      description: "1-week mandatory completion payload enforcement window started"
+    
+    - story_id: BMAD-CORRECT-001
+      action: hardening_sync_workflow_patches
+      archived_to: archive-2026-02.yaml
+      original_timestamp: "2026-02-25T08:10:00Z"
+      epic_id: null
+      actor: merlin
+      description: "Workflow patch hardening finalized"
+    
+    # February 24, 2026 entries
+    - story_id: null
+      action: truth_sync_launch_epics
+      archived_to: archive-2026-02.yaml
+      original_timestamp: "2026-02-24T14:30:00Z"
+      epic_id: null
+      actor: jarvis
+      description: "Fixed Launch epic status inconsistencies"
