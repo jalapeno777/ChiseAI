@@ -36,6 +36,7 @@ from ml.models.model_storage import (
 # When src/ is in sys.path, src.ml resolves to ml package, causing cycle
 from ml.models.signal_outcome import (
     BybitFillEvent,
+    EntryReason,
     OutcomeMatchResult,
     OutcomeType,
     SignalOutcome,
@@ -47,6 +48,7 @@ __all__ = [
     "SignalOutcome",
     "OutcomeType",
     "SignalOutcomeStatus",
+    "EntryReason",
     "BybitFillEvent",
     "OutcomeMatchResult",
     # Registry
