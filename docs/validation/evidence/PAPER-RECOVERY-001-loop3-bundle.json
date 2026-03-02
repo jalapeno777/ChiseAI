@@ -1,7 +1,7 @@
 {
   "story_id": "PAPER-RECOVERY-001",
   "loop": 3,
-  "timestamp": "2026-03-02T13:56:20.606039+00:00",
+  "timestamp": "2026-03-02T14:11:43.026675+00:00",
   "environment": {
     "REDIS_HOST": "host.docker.internal",
     "REDIS_PORT": "6380",
@@ -13,36 +13,49 @@
     "G1": {
       "name": "Signals Delta > 0",
       "status": "PASS",
-      "count": 5940,
+      "count": 5978,
       "key": "paper:index:signals"
     },
     "G2": {
       "name": "Orders Delta > 0",
       "status": "PASS",
-      "count": 4980,
+      "count": 5018,
       "key": "paper:index:orders"
     },
     "G3": {
       "name": "Fills Delta > 0",
       "status": "PASS",
-      "count": 4944,
+      "count": 4982,
       "key": "paper:index:fills"
     },
     "G4": {
       "name": "Outcomes Delta > 0",
       "status": "PASS",
-      "count": 4939,
+      "count": 4977,
       "key": "paper:index:outcomes"
     },
     "G5": {
       "name": "Discord OPEN/CLOSE/RECAP messages",
-      "status": "INFO",
-      "message": "Discord tracking not yet implemented in Redis, check Discord channel directly"
+      "status": "PASS",
+      "deterministic_evidence": {
+        "open_message_id": "1477529875064553563",
+        "open_message_timestamp": "2026-03-01T04:56:13.393000+00:00",
+        "recap_message_count": 940,
+        "latest_recap_message_id": "1478036129725812849",
+        "latest_recap_timestamp": "2026-03-02T14:27:53.910000+00:00",
+        "channel_id": "1448414506412806347",
+        "guild_id": "1413522994810327134",
+        "webhook_id": "1448414669541736508"
+      },
+      "verification": "Discord messages verified via Discord API search",
+      "message_types_sent": ["OPEN", "RECAP"],
+      "close_message_sent": false,
+      "session_still_running": true
     },
     "G6": {
       "name": "InfluxDB orders/fills queries",
-      "status": "PASS",
-      "lines": 18244
+      "status": "FAIL",
+      "lines": 0
     },
     "G7": {
       "name": "InfluxDB canary query",
@@ -51,16 +64,24 @@
     },
     "G8": {
       "name": "Burn-in verdict artifact",
-      "status": "PENDING",
-      "exists": false
+      "status": "PASS",
+      "exists": true,
+      "verdict": "PASS",
+      "timestamp_utc": "2026-03-01T00:14:37.090022+00:00",
+      "duration_seconds": 120,
+      "signals_generated": 21,
+      "orders_placed": 75,
+      "fills_received": 39,
+      "outcomes_recorded": 38
     }
   },
   "summary": {
     "total_gates": 8,
-    "passed": 6,
-    "failed": 0,
-    "info": 1,
-    "pending": 1,
-    "overall": "PASS"
+    "passed": 7,
+    "failed": 1,
+    "info": 0,
+    "pending": 0,
+    "manual": 0,
+    "overall": "PARTIAL"
   }
 }
