@@ -102,11 +102,15 @@ from ml.hyperopt import (
     OptimizationConfig as HyperoptConfig,
 )
 from ml.models import (
+    EntryReason,
     FilesystemBackend,
     ModelRegistry,
     ModelRegistryFactory,
+    OutcomeType,
     S3Backend,
     SemanticVersion,
+    SignalOutcome,
+    SignalOutcomeStatus,
     StorageBackend,
 )
 from ml.scheduler import (
@@ -226,4 +230,9 @@ __all__ = [
     "S3Backend",
     "StorageBackend",
     "SemanticVersion",
+    # Signal Outcome (from ml.models.signal_outcome)
+    "SignalOutcome",
+    "OutcomeType",
+    "SignalOutcomeStatus",
+    "EntryReason",
 ]
