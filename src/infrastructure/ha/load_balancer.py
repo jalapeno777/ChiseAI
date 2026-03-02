@@ -7,6 +7,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import Enum
+from types import TracebackType
 from typing import Any
 
 from src.infrastructure.ha.failover import InstanceInfo
@@ -37,12 +38,14 @@ class ConnectionStats:
             "total_connections": self.total_connections,
             "total_requests": self.total_requests,
             "failed_requests": self.failed_requests,
-            "avg_response_time_ms": self.total_response_time_ms / self.total_requests
-            if self.total_requests > 0
-            else 0,
-            "last_request_time": self.last_request_time.isoformat()
-            if self.last_request_time
-            else None,
+            "avg_response_time_ms": (
+                self.total_response_time_ms / self.total_requests
+                if self.total_requests > 0
+                else 0
+            ),
+            "last_request_time": (
+                self.last_request_time.isoformat() if self.last_request_time else None
+            ),
         }
 
 
@@ -187,7 +190,12 @@ class ConnectionContext:
             return self._instance
         return None
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> bool:
         if self._instance:
             response_time_ms = (time.perf_counter() - self._start_time) * 1000
             success = exc_type is None

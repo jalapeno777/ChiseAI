@@ -50,7 +50,7 @@ def test_discord_guild_lock() -> bool:
     print("\n=== Testing Discord Guild Lock ===")
 
     # Test without guild restriction
-    config_no_restrict = DiscordConfig(
+    config_no_restrict = DiscordConfig(  # nosec B106
         bot_token="test-token",
     )
     client_no_restrict = DiscordClient(config_no_restrict)

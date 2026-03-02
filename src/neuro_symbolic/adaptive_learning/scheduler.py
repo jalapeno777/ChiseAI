@@ -54,9 +54,9 @@ class ScheduledTask:
             "priority": self.priority,
             "created_at": self.created_at.isoformat(),
             "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
             "result": self.result.to_dict() if self.result else None,
             "metadata": self.metadata,
         }
@@ -118,9 +118,9 @@ class TriggerRule:
             "threshold": self.threshold,
             "enabled": self.enabled,
             "cooldown_minutes": self.cooldown_minutes,
-            "last_triggered": self.last_triggered.isoformat()
-            if self.last_triggered
-            else None,
+            "last_triggered": (
+                self.last_triggered.isoformat() if self.last_triggered else None
+            ),
             "priority": self.priority,
         }
 
@@ -145,9 +145,9 @@ class SchedulerStats:
             "failed_tasks": self.failed_tasks,
             "cancelled_tasks": self.cancelled_tasks,
             "last_run": self.last_run.isoformat() if self.last_run else None,
-            "next_scheduled": self.next_scheduled.isoformat()
-            if self.next_scheduled
-            else None,
+            "next_scheduled": (
+                self.next_scheduled.isoformat() if self.next_scheduled else None
+            ),
             "avg_task_duration": self.avg_task_duration,
         }
 
@@ -636,9 +636,9 @@ class LearningScheduler:
             "stats": self._stats.to_dict(),
             "pending_tasks": len(self._task_queue),
             "trigger_rules": {k: v.to_dict() for k, v in self._trigger_rules.items()},
-            "baseline_metrics": self._baseline_metrics.to_dict()
-            if self._baseline_metrics
-            else None,
+            "baseline_metrics": (
+                self._baseline_metrics.to_dict() if self._baseline_metrics else None
+            ),
             "performance_history_count": len(self._performance_history),
         }
 

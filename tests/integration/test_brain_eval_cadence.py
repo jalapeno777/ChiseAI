@@ -18,7 +18,7 @@ import tempfile
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -420,9 +420,9 @@ class TestComponentIntegration:
 
         # Verify issues are in Redis (check that set was called for each issue)
         if mock_redis:
-            assert mock_redis.set.call_count == len(sample_issues), (
-                f"Expected {len(sample_issues)} Redis set calls, got {mock_redis.set.call_count}"
-            )
+            assert mock_redis.set.call_count == len(
+                sample_issues
+            ), f"Expected {len(sample_issues)} Redis set calls, got {mock_redis.set.call_count}"
 
         logger.info(f"Integration test passed: {len(ingestion.issues)} issues ingested")
 

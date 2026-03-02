@@ -31,7 +31,7 @@ import sys
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
@@ -466,7 +466,7 @@ def cmd_status(args: argparse.Namespace) -> int:
             decode_responses=True,
         )
 
-        state = client.hgetall(SCHEDULER_STATE_KEY)
+        state = cast(dict[str, Any], client.hgetall(SCHEDULER_STATE_KEY))
 
         print(f"\n{'=' * 60}")
         print("Scheduler Status")
@@ -481,15 +481,15 @@ def cmd_status(args: argparse.Namespace) -> int:
         # Check lock
         lock = client.get(SCHEDULER_LOCK_KEY)
         if lock:
-            print(f"\nLock: Active")
+            print("\nLock: Active")
             try:
-                lock_data = json.loads(lock)
+                lock_data = json.loads(cast(str, lock))
                 print(f"  PID: {lock_data.get('pid')}")
                 print(f"  Started: {lock_data.get('started_at')}")
             except json.JSONDecodeError:
                 print(f"  Raw: {lock}")
         else:
-            print(f"\nLock: Not active")
+            print("\nLock: Not active")
 
         print(f"{'=' * 60}\n")
         return 0

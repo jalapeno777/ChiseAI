@@ -21,8 +21,9 @@ import logging
 import os
 import subprocess
 import sys
+import tempfile
 import time
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -43,8 +44,8 @@ logger = logging.getLogger(__name__)
 
 # Configuration
 PROJECT_DIR = Path(__file__).parent.parent
-PID_FILE = Path("/tmp/continuous_paper_emitter.pid")
-STATUS_FILE = Path("/tmp/continuous_paper_emitter.status")
+PID_FILE = Path(tempfile.gettempdir()) / "continuous_paper_emitter.pid"
+STATUS_FILE = Path(tempfile.gettempdir()) / "continuous_paper_emitter.status"
 EMITTER_SCRIPT = PROJECT_DIR / "scripts" / "continuous_paper_emitter.py"
 MANAGER_SCRIPT = PROJECT_DIR / "scripts" / "paper_trading_manager.sh"
 
@@ -91,7 +92,7 @@ def is_process_running(pid: int | None = None) -> tuple[bool, int | None]:
     if pid is None and PID_FILE.exists():
         try:
             pid = int(PID_FILE.read_text().strip())
-        except (ValueError, IOError) as e:
+        except (OSError, ValueError) as e:
             logger.debug(f"Failed to read PID file: {e}")
             pid = None
 
@@ -106,7 +107,7 @@ def is_process_running(pid: int | None = None) -> tuple[bool, int | None]:
 
     # Fallback: check by process name
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B607
             ["pgrep", "-f", "continuous_paper_emitter.py"],
             capture_output=True,
             text=True,
@@ -127,12 +128,12 @@ def check_recent_influxdb_data() -> tuple[bool, datetime | None]:
         Tuple of (has_recent_data, last_timestamp)
     """
     # Query for most recent paper_portfolio data
-    query = f'''
+    query = f"""
 from(bucket: "{INFLUXDB_BUCKET}")
   |> range(start: -5m)
   |> filter(fn: (r) => r._measurement == "paper_portfolio")
   |> last()
-'''
+"""
 
     curl_cmd = [
         "curl",
@@ -200,7 +201,7 @@ from(bucket: "{INFLUXDB_BUCKET}")
 
 def check_redis_status() -> dict[str, Any]:
     """Check Redis for emitter status."""
-    status = {
+    status: dict[str, Any] = {
         "redis_available": False,
         "emitter_status": None,
         "last_heartbeat": None,
@@ -219,7 +220,7 @@ def check_redis_status() -> dict[str, Any]:
             status["emitter_status"] = heartbeat.get("status")
             status["last_heartbeat"] = heartbeat.get("last_heartbeat")
 
-            if status["last_heartbeat"]:
+            if isinstance(status["last_heartbeat"], str):
                 try:
                     last_time = datetime.fromisoformat(status["last_heartbeat"])
                     status["heartbeat_age_seconds"] = (
@@ -235,7 +236,7 @@ def check_redis_status() -> dict[str, Any]:
 
 def check_status_file() -> dict[str, Any]:
     """Check the emitter's status file."""
-    status = {
+    status: dict[str, Any] = {
         "file_exists": False,
         "status": None,
         "last_heartbeat": None,
@@ -252,7 +253,7 @@ def check_status_file() -> dict[str, Any]:
         status["status"] = data.get("status")
         status["last_heartbeat"] = data.get("last_heartbeat")
 
-        if status["last_heartbeat"]:
+        if isinstance(status["last_heartbeat"], str):
             try:
                 last_time = datetime.fromisoformat(status["last_heartbeat"])
                 status["heartbeat_age_seconds"] = (
@@ -260,7 +261,7 @@ def check_status_file() -> dict[str, Any]:
                 ).total_seconds()
             except ValueError:
                 pass
-    except (json.JSONDecodeError, IOError) as e:
+    except (OSError, json.JSONDecodeError) as e:
         logger.debug(f"Failed to read status file: {e}")
 
     return status
@@ -278,7 +279,7 @@ def restart_emitter() -> bool:
     if MANAGER_SCRIPT.exists():
         try:
             # Stop any existing process
-            subprocess.run(
+            subprocess.run(  # nosec B607
                 ["bash", str(MANAGER_SCRIPT), "stop"],
                 capture_output=True,
                 timeout=10,
@@ -286,7 +287,7 @@ def restart_emitter() -> bool:
             time.sleep(1)
 
             # Start new process
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B607
                 ["bash", str(MANAGER_SCRIPT), "start"],
                 capture_output=True,
                 text=True,
@@ -304,7 +305,7 @@ def restart_emitter() -> bool:
     # Fallback: direct Python execution
     try:
         # Kill any existing processes
-        subprocess.run(
+        subprocess.run(  # nosec B607
             ["pkill", "-f", "continuous_paper_emitter.py"],
             capture_output=True,
         )
@@ -347,7 +348,7 @@ def perform_health_check() -> dict[str, Any]:
     """
     logger.info("Performing health check...")
 
-    results = {
+    results: dict[str, Any] = {
         "timestamp": datetime.now(UTC).isoformat(),
         "process_running": False,
         "process_pid": None,
@@ -439,7 +440,7 @@ def main():
             results = perform_health_check()
 
             # Log results
-            logger.info(f"Health check results:")
+            logger.info("Health check results:")
             logger.info(
                 f"  Process running: {results['process_running']} "
                 f"(PID: {results['process_pid']})"
@@ -452,7 +453,7 @@ def main():
                     f"  Redis status: {results['redis_status']['emitter_status']}"
                 )
             else:
-                logger.info(f"  Redis: unavailable")
+                logger.info("  Redis: unavailable")
 
             # Handle restart if needed
             if results["needs_restart"]:

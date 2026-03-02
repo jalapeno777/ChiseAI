@@ -13,14 +13,13 @@ This module provides tests for coverage gaps identified in:
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any
-from unittest.mock import MagicMock, Mock, patch
+from typing import TYPE_CHECKING
+from unittest.mock import MagicMock
 
-import numpy as np
 import pytest
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    pass
 
 
 # =============================================================================
@@ -841,8 +840,8 @@ class TestRollbackManagerCoverage:
         from ml.rollback.automatic import (
             RollbackConfig,
             RollbackManager,
-            RollbackState,
             RollbackReason,
+            RollbackState,
         )
 
         mock_registry.get_champion.return_value = None
@@ -912,7 +911,7 @@ class TestOptimizationResultCoverage:
 
     def test_optimization_result_creation(self):
         """Test OptimizationResult creation."""
-        from ml.hyperopt import OptimizationResult, OptimizationMethod
+        from ml.hyperopt import OptimizationMethod, OptimizationResult
 
         result = OptimizationResult(
             strategy_id="strategy_001",

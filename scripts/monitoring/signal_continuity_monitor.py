@@ -11,15 +11,13 @@ Part of P0-RUNTIME-HARDEN-004: Signal Stagnation Fix
 
 from __future__ import annotations
 
-import os
-import sys
-import time
+import asyncio
 import json
 import logging
-import asyncio
-import subprocess
-from datetime import datetime, timezone, timedelta
-from typing import Optional
+import os
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
 import redis
 
 # Load .env file for cron environment
@@ -27,7 +25,7 @@ env_path = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"
 )
 if os.path.exists(env_path):
-    with open(env_path, "r") as f:
+    with open(env_path) as f:
         for line in f:
             line = line.strip()
             if line and not line.startswith("#") and "=" in line:
@@ -61,7 +59,7 @@ DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN", "")
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
 
 
-def get_redis() -> Optional[redis.Redis]:
+def get_redis() -> Any | None:
     """Get Redis connection."""
     try:
         return redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
@@ -70,7 +68,7 @@ def get_redis() -> Optional[redis.Redis]:
         return None
 
 
-def get_current_signal_count(r: redis.Redis) -> int:
+def get_current_signal_count(r: Any) -> int:
     """Get current total signal count from Redis."""
     try:
         # Count all signal keys
@@ -82,7 +80,7 @@ def get_current_signal_count(r: redis.Redis) -> int:
         return 0
 
 
-def get_last_signal_timestamp(r: redis.Redis) -> Optional[datetime]:
+def get_last_signal_timestamp(r: Any) -> datetime | None:
     """Get timestamp of most recent signal."""
     try:
         pattern = "bmad:chiseai:signals:*"
@@ -100,7 +98,7 @@ def get_last_signal_timestamp(r: redis.Redis) -> Optional[datetime]:
                     ts = datetime.fromisoformat(ts_str)
                     if latest_time is None or ts > latest_time:
                         latest_time = ts
-            except Exception:
+            except Exception:  # nosec B112
                 continue
 
         return latest_time
@@ -109,7 +107,7 @@ def get_last_signal_timestamp(r: redis.Redis) -> Optional[datetime]:
         return None
 
 
-def check_generator_heartbeat(r: redis.Redis) -> tuple[bool, Optional[datetime]]:
+def check_generator_heartbeat(r: Any) -> tuple[bool, datetime | None]:
     """Check if signal generator is sending heartbeats.
 
     Returns:
@@ -125,7 +123,7 @@ def check_generator_heartbeat(r: redis.Redis) -> tuple[bool, Optional[datetime]]
             return False, None
 
         last_timestamp = datetime.fromisoformat(last_timestamp_str)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Consider generator alive if heartbeat within last 5 minutes
         is_alive = (now - last_timestamp) < timedelta(minutes=5)
@@ -137,14 +135,14 @@ def check_generator_heartbeat(r: redis.Redis) -> tuple[bool, Optional[datetime]]
 
 
 def record_generator_heartbeat(
-    r: redis.Redis, status: str = "running", message: str = ""
+    r: Any, status: str = "running", message: str = ""
 ) -> bool:
     """Record signal generator heartbeat.
 
     This should be called by the signal generator itself.
     """
     try:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         heartbeat_data = {
             "timestamp": now.isoformat(),
             "status": status,
@@ -163,13 +161,13 @@ def record_generator_heartbeat(
         return False
 
 
-def check_signal_stagnation(r: redis.Redis) -> dict:
+def check_signal_stagnation(r: Any) -> dict[str, Any]:
     """Check for signal stagnation and return status.
 
     Returns:
         Dictionary with stagnation check results
     """
-    result = {
+    result: dict[str, Any] = {
         "stagnant": False,
         "critical": False,
         "minutes_since_last_signal": None,
@@ -189,11 +187,11 @@ def check_signal_stagnation(r: redis.Redis) -> dict:
         last_signal_time = get_last_signal_timestamp(r)
 
         # Calculate time since last signal
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if last_signal_time:
             # Ensure last_signal_time is timezone-aware
             if last_signal_time.tzinfo is None:
-                last_signal_time = last_signal_time.replace(tzinfo=timezone.utc)
+                last_signal_time = last_signal_time.replace(tzinfo=UTC)
             minutes_since = (now - last_signal_time).total_seconds() / 60
             result["minutes_since_last_signal"] = round(minutes_since, 1)
 
@@ -254,7 +252,7 @@ async def send_alert(message: str, priority: str = "warning"):
 
     # Fallback to local log
     os.makedirs("logs/monitoring", exist_ok=True)
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     filename = f"logs/monitoring/SIGNAL_ALERT-{priority}-{timestamp}.log"
     with open(filename, "w") as f:
         f.write(message)
@@ -276,7 +274,7 @@ def trigger_auto_restart() -> bool:
             r.hset(
                 "bmad:chiseai:signal_generator:restart_log",
                 mapping={
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "reason": "signal_stagnation",
                     "triggered_by": "signal_continuity_monitor",
                 },

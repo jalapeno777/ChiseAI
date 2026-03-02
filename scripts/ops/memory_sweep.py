@@ -19,23 +19,21 @@ Cron Setup:
 """
 
 import argparse
-import json
 import logging
 import sys
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from governance.memory.sweep import MemorySweepEngine, SweepConfig
-from governance.memory.promotion import MemoryPromotionEngine, PromotionConfig
-from governance.memory.contradiction import ContradictionDetector, ContradictionConfig
+from governance.memory.contradiction import ContradictionConfig, ContradictionDetector
 from governance.memory.deduplication import (
-    MemoryDeduplicationEngine,
     DeduplicationConfig,
+    MemoryDeduplicationEngine,
 )
+from governance.memory.promotion import MemoryPromotionEngine, PromotionConfig
+from governance.memory.sweep import MemorySweepEngine, SweepConfig
 
 # Configure logging
 logging.basicConfig(

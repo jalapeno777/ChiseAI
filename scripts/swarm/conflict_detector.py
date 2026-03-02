@@ -174,7 +174,7 @@ class ConflictDetector:
 
     def _find_repo_root(self) -> Path:
         """Find the git repository root."""
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B607
             ["git", "rev-parse", "--show-toplevel"],
             capture_output=True,
             text=True,
@@ -197,7 +197,7 @@ class ConflictDetector:
             List of FileChange objects
         """
         # Get diff stats
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B607
             [
                 "git",
                 "-C",
@@ -324,7 +324,9 @@ class ConflictDetector:
         # This is a simplified check - full merge simulation would be expensive
         conflicting = []
         for path in overlapping:
-            if self._is_protected_file(path) or self._would_file_conflict(branch1, branch2, path, base_ref):
+            if self._is_protected_file(path) or self._would_file_conflict(
+                branch1, branch2, path, base_ref
+            ):
                 conflicting.append(path)
 
         return bool(conflicting), list(conflicting)
@@ -346,7 +348,7 @@ class ConflictDetector:
         modified the same regions of the file.
         """
         # Get the diff for the file from both branches
-        result1 = subprocess.run(
+        result1 = subprocess.run(  # nosec B607
             [
                 "git",
                 "-C",
@@ -361,7 +363,7 @@ class ConflictDetector:
             check=False,
         )
 
-        result2 = subprocess.run(
+        result2 = subprocess.run(  # nosec B607
             [
                 "git",
                 "-C",
@@ -561,7 +563,7 @@ class ConflictDetector:
         Returns:
             Dictionary with conflict matrix data
         """
-        matrix = {}
+        matrix: dict[str, dict[str, Any]] = {}
         for cs in change_sets:
             matrix[f"{cs.story_id}/{cs.agent}"] = {}
 

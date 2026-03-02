@@ -9,9 +9,7 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime, timedelta
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import MagicMock
 
 from evaluation.fingerprinting import (
     FingerprintCluster,

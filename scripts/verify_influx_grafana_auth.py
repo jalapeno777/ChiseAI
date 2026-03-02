@@ -21,9 +21,8 @@ import argparse
 import json
 import os
 import sys
-import urllib.request
 import urllib.error
-from typing import Optional, Tuple
+import urllib.request
 
 
 class AuthVerifier:
@@ -33,7 +32,7 @@ class AuthVerifier:
         self,
         influx_url: str = "http://host.docker.internal:18087",
         grafana_url: str = "http://host.docker.internal:3001",
-        token: Optional[str] = None,
+        token: str | None = None,
         grafana_user: str = "admin",
         grafana_pass: str = "admin123",
         org: str = "chiseai",
@@ -55,9 +54,9 @@ class AuthVerifier:
         self,
         url: str,
         method: str = "GET",
-        headers: Optional[dict] = None,
+        headers: dict | None = None,
         timeout: int = 10,
-    ) -> Tuple[bool, str, int]:
+    ) -> tuple[bool, str, int]:
         """Make an HTTP request and return (success, response_data, status_code)."""
         try:
             req = urllib.request.Request(url, method=method)
@@ -65,7 +64,7 @@ class AuthVerifier:
                 for key, value in headers.items():
                     req.add_header(key, value)
 
-            with urllib.request.urlopen(req, timeout=timeout) as response:
+            with urllib.request.urlopen(req, timeout=timeout) as response:  # nosec B310
                 return True, response.read().decode(), response.status
         except urllib.error.HTTPError as e:
             return False, e.read().decode(), e.code
@@ -175,7 +174,7 @@ class AuthVerifier:
                     .get("values", [])
                 )
 
-                self.log(f"✓ InfluxDB query successful")
+                self.log("✓ InfluxDB query successful")
                 self.log(f"  Found {len(measurements)} measurements:")
                 for measurement in measurements[:10]:  # Show first 10
                     self.log(f"    - {measurement[0]}")

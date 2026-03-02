@@ -37,9 +37,10 @@ import os
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, Optional, TypeVar
+from typing import Any, TypeVar
 
 # Configure logging
 logging.basicConfig(
@@ -91,8 +92,8 @@ class AuthorityViolation(Exception):
         self,
         action: str,
         agent: str,
-        epic_id: Optional[str] = None,
-        message: Optional[str] = None,
+        epic_id: str | None = None,
+        message: str | None = None,
     ) -> None:
         self.action = action
         self.agent = agent
@@ -124,7 +125,7 @@ class EpicNotProtected(Exception):
     def __init__(
         self,
         epic_id: str,
-        message: Optional[str] = None,
+        message: str | None = None,
     ) -> None:
         self.epic_id = epic_id
 
@@ -153,8 +154,8 @@ class AuthorityCheckError(Exception):
     def __init__(
         self,
         reason: str,
-        original_error: Optional[Exception] = None,
-        message: Optional[str] = None,
+        original_error: Exception | None = None,
+        message: str | None = None,
     ) -> None:
         self.reason = reason
         self.original_error = original_error
@@ -184,7 +185,7 @@ class AuthorityCheckResult:
     authorized: bool
     action: str
     agent: str
-    epic_id: Optional[str]
+    epic_id: str | None
     setting: str
     reason: str
 
@@ -193,7 +194,7 @@ class AuthorityCheckResult:
 _authority_cache: dict[str, tuple[Any, float]] = {}
 
 
-def _get_cached(key: str) -> Optional[Any]:
+def _get_cached(key: str) -> Any | None:
     """Get a cached value if it hasn't expired."""
     if key in _authority_cache:
         value, timestamp = _authority_cache[key]
@@ -281,7 +282,7 @@ def _detect_agent_from_process() -> str:
         return "unknown"
 
 
-def is_merlin(agent: Optional[str] = None) -> bool:
+def is_merlin(agent: str | None = None) -> bool:
     """
     Check if the specified (or current) agent is merlin.
 
@@ -394,7 +395,7 @@ def _parse_authority_setting(
 def check_epic_authority(
     action: str,
     epic_id: str,
-    agent: Optional[str] = None,
+    agent: str | None = None,
 ) -> AuthorityCheckResult:
     """
     Check if the agent has authority to perform an action on an epic.
@@ -464,7 +465,7 @@ def check_epic_authority(
 
 def check_ep_auto_git_authority(
     action: str,
-    agent: Optional[str] = None,
+    agent: str | None = None,
 ) -> AuthorityCheckResult:
     """
     Check authority for EP-AUTO-GIT epic operations.
@@ -496,7 +497,7 @@ def check_ep_auto_git_authority(
 def enforce_merlin_only(
     action: str,
     epic_id: str = "EP-AUTO-GIT-001",
-    agent: Optional[str] = None,
+    agent: str | None = None,
 ) -> AuthorityCheckResult:
     """
     Enforce merlin-only authority for an action.
@@ -583,7 +584,7 @@ def require_merlin(
     return decorator
 
 
-def verify_git_sha(sha: str, repo_path: Optional[str] = None) -> bool:
+def verify_git_sha(sha: str, repo_path: str | None = None) -> bool:
     """
     Verify that a git SHA exists in the repository history.
 
@@ -637,7 +638,7 @@ def cli_check(args: argparse.Namespace) -> int:
     try:
         result = check_ep_auto_git_authority(args.action, args.agent)
 
-        print(f"Authority Check Result:")
+        print("Authority Check Result:")
         print(f"  Action: {result.action}")
         print(f"  Agent: {result.agent}")
         print(f"  Epic: {result.epic_id}")
@@ -680,16 +681,16 @@ def cli_verify(args: argparse.Namespace) -> int:
     try:
         result = check_ep_auto_git_authority(args.action, args.agent)
 
-        print(f"\nAuthority Check:")
+        print("\nAuthority Check:")
         print(f"  Agent: {result.agent}")
         print(f"  Action: {result.action}")
         print(f"  Authorized: {result.authorized}")
 
         if result.authorized:
-            print(f"\nVerification PASSED: SHA valid and agent authorized")
+            print("\nVerification PASSED: SHA valid and agent authorized")
             return 0
         else:
-            print(f"\nVerification FAILED: Agent not authorized", file=sys.stderr)
+            print("\nVerification FAILED: Agent not authorized", file=sys.stderr)
             return 1
 
     except (EpicNotProtected, AuthorityCheckError) as e:
@@ -712,10 +713,10 @@ def cli_enforce(args: argparse.Namespace) -> int:
     try:
         result = enforce_merlin_only(args.action, args.epic_id, args.agent)
 
-        print(f"Authority ENFORCED:")
+        print("Authority ENFORCED:")
         print(f"  Action: {result.action}")
         print(f"  Agent: {result.agent}")
-        print(f"  Status: AUTHORIZED")
+        print("  Status: AUTHORIZED")
 
         return 0
 

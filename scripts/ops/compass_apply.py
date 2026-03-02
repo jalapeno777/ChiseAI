@@ -16,9 +16,10 @@ import argparse
 import fnmatch
 import os
 import sys
-import yaml
 from pathlib import Path
-from typing import List, Set, Dict, Any
+from typing import Any
+
+import yaml
 
 # Get the repository root
 REPO_ROOT = Path(__file__).parent.parent.parent.resolve()
@@ -36,11 +37,11 @@ def load_compass_config() -> dict:
     if not COMPASS_CONFIG_PATH.exists():
         raise CompassApplyError(f"Compass config not found: {COMPASS_CONFIG_PATH}")
 
-    with open(COMPASS_CONFIG_PATH, "r") as f:
+    with open(COMPASS_CONFIG_PATH) as f:
         return yaml.safe_load(f)
 
 
-def match_glob_patterns(file_path: str, patterns: List[str]) -> bool:
+def match_glob_patterns(file_path: str, patterns: list[str]) -> bool:
     """Check if a file path matches any of the glob patterns.
 
     Supports ** (globstar) for recursive directory matching.
@@ -92,7 +93,7 @@ def match_glob_patterns(file_path: str, patterns: List[str]) -> bool:
     return False
 
 
-def detect_sensitive_changes(files_changed: List[str]) -> Dict[str, List[str]]:
+def detect_sensitive_changes(files_changed: list[str]) -> dict[str, list[str]]:
     """
     Detect which files match veto path patterns.
 
@@ -120,7 +121,7 @@ def detect_sensitive_changes(files_changed: List[str]) -> Dict[str, List[str]]:
     return matches
 
 
-def get_pr_labels(pr_number: int) -> List[str]:
+def get_pr_labels(pr_number: int) -> list[str]:
     """
     Get current labels on a PR.
 
@@ -182,8 +183,10 @@ def remove_label(pr_number: int, label: str, dry_run: bool = False) -> bool:
 
 
 def run_apply(
-    files_changed: List[str], pr_number: int = None, dry_run: bool = False
-) -> Dict[str, Any]:
+    files_changed: list[str],
+    pr_number: int | None = None,
+    dry_run: bool = False,
+) -> dict[str, Any]:
     """
     Run the compass apply logic.
 
@@ -212,7 +215,7 @@ def run_apply(
     sensitive_matches = detect_sensitive_changes(files_changed)
 
     if sensitive_matches:
-        print(f"\n⚠️  SENSITIVE PATHS DETECTED:")
+        print("\n⚠️  SENSITIVE PATHS DETECTED:")
         for category, files in sensitive_matches.items():
             print(f"\n  {category.upper()}:")
             for f in files:
@@ -264,7 +267,7 @@ def run_apply(
         if should_label:
             print(f"\n🏷️  Would apply label '{label_name}' to PR")
         else:
-            print(f"\n✓ No labeling needed")
+            print("\n✓ No labeling needed")
 
     print("\n" + "=" * 60)
     if should_label:

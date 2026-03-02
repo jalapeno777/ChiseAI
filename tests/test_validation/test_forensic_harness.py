@@ -10,32 +10,30 @@ Comprehensive test suite covering:
 - Fail-safe mechanisms
 """
 
-import asyncio
 import json
-import pytest
-from datetime import datetime, timezone, timedelta
-from unittest.mock import MagicMock, AsyncMock, patch
-from typing import Dict, Any
 
 # Import the harness classes
 import sys
+from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 sys.path.insert(0, "/home/tacopants/projects/ChiseAI")
 
 from scripts.validation.forensic_harness import (
-    ForensicHarness,
-    Artifact,
-    Snapshot,
-    GateResult,
-    ProofResult,
-    EvidenceBundle,
-    GateStatus,
-    ArtifactType,
     GATE_REQUIREMENTS,
     ZERO_DELTA_GATES,
-    create_redis_collector,
+    Artifact,
+    ArtifactType,
+    ForensicHarness,
+    GateResult,
+    GateStatus,
+    ProofResult,
+    Snapshot,
     create_discord_collector,
     create_influx_collector,
+    create_redis_collector,
 )
 
 
@@ -95,7 +93,7 @@ class TestSnapshotCapture:
         return {
             "scheduler_heartbeat": MagicMock(
                 return_value={
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "status": "healthy",
                 }
             ),
@@ -168,12 +166,12 @@ class TestSnapshotCapture:
             duration_minutes=5, snapshot_interval_minutes=5, artifact_collectors={}
         )
 
-        before_start = datetime.now(timezone.utc)
+        before_start = datetime.now(UTC)
 
         with patch("asyncio.sleep", new_callable=AsyncMock):
             result = await harness.run_proof_loop()
 
-        after_end = datetime.now(timezone.utc)
+        after_end = datetime.now(UTC)
 
         start_time = datetime.fromisoformat(result.start_time)
         end_time = datetime.fromisoformat(result.end_time)
@@ -199,7 +197,7 @@ class TestGateEvaluationPass:
 
         harness.snapshots = [
             Snapshot(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 label="T0",
                 artifacts={"scheduler_heartbeat": artifact},
             )
@@ -217,7 +215,7 @@ class TestGateEvaluationPass:
 
         harness.snapshots = [
             Snapshot(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 label="T0",
                 artifacts={
                     "discord_open_msg": Artifact(
@@ -255,7 +253,7 @@ class TestGateEvaluationPass:
 
         harness.snapshots = [
             Snapshot(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 label="T0",
                 artifacts={
                     "signal_count_delta": Artifact(
@@ -278,7 +276,7 @@ class TestGateEvaluationPass:
 
         harness.snapshots = [
             Snapshot(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 label="T0",
                 artifacts={
                     "influx_orders_query": Artifact(
@@ -321,7 +319,7 @@ class TestGateEvaluationFail:
 
         harness.snapshots = [
             Snapshot(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 label="T0",
                 artifacts={
                     "discord_open_msg": Artifact(
@@ -350,7 +348,7 @@ class TestGateEvaluationFail:
 
         harness.snapshots = [
             Snapshot(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 label="T0",
                 artifacts={
                     "scheduler_heartbeat": Artifact(
@@ -374,7 +372,7 @@ class TestGateEvaluationFail:
 
         harness.snapshots = [
             Snapshot(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 label="T0",
                 artifacts={
                     "signal_count_delta": Artifact(
@@ -398,7 +396,7 @@ class TestGateEvaluationFail:
 
         harness.snapshots = [
             Snapshot(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 label="T0",
                 artifacts={
                     "outcome_count_delta": Artifact(
@@ -421,7 +419,7 @@ class TestGateEvaluationFail:
 
         harness.snapshots = [
             Snapshot(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 label="T0",
                 artifacts={
                     "kill_switch_state": Artifact(
@@ -444,7 +442,7 @@ class TestGateEvaluationFail:
 
         harness.snapshots = [
             Snapshot(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 label="T0",
                 artifacts={
                     "discord_open_msg": Artifact(
@@ -468,7 +466,7 @@ class TestGateEvaluationFail:
 
         harness.snapshots = [
             Snapshot(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 label="T0",
                 artifacts={
                     "discord_open_msg": Artifact(
@@ -492,7 +490,7 @@ class TestGateEvaluationFail:
 
         harness.snapshots = [
             Snapshot(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 label="T0",
                 artifacts={
                     "influx_orders_query": Artifact(
@@ -516,7 +514,7 @@ class TestGateEvaluationFail:
 
         harness.snapshots = [
             Snapshot(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 label="T0",
                 artifacts={
                     "influx_canary_query": Artifact(
@@ -539,7 +537,7 @@ class TestGateEvaluationFail:
 
         harness.snapshots = [
             Snapshot(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 label="T0",
                 artifacts={
                     "scheduler_heartbeat": Artifact(
@@ -565,7 +563,7 @@ class TestMonotonicTimestampValidation:
         """Test that timestamps are validated as monotonically increasing."""
         harness = ForensicHarness()
 
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
 
         harness.snapshots = [
             Snapshot(timestamp_utc=(base_time).isoformat(), label="T0", artifacts={}),
@@ -589,7 +587,7 @@ class TestMonotonicTimestampValidation:
         """Test that non-monotonic timestamps are detected."""
         harness = ForensicHarness()
 
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
 
         harness.snapshots = [
             Snapshot(
@@ -613,7 +611,7 @@ class TestMonotonicTimestampValidation:
         """Test that equal timestamps are detected as non-monotonic."""
         harness = ForensicHarness()
 
-        same_time = datetime.now(timezone.utc).isoformat()
+        same_time = datetime.now(UTC).isoformat()
 
         harness.snapshots = [
             Snapshot(timestamp_utc=same_time, label="T0", artifacts={}),
@@ -634,7 +632,7 @@ class TestMonotonicTimestampValidation:
         )
 
         # Manually create snapshots with non-monotonic timestamps
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
         harness.snapshots = [
             Snapshot(
                 timestamp_utc=(base_time + timedelta(minutes=10)).isoformat(),
@@ -672,7 +670,7 @@ class TestBundleGeneration:
 
         harness.snapshots = [
             Snapshot(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 label="T0",
                 artifacts={
                     "scheduler_heartbeat": Artifact(
@@ -686,8 +684,8 @@ class TestBundleGeneration:
         ]
 
         harness._proof_result = ProofResult(
-            start_time=datetime.now(timezone.utc).isoformat(),
-            end_time=datetime.now(timezone.utc).isoformat(),
+            start_time=datetime.now(UTC).isoformat(),
+            end_time=datetime.now(UTC).isoformat(),
             snapshots=harness.snapshots,
             gate_results={"G1": GateResult("G1", GateStatus.PASS)},
             overall_status=GateStatus.PASS,
@@ -795,7 +793,7 @@ class TestHelperFunctions:
         mock_message = MagicMock()
         mock_message.id = "12345"
         mock_message.content = "Open message"
-        mock_message.created_at = datetime.now(timezone.utc)
+        mock_message.created_at = datetime.now(UTC)
         mock_discord.fetch_messages.return_value = [mock_message]
 
         collector = create_discord_collector(mock_discord, "channel_123", "open")
@@ -918,12 +916,12 @@ class TestHarnessUtilityMethods:
 
         harness.snapshots = [
             Snapshot(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 label="T0",
                 artifacts={},
             ),
             Snapshot(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 label="T5",
                 artifacts={},
             ),
@@ -945,12 +943,12 @@ class TestHarnessUtilityMethods:
 
         harness.snapshots = [
             Snapshot(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 label="T0",
                 artifacts={"test_art": art1},
             ),
             Snapshot(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 label="T5",
                 artifacts={"test_art": art2},
             ),
@@ -1127,15 +1125,15 @@ class TestIntegrationScenarios:
         harness = ForensicHarness()
         harness.snapshots = [
             Snapshot(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 label="T0",
                 artifacts={"test": Artifact("G1", "test", {"v": 1}, "test")},
             )
         ]
 
         harness._proof_result = ProofResult(
-            start_time=datetime.now(timezone.utc).isoformat(),
-            end_time=datetime.now(timezone.utc).isoformat(),
+            start_time=datetime.now(UTC).isoformat(),
+            end_time=datetime.now(UTC).isoformat(),
             snapshots=harness.snapshots,
             gate_results={"G1": GateResult("G1", GateStatus.PASS)},
             overall_status=GateStatus.PASS,

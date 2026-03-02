@@ -10,22 +10,20 @@ This script tests:
 """
 
 import sys
-import time
+
 import redis
-from datetime import datetime, timezone
 
 sys.path.insert(0, "/home/tacopants/projects/ChiseAI")
 
-from scripts.monitoring.scheduler_heartbeat import (
-    record_heartbeat,
-    check_heartbeat_health,
-    HEARTBEAT_TTL_SECONDS,
-    MIN_HEARTBEAT_INTERVAL,
-    MAX_HEARTBEAT_AGE_ALERT,
-    HEARTBEAT_HASH_KEY,
-    LAST_SEEN_KEY,
-)
 from scripts.monitoring.checkpoint_gate_audit import check_g1_scheduler
+from scripts.monitoring.scheduler_heartbeat import (
+    HEARTBEAT_HASH_KEY,
+    HEARTBEAT_TTL_SECONDS,
+    MAX_HEARTBEAT_AGE_ALERT,
+    MIN_HEARTBEAT_INTERVAL,
+    check_heartbeat_health,
+    record_heartbeat,
+)
 
 
 def test_heartbeat_basic():
@@ -97,12 +95,12 @@ def test_minimum_interval():
     # Record first heartbeat
     success1 = record_heartbeat(r, status="running")
     assert success1, "First heartbeat failed"
-    print(f"  First heartbeat recorded")
+    print("  First heartbeat recorded")
 
     # Try to record second heartbeat immediately (should be skipped)
     success2 = record_heartbeat(r, status="running")
     assert success2, "Second heartbeat returned error"
-    print(f"  Second heartbeat call returned (may be skipped due to interval)")
+    print("  Second heartbeat call returned (may be skipped due to interval)")
 
     print(
         f"✅ Minimum interval enforcement works (interval: {MIN_HEARTBEAT_INTERVAL}s)"
@@ -141,15 +139,15 @@ def test_config_values():
     print(f"  MAX_HEARTBEAT_AGE_ALERT: {MAX_HEARTBEAT_AGE_ALERT}")
 
     # Verify values are reasonable
-    assert HEARTBEAT_TTL_SECONDS == 120, (
-        f"TTL should be 120s, got {HEARTBEAT_TTL_SECONDS}"
-    )
-    assert MIN_HEARTBEAT_INTERVAL == 30, (
-        f"Min interval should be 30s, got {MIN_HEARTBEAT_INTERVAL}"
-    )
-    assert MAX_HEARTBEAT_AGE_ALERT == 90, (
-        f"Alert threshold should be 90s, got {MAX_HEARTBEAT_AGE_ALERT}"
-    )
+    assert (
+        HEARTBEAT_TTL_SECONDS == 120
+    ), f"TTL should be 120s, got {HEARTBEAT_TTL_SECONDS}"
+    assert (
+        MIN_HEARTBEAT_INTERVAL == 30
+    ), f"Min interval should be 30s, got {MIN_HEARTBEAT_INTERVAL}"
+    assert (
+        MAX_HEARTBEAT_AGE_ALERT == 90
+    ), f"Alert threshold should be 90s, got {MAX_HEARTBEAT_AGE_ALERT}"
 
     print("✅ Configuration values are correct")
     return True

@@ -103,7 +103,7 @@ class MemoryEntry:
     def compute_hash(self) -> str:
         """Compute a hash of the content for deduplication."""
         content = f"{self.category.value}:{self.content}:{self.story_id}"
-        return hashlib.md5(content.encode("utf-8")).hexdigest()
+        return hashlib.md5(content.encode("utf-8"), usedforsecurity=False).hexdigest()
 
 
 @dataclass
@@ -134,7 +134,7 @@ class PromotionConfig:
     def __post_init__(self):
         """Load policy from YAML file."""
         try:
-            with open(self.policy_path, "r") as f:
+            with open(self.policy_path) as f:
                 self.policy = yaml.safe_load(f)
             logger.info(f"Loaded promotion policy from {self.policy_path}")
         except Exception as e:
@@ -515,7 +515,7 @@ class MemoryPromotionEngine:
             content = json.dumps(data, default=str)
 
             return MemoryEntry(
-                id=f"{story_id}_{hashlib.md5(key.encode()).hexdigest()[:8]}",
+                id=f"{story_id}_{hashlib.md5(key.encode(), usedforsecurity=False).hexdigest()[:8]}",
                 content=content,
                 category=category,
                 story_id=story_id,

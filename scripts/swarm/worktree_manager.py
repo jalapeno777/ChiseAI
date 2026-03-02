@@ -123,7 +123,7 @@ class WorktreeManager:
 
     def _find_repo_root(self) -> Path:
         """Find the git repository root."""
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B607
             ["git", "rev-parse", "--show-toplevel"],
             capture_output=True,
             text=True,
@@ -136,7 +136,7 @@ class WorktreeManager:
     def _check_redis(self) -> bool:
         """Check if Redis is available."""
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B607
                 [
                     "redis-cli",
                     "-h",
@@ -190,7 +190,7 @@ class WorktreeManager:
 
     def list_worktrees(self) -> list[dict[str, Any]]:
         """List all git worktrees."""
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B607
             ["git", "-C", str(self.repo_root), "worktree", "list", "--porcelain"],
             capture_output=True,
             text=True,
@@ -199,8 +199,8 @@ class WorktreeManager:
         if result.returncode != 0:
             raise WorktreeError(f"Failed to list worktrees: {result.stderr}")
 
-        worktrees = []
-        current = {}
+        worktrees: list[dict[str, Any]] = []
+        current: dict[str, Any] = {}
         for line in result.stdout.split("\n"):
             line = line.strip()
             if not line:
@@ -265,7 +265,7 @@ class WorktreeManager:
 
         # Check if branch exists
         branch_exists = (
-            subprocess.run(
+            subprocess.run(  # nosec B607
                 [
                     "git",
                     "-C",
@@ -283,7 +283,7 @@ class WorktreeManager:
 
         # Create worktree
         if branch_exists:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B607
                 [
                     "git",
                     "-C",
@@ -298,7 +298,7 @@ class WorktreeManager:
                 check=False,
             )
         else:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B607
                 [
                     "git",
                     "-C",
@@ -319,7 +319,7 @@ class WorktreeManager:
             raise WorktreeError(f"Failed to create worktree: {result.stderr}")
 
         # Get commit hash
-        commit_result = subprocess.run(
+        commit_result = subprocess.run(  # nosec B607
             ["git", "-C", str(worktree_path), "rev-parse", "HEAD"],
             capture_output=True,
             text=True,
@@ -400,7 +400,7 @@ class WorktreeManager:
                 )
 
         # Remove worktree
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B607
             [
                 "git",
                 "-C",
@@ -435,7 +435,7 @@ class WorktreeManager:
 
         # Remove branch if requested
         if remove_branch and branch:
-            subprocess.run(
+            subprocess.run(  # nosec B607
                 ["git", "-C", str(self.repo_root), "branch", "-D", branch],
                 capture_output=True,
                 text=True,
@@ -572,7 +572,7 @@ class WorktreeManager:
             return health
 
         # Check if it's a valid git repo
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B607
             ["git", "-C", str(path), "rev-parse", "--git-dir"],
             capture_output=True,
             text=True,
@@ -585,7 +585,7 @@ class WorktreeManager:
             return health
 
         # Check for uncommitted changes
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B607
             ["git", "-C", str(path), "status", "--porcelain"],
             capture_output=True,
             text=True,

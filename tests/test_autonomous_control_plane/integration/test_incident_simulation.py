@@ -13,18 +13,16 @@ Acceptance Criteria:
 
 from __future__ import annotations
 
-import asyncio
 import time
 from datetime import UTC, datetime
-from typing import Any
-from unittest.mock import patch
 
 import pytest
-
-from src.autonomous_control_plane.components.self_healing_engine import SelfHealingEngine
 from src.autonomous_control_plane.components.incident_manager import IncidentManager
 from src.autonomous_control_plane.components.rollback_coordinator import (
     RollbackCoordinator,
+)
+from src.autonomous_control_plane.components.self_healing_engine import (
+    SelfHealingEngine,
 )
 from src.autonomous_control_plane.models.healing import (
     HealingStatus,
@@ -83,9 +81,9 @@ class TestIncidentScenarioA:
         detection_time = time.time() - start_time
 
         # Assert detection time is under 5 seconds
-        assert detection_time < 5.0, (
-            f"Detection took {detection_time:.2f}s, exceeding 5s limit"
-        )
+        assert (
+            detection_time < 5.0
+        ), f"Detection took {detection_time:.2f}s, exceeding 5s limit"
         assert attempt is not None, "Healing attempt should have been created"
 
     @pytest.mark.asyncio
@@ -109,12 +107,13 @@ class TestIncidentScenarioA:
 
         # Verify healing was triggered
         assert attempt is not None, "Healing attempt should have been created"
-        assert attempt.action_type == "redis_restart", (
-            f"Expected redis_restart, got {attempt.action_type}"
-        )
-        assert attempt.status in [HealingStatus.COMPLETED, HealingStatus.IN_PROGRESS], (
-            f"Unexpected status: {attempt.status}"
-        )
+        assert (
+            attempt.action_type == "redis_restart"
+        ), f"Expected redis_restart, got {attempt.action_type}"
+        assert attempt.status in [
+            HealingStatus.COMPLETED,
+            HealingStatus.IN_PROGRESS,
+        ], f"Unexpected status: {attempt.status}"
 
     @pytest.mark.asyncio
     async def test_scenario_a_incident_logged_with_context(self, simulator):
@@ -154,15 +153,15 @@ class TestIncidentScenarioA:
         # Verify incident was logged with full context
         assert incident is not None, "Incident should have been created"
         assert incident.incident_id is not None, "Incident should have an ID"
-        assert incident.source == "redis-connection-pool", (
-            f"Unexpected source: {incident.source}"
-        )
-        assert incident.severity == Severity.P2, (
-            f"Expected P2 severity, got {incident.severity}"
-        )
-        assert "healing_attempt_id" in incident.metadata, (
-            "Incident should reference healing attempt"
-        )
+        assert (
+            incident.source == "redis-connection-pool"
+        ), f"Unexpected source: {incident.source}"
+        assert (
+            incident.severity == Severity.P2
+        ), f"Expected P2 severity, got {incident.severity}"
+        assert (
+            "healing_attempt_id" in incident.metadata
+        ), "Incident should reference healing attempt"
 
     @pytest.mark.asyncio
     async def test_scenario_a_sla_under_60_seconds(self, simulator):
@@ -205,9 +204,9 @@ class TestIncidentScenarioA:
         total_time = time.time() - start_time
 
         # Assert total time is under 60 seconds
-        assert total_time < 60.0, (
-            f"Total scenario time {total_time:.2f}s exceeded 60s SLA"
-        )
+        assert (
+            total_time < 60.0
+        ), f"Total scenario time {total_time:.2f}s exceeded 60s SLA"
 
 
 class TestIncidentScenarioB:
@@ -263,15 +262,15 @@ class TestIncidentScenarioB:
 
         # Verify healing was triggered
         assert attempt is not None, "Healing attempt should have been created"
-        assert attempt.action_type == "circuit_breaker_reset", (
-            f"Expected circuit_breaker_reset, got {attempt.action_type}"
-        )
+        assert (
+            attempt.action_type == "circuit_breaker_reset"
+        ), f"Expected circuit_breaker_reset, got {attempt.action_type}"
 
         # Verify circuit breaker was reset
         final_state = cb.get_state_dict()
-        assert final_state["state"] == "CLOSED", (
-            f"Circuit should be CLOSED, got {final_state['state']}"
-        )
+        assert (
+            final_state["state"] == "CLOSED"
+        ), f"Circuit should be CLOSED, got {final_state['state']}"
 
     @pytest.mark.asyncio
     async def test_scenario_b_detection_time_under_5_seconds(self, simulator):
@@ -295,9 +294,9 @@ class TestIncidentScenarioB:
         attempt = await healing_engine.process_log_entry(log_entry)
         detection_time = time.time() - start_time
 
-        assert detection_time < 5.0, (
-            f"Detection took {detection_time:.2f}s, exceeding 5s limit"
-        )
+        assert (
+            detection_time < 5.0
+        ), f"Detection took {detection_time:.2f}s, exceeding 5s limit"
         assert attempt is not None, "Healing attempt should have been created"
 
     @pytest.mark.asyncio
@@ -344,15 +343,15 @@ class TestIncidentScenarioB:
 
         # Verify incident has circuit breaker context
         assert incident is not None
-        assert "circuit_name" in incident.metadata, (
-            "Incident should reference circuit name"
-        )
-        assert "circuit_state_before" in incident.metadata, (
-            "Incident should record before state"
-        )
-        assert "circuit_state_after" in incident.metadata, (
-            "Incident should record after state"
-        )
+        assert (
+            "circuit_name" in incident.metadata
+        ), "Incident should reference circuit name"
+        assert (
+            "circuit_state_before" in incident.metadata
+        ), "Incident should record before state"
+        assert (
+            "circuit_state_after" in incident.metadata
+        ), "Incident should record after state"
 
 
 class TestIncidentScenarioC:
@@ -394,9 +393,9 @@ class TestIncidentScenarioC:
         validation_result = await rollback_coordinator.validate_rollback(target_state)
 
         assert validation_result.valid, "Rollback path should be available"
-        assert rollback_op.operation_id is not None, (
-            "Rollback operation should have an ID"
-        )
+        assert (
+            rollback_op.operation_id is not None
+        ), "Rollback operation should have an ID"
 
     @pytest.mark.asyncio
     async def test_scenario_c_incident_with_severity_classification(self, simulator):
@@ -437,12 +436,12 @@ class TestIncidentScenarioC:
 
         # Verify incident has proper severity
         assert incident is not None
-        assert incident.severity == Severity.P1, (
-            f"Expected P1 severity, got {incident.severity}"
-        )
-        assert "response_time_ms" in incident.metadata, (
-            "Incident should include performance data"
-        )
+        assert (
+            incident.severity == Severity.P1
+        ), f"Expected P1 severity, got {incident.severity}"
+        assert (
+            "response_time_ms" in incident.metadata
+        ), "Incident should include performance data"
         assert "error_rate" in incident.metadata, "Incident should include error rate"
 
     @pytest.mark.asyncio
@@ -464,9 +463,9 @@ class TestIncidentScenarioC:
         rollback_path_time = time.time() - start_time
 
         # Rollback path check should be fast (part of the 60s SLA)
-        assert rollback_path_time < 10.0, (
-            f"Rollback path check took {rollback_path_time:.2f}s, should be <10s"
-        )
+        assert (
+            rollback_path_time < 10.0
+        ), f"Rollback path check took {rollback_path_time:.2f}s, should be <10s"
         assert validation_result.valid, "Rollback path should be valid"
 
 
@@ -546,9 +545,9 @@ class TestTimingAndSLA:
 
         # Verify all scenarios completed within 60 seconds
         for scenario, duration in scenario_times:
-            assert duration < 60.0, (
-                f"Scenario {scenario} took {duration:.2f}s, exceeding 60s SLA"
-            )
+            assert (
+                duration < 60.0
+            ), f"Scenario {scenario} took {duration:.2f}s, exceeding 60s SLA"
 
     @pytest.mark.asyncio
     async def test_detection_times_under_5_seconds(self):
@@ -654,9 +653,9 @@ class TestIntegrationFlow:
         # Verify incident can be retrieved
         retrieved = await incident_manager.get_incident(incident.incident_id)
         assert retrieved is not None, "Incident should be retrievable"
-        assert retrieved.incident_id == incident.incident_id, (
-            "Retrieved incident should match"
-        )
+        assert (
+            retrieved.incident_id == incident.incident_id
+        ), "Retrieved incident should match"
 
     @pytest.mark.asyncio
     async def test_rollback_coordinator_integration_with_incident_manager(self):

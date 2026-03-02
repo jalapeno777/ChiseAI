@@ -13,7 +13,6 @@ This script:
 import os
 import sys
 import uuid
-from datetime import UTC, datetime
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
@@ -241,10 +240,10 @@ if __name__ == "__main__":
     print("=" * 70)
     print(f"✓ New order:* keys created: {result['stats']['total_orders']} orders")
     print(f"✓ New fill:* keys created: {result['stats']['total_fills']} fills")
-    print(f"✓ Signal→Order→Fill linkage demonstrated")
-    print(f"✓ Code changes made in:")
-    print(f"    - src/orders/storage.py")
-    print(f"    - src/orders/fill_storage.py")
-    print(f"    - src/orders/manager.py")
-    print(f"    - src/persistence/unified.py")
+    print("✓ Signal→Order→Fill linkage demonstrated")
+    print("✓ Code changes made in:")
+    print("    - src/orders/storage.py")
+    print("    - src/orders/fill_storage.py")
+    print("    - src/orders/manager.py")
+    print("    - src/persistence/unified.py")
     print("=" * 70)

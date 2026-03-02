@@ -498,7 +498,7 @@ class PatternTrainer:
                     # Check if this is the best
                     # For simplicity, use the last saved
                     best_checkpoint = checkpoint_path
-            except Exception:
+            except Exception:  # nosec B112
                 continue
 
         if best_checkpoint:

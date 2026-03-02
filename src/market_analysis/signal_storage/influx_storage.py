@@ -7,6 +7,7 @@ Uses line protocol for high-throughput writes and Flux for queries.
 from __future__ import annotations
 
 import logging
+import os
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:

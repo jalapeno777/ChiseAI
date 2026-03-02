@@ -169,7 +169,7 @@ class AgentCLI:
     def _find_repo_root(self) -> Path:
         """Find repository root from current location."""
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B607
                 ["git", "rev-parse", "--show-toplevel"],
                 capture_output=True,
                 text=True,
@@ -181,7 +181,7 @@ class AgentCLI:
 
     def _run_git(self, *args: str) -> tuple[int, str, str]:
         """Run git command and return (rc, stdout, stderr)."""
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B607
             ["git", *args],
             capture_output=True,
             text=True,
@@ -241,7 +241,7 @@ class AgentCLI:
         # Try to get PR info from gitea CLI or API
         # First, try using gh CLI if available
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B607
                 [
                     "gh",
                     "pr",
@@ -336,7 +336,7 @@ class AgentCLI:
 
         # Check current ownership via Redis
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B607
                 [
                     "redis-cli",
                     "-h",
@@ -356,7 +356,12 @@ class AgentCLI:
 
             if current_owner and not force:
                 # Check if we already own it
-                if story_id in current_owner and self.agent_id in current_owner:
+                if (
+                    story_id is not None
+                    and story_id in current_owner
+                    and self.agent_id is not None
+                    and self.agent_id in current_owner
+                ):
                     return ScopeReservation(
                         story_id=story_id,
                         scope=scope,
@@ -377,7 +382,7 @@ class AgentCLI:
             timestamp = datetime.now(UTC).isoformat()
             owner_value = f"{story_id}/{self.agent_id}/{timestamp}"
 
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B607
                 [
                     "redis-cli",
                     "-h",
@@ -396,7 +401,7 @@ class AgentCLI:
 
             if result.returncode == 0:
                 # Set TTL
-                subprocess.run(
+                subprocess.run(  # nosec B607
                     [
                         "redis-cli",
                         "-h",
@@ -555,7 +560,7 @@ class AgentCLI:
         prs = []
 
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B607
                 [
                     "gh",
                     "pr",

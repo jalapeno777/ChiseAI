@@ -11,8 +11,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from orders.storage import OrderStorage
 from orders.fill_storage import FillStorage
+from orders.storage import OrderStorage
 
 logger = logging.getLogger(__name__)
 
@@ -220,10 +220,12 @@ class OrderFillManager:
             "fills": fills,
             "fill_count": len(fills),
             "fill_summary": fill_summary,
-            "complete": fill_summary.get("total_quantity", 0.0)
-            >= order_data.get("quantity", 0.0)
-            if order_data
-            else False,
+            "complete": (
+                fill_summary.get("total_quantity", 0.0)
+                >= order_data.get("quantity", 0.0)
+                if order_data
+                else False
+            ),
         }
 
     def get_signal_chain(

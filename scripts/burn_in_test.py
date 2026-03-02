@@ -25,7 +25,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 # Configure logging
 logging.basicConfig(
@@ -115,7 +115,7 @@ def read_verdict_from_redis(
             decode_responses=True,
         )
 
-        data = r.hgetall(BURN_IN_VERDICT_KEY)
+        data = cast(dict[str, Any], r.hgetall(BURN_IN_VERDICT_KEY))
         r.close()
 
         if not data:
@@ -285,7 +285,7 @@ class BurnInTest:
         try:
             import psycopg2
 
-            conn = psycopg2.connect(
+            conn = psycopg2.connect(  # nosec B106
                 host="host.docker.internal",
                 port=5434,
                 database="chiseai",
@@ -586,7 +586,7 @@ class BurnInTest:
             try:
                 elapsed = time.time() - self.metrics.start_time
 
-                health_status = {
+                health_status: dict[str, Any] = {
                     "timestamp": datetime.now(UTC).isoformat(),
                     "elapsed_seconds": elapsed,
                     "components": {},
@@ -597,7 +597,7 @@ class BurnInTest:
                 try:
                     import psycopg2
 
-                    conn = psycopg2.connect(
+                    conn = psycopg2.connect(  # nosec B106
                         host="host.docker.internal",
                         port=5434,
                         database="chiseai",

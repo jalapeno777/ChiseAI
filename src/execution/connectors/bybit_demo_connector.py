@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from data.exchange.bybit_connector import BybitConfig, BybitConnector
+    from data.exchange.bybit_connector import BybitConnector
     from execution.paper.models import PaperOrder
     from execution.paper.order_simulator import MarketDataProvider
 
@@ -289,7 +289,7 @@ class BybitDemoConnector:
             if self.connector._session is None or self.connector._session.closed:
                 await self.connector.connect()
 
-            result = await self.connector.cancel_order(
+            await self.connector.cancel_order(
                 symbol=order.symbol,
                 order_id=order_id,
             )

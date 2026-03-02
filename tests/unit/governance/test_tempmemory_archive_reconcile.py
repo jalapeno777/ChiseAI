@@ -8,13 +8,11 @@ from __future__ import annotations
 
 import json
 import tempfile
-from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 
-from governance.tempmemory import MigrationStatus
 from governance.tempmemory.archive_reconcile import (
     ArchiveResult,
     ReconciliationIssue,

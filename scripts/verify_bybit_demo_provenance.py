@@ -43,10 +43,9 @@ def check_bybit_config_demo_mode() -> tuple[bool, str]:
     """Check that BybitConfig enforces demo mode."""
     try:
         from data.exchange.bybit_connector import BybitConfig
-        from data.exchange.bybit_safety import SecurityException
 
         # Test demo mode
-        config = BybitConfig(
+        config = BybitConfig(  # nosec B106
             api_key="test_key",
             api_secret="test_secret",
             demo=True,
@@ -74,7 +73,7 @@ def check_production_blocked() -> tuple[bool, str]:
 
         # Attempt to create production config (should raise SecurityException)
         try:
-            config = BybitConfig(
+            BybitConfig(  # nosec B106
                 api_key="test_key",
                 api_secret="test_secret",
                 demo=False,
@@ -207,7 +206,6 @@ async def check_bybit_demo_connector_functionality() -> tuple[bool, str]:
     """Check BybitDemoConnector basic functionality."""
     try:
         from execution.connectors.bybit_demo_connector import (
-            BybitDemoConnector,
             BybitDemoConnectorFactory,
         )
 

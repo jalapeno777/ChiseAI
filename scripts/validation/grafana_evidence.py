@@ -11,13 +11,13 @@ Requirements:
 """
 
 import asyncio
-import os
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, timezone, timedelta
-from typing import Dict, List, Optional, Any
-import json
-import aiohttp
 import base64
+import json
+from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
+import aiohttp
 
 
 @dataclass
@@ -42,10 +42,10 @@ class GrafanaEvidence:
     timestamp_utc: str
     response_status: str
     has_data: bool
-    data_rows: List[Dict[str, Any]] = field(default_factory=list)
-    error: Optional[str] = None
+    data_rows: list[dict[str, Any]] = field(default_factory=list)
+    error: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert evidence to dictionary."""
         return asdict(self)
 
@@ -72,12 +72,10 @@ class DatasourceHealth:
     name: str
     type: str
     status: str
-    message: Optional[str] = None
-    timestamp_utc: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    message: str | None = None
+    timestamp_utc: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert health status to dictionary."""
         return asdict(self)
 
@@ -124,7 +122,7 @@ class GrafanaEvidenceCollector:
         credentials = f"{user}:{password}"
         self.auth_header = base64.b64encode(credentials.encode()).decode()
 
-    def _get_headers(self) -> Dict[str, str]:
+    def _get_headers(self) -> dict[str, str]:
         """Get HTTP headers for Grafana API requests."""
         return {
             "Authorization": f"Basic {self.auth_header}",
@@ -144,7 +142,7 @@ class GrafanaEvidenceCollector:
         Returns:
             DatasourceHealth with status information
         """
-        timestamp_utc = datetime.now(timezone.utc).isoformat()
+        timestamp_utc = datetime.now(UTC).isoformat()
 
         # First try to get datasource info
         api_url = f"{self.url}/api/datasources/uid/{uid}"
@@ -201,7 +199,7 @@ class GrafanaEvidenceCollector:
                             timestamp_utc=timestamp_utc,
                         )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             return DatasourceHealth(
                 uid=uid,
                 name="unknown",
@@ -246,7 +244,7 @@ class GrafanaEvidenceCollector:
         Returns:
             GrafanaEvidence with query results
         """
-        timestamp_utc = datetime.now(timezone.utc).isoformat()
+        timestamp_utc = datetime.now(UTC).isoformat()
 
         # Use the datasource proxy endpoint for InfluxDB
         # POST /api/datasources/uid/{uid}/resources/query
@@ -296,7 +294,7 @@ class GrafanaEvidenceCollector:
                         error=None,
                     )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             return GrafanaEvidence(
                 gate=gate,
                 datasource_uid=datasource_uid,
@@ -330,7 +328,7 @@ class GrafanaEvidenceCollector:
                 error=f"Unexpected error: {str(e)}",
             )
 
-    def _parse_influx_response(self, data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _parse_influx_response(self, data: dict[str, Any]) -> list[dict[str, Any]]:
         """
         Parse InfluxDB response from Grafana proxy.
 
@@ -343,7 +341,7 @@ class GrafanaEvidenceCollector:
         Returns:
             List of row dictionaries
         """
-        rows = []
+        rows: list[dict[str, Any]] = []
 
         if not data:
             return rows
@@ -445,7 +443,7 @@ class GrafanaEvidenceCollector:
 
     async def collect_all_evidence_via_grafana(
         self, since: datetime, limit: int = 5, datasource_uid: str = "chiseai-influxdb"
-    ) -> Dict[str, GrafanaEvidence]:
+    ) -> dict[str, GrafanaEvidence]:
         """
         Collect all G6-G7 evidence through Grafana.
 
@@ -477,15 +475,15 @@ class GrafanaEvidenceCollector:
 
 def hours_ago(hours: int) -> datetime:
     """Get datetime N hours ago in UTC."""
-    return datetime.now(timezone.utc) - timedelta(hours=hours)
+    return datetime.now(UTC) - timedelta(hours=hours)
 
 
 def minutes_ago(minutes: int) -> datetime:
     """Get datetime N minutes ago in UTC."""
-    return datetime.now(timezone.utc) - timedelta(minutes=minutes)
+    return datetime.now(UTC) - timedelta(minutes=minutes)
 
 
-async def verify_grafana_influx_connectivity() -> Dict[str, Any]:
+async def verify_grafana_influx_connectivity() -> dict[str, Any]:
     """
     Verify connectivity to Grafana and InfluxDB datasource.
 
@@ -530,7 +528,7 @@ if __name__ == "__main__":
         since = hours_ago(1)
 
         orders = await collector.query_orders_via_grafana(since)
-        print(f"Orders query:")
+        print("Orders query:")
         print(f"  Status: {orders.response_status}")
         print(f"  Has data: {orders.has_data}")
         print(f"  Rows: {len(orders.data_rows)}")

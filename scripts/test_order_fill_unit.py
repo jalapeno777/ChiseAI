@@ -7,16 +7,14 @@ For PAPER-VALIDATION-001: Implement dedicated order and fill key storage
 import os
 import sys
 import uuid
-from datetime import UTC, datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from orders.storage import OrderStorage
 from orders.fill_storage import FillStorage
 from orders.manager import OrderFillManager
-from persistence.unified import UnifiedPersistence
+from orders.storage import OrderStorage
 
 
 def test_order_storage():
@@ -196,7 +194,7 @@ def test_data_structures():
 
     # Get the data that was passed to redis.set()
     call_args = mock_redis.set.call_args
-    key = call_args[0][0]
+    call_args[0][0]
     data_json = call_args[0][1]
     import json
 

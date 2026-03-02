@@ -85,7 +85,7 @@ class KimiDiagnosticProbe:
         self.config: dict[str, Any] = {}
 
         # Results storage
-        self.results = {
+        self.results: dict[str, Any] = {
             "probe_id": self.probe_id,
             "timestamp": self.timestamp.isoformat(),
             "kimi_api_key_loaded": False,

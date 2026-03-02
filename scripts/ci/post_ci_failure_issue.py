@@ -96,9 +96,10 @@ def _find_open_issue_with_marker(
 ) -> dict | None:
     page = 1
     while True:
+        params: dict[str, str | int] = {"state": "open", "page": page, "limit": 50}
         r = s.get(
             f"{api}/issues",
-            params={"state": "open", "page": page, "limit": 50},
+            params=params,
             timeout=30,
         )
         r.raise_for_status()

@@ -11,7 +11,6 @@ import os
 import sys
 import time
 import uuid
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -22,7 +21,7 @@ os.environ.setdefault("ACP_INFLUXDB_HOST", "host.docker.internal")
 # Import directly from submodules to avoid circular imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
-from autonomous_control_plane.config.settings import Settings, settings
+from autonomous_control_plane.config.settings import Settings
 from autonomous_control_plane.core.orchestrator import ACPOrchestrator
 from autonomous_control_plane.events.bus import Event, EventBus, EventPriority
 

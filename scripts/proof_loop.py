@@ -14,9 +14,11 @@ import asyncio
 import json
 import os
 import sys
+import tempfile
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import cast
 
 # Add src to path
 sys.path.insert(0, "src")
@@ -52,10 +54,10 @@ class ProofLoop:
             )
 
             # Count keys by pattern
-            signals = len(client.keys("paper:signal:*"))
-            orders = len(client.keys("paper:order:*"))
-            fills = len(client.keys("paper:fill:*"))
-            outcomes = len(client.keys("paper:outcome:*"))
+            signals = len(cast(list[str], client.keys("paper:signal:*")))
+            orders = len(cast(list[str], client.keys("paper:order:*")))
+            fills = len(cast(list[str], client.keys("paper:fill:*")))
+            outcomes = len(cast(list[str], client.keys("paper:outcome:*")))
 
             return {
                 "signals": signals,
@@ -204,7 +206,9 @@ async def main():
     results = await loop.run()
 
     # Save results
-    output_file = f"/tmp/proof_loop_results_{int(time.time())}.json"
+    output_file = str(
+        Path(tempfile.gettempdir()) / f"proof_loop_results_{int(time.time())}.json"
+    )
     with open(output_file, "w") as f:
         json.dump(results, f, indent=2)
     print(f"\n💾 Results saved to: {output_file}")

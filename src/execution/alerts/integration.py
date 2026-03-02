@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 if TYPE_CHECKING:
-    from execution.paper.models import PaperOrder, PaperPosition, PaperTradeResult
+    from execution.paper.models import PaperPosition, PaperTradeResult
     from ml.models.signal_outcome import SignalOutcome
 
 logger = logging.getLogger(__name__)
@@ -258,6 +258,7 @@ class ExecutionAlertIntegration:
             SignalOutcome instance
         """
         from decimal import Decimal
+
         from ml.models.signal_outcome import SignalOutcome, SignalOutcomeStatus
 
         signal = result.signal
@@ -271,12 +272,12 @@ class ExecutionAlertIntegration:
             side="Buy" if signal and signal.direction.value == "long" else "Sell",
             direction=signal.direction.value.upper() if signal else "",
             fill_price=Decimal(str(order.avg_fill_price)) if order else Decimal("0"),
-            fill_quantity=Decimal(str(order.filled_quantity))
-            if order
-            else Decimal("0"),
-            entry_price=Decimal(str(position.entry_price))
-            if position
-            else Decimal("0"),
+            fill_quantity=(
+                Decimal(str(order.filled_quantity)) if order else Decimal("0")
+            ),
+            entry_price=(
+                Decimal(str(position.entry_price)) if position else Decimal("0")
+            ),
             position_size=Decimal(str(position.quantity)) if position else Decimal("0"),
             status=SignalOutcomeStatus.FILLED,
             metadata={

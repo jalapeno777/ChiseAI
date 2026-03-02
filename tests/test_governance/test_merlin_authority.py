@@ -35,7 +35,6 @@ from scripts.governance.merlin_authority import (
     EpicNotProtected,
     _clear_cache,
     _detect_agent_from_environment,
-    _detect_agent_from_process,
     _get_cached,
     _get_redis_authority_settings,
     _parse_authority_setting,
@@ -223,7 +222,6 @@ class TestCache(unittest.TestCase):
 
     def test_cache_expiration(self) -> None:
         """Test that cache entries expire after TTL."""
-        import time
 
         # Set a value
         _set_cached("expire_key", "expire_value")

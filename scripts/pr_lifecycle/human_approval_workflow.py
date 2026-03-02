@@ -20,22 +20,15 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import os
-from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
-from pathlib import Path
-from typing import Any
-
-import aiohttp
 
 # Add src to path for imports
 import sys
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
-
-from autonomous_git.gitreviewbot import GiteaClient, GitReviewBot
-from discord_alerts.config import DiscordConfig
-from discord_alerts.discord_client import DiscordClient
 
 from complex_path_gate import (
     ApprovalRecord,
@@ -43,6 +36,10 @@ from complex_path_gate import (
     ComplexPathCheckResult,
     ComplexPathGate,
 )
+
+from autonomous_git.gitreviewbot import GiteaClient, GitReviewBot
+from discord_alerts.config import DiscordConfig
+from discord_alerts.discord_client import DiscordClient
 
 logger = logging.getLogger(__name__)
 
@@ -93,9 +90,9 @@ class WorkflowResult:
             "final_status": self.final_status.value,
             "gitreviewbot_completed": self.gitreviewbot_completed,
             "discord_notified": self.discord_notified,
-            "approval_record": self.approval_record.to_dict()
-            if self.approval_record
-            else None,
+            "approval_record": (
+                self.approval_record.to_dict() if self.approval_record else None
+            ),
             "error_message": self.error_message,
             "processing_time_seconds": self.processing_time_seconds,
         }
@@ -292,6 +289,11 @@ class HumanApprovalWorkflow:
         """
         try:
             logger.info(f"Running GitReviewBot pre-review for PR #{pr_number}")
+            if self.gitreviewbot is None:
+                logger.warning(
+                    "GitReviewBot client not configured; skipping pre-review"
+                )
+                return False
 
             decision = await self.gitreviewbot.review_pr(pr_number)
 
@@ -363,7 +365,7 @@ class HumanApprovalWorkflow:
     ) -> str:
         """Build Discord message for approval request."""
         lines = [
-            f"🚨 **COMPLEX PR Requires Human Approval**",
+            "🚨 **COMPLEX PR Requires Human Approval**",
             "",
             f"**PR #{pr_number}**: {pr.title}",
             f"**Author**: {pr.author}",
@@ -396,7 +398,7 @@ class HumanApprovalWorkflow:
                     else "⏳ Pending"
                 ),
                 "",
-                f"**Action Required**: Please review and approve/reject this PR.",
+                "**Action Required**: Please review and approve/reject this PR.",
                 f"{self.config.discord_mention_role}",
                 "",
                 f"🔗 [View PR]({self.gitea.base_url}/{self.gitea.owner}/{self.gitea.repo}/pulls/{pr_number})",
@@ -511,7 +513,7 @@ class HumanApprovalWorkflow:
             pr = await self.gitea.get_pr(pr_number)
             reminder_count = self._reminder_counts.get(pr_number, 0)
 
-            message = (
+            (
                 f"⏰ **Reminder**: PR #{pr_number} still awaiting human approval.\n"
                 f"**Title**: {pr.title}\n"
                 f"**Reminder #{reminder_count + 1}**\n"

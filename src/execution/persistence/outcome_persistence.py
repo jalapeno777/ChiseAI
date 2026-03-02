@@ -15,7 +15,6 @@ import logging
 import os
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
-from uuid import UUID
 
 if TYPE_CHECKING:
     from execution.paper.models import PaperOrder, PaperTradeResult
@@ -776,40 +775,58 @@ class OutcomePersistence:
                                 outcome_data.get("token"),
                                 outcome_data.get("side"),
                                 outcome_data.get("direction"),
-                                float(outcome_data["fill_price"])
-                                if outcome_data.get("fill_price")
-                                else None,
-                                float(outcome_data["fill_quantity"])
-                                if outcome_data.get("fill_quantity")
-                                else None,
+                                (
+                                    float(outcome_data["fill_price"])
+                                    if outcome_data.get("fill_price")
+                                    else None
+                                ),
+                                (
+                                    float(outcome_data["fill_quantity"])
+                                    if outcome_data.get("fill_quantity")
+                                    else None
+                                ),
                                 _parse_timestamp(outcome_data.get("fill_timestamp")),
                                 outcome_data.get("outcome_type", "unknown"),
-                                float(outcome_data["pnl"])
-                                if outcome_data.get("pnl")
-                                else None,
-                                float(outcome_data["fee"])
-                                if outcome_data.get("fee")
-                                else None,
+                                (
+                                    float(outcome_data["pnl"])
+                                    if outcome_data.get("pnl")
+                                    else None
+                                ),
+                                (
+                                    float(outcome_data["fee"])
+                                    if outcome_data.get("fee")
+                                    else None
+                                ),
                                 outcome_data.get("status", "filled"),
                                 _parse_timestamp(outcome_data.get("created_at")),
-                                json.dumps(outcome_data.get("metadata"))
-                                if outcome_data.get("metadata")
-                                else None,
-                                float(outcome_data["entry_price"])
-                                if outcome_data.get("entry_price")
-                                else None,
-                                float(outcome_data["exit_price"])
-                                if outcome_data.get("exit_price")
-                                else None,
+                                (
+                                    json.dumps(outcome_data.get("metadata"))
+                                    if outcome_data.get("metadata")
+                                    else None
+                                ),
+                                (
+                                    float(outcome_data["entry_price"])
+                                    if outcome_data.get("entry_price")
+                                    else None
+                                ),
+                                (
+                                    float(outcome_data["exit_price"])
+                                    if outcome_data.get("exit_price")
+                                    else None
+                                ),
                                 _parse_timestamp(outcome_data.get("entry_time")),
                                 _parse_timestamp(outcome_data.get("exit_time")),
-                                float(outcome_data["leverage"])
-                                if outcome_data.get("leverage")
-                                else 1.0,
+                                (
+                                    float(outcome_data["leverage"])
+                                    if outcome_data.get("leverage")
+                                    else 1.0
+                                ),
                                 outcome_data.get("entry_reason"),
-                                float(outcome_data["position_size"])
-                                if outcome_data.get("position_size")
-                                else None,
+                                (
+                                    float(outcome_data["position_size"])
+                                    if outcome_data.get("position_size")
+                                    else None
+                                ),
                             )
 
                         batch_synced += 1

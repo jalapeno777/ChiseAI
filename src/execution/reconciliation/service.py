@@ -242,9 +242,12 @@ class OutcomeReconciliationService:
                 )
 
         # Determine status
-        if has_missing_data and not telemetry_counts and not persisted_counts:
-            status = ReconciliationStatus.FAIL
-        elif max_pct >= self.config.fail_threshold_pct:
+        if (
+            has_missing_data
+            and not telemetry_counts
+            and not persisted_counts
+            or max_pct >= self.config.fail_threshold_pct
+        ):
             status = ReconciliationStatus.FAIL
         elif max_pct >= self.config.warn_threshold_pct:
             status = ReconciliationStatus.WARN

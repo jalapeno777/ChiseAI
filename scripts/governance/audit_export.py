@@ -19,6 +19,7 @@ import argparse
 import json
 import logging
 import sys
+import tempfile
 from datetime import datetime
 from pathlib import Path
 
@@ -44,6 +45,8 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+DEFAULT_AUDIT_EXPORT_DIR = str(Path(tempfile.gettempdir()) / "audit_exports")
 
 
 def create_redis_client():
@@ -358,7 +361,7 @@ Examples:
     )
     parser.add_argument(
         "--output",
-        default="/tmp/audit_exports",
+        default=DEFAULT_AUDIT_EXPORT_DIR,
         help="Output directory for exports",
     )
     parser.add_argument(

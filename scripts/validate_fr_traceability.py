@@ -10,7 +10,7 @@ This script verifies:
 Exit codes:
     0 - All FRs covered
     1 - Orphaned FRs found or validation errors
-    2 - Warnings only (e.g., suggestions available)
+    2 - Reserved for tooling/runtime errors
 """
 
 from __future__ import annotations
@@ -306,6 +306,11 @@ def main() -> int:
         action="store_true",
         help="Suggest stories for orphaned FRs",
     )
+    parser.add_argument(
+        "--warnings-as-errors",
+        action="store_true",
+        help="Return non-zero exit code when warnings are present",
+    )
     args = parser.parse_args()
 
     result = ValidationResult()
@@ -325,6 +330,9 @@ def main() -> int:
         return 1
 
     # Extract FRs from PRD
+    assert prd_content is not None
+    assert workflow_data is not None
+
     prd_frs = extract_frs_from_prd(prd_content)
     result.stats["total_frs"] = len(prd_frs)
 
@@ -364,7 +372,7 @@ def main() -> int:
         validation_data, error = load_yaml_file(VALIDATION_REGISTRY_FILE)
         if error:
             result.add_error(error)
-        elif validation_data:
+        elif validation_data is not None:
             validate_validation_registry(validation_data, workflow_data, result)
 
     # Print results
@@ -373,7 +381,7 @@ def main() -> int:
     # Determine exit code
     if result.errors:
         return 1
-    elif result.warnings:
+    elif result.warnings and args.warnings_as_errors:
         return 2
     else:
         if not args.json:

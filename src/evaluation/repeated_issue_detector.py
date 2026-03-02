@@ -23,7 +23,7 @@ from evaluation.fingerprinting import (
 )
 
 if TYPE_CHECKING:
-    from evaluation.schemas.mini_eval import Issue
+    pass
 
 
 logger = logging.getLogger(__name__)
@@ -151,9 +151,9 @@ class RepeatedIssueReport:
             "repeated_issues": [r.to_dict() for r in self.repeated_issues],
             "top_recurring": [r.to_dict() for r in self.top_recurring],
             "recommendations": self.recommendations,
-            "trend_analysis": self.trend_analysis.to_dict()
-            if self.trend_analysis
-            else None,
+            "trend_analysis": (
+                self.trend_analysis.to_dict() if self.trend_analysis else None
+            ),
         }
 
     def to_json(self) -> str:
@@ -472,7 +472,7 @@ class RepeatedIssueDetector:
                     if ts:
                         timestamps.append(datetime.fromisoformat(ts))
                     severities.append(issue.get("severity", "P3"))
-                except Exception:
+                except Exception:  # nosec B112
                     continue
 
             if not timestamps:

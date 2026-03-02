@@ -3,7 +3,6 @@
 
 import asyncio
 import json
-import os
 import sys
 import uuid
 from datetime import UTC, datetime
@@ -12,6 +11,8 @@ from pathlib import Path
 # Add paths
 sys.path.insert(0, "src")
 sys.path.insert(0, "scripts")
+
+import contextlib
 
 from validation.forensic_harness import IntegratedForensicHarness
 
@@ -39,8 +40,8 @@ async def main():
     print(f"FORENSIC PROOF LOOP - Execution ID: {proof_id}")
     print("=" * 70)
     print(f"Start Time: {datetime.now(UTC).isoformat()}")
-    print(f"Duration: 30 minutes")
-    print(f"Snapshots: T0, T5, T10, T15, T20, T25, T30")
+    print("Duration: 30 minutes")
+    print("Snapshots: T0, T5, T10, T15, T20, T25, T30")
     print("=" * 70)
 
     harness = IntegratedForensicHarness(duration_minutes=30)
@@ -89,10 +90,8 @@ async def main():
         return 2
     finally:
         # Clean up resources
-        try:
+        with contextlib.suppress(Exception):
             await harness.close()
-        except Exception:
-            pass
 
 
 def generate_markdown_report(result, bundle, path, proof_id):
@@ -102,8 +101,8 @@ def generate_markdown_report(result, bundle, path, proof_id):
         f.write(f"**Execution ID**: {proof_id}\n")
         f.write(f"**Start Time**: {result.start_time}\n")
         f.write(f"**End Time**: {result.end_time}\n")
-        f.write(f"**Duration**: 30 minutes\n")
-        f.write(f"**Executor**: Merlin\n")
+        f.write("**Duration**: 30 minutes\n")
+        f.write("**Executor**: Merlin\n")
         f.write(f"**Bundle Hash**: {bundle.bundle_hash}\n\n")
 
         f.write("## G1-G8 PASS/FAIL Summary\n\n")

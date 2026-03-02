@@ -259,9 +259,11 @@ class PaperOrder:
             metadata=data.get("metadata", {}),
             correlation_id=data.get("correlation_id", ""),
             avg_fill_price=data.get("avg_fill_price"),
-            filled_at=datetime.fromisoformat(data["filled_at"])
-            if data.get("filled_at")
-            else None,
+            filled_at=(
+                datetime.fromisoformat(data["filled_at"])
+                if data.get("filled_at")
+                else None
+            ),
         )
         # Restore fills
         order.fills = [PaperFill.from_dict(f) for f in data.get("fills", [])]
@@ -397,9 +399,11 @@ class PaperTradeResult:
                 signal_dict = {
                     "signal_id": self.signal.signal_id,
                     "token": self.signal.token,
-                    "direction": self.signal.direction.value
-                    if hasattr(self.signal.direction, "value")
-                    else str(self.signal.direction),
+                    "direction": (
+                        self.signal.direction.value
+                        if hasattr(self.signal.direction, "value")
+                        else str(self.signal.direction)
+                    ),
                     "confidence": self.signal.confidence,
                 }
             else:
@@ -420,14 +424,14 @@ class PaperTradeResult:
 
         return {
             "signal": signal_dict,
-            "status": self.status.value
-            if hasattr(self.status, "value")
-            else str(self.status),
+            "status": (
+                self.status.value if hasattr(self.status, "value") else str(self.status)
+            ),
             "order": self.order.to_dict() if self.order else None,
             "position": position_dict,
-            "reject_reason": [str(r) for r in self.reject_reason]
-            if self.reject_reason
-            else [],
+            "reject_reason": (
+                [str(r) for r in self.reject_reason] if self.reject_reason else []
+            ),
             "latency_ms": self.latency_ms,
             "correlation_id": self.correlation_id,
         }

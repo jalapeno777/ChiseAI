@@ -130,7 +130,7 @@ async def run_canary_pipeline(
     initial_equity: float,
     mock_scenario: str,
     use_influxdb: bool,
-) -> dict[str, Any]:
+) -> tuple[dict[str, Any], str | None]:
     """Run the canary monitoring pipeline and capture telemetry."""
 
     execution_timestamp = datetime.utcnow().isoformat() + "Z"

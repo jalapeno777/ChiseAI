@@ -15,6 +15,7 @@ For P0-RUNTIME-HARDEN-003: Discord Continuity
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 import uuid
@@ -428,10 +429,8 @@ class DiscordClient:
             if self._message_queue.qsize() >= self.MAX_QUEUE_SIZE:
                 logger.error("Message queue full, dropping oldest message")
                 # Remove oldest message
-                try:
+                with contextlib.suppress(asyncio.QueueEmpty):
                     self._message_queue.get_nowait()
-                except asyncio.QueueEmpty:
-                    pass
 
             await self._message_queue.put((msg.priority, msg.created_at, msg))
             self._total_messages_queued += 1
@@ -444,7 +443,7 @@ class DiscordClient:
         """Persist queue state to Redis."""
         try:
             # Import here to avoid circular dependency
-            from tools.redis_state import redis_state_lpush, redis_state_expire
+            from tools.redis_state import redis_state_lpush
 
             # Get all messages from queue
             messages = []
@@ -530,9 +529,11 @@ class DiscordClient:
             redis_state_hset(
                 redis_key,
                 "last_successful_send",
-                self._last_successful_send.isoformat()
-                if self._last_successful_send
-                else "",
+                (
+                    self._last_successful_send.isoformat()
+                    if self._last_successful_send
+                    else ""
+                ),
             )
             redis_state_hset(redis_key, "total_sent", str(self._total_messages_sent))
             redis_state_hset(
@@ -689,10 +690,8 @@ class DiscordClient:
         for task in [self._checkpoint_task, self._health_check_task, self._retry_task]:
             if task and not task.done():
                 task.cancel()
-                try:
+                with contextlib.suppress(asyncio.CancelledError):
                     await task
-                except asyncio.CancelledError:
-                    pass
 
         self.is_connected = False
 

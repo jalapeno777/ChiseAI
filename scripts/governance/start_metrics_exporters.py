@@ -74,12 +74,13 @@ def get_influx_client() -> Any | None:
         if health.status == "pass":
             logger.info(f"Connected to InfluxDB at {url}")
             return client
+        return None
     except Exception as e:
         logger.warning(f"InfluxDB not available: {e}")
         return None
 
 
-def register_exporters(redis_client: Any | None, influx_client: Any | None) -> None:
+def register_exporters(redis_client: Any | None, influx_client: Any | None) -> Any:
     """Register all governance metrics exporters."""
     from src.governance.constitution.metrics_exporter import ConstitutionMetricsExporter
     from src.governance.memory.metrics_exporter import MemoryMetricsExporter

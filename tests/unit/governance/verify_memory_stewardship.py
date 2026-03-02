@@ -6,8 +6,8 @@ This script verifies the implementation by directly loading modules from files
 to avoid circular imports in the existing governance package.
 """
 
-import sys
 import importlib.util
+import sys
 from pathlib import Path
 
 

@@ -268,9 +268,9 @@ class SignalOutcome:
             "entry_price": str(self.entry_price),
             "exit_price": str(self.exit_price) if self.exit_price is not None else None,
             "entry_time": self.entry_time.isoformat(),
-            "exit_time": self.exit_time.isoformat()
-            if self.exit_time is not None
-            else None,
+            "exit_time": (
+                self.exit_time.isoformat() if self.exit_time is not None else None
+            ),
             "leverage": str(self.leverage),
             "entry_reason": self.entry_reason,
             "position_size": str(self.position_size),
@@ -383,9 +383,9 @@ class SignalOutcome:
             "metadata": self.metadata,
             # RECON-001: New fields
             "entry_price": float(self.entry_price),
-            "exit_price": float(self.exit_price)
-            if self.exit_price is not None
-            else None,
+            "exit_price": (
+                float(self.exit_price) if self.exit_price is not None else None
+            ),
             "entry_time": self.entry_time,
             "exit_time": self.exit_time,
             "leverage": float(self.leverage),
@@ -414,9 +414,9 @@ class SignalOutcome:
             "token": self.token,
             "direction": self.direction,
             "entry_price": float(self.entry_price),
-            "exit_price": float(self.exit_price)
-            if self.exit_price is not None
-            else None,
+            "exit_price": (
+                float(self.exit_price) if self.exit_price is not None else None
+            ),
             "entry_time": self.entry_time.isoformat(),
             "exit_time": self.exit_time.isoformat() if self.exit_time else None,
             "pnl": float(self.pnl) if self.pnl is not None else None,

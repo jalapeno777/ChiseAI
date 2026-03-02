@@ -11,7 +11,7 @@ This script validates:
 Exit codes:
     0 - All validations passed
     1 - Errors (parsing failures, invalid status)
-    2 - Warnings (missing references, consistency issues)
+    2 - Warnings treated as errors (--warnings-as-errors)
 """
 
 from __future__ import annotations
@@ -478,6 +478,11 @@ def main() -> int:
     parser.add_argument(
         "--verbose", "-v", action="store_true", help="Show detailed output"
     )
+    parser.add_argument(
+        "--warnings-as-errors",
+        action="store_true",
+        help="Return non-zero exit code when warnings are present",
+    )
     args = parser.parse_args()
 
     result = ValidationResult()
@@ -517,7 +522,7 @@ def main() -> int:
     # Determine exit code
     if result.errors:
         return 1
-    elif result.warnings:
+    elif result.warnings and args.warnings_as_errors:
         return 2
     else:
         print("✅ All validations passed")

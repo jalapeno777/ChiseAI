@@ -15,43 +15,40 @@ For PARTY-FORENSIC-008: E2E Tests
 import asyncio
 import hashlib
 import json
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+
+# Import forensic harness components
+import sys
+from datetime import UTC, datetime, timedelta
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-# Import forensic harness components
-import sys
-
 sys.path.insert(0, "/tmp/worktrees/PARTY-FORENSIC-008-tests")
 
-from scripts.validation.forensic_harness import (
-    ForensicHarness,
-    Artifact,
-    Snapshot,
-    GateResult,
-    ProofResult,
-    EvidenceBundle,
-    GateStatus,
-    ArtifactType,
-    GATE_REQUIREMENTS,
-    ZERO_DELTA_GATES,
-)
 from scripts.validation.discord_evidence import (
     DiscordEvidenceCollector,
     DiscordMessageEvidence,
-    GateResult as DiscordGateResult,
+)
+from scripts.validation.discord_evidence import (
     GateStatus as DiscordGateStatus,
+)
+from scripts.validation.forensic_harness import (
+    GATE_REQUIREMENTS,
+    ZERO_DELTA_GATES,
+    Artifact,
+    ForensicHarness,
+    GateResult,
+    GateStatus,
+    ProofResult,
+    Snapshot,
+)
+from scripts.validation.recap_validator import (
+    GateStatus as RecapGateStatus,
 )
 from scripts.validation.recap_validator import (
     RecapValidator,
-    RecapValidationEvidence,
-    OutcomeSourceProof,
-    GateResult as RecapGateResult,
-    GateStatus as RecapGateStatus,
 )
-
 
 # =============================================================================
 # Mock Factories
@@ -61,22 +58,22 @@ from scripts.validation.recap_validator import (
 class MockRedisClient:
     """Mock Redis client for testing."""
 
-    def __init__(self, data: Optional[Dict[str, Any]] = None):
+    def __init__(self, data: dict[str, Any] | None = None):
         self._data = data or {}
-        self._calls: List[str] = []
+        self._calls: list[str] = []
 
-    def get(self, key: str) -> Optional[bytes]:
+    def get(self, key: str) -> bytes | None:
         self._calls.append(f"GET {key}")
         value = self._data.get(key)
         return value.encode() if isinstance(value, str) else value
 
-    def hget(self, key: str, field: str) -> Optional[bytes]:
+    def hget(self, key: str, field: str) -> bytes | None:
         self._calls.append(f"HGET {key} {field}")
         hash_data = self._data.get(key, {})
         value = hash_data.get(field) if isinstance(hash_data, dict) else None
         return value.encode() if isinstance(value, str) else value
 
-    def hgetall(self, key: str) -> Dict[bytes, bytes]:
+    def hgetall(self, key: str) -> dict[bytes, bytes]:
         self._calls.append(f"HGETALL {key}")
         data = self._data.get(key, {})
         if isinstance(data, dict):
@@ -99,9 +96,9 @@ class MockRedisClient:
 class MockInfluxClient:
     """Mock InfluxDB client for testing."""
 
-    def __init__(self, data: Optional[Dict[str, List[Dict]]] = None):
+    def __init__(self, data: dict[str, list[dict]] | None = None):
         self._data = data or {}
-        self._queries: List[str] = []
+        self._queries: list[str] = []
 
     def query(self, query: str) -> MagicMock:
         self._queries.append(query)
@@ -126,13 +123,13 @@ class MockInfluxClient:
 class MockDiscordClient:
     """Mock Discord client for testing."""
 
-    def __init__(self, messages: Optional[List[Dict]] = None):
+    def __init__(self, messages: list[dict] | None = None):
         self._messages = messages or []
-        self._fetches: List[str] = []
+        self._fetches: list[str] = []
 
     async def fetch_messages(
         self, channel_id: str, limit: int = 100
-    ) -> List[MagicMock]:
+    ) -> list[MagicMock]:
         self._fetches.append(f"FETCH {channel_id} limit={limit}")
 
         mock_messages = []
@@ -140,7 +137,7 @@ class MockDiscordClient:
             msg = MagicMock()
             msg.id = msg_data.get("id", "123456789")
             msg.content = msg_data.get("content", "")
-            msg.created_at = msg_data.get("created_at", datetime.now(timezone.utc))
+            msg.created_at = msg_data.get("created_at", datetime.now(UTC))
             msg.channel_id = msg_data.get("channel_id", channel_id)
 
             author = MagicMock()
@@ -155,12 +152,12 @@ class MockDiscordClient:
         return mock_messages
 
 
-def create_mock_collectors_passing() -> Dict[str, MagicMock]:
+def create_mock_collectors_passing() -> dict[str, MagicMock]:
     """Create mock collectors that all return passing data."""
     return {
         "scheduler_heartbeat": MagicMock(
             return_value={
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "count": 5,
                 "delta": 5,
             }
@@ -213,12 +210,12 @@ def create_mock_collectors_passing() -> Dict[str, MagicMock]:
     }
 
 
-def create_mock_collectors_failing() -> Dict[str, MagicMock]:
+def create_mock_collectors_failing() -> dict[str, MagicMock]:
     """Create mock collectors that return failing data."""
     return {
         "scheduler_heartbeat": MagicMock(
             return_value={
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "count": 0,
                 "delta": 0,
             }
@@ -613,13 +610,13 @@ class TestForensicE2E:
             message_id="123456789",
             channel_id="1444447985378398459",
             channel_name="trading",
-            timestamp_utc=datetime.now(timezone.utc).isoformat(),
+            timestamp_utc=datetime.now(UTC).isoformat(),
             content_type="RECAP",
             content_snippet="Daily RECAP - Trade ID: NONEXISTENT-001",
             is_bot=True,
         )
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         window_start = now - timedelta(minutes=30)
         window_end = now
 
@@ -650,7 +647,7 @@ class TestForensicE2E:
                     "signal_id": "SIG-001",
                     "order_id": "ORD-001",
                     "pnl": 100.5,
-                    "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+                    "timestamp_utc": datetime.now(UTC).isoformat(),
                 }
             }
         )
@@ -661,13 +658,13 @@ class TestForensicE2E:
             message_id="123456789",
             channel_id="1444447985378398459",
             channel_name="trading",
-            timestamp_utc=datetime.now(timezone.utc).isoformat(),
+            timestamp_utc=datetime.now(UTC).isoformat(),
             content_type="RECAP",
             content_snippet="Daily RECAP - Trade ID: TRADE-001",
             is_bot=True,
         )
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         window_start = now - timedelta(minutes=30)
         window_end = now
 
@@ -891,7 +888,7 @@ class TestForensicE2E:
 
         # Create a completed proof result
         snapshot = Snapshot(
-            timestamp_utc=datetime.now(timezone.utc).isoformat(),
+            timestamp_utc=datetime.now(UTC).isoformat(),
             label="T0",
             artifacts={
                 "test_artifact": Artifact(
@@ -904,8 +901,8 @@ class TestForensicE2E:
         )
 
         harness._proof_result = ProofResult(
-            start_time=datetime.now(timezone.utc).isoformat(),
-            end_time=datetime.now(timezone.utc).isoformat(),
+            start_time=datetime.now(UTC).isoformat(),
+            end_time=datetime.now(UTC).isoformat(),
             snapshots=[snapshot],
             gate_results={
                 "G1": GateResult(
@@ -964,8 +961,8 @@ class TestForensicE2E:
         harness = ForensicHarness()
 
         harness._proof_result = ProofResult(
-            start_time=datetime.now(timezone.utc).isoformat(),
-            end_time=datetime.now(timezone.utc).isoformat(),
+            start_time=datetime.now(UTC).isoformat(),
+            end_time=datetime.now(UTC).isoformat(),
             snapshots=[],
             gate_results={"G1": GateResult(gate="G1", status=GateStatus.PASS)},
             overall_status=GateStatus.PASS,
@@ -1035,7 +1032,7 @@ class TestForensicE2E:
         """Verify timestamps are monotonic."""
         harness = ForensicHarness()
 
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
 
         harness.snapshots = [
             Snapshot(
@@ -1062,7 +1059,7 @@ class TestForensicE2E:
         """Verify non-monotonic timestamps are detected."""
         harness = ForensicHarness()
 
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
 
         # Create non-monotonic timestamps (T10 before T5)
         harness.snapshots = [
@@ -1103,7 +1100,7 @@ class TestForensicE2E:
             result = await harness.run_proof_loop()
 
         # Manually corrupt timestamps
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
         harness.snapshots[0].timestamp_utc = (
             base_time + timedelta(minutes=10)
         ).isoformat()
@@ -1126,21 +1123,21 @@ class TestForensicE2E:
                 {
                     "id": "111111111111111111",
                     "content": "🎯 ENTRY: BTC/USDT LONG @ 50000",
-                    "created_at": datetime.now(timezone.utc),
+                    "created_at": datetime.now(UTC),
                     "is_bot": True,
                     "author_name": "TradingBot",
                 },
                 {
                     "id": "222222222222222222",
                     "content": "✅ CLOSED: BTC/USDT @ 51000 (+2%)",
-                    "created_at": datetime.now(timezone.utc),
+                    "created_at": datetime.now(UTC),
                     "is_bot": True,
                     "author_name": "TradingBot",
                 },
                 {
                     "id": "333333333333333333",
                     "content": "📊 DAILY RECAP: 3 trades, +5.2% PnL",
-                    "created_at": datetime.now(timezone.utc),
+                    "created_at": datetime.now(UTC),
                     "is_bot": True,
                     "author_name": "TradingBot",
                 },
@@ -1361,7 +1358,7 @@ class TestDiscordEvidenceE2E:
                 message_id="111",
                 channel_id="123",
                 channel_name="trading",
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 content_type="OPEN",
                 is_bot=True,
             ),
@@ -1369,7 +1366,7 @@ class TestDiscordEvidenceE2E:
                 message_id="222",
                 channel_id="123",
                 channel_name="trading",
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 content_type="CLOSE",
                 is_bot=True,
             ),
@@ -1377,7 +1374,7 @@ class TestDiscordEvidenceE2E:
                 message_id="333",
                 channel_id="123",
                 channel_name="trading",
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 content_type="RECAP",
                 is_bot=True,
             ),
@@ -1399,7 +1396,7 @@ class TestDiscordEvidenceE2E:
                 message_id="111",
                 channel_id="123",
                 channel_name="trading",
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 content_type="OPEN",
                 is_bot=True,
             ),
@@ -1451,7 +1448,7 @@ class TestRecapValidatorE2E:
                     "signal_id": "SIG-001",
                     "order_id": "ORD-001",
                     "pnl": 150.75,
-                    "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+                    "timestamp_utc": datetime.now(UTC).isoformat(),
                 }
             }
         )
@@ -1462,13 +1459,13 @@ class TestRecapValidatorE2E:
             message_id="123456789",
             channel_id="trading",
             channel_name="trading",
-            timestamp_utc=datetime.now(timezone.utc).isoformat(),
+            timestamp_utc=datetime.now(UTC).isoformat(),
             content_type="RECAP",
             content_snippet="Daily RECAP - Trade ID: TRADE-001",
             is_bot=True,
         )
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         evidence = await validator.validate_recap_source(
             recap_message,
             now - timedelta(minutes=30),
@@ -1494,13 +1491,13 @@ class TestRecapValidatorE2E:
             message_id="123456789",
             channel_id="trading",
             channel_name="trading",
-            timestamp_utc=datetime.now(timezone.utc).isoformat(),
+            timestamp_utc=datetime.now(UTC).isoformat(),
             content_type="RECAP",
             content_snippet="Daily RECAP - Trade ID: NONEXISTENT",
             is_bot=True,
         )
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         evidence = await validator.validate_recap_source(
             recap_message,
             now - timedelta(minutes=30),

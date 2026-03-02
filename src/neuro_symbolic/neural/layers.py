@@ -51,9 +51,7 @@ class BaseLayer(ABC):
         """Get layer weights and bias."""
         return self.weights, self.bias
 
-    def set_weights(
-        self, weights: np.ndarray, bias: np.ndarray | None = None
-    ) -> None:
+    def set_weights(self, weights: np.ndarray, bias: np.ndarray | None = None) -> None:
         """Set layer weights and bias."""
         self.weights = weights
         self.bias = bias

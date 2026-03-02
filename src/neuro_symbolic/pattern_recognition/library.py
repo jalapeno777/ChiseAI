@@ -430,9 +430,7 @@ class PatternLibrary:
 
         return occurrences[-limit:]
 
-    def get_performance(
-        self, pattern_type: PatternType
-    ) -> PatternPerformance | None:
+    def get_performance(self, pattern_type: PatternType) -> PatternPerformance | None:
         """Get performance metrics for a pattern type.
 
         Args:

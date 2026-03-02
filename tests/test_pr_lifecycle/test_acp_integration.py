@@ -8,11 +8,9 @@ ST-AUTO-006: EP-NS-008 Integration for PR Pipeline
 
 from __future__ import annotations
 
-import asyncio
 import sys
 import time
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
@@ -21,11 +19,19 @@ sys.path.insert(
     0, str(Path(__file__).parent.parent.parent / "scripts" / "pr_lifecycle")
 )
 
+import contextlib
+
+from acp_integration import (
+    ACPHealthStatus,
+    ACPIntegrationConfig,
+    ACPIntegrationManager,
+    get_global_manager,
+    reset_global_manager,
+)
 from circuit_breaker_pr import (
     CircuitBreaker,
     CircuitBreakerConfig,
     CircuitBreakerOpenError,
-    CircuitBreakerState,
     PRCircuitBreakerRegistry,
     get_global_registry,
     with_circuit_breaker,
@@ -36,15 +42,7 @@ from retry_pr_operations import (
     PRRetryCoordinator,
     RetryBudgetManager,
     RetryPolicy,
-    get_global_coordinator,
     with_retry,
-)
-from acp_integration import (
-    ACPHealthStatus,
-    ACPIntegrationConfig,
-    ACPIntegrationManager,
-    get_global_manager,
-    reset_global_manager,
 )
 
 
@@ -425,15 +423,13 @@ class TestRetryCoordinator:
         )
 
         # Failed operation
-        try:
+        with contextlib.suppress(Exception):
             coordinator.execute_with_retry(
                 service_name="metrics_test",
                 operation_name="fail_op",
                 func=lambda: (_ for _ in ()).throw(ConnectionError("fail")),
                 policy=RetryPolicy(max_attempts=1),
             )
-        except Exception:
-            pass
 
         metrics = coordinator.get_metrics()
         assert metrics["successes"].get("metrics_test", 0) >= 1
@@ -585,7 +581,6 @@ class TestACPIntegrationManager:
     def test_get_metrics(self):
         """Test metrics collection."""
         # Reset circuit registry to ensure clean state
-        from circuit_breaker_pr import get_global_registry
 
         registry = get_global_registry()
         registry.reset_all()
@@ -608,7 +603,6 @@ class TestACPIntegrationManager:
     def test_graceful_degradation_when_acp_unavailable(self):
         """Test that local fallbacks work when ACP unavailable."""
         # Reset circuit registry to ensure clean state
-        from circuit_breaker_pr import get_global_registry
 
         registry = get_global_registry()
         registry.reset_all()
@@ -817,7 +811,6 @@ class TestAsyncOperations:
     async def test_async_resilience_execution(self):
         """Test async resilience execution."""
         # Reset circuit registry to ensure clean state
-        from circuit_breaker_pr import get_global_registry
 
         registry = get_global_registry()
         registry.reset_all()

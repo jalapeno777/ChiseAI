@@ -22,8 +22,8 @@ from typing import TYPE_CHECKING, Any
 import aiohttp
 
 if TYPE_CHECKING:
-    from src.execution.paper.position_tracker import PaperPosition
     from src.execution.paper.models import PaperOrder
+    from src.execution.paper.position_tracker import PaperPosition
     from src.ml.models.signal_outcome import SignalOutcome
 
 logger = logging.getLogger(__name__)
@@ -191,12 +191,13 @@ class TradeNotifier:
         Returns:
             SignalOutcome populated from position data
         """
+        from decimal import Decimal
+        from uuid import UUID
+
         from src.ml.models.signal_outcome import (
             SignalOutcome,
             SignalOutcomeStatus,
         )
-        from uuid import UUID
-        from decimal import Decimal
 
         # Determine direction from position side
         direction = "LONG" if position.side.lower() == "long" else "SHORT"

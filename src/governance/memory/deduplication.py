@@ -403,7 +403,7 @@ class MemoryDeduplicationEngine:
         else:  # qdrant
             content = str(entry.get("payload"))
 
-        return hashlib.md5(content.encode("utf-8")).hexdigest()
+        return hashlib.md5(content.encode("utf-8"), usedforsecurity=False).hexdigest()
 
     def _compute_vector_similarity(self, vec1: list[float], vec2: list[float]) -> float:
         """

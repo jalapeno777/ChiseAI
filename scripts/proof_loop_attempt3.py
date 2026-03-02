@@ -4,8 +4,7 @@
 import asyncio
 import subprocess
 import sys
-import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, "src")
@@ -18,19 +17,17 @@ async def main():
     output_dir = Path("_bmad-output/forensic-evidence")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
 
     print("╔════════════════════════════════════════════════════════════════════╗")
     print("║  PROOF LOOP ATTEMPT 3 - COORDINATED EXECUTION                     ║")
-    print(
-        f"║  Start: {datetime.now(timezone.utc).isoformat()}                              ║"
-    )
+    print(f"║  Start: {datetime.now(UTC).isoformat()}                              ║")
     print("╚════════════════════════════════════════════════════════════════════╝")
 
     # Start trading activity in background (will run for 35+ minutes)
     print("\n[1/3] Starting trading activity...")
     trading_log = output_dir / f"trading_{timestamp}.log"
-    trading_proc = subprocess.Popen(
+    trading_proc = subprocess.Popen(  # nosec B607
         [
             "python3",
             "scripts/run_trading_activity.py",
@@ -88,7 +85,7 @@ async def main():
         # Check if trading log shows signal processing
         trading_active = False
         try:
-            with open(trading_log, "r") as f:
+            with open(trading_log) as f:
                 content = f.read()
                 if "Processing signal" in content or "Trade executed" in content:
                     trading_active = True

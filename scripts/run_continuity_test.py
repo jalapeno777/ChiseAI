@@ -14,6 +14,7 @@ import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -21,19 +22,17 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 import redis.asyncio as redis
 
 from config.bootstrap import bootstrap
-from config.trading_mode import TradingModeConfig, TradingMode, ModuleType
+from config.trading_mode import TradingModeConfig
 from data_ingestion.ohlcv_fetcher import OHLCVFetcher
-from data_ingestion.timeframe_config import Timeframe
 from execution.kill_switch.executor import KillSwitchExecutor
 from execution.paper import create_simulator
 from execution.paper.orchestrator import PaperTradingOrchestrator
+from execution.paper.position_tracker import PaperPositionTracker
 from execution.paper.risk_enforcer import PaperRiskEnforcer
 from execution.paper.risk_models import RiskCheck
 from execution.paper.signal_consumer import SignalConsumer
-from execution.paper.position_tracker import PaperPositionTracker
 from execution.telemetry.collector import ExecutionCollector
 from execution.telemetry.exporter import ExecutionTelemetryExporter
-from execution.paper.position_tracker import PaperPositionTracker
 from signal_generation.signal_generator import SignalGenerator
 
 logging.basicConfig(
@@ -48,7 +47,7 @@ class ContinuityTest:
 
     def __init__(self, duration_seconds: int = 1800):
         self.duration = duration_seconds
-        self.snapshots = []
+        self.snapshots: list[dict[str, Any]] = []
         self.redis_client = None
         self.orchestrator = None
         self.signal_consumer = None
@@ -112,7 +111,7 @@ class ContinuityTest:
         bootstrap(load_env=True, verbose=False)
 
         # Create config
-        config = TradingModeConfig.create_paper_config(
+        TradingModeConfig.create_paper_config(
             portfolio_value=10000.0,
             signal_threshold=0.75,
         )
@@ -120,7 +119,7 @@ class ContinuityTest:
         logger.info("Initializing components...")
 
         # Initialize components
-        fetcher = OHLCVFetcher()
+        OHLCVFetcher()
         signal_generator = SignalGenerator(config=None)
         order_simulator = create_simulator()
         position_tracker = PaperPositionTracker()
@@ -252,7 +251,7 @@ class ContinuityTest:
             "processed": tf["processed_signals"] - t0["processed_signals"],
         }
 
-        print(f"\nDELTAS (Changes during test):")
+        print("\nDELTAS (Changes during test):")
         print(f"  Signals:   {deltas['signals']:+d}")
         print(f"  Orders:    {deltas['orders']:+d}")
         print(f"  Positions: {deltas['positions']:+d}")
@@ -260,7 +259,7 @@ class ContinuityTest:
         print(f"  Processed: {deltas['processed']:+d}")
 
         # Gate evaluation
-        print(f"\nGATE RESULTS:")
+        print("\nGATE RESULTS:")
         gates = {
             "G1 (Signal growth)": deltas["signals"] > 0 or deltas["processed"] > 0,
             "G2 (Order creation)": deltas["orders"] > 0,

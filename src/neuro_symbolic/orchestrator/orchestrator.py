@@ -322,11 +322,11 @@ class NeuroSymbolicOrchestrator:
 
                 # Build signals from different sources
                 signals = {
-                    "reasoning": confidence
-                    if prediction == "buy"
-                    else -confidence
-                    if prediction == "sell"
-                    else 0.0,
+                    "reasoning": (
+                        confidence
+                        if prediction == "buy"
+                        else -confidence if prediction == "sell" else 0.0
+                    ),
                 }
 
                 # Add pattern signal if available
@@ -375,9 +375,9 @@ class NeuroSymbolicOrchestrator:
                         "contributing_factors", {}
                     ),
                     "metadata": {
-                        "pattern_detected": pattern_result.get("pattern")
-                        if pattern_result
-                        else None,
+                        "pattern_detected": (
+                            pattern_result.get("pattern") if pattern_result else None
+                        ),
                         "fusion_used": self.config.enable_fusion,
                     },
                 }
@@ -392,14 +392,16 @@ class NeuroSymbolicOrchestrator:
             result = OrchestratorResult(
                 prediction=prediction,
                 confidence=confidence,
-                explanation=explanation_result.get("explanation", {})
-                if explanation_result
-                else {
-                    "summary": f"{prediction} signal with {confidence:.0%} confidence"
-                },
-                pattern_detected=pattern_result.get("pattern")
-                if pattern_result
-                else None,
+                explanation=(
+                    explanation_result.get("explanation", {})
+                    if explanation_result
+                    else {
+                        "summary": f"{prediction} signal with {confidence:.0%} confidence"
+                    }
+                ),
+                pattern_detected=(
+                    pattern_result.get("pattern") if pattern_result else None
+                ),
                 fused_signal=fusion_result if fusion_result else None,
                 reasoning_result=reasoning_result,
                 processing_time_ms=processing_time,
@@ -522,12 +524,12 @@ class NeuroSymbolicOrchestrator:
         """
         return {
             "processing_count": self._processing_count,
-            "last_prediction": self._last_result.prediction
-            if self._last_result
-            else None,
-            "last_confidence": self._last_result.confidence
-            if self._last_result
-            else None,
+            "last_prediction": (
+                self._last_result.prediction if self._last_result else None
+            ),
+            "last_confidence": (
+                self._last_result.confidence if self._last_result else None
+            ),
             "event_bus_stats": self._event_bus.get_statistics(),
             "config": {
                 "pattern_detection": self.config.enable_pattern_detection,

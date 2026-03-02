@@ -112,15 +112,17 @@ class HumanGateResult:
         return {
             "pr_number": self.pr_number,
             "is_complex": self.is_complex,
-            "risk_level": self.risk_level.value
-            if hasattr(self.risk_level, "value")
-            else str(self.risk_level),
+            "risk_level": (
+                self.risk_level.value
+                if hasattr(self.risk_level, "value")
+                else str(self.risk_level)
+            ),
             "confidence": self.confidence,
             "files_analyzed": self.files_analyzed,
             "approval_status": self.approval_status.value,
-            "approval_record": self.approval_record.to_dict()
-            if self.approval_record
-            else None,
+            "approval_record": (
+                self.approval_record.to_dict() if self.approval_record else None
+            ),
             "requires_human_approval": self.requires_human_approval,
             "can_merge": self.can_merge,
             "reasoning": self.reasoning,
@@ -340,13 +342,15 @@ class HumanGate:
                     else status_value
                 ),
                 approver=self.redis.get(reviewer_key),
-                timestamp=datetime.fromisoformat(
-                    self.redis.get(timestamp_key).decode()
-                    if isinstance(self.redis.get(timestamp_key), bytes)
-                    else self.redis.get(timestamp_key)
-                )
-                if self.redis.get(timestamp_key)
-                else datetime.now(UTC),
+                timestamp=(
+                    datetime.fromisoformat(
+                        self.redis.get(timestamp_key).decode()
+                        if isinstance(self.redis.get(timestamp_key), bytes)
+                        else self.redis.get(timestamp_key)
+                    )
+                    if self.redis.get(timestamp_key)
+                    else datetime.now(UTC)
+                ),
                 emergency_justification=self.redis.get(emergency_key),
                 post_hoc_review_required=self.redis.get(emergency_key) is not None,
             )
@@ -958,7 +962,7 @@ class HumanGate:
         Returns:
             List of PR numbers that received reminders
         """
-        reminded_prs = []
+        reminded_prs: list[int] = []
 
         try:
             if self.redis is None:

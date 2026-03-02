@@ -4,19 +4,17 @@
 For ST-VENUE-001: Venue provenance fields implementation
 """
 
-import pytest
 import json
 from datetime import UTC, datetime
 from decimal import Decimal
-from uuid import uuid4, UUID
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
+from uuid import uuid4
 
+import pytest
+from src.execution.persistence.outcome_persistence import OutcomePersistence
 from src.ml.models.signal_outcome import (
     SignalOutcome,
-    OutcomeType,
-    SignalOutcomeStatus,
 )
-from src.execution.persistence.outcome_persistence import OutcomePersistence
 
 
 class TestOutcomePersistenceVenueFields:

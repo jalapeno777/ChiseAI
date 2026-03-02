@@ -392,9 +392,11 @@ class ExplanationGenerator:
                     step_number=step_num,
                     description=f"Primary drivers: {', '.join(top_contributors)}",
                     evidence=feature_contributions,
-                    confidence=max(feature_contributions.values())
-                    if feature_contributions
-                    else 0.5,
+                    confidence=(
+                        max(feature_contributions.values())
+                        if feature_contributions
+                        else 0.5
+                    ),
                 )
             )
             step_num += 1

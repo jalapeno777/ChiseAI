@@ -440,7 +440,7 @@ class RedisDeltaCollector:
                 if not fill_keys:
                     fill_keys = redis.keys(f"paper:fill:*{order_id}*")
 
-                fill_data = {}
+                fill_data: dict[str, Any] = {}
                 fill_id = order_id  # Fill ID is typically same as order_id
 
                 if fill_keys:

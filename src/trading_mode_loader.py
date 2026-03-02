@@ -256,22 +256,21 @@ class TradingModeLoader:
             Paper orchestrator instance or None if loading fails
         """
         try:
-            from src.execution.paper.orchestrator import PaperTradingOrchestrator
-            from src.execution.paper.order_simulator import (
-                OrderSimulator,
-                MarketDataProvider,
+            from src.execution.connectors.bybit_demo_connector import (
+                BybitDemoConnector,
             )
-            from src.execution.paper.risk_enforcer import PaperRiskEnforcer
-            from src.execution.telemetry.collector import ExecutionCollector
-            from src.execution.telemetry.exporter import ExecutionTelemetryExporter
             from src.execution.kill_switch.executor import KillSwitchExecutor
             from src.execution.outcome_capture.integration import (
                 OutcomeCaptureIntegration,
             )
-            from src.execution.connectors.bybit_demo_connector import (
-                BybitDemoConnector,
-                BybitDemoConnectorFactory,
+            from src.execution.paper.orchestrator import PaperTradingOrchestrator
+            from src.execution.paper.order_simulator import (
+                MarketDataProvider,
+                OrderSimulator,
             )
+            from src.execution.paper.risk_enforcer import PaperRiskEnforcer
+            from src.execution.telemetry.collector import ExecutionCollector
+            from src.execution.telemetry.exporter import ExecutionTelemetryExporter
             from src.portfolio.paper_tracker import PaperPositionTracker
             from src.signal_generation.signal_generator import SignalGenerator
 

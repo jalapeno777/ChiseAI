@@ -329,7 +329,7 @@ class RunbookValidator:
                     # Estimate time based on steps
                     rollback_time = len(runbook.steps) * 30  # 30s per step estimate
                     break
-            except Exception:
+            except Exception:  # nosec B112
                 continue
 
         target_minutes: int = cast(
@@ -383,7 +383,7 @@ class RunbookValidator:
                 ):
                     oncall_found = True
                     break
-            except Exception:
+            except Exception:  # nosec B112
                 continue
 
         target_minutes: int = cast(
@@ -489,7 +489,7 @@ class RunbookValidator:
                     for term in ["ml", "model", "training", "retrain", "validation"]
                 ):
                     ml_runbooks.append(runbook_name)
-            except Exception:
+            except Exception:  # nosec B112
                 continue
 
         if not ml_runbooks:
@@ -538,7 +538,7 @@ class RunbookValidator:
                 content = runbook.raw_content.lower()
                 if any(term in content for term in ["rollback", "recovery", "restore"]):
                     rollback_runbooks.append(runbook_name)
-            except Exception:
+            except Exception:  # nosec B112
                 continue
 
         if not rollback_runbooks:
@@ -593,7 +593,7 @@ class RunbookValidator:
                 ):
                     oncall_found = True
                     break
-            except Exception:
+            except Exception:  # nosec B112
                 continue
 
         if not oncall_found:

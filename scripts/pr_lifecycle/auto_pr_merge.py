@@ -65,7 +65,7 @@ def _req_json(
         headers["Content-Type"] = "application/json"
         data = json.dumps(body).encode("utf-8")
     req = urllib.request.Request(url, data=data, method=method, headers=headers)
-    with urllib.request.urlopen(req, timeout=30) as resp:
+    with urllib.request.urlopen(req, timeout=30) as resp:  # nosec B310
         payload = resp.read().decode("utf-8")
         return json.loads(payload) if payload else {}
 
@@ -129,7 +129,9 @@ def ensure_prs(cfg: Config) -> int:
     cutoff = datetime.now(UTC) - timedelta(minutes=cfg.max_branch_age_min)
     branches = list_branches(cfg)
     if cfg.source_branch:
-        branches = [b for b in branches if (b.get("name") or "").strip() == cfg.source_branch]
+        branches = [
+            b for b in branches if (b.get("name") or "").strip() == cfg.source_branch
+        ]
 
     for branch in branches:
         name = str(branch.get("name", "")).strip()
@@ -137,10 +139,12 @@ def ensure_prs(cfg: Config) -> int:
             continue
         if name.startswith("dependabot/"):
             continue
-        ts_raw = str(((branch.get("commit") or {}).get("timestamp") or "")).strip()
+        ts_raw = str((branch.get("commit") or {}).get("timestamp") or "").strip()
         if ts_raw:
             try:
-                ts = datetime.fromisoformat(ts_raw.replace("Z", "+00:00")).astimezone(UTC)
+                ts = datetime.fromisoformat(ts_raw.replace("Z", "+00:00")).astimezone(
+                    UTC
+                )
                 if ts < cutoff:
                     continue
             except ValueError:
@@ -182,7 +186,9 @@ def _pr_by_number(cfg: Config, number: int) -> dict[str, Any] | None:
     return out if isinstance(out, dict) else None
 
 
-def _wait_until_mergeable(cfg: Config, number: int, attempts: int = 6) -> dict[str, Any] | None:
+def _wait_until_mergeable(
+    cfg: Config, number: int, attempts: int = 6
+) -> dict[str, Any] | None:
     for _ in range(attempts):
         pr = _pr_by_number(cfg, number)
         if not pr:
@@ -215,7 +221,9 @@ def auto_merge(cfg: Config) -> int:
         if not _author_allowed(cfg, pr):
             continue
         if not _is_mergeable_clean(pr):
-            print(f"skip PR #{number}: not conflict-free (mergeable={pr.get('mergeable')})")
+            print(
+                f"skip PR #{number}: not conflict-free (mergeable={pr.get('mergeable')})"
+            )
             continue
 
         if cfg.dry_run:
@@ -243,10 +251,14 @@ def auto_merge(cfg: Config) -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Auto PR creation and conflict-only merge")
+    parser = argparse.ArgumentParser(
+        description="Auto PR creation and conflict-only merge"
+    )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    p_ensure = sub.add_parser("ensure-prs", help="Create missing PRs for pushed branches")
+    p_ensure = sub.add_parser(
+        "ensure-prs", help="Create missing PRs for pushed branches"
+    )
     p_ensure.add_argument("--dry-run", action="store_true")
 
     p_merge = sub.add_parser("automerge", help="Merge open conflict-free PRs")

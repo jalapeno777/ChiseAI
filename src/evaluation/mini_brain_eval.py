@@ -13,7 +13,9 @@ from __future__ import annotations
 
 import logging
 import re
+import tempfile
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from evaluation.schemas.mini_eval import (
@@ -406,7 +408,7 @@ class MiniBrainEval:
             # Try default log locations
             default_paths = [
                 "/var/log/chiseai/app.log",
-                "/tmp/chiseai.log",
+                str(Path(tempfile.gettempdir()) / "chiseai.log"),
                 "logs/app.log",
             ]
             for path in default_paths:

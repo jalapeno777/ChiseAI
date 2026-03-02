@@ -81,7 +81,7 @@ def _query_users(dsn: str) -> list[dict[str, Any]]:
     sql = (
         "select id,login,coalesce(expiry,0),coalesce(token,'') from users order by id;"
     )
-    proc = subprocess.run(
+    proc = subprocess.run(  # nosec B607
         ["psql", dsn, "-At", "-q", "-F", "|", "-c", sql],
         capture_output=True,
         text=True,
@@ -116,7 +116,7 @@ def _discover_dsn(explicit_dsn: str | None) -> str:
         return env_dsn
 
     if shutil.which("docker"):
-        proc = subprocess.run(
+        proc = subprocess.run(  # nosec B607
             [
                 "docker",
                 "inspect",

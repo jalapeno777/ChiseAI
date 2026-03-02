@@ -15,16 +15,11 @@ from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel, Field
 
 from paper_trading.models import (
     ErrorResponse,
-    OrderState,
     OrdersResponse,
-    PaperOrder,
-    PaperPnL,
-    PaperPortfolio,
-    PaperPosition,
+    OrderState,
     PnLResponse,
     PositionsResponse,
 )
@@ -254,9 +249,9 @@ async def get_orders(
                 },
                 "total_quantity": total_quantity,
                 "total_filled": total_filled,
-                "fill_rate": (total_filled / total_quantity * 100)
-                if total_quantity > 0
-                else 0,
+                "fill_rate": (
+                    (total_filled / total_quantity * 100) if total_quantity > 0 else 0
+                ),
                 "timestamp": datetime.now(UTC).isoformat(),
             },
         )

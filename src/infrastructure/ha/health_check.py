@@ -4,7 +4,7 @@ import asyncio
 import contextlib
 import logging
 import time
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
@@ -43,7 +43,7 @@ class HealthCheckResult:
 @dataclass
 class HealthCheckConfig:
     name: str
-    check_func: Callable[[], bool]
+    check_func: Callable[[], bool | Awaitable[bool]]
     interval_seconds: float = 30.0
     timeout_seconds: float = 5.0
     unhealthy_threshold: int = 3
@@ -78,7 +78,9 @@ class HealthChecker:
 
     async def check(self) -> HealthCheckResult:
         start_time = time.perf_counter()
-        status, message, details = HealthStatus.UNKNOWN, "", {}
+        status: HealthStatus = HealthStatus.UNKNOWN
+        message: str = ""
+        details: dict[str, Any] = {}
         try:
             result = await asyncio.wait_for(
                 self._run_check(), timeout=self.config.timeout_seconds
@@ -123,8 +125,9 @@ class HealthChecker:
 
     async def _run_check(self) -> bool:
         if asyncio.iscoroutinefunction(self.config.check_func):
-            return await self.config.check_func()
-        return self.config.check_func()
+            result = await self.config.check_func()
+            return bool(result)
+        return bool(self.config.check_func())
 
     async def start_periodic(self) -> None:
         if self._running:
@@ -155,7 +158,7 @@ class HealthChecker:
 
 
 class HealthCheckRegistry:
-    def __init__(self):
+    def __init__(self) -> None:
         self._checkers: dict[str, HealthChecker] = {}
         self._callbacks: list[Callable[[str, HealthCheckResult], None]] = []
 
@@ -203,8 +206,14 @@ class HealthCheckRegistry:
                     status=HealthStatus.UNHEALTHY,
                     message=f"Check exception: {result}",
                 )
-            else:
+            elif isinstance(result, HealthCheckResult):
                 results[name] = result
+            else:
+                results[name] = HealthCheckResult(
+                    name=name,
+                    status=HealthStatus.UNHEALTHY,
+                    message="Unexpected health check result type",
+                )
             for cb in self._callbacks:
                 try:
                     cb(name, results[name])
@@ -253,12 +262,13 @@ class HealthCheckRegistry:
         return HealthStatus.UNKNOWN
 
     def to_dict(self) -> dict[str, Any]:
+        checks: dict[str, dict[str, Any] | None] = {}
+        for name, checker in self._checkers.items():
+            last = checker.get_last_result()
+            checks[name] = last.to_dict() if last else None
         return {
             "overall_status": self.get_overall_status().value,
-            "checks": {
-                n: c.get_last_result().to_dict() if c.get_last_result() else None
-                for n, c in self._checkers.items()
-            },
+            "checks": checks,
             "timestamp": datetime.now(UTC).isoformat(),
         }
 

@@ -220,7 +220,7 @@ def _get_redis_config() -> tuple[str, int, int]:
 def _redis_cli(*args: str) -> subprocess.CompletedProcess[str]:
     """Run a redis-cli command."""
     host, port, db = _get_redis_config()
-    return subprocess.run(
+    return subprocess.run(  # nosec B607
         ["redis-cli", "-h", host, "-p", str(port), "-n", str(db), *args],
         text=True,
         capture_output=True,
@@ -604,9 +604,9 @@ def main() -> int:
             return 1
 
     elif args.cmd == "get":
-        state = mgr.get_pr(args.pr_number)
-        if state:
-            print(json.dumps(state.to_dict(), indent=2))
+        found_state = mgr.get_pr(args.pr_number)
+        if found_state:
+            print(json.dumps(found_state.to_dict(), indent=2))
             return 0
         else:
             print(f"PR #{args.pr_number} not found", file=sys.stderr)

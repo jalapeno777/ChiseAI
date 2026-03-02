@@ -621,9 +621,9 @@ class ACPIntegrationManager:
                 "success": result.status == "completed",
                 "operation_id": operation.operation_id,
                 "status": result.status,
-                "details": result.to_dict()
-                if hasattr(result, "to_dict")
-                else str(result),
+                "details": (
+                    result.to_dict() if hasattr(result, "to_dict") else str(result)
+                ),
             }
 
         except Exception as e:
@@ -675,12 +675,12 @@ class ACPIntegrationManager:
             logger.info(f"Self-healing requested for {failure_pattern}: {result}")
             return {
                 "success": result.success if hasattr(result, "success") else False,
-                "action_type": result.action_type
-                if hasattr(result, "action_type")
-                else None,
-                "details": result.to_dict()
-                if hasattr(result, "to_dict")
-                else str(result),
+                "action_type": (
+                    result.action_type if hasattr(result, "action_type") else None
+                ),
+                "details": (
+                    result.to_dict() if hasattr(result, "to_dict") else str(result)
+                ),
             }
 
         except Exception as e:

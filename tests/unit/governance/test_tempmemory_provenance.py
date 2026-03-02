@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -18,12 +17,12 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "src"))
 
 from governance.tempmemory.provenance import (
-    ProvenanceRecord,
     ProvenanceChain,
+    ProvenanceRecord,
     ProvenanceSource,
     ProvenanceTracker,
-    get_current_commit_sha,
     compute_content_hash,
+    get_current_commit_sha,
 )
 
 

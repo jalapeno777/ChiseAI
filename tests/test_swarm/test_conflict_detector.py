@@ -5,26 +5,21 @@ Tests for conflict_detector.py
 Story: ST-AUTO-007
 """
 
-import json
-import os
-import subprocess
-import tempfile
+# Add project root to path
+import sys
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-# Add project root to path
-import sys
-
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from scripts.swarm.conflict_detector import (
+    ChangeSet,
     ConflictDetector,
     ConflictReport,
-    ConflictType,
     ConflictSeverity,
+    ConflictType,
     FileChange,
-    ChangeSet,
 )
 
 

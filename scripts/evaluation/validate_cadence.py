@@ -171,8 +171,8 @@ class CadenceValidator:
         try:
             # Try to import brain modules
             try:
-                from brain.evaluation import BrainEvaluator, EvaluationMetrics
                 from brain.batch_evaluator import BatchEvaluator
+                from brain.evaluation import BrainEvaluator, EvaluationMetrics
 
                 logger.debug("Successfully imported brain modules")
             except ImportError as e:
@@ -205,7 +205,7 @@ class CadenceValidator:
 
         try:
             # Create a simple mock evaluation
-            result = {
+            result: dict[str, Any] = {
                 "cadence": "6h",
                 "version": "v1.0.0",
                 "timestamp": datetime.now(UTC).isoformat(),
@@ -251,7 +251,7 @@ class CadenceValidator:
 
         try:
             # Simulate issue ingestion
-            issues = []
+            issues: list[dict[str, Any]] = []
             for i in range(3):
                 issue = {
                     "id": f"issue_{i:03d}",
@@ -294,7 +294,7 @@ class CadenceValidator:
         try:
             # Create test issues with repetitions
             base_time = datetime.now(UTC)
-            issues = []
+            issues: list[dict[str, Any]] = []
 
             # Add 3 file_access issues
             for i in range(3):
@@ -319,7 +319,7 @@ class CadenceValidator:
                 )
 
             # Simulate detection
-            clusters = {}
+            clusters: dict[tuple[str | None, str | None], dict[str, Any]] = {}
             for issue in issues:
                 key = (issue.get("type"), issue.get("message"))
                 if key not in clusters:
@@ -712,7 +712,7 @@ def print_report(report: ValidationReport) -> None:
         report: Validation report to print
     """
     print("\n" + "=" * 70)
-    print(f"BrainEval Cadence Validation Report")
+    print("BrainEval Cadence Validation Report")
     print(f"Cadence: {report.cadence}")
     print(f"Timestamp: {report.timestamp}")
     print("=" * 70)
@@ -744,7 +744,7 @@ def print_report(report: ValidationReport) -> None:
 
     print("\nSample Outputs Generated:")
     print("-" * 70)
-    for name in report.sample_outputs.keys():
+    for name in report.sample_outputs:
         print(f"  - {name}.json")
 
     print("\n" + "=" * 70)

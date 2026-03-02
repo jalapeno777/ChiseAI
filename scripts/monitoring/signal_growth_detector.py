@@ -4,12 +4,13 @@
 Should be run every 30-60 minutes.
 """
 
-import os
-import sys
 import asyncio
 import logging
-from datetime import datetime, timezone, timedelta
-from typing import Optional
+import os
+import sys
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
 import redis
 
 # Load .env file for cron environment
@@ -17,7 +18,7 @@ env_path = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"
 )
 if os.path.exists(env_path):
-    with open(env_path, "r") as f:
+    with open(env_path) as f:
         for line in f:
             line = line.strip()
             if line and not line.startswith("#") and "=" in line:
@@ -40,7 +41,7 @@ ALERT_KEY = "bmad:chiseai:monitoring:signal_growth:last_count"
 ALERT_TIME_KEY = "bmad:chiseai:monitoring:signal_growth:last_alert"
 
 
-def get_redis():
+def get_redis() -> Any | None:
     try:
         return redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
     except Exception as e:
@@ -48,14 +49,14 @@ def get_redis():
         return None
 
 
-def check_signal_growth(r: redis.Redis) -> Optional[str]:
+def check_signal_growth(r: Any) -> str | None:
     """Check if signals have grown in last 2 hours."""
     try:
         current_count = len(r.keys("bmad:chiseai:signals:*"))
         last_count = r.get(ALERT_KEY)
         last_alert = r.get(ALERT_TIME_KEY)
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         if last_count:
             last_count = int(last_count)
@@ -128,7 +129,7 @@ async def send_warning(message: str):
 
     # Fallback
     os.makedirs("logs/monitoring", exist_ok=True)
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     with open(f"logs/monitoring/WARNING-{timestamp}.log", "w") as f:
         f.write(message)
     logger.info("Warning logged locally")

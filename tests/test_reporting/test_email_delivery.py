@@ -1,10 +1,8 @@
 """Tests for email delivery functionality."""
 
-import asyncio
 from unittest.mock import Mock, patch
 
 import pytest
-
 from src.reporting.scheduler import ReportScheduler
 
 

@@ -70,7 +70,9 @@ class InfluxDBConfig:
     bucket: str = "chiseai"
     org: str = "chiseai"
     # Token from infrastructure/terraform/terraform.tfvars
-    token: str = "REDACTED_INFLUXDB_TOKEN"
+    token: str = (
+        "REDACTED_INFLUXDB_TOKEN"
+    )
 
     @property
     def url(self) -> str:
@@ -126,7 +128,9 @@ class Settings:
     cb_health_check_interval: float = 30.0
 
     # API settings
-    api_host: str = "0.0.0.0"  # nosec B104 - 0.0.0.0 binding is standard for containerized services
+    api_host: str = (
+        "0.0.0.0"  # nosec B104 - 0.0.0.0 binding is standard for containerized services
+    )
     api_port: int = 8000
     api_reload: bool = False
 
@@ -156,7 +160,9 @@ class Settings:
                 "ACP_CB_MEASUREMENT", "circuit_breaker_state"
             ),
             cb_health_check_interval=float(os.getenv("ACP_CB_HEALTH_INTERVAL", "30.0")),
-            api_host=os.getenv("ACP_API_HOST", "0.0.0.0"),  # nosec B104 - 0.0.0.0 binding is standard for containerized services
+            api_host=os.getenv(
+                "ACP_API_HOST", "0.0.0.0"
+            ),  # nosec B104 - 0.0.0.0 binding is standard for containerized services
             api_port=int(os.getenv("ACP_API_PORT", "8000")),
             api_reload=os.getenv("ACP_API_RELOAD", "false").lower() == "true",
         )
@@ -225,14 +231,14 @@ class Settings:
             Tuple of (is_healthy, message)
         """
         try:
-            import urllib.request
             import urllib.error
+            import urllib.request
 
             url = f"{self.influxdb.url}/api/v2/buckets"
             headers = {"Authorization": f"Token {self.influxdb.token}"}
 
             req = urllib.request.Request(url, headers=headers, method="GET")
-            with urllib.request.urlopen(req, timeout=10) as response:
+            with urllib.request.urlopen(req, timeout=10) as response:  # nosec B310
                 if response.status == 200:
                     return (
                         True,

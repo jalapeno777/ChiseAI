@@ -4,11 +4,11 @@
 Run once at burn-in end time.
 """
 
-import os
-import sys
 import asyncio
 import logging
-from datetime import datetime, timezone
+import os
+from datetime import UTC, datetime
+
 import redis
 
 # Load .env file for cron environment
@@ -16,7 +16,7 @@ env_path = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"
 )
 if os.path.exists(env_path):
-    with open(env_path, "r") as f:
+    with open(env_path) as f:
         for line in f:
             line = line.strip()
             if line and not line.startswith("#") and "=" in line:
@@ -50,7 +50,7 @@ def get_final_gate_status():
     import subprocess
 
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B607
             ["python3", "scripts/monitoring/checkpoint_gate_audit.py"],
             capture_output=True,
             text=True,
@@ -63,22 +63,22 @@ def get_final_gate_status():
 
 def format_completion_message() -> str:
     """Format burn-in completion message."""
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
 
     lines = [
         f"**🎉 BURN-IN COMPLETE** | {timestamp}",
-        f"",
-        f"**24-Hour Burn-in Finished Successfully**",
-        f"",
-        f"**Final Status:** All gates validated",
-        f"**System:** Ready for Bybit demo trading",
-        f"",
-        f"**Next Steps:**",
-        f"• Review final checkpoint report",
-        f"• Confirm demo trading readiness",
-        f"• Schedule production deployment review",
-        f"",
-        f"_Monitoring will continue in operational mode_",
+        "",
+        "**24-Hour Burn-in Finished Successfully**",
+        "",
+        "**Final Status:** All gates validated",
+        "**System:** Ready for Bybit demo trading",
+        "",
+        "**Next Steps:**",
+        "• Review final checkpoint report",
+        "• Confirm demo trading readiness",
+        "• Schedule production deployment review",
+        "",
+        "_Monitoring will continue in operational mode_",
     ]
 
     return "\n".join(lines)

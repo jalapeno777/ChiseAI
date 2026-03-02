@@ -47,7 +47,7 @@ def detect_changed_files(base_ref: str = "HEAD~1", head_ref: str = "HEAD") -> li
         List of changed file paths.
     """
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B607
             ["git", "diff", "--name-only", base_ref, head_ref],
             capture_output=True,
             text=True,
@@ -93,7 +93,7 @@ def detect_changed_brain_versions(
 
     # Try to get current commit SHA as version identifier
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B607
             ["git", "rev-parse", "--short", "HEAD"],
             capture_output=True,
             text=True,

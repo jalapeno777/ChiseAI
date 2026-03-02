@@ -13,16 +13,17 @@ Usage in crontab:
     0 */6 * * * /usr/bin/python3 /path/to/scripts/monitoring/cron_wrapper.py scripts/monitoring/checkpoint_gate_audit.py
 """
 
-import os
-import sys
-import subprocess
-import logging
 import argparse
-from datetime import datetime, timezone
+import logging
+import os
+import subprocess
+import sys
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 
-def setup_logging(log_dir: str = None) -> logging.Logger:
+def setup_logging(log_dir: str | Path | None = None) -> logging.Logger:
     """Setup logging for cron execution."""
     if log_dir is None:
         # Default to logs/cron/ relative to this script
@@ -31,7 +32,7 @@ def setup_logging(log_dir: str = None) -> logging.Logger:
 
     os.makedirs(log_dir, exist_ok=True)
 
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d")
     log_file = os.path.join(log_dir, f"cron-{timestamp}.log")
 
     # Setup logging
@@ -50,7 +51,7 @@ def load_env_file(project_root: Path) -> None:
 
     if env_path.exists():
         logger.info(f"Loading .env from {env_path}")
-        with open(env_path, "r") as f:
+        with open(env_path) as f:
             for line in f:
                 line = line.strip()
                 if line and not line.startswith("#") and "=" in line:
@@ -83,7 +84,7 @@ def find_project_root() -> Path:
     return script_path.parent.parent.parent
 
 
-def get_job_name_from_path(script_path):
+def get_job_name_from_path(script_path: str | Path) -> str | None:
     """Extract job name from script path for cron evidence tracking."""
     job_mapping = {
         "pager_alerts.py": "pager",
@@ -95,7 +96,9 @@ def get_job_name_from_path(script_path):
     return job_mapping.get(basename)
 
 
-def write_cron_evidence(job_name, status, error_msg=None):
+def write_cron_evidence(
+    job_name: str, status: str, error_msg: str | None = None
+) -> None:
     """Write cron execution evidence to Redis."""
     try:
         sys.path.insert(0, str(Path(__file__).parent))
@@ -122,7 +125,7 @@ def run_script(script_path: str, project_root: Path) -> int:
     # Ensure script is executable
     if not os.access(full_script_path, os.X_OK):
         logger.debug(f"Making script executable: {full_script_path}")
-        os.chmod(full_script_path, 0o755)
+        os.chmod(full_script_path, 0o700)
 
     # Determine job name for cron evidence
     job_name = get_job_name_from_path(str(full_script_path))
@@ -164,7 +167,7 @@ def run_script(script_path: str, project_root: Path) -> int:
         return result.returncode
 
     except subprocess.TimeoutExpired:
-        logger.error(f"Script timed out after 5 minutes")
+        logger.error("Script timed out after 5 minutes")
         if job_name:
             write_cron_evidence(
                 job_name, status="error", error_msg="Timeout after 5 minutes"

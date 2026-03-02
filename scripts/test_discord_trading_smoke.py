@@ -28,12 +28,15 @@ from config.bootstrap import bootstrap
 bootstrap(load_env=True)
 
 # Import after bootstrap
-import aiohttp  # noqa: E402
 
 # Import trade notifier components
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from src.discord_alerts.trade_notifier import TradeNotifier  # noqa: E402
-from src.ml.models.signal_outcome import SignalOutcome, SignalOutcomeStatus, OutcomeType  # noqa: E402
+from src.ml.models.signal_outcome import (  # noqa: E402
+    OutcomeType,
+    SignalOutcome,
+    SignalOutcomeStatus,
+)
 
 
 class DiscordTradingSmokeTester:
@@ -55,15 +58,17 @@ class DiscordTradingSmokeTester:
         print("ENVIRONMENT VERIFICATION")
         print("=" * 60)
 
-        result = {
+        result: dict[str, Any] = {
             "trading_webhook_configured": bool(self.trading_webhook_url),
             "dev_webhook_configured": bool(self.dev_webhook_url),
-            "trading_webhook_url": self.trading_webhook_url[:50] + "..."
-            if self.trading_webhook_url
-            else None,
-            "dev_webhook_url": self.dev_webhook_url[:50] + "..."
-            if self.dev_webhook_url
-            else None,
+            "trading_webhook_url": (
+                self.trading_webhook_url[:50] + "..."
+                if self.trading_webhook_url
+                else None
+            ),
+            "dev_webhook_url": (
+                self.dev_webhook_url[:50] + "..." if self.dev_webhook_url else None
+            ),
             "timestamp": datetime.now(UTC).isoformat(),
         }
 
@@ -90,7 +95,7 @@ class DiscordTradingSmokeTester:
         print("TEST 1: TEST Open Trade Notification")
         print("=" * 60)
 
-        result = {
+        result: dict[str, Any] = {
             "test_name": "TEST Open Trade Notification",
             "message_id": None,
             "timestamp": None,
@@ -114,7 +119,7 @@ class DiscordTradingSmokeTester:
             notifier = TradeNotifier()
 
             # Create test trade outcome with is_test=True
-            outcome = SignalOutcome(
+            outcome = SignalOutcome(  # nosec B106
                 outcome_id=uuid.uuid4(),
                 signal_id=uuid.uuid4(),
                 order_id="test-order-smoke-open",
@@ -159,7 +164,7 @@ class DiscordTradingSmokeTester:
             ).get("text", "")
 
             if open_result.success:
-                print(f"✓ Notification delivered")
+                print("✓ Notification delivered")
                 print(f"  Message ID: {open_result.message_id}")
                 print(f"  Timestamp: {result['timestamp']}")
                 print(f"  Title: {embed.get('title')}")
@@ -196,7 +201,7 @@ class DiscordTradingSmokeTester:
         print("TEST 2: TEST Close Trade Notification")
         print("=" * 60)
 
-        result = {
+        result: dict[str, Any] = {
             "test_name": "TEST Close Trade Notification",
             "message_id": None,
             "timestamp": None,
@@ -224,7 +229,7 @@ class DiscordTradingSmokeTester:
             entry_time = datetime.now(UTC) - timedelta(hours=2, minutes=15)
             exit_time = datetime.now(UTC)
 
-            outcome = SignalOutcome(
+            outcome = SignalOutcome(  # nosec B106
                 outcome_id=uuid.uuid4(),
                 signal_id=uuid.uuid4(),
                 order_id="test-order-smoke-close",
@@ -278,7 +283,7 @@ class DiscordTradingSmokeTester:
             )
 
             if close_result.success:
-                print(f"✓ Notification delivered")
+                print("✓ Notification delivered")
                 print(f"  Message ID: {close_result.message_id}")
                 print(f"  Timestamp: {result['timestamp']}")
                 print(f"  Title: {embed.get('title')}")
@@ -320,7 +325,7 @@ class DiscordTradingSmokeTester:
         print("TEST 3: Development Webhook Fallback")
         print("=" * 60)
 
-        result = {
+        result: dict[str, Any] = {
             "test_name": "Development Webhook Fallback",
             "status": "failed",
             "error": None,
@@ -385,9 +390,7 @@ class DiscordTradingSmokeTester:
             status_symbol = (
                 "✓"
                 if status in ("delivered", "passed")
-                else "✗"
-                if status == "failed"
-                else "⚠"
+                else "✗" if status == "failed" else "⚠"
             )
             print(
                 f"| {test_name:<29} | {status_symbol} {status:<7} | {message_id:<19} |"

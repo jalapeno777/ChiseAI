@@ -10,13 +10,13 @@ This script reads all BrainEval JSON results and groups issues by normalized
 descriptions to identify recurring patterns.
 """
 
-import json
 import hashlib
+import json
 import re
-from pathlib import Path
-from typing import Dict, List, Any, Optional
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
+from pathlib import Path
+from typing import Any
 
 
 @dataclass
@@ -30,8 +30,8 @@ class IssueCluster:
     count: int
     first_seen: str
     last_seen: str
-    occurrences: List[Dict[str, Any]]
-    source_files: List[str]
+    occurrences: list[dict[str, Any]]
+    source_files: list[str]
     trend: str  # increasing, decreasing, stable
 
 
@@ -40,14 +40,14 @@ class RepeatedIssueAnalyzer:
 
     def __init__(self, eval_dir: str = "_bmad-output/brain-eval"):
         self.eval_dir = Path(eval_dir)
-        self.clusters: Dict[str, IssueCluster] = {}
+        self.clusters: dict[str, IssueCluster] = {}
 
-    def is_structured_issue(self, issue: Dict[str, Any]) -> bool:
+    def is_structured_issue(self, issue: dict[str, Any]) -> bool:
         """Check if an issue is structured (parsed from YAML)."""
         return issue.get("is_structured", False)
 
     def normalize_description(
-        self, description: str, issue: Optional[Dict[str, Any]] = None
+        self, description: str, issue: dict[str, Any] | None = None
     ) -> str:
         """Normalize an issue description for clustering.
 
@@ -104,7 +104,7 @@ class RepeatedIssueAnalyzer:
         self,
         normalized_desc: str,
         issue_type: str,
-        issue: Optional[Dict[str, Any]] = None,
+        issue: dict[str, Any] | None = None,
     ) -> str:
         """Generate a unique ID for a cluster.
 
@@ -123,11 +123,11 @@ class RepeatedIssueAnalyzer:
         else:
             content = f"{issue_type}:{normalized_desc}"
 
-        return hashlib.md5(content.encode()).hexdigest()[:12]
+        return hashlib.md5(content.encode(), usedforsecurity=False).hexdigest()[:12]
 
-    def load_all_evaluations(self) -> List[Dict[str, Any]]:
+    def load_all_evaluations(self) -> list[dict[str, Any]]:
         """Load all evaluation JSON files."""
-        evaluations = []
+        evaluations: list[dict[str, Any]] = []
 
         if not self.eval_dir.exists():
             print(f"Warning: Directory {self.eval_dir} does not exist")
@@ -139,7 +139,7 @@ class RepeatedIssueAnalyzer:
                 continue  # Skip our own output
 
             try:
-                with open(json_file, "r") as f:
+                with open(json_file) as f:
                     data = json.load(f)
                     data["_source_file"] = str(json_file)
                     evaluations.append(data)
@@ -149,8 +149,8 @@ class RepeatedIssueAnalyzer:
         return evaluations
 
     def cluster_issues(
-        self, evaluations: List[Dict[str, Any]]
-    ) -> Dict[str, IssueCluster]:
+        self, evaluations: list[dict[str, Any]]
+    ) -> dict[str, IssueCluster]:
         """Group issues into clusters."""
         self.clusters = {}
 
@@ -233,7 +233,7 @@ class RepeatedIssueAnalyzer:
             else:
                 cluster.trend = "stable"
 
-    def generate_report(self) -> Dict[str, Any]:
+    def generate_report(self) -> dict[str, Any]:
         """Generate the repeated issues report."""
         evaluations = self.load_all_evaluations()
 
@@ -265,13 +265,13 @@ class RepeatedIssueAnalyzer:
 
         return report
 
-    def _generate_summary(self, clusters: List[IssueCluster]) -> str:
+    def _generate_summary(self, clusters: list[IssueCluster]) -> str:
         """Generate a human-readable summary."""
         if not clusters:
             return "No repeated issues found"
 
         total_issues = sum(c.count for c in clusters)
-        top_issues = clusters[:5]
+        clusters[:5]
 
         parts = [
             f"Found {len(clusters)} unique issue patterns from {total_issues} total occurrences"
@@ -293,19 +293,19 @@ class RepeatedIssueAnalyzer:
         return "; ".join(parts)
 
     def save_report(
-        self, report: Dict[str, Any], output_path: Optional[str] = None
+        self, report: dict[str, Any], output_path: str | None = None
     ) -> str:
         """Save the report to a file."""
         if output_path is None:
             output_path = str(self.eval_dir / "repeated_issues_report.json")
 
-        output_path = Path(output_path)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_file = Path(output_path)
+        output_file.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(output_path, "w") as f:
+        with open(output_file, "w") as f:
             json.dump(report, f, indent=2)
 
-        return str(output_path)
+        return str(output_file)
 
 
 def main():
@@ -341,7 +341,7 @@ def main():
     print(f"\nSummary: {report['summary']}")
 
     if report["clusters"]:
-        print(f"\nTop 5 Repeated Issues:")
+        print("\nTop 5 Repeated Issues:")
         for i, cluster in enumerate(report["clusters"][:5], 1):
             print(
                 f"  {i}. [{cluster['severity']}] {cluster['issue_type']}: "

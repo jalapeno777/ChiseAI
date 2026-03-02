@@ -11,13 +11,11 @@ This module tests:
 
 from __future__ import annotations
 
-import asyncio
-import json
 import os
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -27,13 +25,14 @@ sys.path.insert(
 )
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from autonomous_git.path_analyzer import RiskLevel
 from human_gate import (
     ApprovalRecord,
     ApprovalStatus,
     HumanGate,
     HumanGateResult,
 )
+
+from autonomous_git.path_analyzer import RiskLevel
 
 
 class TestApprovalStatus:

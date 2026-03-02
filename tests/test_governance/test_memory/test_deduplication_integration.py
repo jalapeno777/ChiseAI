@@ -12,12 +12,9 @@ Covers:
 - TTL expiration
 """
 
-import hashlib
-from datetime import UTC, datetime, timedelta
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
-
 from src.governance.memory.deduplication import (
     FEATURE_FLAG_KEY,
     DeduplicationConfig,
@@ -751,7 +748,6 @@ class TestProcessingTimeTracking:
 
     def test_processing_time_increases_with_work(self):
         """Test that processing time increases with more work."""
-        import time
 
         mock_redis = MagicMock()
         mock_redis.scan.return_value = (0, [f"key_{i}" for i in range(100)])

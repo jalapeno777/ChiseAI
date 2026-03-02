@@ -7,7 +7,7 @@ Analyzes branches and recommends cleanup actions.
 import argparse
 import json
 import subprocess
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from config.bootstrap import bootstrap, check_environment
 
@@ -23,7 +23,7 @@ except ImportError:
 
 def get_all_branches():
     """Get list of all local branches."""
-    result = subprocess.run(
+    result = subprocess.run(  # nosec B607
         ["git", "branch", "--format=%(refname:short)"],
         capture_output=True,
         text=True,
@@ -42,7 +42,7 @@ def get_branch_info(branch_name):
     info = {}
 
     # Last commit date
-    result = subprocess.run(
+    result = subprocess.run(  # nosec B607
         ["git", "log", "-1", "--format=%ci", branch_name],
         capture_output=True,
         text=True,
@@ -51,7 +51,7 @@ def get_branch_info(branch_name):
         info["last_commit"] = result.stdout.strip()
 
     # Check if merged to main
-    result = subprocess.run(
+    result = subprocess.run(  # nosec B607
         ["git", "branch", "--merged", "main", "--list", branch_name],
         capture_output=True,
         text=True,
@@ -59,7 +59,7 @@ def get_branch_info(branch_name):
     info["merged_to_main"] = branch_name in result.stdout
 
     # Check commits behind main
-    result = subprocess.run(
+    result = subprocess.run(  # nosec B607
         ["git", "rev-list", "--count", f"{branch_name}..main"],
         capture_output=True,
         text=True,
@@ -70,7 +70,7 @@ def get_branch_info(branch_name):
         info["commits_behind"] = 0
 
     # Check if has remote tracking
-    result = subprocess.run(
+    result = subprocess.run(  # nosec B607
         ["git", "rev-parse", "--abbrev-ref", f"{branch_name}@{{upstream}}"],
         capture_output=True,
         text=True,
@@ -135,7 +135,7 @@ def analyze_branches():
             last_date = datetime.fromisoformat(
                 info["last_commit"].replace("Z", "+00:00")
             )
-            days_inactive = (datetime.now(timezone.utc) - last_date).days
+            days_inactive = (datetime.now(UTC) - last_date).days
             if days_inactive > 30:
                 issues.append(f"No activity for {days_inactive} days")
 
@@ -284,7 +284,7 @@ def main():
             branch_name = branch["name"]
             try:
                 # Safety check: only delete if merged to main
-                result = subprocess.run(
+                result = subprocess.run(  # nosec B607
                     ["git", "branch", "--merged", "main", "--list", branch_name],
                     capture_output=True,
                     text=True,
@@ -294,7 +294,7 @@ def main():
                     continue
 
                 # Delete the local branch
-                result = subprocess.run(
+                result = subprocess.run(  # nosec B607
                     ["git", "branch", "-d", branch_name],
                     capture_output=True,
                     text=True,
@@ -331,25 +331,25 @@ def main():
                 errors.append(f"{branch_name}: {str(e)}")
                 print(f"  ❌ Error: {branch_name} - {str(e)}")
 
-        print(f"\n📊 Summary:")
+        print("\n📊 Summary:")
         print(f"  Deleted: {len(deleted)} branches")
         print(f"  Errors: {len(errors)} branches")
 
         if deleted:
-            print(f"\n  Deleted branches:")
+            print("\n  Deleted branches:")
             for b in deleted:
                 print(f"    - {b}")
 
         if errors:
-            print(f"\n  Errors encountered:")
-            for e in errors:
-                print(f"    - {e}")
+            print("\n  Errors encountered:")
+            for err in errors:
+                print(f"    - {err}")
 
         # Policy confirmation
-        print(f"\n🔒 Policy Compliance:")
+        print("\n🔒 Policy Compliance:")
         print(f"  --force flag used: {'YES' if args.force else 'NO (safe mode)'}")
-        print(f"  Only merged branches deleted: YES")
-        print(f"  Safety verification: Double-checked merge status before deletion")
+        print("  Only merged branches deleted: YES")
+        print("  Safety verification: Double-checked merge status before deletion")
 
 
 if __name__ == "__main__":

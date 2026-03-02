@@ -11,7 +11,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from src.api.ece_router import router as ece_router
-from src.api.health_router import router as health_router, set_health_monitor
+from src.api.health_router import router as health_router
+from src.api.health_router import set_health_monitor
 from src.api.paper_router import router as paper_router
 from src.autonomous_control_plane.api.v1.healing import router as healing_router
 

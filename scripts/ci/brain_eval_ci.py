@@ -66,7 +66,7 @@ def detect_brain_changes(base_ref: str = "origin/main") -> bool:
     """
     try:
         # Get list of changed files
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B607
             ["git", "diff", "--name-only", base_ref, "HEAD"],
             capture_output=True,
             text=True,

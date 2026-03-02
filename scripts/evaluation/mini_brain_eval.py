@@ -16,11 +16,12 @@ import json
 import os
 import re
 import uuid
-import yaml
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Any, Optional
-from dataclasses import dataclass, asdict, field
+from typing import Any
+
+import yaml
 
 
 @dataclass
@@ -31,20 +32,20 @@ class Issue:
     severity: str  # P0, P1, P2, P3
     description: str
     source_file: str
-    timestamp: Optional[str] = None
-    line_number: Optional[int] = None
+    timestamp: str | None = None
+    line_number: int | None = None
     context: str = ""
     # Structured issue fields
-    root_cause: Optional[str] = None
-    fix_applied: Optional[str] = None
-    time_lost_minutes: Optional[int] = None
-    recurrence_hint: Optional[str] = None
-    impact_area: Optional[str] = None
-    resolved: Optional[bool] = None
+    root_cause: str | None = None
+    fix_applied: str | None = None
+    time_lost_minutes: int | None = None
+    recurrence_hint: str | None = None
+    impact_area: str | None = None
+    resolved: bool | None = None
     is_structured: bool = False  # Flag to indicate structured vs regex
     # Source tracking for multi-source ingestion
     source: str = "filesystem"  # "filesystem", "redis", or "qdrant"
-    provenance: Optional[Dict[str, Any]] = None  # Origin details
+    provenance: dict[str, Any] | None = None  # Origin details
 
 
 @dataclass
@@ -54,12 +55,12 @@ class MiniEvalResult:
     eval_id: str
     timestamp: str
     cadence: str
-    issues_found: List[Dict[str, Any]]
-    mitigations: List[Dict[str, Any]]
-    file_stats: Dict[str, Any]
+    issues_found: list[dict[str, Any]]
+    mitigations: list[dict[str, Any]]
+    file_stats: dict[str, Any]
     summary: str
-    ingestion_sources: List[str] = field(default_factory=list)  # Sources used
-    source_stats: Dict[str, Dict[str, Any]] = field(
+    ingestion_sources: list[str] = field(default_factory=list)  # Sources used
+    source_stats: dict[str, dict[str, Any]] = field(
         default_factory=dict
     )  # Stats per source
 
@@ -172,8 +173,8 @@ class IssueDetector:
         self.use_redis = use_redis
         self.use_qdrant = use_qdrant
         self.include_provenance = include_provenance
-        self.issues: List[Issue] = []
-        self.source_stats: Dict[str, Dict[str, Any]] = {
+        self.issues: list[Issue] = []
+        self.source_stats: dict[str, dict[str, Any]] = {
             "filesystem": {"files_scanned": 0, "issues_found": 0},
             "redis": {"keys_scanned": 0, "issues_found": 0},
             "qdrant": {"vectors_scanned": 0, "issues_found": 0},
@@ -233,7 +234,7 @@ class IssueDetector:
             print(f"Warning: Qdrant client initialization failed: {e}")
             return None
 
-    def scan_all_sources(self) -> List[Issue]:
+    def scan_all_sources(self) -> list[Issue]:
         """Scan all enabled sources for issues."""
         self.issues = []
 
@@ -267,12 +268,12 @@ class IssueDetector:
             [i for i in self.issues if i.source == "filesystem"]
         )
 
-    def _scan_file(self, file_path: Path) -> List[Issue]:
+    def _scan_file(self, file_path: Path) -> list[Issue]:
         """Scan a single file for issues."""
-        file_issues = []
+        file_issues: list[Issue] = []
 
         try:
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            with open(file_path, encoding="utf-8", errors="ignore") as f:
                 content = f.read()
                 lines = content.split("\n")
         except Exception as e:
@@ -300,7 +301,7 @@ class IssueDetector:
 
                         issue = Issue(
                             issue_type=issue_type,
-                            severity=config["severity"],
+                            severity=str(config.get("severity", "P3")),
                             description=line.strip(),
                             source_file=str(file_path),
                             timestamp=timestamp,
@@ -308,13 +309,15 @@ class IssueDetector:
                             context=context.strip(),
                             is_structured=False,
                             source="filesystem",
-                            provenance={
-                                "source_type": "FILESYSTEM",
-                                "file_path": str(file_path),
-                                "line_number": line_num,
-                            }
-                            if self.include_provenance
-                            else None,
+                            provenance=(
+                                {
+                                    "source_type": "FILESYSTEM",
+                                    "file_path": str(file_path),
+                                    "line_number": line_num,
+                                }
+                                if self.include_provenance
+                                else None
+                            ),
                         )
                         file_issues.append(issue)
                         break  # Avoid duplicate detection for same line
@@ -438,7 +441,7 @@ class IssueDetector:
         except Exception as e:
             print(f"Warning: Qdrant scan failed: {e}")
 
-    def _extract_story_id_from_key(self, key: str) -> Optional[str]:
+    def _extract_story_id_from_key(self, key: str) -> str | None:
         """Extract story ID from Redis key."""
         # Pattern: bmad:chiseai:iterlog:story:ST-XXX:decisions
         parts = key.split(":")
@@ -447,10 +450,10 @@ class IssueDetector:
         return None
 
     def _parse_redis_decision(
-        self, decision: Dict[str, Any], story_id: Optional[str], key: str
-    ) -> List[Issue]:
+        self, decision: dict[str, Any], story_id: str | None, key: str
+    ) -> list[Issue]:
         """Parse a Redis decision entry for issues."""
-        issues = []
+        issues: list[Issue] = []
 
         # Get decision text and metadata
         decision_text = decision.get("decision", "")
@@ -465,25 +468,27 @@ class IssueDetector:
                 if re.search(pattern, text_to_check, re.IGNORECASE):
                     issue = Issue(
                         issue_type=issue_type,
-                        severity=config["severity"],
-                        description=decision_text[:200]
-                        if decision_text
-                        else issue_type,
+                        severity=str(config.get("severity", "P3")),
+                        description=(
+                            decision_text[:200] if decision_text else issue_type
+                        ),
                         source_file=f"redis:{key}",
                         timestamp=timestamp,
                         line_number=None,
                         context=rationale[:500] if rationale else "",
                         is_structured=False,
                         source="redis",
-                        provenance={
-                            "source_type": "ITERLOG_DECISION",
-                            "story_id": story_id,
-                            "redis_key": key,
-                            "timestamp": timestamp,
-                            "decision_type": decision.get("type", "unknown"),
-                        }
-                        if self.include_provenance
-                        else None,
+                        provenance=(
+                            {
+                                "source_type": "ITERLOG_DECISION",
+                                "story_id": story_id,
+                                "redis_key": key,
+                                "timestamp": timestamp,
+                                "decision_type": decision.get("type", "unknown"),
+                            }
+                            if self.include_provenance
+                            else None
+                        ),
                     )
                     issues.append(issue)
                     break  # One issue per pattern match
@@ -491,10 +496,10 @@ class IssueDetector:
         return issues
 
     def _parse_qdrant_memory(
-        self, content: str, point_id: str, payload: Dict[str, Any]
-    ) -> List[Issue]:
+        self, content: str, point_id: str, payload: dict[str, Any]
+    ) -> list[Issue]:
         """Parse a Qdrant memory for issues."""
-        issues = []
+        issues: list[Issue] = []
 
         if not content:
             return issues
@@ -511,7 +516,7 @@ class IssueDetector:
 
                     issue = Issue(
                         issue_type=issue_type,
-                        severity=config["severity"],
+                        severity=str(config.get("severity", "P3")),
                         description=content[:200],
                         source_file=f"qdrant:{point_id}",
                         timestamp=timestamp,
@@ -519,15 +524,17 @@ class IssueDetector:
                         context=content[:500],
                         is_structured=False,
                         source="qdrant",
-                        provenance={
-                            "source_type": "QDRANT_MEMORY",
-                            "point_id": str(point_id),
-                            "collection": os.getenv("QDRANT_COLLECTION", "ChiseAI"),
-                            "timestamp": timestamp,
-                            "metadata": metadata,
-                        }
-                        if self.include_provenance
-                        else None,
+                        provenance=(
+                            {
+                                "source_type": "QDRANT_MEMORY",
+                                "point_id": str(point_id),
+                                "collection": os.getenv("QDRANT_COLLECTION", "ChiseAI"),
+                                "timestamp": timestamp,
+                                "metadata": metadata,
+                            }
+                            if self.include_provenance
+                            else None
+                        ),
                     )
                     issues.append(issue)
                     break  # One issue per pattern match
@@ -535,13 +542,13 @@ class IssueDetector:
         return issues
 
     def _scan_structured_issues(
-        self, content: str, file_path: Path, timestamp: Optional[str]
-    ) -> List[Issue]:
+        self, content: str, file_path: Path, timestamp: str | None
+    ) -> list[Issue]:
         """Parse structured issues from markdown YAML section.
 
         Returns empty list if no structured section or parsing fails.
         """
-        issues: List[Issue] = []
+        issues: list[Issue] = []
 
         # Find ## Structured Issues section
         structured_match = re.search(
@@ -596,13 +603,15 @@ class IssueDetector:
                     resolved=item.get("resolved"),
                     is_structured=True,
                     source="filesystem",
-                    provenance={
-                        "source_type": "STRUCTURED_FILE",
-                        "file_path": str(file_path),
-                        "is_structured": True,
-                    }
-                    if self.include_provenance
-                    else None,
+                    provenance=(
+                        {
+                            "source_type": "STRUCTURED_FILE",
+                            "file_path": str(file_path),
+                            "is_structured": True,
+                        }
+                        if self.include_provenance
+                        else None
+                    ),
                 )
                 issues.append(issue)
 
@@ -620,9 +629,9 @@ class IssueDetector:
                 # Reduce severity if resolved
                 if resolved:
                     severity_order = ["P0", "P1", "P2", "P3"]
-                    idx = severity_order.index(config["severity"])
+                    idx = severity_order.index(str(config.get("severity", "P3")))
                     return severity_order[min(idx + 1, 3)]
-                return config["severity"]
+                return str(config.get("severity", "P3"))
 
         # Default severity based on common patterns
         if "blocker" in issue_type.lower():
@@ -633,7 +642,7 @@ class IssueDetector:
             return "P2"
         return "P3"
 
-    def _extract_timestamp(self, content: str) -> Optional[str]:
+    def _extract_timestamp(self, content: str) -> str | None:
         """Extract timestamp from file frontmatter."""
         # Look for date: YYYY-MM-DD pattern
         date_match = re.search(r"date:\s*(\d{4}-\d{2}-\d{2})", content)
@@ -647,12 +656,12 @@ class IssueDetector:
 
         return None
 
-    def get_mitigations(self) -> List[Dict[str, Any]]:
+    def get_mitigations(self) -> list[dict[str, Any]]:
         """Generate mitigation suggestions based on detected issues."""
         mitigations = []
 
         # Group issues by type
-        issues_by_type: Dict[str, List[Issue]] = {}
+        issues_by_type: dict[str, list[Issue]] = {}
         for issue in self.issues:
             if issue.issue_type not in issues_by_type:
                 issues_by_type[issue.issue_type] = []
@@ -671,7 +680,7 @@ class IssueDetector:
 
         return mitigations
 
-    def get_file_stats(self) -> Dict[str, Any]:
+    def get_file_stats(self) -> dict[str, Any]:
         """Generate statistics about scanned files."""
         md_files = (
             list(self.tempmemories_path.glob("*.md"))
@@ -686,7 +695,7 @@ class IssueDetector:
                 severity_counts[issue.severity] += 1
 
         # Count issues by type
-        type_counts: Dict[str, int] = {}
+        type_counts: dict[str, int] = {}
         for issue in self.issues:
             type_counts[issue.issue_type] = type_counts.get(issue.issue_type, 0) + 1
 
@@ -698,7 +707,7 @@ class IssueDetector:
             "files_with_issues": len(set(i.source_file for i in self.issues)),
         }
 
-    def get_ingestion_sources(self) -> List[str]:
+    def get_ingestion_sources(self) -> list[str]:
         """Get list of sources that were scanned."""
         sources = ["filesystem"]
         if self.use_redis:
@@ -849,7 +858,7 @@ def main():
 
     # Print source stats
     if result.source_stats:
-        print(f"\nSource Statistics:")
+        print("\nSource Statistics:")
         for source, stats in result.source_stats.items():
             if stats.get("files_scanned", 0) > 0:
                 print(
@@ -865,16 +874,16 @@ def main():
                 )
 
     if result.file_stats["total_issues"] > 0:
-        print(f"\nIssues by Severity:")
+        print("\nIssues by Severity:")
         for sev, count in result.file_stats["issues_by_severity"].items():
             if count > 0:
                 print(f"  {sev}: {count}")
 
-        print(f"\nIssues by Type:")
+        print("\nIssues by Type:")
         for issue_type, count in result.file_stats["issues_by_type"].items():
             print(f"  {issue_type}: {count}")
 
-        print(f"\nTop Mitigations:")
+        print("\nTop Mitigations:")
         for mit in sorted(result.mitigations, key=lambda x: x["count"], reverse=True)[
             :5
         ]:
@@ -884,7 +893,7 @@ def main():
 
     # Print sample issues with source/provenance if available
     if result.issues_found and args.provenance:
-        print(f"\nSample Issues with Provenance:")
+        print("\nSample Issues with Provenance:")
         for issue in result.issues_found[:3]:
             print(
                 f"  - [{issue.get('source', 'unknown')}] {issue.get('issue_type', 'unknown')}: {issue.get('description', '')[:50]}..."

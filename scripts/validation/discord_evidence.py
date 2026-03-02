@@ -226,7 +226,7 @@ class DiscordEvidenceCollector:
         # Calculate snowflake-based pagination
         # Discord uses snowflake IDs which are time-sortable
         after_snowflake = self._datetime_to_snowflake(since)
-        before_snowflake = self._datetime_to_snowflake(until)
+        self._datetime_to_snowflake(until)
 
         url = (
             f"{self.DISCORD_API_BASE}/channels/{self.trading_channel_id}/messages"
@@ -458,11 +458,11 @@ class DiscordEvidenceCollector:
             if embed.get("description"):
                 full_content += " " + embed["description"]
             # Check embed fields
-            for field in embed.get("fields", []):
-                if field.get("name"):
-                    full_content += " " + field["name"]
-                if field.get("value"):
-                    full_content += " " + field["value"]
+            for embed_field in embed.get("fields", []):
+                if embed_field.get("name"):
+                    full_content += " " + embed_field["name"]
+                if embed_field.get("value"):
+                    full_content += " " + embed_field["value"]
 
         # Pattern: Trade ID: VALUE or trade_id: VALUE
         match = re.search(
@@ -711,6 +711,7 @@ async def main() -> None:
     collector = DiscordEvidenceCollector()
 
     try:
+        result: GateResult | dict[str, object]
         if args.trade_id:
             result = await collector.validate_g5_for_trade(args.trade_id, since, until)
         elif args.validate:

@@ -75,7 +75,7 @@ class GiteaAPI:
         req = urllib.request.Request(url, data=data, method=method, headers=headers)
 
         try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with urllib.request.urlopen(req, timeout=30) as resp:  # nosec B310
                 raw = resp.read()
                 return json.loads(raw.decode("utf-8")) if raw else {}
         except urllib.error.HTTPError as e:
@@ -134,7 +134,7 @@ class PRMonitor:
         mergeable = pr_data.get("mergeable")
         head_sha = str((pr_data.get("head") or {}).get("sha", ""))
 
-        result = {
+        result: dict[str, Any] = {
             "pr_number": pr_number,
             "state": state,
             "merged": merged,
@@ -357,7 +357,7 @@ class PRMonitor:
         """Run a comprehensive health scan of all PRs."""
         print("Running PR health scan...")
 
-        results = {
+        results: dict[str, Any] = {
             "scanned_at": _utc_now(),
             "total_active": 0,
             "by_state": {},
@@ -418,7 +418,7 @@ class PRMonitor:
         )
 
         # Store as JSON
-        _redis_cli = subprocess.run(
+        _redis_cli = subprocess.run(  # nosec B607
             [
                 "redis-cli",
                 "-h",
@@ -437,7 +437,7 @@ class PRMonitor:
         )
 
         # Update last scan timestamp
-        subprocess.run(
+        subprocess.run(  # nosec B607
             [
                 "redis-cli",
                 "-h",
@@ -458,7 +458,7 @@ class PRMonitor:
     def start_continuous_monitoring(self) -> None:
         """Start continuous monitoring loop (runs indefinitely)."""
         self._running = True
-        last_health_scan = 0
+        last_health_scan = 0.0
 
         print("Starting continuous PR monitoring...")
 
@@ -525,13 +525,13 @@ def main() -> int:
         return 0 if result.get("status") == "terminal" else 1
 
     elif args.cmd == "process-all":
-        results = monitor.monitor_all_active()
-        print(json.dumps(results, indent=2))
+        process_results = monitor.monitor_all_active()
+        print(json.dumps(process_results, indent=2))
         return 0
 
     elif args.cmd == "health-scan":
-        results = monitor.run_health_scan()
-        print(json.dumps(results, indent=2))
+        health_results = monitor.run_health_scan()
+        print(json.dumps(health_results, indent=2))
         return 0
 
     elif args.cmd == "continuous":

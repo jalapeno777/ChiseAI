@@ -60,7 +60,7 @@ def create_datasource():
     req.add_header("Authorization", f"Basic {credentials}")
 
     try:
-        with urllib.request.urlopen(req, timeout=10) as response:
+        with urllib.request.urlopen(req, timeout=10) as response:  # nosec B310
             result = json.loads(response.read().decode("utf-8"))
             print(f"SUCCESS: Datasource created with ID: {result.get('id')}")
             return True
@@ -91,7 +91,7 @@ def test_datasource():
     req.add_header("Authorization", f"Basic {credentials}")
 
     try:
-        with urllib.request.urlopen(req, timeout=10) as response:
+        with urllib.request.urlopen(req, timeout=10) as response:  # nosec B310
             result = json.loads(response.read().decode("utf-8"))
             print(f"Datasource health: {result}")
             return result.get("status") == "OK"
@@ -113,7 +113,7 @@ def list_datasources():
     req.add_header("Authorization", f"Basic {credentials}")
 
     try:
-        with urllib.request.urlopen(req, timeout=10) as response:
+        with urllib.request.urlopen(req, timeout=10) as response:  # nosec B310
             result = json.loads(response.read().decode("utf-8"))
             print(f"Current datasources: {json.dumps(result, indent=2)}")
             return result

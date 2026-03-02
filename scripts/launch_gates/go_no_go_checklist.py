@@ -501,7 +501,7 @@ class GoNoGoChecklist:
         # Check if all CI checks are passing
         all_passing = True
 
-        failed_checks = []
+        failed_checks: list[str] = []
 
         # In practice, query CI API
         # For now, assume all passing based on pre-commit validation

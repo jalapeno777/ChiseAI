@@ -25,7 +25,7 @@ import os
 import sys
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 
 # Add project root to path
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -146,7 +146,7 @@ class TradeReconciler:
         Returns:
             List of runtime trade records
         """
-        trades = []
+        trades: list[dict[str, Any]] = []
 
         if self._redis is None:
             # Try to initialize Redis client
@@ -181,7 +181,7 @@ class TradeReconciler:
                         try:
                             data = self._redis.get(key)
                             if data:
-                                trade = json.loads(data)
+                                trade = json.loads(cast(str, data))
                                 # Filter by time range
                                 trade_time = self._parse_trade_time(trade)
                                 if trade_time and start_time <= trade_time <= end_time:
@@ -203,7 +203,7 @@ class TradeReconciler:
             for hash_key in hash_patterns:
                 try:
                     if self._redis.exists(hash_key):
-                        all_fields = self._redis.hgetall(hash_key)
+                        all_fields = cast(dict[str, Any], self._redis.hgetall(hash_key))
                         for field, data in all_fields.items():
                             try:
                                 trade = json.loads(data)
@@ -236,7 +236,7 @@ class TradeReconciler:
         Returns:
             List of persisted outcome records
         """
-        outcomes = []
+        outcomes: list[dict[str, Any]] = []
 
         if self._postgres is None:
             # Try to initialize PostgreSQL client
@@ -289,7 +289,7 @@ class TradeReconciler:
         Returns:
             List of trade records from InfluxDB
         """
-        trades = []
+        trades: list[dict[str, Any]] = []
 
         if self._influxdb is None:
             # Try to initialize InfluxDB client
@@ -315,12 +315,12 @@ class TradeReconciler:
             query_api = self._influxdb.query_api()
             bucket = os.getenv("INFLUXDB_BUCKET", "chiseai")
 
-            query = f'''
+            query = f"""
                 from(bucket: "{bucket}")
                     |> range(start: {start_time.isoformat()}, stop: {end_time.isoformat()})
                     |> filter(fn: (r) => r._measurement == "paper_trades" or r._measurement == "trades")
                     |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-            '''
+            """
 
             tables = query_api.query(query)
 
@@ -371,7 +371,7 @@ class TradeReconciler:
                             return datetime.fromtimestamp(value / 1000, tz=UTC)
                         else:
                             return datetime.fromtimestamp(value, tz=UTC)
-                except Exception:
+                except Exception:  # nosec B112
                     continue
         return None
 
@@ -522,13 +522,17 @@ class TradeReconciler:
                     entry_price=Decimal(
                         str(trade.get("entry_price", trade.get("fill_price", 0)))
                     ),
-                    exit_price=Decimal(str(trade.get("exit_price")))
-                    if trade.get("exit_price")
-                    else None,
+                    exit_price=(
+                        Decimal(str(trade.get("exit_price")))
+                        if trade.get("exit_price")
+                        else None
+                    ),
                     entry_time=self._parse_trade_time(trade) or datetime.now(UTC),
-                    exit_time=self._parse_trade_time(trade)
-                    if trade.get("exit_price")
-                    else None,
+                    exit_time=(
+                        self._parse_trade_time(trade)
+                        if trade.get("exit_price")
+                        else None
+                    ),
                     leverage=Decimal(str(trade.get("leverage", 1.0))),
                     entry_reason=trade.get("entry_reason", ""),
                     position_size=Decimal(

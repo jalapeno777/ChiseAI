@@ -50,7 +50,7 @@ def _redis_cli(*args: str) -> subprocess.CompletedProcess[str]:
     port = int(os.getenv("CHISE_REDIS_PORT", "6380"))
     db = int(os.getenv("CHISE_REDIS_DB", "0"))
 
-    return subprocess.run(
+    return subprocess.run(  # nosec B607
         ["redis-cli", "-h", host, "-p", str(port), "-n", str(db), *args],
         text=True,
         capture_output=True,
@@ -109,7 +109,7 @@ class GiteaAPI:
         req = urllib.request.Request(url, data=data, method=method, headers=headers)
 
         try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with urllib.request.urlopen(req, timeout=30) as resp:  # nosec B310
                 raw = resp.read()
                 return json.loads(raw.decode("utf-8")) if raw else {}
         except Exception as e:
@@ -143,7 +143,7 @@ class GiteaAPI:
         req = urllib.request.Request(url, data=data, method="POST", headers=headers)
 
         try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with urllib.request.urlopen(req, timeout=30) as resp:  # nosec B310
                 return resp.status == 201
         except urllib.error.HTTPError as e:
             if e.code == 422:

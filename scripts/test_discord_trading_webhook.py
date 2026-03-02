@@ -91,8 +91,8 @@ class WebhookValidator:
 
         if not self.WEBHOOK_PATTERN.match(url):
             self.errors.append(
-                f"Webhook URL format is invalid. Expected: "
-                f"https://discord.com/api/webhooks/<id>/<token>"
+                "Webhook URL format is invalid. Expected: "
+                "https://discord.com/api/webhooks/<id>/<token>"
             )
             return False
 
@@ -469,7 +469,7 @@ async def main() -> int:
 
     # Test connectivity
     print_diagnostics(validator, env_vars)
-    print(f"\n🔄 Testing webhook connectivity...")
+    print("\n🔄 Testing webhook connectivity...")
     print(f"   URL: {webhook_url[:50]}...")
 
     test_result = await test_webhook_connectivity(webhook_url)

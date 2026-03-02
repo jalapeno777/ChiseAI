@@ -16,7 +16,7 @@ import os
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 # Add src to path for config imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
@@ -61,7 +61,7 @@ class CleanupHistory:
                 decode_responses=True,
                 socket_connect_timeout=5,
             )
-            return self.client.ping()
+            return cast(bool, self.client.ping())
         except Exception as e:
             print(f"Redis connection failed: {e}", file=sys.stderr)
             return False

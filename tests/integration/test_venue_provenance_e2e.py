@@ -5,20 +5,19 @@ For ST-VENUE-001: Venue provenance fields implementation
 Tests end-to-end venue data flow through the entire pipeline.
 """
 
-import pytest
 import json
 from datetime import UTC, datetime
 from decimal import Decimal
-from uuid import uuid4, UUID
-from unittest.mock import Mock, MagicMock, patch, AsyncMock
+from unittest.mock import Mock
+from uuid import uuid4
 
-from src.ml.models.signal_outcome import (
-    SignalOutcome,
-    OutcomeType,
-    SignalOutcomeStatus,
-)
+import pytest
 from src.data.execution.fill_model import Fill, FillBatch
 from src.execution.persistence.outcome_persistence import OutcomePersistence
+from src.ml.models.signal_outcome import (
+    SignalOutcome,
+    SignalOutcomeStatus,
+)
 
 
 class TestVenueProvenanceE2E:

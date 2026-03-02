@@ -58,7 +58,7 @@ def _get_redis_config() -> tuple[str, int, int]:
 def _redis_cli(*args: str) -> subprocess.CompletedProcess[str]:
     """Run a redis-cli command."""
     host, port, db = _get_redis_config()
-    return subprocess.run(
+    return subprocess.run(  # nosec B607
         ["redis-cli", "-h", host, "-p", str(port), "-n", str(db), *args],
         text=True,
         capture_output=True,
@@ -650,7 +650,7 @@ class RetryHandler:
         """
         metrics = self.calculate_retry_metrics(days)
 
-        patterns = {
+        patterns: dict[str, Any] = {
             "analysis_period_days": days,
             "total_retries": metrics.total_retries,
             "success_rate": metrics.success_rate,
@@ -732,16 +732,16 @@ def main() -> int:
     comment.add_argument("--head-sha", default="")
 
     # Get metrics
-    metrics = sub.add_parser("metrics", help="Get retry metrics")
-    metrics.add_argument("--days", type=int, default=30)
+    metrics_cmd = sub.add_parser("metrics", help="Get retry metrics")
+    metrics_cmd.add_argument("--days", type=int, default=30)
 
     # Get history
     history = sub.add_parser("history", help="Get retry history for a PR")
     history.add_argument("--pr-number", type=int, required=True)
 
     # Identify patterns
-    patterns = sub.add_parser("patterns", help="Identify failure patterns")
-    patterns.add_argument("--days", type=int, default=30)
+    patterns_cmd = sub.add_parser("patterns", help="Identify failure patterns")
+    patterns_cmd.add_argument("--days", type=int, default=30)
 
     args = p.parse_args()
 
@@ -792,8 +792,8 @@ def main() -> int:
         return 0 if result["success"] else 1
 
     elif args.cmd == "metrics":
-        metrics = handler.calculate_retry_metrics(args.days)
-        print(json.dumps(metrics.to_dict(), indent=2))
+        metrics_result = handler.calculate_retry_metrics(args.days)
+        print(json.dumps(metrics_result.to_dict(), indent=2))
         return 0
 
     elif args.cmd == "history":
@@ -802,8 +802,8 @@ def main() -> int:
         return 0
 
     elif args.cmd == "patterns":
-        patterns = handler.identify_common_failure_patterns(args.days)
-        print(json.dumps(patterns, indent=2))
+        pattern_results = handler.identify_common_failure_patterns(args.days)
+        print(json.dumps(pattern_results, indent=2))
         return 0
 
     return 0

@@ -30,10 +30,12 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Import ACP components
-from src.autonomous_control_plane.components.self_healing_engine import SelfHealingEngine
 from src.autonomous_control_plane.components.incident_manager import IncidentManager
 from src.autonomous_control_plane.components.rollback_coordinator import (
     RollbackCoordinator,
+)
+from src.autonomous_control_plane.components.self_healing_engine import (
+    SelfHealingEngine,
 )
 from src.autonomous_control_plane.models.healing import LogEntry
 from src.autonomous_control_plane.models.incidents import IncidentEvent, Severity

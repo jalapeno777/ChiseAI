@@ -5,14 +5,17 @@ A simple scheduler that runs continuously and writes heartbeats to Redis.
 Can be started/stopped gracefully and monitored via Redis heartbeats.
 """
 
-import os
-import sys
-import time
-import signal
+import builtins
+import contextlib
 import logging
+import os
+import signal
+import tempfile
 import threading
-from datetime import datetime, timezone
-from typing import Optional
+import time
+from datetime import UTC, datetime
+from pathlib import Path
+
 import redis
 
 # Load .env file for cron environment
@@ -20,7 +23,7 @@ env_path = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"
 )
 if os.path.exists(env_path):
-    with open(env_path, "r") as f:
+    with open(env_path) as f:
         for line in f:
             line = line.strip()
             if line and not line.startswith("#") and "=" in line:
@@ -39,7 +42,9 @@ REDIS_HOST = os.getenv(
 REDIS_PORT = int(os.getenv("SCHEDULER_REDIS_PORT", os.getenv("REDIS_PORT", "6380")))
 HEARTBEAT_KEY = "bmad:chiseai:scheduler:heartbeat"
 HEARTBEAT_INTERVAL = int(os.getenv("SCHEDULER_HEARTBEAT_INTERVAL", "30"))  # seconds
-PID_FILE = os.getenv("SCHEDULER_PID_FILE", "/tmp/trading_scheduler.pid")
+PID_FILE = os.getenv(
+    "SCHEDULER_PID_FILE", str(Path(tempfile.gettempdir()) / "trading_scheduler.pid")
+)
 
 
 class TradingScheduler:
@@ -47,12 +52,12 @@ class TradingScheduler:
 
     def __init__(self):
         self.running = False
-        self.redis_client: Optional[redis.Redis] = None
-        self.start_time: Optional[datetime] = None
-        self.last_run_time: Optional[datetime] = None
+        self.redis_client: redis.Redis | None = None
+        self.start_time: datetime | None = None
+        self.last_run_time: datetime | None = None
         self._shutdown_event = threading.Event()
 
-    def _get_redis(self) -> Optional[redis.Redis]:
+    def _get_redis(self) -> redis.Redis | None:
         """Get or create Redis connection."""
         if self.redis_client is None:
             try:
@@ -74,7 +79,7 @@ class TradingScheduler:
             return False
 
         try:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
 
             heartbeat_data = {
                 "timestamp": now.isoformat(),
@@ -130,7 +135,7 @@ class TradingScheduler:
 
     def _do_work(self):
         """Perform scheduled work (placeholder for actual trading tasks)."""
-        self.last_run_time = datetime.now(timezone.utc)
+        self.last_run_time = datetime.now(UTC)
         logger.debug(f"Work cycle completed at {self.last_run_time.isoformat()}")
 
         # TODO: Add actual trading tasks here
@@ -146,7 +151,7 @@ class TradingScheduler:
         # Check if already running
         if os.path.exists(PID_FILE):
             try:
-                with open(PID_FILE, "r") as f:
+                with open(PID_FILE) as f:
                     old_pid = int(f.read().strip())
                 # Check if process exists
                 os.kill(old_pid, 0)
@@ -161,7 +166,7 @@ class TradingScheduler:
         signal.signal(signal.SIGINT, self._signal_handler)
 
         # Initialize
-        self.start_time = datetime.now(timezone.utc)
+        self.start_time = datetime.now(UTC)
         self.running = True
 
         # Write PID file
@@ -216,10 +221,8 @@ class TradingScheduler:
         self._remove_pid_file()
 
         if self.redis_client:
-            try:
+            with contextlib.suppress(builtins.BaseException):
                 self.redis_client.close()
-            except:
-                pass
 
         logger.info("Scheduler stopped")
 
@@ -234,7 +237,7 @@ class TradingScheduler:
 
         if self.start_time:
             status_info["start_time"] = self.start_time.isoformat()
-            uptime = datetime.now(timezone.utc) - self.start_time
+            uptime = datetime.now(UTC) - self.start_time
             status_info["uptime_seconds"] = int(uptime.total_seconds())
 
         # Check Redis heartbeat
@@ -264,7 +267,7 @@ def stop_daemon():
         return 1
 
     try:
-        with open(PID_FILE, "r") as f:
+        with open(PID_FILE) as f:
             pid = int(f.read().strip())
 
         # Send SIGTERM
@@ -294,7 +297,7 @@ def show_status():
 
     for key, value in status.items():
         if key == "redis_heartbeat":
-            print(f"\nRedis Heartbeat:")
+            print("\nRedis Heartbeat:")
             for hk, hv in value.items():
                 print(f"  {hk}: {hv}")
         else:

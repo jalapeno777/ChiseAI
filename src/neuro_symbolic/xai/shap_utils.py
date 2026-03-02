@@ -304,9 +304,9 @@ class SHAPCalculator:
                 SHAPValue(
                     feature_name=name,
                     value=shap_val,
-                    feature_value=float(value)
-                    if isinstance(value, (int, float))
-                    else None,
+                    feature_value=(
+                        float(value) if isinstance(value, (int, float)) else None
+                    ),
                     base_value=base_value,
                 )
             )

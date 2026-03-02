@@ -13,7 +13,6 @@ Usage:
 
 import argparse
 import json
-import os
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -25,18 +24,11 @@ sys.path.insert(0, str(src_path))
 
 # Direct imports (bypass __init__.py)
 from batch_evaluator import (
-    BatchEvaluator,
-    EvaluationPersistence,
     Leaderboard,
-    LeaderboardConfig,
-    EvaluationResult as BatchEvalResult,
-    EvaluationStatus as BatchEvalStatus,
 )
+
 from evaluation import (
     BrainEvaluator,
-    EvaluationMetrics,
-    EvaluationResult,
-    EvaluationStatus,
 )
 
 
@@ -159,7 +151,7 @@ def run_vcurrent_evaluation(output_dir: Path) -> dict:
     print(f"\nStatus: {result.status.value}")
     print(f"Test cases: {result.test_cases_run}")
     print(f"Duration: {result.duration_seconds:.2f}s")
-    print(f"\nMetrics:")
+    print("\nMetrics:")
     print(f"  Accuracy: {result.metrics.accuracy:.4f}")
     print(f"  Precision: {result.metrics.precision:.4f}")
     print(f"  Recall: {result.metrics.recall:.4f}")
@@ -200,7 +192,7 @@ def run_vnexta_evaluation(output_dir: Path) -> dict:
     print(f"\nStatus: {result.status.value}")
     print(f"Test cases: {result.test_cases_run}")
     print(f"Duration: {result.duration_seconds:.2f}s")
-    print(f"\nMetrics:")
+    print("\nMetrics:")
     print(f"  Accuracy: {result.metrics.accuracy:.4f}")
     print(f"  Precision: {result.metrics.precision:.4f}")
     print(f"  Recall: {result.metrics.recall:.4f}")
@@ -252,7 +244,7 @@ def generate_leaderboard(vcurrent: dict, vnexta: dict, output_dir: Path) -> dict
     # Get comparison
     comparison = leaderboard.compare("1.0.0-current", "1.1.0-vnexta")
 
-    print(f"\nComparison Results:")
+    print("\nComparison Results:")
     print(f"  vCurrent Score: {comparison['score_a']:.4f}")
     print(f"  vNext-A Score: {comparison['score_b']:.4f}")
     print(f"  Winner: {comparison['winner']}")
@@ -343,7 +335,7 @@ This comparison evaluates the brain decision quality between:
 ### Primary KPI: False Positive Rate
 - **vCurrent**: {fp_vcurrent:.4f} (50% of backtest wins fail in paper)
 - **vNext-A**: {fp_vnexta:.4f} (target: < 0.30)
-- **Improvement**: {fp_improvement:.1f}% reduction in false positives
+- **Improvement**: {fp_improvement}% reduction in false positives
 - **Status**: {fp_status}
 
 ### Secondary Findings
@@ -368,9 +360,11 @@ This comparison evaluates the brain decision quality between:
             vnexta_metrics.get("false_positive_rate", 0),
             lower_is_better=True,
         ),
-        fp_status="✅ PASS"
-        if vnexta_metrics.get("false_positive_rate", 1) < 0.30
-        else "❌ FAIL",
+        fp_status=(
+            "✅ PASS"
+            if vnexta_metrics.get("false_positive_rate", 1) < 0.30
+            else "❌ FAIL"
+        ),
         fp_improvement=calc_improvement(
             vcurrent_metrics.get("false_positive_rate", 0),
             vnexta_metrics.get("false_positive_rate", 0),
@@ -385,9 +379,11 @@ This comparison evaluates the brain decision quality between:
             vcurrent_metrics.get("paper_carryover_rate", 0),
             vnexta_metrics.get("paper_carryover_rate", 0),
         ),
-        pc_status="✅ PASS"
-        if vnexta_metrics.get("paper_carryover_rate", 0) > 0.70
-        else "⏳ PLACEHOLDER",
+        pc_status=(
+            "✅ PASS"
+            if vnexta_metrics.get("paper_carryover_rate", 0) > 0.70
+            else "⏳ PLACEHOLDER"
+        ),
         # F1 Score
         f1_vcurrent=vcurrent_metrics.get("f1_score", 0),
         f1_vnexta=vnexta_metrics.get("f1_score", 0),
@@ -401,9 +397,9 @@ This comparison evaluates the brain decision quality between:
         prec_change=calc_improvement(
             vcurrent_metrics.get("precision", 0), vnexta_metrics.get("precision", 0)
         ),
-        prec_status="✅ PASS"
-        if vnexta_metrics.get("precision", 0) > 0.80
-        else "❌ FAIL",
+        prec_status=(
+            "✅ PASS" if vnexta_metrics.get("precision", 0) > 0.80 else "❌ FAIL"
+        ),
         # Recall
         rec_vcurrent=vcurrent_metrics.get("recall", 0),
         rec_vnexta=vnexta_metrics.get("recall", 0),
@@ -418,9 +414,11 @@ This comparison evaluates the brain decision quality between:
             vcurrent_metrics.get("safety_compliance", 1),
             vnexta_metrics.get("safety_compliance", 1),
         ),
-        safety_status="✅ PASS"
-        if vnexta_metrics.get("safety_compliance", 1) == 1.0
-        else "❌ FAIL",
+        safety_status=(
+            "✅ PASS"
+            if vnexta_metrics.get("safety_compliance", 1) == 1.0
+            else "❌ FAIL"
+        ),
         # Time to improvement (placeholder)
         tti_vcurrent=vcurrent_metrics.get("time_to_improvement", 0),
         tti_vnexta=vnexta_metrics.get("time_to_improvement", 0),
@@ -442,18 +440,22 @@ This comparison evaluates the brain decision quality between:
 - **F1 Score improved** as a result of better precision
 - **Safety compliance** maintained at 100%""",
         # Winner
-        winner="vNext-A (1.1.0-vnexta)"
-        if vnexta_metrics.get("false_positive_rate", 1)
-        < vcurrent_metrics.get("false_positive_rate", 0)
-        else "vCurrent (1.0.0-current)",
-        conclusion="""vNext-A demonstrates measurable improvement in the primary KPI (false positive rate).
+        winner=(
+            "vNext-A (1.1.0-vnexta)"
+            if vnexta_metrics.get("false_positive_rate", 1)
+            < vcurrent_metrics.get("false_positive_rate", 0)
+            else "vCurrent (1.0.0-current)"
+        ),
+        conclusion=(
+            """vNext-A demonstrates measurable improvement in the primary KPI (false positive rate).
 The stricter correlation requirements in vNext-A's BrainSpec successfully reduce
 false positives while maintaining safety compliance.
 
 **Recommendation**: Proceed with vNext-A as the promotion candidate."""
-        if vnexta_metrics.get("false_positive_rate", 1)
-        < vcurrent_metrics.get("false_positive_rate", 0)
-        else "vCurrent remains the better candidate.",
+            if vnexta_metrics.get("false_positive_rate", 1)
+            < vcurrent_metrics.get("false_positive_rate", 0)
+            else "vCurrent remains the better candidate."
+        ),
     )
 
     return table
@@ -527,7 +529,7 @@ def main():
         "false_positive_rate", {}
     )
     if fp_comparison:
-        print(f"\nFalse Positive Rate:")
+        print("\nFalse Positive Rate:")
         print(f"  vCurrent: {fp_comparison['vcurrent']:.4f}")
         print(f"  vNext-A: {fp_comparison['vnexta']:.4f}")
         print(f"  Improvement: {fp_comparison['improvement_pct']:.1f}% reduction")

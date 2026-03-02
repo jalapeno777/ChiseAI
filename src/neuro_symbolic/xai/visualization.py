@@ -517,9 +517,11 @@ class ExplanationVisualizer:
             values = [key_factors.get(f, 0) for f in all_features]
 
             colors = [
-                self._DIVERGING_COLORS["positive"]
-                if v > 0
-                else self._DIVERGING_COLORS["negative"]
+                (
+                    self._DIVERGING_COLORS["positive"]
+                    if v > 0
+                    else self._DIVERGING_COLORS["negative"]
+                )
                 for v in values
             ]
 

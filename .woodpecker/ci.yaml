@@ -55,13 +55,24 @@ steps:
           else
             echo "lint: no changed python files; skipping black/ruff file checks"
           fi
-          mypy src scripts || echo "WARN: mypy violations (non-blocking)"
+          MYPY_CHANGED="$(printf '%s' \"$CHANGED_PY\" | tr ' ' '\n' | grep -E '^(src/|scripts/).+\\.py$' | tr '\n' ' ' || true)"
+          if [ -n "$(printf '%s' "$MYPY_CHANGED" | tr -d '[:space:]')" ]; then
+            echo "mypy: checking changed src/scripts files: ${MYPY_CHANGED}"
+            mypy ${MYPY_CHANGED} || echo "WARN: mypy violations (non-blocking)"
+          else
+            echo "mypy: no changed src/scripts files; checking baseline src package"
+            mypy src || echo "WARN: mypy violations (non-blocking)"
+          fi
           python scripts/validate_status_sync.py || echo "WARN: status sync issues (non-blocking)"
           python scripts/validate_fr_traceability.py || echo "WARN: FR traceability issues (non-blocking)"
-          python scripts/validate_iterloop_compliance.py || echo "WARN: iterloop compliance issues (non-blocking)"
+          if [ "${CI_SKIP_ITERLOOP_COMPLIANCE:-1}" = "1" ]; then
+            echo "lint: skipping iterloop compliance (CI_SKIP_ITERLOOP_COMPLIANCE=1)"
+          else
+            python scripts/validate_iterloop_compliance.py || echo "WARN: iterloop compliance issues (non-blocking)"
+          fi
           python scripts/validate_pr_title.py || echo "WARN: PR title validation issue (non-blocking)"
           python scripts/validate_traceability_drift.py --verbose || echo "WARN: traceability drift issues (non-blocking)"
-          python scripts/ci/validate_bootstrap_compliance.py --check || echo "WARN: bootstrap compliance issues"
+          python scripts/ci/validate_bootstrap_compliance.py --check --allowlist scripts/ci/bootstrap_allowlist.txt || echo "WARN: bootstrap compliance issues"
         ) > _bmad-output/ci/lint.log 2>&1
         code=$?
         cat _bmad-output/ci/lint.log

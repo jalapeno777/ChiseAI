@@ -694,9 +694,11 @@ class PaperTradingOrchestrator:
                 try:
                     outcome = self.trade_notifier.create_outcome_from_paper_position(
                         position=position,
-                        signal_id=position.metadata.get("signal_id")
-                        if position.metadata
-                        else None,
+                        signal_id=(
+                            position.metadata.get("signal_id")
+                            if position.metadata
+                            else None
+                        ),
                         pnl=realized_pnl,
                         exit_price=exit_price,
                     )

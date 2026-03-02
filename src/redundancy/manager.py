@@ -39,9 +39,9 @@ class ReplicaInfo:
             "is_primary": self.is_primary,
             "is_synced": self.is_synced,
             "replication_lag_ms": self.replication_lag_ms,
-            "last_sync_time": self.last_sync_time.isoformat()
-            if self.last_sync_time
-            else None,
+            "last_sync_time": (
+                self.last_sync_time.isoformat() if self.last_sync_time else None
+            ),
             "health_score": self.health_score,
         }
 

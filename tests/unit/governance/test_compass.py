@@ -6,16 +6,17 @@ Tests for compass_gate.py and compass_apply.py
 
 import os
 import sys
-import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
+
+import pytest
 
 # Add scripts to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "scripts" / "ci"))
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "scripts" / "ops"))
 
-import compass_gate
 import compass_apply
+import compass_gate
 
 
 class TestCompassGate:

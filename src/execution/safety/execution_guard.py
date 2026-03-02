@@ -10,6 +10,7 @@ For REMEDIATION-001: G8 Bybit Demo Provenance
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 from dataclasses import dataclass
@@ -145,10 +146,8 @@ class ExecutionSafetyGuard:
         # Get provenance if available
         provenance = None
         if hasattr(executor, "get_provenance"):
-            try:
+            with contextlib.suppress(Exception):
                 provenance = executor.get_provenance()
-            except Exception:
-                pass
 
         if provenance:
             logger.info(

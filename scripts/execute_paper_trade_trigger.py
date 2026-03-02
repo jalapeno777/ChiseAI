@@ -36,8 +36,8 @@ async def execute_controlled_paper_trade() -> dict[str, Any]:
     from execution.kill_switch.executor import KillSwitchExecutor
     from execution.kill_switch.state import KillSwitchConfig, KillSwitchState
     from execution.paper.fill_model import create_fill_model
-    from execution.paper.order_simulator import OrderSimulator
     from execution.paper.orchestrator import PaperTradingOrchestrator
+    from execution.paper.order_simulator import OrderSimulator
     from execution.paper.position_tracker import PaperPositionTracker
     from execution.paper.risk_enforcer import PaperRiskEnforcer
     from execution.paper.risk_models import RiskCheck
@@ -47,7 +47,7 @@ async def execute_controlled_paper_trade() -> dict[str, Any]:
     from execution.telemetry.exporter import ExecutionTelemetryExporter
     from signal_generation.signal_generator import SignalGenerator
 
-    evidence = {
+    evidence: dict[str, Any] = {
         "execution_timestamp": datetime.now(UTC).isoformat(),
         "trade_parameters": {
             "symbol": "BTCUSDT",
@@ -123,7 +123,7 @@ async def execute_controlled_paper_trade() -> dict[str, Any]:
         try:
             from influxdb_client import InfluxDBClient as InfluxDBClientReal
 
-            influx_client = InfluxDBClientReal(
+            influx_client = InfluxDBClientReal(  # nosec B106
                 url="http://host.docker.internal:18087",
                 token="",
                 org="chiseai",

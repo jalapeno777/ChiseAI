@@ -10,7 +10,6 @@ Default: Enabled (critical for safety)
 
 import json
 import logging
-import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
@@ -266,7 +265,7 @@ class ContradictionDetector:
         keyword_contradiction = False
         if keywords_1 or keywords_2:
             # Check if content from one appears in the other with contradiction keywords
-            for keyword in keywords_1:
+            for _keyword in keywords_1:
                 # Simple heuristic: if keyword is present, flag for review
                 keyword_contradiction = True
                 break
@@ -479,7 +478,7 @@ class ContradictionDetector:
         # Store in Redis for review queue
         if self._redis_client:
             try:
-                key = f"chise:governance:contradictions:pending"
+                key = "chise:governance:contradictions:pending"
                 self._redis_client.lpush(
                     key,
                     json.dumps(contradiction.to_dict()),

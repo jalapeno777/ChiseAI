@@ -16,9 +16,9 @@ import argparse
 import fnmatch
 import os
 import sys
-import yaml
 from pathlib import Path
-from typing import List, Set, Tuple
+
+import yaml
 
 # Get the repository root
 REPO_ROOT = Path(__file__).parent.parent.parent.resolve()
@@ -37,7 +37,7 @@ def load_compass_config() -> dict:
     if not COMPASS_CONFIG_PATH.exists():
         raise CompassGateError(f"Compass config not found: {COMPASS_CONFIG_PATH}")
 
-    with open(COMPASS_CONFIG_PATH, "r") as f:
+    with open(COMPASS_CONFIG_PATH) as f:
         return yaml.safe_load(f)
 
 
@@ -48,11 +48,11 @@ def load_human_approval_config() -> dict:
             f"Human approval config not found: {HUMAN_APPROVAL_CONFIG_PATH}"
         )
 
-    with open(HUMAN_APPROVAL_CONFIG_PATH, "r") as f:
+    with open(HUMAN_APPROVAL_CONFIG_PATH) as f:
         return yaml.safe_load(f)
 
 
-def match_glob_patterns(file_path: str, patterns: List[str]) -> bool:
+def match_glob_patterns(file_path: str, patterns: list[str]) -> bool:
     """Check if a file path matches any of the glob patterns.
 
     Supports ** (globstar) for recursive directory matching.
@@ -106,7 +106,7 @@ def match_glob_patterns(file_path: str, patterns: List[str]) -> bool:
     return False
 
 
-def get_veto_patterns(config: dict) -> List[str]:
+def get_veto_patterns(config: dict) -> list[str]:
     """Extract all veto path patterns from compass config."""
     patterns = []
     veto_paths = config.get("veto_paths", {})
@@ -117,7 +117,7 @@ def get_veto_patterns(config: dict) -> List[str]:
     return patterns
 
 
-def get_sensitive_path_patterns(config: dict) -> List[Tuple[str, str]]:
+def get_sensitive_path_patterns(config: dict) -> list[tuple[str, str]]:
     """Extract all sensitive path patterns with their categories from human approval config."""
     patterns = []
     sensitive_paths = config.get("sensitive_paths", {})
@@ -131,8 +131,8 @@ def get_sensitive_path_patterns(config: dict) -> List[Tuple[str, str]]:
 
 
 def check_sensitive_paths(
-    files_changed: List[str],
-) -> Tuple[bool, List[str], List[str]]:
+    files_changed: list[str],
+) -> tuple[bool, list[str], list[str]]:
     """
     Check if any files match veto or sensitive path patterns.
 
@@ -167,7 +167,7 @@ def check_sensitive_paths(
     return has_sensitive, veto_matches, sensitive_matches
 
 
-def check_pr_labels(pr_number: int) -> Tuple[bool, bool]:
+def check_pr_labels(pr_number: int) -> tuple[bool, bool]:
     """
     Check PR labels for COMPASS-VETO and HUMAN-APPROVED.
 
@@ -185,7 +185,7 @@ def check_pr_labels(pr_number: int) -> Tuple[bool, bool]:
     return has_compass_veto, has_human_approved
 
 
-def run_gate_check(files_changed: List[str], pr_number: int = None) -> bool:
+def run_gate_check(files_changed: list[str], pr_number: int | None = None) -> bool:
     """
     Run the compass gate check.
 
@@ -222,7 +222,7 @@ def run_gate_check(files_changed: List[str], pr_number: int = None) -> bool:
         # For local testing, check environment
         has_compass_veto, has_human_approved = check_pr_labels(0)
 
-    print(f"\nLabel Status:")
+    print("\nLabel Status:")
     print(f"  COMPASS-VETO: {'✓ Present' if has_compass_veto else '✗ Not present'}")
     print(f"  HUMAN-APPROVED: {'✓ Present' if has_human_approved else '✗ Not present'}")
 

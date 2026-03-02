@@ -13,14 +13,11 @@ from datetime import UTC, datetime
 from typing import Any
 
 from paper_trading.models import (
-    OrderSide,
     OrderState,
-    OrderType,
     PaperOrder,
     PaperPnL,
     PaperPortfolio,
     PaperPosition,
-    PositionSide,
 )
 
 logger = logging.getLogger(__name__)
@@ -73,8 +70,9 @@ class PaperTradingTracker:
         """Get or create Redis client."""
         if self._redis is None:
             try:
-                import redis as redis_lib
                 import os
+
+                import redis as redis_lib
 
                 redis_host = os.getenv("REDIS_HOST", "host.docker.internal")
                 redis_port = int(os.getenv("REDIS_PORT", "6380"))

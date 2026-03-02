@@ -20,7 +20,6 @@ import json
 import logging
 import os
 import sys
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -78,7 +77,7 @@ def cmd_status(args: argparse.Namespace) -> int:
     print(f"{'=' * 60}")
     print(f"Generated at: {summary.timestamp.isoformat()}")
     print(f"\nTotal tracked files: {summary.total_tracked}")
-    print(f"\nBy Status:")
+    print("\nBy Status:")
     print(f"  Pending:      {summary.pending_count}")
     print(f"  In Progress:  {summary.in_progress_count}")
     print(f"  Completed:    {summary.completed_count}")
@@ -86,12 +85,12 @@ def cmd_status(args: argparse.Namespace) -> int:
     print(f"  Skipped:      {summary.skipped_count}")
 
     if summary.by_story:
-        print(f"\nBy Story:")
+        print("\nBy Story:")
         for story_id, count in sorted(summary.by_story.items()):
             print(f"  {story_id}: {count}")
 
     if summary.by_type:
-        print(f"\nBy Type:")
+        print("\nBy Type:")
         for memory_type, count in sorted(summary.by_type.items()):
             print(f"  {memory_type}: {count}")
 
@@ -122,7 +121,7 @@ def cmd_report(args: argparse.Namespace) -> int:
         print(f"Generated at: {report['generated_at']}")
 
         summary = report.get("summary", {})
-        print(f"\nSummary:")
+        print("\nSummary:")
         print(f"  Total tracked: {summary.get('total_tracked', 0)}")
         print(f"  Completed: {summary.get('completed_count', 0)}")
         print(f"  Failed: {summary.get('failed_count', 0)}")
