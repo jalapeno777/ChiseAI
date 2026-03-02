@@ -4,7 +4,7 @@ This package provides tools for evaluating brain versions in parallel,
 ranking them by weighted objectives, and managing promotion decisions.
 """
 
-from src.brain.batch_evaluator import (
+from brain.batch_evaluator import (
     BatchEvaluator,
     EvaluationPersistence,
     EvaluationResult,
@@ -13,7 +13,7 @@ from src.brain.batch_evaluator import (
     LeaderboardConfig,
     run_batch_evaluation,
 )
-from src.brain.promotion_packet import (
+from brain.promotion_packet import (
     # Dataclasses
     ApprovalSignature,
     ApprovalStatus,
@@ -32,21 +32,21 @@ from src.brain.promotion_packet import (
     # Validation functions
     is_complete,
 )
-from src.brain.rollback_handler import (
+from brain.rollback_handler import (
     PostmortemReport,
     RollbackHandler,
     RollbackResult,
     RollbackStep,
     RollbackTrigger,
 )
-from src.brain.shadow_testing import (
+from brain.shadow_testing import (
     LatencyStatistics,
     ShadowTestConfig,
     ShadowTester,
     ShadowTestResult,
     run_shadow_test,
 )
-from src.brain.version import (
+from brain.version import (
     BrainVersion,
     InvalidVersionError,
     compare_versions,
