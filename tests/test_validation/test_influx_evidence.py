@@ -9,27 +9,24 @@ Comprehensive test suite covering:
 - Error handling
 """
 
-import asyncio
 import json
-import pytest
-from datetime import datetime, timezone, timedelta
-from unittest.mock import MagicMock, AsyncMock, patch
-from typing import Dict, Any
-
 import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 # Add worktree root to path
 worktree_root = str(Path(__file__).parent.parent.parent)
 sys.path.insert(0, worktree_root)
 
 from scripts.validation.influx_evidence import (
+    GateResult,
     InfluxEvidenceCollector,
     InfluxQueryEvidence,
-    GateResult,
     hours_ago,
     minutes_ago,
-    quick_validate_g6_g7,
 )
 
 
@@ -90,7 +87,7 @@ class TestQueryBuilding:
 
     def test_build_basic_query(self, collector):
         """Test building a basic Flux query."""
-        since = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        since = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
         query = collector._build_query("orders", since, limit=5)
 
         assert 'from(bucket: "chiseai")' in query
@@ -100,7 +97,7 @@ class TestQueryBuilding:
 
     def test_build_query_with_fields(self, collector):
         """Test building a query with field filter."""
-        since = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        since = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
         query = collector._build_query(
             "orders", since, limit=10, fields=["price", "quantity"]
         )
@@ -112,7 +109,7 @@ class TestQueryBuilding:
     def test_build_query_custom_bucket(self, collector):
         """Test query uses custom bucket."""
         collector.bucket = "custom-bucket"
-        since = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        since = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
         query = collector._build_query("orders", since)
 
         assert 'from(bucket: "custom-bucket")' in query
@@ -266,7 +263,7 @@ class TestQueryExecution:
         async def mock_post(*args, **kwargs):
             class AsyncContextManager:
                 async def __aenter__(self):
-                    raise asyncio.TimeoutError()
+                    raise TimeoutError()
 
                 async def __aexit__(self, *args):
                     return None
@@ -441,7 +438,7 @@ class TestGateValidation:
             gate="G6",
             measurement="orders",
             query_string="SELECT * FROM orders",
-            timestamp_utc=datetime.now(timezone.utc).isoformat(),
+            timestamp_utc=datetime.now(UTC).isoformat(),
             row_count=5,
             sample_rows=[{"id": 1}],
             has_data=True,
@@ -450,7 +447,7 @@ class TestGateValidation:
             gate="G6",
             measurement="fills",
             query_string="SELECT * FROM fills",
-            timestamp_utc=datetime.now(timezone.utc).isoformat(),
+            timestamp_utc=datetime.now(UTC).isoformat(),
             row_count=3,
             sample_rows=[{"id": 1}],
             has_data=True,
@@ -469,7 +466,7 @@ class TestGateValidation:
             gate="G6",
             measurement="orders",
             query_string="SELECT * FROM orders",
-            timestamp_utc=datetime.now(timezone.utc).isoformat(),
+            timestamp_utc=datetime.now(UTC).isoformat(),
             row_count=0,
             sample_rows=[],
             has_data=False,
@@ -478,7 +475,7 @@ class TestGateValidation:
             gate="G6",
             measurement="fills",
             query_string="SELECT * FROM fills",
-            timestamp_utc=datetime.now(timezone.utc).isoformat(),
+            timestamp_utc=datetime.now(UTC).isoformat(),
             row_count=3,
             sample_rows=[{"id": 1}],
             has_data=True,
@@ -495,7 +492,7 @@ class TestGateValidation:
             gate="G6",
             measurement="orders",
             query_string="SELECT * FROM orders",
-            timestamp_utc=datetime.now(timezone.utc).isoformat(),
+            timestamp_utc=datetime.now(UTC).isoformat(),
             row_count=5,
             sample_rows=[{"id": 1}],
             has_data=True,
@@ -504,7 +501,7 @@ class TestGateValidation:
             gate="G6",
             measurement="fills",
             query_string="SELECT * FROM fills",
-            timestamp_utc=datetime.now(timezone.utc).isoformat(),
+            timestamp_utc=datetime.now(UTC).isoformat(),
             row_count=0,
             sample_rows=[],
             has_data=False,
@@ -521,7 +518,7 @@ class TestGateValidation:
             gate="G6",
             measurement="orders",
             query_string="SELECT * FROM orders",
-            timestamp_utc=datetime.now(timezone.utc).isoformat(),
+            timestamp_utc=datetime.now(UTC).isoformat(),
             row_count=0,
             sample_rows=[],
             has_data=False,
@@ -530,7 +527,7 @@ class TestGateValidation:
             gate="G6",
             measurement="fills",
             query_string="SELECT * FROM fills",
-            timestamp_utc=datetime.now(timezone.utc).isoformat(),
+            timestamp_utc=datetime.now(UTC).isoformat(),
             row_count=0,
             sample_rows=[],
             has_data=False,
@@ -547,7 +544,7 @@ class TestGateValidation:
             gate="G6",
             measurement="orders",
             query_string="SELECT * FROM orders",
-            timestamp_utc=datetime.now(timezone.utc).isoformat(),
+            timestamp_utc=datetime.now(UTC).isoformat(),
             row_count=5,
             sample_rows=[{"id": 1}],
             has_data=True,
@@ -557,7 +554,7 @@ class TestGateValidation:
             gate="G6",
             measurement="fills",
             query_string="SELECT * FROM fills",
-            timestamp_utc=datetime.now(timezone.utc).isoformat(),
+            timestamp_utc=datetime.now(UTC).isoformat(),
             row_count=3,
             sample_rows=[{"id": 1}],
             has_data=True,
@@ -574,7 +571,7 @@ class TestGateValidation:
             gate="G7",
             measurement="canary_deployment",
             query_string="SELECT * FROM canary_deployment",
-            timestamp_utc=datetime.now(timezone.utc).isoformat(),
+            timestamp_utc=datetime.now(UTC).isoformat(),
             row_count=2,
             sample_rows=[{"status": "healthy"}],
             has_data=True,
@@ -592,7 +589,7 @@ class TestGateValidation:
             gate="G7",
             measurement="canary_deployment",
             query_string="SELECT * FROM canary_deployment",
-            timestamp_utc=datetime.now(timezone.utc).isoformat(),
+            timestamp_utc=datetime.now(UTC).isoformat(),
             row_count=0,
             sample_rows=[],
             has_data=False,
@@ -609,7 +606,7 @@ class TestGateValidation:
             gate="G7",
             measurement="canary_deployment",
             query_string="SELECT * FROM canary_deployment",
-            timestamp_utc=datetime.now(timezone.utc).isoformat(),
+            timestamp_utc=datetime.now(UTC).isoformat(),
             row_count=2,
             sample_rows=[{"status": "healthy"}],
             has_data=True,
@@ -842,7 +839,7 @@ class TestConvenienceFunctions:
     def test_hours_ago(self):
         """Test hours_ago function."""
         result = hours_ago(1)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         expected = now - timedelta(hours=1)
 
         # Allow 1 second tolerance
@@ -852,7 +849,7 @@ class TestConvenienceFunctions:
     def test_minutes_ago(self):
         """Test minutes_ago function."""
         result = minutes_ago(30)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         expected = now - timedelta(minutes=30)
 
         # Allow 1 second tolerance
@@ -918,7 +915,7 @@ class TestTimestampFormat:
             gate="G6",
             measurement="orders",
             query_string="q",
-            timestamp_utc=datetime.now(timezone.utc).isoformat(),
+            timestamp_utc=datetime.now(UTC).isoformat(),
             row_count=1,
             sample_rows=[],
             has_data=True,
@@ -932,7 +929,7 @@ class TestTimestampFormat:
         """Test that queries use UTC timestamps."""
         with patch.dict("os.environ", {"INFLUXDB_TOKEN": "test-token"}):
             collector = InfluxEvidenceCollector()
-            since = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+            since = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
             query = collector._build_query("orders", since)
 
             # Should contain the UTC timestamp

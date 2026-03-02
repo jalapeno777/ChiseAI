@@ -67,7 +67,7 @@ def smoke_test_entry_price_fix() -> bool:
 
         # Test with current_price provided
         test_price = 65000.50
-        signal = generator.generate_signal(
+        signal = generator.generate_signal(  # nosec B106
             token="BTC/USDT",
             timeframe=Timeframe.HOUR_1,
             ohlcv_data=mock_ohlcv,
@@ -101,7 +101,7 @@ def smoke_test_entry_price_fix() -> bool:
 
         # Test without current_price (should be None)
         print("\n3. Test without current_price:")
-        signal_no_price = generator.generate_signal(
+        signal_no_price = generator.generate_signal(  # nosec B106
             token="ETH/USDT",
             timeframe=Timeframe.HOUR_1,
             ohlcv_data=mock_ohlcv,

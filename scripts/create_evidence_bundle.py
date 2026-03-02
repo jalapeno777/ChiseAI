@@ -2,10 +2,11 @@
 """Create evidence bundle for PAPER-RECOVERY-001 Loop 3."""
 
 import json
-import redis
 import os
+from datetime import UTC, datetime
+
+import redis
 import requests
-from datetime import datetime, UTC
 
 
 def main():

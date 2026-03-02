@@ -122,7 +122,7 @@ def _git_branch(cwd: Path) -> str:
 
 
 def _branch_exists(branch: str, cwd: Path) -> bool:
-    proc = subprocess.run(
+    proc = subprocess.run(  # nosec B607
         ["git", "show-ref", "--verify", f"refs/heads/{branch}"],
         cwd=str(cwd),
         text=True,
@@ -149,7 +149,7 @@ def _redis_candidates() -> list[tuple[str, int, int]]:
 def _redis_cli(
     host: str, port: int, db: int, *args: str
 ) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
+    return subprocess.run(  # nosec B607
         ["redis-cli", "-h", host, "-p", str(port), "-n", str(db), *args],
         text=True,
         capture_output=True,
@@ -398,7 +398,7 @@ def _pr_exists_for_branch(branch: str, base_ref: str = "main") -> tuple[bool, st
             headers={"Authorization": f"token {token}", "Accept": "application/json"},
         )
         try:
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
                 rows = json.loads(resp.read().decode("utf-8"))
         except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
             return False, f"Gitea PR check failed: {exc}"

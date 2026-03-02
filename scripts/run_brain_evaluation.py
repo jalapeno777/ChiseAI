@@ -9,6 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import redis
+
 from brain.evaluation import BrainEvaluator
 
 
@@ -45,12 +46,12 @@ def main():
     # Print results
     print(f"\nEvaluation Status: {result.status.value}")
     print(f"Duration: {result.duration_seconds:.4f}s")
-    print(f"\nMetrics:")
+    print("\nMetrics:")
     print(f"  Accuracy: {result.metrics.accuracy:.4f}")
     print(f"  Precision: {result.metrics.precision:.4f}")
     print(f"  Recall: {result.metrics.recall:.4f}")
     print(f"  F1 Score: {result.metrics.f1_score:.4f}")
-    print(f"\nBrainEval KPIs:")
+    print("\nBrainEval KPIs:")
     print(f"  1. paper_carryover_rate: {result.metrics.paper_carryover_rate:.4f}")
     print(f"  2. false_positive_rate: {result.metrics.false_positive_rate:.4f}")
     print(f"  3. time_to_improvement: {result.metrics.time_to_improvement:.4f}")
@@ -66,7 +67,7 @@ def main():
         stored_data = json.loads(stored)
         print(f"✓ Redis contains all metrics: {list(stored_data['metrics'].keys())}")
     else:
-        print(f"\n✗ Results NOT stored in Redis")
+        print("\n✗ Results NOT stored in Redis")
         sys.exit(1)
 
     # Save to JSON file

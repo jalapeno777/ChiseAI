@@ -38,8 +38,8 @@ async def force_close_position(position_id: str, outcome_id: str) -> dict[str, A
     from execution.kill_switch.state import KillSwitchConfig
     from execution.outcome_capture.integration import OutcomeCaptureIntegration
     from execution.paper.fill_model import create_fill_model
-    from execution.paper.order_simulator import OrderSimulator
     from execution.paper.orchestrator import PaperTradingOrchestrator
+    from execution.paper.order_simulator import OrderSimulator
     from execution.paper.position_tracker import PaperPositionTracker
     from execution.paper.risk_enforcer import PaperRiskEnforcer
     from execution.paper.risk_models import RiskCheck
@@ -48,7 +48,7 @@ async def force_close_position(position_id: str, outcome_id: str) -> dict[str, A
     from execution.telemetry.exporter import ExecutionTelemetryExporter
     from signal_generation.signal_generator import SignalGenerator
 
-    evidence = {
+    evidence: dict[str, Any] = {
         "test_id": "NOTIFIER-TEST-001-CLOSE",
         "execution_timestamp": datetime.now(UTC).isoformat(),
         "position_id": position_id,
@@ -103,7 +103,7 @@ async def force_close_position(position_id: str, outcome_id: str) -> dict[str, A
         try:
             from influxdb_client import InfluxDBClient as InfluxDBClientReal
 
-            influx_client = InfluxDBClientReal(
+            influx_client = InfluxDBClientReal(  # nosec B106
                 url="http://host.docker.internal:18087",
                 token="",
                 org="chiseai",

@@ -1,9 +1,6 @@
 """Tests for monitoring scripts."""
 
-import pytest
-import json
-from datetime import datetime, UTC
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
 
 class TestHourlyHealthCheck:
@@ -109,8 +106,8 @@ class TestEnvironmentHandling:
 
     def test_discord_config_missing(self):
         """Test behavior when Discord not configured."""
-        import os
         import importlib
+        import os
 
         # Clear env vars
         old_channel = os.environ.pop("DISCORD_DEVELOPMENT_CHANNEL_ID", None)

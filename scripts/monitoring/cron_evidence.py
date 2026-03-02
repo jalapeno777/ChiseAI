@@ -5,10 +5,11 @@ Provides functions to track cron job execution and cadence verification.
 Used by all monitoring scripts to write evidence keys to Redis.
 """
 
-import os
 import logging
-from datetime import datetime, timezone
-from typing import Optional
+import os
+from datetime import UTC, datetime
+from typing import Any, cast
+
 import redis
 
 logger = logging.getLogger(__name__)
@@ -37,7 +38,7 @@ CRON_JOBS = {
 KEY_PREFIX = "chise:cron"
 
 
-def get_redis_connection() -> Optional[redis.Redis]:
+def get_redis_connection() -> Any | None:
     """Get Redis connection for cron evidence tracking."""
     try:
         redis_host = os.getenv(
@@ -59,7 +60,7 @@ def get_redis_connection() -> Optional[redis.Redis]:
 
 
 def write_cron_evidence(
-    job_name: str, status: str = "success", error_message: Optional[str] = None
+    job_name: str, status: str = "success", error_message: str | None = None
 ) -> bool:
     """Write cron execution evidence to Redis.
 
@@ -81,7 +82,7 @@ def write_cron_evidence(
         return False
 
     try:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         timestamp = now.isoformat()
         job_config = CRON_JOBS[job_name]
 
@@ -100,7 +101,7 @@ def write_cron_evidence(
             try:
                 prev_dt = datetime.fromisoformat(prev_run)
                 elapsed = (now - prev_dt).total_seconds()
-                expected = job_config["interval"]
+                expected = int(cast(Any, job_config["interval"]))
 
                 # Calculate how many expected runs were missed
                 # Allow 20% grace period
@@ -134,7 +135,7 @@ def write_cron_evidence(
         return False
 
 
-def check_cron_cadence(r: Optional[redis.Redis] = None) -> dict:
+def check_cron_cadence(r: Any | None = None) -> dict[str, Any]:
     """Check if all cron jobs are running on their expected cadence.
 
     Args:
@@ -167,8 +168,8 @@ def check_cron_cadence(r: Optional[redis.Redis] = None) -> dict:
             "jobs": {},
         }
 
-    now = datetime.now(timezone.utc)
-    results = {"overall_status": "PASS", "jobs": {}}
+    now = datetime.now(UTC)
+    results: dict[str, Any] = {"overall_status": "PASS", "jobs": {}}
 
     for job_name, config in CRON_JOBS.items():
         job_result = {
@@ -184,7 +185,7 @@ def check_cron_cadence(r: Optional[redis.Redis] = None) -> dict:
             # Get evidence keys
             last_run = r.get(f"{KEY_PREFIX}:{job_name}:last_run")
             missed_count = r.get(f"{KEY_PREFIX}:{job_name}:missed_count")
-            status = r.get(f"{KEY_PREFIX}:{job_name}:status")
+            r.get(f"{KEY_PREFIX}:{job_name}:status")
 
             if last_run:
                 try:
@@ -193,7 +194,7 @@ def check_cron_cadence(r: Optional[redis.Redis] = None) -> dict:
                     job_result["last_run"] = last_run
                     job_result["elapsed_seconds"] = int(elapsed)
 
-                    expected = config["interval"]
+                    expected = int(cast(Any, config["interval"]))
                     grace = expected * 0.2  # 20% grace period
 
                     if missed_count:

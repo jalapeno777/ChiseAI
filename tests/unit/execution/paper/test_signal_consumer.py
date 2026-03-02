@@ -7,13 +7,12 @@ from __future__ import annotations
 
 import asyncio
 import uuid
-from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from execution.paper.signal_consumer import SignalConsumer
-from signal_generation.models import Signal, SignalDirection, SignalStatus
+from signal_generation.models import SignalDirection, SignalStatus
 
 
 @pytest.fixture

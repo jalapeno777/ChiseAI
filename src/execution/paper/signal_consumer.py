@@ -17,6 +17,8 @@ if TYPE_CHECKING:
     from execution.paper.orchestrator import PaperTradingOrchestrator
     from signal_generation.models import Signal
 
+import contextlib
+
 from signal_generation.models import SignalDirection, SignalStatus
 
 logger = logging.getLogger(__name__)
@@ -108,10 +110,8 @@ class SignalConsumer:
         # Cancel polling task
         if self._poll_task and not self._poll_task.done():
             self._poll_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._poll_task
-            except asyncio.CancelledError:
-                pass
 
         # Close Redis connection if we own it
         if self._owns_redis and self._redis:

@@ -5,11 +5,10 @@ P0-RUNTIME-HARDEN-004: Manual signal generation test
 Triggers signal generation and verifies signals appear in Redis.
 """
 
+import logging
 import os
 import sys
-import asyncio
-import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 # Set Redis connection for containerized environment
@@ -29,14 +28,14 @@ logger = logging.getLogger(__name__)
 def test_signal_generation():
     """Test signal generation manually."""
     try:
-        from signal_generation.signal_generator import (
-            SignalGenerator,
-            SignalGenerationConfig,
-        )
-        from signal_generation.models import SignalStatus
+        import redis
+
         from data_ingestion.ohlcv_fetcher import OHLCVData
         from data_ingestion.timeframe_config import Timeframe
-        import redis
+        from signal_generation.signal_generator import (
+            SignalGenerationConfig,
+            SignalGenerator,
+        )
 
         # Connect to Redis (use host.docker.internal for containerized environment)
         redis_host = os.getenv("REDIS_HOST", "host.docker.internal")
@@ -69,8 +68,7 @@ def test_signal_generation():
         # Create mock OHLCV data
         mock_data = [
             OHLCVData(
-                timestamp=int(datetime.now(timezone.utc).timestamp() * 1000)
-                - (i * 60000),
+                timestamp=int(datetime.now(UTC).timestamp() * 1000) - (i * 60000),
                 open_price=50000.0 + i * 10,
                 high_price=50100.0 + i * 10,
                 low_price=49900.0 + i * 10,
@@ -85,14 +83,14 @@ def test_signal_generation():
 
         # Generate signal for BTC/USDT
         logger.info("Generating signal for BTC/USDT...")
-        signal = generator.generate_signal(
+        signal = generator.generate_signal(  # nosec B106
             token="BTC/USDT",
             timeframe=Timeframe.HOUR_1,
             ohlcv_data=mock_data,
             current_price=50050.0,
         )
 
-        logger.info(f"Signal generated:")
+        logger.info("Signal generated:")
         logger.info(f"  Token: {signal.token}")
         logger.info(f"  Direction: {signal.direction_str}")
         logger.info(f"  Confidence: {signal.confidence:.1%}")
@@ -134,13 +132,14 @@ def test_signal_generation():
 def test_dry_run_mode():
     """Test signal generation in dry-run mode."""
     try:
-        from signal_generation.signal_generator import (
-            SignalGenerator,
-            SignalGenerationConfig,
-        )
+        import redis
+
         from data_ingestion.ohlcv_fetcher import OHLCVData
         from data_ingestion.timeframe_config import Timeframe
-        import redis
+        from signal_generation.signal_generator import (
+            SignalGenerationConfig,
+            SignalGenerator,
+        )
 
         # Connect to Redis (use host.docker.internal for containerized environment)
         redis_host = os.getenv("REDIS_HOST", "host.docker.internal")
@@ -167,8 +166,7 @@ def test_dry_run_mode():
         # Create mock data
         mock_data = [
             OHLCVData(
-                timestamp=int(datetime.now(timezone.utc).timestamp() * 1000)
-                - (i * 60000),
+                timestamp=int(datetime.now(UTC).timestamp() * 1000) - (i * 60000),
                 open_price=50000.0,
                 high_price=50100.0,
                 low_price=49900.0,
@@ -180,7 +178,7 @@ def test_dry_run_mode():
         mock_data.reverse()
 
         # Generate signal
-        signal = generator.generate_signal(
+        signal = generator.generate_signal(  # nosec B106
             token="ETH/USDT",
             timeframe=Timeframe.HOUR_1,
             ohlcv_data=mock_data,

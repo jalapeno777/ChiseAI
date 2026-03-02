@@ -13,9 +13,9 @@ from execution.safety.execution_guard import (
     guard_execution,
 )
 from execution.safety.venue_enforcement import (
+    ValidationResult,
     VenueEnforcementError,
     VenueEnforcementGate,
-    ValidationResult,
     create_default_gate,
 )
 

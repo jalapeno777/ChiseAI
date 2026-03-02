@@ -24,7 +24,7 @@ import os
 import sys
 import uuid
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -178,7 +178,7 @@ def check_bybit_demo_mode() -> tuple[bool, dict[str, Any]]:
     Returns:
         Tuple of (success, details)
     """
-    details = {
+    details: dict[str, Any] = {
         "checks_performed": [],
         "errors": [],
         "warnings": [],
@@ -233,7 +233,7 @@ def check_bybit_demo_mode() -> tuple[bool, dict[str, Any]]:
             from data.exchange.bybit_safety import SecurityException
 
             # Test demo mode configuration
-            config = BybitConfig(
+            config = BybitConfig(  # nosec B106
                 api_key="test_key",
                 api_secret="test_secret",
                 demo=True,
@@ -250,7 +250,7 @@ def check_bybit_demo_mode() -> tuple[bool, dict[str, Any]]:
 
             # Test production mode is blocked
             try:
-                prod_config = BybitConfig(
+                BybitConfig(  # nosec B106
                     api_key="test_key",
                     api_secret="test_secret",
                     demo=False,
@@ -375,9 +375,11 @@ def check_provenance_completeness() -> tuple[bool, dict[str, Any]]:
                         "check": "outcomes_with_venue",
                         "count": with_venue,
                         "total": total_count,
-                        "percentage": round(with_venue / total_count * 100, 2)
-                        if total_count > 0
-                        else 0,
+                        "percentage": (
+                            round(with_venue / total_count * 100, 2)
+                            if total_count > 0
+                            else 0
+                        ),
                     }
                 )
 
@@ -393,9 +395,11 @@ def check_provenance_completeness() -> tuple[bool, dict[str, Any]]:
                         "check": "outcomes_with_executor_type",
                         "count": with_executor,
                         "total": total_count,
-                        "percentage": round(with_executor / total_count * 100, 2)
-                        if total_count > 0
-                        else 0,
+                        "percentage": (
+                            round(with_executor / total_count * 100, 2)
+                            if total_count > 0
+                            else 0
+                        ),
                     }
                 )
 
@@ -421,9 +425,11 @@ def check_provenance_completeness() -> tuple[bool, dict[str, Any]]:
                         "check": "outcomes_with_demo_flag",
                         "count": demo_count,
                         "total": total_count,
-                        "percentage": round(demo_count / total_count * 100, 2)
-                        if total_count > 0
-                        else 0,
+                        "percentage": (
+                            round(demo_count / total_count * 100, 2)
+                            if total_count > 0
+                            else 0
+                        ),
                     }
                 )
 
@@ -470,7 +476,7 @@ def verify_venue_provenance_integrity(
     Returns:
         Tuple of (success, details)
     """
-    details = {
+    details: dict[str, Any] = {
         "checks_performed": [],
         "warnings": [],
         "errors": [],
@@ -479,7 +485,7 @@ def verify_venue_provenance_integrity(
 
     # Check 1: Venue fields exist or are documented
     fields_found = venue_details.get("fields_found", [])
-    fields_missing = venue_details.get("fields_missing", [])
+    venue_details.get("fields_missing", [])
 
     if fields_found:
         details["checks_performed"].append(
@@ -592,7 +598,7 @@ def main() -> int:
     logger.info("VENUE PROVENANCE LIVE VALIDATION")
     logger.info("=" * 60)
     logger.info(f"Timestamp: {datetime.now(UTC).isoformat()}")
-    logger.info(f"PostgreSQL Host: host.docker.internal (container context)")
+    logger.info("PostgreSQL Host: host.docker.internal (container context)")
     logger.info("")
 
     report = VenueProvenanceReport()
@@ -661,12 +667,12 @@ def main() -> int:
     print(f"Execution ID: {report.execution_id}")
     print(f"Timestamp: {report.timestamp}")
     print(f"Overall Status: {report.overall_status.upper()}")
-    print(f"\nChecks Performed:")
+    print("\nChecks Performed:")
     for check in report.checks:
         icon = "✓" if check["status"] == "pass" else "✗"
         print(f"  {icon} {check['name']}: {check['status']}")
 
-    print(f"\nVenue Fields:")
+    print("\nVenue Fields:")
     fields_found = report.venue_field_checks.get("fields_found", [])
     if fields_found:
         print(f"  Found {len(fields_found)} venue-related field(s):")
@@ -679,14 +685,14 @@ def main() -> int:
     if fields_missing:
         print(f"  Missing fields: {', '.join(fields_missing)}")
 
-    print(f"\nBybit Demo Mode:")
+    print("\nBybit Demo Mode:")
     demo_creds = report.bybit_demo_checks.get("demo_credentials_available", "unknown")
     print(f"  Demo credentials available: {demo_creds}")
     checks = report.bybit_demo_checks.get("checks_performed", [])
     for check in checks:
         print(f"  ✓ {check}")
 
-    print(f"\nProvenance Completeness:")
+    print("\nProvenance Completeness:")
     total = report.provenance_completeness.get("total_outcomes", 0)
     print(f"  Total outcomes: {total}")
     completeness = report.provenance_completeness.get("completeness_checks", [])
@@ -697,20 +703,20 @@ def main() -> int:
 
     executor_dist = report.provenance_completeness.get("executor_type_distribution", {})
     if executor_dist:
-        print(f"\nExecutor Type Distribution:")
+        print("\nExecutor Type Distribution:")
         for executor_type, count in executor_dist.items():
             print(f"  - {executor_type}: {count}")
 
     print(f"\nIntegrity Status: {details.get('integrity_status', 'unknown')}")
     warnings = details.get("warnings", [])
     if warnings:
-        print(f"\nWarnings:")
+        print("\nWarnings:")
         for warning in warnings:
             print(f"  ⚠ {warning}")
 
     recommendations = details.get("recommendations", [])
     if recommendations:
-        print(f"\nRecommendations:")
+        print("\nRecommendations:")
         for rec in recommendations:
             print(f"  → {rec}")
 

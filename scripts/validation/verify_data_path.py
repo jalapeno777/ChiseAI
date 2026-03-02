@@ -78,7 +78,7 @@ def test_postgresql_connectivity() -> tuple[bool, dict[str, Any]]:
         Tuple of (success, details)
     """
     config = get_postgres_config()
-    details = {
+    details: dict[str, Any] = {
         "host": config["host"],
         "port": config["port"],
         "database": config["database"],
@@ -133,7 +133,7 @@ def test_signal_outcomes_table() -> tuple[bool, dict[str, Any]]:
         Tuple of (success, details)
     """
     config = get_postgres_config()
-    details = {
+    details: dict[str, Any] = {
         "table_name": "signal_outcomes",
         "operations": [],
     }
@@ -250,7 +250,7 @@ def test_full_signal_flow() -> tuple[bool, dict[str, Any]]:
         Tuple of (success, details)
     """
     config = get_postgres_config()
-    details = {
+    details: dict[str, Any] = {
         "flow_steps": [],
         "test_signal_id": None,
         "test_record_id": None,
@@ -323,9 +323,9 @@ def test_full_signal_flow() -> tuple[bool, dict[str, Any]]:
                 "signal_id": verified_record[1],
                 "outcome": verified_record[2],
                 "pnl": float(verified_record[3]) if verified_record[3] else None,
-                "created_at": verified_record[5].isoformat()
-                if verified_record[5]
-                else None,
+                "created_at": (
+                    verified_record[5].isoformat() if verified_record[5] else None
+                ),
             }
 
             # Step 3: Query by outcome type
@@ -397,7 +397,7 @@ def main() -> int:
     logger.info("DATA PATH VERIFICATION")
     logger.info("=" * 60)
     logger.info(f"Timestamp: {datetime.now(UTC).isoformat()}")
-    logger.info(f"PostgreSQL Host: host.docker.internal (container context)")
+    logger.info("PostgreSQL Host: host.docker.internal (container context)")
     logger.info("")
 
     report = DataPathHealthReport()
@@ -450,18 +450,18 @@ def main() -> int:
     print(f"Execution ID: {report.execution_id}")
     print(f"Timestamp: {report.timestamp}")
     print(f"Overall Status: {report.overall_status.upper()}")
-    print(f"\nChecks Performed:")
+    print("\nChecks Performed:")
     for check in report.checks:
         icon = "✓" if check["status"] == "pass" else "✗"
         print(f"  {icon} {check['name']}: {check['status']}")
 
-    print(f"\nPostgreSQL Details:")
+    print("\nPostgreSQL Details:")
     if "version" in report.postgresql:
         print(f"  Version: {report.postgresql['version'][:50]}...")
     if "server_time" in report.postgresql:
         print(f"  Server Time: {report.postgresql['server_time']}")
 
-    print(f"\nSignal Outcomes Table:")
+    print("\nSignal Outcomes Table:")
     print(f"  Exists: {report.signal_outcomes_table.get('table_exists', False)}")
     if "columns" in report.signal_outcomes_table:
         print(f"  Columns: {len(report.signal_outcomes_table['columns'])}")
@@ -470,7 +470,7 @@ def main() -> int:
         if missing:
             print(f"  Missing: {', '.join(missing)}")
 
-    print(f"\nTest Flow:")
+    print("\nTest Flow:")
     if "flow_steps" in report.test_flow:
         for step in report.test_flow["flow_steps"]:
             print(f"  {step}")

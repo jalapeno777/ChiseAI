@@ -228,7 +228,7 @@ class AgentOnboarding:
     def _find_repo_root(self) -> Path:
         """Find repository root from current location."""
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B607
                 ["git", "rev-parse", "--show-toplevel"],
                 capture_output=True,
                 text=True,
@@ -246,12 +246,12 @@ class AgentOnboarding:
     def _check_git_configured(self) -> bool:
         """Check if git is configured."""
         try:
-            subprocess.run(
+            subprocess.run(  # nosec B607
                 ["git", "config", "user.name"],
                 capture_output=True,
                 check=True,
             )
-            subprocess.run(
+            subprocess.run(  # nosec B607
                 ["git", "config", "user.email"],
                 capture_output=True,
                 check=True,
@@ -266,7 +266,7 @@ class AgentOnboarding:
             # Try to ping Redis using redis-cli
             import subprocess
 
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B607
                 ["redis-cli", "-h", "host.docker.internal", "-p", "6380", "PING"],
                 capture_output=True,
                 text=True,
@@ -280,7 +280,7 @@ class AgentOnboarding:
         """Check if test environment is working."""
         try:
             # Check if pytest is available
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B607
                 ["python3", "-m", "pytest", "--version"],
                 capture_output=True,
                 cwd=self.repo_root,
@@ -289,7 +289,7 @@ class AgentOnboarding:
                 return False
 
             # Check if ruff is available
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B607
                 ["python3", "-m", "ruff", "--version"],
                 capture_output=True,
                 cwd=self.repo_root,
@@ -327,7 +327,7 @@ class AgentOnboarding:
             if self._check_git_configured():
                 # Check for advanced git features
                 try:
-                    subprocess.run(
+                    subprocess.run(  # nosec B607
                         ["git", "worktree", "list"],
                         capture_output=True,
                         check=True,
@@ -363,7 +363,7 @@ class AgentOnboarding:
         if python_skill is None:
             # Check Python version and available tools
             try:
-                subprocess.run(
+                subprocess.run(  # nosec B607
                     ["python3", "--version"],
                     capture_output=True,
                     text=True,

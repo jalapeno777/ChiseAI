@@ -18,9 +18,8 @@ import json
 import logging
 import sys
 import types
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, cast
 
 # Ensure src is in path for imports
 project_root = Path(__file__).parent.parent.parent
@@ -40,28 +39,20 @@ import governance as _real_governance
 
 if "src.governance" not in sys.modules:
     sys.modules["src.governance"] = _real_governance
-    if hasattr(sys.modules["src"], "governance"):
-        sys.modules["src"].governance = _real_governance
-    else:
-        setattr(sys.modules["src"], "governance", _real_governance)
+    src_pkg = cast(Any, sys.modules["src"])
+    src_pkg.governance = _real_governance
 
 # Import reflection modules
 from governance.reflection.artifacts import (
     AutomationTarget,
     FailureObservation,
-    FailureType,
     KPISnapshot,
-    Priority,
     PromotionCandidate,
     ReflectionArtifact,
-    ReflectionType,
     ReflectionValidator,
     RootCause,
-    RootCauseCategory,
-    Severity,
 )
 from governance.reflection.loops import ReflectionLoops
-
 
 # Configure logging
 logging.basicConfig(
@@ -75,12 +66,12 @@ logger = logging.getLogger("reflection_runner")
 FEATURE_FLAG_KEY = "chise:feature_flags:governance:reflection_enabled"
 
 
-def get_redis_client() -> Optional[Any]:
+def get_redis_client() -> Any | None:
     """Get Redis client from environment or return None."""
     try:
-        import redis
-
         import os
+
+        import redis
 
         host = os.getenv("REDIS_HOST", "host.docker.internal")
         port = int(os.getenv("REDIS_PORT", "6380"))
@@ -101,7 +92,7 @@ def get_redis_client() -> Optional[Any]:
         return None
 
 
-def check_feature_flag(redis_client: Optional[Any]) -> bool:
+def check_feature_flag(redis_client: Any | None) -> bool:
     """
     Check if reflection runner feature flag is enabled.
 
@@ -130,7 +121,7 @@ def check_feature_flag(redis_client: Optional[Any]) -> bool:
         return False
 
 
-def set_feature_flag(redis_client: Optional[Any], enabled: bool) -> bool:
+def set_feature_flag(redis_client: Any | None, enabled: bool) -> bool:
     """
     Set the reflection runner feature flag.
 
@@ -155,7 +146,7 @@ def set_feature_flag(redis_client: Optional[Any], enabled: bool) -> bool:
         return False
 
 
-def get_feature_flag_status(redis_client: Optional[Any]) -> dict:
+def get_feature_flag_status(redis_client: Any | None) -> dict:
     """
     Get detailed feature flag status.
 
@@ -193,12 +184,12 @@ def get_feature_flag_status(redis_client: Optional[Any]) -> dict:
     return status
 
 
-def get_qdrant_client() -> Optional[Any]:
+def get_qdrant_client() -> Any | None:
     """Get Qdrant client from environment or return None."""
     try:
-        from qdrant_client import QdrantClient
-
         import os
+
+        from qdrant_client import QdrantClient
 
         host = os.getenv("QDRANT_HOST", "host.docker.internal")
         port = int(os.getenv("QDRANT_PORT", "6334"))
@@ -271,8 +262,8 @@ def run_micro_reflection(
     story_id: str,
     action: str,
     result: str,
-    duration_ms: Optional[int] = None,
-    error: Optional[str] = None,
+    duration_ms: int | None = None,
+    error: str | None = None,
 ) -> ReflectionArtifact:
     """Run a micro-reflection loop."""
     logger.info(f"Running micro-reflection for {story_id}")
@@ -292,11 +283,11 @@ def run_meso_reflection(
     loops: ReflectionLoops,
     story_id: str,
     what_changed: str,
-    kpi_file: Optional[str] = None,
-    failures_file: Optional[str] = None,
-    root_causes_file: Optional[str] = None,
-    automation_file: Optional[str] = None,
-    promotion_file: Optional[str] = None,
+    kpi_file: str | None = None,
+    failures_file: str | None = None,
+    root_causes_file: str | None = None,
+    automation_file: str | None = None,
+    promotion_file: str | None = None,
 ) -> ReflectionArtifact:
     """Run a meso-reflection loop."""
     logger.info(f"Running meso-reflection for {story_id}")
@@ -348,7 +339,7 @@ def run_macro_reflection(
     loops: ReflectionLoops,
     period: str,
     stories_file: str,
-    kpi_file: Optional[str] = None,
+    kpi_file: str | None = None,
 ) -> ReflectionArtifact:
     """Run a macro-reflection loop."""
     logger.info(f"Running macro-reflection for {period}")
@@ -541,7 +532,7 @@ Examples:
 
         if args.status:
             status = get_feature_flag_status(redis_client)
-            print(f"Feature Flag Status:")
+            print("Feature Flag Status:")
             print(f"  Key: {status['key']}")
             print(f"  Enabled: {status['enabled']}")
             print(f"  Raw Value: {status['raw_value']}")

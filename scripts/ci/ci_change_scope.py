@@ -30,7 +30,7 @@ DOC_ONLY_FILES = {
 
 
 def _run_git(*args: str) -> tuple[int, str]:
-    proc = subprocess.run(
+    proc = subprocess.run(  # nosec B607
         ["git", *args],
         text=True,
         capture_output=True,
@@ -81,7 +81,7 @@ def _pr_changed_files_from_gitea() -> list[str] | None:
     )
     req = Request(url=url, method="GET", headers={"Authorization": f"token {token}"})
     try:
-        with urlopen(req, timeout=15) as resp:  # noqa: S310
+        with urlopen(req, timeout=15) as resp:  # nosec B310  # noqa: S310
             payload = json.loads(resp.read().decode("utf-8", errors="replace"))
             if not isinstance(payload, list):
                 return None

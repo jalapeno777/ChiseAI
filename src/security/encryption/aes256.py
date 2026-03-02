@@ -278,6 +278,8 @@ class AES256Encryptor:
             )
             tag = key_stream[len(plaintext) : len(plaintext) + 16]
 
+        if key_id is None:
+            raise ValueError("No key_id available to track encryption usage")
         self._key_manager.increment_usage(key_id)
 
         return EncryptedData(
@@ -309,6 +311,8 @@ class AES256Encryptor:
                 a ^ b for a, b in zip(encrypted.ciphertext, key_stream, strict=False)
             )
 
+        if key_id is None:
+            raise ValueError("No key_id available to track decryption usage")
         self._key_manager.increment_usage(key_id)
         return plaintext
 

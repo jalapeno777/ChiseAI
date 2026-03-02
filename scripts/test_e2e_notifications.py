@@ -37,8 +37,8 @@ async def test_open_and_close_notifications() -> dict[str, Any]:
     from execution.kill_switch.state import KillSwitchConfig
     from execution.outcome_capture.integration import OutcomeCaptureIntegration
     from execution.paper.fill_model import create_fill_model
-    from execution.paper.order_simulator import OrderSimulator
     from execution.paper.orchestrator import PaperTradingOrchestrator
+    from execution.paper.order_simulator import OrderSimulator
     from execution.paper.position_tracker import PaperPositionTracker
     from execution.paper.risk_enforcer import PaperRiskEnforcer
     from execution.paper.risk_models import RiskCheck
@@ -48,7 +48,7 @@ async def test_open_and_close_notifications() -> dict[str, Any]:
     from execution.telemetry.exporter import ExecutionTelemetryExporter
     from signal_generation.signal_generator import SignalGenerator
 
-    evidence = {
+    evidence: dict[str, Any] = {
         "test_id": "NOTIFIER-TEST-001-E2E",
         "execution_timestamp": datetime.now(UTC).isoformat(),
         "trade_parameters": {
@@ -107,7 +107,7 @@ async def test_open_and_close_notifications() -> dict[str, Any]:
         try:
             from influxdb_client import InfluxDBClient as InfluxDBClientReal
 
-            influx_client = InfluxDBClientReal(
+            influx_client = InfluxDBClientReal(  # nosec B106
                 url="http://host.docker.internal:18087",
                 token="",
                 org="chiseai",
@@ -285,7 +285,7 @@ def main():
     open_data = evidence.get("open", {})
     close_data = evidence.get("close", {})
 
-    print(f"\n--- OPEN ---")
+    print("\n--- OPEN ---")
     print(f"Success: {open_data.get('success', False)}")
     print(f"Signal ID: {open_data.get('signal_id', 'N/A')}")
     print(f"Order ID: {open_data.get('order_id', 'N/A')}")
@@ -293,7 +293,7 @@ def main():
     print(f"Correlation ID: {open_data.get('correlation_id', 'N/A')}")
     print(f"Fill Price: {open_data.get('fill_price', 'N/A')}")
 
-    print(f"\n--- CLOSE ---")
+    print("\n--- CLOSE ---")
     print(f"Success: {close_data.get('success', False)}")
     print(f"Realized PnL: {close_data.get('realized_pnl', 'N/A')}")
     print(f"Exit Price: {close_data.get('exit_price', 'N/A')}")

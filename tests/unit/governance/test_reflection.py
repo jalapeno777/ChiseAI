@@ -11,9 +11,9 @@ Tests cover:
 from __future__ import annotations
 
 import json
+from unittest.mock import MagicMock
+
 import pytest
-from datetime import datetime, timezone
-from unittest.mock import MagicMock, patch
 
 # Import directly from reflection submodule to avoid governance package circular imports
 from governance.reflection.artifacts import (

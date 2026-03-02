@@ -19,15 +19,16 @@ Status Calculation:
 - down: > 50% failure rate OR last success > 30 minutes ago
 """
 
-import os
-import sys
 import json
 import logging
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Dict, Any
-import redis
-import urllib.request
+import os
+import sys
 import urllib.error
+import urllib.request
+from datetime import UTC, datetime
+from typing import Any
+
+import redis
 
 
 # Load .env file for cron environment
@@ -37,7 +38,7 @@ def load_env_file():
         os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"
     )
     if os.path.exists(env_path):
-        with open(env_path, "r") as f:
+        with open(env_path) as f:
             for line in f:
                 line = line.strip()
                 if line and not line.startswith("#") and "=" in line:
@@ -78,7 +79,7 @@ DEGRADED_MAX_AGE_SECONDS = 1800  # 30 minutes
 WINDOW_SECONDS = 3600  # 1 hour
 
 
-def get_redis() -> Optional[redis.Redis]:
+def get_redis() -> Any | None:
     """Get Redis connection with error handling."""
     try:
         r = redis.Redis(
@@ -101,7 +102,7 @@ def post_test_message_to_discord() -> tuple[bool, str]:
     Returns:
         tuple: (success: bool, error_message: str)
     """
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
     message = f"🔔 Discord Continuity Test | {timestamp}"
 
     # Try webhook first (more reliable)
@@ -117,7 +118,7 @@ def post_test_message_to_discord() -> tuple[bool, str]:
                 },
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
                 if resp.status in (200, 204):
                     logger.info("Discord webhook post successful")
                     return True, ""
@@ -153,7 +154,7 @@ def post_test_message_to_discord() -> tuple[bool, str]:
                 },
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
                 if resp.status == 200:
                     logger.info("Discord bot post successful")
                     return True, ""
@@ -180,7 +181,7 @@ def post_test_message_to_discord() -> tuple[bool, str]:
 
 
 def calculate_status(
-    failure_rate: float, seconds_since_last_success: Optional[float]
+    failure_rate: float, seconds_since_last_success: float | None
 ) -> str:
     """Calculate continuity status based on failure rate and last success time.
 
@@ -214,8 +215,8 @@ def calculate_status(
 
 
 def update_continuity_metrics(
-    r: redis.Redis, success: bool, error_message: str
-) -> Dict[str, Any]:
+    r: Any, success: bool, error_message: str
+) -> dict[str, Any]:
     """Update Redis with continuity metrics and calculate status.
 
     Args:
@@ -226,7 +227,7 @@ def update_continuity_metrics(
     Returns:
         Dict with current metrics and status
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     now_iso = now.isoformat().replace("+00:00", "Z")
 
     # Always update last_post_at
@@ -294,7 +295,7 @@ def update_continuity_metrics(
     }
 
 
-def get_continuity_status(r: redis.Redis) -> Dict[str, Any]:
+def get_continuity_status(r: Any) -> dict[str, Any]:
     """Get current continuity status from Redis.
 
     Args:
@@ -309,7 +310,7 @@ def get_continuity_status(r: redis.Redis) -> Dict[str, Any]:
     failure_count = int(r.get(KEY_FAILURE_COUNT_WINDOW) or "0")
     status = r.get(KEY_CONTINUITY_STATUS) or "unknown"
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     # Calculate failure rate
     total_attempts = post_count

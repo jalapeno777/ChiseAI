@@ -8,13 +8,13 @@ Monitors continuously (or via frequent cron) for:
 Posts immediately to Discord with @here mention.
 """
 
-import os
-import sys
 import asyncio
 import logging
-import subprocess
-from datetime import datetime, timezone, timedelta
-from typing import Optional
+import os
+import sys
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
 import redis
 
 # Load .env file for cron environment
@@ -22,7 +22,7 @@ env_path = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"
 )
 if os.path.exists(env_path):
-    with open(env_path, "r") as f:
+    with open(env_path) as f:
         for line in f:
             line = line.strip()
             if line and not line.startswith("#") and "=" in line:
@@ -43,7 +43,7 @@ REDIS_PORT = int(os.getenv("MONITORING_REDIS_PORT", os.getenv("REDIS_PORT", "638
 ALERT_STATE_KEY = "bmad:chiseai:monitoring:pager_alerts:last_check"
 
 
-def get_redis():
+def get_redis() -> Any | None:
     try:
         return redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
     except Exception as e:
@@ -51,7 +51,7 @@ def get_redis():
         return None
 
 
-def check_kill_switch_triggered(r: redis.Redis) -> Optional[str]:
+def check_kill_switch_triggered(r: Any) -> str | None:
     """Check if kill switch is triggered. Returns alert message if triggered."""
     try:
         triggered = r.hget("bmad:chiseai:kill_switch", "triggered")
@@ -62,7 +62,7 @@ def check_kill_switch_triggered(r: redis.Redis) -> Optional[str]:
     return None
 
 
-def try_self_heal(r: redis.Redis) -> bool:
+def try_self_heal(r: Any) -> bool:
     """Attempt to self-heal by writing a heartbeat if missing/stale.
 
     Args:
@@ -98,7 +98,7 @@ def try_self_heal(r: redis.Redis) -> bool:
         return False
 
 
-def check_scheduler_down(r: redis.Redis) -> Optional[str]:
+def check_scheduler_down(r: Any) -> str | None:
     """Check if scheduler has been down for >90 seconds based on Redis heartbeat.
 
     Thresholds:
@@ -109,7 +109,7 @@ def check_scheduler_down(r: redis.Redis) -> Optional[str]:
     try:
         # Get heartbeat from Redis
         heartbeat = r.hgetall("bmad:chiseai:scheduler:heartbeat")
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         if not heartbeat:
             # No heartbeat found - check how long it's been missing
@@ -220,10 +220,10 @@ async def send_alert(message: str):
 
     # Fallback to local log
     os.makedirs("logs/monitoring", exist_ok=True)
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     with open(f"logs/monitoring/ALERT-{timestamp}.log", "w") as f:
         f.write(full_message)
-    logger.info(f"Alert logged locally")
+    logger.info("Alert logged locally")
 
 
 async def main():

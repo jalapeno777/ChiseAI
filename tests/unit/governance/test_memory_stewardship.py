@@ -9,11 +9,10 @@ Tests for:
 - Sweep orchestration
 """
 
-import json
 import sys
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -21,29 +20,21 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "src"))
 
 # Import directly from submodules to avoid circular imports in governance package
-from governance.memory.deduplication import (
-    MemoryDeduplicationEngine,
-    DeduplicationConfig,
-    DeduplicationStats,
+from governance.memory.contradiction import (
+    Contradiction,
+    ContradictionConfig,
+    ContradictionDetector,
 )
 from governance.memory.promotion import (
+    MemoryCategory,
+    MemoryEntry,
     MemoryPromotionEngine,
     PromotionConfig,
-    PromotionStats,
-    MemoryEntry,
-    MemoryCategory,
     PromotionRule,
-)
-from governance.memory.contradiction import (
-    ContradictionDetector,
-    ContradictionConfig,
-    ContradictionStats,
-    Contradiction,
 )
 from governance.memory.sweep import (
     MemorySweepEngine,
     SweepConfig,
-    SweepStats,
 )
 
 
@@ -693,9 +684,9 @@ class TestPolicyCompliance:
         for rule_name, entry in test_entries.items():
             if rule_name in rule_names:
                 should_promote, reason = engine.should_promote(entry)
-                assert should_promote is True, (
-                    f"Rule {rule_name} should trigger promotion"
-                )
+                assert (
+                    should_promote is True
+                ), f"Rule {rule_name} should trigger promotion"
 
 
 if __name__ == "__main__":

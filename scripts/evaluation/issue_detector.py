@@ -11,9 +11,10 @@ independently or as part of the BrainEval system.
 """
 
 import re
-from pathlib import Path
-from typing import Dict, List, Any, Optional, Iterator
+from collections.abc import Iterator
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 
 @dataclass
@@ -24,11 +25,11 @@ class DetectedIssue:
     severity: str
     description: str
     source_file: str
-    timestamp: Optional[str] = None
-    line_number: Optional[int] = None
+    timestamp: str | None = None
+    line_number: int | None = None
     context: str = ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "issue_type": self.issue_type,
@@ -172,13 +173,13 @@ class IssuePatterns:
 class IssueScanner:
     """Scans files for issues based on defined patterns."""
 
-    def __init__(self, patterns: Optional[Dict] = None):
+    def __init__(self, patterns: dict[str, dict[str, Any]] | None = None):
         self.patterns = patterns or IssuePatterns.PATTERNS
 
     def scan_file(self, file_path: Path) -> Iterator[DetectedIssue]:
         """Scan a single file for issues."""
         try:
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            with open(file_path, encoding="utf-8", errors="ignore") as f:
                 content = f.read()
                 lines = content.split("\n")
         except Exception as e:
@@ -197,9 +198,10 @@ class IssueScanner:
                         context_end = min(len(lines), line_num + 1)
                         context = "\n".join(lines[context_start:context_end])
 
+                        severity = str(config.get("severity", "P3"))
                         yield DetectedIssue(
                             issue_type=issue_type,
-                            severity=config["severity"],
+                            severity=severity,
                             description=line.strip(),
                             source_file=str(file_path),
                             timestamp=timestamp,
@@ -218,7 +220,7 @@ class IssueScanner:
         for file_path in directory.glob(pattern):
             yield from self.scan_file(file_path)
 
-    def _extract_timestamp(self, content: str) -> Optional[str]:
+    def _extract_timestamp(self, content: str) -> str | None:
         """Extract timestamp from file frontmatter."""
         # Look for date: YYYY-MM-DD pattern
         date_match = re.search(r"date:\s*(\d{4}-\d{2}-\d{2})", content)
@@ -234,8 +236,10 @@ class IssueScanner:
 
 
 def detect_issues(
-    source_path: str, file_pattern: str = "*.md", patterns: Optional[Dict] = None
-) -> List[DetectedIssue]:
+    source_path: str,
+    file_pattern: str = "*.md",
+    patterns: dict[str, dict[str, Any]] | None = None,
+) -> list[DetectedIssue]:
     """
     Convenience function to detect issues from a path.
 
@@ -256,11 +260,11 @@ def detect_issues(
         return list(scanner.scan_directory(path, file_pattern))
 
 
-def get_issue_summary(issues: List[DetectedIssue]) -> Dict[str, Any]:
+def get_issue_summary(issues: list[DetectedIssue]) -> dict[str, Any]:
     """Generate summary statistics from issues."""
     severity_counts = {"P0": 0, "P1": 0, "P2": 0, "P3": 0}
-    type_counts: Dict[str, int] = {}
-    category_counts: Dict[str, int] = {}
+    type_counts: dict[str, int] = {}
+    category_counts: dict[str, int] = {}
 
     patterns = IssuePatterns.PATTERNS
 
@@ -270,7 +274,7 @@ def get_issue_summary(issues: List[DetectedIssue]) -> Dict[str, Any]:
 
         type_counts[issue.issue_type] = type_counts.get(issue.issue_type, 0) + 1
 
-        category = patterns.get(issue.issue_type, {}).get("category", "unknown")
+        category = str(patterns.get(issue.issue_type, {}).get("category", "unknown"))
         category_counts[category] = category_counts.get(category, 0) + 1
 
     return {
@@ -307,7 +311,7 @@ if __name__ == "__main__":
         print(f"\nBy Type: {summary['by_type']}")
 
         if issues:
-            print(f"\nTop 10 Issues:")
+            print("\nTop 10 Issues:")
             for i, issue in enumerate(issues[:10], 1):
                 print(
                     f"  {i}. [{issue.severity}] {issue.issue_type}: {issue.description[:60]}..."

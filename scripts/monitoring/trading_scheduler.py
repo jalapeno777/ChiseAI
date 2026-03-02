@@ -53,8 +53,9 @@ import logging
 import os
 import signal
 import sys
+import tempfile
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -63,22 +64,24 @@ sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 
+import builtins
+import contextlib
+
 from scripts.monitoring.scheduler_heartbeat import (
     DEFAULT_REDIS_HOST,
     DEFAULT_REDIS_PORT,
+    RECOVERY_KEY,
     get_redis_client,
     record_heartbeat,
     record_stop,
-    WatchdogMonitor,
-    RECOVERY_KEY,
 )
 
 logger = logging.getLogger(__name__)
 
 # Default configuration
 DEFAULT_INTERVAL = 30  # seconds
-DEFAULT_PID_FILE = "/tmp/chiseai_scheduler.pid"
-DEFAULT_HEALTH_FILE = "/tmp/chiseai_scheduler.health"
+DEFAULT_PID_FILE = str(Path(tempfile.gettempdir()) / "chiseai_scheduler.pid")
+DEFAULT_HEALTH_FILE = str(Path(tempfile.gettempdir()) / "chiseai_scheduler.health")
 
 # P0 Hardening Constants
 MAX_HEARTBEAT_FAILURES = 3  # Restart after this many consecutive failures
@@ -103,7 +106,7 @@ class TradingSchedulerDaemon:
         self.pid_file = pid_file
         self.health_file = health_file
         self.running = False
-        self.redis_client = None
+        self.redis_client: Any | None = None
         self.heartbeat_failures = 0
         self.start_time: float | None = None
         self.in_recovery_mode = False
@@ -114,7 +117,7 @@ class TradingSchedulerDaemon:
             pid = os.getpid()
             pid_data = {
                 "pid": pid,
-                "started_at": datetime.now(timezone.utc).isoformat(),
+                "started_at": datetime.now(UTC).isoformat(),
                 "hostname": os.uname().nodename,
             }
             with open(self.pid_file, "w") as f:
@@ -142,7 +145,7 @@ class TradingSchedulerDaemon:
         """
         try:
             if os.path.exists(self.pid_file):
-                with open(self.pid_file, "r") as f:
+                with open(self.pid_file) as f:
                     return json.load(f)
             return None
         except (json.JSONDecodeError, Exception) as e:
@@ -171,7 +174,7 @@ class TradingSchedulerDaemon:
             # Process exists - verify it's actually our daemon
             # by checking /proc/PID/cmdline
             try:
-                with open(f"/proc/{pid}/cmdline", "r") as f:
+                with open(f"/proc/{pid}/cmdline") as f:
                     cmdline = f.read()
                     if "trading_scheduler" in cmdline:
                         return True
@@ -204,7 +207,7 @@ class TradingSchedulerDaemon:
         try:
             health_data = {
                 "status": status,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "pid": os.getpid(),
                 "uptime_seconds": (
                     int(time.time() - self.start_time) if self.start_time else 0
@@ -265,10 +268,8 @@ class TradingSchedulerDaemon:
         try:
             # Reconnect to Redis
             if self.redis_client:
-                try:
+                with contextlib.suppress(builtins.BaseException):
                     self.redis_client.close()
-                except:
-                    pass
 
             self.redis_client = get_redis_client(self.redis_host, self.redis_port)
             if self.redis_client is None:
@@ -284,7 +285,7 @@ class TradingSchedulerDaemon:
                 status="running",
                 metadata={
                     "recovery": "true",
-                    "recovery_at": datetime.now(timezone.utc).isoformat(),
+                    "recovery_at": datetime.now(UTC).isoformat(),
                 },
             )
 
@@ -410,10 +411,8 @@ class TradingSchedulerDaemon:
             return 1
 
         # Child process - detach from terminal
-        try:
+        with contextlib.suppress(OSError):
             os.setsid()
-        except OSError:
-            pass
 
         # Second fork to prevent reacquiring terminal
         try:
@@ -428,7 +427,7 @@ class TradingSchedulerDaemon:
         sys.stdout.flush()
         sys.stderr.flush()
 
-        with open("/dev/null", "r") as f:
+        with open("/dev/null") as f:
             os.dup2(f.fileno(), sys.stdin.fileno())
         with open("/dev/null", "a+") as f:
             os.dup2(f.fileno(), sys.stdout.fileno())
@@ -510,7 +509,7 @@ class TradingSchedulerDaemon:
                     logger.error("Daemon is not running")
                     return 1
 
-            with open(self.health_file, "r") as f:
+            with open(self.health_file) as f:
                 health_data = json.load(f)
 
             status = health_data.get("status", "unknown")
@@ -519,7 +518,7 @@ class TradingSchedulerDaemon:
             # Check if health data is stale (>2 minutes old)
             if timestamp:
                 health_time = datetime.fromisoformat(timestamp)
-                age = datetime.now(timezone.utc) - health_time
+                age = datetime.now(UTC) - health_time
                 if age.total_seconds() > 120:
                     logger.error(
                         f"Health data is stale ({age.total_seconds():.0f}s old)"

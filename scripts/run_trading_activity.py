@@ -580,7 +580,7 @@ async def _execute_trading_cycle(
         generator = loader.signal_generator
         orchestrator = loader.paper_orchestrator
 
-        if not all([fetcher, generator, orchestrator]):
+        if fetcher is None or generator is None:
             return
 
         # Trading parameters

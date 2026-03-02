@@ -20,20 +20,19 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import os
+
+# Add src to path for imports
+import sys
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any
 
-# Add src to path for imports
-import sys
-
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from autonomous_git.path_analyzer import RiskLevel, analyze_paths
 from autonomous_git.gitreviewbot import GiteaClient
+from autonomous_git.path_analyzer import RiskLevel, analyze_paths
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +72,7 @@ class ApprovalRecord:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ApprovalRecord":
+    def from_dict(cls, data: dict[str, Any]) -> ApprovalRecord:
         """Create from dictionary."""
         return cls(
             pr_number=data["pr_number"],
@@ -112,9 +111,9 @@ class ComplexPathCheckResult:
             "confidence": self.confidence,
             "files_analyzed": self.files_analyzed,
             "approval_status": self.approval_status.value,
-            "approval_record": self.approval_record.to_dict()
-            if self.approval_record
-            else None,
+            "approval_record": (
+                self.approval_record.to_dict() if self.approval_record else None
+            ),
             "gitreviewbot_completed": self.gitreviewbot_completed,
             "gitreviewbot_decision": self.gitreviewbot_decision,
             "requires_human_approval": self.requires_human_approval,
@@ -343,13 +342,13 @@ class ComplexPathGate:
         """
         # Check cache first
         if pr_number in self._approval_cache:
-            record = self._approval_cache[pr_number]
+            cached_record = self._approval_cache[pr_number]
 
             # Check if expired
-            if self._is_approval_expired(record):
-                return ApprovalStatus.EXPIRED, record
+            if self._is_approval_expired(cached_record):
+                return ApprovalStatus.EXPIRED, cached_record
 
-            return record.status, record
+            return cached_record.status, cached_record
 
         # Check audit log for historical approvals
         record = self._load_approval_from_log(pr_number)
@@ -546,7 +545,7 @@ class ComplexPathGate:
         try:
             latest_record = None
 
-            with open(self.audit_log_path, "r") as f:
+            with open(self.audit_log_path) as f:
                 for line in f:
                     line = line.strip()
                     if not line:
@@ -588,7 +587,7 @@ class ComplexPathGate:
         records = []
 
         try:
-            with open(self.audit_log_path, "r") as f:
+            with open(self.audit_log_path) as f:
                 for line in f:
                     line = line.strip()
                     if not line:

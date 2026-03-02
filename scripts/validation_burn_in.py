@@ -52,7 +52,7 @@ async def run_validation_burn_in(duration_seconds: int = 900) -> dict:
     try:
         import psycopg2
 
-        conn = psycopg2.connect(
+        conn = psycopg2.connect(  # nosec B106
             host="host.docker.internal",
             port=5434,
             database="chiseai",
@@ -101,7 +101,7 @@ async def run_validation_burn_in(duration_seconds: int = 900) -> dict:
     logger.info(f"\nStarting {duration_seconds}s burn-in test...")
     check_interval = 30  # seconds
     status_interval = 300  # 5 minutes
-    last_status = 0
+    last_status = 0.0
 
     while time.time() - start_time < duration_seconds:
         elapsed = time.time() - start_time
@@ -113,7 +113,7 @@ async def run_validation_burn_in(duration_seconds: int = 900) -> dict:
         try:
             import psycopg2
 
-            conn = psycopg2.connect(
+            conn = psycopg2.connect(  # nosec B106
                 host="host.docker.internal",
                 port=5434,
                 database="chiseai",

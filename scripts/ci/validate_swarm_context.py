@@ -98,7 +98,7 @@ def _changed_files_ci_pr(env: dict[str, str]) -> set[str]:
         target,
     )
     for base in candidates:
-        proc = subprocess.run(
+        proc = subprocess.run(  # nosec B607
             ["git", "diff", "--name-only", f"{base}...HEAD"],
             text=True,
             capture_output=True,

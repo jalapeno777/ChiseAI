@@ -14,24 +14,23 @@ Default: Disabled (safe rollout)
 import json
 import logging
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Any
 
 import yaml
 
+from governance.memory.contradiction import (
+    ContradictionConfig,
+    ContradictionDetector,
+)
 from governance.memory.deduplication import (
-    MemoryDeduplicationEngine,
     DeduplicationConfig,
+    MemoryDeduplicationEngine,
 )
 from governance.memory.promotion import (
+    MemoryCategory,
     MemoryPromotionEngine,
     PromotionConfig,
-    MemoryEntry,
-    MemoryCategory,
-)
-from governance.memory.contradiction import (
-    ContradictionDetector,
-    ContradictionConfig,
 )
 
 logger = logging.getLogger(__name__)
@@ -72,7 +71,7 @@ class SweepConfig:
     def __post_init__(self):
         """Load policy from YAML file."""
         try:
-            with open(self.policy_path, "r") as f:
+            with open(self.policy_path) as f:
                 self.policy = yaml.safe_load(f)
             logger.info(f"Loaded sweep policy from {self.policy_path}")
         except Exception as e:
@@ -356,7 +355,7 @@ class MemorySweepEngine:
 
             # Step 3: Detect contradictions
             logger.info("Step 3: Running contradiction detection")
-            contradictions = self._contradiction_detector.scan_for_contradictions()
+            self._contradiction_detector.scan_for_contradictions()
             contradiction_stats = self._contradiction_detector.get_stats()
             if contradiction_stats:
                 stats.contradiction_stats = {

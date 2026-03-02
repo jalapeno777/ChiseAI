@@ -17,6 +17,7 @@ import signal
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -216,20 +217,20 @@ async def fetch_and_store(
 async def run_ingestion_cycle(
     fetcher: OHLCVFetcher,
     storage: InfluxDBStorage,
-    config: dict,
-) -> dict:
+    config: dict[str, Any],
+) -> dict[str, Any]:
     """Run a single ingestion cycle for all symbols and timeframes.
 
     Returns:
         Statistics dict with counts per symbol/timeframe
     """
-    stats = {"total_stored": 0, "symbols": {}}
+    stats: dict[str, Any] = {"total_stored": 0, "symbols": {}}
 
     for symbol in config["symbols"]:
         if _shutdown_requested:
             break
 
-        symbol_stats = {}
+        symbol_stats: dict[str, int] = {}
 
         for timeframe in config["timeframes"]:
             if _shutdown_requested:

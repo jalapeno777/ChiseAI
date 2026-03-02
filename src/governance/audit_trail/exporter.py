@@ -10,6 +10,7 @@ import gzip
 import json
 import logging
 import os
+import tempfile
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import Enum
@@ -23,6 +24,9 @@ from src.governance.audit_trail.query import (
 from src.governance.audit_trail.trail import AuditTrailEntry
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_AUDIT_EXPORT_DIR = os.path.join(tempfile.gettempdir(), "audit_exports")
+DEFAULT_AUDIT_S3_MOCK_DIR = os.path.join(tempfile.gettempdir(), "audit_s3_mock")
 
 
 class ExportFormat(str, Enum):
@@ -208,7 +212,7 @@ class AuditTrailExporter:
         config: ExportConfig | None = None,
         s3_config: S3Config | None = None,
         storage_backend: StorageBackend | None = None,
-        output_dir: str = "/tmp/audit_exports",
+        output_dir: str = DEFAULT_AUDIT_EXPORT_DIR,
     ):
         """
         Initialize the exporter.
@@ -294,9 +298,7 @@ class AuditTrailExporter:
             result.file_size_bytes = (
                 os.path.getsize(file_path)
                 if os.path.exists(file_path)
-                else len(content)
-                if isinstance(content, bytes)
-                else len(content)
+                else len(content) if isinstance(content, bytes) else len(content)
             )
             result.chain_valid = chain_state is None or chain_state.get("valid", True)
             result.status = ExportStatus.COMPLETED
@@ -555,7 +557,7 @@ class AuditTrailExporter:
 class LocalStorageBackend:
     """Simple local filesystem storage backend for testing."""
 
-    def __init__(self, base_path: str = "/tmp/audit_s3_mock"):
+    def __init__(self, base_path: str = DEFAULT_AUDIT_S3_MOCK_DIR):
         self.base_path = base_path
         os.makedirs(base_path, exist_ok=True)
 

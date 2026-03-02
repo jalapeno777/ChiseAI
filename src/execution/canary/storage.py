@@ -224,8 +224,9 @@ class CanaryStorageWithPersistence(CanaryStorage):
 
         if self._influxdb:
             try:
-                from influxdb_client import Point
                 import os
+
+                from influxdb_client import Point
 
                 record = CanaryRecord.from_deployment(deployment)
 
@@ -294,8 +295,9 @@ class CanaryStorageWithPersistence(CanaryStorage):
 
         if self._influxdb:
             try:
-                from influxdb_client import Point
                 import os
+
+                from influxdb_client import Point
 
                 point = (
                     Point("canary_monitoring_check")

@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, timezone
+from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 
 class ReflectionType(Enum):
@@ -65,11 +65,11 @@ class Priority(Enum):
 class KPISnapshot:
     """Key performance indicator snapshot."""
 
-    ci_pass_rate: Optional[float] = None
-    coverage: Optional[float] = None
-    cycle_time_hours: Optional[float] = None
-    test_count: Optional[int] = None
-    lines_changed: Optional[int] = None
+    ci_pass_rate: float | None = None
+    coverage: float | None = None
+    cycle_time_hours: float | None = None
+    test_count: int | None = None
+    lines_changed: int | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary, excluding None values."""
@@ -207,7 +207,7 @@ class ReflectionArtifact:
     reflection_type: ReflectionType
     timestamp: str
     what_changed: str
-    kpi_snapshot: Optional[KPISnapshot] = None
+    kpi_snapshot: KPISnapshot | None = None
     failures_observed: list[FailureObservation] = field(default_factory=list)
     root_causes: list[RootCause] = field(default_factory=list)
     next_automation_targets: list[AutomationTarget] = field(default_factory=list)
@@ -251,9 +251,11 @@ class ReflectionArtifact:
             reflection_type=ReflectionType(data["reflection_type"]),
             timestamp=data["timestamp"],
             what_changed=data["what_changed"],
-            kpi_snapshot=KPISnapshot.from_dict(data["kpi_snapshot"])
-            if "kpi_snapshot" in data
-            else None,
+            kpi_snapshot=(
+                KPISnapshot.from_dict(data["kpi_snapshot"])
+                if "kpi_snapshot" in data
+                else None
+            ),
             failures_observed=[
                 FailureObservation.from_dict(f)
                 for f in data.get("failures_observed", [])
@@ -349,9 +351,9 @@ class ReflectionValidator:
 
         # Required fields
         required = ["story_id", "reflection_type", "timestamp", "what_changed"]
-        for field in required:
-            if field not in data:
-                errors.append(f"Missing required field: {field}")
+        for required_field in required:
+            if required_field not in data:
+                errors.append(f"Missing required field: {required_field}")
 
         if errors:
             return False, errors
@@ -380,11 +382,11 @@ def create_reflection_artifact(
     story_id: str,
     reflection_type: ReflectionType,
     what_changed: str,
-    kpi_snapshot: Optional[KPISnapshot] = None,
-    failures_observed: Optional[list[FailureObservation]] = None,
-    root_causes: Optional[list[RootCause]] = None,
-    next_automation_targets: Optional[list[AutomationTarget]] = None,
-    promotion_candidates: Optional[list[PromotionCandidate]] = None,
+    kpi_snapshot: KPISnapshot | None = None,
+    failures_observed: list[FailureObservation] | None = None,
+    root_causes: list[RootCause] | None = None,
+    next_automation_targets: list[AutomationTarget] | None = None,
+    promotion_candidates: list[PromotionCandidate] | None = None,
 ) -> ReflectionArtifact:
     """
     Factory function to create a reflection artifact with current timestamp.
@@ -402,7 +404,7 @@ def create_reflection_artifact(
     Returns:
         New ReflectionArtifact instance
     """
-    timestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    timestamp = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     return ReflectionArtifact(
         story_id=story_id,

@@ -34,9 +34,9 @@ import json
 import os
 import sys
 import time
-import urllib.request
 import urllib.error
-from typing import Optional, List, Dict, Any
+import urllib.request
+from typing import Any
 
 
 class InfluxGrafanaBootstrap:
@@ -48,7 +48,7 @@ class InfluxGrafanaBootstrap:
         grafana_url: str = "http://host.docker.internal:3001",
         influx_user: str = "admin",
         influx_pass: str = "change-me",
-        influx_token: Optional[str] = None,
+        influx_token: str | None = None,
         grafana_user: str = "admin",
         grafana_pass: str = "admin123",
         org: str = "chiseai",
@@ -63,7 +63,7 @@ class InfluxGrafanaBootstrap:
         self.grafana_pass = grafana_pass
         self.org = org
         self.bucket = bucket
-        self.token: Optional[str] = influx_token
+        self.token: str | None = influx_token
 
     def log(self, message: str, level: str = "INFO") -> None:
         """Print a log message."""
@@ -73,8 +73,8 @@ class InfluxGrafanaBootstrap:
         self,
         url: str,
         method: str = "GET",
-        headers: Optional[Dict[str, str]] = None,
-        data: Optional[bytes] = None,
+        headers: dict[str, str] | None = None,
+        data: bytes | None = None,
         timeout: int = 10,
     ) -> tuple:
         """Make an HTTP request and return (success, response_data, status_code)."""
@@ -86,7 +86,7 @@ class InfluxGrafanaBootstrap:
             if data:
                 req.data = data
 
-            with urllib.request.urlopen(req, timeout=timeout) as response:
+            with urllib.request.urlopen(req, timeout=timeout) as response:  # nosec B310
                 return True, response.read().decode(), response.status
         except urllib.error.HTTPError as e:
             return False, e.read().decode(), e.code
@@ -110,14 +110,14 @@ class InfluxGrafanaBootstrap:
         self.log(f"InfluxDB not ready after {timeout}s", "ERROR")
         return False
 
-    def _get_influx_headers(self) -> Dict[str, str]:
+    def _get_influx_headers(self) -> dict[str, str]:
         """Get headers for InfluxDB API requests."""
         headers = {"Content-Type": "application/json"}
         if self.token:
             headers["Authorization"] = f"Token {self.token}"
         return headers
 
-    def get_existing_tokens(self) -> List[Dict[str, Any]]:
+    def get_existing_tokens(self) -> list[dict[str, Any]]:
         """Get list of existing tokens from InfluxDB."""
         if not self.token:
             self.log("No token available to list authorizations", "DEBUG")
@@ -134,7 +134,7 @@ class InfluxGrafanaBootstrap:
             self.log(f"Failed to get tokens: {data}", "ERROR")
             return []
 
-    def find_admin_token(self) -> Optional[str]:
+    def find_admin_token(self) -> str | None:
         """Find existing admin token for the organization."""
         tokens = self.get_existing_tokens()
 
@@ -150,7 +150,7 @@ class InfluxGrafanaBootstrap:
 
         return None
 
-    def create_admin_token(self) -> Optional[str]:
+    def create_admin_token(self) -> str | None:
         """Create a new admin token for InfluxDB."""
         if not self.token:
             self.log("No existing token to create new token", "ERROR")
@@ -205,7 +205,7 @@ class InfluxGrafanaBootstrap:
 
         return None
 
-    def get_or_create_token(self) -> Optional[str]:
+    def get_or_create_token(self) -> str | None:
         """Get existing token or create a new one."""
         if self.token:
             self.log("Using provided token")
@@ -225,7 +225,7 @@ class InfluxGrafanaBootstrap:
         self.log("No existing token found, cannot create new one without auth", "ERROR")
         return None
 
-    def _get_grafana_headers(self) -> Dict[str, str]:
+    def _get_grafana_headers(self) -> dict[str, str]:
         """Get headers for Grafana API requests."""
         credentials = base64.b64encode(
             f"{self.grafana_user}:{self.grafana_pass}".encode()
@@ -290,7 +290,7 @@ class InfluxGrafanaBootstrap:
                 headers=self._get_grafana_headers(),
                 data=json.dumps(datasource_config).encode(),
             )
-            self.log(f"Updating existing datasource...")
+            self.log("Updating existing datasource...")
         else:
             # Create new datasource
             success, data, status = self._make_request(

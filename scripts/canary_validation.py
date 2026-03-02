@@ -32,7 +32,7 @@ bootstrap(load_env=True)
 # Test 1: Module Import Validation
 def test_module_imports() -> dict[str, Any]:
     """Test that all canary modules can be imported."""
-    results = {
+    results: dict[str, Any] = {
         "test_name": "Module Import Validation",
         "status": "PASS",
         "details": [],
@@ -59,7 +59,7 @@ def test_module_imports() -> dict[str, Any]:
 # Test 2: Configuration Validation
 def test_configuration() -> dict[str, Any]:
     """Test canary configuration loading and validation."""
-    results = {
+    results: dict[str, Any] = {
         "test_name": "Configuration Validation",
         "status": "PASS",
         "details": [],
@@ -111,7 +111,7 @@ def test_configuration() -> dict[str, Any]:
 # Test 3: Gate Evaluation Tests
 def test_gate_evaluation() -> dict[str, Any]:
     """Test gate evaluation logic."""
-    results = {
+    results: dict[str, Any] = {
         "test_name": "Gate Evaluation Logic",
         "status": "PASS",
         "details": [],
@@ -261,7 +261,7 @@ def test_gate_evaluation() -> dict[str, Any]:
 # Test 4: Canary Deployment Lifecycle
 def test_canary_lifecycle() -> dict[str, Any]:
     """Test full canary deployment lifecycle."""
-    results = {
+    results: dict[str, Any] = {
         "test_name": "Canary Deployment Lifecycle",
         "status": "PASS",
         "details": [],
@@ -352,7 +352,7 @@ def test_canary_lifecycle() -> dict[str, Any]:
 # Test 5: Budget Enforcement Validation
 async def test_budget_enforcement() -> dict[str, Any]:
     """Test budget enforcement and position size limits."""
-    results = {
+    results: dict[str, Any] = {
         "test_name": "Budget Enforcement Validation",
         "status": "PASS",
         "details": [],
@@ -380,7 +380,7 @@ async def test_budget_enforcement() -> dict[str, Any]:
         results["details"].append(f"  - Max drawdown: {config.max_drawdown_pct:.1%}")
 
         # Test position size calculation
-        signal = Signal(
+        signal = Signal(  # nosec B106
             signal_id="test-001",
             token="BTC/USDT",
             direction=SignalDirection.LONG,
@@ -438,7 +438,7 @@ async def test_budget_enforcement() -> dict[str, Any]:
                 results["details"].append(f"  - {v.rule}: {v.message}")
 
         # Test with low confidence (should be rejected)
-        low_conf_signal = Signal(
+        low_conf_signal = Signal(  # nosec B106
             signal_id="test-002",
             token="ETH/USDT",
             direction=SignalDirection.SHORT,
@@ -493,7 +493,7 @@ async def test_budget_enforcement() -> dict[str, Any]:
 # Test 6: Metrics Collection Simulation
 def test_metrics_collection() -> dict[str, Any]:
     """Simulate metrics collection for canary validation."""
-    results = {
+    results: dict[str, Any] = {
         "test_name": "Metrics Collection Simulation",
         "status": "PASS",
         "details": [],
@@ -576,7 +576,7 @@ def test_metrics_collection() -> dict[str, Any]:
 # Test 7: Report Generation
 def generate_canary_report(all_results: list[dict[str, Any]]) -> dict[str, Any]:
     """Generate final canary validation report."""
-    report = {
+    report: dict[str, Any] = {
         "report_title": "Paper Trading Canary Validation Report",
         "generated_at": datetime.now().isoformat(),
         "story_id": "PAPER-003",

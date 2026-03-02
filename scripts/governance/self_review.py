@@ -59,7 +59,7 @@ def get_changed_files(
     try:
         if branch:
             # Compare with main branch
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B607
                 ["git", "diff", "--name-only", f"origin/main...{branch}"],
                 capture_output=True,
                 text=True,
@@ -69,7 +69,7 @@ def get_changed_files(
                 files = [f for f in result.stdout.strip().split("\n") if f]
         else:
             # Get staged/unstaged changes
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B607
                 ["git", "diff", "--name-only", "HEAD"],
                 capture_output=True,
                 text=True,

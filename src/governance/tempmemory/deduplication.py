@@ -82,9 +82,9 @@ class DeduplicationResult:
             "is_duplicate": self.is_duplicate,
             "action": self.action.value,
             "matches": [m.to_dict() for m in self.matches],
-            "selected_match": self.selected_match.to_dict()
-            if self.selected_match
-            else None,
+            "selected_match": (
+                self.selected_match.to_dict() if self.selected_match else None
+            ),
             "message": self.message,
         }
 
@@ -159,7 +159,9 @@ class EmbeddingGenerator:
 
         # Generate multiple hash segments
         for i in range(self.EMBEDDING_DIM // 8):
-            hash_obj = hashlib.md5(hash_input + i.to_bytes(4, "little"))
+            hash_obj = hashlib.md5(
+                hash_input + i.to_bytes(4, "little"), usedforsecurity=False
+            )
             hash_int = int(hash_obj.hexdigest(), 16)
             # Normalize to [-1, 1] range
             normalized = (hash_int % 20000) / 10000 - 1
@@ -190,7 +192,7 @@ class EmbeddingGenerator:
             return 0.0
 
         # Compute dot product
-        dot_product = sum(a * b for a, b in zip(embedding1, embedding2))
+        dot_product = sum(a * b for a, b in zip(embedding1, embedding2, strict=False))
 
         # Compute magnitudes
         magnitude1 = sum(a * a for a in embedding1) ** 0.5
@@ -465,9 +467,11 @@ class DeduplicationEngine:
                     DuplicateMatch(
                         memory_id=memory_id,
                         similarity=similarity,
-                        content=content_preview.decode()
-                        if isinstance(content_preview, bytes)
-                        else content_preview,
+                        content=(
+                            content_preview.decode()
+                            if isinstance(content_preview, bytes)
+                            else content_preview
+                        ),
                         metadata=metadata,
                     )
                 )

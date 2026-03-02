@@ -31,15 +31,13 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import hashlib
 import logging
 import os
 import re
 import subprocess
 import sys
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import yaml
 
@@ -99,7 +97,7 @@ class ValidationResult:
         self.warnings.append(ValidationError(field, message, "warning"))
 
 
-def verify_git_sha(sha: str, repo_path: Optional[str] = None) -> bool:
+def verify_git_sha(sha: str, repo_path: str | None = None) -> bool:
     """
     Verify that a git SHA exists in the repository history.
 
@@ -143,10 +141,7 @@ def verify_git_sha(sha: str, repo_path: Optional[str] = None) -> bool:
         )
 
         # Check if command succeeded and output contains "commit"
-        if result.returncode == 0 and "commit" in result.stdout.lower():
-            return True
-
-        return False
+        return bool(result.returncode == 0 and "commit" in result.stdout.lower())
 
     except subprocess.TimeoutExpired:
         logger.warning(f"Git SHA verification timed out for '{sha}'")
@@ -299,12 +294,12 @@ def check_ep_auto_git_entries(data: Any) -> list[ValidationError]:
 
         # Check required fields for EP-AUTO-GIT epics
         required_fields = ["status", "story_count", "story_points"]
-        for field in required_fields:
-            if field not in epic:
+        for required_field in required_fields:
+            if required_field not in epic:
                 errors.append(
                     ValidationError(
-                        f"{epic_path}.{field}",
-                        f"EP-AUTO-GIT epic '{epic_id}' missing required field: {field}",
+                        f"{epic_path}.{required_field}",
+                        f"EP-AUTO-GIT epic '{epic_id}' missing required field: {required_field}",
                         "error",
                     )
                 )
@@ -352,7 +347,7 @@ def check_ep_auto_git_entries(data: Any) -> list[ValidationError]:
                         errors.append(
                             ValidationError(
                                 f"{change_path}.actor",
-                                f"EP-AUTO-GIT change missing 'actor' field",
+                                "EP-AUTO-GIT change missing 'actor' field",
                                 "warning",
                             )
                         )
@@ -361,7 +356,7 @@ def check_ep_auto_git_entries(data: Any) -> list[ValidationError]:
                         errors.append(
                             ValidationError(
                                 f"{change_path}.timestamp",
-                                f"EP-AUTO-GIT change missing 'timestamp' field",
+                                "EP-AUTO-GIT change missing 'timestamp' field",
                                 "error",
                             )
                         )
@@ -372,7 +367,7 @@ def check_ep_auto_git_entries(data: Any) -> list[ValidationError]:
 def validate_status_yaml(
     yaml_file: str,
     verify_shas: bool = True,
-    repo_path: Optional[str] = None,
+    repo_path: str | None = None,
 ) -> ValidationResult:
     """
     Validate the workflow status YAML file.
@@ -409,7 +404,7 @@ def validate_status_yaml(
 
     # Parse YAML
     try:
-        with open(yaml_file, "r", encoding="utf-8") as f:
+        with open(yaml_file, encoding="utf-8") as f:
             content = f.read()
 
         data = yaml.safe_load(content)
@@ -455,7 +450,7 @@ def validate_status_yaml(
     return result
 
 
-def check_authority(agent: Optional[str] = None) -> tuple[bool, str]:
+def check_authority(agent: str | None = None) -> tuple[bool, str]:
     """
     Check if the agent has authority to write to status file.
 
@@ -488,10 +483,10 @@ def check_authority(agent: Optional[str] = None) -> tuple[bool, str]:
 
 def validate_status_write(
     yaml_file: str = DEFAULT_STATUS_FILE,
-    agent: Optional[str] = None,
+    agent: str | None = None,
     verify_shas: bool = True,
     require_authority: bool = True,
-    repo_path: Optional[str] = None,
+    repo_path: str | None = None,
 ) -> ValidationResult:
     """
     Comprehensive validation for a status file write operation.

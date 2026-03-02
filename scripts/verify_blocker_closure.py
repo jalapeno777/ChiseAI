@@ -11,7 +11,6 @@ Run: python3 scripts/verify_blocker_closure.py
 
 import asyncio
 import sys
-from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import uuid4
 
@@ -65,7 +64,7 @@ async def test_g4_persistence():
 
         # Verify key pattern
         if key and key.startswith("paper:outcome:"):
-            print(f"✓ Key follows correct pattern: paper:outcome:*")
+            print("✓ Key follows correct pattern: paper:outcome:*")
             return True
         else:
             print(f"✗ Key does not follow expected pattern: {key}")
@@ -86,18 +85,18 @@ async def test_g5_discord_routing():
     print("=" * 60)
 
     try:
-        from execution.alerts.integration import ExecutionAlertIntegration
         from discord_alerts.config import DiscordConfig
+        from execution.alerts.integration import ExecutionAlertIntegration
 
         # Load config
         config = DiscordConfig.from_env()
-        print(f"\n✓ Discord config loaded")
+        print("\n✓ Discord config loaded")
         print(f"  - Trading channel ID: {config.trading_channel_id}")
         print(f"  - Summaries channel ID: {config.summaries_channel_id}")
 
         # Create alert integration
         alerts = ExecutionAlertIntegration(enabled=True)
-        print(f"✓ Alert integration initialized")
+        print("✓ Alert integration initialized")
 
         # Test health check
         health = await alerts.health_check()
@@ -109,7 +108,7 @@ async def test_g5_discord_routing():
         with open("config/discord_routing.yaml") as f:
             routing = yaml.safe_load(f)
 
-        print(f"✓ Discord routing config loaded")
+        print("✓ Discord routing config loaded")
         print(f"  - Trading channel: {routing['channels']['trading']['id']}")
         print(f"  - Summaries channel: {routing['channels']['summaries']['id']}")
 
@@ -140,7 +139,7 @@ async def test_g6_recap_generator():
 
         # Create recap generator
         generator = TradingRecapGenerator()
-        print(f"\n✓ Recap generator initialized")
+        print("\n✓ Recap generator initialized")
 
         # Test health check
         health = generator.health_check()
@@ -148,7 +147,7 @@ async def test_g6_recap_generator():
 
         # Generate period recap
         recap = await generator.generate_period_recap(hours=24)
-        print(f"✓ Generated period recap")
+        print("✓ Generated period recap")
         print(f"  - Period: {recap['period']}")
         print(f"  - Data source: {recap['data_source']}")
         print(f"  - Outcome count: {recap['outcome_count']}")
@@ -156,16 +155,16 @@ async def test_g6_recap_generator():
 
         # Generate position summary
         summary = await generator.generate_position_summary()
-        print(f"✓ Generated position summary")
+        print("✓ Generated position summary")
         print(f"  - Data source: {summary['data_source']}")
         print(f"  - Open positions: {summary.get('total_open_positions', 0)}")
 
         # Verify data source is canonical persistence
         if recap.get("data_source") == "canonical_persistence":
-            print(f"✓ Recap uses canonical persistence as data source")
+            print("✓ Recap uses canonical persistence as data source")
             return True
         else:
-            print(f"✗ Recap does not use canonical persistence")
+            print("✗ Recap does not use canonical persistence")
             return False
 
     except Exception as e:

@@ -53,10 +53,10 @@ class RetryPolicy:
     jitter_max: float = 1.0  # seconds
     budget_limit_per_minute: int = 10
     circuit_breaker_name: str | None = None
-    retryable_exceptions: tuple[type[Exception], ...] = field(
+    retryable_exceptions: tuple[type[BaseException], ...] = field(
         default_factory=lambda: (Exception,)
     )
-    non_retryable_exceptions: tuple[type[Exception], ...] = field(
+    non_retryable_exceptions: tuple[type[BaseException], ...] = field(
         default_factory=lambda: (
             KeyboardInterrupt,
             SystemExit,
@@ -132,6 +132,7 @@ class RetryBudgetManager:
 
     def _check_and_consume_redis(self, budget_key: str, limit: int) -> tuple[bool, int]:
         """Check and consume budget using Redis."""
+        assert self._redis is not None
         pipe = self._redis.pipeline()
 
         # Get current count
@@ -333,7 +334,7 @@ class PRRetryCoordinator:
             operation_name=operation_name,
         )
 
-        last_exception: Exception | None = None
+        last_exception: BaseException | None = None
 
         for attempt in range(1, policy.max_attempts + 1):
             operation.attempt_count = attempt
@@ -442,7 +443,7 @@ class PRRetryCoordinator:
             operation_name=operation_name,
         )
 
-        last_exception: Exception | None = None
+        last_exception: BaseException | None = None
 
         for attempt in range(1, policy.max_attempts + 1):
             operation.attempt_count = attempt

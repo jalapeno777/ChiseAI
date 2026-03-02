@@ -34,9 +34,9 @@ import os
 import socket
 import sys
 import time
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import Enum
-from typing import Any
+from typing import Any, cast
 
 # Add project root to path for imports
 sys.path.insert(
@@ -69,6 +69,8 @@ HEARTBEAT_TTL_SECONDS = 300
 WATCHDOG_STALE_THRESHOLD_SECONDS = 120  # 2 minutes
 MAX_RECOVERY_ATTEMPTS = 3
 RECOVERY_COOLDOWN_SECONDS = 300  # 5 minutes
+MIN_HEARTBEAT_INTERVAL = 30
+MAX_HEARTBEAT_AGE_ALERT = 90
 CIRCUIT_BREAKER_THRESHOLD = 5  # Failures before opening
 CIRCUIT_BREAKER_TIMEOUT_SECONDS = 60  # 1 minute before trying again
 EXPONENTIAL_BACKOFF_BASE = 2
@@ -161,7 +163,7 @@ class ExponentialBackoff:
 class WatchdogMonitor:
     """Watchdog that monitors heartbeat age and triggers recovery."""
 
-    def __init__(self, redis_client: redis.Redis | None = None):
+    def __init__(self, redis_client: Any | None = None):
         self.redis_client = redis_client
         self.stale_threshold = timedelta(seconds=WATCHDOG_STALE_THRESHOLD_SECONDS)
 
@@ -180,7 +182,9 @@ class WatchdogMonitor:
             }
 
         try:
-            heartbeat = self.redis_client.hgetall(HEARTBEAT_HASH_KEY)
+            heartbeat = cast(
+                dict[str, Any], self.redis_client.hgetall(HEARTBEAT_HASH_KEY)
+            )
 
             if not heartbeat:
                 return {
@@ -200,7 +204,7 @@ class WatchdogMonitor:
                 }
 
             last_heartbeat = datetime.fromisoformat(timestamp_str)
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             age = now - last_heartbeat
             age_seconds = age.total_seconds()
 
@@ -237,7 +241,9 @@ class WatchdogMonitor:
 
         try:
             # Get current recovery state
-            recovery_data = self.redis_client.hgetall(RECOVERY_KEY) or {}
+            recovery_data = cast(
+                dict[str, Any], self.redis_client.hgetall(RECOVERY_KEY) or {}
+            )
             attempt_count = int(recovery_data.get("attempt_count", 0))
             last_attempt = recovery_data.get("last_attempt")
 
@@ -246,7 +252,7 @@ class WatchdogMonitor:
                 last_dt = datetime.fromisoformat(last_attempt)
                 cooldown_remaining = (
                     RECOVERY_COOLDOWN_SECONDS
-                    - (datetime.now(timezone.utc) - last_dt).total_seconds()
+                    - (datetime.now(UTC) - last_dt).total_seconds()
                 )
                 if cooldown_remaining > 0:
                     return {
@@ -260,10 +266,10 @@ class WatchdogMonitor:
 
             # Store recovery trigger
             recovery_info = {
-                "triggered_at": datetime.now(timezone.utc).isoformat(),
+                "triggered_at": datetime.now(UTC).isoformat(),
                 "reason": reason,
                 "attempt_count": str(attempt_count),
-                "last_attempt": datetime.now(timezone.utc).isoformat(),
+                "last_attempt": datetime.now(UTC).isoformat(),
             }
             self.redis_client.hset(RECOVERY_KEY, mapping=recovery_info)
             self.redis_client.expire(RECOVERY_KEY, 86400)  # 24 hour TTL
@@ -347,6 +353,7 @@ def record_heartbeat(
     metadata: dict[str, Any] | None = None,
     uptime_seconds: int | None = None,
     circuit_breaker: CircuitBreaker | None = None,
+    force: bool = False,
 ) -> bool:
     """Record a scheduler heartbeat to Redis with P0 hardening.
 
@@ -368,7 +375,7 @@ def record_heartbeat(
         return False
 
     try:
-        timestamp = datetime.now(timezone.utc).isoformat()
+        timestamp = datetime.now(UTC).isoformat()
         hostname = socket.gethostname()
         pid = os.getpid()
 
@@ -420,6 +427,12 @@ def record_stop(redis_client: redis.Redis) -> bool:
         True if successful, False otherwise
     """
     return record_heartbeat(redis_client, status="stopped")
+
+
+def check_heartbeat_health(redis_client: redis.Redis) -> dict[str, Any]:
+    """Compatibility helper for tests and external callers."""
+    watchdog = WatchdogMonitor(redis_client)
+    return watchdog.check_heartbeat_age()
 
 
 def run_watchdog_check(

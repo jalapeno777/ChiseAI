@@ -1,4 +1,5 @@
 """CI/CD Pipeline Configuration for ST-NS-030."""
+
 import json
 import logging
 import os
@@ -31,6 +32,7 @@ class PipelineStatus(Enum):
 @dataclass
 class StageResult:
     """Result of a pipeline stage execution."""
+
     stage: PipelineStage
     status: PipelineStatus
     start_time: datetime
@@ -39,7 +41,7 @@ class StageResult:
     output: str = ""
     error: str = ""
     metrics: dict[str, Any] = field(default_factory=dict)
-    
+
     def to_dict(self) -> dict:
         return {
             "stage": self.stage.value,
@@ -56,6 +58,7 @@ class StageResult:
 @dataclass
 class PipelineConfig:
     """Configuration for CI/CD pipeline."""
+
     project_name: str = "chiseai"
     python_version: str = "3.13"
     enable_lint: bool = True
@@ -66,7 +69,7 @@ class PipelineConfig:
     fail_on_coverage_drop: bool = True
     parallel_jobs: int = 4
     timeout_minutes: int = 60
-    
+
     def to_dict(self) -> dict:
         return {
             "project_name": self.project_name,
@@ -82,12 +85,13 @@ class PipelineConfig:
 
 class StageRunner:
     """Base class for running pipeline stages."""
-    
+
     def __init__(self, config: PipelineConfig):
         self.config = config
-    
-    def run_command(self, cmd: list[str], cwd: str | None = None, 
-                    timeout: int | None = None) -> tuple[int, str, str]:
+
+    def run_command(
+        self, cmd: list[str], cwd: str | None = None, timeout: int | None = None
+    ) -> tuple[int, str, str]:
         """Run a shell command and return exit code, stdout, stderr."""
         try:
             result = subprocess.run(
@@ -106,35 +110,39 @@ class StageRunner:
 
 class LintStage(StageRunner):
     """Lint stage runner."""
-    
+
     def run(self) -> StageResult:
         start_time = datetime.now(UTC)
         stage = PipelineStage.LINT
-        
+
         # Run black check
         code, stdout, stderr = self.run_command(
             ["python3", "-m", "black", "--check", "--diff", "src/", "tests/"]
         )
         black_passed = code == 0
-        
+
         # Run ruff
         code2, stdout2, stderr2 = self.run_command(
             ["python3", "-m", "ruff", "check", "src/", "tests/"]
         )
         ruff_passed = code2 == 0
-        
+
         # Run mypy (if configured)
         code3, stdout3, stderr3 = self.run_command(
             ["python3", "-m", "mypy", "src/", "--ignore-missing-imports"],
             timeout=120,
         )
         mypy_passed = code3 == 0 or code3 == -1  # Allow mypy to be missing
-        
+
         end_time = datetime.now(UTC)
         duration = (end_time - start_time).total_seconds()
-        
-        status = PipelineStatus.SUCCESS if (black_passed and ruff_passed) else PipelineStatus.FAILED
-        
+
+        status = (
+            PipelineStatus.SUCCESS
+            if (black_passed and ruff_passed)
+            else PipelineStatus.FAILED
+        )
+
         return StageResult(
             stage=stage,
             status=status,
@@ -153,14 +161,16 @@ class LintStage(StageRunner):
 
 class TestStage(StageRunner):
     """Test stage runner."""
-    
+
     def run(self) -> StageResult:
         start_time = datetime.now(UTC)
         stage = PipelineStage.TEST
-        
+
         # Run pytest with coverage
         cmd = [
-            "python3", "-m", "pytest",
+            "python3",
+            "-m",
+            "pytest",
             "tests/",
             "-v",
             "--cov=src",
@@ -168,12 +178,12 @@ class TestStage(StageRunner):
             "--cov-report=term-missing",
             f"-n{self.config.parallel_jobs}",
         ]
-        
+
         code, stdout, stderr = self.run_command(cmd, timeout=600)
-        
+
         end_time = datetime.now(UTC)
         duration = (end_time - start_time).total_seconds()
-        
+
         # Parse coverage
         coverage_pct = 0.0
         coverage_path = Path("coverage.json")
@@ -181,18 +191,20 @@ class TestStage(StageRunner):
             try:
                 with open(coverage_path) as f:
                     cov_data = json.load(f)
-                    coverage_pct = cov_data.get("totals", {}).get("percent_covered", 0.0)
+                    coverage_pct = cov_data.get("totals", {}).get(
+                        "percent_covered", 0.0
+                    )
             except Exception:
                 pass
-        
+
         passed = code == 0
         coverage_met = coverage_pct >= self.config.min_coverage
-        
+
         if not passed or not coverage_met and self.config.fail_on_coverage_drop:
             status = PipelineStatus.FAILED
         else:
             status = PipelineStatus.SUCCESS
-        
+
         return StageResult(
             stage=stage,
             status=status,
@@ -211,45 +223,49 @@ class TestStage(StageRunner):
 
 class SecurityStage(StageRunner):
     """Security scan stage runner."""
-    
+
     def run(self) -> StageResult:
         start_time = datetime.now(UTC)
         stage = PipelineStage.SECURITY
-        
+
         vulnerabilities = []
-        
+
         # Run bandit for security issues
         code, stdout, stderr = self.run_command(
             ["python3", "-m", "bandit", "-r", "src/", "-f", "json"],
             timeout=120,
         )
         bandit_passed = code == 0
-        
+
         if not bandit_passed and stdout:
             try:
                 results = json.loads(stdout)
                 vulnerabilities.extend(results.get("results", []))
             except json.JSONDecodeError:
                 pass
-        
+
         # Run safety for dependency vulnerabilities
         code2, stdout2, stderr2 = self.run_command(
             ["python3", "-m", "safety", "check", "--json"],
             timeout=60,
         )
         safety_passed = code2 == 0
-        
+
         end_time = datetime.now(UTC)
         duration = (end_time - start_time).total_seconds()
-        
+
         # Allow pipeline to pass even if security tools aren't installed
         if not bandit_passed and "No module named bandit" in stderr:
             bandit_passed = True
         if not safety_passed and "No module named safety" in stderr2:
             safety_passed = True
-        
-        status = PipelineStatus.SUCCESS if (bandit_passed and safety_passed) else PipelineStatus.FAILED
-        
+
+        status = (
+            PipelineStatus.SUCCESS
+            if (bandit_passed and safety_passed)
+            else PipelineStatus.FAILED
+        )
+
         return StageResult(
             stage=stage,
             status=status,
@@ -268,26 +284,26 @@ class SecurityStage(StageRunner):
 
 class CIPipeline:
     """Main CI/CD pipeline orchestrator."""
-    
+
     def __init__(self, config: PipelineConfig | None = None):
         self.config = config or PipelineConfig()
         self._results: list[StageResult] = []
         self._start_time: datetime | None = None
         self._end_time: datetime | None = None
-    
+
     def run(self) -> dict[str, Any]:
         """Run the full pipeline."""
         self._start_time = datetime.now(UTC)
         self._results = []
-        
-        stages = []
+
+        stages: list[tuple[str, Any]] = []
         if self.config.enable_lint:
             stages.append(("lint", LintStage(self.config)))
         if self.config.enable_test:
             stages.append(("test", TestStage(self.config)))
         if self.config.enable_security_scan:
             stages.append(("security", SecurityStage(self.config)))
-        
+
         for name, runner in stages:
             logger.info(f"Running stage: {name}")
             try:
@@ -295,23 +311,29 @@ class CIPipeline:
                 self._results.append(result)
             except Exception as e:
                 logger.exception(f"Stage {name} failed with exception")
-                self._results.append(StageResult(
-                    stage=runner.stage if hasattr(runner, 'stage') else PipelineStage.LINT,
-                    status=PipelineStatus.FAILED,
-                    start_time=datetime.now(UTC),
-                    error=str(e),
-                ))
-        
+                self._results.append(
+                    StageResult(
+                        stage=(
+                            runner.stage
+                            if hasattr(runner, "stage")
+                            else PipelineStage.LINT
+                        ),
+                        status=PipelineStatus.FAILED,
+                        start_time=datetime.now(UTC),
+                        error=str(e),
+                    )
+                )
+
         self._end_time = datetime.now(UTC)
         return self.get_report()
-    
+
     def get_report(self) -> dict[str, Any]:
         """Get pipeline execution report."""
         all_passed = all(r.status == PipelineStatus.SUCCESS for r in self._results)
         total_duration = 0.0
         if self._start_time and self._end_time:
             total_duration = (self._end_time - self._start_time).total_seconds()
-        
+
         return {
             "pipeline": self.config.project_name,
             "status": "success" if all_passed else "failed",
@@ -321,11 +343,15 @@ class CIPipeline:
             "stages": [r.to_dict() for r in self._results],
             "summary": {
                 "total_stages": len(self._results),
-                "passed_stages": sum(1 for r in self._results if r.status == PipelineStatus.SUCCESS),
-                "failed_stages": sum(1 for r in self._results if r.status == PipelineStatus.FAILED),
+                "passed_stages": sum(
+                    1 for r in self._results if r.status == PipelineStatus.SUCCESS
+                ),
+                "failed_stages": sum(
+                    1 for r in self._results if r.status == PipelineStatus.FAILED
+                ),
             },
         }
-    
+
     def is_green(self) -> bool:
         """Check if pipeline is fully green."""
         return all(r.status == PipelineStatus.SUCCESS for r in self._results)

@@ -5,25 +5,23 @@ Tests for worktree_manager.py
 Story: ST-AUTO-007
 """
 
-import datetime as dt
 import json
 import os
-import subprocess
+
+# Add project root to path
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-# Add project root to path
-import sys
-
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from scripts.swarm.worktree_manager import (
-    WorktreeManager,
-    WorktreeInfo,
-    WorktreeError,
     WorktreeConflictError,
+    WorktreeError,
+    WorktreeInfo,
+    WorktreeManager,
 )
 
 

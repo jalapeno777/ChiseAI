@@ -11,13 +11,13 @@ For HOTFIX-PAPER-API-001: Paper Trading API Endpoints
 
 from __future__ import annotations
 
-from paper_trading.tracker import PaperTradingTracker
 from paper_trading.models import (
-    PaperPosition,
     PaperOrder,
     PaperPnL,
     PaperPortfolio,
+    PaperPosition,
 )
+from paper_trading.tracker import PaperTradingTracker
 
 __all__ = [
     "PaperTradingTracker",

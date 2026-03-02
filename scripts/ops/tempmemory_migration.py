@@ -19,7 +19,6 @@ import argparse
 import json
 import logging
 import sys
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -27,7 +26,6 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from governance.tempmemory import (
-    MigrationStatus,
     TempmemoryMigrationEngine,
     TempmemoryTracker,
 )
@@ -182,12 +180,12 @@ def cmd_status(args: argparse.Namespace) -> int:
     print(f"  Skipped: {summary.skipped_count}")
 
     if summary.by_story:
-        print(f"\nBy Story:")
+        print("\nBy Story:")
         for story_id, count in sorted(summary.by_story.items()):
             print(f"  {story_id}: {count}")
 
     if summary.by_type:
-        print(f"\nBy Type:")
+        print("\nBy Type:")
         for memory_type, count in sorted(summary.by_type.items()):
             print(f"  {memory_type}: {count}")
 

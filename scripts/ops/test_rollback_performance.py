@@ -15,6 +15,7 @@ import importlib.util
 import os
 import sys
 import time
+from typing import Any, cast
 from unittest.mock import MagicMock
 
 
@@ -22,6 +23,10 @@ from unittest.mock import MagicMock
 def load_module_directly(module_name: str, file_path: str):
     """Load a module directly from file path."""
     spec = importlib.util.spec_from_file_location(module_name, file_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(
+            f"Could not load module spec for {module_name} at {file_path}"
+        )
     module = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = module
     spec.loader.exec_module(module)
@@ -43,11 +48,11 @@ class MockModule:
 
 
 # Mock InfluxDB client
-sys.modules["influxdb_client"] = MockModule()
-sys.modules["influxdb_client.client"] = MockModule()
-sys.modules["influxdb_client.client.write"] = MockModule()
-sys.modules["influxdb_client.client.write.point"] = MockModule()
-sys.modules["aiohttp"] = MockModule()
+sys.modules["influxdb_client"] = cast(Any, MockModule())
+sys.modules["influxdb_client.client"] = cast(Any, MockModule())
+sys.modules["influxdb_client.client.write"] = cast(Any, MockModule())
+sys.modules["influxdb_client.client.write.point"] = cast(Any, MockModule())
+sys.modules["aiohttp"] = cast(Any, MockModule())
 
 # Now load the model_rollback module
 model_rollback = load_module_directly("ml.rollback.model_rollback", model_rollback_path)

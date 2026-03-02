@@ -8,10 +8,9 @@ from __future__ import annotations
 
 import json
 import time
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
-
 from scripts.pr_lifecycle.agent_coordinator import (
     AgentCoordinator,
     AgentInfo,
@@ -21,14 +20,12 @@ from scripts.pr_lifecycle.agent_coordinator import (
 )
 from scripts.pr_lifecycle.parallel_execution import (
     BatchItem,
-    BatchStatus,
     DeadlockResolution,
     ExecutionBatch,
     ParallelExecutionCoordinator,
 )
 from scripts.pr_lifecycle.scope_registry import (
     ConflictType,
-    ScopeConflict,
     ScopeRegistry,
     ScopeReservation,
 )

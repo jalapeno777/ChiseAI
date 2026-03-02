@@ -80,7 +80,7 @@ async def smoke_test_price_cache_populated():
     loader.ohlcv_fetcher.fetch.return_value = mock_ohlcv
 
     # Setup mock signal generator
-    mock_signal = Signal(
+    mock_signal = Signal(  # nosec B106
         token="BTC/USDT",
         direction=SignalDirection.LONG,
         confidence=0.85,

@@ -1,4 +1,5 @@
 """Shared fixtures for security tests."""
+
 import os
 import tempfile
 
@@ -64,18 +65,24 @@ def temp_cert_files():
     with tempfile.TemporaryDirectory() as tmpdir:
         cert_path = os.path.join(tmpdir, "test.crt")
         key_path = os.path.join(tmpdir, "test.key")
-        
+
         # Create dummy files (not valid certs, just for path testing)
         with open(cert_path, "w") as f:
             f.write("-----BEGIN CERTIFICATE-----\n")
-            f.write("MIIBkTCB+wIJAKHHCgVZU2jAMA0GCSqGSIb3DQEBCwUAMBExDzANBgNVBAMMBnRl\n")
-            f.write("c3RDQTAeFw0yNDAxMDEwMDAwMDBaFw0yNTAxMDEwMDAwMDBaMBExDzANBgNVBAMM\n")
-            f.write("BnRlc3RDQTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAwT8kqCEm4Y5lqZ3a\n")
+            f.write(
+                "MIIBkTCB+wIJAKHHCgVZU2jAMA0GCSqGSIb3DQEBCwUAMBExDzANBgNVBAMMBnRl\n"
+            )
+            f.write(
+                "c3RDQTAeFw0yNDAxMDEwMDAwMDBaFw0yNTAxMDEwMDAwMDBaMBExDzANBgNVBAMM\n"
+            )
+            f.write(
+                "BnRlc3RDQTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAwT8kqCEm4Y5lqZ3a\n"
+            )
             f.write("-----END CERTIFICATE-----\n")
-        
+
         with open(key_path, "w") as f:
             f.write("-----BEGIN PRIVATE KEY-----\n")
             f.write("MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDB\n")
             f.write("-----END PRIVATE KEY-----\n")
-        
+
         yield {"cert": cert_path, "key": key_path}

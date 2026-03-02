@@ -4733,7 +4733,7 @@ launch_stories:
   - id: PAPER-RECOVERY-001
     title: Paper Trading 30-Minute Proof Loop Validation
     epic_id: EP-PAPER-001
-    status: closed
+    status: completed
     validation_status: closed_with_manual_and_info_exceptions
     story_points: 3
     priority: P1-HIGH

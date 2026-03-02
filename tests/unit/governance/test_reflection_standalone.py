@@ -40,23 +40,13 @@ if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))
 
 # Normal imports after setup
-import json
-from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
 from governance.reflection.artifacts import (
-    AutomationTarget,
-    FailureObservation,
-    FailureType,
     KPISnapshot,
-    Priority,
-    PromotionCandidate,
     ReflectionArtifact,
     ReflectionType,
     ReflectionValidator,
-    RootCause,
-    RootCauseCategory,
-    Severity,
     create_reflection_artifact,
 )
 from governance.reflection.loops import ReflectionLoops, ReflectionStorage

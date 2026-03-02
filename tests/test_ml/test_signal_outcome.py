@@ -4,16 +4,14 @@
 For ST-VENUE-001: Venue provenance fields implementation
 """
 
-import pytest
 from datetime import UTC, datetime
 from decimal import Decimal
-from uuid import uuid4, UUID
+from uuid import uuid4
 
+import pytest
 from src.ml.models.signal_outcome import (
     SignalOutcome,
-    OutcomeType,
     SignalOutcomeStatus,
-    EntryReason,
 )
 
 

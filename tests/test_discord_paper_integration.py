@@ -8,19 +8,17 @@ For P0-REPAIR-001: Discord Integration Repair
 
 from __future__ import annotations
 
-import asyncio
 import os
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
 
 if TYPE_CHECKING:
-    from execution.paper.orchestrator import PaperTradingOrchestrator
-    from execution.paper.position_tracker import PaperPosition
+    pass
 
 
 # Set test environment variables
@@ -79,7 +77,7 @@ class TestDiscordIntegration:
         self, mock_signal, mock_filled_order, mock_position
     ):
         """Test that trade open notification is sent when position is opened."""
-        from discord_alerts.trade_notifier import TradeNotifier, TradeNotificationResult
+        from discord_alerts.trade_notifier import TradeNotificationResult, TradeNotifier
         from execution.paper.orchestrator import PaperTradingOrchestrator
 
         # Create mock notifier
@@ -134,7 +132,7 @@ class TestDiscordIntegration:
         assert call_args.kwargs["order"] == mock_filled_order
         assert call_args.kwargs["signal_id"] == mock_signal.signal_id
 
-        print(f"✓ Trade open notification sent successfully")
+        print("✓ Trade open notification sent successfully")
         print(
             f"  Message ID: {mock_notifier.send_trade_open_notification.return_value.message_id}"
         )
@@ -142,7 +140,7 @@ class TestDiscordIntegration:
     @pytest.mark.asyncio
     async def test_trade_close_notification_sent(self, mock_position):
         """Test that trade close notification is sent when position is closed."""
-        from discord_alerts.trade_notifier import TradeNotifier, TradeNotificationResult
+        from discord_alerts.trade_notifier import TradeNotificationResult, TradeNotifier
         from execution.paper.orchestrator import PaperTradingOrchestrator
 
         # Create mock notifier
@@ -212,18 +210,18 @@ class TestDiscordIntegration:
         assert call_args.kwargs["pnl"] == 150.0
         assert call_args.kwargs["exit_price"] == exit_price
 
-        print(f"✓ Trade close notification sent successfully")
+        print("✓ Trade close notification sent successfully")
         print(
             f"  Message ID: {mock_notifier.send_trade_close_notification.return_value.message_id}"
         )
-        print(f"  Realized PnL: $150.00")
+        print("  Realized PnL: $150.00")
 
     @pytest.mark.asyncio
     async def test_notification_graceful_failure(
         self, mock_signal, mock_filled_order, mock_position
     ):
         """Test that notification failures don't break the trading flow."""
-        from discord_alerts.trade_notifier import TradeNotifier, TradeNotificationResult
+        from discord_alerts.trade_notifier import TradeNotificationResult, TradeNotifier
         from execution.paper.orchestrator import PaperTradingOrchestrator
 
         # Create mock notifier that fails
@@ -271,8 +269,8 @@ class TestDiscordIntegration:
         assert position == mock_position
         mock_notifier.send_trade_open_notification.assert_called_once()
 
-        print(f"✓ Notification failure handled gracefully")
-        print(f"  Position still opened despite Discord error")
+        print("✓ Notification failure handled gracefully")
+        print("  Position still opened despite Discord error")
 
 
 class TestSignalOutcomeFactory:
@@ -299,7 +297,7 @@ class TestSignalOutcomeFactory:
         assert outcome.pnl is None
         assert outcome.exit_price is None
 
-        print(f"✓ SignalOutcome created from open position")
+        print("✓ SignalOutcome created from open position")
         print(f"  Symbol: {outcome.symbol}")
         print(f"  Direction: {outcome.direction}")
         print(f"  Entry Price: ${outcome.entry_price}")
@@ -324,7 +322,7 @@ class TestSignalOutcomeFactory:
         assert outcome.pnl == Decimal("150.0")
         assert outcome.exit_price == Decimal("46500.0")
 
-        print(f"✓ SignalOutcome created from closed position")
+        print("✓ SignalOutcome created from closed position")
         print(f"  Status: {outcome.status.value}")
         print(f"  PnL: ${outcome.pnl}")
         print(f"  Exit Price: ${outcome.exit_price}")

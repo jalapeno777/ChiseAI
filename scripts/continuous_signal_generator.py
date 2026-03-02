@@ -10,8 +10,9 @@ import os
 import sys
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import cast
 
 # Set Redis connection
 os.environ["REDIS_HOST"] = "host.docker.internal"
@@ -27,15 +28,16 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 import redis
-from signal_generation.signal_generator import SignalGenerator, SignalGenerationConfig
-from signal_generation.models import SignalStatus
+
 from data_ingestion.ohlcv_fetcher import OHLCVData
 from data_ingestion.timeframe_config import Timeframe
+from signal_generation.models import SignalStatus
+from signal_generation.signal_generator import SignalGenerationConfig, SignalGenerator
 
 
 def create_mock_ohlcv(base_price: float, trend: str = "up"):
     """Create mock OHLCV data."""
-    now = int(datetime.now(timezone.utc).timestamp() * 1000)
+    now = int(datetime.now(UTC).timestamp() * 1000)
     data = []
 
     for i in range(50):
@@ -66,9 +68,9 @@ def store_signal_in_redis_paper_mode(
 ) -> bool:
     """Store a signal in Redis using the paper:signal:* pattern and update indexes."""
     try:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         timestamp_str = now.strftime("%Y%m%d%H%M%S")
-        token_clean = signal.token.replace("/", "_")
+        signal.token.replace("/", "_")
         signal_id = signal.signal_id or str(uuid.uuid4())
 
         # Use paper:signal pattern that forensic harness expects
@@ -158,7 +160,7 @@ async def continuous_signal_generation(
         return 0
 
     # Get initial count
-    initial_count = len(r.keys("paper:signal:*"))
+    initial_count = len(cast(list[str], r.keys("paper:signal:*")))
     logger.info(f"Initial paper signal count: {initial_count}")
 
     # Create signal generator with lower threshold
@@ -197,7 +199,7 @@ async def continuous_signal_generation(
         r.hset(
             "bmad:chiseai:scheduler:heartbeat",
             mapping={
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "status": "running",
                 "iteration": str(iteration),
                 "signals_generated": str(total_generated),
@@ -206,7 +208,7 @@ async def continuous_signal_generation(
         )
 
         # Check current signal count
-        current_count = len(r.keys("paper:signal:*"))
+        current_count = len(cast(list[str], r.keys("paper:signal:*")))
         logger.info(
             f"Total paper signals: {current_count} (+{current_count - initial_count} since start)"
         )
@@ -215,7 +217,7 @@ async def continuous_signal_generation(
         await asyncio.sleep(interval_seconds)
 
     # Final stats
-    final_count = len(r.keys("paper:signal:*"))
+    final_count = len(cast(list[str], r.keys("paper:signal:*")))
     logger.info("=" * 60)
     logger.info("Signal generation complete!")
     logger.info(f"Total signals generated: {total_generated}")

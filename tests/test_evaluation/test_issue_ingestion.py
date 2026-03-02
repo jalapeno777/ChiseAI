@@ -6,15 +6,14 @@ Tests for issue ingestion and parsing system.
 # SAFETY: No live trading flow modified
 """
 
-import pytest
+import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
-import tempfile
-import os
 
+import pytest
 from src.evaluation import Issue, IssueCategory, IssueSource
-from src.evaluation.parsers import IterlogParser, CILogParser, WorkerReportParser
 from src.evaluation.issue_ingestion import IssueIngestion
+from src.evaluation.parsers import CILogParser, IterlogParser, WorkerReportParser
 
 
 class TestIssueDataclass:

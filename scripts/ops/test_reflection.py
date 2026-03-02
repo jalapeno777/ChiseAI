@@ -8,6 +8,7 @@ by running all three loop types with mock storage.
 
 import sys
 from pathlib import Path
+from typing import Any
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -15,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 # Create mock src module to satisfy 'from src.xxx' imports
 import types
 
-src_module = types.ModuleType("src")
+src_module: Any = types.ModuleType("src")
 sys.modules["src"] = src_module
 
 # Import governance and link it to src.governance
@@ -32,14 +33,16 @@ for _attr_name in dir(_real_governance):
             setattr(src_module.governance, _attr_name, _attr)
             sys.modules[f"src.governance.{_attr_name}"] = _attr
 
+from datetime import UTC
+
 from governance.reflection.artifacts import (
-    KPISnapshot,
     FailureObservation,
     FailureType,
-    Severity,
+    KPISnapshot,
+    ReflectionType,
     RootCause,
     RootCauseCategory,
-    ReflectionType,
+    Severity,
 )
 from governance.reflection.loops import ReflectionLoops, ReflectionStorage
 
@@ -188,9 +191,9 @@ def test_macro_reflection():
     print("  ✓ Macro-reflection created successfully")
 
     # Verify stored in Redis
-    from datetime import datetime, timezone
+    from datetime import datetime
 
-    date_str = datetime.now(timezone.utc).strftime("%Y%m%d")
+    date_str = datetime.now(UTC).strftime("%Y%m%d")
     key = ReflectionStorage.MACRO_DAILY_KEY.format(date=date_str)
     assert key in mock_redis.data
     print("  ✓ Macro-reflection stored in Redis")

@@ -69,7 +69,7 @@ def get_server_timestamp(base_url):
                     return int(time_sec) * 1000
         else:
             req = urllib.request.Request(url, method="GET")
-            with urllib.request.urlopen(req, timeout=5) as response:
+            with urllib.request.urlopen(req, timeout=5) as response:  # nosec B310
                 data = json.loads(response.read().decode("utf-8"))
                 time_nano = data.get("result", {}).get("timeNano", 0)
                 if time_nano:
@@ -104,7 +104,7 @@ def test_endpoint_http_lib(base_url, endpoint, api_key, api_secret):
 
     try:
         req = urllib.request.Request(url, headers=headers, method="GET")
-        with urllib.request.urlopen(req, timeout=10) as response:
+        with urllib.request.urlopen(req, timeout=10) as response:  # nosec B310
             response_body = response.read().decode("utf-8")
             latency_ms = int((time.time() - start_time) * 1000)
 

@@ -11,8 +11,6 @@ import json
 from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
-import pytest
-
 from src.governance.memory.deduplication import (
     CONFIG_KEY,
     FEATURE_FLAG_KEY,

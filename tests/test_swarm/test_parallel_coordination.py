@@ -5,29 +5,24 @@ Tests for parallel coordination (agent_coordinator.py)
 Story: ST-AUTO-007
 """
 
-import datetime as dt
 import json
-import os
-import subprocess
-import tempfile
+
+# Add project root to path
+import sys
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-# Add project root to path
-import sys
-
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from scripts.swarm.agent_coordinator import (
+    MAX_AGENTS,
     AgentCoordinator,
     AgentInfo,
-    AgentStatus,
     AgentRole,
+    AgentStatus,
     DashboardData,
     FailureRecord,
-    MAX_AGENTS,
-    STALE_THRESHOLD_MINUTES,
 )
 
 

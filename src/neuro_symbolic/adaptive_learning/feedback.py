@@ -275,9 +275,7 @@ class FeedbackIntegrator:
         profit_factor = (
             sum(rewards) / sum(penalties)
             if penalties and sum(penalties) > 0
-            else float("inf")
-            if rewards
-            else 0.0
+            else float("inf") if rewards else 0.0
         )
 
         # Compute Sharpe-like ratio
@@ -355,9 +353,11 @@ class FeedbackIntegrator:
             "avg_reward": np.mean(rewards) if rewards else 0.0,
             "avg_penalty": np.mean(penalties) if penalties else 0.0,
             "strategies": strategy_stats,
-            "last_integration": self._last_integration_time.isoformat()
-            if self._last_integration_time
-            else None,
+            "last_integration": (
+                self._last_integration_time.isoformat()
+                if self._last_integration_time
+                else None
+            ),
         }
 
     def get_pending_feedback(self) -> list[FeedbackSignal]:

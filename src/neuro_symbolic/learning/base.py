@@ -188,9 +188,11 @@ class PerformanceMetrics:
             profit_factor=data.get("profit_factor", 0.0),
             max_drawdown=data.get("max_drawdown", 0.0),
             sample_count=data.get("sample_count", 0),
-            timestamp=datetime.fromisoformat(data["timestamp"])
-            if "timestamp" in data
-            else datetime.now(),
+            timestamp=(
+                datetime.fromisoformat(data["timestamp"])
+                if "timestamp" in data
+                else datetime.now()
+            ),
             per_strategy=data.get("per_strategy", {}),
         )
 
@@ -276,9 +278,9 @@ class AdaptationResult:
         return {
             "status": self.status.value,
             "timestamp": self.timestamp.isoformat(),
-            "previous_metrics": self.previous_metrics.to_dict()
-            if self.previous_metrics
-            else None,
+            "previous_metrics": (
+                self.previous_metrics.to_dict() if self.previous_metrics else None
+            ),
             "new_metrics": self.new_metrics.to_dict() if self.new_metrics else None,
             "parameters_changed": self.parameters_changed,
             "error_message": self.error_message,
@@ -293,12 +295,16 @@ class AdaptationResult:
         return cls(
             status=AdaptationStatus(data["status"]),
             timestamp=datetime.fromisoformat(data["timestamp"]),
-            previous_metrics=PerformanceMetrics.from_dict(data["previous_metrics"])
-            if data.get("previous_metrics")
-            else None,
-            new_metrics=PerformanceMetrics.from_dict(data["new_metrics"])
-            if data.get("new_metrics")
-            else None,
+            previous_metrics=(
+                PerformanceMetrics.from_dict(data["previous_metrics"])
+                if data.get("previous_metrics")
+                else None
+            ),
+            new_metrics=(
+                PerformanceMetrics.from_dict(data["new_metrics"])
+                if data.get("new_metrics")
+                else None
+            ),
             parameters_changed=data.get("parameters_changed", {}),
             error_message=data.get("error_message"),
             adaptation_id=data.get("adaptation_id", ""),
@@ -351,11 +357,13 @@ class ModelCheckpoint:
             checkpoint_id=data["checkpoint_id"],
             timestamp=datetime.fromisoformat(data["timestamp"]),
             parameters={k: np.array(v) for k, v in data.get("parameters", {}).items()},
-            metrics=PerformanceMetrics.from_dict(data["metrics"])
-            if data.get("metrics")
-            else None,
-            config=LearningConfig.from_dict(data["config"])
-            if data.get("config")
-            else None,
+            metrics=(
+                PerformanceMetrics.from_dict(data["metrics"])
+                if data.get("metrics")
+                else None
+            ),
+            config=(
+                LearningConfig.from_dict(data["config"]) if data.get("config") else None
+            ),
             metadata=data.get("metadata", {}),
         )

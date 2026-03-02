@@ -7,11 +7,10 @@ EP-NS-008: Autonomous Control Plane - Batch 1, Task 3
 
 from __future__ import annotations
 
-import asyncio
 import sys
 import uuid
 from datetime import UTC, datetime, timedelta
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -38,7 +37,6 @@ from src.autonomous_control_plane.models.rollback import (
     ValidationCheckStatus,
     ValidationResult,
 )
-
 
 # =============================================================================
 # Test Validation Models
@@ -622,8 +620,8 @@ class TestAPIEndpoints:
     async def test_validate_rollback_endpoint(self, mock_coordinator):
         """Test validate rollback endpoint."""
         from src.autonomous_control_plane.api.v1.rollback import (
-            validate_rollback,
             set_coordinator,
+            validate_rollback,
         )
 
         # Create a real coordinator for the test
@@ -657,11 +655,11 @@ class TestAPIEndpoints:
     @pytest.mark.asyncio
     async def test_execute_rollback_endpoint_cannot_rollback(self):
         """Test execute rollback when cannot rollback."""
+        from fastapi import HTTPException
         from src.autonomous_control_plane.api.v1.rollback import (
             execute_rollback,
             set_coordinator,
         )
-        from fastapi import HTTPException
 
         coordinator = RollbackCoordinator()
         set_coordinator(coordinator)
@@ -716,11 +714,11 @@ class TestAPIEndpoints:
     @pytest.mark.asyncio
     async def test_get_rollback_status_not_found(self):
         """Test get rollback status for non-existent operation."""
+        from fastapi import HTTPException
         from src.autonomous_control_plane.api.v1.rollback import (
             get_rollback_status,
             set_coordinator,
         )
-        from fastapi import HTTPException
 
         coordinator = RollbackCoordinator()
         set_coordinator(coordinator)
@@ -774,11 +772,11 @@ class TestAPIEndpoints:
     @pytest.mark.asyncio
     async def test_schedule_rollback_invalid_timestamp(self):
         """Test schedule rollback with invalid timestamp."""
+        from fastapi import HTTPException
         from src.autonomous_control_plane.api.v1.rollback import (
             schedule_rollback,
             set_coordinator,
         )
-        from fastapi import HTTPException
 
         coordinator = RollbackCoordinator()
         set_coordinator(coordinator)

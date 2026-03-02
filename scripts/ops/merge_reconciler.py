@@ -137,7 +137,7 @@ class RedisCliStore:
         self.db = db
 
     def _run(self, *args: str) -> str:
-        proc = subprocess.run(
+        proc = subprocess.run(  # nosec B607
             [
                 "redis-cli",
                 "-h",
@@ -202,7 +202,7 @@ class GiteaClient:
             data = json.dumps(body).encode("utf-8")
         req = urllib.request.Request(url, data=data, method=method, headers=headers)
         try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with urllib.request.urlopen(req, timeout=30) as resp:  # nosec B310
                 raw = resp.read()
                 return json.loads(raw.decode("utf-8")) if raw else {}
         except urllib.error.HTTPError as exc:
@@ -430,7 +430,7 @@ class MergeQueueEngine:
 
 
 def _run_git(*args: str) -> tuple[int, str, str]:
-    proc = subprocess.run(
+    proc = subprocess.run(  # nosec B607
         ["git", *args],
         text=True,
         capture_output=True,

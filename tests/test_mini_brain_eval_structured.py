@@ -5,19 +5,14 @@ Tests for Mini BrainEval Structured Issue Parsing
 These tests verify the deterministic structured issue parsing works correctly:
 """
 
-import json
-import pytest
-from pathlib import Path
-from unittest.mock import patch
-
 # Import the modules under test
 import sys
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts" / "evaluation"))
 
-from mini_brain_eval import Issue, IssueDetector, run_evaluation
+from mini_brain_eval import Issue, IssueDetector
 from repeated_issue_analyzer import RepeatedIssueAnalyzer
-
 
 # Fixture paths
 FIXTURES_DIR = Path(__file__).parent / "fixtures" / "iterlog"
@@ -34,9 +29,9 @@ class TestStructuredIssuesParsed:
         # Find issues from the valid_with_issues.md fixture
         valid_issues = [i for i in issues if "valid_with_issues" in i.source_file]
 
-        assert len(valid_issues) == 2, (
-            f"Expected 2 structured issues, got {len(valid_issues)}"
-        )
+        assert (
+            len(valid_issues) == 2
+        ), f"Expected 2 structured issues, got {len(valid_issues)}"
 
         # Verify structured fields are populated
         for issue in valid_issues:
@@ -57,9 +52,9 @@ class TestStructuredIssuesParsed:
         empty_issues = [i for i in issues if "valid_empty_issues" in i.source_file]
 
         # Should have no issues (empty list)
-        assert len(empty_issues) == 0, (
-            f"Expected 0 issues from empty list, got {len(empty_issues)}"
-        )
+        assert (
+            len(empty_issues) == 0
+        ), f"Expected 0 issues from empty list, got {len(empty_issues)}"
 
     def test_regex_fallback(self):
         """Verify regex patterns work when no structured section."""
@@ -87,7 +82,7 @@ class TestStructuredIssuesParsed:
         both_issues = [i for i in issues if "with_both" in i.source_file]
 
         # Should have only structured issues (no regex fallback)
-        assert len(both_issues) >= 1, f"Expected structured issues from with_both.md"
+        assert len(both_issues) >= 1, "Expected structured issues from with_both.md"
 
         # All should be structured
         for issue in both_issues:

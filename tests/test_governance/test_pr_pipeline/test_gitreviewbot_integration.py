@@ -3,12 +3,10 @@
 Story: DEBT-CODE-003
 """
 
-import asyncio
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from src.autonomous_git.gitreviewbot.models import Decision, DecisionType
 from src.governance.pr_pipeline.standard_path import (
     PRClassification,
@@ -187,7 +185,7 @@ class TestGitReviewBotIntegration:
         with patch.object(
             handler, "_call_gitreviewbot", new_callable=AsyncMock
         ) as mock_call:
-            mock_call.side_effect = asyncio.TimeoutError()
+            mock_call.side_effect = TimeoutError()
 
             with patch.object(
                 handler, "escalate_to_human", new_callable=AsyncMock

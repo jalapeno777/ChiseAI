@@ -529,7 +529,7 @@ class LoadTestRunner:
 
         # Check if locust is available
         try:
-            subprocess.run(
+            subprocess.run(  # nosec B607
                 ["locust", "--version"],
                 capture_output=True,
                 check=True,

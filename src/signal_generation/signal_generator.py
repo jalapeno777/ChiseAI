@@ -57,6 +57,16 @@ class SignalGenerationConfig:
     log_filtered_signals: bool = True
 
 
+@dataclass
+class SignalGenerationDiagnostics:
+    """Lightweight runtime diagnostics for signal generation."""
+
+    initialized_at: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"initialized_at": self.initialized_at}
+
+
 class SignalCache:
     """Cache for signals to avoid redundant calculations.
 
@@ -195,6 +205,9 @@ class SignalGenerator:
 
         # Initialize cache
         self._cache = SignalCache(ttl_seconds=self.config.cache_ttl_seconds)
+        self._diagnostics = SignalGenerationDiagnostics(
+            initialized_at=datetime.now(UTC).isoformat()
+        )
 
         # Rate limiting state
         self._signal_counts: dict[str, list[float]] = {}  # token -> timestamps
@@ -657,5 +670,7 @@ class SignalGenerator:
 
     def reset_diagnostics(self) -> None:
         """Reset diagnostics counters."""
-        self._diagnostics = SignalGenerationDiagnostics()
+        self._diagnostics = SignalGenerationDiagnostics(
+            initialized_at=datetime.now(UTC).isoformat()
+        )
         logger.info("SignalGenerator diagnostics reset")

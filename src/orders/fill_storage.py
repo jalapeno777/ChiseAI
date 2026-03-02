@@ -12,7 +12,7 @@ import json
 import logging
 import uuid
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 logger = logging.getLogger(__name__)
 
@@ -57,8 +57,9 @@ class FillStorage:
         """Get or create Redis client."""
         if self._redis is None:
             try:
-                import redis as redis_lib
                 import os
+
+                import redis as redis_lib
 
                 redis_host = os.getenv("REDIS_HOST", "host.docker.internal")
                 redis_port = int(os.getenv("REDIS_PORT", "6380"))
@@ -164,7 +165,9 @@ class FillStorage:
             data = redis.get(key)
 
             if data:
-                return json.loads(data)
+                decoded = json.loads(data)
+                if isinstance(decoded, dict):
+                    return cast(dict[str, Any], decoded)
             return None
 
         except Exception as e:

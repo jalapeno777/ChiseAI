@@ -5,20 +5,18 @@ Tests for PARTY-FORENSIC-003: G5 Discord Evidence Collection
 
 from __future__ import annotations
 
-import asyncio
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from scripts.validation.discord_evidence import (
     DEFAULT_TRADING_CHANNEL_ID,
+    PROOF_WINDOW_MINUTES,
     DiscordEvidenceCollector,
     DiscordMessageEvidence,
     GateResult,
     GateStatus,
-    PROOF_WINDOW_MINUTES,
 )
 
 
@@ -99,7 +97,7 @@ def make_recap_message(
     trade_list = ", ".join(trade_ids) if trade_ids else "N/A"
     return make_discord_message(
         message_id=message_id,
-        content=f"📊 **DAILY RECAP**\n**Trades Today:** 3\n**Win Rate:** 66.7%\n**Total PnL:** +4.5%",
+        content="📊 **DAILY RECAP**\n**Trades Today:** 3\n**Win Rate:** 66.7%\n**Total PnL:** +4.5%",
         timestamp=timestamp,
         embeds=[
             {
@@ -327,9 +325,9 @@ class TestDiscordEvidenceCollector:
 
         for msg, expected_id in messages:
             result = collector.extract_trade_id(msg)
-            assert result == expected_id, (
-                f"Expected {expected_id} for: {msg['content']}"
-            )
+            assert (
+                result == expected_id
+            ), f"Expected {expected_id} for: {msg['content']}"
 
     def test_extract_trade_id_uuid(self, collector: DiscordEvidenceCollector) -> None:
         """Test extracting UUID trade IDs."""

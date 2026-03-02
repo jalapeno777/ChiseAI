@@ -231,9 +231,11 @@ class AdaptiveLearningAdapter(ComponentAdapter):
         result = self._component.adapt(feedback=feedback)
 
         return {
-            "adaptation_status": result.status.value
-            if hasattr(result.status, "value")
-            else str(result.status),
+            "adaptation_status": (
+                result.status.value
+                if hasattr(result.status, "value")
+                else str(result.status)
+            ),
             "is_successful": result.is_successful,
             "error_message": result.error_message,
         }

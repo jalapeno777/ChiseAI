@@ -1140,7 +1140,7 @@ validations:
     title: Test Coverage Compliance
     epic_id: EP-NS-006
     story_id: ST-NS-029
-    status: planned
+    status: validated
     description: Validate codebase maintains >=80% test coverage
     acceptance_criteria:
       - Overall coverage is >=80%
@@ -1154,7 +1154,7 @@ validations:
     title: Security Scan Compliance
     epic_id: EP-NS-006
     story_id: ST-NS-028
-    status: planned
+    status: validated
     description: Validate no critical vulnerabilities exist in codebase or dependencies
     acceptance_criteria:
       - Zero critical vulnerabilities in dependency scan
@@ -2015,7 +2015,7 @@ validations:
     title: Safety Integration E2E Validation
     epic_id: EP-LAUNCH-001
     story_id: ST-LAUNCH-005
-    status: planned
+    status: validated
     description: Validate end-to-end safety workflows integration
     acceptance_criteria:
       - All safety scenarios pass with >=85% test coverage
@@ -2061,7 +2061,7 @@ validations:
     title: Prediction-Outcome Matcher Validation
     epic_id: EP-LAUNCH-002
     story_id: ST-LAUNCH-008
-    status: planned
+    status: validated
     description: Validate prediction-outcome matching with quality metrics
     acceptance_criteria:
       - Match rate >=95% for executed signals
@@ -2107,7 +2107,7 @@ validations:
     title: Model Retraining Trigger Validation
     epic_id: EP-LAUNCH-003
     story_id: ST-LAUNCH-011
-    status: planned
+    status: validated
     description: Validate automatic model retraining triggers
     acceptance_criteria:
       - ECE >0.15 triggers retraining within 5 minutes
@@ -2274,6 +2274,207 @@ validations:
     test_method: manual
     owner: ops-team
 
+  # ============================================================
+  # GOVERNANCE / INFRA BACKFILL VALIDATIONS
+  # Added to align validation coverage with workflow-status inventory.
+  # ============================================================
+  - id: V-GOV-EP-001
+    title: Agent Swarm Governance Epic Validation
+    epic_id: EP-GOV-001
+    story_id: EP-GOV-001
+    status: validated
+    description: Validate governance epic-level completion and acceptance evidence.
+    acceptance_criteria:
+      - Epic story set is defined and tracked
+      - Completed governance stories have evidence references
+      - Governance controls are reflected in workflow status
+    test_method: manual
+    owner: governance-team
+
+  - id: V-PAPER-RECOVERY-001
+    title: Paper Recovery Proof Loop Validation
+    epic_id: EP-PAPER-001
+    story_id: PAPER-RECOVERY-001
+    status: validated
+    description: Validate paper trading recovery proof loop evidence and gate outcomes.
+    acceptance_criteria:
+      - Gate outcomes are recorded in workflow status
+      - Evidence bundle path is present and reviewable
+      - Manual/info gates are explicitly documented
+    test_method: manual
+    owner: ops-team
+
+  - id: V-INFRA-CONTAINER-001
+    title: Container Governance Validation
+    epic_id: EP-INFRA-CLEANUP-001
+    story_id: ST-CONTAINER-001
+    status: planned
+    description: Validate container governance policy and enforcement are implemented.
+    acceptance_criteria:
+      - Network governance rules are enforced
+      - Protected containers policy is documented
+      - Pre-commit governance checks run successfully
+    test_method: automated
+    owner: infra-team
+
+  - id: V-GOV-001
+    title: Governance Story ST-GOV-001 Validation
+    epic_id: EP-GOV-001
+    story_id: ST-GOV-001
+    status: planned
+    description: Validate ST-GOV-001 governance acceptance criteria.
+    acceptance_criteria:
+      - Story acceptance criteria verified
+    test_method: automated
+    owner: governance-team
+
+  - id: V-GOV-002
+    title: Governance Story ST-GOV-002 Validation
+    epic_id: EP-GOV-001
+    story_id: ST-GOV-002
+    status: planned
+    description: Validate ST-GOV-002 governance acceptance criteria.
+    acceptance_criteria:
+      - Story acceptance criteria verified
+    test_method: automated
+    owner: governance-team
+
+  - id: V-GOV-003
+    title: Governance Story ST-GOV-003 Validation
+    epic_id: EP-GOV-001
+    story_id: ST-GOV-003
+    status: validated
+    description: Validate ST-GOV-003 governance acceptance criteria.
+    acceptance_criteria:
+      - Story acceptance criteria verified
+    test_method: automated
+    owner: governance-team
+
+  - id: V-GOV-004
+    title: Governance Story ST-GOV-004 Validation
+    epic_id: EP-GOV-001
+    story_id: ST-GOV-004
+    status: validated
+    description: Validate ST-GOV-004 governance acceptance criteria.
+    acceptance_criteria:
+      - Story acceptance criteria verified
+    test_method: automated
+    owner: governance-team
+
+  - id: V-GOV-005
+    title: Governance Story ST-GOV-005 Validation
+    epic_id: EP-GOV-001
+    story_id: ST-GOV-005
+    status: validated
+    description: Validate ST-GOV-005 governance acceptance criteria.
+    acceptance_criteria:
+      - Story acceptance criteria verified
+    test_method: automated
+    owner: governance-team
+
+  - id: V-GOV-006
+    title: Governance Story ST-GOV-006 Validation
+    epic_id: EP-GOV-001
+    story_id: ST-GOV-006
+    status: validated
+    description: Validate ST-GOV-006 governance acceptance criteria.
+    acceptance_criteria:
+      - Story acceptance criteria verified
+    test_method: automated
+    owner: governance-team
+
+  - id: V-GOV-007
+    title: Governance Story ST-GOV-007 Validation
+    epic_id: EP-GOV-001
+    story_id: ST-GOV-007
+    status: validated
+    description: Validate ST-GOV-007 governance acceptance criteria.
+    acceptance_criteria:
+      - Story acceptance criteria verified
+    test_method: automated
+    owner: governance-team
+
+  - id: V-GOV-008
+    title: Governance Story ST-GOV-008 Validation
+    epic_id: EP-GOV-001
+    story_id: ST-GOV-008
+    status: validated
+    description: Validate ST-GOV-008 governance acceptance criteria.
+    acceptance_criteria:
+      - Story acceptance criteria verified
+    test_method: automated
+    owner: governance-team
+
+  - id: V-GOV-009
+    title: Governance Story ST-GOV-009 Validation
+    epic_id: EP-GOV-001
+    story_id: ST-GOV-009
+    status: validated
+    description: Validate ST-GOV-009 governance acceptance criteria.
+    acceptance_criteria:
+      - Story acceptance criteria verified
+    test_method: automated
+    owner: governance-team
+
+  - id: V-GOV-010
+    title: Governance Story ST-GOV-010 Validation
+    epic_id: EP-GOV-001
+    story_id: ST-GOV-010
+    status: validated
+    description: Validate ST-GOV-010 governance acceptance criteria.
+    acceptance_criteria:
+      - Story acceptance criteria verified
+    test_method: automated
+    owner: governance-team
+
+  - id: V-GOV-MINI-001
+    title: Governance Story ST-GOV-MINI-001 Validation
+    epic_id: EP-GOV-001
+    story_id: ST-GOV-MINI-001
+    status: validated
+    description: Validate ST-GOV-MINI-001 governance acceptance criteria.
+    acceptance_criteria:
+      - Story acceptance criteria verified
+    test_method: automated
+    owner: governance-team
+
+  - id: V-GOV-MINI-002
+    title: Governance Story ST-GOV-MINI-002 Validation
+    epic_id: EP-GOV-001
+    story_id: ST-GOV-MINI-002
+    status: planned
+    description: Validate ST-GOV-MINI-002 governance acceptance criteria.
+    acceptance_criteria:
+      - Story acceptance criteria verified
+    test_method: automated
+    owner: governance-team
+
+  - id: V-INFRA-TAIGA-001
+    title: Taiga Removal Validation
+    epic_id: EP-INFRA-CLEANUP-001
+    story_id: ST-TAIGA-001
+    status: planned
+    description: Validate Taiga removal tasks and replacement workflow coverage.
+    acceptance_criteria:
+      - Legacy Taiga paths are removed or deprecated
+      - Alternative workflow paths are documented
+      - CI and runbooks reflect the migration
+    test_method: manual
+    owner: infra-team
+
+  - id: V-INFRA-WORKFLOW-001
+    title: Workflow Archive Validation
+    epic_id: EP-INFRA-CLEANUP-001
+    story_id: ST-WORKFLOW-001
+    status: validated
+    description: Validate workflow archive structure and retention rules.
+    acceptance_criteria:
+      - Archive paths exist and are indexed
+      - Retention policy is documented
+      - Status sync remains valid after archive operations
+    test_method: automated
+    owner: infra-team
+
 # ============================================================
 # Global validation thresholds
 # ============================================================
@@ -2285,4 +2486,3 @@ thresholds:
     - status_sync
     - ci_test
     - security_scan
-

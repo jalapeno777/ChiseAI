@@ -10,17 +10,16 @@ Usage:
     python3 scripts/monitoring/validate_monitoring.py --format json
 """
 
-import os
-import sys
 import argparse
 import json
 import logging
+import os
 import subprocess
-import asyncio
-from datetime import datetime, timezone
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, field, asdict
+import sys
+from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime
 from enum import Enum
+from typing import Any
 
 # Add parent to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -28,14 +27,16 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 try:
     import redis
 except ImportError:
-    redis = None
+    redis = None  # type: ignore[assignment]
 
 try:
     from monitoring.checkpoint_gate_audit import run_all_checks as run_gate_checks
     from monitoring.hourly_health_check import (
-        check_scheduler_health,
-        check_kill_switch,
         check_daily_loss,
+        check_kill_switch,
+        check_scheduler_health,
+    )
+    from monitoring.hourly_health_check import (
         get_metrics as get_hourly_metrics,
     )
 except ImportError as e:
@@ -70,10 +71,8 @@ class ValidationResult:
     actual_status: str
     validation_status: ValidationStatus
     details: str = ""
-    recommendations: List[str] = field(default_factory=list)
-    timestamp: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    recommendations: list[str] = field(default_factory=list)
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 
 @dataclass
@@ -82,9 +81,9 @@ class ValidationReport:
 
     timestamp: str
     overall_status: str
-    results: List[ValidationResult]
-    summary: Dict[str, int]
-    recommendations: List[str]
+    results: list[ValidationResult]
+    summary: dict[str, int]
+    recommendations: list[str]
 
 
 class MonitoringValidator:
@@ -92,10 +91,10 @@ class MonitoringValidator:
 
     def __init__(self):
         self.redis_client = self._get_redis()
-        self.validation_results: List[ValidationResult] = []
+        self.validation_results: list[ValidationResult] = []
         self.false_positives_found = 0
 
-    def _get_redis(self) -> Optional[redis.Redis]:
+    def _get_redis(self) -> Any | None:
         """Get Redis connection."""
         if redis is None:
             return None
@@ -136,7 +135,7 @@ class MonitoringValidator:
 
             # Check process status
             try:
-                result = subprocess.run(
+                result = subprocess.run(  # nosec B607
                     ["ps", "aux"], capture_output=True, text=True, timeout=5
                 )
                 process_running = any(
@@ -232,7 +231,7 @@ class MonitoringValidator:
 
             # Check for recent signals (within last hour)
             recent_signals = 0
-            current_time = datetime.now(timezone.utc).timestamp()
+            current_time = datetime.now(UTC).timestamp()
             for key in signal_keys[:10]:  # Sample first 10
                 try:
                     signal_data = self.redis_client.hgetall(key)
@@ -329,7 +328,7 @@ class MonitoringValidator:
 
             # Check for recent outcomes
             recent_outcomes = 0
-            current_time = datetime.now(timezone.utc).timestamp()
+            current_time = datetime.now(UTC).timestamp()
 
             # Sample some outcomes to check recency
             outcome_ids = self.redis_client.smembers("bmad:chiseai:outcomes:index")
@@ -645,7 +644,7 @@ class MonitoringValidator:
                             validation_status = ValidationStatus.WARNING
                             details = "Connected but unexpected response"
                             recommendations = ["Check API status"]
-            except socket.timeout:
+            except TimeoutError:
                 actual_status = "TIMEOUT"
                 validation_status = ValidationStatus.INVALID
                 details = "Connection to Bybit timed out"
@@ -711,7 +710,7 @@ class MonitoringValidator:
             # Check memory usage
             memory_info = self.redis_client.info("memory")
             used_memory = memory_info.get("used_memory_human", "unknown")
-            max_memory = memory_info.get("maxmemory_human", "unlimited")
+            memory_info.get("maxmemory_human", "unlimited")
 
             # Determine actual status
             if ping_ok and uptime > 3600:
@@ -771,7 +770,7 @@ class MonitoringValidator:
             outcome_count = self.redis_client.scard("bmad:chiseai:outcomes:index")
 
             # Check for pipeline configuration
-            pipeline_config = self.redis_client.hgetall("bmad:chiseai:pipeline:config")
+            self.redis_client.hgetall("bmad:chiseai:pipeline:config")
 
             # Determine actual status
             has_signals = signal_count > 0
@@ -832,9 +831,7 @@ class MonitoringValidator:
                 recommendations=["Check pipeline configuration"],
             )
 
-    def run_all_validations(
-        self, gates: Optional[List[str]] = None
-    ) -> ValidationReport:
+    def run_all_validations(self, gates: list[str] | None = None) -> ValidationReport:
         """Run all validation checks."""
         validators = {
             "G1": self.validate_g1_scheduler,
@@ -908,7 +905,7 @@ class MonitoringValidator:
             )
 
         return ValidationReport(
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             overall_status=overall,
             results=results,
             summary=summary,
@@ -950,7 +947,7 @@ def format_text_report(report: ValidationReport) -> str:
 
         lines.extend(
             [
-                f"",
+                "",
                 f"{status_icon} {result.check_name}",
                 f"   Reported Status: {result.reported_status}",
                 f"   Actual Status:   {result.actual_status}",
@@ -960,7 +957,7 @@ def format_text_report(report: ValidationReport) -> str:
         )
 
         if result.recommendations:
-            lines.append(f"   Recommendations:")
+            lines.append("   Recommendations:")
             for rec in result.recommendations:
                 lines.append(f"      • {rec}")
 

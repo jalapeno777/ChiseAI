@@ -37,7 +37,7 @@ def _redis_cli(*args: str) -> subprocess.CompletedProcess[str]:
     port = int(os.getenv("CHISE_REDIS_PORT", "6380"))
     db = int(os.getenv("CHISE_REDIS_DB", "0"))
 
-    return subprocess.run(
+    return subprocess.run(  # nosec B607
         ["redis-cli", "-h", host, "-p", str(port), "-n", str(db), *args],
         text=True,
         capture_output=True,
@@ -55,7 +55,7 @@ class PRHealthMonitor:
 
     def scan_all_prs(self) -> dict[str, Any]:
         """Comprehensive scan of all PRs."""
-        results = {
+        results: dict[str, Any] = {
             "scan_id": datetime.now(UTC).strftime("%Y%m%d-%H%M%S"),
             "scanned_at": _utc_now(),
             "summary": {
@@ -186,7 +186,7 @@ class PRHealthMonitor:
         """Store scan results in Redis."""
         scan_key = f"bmad:chiseai:pr:health:scan:{results['scan_id']}"
 
-        subprocess.run(
+        subprocess.run(  # nosec B607
             [
                 "redis-cli",
                 "-h",
@@ -205,7 +205,7 @@ class PRHealthMonitor:
         )
 
         # Set TTL
-        subprocess.run(
+        subprocess.run(  # nosec B607
             [
                 "redis-cli",
                 "-h",
@@ -224,7 +224,7 @@ class PRHealthMonitor:
         )
 
         # Update last scan
-        subprocess.run(
+        subprocess.run(  # nosec B607
             [
                 "redis-cli",
                 "-h",
@@ -379,7 +379,7 @@ class PRHealthMonitor:
 
     def check_systemic_health(self) -> dict[str, Any]:
         """Quick check for systemic issues that need immediate attention."""
-        results = {
+        results: dict[str, Any] = {
             "healthy": True,
             "critical_issues": [],
             "warnings": [],

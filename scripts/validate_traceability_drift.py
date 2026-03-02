@@ -245,7 +245,9 @@ def check_validation_registry_coverage(
             story_id = validation.get("story_id")
             status = validation.get("status")
             if story_id:
-                validated_story_ids[story_id] = status
+                validated_story_ids[story_id] = (
+                    status if isinstance(status, str) else ""
+                )
 
     # Build set of all story IDs from stories section
     all_story_ids: dict[str, dict[str, Any]] = {}
@@ -562,6 +564,10 @@ Exit codes:
         return 2
 
     # Run checks
+    assert workflow_data is not None
+    assert validation_data is not None
+    assert prd_content is not None
+
     if not args.skip_fr_check:
         check_fr_traceability(report, workflow_data, prd_content)
 

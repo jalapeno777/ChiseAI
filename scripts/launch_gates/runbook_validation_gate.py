@@ -243,7 +243,7 @@ class RunbookValidationGate:
                     if "oncall" not in covered:
                         covered.append("oncall")
 
-            except Exception:
+            except Exception:  # nosec B112
                 continue
 
         missing = [s for s in required_scenarios if s not in covered]

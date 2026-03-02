@@ -206,7 +206,7 @@ class AgentCoordinator:
     def _check_redis(self) -> bool:
         """Check if Redis is available."""
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B607
                 [
                     "redis-cli",
                     "-h",
@@ -645,7 +645,7 @@ class AgentCoordinator:
         if os.path.exists(info.worktree_path):
             try:
                 # Remove worktree using git
-                result = subprocess.run(
+                result = subprocess.run(  # nosec B607
                     ["git", "worktree", "remove", info.worktree_path, "--force"],
                     capture_output=True,
                     text=True,

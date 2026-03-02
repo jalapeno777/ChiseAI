@@ -4,13 +4,13 @@
 Posts detailed audit to Discord #development or logs locally.
 """
 
+import asyncio
+import logging
 import os
 import sys
-import asyncio
-import subprocess
-import logging
-from datetime import datetime, timezone
-from typing import Optional, Dict, List
+from datetime import UTC, datetime
+from typing import Any
+
 import redis
 
 # Load .env file for cron environment
@@ -18,7 +18,7 @@ env_path = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"
 )
 if os.path.exists(env_path):
-    with open(env_path, "r") as f:
+    with open(env_path) as f:
         for line in f:
             line = line.strip()
             if line and not line.startswith("#") and "=" in line:
@@ -37,7 +37,7 @@ REDIS_HOST = os.getenv(
 REDIS_PORT = int(os.getenv("MONITORING_REDIS_PORT", os.getenv("REDIS_PORT", "6380")))
 
 
-def get_redis():
+def get_redis() -> Any | None:
     try:
         return redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
     except Exception as e:
@@ -45,9 +45,9 @@ def get_redis():
         return None
 
 
-def check_g1_scheduler(r: redis.Redis):
+def check_g1_scheduler(r: Any) -> dict[str, Any]:
     """G1: Scheduler Continuity - Check Redis heartbeat"""
-    from datetime import datetime, timezone, timedelta
+    from datetime import datetime
 
     try:
         heartbeat = r.hgetall("bmad:chiseai:scheduler:heartbeat")
@@ -72,7 +72,7 @@ def check_g1_scheduler(r: redis.Redis):
 
         # Parse timestamp and check age
         last_heartbeat = datetime.fromisoformat(timestamp_str)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         age_seconds = (now - last_heartbeat).total_seconds()
 
         # Consider healthy if heartbeat within 2 minutes and status is running
@@ -107,7 +107,7 @@ def check_g1_scheduler(r: redis.Redis):
         return {"gate": "G1", "status": "❌ FAIL", "detail": str(e)}
 
 
-def check_g2_signal_cadence(r: redis.Redis):
+def check_g2_signal_cadence(r: Any) -> dict[str, Any]:
     """G2: Signal Cadence"""
     try:
         count = len(r.keys("bmad:chiseai:signals:*"))
@@ -123,7 +123,7 @@ def check_g2_signal_cadence(r: redis.Redis):
         return {"gate": "G2", "status": "❌ FAIL", "detail": str(e)}
 
 
-def check_g3_data_flow(r: redis.Redis):
+def check_g3_data_flow(r: Any) -> dict[str, Any]:
     """G3: Data Flow Movement"""
     try:
         count = r.scard("bmad:chiseai:outcomes:index")
@@ -139,7 +139,7 @@ def check_g3_data_flow(r: redis.Redis):
         return {"gate": "G3", "status": "❌ FAIL", "detail": str(e)}
 
 
-def check_g4_kill_switch(r: redis.Redis):
+def check_g4_kill_switch(r: Any) -> dict[str, Any]:
     """G4: Kill Switch Active"""
     try:
         enabled = r.hget("bmad:chiseai:kill_switch", "enabled")
@@ -159,7 +159,7 @@ def check_g4_kill_switch(r: redis.Redis):
         return {"gate": "G4", "status": "❌ FAIL", "detail": str(e)}
 
 
-def check_g5_cron_cadence(r: redis.Redis):
+def check_g5_cron_cadence(r: Any) -> dict[str, Any]:
     """G5: Cron Job Cadence Evidence
 
     Verifies that all cron jobs are executing on their expected cadence:
@@ -174,7 +174,7 @@ def check_g5_cron_cadence(r: redis.Redis):
     try:
         # Import cron evidence checker
         sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-        from cron_evidence import check_cron_cadence, format_cron_status
+        from cron_evidence import check_cron_cadence
 
         results = check_cron_cadence(r)
 
@@ -264,7 +264,7 @@ def check_g6_bybit_connectivity():
         return {"gate": "G6", "status": "❌ FAIL", "detail": str(e)[:50]}
 
 
-def check_g7_observability(r: redis.Redis):
+def check_g7_observability(r: Any) -> dict[str, Any]:
     """G7: Observability Health"""
     try:
         ping = r.ping()
@@ -282,7 +282,7 @@ def check_g7_observability(r: redis.Redis):
             return {
                 "gate": "G7",
                 "status": "⚠️ CHECK",
-                "detail": f"Redis OK but uptime <1h",
+                "detail": "Redis OK but uptime <1h",
             }
         else:
             return {"gate": "G7", "status": "❌ FAIL", "detail": "Redis ping failed"}
@@ -290,7 +290,7 @@ def check_g7_observability(r: redis.Redis):
         return {"gate": "G7", "status": "❌ FAIL", "detail": str(e)}
 
 
-def check_g8_pipeline(r: redis.Redis):
+def check_g8_pipeline(r: Any) -> dict[str, Any]:
     """G8: End-to-End Pipeline - Burn-in Verdict Integration
 
     Reads burn-in verdict from Redis string key bmad:chiseai:burnin:verdict.
@@ -357,9 +357,9 @@ def run_all_checks():
     return checks
 
 
-def format_checkpoint_message(checks: List[Dict]):
+def format_checkpoint_message(checks: list[dict]):
     """Format checkpoint message."""
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
 
     pass_count = sum(1 for c in checks if "PASS" in c["status"])
     fail_count = sum(1 for c in checks if "FAIL" in c["status"])
@@ -367,15 +367,15 @@ def format_checkpoint_message(checks: List[Dict]):
 
     lines = [
         f"**📊 Burn-in Checkpoint (6h)** | {timestamp}",
-        f"",
+        "",
         f"**Gate Status:** {pass_count} ✅ | {check_count} ⚠️ | {fail_count} ❌",
-        f"",
+        "",
     ]
 
     for check in checks:
         lines.append(f"**{check['gate']}:** {check['status']} - {check['detail']}")
 
-    lines.extend([f"", f"_Next checkpoint in 6 hours_"])
+    lines.extend(["", "_Next checkpoint in 6 hours_"])
 
     return "\n".join(lines)
 
@@ -428,7 +428,7 @@ async def post_discord(message: str):
 def log_local(message: str):
     """Log locally."""
     os.makedirs("logs/monitoring", exist_ok=True)
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     path = f"logs/monitoring/checkpoint-{timestamp}.log"
 
     with open(path, "w") as f:

@@ -241,7 +241,7 @@ async def run_safety_checks(
     """
     print_section("SAFETY CHECKS")
 
-    results = {
+    results: dict[str, Any] = {
         "kill_switch": None,
         "position_size": None,
         "all_passed": True,

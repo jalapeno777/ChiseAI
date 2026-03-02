@@ -25,7 +25,6 @@ For PAPER-RECOVERY-001: Redis canonical indices, Discord notifications, canary m
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 import os
@@ -33,6 +32,7 @@ import random
 import signal
 import subprocess
 import sys
+import tempfile
 import time
 import uuid
 from datetime import UTC, datetime
@@ -57,7 +57,10 @@ INFLUXDB_BUCKET = os.getenv("INFLUXDB_BUCKET", "chiseai")
 EMIT_INTERVAL = float(os.getenv("EMIT_INTERVAL", "5"))
 REDIS_HOST = os.getenv("REDIS_HOST", "host.docker.internal")
 REDIS_PORT = int(os.getenv("REDIS_PORT", "6380"))
-STATUS_FILE = os.getenv("STATUS_FILE", "/tmp/continuous_paper_emitter.status")
+DEFAULT_STATUS_FILE = str(
+    Path(tempfile.gettempdir()) / "continuous_paper_emitter.status"
+)
+STATUS_FILE = os.getenv("STATUS_FILE", DEFAULT_STATUS_FILE)
 HEARTBEAT_INTERVAL = float(os.getenv("HEARTBEAT_INTERVAL", "30"))
 
 # Retry configuration
@@ -278,7 +281,7 @@ def generate_recap_from_outcomes(redis_client: Any) -> str:
     """
     try:
         # Get last 10 outcomes
-        outcomes = redis_client.zrange("paper:index:outcomes", -10, -1, withscores=True)
+        redis_client.zrange("paper:index:outcomes", -10, -1, withscores=True)
 
         signal_count = redis_client.zcard("paper:index:signals")
         order_count = redis_client.zcard("paper:index:orders")
@@ -812,7 +815,7 @@ def main():
     # Initialize session tracking
     session_start_time = time.time()
 
-    logger.info(f"Starting continuous paper metrics emitter")
+    logger.info("Starting continuous paper metrics emitter")
     logger.info(f"InfluxDB URL: {INFLUXDB_URL}")
     logger.info(f"Emit interval: {EMIT_INTERVAL}s")
     logger.info(f"Heartbeat interval: {HEARTBEAT_INTERVAL}s")

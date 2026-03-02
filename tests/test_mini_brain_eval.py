@@ -9,10 +9,9 @@ Tests cover:
 - Empty issues: [] sentinel handling
 """
 
-import os
+import shutil
 import sys
 import tempfile
-import shutil
 from pathlib import Path
 
 import pytest
@@ -21,12 +20,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from evaluation.mini_brain_eval import (
-    Issue,
     IssueDetector,
-    StructuredIssueEntry,
-    RecurringIssue,
-    MiniEvalResult,
-    run_evaluation,
 )
 
 
@@ -181,9 +175,9 @@ class TestStructuredIssueParsing:
 
         # Check that all issues are marked as structured
         structured_count = sum(1 for i in issues if i.is_structured)
-        assert structured_count == 3, (
-            f"Expected 3 structured issues, got {structured_count}"
-        )
+        assert (
+            structured_count == 3
+        ), f"Expected 3 structured issues, got {structured_count}"
 
     def test_structured_issue_fields_populated(self, detector_with_structured_issues):
         """Test that structured issue fields are correctly populated."""
@@ -193,13 +187,13 @@ class TestStructuredIssueParsing:
         assert len(ci_issues) >= 1, "Expected at least one ci_failure issue"
 
         issue = ci_issues[0]
-        assert issue.root_cause == "missing dependency", (
-            f"Expected root_cause 'missing dependency', got '{issue.root_cause}'"
-        )
+        assert (
+            issue.root_cause == "missing dependency"
+        ), f"Expected root_cause 'missing dependency', got '{issue.root_cause}'"
         assert issue.fix_applied is not None, "fix_applied should be populated"
-        assert issue.time_lost_minutes is not None, (
-            "time_lost_minutes should be populated"
-        )
+        assert (
+            issue.time_lost_minutes is not None
+        ), "time_lost_minutes should be populated"
         assert issue.recurrence_hint is not None, "recurrence_hint should be populated"
         assert issue.impact_area is not None, "impact_area should be populated"
         assert issue.resolved is True, "resolved should be True"
@@ -211,12 +205,12 @@ class TestStructuredIssueParsing:
         issues = detector_with_structured_issues.scan_files()
 
         for issue in issues:
-            assert issue.fingerprint is not None, (
-                f"Issue {issue.issue_type} should have fingerprint"
-            )
-            assert len(issue.fingerprint) == 12, (
-                f"Fingerprint should be 12 chars, got {len(issue.fingerprint)}"
-            )
+            assert (
+                issue.fingerprint is not None
+            ), f"Issue {issue.issue_type} should have fingerprint"
+            assert (
+                len(issue.fingerprint) == 12
+            ), f"Fingerprint should be 12 chars, got {len(issue.fingerprint)}"
 
 
 class TestFallbackToRegex:
@@ -231,9 +225,9 @@ class TestFallbackToRegex:
 
         # All issues should be non-structured
         for issue in issues:
-            assert issue.is_structured is False, (
-                "Legacy issues should not be marked as structured"
-            )
+            assert (
+                issue.is_structured is False
+            ), "Legacy issues should not be marked as structured"
 
     def test_mixed_files_priority_logic(self, detector_mixed_files):
         """Test that structured issues take priority over regex."""
@@ -243,9 +237,9 @@ class TestFallbackToRegex:
         structured = [i for i in issues if i.is_structured]
         non_structured = [i for i in issues if not i.is_structured]
 
-        assert len(structured) == 1, (
-            f"Expected 1 structured issue, got {len(structured)}"
-        )
+        assert (
+            len(structured) == 1
+        ), f"Expected 1 structured issue, got {len(structured)}"
         assert len(non_structured) >= 1, "Expected at least one regex-detected issue"
 
     def test_no_double_detection_same_issue(self, detector_mixed_files):
@@ -256,9 +250,9 @@ class TestFallbackToRegex:
         fingerprints = [i.fingerprint for i in issues]
         unique_fingerprints = set(fingerprints)
 
-        assert len(fingerprints) == len(unique_fingerprints), (
-            "Should not have duplicate fingerprints"
-        )
+        assert len(fingerprints) == len(
+            unique_fingerprints
+        ), "Should not have duplicate fingerprints"
 
 
 class TestRepeatedIssueFingerprinting:
@@ -269,20 +263,20 @@ class TestRepeatedIssueFingerprinting:
         detector_with_structured_issues.scan_files()
         recurring = detector_with_structured_issues.get_recurring_issues()
 
-        assert len(recurring) == 1, (
-            f"Expected 1 recurring pattern (ci_failure+missing dependency), got {len(recurring)}"
-        )
+        assert (
+            len(recurring) == 1
+        ), f"Expected 1 recurring pattern (ci_failure+missing dependency), got {len(recurring)}"
 
         rec = recurring[0]
-        assert rec.issue_type == "ci_failure", (
-            f"Expected ci_failure, got {rec.issue_type}"
-        )
-        assert rec.root_cause == "missing dependency", (
-            f"Expected 'missing dependency', got '{rec.root_cause}'"
-        )
-        assert rec.occurrence_count == 2, (
-            f"Expected 2 occurrences, got {rec.occurrence_count}"
-        )
+        assert (
+            rec.issue_type == "ci_failure"
+        ), f"Expected ci_failure, got {rec.issue_type}"
+        assert (
+            rec.root_cause == "missing dependency"
+        ), f"Expected 'missing dependency', got '{rec.root_cause}'"
+        assert (
+            rec.occurrence_count == 2
+        ), f"Expected 2 occurrences, got {rec.occurrence_count}"
 
     def test_recurring_issue_time_aggregation(self, detector_with_structured_issues):
         """Test that time lost is aggregated across recurring issues."""
@@ -291,9 +285,9 @@ class TestRepeatedIssueFingerprinting:
 
         # The ci_failure+missing dependency pattern has 30 + 15 = 45 minutes
         rec = recurring[0]
-        assert rec.total_time_lost_minutes == 45, (
-            f"Expected 45 minutes total, got {rec.total_time_lost_minutes}"
-        )
+        assert (
+            rec.total_time_lost_minutes == 45
+        ), f"Expected 45 minutes total, got {rec.total_time_lost_minutes}"
 
     def test_total_time_lost(self, detector_with_structured_issues):
         """Test total time lost calculation."""
@@ -339,12 +333,12 @@ class TestMiniEvalResult:
 
         # Check file stats
         stats = detector_with_structured_issues.get_file_stats()
-        assert "structured_issues_count" in stats, (
-            "file_stats should include structured_issues_count"
-        )
-        assert stats["structured_issues_count"] == 3, (
-            f"Expected 3 structured issues, got {stats['structured_issues_count']}"
-        )
+        assert (
+            "structured_issues_count" in stats
+        ), "file_stats should include structured_issues_count"
+        assert (
+            stats["structured_issues_count"] == 3
+        ), f"Expected 3 structured issues, got {stats['structured_issues_count']}"
 
     def test_result_includes_recurring_issues(self, detector_with_structured_issues):
         """Test that result includes recurring_issues list."""
@@ -356,9 +350,9 @@ class TestMiniEvalResult:
         rec = recurring[0]
         assert hasattr(rec, "fingerprint"), "RecurringIssue should have fingerprint"
         assert hasattr(rec, "issue_type"), "RecurringIssue should have issue_type"
-        assert hasattr(rec, "occurrence_count"), (
-            "RecurringIssue should have occurrence_count"
-        )
+        assert hasattr(
+            rec, "occurrence_count"
+        ), "RecurringIssue should have occurrence_count"
 
     def test_result_includes_time_lost(self, detector_with_structured_issues):
         """Test that result includes time_lost_total_minutes."""
@@ -391,9 +385,9 @@ issues:
         issues = detector.scan_files()
 
         fingerprints = [i.fingerprint for i in issues]
-        assert fingerprints[0] == fingerprints[1], (
-            "Identical issues should have same fingerprint"
-        )
+        assert (
+            fingerprints[0] == fingerprints[1]
+        ), "Identical issues should have same fingerprint"
 
     def test_different_issue_different_fingerprint(self, temp_dir):
         """Test that different issues get different fingerprints."""
@@ -426,9 +420,9 @@ issues:
         issues = detector.scan_files()
 
         fingerprints = [i.fingerprint for i in issues]
-        assert fingerprints[0] != fingerprints[1], (
-            "Different issues should have different fingerprints"
-        )
+        assert (
+            fingerprints[0] != fingerprints[1]
+        ), "Different issues should have different fingerprints"
 
 
 class TestYAMLParsingEdgeCases:

@@ -3,6 +3,7 @@
 import asyncio
 import contextlib
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
@@ -69,7 +70,7 @@ class FailoverManager:
         self._consecutive_successes: dict[str, int] = {}
         self._last_failover_time: datetime | None = None
         self._failover_count = 0
-        self._callbacks: list = []
+        self._callbacks: list[Callable[[str, str], None]] = []
         self._running = False
         self._monitor_task: asyncio.Task | None = None
 
@@ -224,7 +225,7 @@ class FailoverManager:
             return None
         return min(candidates, key=lambda x: (x.priority, -x.weight))
 
-    def add_callback(self, callback) -> None:
+    def add_callback(self, callback: Callable[[str, str], None]) -> None:
         self._callbacks.append(callback)
 
     def _notify_callbacks(self, event_type: str, data: str) -> None:
@@ -275,12 +276,14 @@ class FailoverManager:
     def get_status(self) -> dict[str, Any]:
         return {
             "state": self._state.value,
-            "active_instance": self.active_instance.to_dict()
-            if self.active_instance
-            else None,
+            "active_instance": (
+                self.active_instance.to_dict() if self.active_instance else None
+            ),
             "failover_count": self._failover_count,
-            "last_failover": self._last_failover_time.isoformat()
-            if self._last_failover_time
-            else None,
+            "last_failover": (
+                self._last_failover_time.isoformat()
+                if self._last_failover_time
+                else None
+            ),
             "instances": {id: inst.to_dict() for id, inst in self._instances.items()},
         }

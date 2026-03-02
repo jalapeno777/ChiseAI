@@ -11,6 +11,7 @@ Responsibilities:
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import os
 import subprocess
@@ -26,13 +27,16 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 from config.bootstrap import bootstrap
 
 try:
-    from scripts.story_id import extract_story_ids, normalize_story_id
+    story_id_module = importlib.import_module("scripts.story_id")
 except ModuleNotFoundError:
     # Allow execution as `python scripts/ops/merlin_pr_sweep.py`.
     import pathlib
 
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-    from story_id import extract_story_ids, normalize_story_id
+    story_id_module = importlib.import_module("story_id")
+
+extract_story_ids = story_id_module.extract_story_ids
+normalize_story_id = story_id_module.normalize_story_id
 
 DEFAULT_MAPPING_FILE = Path("docs/operations/merlin-branch-story-map.json")
 DEFAULT_BASE_URL = "http://host.docker.internal:3000"
@@ -55,7 +59,7 @@ def _req_json(
 
     req = urllib.request.Request(url, data=data, method=method, headers=headers)
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(req, timeout=30) as resp:  # nosec B310
             raw = resp.read()
             return json.loads(raw.decode("utf-8")) if raw else {}
     except urllib.error.HTTPError as exc:
@@ -64,7 +68,7 @@ def _req_json(
 
 
 def _run_git(*args: str) -> tuple[int, str, str]:
-    proc = subprocess.run(
+    proc = subprocess.run(  # nosec B607
         ["git", *args],
         text=True,
         capture_output=True,

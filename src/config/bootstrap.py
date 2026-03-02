@@ -319,7 +319,7 @@ def verify_chiseai_network() -> dict[str, Any]:
 
     # Check if chiseai network exists
     try:
-        proc = subprocess.run(
+        proc = subprocess.run(  # nosec B607
             ["docker", "network", "inspect", "chiseai"],
             capture_output=True,
             text=True,
@@ -344,7 +344,7 @@ def verify_chiseai_network() -> dict[str, Any]:
 
     try:
         # Get list of containers on chiseai network
-        proc = subprocess.run(
+        proc = subprocess.run(  # nosec B607
             [
                 "docker",
                 "network",
@@ -395,7 +395,7 @@ def check_docker_connectivity() -> dict[str, Any]:
 
     try:
         # Check Docker version
-        proc = subprocess.run(
+        proc = subprocess.run(  # nosec B607
             ["docker", "version", "--format", "{{.Server.Version}}"],
             capture_output=True,
             text=True,

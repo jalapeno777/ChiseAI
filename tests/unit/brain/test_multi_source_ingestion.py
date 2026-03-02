@@ -8,8 +8,6 @@ from __future__ import annotations
 
 import json
 import sys
-import uuid
-from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -29,7 +27,6 @@ from governance.tempmemory.migration import (
     MigrationResult,
     MigrationStatus,
     MigrationTarget,
-    TempmemoryFile,
 )
 
 
@@ -183,8 +180,8 @@ class TestBrainEvalIntegration:
     def test_ingest_from_tempmemory_files(self, integration, mock_redis):
         """Test ingestion from tempmemory files."""
         # Create a temporary file
-        import tempfile
         import os
+        import tempfile
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create a test tempmemory file

@@ -232,7 +232,7 @@ class QualityScorer:
 
         # Check black compliance
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B607
                 ["black", "--check", *python_files],
                 capture_output=True,
                 text=True,
@@ -252,7 +252,7 @@ class QualityScorer:
 
         # Check ruff compliance
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B607
                 ["ruff", "check", *python_files],
                 capture_output=True,
                 text=True,
@@ -323,7 +323,7 @@ class QualityScorer:
 
         # Try running pytest coverage if available
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B607
                 ["pytest", "--cov=src", "--cov-report=json", "-q"],
                 capture_output=True,
                 text=True,
@@ -395,7 +395,7 @@ class QualityScorer:
 
         # Run bandit security check
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B607
                 ["bandit", "-r", "-f", "json", *python_files],
                 capture_output=True,
                 text=True,

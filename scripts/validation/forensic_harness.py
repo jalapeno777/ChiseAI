@@ -13,13 +13,15 @@ Fail-Safe Mechanism:
 """
 
 import asyncio
+import contextlib
 import json
 import os
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, timezone, timedelta
-from typing import Dict, List, Optional, Any, Callable
-from enum import Enum
 import uuid
+from collections.abc import Callable
+from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime, timedelta
+from enum import Enum
+from typing import Any
 
 
 class GateStatus(Enum):
@@ -59,14 +61,12 @@ class Artifact:
 
     gate: str
     artifact_type: str
-    data: Dict[str, Any]
+    data: dict[str, Any]
     source_path: str
-    captured_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    captured_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     artifact_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert artifact to dictionary."""
         return asdict(self)
 
@@ -85,10 +85,10 @@ class Snapshot:
 
     timestamp_utc: str
     label: str
-    artifacts: Dict[str, Artifact] = field(default_factory=dict)
+    artifacts: dict[str, Artifact] = field(default_factory=dict)
     snapshot_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert snapshot to dictionary."""
         return {
             "snapshot_id": self.snapshot_id,
@@ -114,14 +114,12 @@ class GateResult:
 
     gate: str
     status: GateStatus
-    artifacts_found: List[str] = field(default_factory=list)
-    artifacts_missing: List[str] = field(default_factory=list)
-    validation_errors: List[str] = field(default_factory=list)
-    evaluated_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    artifacts_found: list[str] = field(default_factory=list)
+    artifacts_missing: list[str] = field(default_factory=list)
+    validation_errors: list[str] = field(default_factory=list)
+    evaluated_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert gate result to dictionary."""
         return {
             "gate": self.gate,
@@ -149,12 +147,12 @@ class ProofResult:
 
     start_time: str
     end_time: str
-    snapshots: List[Snapshot]
-    gate_results: Dict[str, GateResult]
+    snapshots: list[Snapshot]
+    gate_results: dict[str, GateResult]
     overall_status: GateStatus
     proof_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert proof result to dictionary."""
         return {
             "proof_id": self.proof_id,
@@ -185,7 +183,7 @@ class EvidenceBundle:
     created_at: str
     bundle_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert evidence bundle to dictionary."""
         return {
             "bundle_id": self.bundle_id,
@@ -200,7 +198,7 @@ class EvidenceBundle:
 
 
 # Gate requirements definition
-GATE_REQUIREMENTS: Dict[str, List[str]] = {
+GATE_REQUIREMENTS: dict[str, list[str]] = {
     "G1": ["scheduler_heartbeat"],
     "G2": ["signal_count_delta"],
     "G3": ["outcome_count_delta"],
@@ -238,7 +236,7 @@ class ForensicHarness:
         self,
         duration_minutes: int = 30,
         snapshot_interval_minutes: int = 5,
-        artifact_collectors: Optional[Dict[str, Callable]] = None,
+        artifact_collectors: dict[str, Callable] | None = None,
     ):
         """
         Initialize the forensic harness.
@@ -250,14 +248,14 @@ class ForensicHarness:
         """
         self.duration = duration_minutes
         self.interval = snapshot_interval_minutes
-        self.snapshots: List[Snapshot] = []
-        self.start_time: Optional[datetime] = None
-        self.end_time: Optional[datetime] = None
+        self.snapshots: list[Snapshot] = []
+        self.start_time: datetime | None = None
+        self.end_time: datetime | None = None
         self._running = False
         self._artifact_collectors = artifact_collectors or {}
-        self._proof_result: Optional[ProofResult] = None
+        self._proof_result: ProofResult | None = None
 
-    def _generate_snapshot_labels(self) -> List[str]:
+    def _generate_snapshot_labels(self) -> list[str]:
         """Generate snapshot labels (T0, T5, T10, etc.)."""
         labels = ["T0"]  # Always start with T0
         current = self.interval
@@ -266,14 +264,14 @@ class ForensicHarness:
             current += self.interval
         return labels
 
-    def _validate_monotonic_timestamps(self) -> List[str]:
+    def _validate_monotonic_timestamps(self) -> list[str]:
         """
         Validate that all snapshot timestamps are monotonically increasing.
 
         Returns:
             List of error messages (empty if valid)
         """
-        errors = []
+        errors: list[str] = []
         if len(self.snapshots) < 2:
             return errors
 
@@ -287,7 +285,7 @@ class ForensicHarness:
                 )
         return errors
 
-    async def _collect_artifacts_for_snapshot(self, label: str) -> Dict[str, Artifact]:
+    async def _collect_artifacts_for_snapshot(self, label: str) -> dict[str, Artifact]:
         """
         Collect all artifacts for a snapshot.
 
@@ -299,8 +297,8 @@ class ForensicHarness:
         Returns:
             Dictionary mapping artifact names to Artifact objects
         """
-        artifacts: Dict[str, Artifact] = {}
-        timestamp = datetime.now(timezone.utc).isoformat()
+        artifacts: dict[str, Artifact] = {}
+        timestamp = datetime.now(UTC).isoformat()
 
         # Collect artifacts from registered collectors
         for artifact_name, collector in self._artifact_collectors.items():
@@ -385,7 +383,7 @@ class ForensicHarness:
         Returns:
             ProofResult containing all snapshots and gate evaluations
         """
-        self.start_time = datetime.now(timezone.utc)
+        self.start_time = datetime.now(UTC)
         self.snapshots = []
         self._running = True
 
@@ -395,7 +393,7 @@ class ForensicHarness:
         t0_artifacts = await self._collect_artifacts_for_snapshot("T0")
         self.snapshots.append(
             Snapshot(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 label="T0",
                 artifacts=t0_artifacts,
             )
@@ -407,7 +405,7 @@ class ForensicHarness:
                 break
 
             # Calculate wait time
-            elapsed = (datetime.now(timezone.utc) - self.start_time).total_seconds()
+            elapsed = (datetime.now(UTC) - self.start_time).total_seconds()
             target_elapsed = i * self.interval * 60
             wait_seconds = max(0, target_elapsed - elapsed)
 
@@ -420,13 +418,13 @@ class ForensicHarness:
             artifacts = await self._collect_artifacts_for_snapshot(label)
             self.snapshots.append(
                 Snapshot(
-                    timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                    timestamp_utc=datetime.now(UTC).isoformat(),
                     label=label,
                     artifacts=artifacts,
                 )
             )
 
-        self.end_time = datetime.now(timezone.utc)
+        self.end_time = datetime.now(UTC)
         self._running = False
 
         # Validate monotonic timestamps
@@ -434,7 +432,7 @@ class ForensicHarness:
 
         # Evaluate all gates
         gate_results = {}
-        for gate in GATE_REQUIREMENTS.keys():
+        for gate in GATE_REQUIREMENTS:
             gate_results[gate] = self.evaluate_gate(gate, GATE_REQUIREMENTS[gate])
 
         # Overall status is PASS only if ALL gates PASS
@@ -461,7 +459,7 @@ class ForensicHarness:
         """Stop the proof loop early."""
         self._running = False
 
-    def evaluate_gate(self, gate: str, required_artifacts: List[str]) -> GateResult:
+    def evaluate_gate(self, gate: str, required_artifacts: list[str]) -> GateResult:
         """
         Evaluate a gate - PASS only if ALL required artifacts present and valid.
 
@@ -483,7 +481,7 @@ class ForensicHarness:
         validation_errors = []
 
         # Check all snapshots for required artifacts
-        all_artifacts: Dict[str, List[Artifact]] = {}
+        all_artifacts: dict[str, list[Artifact]] = {}
         for snapshot in self.snapshots:
             for art_name, artifact in snapshot.artifacts.items():
                 if art_name not in all_artifacts:
@@ -521,7 +519,7 @@ class ForensicHarness:
 
     def _validate_artifact_content(
         self, gate: str, artifact_name: str, artifact: Artifact
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Validate the content of a specific artifact.
 
@@ -602,17 +600,17 @@ class ForensicHarness:
         return EvidenceBundle(
             proof_result=self._proof_result,
             bundle_hash=bundle_hash,
-            created_at=datetime.now(timezone.utc).isoformat(),
+            created_at=datetime.now(UTC).isoformat(),
         )
 
-    def get_snapshot_at(self, label: str) -> Optional[Snapshot]:
+    def get_snapshot_at(self, label: str) -> Snapshot | None:
         """Get snapshot by label (e.g., "T0", "T5")."""
         for snapshot in self.snapshots:
             if snapshot.label == label:
                 return snapshot
         return None
 
-    def get_artifact_history(self, artifact_name: str) -> List[Artifact]:
+    def get_artifact_history(self, artifact_name: str) -> list[Artifact]:
         """Get all instances of an artifact across snapshots."""
         history = []
         for snapshot in self.snapshots:
@@ -625,7 +623,7 @@ class ForensicHarness:
 
 
 def create_redis_collector(
-    redis_client, key: str, field: Optional[str] = None
+    redis_client, key: str, field: str | None = None
 ) -> Callable:
     """
     Create an artifact collector for Redis data.
@@ -648,7 +646,7 @@ def create_redis_collector(
             "key": key,
             "field": field,
             "value": value.decode() if isinstance(value, bytes) else value,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     return collector
@@ -702,7 +700,7 @@ def create_influx_collector(influx_client, query: str) -> Callable:
         return {
             "query": query,
             "results": list(result.get_points()) if result else [],
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     return collector
@@ -739,9 +737,9 @@ if __name__ == "__main__":
 # Import all collectors for integrated harness
 try:
     from scripts.validation.discord_evidence import DiscordEvidenceCollector
-    from scripts.validation.redis_deltas import RedisDeltaCollector
     from scripts.validation.influx_evidence import InfluxEvidenceCollector
     from scripts.validation.recap_validator import RecapValidator
+    from scripts.validation.redis_deltas import RedisDeltaCollector
 
     COLLECTORS_AVAILABLE = True
 except ImportError:
@@ -799,14 +797,14 @@ class IntegratedForensicHarness(ForensicHarness):
         self._baseline_captured = False
         self._final_captured = False
 
-    async def capture_baseline(self) -> Dict[str, Any]:
+    async def capture_baseline(self) -> dict[str, Any]:
         """Capture baseline state (T0) from all collectors.
 
         Returns:
             Dictionary containing baseline evidence from all sources
         """
-        baseline = {
-            "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        baseline: dict[str, Any] = {
+            "timestamp_utc": datetime.now(UTC).isoformat(),
             "label": "T0",
         }
 
@@ -819,7 +817,7 @@ class IntegratedForensicHarness(ForensicHarness):
 
         # Capture Discord baseline (messages before proof window)
         try:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             discord_messages = await self.discord_collector.collect_messages(
                 since=now - timedelta(minutes=30), until=now
             )
@@ -833,10 +831,10 @@ class IntegratedForensicHarness(ForensicHarness):
         # Capture InfluxDB baseline
         try:
             orders = await self.influx_collector.query_orders(
-                since=datetime.now(timezone.utc) - timedelta(hours=1)
+                since=datetime.now(UTC) - timedelta(hours=1)
             )
             fills = await self.influx_collector.query_fills(
-                since=datetime.now(timezone.utc) - timedelta(hours=1)
+                since=datetime.now(UTC) - timedelta(hours=1)
             )
             baseline["influx"] = {
                 "orders": orders.to_dict() if hasattr(orders, "to_dict") else orders,
@@ -848,7 +846,7 @@ class IntegratedForensicHarness(ForensicHarness):
         self._baseline_captured = True
         return baseline
 
-    async def capture_snapshot(self, label: str) -> Dict[str, Any]:
+    async def capture_snapshot(self, label: str) -> dict[str, Any]:
         """Capture a snapshot at the given label.
 
         Args:
@@ -857,8 +855,8 @@ class IntegratedForensicHarness(ForensicHarness):
         Returns:
             Dictionary containing snapshot evidence
         """
-        snapshot: Dict[str, Any] = {
-            "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        snapshot: dict[str, Any] = {
+            "timestamp_utc": datetime.now(UTC).isoformat(),
             "label": label,
         }
 
@@ -867,14 +865,14 @@ class IntegratedForensicHarness(ForensicHarness):
             kill_switch_state = await self.redis_collector.get_kill_switch_state()
             snapshot["redis"] = {
                 "kill_switch": kill_switch_state,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
         except Exception as e:
             snapshot["redis_error"] = str(e)
 
         # Capture Discord snapshot
         try:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             discord_messages = await self.discord_collector.collect_messages(
                 since=now - timedelta(minutes=5), until=now
             )
@@ -888,10 +886,10 @@ class IntegratedForensicHarness(ForensicHarness):
         # Capture InfluxDB snapshot
         try:
             orders = await self.influx_collector.query_orders(
-                since=datetime.now(timezone.utc) - timedelta(minutes=5)
+                since=datetime.now(UTC) - timedelta(minutes=5)
             )
             fills = await self.influx_collector.query_fills(
-                since=datetime.now(timezone.utc) - timedelta(minutes=5)
+                since=datetime.now(UTC) - timedelta(minutes=5)
             )
             snapshot["influx"] = {
                 "orders": orders.to_dict() if hasattr(orders, "to_dict") else orders,
@@ -902,7 +900,7 @@ class IntegratedForensicHarness(ForensicHarness):
 
         return snapshot
 
-    async def capture_final(self, baseline: Dict[str, Any]) -> Dict[str, Any]:
+    async def capture_final(self, baseline: dict[str, Any]) -> dict[str, Any]:
         """Capture final state and compute deltas.
 
         Args:
@@ -911,8 +909,8 @@ class IntegratedForensicHarness(ForensicHarness):
         Returns:
             Dictionary containing final state and deltas
         """
-        final: Dict[str, Any] = {
-            "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        final: dict[str, Any] = {
+            "timestamp_utc": datetime.now(UTC).isoformat(),
             "label": "T30",
         }
 
@@ -922,7 +920,7 @@ class IntegratedForensicHarness(ForensicHarness):
             if redis_baseline:
                 redis_final = await self.redis_collector.capture_final(redis_baseline)
                 # Compute deltas from the evidence list
-                deltas: Dict[str, Any] = {}
+                deltas: dict[str, Any] = {}
                 for evidence in redis_final:
                     deltas[evidence.index_name] = evidence.delta
                 final["redis"] = {
@@ -936,7 +934,7 @@ class IntegratedForensicHarness(ForensicHarness):
 
         # Capture Discord final state
         try:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             discord_messages = await self.discord_collector.collect_messages(
                 since=now - timedelta(minutes=30), until=now
             )
@@ -964,13 +962,13 @@ class IntegratedForensicHarness(ForensicHarness):
         # Capture InfluxDB final state
         try:
             orders = await self.influx_collector.query_orders(
-                since=datetime.now(timezone.utc) - timedelta(minutes=30)
+                since=datetime.now(UTC) - timedelta(minutes=30)
             )
             fills = await self.influx_collector.query_fills(
-                since=datetime.now(timezone.utc) - timedelta(minutes=30)
+                since=datetime.now(UTC) - timedelta(minutes=30)
             )
             canary = await self.influx_collector.query_canary(
-                since=datetime.now(timezone.utc) - timedelta(minutes=30)
+                since=datetime.now(UTC) - timedelta(minutes=30)
             )
             final["influx"] = {
                 "orders": orders.to_dict() if hasattr(orders, "to_dict") else orders,
@@ -995,7 +993,7 @@ class IntegratedForensicHarness(ForensicHarness):
         Returns:
             ProofResult with all evidence and gate evaluations
         """
-        self.start_time = datetime.now(timezone.utc)
+        self.start_time = datetime.now(UTC)
         self.snapshots = []
         self._running = True
 
@@ -1004,7 +1002,7 @@ class IntegratedForensicHarness(ForensicHarness):
         t0_artifacts = await self._convert_baseline_to_artifacts(baseline)
         self.snapshots.append(
             Snapshot(
-                timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                timestamp_utc=datetime.now(UTC).isoformat(),
                 label="T0",
                 artifacts=t0_artifacts,
             )
@@ -1017,7 +1015,7 @@ class IntegratedForensicHarness(ForensicHarness):
                 break
 
             # Calculate wait time
-            elapsed = (datetime.now(timezone.utc) - self.start_time).total_seconds()
+            elapsed = (datetime.now(UTC) - self.start_time).total_seconds()
             target_elapsed = (i + 1) * 5 * 60  # 5 minutes per interval
             wait_seconds = max(0, target_elapsed - elapsed)
 
@@ -1031,7 +1029,7 @@ class IntegratedForensicHarness(ForensicHarness):
             artifacts = await self._convert_snapshot_to_artifacts(snapshot_data)
             self.snapshots.append(
                 Snapshot(
-                    timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                    timestamp_utc=datetime.now(UTC).isoformat(),
                     label=label,
                     artifacts=artifacts,
                 )
@@ -1039,7 +1037,7 @@ class IntegratedForensicHarness(ForensicHarness):
 
         # Step 3: Capture final state (T30)
         if self._running:
-            elapsed = (datetime.now(timezone.utc) - self.start_time).total_seconds()
+            elapsed = (datetime.now(UTC) - self.start_time).total_seconds()
             target_elapsed = self.duration * 60
             wait_seconds = max(0, target_elapsed - elapsed)
 
@@ -1050,19 +1048,19 @@ class IntegratedForensicHarness(ForensicHarness):
             final_artifacts = await self._convert_final_to_artifacts(final_data)
             self.snapshots.append(
                 Snapshot(
-                    timestamp_utc=datetime.now(timezone.utc).isoformat(),
+                    timestamp_utc=datetime.now(UTC).isoformat(),
                     label="T30",
                     artifacts=final_artifacts,
                 )
             )
 
-        self.end_time = datetime.now(timezone.utc)
+        self.end_time = datetime.now(UTC)
         self._running = False
 
         # Step 4: Evaluate all gates
         timestamp_errors = self._validate_monotonic_timestamps()
         gate_results = {}
-        for gate in GATE_REQUIREMENTS.keys():
+        for gate in GATE_REQUIREMENTS:
             gate_results[gate] = self.evaluate_gate(gate, GATE_REQUIREMENTS[gate])
 
         # Overall status is PASS only if ALL gates PASS
@@ -1086,13 +1084,11 @@ class IntegratedForensicHarness(ForensicHarness):
         return self._proof_result
 
     async def _convert_baseline_to_artifacts(
-        self, baseline: Dict[str, Any]
-    ) -> Dict[str, Artifact]:
+        self, baseline: dict[str, Any]
+    ) -> dict[str, Artifact]:
         """Convert baseline data to artifacts."""
         artifacts = {}
-        timestamp = baseline.get(
-            "timestamp_utc", datetime.now(timezone.utc).isoformat()
-        )
+        timestamp = baseline.get("timestamp_utc", datetime.now(UTC).isoformat())
 
         # Redis artifacts (G1-G4)
         if "redis" in baseline:
@@ -1129,13 +1125,11 @@ class IntegratedForensicHarness(ForensicHarness):
         return artifacts
 
     async def _convert_snapshot_to_artifacts(
-        self, snapshot: Dict[str, Any]
-    ) -> Dict[str, Artifact]:
+        self, snapshot: dict[str, Any]
+    ) -> dict[str, Artifact]:
         """Convert snapshot data to artifacts."""
         artifacts = {}
-        timestamp = snapshot.get(
-            "timestamp_utc", datetime.now(timezone.utc).isoformat()
-        )
+        timestamp = snapshot.get("timestamp_utc", datetime.now(UTC).isoformat())
 
         # Redis artifacts
         if "redis" in snapshot:
@@ -1200,11 +1194,11 @@ class IntegratedForensicHarness(ForensicHarness):
         return artifacts
 
     async def _convert_final_to_artifacts(
-        self, final: Dict[str, Any]
-    ) -> Dict[str, Artifact]:
+        self, final: dict[str, Any]
+    ) -> dict[str, Artifact]:
         """Convert final data to artifacts."""
         artifacts = {}
-        timestamp = final.get("timestamp_utc", datetime.now(timezone.utc).isoformat())
+        timestamp = final.get("timestamp_utc", datetime.now(UTC).isoformat())
 
         # Redis artifacts with deltas
         if "redis" in final:
@@ -1316,10 +1310,8 @@ class IntegratedForensicHarness(ForensicHarness):
     async def close(self):
         """Close all collectors and release resources."""
         # Close Discord collector (has close method)
-        try:
+        with contextlib.suppress(Exception):
             await self.discord_collector.close()
-        except Exception:
-            pass
 
         # Redis and Influx collectors don't have close methods - they use
         # connection pooling that cleans up automatically

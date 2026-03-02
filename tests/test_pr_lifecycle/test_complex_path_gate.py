@@ -10,25 +10,22 @@ This module tests:
 
 from __future__ import annotations
 
-import asyncio
-import json
 import os
-import tempfile
-from datetime import UTC, datetime, timedelta
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
-
-import pytest
 
 # Add paths for imports
 import sys
+import tempfile
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 sys.path.insert(
     0, str(Path(__file__).parent.parent.parent / "scripts" / "pr_lifecycle")
 )
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from autonomous_git.path_analyzer import RiskLevel
 from complex_path_gate import (
     ApprovalRecord,
     ApprovalStatus,
@@ -40,6 +37,8 @@ from human_approval_workflow import (
     WorkflowConfig,
     WorkflowResult,
 )
+
+from autonomous_git.path_analyzer import RiskLevel
 
 
 class TestComplexPathGate:

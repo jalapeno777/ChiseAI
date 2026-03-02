@@ -1,8 +1,10 @@
 """Unified High Availability Manager (NFR-006)."""
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from types import TracebackType
 from typing import Any
 
 from src.infrastructure.ha.failover import (
@@ -77,8 +79,8 @@ class HighAvailabilityManager:
         self,
         service_name: str,
         instances: list[InstanceInfo],
-        health_check_func,
-        replicas=None,
+        health_check_func: Callable[[], bool],
+        replicas: int | None = None,
     ) -> None:
         self._services[service_name] = {
             "instances": {inst.id: inst for inst in instances},
@@ -111,7 +113,10 @@ class HighAvailabilityManager:
         if service_name not in self._services:
             return False
         try:
-            return self._services[service_name]["health_check_func"]()
+            check = self._services[service_name]["health_check_func"]
+            if callable(check):
+                return bool(check())
+            return False
         except Exception:
             return False
 
@@ -153,9 +158,11 @@ class HighAvailabilityManager:
             "service_name": service_name,
             "registered_at": service["registered_at"].isoformat(),
             "instance_count": len(service["instances"]),
-            "active_instance": self._failover_manager.active_instance.to_dict()
-            if self._failover_manager.active_instance
-            else None,
+            "active_instance": (
+                self._failover_manager.active_instance.to_dict()
+                if self._failover_manager.active_instance
+                else None
+            ),
             "failover_state": self._failover_manager.state.value,
             "uptime": self._uptime_monitor.get_service_status(service_name),
         }
@@ -178,8 +185,8 @@ class HighAvailabilityManager:
 
     def is_meeting_uptime_target(self) -> bool:
         status = self._uptime_monitor.get_all_status()
-        return status.get("services_meeting_target", 0) == status.get(
-            "total_services", 0
+        return bool(
+            status.get("services_meeting_target", 0) == status.get("total_services", 0)
         )
 
     async def start(self) -> None:
@@ -194,11 +201,16 @@ class HighAvailabilityManager:
         await self._health_registry.stop_all()
         logger.info("HA Manager stopped")
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "HighAvailabilityManager":
         await self.start()
         return self
 
-    async def __aexit__(self, *args):
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         await self.stop()
 
     def to_dict(self) -> dict[str, Any]:

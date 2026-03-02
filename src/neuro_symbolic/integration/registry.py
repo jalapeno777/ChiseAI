@@ -65,9 +65,9 @@ class ComponentInfo:
             "dependencies": self.dependencies,
             "config": self.config,
             "created_at": self.created_at.isoformat(),
-            "initialized_at": self.initialized_at.isoformat()
-            if self.initialized_at
-            else None,
+            "initialized_at": (
+                self.initialized_at.isoformat() if self.initialized_at else None
+            ),
             "error_message": self.error_message,
             "metadata": self.metadata,
         }

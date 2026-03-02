@@ -9,6 +9,7 @@ For P0-RUNTIME-HARDEN-003: Discord Continuity
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 from dataclasses import dataclass, field
@@ -16,8 +17,8 @@ from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from discord_alerts.discord_client import DiscordClient
     from discord_alerts.config import DiscordConfig
+    from discord_alerts.discord_client import DiscordClient
 
 logger = logging.getLogger(__name__)
 
@@ -199,17 +200,13 @@ class DiscordContinuityMonitor:
 
         if self._monitor_task and not self._monitor_task.done():
             self._monitor_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._monitor_task
-            except asyncio.CancelledError:
-                pass
 
         if self._retry_task and not self._retry_task.done():
             self._retry_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._retry_task
-            except asyncio.CancelledError:
-                pass
 
         logger.info("Discord continuity monitor stopped")
 
@@ -333,7 +330,6 @@ class DiscordContinuityMonitor:
             from tools.redis_state import (
                 redis_state_hset,
                 redis_state_lpush,
-                redis_state_expire,
             )
 
             # Store current metrics

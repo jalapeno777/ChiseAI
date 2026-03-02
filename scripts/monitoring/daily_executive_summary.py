@@ -11,11 +11,12 @@ Posts daily at configured time with:
 Designed for cron execution with proper error handling and exit codes.
 """
 
+import logging
 import os
 import sys
-import logging
-from datetime import datetime, timezone
-from typing import Dict, Optional, Any
+from datetime import UTC, datetime
+from typing import Any
+
 import redis
 
 
@@ -26,7 +27,7 @@ def load_env_file():
         os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"
     )
     if os.path.exists(env_path):
-        with open(env_path, "r") as f:
+        with open(env_path) as f:
             for line in f:
                 line = line.strip()
                 if line and not line.startswith("#") and "=" in line:
@@ -51,7 +52,7 @@ REDIS_HOST = os.getenv(
 REDIS_PORT = int(os.getenv("MONITORING_REDIS_PORT", os.getenv("REDIS_PORT", "6380")))
 
 
-def get_redis() -> Optional[redis.Redis]:
+def get_redis() -> Any | None:
     """Get Redis connection with error handling."""
     try:
         r = redis.Redis(
@@ -92,7 +93,7 @@ def safe_int(value: Any, default: int = 0) -> int:
         return default
 
 
-def validate_outcome_data(r: redis.Redis) -> Dict[str, Any]:
+def validate_outcome_data(r: Any) -> dict[str, Any]:
     """Validate that outcome data exists and is recent.
 
     Returns validation status and warnings about data quality.
@@ -112,7 +113,7 @@ def validate_outcome_data(r: redis.Redis) -> Dict[str, Any]:
 
         # Check for recent outcomes (within 24 hours)
         recent_count = 0
-        current_time = datetime.now(timezone.utc).timestamp()
+        current_time = datetime.now(UTC).timestamp()
 
         for outcome_id in list(outcomes)[:20]:  # Sample first 20
             try:
@@ -161,7 +162,7 @@ def validate_outcome_data(r: redis.Redis) -> Dict[str, Any]:
         }
 
 
-def calculate_pnl(r: redis.Redis) -> Dict[str, Any]:
+def calculate_pnl(r: Any) -> dict[str, Any]:
     """Calculate daily PnL from outcomes with robust error handling and validation.
 
     Self-validation: Checks that outcome data exists and is recent.
@@ -266,7 +267,7 @@ def calculate_pnl(r: redis.Redis) -> Dict[str, Any]:
         }
 
 
-def get_drawdown(r: redis.Redis) -> float:
+def get_drawdown(r: Any) -> float:
     """Get current drawdown from daily loss tracking."""
     try:
         current = r.hget("bmad:chiseai:daily_loss_limit", "current_loss")
@@ -279,7 +280,7 @@ def get_drawdown(r: redis.Redis) -> float:
         return 0.0
 
 
-def get_ece_drift(r: redis.Redis) -> str:
+def get_ece_drift(r: Any) -> str:
     """Get ECE (Expected Calibration Error) drift status."""
     try:
         # Check if ECE tracking key exists
@@ -296,7 +297,7 @@ def get_ece_drift(r: redis.Redis) -> str:
         return "Unknown"
 
 
-def get_incidents_24h(r: redis.Redis) -> int:
+def get_incidents_24h(r: Any) -> int:
     """Count incidents in last 24h."""
     try:
         # Check incident log for any story
@@ -322,10 +323,10 @@ def get_incidents_24h(r: redis.Redis) -> int:
 
 
 def format_executive_summary(
-    pnl: Dict, drawdown: float, ece: str, incidents: int
+    pnl: dict, drawdown: float, ece: str, incidents: int
 ) -> str:
     """Format executive summary message with data validation warnings."""
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
 
     # Determine PnL emoji
     pnl_emoji = "🟢" if pnl["pnl"] >= 0 else "🔴"
@@ -345,19 +346,19 @@ def format_executive_summary(
 
     lines = [
         f"**📈 Daily Executive Summary** | {timestamp}",
-        f"",
-        f"**Performance:**",
+        "",
+        "**Performance:**",
         f"• PnL: {pnl_emoji} ${pnl['pnl']:.2f}",
         f"• Win Rate: {pnl['win_rate']:.1f}% ({pnl['wins']}W / {pnl['losses']}L)",
         f"• Total Trades: {pnl['total_trades']}",
-        f"",
-        f"**Risk Metrics:**",
+        "",
+        "**Risk Metrics:**",
         f"• Drawdown: ${drawdown:.2f}",
         f"• ECE Drift: {ece}",
-        f"",
-        f"**Operations:**",
+        "",
+        "**Operations:**",
         f"• Incidents (24h): {incidents}",
-        f"",
+        "",
         f"**Data Quality:** {status_emoji} {data_status}",
     ]
 
@@ -369,8 +370,8 @@ def format_executive_summary(
 
     lines.extend(
         [
-            f"",
-            f"_Next summary tomorrow_",
+            "",
+            "_Next summary tomorrow_",
         ]
     )
 
@@ -379,9 +380,9 @@ def format_executive_summary(
 
 def post_summary(message: str) -> bool:
     """Post to Discord or log locally. Synchronous version for cron."""
-    import urllib.request
-    import urllib.error
     import json
+    import urllib.error
+    import urllib.request
 
     # Try webhook first (more reliable)
     if DISCORD_WEBHOOK_URL:
@@ -396,7 +397,7 @@ def post_summary(message: str) -> bool:
                 },
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
                 if resp.status in (200, 204):
                     logger.info("Summary posted to Discord via webhook")
                     return True
@@ -424,7 +425,7 @@ def post_summary(message: str) -> bool:
                 },
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
                 if resp.status == 200:
                     logger.info("Summary posted to Discord via bot")
                     return True
@@ -445,7 +446,7 @@ def post_summary(message: str) -> bool:
             os.path.dirname(__file__), "..", "..", "logs", "monitoring"
         )
         os.makedirs(log_dir, exist_ok=True)
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d")
+        timestamp = datetime.now(UTC).strftime("%Y%m%d")
         log_path = os.path.join(log_dir, f"daily-summary-{timestamp}.log")
         with open(log_path, "w") as f:
             f.write(message)

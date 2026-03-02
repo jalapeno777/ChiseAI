@@ -466,9 +466,9 @@ class TestMiniBrainEval:
 
         # Mock BrainEvaluator to return some evaluations
         from brain.evaluation import (
+            EvaluationMetrics,
             EvaluationResult,
             EvaluationStatus,
-            EvaluationMetrics,
         )
 
         mock_brain.list_evaluations.return_value = [
@@ -544,9 +544,9 @@ class TestMiniBrainEval:
     def test_collect_kpis_with_evaluator(self) -> None:
         """Test KPI collection with BrainEvaluator."""
         from brain.evaluation import (
+            EvaluationMetrics,
             EvaluationResult,
             EvaluationStatus,
-            EvaluationMetrics,
         )
 
         mock_brain = MagicMock()

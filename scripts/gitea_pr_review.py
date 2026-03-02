@@ -38,7 +38,7 @@ def _req_json(method: str, url: str, token: str, body: dict | None = None) -> di
         headers["Content-Type"] = "application/json"
     req = urllib.request.Request(url, data=data, method=method, headers=headers)
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(req, timeout=30) as resp:  # nosec B310
             raw = resp.read()
             return json.loads(raw.decode("utf-8")) if raw else {}
     except urllib.error.HTTPError as e:

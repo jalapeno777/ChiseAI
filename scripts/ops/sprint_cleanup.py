@@ -175,7 +175,7 @@ class GitHelper:
     @staticmethod
     def _find_repo_root() -> Path:
         """Find the repository root."""
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B607
             ["git", "rev-parse", "--show-toplevel"],
             capture_output=True,
             text=True,
@@ -187,7 +187,7 @@ class GitHelper:
         self, *args: str, check: bool = True, cwd: Path | None = None
     ) -> tuple[int, str, str]:
         """Run a git command."""
-        proc = subprocess.run(
+        proc = subprocess.run(  # nosec B607
             ["git", *args],
             cwd=str(cwd or self.repo_root),
             capture_output=True,
@@ -308,7 +308,7 @@ class GitHelper:
         _, out, _ = self.run("worktree", "list", "--porcelain")
 
         worktrees = []
-        current_worktree = {}
+        current_worktree: dict[str, Any] = {}
 
         for line in out.split("\n"):
             line = line.strip()
@@ -475,7 +475,7 @@ class GiteaHelper:
         req = urllib.request.Request(url, data=body, method=method, headers=headers)
 
         try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with urllib.request.urlopen(req, timeout=30) as resp:  # nosec B310
                 raw = resp.read()
                 return True, json.loads(raw.decode("utf-8")) if raw else {}
         except urllib.error.HTTPError as e:
@@ -564,7 +564,7 @@ class RedisHelper:
                 decode_responses=True,
                 socket_connect_timeout=5,
             )
-            return self.client.ping()
+            return bool(self.client.ping())
         except Exception:
             self.client = None
             return False
@@ -574,7 +574,7 @@ class RedisHelper:
         if self.client is None:
             return False
         try:
-            return self.client.ping()
+            return bool(self.client.ping())
         except Exception:
             return False
 
@@ -590,6 +590,7 @@ class RedisHelper:
         }
 
         try:
+            assert self.client is not None
             self.client.lpush(REDIS_CLEANUP_LOG, json.dumps(entry))
             return True
         except Exception:
@@ -601,6 +602,7 @@ class RedisHelper:
             return False
 
         try:
+            assert self.client is not None
             payload = {
                 "state": state,
                 "timestamp": datetime.now(UTC).isoformat(),
@@ -617,6 +619,7 @@ class RedisHelper:
             return False
 
         try:
+            assert self.client is not None
             date_key = datetime.now(UTC).strftime("%Y-%m-%d")
             summary = {
                 "timestamp": result.timestamp,
@@ -641,6 +644,7 @@ class RedisHelper:
             return False
 
         try:
+            assert self.client is not None
             boundary_data = {
                 "sprint_id": sprint_id,
                 "started_at": datetime.now(UTC).isoformat(),

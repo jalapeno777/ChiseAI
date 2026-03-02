@@ -10,14 +10,12 @@ Exit codes:
     2 - Critical error (could not run checks)
 """
 
-import os
-import sys
-import subprocess
 import logging
-import json
-from datetime import datetime, timezone
+import os
+import subprocess
+import sys
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 # Setup logging
 logging.basicConfig(
@@ -39,7 +37,7 @@ def find_project_root() -> Path:
     return script_path.parent.parent.parent
 
 
-def run_check(script_name: str, project_root: Path) -> Tuple[int, str, str]:
+def run_check(script_name: str, project_root: Path) -> tuple[int, str, str]:
     """
     Run a single monitoring check script.
 
@@ -71,18 +69,18 @@ def run_check(script_name: str, project_root: Path) -> Tuple[int, str, str]:
         return (1, "", str(e))
 
 
-def format_summary(results: List[Dict]) -> str:
+def format_summary(results: list[dict]) -> str:
     """Format overall summary message."""
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
 
     passed = sum(1 for r in results if r["exit_code"] == 0)
     failed = sum(1 for r in results if r["exit_code"] != 0)
 
     lines = [
         f"**🔍 All Monitoring Checks** | {timestamp}",
-        f"",
+        "",
         f"**Overall Status:** {passed} passed, {failed} failed",
-        f"",
+        "",
     ]
 
     for result in results:
@@ -99,7 +97,7 @@ def format_summary(results: List[Dict]) -> str:
             )
             lines.append(f"   Error: {error}")
 
-    lines.extend([f"", f"_Run completed at {timestamp}_"])
+    lines.extend(["", f"_Run completed at {timestamp}_"])
 
     return "\n".join(lines)
 
@@ -110,7 +108,7 @@ def log_summary(message: str, project_root: Path) -> str:
         log_dir = project_root / "logs" / "monitoring"
         os.makedirs(log_dir, exist_ok=True)
 
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
         log_path = log_dir / f"all-checks-{timestamp}.log"
 
         with open(log_path, "w") as f:

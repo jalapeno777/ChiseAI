@@ -54,7 +54,7 @@ def _post_discord(webhook_url: str, content: str) -> None:
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=15):
+    with urllib.request.urlopen(req, timeout=15):  # nosec B310
         return
 
 

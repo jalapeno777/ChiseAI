@@ -9,6 +9,7 @@ This module is part of Phase 1 of the Tempmemory Migration story (ST-MEMORY-003)
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 from dataclasses import dataclass, field
@@ -52,17 +53,13 @@ class FileTrackingRecord:
 
         migrated_at = None
         if data.get("migrated_at"):
-            try:
+            with contextlib.suppress(ValueError):
                 migrated_at = datetime.fromisoformat(data["migrated_at"])
-            except ValueError:
-                pass
 
         last_attempt = None
         if data.get("last_attempt"):
-            try:
+            with contextlib.suppress(ValueError):
                 last_attempt = datetime.fromisoformat(data["last_attempt"])
-            except ValueError:
-                pass
 
         return cls(
             file_path=file_path,
@@ -200,9 +197,9 @@ class TempmemoryTracker:
                 status=status,
                 story_id=story_id,
                 memory_type=memory_type,
-                migrated_at=datetime.now(UTC)
-                if status == MigrationStatus.COMPLETED
-                else None,
+                migrated_at=(
+                    datetime.now(UTC) if status == MigrationStatus.COMPLETED else None
+                ),
                 error_message=error_message,
                 redis_key=redis_key,
                 qdrant_id=qdrant_id,
@@ -298,7 +295,7 @@ class TempmemoryTracker:
             all_data = self._redis_client.hgetall(self.REDIS_STATUS_KEY)
             summary.total_tracked = len(all_data)
 
-            for file_path, data in all_data.items():
+            for _file_path, data in all_data.items():
                 try:
                     parsed = json.loads(data)
                     status = MigrationStatus(parsed.get("status", "pending"))
@@ -392,14 +389,18 @@ class TempmemoryTracker:
                                     "status": record.status.value,
                                     "story_id": record.story_id,
                                     "memory_type": record.memory_type,
-                                    "migrated_at": record.migrated_at.isoformat()
-                                    if record.migrated_at
-                                    else None,
+                                    "migrated_at": (
+                                        record.migrated_at.isoformat()
+                                        if record.migrated_at
+                                        else None
+                                    ),
                                     "error_message": record.error_message,
                                     "attempt_count": record.attempt_count,
-                                    "last_attempt": record.last_attempt.isoformat()
-                                    if record.last_attempt
-                                    else None,
+                                    "last_attempt": (
+                                        record.last_attempt.isoformat()
+                                        if record.last_attempt
+                                        else None
+                                    ),
                                 }
                             )
                         except (json.JSONDecodeError, ValueError):
@@ -416,9 +417,9 @@ class TempmemoryTracker:
                     "file_path": r.file_path,
                     "error_message": r.error_message,
                     "attempt_count": r.attempt_count,
-                    "last_attempt": r.last_attempt.isoformat()
-                    if r.last_attempt
-                    else None,
+                    "last_attempt": (
+                        r.last_attempt.isoformat() if r.last_attempt else None
+                    ),
                 }
                 for r in failed_records
             ]

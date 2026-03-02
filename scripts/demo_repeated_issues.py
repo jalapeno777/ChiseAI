@@ -125,13 +125,13 @@ def demo_clustering():
     clusters = clusterer.get_clusters()
     stats = clusterer.get_stats()
 
-    print(f"\nClustering Results:")
+    print("\nClustering Results:")
     print(f"  Total issues: {stats['total_issues']}")
     print(f"  Unique fingerprints: {stats['unique_fingerprints']}")
     print(f"  Repeated clusters: {stats['repeated_clusters']}")
     print(f"  Single occurrences: {stats['single_occurrences']}")
 
-    print(f"\nTop Clusters:")
+    print("\nTop Clusters:")
     print("-" * 40)
     for i, cluster in enumerate(clusters[:5], 1):
         print(f"{i}. [{cluster.category}] {cluster.count} occurrences")

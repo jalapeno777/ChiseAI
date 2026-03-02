@@ -636,7 +636,7 @@ class ParallelExecutionCoordinator:
         agent_coordinator = self._get_agent_coordinator()
         scope_registry = self._get_scope_registry()
 
-        results = {
+        results: dict[str, list[dict[str, Any]]] = {
             "assigned": [],
             "failed": [],
             "skipped": [],

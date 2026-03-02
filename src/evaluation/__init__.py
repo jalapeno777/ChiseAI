@@ -61,7 +61,9 @@ class Issue:
 
         normalized = description.lower()
         normalized = re.sub(r"/[\w/.-]+", "<PATH>", normalized)
-        normalized = re.sub(r"\d{4}-\d{2}-\d{2}[t ]\d{2}:\d{2}:\d{2}", "<TIMESTAMP>", normalized)
+        normalized = re.sub(
+            r"\d{4}-\d{2}-\d{2}[t ]\d{2}:\d{2}:\d{2}", "<TIMESTAMP>", normalized
+        )
         normalized = re.sub(r"\b\d+\b", "<NUM>", normalized)
         normalized = re.sub(r"\s+", " ", normalized).strip()
         return normalized
@@ -77,7 +79,11 @@ from .repeated_issue_detector import (
 )
 from .schemas.mini_eval import (
     Issue as MiniEvalIssue,
+)
+from .schemas.mini_eval import (
     IssueCategory as MiniEvalIssueCategory,
+)
+from .schemas.mini_eval import (
     IssueSeverity,
     MiniEvalResult,
     Mitigation,

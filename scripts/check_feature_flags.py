@@ -5,9 +5,13 @@ This script verifies that all required feature flags are properly configured
 in Redis for the Day-0 activation checklist.
 """
 
-import json
 import sys
-from typing import Dict, List, Tuple
+import tempfile
+from pathlib import Path
+
+WORKTREE_PATH = (
+    Path(tempfile.gettempdir()) / "worktrees" / "PAPER-ACTIVATE-003-quickdev"
+)
 
 # Required feature flags from MEMORY_CONTEXT
 LAUNCH_SAFETY_FLAGS = [
@@ -48,12 +52,12 @@ SELF_EVOLUTION_FLAGS = [
 ]
 
 
-def check_redis_hash_flag(key: str, field: str = "enabled") -> Tuple[str, str]:
+def check_redis_hash_flag(key: str, field: str = "enabled") -> tuple[str, str]:
     """Check a feature flag stored as a Redis hash field."""
     try:
         import subprocess
 
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B607
             [
                 "python3",
                 "-c",
@@ -67,7 +71,7 @@ print(value if value else "NOT_FOUND")
             ],
             capture_output=True,
             text=True,
-            cwd="/tmp/worktrees/PAPER-ACTIVATE-003-quickdev",
+            cwd=str(WORKTREE_PATH),
         )
         value = result.stdout.strip()
         if value == "NOT_FOUND" or not value:
@@ -82,12 +86,12 @@ print(value if value else "NOT_FOUND")
         return ("ERROR", str(e))
 
 
-def check_redis_string_flag(key: str) -> Tuple[str, str]:
+def check_redis_string_flag(key: str) -> tuple[str, str]:
     """Check a feature flag stored as a Redis string."""
     try:
         import subprocess
 
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B607
             [
                 "python3",
                 "-c",
@@ -101,7 +105,7 @@ print(value if value else "NOT_FOUND")
             ],
             capture_output=True,
             text=True,
-            cwd="/tmp/worktrees/PAPER-ACTIVATE-003-quickdev",
+            cwd=str(WORKTREE_PATH),
         )
         value = result.stdout.strip()
         if value == "NOT_FOUND" or not value:
@@ -116,7 +120,7 @@ print(value if value else "NOT_FOUND")
         return ("ERROR", str(e))
 
 
-def check_flag(flag: str) -> Tuple[str, str]:
+def check_flag(flag: str) -> tuple[str, str]:
     """Check a feature flag, trying both hash and string formats."""
     # Try hash format first (e.g., launch:safety with field "enabled")
     if ":" in flag:
@@ -131,7 +135,7 @@ def check_flag(flag: str) -> Tuple[str, str]:
     return check_redis_string_flag(flag)
 
 
-def print_section(title: str, flags: List[str]) -> Dict[str, Tuple[str, str]]:
+def print_section(title: str, flags: list[str]) -> dict[str, tuple[str, str]]:
     """Print a section of feature flags."""
     print(f"\n{'=' * 60}")
     print(f"  {title}")
@@ -205,11 +209,11 @@ def main():
             critical_missing.append(flag)
 
     if critical_missing:
-        print(f"\n  ⚠️  CRITICAL FLAGS NOT ENABLED:")
+        print("\n  ⚠️  CRITICAL FLAGS NOT ENABLED:")
         for flag in critical_missing:
             print(f"      - {flag} [{all_results[flag][0]}]")
     else:
-        print(f"\n  ✅ All critical launch flags are ENABLED")
+        print("\n  ✅ All critical launch flags are ENABLED")
 
     print(f"\n{'=' * 60}")
 

@@ -184,7 +184,7 @@ class TLSContext:
             import subprocess
             from datetime import datetime
 
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B607
                 [
                     "openssl",
                     "x509",

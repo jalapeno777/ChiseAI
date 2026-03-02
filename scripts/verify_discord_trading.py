@@ -19,15 +19,16 @@ import asyncio
 import sys
 from datetime import UTC, datetime
 from decimal import Decimal
+from typing import Any
 from uuid import uuid4
 
 # Add src to path
 sys.path.insert(0, "/home/tacopants/projects/ChiseAI")
 sys.path.insert(0, "/home/tacopants/projects/ChiseAI/src")
 
+from discord_alerts.trade_notifier import TradeNotifier
 from execution.alerts.integration import ExecutionAlertIntegration
 from ml.models.signal_outcome import SignalOutcome, SignalOutcomeStatus
-from discord_alerts.trade_notifier import TradeNotifier
 
 
 async def verify_discord_trading() -> dict:
@@ -40,7 +41,7 @@ async def verify_discord_trading() -> dict:
     print("Discord Trading Notifications Verification")
     print("=" * 60)
 
-    results = {
+    results: dict[str, dict[str, Any]] = {
         "open": {"success": False, "message_id": None, "error": None},
         "close": {"success": False, "message_id": None, "error": None},
         "recap": {"success": False, "message_id": None, "error": None},
@@ -54,7 +55,7 @@ async def verify_discord_trading() -> dict:
     notifier = TradeNotifier()
     print(f"   Webhook URL configured: {notifier.webhook_url is not None}")
     print(f"   Trading channel ID: {notifier.trading_channel_id}")
-    print(f"   Expected channel ID: 1444447985378398459 (#trading)")
+    print("   Expected channel ID: 1444447985378398459 (#trading)")
 
     if notifier.trading_channel_id != "1444447985378398459":
         print("   ⚠️  WARNING: Trading channel ID doesn't match #trading!")

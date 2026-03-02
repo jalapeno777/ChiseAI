@@ -51,6 +51,19 @@ def _parse_timestamp(value: str) -> datetime:
 
 def _build_metrics_points(metrics_rows: list[dict[str, object]]) -> list[Point]:
     """Convert monitor metrics into InfluxDB points."""
+
+    def _to_int(value: object, default: int = 0) -> int:
+        try:
+            return int(str(value))
+        except (TypeError, ValueError):
+            return default
+
+    def _to_float(value: object, default: float = 0.0) -> float:
+        try:
+            return float(str(value))
+        except (TypeError, ValueError):
+            return default
+
     points: list[Point] = []
     for row in metrics_rows:
         ts = _parse_timestamp(str(row["timestamp"]))
@@ -58,14 +71,14 @@ def _build_metrics_points(metrics_rows: list[dict[str, object]]) -> list[Point]:
             Point("datasource_health")
             .tag("source_type", str(row["source_type"]))
             .tag("source_name", str(row["source_name"]))
-            .field("is_connected", int(row["is_connected"]))
-            .field("is_healthy", int(row["is_healthy"]))
-            .field("disconnect_count", int(row["disconnect_count"]))
-            .field("reconnect_attempts", int(row["reconnect_attempts"]))
-            .field("uptime_seconds", float(row["uptime_seconds"]))
-            .field("downtime_seconds", float(row["downtime_seconds"]))
-            .field("availability_percentage", float(row["availability_percentage"]))
-            .field("response_time_ms", float(row["response_time_ms"]))
+            .field("is_connected", _to_int(row["is_connected"]))
+            .field("is_healthy", _to_int(row["is_healthy"]))
+            .field("disconnect_count", _to_int(row["disconnect_count"]))
+            .field("reconnect_attempts", _to_int(row["reconnect_attempts"]))
+            .field("uptime_seconds", _to_float(row["uptime_seconds"]))
+            .field("downtime_seconds", _to_float(row["downtime_seconds"]))
+            .field("availability_percentage", _to_float(row["availability_percentage"]))
+            .field("response_time_ms", _to_float(row["response_time_ms"]))
             .field("status", str(row["status"]))
             .time(ts, WritePrecision.NS)
         )

@@ -5,11 +5,10 @@ Lightweight script to record a scheduler heartbeat to Redis.
 Can be run standalone or called from cron/other schedulers.
 """
 
-import os
-import sys
 import logging
-from datetime import datetime, timezone
-from typing import Optional
+import os
+from datetime import UTC, datetime
+
 import redis
 
 # Load .env file for cron environment
@@ -17,7 +16,7 @@ env_path = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"
 )
 if os.path.exists(env_path):
-    with open(env_path, "r") as f:
+    with open(env_path) as f:
         for line in f:
             line = line.strip()
             if line and not line.startswith("#") and "=" in line:
@@ -45,8 +44,8 @@ def get_redis():
 
 def record_heartbeat(
     status: str = "running",
-    message: Optional[str] = None,
-    extra_fields: Optional[dict] = None,
+    message: str | None = None,
+    extra_fields: dict | None = None,
 ) -> bool:
     """Record a scheduler heartbeat to Redis.
 
@@ -64,7 +63,7 @@ def record_heartbeat(
         return False
 
     try:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Build heartbeat data
         heartbeat_data = {
@@ -95,7 +94,7 @@ def record_heartbeat(
         return False
 
 
-def get_heartbeat_info() -> Optional[dict]:
+def get_heartbeat_info() -> dict | None:
     """Get current heartbeat info from Redis.
 
     Returns:
@@ -137,7 +136,7 @@ def is_scheduler_healthy(max_age_seconds: int = 120) -> tuple[bool, str]:
             return False, "Invalid heartbeat data"
 
         last_dt = datetime.fromisoformat(last_timestamp)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         age_seconds = (now - last_dt).total_seconds()
 
         if status != "running":

@@ -230,13 +230,13 @@ class TradeHistoryRecap:
             f"**Date:** {date.strftime('%Y-%m-%d')}",
             "",
             "📈 **Summary**",
-            f"```",
+            "```",
             f"Total Trades:   {total_trades}",
             f"Winning:        {win_count}",
             f"Losing:         {loss_count}",
             f"Win Rate:       {win_rate:.1f}%",
             f"Total PnL:      ${float(total_pnl):,.2f}",
-            f"```",
+            "```",
         ]
 
         # Add best trade
@@ -246,11 +246,11 @@ class TradeHistoryRecap:
                 [
                     "",
                     "🏆 **Best Trade**",
-                    f"```",
+                    "```",
                     f"Token:     {token}",
                     f"Direction: {best_trade.direction}",
                     f"PnL:       +${float(best_trade.pnl):,.2f}",
-                    f"```",
+                    "```",
                 ]
             )
 
@@ -261,11 +261,11 @@ class TradeHistoryRecap:
                 [
                     "",
                     "💔 **Worst Trade**",
-                    f"```",
+                    "```",
                     f"Token:     {token}",
                     f"Direction: {worst_trade.direction}",
                     f"PnL:       ${float(worst_trade.pnl):,.2f}",
-                    f"```",
+                    "```",
                 ]
             )
 

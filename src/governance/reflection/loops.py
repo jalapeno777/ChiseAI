@@ -7,25 +7,22 @@ with storage in Redis and promotion to Qdrant.
 
 from __future__ import annotations
 
-import json
 import logging
-from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from .artifacts import (
     AutomationTarget,
     FailureObservation,
     FailureType,
     KPISnapshot,
-    Priority,
     PromotionCandidate,
     ReflectionArtifact,
     ReflectionType,
+    ReflectionValidator,
     RootCause,
-    RootCauseCategory,
     Severity,
     create_reflection_artifact,
-    ReflectionValidator,
 )
 
 logger = logging.getLogger(__name__)
@@ -46,7 +43,7 @@ class ReflectionStorage:
     MESO_TTL = 90 * 24 * 60 * 60  # 90 days
 
     def __init__(
-        self, redis_client: Optional[Any] = None, qdrant_client: Optional[Any] = None
+        self, redis_client: Any | None = None, qdrant_client: Any | None = None
     ):
         """
         Initialize storage with optional clients.
@@ -75,8 +72,8 @@ class ReflectionStorage:
         story_id: str,
         action: str,
         result: str,
-        duration_ms: Optional[int] = None,
-        error: Optional[str] = None,
+        duration_ms: int | None = None,
+        error: str | None = None,
     ) -> ReflectionArtifact:
         """
         Store a micro-reflection for a single action.
@@ -99,12 +96,12 @@ class ReflectionStorage:
         if error:
             failures.append(
                 FailureObservation(
-                    type=FailureType.TEST_FAILURE
-                    if "test" in error.lower()
-                    else FailureType.CI_FAILURE,
-                    timestamp=datetime.now(timezone.utc)
-                    .isoformat()
-                    .replace("+00:00", "Z"),
+                    type=(
+                        FailureType.TEST_FAILURE
+                        if "test" in error.lower()
+                        else FailureType.CI_FAILURE
+                    ),
+                    timestamp=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
                     description=error,
                     severity=Severity.MEDIUM,
                 )
@@ -135,11 +132,11 @@ class ReflectionStorage:
         self,
         story_id: str,
         what_changed: str,
-        kpi_snapshot: Optional[KPISnapshot] = None,
-        failures_observed: Optional[list[FailureObservation]] = None,
-        root_causes: Optional[list[RootCause]] = None,
-        next_automation_targets: Optional[list[AutomationTarget]] = None,
-        promotion_candidates: Optional[list[PromotionCandidate]] = None,
+        kpi_snapshot: KPISnapshot | None = None,
+        failures_observed: list[FailureObservation] | None = None,
+        root_causes: list[RootCause] | None = None,
+        next_automation_targets: list[AutomationTarget] | None = None,
+        promotion_candidates: list[PromotionCandidate] | None = None,
     ) -> ReflectionArtifact:
         """
         Store a meso-reflection at story closure.
@@ -211,7 +208,7 @@ class ReflectionStorage:
         Returns:
             Created reflection artifact
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         story_id = f"ST-MACRO-{period.upper()}-{now.strftime('%Y%m%d')}"
 
         artifact = create_reflection_artifact(
@@ -265,10 +262,7 @@ class ReflectionStorage:
         if artifact.failures_observed and artifact.root_causes:
             return True
 
-        if artifact.promotion_candidates:
-            return True
-
-        return False
+        return bool(artifact.promotion_candidates)
 
     def _promote_to_qdrant(self, artifact: ReflectionArtifact) -> None:
         """Promote artifact to Qdrant for long-term storage and search."""
@@ -341,7 +335,7 @@ class ReflectionStorage:
 
         return artifacts
 
-    def get_meso_reflection(self, story_id: str) -> Optional[ReflectionArtifact]:
+    def get_meso_reflection(self, story_id: str) -> ReflectionArtifact | None:
         """Get meso-reflection for a story."""
         key = self.MESO_KEY.format(story_id=story_id)
         data = self._get_redis().get(key)
@@ -351,11 +345,11 @@ class ReflectionStorage:
         return None
 
     def get_macro_reflection(
-        self, period: str, date_str: Optional[str] = None
-    ) -> Optional[ReflectionArtifact]:
+        self, period: str, date_str: str | None = None
+    ) -> ReflectionArtifact | None:
         """Get macro-reflection for a period."""
         if date_str is None:
-            date_str = datetime.now(timezone.utc).strftime("%Y%m%d")
+            date_str = datetime.now(UTC).strftime("%Y%m%d")
 
         if period == "daily":
             key = self.MACRO_DAILY_KEY.format(date=date_str)
@@ -374,7 +368,7 @@ class ReflectionLoops:
     """Main class for executing reflection loops."""
 
     def __init__(
-        self, redis_client: Optional[Any] = None, qdrant_client: Optional[Any] = None
+        self, redis_client: Any | None = None, qdrant_client: Any | None = None
     ):
         """
         Initialize reflection loops.
@@ -390,8 +384,8 @@ class ReflectionLoops:
         story_id: str,
         action: str,
         result: str,
-        duration_ms: Optional[int] = None,
-        error: Optional[str] = None,
+        duration_ms: int | None = None,
+        error: str | None = None,
     ) -> ReflectionArtifact:
         """
         Execute micro-reflection loop after an action.
@@ -419,11 +413,11 @@ class ReflectionLoops:
         self,
         story_id: str,
         what_changed: str,
-        kpi_snapshot: Optional[KPISnapshot] = None,
-        failures_observed: Optional[list[FailureObservation]] = None,
-        root_causes: Optional[list[RootCause]] = None,
-        next_automation_targets: Optional[list[AutomationTarget]] = None,
-        promotion_candidates: Optional[list[PromotionCandidate]] = None,
+        kpi_snapshot: KPISnapshot | None = None,
+        failures_observed: list[FailureObservation] | None = None,
+        root_causes: list[RootCause] | None = None,
+        next_automation_targets: list[AutomationTarget] | None = None,
+        promotion_candidates: list[PromotionCandidate] | None = None,
     ) -> ReflectionArtifact:
         """
         Execute meso-reflection loop at story closure.
@@ -455,7 +449,7 @@ class ReflectionLoops:
         self,
         period: str,
         stories_completed: list[str],
-        aggregate_kpis: Optional[KPISnapshot] = None,
+        aggregate_kpis: KPISnapshot | None = None,
     ) -> ReflectionArtifact:
         """
         Execute macro-reflection loop for daily/weekly retro.
@@ -544,19 +538,19 @@ class ReflectionLoops:
         """Generate summary text for macro-reflection."""
         lines = [
             f"Macro-reflection for {period} period",
-            f"",
+            "",
             f"Stories completed: {len(stories_completed)}",
         ]
 
         if stories_completed:
             lines.append("Story IDs: " + ", ".join(stories_completed))
 
-        lines.append(f"")
+        lines.append("")
         lines.append(f"Failures observed: {len(failures)}")
         lines.append(f"Root causes identified: {len(root_causes)}")
 
         if root_causes:
-            lines.append(f"")
+            lines.append("")
             lines.append("Top root cause categories:")
             categories = {}
             for rc in root_causes:

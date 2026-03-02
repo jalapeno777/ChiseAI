@@ -17,9 +17,9 @@ This script is part of Phase 2 of the Tempmemory Migration story (ST-MEMORY-003)
 from __future__ import annotations
 
 import argparse
-import json
 import logging
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -30,7 +30,6 @@ from governance.tempmemory.brain_integration import (
     BrainEvalIntegration,
     IngestionSource,
 )
-from governance.tempmemory.migration import TempmemoryMigrationEngine
 
 # Configure logging
 logging.basicConfig(
@@ -78,7 +77,7 @@ def run_dry_run() -> int:
     logger.info("Running BrainEval ingestion in DRY-RUN mode")
 
     redis_client = create_redis_client()
-    qdrant_client = create_qdrant_client()
+    create_qdrant_client()
 
     integration = BrainEvalIntegration(
         redis_client=redis_client,
@@ -195,7 +194,7 @@ def run_full_ingestion(story_id: str | None = None) -> int:
         print("=" * 60)
 
         # Save report to file
-        report_path = Path("/tmp/brain_eval_ingestion_report.json")
+        report_path = Path(tempfile.gettempdir()) / "brain_eval_ingestion_report.json"
         with open(report_path, "w") as f:
             f.write(result.to_json())
         print(f"\nReport saved to: {report_path}")

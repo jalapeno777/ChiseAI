@@ -10,7 +10,6 @@ import os
 from unittest.mock import patch
 
 import pytest
-
 from src.config.feature_flags import (
     FeatureFlags,
     get_feature_flags,
@@ -81,9 +80,9 @@ class TestFeatureFlagDisableValues:
             os.environ, {"FEATURE_RETRAINING_ECE_TRIGGER": env_value}, clear=False
         ):
             flags = FeatureFlags.from_env()
-            assert flags.retraining_ece_trigger is False, (
-                f"Value '{env_value}' should disable flag"
-            )
+            assert (
+                flags.retraining_ece_trigger is False
+            ), f"Value '{env_value}' should disable flag"
 
     def test_whitespace_around_false(self) -> None:
         """Whitespace around false values should still disable."""
@@ -115,9 +114,9 @@ class TestFeatureFlagFailSafeBehavior:
             os.environ, {"FEATURE_RETRAINING_ECE_TRIGGER": env_value}, clear=False
         ):
             flags = FeatureFlags.from_env()
-            assert flags.retraining_ece_trigger is True, (
-                f"Invalid value '{env_value}' should use safe default (True)"
-            )
+            assert (
+                flags.retraining_ece_trigger is True
+            ), f"Invalid value '{env_value}' should use safe default (True)"
 
     def test_all_flags_fail_safe(self) -> None:
         """Test fail-safe behavior for all flags with invalid input."""

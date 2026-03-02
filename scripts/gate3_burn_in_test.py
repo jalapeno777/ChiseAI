@@ -233,7 +233,7 @@ class Gate3BurnInTest:
         try:
             import psycopg2
 
-            conn = psycopg2.connect(
+            conn = psycopg2.connect(  # nosec B106
                 host="host.docker.internal",
                 port=5434,
                 database="chiseai",
@@ -374,7 +374,7 @@ class Gate3BurnInTest:
             try:
                 elapsed = time.time() - self.metrics.start_time
 
-                health_status = {
+                health_status: dict[str, Any] = {
                     "timestamp": datetime.now(UTC).isoformat(),
                     "elapsed_seconds": elapsed,
                     "components": {},
@@ -385,7 +385,7 @@ class Gate3BurnInTest:
                 try:
                     import psycopg2
 
-                    conn = psycopg2.connect(
+                    conn = psycopg2.connect(  # nosec B106
                         host="host.docker.internal",
                         port=5434,
                         database="chiseai",

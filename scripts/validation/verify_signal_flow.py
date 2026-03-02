@@ -21,9 +21,9 @@ import os
 import sys
 import uuid
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 # Configure logging
 logging.basicConfig(
@@ -94,7 +94,7 @@ def check_redis_signals() -> tuple[bool, dict[str, Any]]:
         Tuple of (success, details)
     """
     config = get_redis_config()
-    details = {
+    details: dict[str, Any] = {
         "host": config["host"],
         "port": config["port"],
         "signal_patterns_checked": [],
@@ -158,7 +158,7 @@ def check_redis_signals() -> tuple[bool, dict[str, Any]]:
                                 key_info["error"] = str(e)
                         elif key_type == "hash":
                             try:
-                                hash_data = r.hgetall(key)
+                                hash_data = cast(dict[Any, Any], r.hgetall(key))
                                 key_info["fields"] = list(hash_data.keys())
                                 key_info["sample"] = {
                                     k: str(v)[:50]
@@ -168,10 +168,10 @@ def check_redis_signals() -> tuple[bool, dict[str, Any]]:
                                 key_info["error"] = str(e)
                         elif key_type == "list":
                             try:
-                                length = r.llen(key)
+                                length = cast(int, r.llen(key))
                                 key_info["length"] = length
                                 if length > 0:
-                                    samples = r.lrange(key, 0, 2)
+                                    samples = cast(list[Any], r.lrange(key, 0, 2))
                                     key_info["samples"] = [
                                         str(s)[:100] for s in samples
                                     ]
@@ -222,7 +222,7 @@ def check_postgresql_outcomes() -> tuple[bool, dict[str, Any]]:
         Tuple of (success, details)
     """
     config = get_postgres_config()
-    details = {
+    details: dict[str, Any] = {
         "host": config["host"],
         "port": config["port"],
         "database": config["database"],
@@ -337,7 +337,7 @@ def verify_flow_integrity(
     Returns:
         Tuple of (success, details)
     """
-    details = {
+    details: dict[str, Any] = {
         "checks_performed": [],
         "warnings": [],
         "errors": [],
@@ -446,8 +446,8 @@ def main() -> int:
     logger.info("SIGNAL FLOW VERIFICATION")
     logger.info("=" * 60)
     logger.info(f"Timestamp: {datetime.now(UTC).isoformat()}")
-    logger.info(f"Redis Host: host.docker.internal (container context)")
-    logger.info(f"PostgreSQL Host: host.docker.internal (container context)")
+    logger.info("Redis Host: host.docker.internal (container context)")
+    logger.info("PostgreSQL Host: host.docker.internal (container context)")
     logger.info("")
 
     report = SignalFlowReport()
@@ -502,31 +502,31 @@ def main() -> int:
     print(f"Execution ID: {report.execution_id}")
     print(f"Timestamp: {report.timestamp}")
     print(f"Overall Status: {report.overall_status.upper()}")
-    print(f"\nChecks Performed:")
+    print("\nChecks Performed:")
     for check in report.checks:
         icon = "✓" if check["status"] == "pass" else "✗"
         print(f"  {icon} {check['name']}: {check['status']}")
 
-    print(f"\nRedis Signals:")
+    print("\nRedis Signals:")
     print(f"  Total Found: {report.redis_signals.get('total_signals_found', 'N/A')}")
     print(f"  Recent (24h): {report.redis_signals.get('recent_signals_24h', 'N/A')}")
     patterns = report.redis_signals.get("signal_patterns_checked", [])
     if patterns:
-        print(f"  Patterns Checked:")
+        print("  Patterns Checked:")
         for p in patterns:
             print(f"    - {p['pattern']}: {p['keys_found']} keys")
 
-    print(f"\nPostgreSQL Outcomes:")
+    print("\nPostgreSQL Outcomes:")
     outcomes = report.postgresql_outcomes.get("outcomes", {})
     print(f"  Total: {outcomes.get('total_count', 'N/A')}")
     print(f"  Recent (24h): {outcomes.get('recent_24h', 'N/A')}")
     by_type = outcomes.get("by_type", {})
     if by_type:
-        print(f"  By Type:")
+        print("  By Type:")
         for outcome_type, count in by_type.items():
             print(f"    - {outcome_type}: {count}")
 
-    print(f"\nFlow Integrity:")
+    print("\nFlow Integrity:")
     print(f"  Status: {report.flow_integrity.get('integrity_status', 'unknown')}")
     checks = report.flow_integrity.get("checks_performed", [])
     for check in checks:
@@ -540,7 +540,7 @@ def main() -> int:
 
     recommendations = report.flow_integrity.get("recommendations", [])
     if recommendations:
-        print(f"\nRecommendations:")
+        print("\nRecommendations:")
         for rec in recommendations:
             print(f"  → {rec}")
 

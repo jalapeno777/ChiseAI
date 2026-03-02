@@ -6,9 +6,15 @@ Parser for worker completion reports.
 # SAFETY: No live trading flow modified
 """
 
+from __future__ import annotations
+
 import re
 from datetime import datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .. import Issue, IssueCategory
 
 
 class WorkerReportParser:
@@ -70,7 +76,7 @@ class WorkerReportParser:
         """
         self.base_path = Path(base_path)
 
-    def parse_file(self, file_path: Path) -> list["Issue"]:
+    def parse_file(self, file_path: Path) -> list[Issue]:
         """
         Parse a single worker report file.
 
@@ -112,7 +118,7 @@ class WorkerReportParser:
 
         return issues
 
-    def parse_all(self, pattern: str = "worker-*.md") -> list["Issue"]:
+    def parse_all(self, pattern: str = "worker-*.md") -> list[Issue]:
         """
         Parse all worker report files matching pattern.
 
@@ -134,9 +140,7 @@ class WorkerReportParser:
 
         return all_issues
 
-    def parse_since(
-        self, since: datetime, pattern: str = "worker-*.md"
-    ) -> list["Issue"]:
+    def parse_since(self, since: datetime, pattern: str = "worker-*.md") -> list[Issue]:
         """
         Parse worker report files modified since a given time.
 
@@ -161,7 +165,7 @@ class WorkerReportParser:
 
         return all_issues
 
-    def parse_text(self, text: str, timestamp: datetime | None = None) -> list["Issue"]:
+    def parse_text(self, text: str, timestamp: datetime | None = None) -> list[Issue]:
         """
         Parse worker report text directly.
 
@@ -199,7 +203,7 @@ class WorkerReportParser:
 
     def _parse_file_with_time(
         self, file_path: Path, timestamp: datetime
-    ) -> list["Issue"]:
+    ) -> list[Issue]:
         """Parse file with explicit timestamp."""
         from .. import Issue, IssueSource
 
@@ -248,7 +252,7 @@ class WorkerReportParser:
 
         return None
 
-    def _detect_issues_in_line(self, line: str) -> list[tuple["IssueCategory", str]]:
+    def _detect_issues_in_line(self, line: str) -> list[tuple[IssueCategory, str]]:
         """
         Detect issues in a single line.
 
@@ -281,7 +285,7 @@ class WorkerReportParser:
 
         return detected
 
-    def _categorize_issue(self, text: str) -> "IssueCategory":
+    def _categorize_issue(self, text: str) -> IssueCategory:
         """Categorize an issue based on its content."""
         from .. import IssueCategory
 

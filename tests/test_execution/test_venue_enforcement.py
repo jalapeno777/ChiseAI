@@ -11,9 +11,9 @@ Tests for:
 import pytest
 
 from execution.safety.venue_enforcement import (
+    ValidationResult,
     VenueEnforcementError,
     VenueEnforcementGate,
-    ValidationResult,
     create_default_gate,
 )
 

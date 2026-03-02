@@ -23,14 +23,14 @@ Example:
     result = await harness.run_integrated_proof_loop()
 """
 
+from scripts.validation.discord_evidence import DiscordEvidenceCollector
 from scripts.validation.forensic_harness import (
     ForensicHarness,
     IntegratedForensicHarness,
 )
-from scripts.validation.discord_evidence import DiscordEvidenceCollector
-from scripts.validation.redis_deltas import RedisDeltaCollector
 from scripts.validation.influx_evidence import InfluxEvidenceCollector
 from scripts.validation.recap_validator import RecapValidator
+from scripts.validation.redis_deltas import RedisDeltaCollector
 
 __all__ = [
     "ForensicHarness",

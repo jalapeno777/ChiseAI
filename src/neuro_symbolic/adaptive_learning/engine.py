@@ -514,9 +514,11 @@ class AdaptiveLearningEngine:
         # Save engine state
         state_dict = {
             "is_adapted": self._state.is_adapted,
-            "last_adaptation": self._state.last_adaptation.isoformat()
-            if self._state.last_adaptation
-            else None,
+            "last_adaptation": (
+                self._state.last_adaptation.isoformat()
+                if self._state.last_adaptation
+                else None
+            ),
             "total_adaptations": self._state.total_adaptations,
             "successful_adaptations": self._state.successful_adaptations,
             "rollback_count": self._state.rollback_count,
@@ -582,9 +584,11 @@ class AdaptiveLearningEngine:
                 "total_adaptations": self._state.total_adaptations,
                 "successful_adaptations": self._state.successful_adaptations,
                 "rollback_count": self._state.rollback_count,
-                "last_adaptation": self._state.last_adaptation.isoformat()
-                if self._state.last_adaptation
-                else None,
+                "last_adaptation": (
+                    self._state.last_adaptation.isoformat()
+                    if self._state.last_adaptation
+                    else None
+                ),
             },
             "config": {
                 "online_learning": self.config.enable_online_learning,

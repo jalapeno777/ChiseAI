@@ -13,8 +13,10 @@ Behavior:
 
 from __future__ import annotations
 
+import importlib
 import os
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 # Add src to path for imports
@@ -29,10 +31,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 bootstrap(load_env=True)
 
 try:
-    from scripts.story_id import contains_valid_story_id, extract_story_ids
+    story_id_module = importlib.import_module("scripts.story_id")
 except ModuleNotFoundError:
     # Allow execution as `python scripts/validate_pr_title.py`.
-    from story_id import contains_valid_story_id, extract_story_ids
+    story_id_module = importlib.import_module("story_id")
+
+contains_valid_story_id: Callable[[str], bool] = story_id_module.contains_valid_story_id
+extract_story_ids: Callable[[str], list[str]] = story_id_module.extract_story_ids
 
 
 def _contains_valid_story_id(text: str) -> bool:
@@ -95,7 +100,7 @@ def _get_pr_title(env: dict[str, str]) -> str:
                 api_url, headers={"Authorization": f"token {token}"}
             )
             try:
-                with urllib.request.urlopen(req, timeout=10) as resp:
+                with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
                     data = json.loads(resp.read().decode("utf-8"))
                     title = data.get("title", "").strip()
                     if title:
@@ -123,7 +128,7 @@ def _get_pr_title(env: dict[str, str]) -> str:
                 api_url, headers={"X-WOODPECKER-TOKEN": woodpecker_token}
             )
             try:
-                with urllib.request.urlopen(req, timeout=10) as resp:
+                with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
                     data = json.loads(resp.read().decode("utf-8"))
                     title = str(data.get("title", "")).strip()
                     if title:

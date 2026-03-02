@@ -8,7 +8,6 @@ For HOTFIX-PAPER-API-001: Paper Trading API Endpoints
 from __future__ import annotations
 
 from datetime import datetime
-from decimal import Decimal
 from enum import Enum
 from typing import Any
 
@@ -156,9 +155,9 @@ class PaperPnL(BaseModel):
             "profit_factor": self.profit_factor,
             "max_drawdown": self.max_drawdown,
             "sharpe_ratio": self.sharpe_ratio,
-            "period_start": self.period_start.isoformat()
-            if self.period_start
-            else None,
+            "period_start": (
+                self.period_start.isoformat() if self.period_start else None
+            ),
             "period_end": self.period_end.isoformat() if self.period_end else None,
         }
 

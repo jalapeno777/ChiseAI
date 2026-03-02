@@ -26,15 +26,15 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 import redis
-from signal_generation.models import Signal, SignalDirection, SignalStatus
+
+from execution.kill_switch.executor import KillSwitchExecutor
 from execution.paper.orchestrator import PaperTradingOrchestrator
 from execution.paper.order_simulator import OrderSimulator
-from execution.paper.risk_enforcer import PaperRiskEnforcer
 from execution.paper.position_tracker import PaperPositionTracker
+from execution.paper.risk_enforcer import PaperRiskEnforcer
 from execution.telemetry.collector import ExecutionCollector
 from execution.telemetry.exporter import ExecutionTelemetryExporter
-from execution.kill_switch.executor import KillSwitchExecutor
-from execution.kill_switch.state import KillSwitchState
+from signal_generation.models import Signal, SignalDirection, SignalStatus
 from signal_generation.signal_generator import SignalGenerator
 
 

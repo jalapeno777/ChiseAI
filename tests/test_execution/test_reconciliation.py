@@ -3,8 +3,7 @@
 For ST-VENUE-002: Canonical reporting and venue enforcement.
 """
 
-from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 

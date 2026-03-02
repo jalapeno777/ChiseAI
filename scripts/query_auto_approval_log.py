@@ -8,6 +8,7 @@ Query and display auto-approval audit logs from Redis.
 """
 
 import argparse
+import ast
 import asyncio
 import json
 import logging
@@ -64,8 +65,8 @@ async def get_logs(
                 if log_raw.startswith("{"):
                     log_entry = json.loads(log_raw)
                 else:
-                    # Handle string representation of dict
-                    log_entry = eval(log_raw)
+                    # Handle string representation of dict in legacy records.
+                    log_entry = ast.literal_eval(log_raw)
 
                 # Filter by PR number if specified
                 if pr_number is None or log_entry.get("pr_number") == pr_number:

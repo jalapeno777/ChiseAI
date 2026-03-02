@@ -13,11 +13,12 @@ Requirements:
 """
 
 import asyncio
-import os
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, timezone, timedelta
-from typing import Dict, List, Optional, Any
 import json
+import os
+from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
 import aiohttp
 
 
@@ -42,11 +43,11 @@ class InfluxQueryEvidence:
     query_string: str
     timestamp_utc: str
     row_count: int
-    sample_rows: List[Dict[str, Any]]
+    sample_rows: list[dict[str, Any]]
     has_data: bool
-    error: Optional[str] = None
+    error: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert evidence to dictionary."""
         return asdict(self)
 
@@ -70,13 +71,11 @@ class GateResult:
 
     gate: str
     status: str  # "PASS" or "FAIL"
-    evidence: List[InfluxQueryEvidence]
-    validation_errors: List[str] = field(default_factory=list)
-    evaluated_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    evidence: list[InfluxQueryEvidence]
+    validation_errors: list[str] = field(default_factory=list)
+    evaluated_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert result to dictionary."""
         return {
             "gate": self.gate,
@@ -110,7 +109,7 @@ class InfluxEvidenceCollector:
     def __init__(
         self,
         url: str = "http://host.docker.internal:18087",
-        token: Optional[str] = None,
+        token: str | None = None,
         org: str = "chiseai",
         bucket: str = "chiseai",
     ):
@@ -139,7 +138,7 @@ class InfluxEvidenceCollector:
         measurement: str,
         since: datetime,
         limit: int = 5,
-        fields: Optional[List[str]] = None,
+        fields: list[str] | None = None,
     ) -> str:
         """
         Build an InfluxDB Flux query string.
@@ -157,19 +156,20 @@ class InfluxEvidenceCollector:
         start_time = since.strftime("%Y-%m-%dT%H:%M:%SZ")
 
         if fields:
-            field_filter = f"|> filter(fn: (r) => {' or '.join(f'r._field == "{f}"' for f in fields)})"
+            predicates = " or ".join([f'r._field == "{name}"' for name in fields])
+            field_filter = f"|> filter(fn: (r) => {predicates})"
         else:
             field_filter = ""
 
-        query = f'''from(bucket: "{self.bucket}")
+        query = f"""from(bucket: "{self.bucket}")
   |> range(start: {start_time})
   |> filter(fn: (r) => r._measurement == "{measurement}")
   {field_filter}
-  |> limit(n: {limit})'''
+  |> limit(n: {limit})"""
 
         return query.strip()
 
-    async def _execute_query(self, query: str) -> Dict[str, Any]:
+    async def _execute_query(self, query: str) -> dict[str, Any]:
         """
         Execute a Flux query against InfluxDB.
 
@@ -205,14 +205,14 @@ class InfluxEvidenceCollector:
                     rows = self._parse_csv_response(csv_data)
                     return {"results": rows, "error": None}
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             return {"results": [], "error": "InfluxDB query timed out"}
         except aiohttp.ClientError as e:
             return {"results": [], "error": f"InfluxDB connection error: {str(e)}"}
         except Exception as e:
             return {"results": [], "error": f"Unexpected error: {str(e)}"}
 
-    def _parse_csv_response(self, csv_data: str) -> List[Dict[str, Any]]:
+    def _parse_csv_response(self, csv_data: str) -> list[dict[str, Any]]:
         """
         Parse InfluxDB CSV response into list of dictionaries.
 
@@ -225,7 +225,7 @@ class InfluxEvidenceCollector:
         Returns:
             List of row dictionaries
         """
-        rows = []
+        rows: list[dict[str, Any]] = []
         lines = csv_data.strip().split("\n")
 
         if not lines:
@@ -281,7 +281,7 @@ class InfluxEvidenceCollector:
         Returns:
             InfluxQueryEvidence with query results
         """
-        timestamp_utc = datetime.now(timezone.utc).isoformat()
+        timestamp_utc = datetime.now(UTC).isoformat()
         query = self._build_query("orders", since, limit)
 
         result = await self._execute_query(query)
@@ -310,7 +310,7 @@ class InfluxEvidenceCollector:
         Returns:
             InfluxQueryEvidence with query results
         """
-        timestamp_utc = datetime.now(timezone.utc).isoformat()
+        timestamp_utc = datetime.now(UTC).isoformat()
         query = self._build_query("fills", since, limit)
 
         result = await self._execute_query(query)
@@ -341,7 +341,7 @@ class InfluxEvidenceCollector:
         Returns:
             InfluxQueryEvidence with query results
         """
-        timestamp_utc = datetime.now(timezone.utc).isoformat()
+        timestamp_utc = datetime.now(UTC).isoformat()
         query = self._build_query("canary_deployment", since, limit)
 
         result = await self._execute_query(query)
@@ -438,7 +438,7 @@ class InfluxEvidenceCollector:
 
     async def collect_all_evidence(
         self, since: datetime, limit: int = 5
-    ) -> Dict[str, InfluxQueryEvidence]:
+    ) -> dict[str, InfluxQueryEvidence]:
         """
         Collect all evidence for G6-G7 validation.
 
@@ -465,7 +465,7 @@ class InfluxEvidenceCollector:
 
     async def validate_g6_g7(
         self, since: datetime, limit: int = 5
-    ) -> Dict[str, GateResult]:
+    ) -> dict[str, GateResult]:
         """
         Collect evidence and validate both G6 and G7.
 
@@ -492,15 +492,15 @@ class InfluxEvidenceCollector:
 
 def hours_ago(hours: int) -> datetime:
     """Get datetime N hours ago in UTC."""
-    return datetime.now(timezone.utc) - timedelta(hours=hours)
+    return datetime.now(UTC) - timedelta(hours=hours)
 
 
 def minutes_ago(minutes: int) -> datetime:
     """Get datetime N minutes ago in UTC."""
-    return datetime.now(timezone.utc) - timedelta(minutes=minutes)
+    return datetime.now(UTC) - timedelta(minutes=minutes)
 
 
-async def quick_validate_g6_g7(window_hours: int = 1, limit: int = 5) -> Dict[str, Any]:
+async def quick_validate_g6_g7(window_hours: int = 1, limit: int = 5) -> dict[str, Any]:
     """
     Quick validation of G6 and G7 gates.
 
@@ -520,7 +520,7 @@ async def quick_validate_g6_g7(window_hours: int = 1, limit: int = 5) -> Dict[st
         "G6": results["G6"].to_dict(),
         "G7": results["G7"].to_dict(),
         "window_start": since.isoformat(),
-        "window_end": datetime.now(timezone.utc).isoformat(),
+        "window_end": datetime.now(UTC).isoformat(),
     }
 
 

@@ -8,7 +8,7 @@ This is a temporary fix to demonstrate signal generation is working.
 import os
 import sys
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 # Set Redis connection for containerized environment
@@ -26,16 +26,17 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 import redis
-from signal_generation.signal_generator import SignalGenerator, SignalGenerationConfig
-from signal_generation.models import SignalStatus
+
 from data_ingestion.ohlcv_fetcher import OHLCVData
 from data_ingestion.timeframe_config import Timeframe
+from signal_generation.models import SignalStatus
+from signal_generation.signal_generator import SignalGenerationConfig, SignalGenerator
 
 
 def store_signal_in_redis(r: redis.Redis, signal, mode: str = "manual") -> bool:
     """Store a signal in Redis."""
     try:
-        date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        date_str = datetime.now(UTC).strftime("%Y-%m-%d")
         token_clean = signal.token.replace("/", "_")
         signal_id = signal.signal_id or str(uuid.uuid4())
 
@@ -92,7 +93,7 @@ def generate_and_store_signals():
     # Create mock OHLCV data for BTC
     mock_data_btc = [
         OHLCVData(
-            timestamp=int(datetime.now(timezone.utc).timestamp() * 1000) - (i * 60000),
+            timestamp=int(datetime.now(UTC).timestamp() * 1000) - (i * 60000),
             open_price=50000.0 + i * 10,
             high_price=50100.0 + i * 10,
             low_price=49900.0 + i * 10,
@@ -105,7 +106,7 @@ def generate_and_store_signals():
 
     # Generate signal for BTC/USDT
     logger.info("Generating signal for BTC/USDT...")
-    signal_btc = generator.generate_signal(
+    signal_btc = generator.generate_signal(  # nosec B106
         token="BTC/USDT",
         timeframe=Timeframe.HOUR_1,
         ohlcv_data=mock_data_btc,
@@ -123,7 +124,7 @@ def generate_and_store_signals():
     # Create mock OHLCV data for ETH
     mock_data_eth = [
         OHLCVData(
-            timestamp=int(datetime.now(timezone.utc).timestamp() * 1000) - (i * 60000),
+            timestamp=int(datetime.now(UTC).timestamp() * 1000) - (i * 60000),
             open_price=3000.0 + i * 5,
             high_price=3050.0 + i * 5,
             low_price=2950.0 + i * 5,
@@ -136,7 +137,7 @@ def generate_and_store_signals():
 
     # Generate signal for ETH/USDT
     logger.info("Generating signal for ETH/USDT...")
-    signal_eth = generator.generate_signal(
+    signal_eth = generator.generate_signal(  # nosec B106
         token="ETH/USDT",
         timeframe=Timeframe.HOUR_1,
         ohlcv_data=mock_data_eth,

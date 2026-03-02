@@ -11,13 +11,14 @@ P0 HARDENING ENHANCEMENTS:
 - Detailed execution logging
 """
 
-import os
-import sys
-import subprocess
 import logging
+import os
+import subprocess
+import sys
 import time
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Dict, Any
+from datetime import UTC, datetime
+from typing import Any
+
 import redis
 
 
@@ -28,7 +29,7 @@ def load_env_file():
         os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"
     )
     if os.path.exists(env_path):
-        with open(env_path, "r") as f:
+        with open(env_path) as f:
             for line in f:
                 line = line.strip()
                 if line and not line.startswith("#") and "=" in line:
@@ -65,7 +66,7 @@ DISCORD_RETRY_ATTEMPTS = 3
 DISCORD_RETRY_BASE_DELAY = 2  # seconds
 
 
-def get_redis() -> Optional[redis.Redis]:
+def get_redis() -> Any | None:
     """Get Redis connection with error handling."""
     try:
         r = redis.Redis(
@@ -86,10 +87,10 @@ def get_redis() -> Optional[redis.Redis]:
         return None
 
 
-def record_execution_start(r: redis.Redis) -> None:
+def record_execution_start(r: Any) -> None:
     """P0 HARDENING: Record execution start timestamp."""
     try:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         r.hset(
             EXECUTION_TRACKING_KEY,
             mapping={"last_run_start": now.isoformat(), "status": "running"},
@@ -99,10 +100,10 @@ def record_execution_start(r: redis.Redis) -> None:
         logger.error(f"Failed to record execution start: {e}")
 
 
-def record_execution_complete(r: redis.Redis, success: bool, details: str = "") -> None:
+def record_execution_complete(r: Any, success: bool, details: str = "") -> None:
     """P0 HARDENING: Record execution completion with details."""
     try:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Update tracking hash
         r.hset(
@@ -129,7 +130,7 @@ def record_execution_complete(r: redis.Redis, success: bool, details: str = "") 
         logger.error(f"Failed to record execution completion: {e}")
 
 
-def check_missed_execution(r: redis.Redis) -> tuple[bool, Optional[str]]:
+def check_missed_execution(r: Any) -> tuple[bool, str | None]:
     """P0 HARDENING: Check if previous execution was missed and trigger self-healing.
 
     Returns:
@@ -144,7 +145,7 @@ def check_missed_execution(r: redis.Redis) -> tuple[bool, Optional[str]]:
 
         last_run_str = tracking.get("last_run_complete", "")
         last_run = datetime.fromisoformat(last_run_str)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         elapsed_minutes = (now - last_run).total_seconds() / 60
 
         logger.info(f"Last execution was {elapsed_minutes:.1f} minutes ago")
@@ -171,14 +172,14 @@ def check_missed_execution(r: redis.Redis) -> tuple[bool, Optional[str]]:
         return False, None
 
 
-def get_execution_stats(r: redis.Redis) -> Dict[str, Any]:
+def get_execution_stats(r: Any) -> dict[str, Any]:
     """P0 HARDENING: Get execution statistics for reporting."""
     try:
         tracking = r.hgetall(EXECUTION_TRACKING_KEY) or {}
         missed = r.hgetall(MISSED_EXECUTION_KEY) or {}
         self_healing = r.hgetall(SELF_HEALING_TRIGGERED_KEY) or {}
 
-        stats: Dict[str, Any] = {
+        stats: dict[str, Any] = {
             "last_run_complete": tracking.get("last_run_complete", "N/A"),
             "last_run_success": tracking.get("last_run_success", "unknown"),
             "missed_count": int(missed.get("count", 0)),
@@ -189,7 +190,7 @@ def get_execution_stats(r: redis.Redis) -> Dict[str, Any]:
         if tracking.get("last_run_complete"):
             try:
                 last_run = datetime.fromisoformat(tracking["last_run_complete"])
-                now = datetime.now(timezone.utc)
+                now = datetime.now(UTC)
                 elapsed = (now - last_run).total_seconds() / 60
                 stats["minutes_since_last_run"] = f"{elapsed:.1f}"
             except:
@@ -201,10 +202,10 @@ def get_execution_stats(r: redis.Redis) -> Dict[str, Any]:
         return {}
 
 
-def check_scheduler_health() -> Dict[str, Any]:
+def check_scheduler_health() -> dict[str, Any]:
     """Check if scheduler process is running."""
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B607
             ["ps", "aux"], capture_output=True, text=True, timeout=5
         )
         running = any(
@@ -228,7 +229,7 @@ def check_scheduler_health() -> Dict[str, Any]:
         return {"status": "⚠️", "running": False, "detail": f"Check failed: {e}"}
 
 
-def check_kill_switch(r: redis.Redis) -> Dict[str, Any]:
+def check_kill_switch(r: Any) -> dict[str, Any]:
     """Check kill switch state."""
     try:
         enabled = r.hget("bmad:chiseai:kill_switch", "enabled")
@@ -248,7 +249,7 @@ def check_kill_switch(r: redis.Redis) -> Dict[str, Any]:
         return {"status": "❌", "armed": False, "detail": f"Error: {e}"}
 
 
-def check_daily_loss(r: redis.Redis) -> Dict[str, Any]:
+def check_daily_loss(r: Any) -> dict[str, Any]:
     """Check daily loss limit."""
     try:
         max_loss = r.hget("bmad:chiseai:daily_loss_limit", "max_loss_percent")
@@ -286,7 +287,7 @@ def check_daily_loss(r: redis.Redis) -> Dict[str, Any]:
         }
 
 
-def get_metrics(r: redis.Redis) -> Dict[str, int]:
+def get_metrics(r: Any) -> dict[str, int]:
     """Get key metrics with error handling."""
     try:
         signals = len(r.keys("bmad:chiseai:signals:*"))
@@ -302,7 +303,7 @@ def get_metrics(r: redis.Redis) -> Dict[str, int]:
         return {"signals": 0, "outcomes": 0, "keys": 0}
 
 
-def check_discord_continuity(r: redis.Redis) -> Dict[str, Any]:
+def check_discord_continuity(r: Any) -> dict[str, Any]:
     """Check Discord continuity status."""
     try:
         status = r.get("chise:discord:continuity:continuity_status")
@@ -322,10 +323,10 @@ def check_discord_continuity(r: redis.Redis) -> Dict[str, Any]:
         last_success_display = "unknown"
         if last_success_at:
             try:
-                from datetime import datetime, timezone
+                from datetime import datetime
 
                 last_dt = datetime.fromisoformat(last_success_at.replace("Z", "+00:00"))
-                now = datetime.now(timezone.utc)
+                now = datetime.now(UTC)
                 seconds_ago = (now - last_dt).total_seconds()
                 if seconds_ago < 60:
                     last_success_display = f"{int(seconds_ago)}s ago"
@@ -376,15 +377,15 @@ def check_discord_continuity(r: redis.Redis) -> Dict[str, Any]:
 
 
 def format_hourly_message(
-    scheduler: Dict,
-    kill_switch: Dict,
-    daily_loss: Dict,
-    metrics: Dict,
-    exec_stats: Optional[Dict[str, Any]] = None,
-    discord_continuity: Optional[Dict[str, Any]] = None,
+    scheduler: dict,
+    kill_switch: dict,
+    daily_loss: dict,
+    metrics: dict,
+    exec_stats: dict[str, Any] | None = None,
+    discord_continuity: dict[str, Any] | None = None,
 ) -> str:
     """Format hourly health message."""
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
 
     # P0 HARDENING: Add execution stats to message
     exec_info = ""
@@ -396,15 +397,15 @@ def format_hourly_message(
 
     lines = [
         f"**🔥 Burn-in Hourly Check** | {timestamp}",
-        f"",
+        "",
         f"**Scheduler:** {scheduler['status']} {scheduler['detail']}",
         f"**Kill Switch:** {kill_switch['status']} {kill_switch['detail']}",
         f"**Daily Loss:** {daily_loss['status']} {daily_loss['detail']}",
         f"**Discord:** {(discord_continuity or {}).get('status', '❓')} {(discord_continuity or {}).get('detail', 'No continuity data')}",
-        f"",
+        "",
         f"**Metrics:** Signals: {metrics['signals']} | Outcomes: {metrics['outcomes']} | Keys: {metrics['keys']}{exec_info}",
-        f"",
-        f"_Next check in 1 hour_",
+        "",
+        "_Next check in 1 hour_",
     ]
 
     return "\n".join(lines)
@@ -412,9 +413,9 @@ def format_hourly_message(
 
 def post_to_discord_with_retry(message: str) -> tuple[bool, str]:
     """P0 HARDENING: Post message to Discord with exponential backoff retry."""
-    import urllib.request
-    import urllib.error
     import json
+    import urllib.error
+    import urllib.request
 
     last_error = ""
 
@@ -435,7 +436,7 @@ def post_to_discord_with_retry(message: str) -> tuple[bool, str]:
                         },
                         method="POST",
                     )
-                    with urllib.request.urlopen(req, timeout=10) as resp:
+                    with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
                         if resp.status in (200, 204):
                             logger.info("Discord webhook post successful")
                             return True, "webhook"
@@ -461,7 +462,7 @@ def post_to_discord_with_retry(message: str) -> tuple[bool, str]:
                         },
                         method="POST",
                     )
-                    with urllib.request.urlopen(req, timeout=10) as resp:
+                    with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
                         if resp.status == 200:
                             logger.info("Discord bot post successful")
                             return True, "bot_api"
@@ -499,7 +500,7 @@ def log_locally(message: str) -> str:
         )
         os.makedirs(log_dir, exist_ok=True)
 
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
         log_path = os.path.join(log_dir, f"hourly-{timestamp}.log")
 
         with open(log_path, "w") as f:

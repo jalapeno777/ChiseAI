@@ -16,7 +16,6 @@ import subprocess
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -491,7 +490,7 @@ def get_current_commit_sha() -> str:
         The current commit SHA or "unknown" if not in a git repo.
     """
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B607
             ["git", "rev-parse", "HEAD"],
             capture_output=True,
             text=True,

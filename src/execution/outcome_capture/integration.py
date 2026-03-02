@@ -14,8 +14,8 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from execution.alerts.integration import ExecutionAlertIntegration
-    from execution.persistence.outcome_persistence import OutcomePersistence
     from execution.paper.models import PaperTradeResult
+    from execution.persistence.outcome_persistence import OutcomePersistence
 
 logger = logging.getLogger(__name__)
 
@@ -256,6 +256,7 @@ class OutcomeCaptureIntegration:
             SignalOutcome instance
         """
         from decimal import Decimal
+
         from ml.models.signal_outcome import SignalOutcome, SignalOutcomeStatus
 
         # Use provided exit_price or fall back to position attribute
@@ -271,9 +272,9 @@ class OutcomeCaptureIntegration:
             fill_price=Decimal(str(position.entry_price)),
             fill_quantity=Decimal(str(position.quantity)),
             entry_price=Decimal(str(position.entry_price)),
-            exit_price=Decimal(str(final_exit_price))
-            if final_exit_price is not None
-            else None,
+            exit_price=(
+                Decimal(str(final_exit_price)) if final_exit_price is not None else None
+            ),
             position_size=Decimal(str(position.quantity)),
             pnl=Decimal(str(realized_pnl)),
             status=SignalOutcomeStatus.CLOSED,

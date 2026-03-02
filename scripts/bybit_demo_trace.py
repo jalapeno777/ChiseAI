@@ -39,16 +39,16 @@ logger = logging.getLogger(__name__)
 
 # Import models
 from execution.paper.models import OrderState, PaperFill, PaperOrder
-from ml.models.signal_outcome import (
-    OutcomeType,
-    SignalOutcome,
-    SignalOutcomeStatus,
-)
 from execution.persistence.outcome_persistence import OutcomePersistence
 from execution.reconciliation.models import (
     CountDiscrepancy,
     ReconciliationResult,
     ReconciliationStatus,
+)
+from ml.models.signal_outcome import (
+    OutcomeType,
+    SignalOutcome,
+    SignalOutcomeStatus,
 )
 
 
@@ -185,7 +185,7 @@ class BybitDemoTrace:
         """
         outcome_id = uuid.uuid4()
 
-        outcome = SignalOutcome(
+        outcome = SignalOutcome(  # nosec B106
             outcome_id=outcome_id,
             order_id=order.order_id,
             symbol=order.symbol,
@@ -351,7 +351,7 @@ class BybitDemoTrace:
         delta_pct: dict[str, float] = {}
         discrepancies: list[CountDiscrepancy] = []
 
-        for category in telemetry_counts.keys():
+        for category in telemetry_counts:
             tel_count = telemetry_counts.get(category, 0)
             per_count = persisted_counts.get(category, 0)
             delta = tel_count - per_count
@@ -412,9 +412,12 @@ class BybitDemoTrace:
         """
         # Determine overall status
         trace_status = "PASS"
-        if not self.order or not self.fill or not self.outcome:
-            trace_status = "FAIL"
-        elif reconciliation.status == ReconciliationStatus.FAIL:
+        if (
+            not self.order
+            or not self.fill
+            or not self.outcome
+            or reconciliation.status == ReconciliationStatus.FAIL
+        ):
             trace_status = "FAIL"
         elif reconciliation.status == ReconciliationStatus.WARN:
             trace_status = "WARN"
@@ -535,7 +538,7 @@ class BybitDemoTrace:
         fill = self.create_fill(order)
 
         # Step 4: Create outcome
-        outcome = self.create_outcome(order, fill)
+        self.create_outcome(order, fill)
 
         # Step 5: Persist records
         persistence_results = self.persist_records()
@@ -580,7 +583,7 @@ def print_trace_summary(output: dict[str, Any]) -> None:
         print(f"  Side: {order['side']}")
         print(f"  Quantity: {order['quantity']}")
         print(f"  State: {order['state']}")
-        print(f"  Provenance:")
+        print("  Provenance:")
         for k, v in order["provenance"].items():
             print(f"    {k}: {v}")
     else:
@@ -600,7 +603,7 @@ def print_trace_summary(output: dict[str, Any]) -> None:
         print(f"  Quantity: {fill['quantity']}")
         print(f"  Price: {fill['price']}")
         print(f"  Notional Value: {fill['notional_value']}")
-        print(f"  Provenance:")
+        print("  Provenance:")
         for k, v in fill["provenance"].items():
             print(f"    {k}: {v}")
     else:
@@ -621,7 +624,7 @@ def print_trace_summary(output: dict[str, Any]) -> None:
         print(f"  Fill Price: {outcome['fill_price']}")
         print(f"  Fill Quantity: {outcome['fill_quantity']}")
         print(f"  Status: {outcome['status']}")
-        print(f"  Provenance:")
+        print("  Provenance:")
         for k, v in outcome["provenance"].items():
             print(f"    {k}: {v}")
     else:
@@ -662,13 +665,13 @@ def print_trace_summary(output: dict[str, Any]) -> None:
     print("5) RECAP SNIPPET ROW")
     print("-" * 70)
     recap = output.get("recap", {})
-    print(f"  Audited Persisted Counts:")
+    print("  Audited Persisted Counts:")
     for k, v in recap.get("audited_persisted_counts", {}).items():
         print(f"    {k}: {v}")
-    print(f"\n  Telemetry Counts:")
+    print("\n  Telemetry Counts:")
     for k, v in recap.get("telemetry_counts", {}).items():
         print(f"    {k}: {v}")
-    print(f"\n  Reconciliation Delta:")
+    print("\n  Reconciliation Delta:")
     for k, v in recap.get("reconciliation_delta", {}).items():
         print(f"    {k}: {v}")
     print(f"\n  Status: {recap.get('status')}")

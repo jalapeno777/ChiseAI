@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import importlib.util
 import sys
-import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any
 
@@ -37,17 +36,21 @@ def _load_triage_parser() -> Any | None:
     return getattr(module, "parse_root_causes", None)
 
 
-def _parse_junit_xml(path: Path) -> ET.Element | None:
+def _parse_junit_xml(path: Path) -> Any | None:
     if not path.exists():
         return None
     try:
-        tree = ET.parse(path)
+        from defusedxml import ElementTree as SafeET
+
+        tree = SafeET.parse(path)
         return tree.getroot()
-    except ET.ParseError:
+    except ImportError:
+        return None
+    except Exception:
         return None
 
 
-def _extract_failures(root: ET.Element | None) -> list[dict]:
+def _extract_failures(root: Any | None) -> list[dict]:
     failures: list[dict] = []
     if root is None:
         return failures

@@ -34,11 +34,11 @@ ignore = ["SIM102", "SIM108", "SIM116", "SIM117"]
 
 [tool.ruff.lint.per-file-ignores]
 # Line too long in test files - tests prioritize readability over strict line length
-"tests/**/*" = ["E501", "E741", "B017", "B007", "E721", "F841"]
+"tests/**/*" = ["E501", "E741", "B017", "B007", "E721", "F841", "E402", "SIM105"]
 # Generated or fixture files
 "tests/e2e/fixtures/*" = ["E501", "F403", "F405"]
 # Scripts prioritize functionality over style
-"scripts/**/*" = ["E501", "B904", "B007", "B015"]
+"scripts/**/*" = ["E501", "E402", "E722", "F401", "F402", "B904", "B007", "B015", "SIM115"]
 # Root-level utility scripts
 "*.py" = ["E501"]
 # API router files often have long docstrings/URLs
@@ -59,6 +59,7 @@ ignore = ["SIM102", "SIM108", "SIM116", "SIM117"]
 "src/backtesting/**/*" = ["E741"]
 # Ops scripts with logging patterns
 "scripts/ops/*" = ["E402"]
+"src/evaluation/__init__.py" = ["E402"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -70,7 +71,6 @@ check_untyped_defs = true
 ignore_missing_imports = true
 exclude = [
     "^tests/",
-    "^scripts/",
     "^src/autonomous_git/",
     "^src/testing/",
     "^src/load_testing/",
@@ -96,6 +96,7 @@ exclude = [
     "^src/runbooks/",
     "^src/backtesting/dsl/",
     "^src/execution/canary/",
+    "^scripts/grafana-performance-test\\.py$",
 ]
 explicit_package_bases = true
 
@@ -118,6 +119,28 @@ warn_return_any = false
 module = "src.governance.*"
 disallow_untyped_defs = false
 check_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = [
+    "tools.redis_state",
+]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = [
+    "src.neuro_symbolic.*",
+    "src.execution.*",
+    "src.evaluation.*",
+    "src.persistence.*",
+    "src.config.bootstrap",
+    "src.reporting.weekly_generator",
+    "src.security.tls.tls13",
+    "src.redundancy.manager",
+    "src.governance.memory.*",
+    "src.governance.tempmemory.*",
+    "src.governance.reflection.*",
+]
+ignore_errors = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

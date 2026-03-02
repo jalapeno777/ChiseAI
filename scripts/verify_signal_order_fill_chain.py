@@ -25,12 +25,11 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import os
 import sys
 import time
 import uuid
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -292,7 +291,7 @@ def take_snapshot(client: Any) -> ChainSnapshot:
         complete_chains = 0
         orphaned_orders = 0
         orphaned_fills = 0
-        sample_chains = []
+        sample_chains: list[dict[str, Any]] = []
 
         for signal_key in signal_keys[:10]:  # Check first 10 signals
             signal_data = get_signal_data(client, signal_key)
@@ -547,7 +546,7 @@ def print_snapshot(snapshot: ChainSnapshot, index: int) -> None:
     print(f"SNAPSHOT {index} - {snapshot.timestamp}")
     print(f"{'=' * 60}")
 
-    print(f"\n📊 COUNTS:")
+    print("\n📊 COUNTS:")
     print(
         f"  Signals:        {snapshot.signal_count} (paper: {snapshot.paper_signal_count}, bmad: {snapshot.bmad_signal_count})"
     )
@@ -561,12 +560,12 @@ def print_snapshot(snapshot: ChainSnapshot, index: int) -> None:
     print(f"  Complete Chains: {snapshot.complete_chains}")
 
     if snapshot.orphaned_orders > 0 or snapshot.orphaned_fills > 0:
-        print(f"\n⚠️  ORPHANED:")
+        print("\n⚠️  ORPHANED:")
         print(f"  Orphaned Orders: {snapshot.orphaned_orders}")
         print(f"  Orphaned Fills:  {snapshot.orphaned_fills}")
 
     if snapshot.sample_chains:
-        print(f"\n🔗 SAMPLE CHAINS:")
+        print("\n🔗 SAMPLE CHAINS:")
         for i, chain in enumerate(snapshot.sample_chains[:2], 1):
             print(f"  Chain {i}:")
             print(f"    Signal: {chain['signal_id'][:20]}...")
@@ -576,7 +575,7 @@ def print_snapshot(snapshot: ChainSnapshot, index: int) -> None:
             print(f"    Fills:  {chain['fill_count']} fills")
 
     if snapshot.errors:
-        print(f"\n❌ ERRORS:")
+        print("\n❌ ERRORS:")
         for error in snapshot.errors:
             print(f"  - {error}")
 
@@ -604,7 +603,7 @@ def print_report(report: ChainVerificationReport) -> None:
         duration = report.growth_analysis.get("duration_minutes", 0)
         print(f"\nDuration: {duration:.1f} minutes")
 
-        print(f"\n📈 SIGNAL GROWTH:")
+        print("\n📈 SIGNAL GROWTH:")
         sig_abs = report.growth_analysis.get("signal_growth", {}).get("absolute", 0)
         sig_pct = report.growth_analysis.get("signal_growth", {}).get("percentage", 0)
         print(f"  Standard: {sig_abs:+d} ({sig_pct:+.1f}%)")
@@ -616,7 +615,7 @@ def print_report(report: ChainVerificationReport) -> None:
         )
         print(f"  Paper:    {paper_sig_abs:+d} ({paper_sig_pct:+.1f}%)")
 
-        print(f"\n📈 ORDER GROWTH:")
+        print("\n📈 ORDER GROWTH:")
         ord_abs = report.growth_analysis.get("order_growth", {}).get("absolute", 0)
         ord_pct = report.growth_analysis.get("order_growth", {}).get("percentage", 0)
         print(f"  Standard: {ord_abs:+d} ({ord_pct:+.1f}%)")
@@ -628,7 +627,7 @@ def print_report(report: ChainVerificationReport) -> None:
         )
         print(f"  Paper:    {paper_ord_abs:+d} ({paper_ord_pct:+.1f}%)")
 
-        print(f"\n📈 FILL GROWTH:")
+        print("\n📈 FILL GROWTH:")
         fill_abs = report.growth_analysis.get("fill_growth", {}).get("absolute", 0)
         fill_pct = report.growth_analysis.get("fill_growth", {}).get("percentage", 0)
         print(f"  Standard: {fill_abs:+d} ({fill_pct:+.1f}%)")
@@ -640,7 +639,7 @@ def print_report(report: ChainVerificationReport) -> None:
         )
         print(f"  Paper:    {paper_fill_abs:+d} ({paper_fill_pct:+.1f}%)")
 
-        print(f"\n📈 COMPLETE CHAIN GROWTH:")
+        print("\n📈 COMPLETE CHAIN GROWTH:")
         chain_abs = report.growth_analysis.get("chain_growth", {}).get("absolute", 0)
         print(f"  {chain_abs:+d} new complete chains")
 
@@ -730,7 +729,7 @@ def main() -> int:
     print("SIGNAL→ORDER→FILL CHAIN VERIFICATION")
     print("=" * 60)
     print(f"Start Time: {datetime.now(UTC).isoformat()}")
-    print(f"Redis Host: host.docker.internal:6380")
+    print("Redis Host: host.docker.internal:6380")
 
     if args.interval > 0 and args.duration > 0:
         print(
@@ -811,9 +810,10 @@ def main() -> int:
         print(f"\nFull report saved to: {report_file}")
 
         # Return exit code based on status
-        if report.overall_status in ["error", "no_signals"]:
-            return 1
-        elif report.overall_status == "degraded":
+        if (
+            report.overall_status in ["error", "no_signals"]
+            or report.overall_status == "degraded"
+        ):
             return 1
         else:
             return 0

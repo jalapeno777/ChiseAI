@@ -97,7 +97,7 @@ class WoodpeckerClient:
         for mode in ("bearer", "token", "x-token"):
             req = Request(url=url, method="GET", headers=self._headers(mode))
             try:
-                with urlopen(req, timeout=20) as resp:  # noqa: S310
+                with urlopen(req, timeout=20) as resp:  # nosec B310  # noqa: S310
                     headers = {k.lower(): v for k, v in dict(resp.headers).items()}
                     body = resp.read().decode("utf-8", errors="replace")
                     return headers, body
@@ -327,7 +327,7 @@ def _fetch_step_log_from_api(
             text = client.get_text(path)
             if text and not _looks_like_html(text):
                 return text
-        except Exception:
+        except Exception:  # nosec B112
             continue
     return ""
 
@@ -659,7 +659,7 @@ def _collect_local_ci(local_dir: Path) -> tuple[dict[str, Any], list[dict[str, A
 
     steps: list[dict[str, Any]] = []
     for name, code in statuses.items():
-        step = {
+        step: dict[str, Any] = {
             "id": None,
             "number": None,
             "name": name,
@@ -754,7 +754,7 @@ def _detect_db_dsn(args: argparse.Namespace) -> str | None:
     if not shutil.which("docker"):
         return None
     try:
-        proc = subprocess.run(
+        proc = subprocess.run(  # nosec B607
             [
                 "docker",
                 "inspect",
@@ -827,7 +827,7 @@ def _fetch_db_logs(
                 f"where step_id={step_id} "
                 "order by line;"
             )
-            proc = subprocess.run(
+            proc = subprocess.run(  # nosec B607
                 ["psql", candidate_dsn, "-At", "-q", "-c", sql],
                 capture_output=True,
                 text=True,
@@ -848,7 +848,7 @@ def _fetch_db_logs(
                 f"where pipeline_id={pipeline_id} "
                 f"and id in ({','.join(str(i) for i in step_ids)});"
             )
-            verify = subprocess.run(
+            verify = subprocess.run(  # nosec B607
                 ["psql", candidate_dsn, "-At", "-q", "-c", verify_sql],
                 capture_output=True,
                 text=True,
@@ -1004,7 +1004,7 @@ def _write_artifacts_if_needed(
     for cmd in result.get("repro_commands", []):
         repro.append(cmd)
     (out_dir / "repro.sh").write_text("\n".join(repro) + "\n", encoding="utf-8")
-    os.chmod(out_dir / "repro.sh", 0o755)
+    os.chmod(out_dir / "repro.sh", 0o700)
     result["artifact_dir"] = str(out_dir)
     return result
 

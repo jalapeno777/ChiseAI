@@ -43,8 +43,10 @@ def get_influxdb_client(
 ) -> InfluxDBClient:
     """Create InfluxDB client from environment or defaults."""
     url = url or os.getenv("INFLUXDB_URL", "http://localhost:18087")
-    token = token or os.getenv("INFLUXDB_TOKEN", "chiseai-token")
-    org = org or os.getenv("INFLUXDB_ORG", "chiseai")
+    token_value = token if token is not None else os.getenv("INFLUXDB_TOKEN")
+    org_value = org if org is not None else os.getenv("INFLUXDB_ORG")
+    token = token_value or "chiseai-token"
+    org = org_value or "chiseai"
 
     return InfluxDBClient(url=url, token=token, org=org)
 
@@ -321,7 +323,7 @@ def test_dashboard_api(grafana_url: str = "http://localhost:3001") -> bool:
             url = f"{grafana_url}/api/dashboards/uid/{uid}"
             req = urllib.request.Request(url)
             # Note: This requires Grafana auth, may fail in test environment
-            with urllib.request.urlopen(req, timeout=5) as response:
+            with urllib.request.urlopen(req, timeout=5) as response:  # nosec B310
                 if response.status == 200:
                     print(f"  ✓ Dashboard {uid} accessible")
                 else:

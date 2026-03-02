@@ -392,7 +392,7 @@ class InferenceEngine:
             try:
                 result = inference_func(rule_results)
                 inferred.update(result)
-            except Exception:
+            except Exception:  # nosec B112
                 continue
 
         return inferred

@@ -5,20 +5,18 @@ For ST-VENUE-001: Venue provenance fields implementation
 Tests that venue fields flow correctly from Signal → Order → Fill → Outcome
 """
 
-import pytest
 import json
 from datetime import UTC, datetime
 from decimal import Decimal
-from uuid import uuid4, UUID
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock
+from uuid import uuid4
 
-from src.ml.models.signal_outcome import (
-    SignalOutcome,
-    OutcomeType,
-    SignalOutcomeStatus,
-)
+import pytest
 from src.data.execution.fill_model import Fill
 from src.execution.persistence.outcome_persistence import OutcomePersistence
+from src.ml.models.signal_outcome import (
+    SignalOutcome,
+)
 
 
 class TestSignalOutcomeVenuePropagation:

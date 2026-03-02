@@ -8,18 +8,16 @@ from __future__ import annotations
 
 import json
 import tempfile
-from datetime import UTC, datetime
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
-import yaml
 
 from governance.tempmemory.migration import (
+    MigrationReport,
     MigrationResult,
     MigrationStatus,
     MigrationTarget,
-    MigrationReport,
     TempmemoryFile,
     TempmemoryMigrationEngine,
 )

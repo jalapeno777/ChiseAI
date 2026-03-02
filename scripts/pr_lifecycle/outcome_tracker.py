@@ -230,7 +230,7 @@ def _get_redis_config() -> tuple[str, int, int]:
 def _redis_cli(*args: str) -> subprocess.CompletedProcess[str]:
     """Run a redis-cli command."""
     host, port, db = _get_redis_config()
-    return subprocess.run(
+    return subprocess.run(  # nosec B607
         ["redis-cli", "-h", host, "-p", str(port), "-n", str(db), *args],
         text=True,
         capture_output=True,

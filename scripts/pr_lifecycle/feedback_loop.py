@@ -68,7 +68,7 @@ def _get_redis_config() -> tuple[str, int, int]:
 def _redis_cli(*args: str) -> subprocess.CompletedProcess[str]:
     """Run a redis-cli command."""
     host, port, db = _get_redis_config()
-    return subprocess.run(
+    return subprocess.run(  # nosec B607
         ["redis-cli", "-h", host, "-p", str(port), "-n", str(db), *args],
         text=True,
         capture_output=True,
@@ -1145,7 +1145,7 @@ class FeedbackLoop:
             data = "\n".join(lines).encode("utf-8")
             req = urllib.request.Request(url, data=data, headers=headers, method="POST")
 
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with urllib.request.urlopen(req, timeout=30) as resp:  # nosec B310
                 if resp.status == 204:
                     return True
                 else:
@@ -1165,7 +1165,7 @@ class FeedbackLoop:
             return False
 
         # Build embed
-        embed = {
+        embed: dict[str, Any] = {
             "title": f"📊 PR Pipeline Weekly Report ({report.week_start[:10]} to {report.week_end[:10]})",
             "color": 3447003,  # Blue
             "fields": [
@@ -1261,7 +1261,7 @@ class FeedbackLoop:
                 method="POST",
             )
 
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with urllib.request.urlopen(req, timeout=30) as resp:  # nosec B310
                 return resp.status == 204
 
         except Exception as e:

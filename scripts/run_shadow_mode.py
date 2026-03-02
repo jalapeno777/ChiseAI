@@ -163,9 +163,9 @@ async def run_shadow_mode(
         "candidate_metrics": {
             "total_candidates": len(candidates),
             "high_confidence_count": high_confidence_count,
-            "high_confidence_ratio": high_confidence_count / len(candidates)
-            if candidates
-            else 0.0,
+            "high_confidence_ratio": (
+                high_confidence_count / len(candidates) if candidates else 0.0
+            ),
             "average_confidence": avg_confidence,
             "trades_per_day": trades_per_day,
             "backtest_paper_correlation": backtest_paper_correlation,

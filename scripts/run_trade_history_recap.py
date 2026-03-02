@@ -27,7 +27,6 @@ sys.path.insert(0, str(project_root))
 
 from src.reporting.trade_history_recap import (
     TradeHistoryRecap,
-    run_nightly_recap,
 )
 
 # Try to import bootstrap, but don't fail if it's not available
