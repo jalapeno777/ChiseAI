@@ -21,6 +21,7 @@ import json
 import logging
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -87,6 +88,144 @@ def detect_brain_changes(base_ref: str = "origin/main") -> bool:
         logger.error(f"Failed to detect changes: {e}")
         # Fail safe: assume changes if we can't detect
         return True
+
+
+def run_memory_ingestion(
+    sources: list[str],
+    track_provenance: bool = False,
+    dry_run: bool = True,
+) -> dict[str, Any]:
+    """Run memory-source ingestion before brain evaluation.
+
+    Args:
+        sources: List of sources to ingest from (iterlog, tempmemory, redis)
+        track_provenance: Whether to track provenance for ingested memories
+        dry_run: If True, don't make actual changes
+
+    Returns:
+        Dictionary with ingestion results including metrics and provenance
+    """
+    start_time = time.time()
+
+    try:
+        # Import BrainEvalIntegration from governance.tempmemory.brain_integration
+        from governance.tempmemory.brain_integration import BrainEvalIntegration
+        from governance.tempmemory.provenance import ProvenanceTracker
+
+        # Initialize provenance tracker if requested
+        provenance_tracker = None
+        if track_provenance:
+            provenance_tracker = ProvenanceTracker(dry_run=dry_run)
+
+        # Initialize BrainEvalIntegration
+        integration = BrainEvalIntegration(
+            provenance_tracker=provenance_tracker,
+            dry_run=dry_run,
+        )
+
+        all_metrics = []
+        total_processed = 0
+        total_ingested = 0
+        total_failed = 0
+
+        # Ingest from each requested source
+        for source in sources:
+            source = source.strip().lower()
+            logger.info(f"Ingesting from source: {source}")
+
+            try:
+                if source == "iterlog":
+                    metrics = integration.ingest_from_iterlog(update_kpis=False)
+                elif source == "tempmemory":
+                    metrics = integration.ingest_from_tempmemory_files(
+                        update_kpis=False
+                    )
+                elif source == "redis":
+                    # Run full migration and ingest from the report
+                    from governance.tempmemory.migration import (
+                        TempmemoryMigrationEngine,
+                    )
+
+                    engine = TempmemoryMigrationEngine(dry_run=dry_run)
+                    report = engine.run_migration()
+                    metrics = integration.ingest_from_migration_report(
+                        report, update_kpis=False
+                    )
+                else:
+                    logger.warning(f"Unknown source: {source}")
+                    continue
+
+                all_metrics.append(metrics.to_dict())
+                total_processed += metrics.items_processed
+                total_ingested += metrics.items_ingested
+                total_failed += metrics.items_failed
+
+            except Exception as e:
+                logger.error(f"Failed to ingest from {source}: {e}")
+                total_failed += 1
+
+        duration = time.time() - start_time
+
+        # Build provenance summary if tracking enabled
+        provenance_summary = None
+        if track_provenance and provenance_tracker:
+            try:
+                # Generate audit report for provenance summary
+                audit_report = provenance_tracker.generate_audit_report()
+                by_source = audit_report.get("statistics", {}).get("by_source", {})
+
+                provenance_summary = {
+                    "tracked_memories": audit_report.get("statistics", {}).get(
+                        "total_records", 0
+                    ),
+                    "sources": by_source,
+                }
+            except Exception as e:
+                logger.warning(f"Failed to generate provenance summary: {e}")
+                provenance_summary = {
+                    "tracked_memories": total_ingested,
+                    "sources": {},
+                }
+
+        return {
+            "success": True,
+            "sources": sources,
+            "metrics": {
+                "items_processed": total_processed,
+                "items_ingested": total_ingested,
+                "items_failed": total_failed,
+                "duration_seconds": round(duration, 2),
+            },
+            "source_metrics": all_metrics,
+            "provenance": provenance_summary,
+        }
+
+    except ImportError as e:
+        logger.error(f"Failed to import BrainEvalIntegration: {e}")
+        return {
+            "success": False,
+            "error": f"Import error: {e}",
+            "sources": sources,
+            "metrics": {
+                "items_processed": 0,
+                "items_ingested": 0,
+                "items_failed": len(sources),
+                "duration_seconds": time.time() - start_time,
+            },
+        }
+    except Exception as e:
+        logger.exception("Memory ingestion failed")
+        return {
+            "success": False,
+            "error": str(e),
+            "sources": sources,
+            "metrics": {
+                "items_processed": 0,
+                "items_ingested": 0,
+                "items_failed": len(sources),
+                "duration_seconds": time.time() - start_time,
+            },
+        }
 
 
 def run_brain_evaluation(output_path: Path | None = None) -> dict[str, Any]:
@@ -246,18 +385,57 @@ def main() -> int:
         action="store_true",
         help="Skip promotion gate checks (for testing)",
     )
+    parser.add_argument(
+        "--with-memory-ingestion",
+        action="store_true",
+        help="Enable memory ingestion before brain evaluation",
+    )
+    parser.add_argument(
+        "--memory-sources",
+        type=str,
+        default="iterlog,tempmemory,redis",
+        help="Comma-separated list of memory sources to ingest (iterlog,tempmemory,redis)",
+    )
+    parser.add_argument(
+        "--track-provenance",
+        action="store_true",
+        help="Enable provenance tracking for ingested memories",
+    )
 
     args = parser.parse_args()
 
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
+    # Initialize result structure
+    result = {
+        "success": True,
+        "version": "1.0.0",
+        "memory_ingestion": None,
+        "brain_evaluation": None,
+    }
+
+    # Run memory ingestion if enabled
+    if args.with_memory_ingestion:
+        logger.info("Memory ingestion enabled, running multi-source ingestion...")
+        sources = [s.strip() for s in args.memory_sources.split(",") if s.strip()]
+        ingestion_result = run_memory_ingestion(
+            sources=sources,
+            track_provenance=args.track_provenance,
+            dry_run=False,  # In CI, we want actual changes
+        )
+        result["memory_ingestion"] = ingestion_result
+
+        if not ingestion_result.get("success"):
+            logger.warning(
+                "Memory ingestion had errors, continuing with brain evaluation"
+            )
+
     # Detect brain changes
     if not args.force and not detect_brain_changes(args.base_ref):
         logger.info("No brain changes detected, skipping evaluation")
-        result = {
-            "success": True,
-            "skipped": True,
+        result["brain_evaluation"] = {
+            "status": "skipped",
             "reason": "No brain changes detected",
         }
         output_path.write_text(json.dumps(result, indent=2))
@@ -266,9 +444,20 @@ def main() -> int:
     # Run evaluation
     logger.info("Running brain evaluation...")
     evaluation_result = run_brain_evaluation(output_path)
+    result["brain_evaluation"] = {
+        "status": evaluation_result.get("status", "unknown"),
+        "metrics": {
+            "accuracy": evaluation_result.get("metrics", {}).get("accuracy"),
+            "precision": evaluation_result.get("metrics", {}).get("precision"),
+            "recall": evaluation_result.get("metrics", {}).get("recall"),
+        },
+    }
+
+    # Update overall success
+    result["success"] = evaluation_result.get("success", False)
 
     # Save results
-    output_path.write_text(json.dumps(evaluation_result, indent=2))
+    output_path.write_text(json.dumps(result, indent=2))
     logger.info(f"Evaluation results saved to {output_path}")
 
     # Check gates unless skipped
