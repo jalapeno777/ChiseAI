@@ -1,0 +1,87 @@
+{
+  "story_id": "PAPER-RECOVERY-001",
+  "loop": 3,
+  "timestamp": "2026-03-02T14:11:43.026675+00:00",
+  "environment": {
+    "REDIS_HOST": "host.docker.internal",
+    "REDIS_PORT": "6380",
+    "INFLUXDB_URL": "http://host.docker.internal:18087",
+    "INFLUXDB_ORG": "chiseai",
+    "INFLUXDB_BUCKET": "chiseai"
+  },
+  "gates": {
+    "G1": {
+      "name": "Signals Delta > 0",
+      "status": "PASS",
+      "count": 5978,
+      "key": "paper:index:signals"
+    },
+    "G2": {
+      "name": "Orders Delta > 0",
+      "status": "PASS",
+      "count": 5018,
+      "key": "paper:index:orders"
+    },
+    "G3": {
+      "name": "Fills Delta > 0",
+      "status": "PASS",
+      "count": 4982,
+      "key": "paper:index:fills"
+    },
+    "G4": {
+      "name": "Outcomes Delta > 0",
+      "status": "PASS",
+      "count": 4977,
+      "key": "paper:index:outcomes"
+    },
+    "G5": {
+      "name": "Discord OPEN/CLOSE/RECAP messages",
+      "status": "PASS",
+      "deterministic_evidence": {
+        "open_message_id": "1477529875064553563",
+        "open_message_timestamp": "2026-03-01T04:56:13.393000+00:00",
+        "recap_message_count": 940,
+        "latest_recap_message_id": "1478036129725812849",
+        "latest_recap_timestamp": "2026-03-02T14:27:53.910000+00:00",
+        "channel_id": "1448414506412806347",
+        "guild_id": "1413522994810327134",
+        "webhook_id": "1448414669541736508"
+      },
+      "verification": "Discord messages verified via Discord API search",
+      "message_types_sent": ["OPEN", "RECAP"],
+      "close_message_sent": false,
+      "session_still_running": true
+    },
+    "G6": {
+      "name": "InfluxDB orders/fills queries",
+      "status": "FAIL",
+      "lines": 0
+    },
+    "G7": {
+      "name": "InfluxDB canary query",
+      "status": "PASS",
+      "health_status": "pass"
+    },
+    "G8": {
+      "name": "Burn-in verdict artifact",
+      "status": "PASS",
+      "exists": true,
+      "verdict": "PASS",
+      "timestamp_utc": "2026-03-01T00:14:37.090022+00:00",
+      "duration_seconds": 120,
+      "signals_generated": 21,
+      "orders_placed": 75,
+      "fills_received": 39,
+      "outcomes_recorded": 38
+    }
+  },
+  "summary": {
+    "total_gates": 8,
+    "passed": 7,
+    "failed": 1,
+    "info": 0,
+    "pending": 0,
+    "manual": 0,
+    "overall": "PARTIAL"
+  }
+}
