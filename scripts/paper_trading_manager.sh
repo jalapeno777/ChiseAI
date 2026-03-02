@@ -18,7 +18,11 @@ mkdir -p "$LOG_DIR"
 
 # Environment variables
 export INFLUXDB_URL="${INFLUXDB_URL:-http://host.docker.internal:18087}"
-export INFLUXDB_TOKEN="${INFLUXDB_TOKEN:-REDACTED_INFLUXDB_TOKEN}"
+export INFLUXDB_TOKEN="${INFLUXDB_TOKEN:-}"
+if [ -z "$INFLUXDB_TOKEN" ]; then
+    echo "ERROR: INFLUXDB_TOKEN environment variable is not set"
+    exit 1
+fi
 export INFLUXDB_ORG="${INFLUXDB_ORG:-chiseai}"
 export INFLUXDB_BUCKET="${INFLUXDB_BUCKET:-chiseai}"
 export EMIT_INTERVAL="${EMIT_INTERVAL:-5}"

@@ -5,7 +5,11 @@
 set -e
 
 INFLUX_URL="http://host.docker.internal:18087"
-INFLUX_TOKEN="REDACTED_INFLUXDB_TOKEN"
+INFLUX_TOKEN="${INFLUXDB_TOKEN:-}"
+if [ -z "$INFLUX_TOKEN" ]; then
+    echo "ERROR: INFLUXDB_TOKEN environment variable is not set"
+    exit 1
+fi
 INFLUX_ORG="chiseai"
 INFLUX_BUCKET="chiseai"
 
