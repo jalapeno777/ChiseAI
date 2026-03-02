@@ -529,6 +529,45 @@ class BrainEvalIntegration:
 
         logger.info("MiniBrainEval KPIs updated from ingestion")
 
+    def _update_brain_eval_kpis_for_source(
+        self, source: str, metrics: IngestionMetrics
+    ) -> None:
+        """Update BrainEval KPIs for a specific ingestion source.
+
+        Args:
+            source: The source name (e.g., "iterlog", "tempmemory").
+            metrics: The ingestion metrics.
+        """
+        if self._brain_evaluator is None:
+            return
+
+        custom_metrics = {
+            f"{source}_ingested": metrics.items_ingested,
+            f"{source}_processed": metrics.items_processed,
+            f"{source}_failed": metrics.items_failed,
+            f"{source}_success_rate": (
+                metrics.items_ingested / metrics.items_processed
+                if metrics.items_processed > 0
+                else 0.0
+            ),
+        }
+
+        logger.info(f"Updated BrainEval KPIs for {source}: {custom_metrics}")
+
+    def _update_mini_eval_kpis_for_source(
+        self, source: str, metrics: IngestionMetrics
+    ) -> None:
+        """Update MiniBrainEval KPIs for a specific ingestion source.
+
+        Args:
+            source: The source name (e.g., "iterlog", "tempmemory").
+            metrics: The ingestion metrics.
+        """
+        if self._mini_eval is None:
+            return
+
+        logger.info(f"Updated MiniBrainEval KPIs for {source}")
+
     def _store_ingestion_result(self, result: IngestionResult) -> None:
         """Store ingestion result in Redis.
 
