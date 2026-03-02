@@ -2,7 +2,7 @@
 name: "juniordev"
 description: "Fast executor subagent for 1SP tasks: small fixes, quick investigations, small refactors, CI tweaks."
 mode: all
-model: "zai-coding-plan/glm-5" # model: "minimax/MiniMax-M2.5"
+model: "glm-5.0-fast" # model: "minimax/MiniMax-M2.5"
 temperature: 0.35
 tools:
   task: true
