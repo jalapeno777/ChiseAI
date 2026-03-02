@@ -2,157 +2,200 @@
 
 ## Purpose
 
-This runbook documents the retention policy and procedures for archiving workflow status entries from `docs/bmm-workflow-status.yaml`.
+This runbook documents the workflow status archiving process for ChiseAI. It ensures that old workflow entries are preserved for traceability while keeping the active workflow status file manageable.
 
 ## Retention Policy
 
-| Policy | Value | Description |
-|--------|-------|-------------|
-| Active Retention | 4 days | Entries remain in active `recent_changes` for 4 days from current date |
-| Archive Location | `docs/archives/workflow-status/` | Archived entries stored in monthly files |
-| Traceability | Full preservation | All `epic_id`, `story_id`, and metadata preserved |
+| Entry Age | Action |
+|-----------|--------|
+| 0-7 days | Keep in active file (`docs/bmm-workflow-status.yaml`) |
+| 7+ days | Archive to monthly archive file |
 
-### Archive Schedule
+**Current Threshold:** Entries older than 4 days are archived (configured per cleanup cycle)
 
-- **When to archive**: When entries in `recent_changes` are older than 4 days
-- **Archive frequency**: As needed (typically weekly or during sprint cleanup)
-- **Archive format**: Monthly YAML files (e.g., `archive-2026-02.yaml`)
-
-## Archive Structure
+## Archive Location
 
 ```
 docs/archives/workflow-status/
 ├── archive-index.yaml      # Master index with cross-references
 ├── archive-2026-02.yaml    # February 2026 entries
-├── archive-2026-03.yaml    # March 2026 entries (created when needed)
-└── ...
+├── archive-2026-01.yaml    # January 2026 entries (if any)
+└── ...                     # Additional monthly archives
 ```
 
-### Index File (`archive-index.yaml`)
+## How to Access Archived Entries
 
-The index file maps `story_id` to archive location for quick lookup:
+### 1. By Story ID
+
+```bash
+# Search for a specific story across all archives
+grep -r "ST-AUTO-CONTROL-001" docs/archives/workflow-status/
+
+# Or check the index first
+cat docs/archives/workflow-status/archive-index.yaml | grep "ST-AUTO-CONTROL-001"
+```
+
+### 2. By Date Range
+
+```bash
+# View February 2026 entries
+cat docs/archives/workflow-status/archive-2026-02.yaml
+```
+
+### 3. By Epic ID
+
+```bash
+# Find all entries for a specific epic
+grep -r "epic_id: EP-AUTO-GIT-001" docs/archives/workflow-status/
+```
+
+### 4. Using the Index
+
+The `archive-index.yaml` file provides a quick lookup table:
 
 ```yaml
 archive_index:
   entries:
-    - story_id: ST-EXAMPLE-001
+    - story_id: ST-AUTO-CONTROL-003
       archived_to: archive-2026-02.yaml
-      original_timestamp: "2026-02-24T14:30:00Z"
-      epic_id: EP-EXAMPLE-001
+      original_timestamp: "2026-02-26T23:55:00Z"
+      epic_id: EP-AUTO-GIT-001
 ```
 
-## How to Archive Entries
+## How to Add New Archive Entries
 
-### Step 1: Identify Entries to Archive
+### Manual Archive Process
+
+1. **Identify entries to archive:**
+   ```bash
+   # Find entries older than threshold (e.g., 7 days)
+   python3 -c "
+   import yaml
+   from datetime import datetime, timedelta
+   
+   with open('docs/bmm-workflow-status.yaml') as f:
+       status = yaml.safe_load(f)
+   
+   threshold = datetime.now() - timedelta(days=7)
+   for entry in status['metadata']['recent_changes']:
+       ts = datetime.fromisoformat(entry['timestamp'].replace('Z', '+00:00'))
+       if ts < threshold:
+           print(f\"Archive: {entry['timestamp']} - {entry.get('action', 'unknown')}\")
+   "
+   ```
+
+2. **Move entries to archive file:**
+   - Copy the entry to the appropriate monthly archive file
+   - Add `archived_from` and `archived_date` fields
+   - Remove from active file's `recent_changes` list
+
+3. **Update the index:**
+   - Add entry to `archive-index.yaml` with key fields
+
+4. **Validate:**
+   ```bash
+   yamllint docs/bmm-workflow-status.yaml docs/archives/workflow-status/*.yaml
+   ```
+
+### Automated Archive Script
+
+(To be implemented as part of ST-CI-001 improvements)
 
 ```bash
-# Find entries older than 4 days
-python3 -c "
-import yaml
-from datetime import datetime, timedelta
-
-with open('docs/bmm-workflow-status.yaml') as f:
-    data = yaml.safe_load(f)
-
-cutoff = datetime.now() - timedelta(days=4)
-recent = data['metadata']['recent_changes']
-
-to_archive = [e for e in recent if datetime.fromisoformat(e['timestamp'].replace('Z', '+00:00')) < cutoff.replace(tzinfo=None)]
-print(f'Entries to archive: {len(to_archive)}')
-for e in to_archive:
-    print(f'  - {e[\"timestamp\"]}: {e.get(\"action\", \"N/A\")}')
-"
+# Future: scripts/archive_workflow_status.py
+# Will automate the archive process based on retention policy
 ```
 
-### Step 2: Move Entries to Archive File
+## Traceability Preservation Rules
 
-1. Open the appropriate monthly archive file (create if needed)
-2. Append entries to the `entries` list with full content preserved
-3. Update `archive_metadata.entry_count` and `date_range`
+### Required Fields (MUST preserve)
 
-### Step 3: Update Index
+When archiving, these fields MUST be retained:
 
-Add entries to `archive-index.yaml`:
+| Field | Purpose |
+|-------|---------|
+| `timestamp` | Original entry timestamp |
+| `actor` | Who made the change |
+| `action` | What action was taken |
+| `description` | Full description |
+| `story_id` | Associated story (if any) |
+| `epic_id` | Associated epic (if any) |
+
+### Archive-Specific Fields (ADD when archiving)
+
+| Field | Purpose |
+|-------|---------|
+| `archived_from` | Source file path |
+| `archived_date` | When entry was archived |
+
+### Cross-Reference Format
+
 ```yaml
+# In archive file:
+- timestamp: "2026-02-26T23:55:00Z"
+  story_id: ST-AUTO-CONTROL-003
+  epic_id: EP-AUTO-GIT-001
+  archived_from: docs/bmm-workflow-status.yaml
+  archived_date: "2026-03-02"
+
+# In index:
 entries:
-  - story_id: ST-EXAMPLE-001
+  - story_id: ST-AUTO-CONTROL-003
     archived_to: archive-2026-02.yaml
-    original_timestamp: "2026-02-24T14:30:00Z"
-    epic_id: EP-EXAMPLE-001
-    actor: jarvis
-    action: example_action
+    original_timestamp: "2026-02-26T23:55:00Z"
+    epic_id: EP-AUTO-GIT-001
 ```
 
-### Step 4: Update Active File
+## Index Structure
 
-1. Remove archived entries from `metadata.recent_changes`
-2. Update `metadata.last_updated`
-3. Add archive reference entry if not present
+The `archive-index.yaml` serves as a master lookup table:
 
-## How to Find Archived Entries
-
-### By Story ID
-
-```bash
-# Search the index for a story_id
-grep -A5 "story_id: ST-TARGET-001" docs/archives/workflow-status/archive-index.yaml
+```yaml
+archive_index:
+  version: "1.0"
+  created_date: "2026-03-02"
+  retention_policy:
+    active_file_keep_days: 7
+    archive_location: docs/archives/workflow-status/
+  
+  entries:
+    - story_id: <STORY_ID>
+      action: <action_name>
+      archived_to: <archive_filename>
+      original_timestamp: <timestamp>
+      epic_id: <EPIC_ID>
+      actor: <actor_name>
+      description: <brief_description>
 ```
 
-### By Date Range
+## Troubleshooting
 
-```bash
-# Check a specific monthly archive
-cat docs/archives/workflow-status/archive-2026-02.yaml
-```
+### Issue: Entry not found in archive
 
-### By Epic ID
+1. Check the index first: `cat docs/archives/workflow-status/archive-index.yaml`
+2. Search all archive files: `grep -r "pattern" docs/archives/workflow-status/`
+3. Check if entry might still be in active file
 
-```bash
-# Search all archives for an epic
-grep -r "epic_id: EP-TARGET-001" docs/archives/workflow-status/
-```
+### Issue: YAML validation fails
 
-## Traceability Rules
+1. Run yamllint: `yamllint docs/archives/workflow-status/*.yaml`
+2. Check for indentation issues (use 2 spaces)
+3. Verify all required fields are present
 
-1. **Never delete entries** - Only move to archive
-2. **Preserve all fields** - Including description, deltas, notes, etc.
-3. **Keep links intact** - `epic_id` and `story_id` must remain valid
-4. **Maintain index** - Every archived entry must have an index entry
+### Issue: Traceability broken
 
-## Validation
+1. Verify `story_id` and `epic_id` match between archive and index
+2. Check that `archived_from` points to correct source
+3. Ensure `original_timestamp` matches the source entry
 
-After archiving, validate:
+## Related Files
 
-```bash
-# YAML syntax check
-python3 -c "import yaml; yaml.safe_load(open('docs/bmm-workflow-status.yaml'))"
-python3 -c "import yaml; yaml.safe_load(open('docs/archives/workflow-status/archive-index.yaml'))"
+- `docs/bmm-workflow-status.yaml` - Active workflow status
+- `docs/archives/workflow-status/archive-index.yaml` - Master index
+- `docs/archives/workflow-status/archive-YYYY-MM.yaml` - Monthly archives
 
-# Verify index entries match archive
-python3 -c "
-import yaml
-with open('docs/archives/workflow-status/archive-index.yaml') as f:
-    index = yaml.safe_load(f)
-print(f'Indexed entries: {len(index[\"archive_index\"][\"entries\"])}')
-"
-```
+## Change History
 
-## Emergency Recovery
-
-If archived entries need to be restored:
-
-1. Find the entry in the archive file
-2. Copy the full entry content
-3. Insert back into `metadata.recent_changes` in the active file
-4. Remove from archive file and index
-5. Validate YAML syntax
-
-## Related Documents
-
-- **Active Status**: `docs/bmm-workflow-status.yaml`
-- **Archive Location**: `docs/archives/workflow-status/`
-- **Ownership Tracking**: Redis key `bmad:chiseai:ownership` -> `docs:workflow-status`
-
----
-
-*Created by ST-WORKFLOW-001 on 2026-03-02*
+| Date | Author | Change |
+|------|--------|--------|
+| 2026-03-02 | dev | Initial runbook creation for ST-WORKFLOW-001 |
