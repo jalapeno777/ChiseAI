@@ -4,9 +4,23 @@
 
 metadata:
   project_name: ChiseAI
-  version: "2.5.3"
-  last_updated: "2026-02-27T00:05:00Z"
+  version: "2.5.4"
+  last_updated: "2026-03-02T00:00:00Z"
   recent_changes:
+    - timestamp: "2026-03-02T00:00:00Z"
+      actor: quickdev
+      action: workflow-hygiene-sync
+      description: "WORKFLOW-HYGIENE-001: Metadata consistency check, recent changes audit, archive strategy proposal, status sync validation. Fixed timestamp coherence (last_updated >= max(recent_changes.timestamp)). Identified 15+ entries older than 4 days needing archive."
+      story_id: WORKFLOW-HYGIENE-001
+      validation_results:
+        timestamp_coherence: "FIXED - updated last_updated from 2026-02-27 to 2026-03-02"
+        status_sync_warnings: 5
+        yamllint_status: "PASS (line-length warnings only)"
+        entries_older_than_4_days: 15
+      archive_strategy:
+        location: "docs/archives/workflow-status/"
+        retention_policy: "Keep 7 days in active, archive entries >7 days old"
+        traceability: "epic_id and story_id links preserved via archive index"
     - timestamp: "2026-03-01T04:30:00Z"
       actor: merlin
       action: remediation-package-complete
