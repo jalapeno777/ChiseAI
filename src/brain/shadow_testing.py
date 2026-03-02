@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from src.brain.version import BrainVersion
+from brain.version import BrainVersion
 
 # Type alias for brain functions
 BrainFunction = Callable[[Any], Coroutine[Any, Any, Any]]

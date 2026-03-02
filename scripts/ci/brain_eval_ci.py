@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import subprocess
 import sys
 import time
@@ -53,6 +54,37 @@ EVALUATION_THRESHOLDS = {
     "max_false_positive_rate": 0.30,
     "min_safety_compliance": 1.0,  # Must be perfect
 }
+
+
+def create_redis_client() -> Any | None:
+    """Create a Redis client if available.
+
+    Returns:
+        Redis client if connection successful, None otherwise.
+    """
+    try:
+        import redis as redis_lib
+
+        redis_host = os.getenv("REDIS_HOST", "host.docker.internal")
+        redis_port = int(os.getenv("REDIS_PORT", "6380"))
+        redis_db = int(os.getenv("REDIS_DB", "0"))
+        redis_password = os.getenv("REDIS_PASSWORD", None)
+
+        client = redis_lib.Redis(
+            host=redis_host,
+            port=redis_port,
+            db=redis_db,
+            password=redis_password,
+            decode_responses=True,
+            socket_connect_timeout=5,
+            socket_timeout=5,
+        )
+        client.ping()
+        logger.info(f"Redis connected: {redis_host}:{redis_port}")
+        return client
+    except Exception as e:
+        logger.warning(f"Redis not available: {e}")
+        return None
 
 
 def detect_brain_changes(base_ref: str = "origin/main") -> bool:
@@ -107,19 +139,33 @@ def run_memory_ingestion(
     """
     start_time = time.time()
 
+    # Create Redis client first
+    redis_client = create_redis_client()
+
+    # Validate Redis availability if provenance tracking is requested
+    if track_provenance and redis_client is None:
+        logger.warning(
+            "Provenance tracking requested but Redis is not available. "
+            "Provenance records will not be persisted."
+        )
+
     try:
         # Import BrainEvalIntegration from governance.tempmemory.brain_integration
         from governance.tempmemory.brain_integration import BrainEvalIntegration
         from governance.tempmemory.provenance import ProvenanceTracker
 
-        # Initialize provenance tracker if requested
+        # Initialize provenance tracker if requested, with Redis client
         provenance_tracker = None
         if track_provenance:
-            provenance_tracker = ProvenanceTracker(dry_run=dry_run)
+            provenance_tracker = ProvenanceTracker(
+                redis_client=redis_client,
+                dry_run=dry_run,
+            )
 
-        # Initialize BrainEvalIntegration
+        # Initialize BrainEvalIntegration with Redis client
         integration = BrainEvalIntegration(
             provenance_tracker=provenance_tracker,
+            redis_client=redis_client,
             dry_run=dry_run,
         )
 
@@ -146,7 +192,10 @@ def run_memory_ingestion(
                         TempmemoryMigrationEngine,
                     )
 
-                    engine = TempmemoryMigrationEngine(dry_run=dry_run)
+                    engine = TempmemoryMigrationEngine(
+                        redis_client=redis_client,
+                        dry_run=dry_run,
+                    )
                     report = engine.run_migration()
                     metrics = integration.ingest_from_migration_report(
                         report, update_kpis=False
