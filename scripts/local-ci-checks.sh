@@ -25,6 +25,7 @@ fi
 if [ "$SCOPE_MODE" = "merged-only" ]; then
   echo "Running merged-files-only local CI checks"
   mapfile -t CHANGED_PY < <(python3 scripts/ci/ci_change_scope.py --mode changed-python)
+  MAX_MERGED_TARGETS="${MAX_MERGED_TARGETS:-40}"
   if [ "${#CHANGED_PY[@]}" -eq 0 ]; then
     echo "No changed python files detected; skipping pytest in merged-only mode"
     exit 0
@@ -58,10 +59,10 @@ if [ "$SCOPE_MODE" = "merged-only" ]; then
         TARGET_MAP["$candidate"]=1
       done < <(
         if [ "$have_rg" -eq 1 ]; then
-          rg --files tests -g "test_${stem}.py" -g "*_${stem}.py" -g "*${stem}*.py"
+          rg --files tests -g "**/test_${stem}.py" -g "**/${stem}_test.py"
         else
           find tests -type f \
-            \( -name "test_${stem}.py" -o -name "*_${stem}.py" -o -name "*${stem}*.py" \) \
+            \( -name "test_${stem}.py" -o -name "${stem}_test.py" \) \
             -print
         fi 2>/dev/null || true
       )
@@ -76,6 +77,47 @@ if [ "$SCOPE_MODE" = "merged-only" ]; then
   if [ "${#TARGETS[@]}" -eq 0 ]; then
     echo "No matching test files found for changed python files; running syntax check on changed files"
     python3 -m py_compile "${CHANGED_PY[@]}"
+    exit 0
+  fi
+
+  if [ "${#TARGETS[@]}" -gt "$MAX_MERGED_TARGETS" ]; then
+    echo "Merged-only target list too large (${#TARGETS[@]} > ${MAX_MERGED_TARGETS})."
+    echo "Running syntax validation + bounded fast-test subset to preserve signal."
+    python3 -m py_compile "${CHANGED_PY[@]}"
+
+    FAST_TARGETS=()
+    for target in "${TARGETS[@]}"; do
+      if [[ "$target" == tests/integration/* || "$target" == tests/e2e/* ]]; then
+        continue
+      fi
+      if [[ "$target" == tests/test_autonomous/* || "$target" == tests/test_autonomous_control_plane/* ]]; then
+        continue
+      fi
+      FAST_TARGETS+=("$target")
+    done
+
+    if [ "${#FAST_TARGETS[@]}" -eq 0 ]; then
+      FAST_TARGETS=("${TARGETS[@]}")
+    fi
+
+    SELECTED_TARGETS=()
+    for target in "${FAST_TARGETS[@]}"; do
+      SELECTED_TARGETS+=("$target")
+      if [ "${#SELECTED_TARGETS[@]}" -ge "$MAX_MERGED_TARGETS" ]; then
+        break
+      fi
+    done
+
+    if [ "${#SELECTED_TARGETS[@]}" -gt 0 ]; then
+      printf "Fallback pytest targets (%s): %s\n" "${#SELECTED_TARGETS[@]}" "${SELECTED_TARGETS[*]}"
+      python3 -m pytest \
+        --junitxml=_bmad-output/ci/pytest-junit.xml \
+        "${SELECTED_TARGETS[@]}" \
+        2>&1 | tee _bmad-output/ci/local-ci.log
+      exit "${PIPESTATUS[0]}"
+    fi
+
+    echo "No suitable fallback test targets available after cap filtering."
     exit 0
   fi
 

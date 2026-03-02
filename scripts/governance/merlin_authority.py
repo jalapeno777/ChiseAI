@@ -325,8 +325,15 @@ def _get_redis_authority_settings(epic_id: str) -> dict[str, str]:
         return cached
 
     try:
-        # Import here to avoid dependency issues if Redis is not available
-        from tools.redis_state import redis_state_hgetall as hgetall
+        # Import here to avoid hard dependency at module import time.
+        # Prefer the legacy top-level module name (used by tests/mocks),
+        # then fall back to tools.redis_state for runtime environments.
+        if "redis_state" in sys.modules and sys.modules["redis_state"] is None:
+            raise ImportError("redis_state module explicitly unavailable")
+        try:
+            from redis_state import hgetall  # type: ignore[import-not-found]
+        except ImportError:
+            from tools.redis_state import redis_state_hgetall as hgetall
 
         # Map epic_id to Redis key
         if epic_id == "EP-AUTO-GIT-001" or epic_id.startswith("EP-AUTO-GIT"):

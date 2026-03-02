@@ -12,6 +12,7 @@ classification, and suggested mitigations.
 """
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -46,6 +47,18 @@ class Issue:
     # Source tracking for multi-source ingestion
     source: str = "filesystem"  # "filesystem", "redis", or "qdrant"
     provenance: dict[str, Any] | None = None  # Origin details
+    fingerprint: str | None = None
+
+
+@dataclass
+class RecurringIssue:
+    """Aggregated recurring issue pattern."""
+
+    fingerprint: str
+    issue_type: str
+    root_cause: str | None
+    occurrence_count: int
+    total_time_lost_minutes: int
 
 
 @dataclass
@@ -251,6 +264,10 @@ class IssueDetector:
 
         return self.issues
 
+    def scan_files(self) -> list[Issue]:
+        """Compatibility wrapper for filesystem-only scans."""
+        return self.scan_all_sources()
+
     def _scan_filesystem(self) -> None:
         """Scan filesystem (docs/tempmemories/*.md) for issues."""
         if not self.tempmemories_path.exists():
@@ -317,6 +334,9 @@ class IssueDetector:
                                 }
                                 if self.include_provenance
                                 else None
+                            ),
+                            fingerprint=self._generate_fingerprint(
+                                issue_type=issue_type, root_cause=None, description=line
                             ),
                         )
                         file_issues.append(issue)
@@ -489,6 +509,11 @@ class IssueDetector:
                             if self.include_provenance
                             else None
                         ),
+                        fingerprint=self._generate_fingerprint(
+                            issue_type=issue_type,
+                            root_cause=None,
+                            description=decision_text or rationale,
+                        ),
                     )
                     issues.append(issue)
                     break  # One issue per pattern match
@@ -534,6 +559,11 @@ class IssueDetector:
                             }
                             if self.include_provenance
                             else None
+                        ),
+                        fingerprint=self._generate_fingerprint(
+                            issue_type=issue_type,
+                            root_cause=None,
+                            description=content,
                         ),
                     )
                     issues.append(issue)
@@ -600,7 +630,7 @@ class IssueDetector:
                     time_lost_minutes=item.get("time_lost_minutes"),
                     recurrence_hint=item.get("recurrence_hint"),
                     impact_area=item.get("impact_area"),
-                    resolved=item.get("resolved"),
+                    resolved=item.get("resolved", True),
                     is_structured=True,
                     source="filesystem",
                     provenance=(
@@ -611,6 +641,11 @@ class IssueDetector:
                         }
                         if self.include_provenance
                         else None
+                    ),
+                    fingerprint=self._generate_fingerprint(
+                        issue_type=issue_type,
+                        root_cause=item.get("root_cause"),
+                        description=description,
                     ),
                 )
                 issues.append(issue)
@@ -656,6 +691,19 @@ class IssueDetector:
 
         return None
 
+    def _generate_fingerprint(
+        self, issue_type: str, root_cause: str | None, description: str
+    ) -> str:
+        """Generate stable fingerprint for issue deduplication."""
+        normalized_root = (root_cause or "").strip().lower()
+        normalized_desc = description.strip().lower()
+        base = (
+            f"{issue_type}|{normalized_root}"
+            if normalized_root
+            else f"{issue_type}|{normalized_desc}"
+        )
+        return hashlib.md5(base.encode("utf-8"), usedforsecurity=False).hexdigest()[:12]
+
     def get_mitigations(self) -> list[dict[str, Any]]:
         """Generate mitigation suggestions based on detected issues."""
         mitigations = []
@@ -699,13 +747,45 @@ class IssueDetector:
         for issue in self.issues:
             type_counts[issue.issue_type] = type_counts.get(issue.issue_type, 0) + 1
 
+        structured_count = sum(1 for i in self.issues if i.is_structured)
+
         return {
             "files_scanned": len(md_files),
             "total_issues": len(self.issues),
+            "structured_issues_count": structured_count,
             "issues_by_severity": severity_counts,
             "issues_by_type": type_counts,
             "files_with_issues": len(set(i.source_file for i in self.issues)),
         }
+
+    def get_time_lost_total(self) -> int:
+        """Total structured issue minutes lost."""
+        return sum((i.time_lost_minutes or 0) for i in self.issues if i.is_structured)
+
+    def get_recurring_issues(self) -> list[RecurringIssue]:
+        """Aggregate recurring structured issues by fingerprint."""
+        grouped: dict[str, list[Issue]] = {}
+        for issue in self.issues:
+            if not issue.fingerprint:
+                continue
+            grouped.setdefault(issue.fingerprint, []).append(issue)
+
+        recurring: list[RecurringIssue] = []
+        for fingerprint, issues in grouped.items():
+            if len(issues) < 2:
+                continue
+            exemplar = issues[0]
+            recurring.append(
+                RecurringIssue(
+                    fingerprint=fingerprint,
+                    issue_type=exemplar.issue_type,
+                    root_cause=exemplar.root_cause,
+                    occurrence_count=len(issues),
+                    total_time_lost_minutes=sum(i.time_lost_minutes or 0 for i in issues),
+                )
+            )
+        recurring.sort(key=lambda item: item.occurrence_count, reverse=True)
+        return recurring
 
     def get_ingestion_sources(self) -> list[str]:
         """Get list of sources that were scanned."""

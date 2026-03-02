@@ -70,7 +70,7 @@ class FileTrackingRecord:
             error_message=data.get("error_message"),
             redis_key=data.get("redis_key"),
             qdrant_id=data.get("qdrant_id"),
-            attempt_count=data.get("attempt_count", 0),
+            attempt_count=int(data.get("attempt_count", 0) or 0),
             last_attempt=last_attempt,
         )
 
@@ -209,9 +209,9 @@ class TempmemoryTracker:
 
             # Store in Redis
             self._redis_client.hset(
-                self.REDIS_STATUS_KEY,
-                file_path,
-                json.dumps(record.to_dict()),
+                name=self.REDIS_STATUS_KEY,
+                key=file_path,
+                value=json.dumps(record.to_dict()),
             )
 
             # Set TTL on the hash key
@@ -491,7 +491,6 @@ class TempmemoryTracker:
             # Use list to store audit entries (keep last 1000)
             self._redis_client.lpush(self.REDIS_AUDIT_KEY, json.dumps(entry))
             self._redis_client.ltrim(self.REDIS_AUDIT_KEY, 0, 999)
-            self._redis_client.expire(self.REDIS_AUDIT_KEY, self.REDIS_TRACKING_TTL)
 
             return True
         except Exception as e:

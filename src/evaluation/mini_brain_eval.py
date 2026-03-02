@@ -14,6 +14,7 @@ from __future__ import annotations
 import logging
 import re
 import tempfile
+from importlib import util as importlib_util
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -32,6 +33,32 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+def _load_scripts_issue_detector() -> type[Any] | None:
+    """Load scripts/evaluation IssueDetector for backward compatibility."""
+    scripts_module_path = (
+        Path(__file__).resolve().parents[2] / "scripts" / "evaluation" / "mini_brain_eval.py"
+    )
+    if not scripts_module_path.exists():
+        return None
+    try:
+        spec = importlib_util.spec_from_file_location(
+            "chise_scripts_mini_brain_eval", scripts_module_path
+        )
+        if spec is None or spec.loader is None:
+            return None
+        module = importlib_util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        detector = getattr(module, "IssueDetector", None)
+        if isinstance(detector, type):
+            return detector
+    except Exception:
+        return None
+    return None
+
+
+IssueDetector = _load_scripts_issue_detector()
 
 
 class MiniBrainEvalError(Exception):
