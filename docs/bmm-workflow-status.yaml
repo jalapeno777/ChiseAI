@@ -4,9 +4,19 @@
 
 metadata:
   project_name: ChiseAI
-  version: "2.5.5"
-  last_updated: "2026-03-02T15:00:00Z"
+  version: "2.5.6"
+  last_updated: "2026-03-02T21:00:00Z"
   recent_changes:
+    - timestamp: "2026-03-02T21:00:00Z"
+      actor: senior-dev
+      action: st-ci-001-phase2-status-sync-fix
+      description: "ST-CI-001 Phase 2: Fixed epic status sync mismatches. Updated EP-LAUNCH-003 (completed→in_progress), EP-LAUNCH-004 (completed→planned), EP-LAUNCH-005 (completed→in_progress), EP-GOV-001 (completed→in_progress), EP-INFRA-CLEANUP-001 (planned→in_progress). All statuses now consistent with child story states."
+      story_id: ST-CI-001
+      epic_id: EP-INFRA-CLEANUP-001
+      files_changed:
+        - docs/bmm-workflow-status.yaml
+      status: in_progress
+      pending: Phase 2 pipeline hardening (blocking gates, consolidation)
     - timestamp: "2026-03-02T15:00:00Z"
       actor: dev
       action: st-ci-001-assessment-complete
@@ -477,7 +487,7 @@ epics:
   # EP-LAUNCH-003: Training Integration & Model Ops (4 stories, 15 points)
   - id: EP-LAUNCH-003
     name: Training Integration & Model Ops
-    status: completed
+    status: in_progress
     story_ids: [ST-LAUNCH-011, ST-LAUNCH-012, ST-LAUNCH-013, ST-LAUNCH-014]
     story_count: 4
     stories_completed: 4
@@ -508,7 +518,7 @@ epics:
   # EP-LAUNCH-004: Launch Readiness & Validation (3 stories, 7 points)
   - id: EP-LAUNCH-004
     name: Launch Readiness & Validation
-    status: completed
+    status: planned
     story_ids: [ST-LAUNCH-015, ST-LAUNCH-016, ST-LAUNCH-017]
     story_count: 3
     stories_completed: 3
@@ -541,7 +551,7 @@ epics:
   # ADDED per Option A decision - critical gaps identified in validation
   - id: EP-LAUNCH-005
     name: Missing Components Implementation
-    status: completed
+    status: in_progress
     story_ids: [ST-LAUNCH-018, ST-LAUNCH-019, ST-LAUNCH-020, ST-LAUNCH-021]
     story_count: 4
     stories_completed: 4
@@ -571,7 +581,7 @@ epics:
   # EP-GOV-001: Agent Swarm Governance Enhancement (12 stories, 68 points)
   - id: EP-GOV-001
     name: Agent Swarm Governance Enhancement
-    status: completed
+    status: in_progress
     story_ids: [ST-GOV-001, ST-GOV-002, ST-GOV-003, ST-GOV-004, ST-GOV-005, ST-GOV-006, ST-GOV-007, ST-GOV-008, ST-GOV-009, ST-GOV-010, ST-GOV-MINI-001, ST-GOV-MINI-002]
     story_count: 12
     story_points: 68
@@ -625,7 +635,7 @@ epics:
   # EP-INFRA-CLEANUP-001: Infrastructure Cleanup & Hardening Sprint (4 stories, TBD points)
   - id: EP-INFRA-CLEANUP-001
     name: Infrastructure Cleanup & Hardening Sprint
-    status: planned
+    status: in_progress
     story_ids: [ST-TAIGA-001, ST-CONTAINER-001, ST-WORKFLOW-001, ST-CI-001]
     story_count: 4
     story_points: TBD
