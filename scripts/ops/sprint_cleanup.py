@@ -183,11 +183,13 @@ class GitHelper:
         )
         return Path(result.stdout.strip())
 
-    def run(self, *args: str, check: bool = True) -> tuple[int, str, str]:
+    def run(
+        self, *args: str, check: bool = True, cwd: Path | None = None
+    ) -> tuple[int, str, str]:
         """Run a git command."""
         proc = subprocess.run(
             ["git", *args],
-            cwd=str(self.repo_root),
+            cwd=str(cwd or self.repo_root),
             capture_output=True,
             text=True,
             check=False,
@@ -214,7 +216,11 @@ class GitHelper:
         branches = []
         for line in out.split("\n"):
             line = line.strip()
-            if line and line != "HEAD" and not line.endswith("/HEAD"):
+            if (
+                line
+                and line not in {"HEAD", "origin", "gitea"}
+                and not line.endswith("/HEAD")
+            ):
                 # Normalize remote refs
                 if line.startswith("origin/") or line.startswith("gitea/"):
                     line = line.split("/", 1)[1]
