@@ -105,6 +105,125 @@ steps:
         # Do not short-circuit the pipeline; ci-gate is the single fail point.
         exit 0
 
+  dependency-audit:
+    image: python:3.11
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir pip-audit tomli || pip install --no-cache-dir --break-system-packages pip-audit tomli
+          python3 scripts/ci/dependency_audit.py
+        ) > _bmad-output/ci/dependency-audit.log 2>&1
+        code=$?
+        cat _bmad-output/ci/dependency-audit.log
+        echo "$code" > _bmad-output/ci/dependency-audit.status
+        exit 0
+
+  secret-scan:
+    image: python:3.11
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          python3 scripts/ci/secret_scan_changed.py
+        ) > _bmad-output/ci/secret-scan.log 2>&1
+        code=$?
+        cat _bmad-output/ci/secret-scan.log
+        echo "$code" > _bmad-output/ci/secret-scan.status
+        exit 0
+
+  risk-invariants:
+    image: python:3.11
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir pytest pytest-asyncio pytest-cov
+          pip install --no-cache-dir ccxt influxdb-client asyncpg numpy scipy pyyaml
+          python3 -m pytest -q \
+            tests/test_execution/test_venue_enforcement.py \
+            tests/test_execution/test_kill_switch/ \
+            tests/test_execution/test_reconciliation.py \
+            tests/test_execution/test_outcome_persistence.py \
+            tests/test_execution/test_paper/test_paper_risk_enforcer.py
+        ) > _bmad-output/ci/risk-invariants.log 2>&1
+        code=$?
+        cat _bmad-output/ci/risk-invariants.log
+        echo "$code" > _bmad-output/ci/risk-invariants.status
+        exit 0
+
+  brain-regression:
+    image: python:3.11
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          CHANGED_FILES="$(git diff --name-only origin/main HEAD || true)"
+          if ! echo "$CHANGED_FILES" | grep -qE "^(src/brain/|src/evaluation/|src/neuro_symbolic/|src/governance/tempmemory/|scripts/evaluation/|scripts/ci/brain_eval_ci.py)"; then
+            echo "brain-regression: no brain/evaluation changes; skipping"
+            exit 0
+          fi
+
+          pip install --no-cache-dir pytest pytest-asyncio pytest-cov pyyaml requests numpy scipy
+          python3 -m pytest -q \
+            tests/test_brain/ \
+            tests/test_evaluation/ \
+            tests/test_ci/test_brain_evaluation.py \
+            tests/test_mini_brain_eval.py \
+            tests/test_mini_brain_eval_structured.py
+
+          python3 scripts/ci/brain_eval_ci.py --output _bmad-output/ci/brain-regression.json
+        ) > _bmad-output/ci/brain-regression.log 2>&1
+        code=$?
+        cat _bmad-output/ci/brain-regression.log
+        echo "$code" > _bmad-output/ci/brain-regression.status
+        exit 0
+
+  docs-pairing:
+    image: python:3.11
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          python3 scripts/ci/validate_docs_pairing.py
+        ) > _bmad-output/ci/docs-pairing.log 2>&1
+        code=$?
+        cat _bmad-output/ci/docs-pairing.log
+        echo "$code" > _bmad-output/ci/docs-pairing.status
+        exit 0
+
+  docker-governance:
+    image: python:3.11
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir pyyaml
+          python3 scripts/ci/validate_docker_governance.py
+        ) > _bmad-output/ci/docker-governance.log 2>&1
+        code=$?
+        cat _bmad-output/ci/docker-governance.log
+        echo "$code" > _bmad-output/ci/docker-governance.status
+        exit 0
+
   local-ci:
     image: python:3.11
     commands:
@@ -160,6 +279,26 @@ steps:
         cat _bmad-output/ci/local-ci-full.log
         echo "$code" > _bmad-output/ci/local-ci.status
         # Do not short-circuit the pipeline; ci-gate is the single fail point.
+        exit 0
+
+  changed-lines-coverage:
+    image: python:3.11
+    depends_on:
+      - local-ci
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir coverage
+          python3 -m coverage json -o _bmad-output/ci/coverage.json
+          python3 scripts/ci/coverage_changed_lines.py --coverage-json _bmad-output/ci/coverage.json --threshold 80
+        ) > _bmad-output/ci/changed-lines-coverage.log 2>&1
+        code=$?
+        cat _bmad-output/ci/changed-lines-coverage.log
+        echo "$code" > _bmad-output/ci/changed-lines-coverage.status
         exit 0
 
   pipeline-watchdog:
@@ -259,6 +398,61 @@ steps:
         code=$?
         cat _bmad-output/ci/tempmemory-reconcile.log
         echo "$code" > _bmad-output/ci/tempmemory-reconcile.status
+        exit 0
+
+  tempmemory-drill:
+    image: python:3.11
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          EVENT="${CI_BUILD_EVENT:-${WOODPECKER_BUILD_EVENT:-${WOODPECKER_EVENT:-}}}"
+          BRANCH="${CI_COMMIT_BRANCH:-${WOODPECKER_COMMIT_BRANCH:-}}"
+          if [ "${EVENT}" != "cron" ] || [ "${BRANCH}" != "main" ]; then
+            echo "tempmemory-drill: not cron/main; skipping"
+            exit 0
+          fi
+
+          pip install --no-cache-dir pyyaml
+          python3 scripts/ops/tempmemory_migration.py --dry-run
+          python3 scripts/ops/tempmemory_scheduler.py --once --dry-run
+          python3 scripts/reconciliation/trade_reconciliation.py --dry-run --output _bmad-output/ci/tempmemory-drill-reconciliation.json
+        ) > _bmad-output/ci/tempmemory-drill.log 2>&1
+        code=$?
+        cat _bmad-output/ci/tempmemory-drill.log
+        echo "$code" > _bmad-output/ci/tempmemory-drill.status
+        exit 0
+
+  flaky-detection:
+    image: python:3.11
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          EVENT="${CI_BUILD_EVENT:-${WOODPECKER_BUILD_EVENT:-${WOODPECKER_EVENT:-}}}"
+          BRANCH="${CI_COMMIT_BRANCH:-${WOODPECKER_COMMIT_BRANCH:-}}"
+          if [ "${EVENT}" != "cron" ] || [ "${BRANCH}" != "main" ]; then
+            echo "flaky-detection: not cron/main; skipping"
+            exit 0
+          fi
+
+          pip install --no-cache-dir pytest pytest-asyncio pytest-cov pyyaml
+          TARGETS=\"tests/test_execution/test_venue_enforcement.py tests/test_execution/test_kill_switch/test_executor.py tests/test_execution/test_reconciliation.py tests/test_evaluation/test_mini_brain_eval.py\"
+
+          for i in 1 2 3; do
+            echo \"flaky-detection: run ${i}/3\"
+            python3 -m pytest -q ${TARGETS}
+          done
+        ) > _bmad-output/ci/flaky-detection.log 2>&1
+        code=$?
+        cat _bmad-output/ci/flaky-detection.log
+        echo "$code" > _bmad-output/ci/flaky-detection.status
         exit 0
 
   compass-apply:

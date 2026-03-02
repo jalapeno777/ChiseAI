@@ -22,7 +22,7 @@ Example:
     import governance  # then use governance.MemoryDeduplicationEngine
 """
 
-# This module is intentionally minimal to prevent circular imports.
-# Import submodules directly as needed.
+# Limited compatibility re-exports for legacy imports.
+from .memory import MemoryDeduplicationEngine
 
-__all__ = []
+__all__ = ["MemoryDeduplicationEngine"]

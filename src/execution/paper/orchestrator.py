@@ -13,6 +13,7 @@ Targets:
 from __future__ import annotations
 
 import asyncio
+import inspect
 import logging
 import time
 import uuid
@@ -670,7 +671,9 @@ class PaperTradingOrchestrator:
             # Update portfolio value
             self.portfolio_value += realized_pnl
             if self.telemetry:
-                await self.telemetry.set_equity(self.portfolio_value)
+                maybe_awaitable = self.telemetry.set_equity(self.portfolio_value)
+                if inspect.isawaitable(maybe_awaitable):
+                    await maybe_awaitable
 
             # Wire outcome_capture.on_position_close() if configured
             if self.outcome_capture:

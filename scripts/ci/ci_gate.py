@@ -23,11 +23,22 @@ FAST_REQUIRED = [
     "swarm-context.status",
     "lint.status",
     "security-scan.status",
+    "dependency-audit.status",
+    "secret-scan.status",
+    "risk-invariants.status",
+    "brain-regression.status",
+    "docs-pairing.status",
+    "docker-governance.status",
+    "changed-lines-coverage.status",
     "status-write-gate.status",
 ]
 FULL_REQUIRED = [
     "local-ci.status",
     "brain-eval.status",
+]
+CRON_REQUIRED = [
+    "tempmemory-drill.status",
+    "flaky-detection.status",
 ]
 
 
@@ -187,8 +198,14 @@ def main() -> int:
     env = dict(os.environ)
     CI_DIR.mkdir(parents=True, exist_ok=True)
     required_files = [CI_DIR / name for name in FAST_REQUIRED]
-    if _is_main_push(env) or env.get("FORCE_FULL_GATE", "").strip() == "1":
+    if (
+        _is_main_push(env)
+        or _is_main_cron(env)
+        or env.get("FORCE_FULL_GATE", "").strip() == "1"
+    ):
         required_files.extend(CI_DIR / name for name in FULL_REQUIRED)
+    if _is_main_cron(env) or env.get("FORCE_CRON_GATE", "").strip() == "1":
+        required_files.extend(CI_DIR / name for name in CRON_REQUIRED)
 
     # Debug: print current directory and list CI_DIR contents
     print(f"ci-gate: Running in {os.getcwd()}")

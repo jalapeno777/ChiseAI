@@ -21,6 +21,12 @@ logger = logging.getLogger(__name__)
 # Feature flag key in Redis
 FEATURE_FLAG_KEY = "chise:feature_flags:governance:memory_dedup_enabled"
 
+# Legacy config key compatibility (B3 test suite)
+CONFIG_KEY = "chise:config:memory_dedup"
+
+# Legacy hash key prefix compatibility (B3 test suite)
+HASH_PREFIX = "chise:memory:dedup:hash:"
+
 # Audit trail key prefix in Redis
 AUDIT_TRAIL_KEY_PREFIX = "chise:governance:dedup:audit"
 
@@ -132,7 +138,7 @@ class MemoryDeduplicationEngine:
 
         # Load config from Redis if available
         if self._redis_client is not None:
-            self._config = self._load_config_from_redis()
+            self._config = self._load_config_from_redis(use_legacy_config=False)
 
         logger.info(
             "MemoryDeduplicationEngine initialized",
@@ -160,7 +166,7 @@ class MemoryDeduplicationEngine:
         # Handle empty strings
         return not (isinstance(value, str) and not value)
 
-    def _load_config_from_redis(self) -> DeduplicationConfig:
+    def _load_config_from_redis(self, use_legacy_config: bool = True) -> DeduplicationConfig:
         """
         Load configuration overrides from Redis.
 
@@ -172,6 +178,21 @@ class MemoryDeduplicationEngine:
             return self._config
 
         try:
+            # Compatibility path for legacy JSON config payload at CONFIG_KEY.
+            # New hash-based overrides still apply below and take precedence.
+            config_kwargs: dict[str, Any] = {}
+            if use_legacy_config:
+                legacy_config = self._load_redis_config()
+                if self._is_valid_config_value(legacy_config.get("threshold")):
+                    try:
+                        config_kwargs["similarity_threshold"] = float(
+                            legacy_config["threshold"]
+                        )
+                    except (ValueError, TypeError, KeyError):
+                        logger.warning(
+                            f"Invalid legacy threshold in Redis: {legacy_config.get('threshold')}"
+                        )
+
             config_values_key = f"{self._config.config_prefix}:values"
 
             # Load each config value from Redis hash
@@ -185,8 +206,7 @@ class MemoryDeduplicationEngine:
                 config_values_key, "min_duplicates"
             )
 
-            # Build new config with overrides
-            config_kwargs = {}
+            # Build new config with hash overrides (merged with legacy overrides)
 
             if self._is_valid_config_value(similarity_threshold):
                 try:
@@ -239,6 +259,104 @@ class MemoryDeduplicationEngine:
             logger.warning(f"Failed to load config from Redis: {e}")
             return self._config
 
+    def _load_redis_config(self) -> dict[str, Any]:
+        """
+        Load legacy JSON config payload from Redis.
+
+        Returns:
+            Dict with keys: enabled, threshold, ttl.
+        """
+        default_config: dict[str, Any] = {
+            "enabled": False,
+            "threshold": self._config.similarity_threshold,
+            "ttl": 86400,
+        }
+
+        if self._redis_client is None:
+            return default_config
+
+        try:
+            raw = self._redis_client.get(CONFIG_KEY)
+            if raw is None:
+                return default_config
+            if isinstance(raw, bytes):
+                raw = raw.decode("utf-8")
+            parsed = json.loads(raw)
+            if not isinstance(parsed, dict):
+                return default_config
+            return {
+                "enabled": bool(parsed.get("enabled", default_config["enabled"])),
+                "threshold": float(parsed.get("threshold", default_config["threshold"])),
+                "ttl": int(parsed.get("ttl", default_config["ttl"])),
+            }
+        except Exception as e:
+            logger.warning(f"Failed to load legacy dedup config: {e}")
+            return default_config
+
+    def _calculate_hash(self, content: str) -> str:
+        """Calculate deterministic SHA-256 hash for deduplication."""
+        return hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+    def _is_duplicate(self, content_hash: str) -> bool:
+        """Check whether a content hash has already been seen."""
+        if self._redis_client is None:
+            return False
+        try:
+            return bool(self._redis_client.exists(f"{HASH_PREFIX}{content_hash}"))
+        except Exception as e:
+            logger.warning(f"Failed duplicate check for hash {content_hash}: {e}")
+            return False
+
+    def _store_hash(self, content_hash: str, ttl: int | None = None) -> None:
+        """Store seen hash in Redis with TTL."""
+        if self._redis_client is None:
+            return
+        effective_ttl = ttl if ttl is not None else self._config.max_age_days * 86400
+        try:
+            self._redis_client.setex(f"{HASH_PREFIX}{content_hash}", effective_ttl, "1")
+        except Exception as e:
+            logger.warning(f"Failed storing hash {content_hash}: {e}")
+
+    def deduplicate_content(self, content: str) -> dict[str, Any]:
+        """
+        Legacy content-level deduplication API.
+
+        Returns:
+            Dict with `is_duplicate` and `hash`.
+        """
+        content_hash = self._calculate_hash(content)
+        duplicate = self._is_duplicate(content_hash)
+        if not duplicate:
+            self._store_hash(content_hash)
+        return {"is_duplicate": duplicate, "hash": content_hash}
+
+    def _is_feature_enabled(self) -> bool:
+        """Legacy feature flag helper with byte/string compatibility."""
+        if self._redis_client is None:
+            return False
+        try:
+            flag_value = self._redis_client.get(FEATURE_FLAG_KEY)
+            if flag_value is None:
+                return False
+            if isinstance(flag_value, bytes):
+                flag_value = flag_value.decode("utf-8")
+            return str(flag_value).lower() in ("true", "1", "yes")
+        except Exception as e:
+            logger.warning(f"Failed to read feature flag: {e}")
+            return False
+
+    def _set_feature_flag(self, enabled: bool) -> bool:
+        """Legacy feature flag setter used by enable/disable wrappers."""
+        if self._redis_client is None:
+            return False
+        try:
+            self._redis_client.set(FEATURE_FLAG_KEY, "true" if enabled else "false")
+            self._enabled = enabled
+            return True
+        except Exception as e:
+            logger.error(f"Failed to set feature flag: {e}")
+            return False
+
     def is_enabled(self) -> bool:
         """
         Check if the deduplication engine is enabled via feature flag.
@@ -255,18 +373,8 @@ class MemoryDeduplicationEngine:
 
         # Try to read feature flag from Redis
         if self._redis_client is not None:
-            try:
-                flag_value = self._redis_client.get(FEATURE_FLAG_KEY)
-                if flag_value is not None:
-                    self._enabled = flag_value.lower() in ("true", "1", "yes")
-                else:
-                    self._enabled = False
-                logger.debug(f"Feature flag check: enabled={self._enabled}")
-            except Exception as e:
-                logger.warning(f"Failed to read feature flag: {e}")
-                # If we can't read the feature flag, default to disabled for safety
-                # but don't cache the result so we can retry later
-                return False
+            self._enabled = self._is_feature_enabled()
+            logger.debug(f"Feature flag check: enabled={self._enabled}")
         else:
             # No Redis client, default to disabled for safety
             self._enabled = False
@@ -837,8 +945,8 @@ class MemoryDeduplicationEngine:
             return False
 
         try:
-            self._redis_client.set(FEATURE_FLAG_KEY, "true")
-            self._enabled = True
+            if not self._set_feature_flag(True):
+                return False
             logger.info("Deduplication engine enabled")
             return True
         except Exception as e:
@@ -861,8 +969,10 @@ class MemoryDeduplicationEngine:
             return True
 
         try:
-            self._redis_client.set(FEATURE_FLAG_KEY, "false")
-            self._enabled = False
+            if not self._set_feature_flag(False):
+                # Keep local disable semantics even if Redis write fails.
+                self._enabled = False
+                return True
             logger.info("Deduplication engine disabled")
             return True
         except Exception as e:
