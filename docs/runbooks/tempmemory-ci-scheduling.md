@@ -25,7 +25,7 @@ This runbook documents the CI scheduling setup for tempmemory operations in the 
 
 **What It Does**:
 1. Installs required Python dependencies (`pyyaml`)
-2. Executes `scripts/ops/tempmemory_migration.py --full-migration --enable`
+2. Executes `scripts/ops/tempmemory_migration.py --migrate`
 3. Processes all pending tempmemory files in `docs/tempmemories/`
 4. Migrates valid files to permanent storage
 
@@ -106,7 +106,7 @@ tempmemory-scheduler:
       (
         set -euo pipefail
         pip install --no-cache-dir pyyaml
-        python3 scripts/ops/tempmemory_migration.py --full-migration --enable
+        python3 scripts/ops/tempmemory_migration.py --migrate
       ) > _bmad-output/ci/tempmemory-scheduler.log 2>&1
       code=$?
       cat _bmad-output/ci/tempmemory-scheduler.log
