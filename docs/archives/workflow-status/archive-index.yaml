@@ -1,0 +1,29 @@
+---
+# Workflow Status Archive Index
+# Maps story_id to archive location for traceability
+# Created: 2026-03-02 by ST-WORKFLOW-001
+
+archive_index:
+  version: "1.0"
+  created_date: "2026-03-02"
+  last_updated: "2026-03-02"
+  retention_policy:
+    active_file_keep_days: 4
+    archive_location: docs/archives/workflow-status/
+    description: "Entries older than 4 days from the current date are archived to preserve traceability while keeping the active workflow status file manageable."
+  
+  archive_files:
+    - filename: archive-2026-02.yaml
+      description: "February 2026 archived entries"
+      entry_count: 0
+      date_range: "2026-02-01 to 2026-02-26"
+      note: "Archive structure created; no entries required archiving at time of creation (all current entries within 4-day retention window)"
+  
+  entries: []
+  # Future entries will be added here with format:
+  # - story_id: ST-EXAMPLE-001
+  #   archived_to: archive-2026-02.yaml
+  #   original_timestamp: "2026-02-24T14:30:00Z"
+  #   epic_id: EP-EXAMPLE-001
+  #   actor: jarvis
+  #   action: example_action_name
