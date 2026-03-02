@@ -1,0 +1,66 @@
+{
+  "story_id": "PAPER-RECOVERY-001",
+  "loop": 3,
+  "timestamp": "2026-03-02T13:56:20.606039+00:00",
+  "environment": {
+    "REDIS_HOST": "host.docker.internal",
+    "REDIS_PORT": "6380",
+    "INFLUXDB_URL": "http://host.docker.internal:18087",
+    "INFLUXDB_ORG": "chiseai",
+    "INFLUXDB_BUCKET": "chiseai"
+  },
+  "gates": {
+    "G1": {
+      "name": "Signals Delta > 0",
+      "status": "PASS",
+      "count": 5940,
+      "key": "paper:index:signals"
+    },
+    "G2": {
+      "name": "Orders Delta > 0",
+      "status": "PASS",
+      "count": 4980,
+      "key": "paper:index:orders"
+    },
+    "G3": {
+      "name": "Fills Delta > 0",
+      "status": "PASS",
+      "count": 4944,
+      "key": "paper:index:fills"
+    },
+    "G4": {
+      "name": "Outcomes Delta > 0",
+      "status": "PASS",
+      "count": 4939,
+      "key": "paper:index:outcomes"
+    },
+    "G5": {
+      "name": "Discord OPEN/CLOSE/RECAP messages",
+      "status": "INFO",
+      "message": "Discord tracking not yet implemented in Redis, check Discord channel directly"
+    },
+    "G6": {
+      "name": "InfluxDB orders/fills queries",
+      "status": "PASS",
+      "lines": 18244
+    },
+    "G7": {
+      "name": "InfluxDB canary query",
+      "status": "PASS",
+      "health_status": "pass"
+    },
+    "G8": {
+      "name": "Burn-in verdict artifact",
+      "status": "PENDING",
+      "exists": false
+    }
+  },
+  "summary": {
+    "total_gates": 8,
+    "passed": 6,
+    "failed": 0,
+    "info": 1,
+    "pending": 1,
+    "overall": "PASS"
+  }
+}
