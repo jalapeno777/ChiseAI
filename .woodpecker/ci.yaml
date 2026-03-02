@@ -1,5 +1,33 @@
-# Woodpecker CI pipeline configuration.
-# CI triggers enabled for pull_request, manual, and cron events.
+# Woodpecker CI Pipeline Configuration for ChiseAI
+# Story: ST-CI-001 - Real CI Gates
+#
+# DESIGN PRINCIPLE: Non-blocking steps with single fail point
+# - Individual steps capture exit codes but always exit 0
+# - The ci-gate step (at the end) is the SINGLE authoritative failure point
+# - This ensures all validations run and provide feedback before failing
+#
+# BLOCKING GATES (via ci-gate.py FAST_REQUIRED list):
+#   - swarm-context: Repository context validation
+#   - lint: Code quality (black, ruff, mypy, status sync)
+#   - security-scan: Bandit security analysis
+#   - dependency-audit: pip-audit vulnerability scan
+#   - secret-scan: Hardcoded secret detection
+#   - risk-invariants: Critical risk invariant tests
+#   - brain-regression: Brain evaluation regression tests
+#   - docs-pairing: Documentation pairing validation
+#   - docker-governance: Docker container governance
+#   - changed-lines-coverage: Coverage on changed lines
+#   - status-write-gate: Workflow status file validation
+#
+# FULL-ONLY GATES (main/cron or FORCE_FULL_GATE=1):
+#   - local-ci: Full test suite
+#   - brain-eval: Brain evaluation
+#
+# CRON-ONLY GATES (main cron or FORCE_CRON_GATE=1):
+#   - tempmemory-drill: Tempmemory reconciliation drill
+#   - flaky-detection: Flaky test detection
+#
+# Triggers: pull_request, manual, cron events
 when:
   event:
     - pull_request
@@ -75,7 +103,10 @@ steps:
         code=$?
         cat _bmad-output/ci/lint.log
         echo "$code" > _bmad-output/ci/lint.status
-        # Do not short-circuit the pipeline; ci-gate is the single fail point.
+        # RATIONALE: Exit 0 ensures pipeline continues to ci-gate.
+        # The ci-gate step is the SINGLE authoritative failure point that reads
+        # lint.status and fails the pipeline if non-zero. This design ensures
+        # all validation feedback is collected before failing.
         exit 0
 
   security-scan:
@@ -100,7 +131,8 @@ steps:
         code=$?
         cat _bmad-output/ci/security-scan.log
         echo "$code" > _bmad-output/ci/security-scan.status
-        # Do not short-circuit the pipeline; ci-gate is the single fail point.
+        # RATIONALE: Exit 0 ensures pipeline continues to ci-gate.
+        # The ci-gate step reads security-scan.status and fails if non-zero.
         exit 0
 
   dependency-audit:
@@ -276,7 +308,10 @@ steps:
         code=$?
         cat _bmad-output/ci/local-ci-full.log
         echo "$code" > _bmad-output/ci/local-ci.status
-        # Do not short-circuit the pipeline; ci-gate is the single fail point.
+        # RATIONALE: Exit 0 ensures pipeline continues to ci-gate.
+        # The ci-gate step reads local-ci.status and fails if non-zero.
+        # Note: local-ci is in FULL_REQUIRED list, so it only blocks on main/cron
+        # or when FORCE_FULL_GATE=1. PR builds skip this gate by default.
         exit 0
 
   changed-lines-coverage:
