@@ -196,6 +196,60 @@ steps:
         # Do not short-circuit the pipeline; ci-gate is the single fail point.
         exit 0
 
+  tempmemory-scheduler:
+    image: python:3.11
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir pyyaml
+          # Run tempmemory migration
+          python3 scripts/ops/tempmemory_migration.py --full-migration --enable
+        ) > _bmad-output/ci/tempmemory-scheduler.log 2>&1
+        code=$?
+        cat _bmad-output/ci/tempmemory-scheduler.log
+        echo "$code" > _bmad-output/ci/tempmemory-scheduler.status
+        exit 0
+
+  mini-brain-eval:
+    image: python:3.11
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir pyyaml
+          # Run mini BrainEval with all sources
+          python3 scripts/evaluation/mini_brain_eval.py --cadence daily --use-all --provenance --output-dir _bmad-output/ci/mini-brain-eval
+        ) > _bmad-output/ci/mini-brain-eval.log 2>&1
+        code=$?
+        cat _bmad-output/ci/mini-brain-eval.log
+        echo "$code" > _bmad-output/ci/mini-brain-eval.status
+        exit 0
+
+  tempmemory-reconcile:
+    image: python:3.11
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir pyyaml
+          # Run reconciliation and archive
+          python3 scripts/ops/tempmemory_scheduler.py --once --dry-run
+        ) > _bmad-output/ci/tempmemory-reconcile.log 2>&1
+        code=$?
+        cat _bmad-output/ci/tempmemory-reconcile.log
+        echo "$code" > _bmad-output/ci/tempmemory-reconcile.status
+        exit 0
+
   compass-apply:
     image: python:3.11
     environment:

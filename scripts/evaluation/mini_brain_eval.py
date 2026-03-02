@@ -6,9 +6,9 @@ SAFETY: No risk cap logic modified
 SAFETY: No promotion gate logic modified
 SAFETY: No live trading flow modified
 
-This script scans docs/tempmemories/*.md files for real issues and generates
-evaluation reports with detected patterns, severity classification, and
-suggested mitigations.
+This script scans docs/tempmemories/*.md files, Redis iterlogs, and Qdrant memories
+for real issues and generates evaluation reports with detected patterns, severity
+classification, and suggested mitigations.
 """
 
 import argparse
@@ -42,6 +42,9 @@ class Issue:
     impact_area: Optional[str] = None
     resolved: Optional[bool] = None
     is_structured: bool = False  # Flag to indicate structured vs regex
+    # Source tracking for multi-source ingestion
+    source: str = "filesystem"  # "filesystem", "redis", or "qdrant"
+    provenance: Optional[Dict[str, Any]] = None  # Origin details
 
 
 @dataclass
@@ -55,6 +58,10 @@ class MiniEvalResult:
     mitigations: List[Dict[str, Any]]
     file_stats: Dict[str, Any]
     summary: str
+    ingestion_sources: List[str] = field(default_factory=list)  # Sources used
+    source_stats: Dict[str, Dict[str, Any]] = field(
+        default_factory=dict
+    )  # Stats per source
 
 
 class IssueDetector:
@@ -154,34 +161,123 @@ class IssueDetector:
         },
     }
 
-    def __init__(self, tempmemories_path: str = "docs/tempmemories"):
+    def __init__(
+        self,
+        tempmemories_path: str = "docs/tempmemories",
+        use_redis: bool = False,
+        use_qdrant: bool = False,
+        include_provenance: bool = False,
+    ):
         self.tempmemories_path = Path(tempmemories_path)
+        self.use_redis = use_redis
+        self.use_qdrant = use_qdrant
+        self.include_provenance = include_provenance
         self.issues: List[Issue] = []
+        self.source_stats: Dict[str, Dict[str, Any]] = {
+            "filesystem": {"files_scanned": 0, "issues_found": 0},
+            "redis": {"keys_scanned": 0, "issues_found": 0},
+            "qdrant": {"vectors_scanned": 0, "issues_found": 0},
+        }
+        self._redis_client = None
+        self._qdrant_client = None
 
-    def scan_files(self) -> List[Issue]:
-        """Scan all markdown files in tempmemories for issues."""
+    def _get_redis_client(self):
+        """Get or create Redis client."""
+        if self._redis_client is not None:
+            return self._redis_client
+
+        try:
+            import redis as redis_lib
+
+            redis_host = os.getenv("REDIS_HOST", "host.docker.internal")
+            redis_port = int(os.getenv("REDIS_PORT", "6380"))
+            redis_db = int(os.getenv("REDIS_DB", "0"))
+            redis_password = os.getenv("REDIS_PASSWORD", None)
+
+            self._redis_client = redis_lib.Redis(
+                host=redis_host,
+                port=redis_port,
+                db=redis_db,
+                password=redis_password,
+                decode_responses=True,
+                socket_connect_timeout=5,
+                socket_timeout=5,
+            )
+            # Test connection
+            self._redis_client.ping()
+            return self._redis_client
+        except Exception as e:
+            print(f"Warning: Redis client initialization failed: {e}")
+            return None
+
+    def _get_qdrant_client(self):
+        """Get or create Qdrant client."""
+        if self._qdrant_client is not None:
+            return self._qdrant_client
+
+        try:
+            from qdrant_client import QdrantClient
+
+            qdrant_host = os.getenv("QDRANT_HOST", "host.docker.internal")
+            qdrant_port = int(os.getenv("QDRANT_PORT", "6334"))
+            qdrant_grpc_port = int(os.getenv("QDRANT_GRPC_PORT", "6334"))
+
+            self._qdrant_client = QdrantClient(
+                host=qdrant_host,
+                port=qdrant_port,
+                grpc_port=qdrant_grpc_port,
+                prefer_grpc=True,
+            )
+            return self._qdrant_client
+        except Exception as e:
+            print(f"Warning: Qdrant client initialization failed: {e}")
+            return None
+
+    def scan_all_sources(self) -> List[Issue]:
+        """Scan all enabled sources for issues."""
         self.issues = []
 
-        if not self.tempmemories_path.exists():
-            print(f"Warning: Path {self.tempmemories_path} does not exist")
-            return self.issues
+        # Always scan filesystem (default behavior)
+        self._scan_filesystem()
 
-        md_files = list(self.tempmemories_path.glob("*.md"))
+        # Scan Redis if enabled
+        if self.use_redis:
+            self._scan_redis()
 
-        for file_path in md_files:
-            self._scan_file(file_path)
+        # Scan Qdrant if enabled
+        if self.use_qdrant:
+            self._scan_qdrant()
 
         return self.issues
 
-    def _scan_file(self, file_path: Path) -> None:
+    def _scan_filesystem(self) -> None:
+        """Scan filesystem (docs/tempmemories/*.md) for issues."""
+        if not self.tempmemories_path.exists():
+            print(f"Warning: Path {self.tempmemories_path} does not exist")
+            return
+
+        md_files = list(self.tempmemories_path.glob("*.md"))
+        self.source_stats["filesystem"]["files_scanned"] = len(md_files)
+
+        for file_path in md_files:
+            file_issues = self._scan_file(file_path)
+            self.issues.extend(file_issues)
+
+        self.source_stats["filesystem"]["issues_found"] = len(
+            [i for i in self.issues if i.source == "filesystem"]
+        )
+
+    def _scan_file(self, file_path: Path) -> List[Issue]:
         """Scan a single file for issues."""
+        file_issues = []
+
         try:
             with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                 content = f.read()
                 lines = content.split("\n")
         except Exception as e:
             print(f"Error reading {file_path}: {e}")
-            return
+            return file_issues
 
         # Extract timestamp from frontmatter if present
         timestamp = self._extract_timestamp(content)
@@ -189,8 +285,8 @@ class IssueDetector:
         # FIRST: Try to parse structured issues
         structured_issues = self._scan_structured_issues(content, file_path, timestamp)
         if structured_issues:
-            self.issues.extend(structured_issues)
-            return  # Use structured issues only, skip regex
+            file_issues.extend(structured_issues)
+            return file_issues  # Use structured issues only, skip regex
 
         # FALLBACK: Use regex patterns if no structured section found
         for line_num, line in enumerate(lines, 1):
@@ -211,9 +307,232 @@ class IssueDetector:
                             line_number=line_num,
                             context=context.strip(),
                             is_structured=False,
+                            source="filesystem",
+                            provenance={
+                                "source_type": "FILESYSTEM",
+                                "file_path": str(file_path),
+                                "line_number": line_num,
+                            }
+                            if self.include_provenance
+                            else None,
                         )
-                        self.issues.append(issue)
+                        file_issues.append(issue)
                         break  # Avoid duplicate detection for same line
+
+        return file_issues
+
+    def _scan_redis(self) -> None:
+        """Scan Redis iterlog keys for issues."""
+        client = self._get_redis_client()
+        if client is None:
+            print("Warning: Redis not available, skipping Redis scan")
+            return
+
+        try:
+            # Scan for iterlog keys
+            pattern = "bmad:chiseai:iterlog:story:*:decisions"
+            cursor = 0
+            keys_scanned = 0
+
+            while True:
+                cursor, keys = client.scan(cursor=cursor, match=pattern, count=100)
+
+                for key in keys:
+                    keys_scanned += 1
+                    try:
+                        # Get decisions from the list
+                        decisions = client.lrange(key, 0, -1)
+                        story_id = self._extract_story_id_from_key(key)
+
+                        for decision_json in decisions:
+                            try:
+                                decision = json.loads(decision_json)
+                                issues = self._parse_redis_decision(
+                                    decision, story_id, key
+                                )
+                                self.issues.extend(issues)
+                            except json.JSONDecodeError:
+                                continue
+                    except Exception as e:
+                        print(f"Warning: Error processing Redis key {key}: {e}")
+
+                if cursor == 0:
+                    break
+
+            self.source_stats["redis"]["keys_scanned"] = keys_scanned
+            self.source_stats["redis"]["issues_found"] = len(
+                [i for i in self.issues if i.source == "redis"]
+            )
+
+        except Exception as e:
+            print(f"Warning: Redis scan failed: {e}")
+
+    def _scan_qdrant(self) -> None:
+        """Scan Qdrant memories for issues."""
+        client = self._get_qdrant_client()
+        if client is None:
+            print("Warning: Qdrant not available, skipping Qdrant scan")
+            return
+
+        try:
+            # Search for issue-related memories
+            collection_name = os.getenv("QDRANT_COLLECTION", "ChiseAI")
+
+            # Use a query to find issue-related vectors
+            search_queries = [
+                "error",
+                "failure",
+                "blocker",
+                "incident",
+                "issue",
+                "problem",
+            ]
+
+            vectors_scanned = 0
+            seen_ids = set()
+
+            for query in search_queries:
+                try:
+                    # Scroll through the collection
+                    offset = None
+                    while True:
+                        results = client.scroll(
+                            collection_name=collection_name,
+                            limit=100,
+                            offset=offset,
+                            with_payload=True,
+                        )
+
+                        if not results or not results[0]:
+                            break
+
+                        for point in results[0]:
+                            if point.id in seen_ids:
+                                continue
+                            seen_ids.add(point.id)
+                            vectors_scanned += 1
+
+                            # Parse the memory content for issues
+                            payload = point.payload or {}
+                            content = payload.get("information", "")
+
+                            issues = self._parse_qdrant_memory(
+                                content, point.id, payload
+                            )
+                            self.issues.extend(issues)
+
+                        # Get next offset
+                        offset = results[1]
+                        if offset is None:
+                            break
+
+                except Exception as e:
+                    print(f"Warning: Qdrant search failed for query '{query}': {e}")
+                    continue
+
+            self.source_stats["qdrant"]["vectors_scanned"] = vectors_scanned
+            self.source_stats["qdrant"]["issues_found"] = len(
+                [i for i in self.issues if i.source == "qdrant"]
+            )
+
+        except Exception as e:
+            print(f"Warning: Qdrant scan failed: {e}")
+
+    def _extract_story_id_from_key(self, key: str) -> Optional[str]:
+        """Extract story ID from Redis key."""
+        # Pattern: bmad:chiseai:iterlog:story:ST-XXX:decisions
+        parts = key.split(":")
+        if len(parts) >= 5:
+            return parts[4]
+        return None
+
+    def _parse_redis_decision(
+        self, decision: Dict[str, Any], story_id: Optional[str], key: str
+    ) -> List[Issue]:
+        """Parse a Redis decision entry for issues."""
+        issues = []
+
+        # Get decision text and metadata
+        decision_text = decision.get("decision", "")
+        rationale = decision.get("rationale", "")
+        timestamp = decision.get("timestamp", datetime.utcnow().isoformat())
+
+        # Check for issue patterns in decision text
+        text_to_check = f"{decision_text} {rationale}".lower()
+
+        for issue_type, config in self.PATTERNS.items():
+            for pattern in config["patterns"]:
+                if re.search(pattern, text_to_check, re.IGNORECASE):
+                    issue = Issue(
+                        issue_type=issue_type,
+                        severity=config["severity"],
+                        description=decision_text[:200]
+                        if decision_text
+                        else issue_type,
+                        source_file=f"redis:{key}",
+                        timestamp=timestamp,
+                        line_number=None,
+                        context=rationale[:500] if rationale else "",
+                        is_structured=False,
+                        source="redis",
+                        provenance={
+                            "source_type": "ITERLOG_DECISION",
+                            "story_id": story_id,
+                            "redis_key": key,
+                            "timestamp": timestamp,
+                            "decision_type": decision.get("type", "unknown"),
+                        }
+                        if self.include_provenance
+                        else None,
+                    )
+                    issues.append(issue)
+                    break  # One issue per pattern match
+
+        return issues
+
+    def _parse_qdrant_memory(
+        self, content: str, point_id: str, payload: Dict[str, Any]
+    ) -> List[Issue]:
+        """Parse a Qdrant memory for issues."""
+        issues = []
+
+        if not content:
+            return issues
+
+        # Check for issue patterns in content
+        text_to_check = content.lower()
+
+        for issue_type, config in self.PATTERNS.items():
+            for pattern in config["patterns"]:
+                if re.search(pattern, text_to_check, re.IGNORECASE):
+                    # Extract metadata from payload
+                    metadata = payload.get("metadata", {})
+                    timestamp = metadata.get("timestamp", datetime.utcnow().isoformat())
+
+                    issue = Issue(
+                        issue_type=issue_type,
+                        severity=config["severity"],
+                        description=content[:200],
+                        source_file=f"qdrant:{point_id}",
+                        timestamp=timestamp,
+                        line_number=None,
+                        context=content[:500],
+                        is_structured=False,
+                        source="qdrant",
+                        provenance={
+                            "source_type": "QDRANT_MEMORY",
+                            "point_id": str(point_id),
+                            "collection": os.getenv("QDRANT_COLLECTION", "ChiseAI"),
+                            "timestamp": timestamp,
+                            "metadata": metadata,
+                        }
+                        if self.include_provenance
+                        else None,
+                    )
+                    issues.append(issue)
+                    break  # One issue per pattern match
+
+        return issues
 
     def _scan_structured_issues(
         self, content: str, file_path: Path, timestamp: Optional[str]
@@ -276,6 +595,14 @@ class IssueDetector:
                     impact_area=item.get("impact_area"),
                     resolved=item.get("resolved"),
                     is_structured=True,
+                    source="filesystem",
+                    provenance={
+                        "source_type": "STRUCTURED_FILE",
+                        "file_path": str(file_path),
+                        "is_structured": True,
+                    }
+                    if self.include_provenance
+                    else None,
                 )
                 issues.append(issue)
 
@@ -371,19 +698,41 @@ class IssueDetector:
             "files_with_issues": len(set(i.source_file for i in self.issues)),
         }
 
+    def get_ingestion_sources(self) -> List[str]:
+        """Get list of sources that were scanned."""
+        sources = ["filesystem"]
+        if self.use_redis:
+            sources.append("redis")
+        if self.use_qdrant:
+            sources.append("qdrant")
+        return sources
+
 
 def run_evaluation(
-    cadence: str, output_dir: str = "_bmad-output/brain-eval"
+    cadence: str,
+    output_dir: str = "_bmad-output/brain-eval",
+    use_redis: bool = False,
+    use_qdrant: bool = False,
+    include_provenance: bool = False,
+    tempmemories_path: str = "docs/tempmemories",
 ) -> MiniEvalResult:
     """Run a complete evaluation for the specified cadence."""
 
-    detector = IssueDetector()
-    issues = detector.scan_files()
+    detector = IssueDetector(
+        tempmemories_path=tempmemories_path,
+        use_redis=use_redis,
+        use_qdrant=use_qdrant,
+        include_provenance=include_provenance,
+    )
+    issues = detector.scan_all_sources()
     mitigations = detector.get_mitigations()
     file_stats = detector.get_file_stats()
+    ingestion_sources = detector.get_ingestion_sources()
+    source_stats = detector.source_stats
 
     # Generate summary
     summary_parts = [
+        f"Sources: {', '.join(ingestion_sources)}",
         f"Scanned {file_stats['files_scanned']} files",
         f"Found {file_stats['total_issues']} issues",
     ]
@@ -404,6 +753,8 @@ def run_evaluation(
         mitigations=mitigations,
         file_stats=file_stats,
         summary="; ".join(summary_parts),
+        ingestion_sources=ingestion_sources,
+        source_stats=source_stats,
     )
 
     # Save to file
@@ -442,20 +793,49 @@ def main():
         default="docs/tempmemories",
         help="Path to tempmemories directory",
     )
+    parser.add_argument(
+        "--use-redis",
+        action="store_true",
+        help="Enable Redis iterlog ingestion",
+    )
+    parser.add_argument(
+        "--use-qdrant",
+        action="store_true",
+        help="Enable Qdrant memory ingestion",
+    )
+    parser.add_argument(
+        "--use-all",
+        action="store_true",
+        help="Enable all sources (filesystem + Redis + Qdrant)",
+    )
+    parser.add_argument(
+        "--provenance",
+        action="store_true",
+        help="Include provenance information in output",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Run in dry-run mode (no output files written)",
+    )
 
     args = parser.parse_args()
 
-    # Override tempmemories path if provided
-    if args.tempmemories != "docs/tempmemories":
-        global IssueDetector
-        original_init = IssueDetector.__init__
-        IssueDetector.__init__ = (
-            lambda self, tempmemories_path=args.tempmemories: original_init(
-                self, tempmemories_path
-            )
-        )
+    # Handle --use-all flag
+    use_redis = args.use_redis or args.use_all
+    use_qdrant = args.use_qdrant or args.use_all
 
-    result = run_evaluation(args.cadence, args.output_dir)
+    # Override tempmemories path if provided
+    tempmemories_path = args.tempmemories
+
+    result = run_evaluation(
+        cadence=args.cadence,
+        output_dir=args.output_dir,
+        use_redis=use_redis,
+        use_qdrant=use_qdrant,
+        include_provenance=args.provenance,
+        tempmemories_path=tempmemories_path,
+    )
 
     # Print summary
     print(f"\n{'=' * 60}")
@@ -463,8 +843,26 @@ def main():
     print(f"{'=' * 60}")
     print(f"Eval ID: {result.eval_id}")
     print(f"Timestamp: {result.timestamp}")
+    print(f"Ingestion Sources: {', '.join(result.ingestion_sources)}")
     print(f"Files Scanned: {result.file_stats['files_scanned']}")
     print(f"Total Issues: {result.file_stats['total_issues']}")
+
+    # Print source stats
+    if result.source_stats:
+        print(f"\nSource Statistics:")
+        for source, stats in result.source_stats.items():
+            if stats.get("files_scanned", 0) > 0:
+                print(
+                    f"  {source}: {stats['files_scanned']} files, {stats.get('issues_found', 0)} issues"
+                )
+            elif stats.get("keys_scanned", 0) > 0:
+                print(
+                    f"  {source}: {stats['keys_scanned']} keys, {stats.get('issues_found', 0)} issues"
+                )
+            elif stats.get("vectors_scanned", 0) > 0:
+                print(
+                    f"  {source}: {stats['vectors_scanned']} vectors, {stats.get('issues_found', 0)} issues"
+                )
 
     if result.file_stats["total_issues"] > 0:
         print(f"\nIssues by Severity:")
@@ -483,6 +881,17 @@ def main():
             print(
                 f"  - {mit['issue_type']} ({mit['count']}): {mit['suggestion'][:60]}..."
             )
+
+    # Print sample issues with source/provenance if available
+    if result.issues_found and args.provenance:
+        print(f"\nSample Issues with Provenance:")
+        for issue in result.issues_found[:3]:
+            print(
+                f"  - [{issue.get('source', 'unknown')}] {issue.get('issue_type', 'unknown')}: {issue.get('description', '')[:50]}..."
+            )
+            if issue.get("provenance"):
+                prov = issue["provenance"]
+                print(f"    Provenance: {prov.get('source_type', 'unknown')}")
 
 
 if __name__ == "__main__":
