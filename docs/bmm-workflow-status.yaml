@@ -17,6 +17,17 @@ metadata:
         - docs/bmm-workflow-status.yaml
       status: in_progress
       pending: Phase 2 pipeline hardening (blocking gates, consolidation)
+    - timestamp: "2026-03-02T18:00:00Z"
+      actor: jarvis
+      action: st-ci-001-phase2-complete
+      description: "ST-CI-001: Completed Phase 2 (Pipeline Hardening). Fixed 5 epic status mismatches, updated CI documentation, verified ci-gate as single failure point."
+      story_id: ST-CI-001
+      epic_id: EP-INFRA-CLEANUP-001
+      files_changed:
+        - docs/bmm-workflow-status.yaml
+        - .woodpecker/ci.yaml
+      status: in_progress
+      pending: Phase 3 (Enhancements)
     - timestamp: "2026-03-02T15:00:00Z"
       actor: dev
       action: st-ci-001-assessment-complete
