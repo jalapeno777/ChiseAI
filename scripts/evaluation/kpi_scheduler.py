@@ -33,13 +33,19 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import http.server
 import json
 import logging
 import os
+import signal
+import socketserver
 import subprocess
 import sys
+import threading
 import time
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
@@ -54,6 +60,185 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger("kpi_scheduler")
+
+
+class SchedulerState(Enum):
+    """Scheduler state machine states."""
+
+    INITIALIZING = "initializing"
+    RUNNING = "running"
+    PAUSED = "paused"
+    SHUTTING_DOWN = "shutting_down"
+    ERROR = "error"
+
+
+@dataclass
+class SchedulerCheckpoint:
+    """Checkpoint data for scheduler state persistence.
+
+    Attributes:
+        state: Current scheduler state
+        last_run_6h: Timestamp of last 6h cycle run
+        last_run_daily: Timestamp of last daily cycle run
+        last_run_weekly: Timestamp of last weekly cycle run
+        cycle_count: Total number of cycles executed
+        error_count: Number of errors encountered
+        last_error: Last error message if any
+        version: Checkpoint format version
+    """
+
+    state: str = SchedulerState.INITIALIZING.value
+    last_run_6h: float = 0.0
+    last_run_daily: float = 0.0
+    last_run_weekly: float = 0.0
+    cycle_count: int = 0
+    error_count: int = 0
+    last_error: str | None = None
+    version: str = "1.0"
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert checkpoint to dictionary."""
+        return {
+            "state": self.state,
+            "last_run_6h": self.last_run_6h,
+            "last_run_daily": self.last_run_daily,
+            "last_run_weekly": self.last_run_weekly,
+            "cycle_count": self.cycle_count,
+            "error_count": self.error_count,
+            "last_error": self.last_error,
+            "version": self.version,
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "SchedulerCheckpoint":
+        """Create checkpoint from dictionary."""
+        return cls(
+            state=data.get("state", SchedulerState.INITIALIZING.value),
+            last_run_6h=data.get("last_run_6h", 0.0),
+            last_run_daily=data.get("last_run_daily", 0.0),
+            last_run_weekly=data.get("last_run_weekly", 0.0),
+            cycle_count=data.get("cycle_count", 0),
+            error_count=data.get("error_count", 0),
+            last_error=data.get("last_error"),
+            version=data.get("version", "1.0"),
+        )
+
+
+class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
+    """HTTP request handler for health check endpoint."""
+
+    def __init__(
+        self,
+        checkpoint: SchedulerCheckpoint,
+        *args: Any,
+        **kwargs: Any,
+    ):
+        self.checkpoint = checkpoint
+        super().__init__(*args, **kwargs)
+
+    def do_GET(self) -> None:
+        """Handle GET requests."""
+        if self.path == "/health":
+            self._handle_health_check()
+        elif self.path == "/status":
+            self._handle_status()
+        else:
+            self.send_error(404)
+
+    def _handle_health_check(self) -> None:
+        """Handle health check request."""
+        status = {
+            "status": "healthy",
+            "state": self.checkpoint.state,
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+
+        if self.checkpoint.state == SchedulerState.ERROR.value:
+            status["status"] = "unhealthy"
+            self.send_response(503)
+        else:
+            self.send_response(200)
+
+        self.send_header("Content-Type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps(status).encode())
+
+    def _handle_status(self) -> None:
+        """Handle detailed status request."""
+        status = {
+            "status": "healthy"
+            if self.checkpoint.state != SchedulerState.ERROR.value
+            else "unhealthy",
+            "state": self.checkpoint.state,
+            "checkpoint": self.checkpoint.to_dict(),
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+
+        self.send_response(200 if status["status"] == "healthy" else 503)
+        self.send_header("Content-Type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps(status, indent=2).encode())
+
+    def log_message(self, format: str, *args: Any) -> None:
+        """Suppress default logging."""
+        logger.debug(f"Health check: {format % args}")
+
+
+class HealthCheckServer:
+    """HTTP health check server for scheduler."""
+
+    def __init__(self, checkpoint: SchedulerCheckpoint, port: int = 8080):
+        """Initialize health check server.
+
+        Args:
+            checkpoint: Shared checkpoint object
+            port: Port to listen on
+        """
+        self.checkpoint = checkpoint
+        self.port = port
+        self.server: socketserver.TCPServer | None = None
+        self.thread: threading.Thread | None = None
+        self._running = False
+
+    def _create_handler(self) -> type[http.server.BaseHTTPRequestHandler]:
+        """Create request handler class with checkpoint reference."""
+        checkpoint = self.checkpoint
+
+        class Handler(HealthCheckHandler):
+            def __init__(self, *args: Any, **kwargs: Any):
+                super().__init__(checkpoint, *args, **kwargs)
+
+        return Handler
+
+    def start(self) -> None:
+        """Start health check server in background thread."""
+        if self._running:
+            return
+
+        handler_class = self._create_handler()
+
+        class ReusableTCPServer(socketserver.TCPServer):
+            allow_reuse_address = True
+
+        self.server = ReusableTCPServer(("", self.port), handler_class)
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        self.thread.start()
+        self._running = True
+
+        logger.info(f"Health check server started on port {self.port}")
+
+    def stop(self) -> None:
+        """Stop health check server."""
+        if not self._running:
+            return
+
+        if self.server:
+            self.server.shutdown()
+            self.server.server_close()
+
+        self._running = False
+        logger.info("Health check server stopped")
 
 
 class KPIScheduler:
@@ -76,22 +261,28 @@ class KPIScheduler:
         self,
         output_dir: Path | str = "_bmad-output/brain-eval/scheduler",
         dry_run: bool = False,
+        checkpoint: SchedulerCheckpoint | None = None,
     ) -> None:
         """Initialize KPI scheduler.
 
         Args:
             output_dir: Base directory for scheduler output
             dry_run: If True, skip actual execution
+            checkpoint: Optional checkpoint object for state tracking
         """
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.dry_run = dry_run
+        self.checkpoint = checkpoint or SchedulerCheckpoint()
 
         # Script paths
         self.scripts_dir = Path(__file__).parent
         self.run_mini_eval = self.scripts_dir / "run_mini_eval.py"
         self.run_daily_trends = self.scripts_dir / "run_daily_trends.py"
         self.run_weekly_reflection = self.scripts_dir / "run_weekly_reflection.py"
+
+        # Load checkpoint if exists
+        self._load_checkpoint()
 
     def run_6h_cycle(self) -> int:
         """Run 6h mini ingest/eval cycle.
@@ -119,15 +310,18 @@ class KPIScheduler:
             if result.returncode == 0:
                 logger.info("6h cycle completed successfully")
                 self._log_cycle_complete("6h", success=True)
+                self.record_cycle_complete("6h", success=True)
                 return 0
             else:
                 logger.error(f"6h cycle failed with exit code {result.returncode}")
                 self._log_cycle_complete("6h", success=False, error=result.stderr)
+                self.record_cycle_complete("6h", success=False, error=result.stderr)
                 return 1
 
         except Exception as e:
             logger.exception(f"6h cycle failed: {e}")
             self._log_cycle_complete("6h", success=False, error=str(e))
+            self.record_cycle_complete("6h", success=False, error=str(e))
             return 1
 
     def run_daily_cycle(self) -> int:
@@ -155,15 +349,18 @@ class KPIScheduler:
             if result.returncode == 0:
                 logger.info("Daily cycle completed successfully")
                 self._log_cycle_complete("daily", success=True)
+                self.record_cycle_complete("daily", success=True)
                 return 0
             else:
                 logger.error(f"Daily cycle failed with exit code {result.returncode}")
                 self._log_cycle_complete("daily", success=False, error=result.stderr)
+                self.record_cycle_complete("daily", success=False, error=result.stderr)
                 return 1
 
         except Exception as e:
             logger.exception(f"Daily cycle failed: {e}")
             self._log_cycle_complete("daily", success=False, error=str(e))
+            self.record_cycle_complete("daily", success=False, error=str(e))
             return 1
 
     def run_weekly_cycle(self) -> int:
@@ -191,15 +388,18 @@ class KPIScheduler:
             if result.returncode == 0:
                 logger.info("Weekly cycle completed successfully")
                 self._log_cycle_complete("weekly", success=True)
+                self.record_cycle_complete("weekly", success=True)
                 return 0
             else:
                 logger.error(f"Weekly cycle failed with exit code {result.returncode}")
                 self._log_cycle_complete("weekly", success=False, error=result.stderr)
+                self.record_cycle_complete("weekly", success=False, error=result.stderr)
                 return 1
 
         except Exception as e:
             logger.exception(f"Weekly cycle failed: {e}")
             self._log_cycle_complete("weekly", success=False, error=str(e))
+            self.record_cycle_complete("weekly", success=False, error=str(e))
             return 1
 
     def run_all_dry(self) -> int:
@@ -316,67 +516,172 @@ class KPIScheduler:
         except Exception as e:
             logger.warning(f"Failed to write to scheduler log: {e}")
 
+    def _get_checkpoint_path(self) -> Path:
+        """Get path to checkpoint file."""
+        return self.output_dir / "checkpoint.json"
+
+    def _load_checkpoint(self) -> None:
+        """Load checkpoint from file if exists."""
+        checkpoint_path = self._get_checkpoint_path()
+
+        if checkpoint_path.exists():
+            try:
+                with open(checkpoint_path) as f:
+                    data = json.load(f)
+                    self.checkpoint = SchedulerCheckpoint.from_dict(data)
+                    logger.info(f"Loaded checkpoint: {self.checkpoint.state}")
+            except Exception as e:
+                logger.warning(f"Failed to load checkpoint: {e}")
+                self.checkpoint = SchedulerCheckpoint()
+
+    def _save_checkpoint(self) -> None:
+        """Save checkpoint to file."""
+        checkpoint_path = self._get_checkpoint_path()
+
+        try:
+            with open(checkpoint_path, "w") as f:
+                json.dump(self.checkpoint.to_dict(), f, indent=2)
+        except Exception as e:
+            logger.warning(f"Failed to save checkpoint: {e}")
+
+    def update_checkpoint_state(self, state: SchedulerState) -> None:
+        """Update scheduler state in checkpoint.
+
+        Args:
+            state: New scheduler state
+        """
+        self.checkpoint.state = state.value
+        self._save_checkpoint()
+        logger.info(f"Scheduler state changed to: {state.value}")
+
+    def record_cycle_complete(
+        self, cycle: str, success: bool, error: str | None = None
+    ) -> None:
+        """Record cycle completion in checkpoint.
+
+        Args:
+            cycle: Cycle name (6h, daily, weekly)
+            success: Whether cycle succeeded
+            error: Error message if failed
+        """
+        current_time = time.time()
+
+        if cycle == "6h":
+            self.checkpoint.last_run_6h = current_time
+        elif cycle == "daily":
+            self.checkpoint.last_run_daily = current_time
+        elif cycle == "weekly":
+            self.checkpoint.last_run_weekly = current_time
+
+        self.checkpoint.cycle_count += 1
+
+        if not success:
+            self.checkpoint.error_count += 1
+            self.checkpoint.last_error = error or "Unknown error"
+
+        self._save_checkpoint()
+
 
 def run_daemon() -> int:
     """Run scheduler in daemon mode with continuous scheduling.
 
     Uses while/sleep loop for Docker-safe scheduling.
+    Includes health check endpoint, state machine, and graceful shutdown.
 
     Returns:
-        Exit code (only returns on error)
+        Exit code (only returns on error or shutdown)
     """
     logger.info("Starting KPI scheduler daemon")
 
-    # Get intervals from environment (in seconds)
+    # Get configuration from environment
     interval_6h = int(os.getenv("SCHEDULER_INTERVAL_6H", 6 * 3600))  # 6 hours
     interval_daily = int(os.getenv("SCHEDULER_INTERVAL_DAILY", 24 * 3600))  # 24 hours
     interval_weekly = int(
         os.getenv("SCHEDULER_INTERVAL_WEEKLY", 7 * 24 * 3600)
     )  # 7 days
+    health_port = int(os.getenv("SCHEDULER_HEALTH_PORT", 8080))
+    output_dir = os.getenv("SCHEDULER_OUTPUT_DIR", "_bmad-output/brain-eval/scheduler")
 
     logger.info(
-        f"Intervals - 6h: {interval_6h}s, daily: {interval_daily}s, weekly: {interval_weekly}s"
+        f"Configuration - 6h: {interval_6h}s, daily: {interval_daily}s, weekly: {interval_weekly}s, "
+        f"health_port: {health_port}"
     )
 
-    # Track last run times
+    # Initialize checkpoint and scheduler
+    checkpoint = SchedulerCheckpoint()
+    scheduler = KPIScheduler(output_dir=output_dir, checkpoint=checkpoint)
+    scheduler.update_checkpoint_state(SchedulerState.INITIALIZING)
+
+    # Initialize last run times from checkpoint
     last_run = {
-        "6h": 0.0,
-        "daily": 0.0,
-        "weekly": 0.0,
+        "6h": checkpoint.last_run_6h,
+        "daily": checkpoint.last_run_daily,
+        "weekly": checkpoint.last_run_weekly,
     }
 
-    scheduler = KPIScheduler()
+    logger.info(
+        f"Resumed from checkpoint - 6h: {last_run['6h']}, daily: {last_run['daily']}, weekly: {last_run['weekly']}"
+    )
+
+    # Start health check server
+    health_server = HealthCheckServer(checkpoint, port=health_port)
+    health_server.start()
+
+    # Set up signal handlers for graceful shutdown
+    shutdown_requested = threading.Event()
+
+    def signal_handler(signum: int, frame: Any) -> None:
+        """Handle shutdown signals."""
+        logger.info(f"Received signal {signum}, initiating graceful shutdown...")
+        shutdown_requested.set()
+
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+
+    # Transition to running state
+    scheduler.update_checkpoint_state(SchedulerState.RUNNING)
 
     try:
-        while True:
+        while not shutdown_requested.is_set():
             current_time = time.time()
 
             # Check 6h cycle
             if current_time - last_run["6h"] >= interval_6h:
                 logger.info("Triggering 6h cycle")
-                scheduler.run_6h_cycle()
+                exit_code = scheduler.run_6h_cycle()
+                scheduler.record_cycle_complete("6h", success=(exit_code == 0))
                 last_run["6h"] = current_time
 
             # Check daily cycle
             if current_time - last_run["daily"] >= interval_daily:
                 logger.info("Triggering daily cycle")
-                scheduler.run_daily_cycle()
+                exit_code = scheduler.run_daily_cycle()
+                scheduler.record_cycle_complete("daily", success=(exit_code == 0))
                 last_run["daily"] = current_time
 
             # Check weekly cycle
             if current_time - last_run["weekly"] >= interval_weekly:
                 logger.info("Triggering weekly cycle")
-                scheduler.run_weekly_cycle()
+                exit_code = scheduler.run_weekly_cycle()
+                scheduler.record_cycle_complete("weekly", success=(exit_code == 0))
                 last_run["weekly"] = current_time
 
-            # Sleep for 60 seconds before next check
-            time.sleep(60)
+            # Sleep for 60 seconds before next check (or until shutdown)
+            shutdown_requested.wait(timeout=60)
 
-    except KeyboardInterrupt:
-        logger.info("Daemon stopped by user")
+        # Graceful shutdown
+        logger.info("Graceful shutdown initiated")
+        scheduler.update_checkpoint_state(SchedulerState.SHUTTING_DOWN)
+        health_server.stop()
+        logger.info("Daemon stopped gracefully")
         return 0
+
     except Exception as e:
         logger.exception(f"Daemon failed: {e}")
+        scheduler.update_checkpoint_state(SchedulerState.ERROR)
+        scheduler.checkpoint.last_error = str(e)
+        scheduler._save_checkpoint()
+        health_server.stop()
         return 1
 
 
