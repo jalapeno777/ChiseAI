@@ -45,6 +45,7 @@ from src.governance.reflection import (
     RootCauseCategory,
     create_reflection_artifact,
 )
+from src.governance.reflection.feature_flags import is_reflection_enabled
 
 # Configure logging
 logging.basicConfig(
@@ -621,6 +622,12 @@ def main() -> int:
     )
 
     args = parser.parse_args()
+
+    # Check feature flag
+    if not is_reflection_enabled():
+        logger.info("Weekly reflection disabled by feature flag")
+        print("Weekly reflection is currently disabled by feature flag")
+        return 0
 
     return run_weekly_reflection(
         week_id=args.week,

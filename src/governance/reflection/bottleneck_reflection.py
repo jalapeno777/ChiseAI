@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from .artifacts import Priority, RootCauseCategory
+from .feature_flags import is_reflection_enabled
 
 logger = logging.getLogger(__name__)
 
@@ -295,6 +296,22 @@ class BottleneckReflectionGenerator:
         Returns:
             DailyReflectionArtifact with top bottlenecks and remediation.
         """
+        # Check feature flag
+        if not is_reflection_enabled():
+            logger.info("Daily reflection disabled by feature flag")
+            date_obj = date if isinstance(date, datetime) else datetime.now(UTC)
+            if isinstance(date, str):
+                date_obj = datetime.fromisoformat(date.replace("Z", "+00:00"))
+            return DailyReflectionArtifact(
+                date=date_obj.strftime("%Y-%m-%d"),
+                timestamp=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+                provenance="bottleneck_reflection.BottleneckReflectionGenerator",
+                top_bottlenecks=[],
+                impact_scores=ImpactScore(),
+                remediation_actions=[],
+                summary="Reflection disabled by feature flag",
+            )
+
         # Normalize date
         if date is None:
             date = datetime.now(UTC)
@@ -349,6 +366,32 @@ class BottleneckReflectionGenerator:
         Returns:
             WeeklyReflectionArtifact with trend deltas and recommendations.
         """
+        # Check feature flag
+        if not is_reflection_enabled():
+            logger.info("Weekly reflection disabled by feature flag")
+            week_start_obj = (
+                week_start if isinstance(week_start, datetime) else datetime.now(UTC)
+            )
+            if isinstance(week_start, str):
+                week_start_obj = datetime.fromisoformat(
+                    week_start.replace("Z", "+00:00")
+                )
+            elif week_start is None:
+                today = datetime.now(UTC)
+                week_start_obj = today - timedelta(days=today.weekday())
+            week_end_obj = week_start_obj + timedelta(days=6)
+            return WeeklyReflectionArtifact(
+                week_start=week_start_obj.strftime("%Y-%m-%d"),
+                week_end=week_end_obj.strftime("%Y-%m-%d"),
+                timestamp=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+                provenance="bottleneck_reflection.BottleneckReflectionGenerator",
+                trend_deltas=[],
+                improvements=[],
+                regressions=[],
+                framework_improvements=[],
+                summary="Reflection disabled by feature flag",
+            )
+
         # Normalize week_start
         if week_start is None:
             today = datetime.now(UTC)
