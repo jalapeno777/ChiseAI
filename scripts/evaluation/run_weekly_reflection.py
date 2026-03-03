@@ -429,7 +429,7 @@ def generate_summary(
     unchanged_count = sum(1 for d in deltas if d.direction == "unchanged")
 
     parts = [
-        f"Weekly reflection summary:",
+        "Weekly reflection summary:",
         f"- {improved_count} KPIs improved",
         f"- {regressed_count} KPIs regressed",
         f"- {unchanged_count} KPIs unchanged",
@@ -509,9 +509,9 @@ def create_weekly_reflection_artifact(
         automation_targets.append(
             AutomationTarget(
                 target=regression.description,
-                priority=Priority.HIGH
-                if regression.priority == "high"
-                else Priority.MEDIUM,
+                priority=(
+                    Priority.HIGH if regression.priority == "high" else Priority.MEDIUM
+                ),
                 estimated_impact=regression.rationale,
             )
         )

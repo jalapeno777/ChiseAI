@@ -78,7 +78,6 @@ from .repeated_issue_detector import (
     RepeatedIssueReport,
     TrendAnalysis,
 )
-from .trend_rollups import TrendRollup, TrendRollupEngine
 from .schemas.mini_eval import (
     Issue as MiniEvalIssue,
 )
@@ -91,6 +90,7 @@ from .schemas.mini_eval import (
     Mitigation,
     MitigationResult,
 )
+from .trend_rollups import TrendRollup, TrendRollupEngine
 
 __all__ = [
     "Issue",

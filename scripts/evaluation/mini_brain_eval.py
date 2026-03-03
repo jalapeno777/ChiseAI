@@ -781,7 +781,9 @@ class IssueDetector:
                     issue_type=exemplar.issue_type,
                     root_cause=exemplar.root_cause,
                     occurrence_count=len(issues),
-                    total_time_lost_minutes=sum(i.time_lost_minutes or 0 for i in issues),
+                    total_time_lost_minutes=sum(
+                        i.time_lost_minutes or 0 for i in issues
+                    ),
                 )
             )
         recurring.sort(key=lambda item: item.occurrence_count, reverse=True)

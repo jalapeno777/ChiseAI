@@ -166,7 +166,9 @@ class MemoryDeduplicationEngine:
         # Handle empty strings
         return not (isinstance(value, str) and not value)
 
-    def _load_config_from_redis(self, use_legacy_config: bool = True) -> DeduplicationConfig:
+    def _load_config_from_redis(
+        self, use_legacy_config: bool = True
+    ) -> DeduplicationConfig:
         """
         Load configuration overrides from Redis.
 
@@ -286,7 +288,9 @@ class MemoryDeduplicationEngine:
                 return default_config
             return {
                 "enabled": bool(parsed.get("enabled", default_config["enabled"])),
-                "threshold": float(parsed.get("threshold", default_config["threshold"])),
+                "threshold": float(
+                    parsed.get("threshold", default_config["threshold"])
+                ),
                 "ttl": int(parsed.get("ttl", default_config["ttl"])),
             }
         except Exception as e:
