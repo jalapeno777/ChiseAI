@@ -62,7 +62,7 @@ export TEMPMEMORY_INGESTION_CADENCE=daily
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `run_tempmemory_ingestion` | bool | `False` | Enable/disable ingestion in consolidation flow |
+| `run_tempmemory_ingestion` | bool | `True` | Enable/disable ingestion in consolidation flow |
 | `tempmemory_ingestion_dry_run` | bool | `False` | Preview what would be ingested without writing |
 | `tempmemory_ingestion_filter_types` | list[str] | `["decision", "pattern", "summary", "anti-pattern"]` | Frontmatter types to ingest (empty list = all types) |
 | `tempmemory_ingestion_cadence` | str | `"daily"` | Cadence: `"daily"`, `"always"`, or `"manual"` |
@@ -311,7 +311,7 @@ volumes:
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `run_tempmemory_ingestion` | bool | `False` | Enable/disable ingestion in consolidation flow |
+| `run_tempmemory_ingestion` | bool | `True` | Enable/disable ingestion in consolidation flow |
 | `tempmemory_ingestion_dry_run` | bool | `False` | Preview what would be ingested without writing |
 | `tempmemory_ingestion_filter_types` | list[str] | `["decision", "pattern", "summary", "anti-pattern"]` | Frontmatter types to ingest (empty list = all types) |
 | `tempmemory_ingestion_cadence` | str | `"daily"` | Cadence: `"daily"`, `"always"`, or `"manual"` |
