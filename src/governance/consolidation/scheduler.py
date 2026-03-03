@@ -29,6 +29,10 @@ from src.governance.consolidation.rollback import (
     RollbackManager,
     RollbackStats,
 )
+from src.governance.tempmemory.ingestion_runner import (
+    TempmemoryIngestionRunner,
+    IngestionStatus,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +52,9 @@ class ConsolidationResult:
     data_loss_incidents: int = 0
     rollback_time_seconds: float = 0.0
     storage_reduction_percent: float = 0.0
+
+    ingestion_stats: dict[str, Any] | None = None
+    """Stats from tempmemory ingestion step"""
 
     def passes_validation_gates(self) -> tuple[bool, list[str]]:
         """
@@ -133,6 +140,19 @@ class MemoryConsolidationScheduler:
         self._rollback_manager = RollbackManager(
             self._config, qdrant_client, redis_client
         )
+
+        # Initialize tempmemory ingestion runner
+        self._ingestion_runner: TempmemoryIngestionRunner | None = None
+        if self._config.run_tempmemory_ingestion:
+            try:
+                self._ingestion_runner = TempmemoryIngestionRunner(
+                    redis_client=redis_client,
+                    dry_run=self._config.tempmemory_ingestion_dry_run,
+                    filter_types=self._config.tempmemory_ingestion_filter_types,
+                )
+                logger.info("TempmemoryIngestionRunner initialized")
+            except Exception as e:
+                logger.warning(f"Failed to initialize TempmemoryIngestionRunner: {e}")
 
         # Scheduler state
         self._scheduler: Any | None = None
@@ -254,6 +274,54 @@ class MemoryConsolidationScheduler:
             promote=promote,
         )
 
+    def _run_tempmemory_ingestion_step(self, dry_run: bool) -> dict[str, Any]:
+        """
+        Run tempmemory ingestion as Step 0 of consolidation.
+
+        Args:
+            dry_run: Whether to run in dry-run mode
+
+        Returns:
+            Dictionary with ingestion statistics
+        """
+        if not self._config.run_tempmemory_ingestion:
+            return {"skipped": True, "reason": "disabled in config"}
+
+        if self._ingestion_runner is None:
+            return {"skipped": True, "reason": "runner not initialized"}
+
+        # Check cadence
+        if self._config.tempmemory_ingestion_cadence == "manual":
+            return {"skipped": True, "reason": "cadence set to manual"}
+
+        logger.info("Starting Step 0: Tempmemory ingestion")
+
+        try:
+            # Run ingestion with lock
+            report = self._ingestion_runner.run_with_lock()
+
+            stats = {
+                "success": report.failed_files == 0,
+                "total_files": report.total_files,
+                "scanned_files": report.scanned_files,
+                "migrated_files": report.migrated_files,
+                "failed_files": report.failed_files,
+                "skipped_files": report.skipped_files,
+                "duration_seconds": report.duration_seconds,
+                "dry_run": report.dry_run,
+            }
+
+            logger.info(
+                f"Tempmemory ingestion completed: {stats['migrated_files']} migrated, "
+                f"{stats['failed_files']} failed"
+            )
+
+            return stats
+
+        except Exception as e:
+            logger.exception(f"Tempmemory ingestion failed: {e}")
+            return {"success": False, "error": str(e)}
+
     def _run_consolidation(
         self,
         dry_run: bool | None = None,
@@ -289,6 +357,14 @@ class MemoryConsolidationScheduler:
         )
 
         try:
+            # Step 0: Run tempmemory ingestion
+            if self._config.run_tempmemory_ingestion:
+                result.ingestion_stats = self._run_tempmemory_ingestion_step(is_dry_run)
+                if result.ingestion_stats.get("failed_files", 0) > 0:
+                    logger.warning(
+                        f"Tempmemory ingestion had {result.ingestion_stats['failed_files']} failures"
+                    )
+
             # Get storage size before
             storage_before = self._archiver.get_cold_storage_size()
 
