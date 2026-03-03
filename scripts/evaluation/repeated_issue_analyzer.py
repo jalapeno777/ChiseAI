@@ -309,6 +309,25 @@ class RepeatedIssueAnalyzer:
 
 
 def main():
+    """Main entry point for the Repeated Issue Analyzer script.
+
+    Parses command-line arguments, loads all BrainEval JSON results from the
+    specified directory, clusters issues by normalized descriptions to identify
+    recurring patterns, and generates a report.
+
+    Usage Examples:
+        # Analyze default directory
+        python repeated_issue_analyzer.py
+
+        # Analyze custom evaluation directory
+        python repeated_issue_analyzer.py --eval-dir /path/to/evaluations
+
+        # Specify custom output path
+        python repeated_issue_analyzer.py --output /path/to/report.json
+
+    Returns:
+        None (results are printed to stdout and saved to JSON file)
+    """
     import argparse
 
     parser = argparse.ArgumentParser(

@@ -865,6 +865,25 @@ def run_evaluation(
 
 
 def main():
+    """Main entry point for the Mini BrainEval script.
+
+    Parses command-line arguments, runs evaluation with the specified cadence,
+    and generates a report of detected issues from iterlog files, Redis,
+    and Qdrant memories.
+
+    Usage Examples:
+        # Daily evaluation with filesystem only
+        python mini_brain_eval.py --cadence daily
+
+        # Enable all sources (filesystem + Redis + Qdrant)
+        python mini_brain_eval.py --cadence 6h --use-all
+
+        # Custom tempmemories path with provenance tracking
+        python mini_brain_eval.py --cadence weekly --tempmemories /path/to/tempmemories --provenance
+
+    Returns:
+        None (results are printed to stdout and saved to JSON file)
+    """
     parser = argparse.ArgumentParser(
         description="Mini BrainEval - Detect issues from iterlog files"
     )
