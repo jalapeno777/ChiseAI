@@ -14,8 +14,8 @@ from __future__ import annotations
 import logging
 import re
 import tempfile
-from importlib import util as importlib_util
 from datetime import UTC, datetime, timedelta
+from importlib import util as importlib_util
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -38,7 +38,10 @@ logger = logging.getLogger(__name__)
 def _load_scripts_issue_detector() -> type[Any] | None:
     """Load scripts/evaluation IssueDetector for backward compatibility."""
     scripts_module_path = (
-        Path(__file__).resolve().parents[2] / "scripts" / "evaluation" / "mini_brain_eval.py"
+        Path(__file__).resolve().parents[2]
+        / "scripts"
+        / "evaluation"
+        / "mini_brain_eval.py"
     )
     if not scripts_module_path.exists():
         return None

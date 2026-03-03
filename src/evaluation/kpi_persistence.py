@@ -19,12 +19,12 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -265,7 +265,7 @@ class KPIPersistence:
 
         try:
             # Query daily bucket for latest
-            pattern = f"bmad:chiseai:brain:kpi:daily:*"
+            pattern = "bmad:chiseai:brain:kpi:daily:*"
             latest_snapshot = None
             latest_timestamp = None
 
