@@ -27,6 +27,7 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import logging
 import sys
@@ -347,9 +348,9 @@ def generate_recommended_stories(
             "rationale": f"Based on trend analysis: {bottleneck.occurrence_count} occurrences detected",
             "recommended_actions": bottleneck.recommended_actions,
             "impact_areas": list(bottleneck.impact_scores.keys()),
-            "estimated_effort": "medium"
-            if bottleneck.priority == Priority.HIGH
-            else "low",
+            "estimated_effort": (
+                "medium" if bottleneck.priority == Priority.HIGH else "low"
+            ),
         }
         stories.append(story)
 
@@ -519,7 +520,7 @@ def run_daily_trends(
     try:
         trends_dir.mkdir(parents=True, exist_ok=True)
         reflections_dir.mkdir(parents=True, exist_ok=True)
-        logger.info(f"Created output directories")
+        logger.info("Created output directories")
     except Exception as e:
         logger.error(f"Failed to create output directories: {e}")
         return 1
@@ -573,10 +574,8 @@ def run_daily_trends(
 
     # Close Redis connection if we opened one
     if redis_client:
-        try:
+        with contextlib.suppress(Exception):
             redis_client.close()
-        except Exception:
-            pass
 
     return 0
 
