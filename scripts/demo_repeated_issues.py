@@ -17,12 +17,12 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import MagicMock
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+# Add project root to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from evaluation.fingerprinting import FingerprintClusterer, IssueFingerprint
-from evaluation.repeated_issue_detector import RepeatedIssueDetector
-from evaluation.schemas.mini_eval import Issue, IssueCategory, IssueSeverity
+from src.evaluation.fingerprinting import FingerprintClusterer, IssueFingerprint
+from src.evaluation.repeated_issue_detector import RepeatedIssueDetector
+from src.evaluation.schemas.mini_eval import Issue, IssueCategory, IssueSeverity
 
 
 def create_sample_issues():

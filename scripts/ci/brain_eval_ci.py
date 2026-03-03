@@ -167,7 +167,7 @@ def run_memory_ingestion(
         mini_eval = None
         try:
             from brain.evaluation import BrainEvaluator
-            from evaluation.mini_brain_eval import MiniBrainEval
+            from src.evaluation.mini_brain_eval import MiniBrainEval
 
             brain_evaluator = BrainEvaluator()
             mini_eval = MiniBrainEval()
