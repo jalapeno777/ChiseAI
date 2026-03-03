@@ -4,9 +4,33 @@
 
 metadata:
   project_name: ChiseAI
-  version: "2.5.7"
-  last_updated: "2026-03-02T21:30:00Z"
+  version: "2.5.9"
+  last_updated: "2026-03-03T08:45:00Z"
   recent_changes:
+    - timestamp: "2026-03-03T08:45:00Z"
+      actor: jarvis
+      action: st-eval-scheduler-001-complete
+      description: "ST-EVAL-SCHEDULER-001: Container-native BrainEval scheduler merged to main. All validation gates pass (60/60 tests, Black✓, Ruff✓). Handoff doc corrected to reflect merged state."
+      story_id: ST-EVAL-SCHEDULER-001
+      epic_id: EP-INFRA-CLEANUP-001
+      files_changed:
+        - infrastructure/docker/Dockerfile.scheduler
+        - infrastructure/docker/docker-compose.scheduler.yml
+        - docs/evaluation/README.md
+        - docs/evaluation/configuration.md
+        - docs/evaluation/architecture.md
+        - scripts/evaluation/schedule_brain_eval.py
+        - src/evaluation/trend_rollups.py
+        - src/evaluation/fingerprinting.py
+      merge_commit_sha: "5cdf40a"
+      status: completed
+      validation_summary:
+        total_tests: 60
+        total_passed: 60
+        total_failed: 0
+        black: "✓"
+        ruff: "✓"
+      completion_date: "2026-03-03"
     - timestamp: "2026-03-02T21:30:00Z"
       actor: jarvis
       action: session-wrapup-complete
@@ -651,15 +675,20 @@ epics:
     roadmap_document: docs/architecture/governance-rollout-roadmap.md
     accelerated_roadmap: docs/roadmaps/governance-autonomy-accelerated.md
 
-  # EP-INFRA-CLEANUP-001: Infrastructure Cleanup & Hardening Sprint (4 stories, TBD points)
+  # EP-INFRA-CLEANUP-001: Infrastructure Cleanup & Hardening Sprint (5 stories, TBD points)
   - id: EP-INFRA-CLEANUP-001
     name: Infrastructure Cleanup & Hardening Sprint
     status: in_progress
-    story_ids: [ST-TAIGA-001, ST-CONTAINER-001, ST-WORKFLOW-001, ST-CI-001]
-    story_count: 4
+    story_ids: [ST-TAIGA-001, ST-CONTAINER-001, ST-WORKFLOW-001, ST-CI-001, ST-EVAL-SCHEDULER-001]
+    story_count: 5
     story_points: TBD
-    description: Post-party-mode infrastructure cleanup focusing on Taiga cleanup, container governance, workflow hardening, and CI improvements
+    stories_completed: 2
+    description: Post-party-mode infrastructure cleanup focusing on Taiga cleanup, container governance, workflow hardening, CI improvements, and BrainEval scheduler containerization
     sprint_id: INFRA-CLEANUP-001
+    notes:
+      - ST-WORKFLOW-001 completed 2026-03-02
+      - ST-CI-001 assessment completed 2026-03-02
+      - ST-EVAL-SCHEDULER-001 completed 2026-03-03 (merged to main at 5cdf40a)
 
 # ============================================================
 # PHASE 1 STORIES (35 stories)
@@ -4757,6 +4786,45 @@ launch_stories:
       - Top 5 highest priority issues documented with root cause analysis
       - Remediation plan reviewed and approved by merlin
     dependency_notes: May require access to CI logs and test infrastructure; plan execution to be scheduled separately
+
+  - id: ST-EVAL-SCHEDULER-001
+    title: Container-Native BrainEval Scheduler
+    epic_id: EP-INFRA-CLEANUP-001
+    sprint_id: INFRA-CLEANUP-001
+    status: completed
+    validation_status: validated
+    story_points: 5
+    priority: P1-HIGH
+    owner_role: dev
+    completion_date: "2026-03-03"
+    merge_commit_sha: "5cdf40a"
+    description: Containerize the BrainEval scheduler for container-native execution with proper Docker networking
+    acceptance_criteria:
+      - Dockerfile.scheduler builds successfully
+      - docker-compose.scheduler.yml launches scheduler container
+      - Scheduler connects to Redis at host.docker.internal:6380
+      - All 60 tests pass
+      - Black and Ruff linting pass
+    implementation_notes:
+      - Fixed Docker connectivity (host.docker.internal instead of localhost)
+      - Resolved all TODOs in schedule_brain_eval.py
+      - Added comprehensive docstrings
+      - Created documentation: README.md, configuration.md, architecture.md
+    validation_summary:
+      total_tests: 60
+      total_passed: 60
+      total_failed: 0
+      black: "✓"
+      ruff: "✓"
+    files_changed:
+      - infrastructure/docker/Dockerfile.scheduler
+      - infrastructure/docker/docker-compose.scheduler.yml
+      - docs/evaluation/README.md
+      - docs/evaluation/configuration.md
+      - docs/evaluation/architecture.md
+      - scripts/evaluation/schedule_brain_eval.py
+      - src/evaluation/trend_rollups.py
+      - src/evaluation/fingerprinting.py
 
   # EP-PAPER-001: Paper Trading Recovery
   - id: PAPER-RECOVERY-001
