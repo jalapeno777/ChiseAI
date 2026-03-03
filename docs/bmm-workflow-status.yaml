@@ -4997,6 +4997,94 @@ backlog:
       - "Automated gates G1-G4, G7-G8 all PASS"
       - "G6 INFO (out-of-scope): InfluxDB is secondary, Redis is canonical"
 
+  # Tempmemory Ingestion Follow-up (ST-MEMORY-INGEST-001)
+  - id: ST-MEMORY-INGEST-002
+    title: Grafana Dashboard for Tempmemory Ingestion Monitoring
+    priority: P1
+    owner: TBD
+    description: Create dedicated Grafana dashboard for monitoring tempmemory ingestion health, metrics, and trends. Currently metrics exist in Redis but no visual dashboard.
+    status: planned
+    acceptance_criteria:
+      - Grafana dashboard panel for ingestion health metrics created
+      - Real-time display of: files processed, files ingested, files failed, skipped files
+      - Ingestion rate trend over time (files/hour)
+      - Type distribution visualization (decision vs pattern vs summary vs anti-pattern)
+      - Last successful/failed run timestamps
+      - Average ingestion duration per run
+      - Alert rules configured for: consecutive failures, latency > threshold, backlog > 100 files
+    related_story: ST-MEMORY-INGEST-001
+    estimated_points: 5
+    created_date: "2026-03-03"
+    notes:
+      - "Completion report (line 474-477) identified this as immediate Week 1 priority"
+      - "Metrics available in Redis: chise:governance:consolidation:metrics:ingestion"
+      - "Status key available: bmad:chiseai:tempmemory:ingestion:status"
+      - "Should integrate with existing data quality monitoring infrastructure"
+
+  - id: ST-MEMORY-INGEST-003
+    title: Auto-Archival Feature for Ingested Tempmemories
+    priority: P2
+    owner: TBD
+    description: Implement automatic archival of successfully ingested tempmemory files to prevent manual error and reduce operational burden. Currently requires manual mv commands.
+    status: planned
+    acceptance_criteria:
+      - Configurable auto-archive modes: immediate, daily, or after N days
+      - Archive location configurable (default: docs/tempmemories/archive/)
+      - Preserve ingestion history (store original path in metadata)
+      - Prevent re-ingestion of archived files (automatic skip)
+      - Rollback capability to restore from archive if needed
+      - Archive report generation (files moved, dates, sizes)
+    related_story: ST-MEMORY-INGEST-001
+    estimated_points: 4
+    created_date: "2026-03-03"
+    notes:
+      - "Completion report (line 486-489) identified this as Month 1 short-term priority"
+      - "Current manual process error-prone and time-consuming"
+      - "Should integrate with existing MemoryArchiver in consolidation system"
+
+  - id: ST-MEMORY-INGEST-004
+    title: Frontmatter Validation Pre-Commit Hook
+    priority: P2
+    owner: TBD
+    description: Create Git pre-commit hook to validate tempmemory frontmatter schema before commit. Catches errors early and prevents invalid files from reaching ingestion.
+    status: planned
+    acceptance_criteria:
+      - Pre-commit hook validates YAML frontmatter structure
+      - Required fields checked: type, story_id, created
+      - Valid type values enforced: decision, pattern, summary, anti-pattern
+      - Optional fields validated with type checking: tags, author, priority
+      - Clear error messages for validation failures
+      - Hook skippable with --no-verify flag
+      - CLI tool available for standalone validation
+    related_story: ST-MEMORY-INGEST-001
+    estimated_points: 3
+    created_date: "2026-03-03"
+    notes:
+      - "Completion report (line 496-498) identified this as Month 1 short-term priority"
+      - "Reduces ingestion failures due to malformed frontmatter"
+      - "Consistent frontmatter quality improves semantic search quality"
+
+  - id: ST-MEMORY-INGEST-005
+    title: CI Pipeline Integration for Tempmemory Ingestion
+    priority: P2
+    owner: TBD
+    description: Add tempmemory ingestion as pre-evaluation step in BrainEval CI pipeline to ensure tempmemories are ingested before evaluation runs.
+    status: planned
+    acceptance_criteria:
+      - CI pipeline runs ingestion before BrainEval evaluation
+      - Ingestion step fails CI if critical errors occur
+      - CI logs ingestion results (files processed, ingested, failed)
+      - Cache ingested memories across CI steps
+      - Validation: CI tests pass with fresh ingested memories
+      - Backward compatibility: CI still works if ingestion disabled
+    related_story: ST-MEMORY-INGEST-001
+    estimated_points: 4
+    created_date: "2026-03-03"
+    notes:
+      - "Completion report (line 469-472) identified this as immediate Week 1 priority"
+      - "Ensures BrainEval evaluations use most recent memory artifacts"
+      - "Prevents stale memories from affecting evaluation quality"
+
 summary:
   total_epics: 24
   total_stories: 119
