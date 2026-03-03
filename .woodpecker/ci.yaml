@@ -562,33 +562,3 @@ steps:
         set -euo pipefail
         pip install --no-cache-dir requests
         python scripts/ci/ci_gate.py
-
-  taiga-sync-validate:
-    image: python:3.11
-    commands:
-      - |
-        set -eu
-        # Optional gate: only run when explicitly enabled via CI env/secrets.
-        if [ "${TAIGA_SYNC_VALIDATE:-}" != "1" ]; then
-          echo "TAIGA_SYNC_VALIDATE != 1; skipping taiga sync validation"
-          exit 0
-        fi
-        pip install --no-cache-dir pyyaml requests
-        python scripts/taiga_sync.py --validate
-
-  taiga-sync-apply:
-    image: python:3.11
-    commands:
-      - |
-        set -eu
-        # Optional automation: apply only on main, only when explicitly enabled.
-        if [ "${TAIGA_SYNC_APPLY:-}" != "1" ]; then
-          echo "TAIGA_SYNC_APPLY != 1; skipping taiga sync apply"
-          exit 0
-        fi
-        if [ "${CI_COMMIT_BRANCH:-}" != "main" ]; then
-          echo "Not on main; skipping taiga sync apply"
-          exit 0
-        fi
-        pip install --no-cache-dir pyyaml requests
-        python scripts/taiga_sync.py --apply
