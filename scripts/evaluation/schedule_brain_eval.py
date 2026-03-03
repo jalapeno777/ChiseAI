@@ -270,9 +270,11 @@ def main() -> int:
     redis_client = None
     if not args.no_redis:
         try:
-            # Try to connect to Redis (default: localhost:6380 for chiseai)
+            # Try to connect to Redis (default: host.docker.internal:6380 for chiseai)
+            import os
+
             redis_client = redis.Redis(
-                host="localhost",
+                host=os.environ.get("REDIS_HOST", "host.docker.internal"),
                 port=6380,
                 db=0,
                 socket_timeout=2,
