@@ -163,6 +163,21 @@ class ConsolidationConfig:
     # Feature flag key
     feature_flag_key: str = "chise:feature_flags:governance:consolidation_enabled"
 
+    # Tempmemory ingestion settings
+    run_tempmemory_ingestion: bool = True
+    """Whether to run tempmemory ingestion as Step 0"""
+
+    tempmemory_ingestion_dry_run: bool = False
+    """If True, tempmemory ingestion runs in dry-run mode"""
+
+    tempmemory_ingestion_filter_types: list[str] = field(
+        default_factory=lambda: ["decision", "pattern", "summary", "anti-pattern"]
+    )
+    """Frontmatter types to ingest (empty list = all types)"""
+
+    tempmemory_ingestion_cadence: str = "daily"
+    """Cadence for tempmemory ingestion: 'daily', 'always', or 'manual'"""
+
     def get_policy(self, memory_type: MemoryType) -> RetentionPolicy:
         """
         Get retention policy for a memory type.
@@ -194,6 +209,10 @@ class ConsolidationConfig:
             "cold_storage_path": self.cold_storage_path,
             "golden_collection": self.golden_collection,
             "feature_flag_key": self.feature_flag_key,
+            "run_tempmemory_ingestion": self.run_tempmemory_ingestion,
+            "tempmemory_ingestion_dry_run": self.tempmemory_ingestion_dry_run,
+            "tempmemory_ingestion_filter_types": self.tempmemory_ingestion_filter_types,
+            "tempmemory_ingestion_cadence": self.tempmemory_ingestion_cadence,
         }
 
     @classmethod
@@ -225,6 +244,16 @@ class ConsolidationConfig:
             config.cold_storage_path = data["cold_storage_path"]
         if "golden_collection" in data:
             config.golden_collection = data["golden_collection"]
+        if "run_tempmemory_ingestion" in data:
+            config.run_tempmemory_ingestion = data["run_tempmemory_ingestion"]
+        if "tempmemory_ingestion_dry_run" in data:
+            config.tempmemory_ingestion_dry_run = data["tempmemory_ingestion_dry_run"]
+        if "tempmemory_ingestion_filter_types" in data:
+            config.tempmemory_ingestion_filter_types = data[
+                "tempmemory_ingestion_filter_types"
+            ]
+        if "tempmemory_ingestion_cadence" in data:
+            config.tempmemory_ingestion_cadence = data["tempmemory_ingestion_cadence"]
 
         return config
 
