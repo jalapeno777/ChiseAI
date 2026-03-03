@@ -2308,14 +2308,21 @@ validations:
     title: Container Governance Validation
     epic_id: EP-INFRA-CLEANUP-001
     story_id: ST-CONTAINER-001
-    status: planned
-    description: Validate container governance policy and enforcement are implemented.
+    status: validated
+    validation_date: "2026-03-03"
+    description: Validate container governance policy and enforcement are implemented. All out-of-category containers migrated to Terraform with proper network and label configuration.
     acceptance_criteria:
       - Network governance rules are enforced
       - Protected containers policy is documented
       - Pre-commit governance checks run successfully
+      - All containers connected to chiseai network
+      - All containers have project=chiseai label applied
     test_method: automated
     owner: infra-team
+    evidence:
+      - "Container inventory completed"
+      - "Terraform configurations updated"
+      - "Pre-commit hook validation passes"
 
   - id: V-GOV-001
     title: Governance Story ST-GOV-001 Validation
