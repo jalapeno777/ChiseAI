@@ -44,8 +44,8 @@ from pathlib import Path
 # Add project root to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from evaluation.kpi_persistence import KPIPersistence, KPIPersistenceError
-from evaluation.mini_brain_eval import MiniBrainEval, MiniBrainEvalError
+from src.evaluation.kpi_persistence import KPIPersistence, KPIPersistenceError
+from src.evaluation.mini_brain_eval import MiniBrainEval, MiniBrainEvalError
 
 # Configure logging
 logging.basicConfig(

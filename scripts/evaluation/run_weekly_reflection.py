@@ -45,6 +45,18 @@ from src.governance.reflection import (
     RootCauseCategory,
     create_reflection_artifact,
 )
+from src.governance.reflection.feature_flags import is_reflection_enabled
+
+# LLM integration (optional, graceful degradation)
+try:
+    from src.governance.reflection.llm_integration import (
+        ReflectionLLMIntegration,
+        get_llm_telemetry,
+    )
+
+    LLM_INTEGRATION_AVAILABLE = True
+except ImportError:
+    LLM_INTEGRATION_AVAILABLE = False
 
 # Configure logging
 logging.basicConfig(
@@ -448,6 +460,7 @@ def create_weekly_reflection_artifact(
     week_id: str,
     current_rollup: TrendRollup,
     previous_rollup: TrendRollup | None,
+    use_llm: bool = False,
 ) -> dict[str, Any]:
     """Create the complete weekly reflection artifact.
 
@@ -455,6 +468,7 @@ def create_weekly_reflection_artifact(
         week_id: Week identifier
         current_rollup: Current week's rollup
         previous_rollup: Previous week's rollup
+        use_llm: Whether to use LLM for insight generation
 
     Returns:
         Dictionary containing the full reflection artifact
@@ -469,6 +483,61 @@ def create_weekly_reflection_artifact(
 
     # Generate summary
     summary = generate_summary(deltas, improvements, regressions)
+
+    # LLM-powered insights (optional)
+    llm_executive_summary = ""
+    llm_insights: dict[str, Any] = {}
+    if use_llm and LLM_INTEGRATION_AVAILABLE:
+        logger.info("Generating LLM-powered insights...")
+        try:
+            llm_integration = ReflectionLLMIntegration()
+            import asyncio
+
+            # Prepare artifact data for LLM
+            artifact_data = {
+                "week_id": week_id,
+                "trend_deltas": [d.to_dict() for d in deltas],
+                "improvements": [i.to_dict() for i in improvements],
+                "regressions": [r.to_dict() for r in regressions],
+                "summary": summary,
+            }
+
+            # Generate executive summary
+            llm_executive_summary = asyncio.run(
+                llm_integration.summarize_weekly_reflection(artifact_data)
+            )
+            if llm_executive_summary:
+                logger.info("LLM executive summary generated successfully")
+
+            # Generate insights
+            trend_data = {
+                "deltas": [d.to_dict() for d in deltas],
+                "improvement_count": len(improvements),
+                "regression_count": len(regressions),
+            }
+            kpi_data = {
+                "data_points": current_rollup.data_points_count,
+                "time_range_days": 7,
+            }
+
+            insights_result = asyncio.run(
+                llm_integration.generate_llm_insights(trend_data, kpi_data)
+            )
+            if insights_result.success:
+                llm_insights = insights_result.to_dict()
+                logger.info(
+                    f"LLM insights generated (provider: {insights_result.provider_used})"
+                )
+            else:
+                logger.warning(f"LLM insights failed: {insights_result.error_message}")
+                llm_insights = {
+                    "error": insights_result.error_message,
+                    "fallback_used": True,
+                }
+
+        except Exception as e:
+            logger.warning(f"LLM insight generation failed: {e}")
+            llm_insights = {"error": str(e), "fallback_used": True}
 
     # Create weekly content
     weekly_content = WeeklyReflectionContent(
@@ -529,18 +598,26 @@ def create_weekly_reflection_artifact(
     artifact = reflection.to_dict()
     artifact["weekly_content"] = weekly_content.to_dict()
 
+    # Add LLM content if available
+    if llm_executive_summary:
+        artifact["llm_executive_summary"] = llm_executive_summary
+    if llm_insights:
+        artifact["llm_insights"] = llm_insights
+
     return artifact
 
 
 def run_weekly_reflection(
     week_id: str | None = None,
     dry_run: bool = False,
+    use_llm: bool = False,
 ) -> int:
     """Run the weekly reflection process.
 
     Args:
         week_id: Week identifier (defaults to current week)
         dry_run: If True, don't write artifact to disk
+        use_llm: If True, use LLM for insight generation
 
     Returns:
         Exit code (0=success, 1=failure)
@@ -552,6 +629,10 @@ def run_weekly_reflection(
 
         logger.info(f"Running weekly reflection for {week_id}")
         logger.info(f"Dry run: {dry_run}")
+        logger.info(f"Use LLM: {use_llm}")
+
+        if use_llm and not LLM_INTEGRATION_AVAILABLE:
+            logger.warning("LLM integration requested but not available")
 
         # Initialize trend rollup engine
         engine = TrendRollupEngine(output_dir=str(TRENDS_DIR))
@@ -569,6 +650,7 @@ def run_weekly_reflection(
             week_id=week_id,
             current_rollup=current_rollup,
             previous_rollup=previous_rollup,
+            use_llm=use_llm,
         )
 
         # Output path
@@ -592,6 +674,14 @@ def run_weekly_reflection(
         weekly_content = artifact.get("weekly_content", {})
         logger.info(f"Summary:\n{weekly_content.get('summary', 'No summary')}")
 
+        # Log LLM usage metrics if applicable
+        if use_llm and LLM_INTEGRATION_AVAILABLE:
+            try:
+                telemetry = get_llm_telemetry()
+                logger.info(f"LLM telemetry: {json.dumps(telemetry, indent=2)}")
+            except Exception as e:
+                logger.debug(f"Could not retrieve LLM telemetry: {e}")
+
         return 0
 
     except Exception as e:
@@ -601,6 +691,11 @@ def run_weekly_reflection(
 
 def main() -> int:
     """Main entry point."""
+    # Check feature flag early
+    if not is_reflection_enabled():
+        logger.info("Weekly reflection disabled by feature flag")
+        return 0
+
     parser = argparse.ArgumentParser(
         description="Run weekly KPI trend reflection",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -620,11 +715,18 @@ def main() -> int:
         help="Week identifier (YYYY-WXX format, defaults to current week)",
     )
 
+    parser.add_argument(
+        "--use-llm",
+        action="store_true",
+        help="Use LLM for insight generation (requires LLM provider configuration)",
+    )
+
     args = parser.parse_args()
 
     return run_weekly_reflection(
         week_id=args.week,
         dry_run=args.dry_run,
+        use_llm=args.use_llm,
     )
 
 

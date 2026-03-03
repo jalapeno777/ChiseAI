@@ -19,7 +19,7 @@ from importlib import util as importlib_util
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from evaluation.schemas.mini_eval import (
+from src.evaluation.schemas.mini_eval import (
     Issue,
     IssueCategory,
     IssueSeverity,

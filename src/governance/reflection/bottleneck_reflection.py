@@ -12,11 +12,24 @@ import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from .artifacts import Priority, RootCauseCategory
+from .feature_flags import is_reflection_enabled
+
+if TYPE_CHECKING:
+    from .llm_integration import LLMInsightResult
 
 logger = logging.getLogger(__name__)
+
+# LLM integration is optional - graceful degradation if unavailable
+try:
+    from . import llm_integration
+
+    LLM_INTEGRATION_AVAILABLE = True
+except ImportError:
+    LLM_INTEGRATION_AVAILABLE = False
+    logger.debug("LLM integration not available for reflections")
 
 
 @dataclass
@@ -152,6 +165,7 @@ class DailyReflectionArtifact:
     - Top 3 recurring bottlenecks
     - Impact scores (1-5 scale)
     - Remediation recommendations
+    - LLM-generated insights (optional)
     """
 
     date: str
@@ -161,10 +175,11 @@ class DailyReflectionArtifact:
     impact_scores: ImpactScore
     remediation_actions: list[RemediationAction]
     summary: str
+    llm_insights: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
-        return {
+        result = {
             "date": self.date,
             "timestamp": self.timestamp,
             "provenance": self.provenance,
@@ -173,6 +188,9 @@ class DailyReflectionArtifact:
             "remediation_actions": [r.to_dict() for r in self.remediation_actions],
             "summary": self.summary,
         }
+        if self.llm_insights:
+            result["llm_insights"] = self.llm_insights
+        return result
 
     def to_json(self, indent: int = 2) -> str:
         """Convert to JSON string."""
@@ -188,6 +206,7 @@ class WeeklyReflectionArtifact:
     - Week-over-week KPI deltas
     - Improvements and regressions
     - Framework improvement recommendations
+    - LLM-powered executive summary (optional)
     """
 
     week_start: str
@@ -199,10 +218,12 @@ class WeeklyReflectionArtifact:
     regressions: list[str]
     framework_improvements: list[FrameworkImprovement]
     summary: str
+    llm_executive_summary: str = ""
+    llm_insights: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
-        return {
+        result = {
             "week_start": self.week_start,
             "week_end": self.week_end,
             "timestamp": self.timestamp,
@@ -215,6 +236,11 @@ class WeeklyReflectionArtifact:
             ],
             "summary": self.summary,
         }
+        if self.llm_executive_summary:
+            result["llm_executive_summary"] = self.llm_executive_summary
+        if self.llm_insights:
+            result["llm_insights"] = self.llm_insights
+        return result
 
     def to_json(self, indent: int = 2) -> str:
         """Convert to JSON string."""
@@ -283,7 +309,8 @@ class BottleneckReflectionGenerator:
         self,
         trend_rollups: list[dict[str, Any]],
         date: str | datetime | None = None,
-    ) -> DailyReflectionArtifact:
+        use_llm: bool = False,
+    ) -> DailyReflectionArtifact | None:
         """
         Generate a daily reflection artifact from trend rollups.
 
@@ -291,10 +318,18 @@ class BottleneckReflectionGenerator:
             trend_rollups: List of trend rollup dictionaries containing
                           bottleneck KPIs from the monitoring system.
             date: Date for the reflection. Defaults to today (UTC).
+            use_llm: Whether to use LLM for insight generation.
+                    Falls back to deterministic approach if LLM unavailable.
 
         Returns:
-            DailyReflectionArtifact with top bottlenecks and remediation.
+            DailyReflectionArtifact with top bottlenecks and remediation,
+            or None if reflection is disabled by feature flag.
         """
+        # Check feature flag
+        if not is_reflection_enabled():
+            logger.info("Reflection disabled by feature flag")
+            return None
+
         # Normalize date
         if date is None:
             date = datetime.now(UTC)
@@ -321,6 +356,17 @@ class BottleneckReflectionGenerator:
         # Generate summary
         summary = self._generate_daily_summary(date_str, top_bottlenecks, impact_scores)
 
+        # LLM insights (optional)
+        llm_insights: dict[str, Any] = {}
+        if use_llm and LLM_INTEGRATION_AVAILABLE:
+            try:
+                llm_insights = self._generate_llm_insights_for_daily(
+                    top_bottlenecks, impact_scores, trend_rollups
+                )
+            except Exception as e:
+                logger.warning(f"LLM insight generation failed, using fallback: {e}")
+                llm_insights = {"error": str(e), "fallback_used": True}
+
         return DailyReflectionArtifact(
             date=date_str,
             timestamp=timestamp,
@@ -329,6 +375,7 @@ class BottleneckReflectionGenerator:
             impact_scores=impact_scores,
             remediation_actions=remediation_actions,
             summary=summary,
+            llm_insights=llm_insights,
         )
 
     def generate_weekly_reflection(
@@ -336,7 +383,8 @@ class BottleneckReflectionGenerator:
         trend_rollups: list[dict[str, Any]],
         previous_week_rollups: list[dict[str, Any]] | None = None,
         week_start: str | datetime | None = None,
-    ) -> WeeklyReflectionArtifact:
+        use_llm: bool = False,
+    ) -> WeeklyReflectionArtifact | None:
         """
         Generate a weekly reflection artifact with trend analysis.
 
@@ -345,10 +393,18 @@ class BottleneckReflectionGenerator:
             previous_week_rollups: Optional trend rollups from previous week
                                   for comparison. If None, assumes stable.
             week_start: Start date of the week. Defaults to current week's Monday.
+            use_llm: Whether to use LLM for insight generation.
+                    Falls back to deterministic approach if LLM unavailable.
 
         Returns:
-            WeeklyReflectionArtifact with trend deltas and recommendations.
+            WeeklyReflectionArtifact with trend deltas and recommendations,
+            or None if reflection is disabled by feature flag.
         """
+        # Check feature flag
+        if not is_reflection_enabled():
+            logger.info("Reflection disabled by feature flag")
+            return None
+
         # Normalize week_start
         if week_start is None:
             today = datetime.now(UTC)
@@ -381,6 +437,20 @@ class BottleneckReflectionGenerator:
             week_start_str, week_end_str, trend_deltas, improvements, regressions
         )
 
+        # LLM insights (optional)
+        llm_executive_summary = ""
+        llm_insights: dict[str, Any] = {}
+        if use_llm and LLM_INTEGRATION_AVAILABLE:
+            try:
+                llm_executive_summary, llm_insights = (
+                    self._generate_llm_insights_for_weekly(
+                        trend_deltas, improvements, regressions, framework_improvements
+                    )
+                )
+            except Exception as e:
+                logger.warning(f"LLM insight generation failed, using fallback: {e}")
+                llm_insights = {"error": str(e), "fallback_used": True}
+
         return WeeklyReflectionArtifact(
             week_start=week_start_str,
             week_end=week_end_str,
@@ -391,6 +461,8 @@ class BottleneckReflectionGenerator:
             regressions=regressions,
             framework_improvements=framework_improvements,
             summary=summary,
+            llm_executive_summary=llm_executive_summary,
+            llm_insights=llm_insights,
         )
 
     def export_reflection_artifact(
@@ -867,11 +939,97 @@ class BottleneckReflectionGenerator:
 
         return "\n".join(lines)
 
+    def _generate_llm_insights_for_daily(
+        self,
+        top_bottlenecks: list[BottleneckKPI],
+        impact_scores: ImpactScore,
+        trend_rollups: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Generate LLM insights for daily reflection.
+
+        Args:
+            top_bottlenecks: Top bottleneck KPIs
+            impact_scores: Aggregate impact scores
+            trend_rollups: Raw trend rollup data
+
+        Returns:
+            Dictionary with LLM insights
+        """
+        trend_data = {
+            "bottlenecks": [b.to_dict() for b in top_bottlenecks],
+            "impact_scores": impact_scores.to_dict(),
+            "rollup_count": len(trend_rollups),
+        }
+
+        kpi_data = {
+            "total_bottlenecks": len(top_bottlenecks),
+            "highest_impact": top_bottlenecks[0].bottleneck_type
+            if top_bottlenecks
+            else None,
+        }
+
+        result = llm_integration.generate_llm_insights(trend_data, kpi_data)
+        return (
+            result.to_dict() if hasattr(result, "to_dict") else {"summary": str(result)}
+        )
+
+    def _generate_llm_insights_for_weekly(
+        self,
+        trend_deltas: list[TrendDelta],
+        improvements: list[str],
+        regressions: list[str],
+        framework_improvements: list[FrameworkImprovement],
+    ) -> tuple[str, dict[str, Any]]:
+        """Generate LLM insights for weekly reflection.
+
+        Args:
+            trend_deltas: Week-over-week trend deltas
+            improvements: List of improved KPIs
+            regressions: List of regressed KPIs
+            framework_improvements: Framework improvement recommendations
+
+        Returns:
+            Tuple of (executive_summary, insights_dict)
+        """
+        artifact_data = {
+            "trend_deltas": [d.to_dict() for d in trend_deltas],
+            "improvements": improvements,
+            "regressions": regressions,
+            "framework_improvements": [f.to_dict() for f in framework_improvements],
+        }
+
+        # Generate executive summary
+        summary = llm_integration.summarize_weekly_reflection(artifact_data)
+
+        # Generate insights
+        trend_data = {
+            "deltas": [d.to_dict() for d in trend_deltas],
+            "improvement_count": len(improvements),
+            "regression_count": len(regressions),
+        }
+
+        kpi_data = {
+            "framework_improvements": len(framework_improvements),
+            "priority_high": sum(
+                1 for f in framework_improvements if f.priority == Priority.HIGH
+            ),
+        }
+
+        insights_result = llm_integration.generate_llm_insights(trend_data, kpi_data)
+        insights_dict = (
+            insights_result.to_dict()
+            if hasattr(insights_result, "to_dict")
+            else {"summary": str(insights_result)}
+        )
+
+        return summary, insights_dict
+
 
 def create_daily_reflection(
     trend_rollups: list[dict[str, Any]],
     date: str | datetime | None = None,
     output_dir: str | Path | None = None,
+    use_llm: bool = False,
 ) -> tuple[DailyReflectionArtifact, Path]:
     """
     Convenience function to create and export a daily reflection.
@@ -880,12 +1038,13 @@ def create_daily_reflection(
         trend_rollups: List of trend rollup dictionaries.
         date: Date for the reflection. Defaults to today.
         output_dir: Output directory for artifacts.
+        use_llm: Whether to use LLM for insight generation.
 
     Returns:
         Tuple of (artifact, filepath).
     """
     generator = BottleneckReflectionGenerator(output_dir)
-    artifact = generator.generate_daily_reflection(trend_rollups, date)
+    artifact = generator.generate_daily_reflection(trend_rollups, date, use_llm=use_llm)
     filepath = generator.export_reflection_artifact(artifact)
     return artifact, filepath
 
@@ -895,6 +1054,7 @@ def create_weekly_reflection(
     previous_week_rollups: list[dict[str, Any]] | None = None,
     week_start: str | datetime | None = None,
     output_dir: str | Path | None = None,
+    use_llm: bool = False,
 ) -> tuple[WeeklyReflectionArtifact, Path]:
     """
     Convenience function to create and export a weekly reflection.
@@ -904,13 +1064,14 @@ def create_weekly_reflection(
         previous_week_rollups: Optional trend rollups from previous week.
         week_start: Start date of the week.
         output_dir: Output directory for artifacts.
+        use_llm: Whether to use LLM for insight generation.
 
     Returns:
         Tuple of (artifact, filepath).
     """
     generator = BottleneckReflectionGenerator(output_dir)
     artifact = generator.generate_weekly_reflection(
-        trend_rollups, previous_week_rollups, week_start
+        trend_rollups, previous_week_rollups, week_start, use_llm=use_llm
     )
     filepath = generator.export_reflection_artifact(artifact)
     return artifact, filepath
