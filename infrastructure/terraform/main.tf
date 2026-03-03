@@ -23,6 +23,7 @@ resource "docker_volume" "grafana" { name = "chiseai-grafana-data" }
 resource "docker_volume" "gitea" { name = "chiseai-gitea-data" }
 resource "docker_volume" "woodpecker" { name = "chiseai-woodpecker-data" }
 resource "docker_volume" "woodpecker_tmp" { name = "chiseai-woodpecker-tmp" }
+resource "docker_volume" "daily_summary_logs" { name = "chiseai-daily-summary-logs" }
 resource "docker_volume" "taiga_postgres" { name = "taiga-postgres-data" }
 resource "docker_volume" "taiga_redis" { name = "taiga-redis-data" }
 resource "docker_volume" "taiga_static" { name = "taiga-static-data" }
@@ -847,6 +848,67 @@ resource "docker_container" "chiseai_ohlcv_ingestion" {
 
   healthcheck {
     test     = ["CMD-SHELL", "python3 -c \"import os; exit(0) if any('run_ohlcv_ingestion' in open(f'/proc/{p}/cmdline', 'r').read() for p in os.listdir('/proc') if p.isdigit()) else exit(1)\" || exit 1"]
+    interval = "60s"
+    timeout  = "10s"
+    retries  = 3
+  }
+}
+
+# Daily Summary Cron Job - Paper trading daily reports
+# Story: ST-CONTAINER-001
+# Migrated from docker-compose.daily-summary.yml to Terraform
+# Runs daily summary scheduler at midnight UTC
+resource "docker_container" "chiseai_daily_summary" {
+  name  = "chiseai-daily-summary"
+  image = "chiseai-daily-summary:latest"
+
+  env = [
+    "REDIS_HOST=chiseai-redis",
+    "REDIS_PORT=6380",
+    "REDIS_DB=0",
+    "POSTGRES_HOST=chiseai-postgres",
+    "POSTGRES_PORT=5434",
+    "POSTGRES_USER=chiseai",
+    "POSTGRES_PASSWORD=${var.chise_postgres_password}",
+    "POSTGRES_DB=chiseai",
+    "INFLUXDB_URL=http://chiseai-influxdb:18087",
+    "INFLUXDB_TOKEN=${var.influxdb_token}",
+    "INFLUXDB_ORG=${var.influxdb_org}",
+    "INFLUXDB_BUCKET=${var.influxdb_bucket}",
+    "PYTHONUNBUFFERED=1",
+    "PYTHONPATH=/app:/app/src",
+    "LOG_FILE=/app/logs/daily_summary.log",
+    "LOCK_FILE=/tmp/chiseai_daily_summary.lock",
+  ]
+
+  restart = "always"
+
+  networks_advanced {
+    name = docker_network.chiseai.name
+  }
+
+  labels {
+    label = "project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.service"
+    value = "daily-summary"
+  }
+
+  volumes {
+    volume_name    = docker_volume.daily_summary_logs.name
+    container_path = "/app/logs"
+  }
+
+  healthcheck {
+    test     = ["CMD-SHELL", "pgrep -x cron > /dev/null || exit 1"]
     interval = "60s"
     timeout  = "10s"
     retries  = 3
