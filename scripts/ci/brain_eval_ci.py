@@ -162,8 +162,23 @@ def run_memory_ingestion(
                 dry_run=dry_run,
             )
 
-        # Initialize BrainEvalIntegration with Redis client
+        # Initialize brain evaluators for KPI updates
+        brain_evaluator = None
+        mini_eval = None
+        try:
+            from brain.evaluation import BrainEvaluator
+            from evaluation.mini_brain_eval import MiniBrainEval
+
+            brain_evaluator = BrainEvaluator()
+            mini_eval = MiniBrainEval()
+            logger.info("Brain evaluators initialized for KPI updates")
+        except Exception as e:
+            logger.warning(f"Could not initialize brain evaluators: {e}")
+
+        # Initialize BrainEvalIntegration with evaluators and Redis client
         integration = BrainEvalIntegration(
+            brain_evaluator=brain_evaluator,
+            mini_eval=mini_eval,
             provenance_tracker=provenance_tracker,
             redis_client=redis_client,
             dry_run=dry_run,
@@ -181,11 +196,9 @@ def run_memory_ingestion(
 
             try:
                 if source == "iterlog":
-                    metrics = integration.ingest_from_iterlog(update_kpis=False)
+                    metrics = integration.ingest_from_iterlog(update_kpis=True)
                 elif source == "tempmemory":
-                    metrics = integration.ingest_from_tempmemory_files(
-                        update_kpis=False
-                    )
+                    metrics = integration.ingest_from_tempmemory_files(update_kpis=True)
                 elif source == "redis":
                     # Run full migration and ingest from the report
                     from governance.tempmemory.migration import (
@@ -198,7 +211,7 @@ def run_memory_ingestion(
                     )
                     report = engine.run_migration()
                     metrics = integration.ingest_from_migration_report(
-                        report, update_kpis=False
+                        report, update_kpis=True
                     )
                 else:
                     logger.warning(f"Unknown source: {source}")
