@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -74,10 +75,14 @@ def create_redis_client():
     try:
         import redis
 
+        # Use environment variables with fallback for container environments
+        redis_host = os.getenv("REDIS_HOST", "host.docker.internal")
+        redis_port = int(os.getenv("REDIS_PORT", "6380"))
+
         # Try to connect to Redis
         client = redis.Redis(
-            host="localhost",
-            port=6380,
+            host=redis_host,
+            port=redis_port,
             decode_responses=True,
             socket_connect_timeout=5,
             socket_timeout=5,
