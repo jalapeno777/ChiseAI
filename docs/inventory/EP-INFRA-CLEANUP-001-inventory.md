@@ -1,9 +1,10 @@
 # EP-INFRA-CLEANUP-001 Infrastructure Cleanup Inventory
 
 **Generated**: 2026-03-02
+**Updated**: 2026-03-03 (ST-CONTAINER-001 completion)
 **Story ID**: EP-INFRA-CLEANUP-001
 **Agent**: dev
-**Phase**: Inventory Only (No Destructive Actions)
+**Phase**: ST-CONTAINER-001 Container Governance Complete
 
 ---
 
@@ -191,6 +192,7 @@ resource "docker_volume" "taiga_media" { name = "taiga-media-data" }
 | chiseai-data-quality-monitor | chiseai-data-quality-monitor:latest | Up 4 days | chiseai | ✅ |
 | chiseai-datasource-health-monitor | chiseai-data-quality-monitor:latest | Up 4 days | chiseai | ✅ |
 | chiseai-ohlcv-ingestion | chiseai-ohlcv-ingestion:latest | Up 33 hours | chiseai | ✅ |
+| chiseai-daily-summary | chiseai-daily-summary:latest | Up 4 days | chiseai | ✅ |
 | taiga-front | taigaio/taiga-front:latest | Up 4 days | chiseai | ✅ |
 | taiga-back | taigaio/taiga-back:latest | Up 4 days | chiseai | ✅ |
 | taiga-events | taigaio/taiga-events:latest | Up 4 days | chiseai | ✅ |
@@ -202,9 +204,9 @@ resource "docker_volume" "taiga_media" { name = "taiga-media-data" }
 
 | Container | Image | Status | Network | Purpose | Migration Plan |
 |-----------|-------|--------|---------|---------|----------------|
-| chiseai-daily-summary | chiseai-daily-summary:latest | Up 4 days | chiseai | Paper trading daily reports | Add to Terraform |
+| *(none)* | - | - | - | - | - |
 
-**Note**: `chiseai-daily-summary` is managed via `docker-compose.daily-summary.yml` and needs Terraform migration.
+**Note**: All ChiseAI containers are now Terraform-managed as of 2026-03-03.
 
 #### Protected Containers (NO TOUCH)
 
@@ -242,10 +244,10 @@ All ChiseAI containers are on the `chiseai` network and have `project=chiseai` l
 ### 2.3 Terraform State
 
 ```
-Terraform Resources (30 total):
-- 17 docker_container resources
+Terraform Resources (32 total):
+- 18 docker_container resources (includes chiseai-daily-summary)
 - 1 docker_network resource
-- 10 docker_volume resources
+- 11 docker_volume resources (includes daily-summary-logs)
 - 6 grafana_dashboard resources
 - 1 grafana_folder resource
 - 1 null_resource (postgres init)
@@ -255,10 +257,10 @@ Terraform Resources (30 total):
 
 | Check | Status | Notes |
 |-------|--------|-------|
-| All ChiseAI containers on chiseai network | ✅ PASS | 20 containers on chiseai |
+| All ChiseAI containers on chiseai network | ✅ PASS | 21 containers on chiseai |
 | All containers have project=chiseai label | ✅ PASS | All Terraform-managed containers labeled |
 | Protected containers untouched | ✅ PASS | tradedev, MCP servers not modified |
-| Non-Terraform containers identified | ✅ PASS | chiseai-daily-summary needs migration |
+| Non-Terraform containers identified | ✅ PASS | chiseai-daily-summary migrated to Terraform (ST-CONTAINER-001) |
 
 ---
 
