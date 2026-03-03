@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from evaluation.schemas.mini_eval import Issue
+    from src.evaluation.schemas.mini_eval import Issue
 
 
 class IssueFingerprint:
@@ -26,7 +26,7 @@ class IssueFingerprint:
     their descriptions and creating consistent hash-based identifiers.
 
         Example:
-            >>> from evaluation.schemas.mini_eval import Issue, IssueCategory, IssueSeverity
+            >>> from src.evaluation.schemas.mini_eval import Issue, IssueCategory, IssueSeverity
             >>> issue = Issue.create(
             ...     category=IssueCategory.DB_CONNECTIVITY,
             ...     severity=IssueSeverity.P1,
