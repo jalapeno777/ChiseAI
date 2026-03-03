@@ -698,7 +698,7 @@ epics:
     story_ids: [ST-TAIGA-001, ST-CONTAINER-001, ST-WORKFLOW-001, ST-CI-001, ST-EVAL-SCHEDULER-001]
     story_count: 5
     story_points: TBD
-    stories_completed: 3
+    stories_completed: 5
     description: Post-party-mode infrastructure cleanup focusing on Taiga cleanup, container governance, workflow hardening, CI improvements, and BrainEval scheduler containerization
     sprint_id: INFRA-CLEANUP-001
     notes:
@@ -706,7 +706,7 @@ epics:
       - ST-CI-001 Phase 2 (Pipeline Hardening) completed 2026-03-03
       - ST-EVAL-SCHEDULER-001 completed 2026-03-03 (merged to main at 5cdf40a)
       - ST-CONTAINER-001 completed 2026-03-03 (merged to main at 723d9bf)
-      - ST-TAIGA-001 in progress (pending final verification)
+      - ST-TAIGA-001 completed 2026-03-03 (merged to main at 58ffc51)
       - ST-CI-001 Phase 3 (Remediation Execution) pending merlin review
 
 # ============================================================
@@ -4725,27 +4725,27 @@ launch_stories:
       - conflict_rate: <2%
       - rollback_success_rate: 100%
 
-   # EP-INFRA-CLEANUP-001: Infrastructure Cleanup & Hardening Sprint (4 stories)
-   - id: ST-TAIGA-001
-     title: Remove Taiga Entirely from Infrastructure
-     epic_id: EP-INFRA-CLEANUP-001
-     sprint_id: INFRA-CLEANUP-001
-     status: completed
-     validation_status: validated
-     completion_date: "2026-03-03"
-     completion_notes: "Taiga completely removed from infrastructure. All containers, volumes, and code files deleted. CI steps removed. Backup artifacts preserved at /tmp/backups/ST-TAIGA-001/."
-     story_points: TBD
-     priority: P0-CRITICAL
-     owner_role: merlin
-     description: Complete removal of Taiga from the infrastructure including all containers, Terraform definitions, and ensuring no project dependencies remain on Taiga services
-     acceptance_criteria:
+  # EP-INFRA-CLEANUP-001: Infrastructure Cleanup & Hardening Sprint (4 stories)
+  - id: ST-TAIGA-001
+    title: Remove Taiga Entirely from Infrastructure
+    epic_id: EP-INFRA-CLEANUP-001
+    sprint_id: INFRA-CLEANUP-001
+    status: completed
+    validation_status: validated
+    completion_date: "2026-03-03"
+    completion_notes: "Taiga completely removed from infrastructure. All containers, volumes, and code files deleted. CI steps removed. Backup artifacts preserved at /tmp/backups/ST-TAIGA-001/."
+    story_points: TBD
+    priority: P0-CRITICAL
+    owner_role: merlin
+    description: Complete removal of Taiga from the infrastructure including all containers, Terraform definitions, and ensuring no project dependencies remain on Taiga services
+    acceptance_criteria:
        - All Taiga containers (taiga-front, taiga-back, taiga-events, taiga-postgres, taiga-redis, taiga-rabbitmq) removed from Terraform
        - Terraform state cleaned of all Taiga resources
        - Verification that no project code or services depend on Taiga APIs or data
        - All documentation referencing Taiga updated or removed
        - Docker volumes and networks associated with Taiga cleaned up
        - Confirmation that removal does not impact other chiseai network services
-     dependency_notes: Requires coordination with any teams using Taiga for project tracking; backup any critical data before removal
+    dependency_notes: Requires coordination with any teams using Taiga for project tracking; backup any critical data before removal
 
   - id: ST-CONTAINER-001
     title: Container Governance - Bring Out-of-Category Containers Under Terraform
