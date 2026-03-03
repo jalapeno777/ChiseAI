@@ -203,7 +203,7 @@ def run_mini_eval(
                 },
             )
 
-            logger.info(f"KPI snapshot persisted successfully")
+            logger.info("KPI snapshot persisted successfully")
             logger.info(f"  Run ID: {run_id}")
             logger.info(f"  Bucket: {snapshot.bucket_type} / {snapshot.bucket_key}")
             logger.info(f"  Timestamp: {snapshot.timestamp}")
