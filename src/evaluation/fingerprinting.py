@@ -105,6 +105,14 @@ class IssueFingerprint:
 
         # Replace file paths, keeping only filename
         def replace_path(match: re.Match) -> str:
+            """Replace file path with filename only.
+
+            Args:
+                match: Regex match object containing the file path
+
+            Returns:
+                Filename extracted from the path, or "<PATH>" placeholder
+            """
             path = match.group()
             # Extract just the filename
             filename = path.split("/")[-1].split("\\")[-1]
