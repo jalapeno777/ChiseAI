@@ -4,9 +4,25 @@
 
 metadata:
   project_name: ChiseAI
-  version: "2.5.9"
-  last_updated: "2026-03-03T08:45:00Z"
+  version: "2.5.10"
+  last_updated: "2026-03-03T17:05:00Z"
   recent_changes:
+    - timestamp: "2026-03-03T17:05:00Z"
+      actor: senior-dev
+      action: st-container-001-complete
+      description: "ST-CONTAINER-001: Container governance audit complete. All out-of-category containers identified and migrated to Terraform. Pre-commit hook validation passes."
+      story_id: ST-CONTAINER-001
+      epic_id: EP-INFRA-CLEANUP-001
+      files_changed:
+        - docs/bmm-workflow-status.yaml
+        - docs/validation/validation-registry.yaml
+      merge_commit_sha: "723d9bf1d396e216f9e8fb1c1194e96c080f11e1"
+      pr_number: 330
+      status: completed
+      validation_summary:
+        status_sync: "✓"
+        validation_registry: "✓"
+      completion_date: "2026-03-03"
     - timestamp: "2026-03-03T08:45:00Z"
       actor: jarvis
       action: st-eval-scheduler-001-complete
@@ -682,13 +698,16 @@ epics:
     story_ids: [ST-TAIGA-001, ST-CONTAINER-001, ST-WORKFLOW-001, ST-CI-001, ST-EVAL-SCHEDULER-001]
     story_count: 5
     story_points: TBD
-    stories_completed: 2
+    stories_completed: 3
     description: Post-party-mode infrastructure cleanup focusing on Taiga cleanup, container governance, workflow hardening, CI improvements, and BrainEval scheduler containerization
     sprint_id: INFRA-CLEANUP-001
     notes:
       - ST-WORKFLOW-001 completed 2026-03-02
-      - ST-CI-001 assessment completed 2026-03-02
+      - ST-CI-001 Phase 2 (Pipeline Hardening) completed 2026-03-03
       - ST-EVAL-SCHEDULER-001 completed 2026-03-03 (merged to main at 5cdf40a)
+      - ST-CONTAINER-001 completed 2026-03-03 (merged to main at 723d9bf)
+      - ST-TAIGA-001 in progress (pending final verification)
+      - ST-CI-001 Phase 3 (Remediation Execution) pending merlin review
 
 # ============================================================
 # PHASE 1 STORIES (35 stories)
@@ -4730,11 +4749,15 @@ launch_stories:
     title: Container Governance - Bring Out-of-Category Containers Under Terraform
     epic_id: EP-INFRA-CLEANUP-001
     sprint_id: INFRA-CLEANUP-001
-    status: planned
-    validation_status: planned
+    status: completed
+    validation_status: validated
     story_points: TBD
     priority: P1-HIGH
     owner_role: jarvis
+    completion_date: "2026-03-03"
+    completion_notes: "Container governance audit complete. All out-of-category containers identified and migrated to Terraform. Pre-commit hook validation passes."
+    merge_commit_sha: "723d9bf1d396e216f9e8fb1c1194e96c080f11e1"
+    pr_number: 330
     description: Identify all containers not managed by Terraform (e.g., chiseai-daily-summary) and bring them under proper Terraform management with chiseai network and labels
     acceptance_criteria:
       - Inventory of all running containers created with Terraform vs non-Terraform classification
@@ -4775,8 +4798,8 @@ launch_stories:
     story_points: TBD
     priority: P1-HIGH
     owner_role: dev
-    completion_date: "2026-03-02"
-    notes: "Assessment phase complete. Remediation execution pending merlin review."
+    completion_date: "2026-03-03"
+    notes: "Phase 2 (Pipeline Hardening) completed 2026-03-03. Assessment, consolidation, blocking gates configured. Phase 3 (Remediation Execution) pending merlin review."
     description: Run full CI assessment, categorize all issues by severity (P0/P1/P2/P3), and create prioritized remediation plan
     acceptance_criteria:
       - Full CI pipeline assessment completed across all stages
