@@ -1,0 +1,203 @@
+# Woodpecker Cron Pipeline for KPI Evaluation
+# Story: ST-KPI-005 - Scheduler Integration
+#
+# DESIGN PRINCIPLE: Non-blocking steps with single fail point
+# - Individual steps capture exit codes but always exit 0
+# - The ci-gate step (at the end) is the SINGLE authoritative failure point
+#
+# CRON SCHEDULES (configured in Woodpecker UI):
+#   - 6h-eval: Every 6 hours (0 */6 * * *)
+#   - daily-trends: Daily at 00:15 UTC (15 0 * * *)
+#   - weekly-reflection: Weekly on Monday at 01:00 UTC (0 1 * * 1)
+#
+# TRIGGER: Set CI_COMMIT_MESSAGE to identify cycle type:
+#   - "cron:6h-eval" for 6-hour cycle
+#   - "cron:daily-trends" for daily cycle
+#   - "cron:weekly-reflection" for weekly cycle
+#
+# SAFETY: No risk cap logic modified
+# SAFETY: No promotion gate logic modified
+# SAFETY: No live trading flow modified
+
+when:
+  event:
+    - cron
+  branch:
+    - main
+
+clone:
+  git:
+    image: woodpeckerci/plugin-git
+    settings:
+      remote:
+        from_secret: gitea_clone_url
+
+steps:
+  kpi-scheduler-6h:
+    image: python:3.11
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir pyyaml requests numpy scipy redis
+          
+          # Check if this is a 6h cron trigger
+          if [ "${CI_COMMIT_MESSAGE:-}" != "cron:6h-eval" ]; then
+            echo "kpi-scheduler-6h: not 6h cron trigger, skipping"
+            exit 0
+          fi
+          
+          echo "Running 6-hour KPI mini eval cycle..."
+          python3 scripts/evaluation/kpi_scheduler.py --cycle 6h
+          
+          # List produced artifacts
+          echo "Artifacts produced:"
+          find _bmad-output/brain-eval -name "*.json" -type f 2>/dev/null || echo "No artifacts found"
+        ) > _bmad-output/ci/kpi-scheduler-6h.log 2>&1
+        code=$?
+        cat _bmad-output/ci/kpi-scheduler-6h.log
+        echo "$code" > _bmad-output/ci/kpi-scheduler-6h.status
+        exit 0
+
+  kpi-scheduler-daily:
+    image: python:3.11
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir pyyaml requests numpy scipy redis
+          
+          # Check if this is a daily cron trigger
+          if [ "${CI_COMMIT_MESSAGE:-}" != "cron:daily-trends" ]; then
+            echo "kpi-scheduler-daily: not daily cron trigger, skipping"
+            exit 0
+          fi
+          
+          echo "Running daily KPI trend cycle..."
+          python3 scripts/evaluation/kpi_scheduler.py --cycle daily
+          
+          # List produced artifacts
+          echo "Artifacts produced:"
+          find _bmad-output/brain-eval -name "*.json" -type f 2>/dev/null || echo "No artifacts found"
+        ) > _bmad-output/ci/kpi-scheduler-daily.log 2>&1
+        code=$?
+        cat _bmad-output/ci/kpi-scheduler-daily.log
+        echo "$code" > _bmad-output/ci/kpi-scheduler-daily.status
+        exit 0
+
+  kpi-scheduler-weekly:
+    image: python:3.11
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir pyyaml requests numpy scipy redis
+          
+          # Check if this is a weekly cron trigger
+          if [ "${CI_COMMIT_MESSAGE:-}" != "cron:weekly-reflection" ]; then
+            echo "kpi-scheduler-weekly: not weekly cron trigger, skipping"
+            exit 0
+          fi
+          
+          echo "Running weekly KPI reflection cycle..."
+          python3 scripts/evaluation/kpi_scheduler.py --cycle weekly
+          
+          # List produced artifacts
+          echo "Artifacts produced:"
+          find _bmad-output/brain-eval -name "*.json" -type f 2>/dev/null || echo "No artifacts found"
+        ) > _bmad-output/ci/kpi-scheduler-weekly.log 2>&1
+        code=$?
+        cat _bmad-output/ci/kpi-scheduler-weekly.log
+        echo "$code" > _bmad-output/ci/kpi-scheduler-weekly.status
+        exit 0
+
+  # Fallback: auto-detect cycle from commit message pattern
+  kpi-scheduler-auto:
+    image: python:3.11
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir pyyaml requests numpy scipy redis
+          
+          CRON_MSG="${CI_COMMIT_MESSAGE:-}"
+          
+          # Skip if already handled by specific steps
+          case "$CRON_MSG" in
+            cron:6h-eval|cron:daily-trends|cron:weekly-reflection)
+              echo "kpi-scheduler-auto: already handled by specific step, skipping"
+              exit 0
+              ;;
+          esac
+          
+          # Try to extract cycle from message pattern
+          CYCLE=""
+          case "$CRON_MSG" in
+            *6h*|*6-hour*|*mini*)
+              CYCLE="6h"
+              ;;
+            *daily*|*trends*|*day*)
+              CYCLE="daily"
+              ;;
+            *weekly*|*reflection*|*week*)
+              CYCLE="weekly"
+              ;;
+            *)
+              echo "kpi-scheduler-auto: unknown cron trigger, skipping"
+              exit 0
+              ;;
+          esac
+          
+          echo "Running KPI scheduler cycle: $CYCLE"
+          python3 scripts/evaluation/kpi_scheduler.py --cycle "$CYCLE"
+          
+          # List produced artifacts
+          echo "Artifacts produced:"
+          find _bmad-output/brain-eval -name "*.json" -type f 2>/dev/null || echo "No artifacts found"
+        ) > _bmad-output/ci/kpi-scheduler-auto.log 2>&1
+        code=$?
+        cat _bmad-output/ci/kpi-scheduler-auto.log
+        echo "$code" > _bmad-output/ci/kpi-scheduler-auto.status
+        exit 0
+
+  ci-gate:
+    image: python:3.11
+    commands:
+      - |
+        set -euo pipefail
+        pip install --no-cache-dir requests
+        
+        # Check status files and fail if any non-zero
+        FAILED=0
+        for status_file in _bmad-output/ci/kpi-scheduler-*.status; do
+          if [ -f "$status_file" ]; then
+            code=$(cat "$status_file")
+            name=$(basename "$status_file" .status)
+            if [ "$code" != "0" ]; then
+              echo "FAIL: $name exited with code $code"
+              FAILED=1
+            else
+              echo "PASS: $name"
+            fi
+          fi
+        done
+        
+        if [ "$FAILED" = "1" ]; then
+          echo "KPI scheduler cron pipeline failed"
+          exit 1
+        fi
+        
+        echo "KPI scheduler cron pipeline passed"
+        exit 0
