@@ -387,25 +387,28 @@ class TrendRollupEngine:
     def _compute_fix_reopen_rate(self, issues: list[dict]) -> float:
         """Compute fix reopen rate.
 
-        NOTE: This is a placeholder. The actual data for tracking issue
-        reopenings after fixes is not yet available in the KPI persistence
-        layer. This requires:
-        1. Fix tracking in the issue lifecycle
-        2. Reopen event logging
-        3. Correlation between fixes and subsequent occurrences
+        NOTE: This metric is not yet implementable due to missing data tracking
+        in the KPI persistence layer. To implement this metric, the following
+        data structures and tracking are required:
+
+        1. Issue lifecycle state tracking (open -> in_progress -> fixed)
+        2. Reopen event logging (when a fixed issue recurs with same fingerprint)
+        3. Temporal correlation between fix timestamps and subsequent occurrences
+        4. Fix metadata (who fixed, when fixed, fix method)
+
+        BACKLOG TRACKING:
+        - Story: ST-KPI-003 (hypothetical future story)
+        - Title: Add fix/reopen tracking to issue lifecycle
+        - Description: Extend ST-KPI-001 persistence layer to track issue state
+          transitions and reopen events for calculating fix_reopen_rate.
 
         Returns:
-            0.0 (placeholder with explicit rationale)
+            0.0 (placeholder value until tracking infrastructure is available)
         """
-        # TODO: Implement when fix/reopen data becomes available
-        # Rationale: We need to track:
-        # 1. When an issue is marked as "fixed"
-        # 2. When the same fingerprint appears again after a fix
-        # 3. Calculate: reopens / total_fixes
-
         logger.warning(
             "fix_reopen_rate is a placeholder - requires fix tracking data "
-            "not yet available in ST-KPI-001 persistence layer"
+            "not yet available in ST-KPI-001 persistence layer. "
+            "See docstring for implementation requirements."
         )
         return 0.0
 

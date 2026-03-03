@@ -111,7 +111,7 @@ class SchedulerCheckpoint:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "SchedulerCheckpoint":
+    def from_dict(cls, data: dict[str, Any]) -> SchedulerCheckpoint:
         """Create checkpoint from dictionary."""
         return cls(
             state=data.get("state", SchedulerState.INITIALIZING.value),
@@ -167,9 +167,11 @@ class HealthCheckHandler(http.server.BaseHTTPRequestHandler):
     def _handle_status(self) -> None:
         """Handle detailed status request."""
         status = {
-            "status": "healthy"
-            if self.checkpoint.state != SchedulerState.ERROR.value
-            else "unhealthy",
+            "status": (
+                "healthy"
+                if self.checkpoint.state != SchedulerState.ERROR.value
+                else "unhealthy"
+            ),
             "state": self.checkpoint.state,
             "checkpoint": self.checkpoint.to_dict(),
             "timestamp": datetime.now(UTC).isoformat(),
