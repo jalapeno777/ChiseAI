@@ -70,6 +70,7 @@ class Issue:
 
 
 from .fingerprinting import FingerprintCluster, FingerprintClusterer, IssueFingerprint
+from .kpi_persistence import KPIPersistence, KPIPersistenceError, KPISnapshot
 from .mini_brain_eval import MiniBrainEval
 from .repeated_issue_detector import (
     IssueCluster,
@@ -77,6 +78,7 @@ from .repeated_issue_detector import (
     RepeatedIssueReport,
     TrendAnalysis,
 )
+from .trend_rollups import TrendRollup, TrendRollupEngine
 from .schemas.mini_eval import (
     Issue as MiniEvalIssue,
 )
@@ -102,10 +104,15 @@ __all__ = [
     "IssueFingerprint",
     "FingerprintClusterer",
     "FingerprintCluster",
+    "TrendRollup",
+    "TrendRollupEngine",
     "MiniEvalResult",
     "MiniEvalIssue",
     "MiniEvalIssueCategory",
     "IssueSeverity",
     "Mitigation",
     "MitigationResult",
+    "KPIPersistence",
+    "KPIPersistenceError",
+    "KPISnapshot",
 ]
