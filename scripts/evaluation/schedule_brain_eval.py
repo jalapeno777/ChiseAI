@@ -35,7 +35,7 @@ sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "src"))
 
 try:
-    from evaluation.mini_brain_eval import MiniBrainEval
+    from src.evaluation.mini_brain_eval import MiniBrainEval
 except ImportError as e:
     print(f"ERROR: Failed to import MiniBrainEval: {e}", file=sys.stderr)
     sys.exit(1)

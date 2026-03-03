@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
-from src.evaluation.fingerprinting import (
+from .fingerprinting import (
     FingerprintCluster,
     FingerprintClusterer,
     IssueFingerprint,
@@ -401,7 +401,7 @@ class RepeatedIssueDetector:
         for issue_data in issues:
             # Create a temporary Issue object for fingerprinting
             try:
-                from src.evaluation.schemas.mini_eval import Issue
+                from .schemas.mini_eval import Issue
 
                 issue = Issue(
                     issue_id=issue_data.get("issue_id", ""),
@@ -436,7 +436,7 @@ class RepeatedIssueDetector:
         issues_by_fingerprint: dict[str, list[dict]] = {}
         for issue in issues:
             try:
-                from src.evaluation.schemas.mini_eval import Issue
+                from .schemas.mini_eval import Issue
 
                 temp_issue = Issue(
                     issue_id=issue.get("issue_id", ""),

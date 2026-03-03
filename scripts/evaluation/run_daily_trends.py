@@ -42,7 +42,7 @@ sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "src"))
 
 try:
-    from evaluation.trend_rollups import TrendRollup, TrendRollupEngine
+    from src.evaluation.trend_rollups import TrendRollup, TrendRollupEngine
 except ImportError as e:
     print(f"ERROR: Failed to import TrendRollupEngine: {e}", file=sys.stderr)
     sys.exit(1)
