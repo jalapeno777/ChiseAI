@@ -2486,7 +2486,7 @@ launch_stories:
   title: Paper Trading 30-Minute Proof Loop Validation
   validation_status: closed_with_manual_and_info_exceptions
 metadata:
-  last_updated: '2026-03-04T15:36:43Z'
+  last_updated: '2026-03-04T16:00:00Z'
   prd_location: docs/prd.md
   prd_note: 'Phased perps execution: continuous backtest -> Bybit demo paper -> Bitget
     live; Grafana-first ops UI; Binance used as reference market-structure venue.
@@ -2494,31 +2494,52 @@ metadata:
     1.'
   project_name: ChiseAI
   recent_changes:
-  - - action: paper-2025-batch1-complete
-      actor: dev
-      branches_created:
-      - feature/PAPER-2025-001-symbol-registry
-      - feature/PAPER-2025-002-provenance-model
-      - feature/PAPER-2025-003-trade-journal-model
-      description: 'PAPER-2025-BATCH1: Batch 1 git remediation complete. Implementation
-        files committed to proper feature branches and PR workflow.'
-      epic_id: EP-PAPER-TRADING-001
-      files_changed:
-      - src/execution/paper/symbol_registry.py
-      - src/execution/paper/provenance.py
-      - src/execution/paper/trade_journal.py
-      - tests/test_execution/test_paper/test_symbol_registry.py
-      - tests/test_execution/test_paper/test_provenance.py
-      - tests/test_execution/test_paper/test_trade_journal.py
-      status: completed
-      story_id: PAPER-2025-BATCH1
-      timestamp: '2026-03-04T15:25:00Z'
-      validation_summary:
-        git_workflow_followed: "\u2713"
-        provenance_branch: "\u2713 Pushed to origin"
-        root_cause: Implementation complete but git workflow skipped - now remediated
-        symbol_registry_branch: "\u2713 Pushed to origin"
-        trade_journal_branch: "\u2713 Pushed to origin"
+  - action: paper-2025-batch2-complete
+    actor: jarvis
+    branches_created:
+    - feature/PAPER-2025-BATCH2-001-symbol-registry-integration
+    - feature/PAPER-2025-BATCH2-002-provenance-pipeline
+    description: 'PAPER-2025-BATCH2: Batch 2 orchestrator integration complete. Symbol
+      registry invariant wired into orchestrator with acquisition/release logic. Provenance
+      capture pipeline integrated at all decision points.'
+    epic_id: EP-PAPER-TRADING-001
+    files_changed:
+    - src/execution/paper/orchestrator.py
+    - tests/test_execution/test_paper/test_orchestrator_symbol_registry.py
+    - tests/test_execution/test_paper/test_orchestrator_provenance.py
+    status: completed
+    story_id: PAPER-2025-BATCH2
+    timestamp: '2026-03-04T16:00:00Z'
+    validation_summary:
+      git_workflow_followed: "\u2713"
+      provenance_pipeline_branch: "\u2713 Pushed to origin"
+      symbol_registry_integration_branch: "\u2713 Pushed to origin"
+      tests_passed: "\u2713 81+ tests passing"
+  - action: paper-2025-batch1-complete
+    actor: dev
+    branches_created:
+    - feature/PAPER-2025-001-symbol-registry
+    - feature/PAPER-2025-002-provenance-model
+    - feature/PAPER-2025-003-trade-journal-model
+    description: 'PAPER-2025-BATCH1: Batch 1 git remediation complete. Implementation
+      files committed to proper feature branches and PR workflow.'
+    epic_id: EP-PAPER-TRADING-001
+    files_changed:
+    - src/execution/paper/symbol_registry.py
+    - src/execution/paper/provenance.py
+    - src/execution/paper/trade_journal.py
+    - tests/test_execution/test_paper/test_symbol_registry.py
+    - tests/test_execution/test_paper/test_provenance.py
+    - tests/test_execution/test_paper/test_trade_journal.py
+    status: completed
+    story_id: PAPER-2025-BATCH1
+    timestamp: '2026-03-04T15:25:00Z'
+    validation_summary:
+      git_workflow_followed: "\u2713"
+      provenance_branch: "\u2713 Pushed to origin"
+      root_cause: Implementation complete but git workflow skipped - now remediated
+      symbol_registry_branch: "\u2713 Pushed to origin"
+      trade_journal_branch: "\u2713 Pushed to origin"
   - action: st-kimi-canary-001-complete
     actor: jarvis
     description: 'ST-KIMI-CANARY-001: Post-merge canary validation complete. .env.example
