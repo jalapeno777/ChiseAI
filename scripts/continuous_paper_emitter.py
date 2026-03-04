@@ -863,8 +863,10 @@ def main():
     error_count = 0
     last_heartbeat = time.time()
     last_price_update = time.time()
-    last_recap = time.time()  # Track last Discord recap
-    recap_interval = 300.0  # Send recap every 5 minutes
+    # last_recap = time.time()  # Track last Discord recap
+    # recap_interval = 300.0  # Send recap every 5 minutes
+    # DISABLED (PAPER-EXEC-001): Recap timer disabled to prevent Discord spam
+    # OPEN and CLOSE session messages are preserved
 
     try:
         while not shutdown_requested:
@@ -1012,14 +1014,16 @@ def main():
                         f"errors={error_count}, portfolio={portfolio_value:.2f}"
                     )
 
-                # TASK 3 (G5): Send periodic Discord RECAP sourced from canonical outcomes
-                if current_time - last_recap >= recap_interval:
-                    if redis_client:
-                        recap_msg = generate_recap_from_outcomes(redis_client)
-                        recap_msg_id = send_discord_session_message("RECAP", recap_msg)
-                        if recap_msg_id:
-                            logger.info(f"Discord RECAP sent: {recap_msg_id}")
-                    last_recap = current_time
+                # DISABLED (PAPER-EXEC-001): Periodic Discord RECAP messages disabled to prevent spam
+                # OPEN and CLOSE session messages remain functional
+                # # TASK 3 (G5): Send periodic Discord RECAP sourced from canonical outcomes
+                # if current_time - last_recap >= recap_interval:
+                #     if redis_client:
+                #         recap_msg = generate_recap_from_outcomes(redis_client)
+                #         recap_msg_id = send_discord_session_message("RECAP", recap_msg)
+                #         if recap_msg_id:
+                #             logger.info(f"Discord RECAP sent: {recap_msg_id}")
+                #     last_recap = current_time
 
                 # G7: Emit canary metrics periodically
                 if iteration % 60 == 0:  # Every 5 minutes (assuming 5s interval)
