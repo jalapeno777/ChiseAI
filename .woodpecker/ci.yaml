@@ -390,7 +390,7 @@ steps:
           set -euo pipefail
           pip install --no-cache-dir pyyaml
           # Run tempmemory migration
-          python3 scripts/ops/tempmemory_migration.py --full-migration --enable
+          python3 scripts/ops/tempmemory_migration.py --dry-run
         ) > _bmad-output/ci/tempmemory-scheduler.log 2>&1
         code=$?
         cat _bmad-output/ci/tempmemory-scheduler.log
