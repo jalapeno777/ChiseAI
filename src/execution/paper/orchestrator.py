@@ -345,6 +345,8 @@ class PaperTradingOrchestrator:
                         )
 
             # Step 1.7: LLM-enhanced decision (behind feature flag)
+            # Store full LLM decision payload for notifications
+            llm_decision_payload: dict[str, Any] | None = None
             if self.decision_enhancer and self.decision_enhancer.enabled:
                 try:
                     enhanced = await self.decision_enhancer.enhance_decision(signal)
@@ -372,6 +374,20 @@ class PaperTradingOrchestrator:
                     llm_stop_loss = enhanced.stop_loss
                     llm_take_profit = enhanced.take_profit
                     llm_risk_rec = enhanced.risk_recommendation
+
+                    # Store full LLM decision payload for notifications
+                    llm_decision_payload = {
+                        "decision": "GO" if enhanced.go_no_go else "NO-GO",
+                        "confidence": enhanced.confidence,
+                        "provider": enhanced.provider,
+                        "rationale": enhanced.rationale,
+                        "position_size": enhanced.position_size,
+                        "stop_loss": enhanced.stop_loss,
+                        "take_profit": enhanced.take_profit,
+                        "risk_recommendation": enhanced.risk_recommendation,
+                        "fallback_used": enhanced.fallback_used,
+                        "latency_ms": enhanced.latency_ms,
+                    }
                 except Exception as e:
                     logger.warning(
                         f"LLM enhancement failed, proceeding with base signal: {e}"
@@ -381,11 +397,13 @@ class PaperTradingOrchestrator:
                     llm_stop_loss = None
                     llm_take_profit = None
                     llm_risk_rec = ""
+                    llm_decision_payload = None
             else:
                 llm_position_size = None
                 llm_stop_loss = None
                 llm_take_profit = None
                 llm_risk_rec = ""
+                llm_decision_payload = None
 
             # Step 2: Validate risk
             risk_start = time.perf_counter()
@@ -460,7 +478,10 @@ class PaperTradingOrchestrator:
             if filled_order.state == OrderState.FILLED:
                 position_start = time.perf_counter()
                 position = await self._open_position(
-                    filled_order, signal, correlation_id
+                    filled_order,
+                    signal,
+                    correlation_id,
+                    llm_decision=llm_decision_payload,
                 )
                 position_latency_ms = (time.perf_counter() - position_start) * 1000
 
@@ -610,6 +631,7 @@ class PaperTradingOrchestrator:
         filled_order: PaperOrder,
         signal: Signal,
         correlation_id: str,
+        llm_decision: dict[str, Any] | None = None,
     ) -> Any:
         """Open a position from a filled order.
 
@@ -617,6 +639,7 @@ class PaperTradingOrchestrator:
             filled_order: The filled order
             signal: Original signal
             correlation_id: Correlation ID
+            llm_decision: Optional LLM decision payload for notifications
 
         Returns:
             New PaperPosition
@@ -624,20 +647,27 @@ class PaperTradingOrchestrator:
         # Determine position side from signal
         side = signal.direction.value  # "long" or "short"
 
+        # Build metadata dict
+        metadata: dict[str, Any] = {
+            "signal_id": signal.signal_id,
+            "order_id": filled_order.order_id,
+            "correlation_id": correlation_id,
+            "stop_loss": signal.stop_loss,
+            "stop_loss_method": signal.stop_loss_method,
+            "confidence": signal.confidence,
+        }
+
+        # Store LLM decision in position metadata if available
+        if llm_decision:
+            metadata["llm_decision"] = llm_decision
+
         # Open position via tracker
         position = await self.position_tracker.open_position(
             symbol=filled_order.symbol,
             side=side,
             entry_price=filled_order.avg_fill_price,
             quantity=filled_order.filled_quantity,
-            metadata={
-                "signal_id": signal.signal_id,
-                "order_id": filled_order.order_id,
-                "correlation_id": correlation_id,
-                "stop_loss": signal.stop_loss,
-                "stop_loss_method": signal.stop_loss_method,
-                "confidence": signal.confidence,
-            },
+            metadata=metadata,
         )
 
         logger.debug(f"Opened position: {position.position_id}")
