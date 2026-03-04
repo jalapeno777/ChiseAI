@@ -28,7 +28,6 @@ if TYPE_CHECKING:
     from execution.paper.order_simulator import OrderSimulator
     from execution.paper.risk_enforcer import PaperRiskEnforcer
     from execution.paper.signal_consumer import SignalConsumer
-    from execution.paper.symbol_registry import SymbolPositionRegistry
     from execution.paper.trade_journal import TradeJournal
     from execution.telemetry.collector import ExecutionCollector
     from portfolio.paper_tracker import PaperPositionTracker
@@ -694,11 +693,6 @@ class PaperTradingOrchestrator:
                 logger.info(
                     f"Trade journal entry created: {entry.entry_id} "
                     f"for position {position.position_id}"
-                )
-            except Exception as e:
-                logger.warning(
-                    f"Failed to create trade journal entry: {e}",
-                    exc_info=True,
                 )
             except Exception as e:
                 logger.warning(
