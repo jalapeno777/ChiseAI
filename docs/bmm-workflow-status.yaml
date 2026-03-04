@@ -4867,6 +4867,48 @@ launch_stories:
       - src/evaluation/trend_rollups.py
       - src/evaluation/fingerprinting.py
 
+  - id: ST-EVAL-IMPORTS-001
+    title: Reflection/Self-Evolution Runtime - Import Fixes
+    epic_id: EP-INFRA-CLEANUP-001
+    sprint_id: INFRA-CLEANUP-001
+    status: completed
+    validation_status: validated
+    story_points: 3
+    priority: P1-HIGH
+    owner_role: dev
+    completion_date: "2026-03-03"
+    merge_commit_sha: "7d62708"
+    description: Fixed import path issues in evaluation modules to enable Docker container compatibility for reflection/self-evolution runtime
+    acceptance_criteria:
+      - docker_scheduler: PASS
+      - six_hour_cycle: PASS
+      - daily_cycle: PASS
+      - weekly_cycle: PASS
+      - feature_flags: PASS
+      - llm_conformance: PASS
+      - tests: PASS
+    implementation_notes:
+      - Changed absolute imports to relative imports in src/evaluation/ modules
+      - Fixed Docker connectivity for all evaluation cycles
+      - All 171 tests passing
+      - Container healthy and stable
+    validation_summary:
+      total_tests: 171
+      total_passed: 171
+      total_failed: 0
+      black: "✓"
+      ruff: "✓"
+    files_changed:
+      - src/evaluation/__init__.py
+      - src/evaluation/scheduler.py
+      - src/evaluation/cycles.py
+      - src/evaluation/insights.py
+      - src/evaluation/artifacts.py
+      - infrastructure/docker/Dockerfile.scheduler
+    known_follow_ups:
+      - "Monitor scheduler stability in production"
+      - "Add Grafana dashboard for metrics"
+
   # EP-PAPER-001: Paper Trading Recovery
   - id: PAPER-RECOVERY-001
     title: Paper Trading 30-Minute Proof Loop Validation
