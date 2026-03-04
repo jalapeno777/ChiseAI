@@ -5,8 +5,22 @@
 metadata:
   project_name: ChiseAI
   version: "2.5.10"
-  last_updated: "2026-03-03T18:30:00Z"
+  last_updated: "2026-03-04T07:45:00Z"
   recent_changes:
+    - timestamp: "2026-03-04T07:45:00Z"
+      actor: merlin
+      action: paper-exec-001-ci-fix-merged
+      description: "PAPER-EXEC-001: Merged critical CI fix for tempmemory_migration.py arguments. Changed invalid --full-migration --enable to valid --dry-run argument."
+      story_id: PAPER-EXEC-001
+      epic_id: EP-INFRA-CLEANUP-001
+      files_changed:
+        - .woodpecker/ci.yaml
+      merge_commit_sha: "373d50c2fed17405cf10e459eb9e140aaee13840"
+      pr_number: 338
+      status: completed
+      validation_summary:
+        fix_verified: "✓"
+        branch_cleanup: "✓"
     - timestamp: "2026-03-03T18:30:00Z"
       actor: jarvis
       action: session-followups-backlog-created
