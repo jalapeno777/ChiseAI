@@ -248,11 +248,20 @@ class TradeNotifier:
     async def send_trade_open_notification(
         self,
         outcome: SignalOutcome,
+        llm_decision: dict[str, Any] | None = None,
     ) -> TradeNotificationResult:
         """Send notification when a trade opens.
 
         Args:
             outcome: The SignalOutcome representing the opened trade
+            llm_decision: Optional LLM decision details including:
+                - decision: GO/NO-GO
+                - confidence: Confidence percentage (0-100)
+                - provider: LLM provider name
+                - rationale: Brief reasoning
+                - position_size: Recommended position size (optional)
+                - stop_loss: Recommended stop loss (optional)
+                - take_profit: Recommended take profit (optional)
 
         Returns:
             TradeNotificationResult with delivery status
@@ -264,7 +273,7 @@ class TradeNotifier:
             )
 
         try:
-            embed = self._build_open_embed(outcome)
+            embed = self._build_open_embed(outcome, llm_decision)
             payload = {"embeds": [embed]}
 
             return await self._send_webhook_with_retry(payload, outcome)
@@ -279,11 +288,19 @@ class TradeNotifier:
     async def send_trade_close_notification(
         self,
         outcome: SignalOutcome,
+        llm_decision: dict[str, Any] | None = None,
     ) -> TradeNotificationResult:
         """Send notification when a trade closes with PnL.
 
         Args:
             outcome: The SignalOutcome representing the closed trade
+            llm_decision: Optional LLM decision details including:
+                - decision: GO/NO-GO
+                - confidence: Confidence percentage (0-100)
+                - provider: LLM provider name
+                - rationale: Brief reasoning
+                - exit_reason: Reason for exit (optional)
+                - realized_pnl: Realized PnL (optional)
 
         Returns:
             TradeNotificationResult with delivery status
@@ -295,7 +312,7 @@ class TradeNotifier:
             )
 
         try:
-            embed = self._build_close_embed(outcome)
+            embed = self._build_close_embed(outcome, llm_decision)
             payload = {"embeds": [embed]}
 
             return await self._send_webhook_with_retry(payload, outcome)
@@ -310,11 +327,13 @@ class TradeNotifier:
     def _build_open_embed(
         self,
         outcome: SignalOutcome,
+        llm_decision: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Build Discord embed for trade open notification.
 
         Args:
             outcome: The SignalOutcome for the opened trade
+            llm_decision: Optional LLM decision details
 
         Returns:
             Discord embed dictionary
@@ -370,6 +389,83 @@ class TradeNotifier:
                 }
             )
 
+        # LLM Decision fields (if available)
+        if llm_decision:
+            # Add separator for LLM section
+            fields.append(
+                {
+                    "name": "━━━ LLM Decision Details ━━━",
+                    "value": "\u200b",  # Zero-width space for separator
+                    "inline": False,
+                }
+            )
+
+            # Decision and confidence
+            decision = llm_decision.get("decision", "N/A")
+            confidence = llm_decision.get("confidence", 0)
+            fields.append(
+                {
+                    "name": "🤖 LLM Decision",
+                    "value": f"**{decision}** (Confidence: {confidence}%)",
+                    "inline": True,
+                }
+            )
+
+            # Provider
+            provider = llm_decision.get("provider", "Unknown")
+            fields.append(
+                {
+                    "name": "🔧 Provider",
+                    "value": provider,
+                    "inline": True,
+                }
+            )
+
+            # Rationale (truncated if too long)
+            rationale = llm_decision.get("rationale", "")
+            if rationale:
+                # Discord field values have a 1024 char limit, truncate to 200 chars
+                rationale_display = (
+                    rationale[:200] + "..." if len(rationale) > 200 else rationale
+                )
+                fields.append(
+                    {
+                        "name": "💭 Rationale",
+                        "value": rationale_display,
+                        "inline": False,
+                    }
+                )
+
+            # Position Size (if recommended by LLM)
+            if "position_size" in llm_decision and llm_decision["position_size"]:
+                fields.append(
+                    {
+                        "name": "📏 Recommended Size",
+                        "value": f"{llm_decision['position_size']}",
+                        "inline": True,
+                    }
+                )
+
+            # Stop Loss (if recommended)
+            if "stop_loss" in llm_decision and llm_decision["stop_loss"]:
+                fields.append(
+                    {
+                        "name": "🛑 Stop Loss",
+                        "value": f"${float(llm_decision['stop_loss']):,.2f}",
+                        "inline": True,
+                    }
+                )
+
+            # Take Profit (if recommended)
+            if "take_profit" in llm_decision and llm_decision["take_profit"]:
+                fields.append(
+                    {
+                        "name": "🎯 Take Profit",
+                        "value": f"${float(llm_decision['take_profit']):,.2f}",
+                        "inline": True,
+                    }
+                )
+
         # Signal ID reference
         signal_id = str(outcome.signal_id) if outcome.signal_id else "unknown"
         fields.append(
@@ -422,11 +518,13 @@ class TradeNotifier:
     def _build_close_embed(
         self,
         outcome: SignalOutcome,
+        llm_decision: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Build Discord embed for trade close notification.
 
         Args:
             outcome: The SignalOutcome for the closed trade
+            llm_decision: Optional LLM decision details
 
         Returns:
             Discord embed dictionary
@@ -512,6 +610,53 @@ class TradeNotifier:
                     "inline": True,
                 }
             )
+
+        # LLM Decision fields (if available)
+        if llm_decision:
+            # Add separator for LLM section
+            fields.append(
+                {
+                    "name": "━━━ LLM Decision Details ━━━",
+                    "value": "\u200b",  # Zero-width space for separator
+                    "inline": False,
+                }
+            )
+
+            # Original decision and confidence
+            decision = llm_decision.get("decision", "N/A")
+            confidence = llm_decision.get("confidence", 0)
+            fields.append(
+                {
+                    "name": "🤖 Original Decision",
+                    "value": f"**{decision}** (Confidence: {confidence}%)",
+                    "inline": True,
+                }
+            )
+
+            # Provider
+            provider = llm_decision.get("provider", "Unknown")
+            fields.append(
+                {
+                    "name": "🔧 Provider",
+                    "value": provider,
+                    "inline": True,
+                }
+            )
+
+            # Exit reason
+            exit_reason = llm_decision.get("exit_reason", "")
+            if exit_reason:
+                # Discord field values have a 1024 char limit, truncate to 200 chars
+                exit_reason_display = (
+                    exit_reason[:200] + "..." if len(exit_reason) > 200 else exit_reason
+                )
+                fields.append(
+                    {
+                        "name": "🚪 Exit Reason",
+                        "value": exit_reason_display,
+                        "inline": False,
+                    }
+                )
 
         # Leverage
         leverage = float(outcome.leverage) if outcome.leverage else 1.0

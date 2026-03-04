@@ -235,7 +235,15 @@ class TestResponseParsing:
 CONFIDENCE: 75
 RATIONALE: Strong uptrend with good volume"""
 
-        go_no_go, confidence, rationale = enhancer._parse_response(content)
+        (
+            go_no_go,
+            confidence,
+            rationale,
+            position_size,
+            stop_loss,
+            take_profit,
+            risk_recommendation,
+        ) = enhancer._parse_response(content)
 
         assert go_no_go is True
         assert confidence == 75.0
@@ -248,7 +256,15 @@ RATIONALE: Strong uptrend with good volume"""
 CONFIDENCE: 30
 RATIONALE: High volatility risk"""
 
-        go_no_go, confidence, rationale = enhancer._parse_response(content)
+        (
+            go_no_go,
+            confidence,
+            rationale,
+            position_size,
+            stop_loss,
+            take_profit,
+            risk_recommendation,
+        ) = enhancer._parse_response(content)
 
         assert go_no_go is False
         assert confidence == 30.0
@@ -261,7 +277,15 @@ RATIONALE: High volatility risk"""
 CONFIDENCE: 85%
 RATIONALE: Test"""
 
-        go_no_go, confidence, rationale = enhancer._parse_response(content)
+        (
+            go_no_go,
+            confidence,
+            rationale,
+            position_size,
+            stop_loss,
+            take_profit,
+            risk_recommendation,
+        ) = enhancer._parse_response(content)
 
         assert confidence == 85.0
 
@@ -272,7 +296,15 @@ RATIONALE: Test"""
 CONFIDENCE: 85
 RATIONALE: Test"""
 
-        go_no_go, confidence, rationale = enhancer._parse_response(content)
+        (
+            go_no_go,
+            confidence,
+            rationale,
+            position_size,
+            stop_loss,
+            take_profit,
+            risk_recommendation,
+        ) = enhancer._parse_response(content)
 
         assert confidence == 85.0
 
@@ -281,7 +313,15 @@ RATIONALE: Test"""
         enhancer = TradeDecisionEnhancer(enabled=False)
         content = ""
 
-        go_no_go, confidence, rationale = enhancer._parse_response(content)
+        (
+            go_no_go,
+            confidence,
+            rationale,
+            position_size,
+            stop_loss,
+            take_profit,
+            risk_recommendation,
+        ) = enhancer._parse_response(content)
 
         # Defaults: GO, 50%, "No rationale provided"
         assert go_no_go is True
@@ -295,7 +335,15 @@ RATIONALE: Test"""
 CONFIDENCE: invalid
 RATIONALE: Test"""
 
-        go_no_go, confidence, rationale = enhancer._parse_response(content)
+        (
+            go_no_go,
+            confidence,
+            rationale,
+            position_size,
+            stop_loss,
+            take_profit,
+            risk_recommendation,
+        ) = enhancer._parse_response(content)
 
         assert confidence == 50.0  # Default
 
@@ -305,7 +353,15 @@ RATIONALE: Test"""
         content = """DECISION: GO
 RATIONALE: Test"""
 
-        go_no_go, confidence, rationale = enhancer._parse_response(content)
+        (
+            go_no_go,
+            confidence,
+            rationale,
+            position_size,
+            stop_loss,
+            take_profit,
+            risk_recommendation,
+        ) = enhancer._parse_response(content)
 
         assert confidence == 50.0
 
@@ -315,7 +371,15 @@ RATIONALE: Test"""
         content = """DECISION: GO
 CONFIDENCE: 70"""
 
-        go_no_go, confidence, rationale = enhancer._parse_response(content)
+        (
+            go_no_go,
+            confidence,
+            rationale,
+            position_size,
+            stop_loss,
+            take_profit,
+            risk_recommendation,
+        ) = enhancer._parse_response(content)
 
         assert rationale == "No rationale provided"
 
@@ -326,7 +390,15 @@ CONFIDENCE: 70"""
 CONFIDENCE: 70
 RATIONALE: Test"""
 
-        go_no_go, confidence, rationale = enhancer._parse_response(content)
+        (
+            go_no_go,
+            confidence,
+            rationale,
+            position_size,
+            stop_loss,
+            take_profit,
+            risk_recommendation,
+        ) = enhancer._parse_response(content)
 
         # "go" != "GO" so defaults to True (the default)
         assert go_no_go is True
@@ -338,7 +410,15 @@ RATIONALE: Test"""
 CONFIDENCE: 40
 RATIONALE: Test"""
 
-        go_no_go, confidence, rationale = enhancer._parse_response(content)
+        (
+            go_no_go,
+            confidence,
+            rationale,
+            position_size,
+            stop_loss,
+            take_profit,
+            risk_recommendation,
+        ) = enhancer._parse_response(content)
 
         # "NO-go".upper() != "GO" so defaults to False
         assert go_no_go is False
@@ -352,7 +432,15 @@ RATIONALE: Test"""
         RATIONALE:   Extra spaces
         """
 
-        go_no_go, confidence, rationale = enhancer._parse_response(content)
+        (
+            go_no_go,
+            confidence,
+            rationale,
+            position_size,
+            stop_loss,
+            take_profit,
+            risk_recommendation,
+        ) = enhancer._parse_response(content)
 
         assert go_no_go is True
         assert confidence == 80.0
@@ -716,3 +804,173 @@ RATIONALE: Bearish divergence detected"""
         assert "50000" in prompt
         assert "3.0" in prompt
         assert decision.go_no_go is True
+
+
+# =============================================================================
+# New Fields Tests (position_size, stop_loss, take_profit, risk_recommendation)
+# =============================================================================
+
+
+class TestNewFieldsParsing:
+    """Tests for new TradeDecision fields parsing."""
+
+    def test_parse_position_size(self):
+        """Test parsing position_size from LLM response."""
+        enhancer = TradeDecisionEnhancer(enabled=False)
+        content = """DECISION: GO
+CONFIDENCE: 75
+RATIONALE: Strong uptrend with good volume
+POSITION_SIZE: 10
+STOP_LOSS: 45000
+TAKE_PROFIT: 55000
+RISK_RECOMMENDATION: Use trailing stop"""
+
+        (
+            go_no_go,
+            confidence,
+            rationale,
+            position_size,
+            stop_loss,
+            take_profit,
+            risk_recommendation,
+        ) = enhancer._parse_response(content)
+
+        assert position_size == 10.0
+        assert stop_loss == 45000.0
+        assert take_profit == 55000.0
+        assert risk_recommendation == "Use trailing stop"
+
+    def test_parse_position_size_with_percent(self):
+        """Test parsing position_size with % sign."""
+        enhancer = TradeDecisionEnhancer(enabled=False)
+        content = """DECISION: GO
+CONFIDENCE: 75
+RATIONALE: Test
+POSITION_SIZE: 15%
+STOP_LOSS: 100
+TAKE_PROFIT: 150
+RISK_RECOMMENDATION: Test"""
+
+        (
+            go_no_go,
+            confidence,
+            rationale,
+            position_size,
+            stop_loss,
+            take_profit,
+            risk_recommendation,
+        ) = enhancer._parse_response(content)
+
+        assert position_size == 15.0
+
+    def test_parse_missing_new_fields(self):
+        """Test parsing response without new fields returns None/empty defaults."""
+        enhancer = TradeDecisionEnhancer(enabled=False)
+        content = """DECISION: GO
+CONFIDENCE: 75
+RATIONALE: Test"""
+
+        (
+            go_no_go,
+            confidence,
+            rationale,
+            position_size,
+            stop_loss,
+            take_profit,
+            risk_recommendation,
+        ) = enhancer._parse_response(content)
+
+        assert position_size is None
+        assert stop_loss is None
+        assert take_profit is None
+        assert risk_recommendation == ""
+
+    def test_parse_malformed_position_size(self):
+        """Test parsing with malformed position_size returns None."""
+        enhancer = TradeDecisionEnhancer(enabled=False)
+        content = """DECISION: GO
+CONFIDENCE: 75
+RATIONALE: Test
+POSITION_SIZE: invalid
+STOP_LOSS: invalid
+TAKE_PROFIT: invalid"""
+
+        (
+            go_no_go,
+            confidence,
+            rationale,
+            position_size,
+            stop_loss,
+            take_profit,
+            risk_recommendation,
+        ) = enhancer._parse_response(content)
+
+        assert position_size is None
+        assert stop_loss is None
+        assert take_profit is None
+
+    @pytest.mark.asyncio
+    async def test_enhance_decision_with_new_fields(self):
+        """Test enhance_decision returns new fields correctly."""
+        enhancer = TradeDecisionEnhancer(enabled=True)
+
+        mock_chain = MagicMock()
+        mock_response = MagicMock()
+        mock_response.content = """DECISION: GO
+CONFIDENCE: 80
+RATIONALE: Strong bullish momentum
+POSITION_SIZE: 12.5
+STOP_LOSS: 45000.0
+TAKE_PROFIT: 55000.0
+RISK_RECOMMENDATION: Set tight stop due to volatility"""
+        mock_response.provider = "kimi"
+        mock_chain.query = AsyncMock(return_value=mock_response)
+        enhancer._chain = mock_chain
+
+        signal = MagicMock()
+        signal.token = "BTC"
+        signal.direction = "long"
+        signal.confidence = 0.8
+
+        decision = await enhancer.enhance_decision(signal)
+
+        assert decision.go_no_go is True
+        assert decision.confidence == 80.0
+        assert decision.position_size == 12.5
+        assert decision.stop_loss == 45000.0
+        assert decision.take_profit == 55000.0
+        assert decision.risk_recommendation == "Set tight stop due to volatility"
+
+    @pytest.mark.asyncio
+    async def test_fallback_returns_none_for_new_fields(self):
+        """Test that fallback decision returns None for new fields."""
+        enhancer = TradeDecisionEnhancer(enabled=True)
+        mock_chain = MagicMock()
+        mock_chain.query = AsyncMock(side_effect=Exception("Chain failed"))
+        enhancer._chain = mock_chain
+
+        signal = MagicMock()
+        signal.token = "BTC"
+        signal.direction = "long"
+        signal.confidence = 0.8
+
+        decision = await enhancer.enhance_decision(signal)
+
+        # Fallback should return None for new fields
+        assert decision.position_size is None
+        assert decision.stop_loss is None
+        assert decision.take_profit is None
+        assert decision.risk_recommendation == ""
+
+    @pytest.mark.asyncio
+    async def test_disabled_returns_none_for_new_fields(self):
+        """Test that disabled enhancer returns None for new fields."""
+        enhancer = TradeDecisionEnhancer(enabled=False)
+        signal = MagicMock()
+
+        decision = await enhancer.enhance_decision(signal)
+
+        assert decision.position_size is None
+        assert decision.stop_loss is None
+        assert decision.take_profit is None
+        assert decision.risk_recommendation == ""
