@@ -36,7 +36,6 @@ if TYPE_CHECKING:
 import contextlib
 
 from execution.llm.trade_decision_enhancer import TradeDecisionEnhancer
-
 from execution.paper.models import (
     OrderSide,
     OrderState,
