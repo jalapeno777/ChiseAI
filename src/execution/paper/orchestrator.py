@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from discord_alerts.trade_notifier import TradeNotifier
     from execution.kill_switch.executor import KillSwitchExecutor
+    from execution.llm.trade_decision_enhancer import TradeDecisionEnhancer
     from execution.paper.models import PaperOrder, PaperTradeResult
     from execution.paper.order_simulator import OrderSimulator
     from execution.paper.risk_enforcer import PaperRiskEnforcer
@@ -33,6 +34,8 @@ if TYPE_CHECKING:
     from signal_generation.signal_generator import SignalGenerator
 
 import contextlib
+
+from execution.llm.trade_decision_enhancer import TradeDecisionEnhancer
 
 from execution.paper.models import (
     OrderSide,
@@ -87,6 +90,7 @@ class PaperTradingOrchestrator:
         trade_notifier: TradeNotifier | None = None,
         signal_consumer: SignalConsumer | None = None,
         outcome_capture: Any | None = None,
+        decision_enhancer: TradeDecisionEnhancer | None = None,  # NEW
     ):
         """Initialize paper trading orchestrator.
 
@@ -100,6 +104,7 @@ class PaperTradingOrchestrator:
             portfolio_value: Starting portfolio value
             trade_notifier: Optional Discord trade notifier for alerts
             signal_consumer: Optional SignalConsumer for Redis signal bridge
+            decision_enhancer: Optional TradeDecisionEnhancer for LLM-enhanced decisions
         """
         self.signal_generator = signal_generator
         self.order_simulator = order_simulator
@@ -111,6 +116,7 @@ class PaperTradingOrchestrator:
         self.trade_notifier = trade_notifier
         self._signal_consumer = signal_consumer
         self.outcome_capture = outcome_capture
+        self.decision_enhancer = decision_enhancer or TradeDecisionEnhancer()
 
         self._running = False
         self._signal_queue: asyncio.Queue[Signal] = asyncio.Queue()
@@ -338,6 +344,33 @@ class PaperTradingOrchestrator:
                             status=TradeStatus.SKIPPED,
                             correlation_id=correlation_id,
                         )
+
+            # Step 1.7: LLM-enhanced decision (behind feature flag)
+            if self.decision_enhancer and self.decision_enhancer.enabled:
+                try:
+                    enhanced = await self.decision_enhancer.enhance_decision(signal)
+                    if not enhanced.go_no_go:
+                        logger.info(
+                            f"Signal rejected by LLM: {signal.token} - {enhanced.rationale}"
+                        )
+                        async with self._lock:
+                            self._metrics["trades_rejected"] += 1
+                        return PaperTradeResult(
+                            signal=signal,
+                            status=TradeStatus.REJECTED,
+                            reject_reason=[f"LLM rejection: {enhanced.rationale}"],
+                            correlation_id=correlation_id,
+                        )
+                    # Log LLM input for observability
+                    logger.debug(
+                        f"LLM enhanced decision: {signal.token} "
+                        f"confidence={enhanced.confidence} provider={enhanced.provider}"
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"LLM enhancement failed, proceeding with base signal: {e}"
+                    )
+                    # Continue with base signal - don't block on LLM error
 
             # Step 2: Validate risk
             risk_start = time.perf_counter()
