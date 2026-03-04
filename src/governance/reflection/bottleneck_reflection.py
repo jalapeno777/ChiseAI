@@ -530,6 +530,22 @@ class BottleneckReflectionGenerator:
             f.write(reflection.to_json(indent=2))
 
         logger.info(f"Exported reflection artifact to {filepath}")
+
+        # Send Discord notification (non-blocking)
+        try:
+            import asyncio
+            from governance.notifications import DiscordNotifier
+
+            notifier = DiscordNotifier()
+            artifact_type = (
+                "daily" if isinstance(reflection, DailyReflectionArtifact) else "weekly"
+            )
+            asyncio.create_task(
+                notifier.notify_reflection(reflection, artifact_type, str(filepath))
+            )
+        except Exception as e:
+            logger.debug(f"Discord notification skipped: {e}")
+
         return filepath
 
     def _extract_bottlenecks(
