@@ -229,9 +229,9 @@ class ReflectionLLMIntegration:
             else:
                 return LLMInsightResult(
                     success=False,
-                    error_message=response.error.message
-                    if response.error
-                    else "Unknown error",
+                    error_message=(
+                        response.error.message if response.error else "Unknown error"
+                    ),
                     provider_used=response.provider,
                     latency_ms=latency_ms,
                     fallback_used=True,

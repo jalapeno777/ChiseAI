@@ -30,14 +30,14 @@ from .bottleneck_reflection import (
     create_weekly_reflection,
 )
 from .llm_integration import (
-    LLMInsightResult,
     LLMCallTelemetry,
+    LLMInsightResult,
     ReflectionLLMIntegration,
-    generate_llm_insights,
-    summarize_weekly_reflection,
     analyze_bottleneck_root_cause,
+    generate_llm_insights,
     get_llm_telemetry,
     reset_llm_telemetry,
+    summarize_weekly_reflection,
 )
 from .loops import ReflectionLoops, ReflectionStorage
 
