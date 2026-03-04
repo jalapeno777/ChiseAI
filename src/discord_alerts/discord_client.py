@@ -729,6 +729,17 @@ class DiscordClient:
         Returns:
             DeliveryResult with status and message info
         """
+        # Check if notifications are disabled due to validation failure
+        if not self.config.notifications_enabled:
+            return DeliveryResult(
+                success=False,
+                error=(
+                    f"Discord notifications disabled due to validation errors: "
+                    f"{'; '.join(self.config.validation_errors)}"
+                ),
+                method="none",
+            )
+
         # Check if disabled due to persistent failures
         if self.is_disabled:
             remaining = self._get_disabled_remaining_minutes()
@@ -1125,3 +1136,190 @@ class DiscordClient:
             "current_queue_size": self._message_queue.qsize(),
             "consecutive_failures": self._consecutive_failures,
         }
+
+    async def validate_channel_id(
+        self, channel_id: str | None
+    ) -> tuple[bool, str | None]:
+        """Validate that a channel ID is a valid Discord text channel.
+
+        Uses Discord API to verify the channel exists and is accessible.
+        Detects if the ID refers to a guild/server instead of a channel.
+
+        Args:
+            channel_id: The Discord channel ID to validate
+
+        Returns:
+            Tuple of (is_valid, error_message)
+            - is_valid: True if valid text channel, False otherwise
+            - error_message: None if valid, descriptive error if invalid
+        """
+        if not channel_id:
+            return True, None  # No channel ID is valid (optional)
+
+        if not self.config.bot_token:
+            logger.warning(
+                "Cannot validate channel ID without bot token. "
+                "Skipping validation for channel_id=%s",
+                channel_id,
+            )
+            return True, None  # Can't validate without bot token
+
+        try:
+            session = await self._get_session()
+            headers = {"Authorization": f"Bot {self.config.bot_token}"}
+
+            async with session.get(
+                f"https://discord.com/api/v10/channels/{channel_id}",
+                headers=headers,
+            ) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+
+                    # Check if this is a channel (has 'type' field)
+                    # Text channels have type 0 (GUILD_TEXT)
+                    # Guilds don't have a 'type' field but have 'owner_id'
+                    if "type" in data:
+                        channel_type = data.get("type")
+                        if channel_type == 0:  # GUILD_TEXT
+                            logger.debug(
+                                "Channel %s validated as text channel", channel_id
+                            )
+                            return True, None
+                        else:
+                            type_names = {
+                                1: "DM",
+                                2: "GROUP_DM",
+                                3: "GUILD_VOICE",
+                                4: "GUILD_CATEGORY",
+                                5: "GUILD_ANNOUNCEMENT",
+                                10: "ANNOUNCEMENT_THREAD",
+                                11: "PUBLIC_THREAD",
+                                12: "PRIVATE_THREAD",
+                                13: "GUILD_STAGE_VOICE",
+                                14: "GUILD_DIRECTORY",
+                                15: "GUILD_FORUM",
+                                16: "GUILD_MEDIA",
+                            }
+                            type_name = type_names.get(
+                                channel_type, f"type_{channel_type}"
+                            )
+                            error_msg = (
+                                f"Channel ID {channel_id} is not a text channel. "
+                                f"It is a {type_name} channel (type={channel_type}). "
+                                f"Please provide a text channel ID."
+                            )
+                            logger.error(error_msg)
+                            return False, error_msg
+                    elif "owner_id" in data:
+                        # This is a guild/server, not a channel
+                        guild_name = data.get("name", "Unknown")
+                        error_msg = (
+                            f"DISCORD_DEVELOPMENT_CHANNEL_ID ({channel_id}) appears to be "
+                            f"a Guild/Server ID, not a Channel ID. "
+                            f"Guild name: '{guild_name}'. "
+                            f"\n\n"
+                            f"COMMON MISTAKE: You may have copied the Guild ID instead of "
+                            f"the Channel ID.\n"
+                            f"\n"
+                            f"To find the correct Channel ID:\n"
+                            f"1. Enable Developer Mode in Discord (User Settings > Advanced)\n"
+                            f"2. Right-click on the TEXT CHANNEL (not the server)\n"
+                            f"3. Select 'Copy Channel ID'\n"
+                            f"\n"
+                            f"Expected format: 17-19 digit numeric string\n"
+                            f"Guild IDs and Channel IDs look similar but serve different purposes."
+                        )
+                        logger.error(error_msg)
+                        return False, error_msg
+                    else:
+                        error_msg = (
+                            f"Channel ID {channel_id} returned unexpected data structure. "
+                            f"Neither channel nor guild format detected."
+                        )
+                        logger.error(error_msg)
+                        return False, error_msg
+
+                elif resp.status == 404:
+                    error_msg = (
+                        f"Channel ID {channel_id} not found (404). "
+                        f"The channel may not exist or the bot may not have access."
+                    )
+                    logger.error(error_msg)
+                    return False, error_msg
+
+                elif resp.status == 401:
+                    error_msg = (
+                        f"Authentication failed when validating channel {channel_id}. "
+                        f"Please check your DISCORD_BOT_TOKEN."
+                    )
+                    logger.error(error_msg)
+                    return False, error_msg
+
+                elif resp.status == 403:
+                    error_msg = (
+                        f"Access denied to channel {channel_id} (403). "
+                        f"The bot may not have permission to view this channel."
+                    )
+                    logger.error(error_msg)
+                    return False, error_msg
+
+                else:
+                    body = await resp.text()
+                    error_msg = (
+                        f"Discord API returned unexpected status {resp.status} "
+                        f"when validating channel {channel_id}: {body}"
+                    )
+                    logger.error(error_msg)
+                    return False, error_msg
+
+        except Exception as e:
+            error_msg = f"Error validating channel ID {channel_id}: {e}"
+            logger.error(error_msg)
+            return False, error_msg
+
+    async def validate_development_channel(self) -> tuple[bool, list[str]]:
+        """Validate the development channel configuration.
+
+        Performs strict or non-strict validation based on config.
+        In strict mode (default), raises/fails on invalid config.
+        In non-strict mode, logs error and disables notifications.
+
+        Returns:
+            Tuple of (success, errors)
+            - success: True if validation passed or non-strict mode
+            - errors: List of error messages (empty if no errors)
+        """
+        channel_id = self.config.development_channel_id
+        errors: list[str] = []
+
+        if not channel_id:
+            # No development channel configured - this is optional
+            logger.debug("No development channel configured, skipping validation")
+            return True, errors
+
+        is_valid, error_msg = await self.validate_channel_id(channel_id)
+
+        if is_valid:
+            logger.info("Development channel %s validated successfully", channel_id)
+            self.config.notifications_enabled = True
+            return True, errors
+
+        # Validation failed
+        errors.append(error_msg or f"Unknown validation error for channel {channel_id}")
+
+        if self.config.strict_validation:
+            logger.error(
+                "Development channel validation FAILED (strict mode). "
+                "To disable strict validation, set DISCORD_STRICT_VALIDATION=false"
+            )
+            self.config.validation_errors = errors
+            return False, errors
+        else:
+            logger.warning(
+                "Development channel validation failed (non-strict mode). "
+                "Notifications will be disabled. Error: %s",
+                error_msg,
+            )
+            self.config.notifications_enabled = False
+            self.config.validation_errors = errors
+            return True, errors
