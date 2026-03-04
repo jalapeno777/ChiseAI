@@ -6,22 +6,20 @@ SymbolPositionRegistry to enforce the one-trade-per-symbol invariant.
 Part of PAPER-2025-BATCH2-001: Symbol Registry Integration.
 """
 
-import asyncio
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from src.execution.paper.symbol_registry import SymbolPositionRegistry
+from src.signal_generation.models import Signal, SignalDirection, SignalStatus
 
 from execution.paper.models import (
     OrderSide,
     OrderState,
     OrderType,
     PaperOrder,
-    PaperTradeResult,
     TradeStatus,
 )
-from src.execution.paper.symbol_registry import SymbolPositionRegistry
-from src.signal_generation.models import Signal, SignalDirection, SignalStatus
 
 
 class TestOrchestratorSymbolRegistryIntegration:
