@@ -146,7 +146,13 @@ class TestProviderChainInitialization:
         """Test default provider order."""
         chain = LLMProviderChain()
 
-        assert chain.provider_order == ["kimi", "zai", "zhipu", "minimax"]
+        assert chain.provider_order == [
+            "kimi_compat",
+            "kimi",
+            "zai",
+            "zhipu",
+            "minimax",
+        ]
         assert chain.max_retries == 3
         assert chain.retry_delay == 1.0
 
@@ -164,14 +170,14 @@ class TestProviderChainInitialization:
 
     def test_provider_configs_exist(self):
         """Test that all provider configs are defined."""
-        expected_providers = ["kimi", "zai", "zhipu", "minimax"]
+        expected_providers = ["kimi_compat", "kimi", "zai", "zhipu", "minimax"]
 
         for provider in expected_providers:
             assert provider in PROVIDER_CONFIGS
             config = PROVIDER_CONFIGS[provider]
             assert config.name
             assert config.api_key_env
-            assert config.priority > 0
+            assert config.priority >= 0  # 0 is valid (highest priority)
 
 
 class TestProviderAvailability:
@@ -658,6 +664,139 @@ class TestIntegrationWithPrompts:
             chain._query_kimi.assert_called_once_with(
                 "Analyze this signal", "You are a trading analyst"
             )
+
+
+class TestKimiCompatProvider:
+    """Test suite for kimi_compat provider."""
+
+    def test_kimi_compat_config_exists(self):
+        """Test that kimi_compat provider config exists."""
+        assert "kimi_compat" in PROVIDER_CONFIGS
+        config = PROVIDER_CONFIGS["kimi_compat"]
+        assert config.name == "KIMI Compat (Adapter)"
+        assert config.api_key_env == "KIMI_API_KEY"
+        assert config.enabled_env == "KIMI_COMPAT_ENABLED"
+        assert config.enabled_default is False
+        assert config.priority == 0  # Highest priority
+
+    def test_kimi_compat_disabled_by_default(self):
+        """Test that kimi_compat is disabled by default."""
+        with patch.dict(
+            os.environ,
+            {"KIMI_API_KEY": "test-key"},  # Key present but compat not enabled
+            clear=True,
+        ):
+            chain = LLMProviderChain()
+            available, reason = chain._is_provider_available("kimi_compat")
+
+            assert available is False
+            assert "KIMI_COMPAT_ENABLED" in reason
+
+    def test_kimi_compat_enabled_with_flag(self):
+        """Test that kimi_compat is enabled when KIMI_COMPAT_ENABLED=true."""
+        with patch.dict(
+            os.environ,
+            {"KIMI_API_KEY": "test-key", "KIMI_COMPAT_ENABLED": "true"},
+            clear=True,
+        ):
+            chain = LLMProviderChain()
+            available, reason = chain._is_provider_available("kimi_compat")
+
+            assert available is True
+            assert reason is None
+
+    def test_kimi_compat_unavailable_without_key(self):
+        """Test that kimi_compat is unavailable without API key."""
+        with patch.dict(
+            os.environ,
+            {"KIMI_COMPAT_ENABLED": "true"},  # Enabled but no key
+            clear=True,
+        ):
+            chain = LLMProviderChain()
+            available, reason = chain._is_provider_available("kimi_compat")
+
+            assert available is False
+            assert "KIMI_API_KEY" in reason
+
+    @pytest.mark.asyncio
+    async def test_kimi_compat_first_in_default_order(self):
+        """Test that kimi_compat is first in default provider order."""
+        chain = LLMProviderChain()
+        assert chain.provider_order[0] == "kimi_compat"
+
+    @pytest.mark.asyncio
+    async def test_fallback_from_kimi_compat_to_kimi(self):
+        """Test fallback from kimi_compat to direct kimi when compat fails."""
+        with patch.dict(
+            os.environ,
+            {
+                "KIMI_API_KEY": "test-key",
+                "KIMI_COMPAT_ENABLED": "true",
+            },
+            clear=True,
+        ):
+            chain = LLMProviderChain()
+
+            # Mock kimi_compat to fail with network error (fallbackable)
+            compat_response = LLMResponse(
+                success=False,
+                provider="KIMI Compat (Adapter)",
+                error=ProviderError(
+                    category=ErrorCategory.NETWORK,
+                    message="Adapter unavailable",
+                    should_fallback=True,
+                ),
+            )
+            chain._query_kimi_compat = AsyncMock(return_value=compat_response)
+
+            # Mock direct kimi to succeed
+            kimi_response = LLMResponse(
+                success=True,
+                content="Direct KIMI response",
+                confidence_score=75.0,
+                rationale="Direct response",
+                provider="KIMI K2.5",
+            )
+            chain._query_kimi = AsyncMock(return_value=kimi_response)
+
+            result = await chain.query("Test prompt")
+
+            assert result.success is True
+            assert result.provider == "KIMI K2.5"
+            chain._query_kimi_compat.assert_called_once()
+            chain._query_kimi.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_kimi_compat_skipped_when_disabled(self):
+        """Test that kimi_compat is skipped when disabled."""
+        with patch.dict(
+            os.environ,
+            {"KIMI_API_KEY": "test-key"},  # Compat disabled by default
+            clear=True,
+        ):
+            chain = LLMProviderChain()
+
+            # Mock kimi_compat - should not be called
+            chain._query_kimi_compat = AsyncMock(
+                side_effect=Exception("Should not be called")
+            )
+
+            # Mock direct kimi to succeed
+            kimi_response = LLMResponse(
+                success=True,
+                content="Direct KIMI response",
+                confidence_score=75.0,
+                rationale="Direct response",
+                provider="KIMI K2.5",
+            )
+            chain._query_kimi = AsyncMock(return_value=kimi_response)
+
+            result = await chain.query("Test prompt")
+
+            assert result.success is True
+            assert result.provider == "KIMI K2.5"
+            chain._query_kimi_compat.assert_not_called()
+            chain._query_kimi.assert_called_once()
 
 
 if __name__ == "__main__":
