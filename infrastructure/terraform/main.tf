@@ -686,3 +686,47 @@ resource "docker_container" "chiseai_daily_summary" {
     retries  = 3
   }
 }
+
+resource "docker_container" "kimi_adapter" {
+  name  = "chiseai-kimi-adapter"
+  image = "chiseai-kimi-adapter:latest"
+
+  env = [
+    "KIMI_API_KEY=${var.kimi_api_key}",
+    "KIMI_BASE_URL=${var.kimi_base_url}",
+    "KIMI_MODEL=${var.kimi_model}",
+  ]
+
+  ports {
+    internal = 8002
+    external = 8002
+  }
+
+  restart = "always"
+
+  networks_advanced {
+    name = docker_network.chiseai.name
+  }
+
+  labels {
+    label = "project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.service"
+    value = "kimi-adapter"
+  }
+
+  healthcheck {
+    test     = ["CMD", "curl", "-f", "http://localhost:8002/health"]
+    interval = "30s"
+    timeout  = "10s"
+    retries  = 3
+  }
+}
