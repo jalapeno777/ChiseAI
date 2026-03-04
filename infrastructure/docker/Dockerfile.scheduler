@@ -49,8 +49,8 @@ COPY config/ /app/config/
 # Ensure scripts are executable
 RUN chmod +x /app/scripts/evaluation/*.py
 
-# Set Python path
-ENV PYTHONPATH=/app
+# Set Python path (include /app/src for module imports)
+ENV PYTHONPATH=/app:/app/src
 ENV PYTHONUNBUFFERED=1
 
 # Redis connection defaults (can be overridden at runtime)
