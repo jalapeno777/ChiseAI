@@ -10,7 +10,7 @@ For PAPER-2025-BATCH3: Trade Journal Integration
 """
 
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
