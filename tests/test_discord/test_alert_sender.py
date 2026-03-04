@@ -13,6 +13,7 @@ import pytest
 from discord_alerts.alert_formatter import AlertType
 from discord_alerts.alert_sender import AlertSender, SendResult
 from discord_alerts.config import DiscordConfig
+from discord_alerts.discord_client import DeliveryResult
 from signal_generation.models import Signal, SignalDirection, SignalStatus
 
 
@@ -313,10 +314,7 @@ class TestAlertSender:
         with mock.patch.object(
             sender._get_client(),
             "send_message",
-            return_value={
-                "success": True,
-                "message_id": "12345",
-            },
+            return_value=DeliveryResult(success=True, message_id="12345"),
         ):
             result = await sender._send_with_retry("Test message", "test-channel")
 
@@ -330,8 +328,8 @@ class TestAlertSender:
 
         # First call rate limited, second succeeds
         responses = [
-            {"success": False, "error": "Rate limited", "retry_after": 0.01},
-            {"success": True, "message_id": "12345"},
+            DeliveryResult(success=False, error="Rate limited"),
+            DeliveryResult(success=True, message_id="12345"),
         ]
 
         with mock.patch.object(
@@ -356,7 +354,7 @@ class TestAlertSender:
         with mock.patch.object(
             sender._get_client(),
             "send_message",
-            return_value={"success": False, "error": "Network error"},
+            return_value=DeliveryResult(success=False, error="Network error"),
         ):
             result = await sender._send_with_retry("Test message", "test-channel")
 
