@@ -947,6 +947,119 @@ class TestPositionManagement:
         # Verify trade was executed
         assert result.status == TradeStatus.EXECUTED
 
+    @pytest.mark.asyncio
+    async def test_open_notification_includes_llm_decision(
+        self, orchestrator, mock_components, mock_signal
+    ):
+        """Test that open notification includes LLM decision when available."""
+        from unittest.mock import patch
+
+        from execution.llm.trade_decision_enhancer import TradeDecision
+        from execution.paper.models import RiskAssessment
+
+        # Setup mocks
+        orchestrator.trade_notifier = AsyncMock()
+
+        mock_components["risk_enforcer"].validate_order = AsyncMock(
+            return_value=RiskAssessment(approved=True, position_size=0.1)
+        )
+
+        filled_order = PaperOrder(
+            symbol="BTC/USDT",
+            side=OrderSide.BUY,
+            order_type=OrderType.MARKET,
+            quantity=0.1,
+            order_id="test-order-llm-001",
+            state=OrderState.FILLED,
+            filled_quantity=0.1,
+            avg_fill_price=50000.0,
+        )
+        mock_components["order_sim"].place_order = AsyncMock(return_value=filled_order)
+
+        mock_position = MagicMock()
+        mock_position.position_id = "test-position-llm-001"
+        mock_position.symbol = "BTC/USDT"
+        mock_components["position_tracker"].open_position = AsyncMock(
+            return_value=mock_position
+        )
+
+        # Mock LLM decision
+        mock_decision = TradeDecision(
+            go_no_go=True,
+            confidence=85.0,
+            provider="kimi",
+            rationale="Test rationale",
+            position_size=0.1,
+            stop_loss=48000.0,
+            take_profit=55000.0,
+            risk_recommendation="Test recommendation",
+            fallback_used=False,
+            latency_ms=100.0,
+        )
+
+        # Enable decision enhancer and mock it
+        orchestrator.decision_enhancer.enabled = True
+        with patch.object(
+            orchestrator.decision_enhancer,
+            "enhance_decision",
+            AsyncMock(return_value=mock_decision),
+        ):
+            result = await orchestrator.process_signal(mock_signal)
+
+        # Verify trade was executed
+        assert result.status == TradeStatus.EXECUTED
+
+        # Verify trade_notifier was called with llm_decision
+        orchestrator.trade_notifier.send_trade_open_notification.assert_called_once()
+        call_args = orchestrator.trade_notifier.send_trade_open_notification.call_args
+        _, kwargs = call_args
+
+        assert "llm_decision" in kwargs
+        assert kwargs["llm_decision"]["decision"] == "GO"
+        assert kwargs["llm_decision"]["confidence"] == 85.0
+        assert kwargs["llm_decision"]["provider"] == "kimi"
+
+    @pytest.mark.asyncio
+    async def test_close_notification_includes_llm_decision(
+        self, orchestrator, mock_components
+    ):
+        """Test that close notification includes LLM decision from position metadata."""
+        # Setup mocks
+        orchestrator.trade_notifier = AsyncMock()
+
+        # Create position with LLM metadata
+        mock_position = MagicMock()
+        mock_position.position_id = "test-pos-llm-close-001"
+        mock_position.symbol = "BTC/USDT"
+        mock_position.metadata = {
+            "signal_id": "test-signal-llm-001",
+            "llm_decision": {
+                "decision": "GO",
+                "confidence": 90.0,
+                "provider": "kimi",
+                "rationale": "Test close rationale",
+            },
+        }
+
+        mock_components["position_tracker"].close_position = AsyncMock(
+            return_value=(mock_position, 150.0)
+        )
+
+        # Call close_position
+        result = await orchestrator.close_position("test-pos-llm-close-001", 50000.0)
+
+        # Verify position was closed
+        assert result is not None
+
+        # Verify trade_notifier was called with llm_decision
+        orchestrator.trade_notifier.send_trade_close_notification.assert_called_once()
+        call_args = orchestrator.trade_notifier.send_trade_close_notification.call_args
+        _, kwargs = call_args
+
+        assert "llm_decision" in kwargs
+        assert kwargs["llm_decision"]["decision"] == "GO"
+        assert kwargs["llm_decision"]["confidence"] == 90.0
+
 
 class TestConcurrency:
     """Test concurrent signal processing."""

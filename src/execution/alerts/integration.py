@@ -7,6 +7,7 @@ For ST-FINAL-CLOSURE-001: G5 - #trading Alert Routing Fully Active
 """
 
 from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
@@ -181,16 +182,18 @@ class ExecutionAlertIntegration:
             # Extract LLM decision from outcome metadata if available
             llm_decision = None
             if outcome.metadata and "llm_decision" in outcome.metadata:
+                llm_meta = outcome.metadata["llm_decision"]
                 llm_decision = {
-                    "decision": outcome.metadata.get("decision"),
-                    "confidence": outcome.metadata.get("confidence"),
-                    "provider": outcome.metadata.get("provider"),
-                    "rationale": outcome.metadata.get("rationale"),
-                    "position_size": outcome.metadata.get("position_size"),
-                    "stop_loss": outcome.metadata.get("stop_loss"),
-                    "take_profit": outcome.metadata.get("take_profit"),
-                    "exit_reason": outcome.metadata.get("exit_reason"),
-                    "realized_pnl": outcome.metadata.get("realized_pnl"),
+                    "decision": llm_meta.get("decision"),
+                    "confidence": llm_meta.get("confidence"),
+                    "provider": llm_meta.get("provider"),
+                    "rationale": llm_meta.get("rationale"),
+                    "position_size": llm_meta.get("position_size"),
+                    "stop_loss": llm_meta.get("stop_loss"),
+                    "take_profit": llm_meta.get("take_profit"),
+                    "risk_recommendation": llm_meta.get("risk_recommendation"),
+                    "fallback_used": llm_meta.get("fallback_used"),
+                    "latency_ms": llm_meta.get("latency_ms"),
                 }
             result = await trade_notifier.send_trade_close_notification(
                 outcome, llm_decision
@@ -251,6 +254,7 @@ class ExecutionAlertIntegration:
             SignalOutcome instance
         """
         from decimal import Decimal
+
         from ml.models.signal_outcome import SignalOutcome, SignalOutcomeStatus
 
         signal = result.signal
