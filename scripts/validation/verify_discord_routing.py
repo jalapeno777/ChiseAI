@@ -17,10 +17,13 @@ import asyncio
 import logging
 import sys
 from decimal import Decimal
+from pathlib import Path
 from uuid import uuid4
 
-# Setup path for imports
-sys.path.insert(0, "/tmp/worktrees/PAPER-EXEC-001-batch1-task3")
+# Setup path for imports - add project root to path for imports
+script_dir = Path(__file__).parent
+project_root = script_dir.parent.parent
+sys.path.insert(0, str(project_root))
 
 from datetime import UTC, datetime
 

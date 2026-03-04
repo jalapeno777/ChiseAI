@@ -1,8 +1,63 @@
 # Archived Recap Components
 
-This directory contains archived components from the deprecated recap emitter system.
+This directory contains archived components from the deprecated recap emitter system and scheduler components.
 
-## Deprecation Notice
+## Archived Scheduler Components (PAPER-EXEC-001)
+
+### Disabled Scheduling - 2026-03-04
+
+The following scheduled recap components have been disabled as part of PAPER-EXEC-001:
+
+**Cron Entries (Removed):**
+- `0 0 * * *` - Nightly trade history recap cron job
+- Location: System crontab
+- Status: **REMOVED** from crontab
+
+**Config Sections (Disabled):**
+- `trade_history_recap` section in `config/scheduler.yaml` (lines 95-144)
+- Status: **COMMENTED OUT** with deprecation notice
+
+**Archived Scripts:**
+- `scripts/cron/trade_history_recap.sh` → `scripts/validation/archive/trade_history_recap.sh`
+  - Shell wrapper for recap cron job
+  - 4.3 KB, last modified Feb 26 18:44
+  
+- `scripts/run_trade_history_recap.py` → `scripts/validation/archive/run_trade_history_recap.py`
+  - Main Python script for recap generation
+  - 8.5 KB, last modified Mar 2 11:47
+  
+- `scripts/validation/recap_validator.py` → `scripts/validation/archive/recap_validator.py`
+  - Validation logic for recap data
+  - 26.2 KB, last modified Feb 28 16:12
+
+**Reason for Disabling:**
+The recap timer behavior was creating Discord spam in the #trading channel. Recaps are now handled on-demand or through the execution alerts integration, providing more immediate and less noisy feedback to traders.
+
+**Docker Services:**
+- No docker-compose services were running recap (docker-compose.scheduler.yml is for BrainEval only)
+
+**Systemd Timers:**
+- None found
+
+### Verification
+
+To verify the scheduler has been disabled:
+```bash
+# Check crontab (should return nothing)
+crontab -l | grep -i recap
+
+# Check config file
+grep -A5 "DEPRECATED: Trade History Recap" config/scheduler.yaml
+
+# Verify scripts are archived
+ls -la scripts/validation/archive/ | grep recap
+```
+
+---
+
+## Archived Recap Emitter Components (Earlier in PAPER-EXEC-001)
+
+### Deprecation Notice
 
 **As of PAPER-EXEC-001 (2026-03-04), these components are deprecated and no longer in active use.**
 

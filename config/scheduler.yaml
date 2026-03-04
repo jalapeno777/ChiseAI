@@ -92,53 +92,73 @@ cron:
   # To test the configuration:
   # python scripts/run_daily_summary.py --test --dry-run
 
-# Trade History Recap Configuration
-# For ST-TRADING-001: Nightly Trade History Recap
-trade_history_recap:
-  # Schedule: 00:00 UTC daily (midnight)
-  schedule: "0 0 * * *"
-  timezone: "UTC"
-  
-  # Discord configuration for #trading channel
-  discord:
-    # Webhook URL for #trading channel
-    # 
-    # CONFIGURATION PRIORITY (highest to lowest):
-    # 1. DISCORD_TRADING_WEBHOOK_URL environment variable (recommended)
-    # 2. DISCORD_WEBHOOK_URL environment variable (fallback)
-    # 3. This webhook_url field in config (not recommended for production)
-    #
-    # SECURITY WARNING: Do NOT commit actual webhook URLs to git.
-    # Use environment variables instead.
-    #
-    # To get the webhook URL:
-    # 1. Go to Discord #trading channel settings
-    # 2. Integrations → Webhooks → New Webhook
-    # 3. Copy the webhook URL
-    # 4. Set as environment variable: export DISCORD_TRADING_WEBHOOK_URL="..."
-    #
-    # To test the configuration:
-    # python scripts/test_discord_trading_webhook.py
-    webhook_url: null
-    
-    # Discord channel ID for #trading
-    channel_id: "1444447985378398459"
-  
-  # Script paths
-  script:
-    python: "scripts/run_trade_history_recap.py"
-    shell: "scripts/cron/trade_history_recap.sh"
-    log_file: "logs/trade_history_recap.log"
-  
-  # Cron installation (idempotent)
-  # Add to crontab with:
-  #   (crontab -l 2>/dev/null; echo "0 0 * * * /path/to/ChiseAI/scripts/cron/trade_history_recap.sh >> /path/to/ChiseAI/logs/trade_history_recap.log 2>&1") | crontab -
-  #
-  # Verify installation:
-  #   crontab -l | grep trade_history_recap
-  #
-  # Manual test:
-  #   python scripts/run_trade_history_recap.py --test
-  #
-  # Dry run (no Discord message):
-  #   python scripts/run_trade_history_recap.py --dry-run
+# ============================================================================
+# DEPRECATED: Trade History Recap Scheduler
+# ============================================================================
+# DISABLED: 2026-03-04 by PAPER-EXEC-001
+# REASON: Recap timer behavior was creating Discord spam in #trading channel.
+#         Recaps are now handled on-demand or through execution alerts integration.
+#
+# CHANGES MADE:
+# - Cron entry removed from crontab
+# - Scripts archived to scripts/validation/archive/
+# - Config section commented out
+#
+# ARCHIVED COMPONENTS:
+# - scripts/cron/trade_history_recap.sh → scripts/validation/archive/
+# - scripts/run_trade_history_recap.py → scripts/validation/archive/
+# - scripts/validation/recap_validator.py → scripts/validation/archive/
+#
+# For questions, see PAPER-EXEC-001 documentation.
+# ============================================================================
+
+# # Trade History Recap Configuration (DISABLED)
+# # For ST-TRADING-001: Nightly Trade History Recap
+# trade_history_recap:
+#   # Schedule: 00:00 UTC daily (midnight)
+#   schedule: "0 0 * * *"
+#   timezone: "UTC"
+#   
+#   # Discord configuration for #trading channel
+#   discord:
+#     # Webhook URL for #trading channel
+#     # 
+#     # CONFIGURATION PRIORITY (highest to lowest):
+#     # 1. DISCORD_TRADING_WEBHOOK_URL environment variable (recommended)
+#     # 2. DISCORD_WEBHOOK_URL environment variable (fallback)
+#     # 3. This webhook_url field in config (not recommended for production)
+#     #
+#     # SECURITY WARNING: Do NOT commit actual webhook URLs to git.
+#     # Use environment variables instead.
+#     #
+#     # To get the webhook URL:
+#     # 1. Go to Discord #trading channel settings
+#     # 2. Integrations → Webhooks → New Webhook
+#     # 3. Copy the webhook URL
+#     # 4. Set as environment variable: export DISCORD_TRADING_WEBHOOK_URL="..."
+#     #
+#     # To test the configuration:
+#     # python scripts/test_discord_trading_webhook.py
+#     webhook_url: null
+#     
+#     # Discord channel ID for #trading
+#     channel_id: "1444447985378398459"
+#   
+#   # Script paths
+#   script:
+#     python: "scripts/run_trade_history_recap.py"
+#     shell: "scripts/cron/trade_history_recap.sh"
+#     log_file: "logs/trade_history_recap.log"
+#   
+#   # Cron installation (idempotent)
+#   # Add to crontab with:
+#   #   (crontab -l 2>/dev/null; echo "0 0 * * * /path/to/ChiseAI/scripts/cron/trade_history_recap.sh >> /path/to/ChiseAI/logs/trade_history_recap.log 2>&1") | crontab -
+#   #
+#   # Verify installation:
+#   #   crontab -l | grep trade_history_recap
+#   #
+#   # Manual test:
+#   #   python scripts/run_trade_history_recap.py --test
+#   #
+#   # Dry run (no Discord message):
+#   #   python scripts/run_trade_history_recap.py --dry-run

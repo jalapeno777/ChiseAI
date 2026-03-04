@@ -393,9 +393,9 @@ class TestLatencyRequirements:
         elapsed_ms = (time.perf_counter() - start) * 1000
 
         # Should be well under 500ms since mocks are instant
-        assert (
-            elapsed_ms < 500
-        ), f"Signal-to-order latency {elapsed_ms:.1f}ms exceeds 500ms"
+        assert elapsed_ms < 500, (
+            f"Signal-to-order latency {elapsed_ms:.1f}ms exceeds 500ms"
+        )
 
 
 class TestErrorHandling:
@@ -550,6 +550,53 @@ class TestMetricsAndReporting:
         assert "portfolio_value" in summary
         assert "open_positions" in summary
         assert "metrics" in summary
+
+    @pytest.mark.asyncio
+    async def test_signals_processed_not_double_counted(
+        self, orchestrator, mock_components, mock_signal
+    ):
+        """Regression test: signals_processed should increment once per signal.
+
+        This test ensures that the signals_processed metric is incremented
+        exactly once per signal, not double-counted in both the processing
+        loop and process_signal method.
+
+        Bug history: Previously incremented in both _processing_loop (line 211)
+        and process_signal (line 265), causing incorrect metrics.
+        """
+        from execution.paper.models import RiskAssessment
+
+        # Setup for successful processing
+        mock_components["risk_enforcer"].validate_order = AsyncMock(
+            return_value=RiskAssessment(approved=True, position_size=0.1)
+        )
+        mock_components["order_sim"].place_order = AsyncMock(
+            return_value=PaperOrder(
+                symbol="BTC/USDT",
+                side=OrderSide.BUY,
+                order_type=OrderType.MARKET,
+                quantity=0.1,
+                order_id="test-order-regression",
+                state=OrderState.FILLED,
+                filled_quantity=0.1,
+                avg_fill_price=50000.0,
+            )
+        )
+        mock_components["position_tracker"].open_position = AsyncMock(
+            return_value=MagicMock()
+        )
+
+        # Get initial count
+        initial_count = orchestrator._metrics["signals_processed"]
+
+        # Process one signal directly (process_signal is the authoritative counter)
+        await orchestrator.process_signal(mock_signal)
+
+        # Verify count incremented by exactly 1
+        final_count = orchestrator._metrics["signals_processed"]
+        assert final_count == initial_count + 1, (
+            f"Expected {initial_count + 1}, got {final_count}. signals_processed should increment exactly once per signal."
+        )
 
 
 class TestPositionManagement:
@@ -1167,12 +1214,12 @@ class TestOrderSimulatorInterface:
         # Verify all required parameters were passed
         assert "symbol" in call_kwargs, "place_order should receive 'symbol' parameter"
         assert "side" in call_kwargs, "place_order should receive 'side' parameter"
-        assert (
-            "order_type" in call_kwargs
-        ), "place_order should receive 'order_type' parameter"
-        assert (
-            "quantity" in call_kwargs
-        ), "place_order should receive 'quantity' parameter"
+        assert "order_type" in call_kwargs, (
+            "place_order should receive 'order_type' parameter"
+        )
+        assert "quantity" in call_kwargs, (
+            "place_order should receive 'quantity' parameter"
+        )
         assert "price" in call_kwargs, "place_order should receive 'price' parameter"
 
         # Verify parameter values
@@ -1181,9 +1228,9 @@ class TestOrderSimulatorInterface:
         assert call_kwargs["order_type"] == "market"
         assert call_kwargs["quantity"] == 0.1
         # Price should now be set from market data (BURNIN-001 fix)
-        assert (
-            call_kwargs["price"] == 50000.0
-        ), f"Price should be set from market data, got {call_kwargs['price']}"
+        assert call_kwargs["price"] == 50000.0, (
+            f"Price should be set from market data, got {call_kwargs['price']}"
+        )
 
     @pytest.mark.asyncio
     async def test_process_signal_short_calls_place_order_with_sell_side(
@@ -1244,9 +1291,9 @@ class TestOrderSimulatorInterface:
         result = await orchestrator.process_signal(short_signal)
 
         assert result.status == TradeStatus.EXECUTED
-        assert (
-            call_kwargs["side"] == "sell"
-        ), "SHORT signals should result in 'sell' side"
+        assert call_kwargs["side"] == "sell", (
+            "SHORT signals should result in 'sell' side"
+        )
         assert call_kwargs["symbol"] == "ETH/USDT"
         assert call_kwargs["quantity"] == 0.5
 
@@ -1320,9 +1367,9 @@ class TestOrderPriceValidation:
         # Verify order was created with correct price
         assert result.status == TradeStatus.EXECUTED
         assert created_order is not None
-        assert (
-            created_order.price == 50000.0
-        ), f"Expected price=50000.0, got {created_order.price}"
+        assert created_order.price == 50000.0, (
+            f"Expected price=50000.0, got {created_order.price}"
+        )
 
     @pytest.mark.asyncio
     async def test_validate_order_receives_entry_price(
@@ -1375,12 +1422,12 @@ class TestOrderPriceValidation:
         result = await orchestrator.process_signal(mock_signal)
 
         assert result.status == TradeStatus.EXECUTED
-        assert (
-            "entry_price" in call_kwargs
-        ), "validate_order should receive 'entry_price' parameter"
-        assert (
-            call_kwargs["entry_price"] == expected_price
-        ), f"Expected entry_price={expected_price}, got {call_kwargs.get('entry_price')}"
+        assert "entry_price" in call_kwargs, (
+            "validate_order should receive 'entry_price' parameter"
+        )
+        assert call_kwargs["entry_price"] == expected_price, (
+            f"Expected entry_price={expected_price}, got {call_kwargs.get('entry_price')}"
+        )
 
     @pytest.mark.asyncio
     async def test_order_rejected_when_no_market_price(
@@ -1490,9 +1537,9 @@ class TestOrderPriceValidation:
         assert call_kwargs["quantity"] == quantity
         # Verify notional value would be correct
         notional_value = call_kwargs["price"] * call_kwargs["quantity"]
-        assert (
-            notional_value == expected_value
-        ), f"Expected value=${expected_value}, got ${notional_value}"
+        assert notional_value == expected_value, (
+            f"Expected value=${expected_value}, got ${notional_value}"
+        )
 
     @pytest.mark.asyncio
     async def test_create_order_raises_on_invalid_price(
@@ -1519,9 +1566,9 @@ class TestOrderPriceValidation:
             correlation_id="test-corr-valid",
         )
 
-        assert (
-            order.price == valid_price
-        ), f"Expected price={valid_price}, got {order.price}"
+        assert order.price == valid_price, (
+            f"Expected price={valid_price}, got {order.price}"
+        )
         assert order.quantity == 0.1
         assert order.symbol == mock_signal.token
 
