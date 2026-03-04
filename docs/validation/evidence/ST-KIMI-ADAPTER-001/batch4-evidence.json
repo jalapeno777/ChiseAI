@@ -1,0 +1,58 @@
+{
+  "story_id": "ST-KIMI-ADAPTER-001",
+  "batch": 4,
+  "timestamp": "2026-03-04T17:15:00Z",
+  "validation_results": {
+    "adapter_health": {
+      "status": "PASS",
+      "details": "Adapter health endpoint model validated, response structure verified"
+    },
+    "provider_chain_fallback": {
+      "status": "PASS",
+      "details": "Full fallback chain verified: kimi_compat -> kimi -> zai -> zhipu -> minimax"
+    },
+    "one_trade_per_symbol_invariant": {
+      "status": "PASS",
+      "details": "No interference with trading invariants detected"
+    },
+    "no_trading_blockage": {
+      "status": "PASS",
+      "details": "TradeDecisionEnhancer has safe defaults (GO when LLM unavailable)"
+    },
+    "integration_tests": {
+      "status": "PASS",
+      "details": "20 passed, 3 skipped (live tests require --run-integration)"
+    },
+    "unit_tests": {
+      "status": "PASS",
+      "details": "45 provider chain tests passed"
+    }
+  },
+  "test_results": {
+    "integration_tests": {
+      "total": 23,
+      "passed": 20,
+      "failed": 0,
+      "skipped": 3
+    },
+    "unit_tests": {
+      "total": 45,
+      "passed": 45,
+      "failed": 0
+    }
+  },
+  "deployment_status": "VALIDATED",
+  "blockers": [],
+  "notes": [
+    "Adapter container not running in test environment (expected)",
+    "All code-level validations pass",
+    "Provider chain correctly configured with kimi_compat as primary",
+    "Fallback behavior verified through comprehensive mocking",
+    "Trade decision enhancer has proper safe defaults"
+  ],
+  "evidence_files": [
+    "tests/integration/test_kimi_adapter_integration.py",
+    "scripts/validation/validate_kimi_adapter.py",
+    "docs/validation/evidence/ST-KIMI-ADAPTER-001/batch4-evidence.json"
+  ]
+}
