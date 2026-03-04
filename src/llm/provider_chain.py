@@ -85,6 +85,13 @@ class ProviderConfig:
 
 # Provider configurations
 PROVIDER_CONFIGS = {
+    "kimi_compat": ProviderConfig(
+        name="KIMI Compat (Adapter)",
+        api_key_env="KIMI_API_KEY",  # Reuses existing Kimi API key
+        enabled_env="KIMI_COMPAT_ENABLED",
+        enabled_default=False,  # Disabled by default
+        priority=0,  # Highest priority - before direct kimi
+    ),
     "kimi": ProviderConfig(
         name="KIMI K2.5",
         api_key_env="KIMI_API_KEY",
@@ -258,7 +265,13 @@ class LLMProviderChain:
             enable_metrics: Whether to collect metrics during burn-in
             metrics_exporter: Optional exporter for InfluxDB integration
         """
-        self.provider_order = provider_order or ["kimi", "zai", "zhipu", "minimax"]
+        self.provider_order = provider_order or [
+            "kimi_compat",
+            "kimi",
+            "zai",
+            "zhipu",
+            "minimax",
+        ]
         self.max_retries = max_retries
         self.retry_delay = retry_delay
         self._provider_stats: dict[str, dict[str, Any]] = {}
@@ -502,6 +515,184 @@ class LLMProviderChain:
             provider=provider_label,
             error=final_error,
         )
+
+    async def _query_kimi_compat(
+        self, prompt: str, system_prompt: str | None = None
+    ) -> LLMResponse:
+        """Query KIMI via OpenAI-compatible adapter.
+
+        Makes HTTP requests to KIMI_COMPAT_BASE_URL (default: http://chiseai-kimi-adapter:8002/v1)
+        using OpenAI-compatible client pattern.
+
+        Args:
+            prompt: User prompt
+            system_prompt: Optional system prompt
+
+        Returns:
+            LLMResponse with result or error
+        """
+        import os
+
+        import aiohttp
+
+        base_url = os.getenv(
+            "KIMI_COMPAT_BASE_URL", "http://chiseai-kimi-adapter:8002/v1"
+        )
+        api_key = os.getenv("KIMI_API_KEY")
+
+        if not api_key:
+            return LLMResponse(
+                success=False,
+                provider="KIMI Compat (Adapter)",
+                error=ProviderError(
+                    category=ErrorCategory.NOT_CONFIGURED,
+                    message="KIMI_API_KEY not configured",
+                    retryable=False,
+                    should_fallback=True,
+                ),
+            )
+
+        # Build messages
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        # Build request payload
+        payload = {
+            "model": "kimi-for-coding",
+            "messages": messages,
+            "temperature": 0.3,
+            "max_tokens": 500,
+        }
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        }
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    f"{base_url}/chat/completions",
+                    json=payload,
+                    headers=headers,
+                    timeout=aiohttp.ClientTimeout(total=60),
+                ) as response:
+                    response_data = await response.json()
+
+                    if response.status == 200:
+                        # Extract content from response
+                        choices = response_data.get("choices", [])
+                        if choices:
+                            content = choices[0].get("message", {}).get("content", "")
+                            confidence, rationale = self._parse_confidence_response(
+                                content
+                            )
+
+                            return LLMResponse(
+                                success=True,
+                                content=content,
+                                confidence_score=confidence,
+                                rationale=rationale,
+                                provider="KIMI Compat (Adapter)",
+                                raw_response=response_data,
+                            )
+                        else:
+                            return LLMResponse(
+                                success=False,
+                                provider="KIMI Compat (Adapter)",
+                                error=ProviderError(
+                                    category=ErrorCategory.UNKNOWN,
+                                    message="No choices in response",
+                                    retryable=False,
+                                    should_fallback=True,
+                                ),
+                            )
+
+                    # Handle errors
+                    error_msg = response_data.get("error", {}).get(
+                        "message", f"HTTP {response.status}"
+                    )
+
+                    if response.status == 401:
+                        return LLMResponse(
+                            success=False,
+                            provider="KIMI Compat (Adapter)",
+                            error=ProviderError(
+                                category=ErrorCategory.AUTH,
+                                message=f"Authentication failed: {error_msg}",
+                                status_code=401,
+                                retryable=False,
+                                should_fallback=True,
+                            ),
+                        )
+                    elif response.status == 403:
+                        return LLMResponse(
+                            success=False,
+                            provider="KIMI Compat (Adapter)",
+                            error=ProviderError(
+                                category=ErrorCategory.SCOPE,
+                                message=f"Permission denied: {error_msg}",
+                                status_code=403,
+                                retryable=False,
+                                should_fallback=True,
+                            ),
+                        )
+                    elif response.status == 429:
+                        return LLMResponse(
+                            success=False,
+                            provider="KIMI Compat (Adapter)",
+                            error=ProviderError(
+                                category=ErrorCategory.RATE_LIMIT,
+                                message=f"Rate limit exceeded: {error_msg}",
+                                status_code=429,
+                                retryable=True,
+                                should_fallback=True,
+                            ),
+                        )
+                    elif response.status >= 500:
+                        return LLMResponse(
+                            success=False,
+                            provider="KIMI Compat (Adapter)",
+                            error=ProviderError(
+                                category=ErrorCategory.SERVER,
+                                message=f"Server error: {error_msg}",
+                                status_code=response.status,
+                                retryable=True,
+                                should_fallback=True,
+                            ),
+                        )
+                    else:
+                        return LLMResponse(
+                            success=False,
+                            provider="KIMI Compat (Adapter)",
+                            error=ProviderError(
+                                category=ErrorCategory.CLIENT,
+                                message=f"Client error: {error_msg}",
+                                status_code=response.status,
+                                retryable=False,
+                                should_fallback=True,
+                            ),
+                        )
+
+        except aiohttp.ClientError as e:
+            return LLMResponse(
+                success=False,
+                provider="KIMI Compat (Adapter)",
+                error=ProviderError(
+                    category=ErrorCategory.NETWORK,
+                    message=f"Network error: {str(e)}",
+                    retryable=True,
+                    should_fallback=True,
+                ),
+            )
+        except Exception as e:
+            return LLMResponse(
+                success=False,
+                provider="KIMI Compat (Adapter)",
+                error=classify_error(e),
+            )
 
     async def _query_kimi(
         self, prompt: str, system_prompt: str | None = None
