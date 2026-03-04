@@ -5,7 +5,7 @@ Configuration dataclass for Discord alert integration.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 
@@ -33,6 +33,10 @@ class DiscordConfig:
         batch_max_size: Maximum number of signals in a batch
         batch_max_wait_ms: Maximum wait time for batch in milliseconds
         batch_enabled: Whether batching is enabled
+        strict_validation: If True (default), fail fast on invalid channel config.
+            If False, log error and disable notifications instead of failing.
+        notifications_enabled: Whether notifications are enabled (set during validation)
+        validation_errors: List of validation errors found during startup
     """
 
     bot_token: str | None = None
@@ -55,6 +59,9 @@ class DiscordConfig:
     batch_max_size: int = 5
     batch_max_wait_ms: int = 100
     batch_enabled: bool = True
+    strict_validation: bool = True
+    notifications_enabled: bool = True
+    validation_errors: list[str] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls, config: dict[str, Any]) -> DiscordConfig:
@@ -90,6 +97,9 @@ class DiscordConfig:
             batch_max_size=config.get("batch_max_size", 5),
             batch_max_wait_ms=config.get("batch_max_wait_ms", 100),
             batch_enabled=config.get("batch_enabled", True),
+            strict_validation=config.get("strict_validation", True),
+            notifications_enabled=config.get("notifications_enabled", True),
+            validation_errors=config.get("validation_errors", []),
         )
 
     @classmethod
@@ -147,6 +157,10 @@ class DiscordConfig:
             batch_max_size=int(os.getenv("DISCORD_BATCH_MAX_SIZE", "5")),
             batch_max_wait_ms=int(os.getenv("DISCORD_BATCH_MAX_WAIT_MS", "100")),
             batch_enabled=os.getenv("DISCORD_BATCH_ENABLED", "true").lower() == "true",
+            strict_validation=os.getenv("DISCORD_STRICT_VALIDATION", "true").lower()
+            != "false",
+            notifications_enabled=True,
+            validation_errors=[],
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -175,6 +189,9 @@ class DiscordConfig:
             "batch_max_size": self.batch_max_size,
             "batch_max_wait_ms": self.batch_max_wait_ms,
             "batch_enabled": self.batch_enabled,
+            "strict_validation": self.strict_validation,
+            "notifications_enabled": self.notifications_enabled,
+            "validation_errors": self.validation_errors,
         }
 
     def get_channel_id_for_name(self, channel_name: str) -> str | None:
