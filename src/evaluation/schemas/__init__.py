@@ -5,7 +5,7 @@
 # SAFETY: No live trading flow modified
 """
 
-from evaluation.schemas.mini_eval import (
+from .mini_eval import (
     Issue,
     IssueCategory,
     IssueSeverity,
