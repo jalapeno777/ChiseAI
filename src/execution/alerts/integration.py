@@ -7,6 +7,7 @@ For ST-FINAL-CLOSURE-001: G5 - #trading Alert Routing Fully Active
 """
 
 from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
@@ -253,6 +254,7 @@ class ExecutionAlertIntegration:
             SignalOutcome instance
         """
         from decimal import Decimal
+
         from ml.models.signal_outcome import SignalOutcome, SignalOutcomeStatus
 
         signal = result.signal
