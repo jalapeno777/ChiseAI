@@ -28,6 +28,8 @@ if TYPE_CHECKING:
     from execution.paper.order_simulator import OrderSimulator
     from execution.paper.risk_enforcer import PaperRiskEnforcer
     from execution.paper.signal_consumer import SignalConsumer
+    from execution.paper.symbol_registry import SymbolPositionRegistry
+    from execution.paper.trade_journal import TradeJournal
     from execution.telemetry.collector import ExecutionCollector
     from portfolio.paper_tracker import PaperPositionTracker
     from signal_generation.models import Signal
@@ -44,6 +46,7 @@ from execution.paper.models import (
     PaperTradeResult,
     TradeStatus,
 )
+from execution.paper.trade_journal import ExitReason, TradeJournal
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +92,8 @@ class PaperTradingOrchestrator:
         trade_notifier: TradeNotifier | None = None,
         signal_consumer: SignalConsumer | None = None,
         outcome_capture: Any | None = None,
-        decision_enhancer: TradeDecisionEnhancer | None = None,  # NEW
+        decision_enhancer: TradeDecisionEnhancer | None = None,
+        trade_journal: TradeJournal | None = None,
     ):
         """Initialize paper trading orchestrator.
 
@@ -104,6 +108,7 @@ class PaperTradingOrchestrator:
             trade_notifier: Optional Discord trade notifier for alerts
             signal_consumer: Optional SignalConsumer for Redis signal bridge
             decision_enhancer: Optional TradeDecisionEnhancer for LLM-enhanced decisions
+            trade_journal: Optional TradeJournal for trade lifecycle tracking
         """
         self.signal_generator = signal_generator
         self.order_simulator = order_simulator
@@ -116,6 +121,7 @@ class PaperTradingOrchestrator:
         self._signal_consumer = signal_consumer
         self.outcome_capture = outcome_capture
         self.decision_enhancer = decision_enhancer or TradeDecisionEnhancer()
+        self.trade_journal = trade_journal
 
         self._running = False
         self._signal_queue: asyncio.Queue[Signal] = asyncio.Queue()
@@ -671,6 +677,35 @@ class PaperTradingOrchestrator:
 
         logger.debug(f"Opened position: {position.position_id}")
 
+        # Create trade journal entry
+        if self.trade_journal:
+            entry = None
+            try:
+                entry = self.trade_journal.create_entry(
+                    position=position,
+                    signal=signal,
+                    correlation_id=correlation_id,
+                )
+                # Store entry_id in position metadata for later reference
+                # Initialize metadata dict if needed
+                if position.metadata is None:
+                    position.metadata = {}
+                position.metadata["journal_entry_id"] = entry.entry_id
+                logger.info(
+                    f"Trade journal entry created: {entry.entry_id} "
+                    f"for position {position.position_id}"
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Failed to create trade journal entry: {e}",
+                    exc_info=True,
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Failed to create trade journal entry: {e}",
+                    exc_info=True,
+                )
+
         # Send Discord notification if notifier is configured
         if self.trade_notifier:
             try:
@@ -767,6 +802,35 @@ class PaperTradingOrchestrator:
                 f"Closed position {position_id}: PnL={realized_pnl:.4f}, reason={reason}"
             )
 
+            # Close trade journal entry
+            if self.trade_journal and position.metadata:
+                entry_id = position.metadata.get("journal_entry_id")
+                if entry_id:
+                    try:
+                        # Map close reason to ExitReason enum
+                        reason_map = {
+                            "time_limit": ExitReason.TIME_LIMIT,
+                            "manual": ExitReason.MANUAL_CLOSE,
+                            "opposite_signal": ExitReason.SIGNAL_REVERSE,
+                            "kill_switch": ExitReason.KILL_SWITCH,
+                        }
+                        exit_reason = reason_map.get(reason, ExitReason.MANUAL_CLOSE)
+
+                        self.trade_journal.close_entry(
+                            entry_id=entry_id,
+                            exit_price=exit_price,
+                            exit_reason=exit_reason,
+                            pnl=realized_pnl,
+                        )
+                        logger.info(
+                            f"Trade journal entry closed: {entry_id} with PnL {realized_pnl:.4f}"
+                        )
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to close trade journal entry {entry_id}: {e}",
+                            exc_info=True,
+                        )
+
             # Update portfolio value
             self.portfolio_value += realized_pnl
             if self.telemetry:
@@ -843,6 +907,16 @@ class PaperTradingOrchestrator:
             Dictionary with performance metrics
         """
         return self._metrics.copy()
+
+    def get_journal_stats(self) -> dict[str, Any] | None:
+        """Get trade journal statistics.
+
+        Returns:
+            Dictionary with journal statistics or None if no journal configured
+        """
+        if self.trade_journal:
+            return self.trade_journal.get_stats()
+        return None
 
     async def get_portfolio_summary(self) -> dict[str, Any]:
         """Get current portfolio summary.
