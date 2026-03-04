@@ -21,6 +21,7 @@ class DiscordConfig:
         guild_id: Optional guild/server ID restriction for bot commands
         summaries_channel_id: Discord channel ID for summary alerts
         trading_channel_id: Discord channel ID for trading alerts
+        development_channel_id: Discord channel ID for development/governance events
         rate_limit_per_minute: Max alerts per channel per minute
         enable_duplicate_suppression: Whether to suppress duplicate alerts
         alert_cooldown_seconds: Cooldown between same signal alerts
@@ -42,6 +43,7 @@ class DiscordConfig:
     # Authoritative channel IDs for routing (Gate B fix)
     summaries_channel_id: str = "1445752426563899492"
     trading_channel_id: str = "1444447985378398459"
+    development_channel_id: str | None = None
     rate_limit_per_minute: int = 10
     enable_duplicate_suppression: bool = True
     alert_cooldown_seconds: int = 60
@@ -74,6 +76,7 @@ class DiscordConfig:
                 "summaries_channel_id", "1445752426563899492"
             ),
             trading_channel_id=config.get("trading_channel_id", "1444447985378398459"),
+            development_channel_id=config.get("development_channel_id"),
             rate_limit_per_minute=config.get("rate_limit_per_minute", 10),
             enable_duplicate_suppression=config.get(
                 "enable_duplicate_suppression", True
@@ -101,6 +104,7 @@ class DiscordConfig:
             DISCORD_GUILD_ID: Guild/server ID for lock enforcement
             DISCORD_SUMMARIES_CHANNEL_ID: Channel ID for summaries (#summaries)
             DISCORD_TRADING_CHANNEL_ID: Channel ID for trading (#trading)
+            DISCORD_DEVELOPMENT_CHANNEL_ID: Channel ID for development/governance events
             DISCORD_RATE_LIMIT_PER_MINUTE: Rate limit per minute
 
         Returns:
@@ -124,6 +128,7 @@ class DiscordConfig:
             trading_channel_id=os.getenv(
                 "DISCORD_TRADING_CHANNEL_ID", "1444447985378398459"
             ),
+            development_channel_id=os.getenv("DISCORD_DEVELOPMENT_CHANNEL_ID"),
             rate_limit_per_minute=int(os.getenv("DISCORD_RATE_LIMIT_PER_MINUTE", "10")),
             enable_duplicate_suppression=os.getenv(
                 "DISCORD_ENABLE_DUPLICATE_SUPPRESSION", "true"
@@ -158,6 +163,7 @@ class DiscordConfig:
             "guild_id": self.guild_id,
             "summaries_channel_id": self.summaries_channel_id,
             "trading_channel_id": self.trading_channel_id,
+            "development_channel_id": self.development_channel_id,
             "rate_limit_per_minute": self.rate_limit_per_minute,
             "enable_duplicate_suppression": self.enable_duplicate_suppression,
             "alert_cooldown_seconds": self.alert_cooldown_seconds,
@@ -185,4 +191,6 @@ class DiscordConfig:
             return self.summaries_channel_id
         elif name_lower in ("trading", "trading_channel", "trading-signals"):
             return self.trading_channel_id
+        elif name_lower in ("development", "dev", "development_channel"):
+            return self.development_channel_id
         return None

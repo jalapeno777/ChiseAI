@@ -401,6 +401,31 @@ class TempmemoryMigrationEngine:
             self._redis_client.expire(redis_key, 30 * 24 * 3600)
 
             logger.debug(f"Migrated to Redis: {redis_key}")
+
+            # After successful Redis migration, send Discord notification (non-blocking)
+            if not self._dry_run and temp_file.memory_type == "decision":
+                try:
+                    import asyncio
+                    from governance.notifications import DiscordNotifier
+
+                    notifier = DiscordNotifier()
+                    decision_data = {
+                        "story_id": temp_file.story_id or "unknown",
+                        "title": temp_file.frontmatter.get(
+                            "title", "Decision Migrated"
+                        ),
+                        "rationale": temp_file.frontmatter.get(
+                            "rationale", "See source file"
+                        ),
+                        "impact": temp_file.frontmatter.get(
+                            "impact", "See source file"
+                        ),
+                        "timestamp": datetime.now(UTC).isoformat(),
+                    }
+                    asyncio.create_task(notifier.notify_decision(decision_data))
+                except Exception as e:
+                    logger.debug(f"Discord notification skipped: {e}")
+
             return True
 
         except Exception as e:
