@@ -544,6 +544,7 @@ steps:
         (
           set -euo pipefail
           echo "Running status write gate check..."
+          pip install --no-cache-dir pyyaml || pip install --no-cache-dir --break-system-packages pyyaml
           python3 scripts/governance/status_write_gate.py --file docs/bmm-workflow-status.yaml --no-require-authority
         ) > _bmad-output/ci/status-write-gate.log 2>&1
         code=$?
