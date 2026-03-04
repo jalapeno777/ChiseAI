@@ -680,7 +680,9 @@ class PaperTradingOrchestrator:
                     order=filled_order,
                     signal_id=signal.signal_id,
                 )
-                result = await self.trade_notifier.send_trade_open_notification(outcome)
+                result = await self.trade_notifier.send_trade_open_notification(
+                    outcome, llm_decision=llm_decision
+                )
 
                 if result.success:
                     logger.info(
@@ -803,8 +805,14 @@ class PaperTradingOrchestrator:
                         pnl=realized_pnl,
                         exit_price=exit_price,
                     )
+                    # Extract LLM decision from position metadata
+                    llm_decision = (
+                        position.metadata.get("llm_decision")
+                        if position.metadata
+                        else None
+                    )
                     result = await self.trade_notifier.send_trade_close_notification(
-                        outcome
+                        outcome, llm_decision=llm_decision
                     )
 
                     if result.success:
