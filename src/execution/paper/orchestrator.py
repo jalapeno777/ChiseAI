@@ -28,7 +28,6 @@ if TYPE_CHECKING:
     from execution.paper.order_simulator import OrderSimulator
     from execution.paper.risk_enforcer import PaperRiskEnforcer
     from execution.paper.signal_consumer import SignalConsumer
-    from execution.paper.symbol_registry import SymbolPositionRegistry
     from execution.paper.trade_journal import TradeJournal
     from execution.telemetry.collector import ExecutionCollector
     from portfolio.paper_tracker import PaperPositionTracker
@@ -94,6 +93,7 @@ class PaperTradingOrchestrator:
         outcome_capture: Any | None = None,
         decision_enhancer: TradeDecisionEnhancer | None = None,
         trade_journal: TradeJournal | None = None,
+        symbol_registry: Any | None = None,
     ):
         """Initialize paper trading orchestrator.
 
@@ -109,6 +109,7 @@ class PaperTradingOrchestrator:
             signal_consumer: Optional SignalConsumer for Redis signal bridge
             decision_enhancer: Optional TradeDecisionEnhancer for LLM-enhanced decisions
             trade_journal: Optional TradeJournal for trade lifecycle tracking
+            symbol_registry: Optional SymbolPositionRegistry for symbol-level locking
         """
         self.signal_generator = signal_generator
         self.order_simulator = order_simulator
@@ -122,6 +123,7 @@ class PaperTradingOrchestrator:
         self.outcome_capture = outcome_capture
         self.decision_enhancer = decision_enhancer or TradeDecisionEnhancer()
         self.trade_journal = trade_journal
+        self.symbol_registry = symbol_registry
 
         self._running = False
         self._signal_queue: asyncio.Queue[Signal] = asyncio.Queue()
@@ -694,11 +696,6 @@ class PaperTradingOrchestrator:
                 logger.info(
                     f"Trade journal entry created: {entry.entry_id} "
                     f"for position {position.position_id}"
-                )
-            except Exception as e:
-                logger.warning(
-                    f"Failed to create trade journal entry: {e}",
-                    exc_info=True,
                 )
             except Exception as e:
                 logger.warning(
