@@ -1,0 +1,41 @@
+# Kimi Adapter Dockerfile
+# LLM adapter for Moonshot AI's Kimi model
+# Story: ST-KIMI-ADAPTER-001
+
+FROM python:3.11-slim
+
+LABEL project=chiseai
+LABEL service=kimi-adapter
+LABEL description="LLM adapter for Moonshot AI's Kimi model"
+
+# Install curl for health checks
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Install Python dependencies
+RUN pip install --no-cache-dir \
+    fastapi>=0.100.0 \
+    uvicorn[standard]>=0.23.0 \
+    aiohttp>=3.8.0 \
+    pydantic>=2.0.0
+
+# Create non-root user for security
+RUN groupadd -r kimi && useradd -r -g kimi kimi
+
+# Health check endpoint on port 8002
+# Returns HTTP 200 if adapter is healthy
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8002/health || exit 1
+
+# Expose adapter port
+EXPOSE 8002
+
+# Switch to non-root user
+USER kimi
+
+# Default command: run FastAPI server
+CMD ["uvicorn", "kimi_adapter.main:app", "--host", "0.0.0.0", "--port", "8002"]
