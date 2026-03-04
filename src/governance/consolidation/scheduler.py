@@ -31,7 +31,6 @@ from src.governance.consolidation.rollback import (
 )
 from src.governance.tempmemory.ingestion_runner import (
     TempmemoryIngestionRunner,
-    IngestionStatus,
 )
 
 logger = logging.getLogger(__name__)

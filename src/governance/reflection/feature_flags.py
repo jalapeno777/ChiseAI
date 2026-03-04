@@ -6,12 +6,11 @@ reflection functionality at runtime.
 
 import logging
 import os
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 
-def get_redis_client() -> Optional[object]:
+def get_redis_client() -> object | None:
     """Get Redis client if available.
 
     Returns:

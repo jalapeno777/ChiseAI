@@ -5,8 +5,8 @@ import logging
 from datetime import UTC, datetime
 from typing import Any
 
-from discord_alerts.discord_client import DiscordClient
 from discord_alerts.config import DiscordConfig
+from discord_alerts.discord_client import DiscordClient
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +80,7 @@ class DiscordNotifier:
         if redis is None:
             return
         try:
-            from tools.redis_state import redis_state_set, redis_state_expire
+            from tools.redis_state import redis_state_expire, redis_state_set
 
             key = f"bmad:chiseai:notifications:sent:{event_id}"
             redis_state_set(key, "1")
@@ -91,7 +91,6 @@ class DiscordNotifier:
 
     async def _send_with_retry(self, content: str, max_retries: int = 3) -> bool:
         """Send message with exponential backoff retry."""
-        import asyncio
 
         for attempt in range(max_retries):
             try:
@@ -190,7 +189,7 @@ class DiscordNotifier:
             success = await self._send_with_retry(content)
             if success:
                 self._mark_sent(event_id)
-                logger.info(f"Sent decision notification to Discord")
+                logger.info("Sent decision notification to Discord")
             return success
 
         except Exception as e:

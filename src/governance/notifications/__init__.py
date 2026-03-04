@@ -2,8 +2,8 @@
 
 from .discord_notifier import DiscordNotifier
 from .formatters import (
-    ReflectionNotificationFormatter,
     DecisionNotificationFormatter,
+    ReflectionNotificationFormatter,
 )
 
 __all__ = [

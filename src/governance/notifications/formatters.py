@@ -22,7 +22,7 @@ class ReflectionNotificationFormatter:
         lines = [
             "📊 **Daily Reflection Generated**",
             "",
-            f"**Event Type:** Daily Bottleneck Reflection",
+            "**Event Type:** Daily Bottleneck Reflection",
             f"**Period:** {artifact.date}",
             f"**Timestamp:** {artifact.timestamp}",
         ]
@@ -75,7 +75,7 @@ class ReflectionNotificationFormatter:
         lines = [
             "📊 **Weekly Reflection Generated**",
             "",
-            f"**Event Type:** Weekly Trend Reflection",
+            "**Event Type:** Weekly Trend Reflection",
             f"**Period:** {artifact.week_start} to {artifact.week_end}",
             f"**Timestamp:** {artifact.timestamp}",
         ]

@@ -18,7 +18,7 @@ from .artifacts import Priority, RootCauseCategory
 from .feature_flags import is_reflection_enabled
 
 if TYPE_CHECKING:
-    from .llm_integration import LLMInsightResult
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -534,6 +534,7 @@ class BottleneckReflectionGenerator:
         # Send Discord notification (non-blocking)
         try:
             import asyncio
+
             from governance.notifications import DiscordNotifier
 
             notifier = DiscordNotifier()
@@ -1011,9 +1012,9 @@ class BottleneckReflectionGenerator:
 
         kpi_data = {
             "total_bottlenecks": len(top_bottlenecks),
-            "highest_impact": top_bottlenecks[0].bottleneck_type
-            if top_bottlenecks
-            else None,
+            "highest_impact": (
+                top_bottlenecks[0].bottleneck_type if top_bottlenecks else None
+            ),
         }
 
         result = llm_integration.generate_llm_insights(trend_data, kpi_data)

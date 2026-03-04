@@ -406,6 +406,7 @@ class TempmemoryMigrationEngine:
             if not self._dry_run and temp_file.memory_type == "decision":
                 try:
                     import asyncio
+
                     from governance.notifications import DiscordNotifier
 
                     notifier = DiscordNotifier()
