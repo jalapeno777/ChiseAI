@@ -27,6 +27,10 @@ class TradeDecision:
     provider: str  # Which LLM provider was used
     fallback_used: bool  # True if fallback was used
     latency_ms: float  # Response time
+    position_size: float | None = None  # Recommended position size
+    stop_loss: float | None = None  # Recommended stop-loss price
+    take_profit: float | None = None  # Recommended take-profit price
+    risk_recommendation: str = ""  # Risk management guidance
 
 
 class TradeDecisionEnhancer:
@@ -103,7 +107,15 @@ class TradeDecisionEnhancer:
             latency_ms = (time.time() - start_time) * 1000
 
             # Parse response
-            go_no_go, confidence, rationale = self._parse_response(response.content)
+            (
+                go_no_go,
+                confidence,
+                rationale,
+                position_size,
+                stop_loss,
+                take_profit,
+                risk_recommendation,
+            ) = self._parse_response(response.content)
 
             return TradeDecision(
                 go_no_go=go_no_go,
@@ -112,6 +124,10 @@ class TradeDecisionEnhancer:
                 provider=response.provider,
                 fallback_used=response.provider != "kimi",  # Primary is KIMI
                 latency_ms=latency_ms,
+                position_size=position_size,
+                stop_loss=stop_loss,
+                take_profit=take_profit,
+                risk_recommendation=risk_recommendation,
             )
 
         except Exception as e:
@@ -159,22 +175,33 @@ Respond in this exact format:
 DECISION: [GO or NO-GO]
 CONFIDENCE: [0-100]
 RATIONALE: [Brief reasoning in 1-2 sentences]
+POSITION_SIZE: [recommended position size as % of portfolio, 0-100]
+STOP_LOSS: [recommended stop-loss price]
+TAKE_PROFIT: [recommended take-profit price]
+RISK_RECOMMENDATION: [brief risk management guidance]
 """
 
         return prompt
 
-    def _parse_response(self, content: str) -> tuple[bool, float, str]:
+    def _parse_response(
+        self, content: str
+    ) -> tuple[bool, float, str, float | None, float | None, float | None, str]:
         """Parse LLM response into structured decision.
 
         Args:
             content: Raw LLM response text
 
         Returns:
-            Tuple of (go_no_go, confidence, rationale)
+            Tuple of (go_no_go, confidence, rationale, position_size,
+                     stop_loss, take_profit, risk_recommendation)
         """
         go_no_go = True  # Default to GO
         confidence = 50.0
         rationale = "No rationale provided"
+        position_size: float | None = None
+        stop_loss: float | None = None
+        take_profit: float | None = None
+        risk_recommendation = ""
 
         lines = content.strip().split("\n")
 
@@ -191,8 +218,34 @@ RATIONALE: [Brief reasoning in 1-2 sentences]
                     confidence = 50.0
             elif line.startswith("RATIONALE:"):
                 rationale = line.split(":", 1)[1].strip()
+            elif line.startswith("POSITION_SIZE:"):
+                try:
+                    size_str = line.split(":", 1)[1].strip()
+                    position_size = float(size_str.replace("%", ""))
+                except (ValueError, IndexError):
+                    position_size = None
+            elif line.startswith("STOP_LOSS:"):
+                try:
+                    stop_loss = float(line.split(":", 1)[1].strip())
+                except (ValueError, IndexError):
+                    stop_loss = None
+            elif line.startswith("TAKE_PROFIT:"):
+                try:
+                    take_profit = float(line.split(":", 1)[1].strip())
+                except (ValueError, IndexError):
+                    take_profit = None
+            elif line.startswith("RISK_RECOMMENDATION:"):
+                risk_recommendation = line.split(":", 1)[1].strip()
 
-        return go_no_go, confidence, rationale
+        return (
+            go_no_go,
+            confidence,
+            rationale,
+            position_size,
+            stop_loss,
+            take_profit,
+            risk_recommendation,
+        )
 
     def get_health(self) -> dict[str, Any]:
         """Get health status of the enhancer."""

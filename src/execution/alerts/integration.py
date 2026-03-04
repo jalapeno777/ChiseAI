@@ -7,7 +7,6 @@ For ST-FINAL-CLOSURE-001: G5 - #trading Alert Routing Fully Active
 """
 
 from __future__ import annotations
-
 import logging
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
@@ -15,16 +14,13 @@ from uuid import UUID
 if TYPE_CHECKING:
     from execution.paper.models import PaperPosition, PaperTradeResult
     from ml.models.signal_outcome import SignalOutcome
-
 logger = logging.getLogger(__name__)
 
 
 class ExecutionAlertIntegration:
     """Integrates Discord alerts into the execution hot path.
-
     Coordinates trade notifications with the paper trading pipeline,
     ensuring all trade events generate appropriate Discord alerts.
-
     Attributes:
         trade_notifier: TradeNotifier instance for Discord webhooks
         alert_sender: AlertSender for signal-based alerts
@@ -38,7 +34,6 @@ class ExecutionAlertIntegration:
         enabled: bool = True,
     ):
         """Initialize execution alert integration.
-
         Args:
             trade_notifier: TradeNotifier for trade open/close alerts
             alert_sender: AlertSender for signal alerts
@@ -47,7 +42,6 @@ class ExecutionAlertIntegration:
         self._trade_notifier = trade_notifier
         self._alert_sender = alert_sender
         self.enabled = enabled
-
         # Track alert statistics
         self._stats = {
             "open_alerts_sent": 0,
@@ -55,7 +49,6 @@ class ExecutionAlertIntegration:
             "recap_alerts_sent": 0,
             "errors": 0,
         }
-
         logger.info(
             f"ExecutionAlertIntegration initialized: enabled={enabled}, "
             f"trade_notifier={trade_notifier is not None}, "
@@ -86,21 +79,17 @@ class ExecutionAlertIntegration:
         result: PaperTradeResult | None = None,
     ) -> dict[str, Any]:
         """Handle signal received event.
-
         Args:
             signal: Trading signal
             result: Optional trade result if signal was processed
-
         Returns:
             Alert result dictionary
         """
         if not self.enabled:
             return {"sent": False, "reason": "disabled"}
-
         try:
             alert_sender = self._get_alert_sender()
             send_result = await alert_sender.send_signal(signal)
-
             return {
                 "sent": send_result.success,
                 "message_id": send_result.message_id,
@@ -108,7 +97,6 @@ class ExecutionAlertIntegration:
                 "error": send_result.error,
                 "suppressed": send_result.suppressed,
             }
-
         except Exception as e:
             logger.error(f"Failed to send signal alert: {e}")
             self._stats["errors"] += 1
@@ -120,23 +108,33 @@ class ExecutionAlertIntegration:
         position: PaperPosition | None = None,
     ) -> dict[str, Any]:
         """Handle trade opened event.
-
         Sends a Discord notification to #trading when a position is opened.
-
         Args:
             outcome: Signal outcome for the opened trade
             position: Optional position details
-
         Returns:
             Alert result dictionary
         """
         if not self.enabled:
             return {"sent": False, "reason": "disabled"}
-
         try:
             trade_notifier = self._get_trade_notifier()
-            result = await trade_notifier.send_trade_open_notification(outcome)
-
+            # Extract LLM decision from outcome metadata if available
+            llm_decision = None
+            if outcome.metadata and "llm_decision" in outcome.metadata:
+                llm_meta = outcome.metadata["llm_decision"]
+                llm_decision = {
+                    "decision": llm_meta.get("decision"),
+                    "confidence": llm_meta.get("confidence"),
+                    "provider": llm_meta.get("provider"),
+                    "rationale": llm_meta.get("rationale"),
+                    "position_size": llm_meta.get("position_size"),
+                    "stop_loss": llm_meta.get("stop_loss"),
+                    "take_profit": llm_meta.get("take_profit"),
+                }
+            result = await trade_notifier.send_trade_open_notification(
+                outcome, llm_decision
+            )
             if result.success:
                 self._stats["open_alerts_sent"] += 1
                 logger.info(
@@ -145,14 +143,12 @@ class ExecutionAlertIntegration:
                 )
             else:
                 logger.warning(f"Trade open alert failed: {result.error}")
-
             return {
                 "sent": result.success,
                 "message_id": result.message_id,
                 "error": result.error,
                 "dead_letter_queued": result.dead_letter_queued,
             }
-
         except Exception as e:
             logger.error(f"Failed to send trade open alert: {e}")
             self._stats["errors"] += 1
@@ -165,30 +161,40 @@ class ExecutionAlertIntegration:
         position: PaperPosition | None = None,
     ) -> dict[str, Any]:
         """Handle trade closed event.
-
         Sends a Discord notification to #trading when a position is closed.
-
         Args:
             outcome: Signal outcome for the closed trade
             realized_pnl: Realized PnL from the trade
             position: Optional position details
-
         Returns:
             Alert result dictionary
         """
         if not self.enabled:
             return {"sent": False, "reason": "disabled"}
-
         try:
             # Update outcome with PnL if not set
             if outcome.pnl is None:
                 from decimal import Decimal
 
                 outcome.pnl = Decimal(str(realized_pnl))
-
             trade_notifier = self._get_trade_notifier()
-            result = await trade_notifier.send_trade_close_notification(outcome)
-
+            # Extract LLM decision from outcome metadata if available
+            llm_decision = None
+            if outcome.metadata and "llm_decision" in outcome.metadata:
+                llm_decision = {
+                    "decision": outcome.metadata.get("decision"),
+                    "confidence": outcome.metadata.get("confidence"),
+                    "provider": outcome.metadata.get("provider"),
+                    "rationale": outcome.metadata.get("rationale"),
+                    "position_size": outcome.metadata.get("position_size"),
+                    "stop_loss": outcome.metadata.get("stop_loss"),
+                    "take_profit": outcome.metadata.get("take_profit"),
+                    "exit_reason": outcome.metadata.get("exit_reason"),
+                    "realized_pnl": outcome.metadata.get("realized_pnl"),
+                }
+            result = await trade_notifier.send_trade_close_notification(
+                outcome, llm_decision
+            )
             if result.success:
                 self._stats["close_alerts_sent"] += 1
                 logger.info(
@@ -197,14 +203,12 @@ class ExecutionAlertIntegration:
                 )
             else:
                 logger.warning(f"Trade close alert failed: {result.error}")
-
             return {
                 "sent": result.success,
                 "message_id": result.message_id,
                 "error": result.error,
                 "dead_letter_queued": result.dead_letter_queued,
             }
-
         except Exception as e:
             logger.error(f"Failed to send trade close alert: {e}")
             self._stats["errors"] += 1
@@ -215,12 +219,9 @@ class ExecutionAlertIntegration:
         result: PaperTradeResult,
     ) -> dict[str, Any]:
         """Handle complete trade result.
-
         Sends appropriate alerts based on trade status.
-
         Args:
             result: Paper trade result
-
         Returns:
             Alert result dictionary
         """
@@ -231,40 +232,30 @@ class ExecutionAlertIntegration:
             "open": None,
             "close": None,
         }
-
         # Send signal alert
         if result.signal:
             alerts["signal"] = await self.on_signal_received(result.signal, result)
-
         # Send trade open/close alerts based on status
         if result.status == TradeStatus.EXECUTED:
             if result.position:
                 # Create outcome from result for notification
                 outcome = self._create_outcome_from_result(result)
                 alerts["open"] = await self.on_trade_opened(outcome, result.position)
-
         return alerts
 
-    def _create_outcome_from_result(
-        self,
-        result: PaperTradeResult,
-    ) -> Any:
+    def _create_outcome_from_result(self, result: PaperTradeResult) -> Any:
         """Create SignalOutcome from PaperTradeResult.
-
         Args:
             result: Paper trade result
-
         Returns:
             SignalOutcome instance
         """
         from decimal import Decimal
-
         from ml.models.signal_outcome import SignalOutcome, SignalOutcomeStatus
 
         signal = result.signal
         order = result.order
         position = result.position
-
         return SignalOutcome(
             signal_id=UUID(signal.signal_id) if signal else None,
             order_id=order.order_id if order else "",
@@ -286,59 +277,44 @@ class ExecutionAlertIntegration:
             },
         )
 
-    async def send_recap(
-        self,
-        period: str,
-        summary: dict[str, Any],
-    ) -> dict[str, Any]:
+    async def send_recap(self, period: str, summary: dict[str, Any]) -> dict[str, Any]:
         """Send trading recap to #trading channel.
-
         Args:
             period: Period description (e.g., "daily", "weekly")
             summary: Trading summary dictionary
-
         Returns:
             Alert result dictionary
         """
         if not self.enabled:
             return {"sent": False, "reason": "disabled"}
-
         try:
             # Build recap embed
             embed = self._build_recap_embed(period, summary)
             payload = {"embeds": [embed]}
-
             trade_notifier = self._get_trade_notifier()
             result = await trade_notifier._send_webhook(payload)
-
             if result.success:
                 self._stats["recap_alerts_sent"] += 1
                 logger.info(f"Recap alert sent: {period}")
             else:
                 logger.warning(f"Recap alert failed: {result.error}")
-
             return {
                 "sent": result.success,
                 "message_id": result.message_id,
                 "error": result.error,
             }
-
         except Exception as e:
             logger.error(f"Failed to send recap alert: {e}")
             self._stats["errors"] += 1
             return {"sent": False, "error": str(e)}
 
     def _build_recap_embed(
-        self,
-        period: str,
-        summary: dict[str, Any],
+        self, period: str, summary: dict[str, Any]
     ) -> dict[str, Any]:
         """Build Discord embed for trading recap.
-
         Args:
             period: Period description
             summary: Trading summary
-
         Returns:
             Discord embed dictionary
         """
@@ -350,7 +326,6 @@ class ExecutionAlertIntegration:
         losing_trades = summary.get("losing_trades", 0)
         total_pnl = summary.get("total_pnl", 0.0)
         win_rate = summary.get("win_rate", 0.0)
-
         # Determine PnL emoji
         if total_pnl > 0:
             pnl_emoji = "🟢"
@@ -361,14 +336,11 @@ class ExecutionAlertIntegration:
         else:
             pnl_emoji = "⚪"
             color = 0x808080
-
         # Title
         title = f"📊 {period.title()} Trading Recap"
-
         # Description
         pnl_prefix = "+" if total_pnl > 0 else ""
         description = f"{pnl_emoji} **Total PnL:** {pnl_prefix}${total_pnl:,.2f}"
-
         # Fields
         fields = [
             {
@@ -392,10 +364,8 @@ class ExecutionAlertIntegration:
                 "inline": True,
             },
         ]
-
         # Timestamp
         timestamp = datetime.now(UTC).isoformat()
-
         return {
             "title": title,
             "description": description,
@@ -407,7 +377,6 @@ class ExecutionAlertIntegration:
 
     def get_stats(self) -> dict[str, Any]:
         """Get alert integration statistics.
-
         Returns:
             Statistics dictionary
         """
@@ -415,25 +384,21 @@ class ExecutionAlertIntegration:
 
     async def health_check(self) -> dict[str, Any]:
         """Check alert integration health.
-
         Returns:
             Health status dictionary
         """
         trade_notifier_health = {}
         alert_sender_health = {}
-
         try:
             if self._trade_notifier:
                 trade_notifier_health = await self._trade_notifier.health_check()
         except Exception as e:
             trade_notifier_health = {"error": str(e)}
-
         try:
             if self._alert_sender:
                 alert_sender_health = await self._alert_sender.health_check()
         except Exception as e:
             alert_sender_health = {"error": str(e)}
-
         return {
             "enabled": self.enabled,
             "stats": self._stats,
