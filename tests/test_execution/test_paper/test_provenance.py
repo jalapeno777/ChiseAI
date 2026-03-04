@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 import pytest
-from src.execution.paper.provenance import (
+from execution.paper.provenance import (
     DecisionReason,
     ExecutionDecision,
     ProvenanceRecord,

@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from execution.paper.order_simulator import OrderSimulator
     from execution.paper.risk_enforcer import PaperRiskEnforcer
     from execution.paper.signal_consumer import SignalConsumer
+    from execution.paper.symbol_registry import SymbolPositionRegistry
     from execution.telemetry.collector import ExecutionCollector
     from portfolio.paper_tracker import PaperPositionTracker
     from signal_generation.models import Signal
