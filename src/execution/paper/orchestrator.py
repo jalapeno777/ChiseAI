@@ -206,9 +206,8 @@ class PaperTradingOrchestrator:
                 # Process signal
                 result = await self.process_signal(signal)
 
-                # Update metrics
+                # Update metrics (signals_processed is incremented in process_signal)
                 async with self._lock:
-                    self._metrics["signals_processed"] += 1
                     if result.status == TradeStatus.EXECUTED:
                         self._metrics["trades_executed"] += 1
                     elif result.status == TradeStatus.REJECTED:
@@ -366,11 +365,27 @@ class PaperTradingOrchestrator:
                         f"LLM enhanced decision: {signal.token} "
                         f"confidence={enhanced.confidence} provider={enhanced.provider}"
                     )
+
+                    # Store LLM recommendations for later comparison with risk enforcer
+                    # Risk enforcer remains authoritative - we'll compare after assessment
+                    llm_position_size = enhanced.position_size
+                    llm_stop_loss = enhanced.stop_loss
+                    llm_take_profit = enhanced.take_profit
+                    llm_risk_rec = enhanced.risk_recommendation
                 except Exception as e:
                     logger.warning(
                         f"LLM enhancement failed, proceeding with base signal: {e}"
                     )
                     # Continue with base signal - don't block on LLM error
+                    llm_position_size = None
+                    llm_stop_loss = None
+                    llm_take_profit = None
+                    llm_risk_rec = ""
+            else:
+                llm_position_size = None
+                llm_stop_loss = None
+                llm_take_profit = None
+                llm_risk_rec = ""
 
             # Step 2: Validate risk
             risk_start = time.perf_counter()
@@ -399,9 +414,29 @@ class PaperTradingOrchestrator:
                     correlation_id=correlation_id,
                 )
 
+            # Step 3: Apply LLM recommendations with risk enforcer as authoritative
+            # Use most conservative position size: min(LLM suggestion, risk enforcer cap)
+            final_position_size = assessment.position_size
+            if llm_position_size is not None:
+                # Risk enforcer cap is authoritative - take the minimum
+                final_position_size = min(llm_position_size, assessment.position_size)
+                logger.debug(
+                    f"Position sizing for {signal.token}: "
+                    f"LLM={llm_position_size}, RiskCap={assessment.position_size}, "
+                    f"Using={final_position_size}"
+                )
+
+            # Log LLM risk recommendations for observability (risk enforcer remains authoritative)
+            if llm_stop_loss or llm_take_profit or llm_risk_rec:
+                logger.info(
+                    f"LLM risk guidance for {signal.token}: "
+                    f"SL={llm_stop_loss}, TP={llm_take_profit}, "
+                    f"Note={llm_risk_rec[:50] if llm_risk_rec else ''}"
+                )
+
             # Step 4: Create order
             order = self._create_order(
-                signal, assessment.position_size, entry_price, correlation_id
+                signal, final_position_size, entry_price, correlation_id
             )
 
             # Step 5: Place order (with latency check)
