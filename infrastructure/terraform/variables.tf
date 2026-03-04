@@ -122,3 +122,22 @@ variable "taiga_events_public_domain" {
   description = "Taiga events/websockets public domain (host:port) for browser clients."
   default     = "localhost:9003"
 }
+
+variable "kimi_api_key" {
+  type        = string
+  description = "Moonshot AI Kimi API key for LLM adapter."
+  default     = ""
+  sensitive   = true
+}
+
+variable "kimi_base_url" {
+  type        = string
+  description = "Moonshot AI Kimi API base URL."
+  default     = "https://api.moonshot.cn/v1"
+}
+
+variable "kimi_model" {
+  type        = string
+  description = "Kimi model to use (e.g., moonshot-v1-8k, moonshot-v1-32k, moonshot-v1-128k)."
+  default     = "moonshot-v1-8k"
+}

@@ -1,0 +1,65 @@
+# Kimi Adapter Docker Compose
+# LLM adapter for Moonshot AI's Kimi model
+# Story: ST-KIMI-ADAPTER-001
+
+version: '3.8'
+
+services:
+  kimi-adapter:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.kimi-adapter
+    image: chiseai-kimi-adapter:latest
+    container_name: chiseai-kimi-adapter
+    
+    # Network configuration
+    networks:
+      - chiseai
+    
+    # Port mapping
+    ports:
+      - "8002:8002"
+    
+    # Environment variables
+    environment:
+      - KIMI_API_KEY=${KIMI_API_KEY}
+      - KIMI_BASE_URL=${KIMI_BASE_URL:-https://api.moonshot.cn/v1}
+      - KIMI_MODEL=${KIMI_MODEL:-moonshot-v1-8k}
+    
+    # Labels for governance
+    labels:
+      - "project=chiseai"
+    
+    # Health check configuration
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "project,service"
+
+# External network (managed by Terraform)
+networks:
+  chiseai:
+    external: true
