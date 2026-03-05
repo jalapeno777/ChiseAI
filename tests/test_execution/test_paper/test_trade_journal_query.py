@@ -7,6 +7,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from src.execution.paper.reason_codes import RejectReason
 from src.execution.paper.trade_journal import ExitReason, FillRecord, TradeJournalEntry
 from src.execution.paper.trade_journal_query import (
     JournalQueryFilters,
@@ -603,3 +604,352 @@ class TestTradeJournalQueryHelpers:
         assert data["strategies"] == []
         assert data["time_range"]["start"] is None
         assert data["time_range"]["end"] is None
+
+
+class TestTradeJournalQueryReasonDistribution:
+    """Test reason code distribution methods."""
+
+    @pytest.fixture
+    def entries_with_diverse_exit_reasons(self):
+        """Create entries with various exit reasons for testing."""
+        now = datetime.now(UTC)
+
+        entries = []
+        exit_reasons = [
+            ExitReason.STOP_LOSS_HIT,
+            ExitReason.STOP_LOSS_HIT,
+            ExitReason.TAKE_PROFIT_HIT,
+            ExitReason.TAKE_PROFIT_HIT,
+            ExitReason.TAKE_PROFIT_HIT,
+            ExitReason.SIGNAL_REVERSE,
+            ExitReason.MANUAL_CLOSE,
+        ]
+
+        for i, reason in enumerate(exit_reasons):
+            entry = TradeJournalEntry(
+                entry_id=f"entry-{i}",
+                symbol="BTCUSDT" if i % 2 == 0 else "ETHUSDT",
+                side="buy",
+                entry_price=100.0 * (i + 1),
+                entry_time=now - timedelta(hours=i),
+                position_size=1.0,
+                signal_id=f"signal-{i}",
+                signal_confidence=0.8,
+                signal_strategy="test_strategy",
+            )
+            entry.close(
+                exit_price=entry.entry_price + 10,
+                exit_reason=reason,
+                realized_pnl=100.0 * (i + 1),
+            )
+            entry.fees = 5.0
+            entries.append(entry)
+
+        # Add one open trade (should be excluded from distribution)
+        open_entry = TradeJournalEntry(
+            entry_id="open-entry",
+            symbol="SOLUSDT",
+            side="buy",
+            entry_price=100.0,
+            entry_time=now,
+            position_size=1.0,
+            signal_id="signal-open",
+            signal_confidence=0.8,
+            signal_strategy="test_strategy",
+        )
+        entries.append(open_entry)
+
+        return entries
+
+    @pytest.fixture
+    def mock_rejected_signals(self):
+        """Create mock rejected signals for testing."""
+        from unittest.mock import MagicMock
+
+        signals = []
+        reject_reasons = [
+            RejectReason.RISK_VIOLATION,
+            RejectReason.RISK_VIOLATION,
+            RejectReason.LOW_CONFIDENCE,
+            RejectReason.LOW_CONFIDENCE,
+            RejectReason.LOW_CONFIDENCE,
+            RejectReason.KILL_SWITCH_ACTIVE,
+            RejectReason.SYMBOL_OCCUPIED,
+            RejectReason.SYMBOL_OCCUPIED,
+            RejectReason.SYMBOL_OCCUPIED,
+            RejectReason.SYMBOL_OCCUPIED,
+        ]
+
+        for i, reason in enumerate(reject_reasons):
+            signal = MagicMock()
+            signal.reject_reason = reason
+            signals.append(signal)
+
+        return signals
+
+    # Tests for get_exit_reason_distribution()
+
+    def test_get_exit_reason_distribution_basic(
+        self, entries_with_diverse_exit_reasons
+    ):
+        """Test basic exit reason distribution calculation."""
+        query = TradeJournalQuery(entries_with_diverse_exit_reasons)
+        distribution = query.get_exit_reason_distribution()
+
+        # Should have 7 closed trades with 4 unique exit reasons
+        assert len(distribution) == 4
+
+        # Check STOP_LOSS_HIT: 2 out of 7 = 28.57%
+        assert ExitReason.STOP_LOSS_HIT in distribution
+        assert distribution[ExitReason.STOP_LOSS_HIT]["count"] == 2
+        assert distribution[ExitReason.STOP_LOSS_HIT]["percentage"] == pytest.approx(
+            28.57, abs=0.1
+        )
+
+        # Check TAKE_PROFIT_HIT: 3 out of 7 = 42.86%
+        assert ExitReason.TAKE_PROFIT_HIT in distribution
+        assert distribution[ExitReason.TAKE_PROFIT_HIT]["count"] == 3
+        assert distribution[ExitReason.TAKE_PROFIT_HIT]["percentage"] == pytest.approx(
+            42.86, abs=0.1
+        )
+
+        # Check SIGNAL_REVERSE: 1 out of 7 = 14.29%
+        assert ExitReason.SIGNAL_REVERSE in distribution
+        assert distribution[ExitReason.SIGNAL_REVERSE]["count"] == 1
+        assert distribution[ExitReason.SIGNAL_REVERSE]["percentage"] == pytest.approx(
+            14.29, abs=0.1
+        )
+
+        # Check MANUAL_CLOSE: 1 out of 7 = 14.29%
+        assert ExitReason.MANUAL_CLOSE in distribution
+        assert distribution[ExitReason.MANUAL_CLOSE]["count"] == 1
+        assert distribution[ExitReason.MANUAL_CLOSE]["percentage"] == pytest.approx(
+            14.29, abs=0.1
+        )
+
+    def test_get_exit_reason_distribution_with_filters(
+        self, entries_with_diverse_exit_reasons
+    ):
+        """Test exit reason distribution with symbol filter."""
+        query = TradeJournalQuery(entries_with_diverse_exit_reasons)
+
+        # Filter to only BTCUSDT (odd indices in fixture)
+        filters = JournalQueryFilters(symbol="BTCUSDT")
+        distribution = query.get_exit_reason_distribution(filters)
+
+        # Should only include BTCUSDT closed trades (indices 0, 2, 4, 6)
+        # exit_reasons[0] = STOP_LOSS_HIT
+        # exit_reasons[2] = TAKE_PROFIT_HIT
+        # exit_reasons[4] = TAKE_PROFIT_HIT
+        # exit_reasons[6] = MANUAL_CLOSE
+        # Total: 4 trades
+        total_count = sum(d["count"] for d in distribution.values())
+        assert total_count == 4
+
+    def test_get_exit_reason_distribution_empty(self):
+        """Test exit reason distribution with no entries."""
+        query = TradeJournalQuery([])
+        distribution = query.get_exit_reason_distribution()
+
+        assert distribution == {}
+
+    def test_get_exit_reason_distribution_only_open_trades(self):
+        """Test exit reason distribution with only open trades."""
+        now = datetime.now(UTC)
+        open_entry = TradeJournalEntry(
+            entry_id="open-entry",
+            symbol="BTCUSDT",
+            side="buy",
+            entry_price=100.0,
+            entry_time=now,
+            position_size=1.0,
+            signal_id="signal-1",
+            signal_confidence=0.8,
+            signal_strategy="test",
+        )
+
+        query = TradeJournalQuery([open_entry])
+        distribution = query.get_exit_reason_distribution()
+
+        assert distribution == {}
+
+    def test_get_exit_reason_distribution_percentage_accuracy(
+        self, entries_with_diverse_exit_reasons
+    ):
+        """Test that percentages sum to 100."""
+        query = TradeJournalQuery(entries_with_diverse_exit_reasons)
+        distribution = query.get_exit_reason_distribution()
+
+        total_percentage = sum(d["percentage"] for d in distribution.values())
+        assert total_percentage == pytest.approx(100.0, abs=0.1)
+
+    # Tests for get_reject_reason_distribution()
+
+    def test_get_reject_reason_distribution_basic(self, mock_rejected_signals):
+        """Test basic reject reason distribution calculation."""
+        query = TradeJournalQuery([])  # Empty entries, focus on rejected signals
+        distribution = query.get_reject_reason_distribution(mock_rejected_signals)
+
+        # Should have 10 rejected signals with 4 unique reject reasons
+        assert len(distribution) == 4
+
+        # Check RISK_VIOLATION: 2 out of 10 = 20%
+        assert RejectReason.RISK_VIOLATION in distribution
+        assert distribution[RejectReason.RISK_VIOLATION]["count"] == 2
+        assert distribution[RejectReason.RISK_VIOLATION]["percentage"] == 20.0
+
+        # Check LOW_CONFIDENCE: 3 out of 10 = 30%
+        assert RejectReason.LOW_CONFIDENCE in distribution
+        assert distribution[RejectReason.LOW_CONFIDENCE]["count"] == 3
+        assert distribution[RejectReason.LOW_CONFIDENCE]["percentage"] == 30.0
+
+        # Check KILL_SWITCH_ACTIVE: 1 out of 10 = 10%
+        assert RejectReason.KILL_SWITCH_ACTIVE in distribution
+        assert distribution[RejectReason.KILL_SWITCH_ACTIVE]["count"] == 1
+        assert distribution[RejectReason.KILL_SWITCH_ACTIVE]["percentage"] == 10.0
+
+        # Check SYMBOL_OCCUPIED: 4 out of 10 = 40%
+        assert RejectReason.SYMBOL_OCCUPIED in distribution
+        assert distribution[RejectReason.SYMBOL_OCCUPIED]["count"] == 4
+        assert distribution[RejectReason.SYMBOL_OCCUPIED]["percentage"] == 40.0
+
+    def test_get_reject_reason_distribution_none_signals(self):
+        """Test reject reason distribution with None signals."""
+        query = TradeJournalQuery([])
+        distribution = query.get_reject_reason_distribution(None)
+
+        assert distribution == {}
+
+    def test_get_reject_reason_distribution_empty_list(self):
+        """Test reject reason distribution with empty signal list."""
+        query = TradeJournalQuery([])
+        distribution = query.get_reject_reason_distribution([])
+
+        assert distribution == {}
+
+    def test_get_reject_reason_distribution_signals_without_reason(self):
+        """Test reject reason distribution with signals missing reject_reason."""
+        from unittest.mock import MagicMock
+
+        # Signals without reject_reason attribute
+        signals = [MagicMock(spec=[]) for _ in range(5)]
+
+        query = TradeJournalQuery([])
+        distribution = query.get_reject_reason_distribution(signals)
+
+        assert distribution == {}
+
+    def test_get_reject_reason_distribution_percentage_accuracy(
+        self, mock_rejected_signals
+    ):
+        """Test that reject percentages sum to 100."""
+        query = TradeJournalQuery([])
+        distribution = query.get_reject_reason_distribution(mock_rejected_signals)
+
+        total_percentage = sum(d["percentage"] for d in distribution.values())
+        assert total_percentage == 100.0
+
+    # Tests for get_reason_summary()
+
+    def test_get_reason_summary_basic(
+        self, entries_with_diverse_exit_reasons, mock_rejected_signals
+    ):
+        """Test basic reason summary calculation."""
+        query = TradeJournalQuery(entries_with_diverse_exit_reasons)
+        summary = query.get_reason_summary(rejected_signals=mock_rejected_signals)
+
+        # Check structure
+        assert "exit_reasons" in summary
+        assert "reject_reasons" in summary
+        assert "totals" in summary
+
+        # Check exit reasons are serialized as strings
+        assert "stop_loss_hit" in summary["exit_reasons"]
+        assert "take_profit_hit" in summary["exit_reasons"]
+
+        # Check reject reasons are serialized as strings
+        assert "risk_violation" in summary["reject_reasons"]
+        assert "low_confidence" in summary["reject_reasons"]
+
+        # Check totals
+        assert summary["totals"]["total_closed_trades"] == 7
+        assert summary["totals"]["total_rejected_signals"] == 10
+        assert summary["totals"]["total_decisions"] == 17
+
+    def test_get_reason_summary_with_filters(self, entries_with_diverse_exit_reasons):
+        """Test reason summary with filters."""
+        query = TradeJournalQuery(entries_with_diverse_exit_reasons)
+
+        filters = JournalQueryFilters(symbol="BTCUSDT")
+        summary = query.get_reason_summary(filters=filters)
+
+        # Should only include BTCUSDT trades (4 closed)
+        assert summary["totals"]["total_closed_trades"] == 4
+        assert (
+            summary["totals"]["total_rejected_signals"] == 0
+        )  # No rejected signals provided
+        assert summary["totals"]["total_decisions"] == 4
+
+    def test_get_reason_summary_empty(self):
+        """Test reason summary with no data."""
+        query = TradeJournalQuery([])
+        summary = query.get_reason_summary()
+
+        assert summary["exit_reasons"] == {}
+        assert summary["reject_reasons"] == {}
+        assert summary["totals"]["total_closed_trades"] == 0
+        assert summary["totals"]["total_rejected_signals"] == 0
+        assert summary["totals"]["total_decisions"] == 0
+
+    def test_get_reason_summary_only_exits(self, entries_with_diverse_exit_reasons):
+        """Test reason summary with only exit data."""
+        query = TradeJournalQuery(entries_with_diverse_exit_reasons)
+        summary = query.get_reason_summary()
+
+        assert len(summary["exit_reasons"]) == 4
+        assert summary["reject_reasons"] == {}
+        assert summary["totals"]["total_closed_trades"] == 7
+        assert summary["totals"]["total_rejected_signals"] == 0
+        assert summary["totals"]["total_decisions"] == 7
+
+    def test_get_reason_summary_only_rejects(self, mock_rejected_signals):
+        """Test reason summary with only reject data."""
+        query = TradeJournalQuery([])
+        summary = query.get_reason_summary(rejected_signals=mock_rejected_signals)
+
+        assert summary["exit_reasons"] == {}
+        assert len(summary["reject_reasons"]) == 4
+        assert summary["totals"]["total_closed_trades"] == 0
+        assert summary["totals"]["total_rejected_signals"] == 10
+        assert summary["totals"]["total_decisions"] == 10
+
+    def test_get_reason_summary_serialization(self, entries_with_diverse_exit_reasons):
+        """Test that reason summary properly serializes enum values."""
+        query = TradeJournalQuery(entries_with_diverse_exit_reasons)
+        summary = query.get_reason_summary()
+
+        # Exit reasons should be serialized as string values
+        for reason_value in summary["exit_reasons"].keys():
+            assert isinstance(reason_value, str)
+
+        # Reject reasons should be serialized as string values
+        for reason_value in summary["reject_reasons"].keys():
+            assert isinstance(reason_value, str)
+
+    def test_get_reason_summary_counts_match(
+        self, entries_with_diverse_exit_reasons, mock_rejected_signals
+    ):
+        """Test that counts in summary match distribution counts."""
+        query = TradeJournalQuery(entries_with_diverse_exit_reasons)
+        summary = query.get_reason_summary(rejected_signals=mock_rejected_signals)
+
+        # Sum exit reason counts
+        exit_count = sum(d["count"] for d in summary["exit_reasons"].values())
+        assert exit_count == summary["totals"]["total_closed_trades"]
+
+        # Sum reject reason counts
+        reject_count = sum(d["count"] for d in summary["reject_reasons"].values())
+        assert reject_count == summary["totals"]["total_rejected_signals"]
+
+        # Check total
+        assert summary["totals"]["total_decisions"] == exit_count + reject_count

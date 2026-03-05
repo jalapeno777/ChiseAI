@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
+from .reason_codes import RejectReason
 from .trade_journal import ExitReason, TradeJournalEntry
 
 
@@ -269,6 +270,152 @@ class TradeJournalQuery:
                 reason = entry.exit_reason
                 result[reason] = result.get(reason, 0.0) + entry.net_pnl
         return result
+
+    def get_exit_reason_distribution(
+        self, filters: JournalQueryFilters | None = None
+    ) -> dict[ExitReason, dict[str, Any]]:
+        """Get distribution of exit reasons for closed trades.
+
+        Calculates the count and percentage of each exit reason across
+        all closed trades matching the filters.
+
+        Args:
+            filters: Optional JournalQueryFilters to apply
+
+        Returns:
+            Dictionary mapping ExitReason to {"count": int, "percentage": float}
+
+        Example:
+            >>> query = TradeJournalQuery(entries)
+            >>> dist = query.get_exit_reason_distribution()
+            >>> print(dist[ExitReason.STOP_LOSS_HIT])
+            {"count": 10, "percentage": 25.0}
+        """
+        entries = self.query(filters)
+        closed_entries = [
+            e for e in entries if e.is_closed and e.exit_reason is not None
+        ]
+
+        if not closed_entries:
+            return {}
+
+        # Count occurrences of each exit reason
+        reason_counts: dict[ExitReason, int] = {}
+        for entry in closed_entries:
+            reason = entry.exit_reason
+            reason_counts[reason] = reason_counts.get(reason, 0) + 1
+
+        total = len(closed_entries)
+
+        # Calculate distribution with counts and percentages
+        distribution: dict[ExitReason, dict[str, Any]] = {}
+        for reason, count in reason_counts.items():
+            percentage = (count / total) * 100.0
+            distribution[reason] = {
+                "count": count,
+                "percentage": round(percentage, 2),
+            }
+
+        return distribution
+
+    def get_reject_reason_distribution(
+        self, rejected_signals: list[Any] | None = None
+    ) -> dict[RejectReason, dict[str, Any]]:
+        """Get distribution of rejection reasons from rejected signals.
+
+        NOTE: This method currently requires rejected_signals to be provided.
+        Future implementation may integrate with provenance tracking system.
+
+        Args:
+            rejected_signals: Optional list of rejected signal objects with
+                            reject_reason attribute. If None, returns empty dict.
+
+        Returns:
+            Dictionary mapping RejectReason to {"count": int, "percentage": float}
+
+        Example:
+            >>> # When rejected signals are available
+            >>> rejected = [...]  # List of rejected signal objects
+            >>> dist = query.get_reject_reason_distribution(rejected)
+            >>> print(dist[RejectReason.RISK_VIOLATION])
+            {"count": 5, "percentage": 20.0}
+        """
+        if not rejected_signals:
+            return {}
+
+        # Count occurrences of each reject reason
+        reason_counts: dict[RejectReason, int] = {}
+        for signal in rejected_signals:
+            if hasattr(signal, "reject_reason") and signal.reject_reason is not None:
+                reason = signal.reject_reason
+                reason_counts[reason] = reason_counts.get(reason, 0) + 1
+
+        if not reason_counts:
+            return {}
+
+        total = sum(reason_counts.values())
+
+        # Calculate distribution with counts and percentages
+        distribution: dict[RejectReason, dict[str, Any]] = {}
+        for reason, count in reason_counts.items():
+            percentage = (count / total) * 100.0
+            distribution[reason] = {
+                "count": count,
+                "percentage": round(percentage, 2),
+            }
+
+        return distribution
+
+    def get_reason_summary(
+        self,
+        filters: JournalQueryFilters | None = None,
+        rejected_signals: list[Any] | None = None,
+    ) -> dict[str, Any]:
+        """Get combined summary of exit and reject reason distributions.
+
+        Provides a comprehensive view of both closed trade exit reasons
+        and signal rejection reasons in a single summary structure.
+
+        Args:
+            filters: Optional JournalQueryFilters to apply to exit reasons
+            rejected_signals: Optional list of rejected signals for reject analysis
+
+        Returns:
+            Dictionary with:
+                - exit_reasons: Distribution of exit reasons
+                - reject_reasons: Distribution of rejection reasons
+                - totals: Combined counts and statistics
+
+        Example:
+            >>> summary = query.get_reason_summary(filters, rejected_signals)
+            >>> print(summary["totals"])
+            {
+                "total_closed_trades": 50,
+                "total_rejected_signals": 20,
+                "total_decisions": 70
+            }
+        """
+        exit_dist = self.get_exit_reason_distribution(filters)
+        reject_dist = self.get_reject_reason_distribution(rejected_signals)
+
+        # Calculate totals
+        total_closed_trades = sum(d["count"] for d in exit_dist.values())
+        total_rejected_signals = sum(d["count"] for d in reject_dist.values())
+        total_decisions = total_closed_trades + total_rejected_signals
+
+        return {
+            "exit_reasons": {
+                reason.value: stats for reason, stats in exit_dist.items()
+            },
+            "reject_reasons": {
+                reason.value: stats for reason, stats in reject_dist.items()
+            },
+            "totals": {
+                "total_closed_trades": total_closed_trades,
+                "total_rejected_signals": total_rejected_signals,
+                "total_decisions": total_decisions,
+            },
+        }
 
     def to_dict(self) -> dict[str, Any]:
         """Convert query interface state to dictionary.

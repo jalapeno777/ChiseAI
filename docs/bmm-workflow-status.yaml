@@ -2486,7 +2486,7 @@ launch_stories:
   title: Paper Trading 30-Minute Proof Loop Validation
   validation_status: closed_with_manual_and_info_exceptions
 metadata:
-  last_updated: '2026-03-05T01:35:00Z'
+  last_updated: '2026-03-05T12:45:00Z'
   prd_location: docs/prd.md
   prd_note: 'Phased perps execution: continuous backtest -> Bybit demo paper -> Bitget
     live; Grafana-first ops UI; Binance used as reference market-structure venue.
@@ -2494,6 +2494,38 @@ metadata:
     1.'
   project_name: ChiseAI
   recent_changes:
+  - action: e2e-bybit-001-closeout
+    actor: jarvis
+    description: 'E2E-BYBIT-001: Session closeout complete. A) Reason-code distribution
+      reporting added to journal query (ST-JOURNAL-QUERY-002). B) Kimi config consistency
+      pass completed (ST-KIMI-CONFIG-001). C) E2E test script created with safety
+      constraints. D) Acceptance gates: 5/6 PASS (G1-G4, G6), G5 INFO (environment
+      not configured). Overall verdict: PASS.'
+    evidence_bundle: docs/validation/evidence/E2E-BYBIT-001-acceptance-gates.md
+    files_changed:
+    - src/execution/paper/trade_journal_query.py
+    - src/execution/paper/trade_journal_service.py
+    - tests/test_execution/test_paper/test_trade_journal_query.py
+    - tests/test_execution/test_paper/test_trade_journal_service_reason_distribution.py
+    - infrastructure/docker/docker-compose.kimi-adapter.yml
+    - infrastructure/terraform/variables.tf
+    - scripts/testing/e2e_bybit_test.py
+    - docs/validation/evidence/E2E-BYBIT-001-evidence.json
+    - docs/validation/evidence/E2E-BYBIT-001-acceptance-gates.md
+    - docs/tempmemories/kimi-config-consistency-report-2026-03-05.md
+    gates_passed: 5
+    gates_info: 1
+    status: completed
+    story_id: E2E-BYBIT-001
+    timestamp: '2026-03-05T12:45:00Z'
+    validation_summary:
+      acceptance_verdict: PASS
+      g1_one_trade_per_symbol: PASS
+      g2_llm_fallback: PASS
+      g3_reason_code_consistency: PASS
+      g4_journal_integrity: PASS
+      g5_discord: INFO
+      g6_bybit_demo: PASS
   - action: reason-code-001-complete
     actor: merlin
     description: 'REASON-CODE-001: Unified reason code contract for close/reject paths. Added CloseReason, RejectReason enums and ReasonCodeMapper to reason_codes.py. Updated orchestrator to use unified mapper instead of hard-coded mappings. All journal query surfaces now use consistent reason codes.'
