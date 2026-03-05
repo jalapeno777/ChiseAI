@@ -13,6 +13,7 @@ Targets:
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import inspect
 import logging
 import time
@@ -35,8 +36,6 @@ if TYPE_CHECKING:
     from signal_generation.models import Signal
     from signal_generation.signal_generator import SignalGenerator
 
-import contextlib
-
 from execution.llm.trade_decision_enhancer import TradeDecisionEnhancer
 from execution.paper.models import (
     OrderSide,
@@ -46,7 +45,10 @@ from execution.paper.models import (
     PaperTradeResult,
     TradeStatus,
 )
-from execution.paper.trade_journal import ExitReason, TradeJournal
+from execution.paper.reason_codes import (
+    ReasonCodeMapper,
+)
+from execution.paper.trade_journal import TradeJournal
 from execution.paper.trade_journal_persistence import TradeJournalRedisPersistence
 from execution.paper.trade_journal_service import TradeJournalService
 
@@ -311,6 +313,7 @@ class PaperTradingOrchestrator:
                 return PaperTradeResult(
                     signal=signal,
                     status=TradeStatus.REJECTED,
+                    # TODO: When models.py is updated, use RejectReason enum directly
                     reject_reason=["Kill-switch triggered"],
                     correlation_id=correlation_id,
                 )
@@ -327,6 +330,7 @@ class PaperTradingOrchestrator:
                 return PaperTradeResult(
                     signal=signal,
                     status=TradeStatus.REJECTED,
+                    # TODO: When models.py is updated, use RejectReason enum directly
                     reject_reason=[f"No market price available for {signal.token}"],
                     correlation_id=correlation_id,
                 )
@@ -396,6 +400,7 @@ class PaperTradingOrchestrator:
                         return PaperTradeResult(
                             signal=signal,
                             status=TradeStatus.REJECTED,
+                            # TODO: When models.py is updated, use RejectReason enum directly
                             reject_reason=[f"LLM rejection: {enhanced.rationale}"],
                             correlation_id=correlation_id,
                         )
@@ -465,6 +470,7 @@ class PaperTradingOrchestrator:
                 return PaperTradeResult(
                     signal=signal,
                     status=TradeStatus.REJECTED,
+                    # TODO: When models.py is updated, use RejectReason enum directly
                     reject_reason=assessment.violations,
                     correlation_id=correlation_id,
                 )
@@ -591,6 +597,7 @@ class PaperTradingOrchestrator:
                     signal=signal,
                     status=TradeStatus.FAILED,
                     order=filled_order,
+                    # TODO: When models.py is updated, use RejectReason enum directly
                     reject_reason=[f"Order state: {filled_order.state.value}"],
                     correlation_id=correlation_id,
                 )
@@ -607,6 +614,7 @@ class PaperTradingOrchestrator:
             return PaperTradeResult(
                 signal=signal,
                 status=TradeStatus.FAILED,
+                # TODO: When models.py is updated, use RejectReason enum directly
                 reject_reason=[str(e)],
                 correlation_id=correlation_id,
             )
@@ -858,14 +866,10 @@ class PaperTradingOrchestrator:
             )
             if entry_id:
                 try:
-                    # Map close reason to ExitReason enum
-                    reason_map = {
-                        "time_limit": ExitReason.TIME_LIMIT,
-                        "manual": ExitReason.MANUAL_CLOSE,
-                        "opposite_signal": ExitReason.SIGNAL_REVERSE,
-                        "kill_switch": ExitReason.KILL_SWITCH,
-                    }
-                    exit_reason = reason_map.get(reason, ExitReason.MANUAL_CLOSE)
+                    # Map close reason to ExitReason enum using unified mapper
+                    exit_reason = ReasonCodeMapper.map_close_reason_string_to_enum(
+                        reason
+                    )
 
                     if self.trade_journal_service:
                         self.trade_journal_service.close_entry(
