@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     from execution.paper.risk_enforcer import PaperRiskEnforcer
     from execution.paper.signal_consumer import SignalConsumer
     from execution.paper.trade_journal import TradeJournal
+    from execution.paper.trade_journal_service import TradeJournalService
     from execution.telemetry.collector import ExecutionCollector
     from portfolio.paper_tracker import PaperPositionTracker
     from signal_generation.models import Signal
@@ -46,6 +47,8 @@ from execution.paper.models import (
     TradeStatus,
 )
 from execution.paper.trade_journal import ExitReason, TradeJournal
+from execution.paper.trade_journal_persistence import TradeJournalRedisPersistence
+from execution.paper.trade_journal_service import TradeJournalService
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +97,8 @@ class PaperTradingOrchestrator:
         decision_enhancer: TradeDecisionEnhancer | None = None,
         trade_journal: TradeJournal | None = None,
         symbol_registry: Any | None = None,
+        trade_journal_persistence: TradeJournalRedisPersistence | None = None,
+        session_id: str | None = None,
     ):
         """Initialize paper trading orchestrator.
 
@@ -110,6 +115,8 @@ class PaperTradingOrchestrator:
             decision_enhancer: Optional TradeDecisionEnhancer for LLM-enhanced decisions
             trade_journal: Optional TradeJournal for trade lifecycle tracking
             symbol_registry: Optional SymbolPositionRegistry for symbol-level locking
+            trade_journal_persistence: Optional persistence layer for trade journal
+            session_id: Optional session ID for journal recovery
         """
         self.signal_generator = signal_generator
         self.order_simulator = order_simulator
@@ -122,8 +129,31 @@ class PaperTradingOrchestrator:
         self._signal_consumer = signal_consumer
         self.outcome_capture = outcome_capture
         self.decision_enhancer = decision_enhancer or TradeDecisionEnhancer()
-        self.trade_journal = trade_journal
         self.symbol_registry = symbol_registry
+
+        # Initialize trade journal service if trade_journal is provided
+        self.trade_journal_service: TradeJournalService | None = None
+        self.trade_journal: TradeJournal | None = None
+
+        if trade_journal_persistence is not None:
+            # Create TradeJournalService with persistence layer
+            self.trade_journal_service = TradeJournalService(
+                session_id=session_id,
+                persistence=trade_journal_persistence,
+            )
+            # If existing journal provided, copy entries to service
+            if trade_journal is not None:
+                for entry in trade_journal.get_all_entries():
+                    self.trade_journal_service.journal._entries[entry.entry_id] = entry
+            # Attempt recovery if session_id is provided
+            if session_id:
+                recovered = self.trade_journal_service.recover(session_id)
+                if recovered:
+                    logger.info(f"Recovered trade journal for session {session_id}")
+            self.trade_journal = self.trade_journal_service.journal
+        elif trade_journal is not None:
+            # Use existing journal directly (backward compatibility)
+            self.trade_journal = trade_journal
 
         self._running = False
         self._signal_queue: asyncio.Queue[Signal] = asyncio.Queue()
@@ -679,8 +709,31 @@ class PaperTradingOrchestrator:
 
         logger.debug(f"Opened position: {position.position_id}")
 
-        # Create trade journal entry
-        if self.trade_journal:
+        # Create trade journal entry using service (if available) for persistence
+        if self.trade_journal_service:
+            entry = None
+            try:
+                entry = self.trade_journal_service.create_entry(
+                    position=position,
+                    signal=signal,
+                    correlation_id=correlation_id,
+                )
+                # Store entry_id in position metadata for later reference
+                # Initialize metadata dict if needed
+                if position.metadata is None:
+                    position.metadata = {}
+                position.metadata["journal_entry_id"] = entry.entry_id
+                logger.info(
+                    f"Trade journal entry created and persisted: {entry.entry_id} "
+                    f"for position {position.position_id}"
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Failed to create trade journal entry: {e}",
+                    exc_info=True,
+                )
+        elif self.trade_journal:
+            # Fallback to direct journal usage (backward compatibility)
             entry = None
             try:
                 entry = self.trade_journal.create_entry(
@@ -799,20 +852,33 @@ class PaperTradingOrchestrator:
                 f"Closed position {position_id}: PnL={realized_pnl:.4f}, reason={reason}"
             )
 
-            # Close trade journal entry
-            if self.trade_journal and position.metadata:
-                entry_id = position.metadata.get("journal_entry_id")
-                if entry_id:
-                    try:
-                        # Map close reason to ExitReason enum
-                        reason_map = {
-                            "time_limit": ExitReason.TIME_LIMIT,
-                            "manual": ExitReason.MANUAL_CLOSE,
-                            "opposite_signal": ExitReason.SIGNAL_REVERSE,
-                            "kill_switch": ExitReason.KILL_SWITCH,
-                        }
-                        exit_reason = reason_map.get(reason, ExitReason.MANUAL_CLOSE)
+            # Close trade journal entry using service (if available) for persistence
+            entry_id = (
+                position.metadata.get("journal_entry_id") if position.metadata else None
+            )
+            if entry_id:
+                try:
+                    # Map close reason to ExitReason enum
+                    reason_map = {
+                        "time_limit": ExitReason.TIME_LIMIT,
+                        "manual": ExitReason.MANUAL_CLOSE,
+                        "opposite_signal": ExitReason.SIGNAL_REVERSE,
+                        "kill_switch": ExitReason.KILL_SWITCH,
+                    }
+                    exit_reason = reason_map.get(reason, ExitReason.MANUAL_CLOSE)
 
+                    if self.trade_journal_service:
+                        self.trade_journal_service.close_entry(
+                            entry_id=entry_id,
+                            exit_price=exit_price,
+                            exit_reason=exit_reason,
+                            pnl=realized_pnl,
+                        )
+                        logger.info(
+                            f"Trade journal entry closed and persisted: {entry_id} with PnL {realized_pnl:.4f}"
+                        )
+                    elif self.trade_journal:
+                        # Fallback to direct journal usage (backward compatibility)
                         self.trade_journal.close_entry(
                             entry_id=entry_id,
                             exit_price=exit_price,
@@ -822,11 +888,11 @@ class PaperTradingOrchestrator:
                         logger.info(
                             f"Trade journal entry closed: {entry_id} with PnL {realized_pnl:.4f}"
                         )
-                    except Exception as e:
-                        logger.warning(
-                            f"Failed to close trade journal entry {entry_id}: {e}",
-                            exc_info=True,
-                        )
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to close trade journal entry {entry_id}: {e}",
+                        exc_info=True,
+                    )
 
             # Update portfolio value
             self.portfolio_value += realized_pnl
@@ -911,9 +977,45 @@ class PaperTradingOrchestrator:
         Returns:
             Dictionary with journal statistics or None if no journal configured
         """
-        if self.trade_journal:
+        if self.trade_journal_service:
+            return self.trade_journal_service.get_stats()
+        elif self.trade_journal:
             return self.trade_journal.get_stats()
         return None
+
+    def recover_journal(self, session_id: str) -> bool:
+        """Recover journal from Redis.
+
+        Loads all entries from Redis and populates the in-memory journal.
+
+        Args:
+            session_id: The session ID to recover
+
+        Returns:
+            True if recovery was successful, False otherwise
+        """
+        if self.trade_journal_service is None:
+            logger.warning("No trade journal service configured, cannot recover")
+            return False
+
+        recovered = self.trade_journal_service.recover(session_id)
+        if recovered:
+            self.trade_journal = self.trade_journal_service.journal
+            logger.info(f"Recovered trade journal for session {session_id}")
+        else:
+            logger.info(f"No existing journal found for session {session_id}")
+
+        return recovered
+
+    def is_journal_persistence_healthy(self) -> bool:
+        """Check if journal persistence layer is healthy.
+
+        Returns:
+            True if Redis persistence is working, False otherwise
+        """
+        if self.trade_journal_service is None:
+            return False
+        return self.trade_journal_service.is_persistence_healthy()
 
     async def get_portfolio_summary(self) -> dict[str, Any]:
         """Get current portfolio summary.

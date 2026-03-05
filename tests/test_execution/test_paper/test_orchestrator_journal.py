@@ -10,7 +10,7 @@ For PAPER-2025-BATCH3: Trade Journal Integration
 """
 
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -469,4 +469,644 @@ class TestJournalWithOutcomeCapture:
 
         # Verify entry exists in journal
         entry = trade_journal.get_entry(position.metadata["journal_entry_id"])
+        assert entry is not None
+
+
+# =============================================================================
+# Tests for PAPER-2025-BATCH3-002: Orchestrator Persistence Integration
+# =============================================================================
+
+
+class TestTradeJournalService:
+    """Test suite for TradeJournalService."""
+
+    @patch("execution.paper.trade_journal_service.TradeJournalRedisPersistence")
+    def test_service_initialization(self, mock_persistence_class):
+        """Test that service initializes correctly."""
+        from execution.paper.trade_journal_service import TradeJournalService
+
+        # Mock the persistence to return unhealthy
+        mock_persistence = MagicMock()
+        mock_persistence.is_healthy.return_value = False
+        mock_persistence_class.return_value = mock_persistence
+
+        service = TradeJournalService(session_id="test-session")
+
+        assert service.session_id == "test-session"
+        assert service.journal is not None
+        assert service.is_persistence_healthy() is False  # No Redis
+
+    def test_service_initialization_with_persistence(self):
+        """Test that service initializes with persistence layer."""
+        from execution.paper.trade_journal_persistence import (
+            TradeJournalRedisPersistence,
+        )
+        from execution.paper.trade_journal_service import TradeJournalService
+
+        mock_persistence = MagicMock(spec=TradeJournalRedisPersistence)
+        mock_persistence.is_healthy.return_value = True
+
+        service = TradeJournalService(
+            session_id="test-session", persistence=mock_persistence
+        )
+
+        assert service.session_id == "test-session"
+        assert service.is_persistence_healthy() is True
+
+    def test_create_entry_persists_to_redis(self):
+        """Test that create_entry persists to Redis."""
+        from execution.paper.trade_journal_persistence import (
+            TradeJournalRedisPersistence,
+        )
+        from execution.paper.trade_journal_service import TradeJournalService
+
+        mock_persistence = MagicMock(spec=TradeJournalRedisPersistence)
+        mock_persistence.is_healthy.return_value = True
+        mock_persistence.save_entry.return_value = True
+
+        service = TradeJournalService(
+            session_id="test-session", persistence=mock_persistence
+        )
+
+        # Create mock position and signal
+        mock_position = MagicMock()
+        mock_position.symbol = "BTCUSDT"
+        mock_position.side = "long"
+        mock_position.entry_price = 50000.0
+        mock_position.quantity = 0.1
+        mock_position.position_id = "pos-123"
+
+        mock_signal = MagicMock()
+        mock_signal.signal_id = "sig-456"
+        mock_signal.confidence = 0.85
+        mock_signal.strategy_name = "test_strategy"
+
+        # Create entry
+        entry = service.create_entry(
+            position=mock_position, signal=mock_signal, correlation_id="corr-789"
+        )
+
+        # Verify entry was created
+        assert entry is not None
+        assert entry.symbol == "BTCUSDT"
+        assert entry.session_id == "test-session"
+
+        # Verify persistence was called
+        mock_persistence.save_entry.assert_called_once_with("test-session", entry)
+
+    def test_create_entry_continues_on_persistence_failure(self):
+        """Test that trading continues even if persistence fails."""
+        from execution.paper.trade_journal_persistence import (
+            TradeJournalRedisPersistence,
+        )
+        from execution.paper.trade_journal_service import TradeJournalService
+
+        mock_persistence = MagicMock(spec=TradeJournalRedisPersistence)
+        mock_persistence.is_healthy.return_value = True
+        mock_persistence.save_entry.side_effect = Exception("Redis error")
+
+        service = TradeJournalService(
+            session_id="test-session", persistence=mock_persistence
+        )
+
+        # Create mock position and signal
+        mock_position = MagicMock()
+        mock_position.symbol = "BTCUSDT"
+        mock_position.side = "long"
+        mock_position.entry_price = 50000.0
+        mock_position.quantity = 0.1
+        mock_position.position_id = "pos-123"
+
+        mock_signal = MagicMock()
+        mock_signal.signal_id = "sig-456"
+        mock_signal.confidence = 0.85
+        mock_signal.strategy_name = "test_strategy"
+
+        # Create entry - should not raise
+        entry = service.create_entry(
+            position=mock_position, signal=mock_signal, correlation_id="corr-789"
+        )
+
+        # Verify entry was still created in memory
+        assert entry is not None
+        assert entry.symbol == "BTCUSDT"
+
+    def test_close_entry_persists_to_redis(self):
+        """Test that close_entry persists to Redis."""
+        from execution.paper.trade_journal import ExitReason
+        from execution.paper.trade_journal_persistence import (
+            TradeJournalRedisPersistence,
+        )
+        from execution.paper.trade_journal_service import TradeJournalService
+
+        mock_persistence = MagicMock(spec=TradeJournalRedisPersistence)
+        mock_persistence.is_healthy.return_value = True
+        mock_persistence.save_entry.return_value = True
+
+        service = TradeJournalService(
+            session_id="test-session", persistence=mock_persistence
+        )
+
+        # First create an entry
+        mock_position = MagicMock()
+        mock_position.symbol = "BTCUSDT"
+        mock_position.side = "long"
+        mock_position.entry_price = 50000.0
+        mock_position.quantity = 0.1
+        mock_position.position_id = "pos-123"
+
+        mock_signal = MagicMock()
+        mock_signal.signal_id = "sig-456"
+        mock_signal.confidence = 0.85
+        mock_signal.strategy_name = "test_strategy"
+
+        entry = service.create_entry(
+            position=mock_position, signal=mock_signal, correlation_id="corr-789"
+        )
+
+        # Reset mock to track close call
+        mock_persistence.save_entry.reset_mock()
+
+        # Close the entry
+        closed_entry = service.close_entry(
+            entry_id=entry.entry_id,
+            exit_price=51000.0,
+            exit_reason=ExitReason.TAKE_PROFIT_HIT,
+            pnl=100.0,
+        )
+
+        # Verify entry was closed
+        assert closed_entry.is_closed
+        assert closed_entry.exit_price == 51000.0
+
+        # Verify persistence was called
+        mock_persistence.save_entry.assert_called_once_with(
+            "test-session", closed_entry
+        )
+
+    def test_get_open_and_closed_entries(self):
+        """Test getting open and closed entries."""
+        from execution.paper.trade_journal import ExitReason
+        from execution.paper.trade_journal_service import TradeJournalService
+
+        service = TradeJournalService(session_id="test-session")
+
+        # Create mock position and signal
+        mock_position = MagicMock()
+        mock_position.symbol = "BTCUSDT"
+        mock_position.side = "long"
+        mock_position.entry_price = 50000.0
+        mock_position.quantity = 0.1
+        mock_position.position_id = "pos-123"
+
+        mock_signal = MagicMock()
+        mock_signal.signal_id = "sig-456"
+        mock_signal.confidence = 0.85
+        mock_signal.strategy_name = "test_strategy"
+
+        # Create entry
+        entry = service.create_entry(
+            position=mock_position, signal=mock_signal, correlation_id="corr-789"
+        )
+
+        # Check open entries
+        open_entries = service.get_open_entries()
+        assert len(open_entries) == 1
+
+        # Check closed entries
+        closed_entries = service.get_closed_entries()
+        assert len(closed_entries) == 0
+
+        # Close entry
+        service.close_entry(
+            entry_id=entry.entry_id,
+            exit_price=51000.0,
+            exit_reason=ExitReason.TAKE_PROFIT_HIT,
+            pnl=100.0,
+        )
+
+        # Check again
+        open_entries = service.get_open_entries()
+        assert len(open_entries) == 0
+
+        closed_entries = service.get_closed_entries()
+        assert len(closed_entries) == 1
+
+    def test_get_stats(self):
+        """Test getting journal statistics."""
+        from execution.paper.trade_journal import ExitReason
+        from execution.paper.trade_journal_service import TradeJournalService
+
+        service = TradeJournalService(session_id="test-session")
+
+        # Create mock position and signal
+        mock_position = MagicMock()
+        mock_position.symbol = "BTCUSDT"
+        mock_position.side = "long"
+        mock_position.entry_price = 50000.0
+        mock_position.quantity = 0.1
+        mock_position.position_id = "pos-123"
+
+        mock_signal = MagicMock()
+        mock_signal.signal_id = "sig-456"
+        mock_signal.confidence = 0.85
+        mock_signal.strategy_name = "test_strategy"
+
+        # Create and close entry
+        entry = service.create_entry(
+            position=mock_position, signal=mock_signal, correlation_id="corr-789"
+        )
+        service.close_entry(
+            entry_id=entry.entry_id,
+            exit_price=51000.0,
+            exit_reason=ExitReason.TAKE_PROFIT_HIT,
+            pnl=100.0,
+        )
+
+        # Get stats
+        stats = service.get_stats()
+
+        assert stats["total_entries"] == 1
+        assert stats["closed_entries"] == 1
+        assert stats["open_entries"] == 0
+        assert stats["total_pnl"] == 100.0
+
+    def test_recover_success(self):
+        """Test successful journal recovery."""
+        from execution.paper.trade_journal import TradeJournal
+        from execution.paper.trade_journal_persistence import (
+            TradeJournalRedisPersistence,
+        )
+        from execution.paper.trade_journal_service import TradeJournalService
+
+        mock_persistence = MagicMock(spec=TradeJournalRedisPersistence)
+        mock_persistence.is_healthy.return_value = True
+        mock_persistence.journal_exists.return_value = True
+
+        # Create a mock journal to return
+        mock_journal = MagicMock(spec=TradeJournal)
+        mock_journal.session_id = "test-session"
+        mock_journal.get_all_entries.return_value = []
+        mock_journal.get_open_entries.return_value = []
+        mock_journal.get_closed_entries.return_value = []
+        mock_journal.get_stats.return_value = {"total_entries": 0}
+
+        mock_persistence.load_journal.return_value = mock_journal
+
+        service = TradeJournalService(
+            session_id="test-session", persistence=mock_persistence
+        )
+
+        # Recover
+        result = service.recover("test-session")
+
+        assert result is True
+        mock_persistence.journal_exists.assert_called_once_with("test-session")
+        mock_persistence.load_journal.assert_called_once_with("test-session")
+
+    def test_recover_no_journal_found(self):
+        """Test recovery when no journal exists."""
+        from execution.paper.trade_journal_persistence import (
+            TradeJournalRedisPersistence,
+        )
+        from execution.paper.trade_journal_service import TradeJournalService
+
+        mock_persistence = MagicMock(spec=TradeJournalRedisPersistence)
+        mock_persistence.is_healthy.return_value = True
+        mock_persistence.journal_exists.return_value = False
+
+        service = TradeJournalService(
+            session_id="test-session", persistence=mock_persistence
+        )
+
+        # Recover
+        result = service.recover("test-session")
+
+        assert result is False
+
+    def test_recover_persistence_failure(self):
+        """Test recovery when persistence fails."""
+        from execution.paper.trade_journal_persistence import (
+            TradeJournalRedisPersistence,
+        )
+        from execution.paper.trade_journal_service import TradeJournalService
+
+        mock_persistence = MagicMock(spec=TradeJournalRedisPersistence)
+        mock_persistence.is_healthy.return_value = True
+        mock_persistence.journal_exists.side_effect = Exception("Redis error")
+
+        service = TradeJournalService(
+            session_id="test-session", persistence=mock_persistence
+        )
+
+        # Recover - should not raise
+        result = service.recover("test-session")
+
+        assert result is False
+
+
+class TestOrchestratorPersistenceIntegration:
+    """Test suite for orchestrator persistence integration."""
+
+    def test_orchestrator_with_trade_journal_service(self, mock_dependencies):
+        """Test that orchestrator uses TradeJournalService when provided."""
+        from execution.paper.orchestrator import PaperTradingOrchestrator
+        from execution.paper.trade_journal_persistence import (
+            TradeJournalRedisPersistence,
+        )
+
+        # Create mock persistence
+        mock_persistence = MagicMock(spec=TradeJournalRedisPersistence)
+        mock_persistence.is_healthy.return_value = True
+
+        # Create orchestrator with persistence
+        orchestrator = PaperTradingOrchestrator(
+            **mock_dependencies,
+            trade_journal_persistence=mock_persistence,
+            session_id="test-session",
+        )
+
+        # Verify service was created
+        assert orchestrator.trade_journal_service is not None
+        assert orchestrator.trade_journal is not None
+
+    def test_orchestrator_with_existing_trade_journal(self, mock_dependencies):
+        """Test that orchestrator wraps existing TradeJournal in service."""
+        from execution.paper.orchestrator import PaperTradingOrchestrator
+        from execution.paper.trade_journal import TradeJournal
+        from execution.paper.trade_journal_persistence import (
+            TradeJournalRedisPersistence,
+        )
+
+        # Create existing journal
+        existing_journal = TradeJournal(session_id="existing-session")
+
+        # Create mock position and signal
+        mock_position = MagicMock()
+        mock_position.symbol = "BTCUSDT"
+        mock_position.side = "long"
+        mock_position.entry_price = 50000.0
+        mock_position.quantity = 0.1
+        mock_position.position_id = "pos-123"
+
+        mock_signal = MagicMock()
+        mock_signal.signal_id = "sig-456"
+        mock_signal.confidence = 0.85
+        mock_signal.strategy_name = "test_strategy"
+
+        # Add entry to existing journal
+        existing_journal.create_entry(
+            position=mock_position, signal=mock_signal, correlation_id="corr-789"
+        )
+
+        # Create mock persistence
+        mock_persistence = MagicMock(spec=TradeJournalRedisPersistence)
+        mock_persistence.is_healthy.return_value = True
+
+        # Create orchestrator with existing journal
+        orchestrator = PaperTradingOrchestrator(
+            **mock_dependencies,
+            trade_journal=existing_journal,
+            trade_journal_persistence=mock_persistence,
+        )
+
+        # Verify entries were copied
+        assert orchestrator.trade_journal_service is not None
+        assert len(orchestrator.trade_journal_service.get_all_entries()) == 1
+
+    def test_orchestrator_journal_recovery_on_init(self, mock_dependencies):
+        """Test that orchestrator attempts recovery on initialization."""
+        from execution.paper.orchestrator import PaperTradingOrchestrator
+        from execution.paper.trade_journal import TradeJournal
+        from execution.paper.trade_journal_persistence import (
+            TradeJournalRedisPersistence,
+        )
+
+        # Create mock persistence
+        mock_persistence = MagicMock(spec=TradeJournalRedisPersistence)
+        mock_persistence.is_healthy.return_value = True
+        mock_persistence.journal_exists.return_value = True
+
+        # Create mock recovered journal
+        recovered_journal = TradeJournal(session_id="recovered-session")
+        mock_persistence.load_journal.return_value = recovered_journal
+
+        # Create orchestrator with session_id (should trigger recovery)
+        orchestrator = PaperTradingOrchestrator(
+            **mock_dependencies,
+            trade_journal_persistence=mock_persistence,
+            session_id="recovered-session",
+        )
+
+        # Verify recovery was attempted
+        mock_persistence.journal_exists.assert_called_once_with("recovered-session")
+        mock_persistence.load_journal.assert_called_once_with("recovered-session")
+
+    def test_orchestrator_recover_journal_method(self, mock_dependencies):
+        """Test the recover_journal method."""
+        from execution.paper.orchestrator import PaperTradingOrchestrator
+        from execution.paper.trade_journal import TradeJournal
+        from execution.paper.trade_journal_persistence import (
+            TradeJournalRedisPersistence,
+        )
+
+        # Create mock persistence
+        mock_persistence = MagicMock(spec=TradeJournalRedisPersistence)
+        mock_persistence.is_healthy.return_value = True
+        mock_persistence.journal_exists.return_value = True
+
+        # Create mock recovered journal
+        recovered_journal = TradeJournal(session_id="new-session")
+        mock_persistence.load_journal.return_value = recovered_journal
+
+        # Create orchestrator
+        orchestrator = PaperTradingOrchestrator(
+            **mock_dependencies, trade_journal_persistence=mock_persistence
+        )
+
+        # Recover journal
+        result = orchestrator.recover_journal("new-session")
+
+        assert result is True
+        assert orchestrator.trade_journal.session_id == "new-session"
+
+    def test_orchestrator_is_journal_persistence_healthy(self, mock_dependencies):
+        """Test the is_journal_persistence_healthy method."""
+        from execution.paper.orchestrator import PaperTradingOrchestrator
+        from execution.paper.trade_journal_persistence import (
+            TradeJournalRedisPersistence,
+        )
+
+        # Create mock persistence
+        mock_persistence = MagicMock(spec=TradeJournalRedisPersistence)
+        mock_persistence.is_healthy.return_value = True
+
+        # Create orchestrator
+        orchestrator = PaperTradingOrchestrator(
+            **mock_dependencies, trade_journal_persistence=mock_persistence
+        )
+
+        # Check health
+        assert orchestrator.is_journal_persistence_healthy() is True
+
+        # Test without service
+        orchestrator2 = PaperTradingOrchestrator(**mock_dependencies)
+        assert orchestrator2.is_journal_persistence_healthy() is False
+
+    def test_orchestrator_get_journal_stats_with_service(self, mock_dependencies):
+        """Test the get_journal_stats method with service."""
+        from execution.paper.orchestrator import PaperTradingOrchestrator
+        from execution.paper.trade_journal_persistence import (
+            TradeJournalRedisPersistence,
+        )
+
+        # Create mock persistence
+        mock_persistence = MagicMock(spec=TradeJournalRedisPersistence)
+        mock_persistence.is_healthy.return_value = True
+
+        # Create orchestrator
+        orchestrator = PaperTradingOrchestrator(
+            **mock_dependencies, trade_journal_persistence=mock_persistence
+        )
+
+        # Add entry
+        mock_position = MagicMock()
+        mock_position.symbol = "BTCUSDT"
+        mock_position.side = "long"
+        mock_position.entry_price = 50000.0
+        mock_position.quantity = 0.1
+        mock_position.position_id = "pos-123"
+
+        mock_signal = MagicMock()
+        mock_signal.signal_id = "sig-456"
+        mock_signal.confidence = 0.85
+        mock_signal.strategy_name = "test_strategy"
+
+        orchestrator.trade_journal_service.create_entry(
+            position=mock_position, signal=mock_signal, correlation_id="corr-789"
+        )
+
+        # Get stats
+        stats = orchestrator.get_journal_stats()
+
+        assert stats is not None
+        assert stats["total_entries"] == 1
+
+
+class TestNonBlockingBehavior:
+    """Test suite for non-blocking persistence behavior."""
+
+    def test_service_continues_when_persistence_unhealthy(self):
+        """Test that service continues working when Redis is down."""
+        from execution.paper.trade_journal_persistence import (
+            TradeJournalRedisPersistence,
+        )
+        from execution.paper.trade_journal_service import TradeJournalService
+
+        mock_persistence = MagicMock(spec=TradeJournalRedisPersistence)
+        mock_persistence.is_healthy.return_value = False
+        mock_persistence.save_entry.return_value = False  # Save fails
+
+        service = TradeJournalService(
+            session_id="test-session", persistence=mock_persistence
+        )
+
+        # Create mock position and signal
+        mock_position = MagicMock()
+        mock_position.symbol = "BTCUSDT"
+        mock_position.side = "long"
+        mock_position.entry_price = 50000.0
+        mock_position.quantity = 0.1
+        mock_position.position_id = "pos-123"
+
+        mock_signal = MagicMock()
+        mock_signal.signal_id = "sig-456"
+        mock_signal.confidence = 0.85
+        mock_signal.strategy_name = "test_strategy"
+
+        # Create entry - should work even though persistence fails
+        entry = service.create_entry(
+            position=mock_position, signal=mock_signal, correlation_id="corr-789"
+        )
+
+        # Entry should still be created in memory
+        assert entry is not None
+        assert entry.symbol == "BTCUSDT"
+
+        # Persistence was called but failed (non-blocking behavior)
+        mock_persistence.save_entry.assert_called_once()
+
+    def test_service_continues_on_save_failure(self):
+        """Test that service continues when save fails."""
+        from execution.paper.trade_journal_persistence import (
+            TradeJournalRedisPersistence,
+        )
+        from execution.paper.trade_journal_service import TradeJournalService
+
+        mock_persistence = MagicMock(spec=TradeJournalRedisPersistence)
+        mock_persistence.is_healthy.return_value = True
+        mock_persistence.save_entry.return_value = False  # Save fails
+
+        service = TradeJournalService(
+            session_id="test-session", persistence=mock_persistence
+        )
+
+        # Create mock position and signal
+        mock_position = MagicMock()
+        mock_position.symbol = "BTCUSDT"
+        mock_position.side = "long"
+        mock_position.entry_price = 50000.0
+        mock_position.quantity = 0.1
+        mock_position.position_id = "pos-123"
+
+        mock_signal = MagicMock()
+        mock_signal.signal_id = "sig-456"
+        mock_signal.confidence = 0.85
+        mock_signal.strategy_name = "test_strategy"
+
+        # Create entry - should work even though save fails
+        entry = service.create_entry(
+            position=mock_position, signal=mock_signal, correlation_id="corr-789"
+        )
+
+        # Entry should still be created in memory
+        assert entry is not None
+
+        # Persistence should have been called but failed
+        mock_persistence.save_entry.assert_called_once()
+
+    def test_service_continues_on_exception(self):
+        """Test that service continues when exception occurs."""
+        from execution.paper.trade_journal_persistence import (
+            TradeJournalRedisPersistence,
+        )
+        from execution.paper.trade_journal_service import TradeJournalService
+
+        mock_persistence = MagicMock(spec=TradeJournalRedisPersistence)
+        mock_persistence.is_healthy.return_value = True
+        mock_persistence.save_entry.side_effect = Exception("Redis connection lost")
+
+        service = TradeJournalService(
+            session_id="test-session", persistence=mock_persistence
+        )
+
+        # Create mock position and signal
+        mock_position = MagicMock()
+        mock_position.symbol = "BTCUSDT"
+        mock_position.side = "long"
+        mock_position.entry_price = 50000.0
+        mock_position.quantity = 0.1
+        mock_position.position_id = "pos-123"
+
+        mock_signal = MagicMock()
+        mock_signal.signal_id = "sig-456"
+        mock_signal.confidence = 0.85
+        mock_signal.strategy_name = "test_strategy"
+
+        # Create entry - should not raise even though exception occurs
+        entry = service.create_entry(
+            position=mock_position, signal=mock_signal, correlation_id="corr-789"
+        )
+
+        # Entry should still be created in memory
         assert entry is not None
