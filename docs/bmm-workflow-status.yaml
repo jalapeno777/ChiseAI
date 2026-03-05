@@ -2494,6 +2494,22 @@ metadata:
     1.'
   project_name: ChiseAI
   recent_changes:
+  - action: reason-code-001-complete
+    actor: merlin
+    description: 'REASON-CODE-001: Unified reason code contract for close/reject paths. Added CloseReason, RejectReason enums and ReasonCodeMapper to reason_codes.py. Updated orchestrator to use unified mapper instead of hard-coded mappings. All journal query surfaces now use consistent reason codes.'
+    files_changed:
+    - src/execution/paper/reason_codes.py
+    - src/execution/paper/orchestrator.py
+    - tests/test_execution/test_paper/test_orchestrator_journal.py
+    merge_commit_sha: 174f893cb5a99c83ddc293a2ed9b5af51b4d9182
+    pr_number: 354
+    status: completed
+    story_id: REASON-CODE-001
+    timestamp: '2026-03-05T02:30:00Z'
+    validation_summary:
+      ci_status: PASS
+      lint: PASS
+      tests: '34 passed'
   - action: st-journal-query-001-complete
     actor: senior-dev
     branches_created:
