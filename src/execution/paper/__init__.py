@@ -66,6 +66,11 @@ from .trade_journal import (
     TradeJournalEntry,
 )
 from .trade_journal_persistence import TradeJournalRedisPersistence
+from .trade_journal_query import (
+    JournalQueryFilters,
+    JournalSummaryStats,
+    TradeJournalQuery,
+)
 from .trade_journal_service import TradeJournalService
 
 
@@ -134,6 +139,9 @@ __all__ = [
     "TradeJournalEntry",
     "TradeJournalService",
     "TradeJournalRedisPersistence",
+    "TradeJournalQuery",
+    "JournalQueryFilters",
+    "JournalSummaryStats",
     "ExitReason",
     "FillRecord",
     "TradeEvent",
