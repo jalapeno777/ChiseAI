@@ -63,6 +63,49 @@ class TestZhipuClientInitialization:
             client = ZhipuClient()
             assert client.api_key == "zhipu-key"
 
+    def test_init_with_env_var_z_ai_underscore(self):
+        """Test initialization with Z_AI_API_KEY env var (with underscore)."""
+        with patch.dict(os.environ, {"Z_AI_API_KEY": "env-z-ai-key"}, clear=True):
+            client = ZhipuClient()
+            assert client.api_key == "env-z-ai-key"
+
+    def test_init_z_ai_underscore_takes_precedence_over_zai(self):
+        """Test Z_AI_API_KEY takes precedence over ZAI_API_KEY."""
+        with patch.dict(
+            os.environ,
+            {"Z_AI_API_KEY": "z-ai-key", "ZAI_API_KEY": "zai-key"},
+            clear=True,
+        ):
+            client = ZhipuClient()
+            assert client.api_key == "z-ai-key"
+
+    def test_init_zhipu_takes_precedence_over_z_ai_underscore(self):
+        """Test ZHIPU_API_KEY takes precedence over Z_AI_API_KEY."""
+        with patch.dict(
+            os.environ, {"ZHIPU_API_KEY": "zhipu-key", "Z_AI_API_KEY": "z-ai-key"}
+        ):
+            client = ZhipuClient()
+            assert client.api_key == "zhipu-key"
+
+    def test_init_all_three_keys_zhipu_precedence(self):
+        """Test precedence: ZHIPU_API_KEY > Z_AI_API_KEY > ZAI_API_KEY."""
+        with patch.dict(
+            os.environ,
+            {
+                "ZHIPU_API_KEY": "zhipu-key",
+                "Z_AI_API_KEY": "z-ai-key",
+                "ZAI_API_KEY": "zai-key",
+            },
+        ):
+            client = ZhipuClient()
+            assert client.api_key == "zhipu-key"
+
+    def test_init_all_three_keys_only_zai_underscore_set(self):
+        """Test Z_AI_API_KEY works when it's the only key set."""
+        with patch.dict(os.environ, {"Z_AI_API_KEY": "z-ai-key"}, clear=True):
+            client = ZhipuClient()
+            assert client.api_key == "z-ai-key"
+
     def test_init_without_api_key_raises(self):
         """Test initialization without API key raises error."""
         with patch.dict(os.environ, {}, clear=True):
