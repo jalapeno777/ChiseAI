@@ -19,6 +19,11 @@ from .trade_journal import (
     TradeJournalEntry,
 )
 from .trade_journal_persistence import TradeJournalRedisPersistence
+from .trade_journal_query import (
+    JournalQueryFilters,
+    JournalSummaryStats,
+    TradeJournalQuery,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -326,3 +331,98 @@ class TradeJournalService:
             Dictionary representation of the journal
         """
         return self._journal.to_dict()
+
+    def query_entries(
+        self, filters: JournalQueryFilters | None = None
+    ) -> list[TradeJournalEntry]:
+        """Query trade entries with optional filters.
+
+        Provides read-only access to journal entries with filtering
+        capabilities. This operation is non-blocking and safe to
+        call during trading operations.
+
+        Args:
+            filters: Optional JournalQueryFilters to apply
+
+        Returns:
+            List of matching TradeJournalEntry objects
+
+        Example:
+            >>> # Query all closed trades for BTCUSDT
+            >>> filters = JournalQueryFilters(
+            ...     symbol="BTCUSDT",
+            ...     status="closed"
+            ... )
+            >>> entries = service.query_entries(filters)
+        """
+        entries = self._journal.get_all_entries()
+        query = TradeJournalQuery(entries)
+        return query.query(filters)
+
+    def get_summary(
+        self, filters: JournalQueryFilters | None = None
+    ) -> JournalSummaryStats:
+        """Get summary statistics for entries matching filters.
+
+        Computes comprehensive statistics including win rate, average PnL,
+        and performance metrics. This operation is read-only and
+        non-blocking.
+
+        Args:
+            filters: Optional JournalQueryFilters to apply
+
+        Returns:
+            JournalSummaryStats with computed statistics
+
+        Example:
+            >>> # Get summary for all trades in the last 24 hours
+            >>> from datetime import datetime, timedelta
+            >>> filters = JournalQueryFilters(
+            ...     start_time=datetime.now(UTC) - timedelta(hours=24)
+            ... )
+            >>> stats = service.get_summary(filters)
+            >>> print(f"Win rate: {stats.win_rate:.2%}")
+        """
+        entries = self._journal.get_all_entries()
+        query = TradeJournalQuery(entries)
+        return query.get_summary(filters)
+
+    def get_symbols(self) -> list[str]:
+        """Get list of all unique symbols in the journal.
+
+        Returns:
+            Sorted list of unique symbol strings
+        """
+        entries = self._journal.get_all_entries()
+        query = TradeJournalQuery(entries)
+        return query.get_symbols()
+
+    def get_strategies(self) -> list[str]:
+        """Get list of all unique strategies in the journal.
+
+        Returns:
+            Sorted list of unique strategy name strings
+        """
+        entries = self._journal.get_all_entries()
+        query = TradeJournalQuery(entries)
+        return query.get_strategies()
+
+    def get_pnl_by_symbol(self) -> dict[str, float]:
+        """Get total PnL grouped by symbol.
+
+        Returns:
+            Dictionary mapping symbol to total net PnL
+        """
+        entries = self._journal.get_all_entries()
+        query = TradeJournalQuery(entries)
+        return query.get_pnl_by_symbol()
+
+    def get_pnl_by_strategy(self) -> dict[str, float]:
+        """Get total PnL grouped by strategy.
+
+        Returns:
+            Dictionary mapping strategy name to total net PnL
+        """
+        entries = self._journal.get_all_entries()
+        query = TradeJournalQuery(entries)
+        return query.get_pnl_by_strategy()
