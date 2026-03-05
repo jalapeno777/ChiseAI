@@ -138,6 +138,6 @@ variable "kimi_base_url" {
 
 variable "kimi_model" {
   type        = string
-  description = "Kimi model to use (e.g., moonshot-v1-8k, moonshot-v1-32k, moonshot-v1-128k)."
-  default     = "moonshot-v1-8k"
+  description = "Kimi model to use (e.g., kimi-for-coding, moonshot-v1-8k, moonshot-v1-32k, moonshot-v1-128k)."
+  default     = "kimi-for-coding"
 }
