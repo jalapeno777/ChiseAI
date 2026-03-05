@@ -126,8 +126,12 @@ def _check_all_providers() -> dict[str, dict[str, Any]]:
     """
     providers = {
         "KIMI": ["KIMI_API_KEY", "KIMI_API_KEY_PRIMARY"],
-        "ZAI": ["ZAI_API_KEY", "ZAI_API_KEY_PRIMARY"],
-        "ZHIPU": ["ZHIPU_API_KEY", "ZAI_API_KEY"],  # ZAI key can proxy for ZHIPU
+        "ZAI": ["ZAI_API_KEY", "Z_AI_API_KEY", "ZAI_API_KEY_PRIMARY"],
+        "ZHIPU": [
+            "ZHIPU_API_KEY",
+            "ZAI_API_KEY",
+            "Z_AI_API_KEY",
+        ],  # ZAI keys can proxy for ZHIPU
         "MINIMAX": ["MINIMAX_API_KEY"],
     }
 
