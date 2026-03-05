@@ -101,7 +101,7 @@ PROVIDER_CONFIGS = {
     ),
     "zai": ProviderConfig(
         name="GLM-5 (Z.ai)",
-        api_key_env="ZAI_API_KEY",
+        api_key_env="ZAI_API_KEY",  # Also supports Z_AI_API_KEY via _is_provider_available
         enabled_env=None,  # Always enabled if key present
         enabled_default=True,
         priority=2,
@@ -307,9 +307,14 @@ class LLMProviderChain:
         # Check for API key
         api_key = os.getenv(config.api_key_env)
         if not api_key:
-            # Special case: Zhipu can use ZAI_API_KEY as fallback
+            # Special case: Zhipu can use ZAI_API_KEY or Z_AI_API_KEY as fallback
             if provider_name == "zhipu":
-                zai_key = os.getenv("ZAI_API_KEY")
+                zai_key = os.getenv("ZAI_API_KEY") or os.getenv("Z_AI_API_KEY")
+                if zai_key:
+                    return True, None
+            # Special case: ZAI can use Z_AI_API_KEY as fallback
+            if provider_name == "zai":
+                zai_key = os.getenv("Z_AI_API_KEY")
                 if zai_key:
                     return True, None
             return False, f"{config.api_key_env} not set"

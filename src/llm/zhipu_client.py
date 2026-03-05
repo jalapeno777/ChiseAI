@@ -131,8 +131,15 @@ class ZhipuClient:
         self._session = self._create_session()
 
     def _get_api_key_from_env(self) -> str | None:
-        """Get API key from environment variables."""
-        return os.getenv("ZHIPU_API_KEY") or os.getenv("ZAI_API_KEY")
+        """Get API key from environment variables.
+
+        Checks in order: ZHIPU_API_KEY, Z_AI_API_KEY, ZAI_API_KEY
+        """
+        return (
+            os.getenv("ZHIPU_API_KEY")
+            or os.getenv("Z_AI_API_KEY")
+            or os.getenv("ZAI_API_KEY")
+        )
 
     def _create_session(self) -> requests.Session:
         """Create requests session with retry strategy."""
