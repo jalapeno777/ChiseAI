@@ -182,7 +182,7 @@ class TestProviderDiscovery:
 
             assert config["enabled"] is True
             assert config["api_key_present"] is True
-            assert config["base_url"] == "https://open.bigmodel.cn/api/paas/v4"
+            assert config["base_url"] == "https://api.z.ai/api/paas/v4"
             assert config["model"] == "glm-5"
 
     def test_discover_zhipu_config_zai_fallback(self) -> None:
@@ -229,6 +229,20 @@ class TestProviderDiscovery:
             assert config["enabled"] is False
             assert config["api_key_present"] is True
 
+    def test_discover_minimax_config_disabled_by_default(self) -> None:
+        """MiniMax disabled by default when only API key present."""
+        with patch.dict(
+            os.environ,
+            {"MINIMAX_API_KEY": "minimax-key"},  # No MINIMAX_ENABLED set
+            clear=False,
+        ):
+            # Ensure MINIMAX_ENABLED is not set
+            os.environ.pop("MINIMAX_ENABLED", None)
+            config = discover_minimax_config()
+
+            assert config["enabled"] is False  # Should be disabled by default
+            assert config["api_key_present"] is True
+
     def test_discover_minimax_config_missing_key(self) -> None:
         """MiniMax without key."""
         with patch.dict(os.environ, {}, clear=False):
@@ -263,6 +277,7 @@ class TestGetAvailableProviders:
                 "ZAI_API_KEY": "zai-key",
                 "ZHIPU_API_KEY": "zhipu-key",
                 "MINIMAX_API_KEY": "minimax-key",
+                "MINIMAX_ENABLED": "true",  # Explicitly enable MiniMax
             },
             clear=False,
         ):
