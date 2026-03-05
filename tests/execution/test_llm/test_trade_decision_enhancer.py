@@ -16,15 +16,13 @@ For PAPER-EXEC-001: LLM-enhanced trade decisions with fallback.
 from __future__ import annotations
 
 import os
-import pytest
-from dataclasses import FrozenInstanceError
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from src.execution.llm.trade_decision_enhancer import (
     TradeDecision,
     TradeDecisionEnhancer,
 )
-
 
 # =============================================================================
 # TradeDecision Dataclass Tests
@@ -452,6 +450,84 @@ RATIONALE: Test"""
 # =============================================================================
 
 
+class TestSignalContextExtraction:
+    """Tests for _extract_signal_context method."""
+
+    def test_extract_context_with_all_fields(self):
+        """Test extracting context from signal with all fields."""
+        enhancer = TradeDecisionEnhancer(enabled=False)
+
+        signal = MagicMock()
+        signal.token = "BTCUSDT"
+        signal.direction = "LONG"
+        signal.confidence = 0.85
+        signal.base_score = 85.0
+        signal.contributing_factors = [
+            {"name": "momentum", "score": 90},
+            {"name": "volume", "score": 85},
+            {"name": "trend", "score": 80},
+            {"name": "extra", "score": 75},  # Should not be included (top 3 only)
+        ]
+
+        ctx = enhancer._extract_signal_context(signal)
+
+        assert ctx["symbol"] == "BTCUSDT"
+        assert ctx["direction"] == "LONG"
+        assert ctx["confidence"] == 0.85
+        assert ctx["base_score"] == 85.0
+        assert "momentum(90)" in ctx["factor_summary"]
+        assert "volume(85)" in ctx["factor_summary"]
+        assert "trend(80)" in ctx["factor_summary"]
+        assert "extra" not in ctx["factor_summary"]  # Only top 3
+
+    def test_extract_context_with_missing_token_uses_symbol(self):
+        """Test that symbol is used when token is missing."""
+        enhancer = TradeDecisionEnhancer(enabled=False)
+
+        signal = MagicMock()
+        del signal.token
+        signal.symbol = "ETHUSDT"
+        signal.direction = "SHORT"
+        signal.confidence = 0.7
+        signal.base_score = 70.0
+        signal.contributing_factors = []
+
+        ctx = enhancer._extract_signal_context(signal)
+
+        assert ctx["symbol"] == "ETHUSDT"
+        assert ctx["direction"] == "SHORT"
+
+    def test_extract_context_with_no_factors(self):
+        """Test extraction when no contributing factors."""
+        enhancer = TradeDecisionEnhancer(enabled=False)
+
+        signal = MagicMock()
+        signal.token = "TEST"
+        signal.direction = "long"
+        signal.confidence = 0.5
+        signal.base_score = 50.0
+        signal.contributing_factors = []
+
+        ctx = enhancer._extract_signal_context(signal)
+
+        assert ctx["factor_summary"] == "technical analysis"
+
+    def test_extract_context_with_missing_attributes(self):
+        """Test extraction with missing optional attributes."""
+        enhancer = TradeDecisionEnhancer(enabled=False)
+
+        signal = MagicMock(spec=[])  # Empty spec means no attributes
+        signal.token = "TEST"
+
+        ctx = enhancer._extract_signal_context(signal)
+
+        assert ctx["symbol"] == "TEST"
+        assert ctx["direction"] == "unknown"
+        assert ctx["confidence"] == 0.0
+        assert ctx["base_score"] == 0.0
+        assert ctx["factor_summary"] == "technical analysis"
+
+
 class TestFallbackBehavior:
     """Tests for fallback behavior when LLM fails."""
 
@@ -467,6 +543,11 @@ class TestFallbackBehavior:
         signal.token = "BTC"
         signal.direction = "long"
         signal.confidence = 0.8
+        signal.base_score = 85.0
+        signal.contributing_factors = [
+            {"name": "test_factor_1", "score": 90},
+            {"name": "test_factor_2", "score": 85},
+        ]
 
         decision = await enhancer.enhance_decision(signal)
 
@@ -475,6 +556,16 @@ class TestFallbackBehavior:
         assert decision.fallback_used is True
         assert "failed" in decision.rationale.lower()
         assert decision.provider == "error"
+
+        # Verify enriched rationale content
+        assert "BASE SIGNAL" in decision.rationale
+        assert "long" in decision.rationale
+        assert "BTC" in decision.rationale
+        assert "80.0%" in decision.rationale  # confidence as percentage
+        assert "85.0" in decision.rationale  # base_score
+        assert "test_factor_1(90)" in decision.rationale
+        assert "test_factor_2(85)" in decision.rationale
+        assert "base signal policy" in decision.rationale.lower()
 
     @pytest.mark.asyncio
     async def test_fallback_on_connection_error(self):
@@ -488,11 +579,19 @@ class TestFallbackBehavior:
         signal.token = "BTC"
         signal.direction = "long"
         signal.confidence = 0.8
+        signal.base_score = 80.0
+        signal.contributing_factors = []
 
         decision = await enhancer.enhance_decision(signal)
 
         assert decision.go_no_go is True
         assert decision.fallback_used is True
+
+        # Verify enriched rationale content
+        assert "BASE SIGNAL" in decision.rationale
+        assert "long" in decision.rationale
+        assert "BTC" in decision.rationale
+        assert "technical analysis" in decision.rationale  # default when no factors
 
     @pytest.mark.asyncio
     async def test_fallback_on_timeout(self):
@@ -506,11 +605,24 @@ class TestFallbackBehavior:
         signal.token = "ETH"
         signal.direction = "short"
         signal.confidence = 0.6
+        signal.base_score = 65.0
+        signal.contributing_factors = [
+            {"name": "momentum", "score": 70},
+        ]
 
         decision = await enhancer.enhance_decision(signal)
 
         assert decision.go_no_go is True
         assert decision.fallback_used is True
+
+        # Verify enriched rationale content for timeout
+        assert "timed out" in decision.rationale.lower()
+        assert "BASE SIGNAL" in decision.rationale
+        assert "short" in decision.rationale
+        assert "ETH" in decision.rationale
+        assert "60.0%" in decision.rationale
+        assert "65.0" in decision.rationale
+        assert "momentum(70)" in decision.rationale
 
     @pytest.mark.asyncio
     async def test_fallback_latency_recorded(self):
