@@ -13,6 +13,7 @@ Targets:
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import inspect
 import logging
 import time
@@ -35,8 +36,6 @@ if TYPE_CHECKING:
     from signal_generation.models import Signal
     from signal_generation.signal_generator import SignalGenerator
 
-import contextlib
-
 from execution.llm.trade_decision_enhancer import TradeDecisionEnhancer
 from execution.paper.models import (
     OrderSide,
@@ -47,11 +46,7 @@ from execution.paper.models import (
     TradeStatus,
 )
 from execution.paper.reason_codes import (
-    CloseReason,
-    RejectReason,
     ReasonCodeMapper,
-    ExitReason,  # for backward compatibility
-    DecisionReason,  # for backward compatibility
 )
 from execution.paper.trade_journal import TradeJournal
 from execution.paper.trade_journal_persistence import TradeJournalRedisPersistence
