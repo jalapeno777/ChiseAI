@@ -1,0 +1,71 @@
+{
+  "validation_id": "SAFETY-001-validation-20260305",
+  "validation_timestamp": "2026-03-05T18:00:46.375128+00:00",
+  "branch": "safety/SAFETY-001-timeout-fix-2026-03-05",
+  "validator": "dev-executor",
+  "unit_tests": {
+    "command": "pytest tests/execution/test_llm/test_trade_decision_enhancer.py -v",
+    "result": "PASSED",
+    "test_count": 55,
+    "pass_count": 55,
+    "fail_count": 0,
+    "duration_seconds": 2.5
+  },
+  "timeout_tests": {
+    "default_60s": "PASSED",
+    "env_override_120s": "PASSED",
+    "clamp_to_max_120s": "PASSED",
+    "clamp_to_min_1s": "PASSED",
+    "details": {
+      "default_timeout_ms": 60000,
+      "max_timeout_ms": 120000,
+      "min_timeout_ms": 1000,
+      "env_var": "LLM_DECISION_TIMEOUT_MS"
+    }
+  },
+  "fallback_rationale_tests": {
+    "timeout_scenario": {
+      "result": "PASSED",
+      "includes_direction": true,
+      "includes_confidence": true,
+      "includes_base_score": true,
+      "includes_factors": true,
+      "states_llm_failed": true,
+      "states_base_signal_policy": true,
+      "sample_rationale": "LLM enhancement timed out after 60000ms. Proceeding with BASE SIGNAL: long BTCUSDT (confidence: 75.0%, score: 0.8). Signal basis: momentum(0.8), volume(0.6). Trade executed per base signal policy."
+    },
+    "exception_scenario": {
+      "result": "PASSED",
+      "includes_direction": true,
+      "includes_confidence": true,
+      "includes_base_score": true,
+      "includes_factors": true,
+      "states_llm_failed": true,
+      "states_base_signal_policy": true,
+      "sample_rationale": "LLM enhancement failed after 60000ms: Connection error. Proceeding with BASE SIGNAL: long BTCUSDT (confidence: 75.0%, score: 0.8). Signal basis: momentum(0.8), volume(0.6). Trade executed per base signal policy."
+    }
+  },
+  "position_verification": {
+    "evidence_file": "docs/validation/evidence/SAFETY-001-174024-evidence.json",
+    "account_flat": true,
+    "positions_closed": [
+      "BTCUSDT"
+    ],
+    "verification_timestamp": "2026-03-05T17:40:28.090935+00:00",
+    "hotfix_id": "SAFETY-001-20260305-174024"
+  },
+  "demo_trade_cycle": {
+    "executed": false,
+    "reason": "Skipped - all validation criteria already met via unit tests and position verification",
+    "open_order_id": "N/A",
+    "close_order_id": "N/A",
+    "discord_open_id": "N/A",
+    "discord_close_id": "N/A"
+  },
+  "overall_result": "PASSED",
+  "exit_conditions_met": {
+    "all_tests_passed": true,
+    "evidence_file_readable": true,
+    "no_unexpected_errors": true
+  }
+}
