@@ -2486,7 +2486,7 @@ launch_stories:
   title: Paper Trading 30-Minute Proof Loop Validation
   validation_status: closed_with_manual_and_info_exceptions
 metadata:
-  last_updated: '2026-03-04T16:00:00Z'
+  last_updated: '2026-03-05T01:35:00Z'
   prd_location: docs/prd.md
   prd_note: 'Phased perps execution: continuous backtest -> Bybit demo paper -> Bitget
     live; Grafana-first ops UI; Binance used as reference market-structure venue.
@@ -2494,6 +2494,30 @@ metadata:
     1.'
   project_name: ChiseAI
   recent_changes:
+  - action: st-journal-query-001-complete
+    actor: senior-dev
+    branches_created:
+    - feature/ST-JOURNAL-QUERY-001-reporting-surface
+    description: 'ST-JOURNAL-QUERY-001: Trade Journal Query/Reporting Surface complete.
+      Added TradeJournalQuery class with time range, symbol, status, exit reason, and
+      strategy filtering. Added JournalSummaryStats with PnL totals, win/loss counts,
+      win rate, and average calculations. Extended TradeJournalService with query_entries(),
+      get_summary(), get_symbols(), get_strategies(), get_pnl_by_symbol(), and
+      get_pnl_by_strategy() methods. All operations are read-only and non-blocking.'
+    epic_id: EP-PAPER-TRADING-001
+    files_changed:
+    - src/execution/paper/trade_journal_query.py
+    - src/execution/paper/trade_journal_service.py
+    - src/execution/paper/__init__.py
+    - tests/test_execution/test_paper/test_trade_journal_query.py
+    status: completed
+    story_id: ST-JOURNAL-QUERY-001
+    timestamp: '2026-03-05T01:35:00Z'
+    validation_summary:
+      black_formatting: "✓ Pass"
+      existing_tests_pass: "✓ 74 tests passing"
+      new_tests_pass: "✓ 34 tests passing"
+      ruff_linting: "✓ Pass (1 pre-existing warning in persistence file)"
   - action: paper-2025-batch2-complete
     actor: jarvis
     branches_created:
