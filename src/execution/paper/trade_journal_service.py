@@ -426,3 +426,139 @@ class TradeJournalService:
         entries = self._journal.get_all_entries()
         query = TradeJournalQuery(entries)
         return query.get_pnl_by_strategy()
+
+    def query_reason_distribution(
+        self,
+        time_range: tuple[Any, Any] | None = None,
+        symbol: str | None = None,
+        rejected_signals: list[Any] | None = None,
+    ) -> dict[str, Any]:
+        """Query reason code distributions with optional filtering.
+
+        Provides comprehensive analysis of both exit reasons and rejection
+        reasons with optional filtering by time range and symbol.
+
+        Args:
+            time_range: Optional tuple of (start_time, end_time) for filtering
+            symbol: Optional symbol to filter by
+            rejected_signals: Optional list of rejected signals for reject analysis
+
+        Returns:
+            Dictionary containing exit and reject reason distributions
+
+        Example:
+            >>> from datetime import datetime, timedelta, UTC
+            >>> start = datetime.now(UTC) - timedelta(days=7)
+            >>> end = datetime.now(UTC)
+            >>> dist = service.query_reason_distribution(
+            ...     time_range=(start, end),
+            ...     symbol="BTCUSDT"
+            ... )
+            >>> print(dist["totals"]["total_closed_trades"])
+            15
+        """
+        # Build filters
+        filters = None
+        if time_range or symbol:
+            filters = JournalQueryFilters(
+                start_time=time_range[0] if time_range else None,
+                end_time=time_range[1] if time_range else None,
+                symbol=symbol,
+            )
+
+        entries = self._journal.get_all_entries()
+        query = TradeJournalQuery(entries)
+        return query.get_reason_summary(filters, rejected_signals)
+
+    def export_reason_report(
+        self,
+        time_range: tuple[Any, Any] | None = None,
+        symbol: str | None = None,
+        rejected_signals: list[Any] | None = None,
+        format: str = "json",
+    ) -> str:
+        """Export reason code analysis in specified format.
+
+        Generates a report of exit and rejection reason distributions
+        in either JSON or CSV format.
+
+        Args:
+            time_range: Optional tuple of (start_time, end_time) for filtering
+            symbol: Optional symbol to filter by
+            rejected_signals: Optional list of rejected signals for reject analysis
+            format: Export format - "json" or "csv" (default: "json")
+
+        Returns:
+            String containing the formatted report
+
+        Raises:
+            ValueError: If format is not "json" or "csv"
+
+        Example:
+            >>> # Export as JSON
+            >>> json_report = service.export_reason_report(format="json")
+
+            >>> # Export as CSV
+            >>> csv_report = service.export_reason_report(format="csv")
+        """
+        import csv
+        import io
+        import json
+
+        # Get reason distribution data
+        data = self.query_reason_distribution(time_range, symbol, rejected_signals)
+
+        if format == "json":
+            return json.dumps(data, indent=2, default=str)
+
+        elif format == "csv":
+            output = io.StringIO()
+            writer = csv.writer(output)
+
+            # Write header
+            writer.writerow(["category", "reason", "count", "percentage"])
+
+            # Write exit reasons
+            for reason, stats in data["exit_reasons"].items():
+                writer.writerow(
+                    [
+                        "exit",
+                        reason,
+                        stats["count"],
+                        stats["percentage"],
+                    ]
+                )
+
+            # Write reject reasons
+            for reason, stats in data["reject_reasons"].items():
+                writer.writerow(
+                    [
+                        "reject",
+                        reason,
+                        stats["count"],
+                        stats["percentage"],
+                    ]
+                )
+
+            # Write totals
+            writer.writerow([])
+            writer.writerow(["totals", "", "", ""])
+            writer.writerow(
+                ["total_closed_trades", "", data["totals"]["total_closed_trades"], ""]
+            )
+            writer.writerow(
+                [
+                    "total_rejected_signals",
+                    "",
+                    data["totals"]["total_rejected_signals"],
+                    "",
+                ]
+            )
+            writer.writerow(
+                ["total_decisions", "", data["totals"]["total_decisions"], ""]
+            )
+
+            return output.getvalue()
+
+        else:
+            raise ValueError(f"Invalid format '{format}'. Must be 'json' or 'csv'")
