@@ -16,7 +16,8 @@ import pytest
 
 from execution.paper.models import OrderSide, OrderState, OrderType, PaperOrder
 from execution.paper.orchestrator import PaperTradingOrchestrator
-from execution.paper.trade_journal import ExitReason, TradeJournal
+from execution.paper.reason_codes import ExitReason
+from execution.paper.trade_journal import TradeJournal
 from signal_generation.models import SignalDirection
 
 
@@ -593,7 +594,7 @@ class TestTradeJournalService:
 
     def test_close_entry_persists_to_redis(self):
         """Test that close_entry persists to Redis."""
-        from execution.paper.trade_journal import ExitReason
+        from execution.paper.reason_codes import ExitReason
         from execution.paper.trade_journal_persistence import (
             TradeJournalRedisPersistence,
         )
@@ -646,7 +647,7 @@ class TestTradeJournalService:
 
     def test_get_open_and_closed_entries(self):
         """Test getting open and closed entries."""
-        from execution.paper.trade_journal import ExitReason
+        from execution.paper.reason_codes import ExitReason
         from execution.paper.trade_journal_service import TradeJournalService
 
         service = TradeJournalService(session_id="test-session")
@@ -694,7 +695,7 @@ class TestTradeJournalService:
 
     def test_get_stats(self):
         """Test getting journal statistics."""
-        from execution.paper.trade_journal import ExitReason
+        from execution.paper.reason_codes import ExitReason
         from execution.paper.trade_journal_service import TradeJournalService
 
         service = TradeJournalService(session_id="test-session")
