@@ -58,6 +58,15 @@ from .position_tracker import (
     PaperPosition,
     PaperPositionTracker,
 )
+from .trade_journal import (
+    ExitReason,
+    FillRecord,
+    TradeEvent,
+    TradeJournal,
+    TradeJournalEntry,
+)
+from .trade_journal_persistence import TradeJournalRedisPersistence
+from .trade_journal_service import TradeJournalService
 
 
 def create_simulator(
@@ -120,4 +129,12 @@ __all__ = [
     "SlippageConfig",
     "LatencyConfig",
     "create_fill_model",
+    # Trade journal
+    "TradeJournal",
+    "TradeJournalEntry",
+    "TradeJournalService",
+    "TradeJournalRedisPersistence",
+    "ExitReason",
+    "FillRecord",
+    "TradeEvent",
 ]
