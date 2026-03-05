@@ -8,6 +8,7 @@ For PAPER-EXEC-001: LLM-enhanced trade decisions with fallback.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import time
@@ -43,15 +44,32 @@ class TradeDecisionEnhancer:
     Feature flag: USE_LLM_TRADE_DECISIONS (default: False)
     """
 
-    def __init__(self, enabled: bool | None = None):
+    def __init__(
+        self, enabled: bool | None = None, timeout_ms: int | None = None
+    ) -> None:
         """Initialize the trade decision enhancer.
 
         Args:
             enabled: Override feature flag. If None, reads from env.
+            timeout_ms: Override timeout in milliseconds. If None, reads from env.
+                        Default is 60000ms (60s), can be overridden via
+                        LLM_DECISION_TIMEOUT_MS env var (max 120000ms / 120s).
         """
         if enabled is None:
             enabled = os.getenv("USE_LLM_TRADE_DECISIONS", "false").lower() == "true"
         self.enabled = enabled
+
+        # Set timeout (default 60s, override via env)
+        if timeout_ms is not None:
+            self.timeout_ms = timeout_ms
+        else:
+            self.timeout_ms = int(os.getenv("LLM_DECISION_TIMEOUT_MS", "60000"))
+
+        # Clamp timeout to reasonable range (1s min, 120s max)
+        self.timeout_ms = max(1000, min(self.timeout_ms, 120000))
+
+        logger.info(f"TradeDecisionEnhancer: timeout={self.timeout_ms}ms")
+
         self._chain = None
 
         if self.enabled:
@@ -101,8 +119,11 @@ class TradeDecisionEnhancer:
         prompt = self._build_prompt(signal, market_context)
 
         try:
-            # Query LLM provider chain with fallback
-            response = await self._chain.query(prompt)
+            # Query LLM provider chain with fallback and timeout
+            timeout_seconds = self.timeout_ms / 1000.0
+            response = await asyncio.wait_for(
+                self._chain.query(prompt), timeout=timeout_seconds
+            )
 
             latency_ms = (time.time() - start_time) * 1000
 
@@ -130,19 +151,88 @@ class TradeDecisionEnhancer:
                 risk_recommendation=risk_recommendation,
             )
 
+        except TimeoutError:
+            logger.error(
+                f"TradeDecisionEnhancer: LLM query timed out after {self.timeout_ms}ms"
+            )
+            latency_ms = (time.time() - start_time) * 1000
+
+            # Extract signal context for enriched fallback
+            ctx = self._extract_signal_context(signal)
+
+            # Build enriched rationale
+            rationale = (
+                f"LLM enhancement timed out after {self.timeout_ms}ms. "
+                f"Proceeding with BASE SIGNAL: {ctx['direction']} {ctx['symbol']} "
+                f"(confidence: {ctx['confidence']:.1%}, score: {ctx['base_score']}). "
+                f"Signal basis: {ctx['factor_summary']}. "
+                f"Trade executed per base signal policy."
+            )
+
+            # Return safe default - don't block trades on timeout
+            return TradeDecision(
+                go_no_go=True,  # Safe default: allow trade
+                confidence=50.0,
+                rationale=rationale,
+                provider="timeout",
+                fallback_used=True,
+                latency_ms=latency_ms,
+            )
+
         except Exception as e:
             logger.error(f"TradeDecisionEnhancer: LLM query failed: {e}")
             latency_ms = (time.time() - start_time) * 1000
+
+            # Extract signal context for enriched fallback
+            ctx = self._extract_signal_context(signal)
+
+            # Build enriched rationale
+            rationale = (
+                f"LLM enhancement failed after {self.timeout_ms}ms: {str(e)[:80]}. "
+                f"Proceeding with BASE SIGNAL: {ctx['direction']} {ctx['symbol']} "
+                f"(confidence: {ctx['confidence']:.1%}, score: {ctx['base_score']}). "
+                f"Signal basis: {ctx['factor_summary']}. "
+                f"Trade executed per base signal policy."
+            )
 
             # Return safe default - don't block trades on LLM failure
             return TradeDecision(
                 go_no_go=True,  # Safe default: allow trade
                 confidence=50.0,
-                rationale=f"LLM enhancement failed: {str(e)[:100]}. Proceeding with base signal.",
+                rationale=rationale,
                 provider="error",
                 fallback_used=True,
                 latency_ms=latency_ms,
             )
+
+    def _extract_signal_context(self, signal: Any) -> dict[str, Any]:
+        """Extract key signal information for fallback rationale.
+
+        Args:
+            signal: Trading signal to extract context from
+
+        Returns:
+            Dict with symbol, direction, confidence, base_score, factor_summary
+        """
+        factors = getattr(signal, "contributing_factors", [])
+        factor_summary = (
+            ", ".join(
+                [
+                    f"{f.get('name', 'unknown')}({f.get('score', 0)})"
+                    for f in factors[:3]  # Top 3 factors
+                ]
+            )
+            if factors
+            else "technical analysis"
+        )
+
+        return {
+            "symbol": getattr(signal, "token", getattr(signal, "symbol", "UNKNOWN")),
+            "direction": getattr(signal, "direction", "unknown"),
+            "confidence": getattr(signal, "confidence", 0.0),
+            "base_score": getattr(signal, "base_score", 0.0),
+            "factor_summary": factor_summary,
+        }
 
     def _build_prompt(
         self,
@@ -253,4 +343,5 @@ RISK_RECOMMENDATION: [brief risk management guidance]
             "enabled": self.enabled,
             "chain_initialized": self._chain is not None,
             "provider_chain_available": self._chain is not None,
+            "timeout_ms": self.timeout_ms,
         }
