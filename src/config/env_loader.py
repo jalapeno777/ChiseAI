@@ -443,9 +443,7 @@ def discover_zhipu_config() -> dict[str, Any]:
     return {
         "enabled": key_present,
         "api_key_present": key_present,
-        "base_url": os.environ.get(
-            "ZHIPU_BASE_URL", "https://open.bigmodel.cn/api/paas/v4"
-        ),
+        "base_url": os.environ.get("ZHIPU_BASE_URL", "https://api.z.ai/api/paas/v4"),
         "model": os.environ.get("ZHIPU_MODEL", "glm-5"),
     }
 
@@ -466,7 +464,7 @@ def discover_minimax_config() -> dict[str, Any]:
         Never includes actual API key values in output.
     """
     api_key = os.environ.get("MINIMAX_API_KEY", "").strip()
-    enabled_str = os.environ.get("MINIMAX_ENABLED", "true").lower()
+    enabled_str = os.environ.get("MINIMAX_ENABLED", "false").lower()
     enabled = enabled_str in ("true", "1", "yes", "on")
 
     return {
