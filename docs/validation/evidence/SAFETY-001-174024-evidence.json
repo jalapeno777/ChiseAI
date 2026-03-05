@@ -1,0 +1,74 @@
+{
+  "hotfix_id": "SAFETY-001-20260305-174024",
+  "start_time": "2026-03-05T17:40:24.735034+00:00",
+  "inspection": {
+    "symbols_checked": [
+      "BTCUSDT",
+      "ETHUSDT"
+    ],
+    "open_positions_found": [
+      {
+        "symbol": "BTCUSDT",
+        "position_size": 0.005,
+        "side": "buy",
+        "entry_price": 71308.04,
+        "unrealized_pnl": -2.0182,
+        "leverage": "10",
+        "position_value": 356.5402,
+        "timestamp": "2026-03-05T17:40:27.604112+00:00"
+      }
+    ]
+  },
+  "close_execution": {
+    "orders_placed": [
+      {
+        "order_id": "70bbe3f2-cdf7-4eb7-a00c-7e12549785d4",
+        "symbol": "BTCUSDT",
+        "side": "sell",
+        "quantity": 0.005,
+        "timestamp": "2026-03-05T17:40:28.090819+00:00"
+      }
+    ],
+    "close_results": [
+      {
+        "order_id": "70bbe3f2-cdf7-4eb7-a00c-7e12549785d4",
+        "symbol": "BTCUSDT",
+        "status": "Created",
+        "timestamp": "2026-03-05T17:40:28.090837+00:00"
+      }
+    ]
+  },
+  "verification": {
+    "positions_after_close": [
+      {
+        "symbol": "BTCUSDT",
+        "position_size": 0.0,
+        "verified_flat": true,
+        "timestamp": "2026-03-05T17:40:28.090935+00:00"
+      },
+      {
+        "symbol": "ETHUSDT",
+        "position_size": 0.0,
+        "verified_flat": true,
+        "timestamp": "2026-03-05T17:40:28.090935+00:00"
+      }
+    ],
+    "account_flat": true,
+    "verification_timestamp": "2026-03-05T17:40:28.090935+00:00"
+  },
+  "discord": {
+    "channel": "#trading",
+    "message_id": "1479171756991451382",
+    "timestamp": "2026-03-05T17:40:28.821893+00:00",
+    "content_summary": "\ud83d\udee1\ufe0f Position Safety Hotfix - Positions Closed"
+  },
+  "errors": [],
+  "connector": {
+    "initialized": true,
+    "endpoint": "https://api-demo.bybit.com",
+    "api_key_prefix": "R9KF",
+    "healthy": true
+  },
+  "status": "SUCCESS",
+  "end_time": "2026-03-05T17:40:28.822594+00:00"
+}
