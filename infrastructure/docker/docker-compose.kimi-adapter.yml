@@ -24,7 +24,7 @@ services:
     environment:
       - KIMI_API_KEY=${KIMI_API_KEY}
       - KIMI_BASE_URL=${KIMI_BASE_URL:-https://api.moonshot.cn/v1}
-      - KIMI_MODEL=${KIMI_MODEL:-moonshot-v1-8k}
+      - KIMI_MODEL=${KIMI_MODEL:-kimi-for-coding}
     
     # Labels for governance
     labels:
