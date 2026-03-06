@@ -138,7 +138,9 @@ Trigger this whenever you identify:
 Required output format to Aria:
 ```text
 INSIGHT_PACKET
+- insight_packet_id: IP-<story_id>-<utc_yyyymmddThhmmssZ>-<short_hash>
 - story_id:
+- detected_at_utc:
 - context:
 - issues:
   - issue:
@@ -148,12 +150,15 @@ INSIGHT_PACKET
     urgency: low|medium|high|critical
     confidence: 0.0-1.0
     evidence:
+    evidence_signature:
 ```
 
 Urgency rules:
 - `critical`: send immediately before continuing related work.
 - `high`: include before the next batch starts.
 - `medium|low`: include in the next status update.
+- Security/compliance flagged insights: mark as `critical`, route to Aria immediately, and do not proceed with remediation work until Aria confirms Craig approval.
+- Potential PRD scope changes: route to Aria immediately for Craig assessment/approval before execution.
 
 ## Rejected-insight memory gate (required)
 Before sending an `INSIGHT_PACKET`, check whether similar insight was already rejected by Aria.
@@ -169,6 +174,9 @@ Suppression rule:
 - If a same/similar rejected insight exists, do not resend it.
 - Exception: resend only when you have materially new evidence (new failure signal, changed dependency, or stronger proof) and explicitly state what changed.
 - If resent under exception, mark packet with `resubmission: true` and `new_evidence_since_rejection`.
+- Similarity check precedence:
+  - exact `evidence_signature` match -> always suppress
+  - same issue semantics + same scope context -> suppress unless new evidence
 
 ## Iteration Logging Discipline (required)
 You must keep a single source of truth for the workstream so parallel workers do not diverge.
@@ -202,6 +210,14 @@ When Aria returns `ARIA_DECISION`:
 - If decision is `REJECT` or `OVERRIDE` with rejection rationale, archive the rejected insight payload to:
   - `bmad:chiseai:insights:rejected:story:<story_id>`
   - and optionally `bmad:chiseai:insights:rejected:global` for cross-story reuse prevention.
+
+### Session-complete compliance audit (required)
+Before declaring a session complete to Aria, run a lightweight `critic` compliance check and include results in your return:
+- Session complete means Aria is at the current Phase 5/Phase 7 checkpoint.
+- were `INSIGHT_PACKET` and `ARIA_DECISION` fields complete (`*_id`, scope fields, evidence signatures)
+- were risk levels assigned and urgency rules respected
+- were security/compliance and PRD scope escalations routed correctly
+- were rejected-insight suppression rules enforced
 
 ### Parallel-safe definition
 Work items may run in parallel only when ALL are true:

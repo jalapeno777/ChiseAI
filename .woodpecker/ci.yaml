@@ -96,6 +96,18 @@ steps:
           else
             python scripts/validate_iterloop_compliance.py || echo "WARN: iterloop compliance issues (non-blocking)"
           fi
+          CHANGED_ITERLOGS="$(printf '%s' \"${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -E '^docs/tempmemories/iterlog-.*\\.md$' || true)"
+          if [ -n "$(printf '%s' "$CHANGED_ITERLOGS" | tr -d '[:space:]')" ]; then
+            echo "insight-governance: validating changed iterlogs (blocking)"
+            printf '%s\n' "$CHANGED_ITERLOGS" | while IFS= read -r iterlog_path; do
+              [ -z "$iterlog_path" ] && continue
+              story_id="$(basename "$iterlog_path" .md | sed 's/^iterlog-//')"
+              echo " - validating story_id=${story_id} from ${iterlog_path}"
+              python scripts/validation/validate_insight_governance.py --story-id "${story_id}" --strict
+            done
+          else
+            echo "insight-governance: no changed iterlog files; skipping strict check"
+          fi
           python scripts/validate_pr_title.py || echo "WARN: PR title validation issue (non-blocking)"
           python scripts/validate_traceability_drift.py --verbose || echo "WARN: traceability drift issues (non-blocking)"
           python scripts/ci/validate_bootstrap_compliance.py --check --allowlist scripts/ci/bootstrap_allowlist.txt || echo "WARN: bootstrap compliance issues"

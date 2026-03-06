@@ -9,6 +9,9 @@ Defaults follow AGENTS.md:
 - Redis: db=0, port=6380, host=host.docker.internal (auto-fallback to localhost)
 - Ownership: bmad:chiseai:ownership (HASH) path_slug -> story/agent/timestamp
 - Incidents: bmad:chiseai:iterlog:story:<story_id>:incidents (LIST)
+- Rejected insights:
+  - bmad:chiseai:insights:rejected:story:<story_id> (LIST)
+  - bmad:chiseai:insights:rejected:global (LIST)
 """
 
 from __future__ import annotations
@@ -24,6 +27,8 @@ from config.bootstrap import bootstrap
 
 ITERLOG_DIR = Path("docs/tempmemories")
 OWNERSHIP_KEY = "bmad:chiseai:ownership"
+REJECTED_STORY_KEY_FMT = "bmad:chiseai:insights:rejected:story:{story_id}"
+REJECTED_GLOBAL_KEY = "bmad:chiseai:insights:rejected:global"
 
 
 def _utc_now() -> str:
@@ -97,6 +102,9 @@ def _ensure_iterlog_file(
         "---\n\n"
         "## Decisions\n\n- TBD\n\n"
         "## Learnings\n\n- TBD\n\n"
+        "## Insights Sent To Aria\n\n- TBD\n\n"
+        "## Aria Decisions\n\n- TBD\n\n"
+        "## Rejected Insight Signatures\n\n- TBD\n\n"
         "## Scope Ownership\n\n- TBD\n\n"
         "## Incidents\n\n- TBD\n\n"
         "## Evidence\n\n- TBD\n"
@@ -233,6 +241,73 @@ def cmd_append_incident(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_append_insight_packet(args: argparse.Namespace) -> int:
+    md = _ensure_iterlog_file(args.story_id, args.story_title, args.phase, args.status)
+    packet = args.text.rstrip()
+    if "INSIGHT_PACKET" not in packet:
+        packet = "INSIGHT_PACKET\n" + packet
+
+    _append_under_heading(md, "## Insights Sent To Aria", ["```text", packet, "```"])
+    print(f"Appended insight packet to markdown {md}")
+    return 0
+
+
+def cmd_append_aria_decision(args: argparse.Namespace) -> int:
+    md = _ensure_iterlog_file(args.story_id, args.story_title, args.phase, args.status)
+    decision = args.text.rstrip()
+    if "ARIA_DECISION" not in decision:
+        decision = "ARIA_DECISION\n" + decision
+
+    _append_under_heading(md, "## Aria Decisions", ["```text", decision, "```"])
+    print(f"Appended Aria decision to markdown {md}")
+    return 0
+
+
+def cmd_archive_rejected_insight(args: argparse.Namespace) -> int:
+    ok, cfg = _redis_ping()
+    md = _ensure_iterlog_file(args.story_id, args.story_title, args.phase, args.status)
+    ts = _utc_now()
+
+    payload = (
+        f"story_id: {args.story_id}\n"
+        f"timestamp: {ts}\n"
+        f"issue: {args.issue}\n"
+        f"reason_rejected: {args.reason_rejected}\n"
+        f"decision: {args.decision}\n"
+        f"scope_context: {args.scope_context}\n"
+        f"evidence_signature: {args.evidence_signature}"
+    )
+
+    _append_under_heading(
+        md,
+        "## Rejected Insight Signatures",
+        [f"- {args.evidence_signature}: {args.issue}"],
+    )
+
+    if not ok or cfg is None:
+        print(f"Redis not reachable; archived rejected insight in markdown {md}")
+        return 0
+
+    host, port, db = cfg
+    story_key = REJECTED_STORY_KEY_FMT.format(story_id=args.story_id)
+
+    r1 = _run_redis_cli(host, port, db, "RPUSH", story_key, payload)
+    if r1.returncode != 0:
+        print(r1.stderr.strip(), file=sys.stderr)
+        return 1
+    _run_redis_cli(host, port, db, "EXPIRE", story_key, str(args.ttl_seconds))
+
+    if args.archive_global:
+        r2 = _run_redis_cli(host, port, db, "RPUSH", REJECTED_GLOBAL_KEY, payload)
+        if r2.returncode != 0:
+            print(r2.stderr.strip(), file=sys.stderr)
+            return 1
+        _run_redis_cli(host, port, db, "EXPIRE", REJECTED_GLOBAL_KEY, str(args.ttl_seconds))
+
+    print(f"Archived rejected insight to Redis ({story_key}) and markdown {md}")
+    return 0
+
+
 def main() -> int:
     # Bootstrap environment first
     bootstrap(load_env=True)
@@ -283,6 +358,45 @@ def main() -> int:
         help="Incident text. If it doesn't start with 'INCIDENT:' it will be wrapped.",
     )
     p_inc.set_defaults(func=cmd_append_incident)
+
+    p_insight = sub.add_parser(
+        "append-insight-packet",
+        help="Append INSIGHT_PACKET block to iterlog markdown fallback",
+    )
+    p_insight.add_argument("--story-id", required=True)
+    p_insight.add_argument("--story-title")
+    p_insight.add_argument("--phase")
+    p_insight.add_argument("--status")
+    p_insight.add_argument("--text", required=True)
+    p_insight.set_defaults(func=cmd_append_insight_packet)
+
+    p_decision = sub.add_parser(
+        "append-aria-decision",
+        help="Append ARIA_DECISION block to iterlog markdown fallback",
+    )
+    p_decision.add_argument("--story-id", required=True)
+    p_decision.add_argument("--story-title")
+    p_decision.add_argument("--phase")
+    p_decision.add_argument("--status")
+    p_decision.add_argument("--text", required=True)
+    p_decision.set_defaults(func=cmd_append_aria_decision)
+
+    p_reject = sub.add_parser(
+        "archive-rejected-insight",
+        help="Archive rejected insight in Redis and markdown fallback",
+    )
+    p_reject.add_argument("--story-id", required=True)
+    p_reject.add_argument("--issue", required=True)
+    p_reject.add_argument("--reason-rejected", required=True)
+    p_reject.add_argument("--decision", required=True, choices=["REJECT", "OVERRIDE"])
+    p_reject.add_argument("--scope-context", required=True)
+    p_reject.add_argument("--evidence-signature", required=True)
+    p_reject.add_argument("--archive-global", action="store_true")
+    p_reject.add_argument("--ttl-seconds", type=int, default=7776000)  # 90 days
+    p_reject.add_argument("--story-title")
+    p_reject.add_argument("--phase")
+    p_reject.add_argument("--status")
+    p_reject.set_defaults(func=cmd_archive_rejected_insight)
 
     args = p.parse_args()
     return int(args.func(args))
