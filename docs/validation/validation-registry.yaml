@@ -2482,6 +2482,28 @@ validations:
     test_method: automated
     owner: infra-team
 
+  # ============================================================
+  # FIX VALIDATIONS
+  # Hot fixes and urgent corrections
+  # ============================================================
+
+  - id: V-LLM-PROVIDER-FIX-001
+    title: LLM Provider Endpoint Fix Validation
+    epic_id: EP-INFRA-CLEANUP-001
+    story_id: LLM-PROVIDER-FIX-001
+    status: validated
+    description: Validate LLM provider endpoint corrections for KIMI and Z.ai/Zhipu
+    acceptance_criteria:
+      - KIMI endpoint changed from api.kimi.com/coding/v1 to api.moonshot.cn/v1
+      - KIMI model changed from k2p5 to kimi-k2.5
+      - Z.ai/Zhipu endpoint changed from api.z.ai to open.bigmodel.cn
+      - Error classification handles 403 "coding agent" errors
+      - Error classification handles 429 "insufficient balance" errors
+      - All 133 tests passing
+      - Provider health check utility created
+    test_method: automated
+    owner: infra-team
+
 # ============================================================
 # Global validation thresholds
 # ============================================================
