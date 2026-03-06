@@ -136,13 +136,17 @@ class TestProviderDiscovery:
 
     def test_discover_kimi_config_with_key(self) -> None:
         """KIMI config discovered when API key present."""
-        with patch.dict(os.environ, {"KIMI_API_KEY": "test-key-123"}, clear=False):
+        with patch.dict(
+            os.environ,
+            {"KIMI_API_KEY": "test-key-123"},
+            clear=True,
+        ):
             config = discover_kimi_config()
 
             assert config["enabled"] is True
             assert config["api_key_present"] is True
-            assert config["base_url"] == "https://api.kimi.com/coding/v1"
-            assert config["model"] == "k2p5"
+            assert config["base_url"] == "https://api.moonshot.cn/v1"
+            assert config["model"] == "kimi-k2.5"
 
     def test_discover_kimi_config_disabled(self) -> None:
         """KIMI config disabled when KIMI_ENABLED=false."""
@@ -173,7 +177,7 @@ class TestProviderDiscovery:
 
             assert config["enabled"] is True
             assert config["api_key_present"] is True
-            assert config["base_url"] == "https://api.z.ai/v1"
+            assert config["base_url"] == "https://open.bigmodel.cn/api/paas/v4"
 
     def test_discover_zhipu_config_with_key(self) -> None:
         """Zhipu config discovered when API key present."""
@@ -182,7 +186,7 @@ class TestProviderDiscovery:
 
             assert config["enabled"] is True
             assert config["api_key_present"] is True
-            assert config["base_url"] == "https://api.z.ai/api/paas/v4"
+            assert config["base_url"] == "https://open.bigmodel.cn/api/paas/v4"
             assert config["model"] == "glm-5"
 
     def test_discover_zhipu_config_zai_fallback(self) -> None:

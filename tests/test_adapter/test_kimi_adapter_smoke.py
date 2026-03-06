@@ -50,10 +50,18 @@ def test_app_metadata():
 
 def test_environment_defaults():
     """Test that environment defaults are set correctly."""
-    from src.adapter.kimi.main import KIMI_BASE_URL, KIMI_MODEL
+    import importlib
+    import os
+    from unittest.mock import patch
 
-    assert KIMI_BASE_URL == "https://api.kimi.com/coding/v1"
-    assert KIMI_MODEL == "kimi-for-coding"
+    # Clear any existing env vars and reload module to test defaults
+    with patch.dict(os.environ, {}, clear=True):
+        import src.adapter.kimi.main as main_module
+
+        importlib.reload(main_module)
+
+        assert main_module.KIMI_BASE_URL == "https://api.moonshot.cn/v1"
+        assert main_module.KIMI_MODEL == "kimi-k2.5"
 
 
 if __name__ == "__main__":

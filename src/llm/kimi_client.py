@@ -40,8 +40,8 @@ class KimiConfig:
     """
 
     api_key: str | None = None
-    base_url: str = "https://api.kimi.com/coding/v1"
-    model: str = "k2p5"
+    base_url: str = "https://api.moonshot.cn/v1"
+    model: str = "kimi-k2.5"
     timeout: float = 30.0
     max_retries: int = 3
     retry_delay: float = 1.0

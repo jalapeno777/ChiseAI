@@ -132,15 +132,15 @@ class TestAdapterHealth:
         health_data = {
             "status": "healthy",
             "version": "1.0.0",
-            "kimi_base_url": "https://api.kimi.com/coding/v1",
-            "kimi_model": "kimi-for-coding",
+            "kimi_base_url": "https://api.moonshot.cn/v1",
+            "kimi_model": "kimi-k2.5",
         }
         response = HealthResponse(**health_data)
 
         assert response.status == "healthy"
         assert response.version == "1.0.0"
-        assert response.kimi_base_url == "https://api.kimi.com/coding/v1"
-        assert response.kimi_model == "kimi-for-coding"
+        assert response.kimi_base_url == "https://api.moonshot.cn/v1"
+        assert response.kimi_model == "kimi-k2.5"
 
     @pytest.mark.asyncio
     async def test_adapter_models_endpoint(self):
