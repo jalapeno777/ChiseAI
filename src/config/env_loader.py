@@ -182,8 +182,8 @@ def load_kimi_config() -> dict[str, Any]:
     """
     return {
         "api_key": kimi_loader.get_str("API_KEY"),
-        "base_url": kimi_loader.get_str("BASE_URL", "https://api.kimi.com/coding/v1"),
-        "model": kimi_loader.get_str("MODEL", "k2p5"),
+        "base_url": kimi_loader.get_str("BASE_URL", "https://api.moonshot.cn/v1"),
+        "model": kimi_loader.get_str("MODEL", "kimi-k2.5"),
         "timeout": kimi_loader.get_float("TIMEOUT", 30.0),
         "max_retries": kimi_loader.get_int("MAX_RETRIES", 3),
         "retry_delay": kimi_loader.get_float("RETRY_DELAY", 1.0),
@@ -391,8 +391,8 @@ def discover_kimi_config() -> dict[str, Any]:
     return {
         "enabled": enabled and bool(api_key),
         "api_key_present": bool(api_key),
-        "base_url": os.environ.get("KIMI_BASE_URL", "https://api.kimi.com/coding/v1"),
-        "model": os.environ.get("KIMI_MODEL", "k2p5"),
+        "base_url": os.environ.get("KIMI_BASE_URL", "https://api.moonshot.cn/v1"),
+        "model": os.environ.get("KIMI_MODEL", "kimi-k2.5"),
     }
 
 
@@ -415,7 +415,9 @@ def discover_zai_config() -> dict[str, Any]:
     return {
         "enabled": bool(api_key),
         "api_key_present": bool(api_key),
-        "base_url": os.environ.get("ZAI_BASE_URL", "https://api.z.ai/v1"),
+        "base_url": os.environ.get(
+            "ZAI_BASE_URL", "https://open.bigmodel.cn/api/paas/v4"
+        ),
     }
 
 
@@ -443,7 +445,9 @@ def discover_zhipu_config() -> dict[str, Any]:
     return {
         "enabled": key_present,
         "api_key_present": key_present,
-        "base_url": os.environ.get("ZHIPU_BASE_URL", "https://api.z.ai/api/paas/v4"),
+        "base_url": os.environ.get(
+            "ZHIPU_BASE_URL", "https://open.bigmodel.cn/api/paas/v4"
+        ),
         "model": os.environ.get("ZHIPU_MODEL", "glm-5"),
     }
 

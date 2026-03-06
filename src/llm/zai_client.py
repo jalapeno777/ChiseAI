@@ -37,7 +37,7 @@ class ZaiConfig:
     """
 
     api_key: str | None = None
-    base_url: str = "https://api.z.ai/api/paas/v4/chat/completions"
+    base_url: str = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
     model: str = "glm-5"
     timeout: float = 30.0
     max_retries: int = 3

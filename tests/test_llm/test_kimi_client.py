@@ -46,8 +46,8 @@ class TestKimiConfig:
         """Test default configuration values."""
         with patch.dict(os.environ, {}, clear=True):
             config = KimiConfig()
-            assert config.base_url == "https://api.kimi.com/coding/v1"
-            assert config.model == "k2p5"
+            assert config.base_url == "https://api.moonshot.cn/v1"
+            assert config.model == "kimi-k2.5"
             assert config.timeout == 30.0
             assert config.max_retries == 3
             assert config.retry_delay == 1.0
@@ -141,7 +141,7 @@ class TestKimiClient:
             stream=False,
         )
 
-        assert payload["model"] == "k2p5"
+        assert payload["model"] == "kimi-k2.5"
         assert payload["temperature"] == 0.5
         assert payload["top_p"] == 0.9
         assert payload["max_tokens"] == 100
@@ -457,7 +457,7 @@ class TestKimiClient:
 
         assert health["healthy"] is True
         assert health["connected"] is True
-        assert health["model"] == "k2p5"
+        assert health["model"] == "kimi-k2.5"
         assert health["error"] is None
 
     @pytest.mark.asyncio
@@ -542,7 +542,7 @@ class TestKimiClient:
         """Test model selection with default."""
         # No accessible models - should return default
         model = client._select_model()
-        assert model == "k2p5"
+        assert model == "kimi-k2.5"
 
     def test_select_model_with_accessible_models(self, client):
         """Test model selection falls back to accessible model."""
