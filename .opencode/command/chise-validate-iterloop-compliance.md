@@ -14,6 +14,7 @@ Validate that a story follows ChiseAI iteration loop requirements.
 
 ```bash
 python3 scripts/validate_iterloop_compliance.py --story-id=<story_id>
+python3 scripts/validation/validate_insight_governance.py --story-id=<story_id> --strict
 ```
 
 ## Checks Performed
@@ -21,6 +22,8 @@ python3 scripts/validate_iterloop_compliance.py --story-id=<story_id>
 - Proper phase tracking
 - Required fields present
 - No orphaned implementations
+- Insight-governance fields present (`INSIGHT_PACKET` / `ARIA_DECISION` shape)
+- No silent scope drift fields missing (`scope_impact`, `prd_scope_change`)
 
 ## Success Criteria
 - Exit code 0

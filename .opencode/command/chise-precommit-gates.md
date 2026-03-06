@@ -1,6 +1,6 @@
 ---
 name: "chise-precommit-gates"
-description: "ChiseAI: run local pre-commit gates (CI checks, status sync, iterloop compliance). Uses best-available commands in this repo."
+description: "ChiseAI: run local pre-commit gates (CI checks, status sync, iterloop compliance, insight-governance conformance). Uses best-available commands in this repo."
 disable-model-invocation: true
 ---
 
@@ -25,7 +25,13 @@ Run these gates before PR/merge. If a referenced script is missing, explicitly n
    - If `scripts/validate_iterloop_compliance.py` exists, run:
      - `python3 scripts/validate_iterloop_compliance.py --story-id=<story_id>`
 
-5. Session close anti-drift (required at handoff/finish)
+5. Insight-governance conformance (if present)
+   - If `scripts/validation/validate_insight_governance.py` exists, run:
+     - `python3 scripts/validation/validate_insight_governance.py --story-id=<story_id> --strict`
+   - If `<story_id>` is not known, run a non-blocking scan:
+     - `python3 scripts/validation/validate_insight_governance.py --require-for-completed-only`
+
+6. Session close anti-drift (required at handoff/finish)
    - `python3 scripts/swarm/session.py close --enforce-merged`
    - If intentionally closing with open PR and branch ahead of main:
      - `python3 scripts/swarm/session.py close --enforce-merged --allow-unmerged`
