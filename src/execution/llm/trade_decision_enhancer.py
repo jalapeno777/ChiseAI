@@ -78,7 +78,7 @@ class TradeDecisionEnhancer:
     def _init_chain(self) -> None:
         """Initialize LLM provider chain."""
         try:
-            from src.llm.provider_chain import LLMProviderChain
+            from llm.provider_chain import LLMProviderChain
 
             self._chain = LLMProviderChain(enable_metrics=True)
             logger.info(
