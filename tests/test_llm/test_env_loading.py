@@ -123,13 +123,14 @@ class TestKimiEnvLoading:
                 "KIMI_MODEL": "k2p5-latest",
                 "KIMI_TIMEOUT": "60",
             },
+            clear=True,
         ):
             config = load_kimi_config()
 
             assert config["api_key"] == "test-api-key-12345"
             assert config["model"] == "k2p5-latest"
             assert config["timeout"] == 60.0
-            assert config["base_url"] == "https://api.kimi.com/coding/v1"
+            assert config["base_url"] == "https://api.moonshot.cn/v1"
 
     def test_load_kimi_config_defaults(self):
         """Test loading KIMI config with default values."""
@@ -138,7 +139,7 @@ class TestKimiEnvLoading:
             config = load_kimi_config()
 
             assert config["api_key"] is None
-            assert config["model"] == "k2p5"
+            assert config["model"] == "kimi-k2.5"
             assert config["timeout"] == 30.0
             assert config["max_retries"] == 3
             assert config["retry_delay"] == 1.0

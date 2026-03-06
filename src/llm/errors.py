@@ -169,8 +169,32 @@ def classify_error(
 
     # Check for quota/scope errors (403)
     if status_code == 403:
+        # Check for coding agent scope error (KIMI-specific)
+        coding_agent_keywords = [
+            "coding agent",
+            "kimi cli",
+            "claude code",
+            "roo code",
+            "kilo code",
+            "only available for",
+        ]
+        if any(keyword in response_lower for keyword in coding_agent_keywords):
+            return ScopeError(
+                f"KIMI API requires Coding Agent access (403). "
+                f"The API key is valid but the endpoint requires special access. "
+                f"Consider using the standard Moonshot API endpoint instead.",
+                provider=provider,
+            )
+
         # Check for quota-related keywords
-        quota_keywords = ["quota", "limit exceeded", "insufficient quota", "billing"]
+        quota_keywords = [
+            "quota",
+            "limit exceeded",
+            "insufficient quota",
+            "billing",
+            "insufficient balance",
+            "no resource package",
+        ]
         if any(keyword in response_lower for keyword in quota_keywords):
             return QuotaError(f"Quota exhausted for {provider}", provider=provider)
 
