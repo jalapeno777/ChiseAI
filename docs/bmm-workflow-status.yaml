@@ -50,6 +50,33 @@ backlog:
   status: merged
   tests_passed: 100/100
   title: Paper Trading LLM Analysis Path Fix
+- acceptance_criteria:
+  - LLM timeout reduced from 60s to 30s with documented rationale
+  - Live E2E validation completed on Bybit demo environment
+  - Orphan positions remediated (0 positions post-run)
+  - Evidence files created and committed
+  branch: feature/PAPER-LLM-TIMEOUT-001-e2e-validation
+  commit_sha: 177523fe9add5665ef116be5d406a34c2575b587
+  created_date: '2026-03-06'
+  description: Reduce LLM timeout default to 30s based on live latency study and E2E validation
+  evidence_files:
+  - docs/tempmemories/PAPER-LLM-TIMEOUT-001-remediation.json
+  - docs/tempmemories/PAPER-LLM-TIMEOUT-001-latency-study.json
+  - docs/tempmemories/PAPER-LLM-TIMEOUT-001-timeout-decision.md
+  - docs/tempmemories/PAPER-LLM-TIMEOUT-001-e2e-evidence.json
+  id: PAPER-LLM-TIMEOUT-001
+  notes:
+  - 'Live latency study: 3 attempts, 0% success rate, avg 228s chain traversal'
+  - 'Orphan position remediation: 1 position closed successfully'
+  - 'Full E2E validation: Signal → LLM fallback → Risk checks → Open → Close → Journal → Discord'
+  - 'Testing environment: Bybit demo with 0.001 BTC position sizes'
+  - 'Post-run status: FLAT (0 open positions)'
+  owner: senior-dev
+  pr_number: 371
+  priority: P1
+  redis_iterlog_key: bmad:chiseai:iterlog:story:PAPER-LLM-TIMEOUT-001
+  status: in_review
+  title: LLM Timeout Reduction with Live E2E Validation
 - acceptance_criteria: TBD
   created_date: '2026-03-02'
   depends_on:
