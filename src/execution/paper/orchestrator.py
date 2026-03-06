@@ -388,7 +388,18 @@ class PaperTradingOrchestrator:
             # Step 1.7: LLM-enhanced decision (behind feature flag)
             # Store full LLM decision payload for notifications
             llm_decision_payload: dict[str, Any] | None = None
+
+            # Debug logging for LLM enhancer status
+            logger.debug(
+                f"LLM enhancer status: enabled={self.decision_enhancer.enabled if self.decision_enhancer else False}, "
+                f"chain_initialized={self.decision_enhancer._chain is not None if self.decision_enhancer else False}"
+            )
+
             if self.decision_enhancer and self.decision_enhancer.enabled:
+                logger.info(
+                    f"Calling LLM enhancer for signal {signal.token} - "
+                    f"chain_ready={self.decision_enhancer._chain is not None}"
+                )
                 try:
                     enhanced = await self.decision_enhancer.enhance_decision(signal)
                     if not enhanced.go_no_go:
