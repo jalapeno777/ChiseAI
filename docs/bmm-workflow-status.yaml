@@ -72,10 +72,11 @@ backlog:
   - 'Testing environment: Bybit demo with 0.001 BTC position sizes'
   - 'Post-run status: FLAT (0 open positions)'
   owner: senior-dev
+  merge_commit: 609dfd8537c353b0add6d4b0ab999a1946583b19
   pr_number: 371
   priority: P1
   redis_iterlog_key: bmad:chiseai:iterlog:story:PAPER-LLM-TIMEOUT-001
-  status: in_review
+  status: merged
   title: LLM Timeout Reduction with Live E2E Validation
 - acceptance_criteria: TBD
   created_date: '2026-03-02'
