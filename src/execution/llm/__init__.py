@@ -5,5 +5,4 @@ from execution.llm.trade_decision_enhancer import (
     TradeDecisionEnhancer,
 )
 
-
 __all__ = ["TradeDecision", "TradeDecisionEnhancer"]

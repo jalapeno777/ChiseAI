@@ -1,0 +1,104 @@
+{
+  "test_id": "E2E-BYBIT-001-e6f372cf",
+  "start_time": "2026-03-06T16:43:37.816561+00:00",
+  "safety_checks": {
+    "bybit_demo_mode": {
+      "passed": true,
+      "mode": "demo",
+      "api_key_prefix": "R9KF..."
+    },
+    "kill_switch": {
+      "passed": true,
+      "triggered": false,
+      "reason": null
+    },
+    "discord_webhook": {
+      "passed": true,
+      "configured": true,
+      "url_prefix": "https://discord.com/api/webhoo..."
+    },
+    "redis": {
+      "passed": false,
+      "error": "No module named 'tools'"
+    }
+  },
+  "signal": {
+    "signal_id": "test-signal-a2fa7dc9",
+    "timestamp": "2026-03-06T16:43:39.190520+00:00",
+    "symbol": "BTCUSDT",
+    "direction": "long",
+    "confidence": 0.85,
+    "base_score": 85.0,
+    "status": "actionable",
+    "timeframe": "1h"
+  },
+  "llm_analysis": {
+    "go_no_go": true,
+    "confidence": 50.0,
+    "rationale": "LLM enhancement disabled or unavailable",
+    "provider": "none",
+    "fallback_used": true,
+    "latency_ms": 0.05,
+    "position_size": null,
+    "stop_loss": null,
+    "take_profit": null,
+    "risk_recommendation": ""
+  },
+  "execution": {
+    "signal_id": "test-signal-a2fa7dc9",
+    "llm_decision": true,
+    "llm_confidence": 50.0,
+    "llm_provider": "none",
+    "risk_checks": {
+      "max_position_size_pct": 0.01,
+      "max_position_value_usd": 100.0,
+      "test_quantity": 0.001
+    },
+    "timestamp": "2026-03-06T16:43:39.232505+00:00"
+  },
+  "trade": {
+    "entry": {
+      "order_id": "01c0601b-ef28-48b3-bf5f-f9190e3c4dbe",
+      "symbol": "BTCUSDT",
+      "side": "buy",
+      "quantity": 0.001,
+      "entry_price": 68572.4,
+      "position_value_usd": 68.57,
+      "timestamp": "2026-03-06T16:43:40.623149+00:00",
+      "latency_ms": 948.46,
+      "demo_mode": true,
+      "live_service_path": true,
+      "endpoint": "https://api-demo.bybit.com",
+      "api_key_prefix": "R9KF",
+      "position_id": "pos-fce73f8a"
+    },
+    "exit": {
+      "position_id": "pos-fce73f8a",
+      "exit_price": 68575.9,
+      "pnl": 0.0035,
+      "timestamp": "2026-03-06T16:43:41.449667+00:00",
+      "latency_ms": 0.01,
+      "reason": "test_complete"
+    }
+  },
+  "journal": {},
+  "discord": {
+    "open": {
+      "sent": false,
+      "error": "No module named 'src'"
+    },
+    "close": {
+      "sent": false,
+      "error": "No module named 'src'"
+    }
+  },
+  "cleanup": {},
+  "errors": [
+    {
+      "timestamp": "2026-03-06T16:43:41.515849+00:00",
+      "error": "type object 'ExitReason' has no attribute 'MANUAL'",
+      "type": "AttributeError"
+    }
+  ],
+  "status": "FAILED"
+}

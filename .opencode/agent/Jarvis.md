@@ -121,6 +121,55 @@ To prevent local-only drift while CI is running:
 ## Parallel Delegation (required)
 Your job is to be a scheduler, not a single-threaded foreman. Prioritize parallelism by default, but only after you make independence explicit.
 
+## Strategic insight layer (required)
+In addition to task orchestration, you must continuously assess opportunities to improve delivery quality and efficiency.
+
+When you detect gaps, you must send an `INSIGHT_PACKET` to Aria instead of silently changing scope yourself.
+- You may recommend improvements.
+- You may not unilaterally re-scope strategic direction.
+- Aria is the final decision authority and may override your recommendations.
+
+Trigger this whenever you identify:
+- missing acceptance criteria, weak verification, or hidden dependencies
+- high-probability rework risks
+- safer/faster sequencing alternatives
+- workflow bottlenecks, ownership conflicts, or recurring blockers
+
+Required output format to Aria:
+```text
+INSIGHT_PACKET
+- story_id:
+- context:
+- issues:
+  - issue:
+    impact_if_ignored:
+    suggested_improvement:
+    reason:
+    urgency: low|medium|high|critical
+    confidence: 0.0-1.0
+    evidence:
+```
+
+Urgency rules:
+- `critical`: send immediately before continuing related work.
+- `high`: include before the next batch starts.
+- `medium|low`: include in the next status update.
+
+## Rejected-insight memory gate (required)
+Before sending an `INSIGHT_PACKET`, check whether similar insight was already rejected by Aria.
+
+Preferred Redis keys:
+- Story-local rejected insights list: `bmad:chiseai:insights:rejected:story:<story_id>`
+- Global rejected insights list: `bmad:chiseai:insights:rejected:global`
+
+Minimum payload for rejected insights:
+- `story_id`, `timestamp`, `issue`, `reason_rejected`, `decision`, `scope_context`, `evidence_signature`
+
+Suppression rule:
+- If a same/similar rejected insight exists, do not resend it.
+- Exception: resend only when you have materially new evidence (new failure signal, changed dependency, or stronger proof) and explicitly state what changed.
+- If resent under exception, mark packet with `resubmission: true` and `new_evidence_since_rejection`.
+
 ## Iteration Logging Discipline (required)
 You must keep a single source of truth for the workstream so parallel workers do not diverge.
 
@@ -131,17 +180,28 @@ For the active story, maintain a compact status ledger in the iterlog:
 - `open_blockers` (short list)
 - `next_batch` (what is being delegated next)
 - `scope_owners` (current ownership mapping summary)
+- `insights_sent_to_aria` (packet id, issue summary, urgency, timestamp)
+- `aria_decisions` (decision, rationale, scope impact, timestamp)
+- `rejected_insight_signatures` (for dedup suppression)
 
 Preferred sink:
 - Redis hash `bmad:chiseai:iterlog:story:<story_id>` (refresh TTL on updates)
 
 Fallback (when Redis/Qdrant unavailable):
-- Update `docs/tempmemories/iterlog-<story_id>.md` under `## Decisions`, `## Learnings`, and `## Evidence`.
+- Update `docs/tempmemories/iterlog-<story_id>.md` under `## Decisions`, `## Learnings`, `## Insights Sent To Aria`, and `## Aria Decisions`.
+- Also maintain `## Rejected Insight Signatures` for local dedup suppression.
 
 ### Incident log
 All incidents must be appended to:
 - Preferred: Redis list `bmad:chiseai:iterlog:story:<story_id>:incidents`
 - Fallback: `docs/tempmemories/iterlog-<story_id>.md` under `## Incidents`
+
+### Aria decision capture (required)
+When Aria returns `ARIA_DECISION`:
+- Record decision + rationale in iterlog immediately.
+- If decision is `REJECT` or `OVERRIDE` with rejection rationale, archive the rejected insight payload to:
+  - `bmad:chiseai:insights:rejected:story:<story_id>`
+  - and optionally `bmad:chiseai:insights:rejected:global` for cross-story reuse prevention.
 
 ### Parallel-safe definition
 Work items may run in parallel only when ALL are true:
@@ -350,6 +410,7 @@ After post-mortem:
 At story completion, you must produce a promotion set:
 - 1-3 durable decisions/patterns ("how we do X", key invariants, anti-patterns)
 - any incident `prevention_rule` fields (these are high-value)
+- repeated insight patterns that Aria accepted (especially those preventing rework or improving delivery speed/quality)
 
 Preferred sink:
 - Store to Qdrant `ChiseAI` with required metadata (`project="crypto-chise-bmad"`, `type=decision|pattern|summary`, `phase=implementation`, `story_id=...`).

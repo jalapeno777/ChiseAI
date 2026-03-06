@@ -1,0 +1,103 @@
+{
+  "test_id": "E2E-BYBIT-001-841d7919",
+  "start_time": "2026-03-06T17:42:31.895216+00:00",
+  "safety_checks": {
+    "bybit_demo_mode": {
+      "passed": true,
+      "mode": "demo",
+      "api_key_prefix": "R9KF..."
+    },
+    "kill_switch": {
+      "passed": true,
+      "triggered": false,
+      "reason": null
+    },
+    "discord_webhook": {
+      "passed": true,
+      "configured": true,
+      "url_prefix": "https://discord.com/api/webhoo..."
+    },
+    "redis": {
+      "passed": false,
+      "error": "cannot import name 'redis_state_ping' from 'tools' (/home/tacopants/projects/ChiseAI/tools/__init__.py)"
+    }
+  },
+  "signal": {
+    "signal_id": "test-signal-5fd88522",
+    "timestamp": "2026-03-06T17:42:33.145562+00:00",
+    "symbol": "BTCUSDT",
+    "direction": "long",
+    "confidence": 0.85,
+    "base_score": 85.0,
+    "status": "actionable",
+    "timeframe": "1h"
+  },
+  "llm_analysis": {
+    "go_no_go": true,
+    "confidence": 50.0,
+    "rationale": "LLM enhancement timed out after 8000ms. Proceeding with BASE SIGNAL: SignalDirection.LONG BTCUSDT (confidence: 85.0%, score: 85.0). Signal basis: test_factor_1(90), test_factor_2(85), test_factor_3(80). Trade executed per base signal policy.",
+    "provider": "timeout",
+    "fallback_used": true,
+    "latency_ms": 8001.72,
+    "position_size": null,
+    "stop_loss": null,
+    "take_profit": null,
+    "risk_recommendation": ""
+  },
+  "execution": {
+    "signal_id": "test-signal-5fd88522",
+    "llm_decision": true,
+    "llm_confidence": 50.0,
+    "llm_provider": "timeout",
+    "risk_checks": {
+      "max_position_size_pct": 0.01,
+      "max_position_value_usd": 10.0,
+      "test_quantity": 0.0001
+    },
+    "timestamp": "2026-03-06T17:42:41.195334+00:00"
+  },
+  "trade": {
+    "entry": {
+      "order_id": "mock-order-24e93f5a",
+      "symbol": "BTCUSDT",
+      "side": "buy",
+      "quantity": 0.0001,
+      "entry_price": 85000.0,
+      "position_value_usd": 8.5,
+      "timestamp": "2026-03-06T17:42:41.333028+00:00",
+      "latency_ms": 50.0,
+      "demo_mode": true,
+      "mocked": true,
+      "position_id": "pos-2a947570"
+    },
+    "exit": {
+      "position_id": "pos-2a947570",
+      "exit_price": 85100.0,
+      "pnl": 0.01,
+      "timestamp": "2026-03-06T17:42:41.855285+00:00",
+      "latency_ms": 25.0,
+      "reason": "test_complete",
+      "mocked": true
+    }
+  },
+  "journal": {},
+  "discord": {
+    "open": {
+      "sent": false,
+      "error": "badly formed hexadecimal UUID string"
+    },
+    "close": {
+      "sent": false,
+      "error": "badly formed hexadecimal UUID string"
+    }
+  },
+  "cleanup": {},
+  "errors": [
+    {
+      "timestamp": "2026-03-06T17:42:41.886621+00:00",
+      "error": "'TradeJournalEntry' object has no attribute 'quantity'",
+      "type": "AttributeError"
+    }
+  ],
+  "status": "FAILED"
+}
