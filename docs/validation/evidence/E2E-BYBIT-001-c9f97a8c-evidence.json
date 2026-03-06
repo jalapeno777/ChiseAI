@@ -1,0 +1,92 @@
+{
+  "test_id": "E2E-BYBIT-001-c9f97a8c",
+  "start_time": "2026-03-06T16:42:51.745795+00:00",
+  "safety_checks": {
+    "bybit_demo_mode": {
+      "passed": true,
+      "mode": "demo",
+      "api_key_prefix": "R9KF..."
+    },
+    "kill_switch": {
+      "passed": true,
+      "triggered": false,
+      "reason": null
+    },
+    "discord_webhook": {
+      "passed": true,
+      "configured": true,
+      "url_prefix": "https://discord.com/api/webhoo..."
+    },
+    "redis": {
+      "passed": false,
+      "error": "No module named 'tools'"
+    }
+  },
+  "signal": {
+    "signal_id": "test-signal-750614bd",
+    "timestamp": "2026-03-06T16:42:52.947223+00:00",
+    "symbol": "BTCUSDT",
+    "direction": "long",
+    "confidence": 0.85,
+    "base_score": 85.0,
+    "status": "actionable",
+    "timeframe": "1h"
+  },
+  "llm_analysis": {
+    "go_no_go": true,
+    "confidence": 50.0,
+    "rationale": "LLM enhancement disabled or unavailable",
+    "provider": "none",
+    "fallback_used": true,
+    "latency_ms": 0.06,
+    "position_size": null,
+    "stop_loss": null,
+    "take_profit": null,
+    "risk_recommendation": ""
+  },
+  "execution": {
+    "signal_id": "test-signal-750614bd",
+    "llm_decision": true,
+    "llm_confidence": 50.0,
+    "llm_provider": "none",
+    "risk_checks": {
+      "max_position_size_pct": 0.01,
+      "max_position_value_usd": 100.0,
+      "test_quantity": 0.001
+    },
+    "timestamp": "2026-03-06T16:42:52.992289+00:00"
+  },
+  "trade": {
+    "entry": {
+      "order_id": "dfc7f978-9bdc-4817-8bf9-dfd50f7687c5",
+      "symbol": "BTCUSDT",
+      "side": "buy",
+      "quantity": 0.001,
+      "entry_price": 68515.1,
+      "position_value_usd": 68.52,
+      "timestamp": "2026-03-06T16:42:54.765372+00:00",
+      "latency_ms": 935.04,
+      "demo_mode": true,
+      "live_service_path": true,
+      "endpoint": "https://api-demo.bybit.com",
+      "api_key_prefix": "R9KF",
+      "position_id": "pos-0db55125"
+    }
+  },
+  "journal": {},
+  "discord": {
+    "open": {
+      "sent": false,
+      "error": "No module named 'src'"
+    }
+  },
+  "cleanup": {},
+  "errors": [
+    {
+      "timestamp": "2026-03-06T16:42:54.876769+00:00",
+      "error": "'BybitConnector' object has no attribute 'connector'",
+      "type": "AttributeError"
+    }
+  ],
+  "status": "FAILED"
+}

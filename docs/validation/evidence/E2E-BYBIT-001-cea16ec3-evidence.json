@@ -1,0 +1,109 @@
+{
+  "test_id": "E2E-BYBIT-001-cea16ec3",
+  "start_time": "2026-03-06T17:44:43.989096+00:00",
+  "safety_checks": {
+    "bybit_demo_mode": {
+      "passed": true,
+      "mode": "demo",
+      "api_key_prefix": "R9KF..."
+    },
+    "kill_switch": {
+      "passed": true,
+      "triggered": false,
+      "reason": null
+    },
+    "discord_webhook": {
+      "passed": true,
+      "configured": true,
+      "url_prefix": "https://discord.com/api/webhoo..."
+    },
+    "redis": {
+      "passed": false,
+      "error": "cannot import name 'redis_state_ping' from 'tools' (/home/tacopants/projects/ChiseAI/tools/__init__.py)"
+    }
+  },
+  "signal": {
+    "signal_id": "24fc92b3-cee9-4fad-bb21-c31025031932",
+    "timestamp": "2026-03-06T17:44:45.290551+00:00",
+    "symbol": "BTCUSDT",
+    "direction": "long",
+    "confidence": 0.85,
+    "base_score": 85.0,
+    "status": "actionable",
+    "timeframe": "1h"
+  },
+  "llm_analysis": {
+    "go_no_go": true,
+    "confidence": 50.0,
+    "rationale": "LLM enhancement timed out after 8000ms. Proceeding with BASE SIGNAL: SignalDirection.LONG BTCUSDT (confidence: 85.0%, score: 85.0). Signal basis: test_factor_1(90), test_factor_2(85), test_factor_3(80). Trade executed per base signal policy.",
+    "provider": "timeout",
+    "fallback_used": true,
+    "latency_ms": 8006.1,
+    "position_size": null,
+    "stop_loss": null,
+    "take_profit": null,
+    "risk_recommendation": ""
+  },
+  "execution": {
+    "signal_id": "24fc92b3-cee9-4fad-bb21-c31025031932",
+    "llm_decision": true,
+    "llm_confidence": 50.0,
+    "llm_provider": "timeout",
+    "risk_checks": {
+      "max_position_size_pct": 0.01,
+      "max_position_value_usd": 10.0,
+      "test_quantity": 0.0001
+    },
+    "timestamp": "2026-03-06T17:44:53.347425+00:00"
+  },
+  "trade": {
+    "entry": {
+      "order_id": "479180e3-7107-43a6-8879-4bb5dbcc5f5e",
+      "symbol": "BTCUSDT",
+      "side": "buy",
+      "quantity": 0.0001,
+      "entry_price": 85000.0,
+      "position_value_usd": 8.5,
+      "timestamp": "2026-03-06T17:44:53.475703+00:00",
+      "latency_ms": 50.0,
+      "demo_mode": true,
+      "mocked": true,
+      "position_id": "4841fc46-84d0-47df-bd67-10912bb198ef"
+    },
+    "exit": {
+      "position_id": "4841fc46-84d0-47df-bd67-10912bb198ef",
+      "exit_price": 85100.0,
+      "pnl": 0.01,
+      "timestamp": "2026-03-06T17:44:54.252313+00:00",
+      "latency_ms": 25.0,
+      "reason": "test_complete",
+      "mocked": true
+    }
+  },
+  "journal": {},
+  "discord": {
+    "open": {
+      "sent": true,
+      "message_id": "1479535255861067828",
+      "timestamp": "2026-03-06T17:44:54.251956+00:00",
+      "error": null,
+      "retry_count": 0
+    },
+    "close": {
+      "sent": true,
+      "message_id": "1479535257341399294",
+      "timestamp": "2026-03-06T17:44:54.430706+00:00",
+      "error": null,
+      "retry_count": 0
+    }
+  },
+  "cleanup": {},
+  "errors": [
+    {
+      "timestamp": "2026-03-06T17:44:54.452663+00:00",
+      "error": "'TradeJournalEntry' object has no attribute 'pnl'",
+      "type": "AttributeError"
+    }
+  ],
+  "status": "FAILED"
+}

@@ -1,0 +1,55 @@
+{
+  "test_id": "E2E-CRAIG-d1c31fa6",
+  "start_time": "2026-03-06T17:58:07.300263+00:00",
+  "requirements": {
+    "llm_attempted": {
+      "passed": true,
+      "provider": "timeout",
+      "latency_ms": 8001.94
+    },
+    "fallback_within_timeout": {
+      "passed": true,
+      "fallback_used": true,
+      "provider": "timeout",
+      "within_timeout": true,
+      "rationale": "LLM enhancement timed out after 8000ms. Proceeding with BASE SIGNAL: SignalDirection.LONG BTCUSDT (c..."
+    },
+    "trade_opened": {
+      "passed": true,
+      "order_id": "ord-c41d00c7",
+      "position_id": "8ae95c8c-e574-42ab-906f-95a9004da04c",
+      "symbol": "BTCUSDT",
+      "side": "buy",
+      "quantity": 0.0001,
+      "entry_price": 85000.0
+    },
+    "discord_open": {
+      "passed": true,
+      "sent": true,
+      "message_id": "1479538617390202982",
+      "error": null
+    },
+    "trade_closed": {
+      "passed": true,
+      "close_order_id": "ord-close-62971f95",
+      "exit_price": 85420.0,
+      "pnl": 0.42,
+      "closed_at": "2026-03-06T17:58:15.247786+00:00"
+    },
+    "discord_close": {
+      "passed": true,
+      "sent": true,
+      "message_id": "1479538618681790615",
+      "error": null
+    },
+    "journal_persistence": {
+      "passed": true,
+      "entry_id": "8ae95c8c-e574-42ab-906f-95a9004da04c",
+      "entry_created": true,
+      "entry_closed": true,
+      "total_entries": 1
+    }
+  },
+  "end_time": "2026-03-06T17:58:15.566291+00:00",
+  "all_passed": true
+}

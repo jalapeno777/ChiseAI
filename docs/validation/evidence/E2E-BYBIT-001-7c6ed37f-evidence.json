@@ -1,0 +1,71 @@
+{
+  "test_id": "E2E-BYBIT-001-7c6ed37f",
+  "start_time": "2026-03-06T17:35:53.930955+00:00",
+  "safety_checks": {
+    "bybit_demo_mode": {
+      "passed": true,
+      "mode": "demo",
+      "api_key_prefix": "R9KF..."
+    },
+    "kill_switch": {
+      "passed": true,
+      "triggered": false,
+      "reason": null
+    },
+    "discord_webhook": {
+      "passed": true,
+      "configured": true,
+      "url_prefix": "https://discord.com/api/webhoo..."
+    },
+    "redis": {
+      "passed": false,
+      "error": "No module named 'tools'"
+    }
+  },
+  "signal": {
+    "signal_id": "test-signal-671ff389",
+    "timestamp": "2026-03-06T17:35:55.398067+00:00",
+    "symbol": "BTCUSDT",
+    "direction": "long",
+    "confidence": 0.85,
+    "base_score": 85.0,
+    "status": "actionable",
+    "timeframe": "1h"
+  },
+  "llm_analysis": {
+    "go_no_go": true,
+    "confidence": 50.0,
+    "rationale": "LLM enhancement timed out after 8000ms. Proceeding with BASE SIGNAL: SignalDirection.LONG BTCUSDT (confidence: 85.0%, score: 85.0). Signal basis: test_factor_1(90), test_factor_2(85), test_factor_3(80). Trade executed per base signal policy.",
+    "provider": "timeout",
+    "fallback_used": true,
+    "latency_ms": 8003.98,
+    "position_size": null,
+    "stop_loss": null,
+    "take_profit": null,
+    "risk_recommendation": ""
+  },
+  "execution": {
+    "signal_id": "test-signal-671ff389",
+    "llm_decision": true,
+    "llm_confidence": 50.0,
+    "llm_provider": "timeout",
+    "risk_checks": {
+      "max_position_size_pct": 0.01,
+      "max_position_value_usd": 10.0,
+      "test_quantity": 0.0001
+    },
+    "timestamp": "2026-03-06T17:36:03.448322+00:00"
+  },
+  "trade": {},
+  "journal": {},
+  "discord": {},
+  "cleanup": {},
+  "errors": [
+    {
+      "timestamp": "2026-03-06T17:36:04.402215+00:00",
+      "error": "Bybit API error: API key is invalid.",
+      "type": "ValueError"
+    }
+  ],
+  "status": "FAILED"
+}

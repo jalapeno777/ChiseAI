@@ -1,0 +1,52 @@
+{
+  "test_id": "E2E-CRAIG-70c3464b",
+  "start_time": "2026-03-06T17:55:07.482537+00:00",
+  "requirements": {
+    "llm_attempted": {
+      "passed": true,
+      "provider": "timeout",
+      "latency_ms": 8005.27
+    },
+    "fallback_within_timeout": {
+      "passed": true,
+      "fallback_used": true,
+      "provider": "timeout",
+      "within_timeout": true,
+      "rationale": "LLM enhancement timed out after 8000ms. Proceeding with BASE SIGNAL: SignalDirection.LONG BTCUSDT (c..."
+    },
+    "trade_opened": {
+      "passed": true,
+      "order_id": "ord-902b088f",
+      "position_id": "83524ee0-d3a2-41ac-aa61-7b89e3cdd8ea",
+      "symbol": "BTCUSDT",
+      "side": "buy",
+      "quantity": 0.0001,
+      "entry_price": 85000.0
+    },
+    "discord_open": {
+      "passed": true,
+      "sent": true,
+      "message_id": "1479537864743194817",
+      "error": null
+    },
+    "trade_closed": {
+      "passed": true,
+      "close_order_id": "ord-close-e44caaa2",
+      "exit_price": 85420.0,
+      "pnl": 0.42,
+      "closed_at": "2026-03-06T17:55:15.658615+00:00"
+    },
+    "discord_close": {
+      "passed": true,
+      "sent": true,
+      "message_id": "1479537865649164290",
+      "error": null
+    },
+    "journal_persistence": {
+      "passed": false,
+      "error": "type object 'ExitReason' has no attribute 'MANUAL'"
+    }
+  },
+  "end_time": "2026-03-06T17:55:16.020845+00:00",
+  "all_passed": false
+}

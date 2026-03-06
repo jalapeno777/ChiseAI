@@ -194,7 +194,7 @@ class TradeNotifier:
         from decimal import Decimal
         from uuid import UUID
 
-        from src.ml.models.signal_outcome import (
+        from ml.models.signal_outcome import (
             SignalOutcome,
             SignalOutcomeStatus,
         )
