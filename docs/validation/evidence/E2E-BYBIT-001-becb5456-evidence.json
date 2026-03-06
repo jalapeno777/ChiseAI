@@ -1,0 +1,71 @@
+{
+  "test_id": "E2E-BYBIT-001-becb5456",
+  "start_time": "2026-03-06T14:11:53.337382+00:00",
+  "safety_checks": {
+    "bybit_demo_mode": {
+      "passed": true,
+      "mode": "demo",
+      "api_key_prefix": "R9KF..."
+    },
+    "kill_switch": {
+      "passed": true,
+      "triggered": false,
+      "reason": null
+    },
+    "discord_webhook": {
+      "passed": true,
+      "configured": true,
+      "url_prefix": "https://discord.com/api/webhoo..."
+    },
+    "redis": {
+      "passed": false,
+      "error": "cannot import name 'redis_state_ping' from 'tools' (/home/tacopants/projects/ChiseAI/tools/__init__.py)"
+    }
+  },
+  "signal": {
+    "signal_id": "test-signal-3df1cccb",
+    "timestamp": "2026-03-06T14:11:54.799245+00:00",
+    "symbol": "BTCUSDT",
+    "direction": "long",
+    "confidence": 0.85,
+    "base_score": 85.0,
+    "status": "actionable",
+    "timeframe": "1h"
+  },
+  "llm_analysis": {
+    "go_no_go": true,
+    "confidence": 50.0,
+    "rationale": "No rationale provided",
+    "provider": "none",
+    "fallback_used": true,
+    "latency_ms": 233598.01,
+    "position_size": null,
+    "stop_loss": null,
+    "take_profit": null,
+    "risk_recommendation": ""
+  },
+  "execution": {
+    "signal_id": "test-signal-3df1cccb",
+    "llm_decision": true,
+    "llm_confidence": 50.0,
+    "llm_provider": "none",
+    "risk_checks": {
+      "max_position_size_pct": 0.01,
+      "max_position_value_usd": 10.0,
+      "test_quantity": 0.001
+    },
+    "timestamp": "2026-03-06T14:15:48.225717+00:00"
+  },
+  "trade": {},
+  "journal": {},
+  "discord": {},
+  "cleanup": {},
+  "errors": [
+    {
+      "timestamp": "2026-03-06T14:15:48.538659+00:00",
+      "error": "'BybitConnector' object has no attribute 'get_market_price'",
+      "type": "AttributeError"
+    }
+  ],
+  "status": "FAILED"
+}

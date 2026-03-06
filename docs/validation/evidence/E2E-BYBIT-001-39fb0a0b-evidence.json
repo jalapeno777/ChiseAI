@@ -1,0 +1,71 @@
+{
+  "test_id": "E2E-BYBIT-001-39fb0a0b",
+  "start_time": "2026-03-06T14:11:38.523005+00:00",
+  "safety_checks": {
+    "bybit_demo_mode": {
+      "passed": true,
+      "mode": "demo",
+      "api_key_prefix": "R9KF..."
+    },
+    "kill_switch": {
+      "passed": true,
+      "triggered": false,
+      "reason": null
+    },
+    "discord_webhook": {
+      "passed": true,
+      "configured": true,
+      "url_prefix": "https://discord.com/api/webhoo..."
+    },
+    "redis": {
+      "passed": false,
+      "error": "No module named 'tools'"
+    }
+  },
+  "signal": {
+    "signal_id": "test-signal-71f96654",
+    "timestamp": "2026-03-06T14:11:39.839498+00:00",
+    "symbol": "BTCUSDT",
+    "direction": "long",
+    "confidence": 0.85,
+    "base_score": 85.0,
+    "status": "actionable",
+    "timeframe": "1h"
+  },
+  "llm_analysis": {
+    "go_no_go": true,
+    "confidence": 50.0,
+    "rationale": "LLM enhancement disabled or unavailable",
+    "provider": "none",
+    "fallback_used": true,
+    "latency_ms": 0.08,
+    "position_size": null,
+    "stop_loss": null,
+    "take_profit": null,
+    "risk_recommendation": ""
+  },
+  "execution": {
+    "signal_id": "test-signal-71f96654",
+    "llm_decision": true,
+    "llm_confidence": 50.0,
+    "llm_provider": "none",
+    "risk_checks": {
+      "max_position_size_pct": 0.01,
+      "max_position_value_usd": 10.0,
+      "test_quantity": 0.001
+    },
+    "timestamp": "2026-03-06T14:11:39.880502+00:00"
+  },
+  "trade": {},
+  "journal": {},
+  "discord": {},
+  "cleanup": {},
+  "errors": [
+    {
+      "timestamp": "2026-03-06T14:11:40.024244+00:00",
+      "error": "No module named 'src'",
+      "type": "ModuleNotFoundError"
+    }
+  ],
+  "status": "FAILED"
+}

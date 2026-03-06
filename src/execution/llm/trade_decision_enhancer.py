@@ -52,18 +52,22 @@ class TradeDecisionEnhancer:
         Args:
             enabled: Override feature flag. If None, reads from env.
             timeout_ms: Override timeout in milliseconds. If None, reads from env.
-                        Default is 60000ms (60s), can be overridden via
-                        LLM_DECISION_TIMEOUT_MS env var (max 120000ms / 120s).
+                        Default is 30000ms (30s) per PAPER-LLM-TIMEOUT-001,
+                        can be overridden via LLM_DECISION_TIMEOUT_MS env var
+                        (max 120000ms / 120s).
         """
         if enabled is None:
             enabled = os.getenv("USE_LLM_TRADE_DECISIONS", "false").lower() == "true"
         self.enabled = enabled
 
-        # Set timeout (default 60s, override via env)
+        # Set timeout (default 30s, override via env)
+        # Updated per PAPER-LLM-TIMEOUT-001: Reduced from 60s to 30s based on
+        # latency study showing 100% fallback rate with ~230s provider chain time.
+        # 30s provides faster fallback while preserving LLM capability when providers recover.
         if timeout_ms is not None:
             self.timeout_ms = timeout_ms
         else:
-            self.timeout_ms = int(os.getenv("LLM_DECISION_TIMEOUT_MS", "60000"))
+            self.timeout_ms = int(os.getenv("LLM_DECISION_TIMEOUT_MS", "30000"))
 
         # Clamp timeout to reasonable range (1s min, 120s max)
         self.timeout_ms = max(1000, min(self.timeout_ms, 120000))
@@ -78,7 +82,7 @@ class TradeDecisionEnhancer:
     def _init_chain(self) -> None:
         """Initialize LLM provider chain."""
         try:
-            from src.llm.provider_chain import LLMProviderChain
+            from llm.provider_chain import LLMProviderChain
 
             self._chain = LLMProviderChain(enable_metrics=True)
             logger.info(
