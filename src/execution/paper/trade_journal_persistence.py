@@ -14,7 +14,7 @@ import logging
 from datetime import UTC, datetime
 from typing import Any
 
-from src.execution.paper.trade_journal import TradeJournal, TradeJournalEntry
+from .trade_journal import TradeJournal, TradeJournalEntry
 
 logger = logging.getLogger(__name__)
 
@@ -230,7 +230,6 @@ class TradeJournalRedisPersistence:
                 return False
 
             # Add to entries list if not already present
-            entry_key = self._get_entry_key(session_id, entry.entry_id)
             entries_key = self._get_entries_key(session_id)
 
             # Check if entry_id is already in the list

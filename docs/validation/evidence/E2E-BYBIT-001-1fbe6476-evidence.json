@@ -1,0 +1,126 @@
+{
+  "test_id": "E2E-BYBIT-001-1fbe6476",
+  "start_time": "2026-03-06T17:46:15.368288+00:00",
+  "safety_checks": {
+    "bybit_demo_mode": {
+      "passed": true,
+      "mode": "demo",
+      "api_key_prefix": "R9KF..."
+    },
+    "kill_switch": {
+      "passed": true,
+      "triggered": false,
+      "reason": null
+    },
+    "discord_webhook": {
+      "passed": true,
+      "configured": true,
+      "url_prefix": "https://discord.com/api/webhoo..."
+    },
+    "redis": {
+      "passed": false,
+      "error": "cannot import name 'redis_state_ping' from 'tools' (/home/tacopants/projects/ChiseAI/tools/__init__.py)"
+    }
+  },
+  "signal": {
+    "signal_id": "e428ea21-7c1b-4934-98bf-6036ed9a2dbe",
+    "timestamp": "2026-03-06T17:46:16.650717+00:00",
+    "symbol": "BTCUSDT",
+    "direction": "long",
+    "confidence": 0.85,
+    "base_score": 85.0,
+    "status": "actionable",
+    "timeframe": "1h"
+  },
+  "llm_analysis": {
+    "go_no_go": true,
+    "confidence": 50.0,
+    "rationale": "LLM enhancement timed out after 8000ms. Proceeding with BASE SIGNAL: SignalDirection.LONG BTCUSDT (confidence: 85.0%, score: 85.0). Signal basis: test_factor_1(90), test_factor_2(85), test_factor_3(80). Trade executed per base signal policy.",
+    "provider": "timeout",
+    "fallback_used": true,
+    "latency_ms": 8005.16,
+    "position_size": null,
+    "stop_loss": null,
+    "take_profit": null,
+    "risk_recommendation": ""
+  },
+  "execution": {
+    "signal_id": "e428ea21-7c1b-4934-98bf-6036ed9a2dbe",
+    "llm_decision": true,
+    "llm_confidence": 50.0,
+    "llm_provider": "timeout",
+    "risk_checks": {
+      "max_position_size_pct": 0.01,
+      "max_position_value_usd": 10.0,
+      "test_quantity": 0.0001
+    },
+    "timestamp": "2026-03-06T17:46:24.697424+00:00"
+  },
+  "trade": {
+    "entry": {
+      "order_id": "4a241769-2265-469f-8931-691ac72b8d54",
+      "symbol": "BTCUSDT",
+      "side": "buy",
+      "quantity": 0.0001,
+      "entry_price": 85000.0,
+      "position_value_usd": 8.5,
+      "timestamp": "2026-03-06T17:46:24.596418+00:00",
+      "latency_ms": 50.0,
+      "demo_mode": true,
+      "mocked": true,
+      "position_id": "c9b555a1-e31f-40e8-ba26-0410f07f1ec9"
+    },
+    "exit": {
+      "position_id": "c9b555a1-e31f-40e8-ba26-0410f07f1ec9",
+      "exit_price": 85100.0,
+      "pnl": 0.01,
+      "timestamp": "2026-03-06T17:46:24.839218+00:00",
+      "latency_ms": 25.0,
+      "reason": "test_complete",
+      "mocked": true
+    }
+  },
+  "journal": {
+    "entry_id": "22015c53-daf0-46ac-a572-ab864f8d223e",
+    "created": true,
+    "closed": true,
+    "total_entries": 1,
+    "closed_entries": 1,
+    "entry_data": {
+      "symbol": "BTCUSDT",
+      "side": "buy",
+      "entry_price": 85000.0,
+      "position_size": 0.0001,
+      "exit_price": 85100.0,
+      "realized_pnl": 0.01,
+      "fees": 0.0,
+      "net_pnl": 0.01,
+      "exit_reason": "manual_close"
+    },
+    "timestamp": "2026-03-06T17:46:25.656777+00:00"
+  },
+  "discord": {
+    "open": {
+      "sent": true,
+      "message_id": "1479535638423408792",
+      "timestamp": "2026-03-06T17:46:24.838838+00:00",
+      "error": null,
+      "retry_count": 0
+    },
+    "close": {
+      "sent": true,
+      "message_id": "1479535640168108277",
+      "timestamp": "2026-03-06T17:46:25.642320+00:00",
+      "error": null,
+      "retry_count": 0
+    }
+  },
+  "cleanup": {
+    "trade_closed": true,
+    "all_positions_closed": true,
+    "timestamp": "2026-03-06T17:46:25.657006+00:00"
+  },
+  "errors": [],
+  "status": "SUCCESS",
+  "end_time": "2026-03-06T17:46:25.657041+00:00"
+}
