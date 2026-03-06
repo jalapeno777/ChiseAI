@@ -23,6 +23,33 @@ backlog:
   redis_iterlog_key: bmad:chiseai:iterlog:story:SESSION-CLEANUP-001
   status: completed
   title: Repository Cleanup and Hygiene Maintenance
+- acceptance_criteria:
+  - LLM provider chain initializes without MiniMax
+  - Unit tests pass (100/100)
+  - Fix summary document created
+  branch: feature/PAPER-LLM-DIAG-001-fix
+  commit_sha: 5a9633e35afb629a5887183f7cbffbc4070b1c7c
+  created_date: '2026-03-06'
+  description: Paper Trading LLM Analysis Path Fix - MiniMax provider causing initialization delays
+  fix_summary: MiniMax temporarily disabled from provider chain
+  id: PAPER-LLM-DIAG-001
+  minimax_disabled: true
+  notes:
+  - 'Root cause: MiniMax provider causing initialization delays'
+  - 'Fix: MiniMax temporarily disabled from provider chain'
+  - 'Re-enable steps: See src/llm/provider_chain.py:268-274'
+  - 'Tests passed: 100/100 (55/55 trade decision enhancer, 45/45 provider chain)'
+  - 'Fix summary: docs/fixes/PAPER-LLM-DIAG-001-fix-summary.md'
+  owner: quickdev
+  priority: P1
+  re_enable_steps: See src/llm/provider_chain.py:268-274
+  merge_commit: 8361c11325eb01b7936b505bab6a2c111c2242af
+  pr_number: 365
+  redis_iterlog_key: bmad:chiseai:iterlog:story:PAPER-LLM-DIAG-001
+  root_cause: MiniMax provider causing initialization delays
+  status: merged
+  tests_passed: 100/100
+  title: Paper Trading LLM Analysis Path Fix
 - acceptance_criteria: TBD
   created_date: '2026-03-02'
   depends_on:
