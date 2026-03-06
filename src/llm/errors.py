@@ -180,9 +180,9 @@ def classify_error(
         ]
         if any(keyword in response_lower for keyword in coding_agent_keywords):
             return ScopeError(
-                f"KIMI API requires Coding Agent access (403). "
-                f"The API key is valid but the endpoint requires special access. "
-                f"Consider using the standard Moonshot API endpoint instead.",
+                "KIMI API requires Coding Agent access (403). "
+                "The API key is valid but the endpoint requires special access. "
+                "Consider using the standard Moonshot API endpoint instead.",
                 provider=provider,
             )
 
