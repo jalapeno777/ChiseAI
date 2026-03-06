@@ -1,5 +1,32 @@
 backlog:
 - acceptance_criteria:
+  - All KIMI endpoints use https://api.moonshot.cn/v1
+  - All KIMI models use kimi-k2.5
+  - All Z.ai/Zhipu endpoints use https://open.bigmodel.cn/api/paas/v4
+  - Error classification handles 403 "coding agent" and 429 "insufficient balance"
+  - Provider health check script created
+  - All tests pass (133/133)
+  - Documentation updated
+  branch: feature/LLM-PROVIDER-FIX-001-endpoint-correction
+  commit_sha: 8a241f4
+  created_date: '2026-03-06'
+  description: Fix incorrect LLM provider endpoints and model IDs discovered through live
+    probe testing. KIMI changed from api.kimi.com/coding/v1 to api.moonshot.cn/v1 with
+    model kimi-k2.5. Z.ai/Zhipu changed from api.z.ai to open.bigmodel.cn.
+  id: LLM-PROVIDER-FIX-001
+  notes:
+  - 'Root cause: Incorrect endpoints for KIMI and Z.ai/Zhipu providers'
+  - 'Fix: Updated KIMI endpoint to https://api.moonshot.cn/v1 with model kimi-k2.5'
+  - 'Fix: Updated Z.ai/Zhipu endpoint to https://open.bigmodel.cn/api/paas/v4'
+  - 'Error handling: Added classification for 403 "coding agent" and 429 "insufficient
+      balance"'
+  - 'Tests passed: 133/133'
+  owner: jarvis
+  priority: P0
+  status: completed
+  tests_passed: 133/133
+  title: Live Provider Endpoint/Model Fix for Coding-Plan Accounts
+- acceptance_criteria:
   - All merged branches older than 7 days are pruned
   - Stale worktrees are removed and tracked in Redis
   - Stashes older than 14 days without active context are dropped
