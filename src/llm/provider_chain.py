@@ -265,12 +265,19 @@ class LLMProviderChain:
             enable_metrics: Whether to collect metrics during burn-in
             metrics_exporter: Optional exporter for InfluxDB integration
         """
+        # TEMPORARY: MiniMax disabled due to PAPER-LLM-DIAG-001
+        # To re-enable: Add "minimax" back to the list
+        # Re-enable checklist:
+        # 1. Verify MINIMAX_API_KEY is configured
+        # 2. Set MINIMAX_ENABLED=true
+        # 3. Test with: python -m pytest tests/test_llm/test_provider_chain.py -v -k minimax
+        # 4. Monitor burn-in metrics for MiniMax success rate
         self.provider_order = provider_order or [
             "kimi_compat",
             "kimi",
             "zai",
             "zhipu",
-            "minimax",
+            # "minimax",  # Disabled per PAPER-LLM-DIAG-001
         ]
         self.max_retries = max_retries
         self.retry_delay = retry_delay
