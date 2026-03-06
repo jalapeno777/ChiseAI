@@ -8,13 +8,14 @@ from unittest.mock import Mock, patch
 
 import pytest
 from src.llm.zhipu_client import (
+    ZaiAuthError,
     ZaiError,
     ZaiMessage,
+    ZaiRateLimitError,
     ZaiResponse,
+    ZaiServerError,
     ZhipuClient,
 )
-
-from llm.errors import AuthError, RateLimitError, ServerError, ValidationError
 
 
 class TestZaiMessage:
@@ -40,7 +41,9 @@ class TestZhipuClientInitialization:
         """Test initialization with explicit API key."""
         client = ZhipuClient(api_key="test-key")
         assert client.api_key == "test-key"
-        assert client.endpoint == ZhipuClient.DEFAULT_ENDPOINT
+        assert (
+            client.endpoint == "https://open.bigmodel.cn/api/paas/v4/chat/completions"
+        )
         assert client.model == ZhipuClient.DEFAULT_MODEL
 
     def test_init_with_env_var_zhipu(self):
@@ -285,31 +288,31 @@ class TestZhipuClientErrors:
         return ZhipuClient(api_key="test-key")
 
     def test_auth_error_401(self, client):
-        """Test 401 raises AuthError."""
+        """Test 401 raises ZaiAuthError."""
         mock_response = Mock()
         mock_response.status_code = 401
         mock_response.json.return_value = {"error": {"message": "Invalid API key"}}
         mock_response.text = '{"error": {"message": "Invalid API key"}}'
 
         with patch.object(client._session, "post", return_value=mock_response):
-            with pytest.raises(AuthError) as exc_info:
+            with pytest.raises(ZaiAuthError) as exc_info:
                 client.chat([ZaiMessage(role="user", content="Hello")])
             assert "Authentication failed" in str(exc_info.value)
 
     def test_rate_limit_error_429(self, client):
-        """Test 429 raises RateLimitError."""
+        """Test 429 raises ZaiRateLimitError."""
         mock_response = Mock()
         mock_response.status_code = 429
         mock_response.json.return_value = {"error": {"message": "Rate limit exceeded"}}
         mock_response.text = '{"error": {"message": "Rate limit exceeded"}}'
 
         with patch.object(client._session, "post", return_value=mock_response):
-            with pytest.raises(RateLimitError) as exc_info:
+            with pytest.raises(ZaiRateLimitError) as exc_info:
                 client.chat([ZaiMessage(role="user", content="Hello")])
             assert "Rate limit exceeded" in str(exc_info.value)
 
     def test_server_error_500(self, client):
-        """Test 500 raises ServerError."""
+        """Test 500 raises ZaiServerError."""
         mock_response = Mock()
         mock_response.status_code = 500
         mock_response.json.return_value = {
@@ -318,21 +321,21 @@ class TestZhipuClientErrors:
         mock_response.text = '{"error": {"message": "Internal server error"}}'
 
         with patch.object(client._session, "post", return_value=mock_response):
-            with pytest.raises(ServerError) as exc_info:
+            with pytest.raises(ZaiServerError) as exc_info:
                 client.chat([ZaiMessage(role="user", content="Hello")])
             assert "Server error" in str(exc_info.value)
 
     def test_other_error_400(self, client):
-        """Test 400 raises ValidationError."""
+        """Test 400 raises ZaiError."""
         mock_response = Mock()
         mock_response.status_code = 400
         mock_response.json.return_value = {"error": {"message": "Bad request"}}
         mock_response.text = '{"error": {"message": "Bad request"}}'
 
         with patch.object(client._session, "post", return_value=mock_response):
-            with pytest.raises(ValidationError) as exc_info:
+            with pytest.raises(ZaiError) as exc_info:
                 client.chat([ZaiMessage(role="user", content="Hello")])
-            assert "Request validation failed" in str(exc_info.value)
+            assert "API error 400" in str(exc_info.value)
 
     def test_error_non_json_response(self, client):
         """Test error with non-JSON response."""
@@ -342,7 +345,7 @@ class TestZhipuClientErrors:
         mock_response.text = "Internal Server Error"
 
         with patch.object(client._session, "post", return_value=mock_response):
-            with pytest.raises(ServerError) as exc_info:
+            with pytest.raises(ZaiServerError) as exc_info:
                 client.chat([ZaiMessage(role="user", content="Hello")])
             # ServerError message format is "Server error 500 from ZHIPU"
             assert "Server error 500" in str(exc_info.value)
@@ -452,12 +455,10 @@ class TestZhipuClientHealthCheck:
         mock_response.json.return_value = {"error": {"message": "Invalid key"}}
         mock_response.text = '{"error": {"message": "Invalid key"}}'
 
-        # health_check catches exceptions and returns False
-        # But currently it only catches ZaiError, not LLMError subclasses
-        # This test documents the current behavior (exception raised)
+        # health_check catches ZaiError exceptions (including ZaiAuthError) and returns False
         with patch.object(client._session, "post", return_value=mock_response):
-            with pytest.raises(AuthError):
-                client.health_check()
+            result = client.health_check()
+            assert result is False
 
 
 class TestZhipuClientContextManager:
