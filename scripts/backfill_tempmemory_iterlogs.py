@@ -3,7 +3,7 @@
 Backfill docs/tempmemories iterlog files with standard sections.
 
 Why: older iterlog markdown files may be missing sections that newer workflows
-assume exist (Incidents, Scope Ownership).
+assume exist (incidents, ownership, insights, decisions).
 
 This script is idempotent and only inserts missing headings.
 """
@@ -23,6 +23,9 @@ ITERLOG_DIR = Path("docs/tempmemories")
 GLOB = "iterlog-*.md"
 
 REQUIRED_SECTIONS = [
+    ("## Insights Sent To Aria", "- TBD\n"),
+    ("## Aria Decisions", "- TBD\n"),
+    ("## Rejected Insight Signatures", "- TBD\n"),
     ("## Scope Ownership", "- TBD\n"),
     ("## Incidents", "- TBD\n"),
 ]

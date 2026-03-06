@@ -2,7 +2,7 @@
 # Memory Stewardship Policy
 # Defines categories, promotion rules, and TTL management for agent memory
 
-version: "1.0.0"
+version: "1.1.0"
 effective_date: "2026-02-25"
 
 # Memory Categories with storage destinations and TTLs
@@ -97,6 +97,33 @@ ttl_management:
   # Grace period before deletion (allows recovery)
   deletion_grace_period_hours: 24
 
+# Insight/Decision Memory Governance
+insight_memory:
+  # Redis lists/hashes used by Aria/Jarvis insight governance
+  redis_keys:
+    rejected_story: "bmad:chiseai:insights:rejected:story:<story_id>"
+    rejected_global: "bmad:chiseai:insights:rejected:global"
+
+  # Retention for rejected insights to prevent repeated low-value proposals
+  rejected_ttl_days: 90
+  active_rejected_extension_days: 30
+
+  # Minimum required payload fields for archive entries
+  required_rejected_fields:
+    - story_id
+    - timestamp
+    - issue
+    - reason_rejected
+    - decision
+    - scope_context
+    - evidence_signature
+
+  # Suppression policy guidance for orchestrators
+  suppression_rules:
+    exact_evidence_signature_match: "suppress"
+    semantic_match_same_scope_without_new_evidence: "suppress"
+    semantic_match_with_material_new_evidence: "allow_resubmission"
+
 # Sweep Configuration
 sweep:
   # How often to run the sweep (cron expression)
@@ -113,6 +140,8 @@ sweep:
     - "bmad:chiseai:iterlog:story:*"
     - "bmad:chiseai:iterlog:story:*:decisions"
     - "bmad:chiseai:iterlog:story:*:incidents"
+    - "bmad:chiseai:insights:rejected:story:*"
+    - "bmad:chiseai:insights:rejected:global"
   
   # Qdrant collection for promoted memories
   qdrant_collection: "ChiseAI"

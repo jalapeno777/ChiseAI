@@ -54,6 +54,28 @@ Helper to reduce hand-rolled Redis operations for parallel execution safety.
   - `python3 scripts/iterlog_ops.py check-ownership --story-id=ST-XXX --agent=dev --scopes src/foo`
 - Append incident (Redis list + markdown fallback):
   - `python3 scripts/iterlog_ops.py append-incident --story-id=ST-XXX --text "symptom: ..."`
+- Append insight packet block (markdown fallback):
+  - `python3 scripts/iterlog_ops.py append-insight-packet --story-id=ST-XXX --text "INSIGHT_PACKET ..."`
+- Append Aria decision block (markdown fallback):
+  - `python3 scripts/iterlog_ops.py append-aria-decision --story-id=ST-XXX --text "ARIA_DECISION ..."`
+- Archive rejected insight (Redis + markdown fallback):
+  - `python3 scripts/iterlog_ops.py archive-rejected-insight --story-id=ST-XXX --issue "..." --reason-rejected "..." --decision REJECT --scope-context "..." --evidence-signature "sig:..."`
+
+### validation/validate_insight_governance.py
+
+Validates orchestrator insight-governance conformance from iterlog artifacts:
+- `INSIGHT_PACKET` completeness
+- `ARIA_DECISION` completeness
+- No silent scope drift fields (`scope_impact`, `prd_scope_change`)
+- Required fallback sections in markdown iterlogs
+
+**Usage:**
+```bash
+python3 scripts/validation/validate_insight_governance.py
+python3 scripts/validation/validate_insight_governance.py --story-id ST-XXX
+python3 scripts/validation/validate_insight_governance.py --require-for-completed-only
+python3 scripts/validation/validate_insight_governance.py --require-for-completed-only --strict
+```
 
 ### backfill_tempmemory_iterlogs.py
 
