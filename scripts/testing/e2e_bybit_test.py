@@ -172,9 +172,11 @@ class E2EBybitTest:
         self.evidence["safety_checks"]["bybit_demo_mode"] = {
             "passed": True,
             "mode": "demo",
-            "api_key_prefix": os.environ.get("BYBIT_DEMO_API_KEY", "")[:4] + "..."
-            if os.environ.get("BYBIT_DEMO_API_KEY")
-            else "N/A",
+            "api_key_prefix": (
+                os.environ.get("BYBIT_DEMO_API_KEY", "")[:4] + "..."
+                if os.environ.get("BYBIT_DEMO_API_KEY")
+                else "N/A"
+            ),
         }
         logger.info("✓ BYBIT_API_MODE=demo verified")
 
@@ -210,9 +212,11 @@ class E2EBybitTest:
             self.evidence["safety_checks"]["discord_webhook"] = {
                 "passed": True,
                 "configured": True,
-                "url_prefix": discord_webhook[:30] + "..."
-                if len(discord_webhook) > 30
-                else "configured",
+                "url_prefix": (
+                    discord_webhook[:30] + "..."
+                    if len(discord_webhook) > 30
+                    else "configured"
+                ),
             }
             logger.info("✓ Discord webhook configured")
 
@@ -569,9 +573,9 @@ class E2EBybitTest:
                 self.evidence["discord"]["open"] = {
                     "sent": result.success,
                     "message_id": result.message_id,
-                    "timestamp": result.timestamp.isoformat()
-                    if result.timestamp
-                    else None,
+                    "timestamp": (
+                        result.timestamp.isoformat() if result.timestamp else None
+                    ),
                     "error": result.error,
                     "retry_count": result.retry_count,
                 }
@@ -592,9 +596,9 @@ class E2EBybitTest:
                 self.evidence["discord"]["close"] = {
                     "sent": result.success,
                     "message_id": result.message_id,
-                    "timestamp": result.timestamp.isoformat()
-                    if result.timestamp
-                    else None,
+                    "timestamp": (
+                        result.timestamp.isoformat() if result.timestamp else None
+                    ),
                     "error": result.error,
                     "retry_count": result.retry_count,
                 }
@@ -672,9 +676,11 @@ class E2EBybitTest:
 
         signal = Signal(
             token=self.TEST_SYMBOL,
-            direction=SignalDirection.LONG
-            if position.side == "long"
-            else SignalDirection.SHORT,
+            direction=(
+                SignalDirection.LONG
+                if position.side == "long"
+                else SignalDirection.SHORT
+            ),
             confidence=0.85,
             base_score=85.0,
             timestamp=datetime.now(UTC),
