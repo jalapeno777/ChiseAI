@@ -1,0 +1,474 @@
+{
+  "probe_metadata": {
+    "timestamp": "2026-03-06T20:01:09.624279+00:00",
+    "probe_id": "47cbf224-ae62-406d-9fd7-d3626cde35ec",
+    "timeout_seconds": 30.0
+  },
+  "summary": {
+    "total_tests": 16,
+    "successful": 0,
+    "failed": 16,
+    "success_rate": "0.0%"
+  },
+  "by_provider": {
+    "KIMI (api.kimi.com/coding/v1)": {
+      "total": 4,
+      "successful": 0,
+      "failed": 4,
+      "working_models": [],
+      "failed_models": [
+        {
+          "model": "k2p5",
+          "error": "Kimi For Coding is currently only available for Coding Agents such as Kimi CLI, Claude Code, Roo Code, Kilo Code, etc.",
+          "category": "SCOPE/QUOTA"
+        },
+        {
+          "model": "kimi-for-coding",
+          "error": "Kimi For Coding is currently only available for Coding Agents such as Kimi CLI, Claude Code, Roo Code, Kilo Code, etc.",
+          "category": "SCOPE/QUOTA"
+        },
+        {
+          "model": "kimi-k2.5",
+          "error": "Kimi For Coding is currently only available for Coding Agents such as Kimi CLI, Claude Code, Roo Code, Kilo Code, etc.",
+          "category": "SCOPE/QUOTA"
+        },
+        {
+          "model": "kimi-k2.5-coding",
+          "error": "Kimi For Coding is currently only available for Coding Agents such as Kimi CLI, Claude Code, Roo Code, Kilo Code, etc.",
+          "category": "SCOPE/QUOTA"
+        }
+      ],
+      "models_endpoint_works": true,
+      "available_models": [
+        "kimi-for-coding"
+      ]
+    },
+    "KIMI (api.moonshot.ai/v1)": {
+      "total": 4,
+      "successful": 0,
+      "failed": 4,
+      "working_models": [],
+      "failed_models": [
+        {
+          "model": "kimi-k2.5",
+          "error": "Invalid Authentication",
+          "category": "AUTH"
+        },
+        {
+          "model": "kimi-k2.5-coding",
+          "error": "Invalid Authentication",
+          "category": "AUTH"
+        },
+        {
+          "model": "k2p5",
+          "error": "Invalid Authentication",
+          "category": "AUTH"
+        },
+        {
+          "model": "kimi-for-coding",
+          "error": "Invalid Authentication",
+          "category": "AUTH"
+        }
+      ],
+      "models_endpoint_works": false
+    },
+    "Z.ai (api.z.ai)": {
+      "total": 4,
+      "successful": 0,
+      "failed": 4,
+      "working_models": [],
+      "failed_models": [
+        {
+          "model": "glm-5",
+          "error": "Insufficient balance or no resource package. Please recharge.",
+          "category": "RATE_LIMIT"
+        },
+        {
+          "model": "glm-4.7",
+          "error": "Insufficient balance or no resource package. Please recharge.",
+          "category": "RATE_LIMIT"
+        },
+        {
+          "model": "glm-4.5",
+          "error": "Insufficient balance or no resource package. Please recharge.",
+          "category": "RATE_LIMIT"
+        },
+        {
+          "model": "glm-4",
+          "error": "Unknown Model, please check the model code.",
+          "category": "CLIENT_ERROR"
+        }
+      ],
+      "models_endpoint_works": true,
+      "available_models": [
+        "glm-4.5",
+        "glm-4.5-air",
+        "glm-4.6",
+        "glm-4.7",
+        "glm-5"
+      ]
+    },
+    "Zhipu (open.bigmodel.cn)": {
+      "total": 4,
+      "successful": 0,
+      "failed": 4,
+      "working_models": [],
+      "failed_models": [
+        {
+          "model": "glm-5",
+          "error": "\u4f59\u989d\u4e0d\u8db3\u6216\u65e0\u53ef\u7528\u8d44\u6e90\u5305,\u8bf7\u5145\u503c\u3002",
+          "category": "RATE_LIMIT"
+        },
+        {
+          "model": "glm-4.7",
+          "error": "\u4f59\u989d\u4e0d\u8db3\u6216\u65e0\u53ef\u7528\u8d44\u6e90\u5305,\u8bf7\u5145\u503c\u3002",
+          "category": "RATE_LIMIT"
+        },
+        {
+          "model": "glm-4.5",
+          "error": "\u4f59\u989d\u4e0d\u8db3\u6216\u65e0\u53ef\u7528\u8d44\u6e90\u5305,\u8bf7\u5145\u503c\u3002",
+          "category": "RATE_LIMIT"
+        },
+        {
+          "model": "glm-4",
+          "error": "\u6a21\u578b\u4e0d\u5b58\u5728\uff0c\u8bf7\u68c0\u67e5\u6a21\u578b\u4ee3\u7801\u3002",
+          "category": "CLIENT_ERROR"
+        }
+      ],
+      "models_endpoint_works": true,
+      "available_models": [
+        "glm-4.5",
+        "glm-4.5-air",
+        "glm-4.6",
+        "glm-4.7",
+        "glm-5"
+      ]
+    }
+  },
+  "recommendations": [
+    {
+      "provider": "KIMI",
+      "recommendation": "No working configuration found. Check KIMI_API_KEY.",
+      "priority": "1"
+    },
+    {
+      "provider": "Z.ai/Zhipu",
+      "recommendation": "No working configuration found. Check ZAI_API_KEY or ZHIPU_API_KEY.",
+      "priority": "2"
+    }
+  ],
+  "detailed_results": [
+    {
+      "provider": "KIMI (api.kimi.com/coding/v1)",
+      "endpoint_url": "https://api.kimi.com/coding/v1",
+      "model": "k2p5",
+      "api_key_source": "KIMI_API_KEY",
+      "success": false,
+      "status_code": 403,
+      "latency_ms": 492.87,
+      "error_message": "Kimi For Coding is currently only available for Coding Agents such as Kimi CLI, Claude Code, Roo Code, Kilo Code, etc.",
+      "error_category": "SCOPE/QUOTA",
+      "response_preview": null,
+      "models_available": [
+        "kimi-for-coding"
+      ],
+      "models_endpoint_works": true,
+      "timestamp": "2026-03-06T20:01:01.335342+00:00",
+      "test_id": "eb283355"
+    },
+    {
+      "provider": "KIMI (api.kimi.com/coding/v1)",
+      "endpoint_url": "https://api.kimi.com/coding/v1",
+      "model": "kimi-for-coding",
+      "api_key_source": "KIMI_API_KEY",
+      "success": false,
+      "status_code": 403,
+      "latency_ms": 553.43,
+      "error_message": "Kimi For Coding is currently only available for Coding Agents such as Kimi CLI, Claude Code, Roo Code, Kilo Code, etc.",
+      "error_category": "SCOPE/QUOTA",
+      "response_preview": null,
+      "models_available": [
+        "kimi-for-coding"
+      ],
+      "models_endpoint_works": true,
+      "timestamp": "2026-03-06T20:01:01.889009+00:00",
+      "test_id": "f4ddfc44"
+    },
+    {
+      "provider": "KIMI (api.kimi.com/coding/v1)",
+      "endpoint_url": "https://api.kimi.com/coding/v1",
+      "model": "kimi-k2.5",
+      "api_key_source": "KIMI_API_KEY",
+      "success": false,
+      "status_code": 403,
+      "latency_ms": 373.42,
+      "error_message": "Kimi For Coding is currently only available for Coding Agents such as Kimi CLI, Claude Code, Roo Code, Kilo Code, etc.",
+      "error_category": "SCOPE/QUOTA",
+      "response_preview": null,
+      "models_available": [
+        "kimi-for-coding"
+      ],
+      "models_endpoint_works": true,
+      "timestamp": "2026-03-06T20:01:02.262714+00:00",
+      "test_id": "31a3ad51"
+    },
+    {
+      "provider": "KIMI (api.kimi.com/coding/v1)",
+      "endpoint_url": "https://api.kimi.com/coding/v1",
+      "model": "kimi-k2.5-coding",
+      "api_key_source": "KIMI_API_KEY",
+      "success": false,
+      "status_code": 403,
+      "latency_ms": 593.29,
+      "error_message": "Kimi For Coding is currently only available for Coding Agents such as Kimi CLI, Claude Code, Roo Code, Kilo Code, etc.",
+      "error_category": "SCOPE/QUOTA",
+      "response_preview": null,
+      "models_available": [
+        "kimi-for-coding"
+      ],
+      "models_endpoint_works": true,
+      "timestamp": "2026-03-06T20:01:02.856277+00:00",
+      "test_id": "091172a2"
+    },
+    {
+      "provider": "KIMI (api.moonshot.ai/v1)",
+      "endpoint_url": "https://api.moonshot.ai/v1",
+      "model": "kimi-k2.5",
+      "api_key_source": "KIMI_API_KEY",
+      "success": false,
+      "status_code": 401,
+      "latency_ms": 259.04,
+      "error_message": "Invalid Authentication",
+      "error_category": "AUTH",
+      "response_preview": null,
+      "models_available": [],
+      "models_endpoint_works": false,
+      "timestamp": "2026-03-06T20:01:03.383740+00:00",
+      "test_id": "d8ac2f1e"
+    },
+    {
+      "provider": "KIMI (api.moonshot.ai/v1)",
+      "endpoint_url": "https://api.moonshot.ai/v1",
+      "model": "kimi-k2.5-coding",
+      "api_key_source": "KIMI_API_KEY",
+      "success": false,
+      "status_code": 401,
+      "latency_ms": 236.26,
+      "error_message": "Invalid Authentication",
+      "error_category": "AUTH",
+      "response_preview": null,
+      "models_available": [],
+      "models_endpoint_works": false,
+      "timestamp": "2026-03-06T20:01:03.620302+00:00",
+      "test_id": "a747cfea"
+    },
+    {
+      "provider": "KIMI (api.moonshot.ai/v1)",
+      "endpoint_url": "https://api.moonshot.ai/v1",
+      "model": "k2p5",
+      "api_key_source": "KIMI_API_KEY",
+      "success": false,
+      "status_code": 401,
+      "latency_ms": 244.44,
+      "error_message": "Invalid Authentication",
+      "error_category": "AUTH",
+      "response_preview": null,
+      "models_available": [],
+      "models_endpoint_works": false,
+      "timestamp": "2026-03-06T20:01:03.865041+00:00",
+      "test_id": "724cff1a"
+    },
+    {
+      "provider": "KIMI (api.moonshot.ai/v1)",
+      "endpoint_url": "https://api.moonshot.ai/v1",
+      "model": "kimi-for-coding",
+      "api_key_source": "KIMI_API_KEY",
+      "success": false,
+      "status_code": 401,
+      "latency_ms": 245.33,
+      "error_message": "Invalid Authentication",
+      "error_category": "AUTH",
+      "response_preview": null,
+      "models_available": [],
+      "models_endpoint_works": false,
+      "timestamp": "2026-03-06T20:01:04.110763+00:00",
+      "test_id": "f1622b6d"
+    },
+    {
+      "provider": "Z.ai (api.z.ai)",
+      "endpoint_url": "https://api.z.ai/api/paas/v4",
+      "model": "glm-5",
+      "api_key_source": "Z_AI_API_KEY",
+      "success": false,
+      "status_code": 429,
+      "latency_ms": 451.23,
+      "error_message": "Insufficient balance or no resource package. Please recharge.",
+      "error_category": "RATE_LIMIT",
+      "response_preview": null,
+      "models_available": [
+        "glm-4.5",
+        "glm-4.5-air",
+        "glm-4.6",
+        "glm-4.7",
+        "glm-5"
+      ],
+      "models_endpoint_works": true,
+      "timestamp": "2026-03-06T20:01:05.540833+00:00",
+      "test_id": "0c0b795f"
+    },
+    {
+      "provider": "Z.ai (api.z.ai)",
+      "endpoint_url": "https://api.z.ai/api/paas/v4",
+      "model": "glm-4.7",
+      "api_key_source": "Z_AI_API_KEY",
+      "success": false,
+      "status_code": 429,
+      "latency_ms": 449.72,
+      "error_message": "Insufficient balance or no resource package. Please recharge.",
+      "error_category": "RATE_LIMIT",
+      "response_preview": null,
+      "models_available": [
+        "glm-4.5",
+        "glm-4.5-air",
+        "glm-4.6",
+        "glm-4.7",
+        "glm-5"
+      ],
+      "models_endpoint_works": true,
+      "timestamp": "2026-03-06T20:01:05.990809+00:00",
+      "test_id": "97f200a4"
+    },
+    {
+      "provider": "Z.ai (api.z.ai)",
+      "endpoint_url": "https://api.z.ai/api/paas/v4",
+      "model": "glm-4.5",
+      "api_key_source": "Z_AI_API_KEY",
+      "success": false,
+      "status_code": 429,
+      "latency_ms": 443.7,
+      "error_message": "Insufficient balance or no resource package. Please recharge.",
+      "error_category": "RATE_LIMIT",
+      "response_preview": null,
+      "models_available": [
+        "glm-4.5",
+        "glm-4.5-air",
+        "glm-4.6",
+        "glm-4.7",
+        "glm-5"
+      ],
+      "models_endpoint_works": true,
+      "timestamp": "2026-03-06T20:01:06.434795+00:00",
+      "test_id": "4a2ca14f"
+    },
+    {
+      "provider": "Z.ai (api.z.ai)",
+      "endpoint_url": "https://api.z.ai/api/paas/v4",
+      "model": "glm-4",
+      "api_key_source": "Z_AI_API_KEY",
+      "success": false,
+      "status_code": 400,
+      "latency_ms": 427.38,
+      "error_message": "Unknown Model, please check the model code.",
+      "error_category": "CLIENT_ERROR",
+      "response_preview": null,
+      "models_available": [
+        "glm-4.5",
+        "glm-4.5-air",
+        "glm-4.6",
+        "glm-4.7",
+        "glm-5"
+      ],
+      "models_endpoint_works": true,
+      "timestamp": "2026-03-06T20:01:06.862461+00:00",
+      "test_id": "02ff9f95"
+    },
+    {
+      "provider": "Zhipu (open.bigmodel.cn)",
+      "endpoint_url": "https://open.bigmodel.cn/api/paas/v4",
+      "model": "glm-5",
+      "api_key_source": "ZHIPU_API_KEY",
+      "success": false,
+      "status_code": 429,
+      "latency_ms": 281.4,
+      "error_message": "\u4f59\u989d\u4e0d\u8db3\u6216\u65e0\u53ef\u7528\u8d44\u6e90\u5305,\u8bf7\u5145\u503c\u3002",
+      "error_category": "RATE_LIMIT",
+      "response_preview": null,
+      "models_available": [
+        "glm-4.5",
+        "glm-4.5-air",
+        "glm-4.6",
+        "glm-4.7",
+        "glm-5"
+      ],
+      "models_endpoint_works": true,
+      "timestamp": "2026-03-06T20:01:08.795055+00:00",
+      "test_id": "5918040a"
+    },
+    {
+      "provider": "Zhipu (open.bigmodel.cn)",
+      "endpoint_url": "https://open.bigmodel.cn/api/paas/v4",
+      "model": "glm-4.7",
+      "api_key_source": "ZHIPU_API_KEY",
+      "success": false,
+      "status_code": 429,
+      "latency_ms": 290.05,
+      "error_message": "\u4f59\u989d\u4e0d\u8db3\u6216\u65e0\u53ef\u7528\u8d44\u6e90\u5305,\u8bf7\u5145\u503c\u3002",
+      "error_category": "RATE_LIMIT",
+      "response_preview": null,
+      "models_available": [
+        "glm-4.5",
+        "glm-4.5-air",
+        "glm-4.6",
+        "glm-4.7",
+        "glm-5"
+      ],
+      "models_endpoint_works": true,
+      "timestamp": "2026-03-06T20:01:09.085389+00:00",
+      "test_id": "49711c0c"
+    },
+    {
+      "provider": "Zhipu (open.bigmodel.cn)",
+      "endpoint_url": "https://open.bigmodel.cn/api/paas/v4",
+      "model": "glm-4.5",
+      "api_key_source": "ZHIPU_API_KEY",
+      "success": false,
+      "status_code": 429,
+      "latency_ms": 273.49,
+      "error_message": "\u4f59\u989d\u4e0d\u8db3\u6216\u65e0\u53ef\u7528\u8d44\u6e90\u5305,\u8bf7\u5145\u503c\u3002",
+      "error_category": "RATE_LIMIT",
+      "response_preview": null,
+      "models_available": [
+        "glm-4.5",
+        "glm-4.5-air",
+        "glm-4.6",
+        "glm-4.7",
+        "glm-5"
+      ],
+      "models_endpoint_works": true,
+      "timestamp": "2026-03-06T20:01:09.359225+00:00",
+      "test_id": "7f07113a"
+    },
+    {
+      "provider": "Zhipu (open.bigmodel.cn)",
+      "endpoint_url": "https://open.bigmodel.cn/api/paas/v4",
+      "model": "glm-4",
+      "api_key_source": "ZHIPU_API_KEY",
+      "success": false,
+      "status_code": 400,
+      "latency_ms": 264.45,
+      "error_message": "\u6a21\u578b\u4e0d\u5b58\u5728\uff0c\u8bf7\u68c0\u67e5\u6a21\u578b\u4ee3\u7801\u3002",
+      "error_category": "CLIENT_ERROR",
+      "response_preview": null,
+      "models_available": [
+        "glm-4.5",
+        "glm-4.5-air",
+        "glm-4.6",
+        "glm-4.7",
+        "glm-5"
+      ],
+      "models_endpoint_works": true,
+      "timestamp": "2026-03-06T20:01:09.624029+00:00",
+      "test_id": "d3126f97"
+    }
+  ]
+}

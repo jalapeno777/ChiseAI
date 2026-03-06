@@ -44,10 +44,10 @@
       "name": "Kimi For Coding",
       "npm": "@ai-sdk/anthropic",
       "options": {
-        "baseURL": "https://api.kimi.com/coding/v1"
+        "baseURL": "https://api.moonshot.cn/v1"
       },
       "models": {
-        "k2p5": {
+        "kimi-k2.5": {
           "name": "Kimi K2.5 (Instant)",
           "reasoning": true,
           "attachment": false,
@@ -59,7 +59,7 @@
           }
         },
 
-        "k2p5_think": {
+        "kimi-k2.5-think": {
           "name": "Kimi K2.5 (Think)",
           "reasoning": true,
           "attachment": false,
