@@ -81,10 +81,14 @@ class TradeDecisionEnhancer:
             from src.llm.provider_chain import LLMProviderChain
 
             self._chain = LLMProviderChain(enable_metrics=True)
-            logger.info("TradeDecisionEnhancer: LLM provider chain initialized")
+            logger.info(
+                f"TradeDecisionEnhancer: LLM provider chain initialized successfully "
+                f"(providers: {self._chain.provider_order})"
+            )
         except Exception as e:
             logger.warning(
-                f"TradeDecisionEnhancer: Failed to initialize LLM chain: {e}"
+                f"TradeDecisionEnhancer: Failed to initialize LLM chain: {e}",
+                exc_info=True,
             )
             self._chain = None
 
@@ -104,8 +108,15 @@ class TradeDecisionEnhancer:
         """
         start_time = time.time()
 
+        logger.debug(
+            f"enhance_decision called: enabled={self.enabled}, chain={self._chain is not None}"
+        )
+
         # If disabled or chain unavailable, return safe default
         if not self.enabled or self._chain is None:
+            logger.info(
+                f"LLM enhancement skipped: enabled={self.enabled}, chain_available={self._chain is not None}"
+            )
             return TradeDecision(
                 go_no_go=True,  # Default to GO when disabled
                 confidence=50.0,

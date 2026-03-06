@@ -146,12 +146,13 @@ class TestProviderChainInitialization:
         """Test default provider order."""
         chain = LLMProviderChain()
 
+        # MiniMax temporarily disabled per PAPER-LLM-DIAG-001
         assert chain.provider_order == [
             "kimi_compat",
             "kimi",
             "zai",
             "zhipu",
-            "minimax",
+            # "minimax",  # Disabled per PAPER-LLM-DIAG-001
         ]
         assert chain.max_retries == 3
         assert chain.retry_delay == 1.0
@@ -554,7 +555,9 @@ class TestProviderStatus:
             assert status["kimi"]["available"] is True
             assert status["zai"]["available"] is True
             assert status["zhipu"]["available"] is True
-            assert status["minimax"]["available"] is True
+            # MiniMax disabled per PAPER-LLM-DIAG-001 - not in provider_order
+            # Can still be checked via explicit provider list
+            assert "minimax" not in chain.provider_order
 
     def test_get_provider_status_with_reasons(self):
         """Test status includes reasons for unavailable providers."""
@@ -565,8 +568,9 @@ class TestProviderStatus:
             assert status["kimi"]["available"] is False
             assert status["kimi"]["reason"] is not None
             assert status["zai"]["available"] is False
-            assert status["minimax"]["available"] is False
-            assert "MINIMAX_ENABLED" in status["minimax"]["reason"]
+            # MiniMax not in provider_order per PAPER-LLM-DIAG-001
+            # So it won't be in status dict
+            assert "minimax" not in status
 
 
 class TestRetryLogic:

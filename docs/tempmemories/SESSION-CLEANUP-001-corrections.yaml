@@ -1,0 +1,99 @@
+# SESSION-CLEANUP-001 Corrections Log
+# Created: 2026-03-05
+# Purpose: Document corrections to original SESSION-CLEANUP-001 documentation
+
+story_id: SESSION-CLEANUP-001
+correction_date: '2026-03-05'
+correction_agent: jarvis
+branch: cleanup/SESSION-CLEANUP-001-corrections
+
+original_document:
+  path: docs/handoffs/session-handoff-2026-03-05.md
+  created_date: '2026-03-05'
+  issues_found: 3
+
+corrections:
+  - correction_id: CORR-001
+    type: branch_name_correction
+    severity: minor
+    original_text: "safety/SAFETY-001-hotfix-2026-03-05"
+    corrected_text: |
+      - safety/SAFETY-001-timeout-fix-2026-03-05 (canonical timeout fix branch)
+      - safety/SAFETY-001-position-close-hotfix-2026-03-05 (canonical position close hotfix)
+    explanation: |
+      The original document referenced a branch that does not exist. The actual canonical
+      branches for SAFETY-001 were the timeout-fix and position-close-hotfix branches,
+      both of which have been merged to main.
+    status: corrected
+
+  - correction_id: CORR-002
+    type: stash_disposition_correction
+    severity: moderate
+    original_text: |
+      Retain stash@{0} (safety stash) - "Active safety-critical work"
+    corrected_text: |
+      DROP stash@{0} (safety stash) - Superseded by merged SAFETY-001 work
+      RETAIN stash@{1} (ST-KPI-FIX-002) - Active handoff documentation work
+    explanation: |
+      The safety stash (stash@{0}) contains stale promotion packets and uncommitted
+      e2e_bybit_test.py improvements that are now obsolete. SAFETY-001 work has been
+      merged to main, making this WIP stash unnecessary. Retaining it would create
+      confusion about which version is canonical.
+    action_taken: "git stash drop stash@{0}"
+    status: corrected
+
+  - correction_id: CORR-003
+    type: count_clarification
+    severity: minor
+    original_text: |
+      Stashes Dropped: 14 (from 16 reviewed)
+      [No distinction between this-session and cumulative]
+    corrected_text: |
+      This-Session Deletions:
+      - Stashes Dropped: 11 (from 16 reviewed, 2 retained)
+      
+      Cumulative Cleanup (includes previous sessions):
+      - Branches Pruned: 14 merged branches
+      - Worktrees Cleaned: Multiple stale worktrees
+    explanation: |
+      The original document did not clearly distinguish between actions taken during
+      the 2026-03-05 session versus cumulative results from all cleanup sessions.
+      The 11 stash deletions occurred during this session. Branch and worktree cleanup
+      includes results from previous sessions.
+    status: corrected
+
+files_updated:
+  - file_path: docs/handoffs/session-handoff-2026-03-05.md
+    change_type: append
+    content: Correction section appended to end of document
+    
+  - file_path: docs/bmm-workflow-status.yaml
+    change_type: insert
+    content: Added SESSION-CLEANUP-001 entry to backlog section
+    
+  - file_path: docs/tempmemories/SESSION-CLEANUP-001-corrections.yaml
+    change_type: create
+    content: This correction log file
+
+redis_tracking:
+  iterlog_key: bmad:chiseai:iterlog:story:SESSION-CLEANUP-001
+  action_logged: corrections_applied
+  correction_count: 3
+
+final_stash_state:
+  stash@{0}: |
+    WIP on feature/ST-KPI-FIX-002-handoff-addendum: 0b1d09b docs(handoffs): append final validation addendum (ST-KPI-FIX-002)
+    Status: RETAINED - Contains active handoff documentation work
+  previous_stash@{0}: |
+    On safety/SAFETY-001-timeout-fix-2026-03-05: WIP: Pre-SAFETY-001-timeout-fix stash
+    Status: DROPPED - Superseded by merged SAFETY-001 work
+
+branch_state:
+  current_branch: cleanup/SESSION-CLEANUP-001-corrections
+  parent_branch: main
+  status: ready_for_commit
+
+sign_off:
+  corrected_by: jarvis
+  correction_date: '2026-03-05T20:20:00Z'
+  review_status: complete

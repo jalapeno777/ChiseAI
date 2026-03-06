@@ -1,4 +1,28 @@
 backlog:
+- acceptance_criteria:
+  - All merged branches older than 7 days are pruned
+  - Stale worktrees are removed and tracked in Redis
+  - Stashes older than 14 days without active context are dropped
+  - Active branches and worktrees are documented with rationale
+  - Redis iterlog key contains complete audit trail
+  created_date: '2026-03-05'
+  description: Repository cleanup and hygiene maintenance including branch pruning,
+    worktree cleanup, stash management, and documentation updates
+  handoff_document: docs/handoffs/session-handoff-2026-03-05.md
+  id: SESSION-CLEANUP-001
+  notes:
+  - 'Branches pruned: 14 merged branches'
+  - 'Stashes dropped: 11 (this session)'
+  - 'Stashes retained: 1 (ST-KPI-FIX-002)'
+  - 'Worktrees cleaned: Multiple stale worktrees'
+  - 'Correction applied: 2026-03-05 - Corrected branch names, stash disposition, and counts'
+  - 'Canonical iterlog: bmad:chiseai:iterlog:story:SESSION-CLEANUP-001'
+  - 'Superseded safety stash dropped (stash@{0}) - SAFETY-001 work merged'
+  owner: jarvis
+  priority: P2
+  redis_iterlog_key: bmad:chiseai:iterlog:story:SESSION-CLEANUP-001
+  status: completed
+  title: Repository Cleanup and Hygiene Maintenance
 - acceptance_criteria: TBD
   created_date: '2026-03-02'
   depends_on:
