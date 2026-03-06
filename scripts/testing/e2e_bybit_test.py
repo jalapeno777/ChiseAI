@@ -70,7 +70,7 @@ class E2EBybitTest:
     MAX_POSITION_SIZE_PCT = 0.01  # 1% of portfolio
     MAX_POSITION_VALUE_USD = 10.0  # $10 USD equivalent
     TEST_SYMBOL = "BTCUSDT"
-    TEST_QUANTITY = 0.001  # 0.001 BTC (small test size)
+    TEST_QUANTITY = 0.0001  # 0.0001 BTC (small test size)
     MAX_TEST_DURATION_SECONDS = 300  # 5 minutes max
 
     def __init__(self) -> None:
@@ -409,7 +409,10 @@ class E2EBybitTest:
 
         # Get current price
         await connector.connect()
-        current_price = await connector.get_market_price(self.TEST_SYMBOL)
+        ticker = await connector.get_ticker(self.TEST_SYMBOL)
+        current_price = float(
+            ticker.get("result", {}).get("list", [{}])[0].get("lastPrice", 0)
+        )
         if not current_price or current_price <= 0:
             raise ValueError(
                 f"Invalid market price for {self.TEST_SYMBOL}: {current_price}"
@@ -594,8 +597,9 @@ class E2EBybitTest:
 
         # Get current price for exit
         if self.bybit_connector:
-            exit_price = await self.bybit_connector.connector.get_market_price(
-                self.TEST_SYMBOL
+            ticker = await self.bybit_connector.connector.get_ticker(self.TEST_SYMBOL)
+            exit_price = float(
+                ticker.get("result", {}).get("list", [{}])[0].get("lastPrice", 0)
             )
         else:
             # Fallback to entry price (no PnL)
