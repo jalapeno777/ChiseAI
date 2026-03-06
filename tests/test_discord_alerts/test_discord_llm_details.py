@@ -72,7 +72,7 @@ def sample_llm_decision_open():
     return {
         "decision": "GO",
         "confidence": 85,
-        "provider": "claude-3-5-sonnet",
+        "provider": "kimi-k2.5",
         "rationale": "Strong bullish momentum with high volume confirmation. RSI shows oversold conditions.",
         "position_size": "1.5 BTC",
         "stop_loss": 48000.00,
@@ -86,7 +86,7 @@ def sample_llm_decision_close():
     return {
         "decision": "GO",
         "confidence": 85,
-        "provider": "claude-3-5-sonnet",
+        "provider": "kimi-k2.5",
         "rationale": "Target profit reached as predicted.",
         "exit_reason": "Take profit hit",
         "realized_pnl": 500.00,
@@ -133,7 +133,7 @@ class TestTradeOpenNotificationWithLLM:
 
             # Check provider
             assert "🔧 Provider" in fields
-            assert "claude-3-5-sonnet" in fields["🔧 Provider"]
+            assert "kimi-k2.5" in fields["🔧 Provider"]
 
             # Check rationale
             assert "💭 Rationale" in fields
@@ -231,7 +231,7 @@ class TestTradeCloseNotificationWithLLM:
 
             # Check provider
             assert "🔧 Provider" in fields
-            assert "claude-3-5-sonnet" in fields["🔧 Provider"]
+            assert "kimi-k2.5" in fields["🔧 Provider"]
 
             # Check exit reason (close notifications show exit reason, not rationale)
             assert "🚪 Exit Reason" in fields

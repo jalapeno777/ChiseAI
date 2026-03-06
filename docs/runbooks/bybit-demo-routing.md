@@ -1,8 +1,10 @@
 # Bybit Demo Routing Runbook
 
 **Story:** BYBIT-DEMO-003  
-**Last Updated:** 2026-02-19  
+**Last Updated:** 2026-03-06  
 **Status:** Active
+
+**Policy Update (REPO-E2E-POLICY-001):** E2E tests now use live-service path (api.bybit.com) with demo credentials. See "E2E Test Configuration" section below.
 
 ## Overview
 
@@ -156,9 +158,59 @@ Before using demo mode in production:
 - [ ] Fill notifications received via WebSocket
 - [ ] Position updates received via WebSocket
 
+## E2E Test Configuration
+
+### Live-Service Path for E2E Tests (REPO-E2E-POLICY-001)
+
+For E2E trade tests, use the Bybit **live-service path** (`api.bybit.com`) with demo account credentials:
+
+```python
+from data.exchange.bybit_connector import BybitConfig, BybitConnector
+
+# Load demo credentials from environment
+config = BybitConfig.from_env()
+
+# Override to use live-service path while keeping demo credentials
+config.base_url = "https://api.bybit.com"
+config.private_ws_url = "wss://stream.bybit.com/v5/private"
+config.ws_url = "wss://stream.bybit.com/v5/public/linear"
+
+connector = BybitConnector(config)
+```
+
+**Key Points:**
+- Demo account credentials work on both `api-demo.bybit.com` and `api.bybit.com`
+- Using live-service path validates production-like API behavior
+- Account remains demo/paper on Bybit side (no real capital at risk)
+- Safety checks (BYBIT_API_MODE=demo, kill switch) still enforced
+
+### Running E2E Tests
+
+```bash
+# Set required environment variables
+export BYBIT_API_MODE=demo
+export BYBIT_DEMO_API_KEY="your_demo_key"
+export BYBIT_DEMO_API_SECRET="your_demo_secret"
+export DISCORD_TRADING_WEBHOOK_URL="your_webhook_url"
+
+# Run E2E test
+python scripts/testing/e2e_bybit_test.py
+```
+
+### E2E Test Safety Constraints
+
+The E2E test enforces the following safety constraints:
+
+1. **BYBIT_API_MODE=demo check**: Test fails if not in demo mode
+2. **Kill switch verification**: Test fails if kill switch is active
+3. **Position size limits**: Maximum $10 USD equivalent per trade
+4. **Automatic cleanup**: Position must be closed by end of test
+5. **Evidence recording**: All order IDs, timestamps, and PnL recorded
+
 ## References
 
 - Bybit API Documentation: https://bybit-exchange.github.io/docs/v5/intro
 - Connector Source: `src/data/exchange/bybit_connector.py`
 - Config: `config/bybit_endpoints.yaml`
 - Tests: `tests/test_execution/test_bybit_connector.py`
+- E2E Test: `scripts/testing/e2e_bybit_test.py`
