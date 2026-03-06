@@ -383,7 +383,11 @@ class E2EBybitTest:
         logger.info("✓ Execution decision recorded")
 
     async def _place_trade(self, signal: Any, llm_decision: dict[str, Any]) -> Any:
-        """Place a small temporary trade on Bybit demo.
+        """Place a small temporary trade on Bybit using live-service path.
+
+        Uses api.bybit.com (live-service path) with demo credentials.
+        The account remains demo/paper on Bybit side - this is about the
+        API endpoint path, not the account type.
 
         Args:
             signal: Trading signal
@@ -392,20 +396,32 @@ class E2EBybitTest:
         Returns:
             Position object
         """
-        logger.info("Step 5: Place trade (DEMO ONLY)...")
+        logger.info("Step 5: Place trade (DEMO account via live-service path)...")
 
         # Import required components
         from data.exchange.bybit_connector import BybitConfig, BybitConnector
-        from execution.connectors.bybit_demo_connector import BybitDemoConnector
         from execution.paper.models import OrderSide, OrderType
 
-        # Create Bybit connector in demo mode
+        # Create Bybit connector with demo credentials but live-service endpoint
+        # Demo credentials work on both api-demo.bybit.com and api.bybit.com
+        # Using live-service path (api.bybit.com) for E2E tests per REPO-E2E-POLICY-001
         config = BybitConfig.from_env()
         if not config.demo:
             raise SecurityException("Bybit connector is not in demo mode!")
 
+        # Override to use live-service path while keeping demo credentials
+        # This is the key change for REPO-E2E-POLICY-001
+        config.base_url = "https://api.bybit.com"
+        config.private_ws_url = "wss://stream.bybit.com/v5/private"
+        # Public WS stays on mainnet (same for all modes)
+        config.ws_url = "wss://stream.bybit.com/v5/public/linear"
+
+        logger.info(
+            f"Using live-service path: {config.base_url} with demo credentials "
+            f"(api_key_prefix={config.api_key[:4] if config.api_key else '****'}...)"
+        )
+
         connector = BybitConnector(config)
-        demo_connector = BybitDemoConnector(connector)
 
         # Get current price
         await connector.connect()
@@ -431,11 +447,11 @@ class E2EBybitTest:
             f"Placing order: {self.TEST_SYMBOL} {signal.direction.value} {self.TEST_QUANTITY} @ ${current_price:,.2f}"
         )
 
-        # Place the order
+        # Place the order directly via Bybit connector (live-service path)
         order_start = time.perf_counter()
         side = "buy" if signal.direction.value == "long" else "sell"
 
-        order = await demo_connector.place_order(
+        result = await connector.place_order(
             symbol=self.TEST_SYMBOL,
             side=side,
             order_type="market",
@@ -443,6 +459,18 @@ class E2EBybitTest:
             price=current_price,
         )
         order_latency_ms = (time.perf_counter() - order_start) * 1000
+
+        # Create PaperOrder from result
+        from execution.paper.models import PaperOrder
+
+        order = PaperOrder(
+            order_id=result.get("order_id", ""),
+            symbol=self.TEST_SYMBOL,
+            side=side,
+            order_type="market",
+            quantity=self.TEST_QUANTITY,
+            price=current_price,
+        )
 
         # Record trade evidence
         self.evidence["trade"]["entry"] = {
@@ -455,11 +483,9 @@ class E2EBybitTest:
             "timestamp": datetime.now(UTC).isoformat(),
             "latency_ms": round(order_latency_ms, 2),
             "demo_mode": True,
-            "provenance": {
-                "endpoint": demo_connector.provenance.endpoint,
-                "api_key_prefix": demo_connector.provenance.api_key_prefix,
-                "timestamp": demo_connector.provenance.timestamp,
-            },
+            "live_service_path": True,
+            "endpoint": config.base_url,
+            "api_key_prefix": config.api_key[:4] if config.api_key else "****",
         }
 
         # Create a simple position object for tracking
@@ -490,7 +516,7 @@ class E2EBybitTest:
         )
 
         # Store for later use
-        self.bybit_connector = demo_connector
+        self.bybit_connector = connector
 
         return position
 
