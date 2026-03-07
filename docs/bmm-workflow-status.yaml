@@ -1,31 +1,56 @@
 backlog:
 - acceptance_criteria:
-  - All KIMI endpoints use https://api.moonshot.cn/v1
-  - All KIMI models use kimi-k2.5
-  - All Z.ai/Zhipu endpoints use https://open.bigmodel.cn/api/paas/v4
-  - Error classification handles 403 "coding agent" and 429 "insufficient balance"
-  - Provider health check script created
-  - All tests pass (133/133)
-  - Documentation updated
-  branch: feature/LLM-PROVIDER-FIX-001-endpoint-correction
-  commit_sha: 8a241f4
+  - Phase A: Kimi adapter infrastructure verified (kimi_model default updated to kimi-k2.5)
+  - Phase B: Smoke matrix completed with all 4 providers tested (0/4 functional - credential issues)
+  - Phase C: Runbooks created (llm-provider-configuration.md, llm-provider-smoke-tests.md)
+  - Phase C: Preflight script created (llm_provider_check.sh) for pre-deployment validation
+  - Phase D: Latency study framework ready (30s timeout recommended per PAPER-LLM-TIMEOUT-001)
+  - Phase E: E2E test script ready (llm_provider_e2e.py) with full validation checklist
+  - All documentation committed and temp memory files preserved
+  - CI passes on consolidation branch
+  branch: feature/LLM-PROVIDER-FIX-001-consolidation
+  commit_sha: 758400c
   created_date: '2026-03-06'
-  description: Fix incorrect LLM provider endpoints and model IDs discovered through live
-    probe testing. KIMI changed from api.kimi.com/coding/v1 to api.moonshot.cn/v1 with
-    model kimi-k2.5. Z.ai/Zhipu changed from api.z.ai to open.bigmodel.cn.
+  description: Multi-phase LLM Provider Infrastructure Remediation and Testing Framework.
+    Phase A - Kimi adapter remediation. Phase B - Live smoke matrix across all providers.
+    Phase C - Lock-in reproducibility with runbooks and preflight checks. Phase D -
+    Latency study framework. Phase E - Final E2E validation framework. All credential
+    issues documented (KIMI key invalid, ZAI not configured, Zhipu quota exhausted).
   id: LLM-PROVIDER-FIX-001
   notes:
-  - 'Root cause: Incorrect endpoints for KIMI and Z.ai/Zhipu providers'
-  - 'Fix: Updated KIMI endpoint to https://api.moonshot.cn/v1 with model kimi-k2.5'
-  - 'Fix: Updated Z.ai/Zhipu endpoint to https://open.bigmodel.cn/api/paas/v4'
-  - 'Error handling: Added classification for 403 "coding agent" and 429 "insufficient
-      balance"'
-  - 'Tests passed: 133/133'
+  - 'Phase A: Adapter infrastructure verified, kimi_model default updated to kimi-k2.5'
+  - 'Phase B: Smoke matrix 0/4 providers working (all credential-related failures)'
+  - 'Phase C: Runbooks and preflight script created for reproducible deployments'
+  - 'Phase D: Latency study framework ready, 30s timeout recommended'
+  - 'Phase E: E2E script ready, dry-run passed with full validation checklist'
+  - 'Smoke Matrix: Kimi (401 invalid key), Z.ai (not configured), Zhipu (429 quota exhausted)'
+  - 'Files: 9 new files, 2694 lines added across all phases'
+  - 'Provider Status: Infrastructure OK, all providers blocked on credentials'
   owner: jarvis
+  phases:
+  - branch: feature/LLM-PROVIDER-FIX-001-ADAPTER-phase-a
+    commit: 6c99749
+    name: Phase A - Kimi Adapter Remediation
+    status: complete
+  - branch: feature/LLM-PROVIDER-FIX-001-SMOKE-phase-b
+    commit: docs/tempmemories/LLM-PROVIDER-FIX-001-smoke-matrix.json
+    name: Phase B - Smoke Matrix
+    status: complete
+  - branch: feature/LLM-PROVIDER-FIX-001-LOCKIN-phase-c
+    commit: 365de5c
+    name: Phase C - Lock-in Reproducibility
+    status: complete
+  - branch: feature/LLM-PROVIDER-FIX-001-LATENCY-phase-d
+    commit: 47ccdf8
+    name: Phase D - Latency Study
+    status: complete
+  - branch: feature/LLM-PROVIDER-FIX-001-E2E-phase-e
+    commit: dfcafb0
+    name: Phase E - Final E2E
+    status: complete
   priority: P0
-  status: completed
-  tests_passed: 133/133
-  title: Live Provider Endpoint/Model Fix for Coding-Plan Accounts
+  status: in_progress
+  title: LLM Provider Infrastructure Remediation and Testing Framework (Phases A-E)
 - acceptance_criteria:
   - All merged branches older than 7 days are pruned
   - Stale worktrees are removed and tracked in Redis

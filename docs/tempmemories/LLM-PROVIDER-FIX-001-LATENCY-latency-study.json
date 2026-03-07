@@ -1,0 +1,69 @@
+{
+  "study_id": "LLM-PROVIDER-FIX-001-LATENCY-20260307-034944",
+  "story_id": "LLM-PROVIDER-FIX-001-LATENCY",
+  "n_attempts": 3,
+  "timeout_ceiling_ms": 5000,
+  "start_time": "2026-03-07T03:49:44.775456+00:00",
+  "end_time": "2026-03-07T03:49:44.775801+00:00",
+  "credential_status": {
+    "KIMI_API_KEY": {
+      "var_name": "KIMI_API_KEY",
+      "description": "Kimi (Moonshot) API key",
+      "valid": true,
+      "set": true,
+      "length": 72,
+      "error": null
+    },
+    "ZAI_API_KEY": {
+      "var_name": "ZAI_API_KEY",
+      "description": "Z.ai API key",
+      "valid": false,
+      "set": false,
+      "length": 0,
+      "error": "Environment variable ZAI_API_KEY is not set"
+    },
+    "ZHIPU_API_KEY": {
+      "var_name": "ZHIPU_API_KEY",
+      "description": "Zhipu (BigModel) API key",
+      "valid": true,
+      "set": true,
+      "length": 49,
+      "error": null
+    }
+  },
+  "attempts": [],
+  "statistics": {},
+  "errors": [
+    {
+      "timestamp": "2026-03-07T03:49:44.775794+00:00",
+      "error": "Credential check failed",
+      "type": "CREDENTIAL_ERROR",
+      "details": {
+        "KIMI_API_KEY": {
+          "var_name": "KIMI_API_KEY",
+          "description": "Kimi (Moonshot) API key",
+          "valid": true,
+          "set": true,
+          "length": 72,
+          "error": null
+        },
+        "ZAI_API_KEY": {
+          "var_name": "ZAI_API_KEY",
+          "description": "Z.ai API key",
+          "valid": false,
+          "set": false,
+          "length": 0,
+          "error": "Environment variable ZAI_API_KEY is not set"
+        },
+        "ZHIPU_API_KEY": {
+          "var_name": "ZHIPU_API_KEY",
+          "description": "Zhipu (BigModel) API key",
+          "valid": true,
+          "set": true,
+          "length": 49,
+          "error": null
+        }
+      }
+    }
+  ]
+}
