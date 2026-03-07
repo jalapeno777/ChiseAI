@@ -70,6 +70,7 @@ class ZaiResponse:
     Attributes:
         success: Whether the request was successful
         content: Generated text content (if successful)
+        reasoning_content: Thinking process content (if thinking mode enabled)
         error: Error message (if failed)
         raw_response: Full JSON response from API
         usage: Token usage information
@@ -78,6 +79,7 @@ class ZaiResponse:
 
     success: bool
     content: str | None = None
+    reasoning_content: str | None = None
     error: str | None = None
     raw_response: dict[str, Any] | None = None
     usage: dict[str, int] | None = None
@@ -376,11 +378,13 @@ class ZaiClient:
             choice = choices[0]
             message = choice.get("message", {})
             content = message.get("content", "")
+            reasoning_content = message.get("reasoning_content")
             finish_reason = choice.get("finish_reason")
 
             return ZaiResponse(
                 success=True,
                 content=content,
+                reasoning_content=reasoning_content,
                 raw_response=data,
                 usage=usage if usage else None,
                 finish_reason=finish_reason,
