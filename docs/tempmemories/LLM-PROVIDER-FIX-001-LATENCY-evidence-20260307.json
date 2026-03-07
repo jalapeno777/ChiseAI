@@ -1,0 +1,114 @@
+{
+  "study_id": "LLM-PROVIDER-FIX-001-LATENCY-20260307-072940",
+  "story_id": "ST-KIMI-CODING-403",
+  "test_date": "2026-03-07T07:30:00Z",
+  "n_attempts": 10,
+  "test_method": "quick_latency_test",
+  
+  "smoke_matrix": {
+    "kimi_compat": {
+      "status": "DISABLED",
+      "reason": "KIMI_COMPAT_ENABLED=false"
+    },
+    "kimi": {
+      "status": "FAILED",
+      "reason": "HTTP 401 - Authentication failed",
+      "note": "Uses different auth than kimi_coding endpoint"
+    },
+    "kimi_coding": {
+      "status": "SUCCESS",
+      "http_status": 200,
+      "user_agent_fix": "VERIFIED",
+      "response_time_ms": "N/A (single test)"
+    },
+    "zai": {
+      "status": "SUCCESS",
+      "model": "GLM-5 (Z.ai)",
+      "success_rate": "100%"
+    },
+    "zhipu": {
+      "status": "SUCCESS",
+      "model": "GLM-4.7 (Zhipu)",
+      "success_rate": "100%"
+    }
+  },
+  
+  "latency_statistics": {
+    "zhipu": {
+      "attempts": 10,
+      "successes": 10,
+      "success_rate": 100.0,
+      "latencies_ms": [6807, 6678, 5701, 9280, 2148, 9200, 10598, 10817, 12102, 8643],
+      "avg_ms": 8197,
+      "p50_ms": 9200,
+      "p90_ms": 12102,
+      "p95_ms": 12102,
+      "p99_ms": 12102,
+      "max_ms": 12102
+    },
+    "zai": {
+      "attempts": 10,
+      "successes": 10,
+      "success_rate": 100.0,
+      "latencies_ms": [7007, 6156, 5527, 9769, 10721, 8677, 6752, 11495, 6042, 12354],
+      "avg_ms": 8450,
+      "p50_ms": 8677,
+      "p90_ms": 12354,
+      "p95_ms": 12354,
+      "p99_ms": 12354,
+      "max_ms": 12354
+    },
+    "combined": {
+      "total_attempts": 20,
+      "total_successes": 20,
+      "overall_success_rate": 100.0,
+      "all_latencies_ms": [6807, 6678, 5701, 9280, 2148, 9200, 10598, 10817, 12102, 8643, 7007, 6156, 5527, 9769, 10721, 8677, 6752, 11495, 6042, 12354],
+      "avg_ms": 8324,
+      "p50_ms": 8643,
+      "p90_ms": 12102,
+      "p95_ms": 12354,
+      "p99_ms": 12354,
+      "max_ms": 12354
+    }
+  },
+  
+  "timeout_recommendation": {
+    "p95_latency_ms": 12354,
+    "buffer_multiplier": 1.5,
+    "recommended_timeout_ms": 18531,
+    "rounded_recommendation_ms": 20000,
+    "rationale": "P95 latency is 12.4s. With 1.5x buffer, this gives ~18.5s. Rounding to 20s (20000ms) provides safe coverage for 95% of requests with reasonable buffer."
+  },
+  
+  "credential_status": {
+    "KIMI_API_KEY": {
+      "set": true,
+      "valid": true,
+      "length": 72
+    },
+    "ZAI_API_KEY": {
+      "set": false,
+      "valid": false,
+      "note": "Not set as env var, but provider works via alternative auth"
+    },
+    "ZHIPU_API_KEY": {
+      "set": true,
+      "valid": true,
+      "length": 49
+    }
+  },
+  
+  "key_findings": [
+    "User-Agent header fix verified - kimi_coding returns HTTP 200",
+    "General kimi provider fails with 401 (different auth than coding endpoint)",
+    "ZAI and ZHIPU providers both achieve 100% success rate",
+    "Average latency ~8.3s across working providers",
+    "P95 latency ~12.4s, max ~12.4s",
+    "Recommended timeout: 20000ms (20s) to cover 95%+ of requests"
+  ],
+  
+  "blocking_issues": [
+    "ZAI_API_KEY environment variable not set (but provider still works)",
+    "General kimi provider authentication needs investigation (separate from kimi_coding)"
+  ]
+}

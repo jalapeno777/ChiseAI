@@ -1,10 +1,10 @@
 {
-  "study_id": "LLM-PROVIDER-FIX-001-LATENCY-20260307-034944",
+  "study_id": "LLM-PROVIDER-FIX-001-LATENCY-20260307-072940",
   "story_id": "LLM-PROVIDER-FIX-001-LATENCY",
-  "n_attempts": 3,
-  "timeout_ceiling_ms": 5000,
-  "start_time": "2026-03-07T03:49:44.775456+00:00",
-  "end_time": "2026-03-07T03:49:44.775801+00:00",
+  "n_attempts": 10,
+  "timeout_ceiling_ms": 300000,
+  "start_time": "2026-03-07T07:29:40.456757+00:00",
+  "end_time": "2026-03-07T07:29:40.457035+00:00",
   "credential_status": {
     "KIMI_API_KEY": {
       "var_name": "KIMI_API_KEY",
@@ -35,7 +35,7 @@
   "statistics": {},
   "errors": [
     {
-      "timestamp": "2026-03-07T03:49:44.775794+00:00",
+      "timestamp": "2026-03-07T07:29:40.457031+00:00",
       "error": "Credential check failed",
       "type": "CREDENTIAL_ERROR",
       "details": {
