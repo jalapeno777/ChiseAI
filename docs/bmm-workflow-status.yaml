@@ -871,28 +871,28 @@ epics:
   story_points: 68
 - description: Post-party-mode infrastructure cleanup focusing on Taiga cleanup, container
     governance, workflow hardening, CI improvements, and BrainEval scheduler containerization
-  id: EP-INFRA-CLEANUP-001
-  name: Infrastructure Cleanup & Hardening Sprint
-  notes:
-  - ST-WORKFLOW-001 completed 2026-03-02
-  - ST-CI-001 Phase 2 (Pipeline Hardening) completed 2026-03-03
-  - ST-EVAL-SCHEDULER-001 completed 2026-03-03 (merged to main at 5cdf40a)
-  - ST-CONTAINER-001 completed 2026-03-03 (merged to main at 723d9bf)
-  - ST-TAIGA-001 completed 2026-03-03 (merged to main at 58ffc51)
-  - ST-CI-001 Phase 3 (Remediation Execution) pending merlin review
-  - Backlog artifact created: docs/backlog/session-followups-2026-03-03.md (9 followup
-      items)
-  sprint_id: INFRA-CLEANUP-001
-  status: in_progress
-  stories_completed: 5
-  story_count: 5
-  story_ids:
-  - ST-TAIGA-001
-  - ST-CONTAINER-001
-  - ST-WORKFLOW-001
-  - ST-CI-001
-  - ST-EVAL-SCHEDULER-001
-  story_points: TBD
+   id: EP-INFRA-CLEANUP-001
+   name: Infrastructure Cleanup & Hardening Sprint
+   notes:
+   - ST-WORKFLOW-001 completed 2026-03-02
+   - ST-CI-001 Phase 2 (Pipeline Hardening) completed 2026-03-03
+   - ST-EVAL-SCHEDULER-001 completed 2026-03-03 (merged to main at 5cdf40a)
+   - ST-CONTAINER-001 completed 2026-03-03 (merged to main at 723d9bf)
+   - ST-TAIGA-001 completed 2026-03-03 (merged to main at 58ffc51)
+   - ST-CI-001 Phase 3 (Remediation Execution) completed 2026-03-07
+   - All 5 stories completed, epic closed out
+   - Backlog artifact: docs/backlog/session-followups-2026-03-03.md (9 followup items)
+   sprint_id: INFRA-CLEANUP-001
+   status: completed
+   stories_completed: 5
+   story_count: 5
+   story_ids:
+   - ST-TAIGA-001
+   - ST-CONTAINER-001
+   - ST-WORKFLOW-001
+   - ST-CI-001
+   - ST-EVAL-SCHEDULER-001
+   story_points: TBD
 launch_stories:
 - acceptance_criteria:
   - Demo mode enforcement - Only demo/testnet endpoints are allowed, production endpoint
@@ -2621,8 +2621,8 @@ launch_stories:
   story_points: 3
   title: Paper Trading 30-Minute Proof Loop Validation
   validation_status: closed_with_manual_and_info_exceptions
-metadata:
-  last_updated: '2026-03-05T12:45:00Z'
+  metadata:
+  last_updated: '2026-03-07T12:00:00Z'
   prd_location: docs/prd.md
   prd_note: 'Phased perps execution: continuous backtest -> Bybit demo paper -> Bitget
     live; Grafana-first ops UI; Binance used as reference market-structure venue.
@@ -2630,6 +2630,33 @@ metadata:
     1.'
   project_name: ChiseAI
   recent_changes:
+  - action: e2e-validation-2026-03-07-success
+    actor: jarvis
+    description: 'E2E Paper Trading Validation Success: Full signal-to-close loop completed with
+      30s LLM timeout. A) Order executed successfully (ID: 39e18c28-1f29-4d53-b7d7-c9b412ddfd06).
+      B) LLM provider fallback validated (Kimi auth failed → GLM-5 success, 19.4s latency).
+      C) Discord OPEN/CLOSE messages confirmed (IDs: 1479853659776090225/1479853661801681008).
+      D) Git hygiene closeout complete (13 local branches deleted, 3 remote branches deleted). E)
+      All gates PASS.'
+    evidence_files:
+    - docs/validation/evidence/E2E-2026-03-07-evidence.json
+    - docs/tempmemories/e2e-validation-success-2026-03-07.md
+    gates_passed: 5
+    gates_info: 0
+    order_id: 39e18c28-1f29-4d53-b7d7-c9b412ddfd06
+    status: completed
+    story_id: E2E-VALIDATION-2026-03-07
+    timestamp: '2026-03-07T12:00:00Z'
+    validation_summary:
+      discord_close_id: '1479853661801681008'
+      discord_open_id: '1479853659776090225'
+      git_branches_deleted_local: 13
+      git_branches_deleted_remote: 3
+      llm_fallback_latency_seconds: 19.4
+      llm_fallback_path: 'Kimi → GLM-5'
+      llm_timeout_seconds: 30
+      order_id: 39e18c28-1f29-4d53-b7d7-c9b412ddfd06
+      overall_verdict: PASS
   - action: e2e-bybit-001-closeout
     actor: jarvis
     description: 'E2E-BYBIT-001: Session closeout complete. A) Reason-code distribution
