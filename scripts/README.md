@@ -92,6 +92,11 @@ python3 scripts/validation/validate_metacog_compliance.py --story-id ST-XXX --st
 python3 scripts/validation/validate_metacog_compliance.py --require-for-completed-only
 ```
 
+CI behavior note:
+- In Woodpecker, metacog and insight governance checks are intentionally lint-bundled.
+- Strict mode is applied for changed `docs/tempmemories/iterlog-*.md` files.
+- Non-story runs may skip iterloop compliance unless `CI_SKIP_ITERLOOP_COMPLIANCE=0`.
+
 ### backfill_tempmemory_iterlogs.py
 
 Backfills older `docs/tempmemories/iterlog-*.md` files with standard sections:

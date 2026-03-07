@@ -109,9 +109,12 @@ Purpose:
 - `bmad:chiseai:metacog:prevention_rules`
 
 TTL policy:
-- prediction/outcome: 5 days
-- weekly calibration: 30 days
+- prediction/outcome: 30 days
+- weekly calibration: 90 days
 - prevention rules: 90 days
+
+Canonical note:
+- This blueprint is the source-of-truth TTL policy for metacognition artifacts; skills/commands must match these values.
 
 ## 5.2 Qdrant collection
 
