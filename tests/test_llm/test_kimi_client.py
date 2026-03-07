@@ -110,6 +110,16 @@ class TestKimiClient:
         await client.close()
 
     @pytest.mark.asyncio
+    async def test_connect_includes_user_agent_header(self, client):
+        """Test connect includes User-Agent header for Kimi Coding API."""
+        await client.connect()
+        assert client._session is not None
+        # Verify the User-Agent header is set for Kimi Coding API compatibility
+        headers = client._session._default_headers
+        assert headers.get("User-Agent") == "claude-code/0.1.0"
+        await client.close()
+
+    @pytest.mark.asyncio
     async def test_close_session(self, client):
         """Test close properly closes session."""
         await client.connect()

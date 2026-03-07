@@ -581,6 +581,7 @@ class LLMProviderChain:
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {api_key}",
+            "User-Agent": "claude-code/0.1.0",
         }
 
         try:
@@ -640,6 +641,15 @@ class LLMProviderChain:
                             ),
                         )
                     elif response.status == 403:
+                        # Telemetry tag for Kimi entitlement block tracking
+                        fallback_reason = "kimi-entitlement-block"
+                        if "coding agent" in error_msg.lower():
+                            fallback_reason = "kimi-entitlement-block"
+                        self._record_failure(
+                            "kimi_compat",
+                            ErrorCategory.SCOPE,
+                            fallback_reason=fallback_reason,
+                        )
                         return LLMResponse(
                             success=False,
                             provider="KIMI Compat (Adapter)",

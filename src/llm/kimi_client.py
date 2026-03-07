@@ -124,6 +124,7 @@ class KimiClient:
                 headers={
                     "Content-Type": "application/json",
                     "Authorization": f"Bearer {self.config.api_key or ''}",
+                    "User-Agent": "claude-code/0.1.0",
                 },
                 timeout=aiohttp.ClientTimeout(total=self.config.timeout),
             )
