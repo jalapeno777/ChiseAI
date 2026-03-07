@@ -200,6 +200,7 @@ async def _forward_to_kimi(request: ChatCompletionRequest) -> dict[str, Any]:
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {KIMI_API_KEY}",
+        "User-Agent": "claude-code/0.1.0",
     }
 
     try:
