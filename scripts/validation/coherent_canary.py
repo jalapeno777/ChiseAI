@@ -56,8 +56,8 @@ async def run_coherent_canary() -> dict:
     print(f"{'=' * 60}\n")
 
     # Import after setting env vars
-    from execution.llm.trade_decision_enhancer import TradeDecisionEnhancer
     from discord_alerts.trade_notifier import TradeNotifier
+    from execution.llm.trade_decision_enhancer import TradeDecisionEnhancer
     from ml.models.signal_outcome import SignalOutcome, SignalOutcomeStatus
 
     # Initialize components
@@ -86,7 +86,7 @@ async def run_coherent_canary() -> dict:
     # Get LLM decision (with timeout safeguard)
     llm_decision = await decision_enhancer.enhance_decision(mock_signal)
 
-    print(f"\nLLM Decision Result:")
+    print("\nLLM Decision Result:")
     print(f"  GO/NO-GO: {'GO' if llm_decision.go_no_go else 'NO-GO'}")
     print(f"  Confidence: {llm_decision.confidence}%")
     print(f"  Provider: {llm_decision.provider}")
@@ -133,7 +133,7 @@ async def run_coherent_canary() -> dict:
         open_outcome, llm_decision=llm_decision_payload
     )
 
-    print(f"Discord Open Result:")
+    print("Discord Open Result:")
     print(f"  Success: {open_result.success}")
     print(f"  Message ID: {open_result.message_id}")
     if open_result.error:
@@ -168,7 +168,7 @@ async def run_coherent_canary() -> dict:
         close_outcome, llm_decision=llm_decision_payload
     )
 
-    print(f"Discord Close Result:")
+    print("Discord Close Result:")
     print(f"  Success: {close_result.success}")
     print(f"  Message ID: {close_result.message_id}")
     if close_result.error:
@@ -310,9 +310,7 @@ def validate_gates(result: dict) -> dict:
         status_emoji = (
             "✅"
             if gate_result["status"] == "PASS"
-            else "❌"
-            if gate_result["status"] == "FAIL"
-            else "⏳"
+            else "❌" if gate_result["status"] == "FAIL" else "⏳"
         )
         print(f"  {status_emoji} {gate_name}: {gate_result['status']}")
         print(f"     {gate_result['details']}")
@@ -358,14 +356,14 @@ async def main():
     print("=" * 60)
     print(f"Session ID: {result['session_id']}")
     print(f"Duration: {result['duration_seconds']:.1f}s")
-    print(f"\nLLM Evidence:")
+    print("\nLLM Evidence:")
     print(f"  Provider: {result['llm_decision']['provider']}")
     print(f"  Fallback Used: {result['llm_decision']['fallback_used']}")
     print(f"  Latency: {result['llm_decision']['latency_ms']:.1f}ms")
-    print(f"\nDiscord Evidence:")
+    print("\nDiscord Evidence:")
     print(f"  Open Message ID: {discord_evidence.get('open_message_id', 'N/A')}")
     print(f"  Close Message ID: {discord_evidence.get('close_message_id', 'N/A')}")
-    print(f"\nGate Results:")
+    print("\nGate Results:")
 
     all_passed = True
     for gate_name, gate_result in gates.items():
