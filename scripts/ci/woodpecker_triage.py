@@ -360,6 +360,8 @@ def _detect_tool(step_name: str, log_text: str) -> str:
         return "validate_status_sync"
     if "validate_iterloop_compliance.py" in text:
         return "validate_iterloop_compliance"
+    if "validate_metacog_compliance.py" in text:
+        return "validate_metacog_compliance"
     if "validate_pr_title.py" in text:
         return "validate_pr_title"
     if "lint" in name:
@@ -596,6 +598,7 @@ def parse_root_causes(step_name: str, log_text: str) -> list[RootCause]:
     elif tool in {
         "validate_status_sync",
         "validate_iterloop_compliance",
+        "validate_metacog_compliance",
         "validate_pr_title",
         "lint",
         "local-ci",
@@ -693,6 +696,9 @@ def _repro_for_tool(tool: str) -> str:
         "validate_status_sync": "python3 scripts/validate_status_sync.py",
         "validate_iterloop_compliance": (
             "python3 scripts/validate_iterloop_compliance.py --story-id=<story_id>"
+        ),
+        "validate_metacog_compliance": (
+            "python3 scripts/validation/validate_metacog_compliance.py --story-id=<story_id> --strict"
         ),
         "validate_pr_title": "python3 scripts/validate_pr_title.py",
         "local-ci": "./scripts/local-ci-checks.sh",
