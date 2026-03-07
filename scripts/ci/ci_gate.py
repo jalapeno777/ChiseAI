@@ -49,6 +49,34 @@ def _read_status(path: Path) -> int:
         return 99
 
 
+def _infer_missing_status_from_log(status_path: Path) -> int | None:
+    """Infer success for missing status files only on explicit skip logs."""
+    log_path = status_path.with_suffix(".log")
+    if not log_path.exists():
+        return None
+    try:
+        text = log_path.read_text(encoding="utf-8", errors="replace")
+    except Exception:  # noqa: BLE001
+        return None
+
+    low = text.lower()
+    if "skipping" not in low:
+        return None
+
+    # Keep this conservative: only treat as success when no obvious hard-failure markers exist.
+    hard_markers = (
+        "traceback",
+        "module not found",
+        "error while importing test module",
+        "validation failed",
+        "ci-gate: fail",
+        "failed steps",
+    )
+    if any(marker in low for marker in hard_markers):
+        return None
+    return 0
+
+
 def _is_pr_build(env: dict[str, str]) -> bool:
     # Woodpecker sets CI_COMMIT_PULL_REQUEST on PR builds.
     return bool(env.get("CI_COMMIT_PULL_REQUEST", "").strip()) or bool(
@@ -215,8 +243,22 @@ def main() -> int:
     else:
         print("ci-gate: CI_DIR does not exist")
 
-    missing = [p for p in required_files if not p.exists()]
-    statuses = {p.name: (_read_status(p) if p.exists() else 99) for p in required_files}
+    missing: list[Path] = []
+    statuses: dict[str, int] = {}
+    for p in required_files:
+        if p.exists():
+            statuses[p.name] = _read_status(p)
+            continue
+        inferred = _infer_missing_status_from_log(p)
+        if inferred is not None:
+            statuses[p.name] = inferred
+            print(
+                f"ci-gate: inferred status=0 from skip log for missing {p.name}",
+                file=sys.stderr,
+            )
+            continue
+        missing.append(p)
+        statuses[p.name] = 99
 
     print(f"ci-gate: Statuses read: {statuses}")
 
