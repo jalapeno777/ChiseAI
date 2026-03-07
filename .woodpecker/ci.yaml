@@ -617,6 +617,27 @@ steps:
 
   ci-gate:
     image: python:3.11
+    depends_on:
+      - swarm-context
+      - lint
+      - security-scan
+      - dependency-audit
+      - secret-scan
+      - risk-invariants
+      - brain-regression
+      - docs-pairing
+      - docker-governance
+      - local-ci
+      - pipeline-watchdog
+      - brain-eval
+      - tempmemory-scheduler
+      - mini-brain-eval
+      - tempmemory-reconcile
+      - tempmemory-drill
+      - flaky-detection
+      - compass-apply
+      - compass-gate
+      - status-write-gate
     environment:
       GITEA_TOKEN:
         from_secret: gitea_token
