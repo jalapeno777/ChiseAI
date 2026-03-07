@@ -1,0 +1,124 @@
+{
+  "test_id": "PAPER-LIVE-E2E-10ec4570",
+  "start_time": "2026-03-07T14:44:15.295253+00:00",
+  "environment": {
+    "USE_LLM_TRADE_DECISIONS": "true",
+    "LLM_DECISION_TIMEOUT_MS": "30000"
+  },
+  "safety_checks": {
+    "bybit_demo_mode": {
+      "passed": true,
+      "mode": "demo",
+      "api_key_prefix": "R9KF..."
+    },
+    "kill_switch": {
+      "passed": true,
+      "triggered": false,
+      "reason": null
+    },
+    "discord_webhook": {
+      "passed": true,
+      "configured": true,
+      "url_prefix": "https://discord.com/api/webhoo..."
+    },
+    "llm_config": {
+      "passed": true,
+      "USE_LLM_TRADE_DECISIONS": true,
+      "LLM_DECISION_TIMEOUT_MS": "30000"
+    }
+  },
+  "signal": {
+    "signal_id": "test-signal-2ed58eb3",
+    "timestamp": "2026-03-07T14:44:16.498416+00:00",
+    "symbol": "BTCUSDT",
+    "direction": "long",
+    "confidence": 0.85,
+    "base_score": 85.0,
+    "status": "actionable",
+    "timeframe": "1h"
+  },
+  "llm_analysis": {
+    "go_no_go": true,
+    "confidence": 50.0,
+    "rationale": "No rationale provided",
+    "provider": "GLM-5 (Z.ai)",
+    "fallback_used": true,
+    "latency_ms": 19859.06,
+    "position_size": null,
+    "stop_loss": null,
+    "take_profit": null,
+    "risk_recommendation": ""
+  },
+  "risk_checks": {
+    "timestamp": "2026-03-07T14:44:36.540691+00:00",
+    "risk_config": {
+      "max_position_pct": 0.01,
+      "max_leverage": 1.0,
+      "min_confidence": 0.75,
+      "max_drawdown_pct": 0.15
+    },
+    "checks": {
+      "confidence_check": {
+        "passed": true,
+        "signal_confidence": 0.85,
+        "min_required": 0.75
+      },
+      "llm_decision_check": {
+        "passed": true,
+        "go_no_go": true,
+        "fallback_used": true
+      },
+      "position_size_check": {
+        "passed": true,
+        "max_position_value_usd": 100.0,
+        "test_quantity": 0.001
+      }
+    },
+    "all_passed": true
+  },
+  "execution": {},
+  "trade": {
+    "entry": {
+      "order_id": "382aa042-b0f1-454f-ac5f-de5c2730d7b9",
+      "symbol": "BTCUSDT",
+      "side": "buy",
+      "quantity": 0.001,
+      "entry_price": 67975.1,
+      "position_value_usd": 67.98,
+      "timestamp": "2026-03-07T14:44:36.738763+00:00",
+      "latency_ms": 508.97,
+      "demo_mode": true,
+      "endpoint": "https://api-demo.bybit.com",
+      "api_key_prefix": "R9KF",
+      "position_id": "pos-a49dec41"
+    },
+    "exit": {
+      "position_id": "pos-a49dec41",
+      "exit_price": 67975.1,
+      "pnl": 0.0,
+      "timestamp": "2026-03-07T14:44:37.744761+00:00",
+      "latency_ms": 0.01,
+      "reason": "test_complete"
+    }
+  },
+  "journal": {},
+  "discord": {
+    "open": {
+      "sent": false,
+      "error": "badly formed hexadecimal UUID string"
+    },
+    "close": {
+      "sent": false,
+      "error": "badly formed hexadecimal UUID string"
+    }
+  },
+  "cleanup": {},
+  "errors": [
+    {
+      "timestamp": "2026-03-07T14:44:37.804271+00:00",
+      "error": "'TradeJournalEntry' object has no attribute 'quantity'",
+      "type": "AttributeError"
+    }
+  ],
+  "status": "FAILED"
+}
