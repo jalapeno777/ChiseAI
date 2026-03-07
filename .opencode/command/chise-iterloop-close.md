@@ -9,9 +9,9 @@ Follow these steps exactly (do not skip):
 1. Evidence collection
    - Capture: files changed, commands run, test results, and any live validation checks.
 
-2. Redis iterlog close (DB 0)
+2. Prepare Redis iterlog close payload (DB 0)
    - Update: `bmad:chiseai:iterlog:story:<story_id>`
-     - `status=completed`
+     - `status=closing`
      - `completed_at`
      - `key_decisions` (compact JSON-like string)
      - `learnings` (compact JSON-like string)
@@ -83,3 +83,15 @@ Follow these steps exactly (do not skip):
    - This check is enforced by CI for all completions
    - Missing or incomplete structured issues will block the completion gate
 
+7. Metacognition close (required)
+   - Run `.opencode/command/chise-metacog-close.md`.
+   - Iterlog must include:
+     - `## Metacognitive Outcomes`
+     - `## Metacognitive Calibration`
+   - Validate:
+     - `python3 scripts/validation/validate_metacog_compliance.py --story-id=<story_id> --strict`
+
+8. Final completion mark
+   - Only after steps 1-7 pass, update Redis iterlog:
+     - `status=completed`
+   - If any gate fails, keep status as `closing` (or `in_progress`) and remediate first.

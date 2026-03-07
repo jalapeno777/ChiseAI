@@ -29,6 +29,8 @@ Run via `.opencode/command/chise-precommit-gates.md`:
 - Local CI (if available)
 - Status sync validation
 - Iterloop compliance
+- Insight governance compliance
+- Metacognition compliance (prediction/outcome/calibration artifacts)
 
 ### 2. CI Gates (Woodpecker)
 Server-side validation:

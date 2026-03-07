@@ -77,6 +77,26 @@ python3 scripts/validation/validate_insight_governance.py --require-for-complete
 python3 scripts/validation/validate_insight_governance.py --require-for-completed-only --strict
 ```
 
+### validation/validate_metacog_compliance.py
+
+Validates metacognition artifact completeness from iterlog artifacts:
+- `## Metacognitive Predictions`
+- `## Metacognitive Outcomes`
+- `## Metacognitive Calibration`
+- Required structured fields in each section
+
+**Usage:**
+```bash
+python3 scripts/validation/validate_metacog_compliance.py
+python3 scripts/validation/validate_metacog_compliance.py --story-id ST-XXX --strict
+python3 scripts/validation/validate_metacog_compliance.py --require-for-completed-only
+```
+
+CI behavior note:
+- In Woodpecker, metacog and insight governance checks are intentionally lint-bundled.
+- Strict mode is applied for changed `docs/tempmemories/iterlog-*.md` files.
+- Non-story runs may skip iterloop compliance unless `CI_SKIP_ITERLOOP_COMPLIANCE=0`.
+
 ### backfill_tempmemory_iterlogs.py
 
 Backfills older `docs/tempmemories/iterlog-*.md` files with standard sections:
