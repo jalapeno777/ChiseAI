@@ -141,3 +141,30 @@ variable "kimi_model" {
   description = "Kimi model to use (e.g., kimi-k2.5, moonshot-v1-8k, moonshot-v1-32k, moonshot-v1-128k)."
   default     = "kimi-k2.5"
 }
+
+variable "zhipu_api_key" {
+  type        = string
+  description = "Zhipu AI API key for LLM adapter."
+  default     = ""
+  sensitive   = true
+}
+
+variable "z_ai_api_key" {
+  type        = string
+  description = "Z-AI API key for LLM adapter."
+  default     = ""
+  sensitive   = true
+}
+
+variable "minimax_api_key" {
+  type        = string
+  description = "MiniMax API key for LLM adapter."
+  default     = ""
+  sensitive   = true
+}
+
+variable "minimax_enabled" {
+  type        = string
+  description = "Enable MiniMax LLM provider (true/false)."
+  default     = "false"
+}
