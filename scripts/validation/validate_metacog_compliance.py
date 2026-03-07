@@ -30,6 +30,7 @@ REQ_PRED_FIELDS = {
     "predicted_risks",
     "confidence",
     "verification_plan",
+    "expected_metrics",
 }
 
 REQ_OUT_FIELDS = {
@@ -37,6 +38,7 @@ REQ_OUT_FIELDS = {
     "actual_metrics",
     "wins",
     "misses",
+    "new_prevention_rules",
 }
 
 REQ_CAL_FIELDS = {
@@ -97,19 +99,52 @@ def _section_text(body: str, heading: str) -> str | None:
     return match.group(1)
 
 
-def _check_fields(section_text: str, fields: set[str], path: Path, section: str, result: Result) -> None:
-    lower = section_text.lower()
+def _contains_field(section_text: str, field: str) -> bool:
+    # Require key-like structure (`field:` or field:) to avoid prose-only false passes.
+    pattern = rf"(?im)^\s*(?:[-*]\s*)?`?{re.escape(field)}`?\s*:"
+    return re.search(pattern, section_text) is not None
+
+
+def _check_fields(
+    section_text: str, fields: set[str], path: Path, section: str, result: Result
+) -> None:
     for field in fields:
-        if field.lower() not in lower:
+        if not _contains_field(section_text, field):
             result.err(f"{path}: {section} missing field {field}")
+
+
+def _extract_story_id(path: Path, fm: dict[str, Any], body: str) -> str:
+    if "story_id" in fm:
+        return str(fm.get("story_id", "")).strip()
+
+    # Fallback filename convention: iterlog-<story_id>.md
+    stem = path.stem
+    if stem.startswith("iterlog-"):
+        return stem.replace("iterlog-", "", 1)
+
+    # Fallback parse from body if present.
+    match = re.search(r"(?im)^\s*story_id\s*:\s*([A-Za-z0-9_-]+)\s*$", body)
+    if match:
+        return match.group(1).strip()
+    return ""
+
+
+def _extract_status(fm: dict[str, Any], body: str) -> str:
+    status = str(fm.get("status", "")).strip().lower()
+    if status:
+        return status
+    match = re.search(r"(?im)^\s*status\s*:\s*([A-Za-z0-9_-]+)\s*$", body)
+    if match:
+        return match.group(1).strip().lower()
+    return ""
 
 
 def _validate_file(path: Path, require_for_completed: bool, strict: bool, result: Result) -> None:
     fm = _read_frontmatter(path)
-    status = str(fm.get("status", "")).strip().lower()
     body = _read_body(path)
+    status = _extract_status(fm, body)
 
-    should_require = status == "completed" if require_for_completed else True
+    should_require = status in {"completed", "complete", "done"} if require_for_completed else True
     if not should_require:
         return
 
@@ -151,7 +186,14 @@ def main() -> int:
 
     paths = sorted(ITERLOG_DIR.glob(ITERLOG_GLOB))
     if args.story_id:
-        paths = [p for p in paths if args.story_id in p.name]
+        filtered: list[Path] = []
+        for path in paths:
+            fm = _read_frontmatter(path)
+            body = _read_body(path)
+            story_id = _extract_story_id(path, fm, body)
+            if story_id == args.story_id:
+                filtered.append(path)
+        paths = filtered
 
     result = Result()
     if not paths:
@@ -170,4 +212,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

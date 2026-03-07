@@ -179,6 +179,17 @@ Primary KPIs:
 5. Prevention-rule hit rate (up is good)
 6. P0/P1 incident frequency (down is good)
 
+Formula and threshold table:
+
+| KPI | Formula | Warn Threshold | Expansion Threshold | Owner |
+|---|---|---|---|---|
+| Calibration error (ECE) | `sum_i((n_i/N) * abs(acc_i - conf_i))` | `>0.10` | `<=0.08` for 2 weeks | Aria |
+| Repeat fingerprint rate | `repeat_fingerprints / total_fingerprints` | no weekly drop vs baseline | `>=15%` reduction vs 4-week baseline | Jarvis |
+| Reopen/regression rate | `reopened_or_regressed / shipped_items` | `>8%` | `<=5%` for 2 weeks | Merlin |
+| Median cycle time guardrail | `median(close_ts - start_ts)` | `>10%` degradation vs baseline | must not degrade while quality is flat/worse | Aria |
+| Prevention-rule hit rate | `incidents_prevented_by_rule / total_incidents` | `<20%` after initial rollout | `>=35%` sustained trend | Jarvis |
+| P0/P1 incident frequency | `p0_p1_count / week` | any upward 2-week trend | non-increasing for 4 weeks | Craig |
+
 Secondary product-aligned KPIs:
 - kill-switch event count
 - drawdown breach incidents
@@ -188,6 +199,35 @@ Secondary product-aligned KPIs:
 Decision policy:
 - If incident rate decreases and calibration improves for 2 consecutive weeks: expand autonomy envelope cautiously.
 - If calibration worsens and repeat incidents rise for 2 consecutive weeks: tighten thresholds and escalate to Aria/Craig.
+
+Review cadence:
+- Weekly operational review: Aria + Jarvis.
+- Monthly policy retune: Aria + Merlin with Craig sign-off.
+- Quarterly threshold recalibration: Craig authority.
+
+Weekly command output schema (`chise-metacog-weekly`):
+```yaml
+week_id: "YYYY-Www"
+generated_at_utc: "ISO8601"
+decision: "NO_CHANGE|TIGHTEN_AUTONOMY_THRESHOLDS|EXPAND_AUTONOMY_ENVELOPE"
+kpis:
+  ece: 0.0
+  repeat_fingerprint_rate: 0.0
+  reopen_regression_rate: 0.0
+  median_cycle_time_hours: 0.0
+  prevention_rule_hit_rate: 0.0
+  p0_p1_incident_count: 0
+baseline_comparison:
+  ece_delta: 0.0
+  repeat_rate_delta_pct: 0.0
+  reopen_rate_delta_pct: 0.0
+  cycle_time_delta_pct: 0.0
+evidence_links:
+  - "<path-or-url>"
+recommended_actions:
+  - "<action>"
+owner: "aria|jarvis|merlin"
+```
 
 ## 9) Rollout Plan
 
@@ -223,4 +263,3 @@ Mitigation: use 2-week sustained trend criteria before policy shifts.
 4. Reflection policy accepts all valid Chise story-id formats.
 5. Weekly reporting path exists (`chise-metacog-weekly`).
 6. Aria receives formal review prompt and implementation recommendations.
-

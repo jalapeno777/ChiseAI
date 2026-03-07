@@ -101,7 +101,7 @@ Content here...
 ```
 
 ### Fallback Strategy
-When Redis/Qdrant unavailable, write to `docs/tempmemories/` with identical frontmatter. Mark with `needs_manual_import: true`.
+When Redis/Qdrant unavailable, write to `docs/tempmemories/` with identical frontmatter. Mark with `needs_manual_qdrant_import: true` (and optionally `needs_manual_import: true` for backward compatibility).
 
 ## Exit Conditions
 
@@ -406,6 +406,7 @@ except Exception as e:
 {json.dumps(decision_data, indent=2)}
 ```
 needs_manual_import: true
+needs_manual_qdrant_import: true
 """
     
     with open(fallback_path, 'w') as f:
