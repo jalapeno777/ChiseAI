@@ -404,6 +404,13 @@ resource "docker_container" "chiseai_api" {
     "QDRANT_URL=http://chiseai-qdrant:6334",
     "CHISEAI_ENV=production",
     "PYTHONPATH=/app:/app/src:/app/scripts",
+    "KIMI_API_KEY=${var.kimi_api_key}",
+    "KIMI_BASE_URL=${var.kimi_base_url}",
+    "KIMI_MODEL=${var.kimi_model}",
+    "ZHIPU_API_KEY=${var.zhipu_api_key}",
+    "Z_AI_API_KEY=${var.z_ai_api_key}",
+    "MINIMAX_API_KEY=${var.minimax_api_key}",
+    "MINIMAX_ENABLED=${var.minimax_enabled}",
   ]
 
   ports {

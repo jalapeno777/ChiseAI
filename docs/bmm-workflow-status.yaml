@@ -1,4 +1,4 @@
-backlog:
+completed:
 - acceptance_criteria:
   - Phase A: Kimi adapter infrastructure verified (kimi_model default updated to kimi-k2.5)
   - Phase B: Smoke matrix completed with all 4 providers tested (0/4 functional - credential issues)
@@ -7,10 +7,13 @@ backlog:
   - Phase D: Latency study framework ready (30s timeout recommended per PAPER-LLM-TIMEOUT-001)
   - Phase E: E2E test script ready (llm_provider_e2e.py) with full validation checklist
   - All documentation committed and temp memory files preserved
-  - CI passes on consolidation branch
+  - Merged to main via PR #383
   branch: feature/LLM-PROVIDER-FIX-001-consolidation
   commit_sha: 758400c
+  merge_commit: 8bf1c7b
+  pr_number: 383
   created_date: '2026-03-06'
+  merged_date: '2026-03-06'
   description: Multi-phase LLM Provider Infrastructure Remediation and Testing Framework.
     Phase A - Kimi adapter remediation. Phase B - Live smoke matrix across all providers.
     Phase C - Lock-in reproducibility with runbooks and preflight checks. Phase D -
@@ -26,6 +29,7 @@ backlog:
   - 'Smoke Matrix: Kimi (401 invalid key), Z.ai (not configured), Zhipu (429 quota exhausted)'
   - 'Files: 9 new files, 2694 lines added across all phases'
   - 'Provider Status: Infrastructure OK, all providers blocked on credentials'
+  - 'MERGED: All phases completed and merged to main via PR #383'
   owner: jarvis
   phases:
   - branch: feature/LLM-PROVIDER-FIX-001-ADAPTER-phase-a
@@ -49,8 +53,9 @@ backlog:
     name: Phase E - Final E2E
     status: complete
   priority: P0
-  status: in_progress
+  status: merged
   title: LLM Provider Infrastructure Remediation and Testing Framework (Phases A-E)
+backlog:
 - acceptance_criteria:
   - All merged branches older than 7 days are pruned
   - Stale worktrees are removed and tracked in Redis
