@@ -47,9 +47,15 @@ Use these keys in DB 0:
 - `bmad:chiseai:metacog:prevention_rules`
 
 TTL defaults:
-- Story prediction/outcome: 5 days (match iterlog lifecycle).
-- Weekly calibration: 30 days.
+- Story prediction/outcome: 30 days (supports monthly retrospectives and incident forensics).
+- Weekly calibration: 90 days (supports quarter-over-quarter trend checks).
 - Prevention rules: 90 days.
+
+Prevention rules contract:
+- Data structure: Redis hash (`rule_id` -> JSON payload).
+- Dedupe key: `rule_id = <scope_context>:<normalized_signature_hash>`.
+- Minimum payload: `rule_id`, `scope_context`, `pattern`, `mitigation`, `created_at`, `last_seen_at`, `hit_count`.
+- Max payload size target: <=4KB per rule.
 
 ## Qdrant Promotion Contract
 
@@ -64,6 +70,7 @@ Promote durable learnings to collection `ChiseAI_metacognition` with payload:
 - `calibration_delta`
 - `prevention_rule`
 - `scope_context`
+- `embedding_model` (match canonical embedding stack used by `ChiseAI` collection)
 
 If Qdrant is unavailable, use `docs/tempmemories/` fallback with:
 - `needs_manual_qdrant_import: true`
@@ -92,4 +99,3 @@ Use a 4-week rolling baseline; tune autonomy thresholds only when trend is stabl
 - `chiseai-validation`
 - `chiseai-incident-response`
 - `chiseai-worker-contracts`
-

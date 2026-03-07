@@ -155,6 +155,7 @@ INSIGHT_PACKET
     reason:
     urgency: low|medium|high|critical
     confidence: 0.0-1.0
+    assumption_ids:
     evidence:
     evidence_signature:
 ```
@@ -168,6 +169,10 @@ ARIA_DECISION
 - scope_impact: NONE | MINOR | MAJOR
 - prd_scope_change: true|false
 - craig_approval_required: true|false
+- acceptance_criteria_impact: NONE | MINOR | MAJOR
+- live_validation_impact: NONE | MINOR | MAJOR
+- decision_deadline_utc:
+- rollback_plan_ref:
 - rationale:
 - expected_outcome:
 - follow_up_actions:

@@ -34,6 +34,7 @@ Run these gates before PR/merge. If a referenced script is missing, explicitly n
 6. Metacognition conformance (if present)
    - If `scripts/validation/validate_metacog_compliance.py` exists and `<story_id>` is known, run:
      - `python3 scripts/validation/validate_metacog_compliance.py --story-id=<story_id> --strict`
+   - If `<story_id>` is known and the script is missing, treat as a blocking gate failure and stop.
    - If `<story_id>` is not known, run a non-blocking scan:
      - `python3 scripts/validation/validate_metacog_compliance.py --require-for-completed-only`
 

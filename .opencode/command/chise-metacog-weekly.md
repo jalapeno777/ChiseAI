@@ -24,6 +24,15 @@ Run weekly (or manually during incident-heavy periods).
      - `TIGHTEN_AUTONOMY_THRESHOLDS`
      - `EXPAND_AUTONOMY_ENVELOPE`
    - Include rationale + evidence links.
+   - Emit machine-parseable YAML with:
+     - `week_id`
+     - `generated_at_utc`
+     - `decision`
+     - `kpis` (ece, repeat_fingerprint_rate, reopen_regression_rate, median_cycle_time_hours, prevention_rule_hit_rate, p0_p1_incident_count)
+     - `baseline_comparison`
+     - `evidence_links`
+     - `recommended_actions`
+     - `owner`
 
 4. Memory promotion
    - Store summary into Qdrant (`ChiseAI_metacognition`) with week metadata.
@@ -32,4 +41,3 @@ Run weekly (or manually during incident-heavy periods).
 5. Escalation rule
    - If confidence is degrading while incident rate rises for 2 consecutive weeks:
      - route a `critical` insight packet to Aria before expanding any autonomy settings.
-

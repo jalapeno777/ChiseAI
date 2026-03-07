@@ -149,6 +149,9 @@ INSIGHT_PACKET
     reason:
     urgency: low|medium|high|critical
     confidence: 0.0-1.0
+    assumption_ids:
+    decision_deadline_utc:
+    rollback_plan_ref:
     evidence:
     evidence_signature:
 ```
