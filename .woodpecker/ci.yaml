@@ -212,6 +212,11 @@ steps:
         set +e
         (
           set -euo pipefail
+          CHANGED_FILES="$(git diff --name-only origin/main HEAD || true)"
+          if ! echo "$CHANGED_FILES" | grep -qE "^(src/execution/|src/ml/|scripts/reconciliation/|tests/test_execution/|tests/test_ml/|scripts/ci/|pyproject.toml|requirements)"; then
+            echo "risk-invariants: no risk-domain changes; skipping"
+            exit 0
+          fi
           pip install --no-cache-dir pytest pytest-asyncio pytest-cov
           pip install --no-cache-dir ccxt influxdb-client asyncpg numpy scipy pyyaml click joblib pydantic
           python3 -m pytest -q \
@@ -419,10 +424,10 @@ steps:
         (
           set -euo pipefail
           python -V
-          pip install --no-cache-dir pyyaml requests numpy scipy
           # Check if brain files changed
           if git diff --name-only origin/main HEAD | grep -qE "(src/brain/|src/neuro_symbolic/|src/strategy/)"; then
             echo "Brain changes detected, running evaluation..."
+            pip install --no-cache-dir pyyaml requests numpy scipy
             pip install -e . > /dev/null 2>&1 || pip install -e . --break-system-packages > /dev/null 2>&1 || true
             python scripts/ci/brain_eval_ci.py --output "$${CI_STATUS_DIR}/brain-eval.json"
           else
