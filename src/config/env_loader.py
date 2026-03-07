@@ -5,6 +5,46 @@ and default value support across the codebase.
 
 For CH-KIMI-DISCORD-001: Fix KIMI env loading
 For ST-ENV-001: Environment bootstrap system
+For LLM-PROVIDER-FIX-001: Provider configuration defaults
+
+================================================================================
+CANONICAL LLM PROVIDER CONFIGURATION (LLM-PROVIDER-FIX-001 Phase C)
+================================================================================
+
+Provider Defaults:
+  KIMI (Direct):
+    - Endpoint: https://api.moonshot.cn/v1
+    - Model: kimi-k2.5
+    - API Key: KIMI_API_KEY
+    - Env Prefix: KIMI_
+
+  KIMI (Adapter):
+    - Endpoint: http://chiseai-kimi-adapter:8002/v1
+    - Model: kimi-for-coding
+    - API Key: KIMI_API_KEY (shared with direct)
+
+  Z.ai Coding:
+    - Endpoint: https://api.z.ai/api/coding/paas/v4
+    - Model: glm-5
+    - API Key: ZAI_API_KEY
+    - Env Prefix: ZAI_
+
+  Zhipu (Open BigModel):
+    - Endpoint: https://open.bigmodel.cn/api/paas/v4
+    - Model: glm-4.7
+    - API Key: ZHIPU_API_KEY (with ZAI_API_KEY fallback)
+    - Env Prefix: ZHIPU_
+
+Configuration Priority:
+  1. Explicit environment variable (e.g., KIMI_BASE_URL)
+  2. Default value from canonical configuration above
+  3. Fallback to generic provider chain
+
+Smoke Test Commands:
+  See: docs/runbooks/llm-provider-smoke-tests.md
+  Preflight: ./scripts/preflight/llm_provider_check.sh
+
+================================================================================
 """
 
 from __future__ import annotations
