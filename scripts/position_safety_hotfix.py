@@ -430,9 +430,9 @@ class PositionSafetyHotfix:
                         )
                     else:
                         error_text = await response.text()
-                        self.evidence["discord"]["error"] = (
-                            f"HTTP {response.status}: {error_text[:200]}"
-                        )
+                        self.evidence["discord"][
+                            "error"
+                        ] = f"HTTP {response.status}: {error_text[:200]}"
                         logger.warning(
                             f"Discord notification failed: HTTP {response.status}"
                         )
