@@ -48,6 +48,11 @@ REQ_CAL_FIELDS = {
     "confidence_adjustment_recommendation",
 }
 
+STORY_ID_PATTERN = re.compile(
+    r"^(ST|CH|FT|REWARD|REPO|SAFETY|BRANCH|PAPER|RECON)-[A-Z0-9-]*[0-9][A-Z0-9-]*$"
+)
+VALID_OBSERVED_RESULTS = {"success", "partial", "failure"}
+
 
 @dataclass
 class Result:
@@ -105,6 +110,58 @@ def _contains_field(section_text: str, field: str) -> bool:
     return re.search(pattern, section_text) is not None
 
 
+def _extract_field_value(section_text: str, field: str) -> str | None:
+    pattern = rf"(?im)^\s*(?:[-*]\s*)?`?{re.escape(field)}`?\s*:\s*(.+?)\s*$"
+    match = re.search(pattern, section_text)
+    if not match:
+        return None
+    return match.group(1).strip()
+
+
+def _is_float_0_1(value: str) -> bool:
+    try:
+        f = float(value)
+    except ValueError:
+        return False
+    return 0.0 <= f <= 1.0
+
+
+def _validate_semantics(
+    path: Path, pred_text: str | None, out_text: str | None, cal_text: str | None, result: Result
+) -> None:
+    if pred_text:
+        confidence = _extract_field_value(pred_text, "confidence")
+        if confidence is not None and not _is_float_0_1(confidence):
+            result.err(f"{path}: {SECTION_PRED} confidence must be in [0.0, 1.0]")
+
+        expected_metrics = _extract_field_value(pred_text, "expected_metrics")
+        if expected_metrics is not None:
+            stripped = expected_metrics.strip()
+            if stripped in {"[]", "{}", '""', "''"}:
+                result.err(f"{path}: {SECTION_PRED} expected_metrics must be non-empty")
+            # Encourage measurable targets (number/comparator/percent).
+            if not re.search(r"(\d|>=|<=|>|<|%|ms|sec|minutes|hours)", stripped, re.IGNORECASE):
+                result.warn(
+                    f"{path}: {SECTION_PRED} expected_metrics has no explicit numeric/comparator target"
+                )
+
+    if cal_text:
+        predicted_confidence = _extract_field_value(cal_text, "predicted_confidence")
+        if predicted_confidence is not None and not _is_float_0_1(predicted_confidence):
+            result.err(f"{path}: {SECTION_CAL} predicted_confidence must be in [0.0, 1.0]")
+
+        observed_result = _extract_field_value(cal_text, "observed_result")
+        if observed_result is not None and observed_result.lower() not in VALID_OBSERVED_RESULTS:
+            result.err(
+                f"{path}: {SECTION_CAL} observed_result must be one of {sorted(VALID_OBSERVED_RESULTS)}"
+            )
+
+    if out_text:
+        new_rules = _extract_field_value(out_text, "new_prevention_rules")
+        if new_rules is not None and new_rules.strip() == "":
+            result.err(f"{path}: {SECTION_OUT} new_prevention_rules must not be blank")
+
+
 def _check_fields(
     section_text: str, fields: set[str], path: Path, section: str, result: Result
 ) -> None:
@@ -142,6 +199,16 @@ def _extract_status(fm: dict[str, Any], body: str) -> str:
 def _validate_file(path: Path, require_for_completed: bool, strict: bool, result: Result) -> None:
     fm = _read_frontmatter(path)
     body = _read_body(path)
+    story_id = _extract_story_id(path, fm, body)
+    if not story_id:
+        result.err(f"{path}: missing story_id")
+    elif not STORY_ID_PATTERN.match(story_id):
+        msg = f"{path}: invalid story_id format {story_id!r}"
+        if strict:
+            result.err(msg)
+        else:
+            result.warn(msg)
+
     status = _extract_status(fm, body)
 
     should_require = status in {"completed", "complete", "done"} if require_for_completed else True
@@ -167,6 +234,7 @@ def _validate_file(path: Path, require_for_completed: bool, strict: bool, result
         _check_fields(out_text, REQ_OUT_FIELDS, path, SECTION_OUT, result)
     if cal_text:
         _check_fields(cal_text, REQ_CAL_FIELDS, path, SECTION_CAL, result)
+    _validate_semantics(path, pred_text, out_text, cal_text, result)
 
 
 def main() -> int:

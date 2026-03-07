@@ -50,6 +50,7 @@ TTL defaults:
 - Story prediction/outcome: 30 days (supports monthly retrospectives and incident forensics).
 - Weekly calibration: 90 days (supports quarter-over-quarter trend checks).
 - Prevention rules: 90 days.
+- Canonical policy source: `docs/governance/metacognition-integration-blueprint.md` (Section 5.1).
 
 Prevention rules contract:
 - Data structure: Redis hash (`rule_id` -> JSON payload).

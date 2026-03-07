@@ -9,6 +9,8 @@
 # BLOCKING GATES (via ci-gate.py FAST_REQUIRED list):
 #   - swarm-context: Repository context validation
 #   - lint: Code quality (black, ruff, mypy, status sync, iterlog governance)
+#     Note: insight/metacog governance checks are intentionally lint-bundled to keep
+#     gate fan-out small while preserving strict blocking on changed iterlogs.
 #   - security-scan: Bandit security analysis
 #   - dependency-audit: pip-audit vulnerability scan
 #   - secret-scan: Hardcoded secret detection
@@ -94,6 +96,8 @@ steps:
           fi
           python scripts/validate_status_sync.py || echo "WARN: status sync issues (non-blocking)"
           python scripts/validate_fr_traceability.py || echo "WARN: FR traceability issues (non-blocking)"
+          # Iterloop compliance remains optional by default to avoid blocking
+          # non-story infra/docs runs. Set CI_SKIP_ITERLOOP_COMPLIANCE=0 to enforce.
           if [ "${CI_SKIP_ITERLOOP_COMPLIANCE:-1}" = "1" ]; then
             echo "lint: skipping iterloop compliance (CI_SKIP_ITERLOOP_COMPLIANCE=1)"
           else

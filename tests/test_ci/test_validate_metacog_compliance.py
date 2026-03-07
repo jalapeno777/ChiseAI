@@ -144,3 +144,86 @@ confidence_adjustment_recommendation: lower_confidence
     )
     assert validate_metacog_compliance.main() == 1
 
+
+def test_invalid_story_id_fails_in_strict_mode(
+    tmp_path: Path, monkeypatch
+) -> None:
+    iterlog_dir = tmp_path / "docs" / "tempmemories"
+    iterlog_dir.mkdir(parents=True)
+    body = """
+## Metacognitive Predictions
+predicted_outcome: improve reliability
+predicted_risks: [regression]
+confidence: 0.8
+verification_plan: run precommit
+expected_metrics: [reopen_rate <= 0.05]
+
+## Metacognitive Outcomes
+actual_outcome: improved reliability
+actual_metrics: {reopen_rate: 0.04}
+wins: [reduced regressions]
+misses: []
+new_prevention_rules: [rule-1]
+
+## Metacognitive Calibration
+predicted_confidence: 0.8
+observed_result: success
+calibration_delta: 0.1
+confidence_adjustment_recommendation: no_change
+"""
+    _write_iterlog(
+        iterlog_dir / "iterlog-BAD-STORY.md",
+        "BAD-STORY",
+        "completed",
+        body,
+    )
+
+    monkeypatch.setattr(validate_metacog_compliance, "ITERLOG_DIR", iterlog_dir)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["validate_metacog_compliance.py", "--story-id", "BAD-STORY", "--strict"],
+    )
+    assert validate_metacog_compliance.main() == 1
+
+
+def test_semantic_bounds_are_enforced(
+    tmp_path: Path, monkeypatch
+) -> None:
+    iterlog_dir = tmp_path / "docs" / "tempmemories"
+    iterlog_dir.mkdir(parents=True)
+    body = """
+## Metacognitive Predictions
+predicted_outcome: improve reliability
+predicted_risks: [regression]
+confidence: 1.7
+verification_plan: run precommit
+expected_metrics: [reopen_rate <= 0.05]
+
+## Metacognitive Outcomes
+actual_outcome: improved reliability
+actual_metrics: {reopen_rate: 0.04}
+wins: [reduced regressions]
+misses: []
+new_prevention_rules: [rule-1]
+
+## Metacognitive Calibration
+predicted_confidence: 0.8
+observed_result: maybe
+calibration_delta: 0.1
+confidence_adjustment_recommendation: no_change
+"""
+    _write_iterlog(
+        iterlog_dir / "iterlog-CH-META-002.md",
+        "CH-META-002",
+        "completed",
+        body,
+    )
+
+    monkeypatch.setattr(validate_metacog_compliance, "ITERLOG_DIR", iterlog_dir)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["validate_metacog_compliance.py", "--story-id", "CH-META-002", "--strict"],
+    )
+    assert validate_metacog_compliance.main() == 1
