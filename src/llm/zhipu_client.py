@@ -2,10 +2,10 @@
 Z.ai (Zhipu AI) GLM-5 Integration Client
 
 Provides OpenAI-compatible interface for Z.ai's GLM-5 model.
-Uses global endpoint: https://open.bigmodel.cn/api/paas/v4/chat/completions
+Uses coding endpoint: https://api.z.ai/api/coding/paas/v4/chat/completions
 
 For CH-LLM-FALLBACK-002: Error classification integration
-For LLM-PROVIDER-FIX-001: Updated endpoint to open.bigmodel.cn
+For LLM-PROVIDER-FIX-002: Updated endpoint to api.z.ai/api/coding/paas/v4
 """
 
 import json
@@ -90,7 +90,7 @@ class ZhipuClient:
     - Proper error handling
     """
 
-    DEFAULT_ENDPOINT = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
+    DEFAULT_ENDPOINT = "https://api.z.ai/api/coding/paas/v4/chat/completions"
     DEFAULT_MODEL = "glm-5"
     DEFAULT_TIMEOUT = 60
     DEFAULT_MAX_RETRIES = 3
