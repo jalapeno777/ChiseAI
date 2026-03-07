@@ -26,7 +26,7 @@ app = FastAPI(
 
 # Configuration from environment
 KIMI_API_KEY = os.getenv("KIMI_API_KEY")
-KIMI_BASE_URL = os.getenv("KIMI_BASE_URL", "https://api.moonshot.cn/v1")
+KIMI_BASE_URL = os.getenv("KIMI_BASE_URL", "https://api.kimi.com/coding/v1")
 KIMI_MODEL = os.getenv("KIMI_MODEL", "kimi-k2.5")
 
 

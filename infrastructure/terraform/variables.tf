@@ -133,7 +133,7 @@ variable "kimi_api_key" {
 variable "kimi_base_url" {
   type        = string
   description = "Moonshot AI Kimi API base URL."
-  default     = "https://api.moonshot.cn/v1"
+  default     = "https://api.kimi.com/coding/v1"
 }
 
 variable "kimi_model" {
