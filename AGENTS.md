@@ -14,9 +14,11 @@
 ```
 skill(name="chiseai-git-workflow")          # Load git workflow skill
 → chise-iterloop-start                      # Start iteration
+→ chise-metacog-start                       # Capture prediction card + confidence
 → chise-claim-ownership                     # Claim scope (if parallel)
 → [Do work following skill guidance]
 → chise-precommit-gates                     # Validate before PR
+→ chise-metacog-close                       # Capture outcome + calibration
 → chise-iterloop-close                      # Close and promote learnings
 ```
 
@@ -93,6 +95,11 @@ skill(name="chiseai-git-workflow")          # Load git workflow skill
 **Load:** `chiseai-testing-patterns`
 **Why:** Ensures tests meet coverage requirements and follow patterns
 
+### "I want better learning/calibration from Aria/Jarvis decisions..."
+**Load:** `chiseai-metacognition-ops`
+**Then run:** `chise-metacog-start` at iteration start and `chise-metacog-close` at iteration close
+**Why:** Adds prediction→outcome→calibration loops with Redis/Qdrant memory promotion and measurable quality impact
+
 ## 📋 Quick Skill Reference Table
 
 | Skill | Primary Use | Key Commands |
@@ -109,6 +116,7 @@ skill(name="chiseai-git-workflow")          # Load git workflow skill
 | `chiseai-skill-validation` | Skill structure validation | N/A |
 | `chiseai-metrics-dashboard` | Grafana dashboard interaction | N/A |
 | `chiseai-testing-patterns` | Testing patterns and coverage | N/A |
+| `chiseai-metacognition-ops` | Decision quality calibration and reflection loops | `chise-metacog-start`, `chise-metacog-close`, `chise-metacog-weekly` |
 | `python-quality` | Python code quality | N/A |
 
 ## 🔧 Skill Loading Pattern
@@ -459,3 +467,4 @@ docker run --network chiseai --name my-service [image]
 - `chiseai-skill-validation` - Validate skill structure and compliance
 - `chiseai-metrics-dashboard` - Grafana dashboard interaction guide
 - `chiseai-testing-patterns` - Testing patterns and best practices
+- `chiseai-metacognition-ops` - Metacognitive prediction/outcome/calibration workflow

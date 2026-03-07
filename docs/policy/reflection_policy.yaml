@@ -66,7 +66,7 @@ artifact_schema:
   field_definitions:
     story_id:
       type: string
-      pattern: "^ST-[A-Z]+-[0-9]+$"
+      pattern: "^(ST|CH|FT|REWARD|REPO|SAFETY|BRANCH|PAPER|RECON)-[A-Z0-9-]*[0-9][A-Z0-9-]*$"
       description: "Story identifier"
     
     reflection_type:

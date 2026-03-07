@@ -83,3 +83,10 @@ Follow these steps exactly (do not skip):
    - This check is enforced by CI for all completions
    - Missing or incomplete structured issues will block the completion gate
 
+7. Metacognition close (required)
+   - Run `.opencode/command/chise-metacog-close.md`.
+   - Iterlog must include:
+     - `## Metacognitive Outcomes`
+     - `## Metacognitive Calibration`
+   - Validate:
+     - `python3 scripts/validation/validate_metacog_compliance.py --story-id=<story_id> --strict`
