@@ -47,7 +47,7 @@ steps:
   swarm-context:
     image: python:3.11
     environment:
-      CI_STATUS_DIR: "/woodpecker/ci-status"
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
       - |
         set -euo pipefail
@@ -68,7 +68,7 @@ steps:
     environment:
       GITEA_TOKEN:
         from_secret: gitea_token
-      CI_STATUS_DIR: "/woodpecker/ci-status"
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
       - |
         set -euo pipefail
@@ -139,7 +139,7 @@ steps:
   security-scan:
     image: python:3.11
     environment:
-      CI_STATUS_DIR: "/woodpecker/ci-status"
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
       - |
         set -euo pipefail
@@ -167,7 +167,7 @@ steps:
   dependency-audit:
     image: python:3.11
     environment:
-      CI_STATUS_DIR: "/woodpecker/ci-status"
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
       - |
         set -euo pipefail
@@ -186,7 +186,7 @@ steps:
   secret-scan:
     image: python:3.11
     environment:
-      CI_STATUS_DIR: "/woodpecker/ci-status"
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
       - |
         set -euo pipefail
@@ -204,7 +204,7 @@ steps:
   risk-invariants:
     image: python:3.11
     environment:
-      CI_STATUS_DIR: "/woodpecker/ci-status"
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
       - |
         set -euo pipefail
@@ -234,7 +234,7 @@ steps:
   brain-regression:
     image: python:3.11
     environment:
-      CI_STATUS_DIR: "/woodpecker/ci-status"
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
       - |
         set -euo pipefail
@@ -266,7 +266,7 @@ steps:
   docs-pairing:
     image: python:3.11
     environment:
-      CI_STATUS_DIR: "/woodpecker/ci-status"
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
       - |
         set -euo pipefail
@@ -284,7 +284,7 @@ steps:
   docker-governance:
     image: python:3.11
     environment:
-      CI_STATUS_DIR: "/woodpecker/ci-status"
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
       - |
         set -euo pipefail
@@ -303,7 +303,7 @@ steps:
   local-ci:
     image: python:3.11
     environment:
-      CI_STATUS_DIR: "/woodpecker/ci-status"
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
       - |
         set -euo pipefail
@@ -372,7 +372,7 @@ steps:
     depends_on:
       - local-ci
     environment:
-      CI_STATUS_DIR: "/woodpecker/ci-status"
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
       - |
         set -euo pipefail
@@ -395,7 +395,7 @@ steps:
   pipeline-watchdog:
     image: python:3.11
     environment:
-      CI_STATUS_DIR: "/woodpecker/ci-status"
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
       - |
         set -euo pipefail
@@ -415,7 +415,7 @@ steps:
   brain-eval:
     image: python:3.11
     environment:
-      CI_STATUS_DIR: "/woodpecker/ci-status"
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
       - |
         set -euo pipefail
@@ -444,7 +444,7 @@ steps:
   tempmemory-scheduler:
     image: python:3.11
     environment:
-      CI_STATUS_DIR: "/woodpecker/ci-status"
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
       - |
         set -euo pipefail
@@ -464,7 +464,7 @@ steps:
   mini-brain-eval:
     image: python:3.11
     environment:
-      CI_STATUS_DIR: "/woodpecker/ci-status"
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
       - |
         set -euo pipefail
@@ -484,7 +484,7 @@ steps:
   tempmemory-reconcile:
     image: python:3.11
     environment:
-      CI_STATUS_DIR: "/woodpecker/ci-status"
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
       - |
         set -euo pipefail
@@ -504,7 +504,7 @@ steps:
   tempmemory-drill:
     image: python:3.11
     environment:
-      CI_STATUS_DIR: "/woodpecker/ci-status"
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
       - |
         set -euo pipefail
@@ -532,7 +532,7 @@ steps:
   flaky-detection:
     image: python:3.11
     environment:
-      CI_STATUS_DIR: "/woodpecker/ci-status"
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
       - |
         set -euo pipefail
@@ -564,7 +564,7 @@ steps:
     image: python:3.11
     environment:
       CI_PR_LABELS: "${CI_COMMIT_PULL_REQUEST_LABELS:-}"
-      CI_STATUS_DIR: "/woodpecker/ci-status"
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
       - |
         set -euo pipefail
@@ -610,7 +610,7 @@ steps:
   status-write-gate:
     image: python:3.11
     environment:
-      CI_STATUS_DIR: "/woodpecker/ci-status"
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
       - |
         set -euo pipefail
@@ -663,7 +663,7 @@ steps:
     environment:
       GITEA_TOKEN:
         from_secret: gitea_token
-      CI_STATUS_DIR: "/woodpecker/ci-status"
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
       - |
         set -euo pipefail
