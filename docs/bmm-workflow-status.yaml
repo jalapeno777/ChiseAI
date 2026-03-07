@@ -871,28 +871,28 @@ epics:
   story_points: 68
 - description: Post-party-mode infrastructure cleanup focusing on Taiga cleanup, container
     governance, workflow hardening, CI improvements, and BrainEval scheduler containerization
-   id: EP-INFRA-CLEANUP-001
-   name: Infrastructure Cleanup & Hardening Sprint
-   notes:
-   - ST-WORKFLOW-001 completed 2026-03-02
-   - ST-CI-001 Phase 2 (Pipeline Hardening) completed 2026-03-03
-   - ST-EVAL-SCHEDULER-001 completed 2026-03-03 (merged to main at 5cdf40a)
-   - ST-CONTAINER-001 completed 2026-03-03 (merged to main at 723d9bf)
-   - ST-TAIGA-001 completed 2026-03-03 (merged to main at 58ffc51)
-   - ST-CI-001 Phase 3 (Remediation Execution) completed 2026-03-07
-   - All 5 stories completed, epic closed out
-   - Backlog artifact: docs/backlog/session-followups-2026-03-03.md (9 followup items)
-   sprint_id: INFRA-CLEANUP-001
-   status: completed
-   stories_completed: 5
-   story_count: 5
-   story_ids:
-   - ST-TAIGA-001
-   - ST-CONTAINER-001
-   - ST-WORKFLOW-001
-   - ST-CI-001
-   - ST-EVAL-SCHEDULER-001
-   story_points: TBD
+  id: EP-INFRA-CLEANUP-001
+  name: Infrastructure Cleanup & Hardening Sprint
+  notes:
+  - ST-WORKFLOW-001 completed 2026-03-02
+  - ST-CI-001 Phase 2 (Pipeline Hardening) completed 2026-03-03
+  - ST-EVAL-SCHEDULER-001 completed 2026-03-03 (merged to main at 5cdf40a)
+  - ST-CONTAINER-001 completed 2026-03-03 (merged to main at 723d9bf)
+  - ST-TAIGA-001 completed 2026-03-03 (merged to main at 58ffc51)
+  - ST-CI-001 Phase 3 (Remediation Execution) completed 2026-03-07
+  - All 5 stories completed, epic closed out
+  - Backlog artifact: docs/backlog/session-followups-2026-03-03.md (9 followup items)
+  sprint_id: INFRA-CLEANUP-001
+  status: completed
+  stories_completed: 5
+  story_count: 5
+  story_ids:
+  - ST-TAIGA-001
+  - ST-CONTAINER-001
+  - ST-WORKFLOW-001
+  - ST-CI-001
+  - ST-EVAL-SCHEDULER-001
+  story_points: TBD
 launch_stories:
 - acceptance_criteria:
   - Demo mode enforcement - Only demo/testnet endpoints are allowed, production endpoint
