@@ -18,7 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 from config.bootstrap import bootstrap
 
-CI_DIR = Path("_bmad-output/ci")
+CI_DIR = Path(os.environ.get("CI_STATUS_DIR", "_bmad-output/ci"))
 FAST_REQUIRED = [
     "swarm-context.status",
     "lint.status",
