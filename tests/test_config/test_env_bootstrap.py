@@ -177,7 +177,7 @@ class TestProviderDiscovery:
 
             assert config["enabled"] is True
             assert config["api_key_present"] is True
-            assert config["base_url"] == "https://open.bigmodel.cn/api/paas/v4"
+            assert config["base_url"] == "https://api.z.ai/api/coding/paas/v4"
 
     def test_discover_zhipu_config_with_key(self) -> None:
         """Zhipu config discovered when API key present."""
@@ -186,7 +186,7 @@ class TestProviderDiscovery:
 
             assert config["enabled"] is True
             assert config["api_key_present"] is True
-            assert config["base_url"] == "https://open.bigmodel.cn/api/paas/v4"
+            assert config["base_url"] == "https://api.z.ai/api/coding/paas/v4"
             assert config["model"] == "glm-5"
 
     def test_discover_zhipu_config_zai_fallback(self) -> None:

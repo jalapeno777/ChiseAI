@@ -416,7 +416,7 @@ def discover_zai_config() -> dict[str, Any]:
         "enabled": bool(api_key),
         "api_key_present": bool(api_key),
         "base_url": os.environ.get(
-            "ZAI_BASE_URL", "https://open.bigmodel.cn/api/paas/v4"
+            "ZAI_BASE_URL", "https://api.z.ai/api/coding/paas/v4"
         ),
     }
 
@@ -446,7 +446,7 @@ def discover_zhipu_config() -> dict[str, Any]:
         "enabled": key_present,
         "api_key_present": key_present,
         "base_url": os.environ.get(
-            "ZHIPU_BASE_URL", "https://open.bigmodel.cn/api/paas/v4"
+            "ZHIPU_BASE_URL", "https://api.z.ai/api/coding/paas/v4"
         ),
         "model": os.environ.get("ZHIPU_MODEL", "glm-5"),
     }

@@ -41,9 +41,7 @@ class TestZhipuClientInitialization:
         """Test initialization with explicit API key."""
         client = ZhipuClient(api_key="test-key")
         assert client.api_key == "test-key"
-        assert (
-            client.endpoint == "https://open.bigmodel.cn/api/paas/v4/chat/completions"
-        )
+        assert client.endpoint == "https://api.z.ai/api/coding/paas/v4/chat/completions"
         assert client.model == ZhipuClient.DEFAULT_MODEL
 
     def test_init_with_env_var_zhipu(self):
