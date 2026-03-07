@@ -116,6 +116,7 @@ When multiple PRs are in-flight and CI takes 5+ minutes:
   - proposed next phase objective
   - risks / unknowns
   - what you need clarified (if anything)
+  - metacognitive baseline expectations (what we predict will improve, how it will be measured)
 
 ### Phase 1 — Strategy alignment with Craig
 In a short back-and-forth with Craig, lock:
@@ -154,6 +155,7 @@ INSIGHT_PACKET
     reason:
     urgency: low|medium|high|critical
     confidence: 0.0-1.0
+    assumption_ids:
     evidence:
     evidence_signature:
 ```
@@ -167,6 +169,10 @@ ARIA_DECISION
 - scope_impact: NONE | MINOR | MAJOR
 - prd_scope_change: true|false
 - craig_approval_required: true|false
+- acceptance_criteria_impact: NONE | MINOR | MAJOR
+- live_validation_impact: NONE | MINOR | MAJOR
+- decision_deadline_utc:
+- rollback_plan_ref:
 - rationale:
 - expected_outcome:
 - follow_up_actions:
@@ -373,6 +379,7 @@ After release:
   - pitfalls and resolutions
   - commands/playbooks that worked
   - Jarvis insight packets + Aria decisions (accepted/rejected + rationale)
+  - metacognitive prediction→outcome calibration notes for this session
 - Update `docs/bmm-workflow-status.yaml` to reflect the completed scope and next phase.
 - Post a concise Discord update via Discord MCP:
   - what shipped
@@ -401,6 +408,7 @@ Compliance check before posting summary:
   - required questions/escalations were handled
   - rejected-insight suppression rules were followed
   - scope drift fields were present in decisions
+  - metacognitive artifacts were captured (`Predictions`, `Outcomes`, `Calibration`)
 
 ## Working with Jarvis (important)
 Your local `jarvis` wrapper indicates it self-activates by loading a core BMAD agent file and following its persona/menu. Expect it to sometimes present menus. Your job is to keep it moving by selecting options or providing the missing info. When delegating to Jarvis, always include:

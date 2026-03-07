@@ -36,6 +36,15 @@ Standardize short-term (Redis) and long-term (Qdrant) memory operations for agen
 | `bmad:chiseai:iterlog:story:<id>` | Story iteration log | 5 days |
 | `bmad:chiseai:ownership` | Scope ownership | 5 days |
 | `bmad:chiseai:current-story` | Active story tracking | Session |
+| `bmad:chiseai:metacog:prediction:story:<id>` | Story-level prediction card | 30 days |
+| `bmad:chiseai:metacog:outcome:story:<id>` | Story-level outcome card | 30 days |
+| `bmad:chiseai:metacog:calibration:agent:<agent>:weekly:<week>` | Weekly calibration trend | 90 days |
+| `bmad:chiseai:metacog:prevention_rules` | Durable anti-pattern prevention hints | 90 days |
+
+Metacog prevention-rules contract:
+- Data type: Redis hash (`rule_id` -> JSON payload)
+- Dedupe key: `rule_id = <scope_context>:<normalized_signature_hash>`
+- Minimum payload: `rule_id`, `scope_context`, `pattern`, `mitigation`, `created_at`, `last_seen_at`, `hit_count`
 
 ### Standard Operations
 
@@ -97,7 +106,7 @@ Content here...
 ```
 
 ### Fallback Strategy
-When Redis/Qdrant unavailable, write to `docs/tempmemories/` with identical frontmatter. Mark with `needs_manual_import: true`.
+When Redis/Qdrant unavailable, write to `docs/tempmemories/` with identical frontmatter. Mark with `needs_manual_qdrant_import: true` (and optionally `needs_manual_import: true` for backward compatibility).
 
 ## Exit Conditions
 
@@ -402,6 +411,7 @@ except Exception as e:
 {json.dumps(decision_data, indent=2)}
 ```
 needs_manual_import: true
+needs_manual_qdrant_import: true
 """
     
     with open(fallback_path, 'w') as f:

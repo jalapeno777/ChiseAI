@@ -19,6 +19,7 @@
 | `chiseai-branch-hygiene` | Branch lifecycle management and cleanup | "Too many stale branches", "Cleanup old feature branches", "Branch inventory" | `chise-branch-hygiene-check` |
 | `chiseai-workflow-commands` | BMAD workflow command routing | "Which BMAD command for...", "Planning a sprint", "Creating a PRD" | `bmad-help` or specific `bmad-*` command |
 | `chiseai-sprint-cleanup` | Repository hygiene before sprint work | "Starting new sprint", "Clean up repo before work", "Reset for sprint" | `chise-sprint-cleanup` |
+| `chiseai-metacognition-ops` | Prediction/outcome/calibration loops for decision quality | "Improve Aria/Jarvis learning", "Track confidence accuracy", "Reduce repeated mistakes" | `chise-metacog-start` then `chise-metacog-close` |
 
 ### Strategy/Trading Skills
 
@@ -70,6 +71,7 @@ When multiple skills could apply:
 | Claiming file ownership | `chiseai-parallel-safety` → `chise-claim-ownership` |
 | Something broke | `chiseai-incident-response` → `chise-incident-log` |
 | Storing iteration state | `chiseai-memory-ops` → `chise-iterloop-start` |
+| Running metacognitive loop | `chiseai-metacognition-ops` → `chise-metacog-start`/`chise-metacog-close` |
 | Cleaning up branches | `chiseai-branch-hygiene` → `chise-branch-hygiene-check` |
 | Strategy risk check | `chiseai-risk-audit` → `chise-risk-audit` |
 | Paper trading validation | `chiseai-paper-trading-canary` → `chise-paper-canary` |
@@ -87,6 +89,7 @@ When multiple skills could apply:
 | Category | Commands |
 |----------|----------|
 | **Iteration** | `chise-iterloop-start`, `chise-iterloop-close` |
+| **Metacognition** | `chise-metacog-start`, `chise-metacog-close`, `chise-metacog-weekly` |
 | **Ownership** | `chise-claim-ownership`, `chise-check-ownership` |
 | **Validation** | `chise-precommit-gates`, `chise-ci-root-cause`, `chise-ci-failure-bundle` |
 | **Incidents** | `chise-incident-log`, `chise-postmortem-create` |
@@ -99,4 +102,4 @@ When multiple skills could apply:
 
 ---
 
-*Last updated: 2026-02-23*
+*Last updated: 2026-03-07*

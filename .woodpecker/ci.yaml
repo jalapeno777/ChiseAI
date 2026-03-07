@@ -8,7 +8,9 @@
 #
 # BLOCKING GATES (via ci-gate.py FAST_REQUIRED list):
 #   - swarm-context: Repository context validation
-#   - lint: Code quality (black, ruff, mypy, status sync)
+#   - lint: Code quality (black, ruff, mypy, status sync, iterlog governance)
+#     Note: insight/metacog governance checks are intentionally lint-bundled to keep
+#     gate fan-out small while preserving strict blocking on changed iterlogs.
 #   - security-scan: Bandit security analysis
 #   - dependency-audit: pip-audit vulnerability scan
 #   - secret-scan: Hardcoded secret detection
@@ -94,6 +96,8 @@ steps:
           fi
           python scripts/validate_status_sync.py || echo "WARN: status sync issues (non-blocking)"
           python scripts/validate_fr_traceability.py || echo "WARN: FR traceability issues (non-blocking)"
+          # Iterloop compliance remains optional by default to avoid blocking
+          # non-story infra/docs runs. Set CI_SKIP_ITERLOOP_COMPLIANCE=0 to enforce.
           if [ "${CI_SKIP_ITERLOOP_COMPLIANCE:-1}" = "1" ]; then
             echo "lint: skipping iterloop compliance (CI_SKIP_ITERLOOP_COMPLIANCE=1)"
           else
@@ -108,8 +112,16 @@ steps:
               echo " - validating story_id=${story_id} from ${iterlog_path}"
               python scripts/validation/validate_insight_governance.py --story-id "${story_id}" --strict
             done
+            echo "metacog-governance: validating changed iterlogs (blocking)"
+            printf '%s\n' "$CHANGED_ITERLOGS" | while IFS= read -r iterlog_path; do
+              [ -z "$iterlog_path" ] && continue
+              story_id="$(basename "$iterlog_path" .md | sed 's/^iterlog-//')"
+              echo " - validating story_id=${story_id} from ${iterlog_path}"
+              python scripts/validation/validate_metacog_compliance.py --story-id "${story_id}" --strict
+            done
           else
             echo "insight-governance: no changed iterlog files; skipping strict check"
+            echo "metacog-governance: no changed iterlog files; skipping strict check"
           fi
           python scripts/validate_pr_title.py || echo "WARN: PR title validation issue (non-blocking)"
           python scripts/validate_traceability_drift.py --verbose || echo "WARN: traceability drift issues (non-blocking)"
