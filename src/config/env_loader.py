@@ -439,7 +439,7 @@ def discover_kimi_config() -> dict[str, Any]:
 def discover_zai_config() -> dict[str, Any]:
     """Discover Z.ai (Zhipu) provider configuration from environment.
 
-    Checks for ZAI_API_KEY environment variable.
+    Checks for ZAI_API_KEY environment variable, with fallback to Z_AI_API_KEY.
 
     Returns:
         Dictionary with provider configuration:
@@ -450,7 +450,10 @@ def discover_zai_config() -> dict[str, Any]:
     Note:
         Never includes actual API key values in output.
     """
-    api_key = os.environ.get("ZAI_API_KEY", "").strip()
+    api_key = (
+        os.environ.get("ZAI_API_KEY", "").strip()
+        or os.environ.get("Z_AI_API_KEY", "").strip()
+    )
 
     return {
         "enabled": bool(api_key),
