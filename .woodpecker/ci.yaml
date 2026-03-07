@@ -51,16 +51,16 @@ steps:
     commands:
       - |
         set -euo pipefail
-        mkdir -p "${CI_STATUS_DIR}"
-        rm -f "${CI_STATUS_DIR}"/*.status
+        mkdir -p "$${CI_STATUS_DIR}"
+        rm -f "$${CI_STATUS_DIR}"/*.status
         set +e
         (
           set -euo pipefail
           python scripts/ci/validate_swarm_context.py
-        ) > "${CI_STATUS_DIR}/swarm-context.log" 2>&1
+        ) > "$${CI_STATUS_DIR}/swarm-context.log" 2>&1
         code=$?
-        cat "${CI_STATUS_DIR}/swarm-context.log"
-        echo "$code" > "${CI_STATUS_DIR}/swarm-context.status"
+        cat "$${CI_STATUS_DIR}/swarm-context.log"
+        echo "$code" > "$${CI_STATUS_DIR}/swarm-context.status"
         exit 0
 
   lint:
@@ -72,7 +72,7 @@ steps:
     commands:
       - |
         set -euo pipefail
-        mkdir -p "${CI_STATUS_DIR}"
+        mkdir -p "$${CI_STATUS_DIR}"
         set +e
         (
           set -euo pipefail
@@ -126,10 +126,10 @@ steps:
           python scripts/validate_pr_title.py || echo "WARN: PR title validation issue (non-blocking)"
           python scripts/validate_traceability_drift.py --verbose || echo "WARN: traceability drift issues (non-blocking)"
           python scripts/ci/validate_bootstrap_compliance.py --check --allowlist scripts/ci/bootstrap_allowlist.txt || echo "WARN: bootstrap compliance issues"
-        ) > "${CI_STATUS_DIR}/lint.log" 2>&1
+        ) > "$${CI_STATUS_DIR}/lint.log" 2>&1
         code=$?
-        cat "${CI_STATUS_DIR}/lint.log"
-        echo "$code" > "${CI_STATUS_DIR}/lint.status"
+        cat "$${CI_STATUS_DIR}/lint.log"
+        echo "$code" > "$${CI_STATUS_DIR}/lint.status"
         # RATIONALE: Exit 0 ensures pipeline continues to ci-gate.
         # The ci-gate step is the SINGLE authoritative failure point that reads
         # lint.status and fails the pipeline if non-zero. This design ensures
@@ -143,7 +143,7 @@ steps:
     commands:
       - |
         set -euo pipefail
-        mkdir -p "${CI_STATUS_DIR}"
+        mkdir -p "$${CI_STATUS_DIR}"
         set +e
         (
           set -euo pipefail
@@ -156,10 +156,10 @@ steps:
           else
             echo "security-scan: no changed src/scripts python files; skipping"
           fi
-        ) > "${CI_STATUS_DIR}/security-scan.log" 2>&1
+        ) > "$${CI_STATUS_DIR}/security-scan.log" 2>&1
         code=$?
-        cat "${CI_STATUS_DIR}/security-scan.log"
-        echo "$code" > "${CI_STATUS_DIR}/security-scan.status"
+        cat "$${CI_STATUS_DIR}/security-scan.log"
+        echo "$code" > "$${CI_STATUS_DIR}/security-scan.status"
         # RATIONALE: Exit 0 ensures pipeline continues to ci-gate.
         # The ci-gate step reads security-scan.status and fails if non-zero.
         exit 0
@@ -171,16 +171,16 @@ steps:
     commands:
       - |
         set -euo pipefail
-        mkdir -p "${CI_STATUS_DIR}"
+        mkdir -p "$${CI_STATUS_DIR}"
         set +e
         (
           set -euo pipefail
           pip install --no-cache-dir pip-audit tomli || pip install --no-cache-dir --break-system-packages pip-audit tomli
           python3 scripts/ci/dependency_audit.py
-        ) > "${CI_STATUS_DIR}/dependency-audit.log" 2>&1
+        ) > "$${CI_STATUS_DIR}/dependency-audit.log" 2>&1
         code=$?
-        cat "${CI_STATUS_DIR}/dependency-audit.log"
-        echo "$code" > "${CI_STATUS_DIR}/dependency-audit.status"
+        cat "$${CI_STATUS_DIR}/dependency-audit.log"
+        echo "$code" > "$${CI_STATUS_DIR}/dependency-audit.status"
         exit 0
 
   secret-scan:
@@ -190,15 +190,15 @@ steps:
     commands:
       - |
         set -euo pipefail
-        mkdir -p "${CI_STATUS_DIR}"
+        mkdir -p "$${CI_STATUS_DIR}"
         set +e
         (
           set -euo pipefail
           python3 scripts/ci/secret_scan_changed.py
-        ) > "${CI_STATUS_DIR}/secret-scan.log" 2>&1
+        ) > "$${CI_STATUS_DIR}/secret-scan.log" 2>&1
         code=$?
-        cat "${CI_STATUS_DIR}/secret-scan.log"
-        echo "$code" > "${CI_STATUS_DIR}/secret-scan.status"
+        cat "$${CI_STATUS_DIR}/secret-scan.log"
+        echo "$code" > "$${CI_STATUS_DIR}/secret-scan.status"
         exit 0
 
   risk-invariants:
@@ -208,7 +208,7 @@ steps:
     commands:
       - |
         set -euo pipefail
-        mkdir -p "${CI_STATUS_DIR}"
+        mkdir -p "$${CI_STATUS_DIR}"
         set +e
         (
           set -euo pipefail
@@ -220,10 +220,10 @@ steps:
             tests/test_execution/test_reconciliation.py \
             tests/test_execution/test_outcome_persistence.py \
             tests/test_execution/test_paper/test_paper_risk_enforcer.py
-        ) > "${CI_STATUS_DIR}/risk-invariants.log" 2>&1
+        ) > "$${CI_STATUS_DIR}/risk-invariants.log" 2>&1
         code=$?
-        cat "${CI_STATUS_DIR}/risk-invariants.log"
-        echo "$code" > "${CI_STATUS_DIR}/risk-invariants.status"
+        cat "$${CI_STATUS_DIR}/risk-invariants.log"
+        echo "$code" > "$${CI_STATUS_DIR}/risk-invariants.status"
         exit 0
 
   brain-regression:
@@ -233,7 +233,7 @@ steps:
     commands:
       - |
         set -euo pipefail
-        mkdir -p "${CI_STATUS_DIR}"
+        mkdir -p "$${CI_STATUS_DIR}"
         set +e
         (
           set -euo pipefail
@@ -251,11 +251,11 @@ steps:
             tests/test_mini_brain_eval.py \
             tests/test_mini_brain_eval_structured.py
 
-          python3 scripts/ci/brain_eval_ci.py --output "${CI_STATUS_DIR}/brain-regression.json"
-        ) > "${CI_STATUS_DIR}/brain-regression.log" 2>&1
+          python3 scripts/ci/brain_eval_ci.py --output "$${CI_STATUS_DIR}/brain-regression.json"
+        ) > "$${CI_STATUS_DIR}/brain-regression.log" 2>&1
         code=$?
-        cat "${CI_STATUS_DIR}/brain-regression.log"
-        echo "$code" > "${CI_STATUS_DIR}/brain-regression.status"
+        cat "$${CI_STATUS_DIR}/brain-regression.log"
+        echo "$code" > "$${CI_STATUS_DIR}/brain-regression.status"
         exit 0
 
   docs-pairing:
@@ -265,15 +265,15 @@ steps:
     commands:
       - |
         set -euo pipefail
-        mkdir -p "${CI_STATUS_DIR}"
+        mkdir -p "$${CI_STATUS_DIR}"
         set +e
         (
           set -euo pipefail
           python3 scripts/ci/validate_docs_pairing.py
-        ) > "${CI_STATUS_DIR}/docs-pairing.log" 2>&1
+        ) > "$${CI_STATUS_DIR}/docs-pairing.log" 2>&1
         code=$?
-        cat "${CI_STATUS_DIR}/docs-pairing.log"
-        echo "$code" > "${CI_STATUS_DIR}/docs-pairing.status"
+        cat "$${CI_STATUS_DIR}/docs-pairing.log"
+        echo "$code" > "$${CI_STATUS_DIR}/docs-pairing.status"
         exit 0
 
   docker-governance:
@@ -283,16 +283,16 @@ steps:
     commands:
       - |
         set -euo pipefail
-        mkdir -p "${CI_STATUS_DIR}"
+        mkdir -p "$${CI_STATUS_DIR}"
         set +e
         (
           set -euo pipefail
           pip install --no-cache-dir pyyaml
           python3 scripts/ci/validate_docker_governance.py
-        ) > "${CI_STATUS_DIR}/docker-governance.log" 2>&1
+        ) > "$${CI_STATUS_DIR}/docker-governance.log" 2>&1
         code=$?
-        cat "${CI_STATUS_DIR}/docker-governance.log"
-        echo "$code" > "${CI_STATUS_DIR}/docker-governance.status"
+        cat "$${CI_STATUS_DIR}/docker-governance.log"
+        echo "$code" > "$${CI_STATUS_DIR}/docker-governance.status"
         exit 0
 
   local-ci:
@@ -302,7 +302,7 @@ steps:
     commands:
       - |
         set -euo pipefail
-        mkdir -p "${CI_STATUS_DIR}"
+        mkdir -p "$${CI_STATUS_DIR}"
         set +e
         (
           set -euo pipefail
@@ -347,10 +347,10 @@ steps:
             echo "scripts/local-ci-checks.sh not found; failing"
             exit 1
           fi
-        ) > "${CI_STATUS_DIR}/local-ci-full.log" 2>&1
+        ) > "$${CI_STATUS_DIR}/local-ci-full.log" 2>&1
         code=$?
-        cat "${CI_STATUS_DIR}/local-ci-full.log"
-        echo "$code" > "${CI_STATUS_DIR}/local-ci.status"
+        cat "$${CI_STATUS_DIR}/local-ci-full.log"
+        echo "$code" > "$${CI_STATUS_DIR}/local-ci.status"
         # RATIONALE: Exit 0 ensures pipeline continues to ci-gate.
         # The ci-gate step reads local-ci.status and fails if non-zero.
         # Note: local-ci is in FULL_REQUIRED list, so it only blocks on main/cron
@@ -366,17 +366,17 @@ steps:
     commands:
       - |
         set -euo pipefail
-        mkdir -p "${CI_STATUS_DIR}"
+        mkdir -p "$${CI_STATUS_DIR}"
         set +e
         (
           set -euo pipefail
           pip install --no-cache-dir coverage
-          python3 -m coverage json -o "${CI_STATUS_DIR}/coverage.json"
-          python3 scripts/ci/coverage_changed_lines.py --coverage-json "${CI_STATUS_DIR}/coverage.json" --threshold 80
-        ) > "${CI_STATUS_DIR}/changed-lines-coverage.log" 2>&1
+          python3 -m coverage json -o "$${CI_STATUS_DIR}/coverage.json"
+          python3 scripts/ci/coverage_changed_lines.py --coverage-json "$${CI_STATUS_DIR}/coverage.json" --threshold 80
+        ) > "$${CI_STATUS_DIR}/changed-lines-coverage.log" 2>&1
         code=$?
-        cat "${CI_STATUS_DIR}/changed-lines-coverage.log"
-        echo "$code" > "${CI_STATUS_DIR}/changed-lines-coverage.status"
+        cat "$${CI_STATUS_DIR}/changed-lines-coverage.log"
+        echo "$code" > "$${CI_STATUS_DIR}/changed-lines-coverage.status"
         exit 0
 
   pipeline-watchdog:
@@ -386,16 +386,16 @@ steps:
     commands:
       - |
         set -euo pipefail
-        mkdir -p "${CI_STATUS_DIR}"
+        mkdir -p "$${CI_STATUS_DIR}"
         set +e
         (
           set -euo pipefail
           pip install --no-cache-dir requests
           python scripts/ci/check_woodpecker_stuck_pipelines.py --max-running-seconds 1800
-        ) > "${CI_STATUS_DIR}/pipeline-watchdog.log" 2>&1
+        ) > "$${CI_STATUS_DIR}/pipeline-watchdog.log" 2>&1
         code=$?
-        cat "${CI_STATUS_DIR}/pipeline-watchdog.log"
-        echo "$code" > "${CI_STATUS_DIR}/pipeline-watchdog.status"
+        cat "$${CI_STATUS_DIR}/pipeline-watchdog.log"
+        echo "$code" > "$${CI_STATUS_DIR}/pipeline-watchdog.status"
         # Non-blocking signal; ci-gate remains the only fail point.
         exit 0
 
@@ -406,7 +406,7 @@ steps:
     commands:
       - |
         set -euo pipefail
-        mkdir -p "${CI_STATUS_DIR}"
+        mkdir -p "$${CI_STATUS_DIR}"
         set +e
         (
           set -euo pipefail
@@ -416,15 +416,15 @@ steps:
           if git diff --name-only origin/main HEAD | grep -qE "(src/brain/|src/neuro_symbolic/|src/strategy/)"; then
             echo "Brain changes detected, running evaluation..."
             pip install -e . > /dev/null 2>&1 || pip install -e . --break-system-packages > /dev/null 2>&1 || true
-            python scripts/ci/brain_eval_ci.py --output "${CI_STATUS_DIR}/brain-eval.json"
+            python scripts/ci/brain_eval_ci.py --output "$${CI_STATUS_DIR}/brain-eval.json"
           else
             echo "No brain changes detected, skipping evaluation"
-            echo '{"success": true, "skipped": true, "reason": "No brain changes detected"}' > "${CI_STATUS_DIR}/brain-eval.json"
+            echo '{"success": true, "skipped": true, "reason": "No brain changes detected"}' > "$${CI_STATUS_DIR}/brain-eval.json"
           fi
-        ) > "${CI_STATUS_DIR}/brain-eval.log" 2>&1
+        ) > "$${CI_STATUS_DIR}/brain-eval.log" 2>&1
         code=$?
-        cat "${CI_STATUS_DIR}/brain-eval.log"
-        echo "$code" > "${CI_STATUS_DIR}/brain-eval.status"
+        cat "$${CI_STATUS_DIR}/brain-eval.log"
+        echo "$code" > "$${CI_STATUS_DIR}/brain-eval.status"
         # Do not short-circuit the pipeline; ci-gate is the single fail point.
         exit 0
 
@@ -435,17 +435,17 @@ steps:
     commands:
       - |
         set -euo pipefail
-        mkdir -p "${CI_STATUS_DIR}"
+        mkdir -p "$${CI_STATUS_DIR}"
         set +e
         (
           set -euo pipefail
           pip install --no-cache-dir pyyaml
           # Run tempmemory migration
           python3 scripts/ops/tempmemory_migration.py --dry-run
-        ) > "${CI_STATUS_DIR}/tempmemory-scheduler.log" 2>&1
+        ) > "$${CI_STATUS_DIR}/tempmemory-scheduler.log" 2>&1
         code=$?
-        cat "${CI_STATUS_DIR}/tempmemory-scheduler.log"
-        echo "$code" > "${CI_STATUS_DIR}/tempmemory-scheduler.status"
+        cat "$${CI_STATUS_DIR}/tempmemory-scheduler.log"
+        echo "$code" > "$${CI_STATUS_DIR}/tempmemory-scheduler.status"
         exit 0
 
   mini-brain-eval:
@@ -455,17 +455,17 @@ steps:
     commands:
       - |
         set -euo pipefail
-        mkdir -p "${CI_STATUS_DIR}"
+        mkdir -p "$${CI_STATUS_DIR}"
         set +e
         (
           set -euo pipefail
           pip install --no-cache-dir pyyaml
           # Run mini BrainEval with all sources
-          python3 scripts/evaluation/mini_brain_eval.py --cadence daily --use-all --provenance --output-dir "${CI_STATUS_DIR}/mini-brain-eval"
-        ) > "${CI_STATUS_DIR}/mini-brain-eval.log" 2>&1
+          python3 scripts/evaluation/mini_brain_eval.py --cadence daily --use-all --provenance --output-dir "$${CI_STATUS_DIR}/mini-brain-eval"
+        ) > "$${CI_STATUS_DIR}/mini-brain-eval.log" 2>&1
         code=$?
-        cat "${CI_STATUS_DIR}/mini-brain-eval.log"
-        echo "$code" > "${CI_STATUS_DIR}/mini-brain-eval.status"
+        cat "$${CI_STATUS_DIR}/mini-brain-eval.log"
+        echo "$code" > "$${CI_STATUS_DIR}/mini-brain-eval.status"
         exit 0
 
   tempmemory-reconcile:
@@ -475,17 +475,17 @@ steps:
     commands:
       - |
         set -euo pipefail
-        mkdir -p "${CI_STATUS_DIR}"
+        mkdir -p "$${CI_STATUS_DIR}"
         set +e
         (
           set -euo pipefail
           pip install --no-cache-dir pyyaml
           # Run reconciliation and archive
           python3 scripts/ops/tempmemory_scheduler.py --once --dry-run
-        ) > "${CI_STATUS_DIR}/tempmemory-reconcile.log" 2>&1
+        ) > "$${CI_STATUS_DIR}/tempmemory-reconcile.log" 2>&1
         code=$?
-        cat "${CI_STATUS_DIR}/tempmemory-reconcile.log"
-        echo "$code" > "${CI_STATUS_DIR}/tempmemory-reconcile.status"
+        cat "$${CI_STATUS_DIR}/tempmemory-reconcile.log"
+        echo "$code" > "$${CI_STATUS_DIR}/tempmemory-reconcile.status"
         exit 0
 
   tempmemory-drill:
@@ -495,7 +495,7 @@ steps:
     commands:
       - |
         set -euo pipefail
-        mkdir -p "${CI_STATUS_DIR}"
+        mkdir -p "$${CI_STATUS_DIR}"
         set +e
         (
           set -euo pipefail
@@ -509,11 +509,11 @@ steps:
           pip install --no-cache-dir pyyaml
           python3 scripts/ops/tempmemory_migration.py --dry-run
           python3 scripts/ops/tempmemory_scheduler.py --once --dry-run
-          python3 scripts/reconciliation/trade_reconciliation.py --dry-run --output "${CI_STATUS_DIR}/tempmemory-drill-reconciliation.json"
-        ) > "${CI_STATUS_DIR}/tempmemory-drill.log" 2>&1
+          python3 scripts/reconciliation/trade_reconciliation.py --dry-run --output "$${CI_STATUS_DIR}/tempmemory-drill-reconciliation.json"
+        ) > "$${CI_STATUS_DIR}/tempmemory-drill.log" 2>&1
         code=$?
-        cat "${CI_STATUS_DIR}/tempmemory-drill.log"
-        echo "$code" > "${CI_STATUS_DIR}/tempmemory-drill.status"
+        cat "$${CI_STATUS_DIR}/tempmemory-drill.log"
+        echo "$code" > "$${CI_STATUS_DIR}/tempmemory-drill.status"
         exit 0
 
   flaky-detection:
@@ -523,7 +523,7 @@ steps:
     commands:
       - |
         set -euo pipefail
-        mkdir -p "${CI_STATUS_DIR}"
+        mkdir -p "$${CI_STATUS_DIR}"
         set +e
         (
           set -euo pipefail
@@ -541,10 +541,10 @@ steps:
             echo \"flaky-detection: run ${i}/3\"
             python3 -m pytest -q ${TARGETS}
           done
-        ) > "${CI_STATUS_DIR}/flaky-detection.log" 2>&1
+        ) > "$${CI_STATUS_DIR}/flaky-detection.log" 2>&1
         code=$?
-        cat "${CI_STATUS_DIR}/flaky-detection.log"
-        echo "$code" > "${CI_STATUS_DIR}/flaky-detection.status"
+        cat "$${CI_STATUS_DIR}/flaky-detection.log"
+        echo "$code" > "$${CI_STATUS_DIR}/flaky-detection.status"
         exit 0
 
   compass-apply:
@@ -555,7 +555,7 @@ steps:
     commands:
       - |
         set -euo pipefail
-        mkdir -p "${CI_STATUS_DIR}"
+        mkdir -p "$${CI_STATUS_DIR}"
         set +e
         (
           set -euo pipefail
@@ -568,10 +568,10 @@ steps:
           else
             echo "No changed files detected, skipping compass apply"
           fi
-        ) > "${CI_STATUS_DIR}/compass-apply.log" 2>&1
+        ) > "$${CI_STATUS_DIR}/compass-apply.log" 2>&1
         code=$?
-        cat "${CI_STATUS_DIR}/compass-apply.log"
-        echo "$code" > "${CI_STATUS_DIR}/compass-apply.status"
+        cat "$${CI_STATUS_DIR}/compass-apply.log"
+        echo "$code" > "$${CI_STATUS_DIR}/compass-apply.status"
         # Non-blocking: always exit 0 for auto-labeling
         exit 0
 
@@ -601,17 +601,17 @@ steps:
     commands:
       - |
         set -euo pipefail
-        mkdir -p "${CI_STATUS_DIR}"
+        mkdir -p "$${CI_STATUS_DIR}"
         set +e
         (
           set -euo pipefail
           echo "Running status write gate check..."
           pip install --no-cache-dir pyyaml || pip install --no-cache-dir --break-system-packages pyyaml
           python3 scripts/governance/status_write_gate.py --file docs/bmm-workflow-status.yaml --no-require-authority
-        ) > "${CI_STATUS_DIR}/status-write-gate.log" 2>&1
+        ) > "$${CI_STATUS_DIR}/status-write-gate.log" 2>&1
         code=$?
-        cat "${CI_STATUS_DIR}/status-write-gate.log"
-        echo "$code" > "${CI_STATUS_DIR}/status-write-gate.status"
+        cat "$${CI_STATUS_DIR}/status-write-gate.log"
+        echo "$code" > "$${CI_STATUS_DIR}/status-write-gate.status"
         # Do not short-circuit the pipeline; ci-gate is the single fail point.
         exit 0
 
