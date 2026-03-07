@@ -52,7 +52,6 @@ steps:
       - |
         set -euo pipefail
         mkdir -p "$${CI_STATUS_DIR}"
-        rm -f "$${CI_STATUS_DIR}"/*.status
         set +e
         (
           set -euo pipefail
