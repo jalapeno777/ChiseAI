@@ -40,38 +40,6 @@
         }
       }
     },
-    "kimi-for-coding": {
-      "name": "Kimi For Coding",
-      "npm": "@ai-sdk/anthropic",
-      "options": {
-        "baseURL": "https://api.moonshot.cn/v1"
-      },
-      "models": {
-        "kimi-k2.5": {
-          "name": "Kimi K2.5 (Instant)",
-          "reasoning": true,
-          "attachment": false,
-          "limit": { "context": 262144, "output": 32768 },
-          "modalities": { "input": ["text", "image", "video"], "output": ["text"] },
-          "options": {
-            "thinking": { "type": "disabled" },
-            "interleaved": { "field": "reasoning_content" }
-          }
-        },
-
-        "kimi-k2.5-think": {
-          "name": "Kimi K2.5 (Think)",
-          "reasoning": true,
-          "attachment": false,
-          "limit": { "context": 262144, "output": 32768 },
-          "modalities": { "input": ["text", "image", "video"], "output": ["text"] },
-          "options": {
-            "thinking": { "type": "enabled", "budgetTokens": 32000 },
-            "interleaved": { "field": "reasoning_content" }
-          }
-        }
-      }
-    }
   },
   "lsp": {
     "sqls": {
