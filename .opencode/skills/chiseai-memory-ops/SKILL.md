@@ -36,6 +36,10 @@ Standardize short-term (Redis) and long-term (Qdrant) memory operations for agen
 | `bmad:chiseai:iterlog:story:<id>` | Story iteration log | 5 days |
 | `bmad:chiseai:ownership` | Scope ownership | 5 days |
 | `bmad:chiseai:current-story` | Active story tracking | Session |
+| `bmad:chiseai:metacog:prediction:story:<id>` | Story-level prediction card | 5 days |
+| `bmad:chiseai:metacog:outcome:story:<id>` | Story-level outcome card | 5 days |
+| `bmad:chiseai:metacog:calibration:agent:<agent>:weekly:<week>` | Weekly calibration trend | 30 days |
+| `bmad:chiseai:metacog:prevention_rules` | Durable anti-pattern prevention hints | 90 days |
 
 ### Standard Operations
 

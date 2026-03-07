@@ -27,3 +27,6 @@ Follow these steps exactly (do not skip):
    - Write explicit, testable acceptance criteria BEFORE implementation begins.
    - Store them in the Redis iterlog hash under `acceptance_criteria`.
 
+6. Metacognition kickoff (required)
+   - Run `.opencode/command/chise-metacog-start.md`.
+   - Ensure iterlog includes `## Metacognitive Predictions` with measurable expected outcomes.

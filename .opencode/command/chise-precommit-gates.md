@@ -31,7 +31,13 @@ Run these gates before PR/merge. If a referenced script is missing, explicitly n
    - If `<story_id>` is not known, run a non-blocking scan:
      - `python3 scripts/validation/validate_insight_governance.py --require-for-completed-only`
 
-6. Session close anti-drift (required at handoff/finish)
+6. Metacognition conformance (if present)
+   - If `scripts/validation/validate_metacog_compliance.py` exists and `<story_id>` is known, run:
+     - `python3 scripts/validation/validate_metacog_compliance.py --story-id=<story_id> --strict`
+   - If `<story_id>` is not known, run a non-blocking scan:
+     - `python3 scripts/validation/validate_metacog_compliance.py --require-for-completed-only`
+
+7. Session close anti-drift (required at handoff/finish)
    - `python3 scripts/swarm/session.py close --enforce-merged`
    - If intentionally closing with open PR and branch ahead of main:
      - `python3 scripts/swarm/session.py close --enforce-merged --allow-unmerged`

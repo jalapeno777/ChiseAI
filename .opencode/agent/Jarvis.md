@@ -184,6 +184,9 @@ You must keep a single source of truth for the workstream so parallel workers do
 ### Story iterlog status ledger
 For the active story, maintain a compact status ledger in the iterlog:
 - `phase`, `status`, `started_at`, `acceptance_criteria`
+- `metacog_predictions` (expected outcomes, predicted risks, confidence)
+- `metacog_outcomes` (actual outcomes, wins/misses)
+- `metacog_calibration` (confidence-vs-outcome deltas and next adjustments)
 - `key_decisions` (append-only)
 - `open_blockers` (short list)
 - `next_batch` (what is being delegated next)
@@ -198,6 +201,7 @@ Preferred sink:
 Fallback (when Redis/Qdrant unavailable):
 - Update `docs/tempmemories/iterlog-<story_id>.md` under `## Decisions`, `## Learnings`, `## Insights Sent To Aria`, and `## Aria Decisions`.
 - Also maintain `## Rejected Insight Signatures` for local dedup suppression.
+- Also maintain `## Metacognitive Predictions`, `## Metacognitive Outcomes`, and `## Metacognitive Calibration`.
 
 ### Incident log
 All incidents must be appended to:
@@ -218,6 +222,7 @@ Before declaring a session complete to Aria, run a lightweight `critic` complian
 - were risk levels assigned and urgency rules respected
 - were security/compliance and PRD scope escalations routed correctly
 - were rejected-insight suppression rules enforced
+- were metacognition sections/fields complete and validated for the story
 
 ### Parallel-safe definition
 Work items may run in parallel only when ALL are true:
