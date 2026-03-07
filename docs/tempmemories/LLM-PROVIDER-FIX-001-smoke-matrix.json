@@ -1,0 +1,77 @@
+{
+  "story_id": "LLM-PROVIDER-FIX-001-SMOKE",
+  "phase": "B",
+  "test_type": "live_smoke_matrix",
+  "timestamp_utc": "2026-03-06T09:32:00Z",
+  "test_prompt": "Reply with OK and current UTC minute",
+  "environment": {
+    "KIMI_API_KEY": "SET (length: 72)",
+    "ZAI_API_KEY": "NOT SET",
+    "ZHIPU_API_KEY": "SET (length: 49)"
+  },
+  "results": [
+    {
+      "provider": "Kimi via Adapter",
+      "endpoint": "http://chiseai-kimi-adapter:8002/v1/chat/completions",
+      "model": "kimi-k2.5",
+      "http_status": 500,
+      "latency_ms": 1406,
+      "success": false,
+      "response_snippet": "{\"error\":{\"message\":\"Internal error: 401: {'error': {'message': 'Invalid API key'...",
+      "error_details": "Adapter functional, but Kimi API key invalid (401 from upstream)",
+      "root_cause": "Invalid KIMI_API_KEY (known issue from Phase A)"
+    },
+    {
+      "provider": "Kimi Direct",
+      "endpoint": "https://api.moonshot.cn/v1/chat/completions",
+      "model": "kimi-k2.5",
+      "http_status": 401,
+      "latency_ms": 1400,
+      "success": false,
+      "response_snippet": "{\"error\":{\"message\":\"Invalid Authentication\",\"type\":\"invalid_authentication...",
+      "error_details": "Direct authentication failure",
+      "root_cause": "Invalid KIMI_API_KEY"
+    },
+    {
+      "provider": "Z.ai Coding Endpoint",
+      "endpoint": "https://api.z.ai/api/coding/paas/v4/chat/completions",
+      "model": "GLM-5",
+      "http_status": null,
+      "latency_ms": null,
+      "success": false,
+      "response_snippet": "SKIPPED: ZAI_API_KEY not set in environment",
+      "error_details": "Missing API key configuration",
+      "root_cause": "ZAI_API_KEY environment variable not configured"
+    },
+    {
+      "provider": "Zhipu",
+      "endpoint": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+      "model": "GLM-4.7",
+      "http_status": 429,
+      "latency_ms": 1400,
+      "success": false,
+      "response_snippet": "{\"error\":{\"code\":\"1113\",\"message\":\"余额不足或无可用资源包,请充值。\"}}...",
+      "error_details": "Quota/balance exhausted (code 1113: insufficient balance)",
+      "root_cause": "Zhipu account quota exhausted"
+    }
+  ],
+  "summary": {
+    "total_providers": 4,
+    "successful": 0,
+    "failed": 4,
+    "skipped": 1,
+    "infrastructure_ok": true,
+    "adapter_functional": true,
+    "blocking_issues": [
+      "KIMI_API_KEY invalid (both adapter and direct paths)",
+      "ZAI_API_KEY not configured",
+      "ZHIPU_API_KEY quota exhausted"
+    ]
+  },
+  "next_steps": [
+    "Phase C: Obtain valid KIMI_API_KEY or rotate credentials",
+    "Phase C: Configure ZAI_API_KEY in environment",
+    "Phase C: Recharge Zhipu account or obtain new quota",
+    "Retest all providers after credential fixes"
+  ]
+}
