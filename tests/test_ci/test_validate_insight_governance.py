@@ -87,7 +87,7 @@ def test_strict_passes_with_no_issues_packet_and_tp_proof(
     iterlog_dir.mkdir(parents=True)
     body = """
 ## Thinking Partner Status
-- tp_session_id: TPS-20260308T000000Z-aaa111
+- **tp_session_id**: TPS-20260308T000000Z-aaa111
 
 ## Insights Sent To Aria
 ```text
