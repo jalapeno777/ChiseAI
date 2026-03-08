@@ -55,6 +55,37 @@ completed:
   priority: P0
   status: merged
   title: LLM Provider Infrastructure Remediation and Testing Framework (Phases A-E)
+- acceptance_criteria:
+  - Cross-branch verification guardrail implemented in AGENTS.md and agent files
+  - AUDIT-DELTA evidence files created and committed
+  - All three remediation PRs merged (#407, #408, #410)
+  - Workflow status updated with audit-delta disposition
+  created_date: '2026-03-07'
+  description: Remediation of PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI findings including
+    cross-branch verification guardrail, merge authority updates, and memory deduplication
+  evidence_commit: b238ebb645c761eb8ddd4e242628ca8e5645dfbc
+  evidence_files:
+  - docs/tempmemories/AUDIT-DELTA-REMEDIATION-EVIDENCE-INDEX.md
+  - docs/tempmemories/AUDIT-DELTA-REMEDIATION-INSIGHTS.md
+  id: AUDIT-DELTA-FIX-001
+  merge_commits:
+  - 48725e8068161d60222eaaf154a499781e00a268
+  - 56fb76ee36cd9d900a5aec4870d47280334efe95
+  - 0ce77cf31d9fde4ae207fd755992ad67b5cb16e9
+  notes:
+  - 'Root cause: False merge claims in BrainEval CI audit'
+  - 'Remediation: git branch --contains guardrail added to all agent docs'
+  - 'Related audit: docs/evidence/PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI.md'
+  - 'Evidence index: 574 lines documenting all remediation work'
+  owner: senior-dev
+  priority: P0-CRITICAL
+  related_audit: PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI
+  remediation_pr_numbers:
+  - 407
+  - 408
+  - 410
+  status: completed
+  title: AUDIT-DELTA Remediation - Cross-Branch Verification Guardrail
 backlog:
 - acceptance_criteria:
   - AGENTS.md updated with new merge policy including senior-dev authority and merge attempt definitions

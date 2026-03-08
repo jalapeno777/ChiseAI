@@ -34,7 +34,7 @@ from typing import Any
 # Add project root to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from src.evaluation.trend_rollups import TrendRollup, TrendRollupEngine
+from src.evaluation.trend_rollups import TrendRollup, TrendRollupEngine, calculate_kpis
 from src.governance.reflection import (
     AutomationTarget,
     KPISnapshot,
@@ -475,6 +475,44 @@ def create_weekly_reflection_artifact(
     """
     logger.info(f"Creating weekly reflection for {week_id}")
 
+    # Get real KPI data from stories + incidents (not just incidents)
+    logger.info("Calculating real KPIs from stories and incidents...")
+    kpi_result = calculate_kpis(window="7d")
+
+    if kpi_result.get("status") == "success":
+        real_kpis = kpi_result.get("kpis", {})
+        data_points = kpi_result.get("data_points", {})
+        logger.info(
+            f"Real KPIs calculated: {data_points.get('stories', 0)} stories, "
+            f"{data_points.get('incidents', 0)} incidents"
+        )
+
+        # Merge real KPIs into current_rollup (override incident-only metrics)
+        current_rollup.kpis.update(
+            {
+                "cycle_time_hours": real_kpis.get("cycle_time_hours", 0.0),
+                "test_count": real_kpis.get("test_count", 0),
+                "recurring_issue_rate": real_kpis.get("recurring_issue_rate", 0.0),
+                "median_time_lost_minutes": real_kpis.get(
+                    "median_time_lost_minutes", 0.0
+                ),
+                "unresolved_issue_age": real_kpis.get(
+                    "unresolved_issue_age_hours", 0.0
+                ),
+                "top_fingerprint_repeat_count": real_kpis.get(
+                    "top_fingerprint_repeat_count", 0
+                ),
+                "fix_reopen_rate": real_kpis.get("fix_reopen_rate", 0.0),
+            }
+        )
+
+        # Update data_points_count to reflect stories + incidents
+        current_rollup.data_points_count = data_points.get(
+            "stories", 0
+        ) + data_points.get("incidents", 0)
+    else:
+        logger.warning(f"Failed to calculate real KPIs: {kpi_result.get('message')}")
+
     # Compute deltas
     deltas = compute_wow_deltas(current_rollup, previous_rollup)
 
@@ -551,12 +589,11 @@ def create_weekly_reflection_artifact(
     # Create base reflection artifact
     story_id = f"ST-MACRO-WEEKLY-{week_id.replace('-W', '')}"
 
-    # Build KPI snapshot from current rollup
+    # Build KPI snapshot from current rollup with real data
     kpi_snapshot = KPISnapshot(
         ci_pass_rate=None,  # Not tracked in trend rollups
         coverage=None,  # Not tracked in trend rollups
-        cycle_time_hours=current_rollup.kpis.get("median_time_lost_minutes", 0.0)
-        / 60.0,
+        cycle_time_hours=float(current_rollup.kpis.get("cycle_time_hours", 0.0)),
         test_count=current_rollup.data_points_count,
         lines_changed=None,  # Not tracked in trend rollups
     )
