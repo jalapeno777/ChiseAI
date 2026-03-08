@@ -1,0 +1,22 @@
+# ChiseAI Weekly Skill Autonomy Cron Job
+#
+# Runs weekly on Monday at 01:30 UTC.
+# Generates skills KPI weekly report and backlog candidates for repeated gaps.
+# Optional: posts success/failure notifications if webhook env var is set.
+# Optional: auto-commit is disabled by default and requires explicit env vars.
+
+PYTHONPATH=/home/tacopants/projects/ChiseAI
+LOG_DIR=/home/tacopants/projects/ChiseAI/logs/skill-autonomy
+DISCORD_DEV_WEBHOOK_URL=
+SKILL_AUTONOMY_AUTO_COMMIT=0
+SKILL_AUTONOMY_COMMIT_BRANCH=
+SKILL_AUTONOMY_QUEUE_WARN_THRESHOLD=25
+SKILL_AUTONOMY_QUEUE_CRIT_THRESHOLD=100
+SKILL_AUTONOMY_WEEKLY_RETENTION_DAYS=60
+SKILL_AUTONOMY_BACKLOG_RETENTION_DAYS=120
+
+# Weekly skill autonomy run
+30 1 * * 1 cd /home/tacopants/projects/ChiseAI && /home/tacopants/projects/ChiseAI/scripts/cron/weekly_skill_autonomy.sh >> $LOG_DIR/cron.log 2>&1
+
+# Manual trigger command:
+# cd /home/tacopants/projects/ChiseAI && python3 scripts/ops/skill_autonomy_tick.py --mode=weekly

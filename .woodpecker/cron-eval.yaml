@@ -120,6 +120,36 @@ steps:
         echo "$code" > _bmad-output/ci/kpi-scheduler-weekly.status
         exit 0
 
+  skill-autonomy-weekly:
+    image: python:3.11
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir pyyaml redis
+
+          # Check if this is a weekly cron trigger
+          if [ "${CI_COMMIT_MESSAGE:-}" != "cron:weekly-reflection" ]; then
+            echo "skill-autonomy-weekly: not weekly cron trigger, skipping"
+            exit 0
+          fi
+
+          echo "Running weekly skill autonomy tick..."
+          python3 scripts/ops/skill_autonomy_tick.py --mode=weekly
+          python3 scripts/ops/ingest_skill_backlog_candidates.py
+
+          echo "Artifacts produced:"
+          find docs/tempmemories -name "skill-autonomy-weekly-*.md" -type f 2>/dev/null || echo "No weekly skill autonomy artifacts found"
+          find docs/backlog -name "skills-autonomy-candidates-*.md" -type f 2>/dev/null || echo "No backlog candidate artifacts found"
+        ) > _bmad-output/ci/skill-autonomy-weekly.log 2>&1
+        code=$?
+        cat _bmad-output/ci/skill-autonomy-weekly.log
+        echo "$code" > _bmad-output/ci/skill-autonomy-weekly.status
+        exit 0
+
   # Fallback: auto-detect cycle from commit message pattern
   kpi-scheduler-auto:
     image: python:3.11
@@ -181,7 +211,7 @@ steps:
         
         # Check status files and fail if any non-zero
         FAILED=0
-        for status_file in _bmad-output/ci/kpi-scheduler-*.status; do
+        for status_file in _bmad-output/ci/*.status; do
           if [ -f "$status_file" ]; then
             code=$(cat "$status_file")
             name=$(basename "$status_file" .status)

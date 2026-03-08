@@ -70,6 +70,14 @@ Prefer repeatable workflow execution through `.opencode/command/*` rather than a
 - `.opencode/command/chise-metacog-close.md`
 - `.opencode/command/chise-metacog-weekly.md`
 
+### Skills autonomy loop:
+- `.opencode/command/chise-skill-autonomy-tick.md`
+- `.opencode/command/chise-skill-backlog-ingest.md`
+- `.opencode/command/chise-skill-eval.md`
+- `.opencode/command/chise-skill-promote.md`
+- `.opencode/command/chise-skill-rollback.md`
+- `.opencode/command/chise-skill-weekly.md`
+
 ### PR review bot setup + review:
 - `.opencode/command/chise-gitea-review-bot-setup.md`
 - `.opencode/command/chise-pr-review-bot.md`

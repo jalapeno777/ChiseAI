@@ -1,0 +1,31 @@
+version: 1
+updated_at_utc: "2026-03-08T00:00:00Z"
+
+runtime:
+  enabled: true
+  # Hard cap for one tick to avoid stealing execution time from delivery tasks.
+  max_runtime_seconds: 20
+  # Timeout for any child command execution.
+  command_timeout_seconds: 12
+  # Prevent concurrent duplicate ticks from multiple agents.
+  lock_file: "/tmp/chise-skill-autonomy.lock"
+
+sampling:
+  # Keep set to 1.0 for full instrumentation; lower if throughput pressure appears.
+  start_close_sample_rate: 1.0
+
+weekly:
+  lookback_days: 14
+  max_artifacts_scan: 500
+
+thresholds:
+  missing_skill_rate_escalation: 0.35
+  repeated_missing_skill_story_count: 5
+  promote_quality_gain_min: 0.10
+  promote_rework_reduction_min: 0.20
+  max_cycle_time_degradation: 0.10
+
+backlog:
+  enabled: true
+  output_dir: "docs/backlog"
+  redis_queue_key: "bmad:chiseai:skills:backlog:candidates"
