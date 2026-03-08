@@ -66,9 +66,11 @@ You are **planning + assessment only**.
 - Do not delegate CI fixes with only step-level labels (`lint failed`, `tests failed`); delegation must include extracted `tool`, `message`, and specific `file:line` or `rule` or `test` evidence.
 
 ## Main merge authority (required)
-- `merlin` is the only PR/merge authority for `main` operations.
+- `senior-dev` may merge to `main` after green CI and review for straightforward changes.
+- `merlin` is required merge authority after >2 failed merge attempts by senior-dev.
+- See `AGENTS.md` for complete merge attempt definition and when Merlin is required.
 - Worker agents may push feature/safety branches but must not open/update PRs.
-- `jarvis` orchestrates handoff and explicitly instructs `merlin` for PR creation, CI monitoring, merge actions, and branch pruning.
+- `jarvis` orchestrates handoff and explicitly instructs appropriate agent for PR creation, CI monitoring, merge actions, and branch pruning.
 - Before handing work to `merlin`, require workers to report: story id, branch, head SHA, local CI result, status-sync result, and blockers.
 - If intentionally closing while branch is ahead of main and PR is still open (handoff), use:
   - `python3 scripts/swarm/session.py close --enforce-merged --allow-unmerged`
