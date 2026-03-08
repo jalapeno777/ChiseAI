@@ -504,7 +504,7 @@ class TestMain:
     @patch("scripts.gitea_pr_automerge._check_merge_conflict")
     @patch("scripts.gitea_pr_automerge._get_pr_reviews")
     @patch("scripts.gitea_pr_automerge._get_pr")
-    def test_main_no_wait_enables_automerge(
+    def test_main_no_wait_enables_automerge_when_explicitly_enabled(
         self,
         mock_get_pr: MagicMock,
         mock_get_reviews: MagicMock,
@@ -512,7 +512,7 @@ class TestMain:
         mock_merge: MagicMock,
         mock_req_json: MagicMock,
     ) -> None:
-        """Test that --wait=false enables server-side automerge."""
+        """Test that no-wait enables server-side automerge only with explicit opt-in."""
         mock_get_pr.return_value = {
             "number": 42,
             "title": "Test PR",
@@ -533,6 +533,7 @@ class TestMain:
                     "feature-branch",
                     "--story-id",
                     "ST-CI-002",
+                    "--enable-automerge",
                 ],
             ),
         ):
@@ -586,8 +587,11 @@ class TestMain:
                     "--story-id",
                     "ST-CI-002",
                     "--wait",
+                    "--enable-automerge",
                     "--poll-sec",
                     "1",
+                    "--required-context",
+                    "ci/woodpecker/push/woodpecker",
                 ],
             ),
         ):
@@ -636,6 +640,9 @@ class TestMain:
                     "--story-id",
                     "ST-CI-002",
                     "--wait",
+                    "--enable-automerge",
+                    "--required-context",
+                    "ci/woodpecker/push/woodpecker",
                 ],
             ),
         ):
@@ -767,8 +774,11 @@ class TestMain:
                     "--story-id",
                     "ST-CI-002",
                     "--wait",
+                    "--enable-automerge",
                     "--max-retries",
                     "3",
+                    "--required-context",
+                    "ci/woodpecker/push/woodpecker",
                 ],
             ),
         ):

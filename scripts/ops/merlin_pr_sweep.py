@@ -167,7 +167,7 @@ def run_automerge_for_branch(
         agent_id,
     ]
     if wait:
-        cmd.append("--wait")
+        cmd.extend(["--wait", "--enable-automerge"])
     if delete_branch:
         cmd.append("--delete-branch")
 
