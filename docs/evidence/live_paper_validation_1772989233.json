@@ -1,0 +1,27 @@
+{
+  "timestamp": "2026-03-08T17:00:33.832432+00:00",
+  "test_session_id": "LIVE-EVIDENCE-1b3bfa55",
+  "infrastructure": {
+    "redis_connected": true,
+    "bybit_connector_loaded": true,
+    "discord_configured": true
+  },
+  "baseline_counts": {
+    "signals": 27061,
+    "orders": 26101,
+    "fills": 26065,
+    "outcomes": 26060
+  },
+  "updated_counts": {
+    "signals": 27062,
+    "orders": 26102,
+    "fills": 26066,
+    "outcomes": 26061
+  },
+  "deltas": {
+    "signals": 1,
+    "orders": 1,
+    "fills": 1,
+    "outcomes": 1
+  }
+}
