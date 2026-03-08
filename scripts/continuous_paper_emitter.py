@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 """Continuous paper trading metrics emitter.
 
+⚠️  THIS IS A METRICS EMITTER FOR GRAFANA DASHBOARD TESTING ⚠️
+This is NOT the real paper trading system. This script generates
+synthetic data to keep the Grafana dashboard populated with test data.
+
+For real paper trading, use PaperTradingOrchestrator instead.
+
 This script continuously emits paper trading metrics to InfluxDB
 to keep the Grafana dashboard populated with live data.
 
@@ -21,6 +27,7 @@ Environment Variables:
 For ST-FINAL-CLOSURE-001: Grafana Paper-Trading-Execution No-Data Fix
 For PAPER-DIAG-001: Robust error handling and auto-restart
 For PAPER-RECOVERY-001: Redis canonical indices, Discord notifications, canary metrics
+For PAPER-EMITTER-001: Clarify synthetic data semantics, disable canonical index writes
 """
 
 from __future__ import annotations
@@ -832,7 +839,9 @@ def main():
     # G5: Send Discord OPEN message at startup
     open_msg_id = send_discord_session_message(
         "OPEN",
-        f"Paper trading session started at {datetime.now(UTC).isoformat()}\nPID: {os.getpid()}",
+        f"📊 Metrics Emitter Started [SYNTHETIC DATA - NOT REAL TRADING]\n"
+        f"This generates dashboard test data. Real trading uses PaperTradingOrchestrator.\n"
+        f"PID: {os.getpid()}",
     )
     if open_msg_id:
         logger.info(f"Discord OPEN message sent: {open_msg_id}")
@@ -960,9 +969,11 @@ def main():
                     else:
                         error_count += 1
 
+                    # DISABLED: Don't write synthetic data to canonical indices
+                    # These should ONLY contain real trades from PaperTradingOrchestrator
                     # TASK 1: Write signal to Redis canonical index
-                    if redis_client:
-                        write_signal_index(redis_client, current_ts, symbol, side)
+                    # if redis_client:
+                    #     write_signal_index(redis_client, current_ts, symbol, side)
 
                     # Emit order for Order/Fill tracking
                     order_id = str(uuid.uuid4())[:8]
@@ -972,9 +983,11 @@ def main():
                     else:
                         error_count += 1
 
+                    # DISABLED: Don't write synthetic data to canonical indices
+                    # These should ONLY contain real trades from PaperTradingOrchestrator
                     # TASK 2: Write order to Redis canonical index
-                    if redis_client:
-                        write_order_index(redis_client, order_id, current_ts)
+                    # if redis_client:
+                    #     write_order_index(redis_client, order_id, current_ts)
 
                     # Emit fill for Order/Fill tracking
                     fill_id = str(uuid.uuid4())[:8]
@@ -984,13 +997,17 @@ def main():
                     else:
                         error_count += 1
 
+                    # DISABLED: Don't write synthetic data to canonical indices
+                    # These should ONLY contain real trades from PaperTradingOrchestrator
                     # TASK 2: Write fill to Redis canonical index
-                    if redis_client:
-                        write_fill_index(redis_client, fill_id, current_ts)
+                    # if redis_client:
+                    #     write_fill_index(redis_client, fill_id, current_ts)
 
+                    # DISABLED: Don't write synthetic data to canonical indices
+                    # These should ONLY contain real trades from PaperTradingOrchestrator
                     # TASK 1: Write outcome to Redis canonical index
-                    if redis_client:
-                        write_outcome_index(redis_client, order_id, current_ts)
+                    # if redis_client:
+                    #     write_outcome_index(redis_client, order_id, current_ts)
 
                     # Update win/loss counts
                     if pnl > 0:
@@ -1074,7 +1091,7 @@ def main():
     logger.info(f"Session duration: {session_duration:.0f}s")
 
     # G5: Send Discord CLOSE message
-    close_msg = f"Session completed successfully.\nDuration: {session_duration:.0f}s\nTotal emissions: {success_count}"
+    close_msg = f"[SYNTHETIC DATA] Session completed successfully.\nDuration: {session_duration:.0f}s\nTotal emissions: {success_count}"
     close_msg_id = send_discord_session_message("CLOSE", close_msg)
     if close_msg_id:
         logger.info(f"Discord CLOSE message sent: {close_msg_id}")
