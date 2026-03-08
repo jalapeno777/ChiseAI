@@ -263,6 +263,14 @@ def _resolve_worktree_path(provided: str | None) -> Path:
     return Path.cwd().resolve()
 
 
+def _find_nested_session_candidates(worktree_path: Path) -> list[Path]:
+    # Common legacy layout is /tmp/worktrees/<id>/<id>/.swarm-session.json.
+    matches = sorted(
+        p.parent for p in worktree_path.glob(f"*/{SESSION_FILE}") if p.is_file()
+    )
+    return matches
+
+
 def _session_owner(session: dict[str, Any]) -> str:
     return f"{session.get('story_id')}/{session.get('agent')}"
 
@@ -368,6 +376,36 @@ def _branch_ahead_count(
         ) from exc
 
 
+def _git_dirty_entries(worktree_path: Path) -> list[str]:
+    rc, out, err = _run_rc(
+        "git",
+        "-C",
+        str(worktree_path),
+        "status",
+        "--porcelain",
+    )
+    if rc != 0:
+        raise SessionError(f"Failed to check worktree dirtiness: {err or out}")
+    return [line for line in out.splitlines() if line.strip()]
+
+
+def _stash_dirty_worktree(worktree_path: Path, story_id: str, branch: str) -> str:
+    label = f"swarm-close:{story_id}:{branch}:{_utc_now()}"
+    rc, out, err = _run_rc(
+        "git",
+        "-C",
+        str(worktree_path),
+        "stash",
+        "push",
+        "--include-untracked",
+        "-m",
+        label,
+    )
+    if rc != 0:
+        raise SessionError(f"Failed to stash dirty worktree: {err or out}")
+    return out or label
+
+
 def _pr_exists_for_branch(branch: str, base_ref: str = "main") -> tuple[bool, str]:
     token = (os.getenv("GITEA_TOKEN") or "").strip()
     owner = (
@@ -433,14 +471,23 @@ def cmd_start(args: argparse.Namespace) -> int:
     if not re.match(r"^(feature|safety)/", branch):
         raise SessionError("Branch must start with feature/ or safety/")
 
-    worktree_root = Path(args.worktree_root)
-    if not worktree_root.is_absolute():
-        worktree_root = (repo_root / worktree_root).resolve()
-    worktree_root.mkdir(parents=True, exist_ok=True)
-
     safe_story = re.sub(r"[^A-Za-z0-9._-]", "-", args.story_id)
     safe_agent = re.sub(r"[^A-Za-z0-9._-]", "-", args.agent)
-    worktree_path = (worktree_root / f"{safe_story}-{safe_agent}").resolve()
+    expected_leaf = f"{safe_story}-{safe_agent}"
+
+    if args.worktree_path:
+        worktree_path = Path(args.worktree_path).resolve()
+    else:
+        worktree_root = Path(args.worktree_root)
+        if not worktree_root.is_absolute():
+            worktree_root = (repo_root / worktree_root).resolve()
+        # Backward compatibility: if caller passed a story-specific root, treat it
+        # as the final worktree path instead of nesting the same suffix twice.
+        if worktree_root.name == expected_leaf:
+            worktree_path = worktree_root
+        else:
+            worktree_path = (worktree_root / expected_leaf).resolve()
+    worktree_path.parent.mkdir(parents=True, exist_ok=True)
 
     if worktree_path.exists() and any(worktree_path.iterdir()) and not args.force:
         raise SessionError(
@@ -547,8 +594,36 @@ def _validate_canonical_lock(args: argparse.Namespace, session: dict[str, Any]) 
 
 
 def cmd_verify(args: argparse.Namespace) -> int:
-    worktree_path = _resolve_worktree_path(args.worktree_path)
-    session = _read_session(worktree_path)
+    requested_worktree_path = _resolve_worktree_path(args.worktree_path)
+    worktree_path = requested_worktree_path
+    try:
+        session = _read_session(worktree_path)
+    except SessionError as exc:
+        if f"Missing {SESSION_FILE}" not in str(exc):
+            raise
+
+        candidates = _find_nested_session_candidates(worktree_path)
+        if len(candidates) == 1:
+            worktree_path = candidates[0]
+            session = _read_session(worktree_path)
+            print(
+                "WARN: Session file not found at requested path; using nested worktree "
+                f"{worktree_path}",
+                file=sys.stderr,
+            )
+        elif len(candidates) > 1:
+            listed = "\n".join(f"  - {c}" for c in candidates)
+            raise SessionError(
+                f"Missing {SESSION_FILE} under {requested_worktree_path} "
+                f"and found multiple nested session candidates:\n{listed}\n"
+                "Re-run verify with an explicit --worktree-path to the correct child."
+            ) from exc
+        else:
+            raise SessionError(
+                f"Missing {SESSION_FILE} under {requested_worktree_path}. "
+                "Initialize the session first with `session.py start`."
+            ) from exc
+
     branch = _git_branch(worktree_path)
 
     if args.branch and branch != args.branch:
@@ -610,6 +685,48 @@ def cmd_close(args: argparse.Namespace) -> int:
     worktree_path = _resolve_worktree_path(args.worktree_path)
     session = _read_session(worktree_path)
     branch = str(session["branch"])
+    story_id = str(session.get("story_id", "")).strip() or "unknown-story"
+
+    if args.auto_stash_dirty and not args.confirm_stash_last_resort:
+        raise SessionError(
+            "--auto-stash-dirty requires --confirm-stash-last-resort. "
+            "Stash is intentionally guarded as a last-resort cleanup path."
+        )
+
+    dirty_entries = _git_dirty_entries(worktree_path)
+    if dirty_entries:
+        if args.auto_stash_dirty:
+            stash_result = _stash_dirty_worktree(worktree_path, story_id, branch)
+            print(f"- dirty_worktree: stashed ({stash_result})")
+            dirty_entries = _git_dirty_entries(worktree_path)
+            if dirty_entries:
+                raise SessionError(
+                    "Worktree still dirty after auto-stash; resolve manually and retry close."
+                )
+        elif args.allow_dirty:
+            print(
+                "WARN: Closing session with dirty worktree due to --allow-dirty.",
+                file=sys.stderr,
+            )
+        else:
+            sample = "\n".join(f"  - {line}" for line in dirty_entries[:20])
+            more = ""
+            if len(dirty_entries) > 20:
+                more = f"\n  ... ({len(dirty_entries) - 20} more)"
+            raise SessionError(
+                "Worktree has uncommitted changes; refusing to close session.\n"
+                "Preferred resolution: commit, discard, or otherwise clean the "
+                "worktree explicitly.\n"
+                "Last resort: re-run with --auto-stash-dirty "
+                "--confirm-stash-last-resort, or use --allow-dirty.\n"
+                f"Dirty entries:\n{sample}{more}"
+            )
+
+    if args.remove_worktree and args.allow_dirty and dirty_entries:
+        raise SessionError(
+            "Cannot remove worktree while closing dirty session with --allow-dirty. "
+            "Use --auto-stash-dirty or clean manually first."
+        )
 
     if args.enforce_merged:
         ahead = _branch_ahead_count(worktree_path, branch, args.base_ref)
@@ -667,6 +784,7 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument("--branch", required=True)
     start.add_argument("--base", default="main")
     start.add_argument("--worktree-root", default=".swarm-worktrees")
+    start.add_argument("--worktree-path")
     start.add_argument("--ttl-seconds", type=int, default=432000)
     start.add_argument("--force", action="store_true")
     start.add_argument("--scopes", nargs="*", default=[])
@@ -685,6 +803,9 @@ def build_parser() -> argparse.ArgumentParser:
     close = sub.add_parser("close", help="Release leases and close worktree session")
     close.add_argument("--worktree-path")
     close.add_argument("--remove-worktree", action="store_true")
+    close.add_argument("--auto-stash-dirty", action="store_true")
+    close.add_argument("--confirm-stash-last-resort", action="store_true")
+    close.add_argument("--allow-dirty", action="store_true")
     close.add_argument("--enforce-merged", action="store_true")
     close.add_argument("--allow-unmerged", action="store_true")
     close.add_argument("--base-ref", default="main")
