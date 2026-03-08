@@ -2,7 +2,7 @@
 name: "research"
 description: "Research subagent. Investigates PRD/docs, market/technical research, and produces structured notes. No code changes unless explicitly requested."
 mode: all
-model: "zai-coding-plan/glm-4.7"   # model: "minimax/MiniMax-M2.5"
+model: "kimi-for-coding/kimi-k2-thinking"   # model: "minimax/MiniMax-M2.5"
 temperature: 0.3
 tools:
   task: true
@@ -35,4 +35,3 @@ Return:
 - Key findings
 - Open questions/assumptions
 - Recommended next steps for `aria`/`jarvis`
-
