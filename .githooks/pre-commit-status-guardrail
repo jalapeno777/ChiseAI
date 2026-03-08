@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+#
+# Pre-commit Hook: Completion Evidence Guardrail
+#
+# Prevents commits to docs/bmm-workflow-status.yaml when stories are marked
+# as "completed" or "merged" without proper evidence.
+#
+# Required evidence:
+#   - pr_number: GitHub PR number that was merged
+#   - merge_commit: SHA of the merge commit
+#   - Verification via `git branch --contains` that commit is on main
+#
+# Bypass: git commit --no-verify (requires justification in commit message)
+#
+# Incident: GOV-BATCH-003-STATUS-FALSIFICATION
+#
+
+set -e
+
+# Only run if bmm-workflow-status.yaml is being modified
+STATUS_FILE="docs/bmm-workflow-status.yaml"
+
+if git diff --cached --name-only | grep -q "$STATUS_FILE"; then
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "🔍 Completion Evidence Guardrail: Checking $STATUS_FILE"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    
+    # Run the validation script
+    if python3 scripts/validate_completion_evidence.py --status-file "$STATUS_FILE"; then
+        echo ""
+        echo "✅ Completion evidence validation passed"
+        echo ""
+        exit 0
+    else
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "❌ COMMIT BLOCKED: Completion evidence validation failed"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "Stories marked as 'completed' or 'merged' must have:"
+        echo "  1. pr_number field with the GitHub PR number"
+        echo "  2. merge_commit field with the SHA of the merge commit"
+        echo "  3. Verification that merge_commit exists on main branch"
+        echo ""
+        echo "To fix:"
+        echo "  1. Add missing evidence fields to the story"
+        echo "  2. Verify the merge commit is on main: git branch --contains <commit>"
+        echo "  3. If story is not actually complete, change status to 'in_progress'"
+        echo ""
+        echo "Emergency bypass (requires justification):"
+        echo "  git commit --no-verify -m \"YOUR MESSAGE - BYPASS JUSTIFICATION: <reason>\""
+        echo ""
+        echo "Related incident: GOV-BATCH-003-STATUS-FALSIFICATION"
+        echo ""
+        exit 1
+    fi
+fi
+
+# Not modifying status file, allow commit
+exit 0
