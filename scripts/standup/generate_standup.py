@@ -16,6 +16,7 @@ Usage:
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from datetime import datetime, timedelta
@@ -303,6 +304,81 @@ class StandupGenerator:
             "incidents_24h": len(blockers.get("technical", [])),
         }
 
+    def _get_thinking_partner_status(self) -> Dict[str, Any]:
+        """Build Thinking Partner visibility snapshot from Redis + iterlogs."""
+        status = {
+            "mode": "OFF",
+            "tp_sessions_24h": 0,
+            "insight_packets_24h": 0,
+            "aria_decisions_24h": 0,
+            "open_risk_items": 0,
+            "decision_debt_open": 0,
+            "last_proof_chain": "IP:none -> AD:none",
+            "proof_coverage_percent": 0.0,
+        }
+
+        # Redis sessions (best effort)
+        if self.redis_client:
+            try:
+                cursor = 0
+                sessions = 0
+                while True:
+                    cursor, keys = self.redis_client.scan(
+                        cursor=cursor,
+                        match="bmad:chiseai:tp:session:*",
+                        count=100,
+                    )
+                    sessions += len(keys)
+                    if cursor == 0:
+                        break
+                status["tp_sessions_24h"] = sessions
+            except Exception:
+                pass
+
+        # Iterlog-derived governance signal (best effort)
+        try:
+            iterlog_paths = sorted(Path("docs/tempmemories").glob("iterlog-*.md"))
+            total = len(iterlog_paths)
+            with_proof = 0
+            latest_ip = "none"
+            latest_ad = "none"
+
+            for path in iterlog_paths:
+                body = path.read_text(encoding="utf-8", errors="replace")
+                if "Thinking Partner Proof:" in body:
+                    with_proof += 1
+
+                ip_matches = re.findall(r"insight_packet_id:\s*([A-Za-z0-9._:-]+)", body)
+                ad_matches = re.findall(r"aria_decision_id:\s*([A-Za-z0-9._:-]+)", body)
+                if ip_matches:
+                    latest_ip = ip_matches[-1]
+                    status["insight_packets_24h"] += len(ip_matches)
+                if ad_matches:
+                    latest_ad = ad_matches[-1]
+                    status["aria_decisions_24h"] += len(ad_matches)
+
+                # Lightweight debt/risk signal from documented fields.
+                status["open_risk_items"] += len(
+                    re.findall(r"urgency:\s*(medium|high|critical)", body, flags=re.IGNORECASE)
+                )
+                status["decision_debt_open"] += len(re.findall(r"\bdebt_id:\b", body))
+
+            status["last_proof_chain"] = f"IP:{latest_ip} -> AD:{latest_ad}"
+            if total > 0:
+                status["proof_coverage_percent"] = round((with_proof / total) * 100.0, 1)
+        except Exception:
+            pass
+
+        coverage = status["proof_coverage_percent"]
+        if coverage >= 95.0 and status["tp_sessions_24h"] > 0:
+            status["mode"] = "ACTIVE"
+        elif coverage >= 70.0:
+            status["mode"] = "DEGRADED"
+        else:
+            status["mode"] = "OFF"
+
+        return status
+
     def generate_markdown_report(self) -> str:
         """Generate full markdown standup report."""
         completed = self._get_completed_yesterday()
@@ -310,6 +386,7 @@ class StandupGenerator:
         blockers = self._get_blockers()
         risks = self._get_risks()
         metrics = self._get_metrics()
+        tp = self._get_thinking_partner_status()
 
         current_phase = self.workflow_status.get("current_phase", {})
 
@@ -425,6 +502,19 @@ class StandupGenerator:
 
 ---
 
+## Thinking Partner Status
+
+- **Mode**: {tp["mode"]}
+- **TP Sessions (24h)**: {tp["tp_sessions_24h"]}
+- **Insight Packets (24h)**: {tp["insight_packets_24h"]}
+- **Aria Decisions (24h)**: {tp["aria_decisions_24h"]}
+- **Open Risk Items**: {tp["open_risk_items"]}
+- **Decision Debt Open**: {tp["decision_debt_open"]}
+- **Proof Coverage**: {tp["proof_coverage_percent"]}%
+- **Last Proof Chain**: {tp["last_proof_chain"]}
+
+---
+
 ## Notes
 
 - Report generated from workflow status and Redis iterlogs
@@ -445,6 +535,7 @@ class StandupGenerator:
             "generated_at": datetime.now().isoformat(),
             "phase": self.workflow_status.get("current_phase", {}),
             "summary": self._get_metrics(),
+            "thinking_partner": self._get_thinking_partner_status(),
             "yesterday": {"completed": self._get_completed_yesterday()},
             "today": {"planned": self._get_planned_today()},
             "blockers": self._get_blockers(),

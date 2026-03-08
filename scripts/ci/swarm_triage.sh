@@ -74,14 +74,18 @@ mypy src scripts || echo "WARN: mypy violations (non-blocking)"
 python3 scripts/validate_status_sync.py
 python3 scripts/validate_iterloop_compliance.py
 CHANGED_ITERLOGS="$(git diff --name-only origin/main...HEAD 2>/dev/null | grep -E "^docs/tempmemories/iterlog-.*\\.md$" || true)"
-if [ -n "$(printf "%s" "${CHANGED_ITERLOGS}" | tr -d "[:space:]")" ]; then
-  printf "%s\n" "${CHANGED_ITERLOGS}" | while IFS= read -r iterlog_path; do
-    [ -z "$iterlog_path" ] && continue
-    story_id="$(basename "$iterlog_path" .md | sed "s/^iterlog-//")"
-    python3 scripts/validation/validate_insight_governance.py --story-id "${story_id}" --strict
-    python3 scripts/validation/validate_metacog_compliance.py --story-id "${story_id}" --strict
-  done
-else
+  if [ -n "$(printf "%s" "${CHANGED_ITERLOGS}" | tr -d "[:space:]")" ]; then
+    printf "%s\n" "${CHANGED_ITERLOGS}" | while IFS= read -r iterlog_path; do
+      [ -z "$iterlog_path" ] && continue
+      story_id="$(basename "$iterlog_path" .md | sed "s/^iterlog-//")"
+      python3 scripts/validation/validate_insight_governance.py --story-id "${story_id}" --strict
+      if [ "${CI_REQUIRE_REDIS_METACOG_ARTIFACTS:-0}" = "1" ]; then
+        python3 scripts/validation/validate_metacog_compliance.py --story-id "${story_id}" --strict --require-artifacts
+      else
+        python3 scripts/validation/validate_metacog_compliance.py --story-id "${story_id}" --strict
+      fi
+    done
+  else
   python3 scripts/validation/validate_insight_governance.py --require-for-completed-only || true
   python3 scripts/validation/validate_metacog_compliance.py --require-for-completed-only || true
 fi

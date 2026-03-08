@@ -152,6 +152,11 @@ Trigger this whenever you identify:
 - safer/faster sequencing alternatives
 - workflow bottlenecks, ownership conflicts, or recurring blockers
 
+Completion-review rule:
+- Every worker completion summary must be reviewed before returning to Aria.
+- If issues exist, emit `INSIGHT_PACKET`.
+- If no material issues exist, emit `NO_ISSUES_PACKET` with evidence summary so Aria can still produce a decision trace.
+
 Required output format to Aria:
 ```text
 INSIGHT_PACKET
@@ -171,6 +176,18 @@ INSIGHT_PACKET
     rollback_plan_ref:
     evidence:
     evidence_signature:
+```
+
+No-issues packet format:
+```text
+NO_ISSUES_PACKET
+- packet_id: NIP-<story_id>-<utc_yyyymmddThhmmssZ>-<short_hash>
+- story_id:
+- reviewed_at_utc:
+- context:
+- checks_run:
+- evidence:
+- evidence_signature:
 ```
 
 Urgency rules:

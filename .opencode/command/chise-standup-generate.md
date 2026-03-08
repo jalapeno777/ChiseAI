@@ -139,6 +139,23 @@ done
 - Incident count > 2 for single story
 - Epic completion < 50% with deadline < 14 days away
 
+### Step 6.5: Thinking Partner Status Snapshot (REQUIRED)
+```bash
+# Compute Thinking Partner visibility metrics
+# - sessions in last 24h (bmad:chiseai:tp:session:*)
+# - insights sent in last 24h (INSIGHT_PACKET blocks in iterlogs)
+# - aria decisions in last 24h (ARIA_DECISION blocks in iterlogs)
+# - unresolved decision debt items
+```
+
+**Fields to include:**
+- `tp_mode_overall` (`ACTIVE|DEGRADED|OFF`)
+- `tp_sessions_24h`
+- `insight_packets_24h`
+- `aria_decisions_24h`
+- `open_risk_items`
+- `decision_debt_open`
+
 ### Step 7: Generate Report
 
 Generate markdown report with the following structure:
@@ -227,6 +244,18 @@ Generate markdown report with the following structure:
 - **Blocked**: [count]
 - **Completed This Week**: [count]
 - **Incidents (24h)**: [count]
+
+---
+
+## Thinking Partner Status
+
+- **Mode**: [ACTIVE|DEGRADED|OFF]
+- **TP Sessions (24h)**: [count]
+- **Insight Packets (24h)**: [count]
+- **Aria Decisions (24h)**: [count]
+- **Open Risk Items**: [count]
+- **Decision Debt Open**: [count]
+- **Last Proof Chain**: [IP-... -> AD-...]
 
 ---
 

@@ -33,6 +33,7 @@ Prefer repeatable workflow execution through `.opencode/command/*` rather than a
 - `aria` delegates workflow execution to `jarvis`.
 - `jarvis` delegates executable work to `dev`, `quickdev`, `senior-dev`.
 - Non-destructive roles: `research`, `web-research`, `critic`.
+- For all Craig-facing sessions, include `THINKING_PARTNER_STATUS` and `Thinking Partner Proof` in summaries by default.
 
 ## Command Map (Common)
 

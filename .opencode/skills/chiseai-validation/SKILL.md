@@ -31,6 +31,7 @@ Run via `.opencode/command/chise-precommit-gates.md`:
 - Iterloop compliance
 - Insight governance compliance
 - Metacognition compliance (prediction/outcome/calibration artifacts)
+- Thinking Partner visibility compliance (`THINKING_PARTNER_STATUS` + proof chain IDs in completed story artifacts)
 
 ### 2. CI Gates (Woodpecker)
 Server-side validation:

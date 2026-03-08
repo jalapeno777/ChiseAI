@@ -19,6 +19,7 @@ Story: ST-DAILY-REFLECTION-001
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from datetime import datetime, timedelta
@@ -114,6 +115,10 @@ class DailyReflectionReportGenerator:
             "active_stories": 0,
             "completed_iterations": 0,
             "avg_iteration_duration_hours": 0.0,
+            "tp_sessions_24h": 0,
+            "insight_packets_24h": 0,
+            "aria_decisions_24h": 0,
+            "tp_proof_coverage_percent": 0.0,
         }
 
         if not self.redis_client:
@@ -154,9 +159,42 @@ class DailyReflectionReportGenerator:
                     iter_metrics.get("avg_duration_hours", 0.0)
                 )
 
+            # Thinking Partner session signal
+            cursor = 0
+            tp_sessions = 0
+            while True:
+                cursor, keys = self.redis_client.scan(
+                    cursor=cursor, match="bmad:chiseai:tp:session:*", count=100
+                )
+                tp_sessions += len(keys)
+                if cursor == 0:
+                    break
+            kpis["tp_sessions_24h"] = tp_sessions
+
         except Exception as e:
             if self.verbose:
                 print(f"⚠ Error fetching KPI snapshot: {e}")
+
+        # Iterlog-derived signals (works even if Redis metrics are sparse)
+        try:
+            iterlog_paths = sorted(Path("docs/tempmemories").glob("iterlog-*.md"))
+            total = len(iterlog_paths)
+            with_proof = 0
+            insights = 0
+            decisions = 0
+            for path in iterlog_paths:
+                body = path.read_text(encoding="utf-8", errors="replace")
+                if "Thinking Partner Proof:" in body:
+                    with_proof += 1
+                insights += len(re.findall(r"insight_packet_id:\s*", body, flags=re.IGNORECASE))
+                decisions += len(re.findall(r"aria_decision_id:\s*", body, flags=re.IGNORECASE))
+
+            kpis["insight_packets_24h"] = insights
+            kpis["aria_decisions_24h"] = decisions
+            if total > 0:
+                kpis["tp_proof_coverage_percent"] = round((with_proof / total) * 100.0, 1)
+        except Exception:
+            pass
 
         return kpis
 
@@ -518,6 +556,12 @@ class DailyReflectionReportGenerator:
         lines.append(
             f"- **Avg Iteration Duration:** {kpis['avg_iteration_duration_hours']:.1f}h"
         )
+        lines.append("")
+        lines.append("## 🤝 Thinking Partner")
+        lines.append(f"- **TP Sessions (24h):** {kpis['tp_sessions_24h']}")
+        lines.append(f"- **Insight Packets (24h):** {kpis['insight_packets_24h']}")
+        lines.append(f"- **Aria Decisions (24h):** {kpis['aria_decisions_24h']}")
+        lines.append(f"- **Proof Coverage:** {kpis['tp_proof_coverage_percent']:.1f}%")
         lines.append("")
 
         # Trend Deltas

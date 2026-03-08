@@ -53,6 +53,7 @@ REQUIRED_DECISION_FIELDS = {
 }
 
 FALLBACK_SECTIONS = {
+    "## Thinking Partner Status",
     "## Insights Sent To Aria",
     "## Aria Decisions",
     "## Rejected Insight Signatures",
@@ -150,16 +151,29 @@ def _validate_file(
                     result.warn(msg)
 
     insight_blocks = _extract_blocks(body, "INSIGHT_PACKET")
+    no_issues_blocks = _extract_blocks(body, "NO_ISSUES_PACKET")
     decision_blocks = _extract_blocks(body, "ARIA_DECISION")
 
-    if should_require and not insight_blocks:
-        msg = f"{path}: no INSIGHT_PACKET blocks found"
+    if should_require and not insight_blocks and not no_issues_blocks:
+        msg = f"{path}: no INSIGHT_PACKET or NO_ISSUES_PACKET blocks found"
         if strict:
             result.err(msg)
         else:
             result.warn(msg)
     if should_require and not decision_blocks:
         msg = f"{path}: no ARIA_DECISION blocks found"
+        if strict:
+            result.err(msg)
+        else:
+            result.warn(msg)
+    if should_require and not re.search(r"(?im)^\s*[-*]?\s*tp_session_id\s*:", body):
+        msg = f"{path}: missing tp_session_id in Thinking Partner status"
+        if strict:
+            result.err(msg)
+        else:
+            result.warn(msg)
+    if should_require and "Thinking Partner Proof:" not in body:
+        msg = f"{path}: missing Thinking Partner Proof line"
         if strict:
             result.err(msg)
         else:
