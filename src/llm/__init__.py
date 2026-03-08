@@ -1,10 +1,13 @@
 """LLM integration module for ChiseAI.
 
-Provides clients for various LLM APIs including MiniMax, Z.ai, and KIMI.
-Also includes provider chain for automatic fallback between providers.
+Provides a universal LLM provider chain interface with automatic fallback
+between providers (KIMI, Z.ai, Zhipu, MiniMax).
+
+ARCHITECTURAL NOTE: Production code MUST use LLMProviderChain as the
+universal interface. Direct client imports are for testing/diagnostics only.
+See src/governance/reflection/llm_integration.py as the canonical example.
 """
 
-from config.env_loader import EnvLoader, kimi_loader, load_kimi_config
 from llm.errors import (
     AuthError,
     LLMError,
@@ -19,41 +22,20 @@ from llm.errors import (
     get_fallback_delay,
     should_retry,
 )
-from llm.kimi_client import (
-    KimiClient,
-    KimiConfig,
-    KimiMessage,
-    KimiResponse,
-)
-from llm.minimax_client import (
-    MiniMaxClient,
-    MiniMaxConfig,
-    MiniMaxMessage,
-    MiniMaxResponse,
-)
 from llm.provider_chain import (
     ErrorCategory,
     LLMProviderChain,
     LLMResponse,
     ProviderError,
 )
-from llm.zai_client import (
-    ZaiClient,
-    ZaiConfig,
-    ZaiMessage,
-    ZaiResponse,
-)
-from llm.zhipu_client import (
-    ZaiAuthError,
-    ZaiError,
-    ZaiRateLimitError,
-    ZaiServerError,
-    ZaiTimeoutError,
-    ZhipuClient,
-)
 
 __all__ = [
-    # Error classes (CH-LLM-FALLBACK-002)
+    # Provider chain (universal interface)
+    "LLMProviderChain",
+    "LLMResponse",
+    "ProviderError",
+    "ErrorCategory",
+    # Error handling (allowed for direct use)
     "LLMError",
     "AuthError",
     "QuotaError",
@@ -67,36 +49,4 @@ __all__ = [
     "classify_error",
     "should_retry",
     "get_fallback_delay",
-    # KIMI
-    "KimiClient",
-    "KimiConfig",
-    "KimiMessage",
-    "KimiResponse",
-    # Config
-    "EnvLoader",
-    "kimi_loader",
-    "load_kimi_config",
-    # MiniMax
-    "MiniMaxClient",
-    "MiniMaxConfig",
-    "MiniMaxMessage",
-    "MiniMaxResponse",
-    # Z.ai
-    "ZaiClient",
-    "ZaiConfig",
-    "ZaiMessage",
-    "ZaiResponse",
-    # Zhipu
-    "ZhipuClient",
-    "ZaiError",
-    "ZaiAuthError",
-    "ZaiRateLimitError",
-    "ZaiServerError",
-    "ZaiTimeoutError",
-    # Provider chain exports
-    "LLMProviderChain",
-    "LLMResponse",
-    "ProviderError",
-    "ErrorCategory",
-    "classify_error",
 ]
