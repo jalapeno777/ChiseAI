@@ -48,7 +48,22 @@ Follow these steps exactly (do not skip):
    
    **Record in iterlog:** Add `## Metacognitive Predictions` section with the full prediction card.
 
-7. Thinking-partner status kickoff (REQUIRED for all Craig-facing sessions)
+7. Skills coverage snapshot (NON-BLOCKING)
+   - Run `.opencode/command/chise-skill-autonomy-tick.md` with:
+     - `story_id`
+     - `task_class` (use `unclassified` if unknown)
+     - `mode=start`
+   - Missing recommended skills are warning-only:
+     - continue execution
+     - log KPI gap event for weekly reflection
+   - Record in iterlog under `## Skill Coverage Snapshot`:
+     - `recommended_skills`
+     - `available_skills`
+     - `missing_skills`
+     - `coverage_status`
+     - `fallback_used`
+
+8. Thinking-partner status kickoff (REQUIRED for all Craig-facing sessions)
    - Emit and persist this status block:
    ```text
    THINKING_PARTNER_STATUS

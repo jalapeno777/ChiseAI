@@ -18,6 +18,15 @@ Run weekly (or manually during incident-heavy periods).
      - median cycle time trend
      - prevention-rule hit rate
 
+2.1 Skills autonomy KPI snapshot (NON-BLOCKING)
+   - Run `.opencode/command/chise-skill-autonomy-tick.md` with `mode=weekly`.
+   - Include:
+     - missing-skill rate by task class
+     - top repeated missing skills
+     - skill effectiveness trend (quality/rework/regression/cycle time)
+     - generated backlog candidates for repeated skill gaps
+   - Treat missing skills as capability signals, not execution failures.
+
 3. Decision output
    - Produce one of:
      - `NO_CHANGE`

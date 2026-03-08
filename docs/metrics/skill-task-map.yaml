@@ -1,0 +1,52 @@
+version: 1
+updated_at_utc: "2026-03-08T00:00:00Z"
+default_task_class: "unclassified"
+
+# Recommended skills are advisory, not blocking.
+task_classes:
+  coding_small:
+    recommended_skills:
+      - chiseai-git-workflow
+      - python-quality
+      - chiseai-testing-patterns
+
+  coding_complex:
+    recommended_skills:
+      - chiseai-git-workflow
+      - chiseai-validation
+      - chiseai-testing-patterns
+      - chiseai-worker-contracts
+
+  ci_failure:
+    recommended_skills:
+      - chiseai-validation
+      - chiseai-incident-response
+
+  incident_response:
+    recommended_skills:
+      - chiseai-incident-response
+      - chiseai-validation
+
+  parallel_execution:
+    recommended_skills:
+      - chiseai-parallel-safety
+      - chiseai-worker-contracts
+
+  docker_infra:
+    recommended_skills:
+      - chiseai-docker-governance
+      - chiseai-validation
+
+  research:
+    recommended_skills:
+      - chiseai-workflow-commands
+
+  planning:
+    recommended_skills:
+      - chiseai-workflow-commands
+      - chiseai-metacognition-ops
+
+  validation:
+    recommended_skills:
+      - chiseai-validation
+      - chiseai-metacognition-ops

@@ -113,7 +113,19 @@ Follow these steps exactly (do not skip):
    - `## Metacognitive Outcomes`
    - `## Metacognitive Calibration`
 
-8. Metacognition compliance validation (REQUIRED)
+8. Skills effectiveness capture (NON-BLOCKING)
+   - Run `.opencode/command/chise-skill-autonomy-tick.md` with:
+     - `story_id`
+     - `task_class`
+     - `mode=close`
+     - `quality_score` (if available)
+     - `cycle_time_minutes` (if available)
+     - `rework_flag` / `regression_flag` (if applicable)
+     - `skill_name` / `skill_version` when attribution is known
+   - Missing recommended skills are warning-only and must not block completion.
+   - Record in iterlog under `## Skill Effectiveness Snapshot`.
+
+9. Metacognition compliance validation (REQUIRED)
    - Run validation script:
      ```bash
      python3 scripts/validation/validate_metacog_compliance.py --story-id=<story_id> --strict
@@ -123,14 +135,14 @@ Follow these steps exactly (do not skip):
      - Outcome card missing
      - Calibration card missing
      - Metrics are not measurable
-   - Fix all failures before proceeding to step 9.
+   - Fix all failures before proceeding to step 10.
 
-9. Final completion mark
-   - Only after steps 1-8 pass, update Redis iterlog:
+10. Final completion mark
+   - Only after steps 1-9 pass, update Redis iterlog:
      - `status=completed`
    - If any gate fails, keep status as `closing` (or `in_progress`) and remediate first.
 
-10. Thinking-partner proof chain (REQUIRED)
+11. Thinking-partner proof chain (REQUIRED)
    - Add these iterlog sections before completion:
      - `## Thinking Partner Status`
      - `## Insights Sent To Aria`

@@ -66,7 +66,19 @@ Run these gates before PR/merge. If a referenced script is missing, explicitly n
    - If `<story_id>` is not known, run a non-blocking scan:
      - `python3 scripts/validation/validate_insight_governance.py --require-for-completed-only`
 
-7. Session close anti-drift (required at handoff/finish)
+7. Skills autonomy KPI check (WARNING-ONLY)
+   - If `scripts/ops/skill_autonomy_tick.py` exists and `<story_id>` is known, run:
+     ```bash
+     python3 scripts/ops/skill_autonomy_tick.py --mode=start --story-id=<story_id> --task-class=<task_class_or_unclassified>
+     ```
+   - Purpose:
+     - capture missing-skill coverage signals
+     - persist KPI/reflection artifact
+   - Policy:
+     - missing skills are never blocking in this gate
+     - script failure should warn, not fail precommit
+
+8. Session close anti-drift (required at handoff/finish)
    - `python3 scripts/swarm/session.py close --enforce-merged`
    - If intentionally closing with open PR and branch ahead of main:
      - `python3 scripts/swarm/session.py close --enforce-merged --allow-unmerged`
@@ -78,6 +90,7 @@ Run these gates before PR/merge. If a referenced script is missing, explicitly n
 | Metacog compliance | BLOCKING | Warning only | Ignored for P0/P1 |
 | Insight governance | BLOCKING | BLOCKING | Allowed |
 | Iterloop compliance | BLOCKING | BLOCKING | Allowed |
+| Skills autonomy KPI | Warning only | Warning only | Allowed |
 | Local CI checks | BLOCKING | BLOCKING | Allowed |
 
 **Note:** P0/P1 stories cannot bypass metacog compliance with `--no-verify`. This is a safety constraint.
