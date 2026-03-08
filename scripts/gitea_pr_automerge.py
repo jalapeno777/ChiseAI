@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Open a PR on Gitea and enable merge-when-checks-succeed (or merge immediately).
+Open a PR on Gitea and optionally enable/perform merge.
 
 This is intended for autonomous agents to keep the repo convergent:
 - open PR for a branch
-- optionally set "merge_when_checks_succeed"
+- optionally set "merge_when_checks_succeed" (explicit opt-in)
 - optionally poll commit status contexts and merge once green
 
 Auth:
@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import time
 import urllib.error
@@ -37,6 +38,18 @@ from config.bootstrap import bootstrap
 bootstrap(load_env=True)
 
 from config.bootstrap import bootstrap  # noqa: E402
+
+STORY_ID_RE = re.compile(
+    r"^(?:ST|CH|FT|REWARD|REPO|SAFETY|BRANCH|PAPER|RECON)-[A-Z0-9-]*\d[A-Z0-9-]*$",
+    re.IGNORECASE,
+)
+
+
+def _has_story_id_prefix(title: str, story_id: str) -> bool:
+    token = (story_id or "").strip()
+    if not token:
+        return False
+    return title.upper().startswith(token.upper())
 
 
 def _req_json(method: str, url: str, token: str, body: dict | None = None) -> dict:
@@ -271,6 +284,14 @@ def main() -> int:
         default=os.getenv("AGENT_ID", "merlin"),
         help="Agent identity. Must be 'merlin' unless explicit override is enabled.",
     )
+    p.add_argument(
+        "--enable-automerge",
+        action="store_true",
+        help=(
+            "Explicitly allow merge actions. Without this flag, the script only "
+            "opens/updates PRs and exits."
+        ),
+    )
     args = p.parse_args()
 
     token = os.getenv("GITEA_TOKEN")
@@ -295,11 +316,22 @@ def main() -> int:
     if not story_id:
         print("ERROR: --story-id must be non-empty", file=sys.stderr)
         return 1
+    if not STORY_ID_RE.match(story_id):
+        print(
+            "ERROR: --story-id must match accepted patterns and include a digit "
+            "(ST/CH/FT/REWARD/REPO/SAFETY/BRANCH/PAPER/RECON)",
+            file=sys.stderr,
+        )
+        return 1
 
     pr = _get_pr(args.owner, args.repo, base_url, token, head_ref)
     if pr is None:
         base_title = args.title or f"{head_ref}"
-        title = f"{story_id} {base_title}"
+        title = (
+            base_title
+            if _has_story_id_prefix(base_title, story_id)
+            else f"{story_id} {base_title}"
+        )
         pr = _create_pr(
             args.owner,
             args.repo,
@@ -313,7 +345,7 @@ def main() -> int:
     else:
         # If PR exists but lacks story ID in title, patch it to include the prefix.
         pr_title = str(pr.get("title", ""))
-        if story_id not in pr_title:
+        if not _has_story_id_prefix(pr_title, story_id):
             pr_num = int(pr["number"])
             url = f"{base_url}/api/v1/repos/{args.owner}/{args.repo}/pulls/{pr_num}"
             new_title = f"{story_id} {pr_title}".strip()
@@ -346,6 +378,12 @@ def main() -> int:
                 file=sys.stderr,
             )
             return 1
+
+    if not args.enable_automerge:
+        print(
+            f"PR #{index}: opened/updated (automerge disabled; pass --enable-automerge to merge)"
+        )
+        return 0
 
     if not args.wait:
         # Enable server-side automerge when checks succeed.

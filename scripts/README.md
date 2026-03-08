@@ -109,17 +109,18 @@ Backfills older `docs/tempmemories/iterlog-*.md` files with standard sections:
 
 ### gitea_pr_automerge.py
 
-Opens a PR (if missing) and enables merge when checks succeed, or waits and merges once a required status context is green.
+Opens/updates a PR. Merge behavior is explicit opt-in via `--enable-automerge`.
 
 **Usage:**
 ```bash
 export GITEA_TOKEN=...
 python3 scripts/gitea_pr_automerge.py --head feature/my-branch --story-id ST-NS-001
-python3 scripts/gitea_pr_automerge.py --head feature/my-branch --story-id ST-NS-001 --wait --delete-branch
+python3 scripts/gitea_pr_automerge.py --head feature/my-branch --story-id ST-NS-001 --wait --enable-automerge --delete-branch
 ```
 
 Notes:
 - `--story-id` is required and must match accepted CI patterns (`ST-*`, `CH-*`, `FT-*`, `REWARD-*`, `REPO-*`, `SAFETY-*`, `BRANCH-*`, `PAPER-*`, `RECON-*`; must include a digit).
+- Without `--enable-automerge`, the script only opens/updates the PR and exits.
 - Script avoids duplicate title prefixes when the title already contains the provided story id token.
 
 ### gitea_pr_review.py

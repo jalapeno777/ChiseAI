@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Auto-create PRs from pushed branches and auto-merge conflict-free PRs.
+"""Auto-create PRs from pushed branches and optionally auto-merge conflict-free PRs.
 
 Policy:
 - Auto-create PRs from non-protected branches targeting main when no open PR exists.
-- Auto-merge open PRs to main only when mergeable=true.
+- Auto-merge is disabled by default and requires explicit `--enable-automerge`.
 - Merge conflicts are skipped (never forced).
 """
 
@@ -263,6 +263,11 @@ def main() -> int:
 
     p_merge = sub.add_parser("automerge", help="Merge open conflict-free PRs")
     p_merge.add_argument("--dry-run", action="store_true")
+    p_merge.add_argument(
+        "--enable-automerge",
+        action="store_true",
+        help="Explicitly enable merge actions",
+    )
 
     args = parser.parse_args()
     cfg = _cfg(dry_run=bool(getattr(args, "dry_run", False)))
@@ -275,6 +280,9 @@ def main() -> int:
         print(f"auto-pr complete: created={created}")
         return 0
     if args.cmd == "automerge":
+        if not args.enable_automerge:
+            print("automerge skipped: pass --enable-automerge to allow merging")
+            return 0
         merged = auto_merge(cfg)
         print(f"automerge complete: merged={merged}")
         return 0

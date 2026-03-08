@@ -1,10 +1,10 @@
 ---
 name: "chise-pr-automerge"
-description: "ChiseAI: Merlin-only PR open/merge flow (green CI only). Uses scripts/gitea_pr_automerge.py."
+description: "ChiseAI: Merlin-only PR open flow with explicit merge opt-in. Uses scripts/gitea_pr_automerge.py."
 disable-model-invocation: true
 ---
 
-Use this command for Merlin-managed PR operations: open/update PR and merge to `main` only after Woodpecker checks are green.
+Use this command for Merlin-managed PR operations: open/update PR, then explicitly opt into merge to `main` after Woodpecker checks are green.
 
 Prereqs:
 - Set `GITEA_TOKEN` (PAT) in env.
@@ -30,13 +30,16 @@ Prereqs:
 3. Push branch to Gitea (if needed)
    - `git push -u gitea "$BRANCH"`
 
-4. Open PR and enable auto-merge on green CI
+4. Open PR (no merge side effects)
+   - `python3 scripts/gitea_pr_automerge.py --story-id "$STORY_ID" --head "$BRANCH"`
+
+5. Explicit merge (opt-in)
    - If approvals are required, have the review bot approve first:
      - `.opencode/agent/GitReviewBot.md` (review) + `python3 scripts/gitea_pr_review.py --pr <num> --state APPROVED`
    - Then run:
-     - `python3 scripts/gitea_pr_automerge.py --story-id "$STORY_ID" --head "$BRANCH" --wait --delete-branch`
+     - `python3 scripts/gitea_pr_automerge.py --story-id "$STORY_ID" --head "$BRANCH" --wait --enable-automerge --delete-branch`
 
-5. Non-blocking mode for Merlin reconcile windows
+6. Non-blocking mode for Merlin reconcile windows
    - Resolve PR number from Gitea UI/API and export it:
      - `export PR_NUMBER=<gitea-pr-number>`
    - Get head SHA:
@@ -45,7 +48,7 @@ Prereqs:
      - `python3 scripts/ops/merge_reconciler.py enqueue --story-id "$STORY_ID" --branch "$BRANCH" --pr-number "$PR_NUMBER" --head-sha "$HEAD_SHA" --queued-by "${AGENT_ID:-jarvis}"`
    - Continue development in your assigned worktree; Merlin performs bounded reconcile ticks and merges on green.
 
-6. Sync local main and prune
+7. Sync local main and prune
    - `git switch main`
    - `git pull --ff-only gitea main`
    - `git fetch -p gitea`
