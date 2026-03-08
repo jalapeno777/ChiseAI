@@ -89,7 +89,7 @@ PROVIDER_CONFIGS = {
         name="KIMI Compat (Adapter)",
         api_key_env="KIMI_API_KEY",  # Reuses existing Kimi API key
         enabled_env="KIMI_COMPAT_ENABLED",
-        enabled_default=False,  # Disabled by default
+        enabled_default=True,  # ENABLED by default - Kimi MUST route through adapter
         priority=0,  # Highest priority - before direct kimi
     ),
     "kimi": ProviderConfig(

@@ -4,13 +4,36 @@
 
 This document provides the canonical mapping of LLM providers, endpoints, and configuration for the ChiseAI Neuro-Symbolic Brain System.
 
+## ⚠️ CRITICAL: Mandatory Bridge Route for KIMI
+
+**KIMI MUST route through the `chiseai-kimi-adapter` container.**
+
+This is not optional. All Kimi API calls must go through the OpenAI-compatible adapter at `http://chiseai-kimi-adapter:8002/v1`.
+
+### Why Mandatory?
+
+- **Infrastructure Consistency**: Ensures all Kimi traffic routes through a controlled, observable endpoint
+- **Error Handling**: Adapter provides standardized error responses and retry logic
+- **Security**: Centralizes API key management and request validation
+- **Observability**: Enables unified logging and metrics collection
+
+### Configuration Requirement
+
+```bash
+KIMI_COMPAT_ENABLED=true  # MUST be true
+KIMI_COMPAT_BASE_URL=http://chiseai-kimi-adapter:8002/v1
+```
+
+Direct API calls to `https://api.moonshot.cn/v1` are deprecated and may be disabled in future releases.
+
 ## Provider Configuration
 
-| Provider | Endpoint | Model | API Key Env | Notes |
-|----------|----------|-------|-------------|-------|
-| KIMI (via adapter) | http://chiseai-kimi-adapter:8002/v1 | kimi-for-coding | KIMI_API_KEY | OpenAI-compatible adapter (preferred for local infra) |
-| KIMI (direct) | https://api.moonshot.cn/v1 | kimi-k2.5 | KIMI_API_KEY | Direct API access |
-| Z.ai/Zhipu | https://api.z.ai/api/coding/paas/v4 | glm-5 | ZAI_API_KEY or ZHIPU_API_KEY | Coding endpoint for NA |
+| Provider | Endpoint | Model | API Key Env | Status | Notes |
+|----------|----------|-------|-------------|--------|-------|
+| **KIMI (via adapter)** | http://chiseai-kimi-adapter:8002/v1 | kimi-for-coding | KIMI_API_KEY | **MANDATORY** | OpenAI-compatible adapter - REQUIRED route |
+| KIMI (direct) | https://api.moonshot.cn/v1 | kimi-k2.5 | KIMI_API_KEY | Deprecated | Direct API access - DO NOT USE |
+| Z.ai/Zhipu Group | https://api.z.ai/api/paas/v4 | glm-5 | ZAI_API_KEY or ZHIPU_API_KEY | Active | Usage-equivalent providers (see grouping below) |
+| MiniMax | N/A | N/A | MINIMAX_API_KEY | **DISABLED** | Removed from provider chain - DO NOT USE |
 
 ## Endpoint Details
 
@@ -73,6 +96,83 @@ This document provides the canonical mapping of LLM providers, endpoints, and co
 - This is the coding-specific endpoint (NOT `https://open.bigmodel.cn`)
 - The endpoint supports the `thinking` parameter to enable reasoning content
 - Response structure differs from OpenAI-compatible format
+
+## Z.AI / Zhipu Provider Group
+
+**Zhipu and Z.AI are usage-equivalent providers that both use the `api.z.ai` endpoint.**
+
+### What This Means
+
+- Both providers offer the same GLM-5 model with identical capabilities
+- They share the same endpoint: `https://api.z.ai/api/paas/v4/chat/completions`
+- Either `ZAI_API_KEY` or `ZHIPU_API_KEY` can be used interchangeably
+- The provider chain treats them as alternatives within the same group
+
+### Provider Chain Behavior
+
+In `src/llm/provider_chain.py`:
+- `zai` provider: Uses `ZAI_API_KEY` (or falls back to `Z_AI_API_KEY`)
+- `zhipu` provider: Uses `ZHIPU_API_KEY` (or falls back to `ZAI_API_KEY`)
+
+Both route to the same endpoint and can use either API key due to automatic fallback logic.
+
+### Configuration
+
+```bash
+# Option 1: Use ZAI_API_KEY
+ZAI_API_KEY=your_api_key_here
+ZAI_ENABLED=true
+
+# Option 2: Use ZHIPU_API_KEY
+ZHIPU_API_KEY=your_api_key_here
+ZHIPU_ENABLED=true
+
+# Option 3: Use either key for either provider (fallback works both ways)
+ZAI_API_KEY=your_api_key_here
+ZHIPU_ENABLED=true  # Will use ZAI_API_KEY as fallback
+```
+
+### When to Use
+
+- Use Z.AI/Zhipu as the secondary provider when KIMI (via adapter) is unavailable
+- Both providers are functionally equivalent - choose based on which API key you have
+- The provider chain will try `zai` first, then fall back to `zhipu`
+
+## MiniMax - DISABLED
+
+**MiniMax has been permanently disabled and removed from the provider fallback chain.**
+
+### Status
+
+- **Enabled by default**: `false` (in `PROVIDER_CONFIGS`)
+- **In provider_order**: Commented out
+- **Reason for removal**: Insufficient API balance and unreliable service
+
+### Do Not Enable
+
+```python
+# In src/llm/provider_chain.py, MiniMax is commented out:
+self.provider_order = [
+    "kimi_compat",  # MANDATORY - Kimi via adapter
+    "kimi",         # Direct Kimi (fallback)
+    "zai",          # Z.AI (GLM-5)
+    "zhipu",        # Zhipu (GLM-4.7)
+    # "minimax",    # DISABLED - Removed per PAPER-LLM-DIAG-001
+]
+```
+
+### Historical Context
+
+MiniMax was disabled per `PAPER-LLM-DIAG-001` due to:
+- API balance issues (status_code: 1008 - Insufficient balance)
+- Unreliable service availability
+- Better alternatives available (KIMI adapter, Z.AI/Zhipu)
+
+To re-enable (not recommended):
+1. Uncomment `"minimax"` from `provider_order`
+2. Set `MINIMAX_ENABLED=true`
+3. Verify `MINIMAX_API_KEY` is valid with sufficient balance
+4. Test with: `python -m pytest tests/test_llm/test_provider_chain.py -v -k minimax`
 
 ## Reasoning Field Contract
 

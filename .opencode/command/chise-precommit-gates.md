@@ -1,10 +1,12 @@
 ---
 name: "chise-precommit-gates"
-description: "ChiseAI: run local pre-commit gates (CI checks, status sync, iterloop compliance, insight-governance conformance). Uses best-available commands in this repo."
+description: "ChiseAI: run local pre-commit gates (CI checks, status sync, iterloop compliance, metacog compliance, insight-governance conformance). Uses best-available commands in this repo."
 disable-model-invocation: true
 ---
 
 Run these gates before PR/merge. If a referenced script is missing, explicitly note it and run the closest available equivalent.
+
+**Bypass option:** Add `--no-verify` flag to skip non-critical gates (NOT recommended for P0/P1 stories).
 
 1. Repo sanity
    - `git status -sb`
@@ -25,20 +27,54 @@ Run these gates before PR/merge. If a referenced script is missing, explicitly n
    - If `scripts/validate_iterloop_compliance.py` exists, run:
      - `python3 scripts/validate_iterloop_compliance.py --story-id=<story_id>`
 
-5. Insight-governance conformance (if present)
+5. Metacognition compliance (REQUIRED for completed stories)
+   - **For P0/P1 stories (BLOCKING GATE):**
+     - If `scripts/validation/validate_metacog_compliance.py` exists and `<story_id>` is known:
+       ```bash
+       python3 scripts/validation/validate_metacog_compliance.py --story-id=<story_id> --strict --require-artifacts
+       ```
+     - **Gate FAILS if metacog artifacts are missing:**
+       - Missing prediction card (`bmad:chiseai:metacog:prediction:story:<story_id>`)
+       - Missing outcome card (`bmad:chiseai:metacog:outcome:story:<story_id>`)
+       - Missing calibration section in iterlog
+     - **Cannot bypass with --no-verify for P0/P1 stories**
+   
+   - **For P2+ stories (NON-BLOCKING with warning):**
+     - If `scripts/validation/validate_metacog_compliance.py` exists and `<story_id>` is known:
+       ```bash
+       python3 scripts/validation/validate_metacog_compliance.py --story-id=<story_id> --strict
+       ```
+     - Warn if artifacts missing but allow proceed
+     - Can bypass with `--no-verify` flag
+   
+   - **If `<story_id>` is not known:**
+     - Run non-blocking scan:
+       ```bash
+       python3 scripts/validation/validate_metacog_compliance.py --require-for-completed-only
+       ```
+   
+   - **If script is missing and `<story_id>` is known:**
+     - Treat as blocking gate failure for P0/P1
+     - Warn and continue for P2+
+
+6. Insight-governance conformance (if present)
    - If `scripts/validation/validate_insight_governance.py` exists, run:
      - `python3 scripts/validation/validate_insight_governance.py --story-id=<story_id> --strict`
    - If `<story_id>` is not known, run a non-blocking scan:
      - `python3 scripts/validation/validate_insight_governance.py --require-for-completed-only`
 
-6. Metacognition conformance (if present)
-   - If `scripts/validation/validate_metacog_compliance.py` exists and `<story_id>` is known, run:
-     - `python3 scripts/validation/validate_metacog_compliance.py --story-id=<story_id> --strict`
-   - If `<story_id>` is known and the script is missing, treat as a blocking gate failure and stop.
-   - If `<story_id>` is not known, run a non-blocking scan:
-     - `python3 scripts/validation/validate_metacog_compliance.py --require-for-completed-only`
-
 7. Session close anti-drift (required at handoff/finish)
    - `python3 scripts/swarm/session.py close --enforce-merged`
    - If intentionally closing with open PR and branch ahead of main:
      - `python3 scripts/swarm/session.py close --enforce-merged --allow-unmerged`
+
+## Priority-Based Gate Summary
+
+| Gate | P0/P1 | P2+ | --no-verify |
+|------|-------|-----|-------------|
+| Metacog compliance | BLOCKING | Warning only | Ignored for P0/P1 |
+| Insight governance | BLOCKING | BLOCKING | Allowed |
+| Iterloop compliance | BLOCKING | BLOCKING | Allowed |
+| Local CI checks | BLOCKING | BLOCKING | Allowed |
+
+**Note:** P0/P1 stories cannot bypass metacog compliance with `--no-verify`. This is a safety constraint.

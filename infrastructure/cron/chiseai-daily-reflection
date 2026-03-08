@@ -1,0 +1,29 @@
+# ChiseAI Daily Reflection Report Cron Job
+# Story: ST-DAILY-REFLECTION-001
+# 
+# Runs daily at 09:00 UTC for 7-day stabilization cadence
+# Generates reflection-quality metrics and posts to Discord
+
+# Environment setup
+REDIS_HOST=chiseai-redis
+REDIS_PORT=6380
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/1448414669541736508/REDACTED_WEBHOOK_TOKEN_3
+DISCORD_DEVELOPMENT_CHANNEL_ID=1444447985378398459
+PYTHONPATH=/home/tacopants/projects/ChiseAI
+LOG_DIR=/home/tacopants/projects/ChiseAI/logs/daily-reflection
+
+# Daily reflection report at 09:00 UTC
+0 9 * * * cd /home/tacopants/projects/ChiseAI && /usr/bin/python3 scripts/standup/generate_daily_reflection_report.py --post-discord --redis-host chiseai-redis --verbose >> $LOG_DIR/daily_$(date +\%Y\%m\%d).log 2>&1
+
+# Alternative: Run every day for 7 consecutive days starting from cadence start
+# To enable: Uncomment the line above and set cadence start date in Redis:
+# redis-cli -h chiseai-redis -p 6380 SET bmad:chiseai:reflection_cadence:start_date "2026-03-08"
+
+# Manual trigger command:
+# cd /home/tacopants/projects/ChiseAI && python3 scripts/standup/generate_daily_reflection_report.py --post-discord --verbose
+
+# Verify cron is active:
+# crontab -l | grep daily-reflection
+
+# Check logs:
+# tail -f /home/tacopants/projects/ChiseAI/logs/daily-reflection/daily_*.log
