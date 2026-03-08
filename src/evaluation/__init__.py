@@ -90,7 +90,12 @@ from .schemas.mini_eval import (
     Mitigation,
     MitigationResult,
 )
-from .trend_rollups import TrendRollup, TrendRollupEngine
+from .trend_rollups import (
+    TrendRollup,
+    TrendRollupEngine,
+    calculate_kpis,
+    get_redis_client,
+)
 
 __all__ = [
     "Issue",
@@ -106,6 +111,8 @@ __all__ = [
     "FingerprintCluster",
     "TrendRollup",
     "TrendRollupEngine",
+    "calculate_kpis",
+    "get_redis_client",
     "MiniEvalResult",
     "MiniEvalIssue",
     "MiniEvalIssueCategory",

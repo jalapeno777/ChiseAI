@@ -56,27 +56,36 @@ completed:
   status: merged
   title: LLM Provider Infrastructure Remediation and Testing Framework (Phases A-E)
 - acceptance_criteria:
-  - Cross-branch verification guardrail implemented in all agent files
-  - Merge authority documentation updated per REPO-MERGE-POLICY-001
-  - Workflow status synchronized with actual git state
-  - Evidence index and insights summary created
+  - Cross-branch verification guardrail implemented in AGENTS.md and agent files
+  - AUDIT-DELTA evidence files created and committed
+  - All three remediation PRs merged (#407, #408, #410)
+  - Workflow status updated with audit-delta disposition
   branch: feature/GOV-BATCH-003-workflow-update
   commit_sha: 2513cc6
   created_date: '2026-03-07'
-  description: Remediation of PARTY-MODE-TRUTH-AUDIT findings - implemented cross-branch
-    verification guardrail and updated merge authority documentation to prevent false
-    merge claims
-  evidence_index: docs/tempmemories/AUDIT-DELTA-REMEDIATION-EVIDENCE-INDEX.md
+  description: Remediation of PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI findings including
+    cross-branch verification guardrail, merge authority updates, and memory deduplication
+  evidence_commit: b238ebb645c761eb8ddd4e242628ca8e5645dfbc
+  evidence_files:
+  - docs/tempmemories/AUDIT-DELTA-REMEDIATION-EVIDENCE-INDEX.md
+  - docs/tempmemories/AUDIT-DELTA-REMEDIATION-INSIGHTS.md
   id: AUDIT-DELTA-FIX-001
-  insights_summary: docs/tempmemories/AUDIT-DELTA-REMEDIATION-INSIGHTS.md
+  merge_commits:
+  - 48725e8068161d60222eaaf154a499781e00a268
+  - 56fb76ee36cd9d900a5aec4870d47280334efe95
+  - 0ce77cf31d9fde4ae207fd755992ad67b5cb16e9
   notes:
-  - 'Root cause: False merge claims in BrainEval CI audit (PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI.md)'
-  - 'Solution: Mandatory cross-branch verification with git branch --contains'
-  - 'Policy impact: Clear separation of merge authorities (workers/senior-dev/Merlin)'
-  - 'Files changed: 5 governance files (AGENTS.md, agent configs, workflow skill)'
-  owner: jarvis
-  priority: P1
-  related_audit: docs/evidence/PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI.md
+  - 'Root cause: False merge claims in BrainEval CI audit'
+  - 'Remediation: git branch --contains guardrail added to all agent docs'
+  - 'Related audit: docs/evidence/PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI.md'
+  - 'Evidence index: 574 lines documenting all remediation work'
+  owner: senior-dev
+  priority: P0-CRITICAL
+  related_audit: PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI
+  remediation_pr_numbers:
+  - 407
+  - 408
+  - 410
   status: completed
   title: AUDIT-DELTA Remediation - Cross-Branch Verification Guardrail
 backlog:
