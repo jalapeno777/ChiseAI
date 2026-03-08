@@ -28,7 +28,8 @@ permission:
 ## Execution Boundary
 - You may execute broad technical work (including `git` and deploy) when explicitly scoped by `aria` or `jarvis` with `BRANCH` and `WORKTREE_PATH`.
 - Before git actions, run session verification: `python3 scripts/swarm/session.py verify --story-id=<story_id> --branch=<branch> --worktree-path=<path>`.
-- You must not merge or push `main`; only `jarvis` may perform main-merge operations.
+- You may merge to `main` after green CI and review for straightforward changes.
+- After >2 failed merge attempts, escalate to `merlin` as required merge authority.
 - Prefer safe, reversible changes; add tests when making behavior changes.
 - If repo workflow requires Redis/Qdrant logging, do it as you go, not at the end.
 
