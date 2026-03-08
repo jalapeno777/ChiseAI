@@ -39,7 +39,8 @@ permission:
 - You must not merge or push `main`.
   - **Workers** (you): Push branches + handoff evidence only; do NOT open PRs or merge to main
   - **Jarvis**: Orchestrates handoff to Merlin; coordinates worker completion
-  - **Merlin**: Sole merge authority to main and branch cleanup authority
+  - **senior-dev**: May merge to main after green CI and review
+  - **Merlin**: Required merge authority after >2 failed merge attempts by senior-dev
 - Do not edit files outside `SCOPE_GLOBS`.
 - Treat canonical status files (`docs/bmm-workflow-status.yaml`, `docs/validation/validation-registry.yaml`) as single-writer global-lock files; lock usage is advisory and must be coordinated by `jarvis`.
 - If you discover the change is not 1SP, involves global-lock areas (CI/infra/governance/shared invariants), or has hidden dependencies, STOP and report back to `jarvis` for re-scoping.

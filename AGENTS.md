@@ -169,7 +169,17 @@ When starting work:
 ### Merge Authority (Explicit Roles)
 - **Workers**: Push branches + handoff evidence only; workers do NOT open PRs or merge to main
 - **Jarvis**: Orchestrates handoff to Merlin; coordinates worker completion
-- **Merlin**: Sole merge authority to main and branch cleanup authority
+- **senior-dev**: May merge to main after green CI and review
+- **Merlin**: Required merge authority after >2 failed merge attempts (see merge attempt definition below)
+
+### Merge Attempt Definition
+One merge attempt = sync/rebase OR conflict resolution + required checks rerun + merge attempt
+
+### When Merlin is Required
+- After 2+ failed merge attempts by senior-dev with attempted fixes
+- Emergency merges requiring override
+- Complex merges with conflicts across >3 files
+- Infrastructure changes (CI, Terraform, core workflow)
 
 ---
 

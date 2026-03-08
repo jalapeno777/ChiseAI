@@ -63,10 +63,18 @@ Ensure all agent swarm operations follow consistent, safe Git practices that mai
 
 ## Merge Authority
 
-### Only Merlin May:
-- Open/update/close PRs
-- Merge to `main`
-- Run branch cleanup
+### Merge Authority by Role
+
+#### Primary Authority (senior-dev)
+- `senior-dev` may merge to `main` after green CI and review for straightforward changes
+- Open/update/close PRs for standard changes
+
+#### Escalated Authority (Merlin)
+`merlin` is required for:
+- Open/update/close PRs after 2+ failed merge attempts by senior-dev
+- Merges to `main` when >2 attempts failed or for complex/infrastructure changes
+- Branch cleanup operations
+- Emergency merge overrides
 
 ### Emergency Override
 See `.opencode/command/chise-emergency-merge-override.md` for documented bypass procedure.
@@ -75,7 +83,17 @@ See `.opencode/command/chise-emergency-merge-override.md` for documented bypass 
 The merge authority rules here are consistent with `AGENTS.md` Git Safety Essentials:
 - **Workers**: Push branches + handoff evidence only; workers do NOT open PRs or merge to main
 - **Jarvis**: Orchestrates handoff to Merlin; coordinates worker completion
-- **Merlin**: Sole merge authority to main and branch cleanup authority
+- **senior-dev**: May merge to main after green CI and review
+- **Merlin**: Required merge authority after >2 failed merge attempts
+
+### Merge Attempt Definition
+One merge attempt = sync/rebase OR conflict resolution + required checks rerun + merge attempt
+
+### When Merlin is Required
+- After 2+ failed merge attempts by senior-dev with attempted fixes
+- Emergency merges requiring override
+- Complex merges with conflicts across >3 files
+- Infrastructure changes (CI, Terraform, core workflow)
 
 ## Command Selection Guide
 
