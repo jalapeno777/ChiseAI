@@ -181,6 +181,13 @@ One merge attempt = sync/rebase OR conflict resolution + required checks rerun +
 - Complex merges with conflicts across >3 files
 - Infrastructure changes (CI, Terraform, core workflow)
 
+### Cross-Branch Verification Guardrail (REQUIRED)
+Before claiming "merged to main", verify with:
+```bash
+git branch --contains <commit>
+```
+This ensures the work is actually on main and prevents false merge claims. See `docs/evidence/PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI.md` for the incident that motivated this rule.
+
 ---
 
 ## Docker & Container Connectivity (CRITICAL)
