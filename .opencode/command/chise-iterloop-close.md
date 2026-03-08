@@ -83,15 +83,49 @@ Follow these steps exactly (do not skip):
    - This check is enforced by CI for all completions
    - Missing or incomplete structured issues will block the completion gate
 
-7. Metacognition close (required)
-   - Run `.opencode/command/chise-metacog-close.md`.
-   - Iterlog must include:
-     - `## Metacognitive Outcomes`
-     - `## Metacognitive Calibration`
-   - Validate:
-     - `python3 scripts/validation/validate_metacog_compliance.py --story-id=<story_id> --strict`
+7. Metacognition close (REQUIRED for all stories)
+   - Run `.opencode/command/chise-metacog-close.md` to create outcome and calibration cards.
+   
+   **Outcome card must include:**
+   - `story_id`
+   - `actual_outcome` (what actually happened)
+   - `actual_metrics` (measured values)
+   - `misses` (where prediction was wrong)
+   - `wins` (where prediction was right)
+   - `new_prevention_rules` (if any)
+   
+   **Calibration card must include:**
+   - `predicted_confidence` (from step 6 of iterloop-start)
+   - `observed_result` (`success|partial|failure`)
+   - `calibration_delta` (absolute error)
+   - `confidence_adjustment_recommendation`
+   
+   **Redis writes (DB 0):**
+   - Outcome card to `bmad:chiseai:metacog:outcome:story:<story_id>`
+   - Weekly agent calibration: `bmad:chiseai:metacog:calibration:agent:<agent>:weekly:<yyyy-Www>`
+   - Prevention rules: `bmad:chiseai:metacog:prevention_rules`
+   
+   **Qdrant promotion:**
+   - Promote durable lessons to `ChiseAI_metacognition` collection
+   - Fallback to `docs/tempmemories/` with `needs_manual_qdrant_import: true`
+   
+   **Iterlog sections required:**
+   - `## Metacognitive Outcomes`
+   - `## Metacognitive Calibration`
 
-8. Final completion mark
-   - Only after steps 1-7 pass, update Redis iterlog:
+8. Metacognition compliance validation (REQUIRED)
+   - Run validation script:
+     ```bash
+     python3 scripts/validation/validate_metacog_compliance.py --story-id=<story_id> --strict
+     ```
+   - Gate FAILS if:
+     - Prediction card missing
+     - Outcome card missing
+     - Calibration card missing
+     - Metrics are not measurable
+   - Fix all failures before proceeding to step 9.
+
+9. Final completion mark
+   - Only after steps 1-8 pass, update Redis iterlog:
      - `status=completed`
    - If any gate fails, keep status as `closing` (or `in_progress`) and remediate first.

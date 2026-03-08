@@ -2,10 +2,10 @@
 name: chiseai-metacognition-ops
 description: Enforce metacognitive prediction/outcome/calibration loops for Aria/Jarvis execution quality and safer autonomy.
 metadata:
-  version: "1.0"
+  version: "1.1"
   opencode_min_version: "1.1.60"
   author: "ChiseAI Team"
-  last_updated: "2026-03-07"
+  last_updated: "2026-03-08"
 ---
 
 # chiseai-metacognition-ops
@@ -23,6 +23,7 @@ Make decision quality measurable and improvable by default via three loops:
 - Aria/Jarvis orchestration where `INSIGHT_PACKET` and `ARIA_DECISION` are used.
 - Incident-heavy or regression-prone workstreams.
 - Any work that affects risk invariants, CI reliability, or delivery throughput.
+- Pre-commit gates for P0/P1 stories (blocking requirement).
 
 ## When Not To Use
 
@@ -37,6 +38,31 @@ Make decision quality measurable and improvable by default via three loops:
    - `.opencode/command/chise-metacog-close.md`
 3. Weekly trend review:
    - `.opencode/command/chise-metacog-weekly.md`
+
+## Workflow Integration
+
+Metacognition is **integrated into the standard ChiseAI iteration workflow**:
+
+### Iterloop Start Integration
+When running `chise-iterloop-start`, step 6 automatically triggers metacognition:
+- Creates prediction card with required fields
+- Persists to Redis under `bmad:chiseai:metacog:prediction:story:<story_id>`
+- Gates implementation until prediction is measurable
+- Records in iterlog under `## Metacognitive Predictions`
+
+### Iterloop Close Integration
+When running `chise-iterloop-close`, steps 7-8 handle metacognition:
+- Creates outcome and calibration cards
+- Persists to Redis (outcome, calibration, prevention rules)
+- Promotes to Qdrant `ChiseAI_metacognition` collection
+- Validates compliance via `validate_metacog_compliance.py --strict`
+- Records in iterlog under `## Metacognitive Outcomes` and `## Metacognitive Calibration`
+
+### Pre-commit Gates Integration
+When running `chise-precommit-gates`, step 5 validates metacognition:
+- **P0/P1 stories:** BLOCKING gate - fails if metacog artifacts missing
+- **P2+ stories:** Warning only - allows proceed with warning
+- **Bypass:** `--no-verify` flag is **ignored** for P0/P1 stories (safety constraint)
 
 ## Redis Memory Contract
 
