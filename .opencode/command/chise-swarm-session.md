@@ -24,8 +24,14 @@ Prereqs:
    - Use explicit branch in push/PR commands (never use `HEAD` inference).
 
 4. Close session (after merge or handoff)
+   - `close` now blocks if the worktree is dirty unless you explicitly handle it.
    - Default behavior (removes worktree after successful close):
      - `python3 scripts/swarm/session.py close --enforce-merged --remove-worktree`
+   - Preferred dirty cleanup: commit/discard changes explicitly, then close.
+   - Auto-stash dirty changes before close (last resort only; explicit confirmation required):
+     - `python3 scripts/swarm/session.py close --enforce-merged --auto-stash-dirty --confirm-stash-last-resort --remove-worktree`
+   - Allow dirty close without stashing (not recommended):
+     - `python3 scripts/swarm/session.py close --enforce-merged --allow-dirty`
    - If intentionally handing off with an open PR and unmerged branch commits:
      - `python3 scripts/swarm/session.py close --enforce-merged --allow-unmerged --remove-worktree`
    - Exception (preserving worktree requires justification):
