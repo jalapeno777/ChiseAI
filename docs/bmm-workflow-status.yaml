@@ -76,11 +76,13 @@ backlog:
   - 'Merlin required only after >2 failed merge attempts by senior-dev'
   - 'Merge attempt defined: sync/rebase + required checks rerun + merge attempt'
   - 'When Merlin required: 2+ failed attempts, emergency merges, complex conflicts (>3 files), infrastructure changes'
+  merge_commit: 56fb76e
   owner: senior-dev
   policy_change_summary: Updated from "Merlin sole merge authority" to "senior-dev allowed,
     Merlin mandatory only after >2 failed attempts"
+  pr_number: 408
   priority: P0-CRITICAL
-  status: in_progress
+  status: merged
   title: Update Merge Policy - Senior Dev Authority
 - acceptance_criteria:
   - All merged branches older than 7 days are pruned
@@ -1956,9 +1958,11 @@ launch_stories:
   - FR-GOV-001
   governance_feature: GF-001
   id: ST-GOV-001
+  merge_commit: 0ce77cf
+  pr_number: 410
   priority: P0-CRITICAL
   sprint_id: GOV-PHASE1-001
-  status: planned
+  status: merged
   story_points: 5
   test_strategy:
     integration: pytest tests/test_governance/integration/test_similarity_accuracy.py
