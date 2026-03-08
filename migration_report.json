@@ -1,0 +1,669 @@
+{
+  "timestamp": "2026-03-08T19:32:08.500545+00:00",
+  "mode": "execute",
+  "cleanup": true,
+  "stats": {
+    "attempted": 94,
+    "succeeded": 0,
+    "failed": 94,
+    "skipped": 32,
+    "already_migrated": 0
+  },
+  "redis_keys": [
+    "bmad:chiseai:iterlog:story:ST-INFRA-BOOT-001",
+    "bmad:chiseai:iterlog:story:ST-INFRA-001",
+    "bmad:chiseai:iterlog:story:CH-AGENTS-001",
+    "bmad:chiseai:iterlog:story:CH-AGENTS-002",
+    "bmad:chiseai:iterlog:story:CH-AGENTS-003",
+    "bmad:chiseai:iterlog:story:CH-AGENTS-003",
+    "bmad:chiseai:iterlog:story:ST-CI-008",
+    "bmad:chiseai:iterlog:story:CH-GIT-MERLIN-PR-001",
+    "bmad:chiseai:iterlog:story:CH-GIT-MERLIN-PR-002",
+    "bmad:chiseai:iterlog:story:ST-CI-GATE-LOCALSCOPE-20260216",
+    "bmad:chiseai:iterlog:story:EP-NS-008",
+    "bmad:chiseai:iterlog:story:BRANCH-CLEANUP-002",
+    "bmad:chiseai:iterlog:story:BURNIN-001",
+    "bmad:chiseai:iterlog:story:BYBIT-DEMO-003",
+    "bmad:chiseai:iterlog:story:CH-AGENTS-003",
+    "bmad:chiseai:iterlog:story:CH-AGENTS-004",
+    "bmad:chiseai:iterlog:story:CH-AUTONOMY-001",
+    "bmad:chiseai:iterlog:story:CH-CI-PR58-FIX-001",
+    "bmad:chiseai:iterlog:story:CH-CI-PRTITLE-001",
+    "bmad:chiseai:iterlog:story:CH-CI-PRTITLE-002",
+    "bmad:chiseai:iterlog:story:CH-GIT-MERLIN-PR-001",
+    "bmad:chiseai:iterlog:story:CH-GIT-MERLIN-PR-002",
+    "bmad:chiseai:iterlog:story:CH-INFRA-DDGROUP-001",
+    "bmad:chiseai:iterlog:story:CH-INFRA-RECOVERY-20260215",
+    "bmad:chiseai:iterlog:story:CH-INFRA-WOODPECKER-PG-001",
+    "bmad:chiseai:iterlog:story:CH-OPS-AUTOMERGE-CMD-001",
+    "bmad:chiseai:iterlog:story:CH-PB-001",
+    "bmad:chiseai:iterlog:story:CH-PRD-CHISE-001",
+    "bmad:chiseai:iterlog:story:CH-PRD-CI-ALIGN-001",
+    "bmad:chiseai:iterlog:story:CH-PRD-PHASE1-ALIGN-001",
+    "bmad:chiseai:iterlog:story:CH-TAIGA-DBPASS-001",
+    "bmad:chiseai:iterlog:story:CH-TAIGA-UI-001",
+    "bmad:chiseai:iterlog:story:CH-TP-E2E-001",
+    "bmad:chiseai:iterlog:story:CH-TRACE-DRIFT-001",
+    "bmad:chiseai:iterlog:story:EP-NS-008",
+    "bmad:chiseai:iterlog:story:PAPER-003",
+    "bmad:chiseai:iterlog:story:PAPER-VALIDATION-001",
+    "bmad:chiseai:iterlog:story:REPO-002",
+    "bmad:chiseai:iterlog:story:REPO-CI-FIX-002",
+    "bmad:chiseai:iterlog:story:SAFETY-METACOG-001",
+    "bmad:chiseai:iterlog:story:SAFETY-RESCUE-001",
+    "bmad:chiseai:iterlog:story:ST-AUTO-007",
+    "bmad:chiseai:iterlog:story:ST-CHISE-001",
+    "bmad:chiseai:iterlog:story:ST-CI-001",
+    "bmad:chiseai:iterlog:story:ST-CI-003",
+    "bmad:chiseai:iterlog:story:ST-CI-008",
+    "bmad:chiseai:iterlog:story:ST-CI-GATE-LOCALSCOPE-20260216",
+    "bmad:chiseai:iterlog:story:ST-CI-HEALTH-20260215",
+    "bmad:chiseai:iterlog:story:ST-CI-HEALTH-20260215B",
+    "bmad:chiseai:iterlog:story:ST-CI-HEALTH-20260215D",
+    "bmad:chiseai:iterlog:story:ST-CI-HEALTH-20260215F",
+    "bmad:chiseai:iterlog:story:ST-CI-HEALTH-20260215G",
+    "bmad:chiseai:iterlog:story:ST-CONF-001-FASTAPI-CI-FIX",
+    "bmad:chiseai:iterlog:story:ST-CONF-001",
+    "bmad:chiseai:iterlog:story:ST-HARDEN-001",
+    "bmad:chiseai:iterlog:story:ST-LAUNCH-005",
+    "bmad:chiseai:iterlog:story:ST-LAUNCH-011",
+    "bmad:chiseai:iterlog:story:ST-LAUNCH-017",
+    "bmad:chiseai:iterlog:story:ST-MERLIN-MERGE-20260215",
+    "bmad:chiseai:iterlog:story:ST-NS-001",
+    "bmad:chiseai:iterlog:story:ST-NS-002",
+    "bmad:chiseai:iterlog:story:ST-NS-003",
+    "bmad:chiseai:iterlog:story:ST-NS-004",
+    "bmad:chiseai:iterlog:story:ST-NS-005",
+    "bmad:chiseai:iterlog:story:ST-NS-006",
+    "bmad:chiseai:iterlog:story:ST-NS-007",
+    "bmad:chiseai:iterlog:story:ST-NS-008",
+    "bmad:chiseai:iterlog:story:ST-NS-009",
+    "bmad:chiseai:iterlog:story:ST-NS-010",
+    "bmad:chiseai:iterlog:story:ST-NS-011",
+    "bmad:chiseai:iterlog:story:ST-NS-012B",
+    "bmad:chiseai:iterlog:story:ST-NS-013B",
+    "bmad:chiseai:iterlog:story:ST-NS-014",
+    "bmad:chiseai:iterlog:story:ST-NS-014B",
+    "bmad:chiseai:iterlog:story:ST-NS-015",
+    "bmad:chiseai:iterlog:story:ST-NS-015A",
+    "bmad:chiseai:iterlog:story:ST-NS-015B",
+    "bmad:chiseai:iterlog:story:ST-NS-016",
+    "bmad:chiseai:iterlog:story:ST-NS-016A",
+    "bmad:chiseai:iterlog:story:ST-NS-016B",
+    "bmad:chiseai:iterlog:story:ST-NS-025",
+    "bmad:chiseai:iterlog:story:ST-NS-038",
+    "bmad:chiseai:iterlog:story:ST-OPS-004",
+    "bmad:chiseai:iterlog:story:ST-OPS-013",
+    "bmad:chiseai:iterlog:story:ST-OPS-GRAFANA-FIX-20260216",
+    "bmad:chiseai:iterlog:story:ST-SOUL-001",
+    "bmad:chiseai:iterlog:story:TRUTH-SYNC-001",
+    "bmad:chiseai:iterlog:story:REPO-E2E-POLICY-001"
+  ],
+  "failed_files": [
+    {
+      "file": "2026-02-07-infra-setup.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.004599334}'"
+      ]
+    },
+    {
+      "file": "2026-02-08-ci-and-woodpecker.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001360621}'"
+      ]
+    },
+    {
+      "file": "2026-02-08-ci-pr-test.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001231708}'"
+      ]
+    },
+    {
+      "file": "2026-02-08-opencode-agent-swarm.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.003814887}'"
+      ]
+    },
+    {
+      "file": "2026-02-08-opencode-commands-and-skills.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001236138}'"
+      ]
+    },
+    {
+      "file": "2026-02-09-promotion-CH-AGENTS-003.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.010381325}'"
+      ]
+    },
+    {
+      "file": "2026-02-09-qdrant-context-CH-AGENTS-003.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001064173}'"
+      ]
+    },
+    {
+      "file": "2026-02-11-promotion-ST-CI-008.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001093032}'"
+      ]
+    },
+    {
+      "file": "2026-02-16-promotion-CH-GIT-MERLIN-PR-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001620283}'"
+      ]
+    },
+    {
+      "file": "2026-02-16-promotion-CH-GIT-MERLIN-PR-002.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001278278}'"
+      ]
+    },
+    {
+      "file": "2026-02-16-promotion-ST-CI-GATE-LOCALSCOPE-20260216.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001379721}'"
+      ]
+    },
+    {
+      "file": "activation-2026-02-22-memory.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001441877}'"
+      ]
+    },
+    {
+      "file": "EP-NS-008-batch2-completion.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.002738029}'"
+      ]
+    },
+    {
+      "file": "epic-EP-NS-008-autonomous-control-plane.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001248054}'"
+      ]
+    },
+    {
+      "file": "iterlog-BRANCH-CLEANUP-002.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001266937}'"
+      ]
+    },
+    {
+      "file": "iterlog-BURNIN-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001254778}'"
+      ]
+    },
+    {
+      "file": "iterlog-BYBIT-DEMO-003.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001195765}'"
+      ]
+    },
+    {
+      "file": "iterlog-CH-AGENTS-003.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001316598}'"
+      ]
+    },
+    {
+      "file": "iterlog-CH-AGENTS-004.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001104874}'"
+      ]
+    },
+    {
+      "file": "iterlog-CH-AUTONOMY-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001012974}'"
+      ]
+    },
+    {
+      "file": "iterlog-CH-CI-PR58-FIX-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001165495}'"
+      ]
+    },
+    {
+      "file": "iterlog-CH-CI-PRTITLE-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.000976098}'"
+      ]
+    },
+    {
+      "file": "iterlog-CH-CI-PRTITLE-002.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.002572328}'"
+      ]
+    },
+    {
+      "file": "iterlog-CH-GIT-MERLIN-PR-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001150689}'"
+      ]
+    },
+    {
+      "file": "iterlog-CH-GIT-MERLIN-PR-002.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001083874}'"
+      ]
+    },
+    {
+      "file": "iterlog-CH-INFRA-DDGROUP-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001092662}'"
+      ]
+    },
+    {
+      "file": "iterlog-CH-INFRA-RECOVERY-20260215.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001015728}'"
+      ]
+    },
+    {
+      "file": "iterlog-CH-INFRA-WOODPECKER-PG-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001457971}'"
+      ]
+    },
+    {
+      "file": "iterlog-CH-OPS-AUTOMERGE-CMD-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001179139}'"
+      ]
+    },
+    {
+      "file": "iterlog-CH-PB-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001106473}'"
+      ]
+    },
+    {
+      "file": "iterlog-CH-PRD-CHISE-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001182839}'"
+      ]
+    },
+    {
+      "file": "iterlog-CH-PRD-CI-ALIGN-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.003058348}'"
+      ]
+    },
+    {
+      "file": "iterlog-CH-PRD-PHASE1-ALIGN-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001179119}'"
+      ]
+    },
+    {
+      "file": "iterlog-CH-TAIGA-DBPASS-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.000993015}'"
+      ]
+    },
+    {
+      "file": "iterlog-CH-TAIGA-UI-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001137372}'"
+      ]
+    },
+    {
+      "file": "iterlog-CH-TP-E2E-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001104482}'"
+      ]
+    },
+    {
+      "file": "iterlog-CH-TRACE-DRIFT-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001205428}'"
+      ]
+    },
+    {
+      "file": "iterlog-EP-NS-008.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001156627}'"
+      ]
+    },
+    {
+      "file": "iterlog-LIVE-PROOF-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001240239}'"
+      ]
+    },
+    {
+      "file": "iterlog-LIVE-PROOF-FINAL.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001135353}'"
+      ]
+    },
+    {
+      "file": "iterlog-PAPER-003.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001166165}'"
+      ]
+    },
+    {
+      "file": "iterlog-PAPER-VALIDATION-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.002897829}'"
+      ]
+    },
+    {
+      "file": "iterlog-REPO-002.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001149932}'"
+      ]
+    },
+    {
+      "file": "iterlog-REPO-CI-FIX-002.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001039126}'"
+      ]
+    },
+    {
+      "file": "iterlog-SAFETY-METACOG-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001197251}'"
+      ]
+    },
+    {
+      "file": "iterlog-SAFETY-RESCUE-001-incident.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001194801}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-AUTO-007.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001246806}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-CHISE-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001148921}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-CI-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001122098}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-CI-003.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001104347}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-CI-008.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001124505}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-CI-GATE-LOCALSCOPE-20260216.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.002690325}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-CI-HEALTH-20260215.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001262381}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-CI-HEALTH-20260215B.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001266028}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-CI-HEALTH-20260215D.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001208981}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-CI-HEALTH-20260215F.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001324501}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-CI-HEALTH-20260215G.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.000998339}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-CONF-001-FASTAPI-CI-FIX.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001330327}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-CONF-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001240009}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-HARDEN-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001103209}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-LAUNCH-005.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.002964444}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-LAUNCH-011.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001026438}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-LAUNCH-017.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001283691}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-MERLIN-MERGE-20260215.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.000977403}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-NS-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.00108075}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-NS-002.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001132697}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-NS-003.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001081265}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-NS-004.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001117028}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-NS-005.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001083856}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-NS-006.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001418584}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-NS-007.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.002429051}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-NS-008.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001048721}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-NS-009.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001224136}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-NS-010.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.000982357}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-NS-011.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.000963849}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-NS-012B.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001032568}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-NS-013B.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001132464}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-NS-014.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001266005}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-NS-014B.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001023359}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-NS-015.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001095919}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-NS-015A.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001120902}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-NS-015B.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.003039595}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-NS-016.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001033939}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-NS-016A.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001187714}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-NS-016B.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.000949693}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-NS-025.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001032798}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-NS-038.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001299443}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-OPS-004.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001014982}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-OPS-013.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001075357}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-OPS-GRAFANA-FIX-20260216.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001169111}'"
+      ]
+    },
+    {
+      "file": "iterlog-ST-SOUL-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001024419}'"
+      ]
+    },
+    {
+      "file": "iterlog-TRUTH-SYNC-001.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.002250102}'"
+      ]
+    },
+    {
+      "file": "REPO-E2E-POLICY-001-policy-update.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.00100146}'"
+      ]
+    },
+    {
+      "file": "session-memory-persistence-2026-03-02.md",
+      "errors": [
+        "Qdrant: Qdrant error: Unexpected Response: 400 (Bad Request)\nRaw response content:\nb'{\"status\":{\"error\":\"Wrong input: Not existing vector name error: \"},\"time\":0.001033918}'"
+      ]
+    }
+  ],
+  "archive_location": "docs/tempmemories/archived/2026-03"
+}
