@@ -55,6 +55,30 @@ completed:
   priority: P0
   status: merged
   title: LLM Provider Infrastructure Remediation and Testing Framework (Phases A-E)
+- acceptance_criteria:
+  - Cross-branch verification guardrail implemented in all agent files
+  - Merge authority documentation updated per REPO-MERGE-POLICY-001
+  - Workflow status synchronized with actual git state
+  - Evidence index and insights summary created
+  branch: feature/GOV-BATCH-003-workflow-update
+  commit_sha: 2513cc6
+  created_date: '2026-03-07'
+  description: Remediation of PARTY-MODE-TRUTH-AUDIT findings - implemented cross-branch
+    verification guardrail and updated merge authority documentation to prevent false
+    merge claims
+  evidence_index: docs/tempmemories/AUDIT-DELTA-REMEDIATION-EVIDENCE-INDEX.md
+  id: AUDIT-DELTA-FIX-001
+  insights_summary: docs/tempmemories/AUDIT-DELTA-REMEDIATION-INSIGHTS.md
+  notes:
+  - 'Root cause: False merge claims in BrainEval CI audit (PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI.md)'
+  - 'Solution: Mandatory cross-branch verification with git branch --contains'
+  - 'Policy impact: Clear separation of merge authorities (workers/senior-dev/Merlin)'
+  - 'Files changed: 5 governance files (AGENTS.md, agent configs, workflow skill)'
+  owner: jarvis
+  priority: P1
+  related_audit: docs/evidence/PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI.md
+  status: completed
+  title: AUDIT-DELTA Remediation - Cross-Branch Verification Guardrail
 backlog:
 - acceptance_criteria:
   - AGENTS.md updated with new merge policy including senior-dev authority and merge attempt definitions
