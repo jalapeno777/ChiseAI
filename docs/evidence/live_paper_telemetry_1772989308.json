@@ -1,0 +1,108 @@
+{
+  "collection_time": "2026-03-08T17:01:48.331351+00:00",
+  "final_counts": {
+    "signals": 27063,
+    "orders": 26103,
+    "fills": 26067,
+    "outcomes": 26062
+  },
+  "recent_signals": [
+    [
+      "paper:signal:1772985931:BTCUSDT:buy",
+      1772985931.643061
+    ],
+    [
+      "paper:signal:1772985955:BTCUSDT:sell",
+      1772985955.3610766
+    ],
+    [
+      "paper:signal:1772985979:BTCUSDT:sell",
+      1772985979.1986809
+    ],
+    [
+      "paper:signal:1772989233:BTCUSDT:buy",
+      1772989233.8173714
+    ],
+    [
+      "paper:signal:1772989278:ETHUSDT:buy",
+      1772989278.716562
+    ]
+  ],
+  "recent_orders": [
+    [
+      "paper:order:f6b68500",
+      1772985931.643061
+    ],
+    [
+      "paper:order:d8688161",
+      1772985955.3610766
+    ],
+    [
+      "paper:order:426df766",
+      1772985979.1986809
+    ],
+    [
+      "paper:order:test-order-140f8caf",
+      1772989233.8173714
+    ],
+    [
+      "paper:order:82afd9b3",
+      1772989278.716562
+    ]
+  ],
+  "recent_fills": [
+    [
+      "paper:fill:5c0be0d0",
+      1772985931.643061
+    ],
+    [
+      "paper:fill:0a65cf6a",
+      1772985955.3610766
+    ],
+    [
+      "paper:fill:2e4e39bb",
+      1772985979.1986809
+    ],
+    [
+      "paper:fill:test-fill-50df778d",
+      1772989233.8173714
+    ],
+    [
+      "paper:fill:0df4e5d1",
+      1772989278.716562
+    ]
+  ],
+  "recent_outcomes": [
+    [
+      "paper:outcome:f6b68500:1772985931",
+      1772985931.643061
+    ],
+    [
+      "paper:outcome:d8688161:1772985955",
+      1772985955.3610766
+    ],
+    [
+      "paper:outcome:426df766:1772985979",
+      1772985979.1986809
+    ],
+    [
+      "paper:outcome:test-order-140f8caf:1772989233",
+      1772989233.8173714
+    ],
+    [
+      "paper:outcome:82afd9b3:1772989278",
+      1772989278.716562
+    ]
+  ],
+  "heartbeat": {
+    "last_heartbeat": "2026-03-08T17:01:29.109699+00:00",
+    "status": "stopped",
+    "pid": "3846333",
+    "exit_code": "0",
+    "error": ""
+  },
+  "market_prices": {
+    "BTC/USDT": "85000.0",
+    "ETH/USDT": "3200.0"
+  }
+}
