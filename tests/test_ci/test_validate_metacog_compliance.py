@@ -316,7 +316,11 @@ confidence_adjustment_recommendation: no_change
             return 1
 
     monkeypatch.setattr(validate_metacog_compliance, "ITERLOG_DIR", iterlog_dir)
-    monkeypatch.setattr(validate_metacog_compliance, "_get_redis_client", lambda: _FakeRedis())
+    monkeypatch.setattr(
+        validate_metacog_compliance,
+        "_get_redis_client",
+        lambda: {0: _FakeRedis()},
+    )
     monkeypatch.setattr(
         sys,
         "argv",
@@ -327,5 +331,151 @@ confidence_adjustment_recommendation: no_change
             "--strict",
             "--require-artifacts",
         ],
+    )
+    assert validate_metacog_compliance.main() == 0
+
+
+def test_markdown_bold_key_fields_are_accepted(
+    tmp_path: Path, monkeypatch
+) -> None:
+    iterlog_dir = tmp_path / "docs" / "tempmemories"
+    iterlog_dir.mkdir(parents=True)
+    body = """
+## Metacognitive Predictions
+**predicted_outcome**: improve reliability
+**predicted_risks**: [regression]
+**confidence**: 0.8
+**verification_plan**: run precommit
+**expected_metrics**: [reopen_rate <= 0.05]
+
+## Metacognitive Outcomes
+**actual_outcome**: improved reliability
+**actual_metrics**: {reopen_rate: 0.04}
+**wins**: [reduced regressions]
+**misses**: []
+**new_prevention_rules**: [rule-1]
+
+## Metacognitive Calibration
+**predicted_confidence**: 0.8
+**observed_result**: success
+**calibration_delta**: 0.1
+**confidence_adjustment_recommendation**: no_change
+"""
+    _write_iterlog(
+        iterlog_dir / "iterlog-CH-META-005.md",
+        "CH-META-005",
+        "completed",
+        body,
+    )
+
+    monkeypatch.setattr(validate_metacog_compliance, "ITERLOG_DIR", iterlog_dir)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["validate_metacog_compliance.py", "--story-id", "CH-META-005", "--strict"],
+    )
+    assert validate_metacog_compliance.main() == 0
+
+
+def test_require_artifacts_falls_back_to_db0_when_env_db_mismatch(
+    tmp_path: Path, monkeypatch
+) -> None:
+    iterlog_dir = tmp_path / "docs" / "tempmemories"
+    iterlog_dir.mkdir(parents=True)
+    body = """
+## Metacognitive Predictions
+predicted_outcome: improve reliability
+predicted_risks: [regression]
+confidence: 0.8
+verification_plan: run precommit
+expected_metrics: [reopen_rate <= 0.05]
+
+## Metacognitive Outcomes
+actual_outcome: improved reliability
+actual_metrics: {reopen_rate: 0.04}
+wins: [reduced regressions]
+misses: []
+new_prevention_rules: [rule-1]
+
+## Metacognitive Calibration
+predicted_confidence: 0.8
+observed_result: success
+calibration_delta: 0.1
+confidence_adjustment_recommendation: no_change
+"""
+    _write_iterlog(
+        iterlog_dir / "iterlog-CH-META-006.md",
+        "CH-META-006",
+        "completed",
+        body,
+    )
+
+    class _MissingRedis:
+        def exists(self, key: str) -> int:  # noqa: ARG002
+            return 0
+
+    class _PresentRedis:
+        def exists(self, key: str) -> int:  # noqa: ARG002
+            return 1
+
+    monkeypatch.setattr(validate_metacog_compliance, "ITERLOG_DIR", iterlog_dir)
+    monkeypatch.setattr(
+        validate_metacog_compliance,
+        "_get_redis_client",
+        lambda: {1: _MissingRedis(), 0: _PresentRedis()},
+    )
+    monkeypatch.setenv("REDIS_DB", "1")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "validate_metacog_compliance.py",
+            "--story-id",
+            "CH-META-006",
+            "--strict",
+            "--require-artifacts",
+        ],
+    )
+    assert validate_metacog_compliance.main() == 0
+
+
+def test_observed_result_aliases_are_accepted(
+    tmp_path: Path, monkeypatch
+) -> None:
+    iterlog_dir = tmp_path / "docs" / "tempmemories"
+    iterlog_dir.mkdir(parents=True)
+    body = """
+## Metacognitive Predictions
+predicted_outcome: improve reliability
+predicted_risks: [regression]
+confidence: 0.8
+verification_plan: run precommit
+expected_metrics: [reopen_rate <= 0.05]
+
+## Metacognitive Outcomes
+actual_outcome: improved reliability
+actual_metrics: {reopen_rate: 0.04}
+wins: [reduced regressions]
+misses: []
+new_prevention_rules: [rule-1]
+
+## Metacognitive Calibration
+predicted_confidence: 0.8
+observed_result: PARTIAL_PASS
+calibration_delta: 0.1
+confidence_adjustment_recommendation: no_change
+"""
+    _write_iterlog(
+        iterlog_dir / "iterlog-CH-META-007.md",
+        "CH-META-007",
+        "completed",
+        body,
+    )
+
+    monkeypatch.setattr(validate_metacog_compliance, "ITERLOG_DIR", iterlog_dir)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["validate_metacog_compliance.py", "--story-id", "CH-META-007", "--strict"],
     )
     assert validate_metacog_compliance.main() == 0

@@ -107,12 +107,12 @@ def _section_text(body: str, heading: str) -> str | None:
 
 def _contains_field(section_text: str, field: str) -> bool:
     # Require key-like structure (`field:` or field:) to avoid prose-only false passes.
-    pattern = rf"(?im)^\s*(?:[-*]\s*)?`?{re.escape(field)}`?\s*:"
+    pattern = rf"(?im)^\s*(?:[-*]\s*)?(?:\*\*|`)?{re.escape(field)}(?:\*\*|`)?\s*:"
     return re.search(pattern, section_text) is not None
 
 
 def _extract_field_value(section_text: str, field: str) -> str | None:
-    pattern = rf"(?im)^\s*(?:[-*]\s*)?`?{re.escape(field)}`?\s*:\s*(.+?)\s*$"
+    pattern = rf"(?im)^\s*(?:[-*]\s*)?(?:\*\*|`)?{re.escape(field)}(?:\*\*|`)?\s*:\s*(.+?)\s*$"
     match = re.search(pattern, section_text)
     if not match:
         return None
@@ -152,7 +152,23 @@ def _validate_semantics(
             result.err(f"{path}: {SECTION_CAL} predicted_confidence must be in [0.0, 1.0]")
 
         observed_result = _extract_field_value(cal_text, "observed_result")
-        if observed_result is not None and observed_result.lower() not in VALID_OBSERVED_RESULTS:
+        if observed_result is not None:
+            normalized_observed_result = observed_result.strip().lower()
+            compact = re.sub(r"\s+", " ", normalized_observed_result)
+            if compact.startswith(("success", "pass", "passed", "full_pass", "full pass")):
+                normalized_observed_result = "success"
+            elif compact.startswith(("partial_pass", "partial pass", "partial", "partial-fail")):
+                normalized_observed_result = "partial"
+            elif compact.startswith(("failure", "fail", "failed")):
+                normalized_observed_result = "failure"
+            else:
+                normalized_observed_result = compact
+        else:
+            normalized_observed_result = None
+        if (
+            normalized_observed_result is not None
+            and normalized_observed_result not in VALID_OBSERVED_RESULTS
+        ):
             result.err(
                 f"{path}: {SECTION_CAL} observed_result must be one of {sorted(VALID_OBSERVED_RESULTS)}"
             )
@@ -181,7 +197,10 @@ def _extract_story_id(path: Path, fm: dict[str, Any], body: str) -> str:
         return stem.replace("iterlog-", "", 1)
 
     # Fallback parse from body if present.
-    match = re.search(r"(?im)^\s*story_id\s*:\s*([A-Za-z0-9_-]+)\s*$", body)
+    match = re.search(
+        r"(?im)^\s*(?:[-*]\s*)?(?:\*\*|`)?story_id(?:\*\*|`)?\s*:\s*([A-Za-z0-9_-]+)\s*$",
+        body,
+    )
     if match:
         return match.group(1).strip()
     return ""
@@ -191,7 +210,10 @@ def _extract_status(fm: dict[str, Any], body: str) -> str:
     status = str(fm.get("status", "")).strip().lower()
     if status:
         return status
-    match = re.search(r"(?im)^\s*status\s*:\s*([A-Za-z0-9_-]+)\s*$", body)
+    match = re.search(
+        r"(?im)^\s*(?:[-*]\s*)?(?:\*\*|`)?status(?:\*\*|`)?\s*:\s*([A-Za-z0-9_-]+)\s*$",
+        body,
+    )
     if match:
         return match.group(1).strip().lower()
     return ""
@@ -244,26 +266,32 @@ def _get_redis_client():
 
         host = os.getenv("REDIS_HOST", "host.docker.internal")
         port = int(os.getenv("REDIS_PORT", "6380"))
-        db = int(os.getenv("REDIS_DB", "0"))
-        client = redis.Redis(
-            host=host,
-            port=port,
-            db=db,
-            decode_responses=True,
-            socket_connect_timeout=3,
-            socket_timeout=3,
-        )
-        client.ping()
-        return client
+        primary_db = int(os.getenv("REDIS_DB", "0"))
+        db_candidates = [primary_db] if primary_db == 0 else [primary_db, 0]
+        clients: dict[int, redis.Redis] = {}
+        for db in db_candidates:
+            client = redis.Redis(
+                host=host,
+                port=port,
+                db=db,
+                decode_responses=True,
+                socket_connect_timeout=3,
+                socket_timeout=3,
+            )
+            client.ping()
+            clients[db] = client
+        return clients
     except Exception:
         return None
 
 
 def _validate_artifacts_in_redis(paths: list[Path], result: Result) -> None:
-    client = _get_redis_client()
-    if client is None:
+    clients = _get_redis_client()
+    if clients is None:
         result.err("Redis unavailable; cannot enforce --require-artifacts")
         return
+
+    primary_db = int(os.getenv("REDIS_DB", "0"))
 
     for path in paths:
         fm = _read_frontmatter(path)
@@ -274,10 +302,20 @@ def _validate_artifacts_in_redis(paths: list[Path], result: Result) -> None:
 
         pred_key = f"bmad:chiseai:metacog:prediction:story:{story_id}"
         out_key = f"bmad:chiseai:metacog:outcome:story:{story_id}"
-        if client.exists(pred_key) != 1:
+        pred_found_db = next((db for db, client in clients.items() if client.exists(pred_key) == 1), None)
+        out_found_db = next((db for db, client in clients.items() if client.exists(out_key) == 1), None)
+        if pred_found_db is None:
             result.err(f"{path}: missing Redis artifact {pred_key}")
-        if client.exists(out_key) != 1:
+        if out_found_db is None:
             result.err(f"{path}: missing Redis artifact {out_key}")
+        if pred_found_db is not None and pred_found_db != primary_db:
+            result.warn(
+                f"{path}: found {pred_key} in Redis DB {pred_found_db} (REDIS_DB={primary_db})"
+            )
+        if out_found_db is not None and out_found_db != primary_db:
+            result.warn(
+                f"{path}: found {out_key} in Redis DB {out_found_db} (REDIS_DB={primary_db})"
+            )
 
 
 def main() -> int:

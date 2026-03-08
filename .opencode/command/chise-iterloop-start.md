@@ -77,10 +77,12 @@ Follow these steps exactly (do not skip):
    ```
    - Record in iterlog under `## Thinking Partner Status`.
    - Persist in Redis hash `bmad:chiseai:tp:session:<tp_session_id>` with 5-day TTL.
+   - Use Redis DB `0` for TP session keys unless Craig explicitly overrides.
    - Example persistence:
    ```bash
-   redis-cli -h host.docker.internal -p 6380 HSET "bmad:chiseai:tp:session:<tp_session_id>" \
+   redis-cli -h host.docker.internal -p 6380 -n 0 HSET "bmad:chiseai:tp:session:<tp_session_id>" \
      story_id "<story_id>" tp_mode "ACTIVE" scope "<story_id>" created_at "$(date -u +%FT%TZ)"
-   redis-cli -h host.docker.internal -p 6380 EXPIRE "bmad:chiseai:tp:session:<tp_session_id>" 432000
+   redis-cli -h host.docker.internal -p 6380 -n 0 EXPIRE "bmad:chiseai:tp:session:<tp_session_id>" 432000
+   redis-cli -h host.docker.internal -p 6380 -n 0 EXISTS "bmad:chiseai:tp:session:<tp_session_id>"
    ```
-   - Gate: do not proceed if `tp_session_id` is missing.
+   - Gate: do not proceed if `tp_session_id` is missing or `EXISTS` does not return `1`.

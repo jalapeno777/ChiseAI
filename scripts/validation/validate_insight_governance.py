@@ -217,7 +217,10 @@ def _validate_file(
             result.err(msg)
         else:
             result.warn(msg)
-    if should_require and not re.search(r"(?im)\btp_session_id\b\s*:", body):
+    tp_session_pattern = (
+        r"(?im)^\s*(?:[-*]\s*)?(?:\*\*|`)?tp_session_id(?:\*\*|`)?\s*:"
+    )
+    if should_require and not re.search(tp_session_pattern, body):
         msg = f"{path}: missing tp_session_id in Thinking Partner status"
         if strict:
             result.err(msg)

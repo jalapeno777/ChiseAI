@@ -51,6 +51,11 @@ THINKING_PARTNER_STATUS
 - last_aria_decision_id: <id|none>
 ```
 
+Persistence rule (required):
+- Persist `tp_session_id` to Redis key `bmad:chiseai:tp:session:<tp_session_id>` in DB `0` with TTL `432000`.
+- Verify write success (`EXISTS ... == 1`) before continuing.
+- If persistence fails, set `tp_mode: DEGRADED`, log the failure reason in iterlog, and issue remediation steps.
+
 For every meaningful response (plan, recommendation, decision, handoff), include:
 `Thinking Partner Proof: <tp_mode> | <scope> | IP:<id|none> | AD:<id|none> | Risks:<count>`
 
