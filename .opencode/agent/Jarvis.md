@@ -75,6 +75,13 @@ You are **planning + assessment only**.
 - If intentionally closing while branch is ahead of main and PR is still open (handoff), use:
   - `python3 scripts/swarm/session.py close --enforce-merged --allow-unmerged`
 
+### Cross-Branch Verification Guardrail (REQUIRED)
+Before confirming any merge to main, verify the commit is actually on main:
+```bash
+git branch --contains <commit>
+```
+This prevents false merge claims. Reference: `docs/evidence/PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI.md` documents an incident where work was claimed as merged but wasn't.
+
 ## Merge queue reconcile cadence (required)
 
 ### During PR Sweep (Merlin)
