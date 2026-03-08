@@ -1,8 +1,17 @@
 #!/usr/bin/env python3
-"""Continuous paper trading metrics emitter.
+"""Continuous paper trading METRICS EMITTER (NOT the real trading system).
 
-This script continuously emits paper trading metrics to InfluxDB
-to keep the Grafana dashboard populated with live data.
+⚠️  IMPORTANT: This is a Grafana dashboard metrics emitter that generates SYNTHETIC
+test data for visualization purposes only. This is NOT the real paper trading system.
+
+The REAL paper trading system is PaperTradingOrchestrator (see src/execution/paper/).
+
+This script:
+- Generates synthetic/random trading metrics for Grafana dashboard visualization
+- Writes metrics to InfluxDB for Grafana dashboards
+- Does NOT perform real trades or trading decisions
+- Does NOT write to Redis canonical indices (paper:index:*) - those are reserved
+  for real trades from PaperTradingOrchestrator
 
 Usage:
     python3 continuous_paper_emitter.py
@@ -21,6 +30,7 @@ Environment Variables:
 For ST-FINAL-CLOSURE-001: Grafana Paper-Trading-Execution No-Data Fix
 For PAPER-DIAG-001: Robust error handling and auto-restart
 For PAPER-RECOVERY-001: Redis canonical indices, Discord notifications, canary metrics
+For PAPER-TELEMETRY-001: Removed Redis canonical index writes to prevent contamination
 """
 
 from __future__ import annotations
@@ -830,9 +840,12 @@ def main():
         logger.warning("Redis client unavailable - canonical indices disabled")
 
     # G5: Send Discord OPEN message at startup
+    # PAPER-TELEMETRY-001: Clarified this is metrics emitter, NOT real trading
     open_msg_id = send_discord_session_message(
         "OPEN",
-        f"Paper trading session started at {datetime.now(UTC).isoformat()}\nPID: {os.getpid()}",
+        f"📊 Metrics Emitter Started [SYNTHETIC DATA - NOT REAL TRADING]\n"
+        f"This generates dashboard test data for Grafana. Real trading uses PaperTradingOrchestrator.\n"
+        f"PID: {os.getpid()}",
     )
     if open_msg_id:
         logger.info(f"Discord OPEN message sent: {open_msg_id}")
@@ -960,9 +973,13 @@ def main():
                     else:
                         error_count += 1
 
-                    # TASK 1: Write signal to Redis canonical index
-                    if redis_client:
-                        write_signal_index(redis_client, current_ts, symbol, side)
+                    # DISABLED (PAPER-TELEMETRY-001): Don't write synthetic data to canonical indices
+                    # These indices should ONLY contain real trades from PaperTradingOrchestrator.
+                    # Writing synthetic data here contaminates the canonical data source and causes
+                    # contradictions between Discord (shows activity), burn-in (shows cumulative data),
+                    # and daily checks (shows stale data because they query Redis canonical indices).
+                    # if redis_client:
+                    #     write_signal_index(redis_client, current_ts, symbol, side)
 
                     # Emit order for Order/Fill tracking
                     order_id = str(uuid.uuid4())[:8]
@@ -972,9 +989,9 @@ def main():
                     else:
                         error_count += 1
 
-                    # TASK 2: Write order to Redis canonical index
-                    if redis_client:
-                        write_order_index(redis_client, order_id, current_ts)
+                    # DISABLED (PAPER-TELEMETRY-001): Don't write synthetic data to canonical indices
+                    # if redis_client:
+                    #     write_order_index(redis_client, order_id, current_ts)
 
                     # Emit fill for Order/Fill tracking
                     fill_id = str(uuid.uuid4())[:8]
@@ -984,13 +1001,13 @@ def main():
                     else:
                         error_count += 1
 
-                    # TASK 2: Write fill to Redis canonical index
-                    if redis_client:
-                        write_fill_index(redis_client, fill_id, current_ts)
+                    # DISABLED (PAPER-TELEMETRY-001): Don't write synthetic data to canonical indices
+                    # if redis_client:
+                    #     write_fill_index(redis_client, fill_id, current_ts)
 
-                    # TASK 1: Write outcome to Redis canonical index
-                    if redis_client:
-                        write_outcome_index(redis_client, order_id, current_ts)
+                    # DISABLED (PAPER-TELEMETRY-001): Don't write synthetic data to canonical indices
+                    # if redis_client:
+                    #     write_outcome_index(redis_client, order_id, current_ts)
 
                     # Update win/loss counts
                     if pnl > 0:
@@ -1047,9 +1064,10 @@ def main():
         logger.error(f"Fatal error in main loop: {e}", exc_info=True)
 
         # G5: Send Discord CLOSE message on error
+        # PAPER-TELEMETRY-001: Clarified this is metrics emitter, NOT real trading
         send_discord_session_message(
             "CLOSE",
-            f"Paper trading session ended with error: {str(e)[:100]}",
+            f"📊 Metrics Emitter Stopped [SYNTHETIC DATA]\nError: {str(e)[:100]}",
         )
 
         # G7: Emit canary stopped metrics
@@ -1074,7 +1092,11 @@ def main():
     logger.info(f"Session duration: {session_duration:.0f}s")
 
     # G5: Send Discord CLOSE message
-    close_msg = f"Session completed successfully.\nDuration: {session_duration:.0f}s\nTotal emissions: {success_count}"
+    # PAPER-TELEMETRY-001: Clarified this is metrics emitter, NOT real trading
+    close_msg = (
+        f"📊 Metrics Emitter Session Complete [SYNTHETIC DATA]\n"
+        f"Duration: {session_duration:.0f}s | Total emissions: {success_count}"
+    )
     close_msg_id = send_discord_session_message("CLOSE", close_msg)
     if close_msg_id:
         logger.info(f"Discord CLOSE message sent: {close_msg_id}")
