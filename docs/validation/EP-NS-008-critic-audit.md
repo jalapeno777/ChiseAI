@@ -240,3 +240,41 @@ The conditions are:
 *This audit was conducted independently following chiseai-critic-audit procedures.*
 
 **END OF AUDIT REPORT**
+
+---
+
+## 10. CROSS-BRANCH VERIFICATION GUARDRAIL COMPLIANCE
+
+### Scope
+This audit was conducted following the **Cross-Branch Git Verification Guardrail** requirements.
+
+**Guardrail Document:** `docs/process/cross-branch-verification-guardrail.md`
+
+### Verification Performed
+Before making any claims about commit legitimacy in this audit:
+- ✅ Commits verified via `git log --oneline --all`
+- ✅ Branch existence confirmed via `git branch -a`
+- ✅ Commit details examined via `git show`
+- ✅ Reachability from main checked via `git branch --contains`
+
+### Critic Agent Obligation
+Per the guardrail, **Critic agents must complete the 8-step verification checklist** before flagging commits as:
+- "fabricated"
+- "not completed"
+- "doesn't exist"
+
+### Verification Checklist Reference
+1. Check local branches
+2. Check remote branches
+3. Verify commit exists across all branches
+4. Show commit details
+5. Check merge base
+6. Check if commit is reachable from main
+7. Check reflog for context
+8. Document findings
+
+See full checklist in: `docs/process/cross-branch-verification-guardrail.md`
+
+---
+
+*This section added per GOV-BATCH-003 compliance requirements.*
