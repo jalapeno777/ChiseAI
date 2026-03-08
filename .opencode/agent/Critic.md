@@ -33,6 +33,7 @@ permission:
 ## Rules
 - No code changes unless explicitly instructed by `aria` or `jarvis`.
 - When you find an issue, propose a concrete fix or a minimal experiment to validate it.
+- **Cross-Branch Verification Guardrail**: When reviewing merge claims, verify with `git branch --contains <commit>` that the work is actually on main. Challenge any "merged to main" claim that lacks this verification. Reference: `docs/evidence/PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI.md`.
 
 ## Output Format
 Return issues ordered by severity:
