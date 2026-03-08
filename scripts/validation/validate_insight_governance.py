@@ -103,8 +103,56 @@ def _read_body(path: Path) -> str:
 
 
 def _extract_blocks(body: str, tag: str) -> list[str]:
-    pattern = rf"```text\s*({tag}.*?)(?:```)"
-    return re.findall(pattern, body, flags=re.DOTALL)
+    """Extract governance blocks from text or yaml fences.
+
+    Supports:
+    - ```text ... TAG ... ```
+    - ```yaml ... TAG: ... ```
+    - ```yaml ... tag_specific_fields ... ``` (when heading announces the tag)
+    """
+    blocks: list[str] = []
+
+    # Case 1: collect all text/yaml fenced blocks and filter by tag semantics.
+    fenced_blocks = re.findall(r"```(?:text|yaml)\s*(.*?)```", body, flags=re.DOTALL | re.IGNORECASE)
+    tag_lower = tag.lower()
+    for b in fenced_blocks:
+        b_low = b.lower()
+        if tag_lower == "insight_packet":
+            if "insight_packet_id:" in b_low or re.search(r"(?im)^\s*insight_packet\b", b_low):
+                blocks.append(b)
+        elif tag_lower == "aria_decision":
+            if "aria_decision_id:" in b_low or re.search(r"(?im)^\s*aria_decision\b", b_low):
+                blocks.append(b)
+        elif tag_lower == "no_issues_packet":
+            if "packet_id:" in b_low and re.search(r"(?im)^\s*no_issues_packet\b", b_low):
+                blocks.append(b)
+
+    # Case 2: markdown heading announces block type followed by fenced payload.
+    heading_pattern = rf"(?is)(?:^|\n)\s*#+\s*{re.escape(tag)}\s*\n+```(?:text|yaml)\s*(.*?)```"
+    blocks.extend(re.findall(heading_pattern, body, flags=re.DOTALL | re.IGNORECASE))
+
+    # De-duplicate while preserving order.
+    seen: set[str] = set()
+    unique: list[str] = []
+    for b in blocks:
+        key = b.strip()
+        if key and key not in seen:
+            seen.add(key)
+            unique.append(key)
+    return unique
+
+
+def _contains_no_issues_fields(block: str) -> bool:
+    required = (
+        "packet_id:",
+        "story_id:",
+        "reviewed_at_utc:",
+        "context:",
+        "checks_run:",
+        "evidence:",
+        "evidence_signature:",
+    )
+    return all(field in block for field in required)
 
 
 def _validate_insight_packet(block: str, path: Path, idx: int, result: Result) -> None:
@@ -154,6 +202,9 @@ def _validate_file(
     no_issues_blocks = _extract_blocks(body, "NO_ISSUES_PACKET")
     decision_blocks = _extract_blocks(body, "ARIA_DECISION")
 
+    # If parser extracted content by heading fallback, ensure it is the right payload.
+    no_issues_blocks = [b for b in no_issues_blocks if _contains_no_issues_fields(b)]
+
     if should_require and not insight_blocks and not no_issues_blocks:
         msg = f"{path}: no INSIGHT_PACKET or NO_ISSUES_PACKET blocks found"
         if strict:
@@ -166,13 +217,13 @@ def _validate_file(
             result.err(msg)
         else:
             result.warn(msg)
-    if should_require and not re.search(r"(?im)^\s*[-*]?\s*tp_session_id\s*:", body):
+    if should_require and not re.search(r"(?im)\btp_session_id\b\s*:", body):
         msg = f"{path}: missing tp_session_id in Thinking Partner status"
         if strict:
             result.err(msg)
         else:
             result.warn(msg)
-    if should_require and "Thinking Partner Proof:" not in body:
+    if should_require and "Thinking Partner Proof:" not in body and "## Thinking Partner Proof" not in body:
         msg = f"{path}: missing Thinking Partner Proof line"
         if strict:
             result.err(msg)
