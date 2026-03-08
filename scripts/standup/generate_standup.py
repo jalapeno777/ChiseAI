@@ -618,6 +618,7 @@ class StandupGenerator:
                     print("⚠ Discord script not found: scripts/discord/post_message.py")
                 return False
 
+            tp = self._get_thinking_partner_status()
             # Format compact message
             message = f"""📊 **Daily Standup - {self.date}**
 
@@ -625,6 +626,7 @@ class StandupGenerator:
 🔄 **Today**: {metrics["in_progress"]} in progress
 🚫 **Blockers**: {metrics["blocked"]} active
 ⚠️ **Risks**: Check full report
+🤝 **Thinking Partner**: {tp["mode"]} (Proof {tp["proof_coverage_percent"]}%)
 
 Full report: `{report_path}`
 """

@@ -110,8 +110,32 @@ Follow these steps exactly (do not skip):
    - Fallback to `docs/tempmemories/` with `needs_manual_qdrant_import: true`
    
    **Iterlog sections required:**
+   - `## Metacognitive Predictions` (must still exist from iterloop-start; copy forward if missing)
    - `## Metacognitive Outcomes`
    - `## Metacognitive Calibration`
+
+   **Validator-compatible section skeleton (required headings):**
+   ```markdown
+   ## Metacognitive Predictions
+   - `predicted_outcome`:
+   - `predicted_risks`:
+   - `confidence`:
+   - `verification_plan`:
+   - `expected_metrics`:
+
+   ## Metacognitive Outcomes
+   - `actual_outcome`:
+   - `actual_metrics`:
+   - `wins`:
+   - `misses`:
+   - `new_prevention_rules`:
+
+   ## Metacognitive Calibration
+   - `predicted_confidence`:
+   - `observed_result`:
+   - `calibration_delta`:
+   - `confidence_adjustment_recommendation`:
+   ```
 
 8. Skills effectiveness capture (NON-BLOCKING)
    - Run `.opencode/command/chise-skill-autonomy-tick.md` with:
@@ -150,6 +174,18 @@ Follow these steps exactly (do not skip):
    - Include at least one of:
      - `INSIGHT_PACKET` + `ARIA_DECISION`, or
      - `NO_ISSUES_PACKET` + `ARIA_DECISION`
+   - Use validator-compatible fenced format under required sections, for example:
+   ```text
+   ## Insights Sent To Aria
+   INSIGHT_PACKET
+   - insight_packet_id: IP-...
+   ...
+
+   ## Aria Decisions
+   ARIA_DECISION
+   - aria_decision_id: AD-...
+   ...
+   ```
    - Include one summary line:
      - `Thinking Partner Proof: <tp_mode> | <story_id> | IP:<id|none> | AD:<id|none> | Risks:<count>`
    - If `decision=DEFER`, add decision debt fields:
