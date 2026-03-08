@@ -2,10 +2,10 @@
 name: chiseai-git-workflow
 description: Standard Git workflows for ChiseAI agent swarm operations (branching, PR handoff, merge authority).
 metadata:
-  version: "1.1"
+  version: "1.2"
   opencode_min_version: "1.1.60"
   author: "ChiseAI Team"
-  last_updated: "2026-02-23"
+  last_updated: "2026-03-07"
 ---
 
 # chiseai-git-workflow
@@ -65,16 +65,26 @@ Ensure all agent swarm operations follow consistent, safe Git practices that mai
 
 ### Merge Authority by Role
 
-#### Primary Authority (senior-dev)
-- `senior-dev` may merge to `main` after green CI and review for straightforward changes
-- Open/update/close PRs for standard changes
+#### Workers
+- Push branches + handoff evidence only
+- Workers do NOT open PRs or merge to main
 
-#### Escalated Authority (Merlin)
-`merlin` is required for:
-- Open/update/close PRs after 2+ failed merge attempts by senior-dev
-- Merges to `main` when >2 attempts failed or for complex/infrastructure changes
-- Branch cleanup operations
-- Emergency merge overrides
+#### Jarvis
+- Orchestrates handoff to Merlin
+- Coordinates worker completion
+
+#### senior-dev
+- May merge to `main` after green CI and review for straightforward changes
+- Does NOT open/update/close PRs (only Merlin may do this)
+
+#### Merlin (Required Authority)
+`merlin` is the ONLY agent who may:
+- Open/update/close PRs (exclusive authority)
+- Merge to `main` after >2 failed merge attempts by senior-dev
+- Handle complex merges with conflicts across >3 files
+- Perform infrastructure changes (CI, Terraform, core workflow)
+- Execute branch cleanup operations
+- Perform emergency merge overrides
 
 ### Emergency Override
 See `.opencode/command/chise-emergency-merge-override.md` for documented bypass procedure.
