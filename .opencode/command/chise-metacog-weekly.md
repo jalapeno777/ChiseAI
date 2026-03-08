@@ -34,10 +34,21 @@ Run weekly (or manually during incident-heavy periods).
      - `recommended_actions`
      - `owner`
 
-4. Memory promotion
+4. Executive digest payload (REQUIRED for Discord)
+   - Include:
+     - `tp_mode_overall` (`ACTIVE|DEGRADED|OFF`)
+     - `tp_proof_coverage_percent`
+     - `insight_packets_weekly`
+     - `aria_decisions_weekly`
+     - `overrides_weekly`
+     - `decision_latency_median_minutes` (IP -> AD)
+     - `top_risk_signatures` (max 3)
+     - `craig_attention_item` (single highest-value pending decision)
+
+5. Memory promotion
    - Store summary into Qdrant (`ChiseAI_metacognition`) with week metadata.
    - Fallback: write markdown artifact under `_bmad-output/brain-eval/reflections/weekly/`.
 
-5. Escalation rule
+6. Escalation rule
    - If confidence is degrading while incident rate rises for 2 consecutive weeks:
      - route a `critical` insight packet to Aria before expanding any autonomy settings.

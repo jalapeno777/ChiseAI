@@ -129,3 +129,16 @@ Follow these steps exactly (do not skip):
    - Only after steps 1-8 pass, update Redis iterlog:
      - `status=completed`
    - If any gate fails, keep status as `closing` (or `in_progress`) and remediate first.
+
+10. Thinking-partner proof chain (REQUIRED)
+   - Add these iterlog sections before completion:
+     - `## Thinking Partner Status`
+     - `## Insights Sent To Aria`
+     - `## Aria Decisions`
+   - Include at least one of:
+     - `INSIGHT_PACKET` + `ARIA_DECISION`, or
+     - `NO_ISSUES_PACKET` + `ARIA_DECISION`
+   - Include one summary line:
+     - `Thinking Partner Proof: <tp_mode> | <story_id> | IP:<id|none> | AD:<id|none> | Risks:<count>`
+   - If `decision=DEFER`, add decision debt fields:
+     - `debt_id`, `owner`, `due_utc`, `impact_if_overdue`

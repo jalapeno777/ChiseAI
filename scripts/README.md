@@ -90,7 +90,12 @@ Validates metacognition artifact completeness from iterlog artifacts:
 python3 scripts/validation/validate_metacog_compliance.py
 python3 scripts/validation/validate_metacog_compliance.py --story-id ST-XXX --strict
 python3 scripts/validation/validate_metacog_compliance.py --require-for-completed-only
+python3 scripts/validation/validate_metacog_compliance.py --story-id ST-XXX --strict --require-artifacts
 ```
+
+`--require-artifacts` validates Redis prediction/outcome artifacts:
+- `bmad:chiseai:metacog:prediction:story:<story_id>`
+- `bmad:chiseai:metacog:outcome:story:<story_id>`
 
 CI behavior note:
 - In Woodpecker, metacog and insight governance checks are intentionally lint-bundled.

@@ -33,6 +33,9 @@ Run these gates before PR/merge. If a referenced script is missing, explicitly n
        ```bash
        python3 scripts/validation/validate_metacog_compliance.py --story-id=<story_id> --strict --require-artifacts
        ```
+     - `--require-artifacts` requires Redis availability and validates:
+       - `bmad:chiseai:metacog:prediction:story:<story_id>`
+       - `bmad:chiseai:metacog:outcome:story:<story_id>`
      - **Gate FAILS if metacog artifacts are missing:**
        - Missing prediction card (`bmad:chiseai:metacog:prediction:story:<story_id>`)
        - Missing outcome card (`bmad:chiseai:metacog:outcome:story:<story_id>`)

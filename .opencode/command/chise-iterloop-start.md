@@ -47,3 +47,19 @@ Follow these steps exactly (do not skip):
    **Gate:** Do NOT proceed to implementation unless prediction card exists and is measurable.
    
    **Record in iterlog:** Add `## Metacognitive Predictions` section with the full prediction card.
+
+7. Thinking-partner status kickoff (REQUIRED for all Craig-facing sessions)
+   - Emit and persist this status block:
+   ```text
+   THINKING_PARTNER_STATUS
+   - tp_mode: ACTIVE | DEGRADED | OFF
+   - tp_session_id: TPS-<utc_yyyymmddThhmmssZ>-<short_hash>
+   - scope: <story_id>
+   - assumptions_open: <count>
+   - risk_items_open: <count>
+   - last_insight_packet_id: <id|none>
+   - last_aria_decision_id: <id|none>
+   ```
+   - Record in iterlog under `## Thinking Partner Status`.
+   - Persist in Redis hash `bmad:chiseai:tp:session:<tp_session_id>` with 5-day TTL.
+   - Gate: do not proceed if `tp_session_id` is missing.

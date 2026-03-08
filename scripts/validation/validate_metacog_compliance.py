@@ -10,6 +10,7 @@ Purpose:
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import sys
 from dataclasses import dataclass
@@ -237,6 +238,48 @@ def _validate_file(path: Path, require_for_completed: bool, strict: bool, result
     _validate_semantics(path, pred_text, out_text, cal_text, result)
 
 
+def _get_redis_client():
+    try:
+        import redis
+
+        host = os.getenv("REDIS_HOST", "host.docker.internal")
+        port = int(os.getenv("REDIS_PORT", "6380"))
+        db = int(os.getenv("REDIS_DB", "0"))
+        client = redis.Redis(
+            host=host,
+            port=port,
+            db=db,
+            decode_responses=True,
+            socket_connect_timeout=3,
+            socket_timeout=3,
+        )
+        client.ping()
+        return client
+    except Exception:
+        return None
+
+
+def _validate_artifacts_in_redis(paths: list[Path], result: Result) -> None:
+    client = _get_redis_client()
+    if client is None:
+        result.err("Redis unavailable; cannot enforce --require-artifacts")
+        return
+
+    for path in paths:
+        fm = _read_frontmatter(path)
+        body = _read_body(path)
+        story_id = _extract_story_id(path, fm, body)
+        if not story_id:
+            continue
+
+        pred_key = f"bmad:chiseai:metacog:prediction:story:{story_id}"
+        out_key = f"bmad:chiseai:metacog:outcome:story:{story_id}"
+        if client.exists(pred_key) != 1:
+            result.err(f"{path}: missing Redis artifact {pred_key}")
+        if client.exists(out_key) != 1:
+            result.err(f"{path}: missing Redis artifact {out_key}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Validate metacognition compliance")
     ap.add_argument("--story-id", help="Validate only iterlog for this story id")
@@ -249,6 +292,11 @@ def main() -> int:
         "--strict",
         action="store_true",
         help="Treat missing sections/fields as errors",
+    )
+    ap.add_argument(
+        "--require-artifacts",
+        action="store_true",
+        help="Also require prediction/outcome artifacts in Redis for selected story files",
     )
     args = ap.parse_args()
 
@@ -269,6 +317,8 @@ def main() -> int:
     else:
         for path in paths:
             _validate_file(path, args.require_for_completed_only, args.strict, result)
+        if args.require_artifacts:
+            _validate_artifacts_in_redis(paths, result)
 
     for w in result.warnings:
         print(w)

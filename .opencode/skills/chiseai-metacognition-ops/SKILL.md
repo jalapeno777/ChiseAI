@@ -24,6 +24,7 @@ Make decision quality measurable and improvable by default via three loops:
 - Incident-heavy or regression-prone workstreams.
 - Any work that affects risk invariants, CI reliability, or delivery throughput.
 - Pre-commit gates for P0/P1 stories (blocking requirement).
+- All Craig-facing Aria sessions (always-on; no explicit request needed).
 
 ## When Not To Use
 
@@ -63,6 +64,14 @@ When running `chise-precommit-gates`, step 5 validates metacognition:
 - **P0/P1 stories:** BLOCKING gate - fails if metacog artifacts missing
 - **P2+ stories:** Warning only - allows proceed with warning
 - **Bypass:** `--no-verify` flag is **ignored** for P0/P1 stories (safety constraint)
+
+### Thinking Partner Status Integration (Always-On)
+- Every Craig-facing summary must include `## Thinking Partner Status` and a proof line:
+  - `Thinking Partner Proof: <tp_mode> | <scope> | IP:<id|none> | AD:<id|none> | Risks:<count>`
+- Status modes:
+  - `ACTIVE`: proof coverage >=95% over last 24h, no missing required TP artifacts on active stories
+  - `DEGRADED`: proof coverage 70-94% or any missing required TP artifact
+  - `OFF`: proof coverage <70% or TP contract disabled
 
 ## Redis Memory Contract
 
