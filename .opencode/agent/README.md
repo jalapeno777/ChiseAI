@@ -18,6 +18,7 @@ The ChiseAI Agent Swarm is a multi-agent system where different AI agents collab
 | **SeniorDev** | Senior Developer | Implementation | Complex feature implementation, architecture decisions |
 | **Dev** | Developer | Implementation | Feature implementation, bug fixes |
 | **Quickdev** | Fast Developer | Implementation | Quick fixes, documentation, simple features |
+| **QuickdevFast** | Ultra-Fast Developer | Implementation | Trivial mechanical 1SP tasks with maximum throughput |
 | **Juniordev** | Junior Developer | Implementation | Learning, simple tasks, test writing |
 | **Critic** | Quality Assurance | Review | Code review, quality gates, validation |
 | **GitReviewBot** | Automated Review | Review | Automated PR review for STANDARD path |
@@ -57,7 +58,33 @@ The ChiseAI Agent Swarm is a multi-agent system where different AI agents collab
 | **bmad-agent-bmb-workflow-builder** | Workflow Builder | Build workflows |
 | **bmad-agent-tea-tea** | TEA Agent | Trading Execution Agent |
 | **Research** | Researcher | Research and analysis |
+| **ResearchFast** | Research Triage | Research | High-throughput first-pass source triage |
 | **WebResearch** | Web Researcher | Web-based research |
+
+## Agent Selection Matrix
+
+Use this matrix when `jarvis` routes work to fixed-model agents.
+
+| Work Pattern | Preferred Agent | Model |
+|-------------|------------------|-------|
+| Top-level strategy/orchestration | `aria` | `openai/gpt-5.3-codex` |
+| Critical blockers, CI deep debug, 5-attempt escalations | `merlin` | `openai/gpt-5.3-codex` |
+| Orchestration planning (non-Codex default) | `jarvis` | `kimi-for-coding/kimi-k2-thinking` |
+| 4SP+ implementation, complex refactors | `senior-dev` | `kimi-for-coding/kimi-k2-thinking` |
+| 2-3SP implementation | `dev` | `kimi-for-coding/k2p5` |
+| 1SP implementation (quality-first) | `quickdev` | `zai-coding-plan/glm-5.0-fast` |
+| Trivial 1SP mechanical throughput | `quickdev-fast` | `zai-coding-plan/glm-4.7-flash` |
+| Adversarial review / risk challenge | `critic` | `kimi-for-coding/kimi-k2-thinking` |
+| Automated PR review decisions | `git-review-bot` | `zai-coding-plan/glm-5.0-thinking` |
+| Deep synthesis research | `research` | `kimi-for-coding/kimi-k2-thinking` |
+| First-pass high-volume source triage | `research-fast` | `zai-coding-plan/glm-4.7-flash` |
+| Web-citation-heavy external research | `web-research` | `zai-coding-plan/glm-5` |
+
+### Codex Budget Policy
+
+- Reserve Codex for `aria` and `merlin` by default.
+- Route routine implementation/research/review to Kimi/Z.ai agents.
+- Escalate to `merlin` when blocker depth or risk justifies premium reasoning.
 
 ## Autonomous PR Pipeline
 

@@ -2,7 +2,7 @@
 name: "critic"
 description: "Independent reviewer. Performs adversarial code/workflow review, identifies risks/gaps, and challenges plans with concrete recommendations."
 mode: all
-model: "zai-coding-plan/glm-5"
+model: "kimi-for-coding/kimi-k2-thinking"
 temperature: 0.15
 tools:
   task: true
@@ -42,4 +42,3 @@ Return issues ordered by severity:
 - Medium
 - Low
 - Open questions and assumptions
-

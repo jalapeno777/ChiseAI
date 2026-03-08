@@ -2,7 +2,7 @@
 name: "dev"
 description: "Development subagent. Implements features, runs tests, performs git/deploy steps when explicitly tasked by Aria or Jarvis."
 mode: all
-model: "zai-coding-plan/glm-5"
+model: "kimi-for-coding/k2p5"
 temperature: 0.2
 tools:
   task: true
