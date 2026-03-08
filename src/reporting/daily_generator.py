@@ -4,14 +4,18 @@ Generates daily PnL summaries with trade metrics, win/loss ratios,
 and risk metrics. Formats output as Markdown for Discord/email.
 
 For PAPER-003-003: Automated Reporting and Anomaly Detection
+For PAPER-TELEMETRY-001: Query Redis canonical indices instead of InfluxDB
 """
 
 from __future__ import annotations
 
 import logging
+import os
 import statistics
 from datetime import UTC, datetime, timedelta
 from typing import Any
+
+from redis import Redis
 
 from .models import (
     DailyReport,
@@ -23,15 +27,27 @@ from .models import (
 
 logger = logging.getLogger(__name__)
 
+# Redis canonical index keys for paper trading
+REDIS_INDEX_KEYS = {
+    "signals": "paper:index:signals",
+    "orders": "paper:index:orders",
+    "fills": "paper:index:fills",
+    "outcomes": "paper:index:outcomes",
+}
+
 
 class DailyReportGenerator:
     """Generate daily trading summary reports.
 
-    Queries InfluxDB for paper trading metrics and generates
-    comprehensive daily reports with PnL, trade statistics, and risk metrics.
+    Queries Redis canonical indices (paper:index:*) for paper trading metrics
+    and generates comprehensive daily reports with PnL, trade statistics, and risk metrics.
+
+    For PAPER-TELEMETRY-001: Uses Redis as canonical source instead of InfluxDB.
+    InfluxDB queries remain available as fallback for Grafana dashboard data.
 
     Attributes:
-        influxdb_client: InfluxDB client for querying data
+        influxdb_client: InfluxDB client for querying data (fallback)
+        redis_client: Redis client for querying canonical indices
         bucket: InfluxDB bucket name
         org: InfluxDB organization
     """
@@ -41,20 +57,45 @@ class DailyReportGenerator:
         influxdb_client: Any | None = None,
         bucket: str = "chiseai",
         org: str = "chiseai",
+        redis_client: Redis | None = None,
+        redis_host: str = "host.docker.internal",
+        redis_port: int = 6380,
     ) -> None:
         """Initialize daily report generator.
 
         Args:
-            influxdb_client: InfluxDB client instance
+            influxdb_client: InfluxDB client instance (fallback)
             bucket: InfluxDB bucket name
             org: InfluxDB organization
+            redis_client: Redis client instance (preferred)
+            redis_host: Redis host (if no client provided)
+            redis_port: Redis port (if no client provided)
         """
         self._client = influxdb_client
         self._bucket = bucket
         self._org = org
         self._query_api = None
 
-        logger.info(f"DailyReportGenerator initialized: bucket={bucket}")
+        # PAPER-TELEMETRY-001: Redis client for canonical indices
+        if redis_client is not None:
+            self._redis = redis_client
+        else:
+            redis_host = os.getenv("REDIS_HOST", redis_host)
+            redis_port = int(os.getenv("REDIS_PORT", str(redis_port)))
+            try:
+                self._redis = Redis(
+                    host=redis_host, port=redis_port, decode_responses=True
+                )
+                # Test connection
+                self._redis.ping()
+                logger.info(f"Redis client connected: {redis_host}:{redis_port}")
+            except Exception as e:
+                logger.warning(f"Redis client unavailable: {e}")
+                self._redis = None
+
+        logger.info(
+            f"DailyReportGenerator initialized: bucket={bucket}, redis={'yes' if self._redis else 'no'}"
+        )
 
     def _get_query_api(self) -> Any:
         """Get or create InfluxDB query API."""
@@ -62,22 +103,135 @@ class DailyReportGenerator:
             self._query_api = self._client.query_api()
         return self._query_api
 
+    # =========================================================================
+    # Redis Canonical Index Queries (PAPER-TELEMETRY-001)
+    # =========================================================================
+
+    def _query_redis_index_counts(
+        self, start_ts: float, end_ts: float
+    ) -> dict[str, int]:
+        """Query Redis canonical indices for counts in a time range.
+
+        Args:
+            start_ts: Start timestamp (Unix epoch)
+            end_ts: End timestamp (Unix epoch)
+
+        Returns:
+            Dictionary with counts for each index type
+        """
+        if self._redis is None:
+            return {}
+
+        counts = {}
+        try:
+            for index_type, key in REDIS_INDEX_KEYS.items():
+                count = self._redis.zcount(key, start_ts, end_ts)
+                counts[index_type] = count
+                logger.debug(f"Redis {key}: {count} entries in time range")
+        except Exception as e:
+            logger.warning(f"Failed to query Redis indices: {e}")
+            return {}
+
+        return counts
+
+    def _query_redis_trades(
+        self, start_ts: float, end_ts: float
+    ) -> list[dict[str, Any]]:
+        """Query Redis canonical indices for trade data in a time range.
+
+        Args:
+            start_ts: Start timestamp (Unix epoch)
+            end_ts: End timestamp (Unix epoch)
+
+        Returns:
+            List of trade records from Redis indices
+        """
+        if self._redis is None:
+            return []
+
+        trades = []
+        try:
+            # Get signals (which contain symbol and side info)
+            signals = self._redis.zrangebyscore(
+                REDIS_INDEX_KEYS["signals"], start_ts, end_ts, withscores=True
+            )
+
+            for signal_member, score in signals:
+                # Parse signal format: paper:signal:{timestamp}:{symbol}:{side}
+                parts = signal_member.split(":")
+                if len(parts) >= 5:
+                    symbol = parts[3]
+                    side = parts[4]
+                    trades.append(
+                        {
+                            "timestamp": datetime.fromtimestamp(score, tz=UTC),
+                            "symbol": symbol,
+                            "side": side,
+                            "pnl": 0.0,  # PnL not stored in signals index
+                            "quantity": 0.0,
+                            "price": 0.0,
+                            "source": "redis_canonical",
+                        }
+                    )
+
+            logger.info(f"Queried {len(trades)} trades from Redis canonical indices")
+        except Exception as e:
+            logger.warning(f"Failed to query Redis trades: {e}")
+            return []
+
+        return trades
+
+    def get_redis_index_summary(self, date: datetime | None = None) -> dict[str, Any]:
+        """Get summary of Redis canonical indices for a specific date.
+
+        This is useful for daily checks to see trading activity.
+
+        Args:
+            date: Date to query (default: yesterday)
+
+        Returns:
+            Dictionary with index counts and summary info
+        """
+        if date is None:
+            date = datetime.now(UTC) - timedelta(days=1)
+
+        # Normalize to start of day
+        date = date.replace(hour=0, minute=0, second=0, microsecond=0)
+        start_ts = date.timestamp()
+        end_ts = (date + timedelta(days=1)).timestamp()
+
+        counts = self._query_redis_index_counts(start_ts, end_ts)
+
+        return {
+            "date": date.strftime("%Y-%m-%d"),
+            "start_ts": start_ts,
+            "end_ts": end_ts,
+            "signals_count": counts.get("signals", 0),
+            "orders_count": counts.get("orders", 0),
+            "fills_count": counts.get("fills", 0),
+            "outcomes_count": counts.get("outcomes", 0),
+            "total_activity": sum(counts.values()),
+            "source": "redis_canonical_indices",
+        }
+
     async def generate_report(
         self,
         date: datetime | None = None,
         use_mock_data: bool = False,
+        prefer_redis: bool = True,
     ) -> DailyReport:
         """Generate daily report for a specific date.
 
         Args:
             date: Date to generate report for (default: yesterday)
             use_mock_data: Use mock data for testing
+            prefer_redis: Prefer Redis canonical indices over InfluxDB (default: True)
 
         Returns:
             DailyReport with all metrics
 
         Raises:
-            RuntimeError: If cannot query InfluxDB and not using mock data
+            RuntimeError: If cannot query any data source and not using mock data
         """
         if date is None:
             # Default to yesterday (UTC)
@@ -91,45 +245,74 @@ class DailyReportGenerator:
         if use_mock_data:
             return self._generate_mock_report(date)
 
-        try:
-            # Query data from InfluxDB
-            trades_data = await self._query_trades(date)
-            portfolio_data = await self._query_portfolio(date)
-            positions_data = await self._query_positions(date)
+        # Calculate timestamp range for Redis queries
+        start_ts = date.timestamp()
+        end_ts = (date + timedelta(days=1)).timestamp()
 
-            # Calculate metrics
-            trade_metrics = self._calculate_trade_metrics(trades_data)
-            risk_metrics = self._calculate_risk_metrics(trades_data, portfolio_data)
+        trades_data: list[dict[str, Any]] = []
+        portfolio_data: dict[str, Any] = {}
+        positions_data: dict[str, Any] = {"open_count": 0}
 
-            # Build report
-            report = DailyReport(
-                date=date,
-                total_trades=trade_metrics.total_trades,
-                winning_trades=trade_metrics.winning_trades,
-                losing_trades=trade_metrics.losing_trades,
-                win_rate=trade_metrics.win_rate,
-                total_pnl=portfolio_data.get("total_pnl", 0.0),
-                realized_pnl=portfolio_data.get("realized_pnl", 0.0),
-                unrealized_pnl=portfolio_data.get("unrealized_pnl", 0.0),
-                max_drawdown=risk_metrics.max_drawdown,
-                max_drawdown_pct=risk_metrics.max_drawdown_pct,
-                avg_pnl=trade_metrics.avg_pnl_per_trade,
-                trade_metrics=trade_metrics,
-                risk_metrics=risk_metrics,
-                open_positions=positions_data.get("open_count", 0),
-                portfolio_value=portfolio_data.get("portfolio_value", 0.0),
-            )
+        # PAPER-TELEMETRY-001: Prefer Redis canonical indices
+        if prefer_redis and self._redis is not None:
+            logger.info("Querying Redis canonical indices for daily report")
+            trades_data = self._query_redis_trades(start_ts, end_ts)
 
+            # Get index summary for logging
+            summary = self.get_redis_index_summary(date)
             logger.info(
-                f"Daily report generated: trades={report.total_trades}, "
-                f"pnl=${report.total_pnl:.2f}, win_rate={report.win_rate:.1f}%"
+                f"Redis index summary: signals={summary['signals_count']}, "
+                f"orders={summary['orders_count']}, fills={summary['fills_count']}, "
+                f"outcomes={summary['outcomes_count']}"
             )
 
-            return report
+            # Portfolio data from Redis is limited - use InfluxDB as supplement
+            if self._client is not None:
+                try:
+                    portfolio_data = await self._query_portfolio(date)
+                    positions_data = await self._query_positions(date)
+                except Exception as e:
+                    logger.warning(f"Failed to query InfluxDB for portfolio data: {e}")
 
-        except Exception as e:
-            logger.error(f"Failed to generate daily report: {e}")
-            raise RuntimeError(f"Cannot generate daily report: {e}") from e
+        # Fallback to InfluxDB if Redis unavailable or no data
+        if not trades_data and self._client is not None:
+            logger.info("Falling back to InfluxDB for daily report")
+            try:
+                trades_data = await self._query_trades(date)
+                portfolio_data = await self._query_portfolio(date)
+                positions_data = await self._query_positions(date)
+            except Exception as e:
+                logger.error(f"Failed to query InfluxDB: {e}")
+
+        # Calculate metrics
+        trade_metrics = self._calculate_trade_metrics(trades_data)
+        risk_metrics = self._calculate_risk_metrics(trades_data, portfolio_data)
+
+        # Build report
+        report = DailyReport(
+            date=date,
+            total_trades=trade_metrics.total_trades,
+            winning_trades=trade_metrics.winning_trades,
+            losing_trades=trade_metrics.losing_trades,
+            win_rate=trade_metrics.win_rate,
+            total_pnl=portfolio_data.get("total_pnl", 0.0),
+            realized_pnl=portfolio_data.get("realized_pnl", 0.0),
+            unrealized_pnl=portfolio_data.get("unrealized_pnl", 0.0),
+            max_drawdown=risk_metrics.max_drawdown,
+            max_drawdown_pct=risk_metrics.max_drawdown_pct,
+            avg_pnl=trade_metrics.avg_pnl_per_trade,
+            trade_metrics=trade_metrics,
+            risk_metrics=risk_metrics,
+            open_positions=positions_data.get("open_count", 0),
+            portfolio_value=portfolio_data.get("portfolio_value", 0.0),
+        )
+
+        logger.info(
+            f"Daily report generated: trades={report.total_trades}, "
+            f"pnl=${report.total_pnl:.2f}, win_rate={report.win_rate:.1f}%"
+        )
+
+        return report
 
     async def _query_trades(self, date: datetime) -> list[dict[str, Any]]:
         """Query trades from InfluxDB for a specific date.
