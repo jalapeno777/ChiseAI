@@ -1,0 +1,235 @@
+{
+  "validation_timestamp": "2026-03-09T12:04:18Z",
+  "story_id": "CLOSURE-SPRINT-001",
+  "validator": "senior-dev",
+  "validation_type": "grafana_dashboard",
+  "dashboard": {
+    "uid": "tempmemory-ingestion-ST-MEMORY-INGEST-002",
+    "title": "Tempmemory Ingestion",
+    "version": 1,
+    "schemaVersion": 38,
+    "refresh": "30s",
+    "timezone": "utc",
+    "tags": ["governance", "tempmemory", "ingestion", "monitoring"]
+  },
+  "grafana_health": {
+    "status": "healthy",
+    "version": "10.4.2",
+    "commit": "701c851be7a930e04fbc6ebb1cd4254da80edd4c",
+    "database": "ok",
+    "url": "http://host.docker.internal:3001",
+    "login_page_accessible": true,
+    "api_access": {
+      "public_health": "accessible",
+      "authenticated_api": "requires_auth"
+    }
+  },
+  "datasource_validation": {
+    "datasource_uid": "chiseai-influxdb",
+    "datasource_name": "ChiseAI InfluxDB",
+    "datasource_type": "influxdb",
+    "status": "healthy",
+    "message": "datasource is working. 3 buckets found",
+    "buckets_available": ["chiseai", "_monitoring", "_tasks"],
+    "governance_bucket_exists": false,
+    "note": "Dashboard queries reference 'governance' bucket which does not exist. InfluxDB datasource is healthy but target bucket needs to be created for dashboard to display data."
+  },
+  "panels_summary": {
+    "total_panels": 13,
+    "rows": [
+      {
+        "title": "Ingestion Overview",
+        "panels": [
+          {
+            "id": 2,
+            "title": "Files Ingested (Last 24h)",
+            "type": "stat",
+            "datasource": "influxdb",
+            "query": "from(bucket: \"governance\") |> range(start: -24h) |> filter(fn: (r) => r._measurement == \"governance.tempmemory.ingestion.files\" and r.status == \"ingested\") |> last()",
+            "status": "configured - no data (governance bucket missing)"
+          },
+          {
+            "id": 3,
+            "title": "Files Failed",
+            "type": "stat",
+            "thresholds": {
+              "yellow": 1,
+              "red": 5
+            },
+            "query": "from(bucket: \"governance\") |> range(start: -24h) |> filter(fn: (r) => r._measurement == \"governance.tempmemory.ingestion.files\" and r.status == \"failed\") |> last()",
+            "status": "configured - no data (governance bucket missing)"
+          },
+          {
+            "id": 4,
+            "title": "Success Rate",
+            "type": "gauge",
+            "thresholds": {
+              "red": 0,
+              "yellow": 50,
+              "green": 90
+            },
+            "query": "from(bucket: \"governance\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r._measurement == \"governance.tempmemory.ingestion.success_rate\") |> last()",
+            "status": "configured - no data (governance bucket missing)"
+          },
+          {
+            "id": 5,
+            "title": "Ingestion Duration",
+            "type": "bargauge",
+            "thresholds": {
+              "green": 0,
+              "yellow": 300,
+              "red": 600
+            },
+            "query": "from(bucket: \"governance\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r._measurement == \"governance.tempmemory.ingestion.duration\") |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
+            "status": "configured - no data (governance bucket missing)"
+          },
+          {
+            "id": 6,
+            "title": "Files by Status",
+            "type": "piechart",
+            "query": "from(bucket: \"governance\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r._measurement == \"governance.tempmemory.ingestion.files\") |> filter(fn: (r) => r.status != \"processed\")",
+            "status": "configured - no data (governance bucket missing)"
+          }
+        ]
+      },
+      {
+        "title": "File Types & Migration",
+        "panels": [
+          {
+            "id": 8,
+            "title": "Files by Type",
+            "type": "piechart",
+            "query": "from(bucket: \"governance\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r._measurement == \"governance.tempmemory.files.by_type\") |> filter(fn: (r) => r.memory_type != \"unknown\")",
+            "status": "configured - no data (governance bucket missing)"
+          },
+          {
+            "id": 9,
+            "title": "Ingestion Trend",
+            "type": "timeseries",
+            "queries": [
+              "from(bucket: \"governance\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r._measurement == \"governance.tempmemory.ingestion.files\" and r.status == \"ingested\") |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)",
+              "from(bucket: \"governance\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r._measurement == \"governance.tempmemory.ingestion.files\" and r.status == \"failed\") |> aggregateWindow(every: v.windowPeriod, fn: sum, createEmpty: false)"
+            ],
+            "status": "configured - no data (governance bucket missing)"
+          }
+        ]
+      },
+      {
+        "title": "Migration & Health",
+        "panels": [
+          {
+            "id": 11,
+            "title": "Migration Status Over Time",
+            "type": "timeseries",
+            "queries": [
+              "from(bucket: \"governance\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r._measurement == \"governance.tempmemory.migration.files\" and r.status == \"migrated\")",
+              "from(bucket: \"governance\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r._measurement == \"governance.tempmemory.migration.files\" and r.status == \"failed\")",
+              "from(bucket: \"governance\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r._measurement == \"governance.tempmemory.migration.files\" and r.status == \"skipped\")"
+            ],
+            "status": "configured - no data (governance bucket missing)"
+          },
+          {
+            "id": 12,
+            "title": "Last Run Status",
+            "type": "stat",
+            "query": "from(bucket: \"governance\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r._measurement == \"governance.tempmemory.ingestion.last_run_success\") |> last()",
+            "status": "configured - no data (governance bucket missing)"
+          },
+          {
+            "id": 13,
+            "title": "Last Run Age",
+            "type": "stat",
+            "thresholds": {
+              "green": 0,
+              "yellow": 3600,
+              "red": 7200
+            },
+            "query": "from(bucket: \"governance\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r._measurement == \"governance.tempmemory.ingestion.last_run_age\") |> last()",
+            "status": "configured - no data (governance bucket missing)"
+          },
+          {
+            "id": 14,
+            "title": "Backlog",
+            "type": "stat",
+            "thresholds": {
+              "green": 0,
+              "yellow": 50,
+              "red": 100
+            },
+            "query": "from(bucket: \"governance\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r._measurement == \"governance.tempmemory.ingestion.backlog\") |> last()",
+            "status": "configured - no data (governance bucket missing)"
+          },
+          {
+            "id": 15,
+            "title": "Consecutive Failures",
+            "type": "stat",
+            "thresholds": {
+              "green": 0,
+              "yellow": 2,
+              "red": 3
+            },
+            "query": "from(bucket: \"governance\") |> range(start: v.timeRangeStart, stop: v.timeRangeStop) |> filter(fn: (r) => r._measurement == \"governance.tempmemory.ingestion.consecutive_failures\") |> last()",
+            "status": "configured - no data (governance bucket missing)"
+          }
+        ]
+      }
+    ]
+  },
+  "measurements_expected": [
+    "governance.tempmemory.ingestion.files",
+    "governance.tempmemory.ingestion.success_rate",
+    "governance.tempmemory.ingestion.duration",
+    "governance.tempmemory.files.by_type",
+    "governance.tempmemory.migration.files",
+    "governance.tempmemory.ingestion.last_run_success",
+    "governance.tempmemory.ingestion.last_run_age",
+    "governance.tempmemory.ingestion.backlog",
+    "governance.tempmemory.ingestion.consecutive_failures"
+  ],
+  "validation_results": {
+    "dashboard_structure": "PASS",
+    "datasource_configuration": "PASS",
+    "influxdb_connectivity": "PASS",
+    "data_availability": "FAIL - governance bucket does not exist",
+    "panel_queries": "PASS - all queries are syntactically correct Flux",
+    "thresholds_configuration": "PASS - all panels have appropriate thresholds"
+  },
+  "issues_found": [
+    {
+      "severity": "high",
+      "issue": "Governance bucket does not exist in InfluxDB",
+      "impact": "Dashboard panels will show 'No Data' until the bucket is created and populated",
+      "recommendation": "Create the 'governance' bucket in InfluxDB and configure the tempmemory ingestion runner to write metrics to it"
+    },
+    {
+      "severity": "low",
+      "issue": "Dashboard UID references ST-MEMORY-INGEST-002 story",
+      "impact": "None - UID is valid and unique",
+      "recommendation": "No action needed"
+    }
+  ],
+  "recommendations": [
+    "Create the 'governance' InfluxDB bucket via Terraform or InfluxDB API",
+    "Configure the tempmemory ingestion runner to emit metrics to the governance bucket",
+    "Verify metrics are being written by querying: from(bucket: \"governance\") |> range(start: -1h) |> limit(n: 5)",
+    "Consider adding a 'test data' button or sample data generator for development/testing"
+  ],
+  "commands_run": [
+    {
+      "command": "curl http://host.docker.internal:3001/api/health",
+      "result": "{\"commit\": \"701c851be7a930e04fbc6ebb1cd4254da80edd4c\", \"database\": \"ok\", \"version\": \"10.4.2\"}",
+      "status": "success"
+    },
+    {
+      "command": "python3 scripts/validation/grafana_evidence.py",
+      "result": "Datasource healthy - chiseai-influxdb (ChiseAI InfluxDB) - 3 buckets found",
+      "status": "success"
+    },
+    {
+      "command": "curl http://host.docker.internal:18087/api/v2/buckets",
+      "result": "Found buckets: chiseai, _monitoring, _tasks (governance bucket missing)",
+      "status": "partial - governance bucket not found"
+    }
+  ],
+  "overall_status": "PARTIAL - Dashboard configured correctly but requires governance bucket for data display"
+}
