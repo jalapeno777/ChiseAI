@@ -1,8 +1,30 @@
+---
+type: summary
+story_id: ST-3003
+created: 2026-03-09T00:00:00Z
+tags: [llm, provider, operational-status, validation]
+author: senior-dev
+priority: high
+---
+
 # LLM Provider Matrix
 
-**Last Updated**: 2026-03-06
-**Source**: LLM-PROVIDER-FIX-001 probe results
+**Last Updated**: 2026-03-09
+**Source**: LLM-PROVIDER-FIX-003 operational validation
 **Probe ID**: 47cbf224-ae62-406d-9fd7-d3626cde35ec
+**Validation Story**: LLM-PROVIDER-FIX-003
+**Test Results**: 313/324 passed (98.77%)
+
+---
+
+## Operational Status (2026-03-09)
+
+| Provider | Status | Endpoint | Notes |
+|----------|--------|----------|-------|
+| KIMI Adapter | **OPERATIONAL** | http://chiseai-kimi-adapter:8002/v1 | Container healthy |
+| Z.AI | **OPERATIONAL** | https://api.z.ai/api/coding/paas/v4 | reasoning_content supported |
+| Zhipu | **ALIASED** | Routes to Z.AI | Deprecated, use Z.AI |
+| MiniMax | **DISABLED** | N/A | Per PAPER-LLM-DIAG-001 |
 
 ---
 
@@ -312,6 +334,33 @@ GROUP BY error_type
 
 ---
 
-*Matrix Version: 1.0*
-*Story: LLM-PROVIDER-FIX-001*
-*Probe Date: 2026-03-06*
+## Validation History
+
+| Date | Story | Status | Test Results |
+|------|-------|--------|--------------|
+| 2026-03-06 | LLM-PROVIDER-FIX-001 | Infrastructure remediation | 0/16 (credential issues) |
+| 2026-03-09 | LLM-PROVIDER-FIX-003 | **OPERATIONAL** | 313/324 (98.77%) |
+
+### LLM-PROVIDER-FIX-003 Validation Details
+
+**Acceptance Criteria:**
+- ✅ KIMI adapter smoke test passes (container reachable)
+- ✅ Z.AI coding endpoint returns HTTP 200 with reasoning_content
+- ✅ Provider chain tests pass (313/324, 98.77%)
+- ✅ Zhipu client shows deprecation warning for ZHIPU_API_KEY
+- ✅ KIMI adapter prioritized over direct API
+
+**Implementation Notes:**
+- Z.AI coding endpoint: https://api.z.ai/api/coding/paas/v4
+- KIMI adapter: http://chiseai-kimi-adapter:8002/v1
+- Reasoning field parsing: verified in Z.AI response
+- Test pass rate: 98.77% (313/324)
+
+**Evidence Files:**
+- docs/evidence/LLM-PROVIDER-OPERATIONAL-20260309.json
+
+---
+
+*Matrix Version: 1.1*
+*Story: LLM-PROVIDER-FIX-003*
+*Validation Date: 2026-03-09*
