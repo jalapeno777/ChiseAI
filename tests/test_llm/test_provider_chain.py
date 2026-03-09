@@ -680,21 +680,23 @@ class TestKimiCompatProvider:
         assert config.name == "KIMI Compat (Adapter)"
         assert config.api_key_env == "KIMI_API_KEY"
         assert config.enabled_env == "KIMI_COMPAT_ENABLED"
-        assert config.enabled_default is False
+        assert config.enabled_default is True  # ENABLED by default
         assert config.priority == 0  # Highest priority
 
-    def test_kimi_compat_disabled_by_default(self):
-        """Test that kimi_compat is disabled by default."""
+    def test_kimi_compat_enabled_by_default(self):
+        """Test that kimi_compat is enabled by default when key is present."""
         with patch.dict(
             os.environ,
-            {"KIMI_API_KEY": "test-key"},  # Key present but compat not enabled
+            {"KIMI_API_KEY": "test-key"},  # Key present, compat enabled by default
             clear=True,
         ):
             chain = LLMProviderChain()
+            # Mock adapter container as reachable
+            chain._is_adapter_container_reachable = lambda: True
             available, reason = chain._is_provider_available("kimi_compat")
 
-            assert available is False
-            assert "KIMI_COMPAT_ENABLED" in reason
+            assert available is True
+            assert reason is None
 
     def test_kimi_compat_enabled_with_flag(self):
         """Test that kimi_compat is enabled when KIMI_COMPAT_ENABLED=true."""
@@ -704,6 +706,8 @@ class TestKimiCompatProvider:
             clear=True,
         ):
             chain = LLMProviderChain()
+            # Mock adapter container as reachable
+            chain._is_adapter_container_reachable = lambda: True
             available, reason = chain._is_provider_available("kimi_compat")
 
             assert available is True
@@ -740,6 +744,8 @@ class TestKimiCompatProvider:
             clear=True,
         ):
             chain = LLMProviderChain()
+            # Mock adapter container as reachable
+            chain._is_adapter_container_reachable = lambda: True
 
             # Mock kimi_compat to fail with network error (fallbackable)
             compat_response = LLMResponse(
@@ -772,15 +778,18 @@ class TestKimiCompatProvider:
 
     @pytest.mark.asyncio
     async def test_kimi_compat_skipped_when_disabled(self):
-        """Test that kimi_compat is skipped when disabled."""
+        """Test that kimi_compat is skipped when explicitly disabled."""
         with patch.dict(
             os.environ,
-            {"KIMI_API_KEY": "test-key"},  # Compat disabled by default
+            {
+                "KIMI_API_KEY": "test-key",
+                "KIMI_COMPAT_ENABLED": "false",  # Explicitly disable compat
+            },
             clear=True,
         ):
             chain = LLMProviderChain()
 
-            # Mock kimi_compat - should not be called
+            # Mock kimi_compat - should not be called when disabled
             chain._query_kimi_compat = AsyncMock(
                 side_effect=Exception("Should not be called")
             )

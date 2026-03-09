@@ -6,11 +6,16 @@ Uses coding endpoint: https://api.z.ai/api/coding/paas/v4/chat/completions
 
 For CH-LLM-FALLBACK-002: Error classification integration
 For LLM-PROVIDER-FIX-002: Updated endpoint to api.z.ai/api/coding/paas/v4
+For LLM-PROVIDER-FIX-003: Added deprecation warning for ZHIPU_API_KEY (use Z_AI_API_KEY)
+
+Note: Zhipu AI has rebranded to Z.AI. ZHIPU_API_KEY is deprecated but still supported
+for backward compatibility. Please migrate to Z_AI_API_KEY.
 """
 
 import json
 import os
 import time
+import warnings
 from dataclasses import dataclass
 from typing import Any
 
@@ -109,7 +114,8 @@ class ZhipuClient:
         Initialize Z.ai client.
 
         Args:
-            api_key: Z.ai API key. Defaults to ZHIPU_API_KEY or ZAI_API_KEY env var.
+            api_key: Z.ai API key. Defaults to Z_AI_API_KEY, ZAI_API_KEY, or
+                     ZHIPU_API_KEY (deprecated) env var.
             endpoint: API endpoint URL. Defaults to global endpoint.
             model: Model name. Defaults to "glm-5".
             timeout: Request timeout in seconds.
@@ -119,8 +125,8 @@ class ZhipuClient:
         self.api_key = api_key or self._get_api_key_from_env()
         if not self.api_key:
             raise ZaiAuthError(
-                "API key required. Set ZHIPU_API_KEY or ZAI_API_KEY "
-                "environment variable."
+                "API key required. Set Z_AI_API_KEY environment variable. "
+                "(ZHIPU_API_KEY is deprecated but still supported for backward compatibility.)"
             )
 
         self.endpoint = endpoint or self.DEFAULT_ENDPOINT
@@ -135,12 +141,21 @@ class ZhipuClient:
         """Get API key from environment variables.
 
         Checks in order: ZHIPU_API_KEY, Z_AI_API_KEY, ZAI_API_KEY
+        Shows deprecation warning if ZHIPU_API_KEY is used (prefer Z_AI_API_KEY).
         """
-        return (
-            os.getenv("ZHIPU_API_KEY")
-            or os.getenv("Z_AI_API_KEY")
-            or os.getenv("ZAI_API_KEY")
-        )
+        # Check for deprecated ZHIPU_API_KEY first (backward compatibility)
+        zhipu_key = os.getenv("ZHIPU_API_KEY")
+        if zhipu_key:
+            warnings.warn(
+                "ZHIPU_API_KEY is deprecated. Please use Z_AI_API_KEY instead. "
+                "Zhipu AI has rebranded to Z.AI. Update your environment variables.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            return zhipu_key
+
+        # Prefer Z_AI_API_KEY (canonical naming for Z.AI)
+        return os.getenv("Z_AI_API_KEY") or os.getenv("ZAI_API_KEY")
 
     def _create_session(self) -> requests.Session:
         """Create requests session with retry strategy."""
