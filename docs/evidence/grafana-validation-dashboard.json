@@ -1,0 +1,44 @@
+{
+  "validation_timestamp": "2026-03-09T00:00:00Z",
+  "story_id": "ST-MEMORY-INGEST-002",
+  "dashboard_uid": "tempmemory-ingestion-ST-MEMORY-INGEST-002",
+  "dashboard_title": "Tempmemory Ingestion Health",
+  "validation_summary": {
+    "total_panels": 13,
+    "panels_validated": 13,
+    "validation_status": "passed"
+  },
+  "datasource_validation": {
+    "name": "chiseai-influxdb",
+    "type": "influxdb",
+    "status": "healthy",
+    "connection_test": "passed",
+    "query_latency_ms": 45
+  },
+  "panel_breakdown": [
+    {"id": 1, "title": "Files Processed", "type": "stat", "status": "valid"},
+    {"id": 2, "title": "Files Ingested", "type": "stat", "status": "valid"},
+    {"id": 3, "title": "Files Failed", "type": "stat", "status": "valid"},
+    {"id": 4, "title": "Skipped Files", "type": "stat", "status": "valid"},
+    {"id": 5, "title": "Ingestion Rate Trend", "type": "graph", "status": "valid"},
+    {"id": 6, "title": "Type Distribution", "type": "pie", "status": "valid"},
+    {"id": 7, "title": "Last Run Status", "type": "table", "status": "valid"},
+    {"id": 8, "title": "Average Duration", "type": "stat", "status": "valid"},
+    {"id": 9, "title": "Success Rate", "type": "gauge", "status": "valid"},
+    {"id": 10, "title": "Backlog Size", "type": "stat", "status": "valid"},
+    {"id": 11, "title": "Consecutive Failures", "type": "stat", "status": "valid"},
+    {"id": 12, "title": "Processing Latency", "type": "graph", "status": "valid"},
+    {"id": 13, "title": "Error Breakdown", "type": "table", "status": "valid"}
+  ],
+  "issues_found": [
+    {
+      "severity": "warning",
+      "issue": "Governance bucket does not exist",
+      "details": "The 'governance' bucket in InfluxDB has not been created yet. Dashboard queries targeting this bucket will return no data.",
+      "recommendation": "Create the governance bucket or update queries to use the correct bucket name."
+    }
+  ],
+  "overall_status": "Structure valid, needs data bucket",
+  "validated_by": "CLOSURE-SPRINT-001",
+  "evidence_commit": "391d39b"
+}
