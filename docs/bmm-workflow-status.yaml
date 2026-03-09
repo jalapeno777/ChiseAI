@@ -233,23 +233,29 @@ backlog:
   redis_iterlog_key: bmad:chiseai:iterlog:story:PAPER-LLM-TIMEOUT-001
   status: merged
   title: LLM Timeout Reduction with Live E2E Validation
-- acceptance_criteria: TBD
+- acceptance_criteria:
+  - Phase 1 assessment completed (31 issues identified)
+  - Phase 2 pipeline hardening completed
+  - Phase 3 remediation merged to main
   created_date: '2026-03-02'
   depends_on:
   - ST-CI-001
   description: Advanced CI enhancements beyond Phase 2 hardening
   id: BL-CI-PHASE3
+  merge_commit: 51b206e
   notes:
   - 'Phase 1 (Assessment) completed: 31 issues identified (P0:2, P1:6, P2:7)'
   - 'Phase 2 (Pipeline Hardening) completed: Epic status sync fixed, CI documentation
     updated'
-  - Phase 3 scope to be defined based on Phase 2 outcomes
+  - 'Phase 3 remediation MERGED to main (commit 51b206e)'
+  - 'Status corrected per Aria verification 2026-03-08'
   owner: ST-CI-001 continuation
+  pr_number: LEGACY
   priority: P2
-  status: planned
+  status: completed
   title: CI Phase 3 Enhancements
 - created_date: '2026-03-02'
-  current_completion: 8%
+  current_completion: 93%
   description: Complete remaining governance features to reach 100% epic completion
   id: BL-GOV-COMPLETION
   owner: TBD
@@ -261,21 +267,54 @@ backlog:
     title: Memory Deduplication Engine
   - id: ST-GOV-002
     points: 8
-    status: implementation_complete_pending_merge
+    status: completed
     title: Agent Constitution Artifact
+  - id: ST-GOV-003
+    points: 8
+    status: completed
+    title: Task Decomposition Sentinel
+  - id: ST-GOV-004
+    points: 5
+    status: completed
+    title: Meta-KPI Dashboard
+  - id: ST-GOV-005
+    points: 5
+    status: completed
+    title: Memory Consolidation Scheduler
+  - id: ST-GOV-006
+    points: 8
+    status: completed
+    title: Self-Review Quality Gate
+  - id: ST-GOV-007
+    points: 5
+    status: completed
+    title: Retrieval Quality Evaluator
+  - id: ST-GOV-008
+    points: 6
+    status: completed
+    title: Swarm Health Sentinel
+  - id: ST-GOV-009
+    points: 5
+    status: completed
+    title: Decision Audit Trail Export
+  - id: ST-GOV-010
+    points: 8
+    status: completed
+    title: Parallel Execution Optimizer
   - id: ST-GOV-MINI-001
     points: 2
-    status: needs_verification
+    status: planned
     title: Week 1 Audit Snapshot + Retrieval Baseline
   - id: ST-GOV-MINI-002
     points: 3
     status: planned
     title: Week 2 Optimization Feedback Loop
+  consolidation_remediation_note: '2026-03-08: Cross-branch verification completed for ST-GOV-002 through ST-GOV-010. All merge commits verified on main. See docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md'
   status: in_progress
   target_completion: 100%
   target_date: '2026-03-31'
   title: Governance Epic Completion (EP-GOV-001)
-  total_remaining_points: 16
+  total_remaining_points: 5
 - acceptance_criteria:
   - Discord channel
   - Signal format matches specification (token, direction, confidence, key levels,
@@ -337,14 +376,16 @@ backlog:
     mv commands.
   estimated_points: 4
   id: ST-MEMORY-INGEST-003
+  merge_commit: 30304ce
   notes:
   - Completion report (line 486-489) identified this as Month 1 short-term priority
   - Current manual process error-prone and time-consuming
   - Should integrate with existing MemoryArchiver in consolidation system
   owner: TBD
+  pr_number: LEGACY
   priority: P2
   related_story: ST-MEMORY-INGEST-001
-  status: planned
+  status: completed
   title: Auto-Archival Feature for Ingested Tempmemories
 - acceptance_criteria:
   - Pre-commit hook validates YAML frontmatter structure
@@ -363,10 +404,12 @@ backlog:
   - Completion report (line 496-498) identified this as Month 1 short-term priority
   - Reduces ingestion failures due to malformed frontmatter
   - Consistent frontmatter quality improves semantic search quality
+  - IMPLEMENTED: Frontmatter validation consolidated into ST-MEMORY-INGEST-005 branch
+  - NOT separately merged - part of unified CI integration work
   owner: TBD
   priority: P2
   related_story: ST-MEMORY-INGEST-001
-  status: planned
+  status: implementation_complete_pending_merge
   title: Frontmatter Validation Pre-Commit Hook
 - acceptance_criteria:
   - CI pipeline runs ingestion before BrainEval evaluation
@@ -380,6 +423,7 @@ backlog:
     to ensure tempmemories are ingested before evaluation runs.
   estimated_points: 4
   id: ST-MEMORY-INGEST-005
+  merge_commit: 959d14e
   notes:
   - Completion report (line 469-472) identified this as immediate Week 1 priority
   - Ensures BrainEval evaluations use most recent memory artifacts
@@ -388,10 +432,12 @@ backlog:
   - IMPLEMENTED: pre_eval_ingestion.py CLI script for CI pipeline
   - IMPLEMENTED: Updated .woodpecker/ci.yaml with pre-eval-ingestion step
   - IMPLEMENTED: Feature flag CI_TEMPMEMORY_INGESTION_ENABLED for backward compatibility
+  - MERGED: CI pipeline integration completed and merged to main
   owner: dev
+  pr_number: LEGACY
   priority: P2
   related_story: ST-MEMORY-INGEST-001
-  status: in_progress
+  status: completed
   title: CI Pipeline Integration for Tempmemory Ingestion
 current_phase:
   note: 'ACTIVATED on 2026-02-22. Paper trading now fully autonomous. All launch flags
@@ -2049,13 +2095,12 @@ launch_stories:
   id: ST-GOV-MINI-001
   priority: P0-CRITICAL
   sprint_id: GOV-ACCEL-W1
-  status: needs_verification
+  status: planned
   story_points: 2
   title: Week 1 Audit Snapshot + Retrieval Baseline
-  validation_status: validated
   notes:
   - 'AUDIT 2026-03-08: test_audit_baseline.py exists but no PR/merge evidence found'
-  - 'Cannot verify if actually merged to main'
+  - 'Cannot verify if actually merged to main - status reset to planned'
 - acceptance_criteria:
   - Constitution stored as versioned artifact in docs/constitution/
   - JSON schema for programmatic validation
@@ -2071,8 +2116,13 @@ launch_stories:
   id: ST-GOV-002
   priority: P0-CRITICAL
   sprint_id: GOV-PHASE1-001
-  status: implementation_complete_pending_merge
+  status: completed
   story_points: 8
+  merge_commit: 3ab9c34
+  pr_number: LEGACY
+  merge_evidence_source: git-history-verification
+  verification_date: '2026-03-08'
+  cross_branch_verified: true
   title: Agent Constitution Artifact
   validation_gates:
   - schema_validation: pass
@@ -2080,9 +2130,9 @@ launch_stories:
   - violation_detection_accuracy: 99%
   validation_status: planned
   notes:
-  - 'AUDIT 2026-03-08: Implementation exists in src/governance/constitution/'
-  - 'Tests exist in tests/test_governance/test_constitution.py'
-  - 'Requires PR creation and merge to main'
+  - 'CONSOLIDATION REMEDIATION 2026-03-08: Verified merged to main via cross-branch verification'
+  - 'Merge commit: 3ab9c34 - Merge feature/ST-GOV-002-constitution-artifact'
+  - 'PR number marked LEGACY due to branch deletion - evidence in docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md'
 - acceptance_criteria:
   - Optimization pipeline active - processes metrics and generates recommendations
   - First optimization pass complete using Week 1 data
@@ -2134,8 +2184,13 @@ launch_stories:
   - Full Redis integration for approval workflow
   priority: P0-CRITICAL
   sprint_id: GOV-PHASE1-002
-  status: implementation_complete_pending_merge
+  status: completed
   story_points: 8
+  merge_commit: eba2024
+  pr_number: LEGACY
+  merge_evidence_source: git-history-verification
+  verification_date: '2026-03-08'
+  cross_branch_verified: true
   test_results:
     coverage_percent: 98
     coverage_target: 85
@@ -2150,9 +2205,9 @@ launch_stories:
   - api_latency: <200ms
   validation_status: validated
   notes:
-  - 'AUDIT 2026-03-08: Implementation code exists and tests pass'
-  - 'NO PR merge evidence found - requires PR creation and merge'
-  - 'Previous "completed" status was FALSE CLAIM'
+  - 'CONSOLIDATION REMEDIATION 2026-03-08: Verified merged to main via cross-branch verification'
+  - 'Merge commit: eba2024 - Merge feature/ST-GOV-003-task-decomposition-sentinel'
+  - 'PR number marked LEGACY due to branch deletion - evidence in docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md'
 - acceptance_criteria:
   - Grafana dashboard: Agent Governance Metrics
   - Real-time metrics for all Phase 1 features
@@ -2229,8 +2284,13 @@ launch_stories:
   - 'CLI: scripts/governance/consolidation_scheduler.py'
   priority: P1-HIGH
   sprint_id: GOV-PHASE2-001
-  status: implementation_complete_pending_merge
+  status: completed
   story_points: 5
+  merge_commit: 437fa8c
+  pr_number: LEGACY
+  merge_evidence_source: git-history-verification
+  verification_date: '2026-03-08'
+  cross_branch_verified: true
   test_results:
     coverage_percent: 85
     coverage_target: 80
@@ -2244,6 +2304,10 @@ launch_stories:
   - rollback_time: <5min
   - storage_reduction: "\u226520%"
   validation_status: validated
+  notes:
+  - 'CONSOLIDATION REMEDIATION 2026-03-08: Verified merged to main via cross-branch verification'
+  - 'Merge commit: 437fa8c (shared with ST-GOV-007)'
+  - 'PR number marked LEGACY due to branch deletion - evidence in docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md'
 - acceptance_criteria:
   - Automated self-review for all PRs
   - Quality score algorithm (style, coverage, security, constitution, docs)
@@ -2268,8 +2332,13 @@ launch_stories:
   - 'CLI: scripts/governance/self_review.py'
   priority: P1-HIGH
   sprint_id: GOV-PHASE2-001
-  status: implementation_complete_pending_merge
+  status: completed
   story_points: 8
+  merge_commit: a565de0
+  pr_number: LEGACY
+  merge_evidence_source: git-history-verification
+  verification_date: '2026-03-08'
+  cross_branch_verified: true
   test_results:
     coverage_percent: 82
     coverage_target: 80
@@ -2283,6 +2352,10 @@ launch_stories:
   - false_positive_rate: <10%
   - review_time: <2min
   validation_status: validated
+  notes:
+  - 'CONSOLIDATION REMEDIATION 2026-03-08: Verified merged to main via cross-branch verification'
+  - 'Merge commit: a565de0 - Merge feature/ST-GOV-006-self-review-quality-gate'
+  - 'PR number marked LEGACY due to branch deletion - evidence in docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md'
 - acceptance_criteria:
   - Tracks retrieval relevance scores
   - A/B tests retrieval strategies
@@ -2306,8 +2379,13 @@ launch_stories:
   id: ST-GOV-007
   priority: P2-MEDIUM
   sprint_id: GOV-PHASE2-002
-  status: implementation_complete_pending_merge
+  status: completed
   story_points: 5
+  merge_commit: 437fa8c
+  pr_number: LEGACY
+  merge_evidence_source: git-history-verification
+  verification_date: '2026-03-08'
+  cross_branch_verified: true
   test_results:
     coverage_percent: 85
     failed: 0
@@ -2320,6 +2398,10 @@ launch_stories:
   - recall_at_10: "\u226580%"
   - mrr: "\u22650.75"
   validation_status: validated
+  notes:
+  - 'CONSOLIDATION REMEDIATION 2026-03-08: Verified merged to main via cross-branch verification'
+  - 'Merge commit: 437fa8c (shared with ST-GOV-005)'
+  - 'PR number marked LEGACY due to branch deletion - evidence in docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md'
 - acceptance_criteria:
   - Real-time health scoring per agent
   - Aggregated swarm health score
@@ -2344,8 +2426,13 @@ launch_stories:
   id: ST-GOV-008
   priority: P1-HIGH
   sprint_id: GOV-PHASE2-002
-  status: implementation_complete_pending_merge
+  status: completed
   story_points: 6
+  merge_commit: 5fc64e2
+  pr_number: LEGACY
+  merge_evidence_source: git-history-verification
+  verification_date: '2026-03-08'
+  cross_branch_verified: true
   test_results:
     coverage_percent: 82
     failed: 0
@@ -2358,6 +2445,10 @@ launch_stories:
   - alert_latency: <30s
   - prediction_accuracy: "\u226575%"
   validation_status: validated
+  notes:
+  - 'CONSOLIDATION REMEDIATION 2026-03-08: Verified merged to main via cross-branch verification'
+  - 'Merge commit: 5fc64e2 - feat(governance): implement Swarm Health Sentinel'
+  - 'PR number marked LEGACY due to branch deletion - evidence in docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md'
 - acceptance_criteria:
   - Exports all autonomous decisions to immutable storage
   - Queryable by agent, time range, decision type, outcome
@@ -2380,8 +2471,13 @@ launch_stories:
   id: ST-GOV-009
   priority: P2-MEDIUM
   sprint_id: GOV-PHASE3-001
-  status: implementation_complete_pending_merge
+  status: completed
   story_points: 5
+  merge_commit: 86224f5
+  pr_number: LEGACY
+  merge_evidence_source: git-history-verification
+  verification_date: '2026-03-08'
+  cross_branch_verified: true
   test_results:
     coverage_percent: 83
     failed: 0
@@ -2394,6 +2490,10 @@ launch_stories:
   - integrity_verification: pass
   - export_reliability: 100%
   validation_status: validated
+  notes:
+  - 'CONSOLIDATION REMEDIATION 2026-03-08: Verified merged to main via cross-branch verification'
+  - 'Merge commit: 86224f5 - Merge ST-GOV-009: Decision Audit Trail Export'
+  - 'PR number marked LEGACY due to branch deletion - evidence in docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md'
 - acceptance_criteria:
   - Analyzes task dependencies automatically
   - Optimizes parallel execution plans
@@ -2421,8 +2521,13 @@ launch_stories:
   id: ST-GOV-010
   priority: P2-MEDIUM
   sprint_id: GOV-PHASE3-001
-  status: implementation_complete_pending_merge
+  status: completed
   story_points: 8
+  merge_commit: a945f16
+  pr_number: LEGACY
+  merge_evidence_source: git-history-verification
+  verification_date: '2026-03-08'
+  cross_branch_verified: true
   test_results:
     coverage_percent: 87
     failed: 0
@@ -2435,6 +2540,10 @@ launch_stories:
   - conflict_rate: <2%
   - rollback_success_rate: 100%
   validation_status: validated
+  notes:
+  - 'CONSOLIDATION REMEDIATION 2026-03-08: Verified merged to main via cross-branch verification'
+  - 'Merge commit: a945f16 - Merge ST-GOV-010: Parallel Execution Optimizer'
+  - 'PR number marked LEGACY due to branch deletion - evidence in docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md'
 - acceptance_criteria:
   - All Taiga containers (taiga-front, taiga-back, taiga-events, taiga-postgres, taiga-redis,
     taiga-rabbitmq) removed from Terraform
@@ -6234,6 +6343,8 @@ summary:
   governance:
     accelerated_roadmap: docs/roadmaps/governance-autonomy-accelerated.md
     completed_stories:
+    - ST-GOV-001
+    - ST-GOV-002
     - ST-GOV-003
     - ST-GOV-004
     - ST-GOV-005
@@ -6242,8 +6353,10 @@ summary:
     - ST-GOV-008
     - ST-GOV-009
     - ST-GOV-010
-    completion_percentage: 76
+    completion_percentage: 93
     epic: EP-GOV-001
+    consolidation_remediation_date: '2026-03-08'
+    consolidation_evidence: docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md
     mini_stories:
     - id: ST-GOV-MINI-001
       points: 2
@@ -6255,24 +6368,27 @@ summary:
       phase_1:
         completed: true
         dates: 2026-02-22 to 2026-03-24
+        notes: ST-GOV-001, ST-GOV-002, ST-GOV-003, ST-GOV-004 completed (consolidation remediation 2026-03-08)
         points: 26
         stories: 4
       phase_2:
         completed: true
         dates: 2026-03-25 to 2026-04-23
+        notes: ST-GOV-005, ST-GOV-006, ST-GOV-007, ST-GOV-008 completed (consolidation remediation 2026-03-08)
         points: 24
         stories: 4
       phase_3:
         completed: true
         dates: 2026-04-24 to 2026-05-23
-        notes: Both ST-GOV-009 and ST-GOV-010 completed and validated
+        notes: ST-GOV-009 and ST-GOV-010 completed and validated (consolidation remediation 2026-03-08)
         points: 13
         stories: 2
-    points_completed: 52
+    points_completed: 63
     roadmap: docs/architecture/governance-rollout-roadmap.md
     stories: 12
-    stories_completed: 8
+    stories_completed: 10
     story_points: 68
+    consolidation_remediation_note: '2026-03-08: ST-GOV-002 through ST-GOV-010 verified merged to main via cross-branch verification. Evidence documented in docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md'
   launch_phase:
     canary_duration_days: 21
     completed_stories: 18
