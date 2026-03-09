@@ -1,0 +1,964 @@
+---
+# DATA RETENTION AND ARCHIVAL POLICY
+# ChiseAI Workflow Status System
+#
+# Purpose: Define comprehensive data lifecycle management to keep workflow files lean
+# while preserving full historical traceability and promoting high-value learnings.
+#
+# Related Documents:
+#   - docs/policy/memory_policy.yaml (memory stewardship rules)
+#   - docs/policy/reflection_policy.yaml (reflection cadence)
+#   - docs/bmm-workflow-status.yaml (active workflow file)
+#   - docs/validation/validation-registry.yaml (validation tracking)
+
+version: "1.0.0"
+effective_date: "2026-03-09"
+last_reviewed: "2026-03-09"
+next_review_date: "2026-06-09"
+owner: "workflow-governance"
+approvers: ["merlin", "jarvis"]
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# SECTION 1: RETENTION TIERS
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+retention_tiers:
+  
+  # TIER 1: Active Workflow File (docs/bmm-workflow-status.yaml)
+  tier_1_active:
+    description: "Hot data for immediate operational needs"
+    retention_period: "Current + 7 days after completion"
+    criteria: |
+      Stories with status in [backlog, planned, in_progress] 
+      OR stories with status in [completed, merged] AND age ≤ 7 days
+    location: "docs/bmm-workflow-status.yaml"
+    access_pattern: "High-frequency reads, occasional updates"
+    
+    fields_included:
+      - story_id (required)
+      - status (required)
+      - title (required)
+      - epic_id (for epic membership)
+      - priority (P0, P0-CRITICAL, P1, P2, P3)
+      - owner (agent or team)
+      - created_date (ISO 8601 format)
+      - completed_date (if available)
+      - merged_date (if available)
+      - pr_number (for completed stories)
+      - merge_commit (SHA for verification)
+      - story_points (for velocity tracking)
+      - sprint_id (for sprint planning)
+      - phase (for multi-phase stories)
+      - current_completion (percentage for in-progress)
+      - target_date (for planning)
+      - depends_on (dependency tracking)
+    
+    fields_excluded:
+      - detailed acceptance_criteria lists (moved to archive)
+      - evidence file lists (moved to archive)
+      - test result details (moved to archive)
+      - validation summaries (moved to archive)
+      - loop results and iterlog references (moved to archive)
+      - implementation notes and decision logs (moved to archive)
+      - files_changed lists (moved to archive)
+      - notes arrays with detailed context (moved to archive)
+    
+    size_target: "< 2000 lines for optimal parse performance"
+    
+  # TIER 2: Archive Documents (docs/archives/)
+  tier_2_archive:
+    description: "Warm data for historical reference and audit"
+    retention_period: "7 days after completion → indefinite"
+    criteria: |
+      Stories with status in [completed, merged, cancelled] 
+      AND age > 7 days
+    location: "docs/archives/"
+    access_pattern: "Low-frequency reads, append-only writes"
+    
+    sub_tiers:
+      
+      story_details:
+        path: "docs/archives/story-details/"
+        filename_pattern: "{story_id}-{slug}-details.yaml"
+        description: "Complete story evidence and artifacts"
+        sections:
+          - story_metadata:
+              - id, title, epic_id, owner
+              - created_date, completed_date, merged_date
+              - status_history (array of status transitions)
+          - acceptance_criteria:
+              - full AC list with completion status
+              - AC verification evidence
+          - evidence_manifest:
+              - list of all evidence files
+              - file paths and checksums
+              - evidence commit SHAs
+          - test_results:
+              - unit test counts (passed/failed/skipped)
+              - integration test results
+              - coverage percentages
+              - test strategy summary
+          - validation_summary:
+              - validation gate results
+              - manual verification records
+              - sign-off approvals
+          - notes_and_decisions:
+              - implementation notes
+              - decision logs
+              - lessons learned
+              - blockers and resolutions
+        
+      epic_summaries:
+        path: "docs/archives/epic-summaries/"
+        filename_pattern: "{epic_id}-summary.yaml"
+        description: "Epic-level rollup summaries"
+        sections:
+          - epic_metadata
+          - story_rollout (list of all stories)
+          - completion_timeline
+          - velocity_metrics
+          - retrospective_notes
+      
+      monthly_reports:
+        path: "docs/archives/monthly-reports/"
+        filename_pattern: "YYYY-MM-completions.yaml"
+        description: "Aggregated monthly completion reports"
+        sections:
+          - month_metadata
+          - stories_completed
+          - epics_closed
+          - velocity_summary
+          - quality_metrics
+          - notable_learnings
+      
+      workflow_snapshots:
+        path: "docs/archives/workflow-status/"
+        filename_pattern: "archive-YYYY-MM.yaml"
+        description: "Monthly snapshots of archived workflow entries"
+        sections:
+          - archive_metadata
+          - archived_entries (from bmm-workflow-status.yaml)
+          - index_reference
+    
+    referential_integrity:
+      - epic_id links must resolve to epic-summaries/
+      - story_id links must resolve to story-details/
+      - pr_number links must resolve to Gitea/GitHub
+      - merge_commit SHAs must be verifiable in git
+    
+    compression_policy:
+      trigger: "Archive file age > 2 years"
+      action: "Compress to .gz, keep metadata uncompressed"
+      retention_post_compress: "7 years"
+  
+  # TIER 3: Qdrant Searchable Memory
+  tier_3_qdrant:
+    description: "Semantic memory for pattern recognition and learning"
+    retention_period: "Permanent (until explicitly deleted)"
+    criteria: "High-value patterns, decisions, anti-patterns, lessons learned"
+    location: "Qdrant vector database (collection: ChiseAI)"
+    access_pattern: "Semantic search, similarity matching"
+    
+    vector_dimensions: 1536
+    distance_metric: "COSINE"
+    
+    memory_types:
+      - type: decision
+        description: "Architectural and design decisions"
+        promotion_rule: "immediate OR occurrences >= 2"
+        
+      - type: pattern
+        description: "Reusable patterns and best practices"
+        promotion_rule: "ci_impact OR validated"
+        
+      - type: anti-pattern
+        description: "Anti-patterns with prevention rules"
+        promotion_rule: "immediate"
+        priority: critical
+        
+      - type: postmortem
+        description: "Incident postmortems and lessons learned"
+        promotion_rule: "immediate"
+        priority: critical
+        
+      - type: invariant
+        description: "System invariants that must never be violated"
+        promotion_rule: "immediate"
+        priority: critical
+        
+      - type: research
+        description: "Research findings and background information"
+        promotion_rule: "validated"
+    
+    required_metadata:
+      - story_id
+      - timestamp
+      - agent
+      - type
+      - priority
+    
+    optional_metadata:
+      - pr_link
+      - commit_hash
+      - branch_name
+      - related_stories
+      - tags
+  
+  # TIER 4: Cold Storage (Future)
+  tier_4_cold:
+    description: "Long-term compliance and audit storage"
+    retention_period: "1+ years"
+    criteria: "Full historical archive for compliance/auditing"
+    location: "S3 or similar object storage (future consideration)"
+    status: "planned"
+    trigger_for_implementation: "Repository size > 1GB OR regulatory requirement"
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# SECTION 2: ARCHIVAL TRIGGERS
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+archival_triggers:
+  
+  scheduled:
+    name: "Daily Automated Archival"
+    frequency: "Daily at 02:00 UTC"
+    mechanism: "GitHub Actions / Woodpecker CI pipeline"
+    script: "scripts/workflow/archive_old_stories.py"
+    
+    workflow:
+      - name: "Identify archive candidates"
+        step: "Scan bmm-workflow-status.yaml for completed stories > 7 days old"
+      - name: "Generate archive files"
+        step: "Create story-details YAML files in docs/archives/story-details/"
+      - name: "Update workflow file"
+        step: "Remove detailed fields from bmm-workflow-status.yaml"
+      - name: "Update archive index"
+        step: "Add entries to docs/archives/workflow-status/archive-index.yaml"
+      - name: "Commit and push"
+        step: "Create PR with archive changes (auto-merge if tests pass)"
+    
+    dry_run_option: true
+    notification: "Discord #workflow-alerts channel"
+  
+  manual:
+    name: "Manual Archival"
+    commands:
+      dry_run: "python3 scripts/workflow/archive_old_stories.py --dry-run"
+      execute: "python3 scripts/workflow/archive_old_stories.py --execute"
+      force_story: "python3 scripts/workflow/archive_old_stories.py --story-id ST-XXX --execute"
+      restore: "python3 scripts/workflow/restore_from_archive.py --story-id ST-XXX"
+    
+    permissions:
+      - role: "merlin"
+        can: ["dry_run", "execute", "force_story", "restore"]
+      - role: "jarvis"
+        can: ["dry_run", "execute", "force_story"]
+      - role: "senior-dev"
+        can: ["dry_run"]
+  
+  event_driven:
+    name: "Event-Driven Archival"
+    triggers:
+      - event: "story_status_changed"
+        condition: "status == 'completed' OR status == 'merged'"
+        action: "Schedule for archival in 7 days"
+      - event: "epic_closed"
+        condition: "all stories completed"
+        action: "Generate epic summary archive"
+      - event: "month_end"
+        condition: "last day of month"
+        action: "Generate monthly completion report"
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# SECTION 3: ARCHIVE STRUCTURE
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+archive_structure:
+  
+  base_path: "docs/archives/"
+  
+  directories:
+    
+    story_details:
+      path: "docs/archives/story-details/"
+      description: "Detailed story evidence and artifacts"
+      naming_convention: "{story_id}-{slug}-details.yaml"
+      example: "ST-MEMORY-INGEST-001-details.yaml"
+      
+      schema:
+        archive_metadata:
+          version: "1.0"
+          archived_date: "ISO 8601 timestamp"
+          archived_by: "agent or script name"
+          source_file: "docs/bmm-workflow-status.yaml"
+          retention_until: "ISO 8601 date (7 years)"
+        
+        story_summary:
+          id: "Story ID"
+          title: "Story title"
+          epic_id: "Epic ID (if applicable)"
+          status: "final status"
+          owner: "agent or team"
+          priority: "P0/P1/P2/P3"
+          story_points: "numeric"
+          created_date: "ISO 8601"
+          completed_date: "ISO 8601"
+          merged_date: "ISO 8601 (if applicable)"
+          pr_number: "PR number"
+          merge_commit: "SHA"
+        
+        acceptance_criteria:
+          - criterion: "AC text"
+            status: "completed/partial/not_started"
+            evidence: "path to evidence file"
+        
+        evidence_manifest:
+          files:
+            - path: "relative path"
+              type: "json/md/txt/yaml"
+              size_bytes: "numeric"
+              checksum: "sha256"
+              commit: "git SHA"
+        
+        test_results:
+          unit_tests:
+            total: "numeric"
+            passed: "numeric"
+            failed: "numeric"
+            skipped: "numeric"
+          integration_tests:
+            total: "numeric"
+            passed: "numeric"
+            failed: "numeric"
+          coverage_percent: "numeric"
+        
+        validation_summary:
+          gates_passed: ["list of gates"]
+          manual_verifications: ["list"]
+          sign_offs:
+            - role: "agent/team"
+              date: "ISO 8601"
+        
+        notes_and_decisions:
+          implementation_notes: ["list of notes"]
+          key_decisions:
+            - decision: "decision text"
+              date: "ISO 8601"
+              rationale: "why this decision"
+          lessons_learned: ["list"]
+          blockers_resolved: ["list"]
+    
+    epic_summaries:
+      path: "docs/archives/epic-summaries/"
+      description: "Epic-level rollup summaries"
+      naming_convention: "{epic_id}-summary.yaml"
+      example: "EP-NS-008-summary.yaml"
+      
+      schema:
+        epic_metadata:
+          id: "Epic ID"
+          name: "Epic name"
+          description: "Epic description"
+          status: "completed/in_progress/cancelled"
+          sprint_id: "Sprint identifier"
+        
+        story_rollout:
+          stories:
+            - id: "Story ID"
+              title: "Story title"
+              status: "completed/merged"
+              story_points: "numeric"
+              owner: "agent"
+              pr_number: "PR number"
+              merge_commit: "SHA"
+        
+        completion_timeline:
+          start_date: "ISO 8601"
+          target_date: "ISO 8601"
+          actual_completion_date: "ISO 8601"
+          milestones:
+            - date: "ISO 8601"
+              event: "milestone description"
+        
+        velocity_metrics:
+          total_story_points: "numeric"
+          completed_story_points: "numeric"
+          completion_percentage: "numeric"
+          stories_count: "numeric"
+          stories_completed: "numeric"
+        
+        retrospective_notes:
+          what_went_well: ["list"]
+          what_could_improve: ["list"]
+          action_items: ["list"]
+    
+    monthly_reports:
+      path: "docs/archives/monthly-reports/"
+      description: "Aggregated monthly completion reports"
+      naming_convention: "YYYY-MM-completions.yaml"
+      example: "2026-02-completions.yaml"
+      
+      schema:
+        month_metadata:
+          year: "YYYY"
+          month: "MM"
+          generated_date: "ISO 8601"
+        
+        stories_completed:
+          - story_id: "Story ID"
+            title: "Story title"
+            epic_id: "Epic ID"
+            completed_date: "ISO 8601"
+            story_points: "numeric"
+            owner: "agent"
+        
+        epics_closed:
+          - epic_id: "Epic ID"
+            name: "Epic name"
+            closed_date: "ISO 8601"
+            total_stories: "numeric"
+            total_points: "numeric"
+        
+        velocity_summary:
+          total_points_completed: "numeric"
+          average_velocity_per_week: "numeric"
+          stories_per_week: "numeric"
+        
+        quality_metrics:
+          test_pass_rate: "percentage"
+          coverage_average: "percentage"
+          incidents_count: "numeric"
+          rollbacks_count: "numeric"
+        
+        notable_learnings:
+          - type: "decision/pattern/anti-pattern"
+            description: "learning description"
+            story_id: "source story"
+            promoted_to_qdrant: "boolean"
+    
+    workflow_status:
+      path: "docs/archives/workflow-status/"
+      description: "Monthly snapshots of archived workflow entries"
+      naming_convention: "archive-YYYY-MM.yaml"
+      example: "archive-2026-02.yaml"
+      
+      schema:
+        archive_metadata:
+          archive_date: "ISO 8601"
+          archive_reason: "description"
+          source_file: "docs/bmm-workflow-status.yaml"
+          total_entries: "numeric"
+        
+        archived_entries:
+          - timestamp: "ISO 8601"
+            actor: "agent"
+            action: "action type"
+            description: "action description"
+            story_id: "Story ID"
+            epic_id: "Epic ID"
+            # ... additional fields as needed
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# SECTION 4: QDRANT PROMOTION CRITERIA
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+qdrant_promotion:
+  
+  auto_promotion:
+    enabled: true
+    
+    criteria:
+      
+      - name: "high_priority_stories"
+        description: "Stories with critical priority"
+        conditions:
+          - field: "priority"
+            operator: "in"
+            value: ["P0", "P0-CRITICAL", "P1", "P1-HIGH"]
+        promotion_action: "Promote decisions and patterns to Qdrant"
+        
+      - name: "large_stories"
+        description: "Stories with significant scope"
+        conditions:
+          - field: "story_points"
+            operator: ">="
+            value: 5
+        promotion_action: "Promote architectural decisions to Qdrant"
+        
+      - name: "reusable_patterns"
+        description: "Reusable architectural decisions"
+        conditions:
+          - field: "type"
+            operator: "in"
+            value: ["decision", "pattern"]
+        promotion_action: "Immediate promotion to Qdrant"
+        
+      - name: "anti_patterns"
+        description: "Anti-patterns with prevention rules"
+        conditions:
+          - field: "type"
+            operator: "equals"
+            value: "anti-pattern"
+        promotion_action: "Immediate promotion with CRITICAL priority"
+        
+      - name: "incident_related"
+        description: "Stories related to incidents"
+        conditions:
+          - field: "has_incident"
+            operator: "equals"
+            value: true
+        promotion_action: "Promote root cause and remediation to Qdrant"
+        
+      - name: "ci_impact"
+        description: "Stories affecting CI/CD"
+        conditions:
+          - field: "ci_failure"
+            operator: "equals"
+            value: true
+          - field: "ci_prevention"
+            operator: "equals"
+            value: true
+        promotion_action: "Promote prevention patterns to Qdrant"
+        
+      - name: "invariant_updates"
+        description: "Stories updating invariants or policies"
+        conditions:
+          - field: "touches_invariant"
+            operator: "equals"
+            value: true
+        promotion_action: "Immediate promotion to Qdrant"
+        
+      - name: "execution_safety"
+        description: "Stories touching safety mechanisms"
+        conditions:
+          - field: "touches_kill_switch"
+            operator: "equals"
+            value: true
+          - field: "touches_canary"
+            operator: "equals"
+            value: true
+          - field: "touches_risk_limit"
+            operator: "equals"
+            value: true
+        promotion_action: "Promote safety patterns to Qdrant"
+  
+  manual_promotion:
+    enabled: true
+    
+    commands:
+      promote_story: "python3 scripts/memory/promote_to_qdrant.py --story-id ST-XXX"
+      promote_file: "python3 scripts/memory/promote_to_qdrant.py --file docs/tempmemories/XXX.md"
+      review_pending: "python3 scripts/memory/list_pending_promotions.py"
+    
+    permissions:
+      - role: "merlin"
+        can: ["promote_story", "promote_file", "review_pending"]
+      - role: "jarvis"
+        can: ["promote_story", "promote_file", "review_pending"]
+      - role: "senior-dev"
+        can: ["review_pending"]
+    
+    criteria: |
+      Any story with valuable learnings regardless of auto criteria.
+      Use for:
+        - Edge cases with novel solutions
+        - Process improvements
+        - Tooling enhancements
+        - Documentation insights
+        - Cross-story patterns
+  
+  deduplication:
+    enabled: true
+    similarity_threshold: 0.92
+    contradiction_threshold: 0.85
+    max_age_days: 30
+    
+    contradiction_detection:
+      enabled: true
+      similarity_range:
+        min: 0.75
+        max: 0.92
+      keywords:
+        - "contradicts"
+        - "conflicts with"
+        - "overrides"
+        - "deprecated"
+        - "replaced by"
+        - "supersedes"
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# SECTION 5: CLEANUP POLICIES
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+cleanup_policies:
+  
+  archive_cleanup:
+    name: "Archive File Cleanup"
+    
+    compression:
+      trigger: "Archive file age > 2 years"
+      action: "gzip compress archive files"
+      retention_post_compress: "7 years"
+      grace_period: "30 days notice before compression"
+      
+    deletion:
+      trigger: "Archive file age > 7 years"
+      action: "Move to cold storage (Tier 4) or delete per compliance"
+      approval_required: true
+      approvers: ["merlin"]
+      audit_log: "docs/archives/deletion-audit.log"
+  
+  qdrant_cleanup:
+    name: "Qdrant Vector Cleanup"
+    
+    stale_vector_removal:
+      trigger: "Vector age > 1 year AND retrieval_frequency < 1 per quarter"
+      action: "Archive metadata, remove vector"
+      review_required: true
+      retention_metadata: "Permanent in archive"
+      
+    contradiction_resolution:
+      trigger: "Contradiction detected between vectors"
+      action: "Flag for review, preserve both with contradiction metadata"
+      resolution_required: true
+      
+    low_quality_removal:
+      trigger: "Vector quality score < 0.5 (based on retrieval feedback)"
+      action: "Flag for review, may remove if confirmed low-value"
+      review_required: true
+  
+  tempmemory_cleanup:
+    name: "Tempmemory File Cleanup"
+    
+    archival:
+      trigger: "File ingested to Qdrant AND age > 7 days"
+      action: "Move to docs/tempmemories/archived/YYYY-MM/"
+      script: "scripts/consolidation/archive_reconcile.py"
+      
+    deletion:
+      trigger: "File archived AND age > 90 days"
+      action: "Delete from tempmemories/ (preserved in archive/)"
+      dry_run_first: true
+  
+  redis_cleanup:
+    name: "Redis Key Cleanup"
+    
+    iterlog_cleanup:
+      pattern: "bmad:chiseai:iterlog:story:*"
+      trigger: "Story archived AND iterlog age > 90 days"
+      action: "Export to docs/archives/iterlog-exports/, then delete"
+      
+    metrics_cleanup:
+      pattern: "bmad:chiseai:metrics:*"
+      trigger: "Metric age > 30 days"
+      action: "Aggregate and archive, delete raw data"
+      
+    rejected_insights_cleanup:
+      pattern: "bmad:chiseai:insights:rejected:*"
+      trigger: "Rejection age > 90 days"
+      action: "Archive to docs/archives/rejected-insights/, then delete"
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# SECTION 6: REFERENTIAL INTEGRITY
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+referential_integrity:
+  
+  requirements:
+    - id: "RI-001"
+      description: "Epic links must be resolvable"
+      rule: "All epic_id references in stories must resolve to an epic summary in docs/archives/epic-summaries/ OR an active epic in bmm-workflow-status.yaml"
+      validation: "scripts/workflow/validate_references.py"
+      
+    - id: "RI-002"
+      description: "Story links must be resolvable"
+      rule: "All story_id references in epics must resolve to a story detail in docs/archives/story-details/ OR an active story in bmm-workflow-status.yaml"
+      validation: "scripts/workflow/validate_references.py"
+      
+    - id: "RI-003"
+      description: "PR links must be verifiable"
+      rule: "All pr_number references must be verifiable in Gitea/GitHub"
+      validation: "scripts/workflow/validate_pr_references.py"
+      
+    - id: "RI-004"
+      description: "Commit SHAs must be verifiable"
+      rule: "All merge_commit references must exist in git history"
+      validation: "scripts/workflow/validate_commit_references.py"
+      
+    - id: "RI-005"
+      description: "Evidence files must exist"
+      rule: "All evidence file paths in evidence_manifest must exist in repository"
+      validation: "scripts/workflow/validate_evidence_files.py"
+  
+  validation_schedule:
+    frequency: "Weekly (Sundays at 03:00 UTC)"
+    script: "scripts/workflow/validate_all_references.py"
+    notification: "Discord #workflow-alerts channel"
+    on_failure: "Create incident ticket, block archival until resolved"
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# SECTION 7: RESTORATION PROCEDURES
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+restoration_procedures:
+  
+  from_archive:
+    name: "Restore Story from Archive"
+    command: "python3 scripts/workflow/restore_from_archive.py --story-id ST-XXX"
+    
+    steps:
+      - step: 1
+        action: "Locate story in docs/archives/story-details/"
+        validation: "File exists and is valid YAML"
+      - step: 2
+        action: "Extract story summary fields"
+        output: "Update bmm-workflow-status.yaml with summary"
+      - step: 3
+        action: "Update story status to 'restored'"
+        note: "Preserves archive copy, creates active reference"
+      - step: 4
+        action: "Create restoration log entry"
+        output: "docs/archives/restoration-log.yaml"
+      - step: 5
+        action: "Commit changes with message 'RESTORE: ST-XXX from archive'"
+    
+    permissions:
+      - role: "merlin"
+        can: ["execute"]
+      - role: "jarvis"
+        can: ["execute"]
+  
+  from_qdrant:
+    name: "Restore Memory from Qdrant"
+    command: "python3 scripts/memory/export_from_qdrant.py --query 'search terms' --output file.yaml"
+    
+    note: "Qdrant memories are not deleted during archival, so restoration is not typically needed. Use export for reporting."
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# SECTION 8: COMPLIANCE AND AUDITING
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+compliance:
+  
+  audit_trail:
+    requirements:
+      - All archival operations must be logged
+      - All restoration operations must be logged
+      - All deletions must be logged with approval reference
+      - All Qdrant promotions must be logged
+    
+    log_location: "docs/archives/audit-trail/"
+    log_format: "YYYY-MM-DD-audit.log"
+    retention: "7 years"
+  
+  evidence_preservation:
+    completion_evidence:
+      required: true
+      location: "docs/evidence/"
+      retention: "Permanent"
+      
+    validation_evidence:
+      required: true
+      location: "docs/validation/evidence/"
+      retention: "Permanent"
+      
+    tempmemory_evidence:
+      required: true
+      location: "docs/tempmemories/archived/"
+      retention: "2 years"
+  
+  regulatory_compliance:
+    note: "If regulatory requirements change, adjust retention periods accordingly"
+    review_trigger: "Regulatory change OR annual compliance review"
+    owner: "compliance-officer"
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# SECTION 9: MONITORING AND ALERTING
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+monitoring:
+  
+  metrics:
+    - name: "archive_size_bytes"
+      description: "Total size of archive directory"
+      alert_threshold: "> 1GB"
+      
+    - name: "active_workflow_size_lines"
+      description: "Line count of bmm-workflow-status.yaml"
+      alert_threshold: "> 2000"
+      
+    - name: "stories_pending_archival"
+      description: "Count of completed stories > 7 days old still in active file"
+      alert_threshold: "> 50"
+      
+    - name: "qdrant_vector_count"
+      description: "Total vectors in ChiseAI collection"
+      alert_threshold: "> 10000"
+      
+    - name: "reference_validation_failures"
+      description: "Count of broken references detected"
+      alert_threshold: "> 0"
+  
+  alerts:
+    - condition: "archive_size_bytes > 1GB"
+      action: "Notify #workflow-alerts, schedule compression review"
+      
+    - condition: "active_workflow_size_lines > 2000"
+      action: "Notify #workflow-alerts, trigger archival run"
+      
+    - condition: "stories_pending_archival > 50"
+      action: "Notify #workflow-alerts, investigate archival script"
+      
+    - condition: "reference_validation_failures > 0"
+      action: "Create P1 incident, block archival until resolved"
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# SECTION 10: RATIONALE
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+rationale:
+  
+  retention_periods:
+    
+    tier_1_7_days:
+      reason: |
+        The 7-day retention for completed stories in the active file balances
+        operational needs with file size management. This allows:
+          - Recent completions to be visible for sprint reviews
+        - Time for any post-completion updates or corrections
+        - Quick access to recently completed work for reference
+        - Prevents the active file from growing unbounded
+      
+    tier_2_indefinite:
+      reason: |
+        Archive documents are kept indefinitely (until Tier 4 cold storage)
+        because:
+          - Historical reference is valuable for pattern recognition
+        - Audit requirements may need old story details
+        - Epic summaries provide long-term project context
+        - Monthly reports show velocity trends over time
+        - Referential integrity requires preserved archives
+      
+    tier_3_permanent:
+      reason: |
+        Qdrant memories are kept permanently because:
+          - They represent distilled learnings and patterns
+        - Vector search requires accumulated context
+        - Patterns emerge from long-term observation
+        - Anti-patterns and invariants must persist for safety
+        - Storage cost is low relative to value
+      
+    compression_2_years:
+      reason: |
+        Compression after 2 years balances accessibility with storage:
+          - Recent archives likely to be accessed
+        - Older archives rarely accessed but must be preserved
+        - Compression reduces storage by ~80%
+        - Metadata remains uncompressed for browsing
+      
+    deletion_7_years:
+      reason: |
+        The 7-year deletion policy aligns with:
+          - Typical audit retention requirements
+        - Statute of limitations for compliance
+        - Project lifecycle (ChiseAI v1 expected to evolve)
+        - Can be extended if regulatory requirements change
+  
+  promotion_criteria:
+    
+    high_priority_auto_promote:
+      reason: |
+        P0/P1 stories are auto-promoted because:
+          - They represent critical system changes
+        - Lessons learned are high-value
+        - Decisions affect core infrastructure
+        - Patterns are likely reusable
+      
+    large_stories_auto_promote:
+      reason: |
+        Stories with 5+ points are auto-promoted because:
+          - They involve significant architectural decisions
+        - Complex solutions have reusable patterns
+        - Anti-patterns are more likely to emerge
+        - Investment in documentation is justified
+      
+    anti_patterns_immediate:
+      reason: |
+        Anti-patterns are immediately promoted because:
+          - Prevention is critical for system safety
+        - Must be searchable to avoid repetition
+        - Often tied to incidents or near-misses
+        - Highest priority for organizational learning
+      
+    manual_promotion_available:
+      reason: |
+        Manual promotion is available because:
+          - Not all valuable learnings meet auto criteria
+        - Edge cases may have novel solutions
+        - Process improvements may be medium-sized
+        - Tooling enhancements may be P2 but valuable
+        - Human judgment can identify hidden patterns
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# APPENDIX: IMPLEMENTATION CHECKLIST
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+implementation_checklist:
+  
+  scripts_to_create:
+    - name: "scripts/workflow/archive_old_stories.py"
+      description: "Main archival script"
+      priority: "P0"
+      
+    - name: "scripts/workflow/restore_from_archive.py"
+      description: "Restoration script"
+      priority: "P1"
+      
+    - name: "scripts/workflow/validate_references.py"
+      description: "Reference integrity validator"
+      priority: "P1"
+      
+    - name: "scripts/memory/promote_to_qdrant.py"
+      description: "Manual Qdrant promotion"
+      priority: "P1"
+      
+    - name: "scripts/memory/list_pending_promotions.py"
+      description: "List stories eligible for promotion"
+      priority: "P2"
+  
+  ci_integration:
+    - name: "Add archival job to Woodpecker CI"
+      schedule: "Daily at 02:00 UTC"
+      priority: "P1"
+      
+    - name: "Add reference validation job"
+      schedule: "Weekly on Sundays"
+      priority: "P1"
+      
+    - name: "Add metrics collection"
+      schedule: "Hourly"
+      priority: "P2"
+  
+  documentation:
+    - name: "Create runbook: workflow-archiving-runbook.md"
+      priority: "P1"
+      
+    - name: "Update AGENTS.md with archival procedures"
+      priority: "P1"
+      
+    - name: "Create FAQ for common archival questions"
+      priority: "P3"
+  
+  testing:
+    - name: "Unit tests for archive_old_stories.py"
+      priority: "P1"
+      
+    - name: "Integration tests for end-to-end archival"
+      priority: "P1"
+      
+    - name: "Restore procedure validation tests"
+      priority: "P2"
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# END OF DATA RETENTION AND ARCHIVAL POLICY
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

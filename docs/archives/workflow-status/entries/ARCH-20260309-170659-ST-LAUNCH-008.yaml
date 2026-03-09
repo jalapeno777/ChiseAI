@@ -1,0 +1,63 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260309-170659-ST-LAUNCH-008
+original_story_id: ST-LAUNCH-008
+archived_at: '2026-03-09T17:06:59.869426Z'
+archive_reason: age (15 days)
+archive_reason_detail: Story archived due to age (15 days)
+migration:
+  phase: pilot
+  migrated_by: senior-dev
+  migration_script_version: 1.0.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260309-170659-ST-LAUNCH-008
+  id: ST-LAUNCH-008
+  status: archived
+  title: Prediction-Outcome Matcher Enhancement
+  priority: P1-HIGH
+  epic_id: EP-LAUNCH-002
+  completion_date: '2026-02-22'
+  merge_commit: batch4-final
+  pr_number: 255
+archived_fields:
+  description: Enhance the existing matcher to work with outcome capture service and
+    provide richer matching analytics
+  acceptance_criteria:
+  - Outcome integration - Outcomes matched to predictions with high accuracy, unmatched
+    outcomes flagged
+  - Matching windows - Appropriate time windows per timeframe (1m:30min, 5m:2h, 15m:6h,
+    1h:24h, 4h:3d, 1d:7d)
+  - Match quality metrics - Precision, recall, F1 calculated per signal type, exported
+    to InfluxDB
+  - Batch processing - All items processed in single transaction, partial failures
+    handled gracefully
+  live_validation_gates:
+  - check: Verify 100 matches
+    gate: match_accuracy
+    threshold: '>=95% accuracy'
+  rollback_plan:
+  - action: Use simple matcher
+    command: redis-cli SET launch:feedback:matcher:enabled 0
+  scope_globs:
+  - src/ml/feedback/matcher.py
+  - tests/test_ml/test_matcher_enhanced.py
+  depends_on:
+  - ST-LAUNCH-006
+  test_strategy:
+    e2e: pytest tests/e2e/test_prediction_matching.py -v
+    integration: pytest tests/test_ml/integration/test_matcher_outcomes.py -v
+    unit: pytest tests/test_ml/test_matcher_enhanced.py -v
+  sprint_id: LAUNCH-SPRINT-1
+  story_points: 3
+  fr_coverage:
+  - FR-017
+  - FR-018
+  validation_status: validated
+completion_evidence:
+  pr_number: 255
+  merge_commit: batch4-final
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-170659-ST-LAUNCH-008.yaml
+integrity:
+  original_checksum: eef65b4d4685771866c21d55f624a618cef26c796f3dd371e24868cfcc2b2fc2
+  archived_checksum: 84a421743ab86aaa684c859843011ee654a23c16841ada49b642d7ece9e6a8b0
+  verification_date: '2026-03-09T17:06:59.869467Z'

@@ -1,0 +1,50 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260309-170659-BL-PAPER-G5-MANUAL
+original_story_id: BL-PAPER-G5-MANUAL
+archived_at: '2026-03-09T17:06:59.763385Z'
+archive_reason: age (7 days)
+archive_reason_detail: Story archived due to age (7 days)
+migration:
+  phase: pilot
+  migrated_by: senior-dev
+  migration_script_version: 1.0.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260309-170659-BL-PAPER-G5-MANUAL
+  id: BL-PAPER-G5-MANUAL
+  status: archived
+  title: Manual Verification Tracking (PAPER-RECOVERY-001 G5)
+  priority: P1
+archived_fields:
+  description: Discord verification required per PAPER-RECOVERY-001 acceptance criteria
+  acceptance_criteria:
+  - Discord channel
+  - Signal format matches specification (token, direction, confidence, key levels,
+    timestamp)
+  - Alert delivery latency within 5 seconds
+  notes:
+  - G5 verification completed via Discord API search on 2026-03-02
+  - Automated gates G1-G4, G7-G8 all PASS
+  - 'G6 INFO (out-of-scope): InfluxDB is secondary, Redis is canonical'
+  - Discord messages found in channel 1448414506412806347
+  created_date: '2026-03-02'
+  owner: Operations
+  gate_id: G5
+  gate_status: MANUAL
+  verification_method: Discord API search
+  verification_checklist:
+  - '[ ] Verify Discord channel access'
+  - '[ ] Review recent signal messages for format compliance'
+  - '[ ] Measure alert latency with test signal'
+  - '[ ] Document verification results in evidence bundle'
+  discord_message_ids:
+  - '1477529875064553563'
+  - '1478036129725812849'
+  verification_evidence: docs/tempmemories/iterlog-Paper-recovery-001-g8-g5-completion.md
+  related_story: PAPER-RECOVERY-001
+completion_evidence: null
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-170659-BL-PAPER-G5-MANUAL.yaml
+integrity:
+  original_checksum: de52a83ee0af3321d2720f10589b47f9567bcafb4094829d10442dbb395e26ea
+  archived_checksum: 31e7586ec98f58069d07634d3e0dd809896490aef68757cfca5cbaa5e8091d29
+  verification_date: '2026-03-09T17:06:59.763421Z'

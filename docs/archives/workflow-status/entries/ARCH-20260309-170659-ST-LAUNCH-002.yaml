@@ -1,0 +1,65 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260309-170659-ST-LAUNCH-002
+original_story_id: ST-LAUNCH-002
+archived_at: '2026-03-09T17:06:59.788886Z'
+archive_reason: age (15 days)
+archive_reason_detail: Story archived due to age (15 days)
+migration:
+  phase: pilot
+  migrated_by: senior-dev
+  migration_script_version: 1.0.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260309-170659-ST-LAUNCH-002
+  id: ST-LAUNCH-002
+  status: archived
+  title: WebSocket Circuit Breaker
+  priority: P0-CRITICAL
+  epic_id: EP-LAUNCH-001
+  completion_date: '2026-02-22'
+  merge_commit: bf48587
+  pr_number: 245
+archived_fields:
+  description: Wire EP-NS-008 CircuitBreakerRegistry to Bybit WebSocket connection
+    with automatic fallback to REST API
+  acceptance_criteria:
+  - Circuit breaker state machine - Opens after 5 failures in 60 seconds, suspends
+    WebSocket connection
+  - Automatic recovery - Transitions to HALF_OPEN after 60 seconds, attempts test
+    connection
+  - REST fallback - Uses REST API polling when circuit is OPEN, maintains data freshness
+    <5s latency
+  - Telemetry export - Metrics exported to InfluxDB, Grafana dashboard updates within
+    15 seconds
+  live_validation_gates:
+  - check: Simulate 5 WebSocket failures
+    gate: circuit_breaker_functional
+    threshold: Circuit opens, REST fallback activates
+  rollback_plan:
+  - action: Disable circuit breaker
+    command: redis-cli SET launch:safety:circuit_breaker:enabled 0
+  scope_globs:
+  - src/data/exchange/bybit_connector.py
+  - src/autonomous_control_plane/components/circuit_breaker_registry.py
+  - tests/test_execution/test_bybit_ws_circuit_breaker.py
+  depends_on:
+  - ST-NS-038
+  - ST-NS-039
+  test_strategy:
+    chaos: pytest tests/chaos/test_websocket_resilience.py -v
+    integration: pytest tests/test_execution/integration/test_circuit_breaker.py -v
+    unit: pytest tests/test_execution/test_bybit_ws_circuit_breaker.py -v
+  sprint_id: LAUNCH-SPRINT-1
+  story_points: 3
+  fr_coverage:
+  - FR-029
+  - NFR-008
+  validation_status: validated
+completion_evidence:
+  pr_number: 245
+  merge_commit: bf48587
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-170659-ST-LAUNCH-002.yaml
+integrity:
+  original_checksum: 533a5ea94af36b3d42a5a4b31af5c4f954f0a1abab7a9a71bc7231b92f7330fb
+  archived_checksum: 4115d9ff733b6607013e1c128ecc13bea9eccd2015982f173eb768bbfb91cb3a
+  verification_date: '2026-03-09T17:06:59.788931Z'
