@@ -2,7 +2,7 @@ schema_version: 1.0.0
 archive_ref: ARCH-20260309-170659-BL-PAPER-G5-MANUAL
 original_story_id: BL-PAPER-G5-MANUAL
 archived_at: '2026-03-09T17:06:59.763385Z'
-archive_reason: age (7 days)
+archive_reason: age
 archive_reason_detail: Story archived due to age (7 days)
 migration:
   phase: pilot
@@ -46,5 +46,5 @@ completion_evidence: null
 archive_location: docs/archives/workflow-status/entries/ARCH-20260309-170659-BL-PAPER-G5-MANUAL.yaml
 integrity:
   original_checksum: de52a83ee0af3321d2720f10589b47f9567bcafb4094829d10442dbb395e26ea
-  archived_checksum: 31e7586ec98f58069d07634d3e0dd809896490aef68757cfca5cbaa5e8091d29
-  verification_date: '2026-03-09T17:06:59.763421Z'
+  archived_checksum: 1cea4e8333ccb5b992ab338ee02d87865ec2f36aa3b4cb640812c6b14c1eb7ec
+  verification_date: '2026-03-09T23:24:14.216765+00:00'
