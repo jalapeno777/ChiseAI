@@ -233,7 +233,10 @@ backlog:
   redis_iterlog_key: bmad:chiseai:iterlog:story:PAPER-LLM-TIMEOUT-001
   status: merged
   title: LLM Timeout Reduction with Live E2E Validation
-- acceptance_criteria: TBD
+- acceptance_criteria:
+  - Phase 1 assessment completed (31 issues identified)
+  - Phase 2 pipeline hardening completed
+  - Phase 3 remediation merged to main
   created_date: '2026-03-02'
   depends_on:
   - ST-CI-001
@@ -244,8 +247,8 @@ backlog:
   - 'Phase 1 (Assessment) completed: 31 issues identified (P0:2, P1:6, P2:7)'
   - 'Phase 2 (Pipeline Hardening) completed: Epic status sync fixed, CI documentation
     updated'
-  - 'Phase 3 (Remediation Execution) completed: 2026-03-07'
-  - 'MERGED: CI Phase 3 remediation updates merged to main'
+  - 'Phase 3 remediation MERGED to main (commit 51b206e)'
+  - 'Status corrected per Aria verification 2026-03-08'
   owner: ST-CI-001 continuation
   pr_number: LEGACY
   priority: P2
