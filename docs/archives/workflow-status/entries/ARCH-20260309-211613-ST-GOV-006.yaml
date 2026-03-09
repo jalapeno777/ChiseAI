@@ -1,7 +1,7 @@
 schema_version: 1.0.0
-archive_ref: ARCH-20260309-200639-ST-GOV-006
+archive_ref: ARCH-20260309-211613-ST-GOV-006
 original_story_id: ST-GOV-006
-archived_at: '2026-03-09T20:06:39.308277Z'
+archived_at: '2026-03-09T21:16:13.955748Z'
 archive_reason: age
 archive_reason_detail: Story completed 14 days ago, exceeds 14-day threshold
 migration:
@@ -10,7 +10,7 @@ migration:
   migration_script_version: 1.0.0
   verification_status: verified
 lean_status:
-  archive_ref: ARCH-20260309-200639-ST-GOV-006
+  archive_ref: ARCH-20260309-211613-ST-GOV-006
   id: ST-GOV-006
   status: archived
   title: Self-Review Quality Gate
@@ -60,8 +60,8 @@ archived_fields:
 completion_evidence:
   pr_number: LEGACY
   merge_commit: a565de0
-archive_location: docs/archives/workflow-status/entries/ARCH-20260309-200639-ST-GOV-006.yaml
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-211613-ST-GOV-006.yaml
 integrity:
   original_checksum: cfec901457c25529fc5004821599d51b8bb16262c2321807a72e8f85460fb806
-  archived_checksum: 8ae2bc50ad9837c32859b72d725de727d53a17e3ade63eb223786b0bb05e3704
-  verification_date: '2026-03-09T20:06:39.308301Z'
+  archived_checksum: d3040740559ddbc6c0cbb19eca8b48bd15f49d2808af69539964bad801f37c8c
+  verification_date: '2026-03-09T21:16:13.955791Z'

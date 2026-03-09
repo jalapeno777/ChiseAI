@@ -1,7 +1,7 @@
 schema_version: 1.0.0
-archive_ref: ARCH-20260309-200324-ST-LAUNCH-018
+archive_ref: ARCH-20260309-211613-ST-LAUNCH-018
 original_story_id: ST-LAUNCH-018
-archived_at: '2026-03-09T20:03:24.255154Z'
+archived_at: '2026-03-09T21:16:13.900381Z'
 archive_reason: age
 archive_reason_detail: Story completed 16 days ago, exceeds 14-day threshold
 migration:
@@ -10,7 +10,7 @@ migration:
   migration_script_version: 1.0.0
   verification_status: verified
 lean_status:
-  archive_ref: ARCH-20260309-200324-ST-LAUNCH-018
+  archive_ref: ARCH-20260309-211613-ST-LAUNCH-018
   id: ST-LAUNCH-018
   status: archived
   title: Outcome Capture Service Implementation
@@ -61,8 +61,8 @@ archived_fields:
 completion_evidence:
   pr_number: 242
   merge_commit: 3eaa16c268677f2fdd6274eaf85b7f2a015d1eab
-archive_location: docs/archives/workflow-status/entries/ARCH-20260309-200324-ST-LAUNCH-018.yaml
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-211613-ST-LAUNCH-018.yaml
 integrity:
   original_checksum: 4dcd38955da0e5791a1fb2b4545abdf36cb688ae1d396c2ad61fbcc7f7fb89aa
-  archived_checksum: a226a47777a04c76d8ac66aece7b7a770a3a66a54c9a5e3fe3505a31318d01b3
-  verification_date: '2026-03-09T20:03:24.255203Z'
+  archived_checksum: 42ee4806869e6e314647834dc844905c1e3f3f896e4f916d2a49d551f8326746
+  verification_date: '2026-03-09T21:16:13.900439Z'

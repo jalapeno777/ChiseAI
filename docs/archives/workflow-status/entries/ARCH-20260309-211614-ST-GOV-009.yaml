@@ -1,7 +1,7 @@
 schema_version: 1.0.0
-archive_ref: ARCH-20260309-200639-ST-GOV-009
+archive_ref: ARCH-20260309-211614-ST-GOV-009
 original_story_id: ST-GOV-009
-archived_at: '2026-03-09T20:06:39.314361Z'
+archived_at: '2026-03-09T21:16:14.000875Z'
 archive_reason: age
 archive_reason_detail: Story completed 14 days ago, exceeds 14-day threshold
 migration:
@@ -10,7 +10,7 @@ migration:
   migration_script_version: 1.0.0
   verification_status: verified
 lean_status:
-  archive_ref: ARCH-20260309-200639-ST-GOV-009
+  archive_ref: ARCH-20260309-211614-ST-GOV-009
   id: ST-GOV-009
   status: archived
   title: Decision Audit Trail Export
@@ -57,8 +57,8 @@ archived_fields:
 completion_evidence:
   pr_number: LEGACY
   merge_commit: 86224f5
-archive_location: docs/archives/workflow-status/entries/ARCH-20260309-200639-ST-GOV-009.yaml
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-211614-ST-GOV-009.yaml
 integrity:
   original_checksum: 4da512df4a910c6f0f18f733e6d4281b1234214532094d36c2abd8441bcfb336
-  archived_checksum: 7eb709c84700bccdd474dec10c4f38c77d0a08e6759a37403ceb2b2945074eee
-  verification_date: '2026-03-09T20:06:39.314397Z'
+  archived_checksum: 7ca40e58a0bea93354314f19078d4ee2539170afc32c5beafdc4d5119c13ef1c
+  verification_date: '2026-03-09T21:16:14.000914Z'

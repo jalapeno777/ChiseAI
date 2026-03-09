@@ -1,7 +1,7 @@
 schema_version: 1.0.0
-archive_ref: ARCH-20260309-200858-ST-GOV-004
+archive_ref: ARCH-20260309-211613-ST-GOV-004
 original_story_id: ST-GOV-004
-archived_at: '2026-03-09T20:08:58.083174Z'
+archived_at: '2026-03-09T21:16:13.926640Z'
 archive_reason: age
 archive_reason_detail: Story completed 14 days ago, exceeds 14-day threshold
 migration:
@@ -10,7 +10,7 @@ migration:
   migration_script_version: 1.0.0
   verification_status: verified
 lean_status:
-  archive_ref: ARCH-20260309-200858-ST-GOV-004
+  archive_ref: ARCH-20260309-211613-ST-GOV-004
   id: ST-GOV-004
   status: archived
   title: Meta-KPI Dashboard
@@ -66,8 +66,8 @@ archived_fields:
 completion_evidence:
   pr_number: RETROSPECTIVE
   merge_commit: faf62dc
-archive_location: docs/archives/workflow-status/entries/ARCH-20260309-200858-ST-GOV-004.yaml
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-211613-ST-GOV-004.yaml
 integrity:
-  original_checksum: d8d5bb41df2c13894ff0345697146675db75b04063247e4e84bf2f7ab7716c5e
-  archived_checksum: 7ce0e1c2db7a3a288c647d3cabdf3fab732278bed9d09850878a6caa1a45ed67
-  verification_date: '2026-03-09T20:08:58.083233Z'
+  original_checksum: b3105420ac667e9eb895672b6ef08c570331c8e1c3d4d5e34608badf9188e4b5
+  archived_checksum: 5fec67dc107087c564d93d4a87627015fcead1c61064dd98e66b54e1020bfe7f
+  verification_date: '2026-03-09T21:16:13.926688Z'

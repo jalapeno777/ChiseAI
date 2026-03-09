@@ -1,7 +1,7 @@
 schema_version: 1.0.0
-archive_ref: ARCH-20260309-200324-ST-LAUNCH-011
+archive_ref: ARCH-20260309-211613-ST-LAUNCH-011
 original_story_id: ST-LAUNCH-011
-archived_at: '2026-03-09T20:03:24.252294Z'
+archived_at: '2026-03-09T21:16:13.873573Z'
 archive_reason: age
 archive_reason_detail: Story completed 15 days ago, exceeds 14-day threshold
 migration:
@@ -10,7 +10,7 @@ migration:
   migration_script_version: 1.0.0
   verification_status: verified
 lean_status:
-  archive_ref: ARCH-20260309-200324-ST-LAUNCH-011
+  archive_ref: ARCH-20260309-211613-ST-LAUNCH-011
   id: ST-LAUNCH-011
   status: archived
   title: Model Retraining Trigger
@@ -60,8 +60,8 @@ archived_fields:
 completion_evidence:
   pr_number: 257
   merge_commit: batch4-final
-archive_location: docs/archives/workflow-status/entries/ARCH-20260309-200324-ST-LAUNCH-011.yaml
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-211613-ST-LAUNCH-011.yaml
 integrity:
   original_checksum: eebf2ab41299627dbf34effbaf07b8877d2b88dd23db89d8c02c4276b8c687f3
-  archived_checksum: c5f1c704e48b8d48cd8c6375850290588fc82c9b8176c66e712a7a80571e7d0d
-  verification_date: '2026-03-09T20:03:24.252330Z'
+  archived_checksum: 23153712fdcf5ed3b7cd0a9b53a3b040cb580fb944ebaad1d38651a73c77829c
+  verification_date: '2026-03-09T21:16:13.873625Z'
