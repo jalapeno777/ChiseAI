@@ -190,3 +190,16 @@ Follow these steps exactly (do not skip):
      - `Thinking Partner Proof: <tp_mode> | <story_id> | IP:<id|none> | AD:<id|none> | Risks:<count>`
    - If `decision=DEFER`, add decision debt fields:
      - `debt_id`, `owner`, `due_utc`, `impact_if_overdue`
+
+12. TP session durability self-heal (autonomous, non-blocking)
+   - Validate tp session artifact for this story and backfill if missing:
+     ```bash
+     python3 scripts/validation/validate_insight_governance.py \
+       --story-id=<story_id> \
+       --strict \
+       --tp-session-artifact-mode=warn \
+       --tp-session-self-heal
+     ```
+   - If self-heal occurs, append a line in iterlog:
+     - `tp_session_self_healed: true`
+   - Do not block completion for P2+ in-progress stories; escalate only for repeated failures or P0/P1 completed stories.

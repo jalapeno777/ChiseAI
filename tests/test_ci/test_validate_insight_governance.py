@@ -129,3 +129,216 @@ Thinking Partner Proof: ACTIVE | CH-TP-002 | IP:none | AD:AD-CH-TP-002-20260308T
         ["validate_insight_governance.py", "--story-id", "CH-TP-002", "--strict"],
     )
     assert validate_insight_governance.main() == 0
+
+
+def test_tp_session_artifact_strict_fails_when_missing(
+    tmp_path: Path, monkeypatch
+) -> None:
+    iterlog_dir = tmp_path / "docs" / "tempmemories"
+    iterlog_dir.mkdir(parents=True)
+    body = """
+## Thinking Partner Status
+- tp_session_id: TPS-20260308T000000Z-zzz999
+
+## Insights Sent To Aria
+```text
+NO_ISSUES_PACKET
+- packet_id: NIP-CH-TP-003-20260308T000000Z-bbb222
+- story_id: CH-TP-003
+- reviewed_at_utc: 2026-03-08T00:00:00Z
+- context: no material issues
+- checks_run: validators
+- evidence: local checks all pass
+- evidence_signature: sig-2
+```
+
+## Aria Decisions
+```text
+ARIA_DECISION
+- aria_decision_id: AD-CH-TP-003-20260308T000100Z-ccc333
+- decision: ACCEPT
+- scope_update: no changes
+- scope_impact: NONE
+- prd_scope_change: false
+- craig_approval_required: false
+- rationale: no issues found
+- expected_outcome: proceed
+- follow_up_actions: none
+```
+
+## Rejected Insight Signatures
+- none
+
+Thinking Partner Proof: ACTIVE | CH-TP-003 | IP:none | AD:AD-CH-TP-003-20260308T000100Z-ccc333 | Risks:0
+"""
+    _write_iterlog(iterlog_dir / "iterlog-CH-TP-003.md", "CH-TP-003", "completed", body)
+
+    class _MissingRedis:
+        def exists(self, key: str) -> int:  # noqa: ARG002
+            return 0
+
+    monkeypatch.setattr(validate_insight_governance, "ITERLOG_DIR", iterlog_dir)
+    monkeypatch.setattr(
+        validate_insight_governance,
+        "_get_redis_clients",
+        lambda: {0: _MissingRedis()},
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "validate_insight_governance.py",
+            "--story-id",
+            "CH-TP-003",
+            "--strict",
+            "--tp-session-artifact-mode",
+            "strict",
+        ],
+    )
+    assert validate_insight_governance.main() == 1
+
+
+def test_tp_session_artifact_warn_mode_does_not_fail(
+    tmp_path: Path, monkeypatch
+) -> None:
+    iterlog_dir = tmp_path / "docs" / "tempmemories"
+    iterlog_dir.mkdir(parents=True)
+    body = """
+## Thinking Partner Status
+- tp_session_id: TPS-20260308T000000Z-yyy888
+
+## Insights Sent To Aria
+```text
+NO_ISSUES_PACKET
+- packet_id: NIP-CH-TP-004-20260308T000000Z-bbb222
+- story_id: CH-TP-004
+- reviewed_at_utc: 2026-03-08T00:00:00Z
+- context: no material issues
+- checks_run: validators
+- evidence: local checks all pass
+- evidence_signature: sig-2
+```
+
+## Aria Decisions
+```text
+ARIA_DECISION
+- aria_decision_id: AD-CH-TP-004-20260308T000100Z-ccc333
+- decision: ACCEPT
+- scope_update: no changes
+- scope_impact: NONE
+- prd_scope_change: false
+- craig_approval_required: false
+- rationale: no issues found
+- expected_outcome: proceed
+- follow_up_actions: none
+```
+
+## Rejected Insight Signatures
+- none
+
+Thinking Partner Proof: ACTIVE | CH-TP-004 | IP:none | AD:AD-CH-TP-004-20260308T000100Z-ccc333 | Risks:0
+"""
+    _write_iterlog(iterlog_dir / "iterlog-CH-TP-004.md", "CH-TP-004", "completed", body)
+
+    class _MissingRedis:
+        def exists(self, key: str) -> int:  # noqa: ARG002
+            return 0
+
+    monkeypatch.setattr(validate_insight_governance, "ITERLOG_DIR", iterlog_dir)
+    monkeypatch.setattr(
+        validate_insight_governance,
+        "_get_redis_clients",
+        lambda: {0: _MissingRedis()},
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "validate_insight_governance.py",
+            "--story-id",
+            "CH-TP-004",
+            "--strict",
+            "--tp-session-artifact-mode",
+            "warn",
+        ],
+    )
+    assert validate_insight_governance.main() == 0
+
+
+def test_tp_session_self_heal_recovers_missing_artifact(
+    tmp_path: Path, monkeypatch
+) -> None:
+    iterlog_dir = tmp_path / "docs" / "tempmemories"
+    iterlog_dir.mkdir(parents=True)
+    body = """
+## Thinking Partner Status
+- tp_session_id: TPS-20260308T000000Z-xxx777
+
+## Insights Sent To Aria
+```text
+NO_ISSUES_PACKET
+- packet_id: NIP-CH-TP-005-20260308T000000Z-bbb222
+- story_id: CH-TP-005
+- reviewed_at_utc: 2026-03-08T00:00:00Z
+- context: no material issues
+- checks_run: validators
+- evidence: local checks all pass
+- evidence_signature: sig-2
+```
+
+## Aria Decisions
+```text
+ARIA_DECISION
+- aria_decision_id: AD-CH-TP-005-20260308T000100Z-ccc333
+- decision: ACCEPT
+- scope_update: no changes
+- scope_impact: NONE
+- prd_scope_change: false
+- craig_approval_required: false
+- rationale: no issues found
+- expected_outcome: proceed
+- follow_up_actions: none
+```
+
+## Rejected Insight Signatures
+- none
+
+Thinking Partner Proof: ACTIVE | CH-TP-005 | IP:none | AD:AD-CH-TP-005-20260308T000100Z-ccc333 | Risks:0
+"""
+    _write_iterlog(iterlog_dir / "iterlog-CH-TP-005.md", "CH-TP-005", "completed", body)
+
+    class _HealingRedis:
+        def __init__(self) -> None:
+            self._store: dict[str, dict[str, str]] = {}
+
+        def exists(self, key: str) -> int:
+            return 1 if key in self._store else 0
+
+        def hset(self, key: str, mapping: dict[str, str]) -> int:
+            self._store[key] = dict(mapping)
+            return 1
+
+        def expire(self, key: str, ttl: int) -> int:  # noqa: ARG002
+            return 1 if key in self._store else 0
+
+    fake_redis = _HealingRedis()
+    monkeypatch.setattr(validate_insight_governance, "ITERLOG_DIR", iterlog_dir)
+    monkeypatch.setattr(
+        validate_insight_governance,
+        "_get_redis_clients",
+        lambda: {0: fake_redis},
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "validate_insight_governance.py",
+            "--story-id",
+            "CH-TP-005",
+            "--strict",
+            "--tp-session-artifact-mode",
+            "strict",
+            "--tp-session-self-heal",
+        ],
+    )
+    assert validate_insight_governance.main() == 0

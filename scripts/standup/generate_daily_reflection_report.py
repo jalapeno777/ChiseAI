@@ -116,6 +116,9 @@ class DailyReflectionReportGenerator:
             "completed_iterations": 0,
             "avg_iteration_duration_hours": 0.0,
             "tp_sessions_24h": 0,
+            "tp_sessions_expected_24h": 0,
+            "tp_sessions_found_24h": 0,
+            "tp_session_gap_count": 0,
             "insight_packets_24h": 0,
             "aria_decisions_24h": 0,
             "tp_proof_coverage_percent": 0.0,
@@ -182,15 +185,39 @@ class DailyReflectionReportGenerator:
             with_proof = 0
             insights = 0
             decisions = 0
+            expected_sessions: set[str] = set()
             for path in iterlog_paths:
                 body = path.read_text(encoding="utf-8", errors="replace")
                 if "Thinking Partner Proof:" in body:
                     with_proof += 1
                 insights += len(re.findall(r"insight_packet_id:\s*", body, flags=re.IGNORECASE))
                 decisions += len(re.findall(r"aria_decision_id:\s*", body, flags=re.IGNORECASE))
+                for session_id in re.findall(
+                    r"(?im)^\s*(?:[-*]\s*)?(?:\*\*|`)?tp_session_id(?:\*\*|`)?\s*:\s*([A-Za-z0-9._:-]+)\s*$",
+                    body,
+                ):
+                    expected_sessions.add(session_id.strip())
 
             kpis["insight_packets_24h"] = insights
             kpis["aria_decisions_24h"] = decisions
+            kpis["tp_sessions_expected_24h"] = len(expected_sessions)
+            if self.redis_client and expected_sessions:
+                found_sessions = 0
+                for session_id in expected_sessions:
+                    key = f"bmad:chiseai:tp:session:{session_id}"
+                    try:
+                        if self.redis_client.exists(key) == 1:
+                            found_sessions += 1
+                    except Exception:
+                        continue
+                kpis["tp_sessions_found_24h"] = found_sessions
+            else:
+                kpis["tp_sessions_found_24h"] = min(
+                    kpis["tp_sessions_24h"], kpis["tp_sessions_expected_24h"]
+                )
+            kpis["tp_session_gap_count"] = max(
+                kpis["tp_sessions_expected_24h"] - kpis["tp_sessions_found_24h"], 0
+            )
             if total > 0:
                 kpis["tp_proof_coverage_percent"] = round((with_proof / total) * 100.0, 1)
         except Exception:
@@ -559,6 +586,9 @@ class DailyReflectionReportGenerator:
         lines.append("")
         lines.append("## 🤝 Thinking Partner")
         lines.append(f"- **TP Sessions (24h):** {kpis['tp_sessions_24h']}")
+        lines.append(f"- **TP Sessions Expected (Iterlogs):** {kpis['tp_sessions_expected_24h']}")
+        lines.append(f"- **TP Sessions Found (Redis):** {kpis['tp_sessions_found_24h']}")
+        lines.append(f"- **TP Session Gap:** {kpis['tp_session_gap_count']}")
         lines.append(f"- **Insight Packets (24h):** {kpis['insight_packets_24h']}")
         lines.append(f"- **Aria Decisions (24h):** {kpis['aria_decisions_24h']}")
         lines.append(f"- **Proof Coverage:** {kpis['tp_proof_coverage_percent']:.1f}%")
