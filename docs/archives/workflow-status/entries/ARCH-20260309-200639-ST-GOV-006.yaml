@@ -1,0 +1,67 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260309-200639-ST-GOV-006
+original_story_id: ST-GOV-006
+archived_at: '2026-03-09T20:06:39.308277Z'
+archive_reason: age
+archive_reason_detail: Story completed 14 days ago, exceeds 14-day threshold
+migration:
+  phase: batch_1
+  migrated_by: senior-dev
+  migration_script_version: 1.0.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260309-200639-ST-GOV-006
+  id: ST-GOV-006
+  status: archived
+  title: Self-Review Quality Gate
+  priority: P1-HIGH
+  epic_id: EP-GOV-001
+  completion_date: '2026-02-23'
+  merge_commit: a565de0
+  pr_number: LEGACY
+archived_fields:
+  description: Automated self-review for all PRs with quality scoring and constitution
+    alignment
+  acceptance_criteria:
+  - Automated self-review for all PRs
+  - Quality score algorithm (style, coverage, security, constitution, docs)
+  - Blocks PR if quality score <80%
+  - Human can override with justification
+  - Integration with GitReviewBot (ST-AUTO-003)
+  notes:
+  - 'CONSOLIDATION REMEDIATION 2026-03-08: Verified merged to main via cross-branch
+    verification'
+  - 'Merge commit: a565de0 - Merge feature/ST-GOV-006-self-review-quality-gate'
+  - PR number marked LEGACY due to branch deletion - evidence in docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md
+  implementation_notes:
+  - 10 files added (3,852 lines) - merged to main from feature branch
+  - 'Quality scoring: Style 20%, Coverage 25%, Security 20%, Constitution 20%, Docs
+    15%'
+  - 'PR blocking: automatic block when quality score <80%'
+  - 'Human override: OverrideManager with approval workflow and justification'
+  - 'GitReviewBot integration: REST API + CLI script'
+  - 'CLI: scripts/governance/self_review.py'
+  test_results:
+    coverage_percent: 82
+    coverage_target: 80
+    failed: 0
+    passed: 65
+    status: All tests pass, coverage exceeds target
+    total_tests: 65
+  validation_gates:
+  - false_negative_rate: <5%
+  - false_positive_rate: <10%
+  - review_time: <2min
+  sprint_id: GOV-PHASE2-001
+  story_points: 8
+  fr_coverage:
+  - FR-GOV-006
+  validation_status: validated
+completion_evidence:
+  pr_number: LEGACY
+  merge_commit: a565de0
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-200639-ST-GOV-006.yaml
+integrity:
+  original_checksum: cfec901457c25529fc5004821599d51b8bb16262c2321807a72e8f85460fb806
+  archived_checksum: 8ae2bc50ad9837c32859b72d725de727d53a17e3ade63eb223786b0bb05e3704
+  verification_date: '2026-03-09T20:06:39.308301Z'

@@ -1,0 +1,68 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260309-200324-ST-LAUNCH-018
+original_story_id: ST-LAUNCH-018
+archived_at: '2026-03-09T20:03:24.255154Z'
+archive_reason: age
+archive_reason_detail: Story completed 16 days ago, exceeds 14-day threshold
+migration:
+  phase: batch_1
+  migrated_by: senior-dev
+  migration_script_version: 1.0.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260309-200324-ST-LAUNCH-018
+  id: ST-LAUNCH-018
+  status: archived
+  title: Outcome Capture Service Implementation
+  priority: P0-CRITICAL
+  epic_id: EP-LAUNCH-005
+  completion_date: '2026-02-21'
+  merge_commit: 3eaa16c268677f2fdd6274eaf85b7f2a015d1eab
+  pr_number: 242
+archived_fields:
+  description: Create outcome capture service that listens to Bybit WebSocket fill
+    events and stores trade outcomes for signal-to-outcome matching
+  acceptance_criteria:
+  - WebSocket listener - Connects to Bybit private WebSocket, subscribes to execution
+    channel
+  - Fill event parsing - Parses fill events to extract order_id, symbol, side, price,
+    quantity, timestamp
+  - Outcome storage - Stores outcomes in signal_outcomes table with proper schema
+  - Signal matching - Matches fills to originating signals using order metadata
+  - Error handling - Handles missed events, reconnections, and duplicate fills
+  - Latency target - Outcomes available within 5 minutes of fill
+  notes:
+  - CRITICAL PATH - blocks all feedback loop stories
+  - Must start on Day 1
+  - Fallback: CSV export if WebSocket issues
+  live_validation_gates:
+  - check: Execute trade, measure capture time
+    gate: capture_latency
+    threshold: <5 minutes
+  rollback_plan:
+  - action: Disable capture service
+    command: systemctl stop outcome-capture
+  scope_globs:
+  - src/ml/feedback/outcome_capture_service.py
+  - src/ml/feedback/bybit_fill_listener.py
+  - tests/test_ml/test_outcome_capture_service.py
+  depends_on:
+  - ST-LAUNCH-001
+  test_strategy:
+    e2e: pytest tests/e2e/test_fill_to_outcome.py -v
+    integration: pytest tests/test_ml/integration/test_bybit_websocket.py -v
+    unit: pytest tests/test_ml/test_outcome_capture_service.py -v
+  sprint_id: LAUNCH-SPRINT-1
+  story_points: 8
+  fr_coverage:
+  - FR-017
+  - FR-018
+  validation_status: validated
+completion_evidence:
+  pr_number: 242
+  merge_commit: 3eaa16c268677f2fdd6274eaf85b7f2a015d1eab
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-200324-ST-LAUNCH-018.yaml
+integrity:
+  original_checksum: 4dcd38955da0e5791a1fb2b4545abdf36cb688ae1d396c2ad61fbcc7f7fb89aa
+  archived_checksum: a226a47777a04c76d8ac66aece7b7a770a3a66a54c9a5e3fe3505a31318d01b3
+  verification_date: '2026-03-09T20:03:24.255203Z'

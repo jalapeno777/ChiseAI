@@ -35,7 +35,7 @@ WORKFLOW_STATUS_PATH = Path("docs/bmm-workflow-status.yaml")
 ARCHIVE_ENTRIES_DIR = Path("docs/archives/workflow-status/entries")
 ARCHIVE_SCHEMA_VERSION = "1.0.0"
 MIGRATION_SCRIPT_VERSION = "1.0.0"
-ARCHIVE_AGE_THRESHOLD_DAYS = 7
+ARCHIVE_AGE_THRESHOLD_DAYS = 14  # Phase 2: 14+ days old
 
 # Fields to archive (long-form content)
 ARCHIVE_FIELDS = [
@@ -158,19 +158,23 @@ def parse_date(date_str: str) -> Optional[datetime]:
     return None
 
 
-def should_archive(story: dict, current_date: datetime) -> tuple[bool, str]:
+def should_archive(story: dict, current_date: datetime) -> tuple[bool, str, str]:
     """
     Determine if a story should be archived.
 
     Returns:
-        (should_archive, reason)
+        (should_archive, reason, reason_detail)
     """
     story_id = story.get("id", "unknown")
     status = story.get("status", "").lower()
 
+    # Skip if already archived (has archive_ref)
+    if story.get("archive_ref"):
+        return False, "already archived", ""
+
     # Only archive completed/merged stories
-    if status not in ["completed", "merged", "archived"]:
-        return False, f"Status '{status}' not eligible for archival"
+    if status not in ["completed", "merged"]:
+        return False, f"Status '{status}' not eligible for archival", ""
 
     # Check completion date
     completion_date_str = story.get("completion_date") or story.get("merged_date")
@@ -183,7 +187,7 @@ def should_archive(story: dict, current_date: datetime) -> tuple[bool, str]:
     )
 
     if not completion_date:
-        return False, "No completion date found"
+        return False, "No completion date found", ""
 
     age_days = (current_date - completion_date).days
 
@@ -191,9 +195,29 @@ def should_archive(story: dict, current_date: datetime) -> tuple[bool, str]:
         return (
             False,
             f"Only {age_days} days old (threshold: {ARCHIVE_AGE_THRESHOLD_DAYS})",
+            "",
         )
 
-    return True, f"age ({age_days} days)"
+    # Check completion evidence (pr_number or merge_commit)
+    has_pr = story.get("pr_number") is not None and story.get("pr_number") not in [
+        "N/A",
+        None,
+        "",
+    ]
+    has_merge = story.get("merge_commit") is not None and story.get(
+        "merge_commit"
+    ) not in ["N/A", None, ""]
+    has_remediation_prs = bool(story.get("remediation_pr_numbers"))
+    has_merge_commits = bool(story.get("merge_commits"))
+
+    if not (has_pr or has_merge or has_remediation_prs or has_merge_commits):
+        return False, "MISSING COMPLETION EVIDENCE", ""
+
+    return (
+        True,
+        "age",
+        f"Story completed {age_days} days ago, exceeds {ARCHIVE_AGE_THRESHOLD_DAYS}-day threshold",
+    )
 
 
 def extract_archived_fields(story: dict) -> dict:
@@ -231,7 +255,11 @@ def create_completion_evidence(story: dict) -> Optional[dict]:
 
 
 def create_archive_entry(
-    story: dict, archive_ref: str, archive_reason: str, migrated_by: str
+    story: dict,
+    archive_ref: str,
+    archive_reason: str,
+    archive_reason_detail: str,
+    migrated_by: str,
 ) -> dict:
     """Create archive entry from story."""
     archived_fields = extract_archived_fields(story)
@@ -247,9 +275,9 @@ def create_archive_entry(
         "original_story_id": story.get("id", "unknown"),
         "archived_at": datetime.utcnow().isoformat() + "Z",
         "archive_reason": archive_reason,
-        "archive_reason_detail": f"Story archived due to {archive_reason}",
+        "archive_reason_detail": archive_reason_detail,
         "migration": {
-            "phase": "pilot",
+            "phase": "batch_1",
             "migrated_by": migrated_by,
             "migration_script_version": MIGRATION_SCRIPT_VERSION,
             "verification_status": "pending",
@@ -334,9 +362,10 @@ def save_workflow_status(data: dict, dry_run: bool = False):
 
 def find_stories_to_archive(
     workflow_data: dict, current_date: datetime, story_id_filter: Optional[str] = None
-) -> list[tuple[dict, str]]:
+) -> list[tuple[dict, str, str]]:
     """Find stories eligible for archival."""
     stories_to_archive = []
+    seen_story_ids = set()
 
     # Search in all story sections
     sections = ["completed", "backlog", "launch_stories"]
@@ -348,13 +377,18 @@ def find_stories_to_archive(
         for story in workflow_data[section]:
             story_id = story.get("id", "")
 
+            # Skip if already seen (story appears in multiple sections)
+            if story_id in seen_story_ids:
+                continue
+
             # Skip if specific story ID requested and doesn't match
             if story_id_filter and story_id != story_id_filter:
                 continue
 
-            should_arch, reason = should_archive(story, current_date)
+            should_arch, reason, reason_detail = should_archive(story, current_date)
             if should_arch:
-                stories_to_archive.append((story, reason))
+                stories_to_archive.append((story, reason, reason_detail))
+                seen_story_ids.add(story_id)
 
     return stories_to_archive
 
@@ -455,7 +489,7 @@ def main():
     archived_count = 0
     failed_count = 0
 
-    for story, reason in stories_to_archive:
+    for story, reason, reason_detail in stories_to_archive:
         story_id = story.get("id", "unknown")
         print(f"Processing: {story_id}")
         print(f"  Reason: {reason}")
@@ -467,7 +501,7 @@ def main():
 
             # Create archive entry
             archive_entry = create_archive_entry(
-                story, archive_ref, reason, args.migrated_by
+                story, archive_ref, reason, reason_detail, args.migrated_by
             )
 
             # Verify integrity

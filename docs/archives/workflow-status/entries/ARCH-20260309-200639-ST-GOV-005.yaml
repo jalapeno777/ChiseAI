@@ -1,0 +1,66 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260309-200639-ST-GOV-005
+original_story_id: ST-GOV-005
+archived_at: '2026-03-09T20:06:39.305581Z'
+archive_reason: age
+archive_reason_detail: Story completed 14 days ago, exceeds 14-day threshold
+migration:
+  phase: batch_1
+  migrated_by: senior-dev
+  migration_script_version: 1.0.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260309-200639-ST-GOV-005
+  id: ST-GOV-005
+  status: archived
+  title: Memory Consolidation Scheduler
+  priority: P1-HIGH
+  epic_id: EP-GOV-001
+  completion_date: '2026-02-23'
+  merge_commit: 437fa8c
+  pr_number: LEGACY
+archived_fields:
+  description: Automate memory lifecycle management with scheduled archiving and promotion
+  acceptance_criteria:
+  - Scheduled consolidation runs (daily at 2 AM UTC)
+  - Archives memories >90 days to cold storage
+  - Promotes high-value memories to "golden" set
+  - Configurable retention policies per memory type
+  - Rollback capability for 7 days post-consolidation
+  notes:
+  - 'CONSOLIDATION REMEDIATION 2026-03-08: Verified merged to main via cross-branch
+    verification'
+  - 'Merge commit: 437fa8c (shared with ST-GOV-007)'
+  - PR number marked LEGACY due to branch deletion - evidence in docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md
+  implementation_notes:
+  - 13 files added (4,018 lines) - all tracked in git
+  - 'Scheduled consolidation: daily at 2 AM UTC via APScheduler'
+  - 'Memory archiver: archives >90 days to cold storage'
+  - 'Golden memory promoter: weighted scoring for high-value memories'
+  - Configurable retention policies per MemoryType
+  - 7-day rollback capability with Redis-backed recovery
+  - 'CLI: scripts/governance/consolidation_scheduler.py'
+  test_results:
+    coverage_percent: 85
+    coverage_target: 80
+    failed: 0
+    passed: 113
+    status: All tests pass, coverage exceeds target
+    total_tests: 113
+  validation_gates:
+  - data_loss_incidents: 0
+  - rollback_time: <5min
+  - storage_reduction: "\u226520%"
+  sprint_id: GOV-PHASE2-001
+  story_points: 5
+  fr_coverage:
+  - FR-GOV-005
+  validation_status: validated
+completion_evidence:
+  pr_number: LEGACY
+  merge_commit: 437fa8c
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-200639-ST-GOV-005.yaml
+integrity:
+  original_checksum: 8dc7f235d07ac49651dfbeeb6b7dba4806b8a555e91a1246eb163b526a9855d0
+  archived_checksum: d3d996098cdc5d816078c17fad93e50a483d92ba421c78e159e50afc88dc093c
+  verification_date: '2026-03-09T20:06:39.305620Z'

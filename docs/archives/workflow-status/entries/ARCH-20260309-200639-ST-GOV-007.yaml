@@ -1,0 +1,65 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260309-200639-ST-GOV-007
+original_story_id: ST-GOV-007
+archived_at: '2026-03-09T20:06:39.310379Z'
+archive_reason: age
+archive_reason_detail: Story completed 14 days ago, exceeds 14-day threshold
+migration:
+  phase: batch_1
+  migrated_by: senior-dev
+  migration_script_version: 1.0.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260309-200639-ST-GOV-007
+  id: ST-GOV-007
+  status: archived
+  title: Retrieval Quality Evaluator
+  priority: P2-MEDIUM
+  epic_id: EP-GOV-001
+  completion_date: '2026-02-23'
+  merge_commit: 437fa8c
+  pr_number: LEGACY
+archived_fields:
+  description: Monitor and improve memory retrieval accuracy with A/B testing
+  acceptance_criteria:
+  - Tracks retrieval relevance scores
+  - A/B tests retrieval strategies
+  - Automatically tunes similarity thresholds
+  - Reports on retrieval accuracy
+  notes:
+  - 'CONSOLIDATION REMEDIATION 2026-03-08: Verified merged to main via cross-branch
+    verification'
+  - 'Merge commit: 437fa8c (shared with ST-GOV-005)'
+  - PR number marked LEGACY due to branch deletion - evidence in docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md
+  test_results:
+    coverage_percent: 85
+    failed: 0
+    passed: 121
+    status: All tests pass, coverage exceeds target
+    total: 121
+  validation_gates:
+  - precision_at_5: "\u226585%"
+  - recall_at_10: "\u226580%"
+  - mrr: "\u22650.75"
+  completion_evidence:
+  - 5 source files (evaluator, ab_tester, threshold_tuner, metrics, __init__) - 1,850+
+    lines
+  - 6 test files - 121 tests passing, 0 failed
+  - RetrievalEvaluator with precision/recall/MRR tracking
+  - ABTester with statistical significance analysis (t-test)
+  - ThresholdTuner with gradient, binary search, and adaptive strategies
+  - RetrievalMetricsExporter with Prometheus-compatible output
+  - Redis persistence for experiment results
+  sprint_id: GOV-PHASE2-002
+  story_points: 5
+  fr_coverage:
+  - FR-GOV-007
+  validation_status: validated
+completion_evidence:
+  pr_number: LEGACY
+  merge_commit: 437fa8c
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-200639-ST-GOV-007.yaml
+integrity:
+  original_checksum: dfccd709c0ac693ef4db9102b4125c6862b19c5244ce4124ce2e76decac9df70
+  archived_checksum: af9c3ac422c8dd189cf360c8ae814eba40fe4b6a3b7798cf5589243e86d483e3
+  verification_date: '2026-03-09T20:06:39.310405Z'
