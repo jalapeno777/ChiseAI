@@ -1,0 +1,132 @@
+{
+  "story_id": "CLOSURE-SPRINT-001",
+  "task": "1.2 - Enable Tempmemory Ingestion in Staging CI",
+  "timestamp": "2026-03-09T08:05:00Z",
+  "agent": "dev",
+  "status": "completed",
+  
+  "feature_flag": {
+    "name": "CI_TEMPMEMORY_INGESTION_ENABLED",
+    "previous_value": "${CI_TEMPMEMORY_INGESTION_ENABLED:-false}",
+    "new_value": "${CI_TEMPMEMORY_INGESTION_ENABLED:-auto}",
+    "behavior": {
+      "auto": "Enabled for non-main branches (staging), disabled for main (production)",
+      "true": "Force enable regardless of branch",
+      "false": "Force disable regardless of branch"
+    }
+  },
+  
+  "files_modified": [
+    {
+      "path": ".woodpecker/ci.yaml",
+      "changes": [
+        {
+          "step": "pre-eval-ingestion",
+          "lines": "479-519",
+          "change_type": "modified",
+          "description": "Updated feature flag default from 'false' to 'auto' with branch-based detection logic"
+        },
+        {
+          "step": "brain-eval",
+          "lines": "521-566",
+          "change_type": "modified",
+          "description": "Added same auto-detection logic to ensure consistency with pre-eval-ingestion"
+        }
+      ]
+    }
+  ],
+  
+  "script_verified": {
+    "path": "scripts/ci/pre_eval_ingestion.py",
+    "status": "exists_and_functional",
+    "test_result": "help_output_successful",
+    "description": "Pre-evaluation tempmemory ingestion script for CI"
+  },
+  
+  "staging_behavior": {
+    "enabled_for": "All non-main branches (feature/*, fix/*, etc.)",
+    "disabled_for": "main branch (production)",
+    "detection_logic": "Checks CI_COMMIT_BRANCH against 'main' and CI_REPO_DEFAULT_BRANCH"
+  },
+  
+  "rollback_controls": {
+    "emergency_rollback": {
+      "method_1": "Set CI_TEMPMEMORY_INGESTION_ENABLED=false at pipeline level in Woodpecker UI",
+      "method_2": "Revert the .woodpecker/ci.yaml changes via git revert",
+      "method_3": "Disable the entire pre-eval-ingestion step by commenting it out"
+    },
+    "partial_rollback": {
+      "disable_specific_branch": "Set CI_TEMPMEMORY_INGESTION_ENABLED=false in branch-specific environment variables",
+      "enable_only_specific_branch": "Override with CI_TEMPMEMORY_INGESTION_ENABLED=true for production if needed"
+    },
+    "monitoring": {
+      "check_logs": "Review $CI_STATUS_DIR/pre-eval-ingestion.log for feature flag state",
+      "check_status": "Review $CI_STATUS_DIR/pre-eval-ingestion.status for exit code",
+      "check_report": "Review $CI_STATUS_DIR/pre-eval-ingestion.json for detailed results"
+    }
+  },
+  
+  "verification_steps": [
+    {
+      "step": 1,
+      "action": "Feature flag verification",
+      "command": "grep 'CI_TEMPMEMORY_INGESTION_ENABLED' .woodpecker/ci.yaml",
+      "expected": "Should show 'auto' as default with branch detection logic"
+    },
+    {
+      "step": 2,
+      "action": "Script existence verification",
+      "command": "ls -la scripts/ci/pre_eval_ingestion.py",
+      "expected": "File exists and is executable"
+    },
+    {
+      "step": 3,
+      "action": "Pipeline validation",
+      "command": "# Run via Woodpecker UI or wait for next PR build",
+      "expected": "Pipeline runs pre-eval ingestion step on non-main branches"
+    }
+  ],
+  
+  "risks_and_mitigations": {
+    "risk_1": {
+      "description": "Feature flag may not work correctly on first run",
+      "mitigation": "Monitor initial PR builds closely; rollback available via methods documented above"
+    },
+    "risk_2": {
+      "description": "Branch detection may fail if CI_COMMIT_BRANCH is not set",
+      "mitigation": "Falls back to 'false' (disabled) if detection fails - safe default"
+    },
+    "risk_3": {
+      "description": "Ingestion may fail if Redis/Qdrant unavailable",
+      "mitigation": "Script handles failures gracefully; CI pipeline continues (non-blocking)"
+    }
+  },
+  
+  "success_criteria": {
+    "criteria_1": {
+      "description": "CI_TEMPMEMORY_INGESTION_ENABLED defaults to auto mode",
+      "status": "verified"
+    },
+    "criteria_2": {
+      "description": "Staging branches (non-main) have ingestion enabled",
+      "status": "implemented"
+    },
+    "criteria_3": {
+      "description": "Production (main) has ingestion disabled",
+      "status": "implemented"
+    },
+    "criteria_4": {
+      "description": "Rollback procedure documented",
+      "status": "documented"
+    }
+  },
+  
+  "next_steps": [
+    "Monitor first few PR builds to verify feature flag works correctly",
+    "Validate ingestion results in staging before considering production enable",
+    "Update runbooks to include tempmemory ingestion monitoring"
+  ],
+  
+  "branch": "feature/CLOSURE-SPRINT-001-ci-staging",
+  "commit_message": "feat(ci): enable tempmemory ingestion in staging (CLOSURE-SPRINT-001)"
+}
