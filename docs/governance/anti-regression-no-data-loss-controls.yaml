@@ -1,0 +1,1057 @@
+# ANTI-REGRESSION AND NO-DATA-LOSS CONTROLS
+# Version: 1.0
+# Purpose: Comprehensive safety controls for workflow status archival system
+# Author: ChiseAI Workflow Governance
+# Last Updated: 2026-03-09
+
+safety_controls:
+  version: "1.0"
+  last_updated: "2026-03-09"
+  applies_to:
+    - scripts/workflow/archive_old_stories.py
+    - scripts/workflow/verify_archive_completeness.py
+    - scripts/workflow/verify_workflow_integrity.py
+    - scripts/workflow/restore_from_archive.py
+    - docs/bmm-workflow-status.yaml
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # PRE-FLIGHT CHECKS
+  # ═══════════════════════════════════════════════════════════════════════════
+  pre_flight_checks:
+    description: "Validation before any archival operation - ALL BLOCKING checks must pass"
+    execution_order: sequential
+    abort_on_failure: true
+    
+    checks:
+      - check_id: PFC-001
+        name: "YAML Syntax Validation"
+        description: "Ensure workflow file is valid YAML before any operations"
+        command: |
+          python3 -c "
+          import yaml
+          with open('docs/bmm-workflow-status.yaml', 'r') as f:
+              yaml.safe_load(f)
+          print('YAML syntax valid')
+          "
+        severity: BLOCKING
+        timeout_seconds: 30
+        on_failure: 
+          action: "ABORT_IMMEDIATELY"
+          alert: "P0-CRITICAL"
+          message: "Workflow file has YAML syntax errors - archival blocked"
+          notify: ["merlin", "jarvis"]
+      
+      - check_id: PFC-002
+        name: "Required Fields Present"
+        description: "Verify all completed stories have mandatory completion evidence"
+        validation: |
+          All stories with status in ['completed', 'merged'] MUST have:
+            - pr_number OR remediation_pr_numbers
+            - merge_commit OR merge_commits
+            - completed_date OR merged_date
+        command: |
+          python3 scripts/validation/validate_status_evidence.py --strict
+        severity: BLOCKING
+        timeout_seconds: 60
+        on_failure:
+          action: "LOG_INCIDENT_CONTINUE"
+          alert: "P1-HIGH"
+          message: "Stories missing completion evidence - skip these stories, continue with others"
+          log_to: "bmad:chiseai:archival:missing_evidence"
+      
+      - check_id: PFC-003
+        name: "Archive Directory Writable"
+        description: "Verify archive directories exist and are writable"
+        command: |
+          test -d docs/archives/workflow-status && \
+          test -w docs/archives/workflow-status && \
+          test -d docs/archives/workflow-status/story-details && \
+          test -w docs/archives/workflow-status/story-details && \
+          echo "Archive directories writable"
+        severity: BLOCKING
+        timeout_seconds: 10
+        on_failure:
+          action: "ABORT_IMMEDIATELY"
+          alert: "P1-HIGH"
+          message: "Archive directories not writable - check permissions and disk space"
+          auto_remediation: |
+            mkdir -p docs/archives/workflow-status/story-details
+            chmod 755 docs/archives/workflow-status/story-details
+      
+      - check_id: PFC-004
+        name: "Git Repository Clean"
+        description: "Ensure no uncommitted changes that could conflict with archival"
+        command: |
+          if [ -z "$(git status --porcelain docs/bmm-workflow-status.yaml)" ]; then
+            echo "Workflow file clean"
+            exit 0
+          else
+            echo "Workflow file has uncommitted changes"
+            exit 1
+          fi
+        severity: WARNING
+        timeout_seconds: 10
+        on_failure:
+          action: "REQUIRE_FORCE_FLAG"
+          alert: "P2-MEDIUM"
+          message: "Uncommitted changes detected - require --force flag to proceed"
+          note: "This is a WARNING, not blocking, but requires explicit override"
+      
+      - check_id: PFC-005
+        name: "Qdrant Connectivity"
+        description: "Verify Qdrant is accessible for vector promotion"
+        command: |
+          curl -sf http://host.docker.internal:6334/healthz || \
+          curl -sf http://chiseai-qdrant:6333/healthz || \
+          echo "Qdrant unavailable"
+        severity: WARNING
+        timeout_seconds: 15
+        on_failure:
+          action: "DEGRADED_MODE"
+          alert: "P2-MEDIUM"
+          message: "Qdrant unavailable - archive to files only, retry Qdrant later"
+          degraded_mode: "FILE_ONLY_ARCHIVAL"
+      
+      - check_id: PFC-006
+        name: "Redis Connectivity"
+        description: "Verify Redis is accessible for hash storage and logging"
+        command: |
+          redis-cli -h host.docker.internal -p 6380 PING | grep -q "PONG" || \
+          redis-cli -h chiseai-redis -p 6379 PING | grep -q "PONG" || \
+          echo "Redis unavailable"
+        severity: WARNING
+        timeout_seconds: 10
+        on_failure:
+          action: "DEGRADED_MODE"
+          alert: "P2-MEDIUM"
+          message: "Redis unavailable - proceed with file-based verification only"
+          degraded_mode: "FILE_ONLY_VERIFICATION"
+      
+      - check_id: PFC-007
+        name: "Disk Space Check"
+        description: "Ensure sufficient disk space for archival operations"
+        command: |
+          AVAILABLE=$(df -m docs/archives | tail -1 | awk '{print $4}')
+          if [ "$AVAILABLE" -gt 100 ]; then
+            echo "Sufficient disk space: ${AVAILABLE}MB available"
+            exit 0
+          else
+            echo "Insufficient disk space: ${AVAILABLE}MB available (need >100MB)"
+            exit 1
+          fi
+        severity: BLOCKING
+        timeout_seconds: 10
+        on_failure:
+          action: "ABORT_IMMEDIATELY"
+          alert: "P0-CRITICAL"
+          message: "Insufficient disk space - archival would risk system stability"
+      
+      - check_id: PFC-008
+        name: "Backup Directory Available"
+        description: "Ensure backup can be created before modification"
+        command: |
+          BACKUP_DIR=$(dirname docs/bmm-workflow-status.yaml)
+          test -w "$BACKUP_DIR" && echo "Backup directory writable" || exit 1
+        severity: BLOCKING
+        timeout_seconds: 10
+        on_failure:
+          action: "ABORT_IMMEDIATELY"
+          alert: "P1-HIGH"
+          message: "Cannot create backup - abort to prevent data loss"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # DATA INTEGRITY VERIFICATION
+  # ═══════════════════════════════════════════════════════════════════════════
+  data_integrity:
+    description: "Multi-layer verification ensuring zero data loss during archival"
+    verification_stages:
+      - stage: "pre-archive"
+        description: "Capture state before any modifications"
+        steps:
+          - step: 1
+            name: "Calculate Content Hash"
+            action: "Calculate SHA-256 hash of complete story content"
+            algorithm: "SHA-256"
+            command: |
+              python3 -c "
+              import hashlib, json, yaml
+              with open('docs/bmm-workflow-status.yaml', 'r') as f:
+                  data = yaml.safe_load(f)
+              # Find story and calculate hash
+              story_id = 'ST-XXX'  # parameterized
+              for section in ['completed', 'backlog', 'launch_stories']:
+                  for story in data.get(section, []):
+                      if story.get('id') == story_id:
+                          content = json.dumps(story, sort_keys=True, default=str)
+                          hash = hashlib.sha256(content.encode()).hexdigest()
+                          print(f'{story_id}:{hash}')
+              "
+            storage:
+              redis_key: "bmad:chiseai:archival:hash:{story_id}"
+              redis_ttl: 7776000  # 90 days
+              file_backup: "docs/archives/workflow-status/hashes/{story_id}.hash"
+          
+          - step: 2
+            name: "Capture Story Byte Count"
+            action: "Record original story size for comparison"
+            command: |
+              python3 -c "
+              import yaml
+              with open('docs/bmm-workflow-status.yaml', 'r') as f:
+                  content = f.read()
+              # Find story position and size
+              story_id = 'ST-XXX'
+              print(f'{story_id}:{len(content)}')
+              "
+            storage:
+              redis_key: "bmad:chiseai:archival:size:{story_id}"
+              redis_ttl: 7776000
+      
+      - stage: "during-archive"
+        description: "Verify during archival process"
+        steps:
+          - step: 1
+            name: "Field Completeness Check"
+            action: "Verify all fields from source are present in archive"
+            fields_verified:
+              - id
+              - title
+              - status
+              - owner
+              - priority
+              - story_points
+              - created_date
+              - completed_date / merged_date
+              - pr_number / remediation_pr_numbers
+              - merge_commit / merge_commits
+              - acceptance_criteria
+              - evidence_files
+              - test_results
+              - validation_summary
+              - notes
+              - epic_id
+              - related_stories
+            verification_command: |
+              python3 scripts/workflow/verify_archive_completeness.py --strict
+          
+          - step: 2
+            name: "Archive File Written"
+            action: "Verify archive file exists and is readable"
+            command: |
+              test -f "docs/archives/workflow-status/story-details/{story_id}-*-details.yaml"
+            retry:
+              count: 3
+              delay_seconds: 1
+      
+      - stage: "post-archive"
+        description: "Verify after archival is complete"
+        steps:
+          - step: 1
+            name: "Hash Verification"
+            action: "Verify archive content hash matches pre-archive hash"
+            command: |
+              python3 -c "
+              import hashlib, json, yaml
+              story_id = 'ST-XXX'
+              # Load archive
+              import glob
+              files = glob.glob(f'docs/archives/workflow-status/story-details/{story_id}-*-details.yaml')
+              if not files:
+                  print('ARCHIVE_NOT_FOUND')
+                  exit(1)
+              with open(files[0], 'r') as f:
+                  archive = yaml.safe_load(f)
+              # Calculate hash of archived story
+              story = archive.get('archived_story', {}).get('full_details', {})
+              if not story:
+                  story = archive.get('story_summary', {})
+              content = json.dumps(story, sort_keys=True, default=str)
+              current_hash = hashlib.sha256(content.encode()).hexdigest()
+              # Compare with stored hash
+              import redis
+              r = redis.Redis(host='host.docker.internal', port=6380, decode_responses=True)
+              stored_hash = r.hget(f'bmad:chiseai:archival:hash:{story_id}', 'hash')
+              if current_hash == stored_hash:
+                  print('HASH_MATCH')
+              else:
+                  print(f'HASH_MISMATCH: stored={stored_hash}, current={current_hash}')
+                  exit(1)
+              "
+            mismatch_action:
+              severity: "P0-CRITICAL"
+              immediate_action: "STOP_ALL_ARCHIVAL"
+              alert_channels: ["discord", "email"]
+              notify: ["merlin", "jarvis", "senior-dev"]
+              incident_template: |
+                ## DATA INTEGRITY VIOLATION
+                Story: {story_id}
+                Issue: Archive hash does not match original
+                Time: {timestamp}
+                Action: Archival halted, investigation required
+          
+          - step: 2
+            name: "Index Entry Verification"
+            action: "Verify story appears in archive index"
+            command: |
+              grep -q "story_id: {story_id}" docs/archives/workflow-status/archive-index.yaml
+            on_failure:
+              action: "REINDEX_STORY"
+              command: |
+                python3 scripts/workflow/update_archive_index.py --story-id {story_id}
+          
+          - step: 3
+            name: "Workflow Lean Verification"
+            action: "Verify story is properly lean in workflow file"
+            command: |
+              python3 -c "
+              import yaml
+              with open('docs/bmm-workflow-status.yaml', 'r') as f:
+                  data = yaml.safe_load(f)
+              story_id = 'ST-XXX'
+              for section in ['completed', 'backlog', 'launch_stories']:
+                  for story in data.get(section, []):
+                      if story.get('id') == story_id:
+                          field_count = len(story.keys())
+                          if field_count <= 10:
+                              print(f'LEAN_OK: {field_count} fields')
+                          else:
+                              print(f'LEAN_FAIL: {field_count} fields (expected <= 10)')
+                              exit(1)
+              "
+          
+          - step: 4
+            name: "Referential Integrity"
+            action: "Verify epic links and related story references are intact"
+            command: |
+              python3 scripts/workflow/verify_workflow_integrity.py --check-epics
+            on_failure:
+              action: "RESTORE_AND_INVESTIGATE"
+              severity: "P1-HIGH"
+
+    completeness_check:
+      description: "Verify all required data is preserved"
+      checks:
+        - check: "All fields from source story present in archive"
+          fields_verified:
+            - acceptance_criteria
+            - evidence_files
+            - test_results
+            - validation_summary
+            - detailed_notes
+          verification_method: "field_by_field_comparison"
+          
+        - check: "Archive index updated"
+          verification: "story_id appears in docs/archives/workflow-status/archive-index.yaml"
+          query: |
+            yq '.archive_index.entries[] | select(.story_id == "{story_id}")' \
+              docs/archives/workflow-status/archive-index.yaml
+          
+        - check: "Referential integrity maintained"
+          verification: "epic_id links still valid after archival"
+          command: |
+            python3 scripts/workflow/verify_workflow_integrity.py --check-epics
+          
+        - check: "High-value content promoted to Qdrant"
+          verification: "Vectors created for P0/P1 stories"
+          query: |
+            curl -s "http://host.docker.internal:6334/collections/chiseai_workflow_archives/points/search" \
+              -H "Content-Type: application/json" \
+              -d '{"vector": [0.0], "limit": 1, "filter": {"must": [{"key": "story_id", "match": {"value": "{story_id}"}}]}}'
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # BACKUP STRATEGY
+  # ═══════════════════════════════════════════════════════════════════════════
+  backup_strategy:
+    description: "Five-layer backup strategy for maximum data protection"
+    layers:
+      - layer: 1
+        name: "Git Version Control"
+        description: "All changes committed to git - ultimate backup"
+        type: "implicit"
+        retention: "Permanent (git history)"
+        recovery_time: "Minutes"
+        commands:
+          pre_archival: |
+            git add docs/bmm-workflow-status.yaml
+            git commit -m "pre-archival: backup before archiving $(date -u +%Y%m%d_%H%M%S)"
+          post_archival: |
+            git add docs/bmm-workflow-status.yaml docs/archives/
+            git commit -m "archival: archived stories to archive system $(date -u +%Y%m%d_%H%M%S)"
+        
+      - layer: 2
+        name: "Pre-Migration Backup"
+        description: "Full backup before first archival run"
+        type: "explicit"
+        location: "docs/bmm-workflow-status.yaml.backup.{timestamp}"
+        timestamp_format: "%Y%m%d_%H%M%S"
+        retention: "30 days"
+        recovery_time: "Seconds"
+        command: |
+          cp docs/bmm-workflow-status.yaml \
+             docs/bmm-workflow-status.yaml.backup.$(date -u +%Y%m%d_%H%M%S)
+        auto_cleanup: true
+        cleanup_command: |
+          find docs -name "bmm-workflow-status.yaml.backup.*" -mtime +30 -delete
+        
+      - layer: 3
+        name: "Archive Documents"
+        description: "Archived stories in separate files - primary data store"
+        type: "primary"
+        location: "docs/archives/workflow-status/story-details/"
+        retention: "2 years"
+        recovery_time: "Seconds"
+        structure: |
+          {story_id}-{slug}-details.yaml
+        integrity: "SHA-256 hash verified"
+        
+      - layer: 4
+        name: "Redis Backup"
+        description: "Archive hashes and metadata for verification"
+        type: "metadata"
+        location: "Redis keys: bmad:chiseai:archival:*"
+        retention: "90 days"
+        recovery_time: "Seconds"
+        keys:
+          - "bmad:chiseai:archival:hash:{story_id}"
+          - "bmad:chiseai:archival:size:{story_id}"
+          - "bmad:chiseai:archival:log"
+          - "bmad:chiseai:archival:stats"
+        persistence: "RDB snapshots every 15 minutes"
+        
+      - layer: 5
+        name: "Qdrant Vectors"
+        description: "Semantic search backup - high-value content"
+        type: "semantic"
+        location: "Qdrant collection: chiseai_workflow_archives"
+        retention: "Permanent"
+        recovery_time: "Minutes"
+        content_types:
+          - acceptance_criteria
+          - key_decisions
+          - lessons_learned
+          - implementation_notes
+        snapshot_schedule: "Daily at 04:00 UTC"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # MONITORING AND ALERTING
+  # ═══════════════════════════════════════════════════════════════════════════
+  monitoring:
+    description: "Real-time monitoring and alerting for archival operations"
+    
+    metrics:
+      - metric: archival_operations_total
+        type: counter
+        labels:
+          - status: [success, failure, partial]
+          - story_id: string
+          - phase: [identify, create_archive, promote_qdrant, lean_workflow]
+        description: "Total number of archival operations"
+        redis_key: "bmad:chiseai:archival:metrics:operations_total"
+        
+      - metric: archival_bytes_processed
+        type: histogram
+        buckets: [1024, 4096, 16384, 65536, 262144, 1048576]
+        description: "Size of archived content in bytes"
+        redis_key: "bmad:chiseai:archival:metrics:bytes_histogram"
+        
+      - metric: archival_duration_seconds
+        type: histogram
+        buckets: [1, 5, 10, 30, 60, 120, 300]
+        description: "Time to archive a story in seconds"
+        redis_key: "bmad:chiseai:archival:metrics:duration_histogram"
+        
+      - metric: data_integrity_violations
+        type: counter
+        severity: CRITICAL
+        alert_threshold: "> 0"
+        description: "Number of data integrity violations detected"
+        redis_key: "bmad:chiseai:archival:metrics:integrity_violations"
+        
+      - metric: archive_directory_size_bytes
+        type: gauge
+        description: "Current size of archive directory"
+        command: "du -sb docs/archives/workflow-status | cut -f1"
+        
+      - metric: stories_archived_total
+        type: counter
+        description: "Total stories archived since system start"
+        redis_key: "bmad:chiseai:archival:metrics:stories_total"
+        
+      - metric: qdrant_promotion_failures
+        type: counter
+        description: "Number of Qdrant promotion failures"
+        redis_key: "bmad:chiseai:archival:metrics:qdrant_failures"
+    
+    alerts:
+      - alert: ArchivalFailureRateHigh
+        alert_id: ARCH-001
+        condition: "rate(archival_operations_total{status='failure'}[1h]) > 0.1"
+        severity: P1
+        threshold: "10% failure rate"
+        window: "1 hour"
+        action: "Page on-call, pause archival automation"
+        auto_mitigation: |
+          redis-cli SET bmad:chiseai:workflow:archival:enabled 0
+        escalation: "merlin"
+        
+      - alert: DataIntegrityViolation
+        alert_id: ARCH-002
+        condition: "data_integrity_violations > 0"
+        severity: P0
+        threshold: "Any violation"
+        action: "Immediate escalation, initiate rollback"
+        auto_mitigation: |
+          # Stop all archival operations
+          redis-cli SET bmad:chiseai:workflow:archival:enabled 0
+          # Alert team
+          echo "P0: Data integrity violation in archival system" | \
+            discord_send --channel alerts --priority critical
+        escalation: "merlin, craig"
+        runbook: "docs/runbooks/data-integrity-violation.md"
+        
+      - alert: ArchiveDirectoryGrowing
+        alert_id: ARCH-003
+        condition: "archive_directory_size_bytes > 1073741824"  # 1GB
+        severity: P2
+        threshold: "> 1GB"
+        action: "Schedule cleanup, review retention policy"
+        auto_mitigation: |
+          python3 scripts/workflow/cleanup_old_archives.py --dry-run
+        escalation: "jarvis"
+        
+      - alert: QdrantPromotionStalled
+        alert_id: ARCH-004
+        condition: "qdrant_promotion_failures > 5"
+        severity: P2
+        threshold: "> 5 failures in 24h"
+        action: "Investigate Qdrant health, retry queue"
+        runbook: "docs/runbooks/qdrant-promotion-failure.md"
+        
+      - alert: BackupCreationFailure
+        alert_id: ARCH-005
+        condition: "backup_creation_success == 0"
+        severity: P1
+        threshold: "Any backup failure"
+        action: "Stop archival, investigate storage"
+        escalation: "senior-dev"
+
+    dashboards:
+      - name: "Archival System Health"
+        url: "http://host.docker.internal:3001/d/archival-system"
+        panels:
+          - "Operations per hour"
+          - "Success rate"
+          - "Average duration"
+          - "Integrity violations"
+          - "Storage usage"
+      
+      - name: "Data Integrity"
+        url: "http://host.docker.internal:3001/d/data-integrity"
+        panels:
+          - "Hash verification status"
+          - "Completeness checks"
+          - "Failed verifications"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # RECOVERY PROCEDURES
+  # ═══════════════════════════════════════════════════════════════════════════
+  recovery_procedures:
+    description: "Step-by-step recovery procedures for all failure scenarios"
+    
+    scenario_1_single_story_corruption:
+      trigger: "Archive file for story ST-XXX is corrupted or missing"
+      severity: P2
+      estimated_recovery_time: "5 minutes"
+      steps:
+        - step: 1
+          name: "Check git history for original content"
+          command: |
+            git show HEAD:docs/bmm-workflow-status.yaml | \
+              python3 -c "
+              import sys, yaml
+              data = yaml.safe_load(sys.stdin)
+              story_id = 'ST-XXX'
+              for section in ['completed', 'backlog', 'launch_stories']:
+                  for story in data.get(section, []):
+                      if story.get('id') == story_id:
+                          print(yaml.dump(story))
+                          exit(0)
+              print('Story not found in git history')
+              exit(1)
+              "
+          expected_output: "Story YAML content"
+          
+        - step: 2
+          name: "Restore from git history"
+          command: |
+            python3 scripts/workflow/restore_from_git.py --story-id ST-XXX
+          verification: |
+            grep -q "ST-XXX" docs/bmm-workflow-status.yaml && echo "Restored to workflow"
+          
+        - step: 3
+          name: "Regenerate archive file"
+          command: |
+            python3 scripts/workflow/archive_old_stories.py \
+              --story-id ST-XXX --execute
+          verification: |
+            ls docs/archives/workflow-status/story-details/ST-XXX-*-details.yaml
+          
+        - step: 4
+          name: "Verify restoration"
+          command: |
+            python3 scripts/workflow/verify_archive_completeness.py --story-id ST-XXX
+          expected_exit_code: 0
+          
+        - step: 5
+          name: "Update incident log"
+          command: |
+            redis_state_rpush \
+              name="bmad:chiseai:archival:recovery:log" \
+              value='{"story_id": "ST-XXX", "scenario": "single_corruption", "recovered_at": "'$(date -Iseconds)'"}'
+    
+    scenario_2_mass_data_loss:
+      trigger: "Multiple archive files missing or corrupted"
+      severity: P0
+      estimated_recovery_time: "30 minutes"
+      steps:
+        - step: 1
+          name: "Stop all archival automation"
+          command: |
+            redis-cli SET bmad:chiseai:workflow:archival:enabled 0
+            echo "Archival automation disabled"
+          verification: |
+            redis-cli GET bmad:chiseai:workflow:archival:enabled | grep -q "0"
+          
+        - step: 2
+          name: "Alert team of mass data loss"
+          command: |
+            echo "P0: Mass data loss detected in archival system" | \
+              discord_send --channel alerts --priority critical
+          
+        - step: 3
+          name: "Identify most recent valid backup"
+          command: |
+            BACKUP=$(ls -t docs/bmm-workflow-status.yaml.backup.* | head -1)
+            echo "Using backup: $BACKUP"
+            echo "BACKUP_PATH=$BACKUP" >> $GITHUB_ENV
+          
+        - step: 4
+          name: "Restore workflow status from backup"
+          command: |
+            cp "$BACKUP_PATH" docs/bmm-workflow-status.yaml
+            echo "Restored from backup"
+          verification: |
+            python3 scripts/workflow/verify_workflow_integrity.py
+          
+        - step: 5
+          name: "Verify workflow integrity"
+          command: |
+            python3 scripts/workflow/verify_workflow_integrity.py --strict
+          expected_exit_code: 0
+          
+        - step: 6
+          name: "Clear corrupted archive directory"
+          command: |
+            mv docs/archives/workflow-status/story-details \
+               docs/archives/workflow-status/story-details.corrupted.$(date +%Y%m%d_%H%M%S)
+            mkdir -p docs/archives/workflow-status/story-details
+            echo "Archive directory cleared"
+          
+        - step: 7
+          name: "Re-archive all eligible stories"
+          command: |
+            python3 scripts/workflow/archive_old_stories.py --execute
+          verification: |
+            python3 scripts/workflow/verify_archive_completeness.py --strict
+          
+        - step: 8
+          name: "Re-enable archival automation"
+          command: |
+            redis-cli SET bmad:chiseai:workflow:archival:enabled 1
+            echo "Archival automation re-enabled"
+          
+        - step: 9
+          name: "Create post-mortem"
+          command: |
+            echo "Post-mortem required for mass data loss incident"
+            # Trigger post-mortem creation workflow
+    
+    scenario_3_qdrant_failure:
+      trigger: "Qdrant promotion fails or vectors lost"
+      severity: P2
+      estimated_recovery_time: "15 minutes"
+      steps:
+        - step: 1
+          name: "Switch to degraded mode (file-only archival)"
+          command: |
+            python3 scripts/workflow/archive_old_stories.py --execute --skip-qdrant
+          note: "Continue archiving to files while Qdrant is down"
+          
+        - step: 2
+          name: "Diagnose Qdrant connectivity"
+          command: |
+            curl -v http://host.docker.internal:6334/healthz
+            docker logs chiseai-qdrant --tail 100
+          
+        - step: 3
+          name: "Attempt Qdrant restart"
+          command: |
+            docker restart chiseai-qdrant
+            sleep 10
+            curl -sf http://host.docker.internal:6334/healthz
+          
+        - step: 4
+          name: "Replay Qdrant promotion"
+          command: |
+            python3 scripts/memory/promote_archived_to_qdrant.py --replay --since $(date -d '1 day ago' +%Y-%m-%d)
+          verification: |
+            curl -s "http://host.docker.internal:6334/collections/chiseai_workflow_archives" | \
+              jq '.result.points_count'
+          
+        - step: 5
+          name: "Verify vector integrity"
+          command: |
+            python3 scripts/memory/verify_qdrant_vectors.py --collection chiseai_workflow_archives
+          expected_exit_code: 0
+    
+    scenario_4_workflow_file_corruption:
+      trigger: "Workflow file corrupted during archival"
+      severity: P0
+      estimated_recovery_time: "10 minutes"
+      steps:
+        - step: 1
+          name: "Stop all operations immediately"
+          command: |
+            redis-cli SET bmad:chiseai:workflow:archival:enabled 0
+            touch /tmp/archival_emergency_stop
+          
+        - step: 2
+          name: "Verify corruption"
+          command: |
+            python3 -c "import yaml; yaml.safe_load(open('docs/bmm-workflow-status.yaml'))"
+          expected_exit_code: 1
+          
+        - step: 3
+          name: "Restore from most recent backup"
+          command: |
+            BACKUP=$(ls -t docs/bmm-workflow-status.yaml.backup.* | head -1)
+            cp "$BACKUP" docs/bmm-workflow-status.yaml
+            echo "Restored from: $BACKUP"
+          
+        - step: 4
+          name: "Verify restored file"
+          command: |
+            python3 scripts/workflow/verify_workflow_integrity.py
+          expected_exit_code: 0
+          
+        - step: 5
+          name: "Identify cause of corruption"
+          command: |
+            git diff HEAD docs/bmm-workflow-status.yaml | head -100
+          
+        - step: 6
+          name: "Fix root cause"
+          command: |
+            # Depends on root cause analysis
+            echo "Apply fix based on root cause"
+          
+        - step: 7
+          name: "Re-enable operations"
+          command: |
+            rm -f /tmp/archival_emergency_stop
+            redis-cli SET bmad:chiseai:workflow:archival:enabled 1
+    
+    scenario_5_redis_failure:
+      trigger: "Redis unavailable during archival"
+      severity: P2
+      estimated_recovery_time: "10 minutes"
+      steps:
+        - step: 1
+          name: "Continue in file-only mode"
+          command: |
+            export ARCHIVAL_MODE=FILE_ONLY
+            python3 scripts/workflow/archive_old_stories.py --execute --skip-redis
+          
+        - step: 2
+          name: "Diagnose Redis"
+          command: |
+            redis-cli -h host.docker.internal -p 6380 PING
+            docker logs chiseai-redis --tail 50
+          
+        - step: 3
+          name: "Restart Redis if needed"
+          command: |
+            docker restart chiseai-redis
+            sleep 5
+            redis-cli PING
+          
+        - step: 4
+          name: "Replay missing hash storage"
+          command: |
+            python3 scripts/workflow/replay_redis_hashes.py --since $(date -d '1 hour ago' +%Y-%m-%d)
+          
+        - step: 5
+          name: "Restore full mode"
+          command: |
+            unset ARCHIVAL_MODE
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # VALIDATION CHECKPOINTS
+  # ═══════════════════════════════════════════════════════════════════════════
+  validation_checkpoints:
+    description: "Mandatory checkpoints that must be passed before proceeding"
+    
+    checkpoint_1_pre_migration:
+      name: "Pre-Migration Validation"
+      phase: "Before any archival operations"
+      gate: BLOCKING
+      checks:
+        - check: "All scripts tested in dry-run mode"
+          command: |
+            python3 scripts/workflow/archive_old_stories.py --dry-run
+            python3 scripts/workflow/verify_archive_completeness.py --dry-run
+          expected_exit_code: 0
+          
+        - check: "Backup created and verified"
+          command: |
+            cp docs/bmm-workflow-status.yaml \
+               docs/bmm-workflow-status.yaml.backup.$(date -u +%Y%m%d_%H%M%S)
+            python3 -c "import yaml; yaml.safe_load(open('docs/bmm-workflow-status.yaml.backup.*'))"
+          
+        - check: "Team notified of maintenance window"
+          command: |
+            echo "Archival maintenance window: $(date -u +%Y-%m-%d_%H:%M:%S) UTC" | \
+              discord_send --channel engineering
+          
+        - check: "Rollback procedures tested"
+          command: |
+            python3 scripts/workflow/restore_from_archive.py --dry-run
+          
+        - check: "Pre-flight checks all pass"
+          command: |
+            python3 scripts/workflow/run_pre_flight_checks.py
+          expected_exit_code: 0
+      
+      sign_off:
+        required: true
+        role: "senior-dev"
+        method: "Redis key set"
+        command: |
+          redis-cli HSET bmad:chiseai:archival:checkpoint:pre_migration \
+            status passed \
+            signed_by senior-dev \
+            timestamp $(date -Iseconds)
+      
+    checkpoint_2_post_migration:
+      name: "Post-Migration Validation"
+      phase: "After archival operations complete"
+      gate: BLOCKING
+      checks:
+        - check: "Archive completeness verified"
+          command: |
+            python3 scripts/workflow/verify_archive_completeness.py --strict
+          expected_exit_code: 0
+          
+        - check: "Workflow integrity validated"
+          command: |
+            python3 scripts/workflow/verify_workflow_integrity.py --strict
+          expected_exit_code: 0
+          
+        - check: "Qdrant promotion confirmed"
+          command: |
+            curl -s "http://host.docker.internal:6334/collections/chiseai_workflow_archives" | \
+              jq -e '.result.points_count > 0'
+          
+        - check: "CI pipeline passes"
+          command: |
+            woodpecker-cli exec --pipeline validate
+          
+        - check: "Documentation updated"
+          command: |
+            test -f docs/archives/workflow-status/archive-index.yaml
+          
+        - check: "Metrics populated"
+          command: |
+            redis-cli HGET bmad:chiseai:archival:stats stories_archived | grep -v nil
+      
+      sign_off:
+        required: true
+        role: "merlin"
+        method: "Redis key set"
+        command: |
+          redis-cli HSET bmad:chiseai:archival:checkpoint:post_migration \
+            status passed \
+            signed_by merlin \
+            timestamp $(date -Iseconds)
+      
+    checkpoint_3_ongoing:
+      name: "Ongoing Monitoring"
+      phase: "Continuous"
+      frequency: "Daily"
+      automated: true
+      checks:
+        - check: "Archival automation ran successfully"
+          command: |
+            redis-cli LRANGE bmad:chiseai:archival:log 0 0 | \
+              jq -e '.[0].status == "success"'
+          
+        - check: "No data integrity violations"
+          command: |
+            redis-cli HGET bmad:chiseai:archival:metrics:integrity_violations total | \
+              awk '{if($1>0) exit 1}'
+          
+        - check: "Archive directory size within limits"
+          command: |
+            du -sb docs/archives/workflow-status | awk '{if($1>1073741824) exit 1}'
+          
+        - check: "Qdrant connectivity healthy"
+          command: |
+            curl -sf http://host.docker.internal:6334/healthz
+          
+        - check: "Redis connectivity healthy"
+          command: |
+            redis-cli PING | grep -q "PONG"
+      
+      alert_on_failure: true
+      escalation: "jarvis"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # EMERGENCY PROCEDURES
+  # ═══════════════════════════════════════════════════════════════════════════
+  emergency_procedures:
+    description: "Emergency stop and recovery procedures"
+    
+    emergency_stop:
+      trigger: "Critical failure requiring immediate halt"
+      command: |
+        # Immediate stop
+        redis-cli SET bmad:chiseai:workflow:archival:enabled 0
+        touch /tmp/archival_emergency_stop
+        
+        # Alert team
+        echo "EMERGENCY STOP: Archival system halted" | \
+          discord_send --channel alerts --priority critical
+        
+        # Log incident
+        redis_state_rpush \
+          name="bmad:chiseai:archival:emergency_stops" \
+          value='{"timestamp": "'$(date -Iseconds)'", "reason": "MANUAL_STOP"}'
+      
+    emergency_restart:
+      trigger: "System ready to resume after emergency stop"
+      prerequisites:
+        - "Root cause identified and fixed"
+        - "All checkpoints passed"
+        - "Team approval received"
+      command: |
+        rm -f /tmp/archival_emergency_stop
+        redis-cli SET bmad:chiseai:workflow:archival:enabled 1
+        echo "Archival system resumed" | \
+          discord_send --channel engineering
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # AUDIT TRAIL
+  # ═══════════════════════════════════════════════════════════════════════════
+  audit_trail:
+    description: "Comprehensive logging of all archival operations"
+    
+    log_types:
+      - type: "operation_log"
+        redis_key: "bmad:chiseai:archival:log"
+        format: json
+        retention: "90 days"
+        fields:
+          - timestamp
+          - story_id
+          - operation
+          - status
+          - duration_ms
+          - hash_verified
+          - bytes_processed
+      
+      - type: "integrity_log"
+        redis_key: "bmad:chiseai:archival:integrity:log"
+        format: json
+        retention: "1 year"
+        fields:
+          - timestamp
+          - story_id
+          - check_type
+          - result
+          - expected_hash
+          - actual_hash
+      
+      - type: "recovery_log"
+        redis_key: "bmad:chiseai:archival:recovery:log"
+        format: json
+        retention: "permanent"
+        fields:
+          - timestamp
+          - scenario
+          - story_id
+          - steps_executed
+          - recovery_time_ms
+          - success
+      
+      - type: "checkpoint_log"
+        redis_key: "bmad:chiseai:archival:checkpoint:log"
+        format: json
+        retention: "permanent"
+        fields:
+          - timestamp
+          - checkpoint_name
+          - signed_by
+          - checks_passed
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # COMPLIANCE REQUIREMENTS
+  # ═══════════════════════════════════════════════════════════════════════════
+  compliance:
+    description: "Regulatory and policy compliance requirements"
+    
+    data_retention:
+      policy: "docs/policy/data_retention_policy.yaml"
+      requirements:
+        - "All completed stories archived within 7 days"
+        - "Archive retention: 2 years"
+        - "High-value content: Permanent (Qdrant)"
+        - "Audit logs: 90 days minimum"
+    
+    evidence_preservation:
+      requirements:
+        - "PR numbers preserved indefinitely"
+        - "Merge commits preserved indefinitely"
+        - "Completion dates preserved indefinitely"
+        - "Acceptance criteria preserved 2 years"
+    
+    verification:
+      frequency: "Daily"
+      command: |
+        python3 scripts/workflow/verify_archive_completeness.py --compliance-check
+      report_to: "bmad:chiseai:compliance:archival"
+
+# ═════════════════════════════════════════════════════════════════════════════
+# IMPLEMENTATION NOTES
+# ═════════════════════════════════════════════════════════════════════════════
+
+# 1. These controls are MANDATORY and cannot be bypassed without explicit
+#    approval from merlin and documentation of the exception.
+#
+# 2. All BLOCKING checks must pass before any archival operation.
+#
+# 3. Hash verification is the primary data integrity mechanism - any hash
+#    mismatch is treated as a P0 incident.
+#
+# 4. The five-layer backup strategy provides defense in depth - no single
+#    failure can result in data loss.
+#
+# 5. All recovery procedures must be tested quarterly.
+#
+# 6. Incident response times:
+#    - P0: 15 minutes
+#    - P1: 1 hour
+#    - P2: 4 hours
+#
+# 7. For questions or issues with these controls, contact:
+#    - Primary: merlin
+#    - Escalation: craig

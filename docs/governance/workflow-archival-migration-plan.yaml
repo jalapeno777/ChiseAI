@@ -1,0 +1,1062 @@
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# WORKFLOW STATUS ARCHIVAL SYSTEM
+# Migration Plan and Automation Process
+# Version: 1.0
+# Generated: 2026-03-09
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# MIGRATION PLAN
+migration_plan:
+  version: "1.0"
+  generated_date: "2026-03-09"
+  
+  # ============================================================================
+  # PHASE 0: PRE-MIGRATION SETUP
+  # ============================================================================
+  phase_0_preparation:
+    name: "Pre-Migration Setup"
+    estimated_duration: "30 minutes"
+    
+    tasks:
+      - task: "Create archive directory structure"
+        description: "Establish organized archive directory hierarchy"
+        command: "mkdir -p docs/archives/workflow-status/story-details/ docs/archives/workflow-status/epic-summaries/ docs/archives/workflow-status/indices/"
+        validation: "ls -la docs/archives/workflow-status/"
+      
+      - task: "Create archive index template"
+        description: "Initialize master archive index if not exists"
+        file: "docs/archives/workflow-status/archive-index.yaml"
+        template: |
+          ---
+          # Workflow Status Archive Index
+          # Master index for all archived workflow status entries
+          # 
+          # Generated: {{date}}
+          # Retention Policy: Keep 7 days in active file, then archive
+          
+          archive_index:
+            version: "1.0"
+            created_date: "{{date}}"
+            last_updated: "{{date}}"
+            retention_policy:
+              active_file_keep_days: 7
+              archive_location: docs/archives/workflow-status/
+              auto_archive_enabled: true
+              archive_schedule: "daily at 02:00 UTC"
+            
+            statistics:
+              total_archived_stories: 0
+              total_archived_epics: 0
+              last_archive_run: null
+              
+            entries: []
+      
+      - task: "Backup current workflow status"
+        description: "Create timestamped backup before any modifications"
+        command: "cp docs/bmm-workflow-status.yaml docs/bmm-workflow-status.yaml.backup.$(date +%Y%m%d_%H%M%S)"
+        validation: "ls -lh docs/bmm-workflow-status.yaml.backup.* | head -5"
+      
+      - task: "Verify backup integrity"
+        description: "Ensure backup is valid YAML"
+        command: "python3 -c \"import yaml; yaml.safe_load(open('docs/bmm-workflow-status.yaml.backup.$(date +%Y%m%d)'))\" && echo 'Backup valid'"
+      
+      - task: "Create migration tracking Redis key"
+        description: "Initialize migration state tracking"
+        command: |
+          redis-cli HSET bmad:chiseai:workflow:migration:status \
+            phase "preparation" \
+            started_at "$(date -Iseconds)" \
+            status "in_progress"
+
+  # ============================================================================
+  # PHASE 1: DATA ANALYSIS AND CLASSIFICATION
+  # ============================================================================
+  phase_1_analysis:
+    name: "Data Analysis and Classification"
+    estimated_duration: "15 minutes"
+    depends_on: phase_0_preparation
+    
+    tasks:
+      - task: "Identify stories for archival"
+        description: "Find completed/merged stories older than 7 days"
+        criteria:
+          status:
+            - completed
+            - merged
+          age_threshold: "7 days"
+          exclude:
+            - stories with status "in_progress"
+            - stories with status "planned"
+            - stories with status "blocked"
+            - stories modified in last 7 days
+        script: "scripts/workflow/identify_archival_candidates.py"
+        arguments:
+          - "--age-days": 7
+          - "--status": "completed,merged"
+          - "--output": "docs/archives/workflow-status/migration-candidates.yaml"
+      
+      - task: "Generate migration manifest"
+        description: "Create detailed manifest of all archival operations"
+        output: "docs/archives/workflow-status/migration-manifest.yaml"
+        manifest_structure:
+          version: "1.0"
+          generated_at: "{{timestamp}}"
+          total_stories: "{{count}}"
+          stories:
+            - story_id: "ST-XXX"
+              status: "completed"
+              completed_date: "2026-XX-XX"
+              archive_target: "docs/archives/workflow-status/story-details/ST-XXX-details.yaml"
+              lean_fields_to_keep:
+                - id
+                - status
+                - pr_number
+                - merge_commit
+                - completed_date
+                - title
+              high_value_content:
+                - acceptance_criteria
+                - notes
+                - validation_summary
+              qdrant_promotion: true
+      
+      - task: "Validate migration candidates"
+        description: "Ensure all candidates have required completion evidence"
+        validation_rules:
+          - "Must have status: completed or merged"
+          - "Must have completion date"
+          - "Must have PR number or merge commit (for merged stories)"
+          - "Must be older than 7 days"
+        script: "scripts/workflow/validate_migration_candidates.py"
+
+  # ============================================================================
+  # PHASE 2: EXECUTE MIGRATION
+  # ============================================================================
+  phase_2_migration:
+    name: "Execute Migration"
+    estimated_duration: "45 minutes"
+    depends_on: phase_1_analysis
+    
+    tasks:
+      - task: "Create archive documents"
+        description: "Generate individual archive YAML files for each story"
+        script: "scripts/workflow/create_archive_documents.py"
+        inputs:
+          - "docs/bmm-workflow-status.yaml"
+          - "docs/archives/workflow-status/migration-manifest.yaml"
+        outputs:
+          - "docs/archives/workflow-status/story-details/{story-id}-details.yaml"
+        arguments:
+          - "--manifest": "docs/archives/workflow-status/migration-manifest.yaml"
+          - "--output-dir": "docs/archives/workflow-status/story-details/"
+          - "--template": "scripts/workflow/templates/story-archive-template.yaml"
+      
+      - task: "Create epic summaries"
+        description: "Generate condensed epic summaries for archived epics"
+        script: "scripts/workflow/create_epic_summaries.py"
+        outputs:
+          - "docs/archives/workflow-status/epic-summaries/{epic-id}-summary.yaml"
+      
+      - task: "Update archive index"
+        description: "Add new archive entries to master index"
+        script: "scripts/workflow/update_archive_index.py"
+        arguments:
+          - "--manifest": "docs/archives/workflow-status/migration-manifest.yaml"
+          - "--index": "docs/archives/workflow-status/archive-index.yaml"
+      
+      - task: "Promote high-value content to Qdrant"
+        description: "Index key learnings and patterns in Qdrant for semantic search"
+        script: "scripts/memory/promote_archived_to_qdrant.py"
+        promotion_criteria:
+          - "acceptance_criteria with reusable patterns"
+          - "notes containing architectural decisions"
+          - "validation_summary with metrics"
+          - "rollback_plan with recovery procedures"
+        arguments:
+          - "--manifest": "docs/archives/workflow-status/migration-manifest.yaml"
+          - "--collection": "chiseai_workflow_archives"
+      
+      - task: "Lean workflow status"
+        description: "Remove archived details from main workflow file"
+        script: "scripts/workflow/lean_workflow_status.py"
+        safety_measures:
+          - "Creates backup before modification"
+          - "Preserves required fields: id, status, pr_number, merge_commit, completed_date, title"
+          - "Validates YAML structure after modification"
+          - "Dry-run mode available"
+        arguments:
+          - "--manifest": "docs/archives/workflow-status/migration-manifest.yaml"
+          - "--backup": true
+          - "--validate": true
+      
+      - task: "Update migration tracking"
+        description: "Record migration progress in Redis"
+        command: |
+          redis-cli HSET bmad:chiseai:workflow:migration:status \
+            phase "migration_complete" \
+            stories_archived "{{count}}" \
+            completed_at "$(date -Iseconds)"
+
+  # ============================================================================
+  # PHASE 3: POST-MIGRATION VALIDATION
+  # ============================================================================
+  phase_3_validation:
+    name: "Post-Migration Validation"
+    estimated_duration: "20 minutes"
+    depends_on: phase_2_migration
+    
+    tasks:
+      - task: "Verify archive completeness"
+        description: "Ensure no data loss during archival"
+        script: "scripts/workflow/verify_archive_completeness.py"
+        checks:
+          - "All archived stories have corresponding archive files"
+          - "Archive files contain all expected sections"
+          - "Original content matches archived content (hash comparison)"
+          - "Qdrant promotion successful for high-value content"
+        arguments:
+          - "--manifest": "docs/archives/workflow-status/migration-manifest.yaml"
+          - "--strict": true
+      
+      - task: "Verify workflow status integrity"
+        description: "Ensure main workflow file is still valid"
+        script: "scripts/workflow/verify_workflow_integrity.py"
+        checks:
+          - "YAML syntax valid"
+          - "All required fields present for lean stories"
+          - "No orphaned references"
+          - "Epic-story relationships intact"
+      
+      - task: "Run validation suite"
+        description: "Execute comprehensive test suite"
+        command: "pytest tests/workflow/test_archival_system.py -v --tb=short"
+      
+      - task: "Validate CI compatibility"
+        description: "Ensure CI pipeline still works with lean format"
+        command: "python3 scripts/validate_status_sync.py"
+      
+      - task: "Update migration tracking"
+        description: "Mark migration as complete"
+        command: |
+          redis-cli HSET bmad:chiseai:workflow:migration:status \
+            phase "validation_complete" \
+            status "success" \
+            validated_at "$(date -Iseconds)"
+
+  # ============================================================================
+  # PHASE 4: CLEANUP AND DOCUMENTATION
+  # ============================================================================
+  phase_4_cleanup:
+    name: "Cleanup and Documentation"
+    estimated_duration: "10 minutes"
+    depends_on: phase_3_validation
+    
+    tasks:
+      - task: "Clean up temporary files"
+        description: "Remove migration working files"
+        command: |
+          rm -f docs/archives/workflow-status/migration-candidates.yaml
+          rm -f docs/archives/workflow-status/migration-manifest.yaml
+        retention:
+          - "Keep: migration-manifest.yaml for 30 days"
+      
+      - task: "Update documentation"
+        description: "Document new archival system"
+        files:
+          - "docs/governance/workflow-archival-system.md"
+          - "docs/governance/archive-access-guide.md"
+      
+      - task: "Notify team"
+        description: "Send completion notification"
+        command: |
+          echo "Workflow status migration complete. Archives: docs/archives/workflow-status/"
+
+# AUTOMATION SCRIPTS NEEDED
+automation_scripts:
+  
+  # ============================================================================
+  # PRIMARY ARCHIVAL SCRIPT
+  # ============================================================================
+  - name: "archive_old_stories.py"
+    path: "scripts/workflow/archive_old_stories.py"
+    purpose: "Daily archival of stories >7 days completed"
+    schedule: "daily at 02:00 UTC"
+    
+    arguments:
+      - name: "--dry-run"
+        description: "Preview what would be archived without making changes"
+        default: false
+      - name: "--execute"
+        description: "Perform actual archival"
+        default: false
+      - name: "--story-id"
+        description: "Archive specific story (bypasses age check)"
+        type: string
+      - name: "--age-days"
+        description: "Override default age threshold"
+        default: 7
+        type: integer
+      - name: "--force"
+        description: "Force archival even if validation warnings"
+        default: false
+    
+    workflow:
+      - "Load archive configuration"
+      - "Identify archival candidates"
+      - "Validate candidates"
+      - "Create archive documents"
+      - "Update archive index"
+      - "Promote to Qdrant (optional)"
+      - "Lean workflow status"
+      - "Verify completeness"
+      - "Log to Redis"
+    
+    redis_logging:
+      key: "bmad:chiseai:workflow:archival:log"
+      fields:
+        - run_timestamp
+        - stories_archived
+        - archive_location
+        - duration_seconds
+
+  # ============================================================================
+  # ARCHIVE DOCUMENT CREATION
+  # ============================================================================
+  - name: "create_archive_documents.py"
+    path: "scripts/workflow/create_archive_documents.py"
+    purpose: "Generate archive YAML from workflow status data"
+    
+    inputs:
+      - "docs/bmm-workflow-status.yaml"
+      - "Migration manifest (optional)"
+    
+    outputs:
+      - "docs/archives/workflow-status/story-details/{story-id}-details.yaml"
+    
+    template_structure: |
+      ---
+      # Archived Story Details
+      # Story ID: {story_id}
+      # Archived: {timestamp}
+      # Original Location: docs/bmm-workflow-status.yaml
+      
+      archived_story:
+        metadata:
+          story_id: "{story_id}"
+          archived_at: "{timestamp}"
+          archived_by: "{script_name}"
+          archive_version: "1.0"
+        
+        lean_reference:
+          id: "{story_id}"
+          status: "{status}"
+          pr_number: {pr_number}
+          merge_commit: "{merge_commit}"
+          completed_date: "{completed_date}"
+          title: "{title}"
+        
+        full_details:
+          # Complete original story content
+          {original_story_content}
+        
+        high_value_extracts:
+          # Key learnings for Qdrant
+          acceptance_criteria: {extracted}
+          key_decisions: {extracted}
+          lessons_learned: {extracted}
+
+  # ============================================================================
+  # WORKFLOW STATUS LEANING
+  # ============================================================================
+  - name: "lean_workflow_status.py"
+    path: "scripts/workflow/lean_workflow_status.py"
+    purpose: "Remove archived details from main workflow file"
+    
+    safety:
+      - "Creates backup before modification (timestamped)"
+      - "Preserves required fields: id, status, pr_number, merge_commit, completed_date, title"
+      - "Preserves epic relationships"
+      - "Validates YAML structure after modification"
+      - "Fails safe - stops on any validation error"
+    
+    lean_format:
+      story_fields_to_keep:
+        - id
+        - status
+        - pr_number
+        - merge_commit
+        - completed_date
+        - title
+        - epic_id (if exists)
+      
+      story_fields_to_remove:
+        - acceptance_criteria
+        - description
+        - notes
+        - implementation_notes
+        - test_results
+        - validation_summary
+        - rollback_plan
+        - live_validation_gates
+    
+    arguments:
+      - name: "--manifest"
+        description: "Path to migration manifest"
+        required: true
+      - name: "--backup"
+        description: "Create backup before modification"
+        default: true
+      - name: "--validate"
+        description: "Validate after modification"
+        default: true
+
+  # ============================================================================
+  # ARCHIVE VERIFICATION
+  # ============================================================================
+  - name: "verify_archive_completeness.py"
+    path: "scripts/workflow/verify_archive_completeness.py"
+    purpose: "Ensure no data loss during archival"
+    
+    checks:
+      - name: "file_existence"
+        description: "All archived stories have corresponding archive files"
+      - name: "content_integrity"
+        description: "Archive content matches original (hash-based)"
+      - name: "structure_validation"
+        description: "Archive files contain all expected sections"
+      - name: "qdrant_verification"
+        description: "Qdrant promotion successful for high-value content"
+      - name: "lean_validation"
+        description: "Main workflow file properly leans archived stories"
+    
+    arguments:
+      - name: "--manifest"
+        description: "Path to migration manifest"
+      - name: "--strict"
+        description: "Fail on any warning"
+        default: false
+
+  # ============================================================================
+  # WORKFLOW INTEGRITY VERIFICATION
+  # ============================================================================
+  - name: "verify_workflow_integrity.py"
+    path: "scripts/workflow/verify_workflow_integrity.py"
+    purpose: "Ensure main workflow file remains valid after archival"
+    
+    checks:
+      - name: "yaml_syntax"
+        description: "Valid YAML syntax"
+      - name: "required_fields"
+        description: "All required fields present"
+      - name: "epic_integrity"
+        description: "Epic-story relationships intact"
+      - name: "no_orphans"
+        description: "No orphaned references"
+      - name: "status_consistency"
+        description: "Status values are valid"
+
+  # ============================================================================
+  # EMERGENCY RESTORATION
+  # ============================================================================
+  - name: "restore_from_archive.py"
+    path: "scripts/workflow/restore_from_archive.py"
+    purpose: "Emergency restoration of archived details to workflow"
+    
+    arguments:
+      - name: "--story-id"
+        description: "Story to restore"
+        type: string
+      - name: "--all"
+        description: "Restore all archived stories"
+        default: false
+      - name: "--dry-run"
+        description: "Preview restoration without changes"
+        default: false
+    
+    workflow:
+      - "Locate archive file"
+      - "Validate archive integrity"
+      - "Merge with lean reference"
+      - "Update workflow status"
+      - "Verify restoration"
+      - "Log to Redis"
+
+  # ============================================================================
+  # ARCHIVE INDEX MANAGEMENT
+  # ============================================================================
+  - name: "update_archive_index.py"
+    path: "scripts/workflow/update_archive_index.py"
+    purpose: "Maintain master archive index"
+    
+    arguments:
+      - name: "--add"
+        description: "Add new entries from manifest"
+      - name: "--cleanup"
+        description: "Remove stale entries"
+      - name: "--rebuild"
+        description: "Rebuild entire index from archives"
+
+  # ============================================================================
+  # ARCHIVE CANDIDATE IDENTIFICATION
+  # ============================================================================
+  - name: "identify_archival_candidates.py"
+    path: "scripts/workflow/identify_archival_candidates.py"
+    purpose: "Find stories eligible for archival"
+    
+    criteria:
+      - "Status: completed or merged"
+      - "Age: >7 days since completion"
+      - "Not modified in last 7 days"
+      - "Has completion evidence (PR number or merge commit)"
+    
+    arguments:
+      - name: "--age-days"
+        default: 7
+        type: integer
+      - name: "--status"
+        default: "completed,merged"
+      - name: "--output"
+        description: "Output file for candidates"
+
+  # ============================================================================
+  # ARCHIVE CLEANUP (OLD ARCHIVES)
+  # ============================================================================
+  - name: "cleanup_old_archives.py"
+    path: "scripts/workflow/cleanup_old_archives.py"
+    purpose: "Remove archives older than retention period"
+    
+    arguments:
+      - name: "--age-days"
+        description: "Delete archives older than N days"
+        default: 730  # 2 years
+      - name: "--dry-run"
+        description: "Preview deletions"
+        default: true
+      - name: "--qdrant-sync"
+        description: "Ensure Qdrant has content before deleting"
+        default: true
+
+# CI INTEGRATION
+ci_integration:
+  workflow_file: ".woodpecker/ci.yaml"
+  
+  integration_points:
+    
+    # ============================================================================
+    # PRE-BUILD VALIDATION
+    # ============================================================================
+    - stage: "pre-build"
+      step: "workflow-status-validation"
+      script: "scripts/workflow/validate_workflow_status.py"
+      purpose: "Ensure workflow status is valid before build"
+      conditions:
+        - "workflow status file changed"
+      
+    # ============================================================================
+    # POST-MERGE AUTO-ARCHIVAL
+    # ============================================================================
+    - stage: "post-merge"
+      step: "auto-archive"
+      script: "scripts/workflow/archive_old_stories.py --execute"
+      condition: "branch == main"
+      schedule: "daily at 02:00 UTC"
+      purpose: "Automatically archive old completed stories"
+      
+      environment:
+        ARCHIVE_AGE_DAYS: "7"
+        ARCHIVE_QDRANT_PROMOTION: "true"
+        ARCHIVE_BACKUP: "true"
+      
+      notifications:
+        on_success: "Log to Redis"
+        on_failure: "Alert to Discord #ops-alerts"
+    
+    # ============================================================================
+    # NIGHTLY MAINTENANCE
+    # ============================================================================
+    - stage: "nightly"
+      step: "archive-cleanup"
+      script: "scripts/workflow/cleanup_old_archives.py --age-days 730"
+      schedule: "daily at 03:00 UTC"
+      condition: "event == cron && branch == main"
+      purpose: "Clean up archives older than 2 years"
+      
+    # ============================================================================
+    # WEEKLY INTEGRITY CHECK
+    # ============================================================================
+    - stage: "weekly"
+      step: "archive-integrity-check"
+      script: "scripts/workflow/verify_archive_completeness.py --strict"
+      schedule: "weekly on Sunday at 04:00 UTC"
+      condition: "event == cron && branch == main"
+      purpose: "Verify no data loss in archives"
+
+# ROLLBACK PLAN
+rollback_plan:
+  version: "1.0"
+  
+  # ============================================================================
+  # EMERGENCY ROLLBACK (Full Restoration)
+  # ============================================================================
+  emergency_rollback:
+    trigger: "Data loss detected or critical failure"
+    severity: "P0-CRITICAL"
+    
+    steps:
+      - step: 1
+        name: "Stop all archival automation"
+        description: "Disable archival to prevent further changes"
+        command: "redis-cli SET bmad:chiseai:workflow:archival:enabled 0"
+        verification: "redis-cli GET bmad:chiseai:workflow:archival:enabled"
+      
+      - step: 2
+        name: "Alert team"
+        description: "Notify operations team of rollback"
+        command: "scripts/notify/alert_team.sh 'WORKFLOW ARCHIVAL ROLLBACK INITIATED'"
+      
+      - step: 3
+        name: "Identify backup"
+        description: "Find most recent valid backup"
+        command: |
+          BACKUP=$(ls -t docs/bmm-workflow-status.yaml.backup.* | head -1)
+          echo "Using backup: $BACKUP"
+      
+      - step: 4
+        name: "Verify backup integrity"
+        description: "Ensure backup is valid before restoration"
+        command: |
+          python3 -c "import yaml; yaml.safe_load(open('$BACKUP'))" && echo "Backup valid"
+      
+      - step: 5
+        name: "Restore workflow status"
+        description: "Restore from backup"
+        command: |
+          cp "$BACKUP" docs/bmm-workflow-status.yaml
+          echo "Restored from: $BACKUP"
+      
+      - step: 6
+        name: "Verify restoration"
+        description: "Validate restored file"
+        command: |
+          python3 -c "import yaml; yaml.safe_load(open('docs/bmm-workflow-status.yaml'))"
+          yamllint docs/bmm-workflow-status.yaml
+      
+      - step: 7
+        name: "Run validation suite"
+        description: "Ensure all systems functional"
+        command: "pytest tests/workflow/ -v --tb=short"
+      
+      - step: 8
+        name: "Log rollback"
+        description: "Record rollback in Redis"
+        command: |
+          redis-cli HSET bmad:chiseai:workflow:rollback:log \
+            timestamp "$(date -Iseconds)" \
+            reason "{{rollback_reason}}" \
+            backup_used "$BACKUP" \
+            triggered_by "{{user}}"
+      
+      - step: 9
+        name: "Re-enable automation (when safe)"
+        description: "Re-enable archival after verification"
+        command: "redis-cli SET bmad:chiseai:workflow:archival:enabled 1"
+        manual_approval: true
+
+  # ============================================================================
+  # PARTIAL ROLLBACK (Single Story Restoration)
+  # ============================================================================
+  partial_rollback:
+    trigger: "Single story needs restoration"
+    severity: "P1"
+    
+    steps:
+      - step: 1
+        name: "Locate archive"
+        description: "Find story archive file"
+        command: |
+          ARCHIVE="docs/archives/workflow-status/story-details/{{story_id}}-details.yaml"
+          if [ -f "$ARCHIVE" ]; then
+            echo "Found archive: $ARCHIVE"
+          else
+            echo "Archive not found: $ARCHIVE"
+            exit 1
+          fi
+      
+      - step: 2
+        name: "Validate archive"
+        description: "Ensure archive is valid"
+        command: "python3 -c \"import yaml; yaml.safe_load(open('$ARCHIVE'))\""
+      
+      - step: 3
+        name: "Restore story"
+        description: "Merge archive content with workflow"
+        command: "python3 scripts/workflow/restore_from_archive.py --story-id {{story_id}}"
+      
+      - step: 4
+        name: "Verify restoration"
+        description: "Confirm story restored correctly"
+        command: |
+          grep -A 5 "id: {{story_id}}" docs/bmm-workflow-status.yaml
+      
+      - step: 5
+        name: "Log restoration"
+        description: "Record in Redis"
+        command: |
+          redis-cli HSET bmad:chiseai:workflow:restore:log:{{story_id}} \
+            timestamp "$(date -Iseconds)" \
+            archive "$ARCHIVE" \
+            triggered_by "{{user}}"
+
+  # ============================================================================
+  # ROLLBACK VERIFICATION
+  # ============================================================================
+  rollback_verification:
+    post_rollback_checks:
+      - "Workflow status file is valid YAML"
+      - "All stories have required fields"
+      - "Epic relationships intact"
+      - "CI pipeline passes"
+      - "Archive index consistent"
+
+# FIRST CLEANUP RUN
+first_cleanup_run:
+  version: "1.0"
+  scheduled_date: "2026-03-10"
+  
+  # ============================================================================
+  # ESTIMATED IMPACT
+  # ============================================================================
+  estimated_impact:
+    total_stories_in_workflow: 206
+    stories_with_completed_status: 180
+    stories_eligible_for_archive: "~50-80 stories"
+    estimated_lines_to_remove: "~2,000-2,500 lines"
+    estimated_archive_files: "~50-80 archive documents"
+    estimated_qdrant_promotions: "~20-30 high-value memories"
+    estimated_duration: "60-90 minutes"
+  
+  # ============================================================================
+  # PRE-RUN CHECKLIST
+  # ============================================================================
+  pre_run_checklist:
+    - item: "[ ] Full repository backup created"
+      verification: "git bundle create backup-$(date +%Y%m%d).bundle --all"
+    
+    - item: "[ ] Archive directory structure created"
+      verification: "ls -la docs/archives/workflow-status/"
+    
+    - item: "[ ] Migration scripts tested in dry-run mode"
+      verification: "python3 scripts/workflow/archive_old_stories.py --dry-run"
+    
+    - item: "[ ] Rollback procedures documented and tested"
+      verification: "Test restore of single story"
+    
+    - item: "[ ] Team notified of maintenance window"
+      verification: "Discord notification sent"
+    
+    - item: "[ ] Redis connectivity verified"
+      verification: "redis-cli ping"
+    
+    - item: "[ ] Qdrant connectivity verified"
+      verification: "curl http://localhost:6333/healthz"
+    
+    - item: "[ ] CI pipeline disabled (optional)"
+      verification: "Woodpecker maintenance mode"
+  
+  # ============================================================================
+  # EXECUTION STEPS
+  # ============================================================================
+  execution_steps:
+    - step: 1
+      name: "Dry run analysis"
+      action: "Preview what will be archived"
+      command: "python3 scripts/workflow/archive_old_stories.py --dry-run --age-days 7"
+      expected_output: "List of 50-80 stories to be archived"
+      duration: "5 minutes"
+      
+    - step: 2
+      name: "Create archive documents"
+      action: "Generate individual archive files"
+      command: "python3 scripts/workflow/create_archive_documents.py --execute"
+      expected_output: "Archive files created in docs/archives/workflow-status/story-details/"
+      duration: "15 minutes"
+      
+    - step: 3
+      name: "Update archive index"
+      action: "Add entries to master index"
+      command: "python3 scripts/workflow/update_archive_index.py --add"
+      expected_output: "Index updated with new entries"
+      duration: "2 minutes"
+      
+    - step: 4
+      name: "Promote to Qdrant"
+      action: "Index high-value content"
+      command: "python3 scripts/memory/promote_archived_to_qdrant.py --execute"
+      expected_output: "20-30 memories indexed in Qdrant"
+      duration: "10 minutes"
+      
+    - step: 5
+      name: "Lean workflow status"
+      action: "Remove archived details from main file"
+      command: "python3 scripts/workflow/lean_workflow_status.py --execute"
+      expected_output: "Workflow file reduced by ~2,000 lines (from ~6,500 to ~4,500)"
+      duration: "5 minutes"
+      
+    - step: 6
+      name: "Verify archive completeness"
+      action: "Ensure no data loss"
+      command: "python3 scripts/workflow/verify_archive_completeness.py --strict"
+      expected_output: "All checks pass"
+      duration: "10 minutes"
+      
+    - step: 7
+      name: "Verify workflow integrity"
+      action: "Validate main file"
+      command: "python3 scripts/workflow/verify_workflow_integrity.py"
+      expected_output: "Workflow status valid"
+      duration: "5 minutes"
+      
+    - step: 8
+      name: "Run CI validation"
+      action: "Ensure CI compatibility"
+      command: "python3 scripts/validate_status_sync.py"
+      expected_output: "Status sync validation passed"
+      duration: "5 minutes"
+      
+    - step: 9
+      name: "Commit changes"
+      action: "Commit archival changes"
+      command: |
+        git add docs/archives/workflow-status/
+        git add docs/bmm-workflow-status.yaml
+        git commit -m "ST-ARCHIVE-001: Archive completed stories older than 7 days
+        
+        - Archived ~60 stories to docs/archives/workflow-status/
+        - Reduced workflow status from ~6,500 to ~4,500 lines
+        - Promoted 25 high-value memories to Qdrant
+        - All archives verified for completeness"
+      expected_output: "Commit created"
+      duration: "2 minutes"
+  
+  # ============================================================================
+  # POST-RUN CHECKLIST
+  # ============================================================================
+  post_run_checklist:
+    - item: "[ ] Workflow file size verified"
+      target: "<4,500 lines (from ~6,500)"
+      verification: "wc -l docs/bmm-workflow-status.yaml"
+    
+    - item: "[ ] Archive files accessible and complete"
+      target: "50-80 archive files created"
+      verification: "ls docs/archives/workflow-status/story-details/ | wc -l"
+    
+    - item: "[ ] Archive index updated"
+      target: "Index contains all archived stories"
+      verification: "grep -c 'story_id:' docs/archives/workflow-status/archive-index.yaml"
+    
+    - item: "[ ] Qdrant search functional"
+      target: "Can search archived content"
+      verification: "python3 scripts/memory/test_qdrant_search.py"
+    
+    - item: "[ ] CI pipeline passes"
+      target: "All validation checks pass"
+      verification: "python3 scripts/validate_status_sync.py"
+    
+    - item: "[ ] Rollback tested"
+      target: "Can restore single story"
+      verification: "python3 scripts/workflow/restore_from_archive.py --story-id ST-TEST --dry-run"
+    
+    - item: "[ ] Documentation updated"
+      target: "Archive access guide created"
+      verification: "ls docs/governance/archive-access-guide.md"
+    
+    - item: "[ ] Automation enabled"
+      target: "Daily archival scheduled"
+      verification: "redis-cli SET bmad:chiseai:workflow:archival:enabled 1"
+
+# ONGOING AUTOMATION
+ongoing_automation:
+  
+  # ============================================================================
+  # DAILY AUTOMATION
+  # ============================================================================
+  daily:
+    - task: "Auto-archive old stories"
+      schedule: "02:00 UTC"
+      script: "scripts/workflow/archive_old_stories.py --execute"
+      conditions:
+        - "Stories completed >7 days ago"
+        - "Archival enabled in Redis"
+      
+    - task: "Verify archive integrity"
+      schedule: "03:00 UTC"
+      script: "scripts/workflow/verify_archive_completeness.py"
+      on_failure: "Alert ops team"
+  
+  # ============================================================================
+  # WEEKLY AUTOMATION
+  # ============================================================================
+  weekly:
+    - task: "Clean up old archives"
+      schedule: "Sunday 04:00 UTC"
+      script: "scripts/workflow/cleanup_old_archives.py --age-days 730"
+      retention: "2 years"
+      
+    - task: "Generate archive report"
+      schedule: "Monday 09:00 UTC"
+      script: "scripts/workflow/generate_archive_report.py"
+      output: "docs/reports/archive-weekly-report.md"
+  
+  # ============================================================================
+  # MONTHLY AUTOMATION
+  # ============================================================================
+  monthly:
+    - task: "Archive health check"
+      schedule: "1st of month"
+      script: "scripts/workflow/archive_health_check.py"
+      checks:
+        - "Archive file integrity"
+        - "Qdrant index health"
+        - "Storage usage"
+        - "Access patterns"
+
+# MONITORING AND ALERTING
+monitoring:
+  
+  # ============================================================================
+  # REDIS METRICS
+  # ============================================================================
+  redis_metrics:
+    keys:
+      - name: "bmad:chiseai:workflow:archival:log"
+        type: "list"
+        description: "Archive operation log"
+      
+      - name: "bmad:chiseai:workflow:archival:stats"
+        type: "hash"
+        description: "Archive statistics"
+        fields:
+          - total_archived
+          - last_archive_run
+          - archive_failures
+      
+      - name: "bmad:chiseai:workflow:archival:enabled"
+        type: "string"
+        description: "Archival feature flag"
+  
+  # ============================================================================
+  # ALERTS
+  # ============================================================================
+  alerts:
+    - name: "archive_failure"
+      condition: "Archival script exits non-zero"
+      severity: "P1"
+      channel: "Discord #ops-alerts"
+      
+    - name: "data_loss_detected"
+      condition: "Verify script finds missing archives"
+      severity: "P0-CRITICAL"
+      channel: "Discord #ops-alerts + PagerDuty"
+      
+    - name: "workflow_corruption"
+      condition: "Workflow file fails validation"
+      severity: "P0-CRITICAL"
+      channel: "Discord #ops-alerts + PagerDuty"
+      
+    - name: "qdrant_promotion_failure"
+      condition: "Qdrant indexing fails"
+      severity: "P2"
+      channel: "Discord #ops-alerts"
+
+# FILE SIZE TARGETS
+file_size_targets:
+  workflow_status:
+    current: "~6,549 lines"
+    target_after_migration: "~4,500 lines"
+    max_target: "5,000 lines"
+    warning_threshold: "6,000 lines"
+    
+  archive_files:
+    location: "docs/archives/workflow-status/"
+    format: "Individual YAML per story"
+    retention: "2 years"
+    
+  total_storage:
+    estimated_growth: "~100KB per month"
+    compression: "gzip for archives >1 year"
+
+# EDGE CASE HANDLING
+edge_cases:
+  
+  - case: "Story without completion date"
+    handling: |
+      If story has status 'completed' or 'merged' but no completion_date:
+      1. Use last modified date from git history
+      2. Log warning
+      3. Require --force flag to archive
+    
+  - case: "Story without PR number or merge commit"
+    handling: |
+      If merged story lacks completion evidence:
+      1. Skip archival
+      2. Log to Redis for manual review
+      3. Alert in weekly report
+    
+  - case: "Duplicate story IDs"
+    handling: |
+      If duplicate IDs found:
+      1. Halt archival
+      2. Alert ops team
+      3. Require manual resolution
+    
+  - case: "Archive file already exists"
+    handling: |
+      If archive file exists:
+      1. Compare content hashes
+      2. If different: create versioned archive (ST-XXX-v2.yaml)
+      3. If same: skip
+    
+  - case: "Qdrant unavailable during promotion"
+    handling: |
+      If Qdrant promotion fails:
+      1. Continue with file archival
+      2. Queue for retry
+      3. Retry daily until success
+    
+  - case: "Concurrent modification during archival"
+    handling: |
+      If workflow file changes during archival:
+      1. Detect with file hash check
+      2. Abort and retry
+      3. Log conflict in Redis
+
+# SUCCESS CRITERIA
+success_criteria:
+  migration:
+    - "All eligible stories archived"
+    - "No data loss (verified by hash comparison)"
+    - "Workflow file reduced by >1,500 lines"
+    - "All CI checks pass"
+    - "Qdrant search functional"
+    - "Rollback tested and working"
+  
+  ongoing:
+    - "Daily archival runs without errors"
+    - "Archive verification passes weekly"
+    - "Workflow file stays under 5,000 lines"
+    - "Archive access latency <100ms"
+    - "Zero unplanned rollbacks per month"
+
+# DOCUMENTATION REFERENCES
+documentation:
+  - file: "docs/governance/workflow-archival-system.md"
+    purpose: "Complete system documentation"
+  
+  - file: "docs/governance/archive-access-guide.md"
+    purpose: "How to access archived stories"
+  
+  - file: "docs/governance/completion-evidence-requirements.md"
+    purpose: "Required fields for completion"
+  
+  - file: "docs/archives/workflow-status/archive-index.yaml"
+    purpose: "Master archive index"
