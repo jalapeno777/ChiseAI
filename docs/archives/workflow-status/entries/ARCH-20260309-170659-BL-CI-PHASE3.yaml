@@ -2,7 +2,7 @@ schema_version: 1.0.0
 archive_ref: ARCH-20260309-170659-BL-CI-PHASE3
 original_story_id: BL-CI-PHASE3
 archived_at: '2026-03-09T17:06:59.751517Z'
-archive_reason: age (7 days)
+archive_reason: age
 archive_reason_detail: Story archived due to age (7 days)
 migration:
   phase: pilot
@@ -39,5 +39,5 @@ completion_evidence:
 archive_location: docs/archives/workflow-status/entries/ARCH-20260309-170659-BL-CI-PHASE3.yaml
 integrity:
   original_checksum: c66fff3070c42e63fbebe044d4c5b74feaf54dd3e1c3ef8d955b23f1a83dc2dc
-  archived_checksum: d1da51d38c6ba96780158f9b6bc04dca8f72119236a58ef511a6209b34c45292
-  verification_date: '2026-03-09T17:06:59.751583Z'
+  archived_checksum: 9d977bca9daaafefc11c99589fa76877ddd1f72b104bc0d9665b9a20358f64d4
+  verification_date: '2026-03-09T23:24:14.190976+00:00'

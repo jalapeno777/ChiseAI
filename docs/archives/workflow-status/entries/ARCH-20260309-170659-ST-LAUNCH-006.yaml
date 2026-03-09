@@ -2,7 +2,7 @@ schema_version: 1.0.0
 archive_ref: ARCH-20260309-170659-ST-LAUNCH-006
 original_story_id: ST-LAUNCH-006
 archived_at: '2026-03-09T17:06:59.840394Z'
-archive_reason: age (15 days)
+archive_reason: age
 archive_reason_detail: Story archived due to age (15 days)
 migration:
   phase: pilot
@@ -65,5 +65,5 @@ completion_evidence:
 archive_location: docs/archives/workflow-status/entries/ARCH-20260309-170659-ST-LAUNCH-006.yaml
 integrity:
   original_checksum: 1d305fd640b80dec585a4a6a9796dcb2dd07cd2ddd07d10cf91e0742d4cb7ffc
-  archived_checksum: be68bcc75abdeb37d9c7f1f845b5e868cd33691929a97dd1685817a9a06e9320
-  verification_date: '2026-03-09T17:06:59.840438Z'
+  archived_checksum: ef67c2a249cb2db833b580c59ed24c7d4b1ec6a590c31e33b8384795c99fe1e5
+  verification_date: '2026-03-09T23:24:14.420303+00:00'

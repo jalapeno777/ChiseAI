@@ -20,6 +20,10 @@
 # - Total archived to date: 20 stories
 # - Archive location: docs/archives/workflow-status/entries/
 # - Schema: docs/archives/workflow-status/schema/archive-entry-schema.yaml
+# - Legacy Integrity Cleanup: COMPLETED 2026-03-09
+#   * 10 archives with checksum mismatches repaired
+#   * All 20 archives now pass verification
+#   * No data loss
 #
 # PHASE GATES:
 #   Phase 0 (Foundation): ✓ COMPLETE
