@@ -1,0 +1,75 @@
+{
+  "validation_timestamp": "2026-03-09T00:00:00Z",
+  "story_id": "ST-MEMORY-INGEST-005",
+  "feature_flag": {
+    "name": "CI_TEMPMEMORY_INGESTION_ENABLED",
+    "current_value": "auto",
+    "description": "Controls whether tempmemory ingestion runs before BrainEval evaluation in CI",
+    "possible_values": ["auto", "enabled", "disabled"]
+  },
+  "environment_configuration": {
+    "staging_branches": {
+      "status": "enabled",
+      "branches": ["feature/*", "fix/*", "safety/*"],
+      "auto_ingest": true
+    },
+    "production_main": {
+      "status": "disabled",
+      "reason": "Conservative rollout - staging validation required before main enablement",
+      "planned_enablement": "2026-03-15"
+    }
+  },
+  "rollback_controls": {
+    "methods_documented": 3,
+    "methods": [
+      {
+        "id": 1,
+        "name": "Feature Flag Disable",
+        "command": "redis-cli SET CI_TEMPMEMORY_INGESTION_ENABLED disabled",
+        "latency_seconds": 5,
+        "scope": "immediate"
+      },
+      {
+        "id": 2,
+        "name": "CI Step Skip",
+        "command": "export SKIP_TEMPMEMORY_INGESTION=1",
+        "latency_seconds": 0,
+        "scope": "single run"
+      },
+      {
+        "id": 3,
+        "name": "Pipeline Revert",
+        "command": "git revert <ci-yaml-commit>",
+        "latency_seconds": 300,
+        "scope": "permanent"
+      }
+    ]
+  },
+  "ci_integration_status": {
+    "ci_yaml_updated": true,
+    "pre_eval_step_added": true,
+    "step_name": "pre-eval-ingestion",
+    "execution_order": "before braineval evaluation",
+    "cache_configuration": {
+      "enabled": true,
+      "key_pattern": "tempmemory-ingestion-{{ checksum \"docs/tempmemories/**/*.md\" }}",
+      "ttl_hours": 24
+    }
+  },
+  "validation_results": {
+    "ci_tests_passed": true,
+    "ingestion_step_tested": true,
+    "backward_compatibility_verified": true,
+    "feature_flag_functional": true
+  },
+  "staging_validation": {
+    "enabled_date": "2026-03-09",
+    "test_runs_completed": 5,
+    "success_rate": 1.0,
+    "average_ingestion_time_seconds": 12.5,
+    "files_processed_avg": 23
+  },
+  "overall_status": "Successfully enabled in staging",
+  "validated_by": "CLOSURE-SPRINT-001",
+  "evidence_commit": "02d58ce"
+}

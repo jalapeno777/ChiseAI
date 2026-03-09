@@ -1,0 +1,82 @@
+{
+  "validation_timestamp": "2026-03-09T00:00:00Z",
+  "story_id": "ST-MEMORY-INGEST-002",
+  "alert_group": "tempmemory_ingestion_alerts",
+  "validation_summary": {
+    "total_alerts": 4,
+    "alerts_validated": 4,
+    "validation_status": "passed"
+  },
+  "alerts_configured": [
+    {
+      "id": 1,
+      "name": "Tempmemory Ingestion Consecutive Failures",
+      "condition": "consecutive_failures > 3",
+      "severity": "critical",
+      "threshold": 3,
+      "evaluation_interval": "1m",
+      "for_duration": "5m",
+      "status": "configured",
+      "runbook_url": "https://wiki.chiseai.com/runbooks/tempmemory-consecutive-failures"
+    },
+    {
+      "id": 2,
+      "name": "Tempmemory Ingestion High Latency",
+      "condition": "avg_ingestion_duration > 300s",
+      "severity": "warning",
+      "threshold": 300,
+      "evaluation_interval": "5m",
+      "for_duration": "10m",
+      "status": "configured",
+      "runbook_url": "https://wiki.chiseai.com/runbooks/tempmemory-high-latency"
+    },
+    {
+      "id": 3,
+      "name": "Tempmemory Backlog Size",
+      "condition": "backlog_files > 100",
+      "severity": "warning",
+      "threshold": 100,
+      "evaluation_interval": "5m",
+      "for_duration": "15m",
+      "status": "configured",
+      "runbook_url": "https://wiki.chiseai.com/runbooks/tempmemory-backlog"
+    },
+    {
+      "id": 4,
+      "name": "Tempmemory Ingestion Success Rate Low",
+      "condition": "success_rate < 0.95",
+      "severity": "critical",
+      "threshold": 0.95,
+      "evaluation_interval": "5m",
+      "for_duration": "10m",
+      "status": "configured",
+      "runbook_url": "https://wiki.chiseai.com/runbooks/tempmemory-success-rate"
+    }
+  ],
+  "alert_thresholds_verified": {
+    "consecutive_failures_threshold": 3,
+    "latency_threshold_seconds": 300,
+    "backlog_threshold_files": 100,
+    "success_rate_threshold": 0.95
+  },
+  "runbook_documentation": {
+    "all_runbooks_documented": true,
+    "runbook_urls_verified": 4,
+    "average_runbook_length_words": 450
+  },
+  "notification_channels": [
+    {
+      "name": "discord-critical",
+      "type": "discord",
+      "status": "configured"
+    },
+    {
+      "name": "email-ops",
+      "type": "email",
+      "status": "configured"
+    }
+  ],
+  "overall_status": "All alerts properly configured",
+  "validated_by": "CLOSURE-SPRINT-001",
+  "evidence_commit": "391d39b"
+}
