@@ -34,7 +34,15 @@ WORKFLOW_STATUS_FILE = Path("docs/bmm-workflow-status.yaml")
 VALIDATION_REGISTRY_FILE = Path("docs/validation/validation-registry.yaml")
 
 # Allowed status vocabularies
-WORKFLOW_STATUSES = {"planned", "in_progress", "completed", "blocked", "deprecated"}
+# Note: 'archived' status indicates story details have been moved to archive storage
+WORKFLOW_STATUSES = {
+    "planned",
+    "in_progress",
+    "completed",
+    "blocked",
+    "deprecated",
+    "archived",
+}
 VALIDATION_STATUSES = {"planned", "in_progress", "validated", "blocked", "deprecated"}
 
 

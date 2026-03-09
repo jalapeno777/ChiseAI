@@ -1,0 +1,65 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260309-170659-ST-LAUNCH-005
+original_story_id: ST-LAUNCH-005
+archived_at: '2026-03-09T17:06:59.827164Z'
+archive_reason: age (15 days)
+archive_reason_detail: Story archived due to age (15 days)
+migration:
+  phase: pilot
+  migrated_by: senior-dev
+  migration_script_version: 1.0.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260309-170659-ST-LAUNCH-005
+  id: ST-LAUNCH-005
+  status: archived
+  title: Safety Integration & E2E Tests
+  priority: P0-CRITICAL
+  epic_id: EP-LAUNCH-001
+  completion_date: '2026-02-22'
+  merge_commit: batch4-final
+  pr_number: 254
+archived_fields:
+  description: Integrate all safety components and create comprehensive E2E tests
+    for safety workflows
+  acceptance_criteria:
+  - Safety E2E test - All scenarios pass (demo mode, CB, idempotency, kill switch),
+    coverage >=85%
+  - Kill switch integration - All positions close within 5 seconds, trading suspended
+    on trigger
+  - Circuit breaker safety - Signals not executed via WebSocket when circuit OPEN,
+    REST fallback used
+  - Audit completeness - Full audit trail written for all safety events, queryable
+    by timestamp and type
+  live_validation_gates:
+  - check: Execute safety E2E test suite
+    gate: safety_workflows
+    threshold: 100% pass rate
+  rollback_plan:
+  - action: Disable safety master
+    command: redis-cli SET launch:safety:enabled 0
+  scope_globs:
+  - tests/e2e/test_bybit_safety_integration.py
+  - src/execution/safety_orchestrator.py
+  depends_on:
+  - ST-LAUNCH-001
+  - ST-LAUNCH-002
+  - ST-LAUNCH-003
+  test_strategy:
+    e2e: pytest tests/e2e/test_bybit_safety_integration.py -v
+    integration: pytest tests/test_execution/integration/test_safety_integration.py
+      -v
+    unit: pytest tests/test_execution/test_safety_orchestrator.py -v
+  sprint_id: LAUNCH-SPRINT-1
+  story_points: 4
+  fr_coverage:
+  - FR-029
+  validation_status: validated
+completion_evidence:
+  pr_number: 254
+  merge_commit: batch4-final
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-170659-ST-LAUNCH-005.yaml
+integrity:
+  original_checksum: af22dbe74aa6e49ca07e1915a71170c75a17a4b7325cc19ad7bfe1fdfbe39ec0
+  archived_checksum: 801407d3bc692fc8e0f559fac71d0a4836f77f0270a4f9b33a58c2500316edbc
+  verification_date: '2026-03-09T17:06:59.827210Z'

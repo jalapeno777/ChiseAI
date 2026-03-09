@@ -1,27 +1,59 @@
-# Workflow Status Archiving Runbook
+# Workflow Archiving Runbook
 
 ## Purpose
 
-This runbook documents the workflow status archiving process for ChiseAI. It ensures that old workflow entries are preserved for traceability while keeping the active workflow status file manageable.
+This runbook documents the comprehensive data retention and archival process for ChiseAI. It ensures workflow data is properly tiered for operational efficiency while preserving full historical traceability.
 
-## Retention Policy
+## Quick Reference
 
-| Entry Age | Action |
-|-----------|--------|
-| 0-7 days | Keep in active file (`docs/bmm-workflow-status.yaml`) |
-| 7+ days | Archive to monthly archive file |
+| Task | Command |
+|------|---------|
+| Check what would be archived | `python3 scripts/workflow/archive_old_stories.py --dry-run` |
+| Archive eligible stories | `python3 scripts/workflow/archive_old_stories.py --execute` |
+| Archive specific story | `python3 scripts/workflow/archive_old_stories.py --story-id ST-XXX --execute` |
+| Restore from archive | `python3 scripts/workflow/restore_from_archive.py --story-id ST-XXX` |
+| Validate references | `python3 scripts/workflow/validate_references.py` |
 
-**Current Threshold:** Entries older than 4 days are archived (configured per cleanup cycle)
+## Policy Reference
 
-## Archive Location
+- **Policy Document**: `docs/policy/data_retention_policy.yaml`
+- **Retention Period**: 7 days after story completion
+- **Archive Location**: `docs/archives/`
+- **Qdrant Promotion**: Automatic for P0/P1 stories and anti-patterns
+
+## Retention Tiers
+
+### Tier 1: Active Workflow File
+- **Location**: `docs/bmm-workflow-status.yaml`
+- **Retention**: Current + 7 days after completion
+- **Contents**: Story ID, status, title, epic_id, priority, owner, dates, PR info
+- **Target Size**: < 2000 lines
+
+### Tier 2: Archive Documents
+- **Location**: `docs/archives/`
+- **Retention**: 7 days after completion → indefinite
+- **Subdirectories**:
+  - `story-details/`: Complete story evidence
+  - `epic-summaries/`: Epic-level rollups
+  - `monthly-reports/`: Aggregated metrics
+  - `workflow-status/`: Monthly snapshots
+
+### Tier 3: Qdrant Searchable Memory
+- **Location**: Qdrant vector database (collection: ChiseAI)
+- **Retention**: Permanent
+- **Contents**: High-value patterns, decisions, anti-patterns
+- **Auto-Promotion**: P0/P1 stories, 5+ point stories, anti-patterns
+
+## Legacy Archive Location (Being Deprecated)
 
 ```
 docs/archives/workflow-status/
 ├── archive-index.yaml      # Master index with cross-references
-├── archive-2026-02.yaml    # February 2026 entries
-├── archive-2026-01.yaml    # January 2026 entries (if any)
+├── archive-2026-02.yaml    # February 2026 entries (legacy format)
 └── ...                     # Additional monthly archives
 ```
+
+**Note**: The legacy workflow-status archive format is being replaced by the comprehensive story-details format per the data retention policy.
 
 ## How to Access Archived Entries
 
@@ -198,4 +230,18 @@ archive_index:
 
 | Date | Author | Change |
 |------|--------|--------|
+| 2026-03-09 | senior-dev | Comprehensive update per data retention policy v1.0 |
 | 2026-03-02 | dev | Initial runbook creation for ST-WORKFLOW-001 |
+
+## Related Documentation
+
+- **Data Retention Policy**: `docs/policy/data_retention_policy.yaml`
+- **Memory Policy**: `docs/policy/memory_policy.yaml`
+- **Workflow Status**: `docs/bmm-workflow-status.yaml`
+- **Archive Examples**: `docs/archives/examples/`
+
+## Contact
+
+For issues or questions:
+- **Workflow Governance**: @merlin, @jarvis
+- **Discord**: #workflow-alerts

@@ -1,0 +1,1159 @@
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# VALIDATION PLAN AND PHASED IMPLEMENTATION ROADMAP
+# Workflow Status Archival System
+# Version: 1.0
+# Generated: 2026-03-09
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# ==============================================================================
+# VALIDATION PLAN
+# ==============================================================================
+
+validation_plan:
+  version: "1.0"
+  generated_date: "2026-03-09"
+  last_updated: "2026-03-09"
+  
+  # ============================================================================
+  # VALIDATION LEVELS
+  # ============================================================================
+  validation_levels:
+    
+    level_1_unit:
+      name: "Unit Tests"
+      description: "Test individual scripts and functions in isolation"
+      scope:
+        - "Migration scripts"
+        - "Archive creation"
+        - "Workflow modification"
+        - "Qdrant promotion"
+        - "Verification scripts"
+      test_files:
+        - "tests/workflow/test_archive_creation.py"
+        - "tests/workflow/test_workflow_modification.py"
+        - "tests/workflow/test_qdrant_promotion.py"
+        - "tests/workflow/test_verification.py"
+        - "tests/workflow/test_restore.py"
+      success_criteria:
+        - "100% test pass rate"
+        - "≥90% code coverage"
+        - "All edge cases covered"
+      execution_command: "pytest tests/workflow/ -v --cov=scripts/workflow --cov-report=term-missing"
+      
+    level_2_integration:
+      name: "Integration Tests"
+      description: "Test end-to-end archival workflow with real data"
+      scope:
+        - "Full archival pipeline"
+        - "Data integrity verification"
+        - "Rollback procedures"
+        - "Redis logging"
+        - "Qdrant integration"
+      test_scenarios:
+        - scenario: "Archive single story"
+          steps:
+            - "Create test story in workflow"
+            - "Run archival script"
+            - "Verify archive created"
+            - "Verify workflow updated"
+            - "Verify data integrity"
+            - "Verify Redis log entry"
+          expected_duration: "30 seconds"
+          
+        - scenario: "Archive multiple stories"
+          steps:
+            - "Create 10 test stories"
+            - "Run bulk archival"
+            - "Verify all archives created"
+            - "Verify workflow lean"
+            - "Verify archive index updated"
+          expected_duration: "2 minutes"
+          
+        - scenario: "Rollback archived story"
+          steps:
+            - "Archive a story"
+            - "Run rollback script"
+            - "Verify story restored to workflow"
+            - "Verify archive removed"
+            - "Verify Redis log entry"
+          expected_duration: "30 seconds"
+          
+        - scenario: "Qdrant promotion"
+          steps:
+            - "Archive story with high-value content"
+            - "Verify Qdrant indexing"
+            - "Test semantic search"
+            - "Verify metadata completeness"
+          expected_duration: "1 minute"
+          
+        - scenario: "Concurrent modification handling"
+          steps:
+            - "Start archival process"
+            - "Modify workflow file mid-process"
+            - "Verify conflict detection"
+            - "Verify graceful abort"
+          expected_duration: "1 minute"
+      success_criteria:
+        - "All scenarios pass"
+        - "No data loss in any scenario"
+        - "Rollback completes < 60 seconds"
+        - "Qdrant search returns results < 500ms"
+      execution_command: "pytest tests/workflow/integration/ -v --tb=short"
+    
+    level_3_system:
+      name: "System Validation"
+      description: "Validate complete system in staging environment"
+      scope:
+        - "Full migration on copy of production data"
+        - "CI integration"
+        - "Monitoring and alerting"
+        - "Performance benchmarks"
+        - "Load testing"
+      test_procedures:
+        - procedure: "Staging Migration"
+          steps:
+            - "Copy production workflow status to staging"
+            - "Run full migration"
+            - "Verify archive completeness"
+            - "Verify workflow integrity"
+            - "Run CI pipeline"
+            - "Validate performance"
+          expected_duration: "2 hours"
+          
+        - procedure: "Load Testing"
+          steps:
+            - "Simulate 100 concurrent archive operations"
+            - "Measure response times"
+            - "Verify no data corruption"
+            - "Check Redis connection pool"
+            - "Check Qdrant throughput"
+          expected_duration: "30 minutes"
+          
+        - procedure: "Disaster Recovery"
+          steps:
+            - "Simulate data loss scenario"
+            - "Execute emergency rollback"
+            - "Verify full restoration"
+            - "Validate all systems operational"
+          expected_duration: "1 hour"
+      success_criteria:
+        - "Migration completes without errors"
+        - "CI pipeline passes"
+        - "Response times within SLA"
+        - "Zero data integrity violations"
+        - "Rollback tested and verified"
+      execution_command: "python3 scripts/workflow/system_validation.py --environment=staging"
+    
+    level_4_acceptance:
+      name: "User Acceptance Testing"
+      description: "Validate with actual agent workflows"
+      scope:
+        - "Agent lookup patterns"
+        - "Archive access workflows"
+        - "Qdrant search usability"
+        - "Documentation completeness"
+      test_procedures:
+        - procedure: "Agent Workflow Simulation"
+          steps:
+            - "Have agents perform typical lookups"
+            - "Measure time to find information"
+            - "Gather feedback on UX"
+            - "Verify all information accessible"
+            - "Test archive access patterns"
+          participants: "3+ agents"
+          expected_duration: "1 day"
+          
+        - procedure: "Documentation Review"
+          steps:
+            - "Review archive access guide"
+            - "Test documented procedures"
+            - "Verify examples work correctly"
+            - "Check troubleshooting guide"
+          expected_duration: "2 hours"
+      success_criteria:
+        - "Agents can find information in < 5 seconds"
+        - "No critical UX issues"
+        - "Positive feedback from test agents"
+        - "Documentation rated clear and complete"
+      sign_off_required:
+        - "Lead agent approval"
+        - "Operations team approval"
+
+  # ============================================================================
+  # VALIDATION METRICS
+  # ============================================================================
+  validation_metrics:
+    - metric: "test_pass_rate"
+      target: "100%"
+      measurement: "pytest exit code + summary"
+      
+    - metric: "code_coverage"
+      target: "≥90%"
+      measurement: "pytest-cov report"
+      
+    - metric: "data_integrity_score"
+      target: "100%"
+      measurement: "verify_archive_completeness.py --strict"
+      
+    - metric: "archive_retrieval_time"
+      target: "< 500ms"
+      measurement: "Benchmark script average"
+      
+    - metric: "qdrant_search_time"
+      target: "< 200ms"
+      measurement: "Qdrant query timing"
+      
+    - metric: "rollback_time"
+      target: "< 60 seconds"
+      measurement: "restore_from_archive.py execution time"
+      
+    - metric: "workflow_file_size"
+      target: "< 1,500 lines"
+      measurement: "wc -l docs/bmm-workflow-status.yaml"
+
+  # ============================================================================
+  # VALIDATION SCHEDULE
+  # ============================================================================
+  validation_schedule:
+    pre_migration:
+      - "Level 1: Unit tests (continuous)"
+      - "Level 2: Integration tests (before each phase)"
+    
+    during_migration:
+      - "Level 2: Integration tests (after each batch)"
+      - "Level 3: System validation (after Phase 2)"
+    
+    post_migration:
+      - "Level 3: Full system validation"
+      - "Level 4: User acceptance testing"
+      - "Level 1: Regression tests (ongoing)"
+
+# ==============================================================================
+# PHASED IMPLEMENTATION ROADMAP
+# ==============================================================================
+
+phased_roadmap:
+  
+  # ============================================================================
+  # PHASE 0: FOUNDATION
+  # ============================================================================
+  phase_0_foundation:
+    name: "Phase 0: Foundation"
+    duration: "3 days"
+    status: "Not started"
+    story_id: "ST-ARCHIVE-000"
+    priority: "P0"
+    
+    objectives:
+      - "Create directory structure"
+      - "Implement core scripts"
+      - "Set up monitoring"
+      - "Write documentation"
+      - "Establish validation framework"
+    
+    deliverables:
+      - item: "Directory structure"
+        path: "docs/archives/workflow-status/"
+        subdirectories:
+          - "story-details/"
+          - "epic-summaries/"
+          - "indices/"
+        acceptance_criteria:
+          - "All directories created"
+          - "Permissions set correctly (755)"
+          - "Git tracking configured"
+          - ".gitkeep files present"
+        verification: "ls -la docs/archives/workflow-status/"
+      
+      - item: "Core scripts"
+        paths:
+          - "scripts/workflow/archive_old_stories.py"
+          - "scripts/workflow/create_archive_documents.py"
+          - "scripts/workflow/lean_workflow_status.py"
+          - "scripts/workflow/verify_archive_completeness.py"
+          - "scripts/workflow/verify_workflow_integrity.py"
+          - "scripts/workflow/restore_from_archive.py"
+          - "scripts/workflow/update_archive_index.py"
+          - "scripts/workflow/identify_archival_candidates.py"
+        acceptance_criteria:
+          - "All scripts implemented"
+          - "Unit tests pass (100%)"
+          - "Documentation complete (docstrings)"
+          - "Error handling robust"
+          - "Logging to Redis implemented"
+        verification: "pytest tests/workflow/test_*.py -v"
+      
+      - item: "Archive templates"
+        paths:
+          - "scripts/workflow/templates/story-archive-template.yaml"
+          - "scripts/workflow/templates/epic-summary-template.yaml"
+        acceptance_criteria:
+          - "Templates validated"
+          - "All required fields present"
+          - "Version controlled"
+        verification: "yamllint scripts/workflow/templates/*.yaml"
+      
+      - item: "Monitoring setup"
+        paths:
+          - "scripts/workflow/log_archival_metrics.py"
+          - "Grafana dashboard config (optional)"
+        acceptance_criteria:
+          - "Metrics collection working"
+          - "Redis keys created"
+          - "Alerts configured"
+        verification: "redis-cli KEYS 'bmad:chiseai:workflow:archival:*'"
+      
+      - item: "Documentation"
+        paths:
+          - "docs/governance/workflow-archival-system.md"
+          - "docs/governance/archive-access-guide.md"
+          - "docs/runbooks/workflow-archiving-runbook.md"
+        acceptance_criteria:
+          - "All docs complete and reviewed"
+          - "Examples provided"
+          - "Troubleshooting guide included"
+          - "API documentation complete"
+        verification: "ls -la docs/governance/*.md docs/runbooks/*.md"
+      
+      - item: "Validation framework"
+        paths:
+          - "tests/workflow/test_archive_creation.py"
+          - "tests/workflow/test_workflow_modification.py"
+          - "tests/workflow/test_qdrant_promotion.py"
+          - "tests/workflow/test_verification.py"
+          - "tests/workflow/test_restore.py"
+        acceptance_criteria:
+          - "All test files created"
+          - "≥90% code coverage"
+          - "Integration tests pass"
+        verification: "pytest tests/workflow/ --cov-report=term-missing"
+    
+    exit_criteria:
+      - "All deliverables complete"
+      - "Code review passed"
+      - "All tests passing (100%)"
+      - "Documentation approved"
+      - "Security review completed"
+      - "Performance benchmarks established"
+    
+    go_no_go_criteria:
+      go:
+        - "All unit tests pass"
+        - "Documentation complete"
+        - "Scripts reviewed and approved"
+        - "No critical security issues"
+      no_go:
+        - "Any test failures"
+        - "Missing documentation"
+        - "Security vulnerabilities"
+        - "Performance issues identified"
+    
+    rollback_plan:
+      steps:
+        - "Delete created directories: rm -rf docs/archives/workflow-status/"
+        - "Remove scripts: rm -f scripts/workflow/archive_*.py scripts/workflow/lean_*.py"
+        - "Revert documentation: git checkout docs/governance/ docs/runbooks/"
+        - "Clean Redis keys: redis-cli DEL 'bmad:chiseai:workflow:archival:*'"
+      verification: "ls docs/archives/workflow-status/ 2>&1 | grep 'No such file'"
+      estimated_duration: "5 minutes"
+
+  # ============================================================================
+  # PHASE 1: PILOT MIGRATION
+  # ============================================================================
+  phase_1_pilot:
+    name: "Phase 1: Pilot Migration"
+    duration: "2 days"
+    depends_on: "Phase 0"
+    status: "Not started"
+    story_id: "ST-ARCHIVE-001"
+    priority: "P0"
+    
+    objectives:
+      - "Migrate 5-10 selected stories"
+      - "Validate process end-to-end"
+      - "Gather feedback"
+      - "Refine procedures"
+      - "Test rollback procedures"
+    
+    deliverables:
+      - item: "Pilot archive"
+        description: "Archive documents for 5-10 stories"
+        acceptance_criteria:
+          - "All pilot stories archived"
+          - "Data integrity verified (hash match)"
+          - "Workflow updated correctly"
+          - "Archive index updated"
+          - "Qdrant promotion successful (if applicable)"
+        verification: |
+          python3 scripts/workflow/verify_archive_completeness.py \
+            --manifest docs/archives/workflow-status/pilot-manifest.yaml \
+            --strict
+      
+      - item: "Process validation"
+        description: "Validated migration process"
+        acceptance_criteria:
+          - "No data loss"
+          - "Rollback tested and working"
+          - "Performance acceptable (< 5 min for 10 stories)"
+          - "All verification checks pass"
+        verification: |
+          # Test rollback
+          python3 scripts/workflow/restore_from_archive.py --story-id ST-PILOT-001
+          # Verify restoration
+          grep "ST-PILOT-001" docs/bmm-workflow-status.yaml
+      
+      - item: "Feedback report"
+        description: "Agent feedback on new system"
+        acceptance_criteria:
+          - "Feedback collected from 3+ agents"
+          - "Issues documented"
+          - "Improvements identified"
+          - "UX concerns addressed"
+        verification: "ls docs/feedback/pilot-migration-feedback.md"
+    
+    story_selection_criteria:
+      - "Completed > 14 days ago (safe to archive)"
+      - "Low risk (not critical path)"
+      - "Good representation of story types"
+      - "Mix of epics"
+      - "Has complete completion evidence"
+      - "No pending dependencies"
+    
+    pilot_stories:
+      selection_method: "Manual review by senior-dev"
+      count: "5-10 stories"
+      criteria_verification: "scripts/workflow/validate_pilot_candidates.py"
+    
+    execution_steps:
+      day_1:
+        - "Select pilot stories (manual review)"
+        - "Create pilot manifest"
+        - "Run dry-run archival"
+        - "Review dry-run output"
+        - "Execute pilot archival"
+        - "Verify archives created"
+      
+      day_2:
+        - "Test archive access"
+        - "Test Qdrant search"
+        - "Execute rollback test"
+        - "Gather agent feedback"
+        - "Document lessons learned"
+        - "Update procedures if needed"
+    
+    exit_criteria:
+      - "All pilot stories archived successfully"
+      - "No critical issues"
+      - "Agents can access archived info"
+      - "Feedback incorporated"
+      - "Rollback tested and verified"
+      - "Performance metrics collected"
+    
+    go_no_go_criteria:
+      go:
+        - "All pilot archives verified"
+        - "No data loss detected"
+        - "Rollback successful"
+        - "Agent feedback positive"
+        - "Performance acceptable"
+      no_go:
+        - "Any data loss"
+        - "Rollback failure"
+        - "Critical UX issues"
+        - "Performance > 10 min for 10 stories"
+        - "Agent feedback negative"
+    
+    rollback_plan:
+      steps:
+        - "Restore pilot stories: scripts/workflow/restore_from_archive.py --all-pilot"
+        - "Delete pilot archives: rm docs/archives/workflow-status/story-details/ST-PILOT-*"
+        - "Revert workflow changes: git checkout docs/bmm-workflow-status.yaml"
+        - "Clean pilot manifest: rm docs/archives/workflow-status/pilot-manifest.yaml"
+      verification: |
+        # Verify all pilot stories restored
+        for story in ST-PILOT-001 ST-PILOT-002 ...; do
+          grep -q "id: $story" docs/bmm-workflow-status.yaml || echo "MISSING: $story"
+        done
+      estimated_duration: "10 minutes"
+
+  # ============================================================================
+  # PHASE 2: FULL MIGRATION
+  # ============================================================================
+  phase_2_full_migration:
+    name: "Phase 2: Full Migration"
+    duration: "1 week"
+    depends_on: "Phase 1"
+    status: "Not started"
+    story_id: "ST-ARCHIVE-002"
+    priority: "P0"
+    
+    objectives:
+      - "Migrate all eligible stories"
+      - "Complete bulk archival"
+      - "Verify system at scale"
+      - "Enable automation"
+      - "Achieve target file size"
+    
+    deliverables:
+      - item: "Complete archive"
+        description: "All eligible stories archived"
+        acceptance_criteria:
+          - "~50-80 stories archived"
+          - "All archives verified (100%)"
+          - "Archive index complete"
+          - "No data loss"
+        verification: |
+          python3 scripts/workflow/verify_archive_completeness.py --strict
+          echo "Archive count: $(ls docs/archives/workflow-status/story-details/ | wc -l)"
+      
+      - item: "Lean workflow"
+        description: "Workflow status reduced to < 1,500 lines"
+        acceptance_criteria:
+          - "File size reduced by > 2,000 lines"
+          - "All required fields preserved"
+          - "YAML valid"
+          - "CI pipeline passes"
+        verification: |
+          wc -l docs/bmm-workflow-status.yaml
+          python3 scripts/validate_status_sync.py
+      
+      - item: "Qdrant promotion"
+        description: "High-value memories in Qdrant"
+        acceptance_criteria:
+          - "~20-30 memories promoted"
+          - "Search functional"
+          - "Metadata complete"
+          - "Search latency < 200ms"
+        verification: |
+          curl -s http://localhost:6333/collections/chiseai_workflow_archives
+          python3 scripts/memory/test_qdrant_search.py
+      
+      - item: "Automation enabled"
+        description: "Daily archival running"
+        acceptance_criteria:
+          - "CI job configured"
+          - "First automated run successful"
+          - "Monitoring active"
+          - "Alerts configured"
+        verification: |
+          redis-cli GET bmad:chiseai:workflow:archival:enabled
+          # Check CI config
+          grep -A 5 "auto-archive" .woodpecker/ci.yaml
+    
+    execution_plan:
+      day_1_preparation:
+        - task: "Final pre-migration backup"
+          command: |
+            cp docs/bmm-workflow-status.yaml \
+               docs/bmm-workflow-status.yaml.pre-migration-$(date +%Y%m%d)
+          verification: "ls -lh docs/bmm-workflow-status.yaml.pre-migration-*"
+        
+        - task: "Dry run analysis"
+          command: "python3 scripts/workflow/archive_old_stories.py --dry-run --age-days 7"
+          verification: "Review output: ~50-80 stories identified"
+        
+        - task: "Team notification"
+          command: |
+            echo "Full migration starting. Maintenance window: 1 week."
+            # Notify via Discord or other channel
+          verification: "Notification sent"
+      
+      day_2_batch_1:
+        - task: "Create archive documents (batch 1: 20 stories)"
+          command: |
+            python3 scripts/workflow/archive_old_stories.py \
+              --execute --batch-size 20 --batch-number 1
+          verification: |
+            ls docs/archives/workflow-status/story-details/ | wc -l
+        
+        - task: "Verify batch 1"
+          command: |
+            python3 scripts/workflow/verify_archive_completeness.py \
+              --batch 1 --strict
+          verification: "All checks pass"
+      
+      day_3_batch_2:
+        - task: "Create archive documents (batch 2: 20 stories)"
+          command: |
+            python3 scripts/workflow/archive_old_stories.py \
+              --execute --batch-size 20 --batch-number 2
+          verification: "20 more archives created"
+        
+        - task: "Verify batch 2"
+          command: |
+            python3 scripts/workflow/verify_archive_completeness.py \
+              --batch 2 --strict
+          verification: "All checks pass"
+      
+      day_4_batch_3:
+        - task: "Create archive documents (batch 3: remaining)"
+          command: |
+            python3 scripts/workflow/archive_old_stories.py \
+              --execute --batch-number 3
+          verification: "All remaining archives created"
+        
+        - task: "Verify batch 3"
+          command: |
+            python3 scripts/workflow/verify_archive_completeness.py \
+              --batch 3 --strict
+          verification: "All checks pass"
+        
+        - task: "Update archive index"
+          command: "python3 scripts/workflow/update_archive_index.py --rebuild"
+          verification: "Index contains all stories"
+      
+      day_5_qdrant_and_lean:
+        - task: "Promote to Qdrant"
+          command: |
+            python3 scripts/memory/promote_archived_to_qdrant.py --execute
+          verification: |
+            curl -s http://localhost:6333/collections/chiseai_workflow_archives
+        
+        - task: "Lean workflow status"
+          command: |
+            python3 scripts/workflow/lean_workflow_status.py --execute
+          verification: |
+            wc -l docs/bmm-workflow-status.yaml
+            # Target: < 1,500 lines
+        
+        - task: "Final verification"
+          command: |
+            python3 scripts/workflow/verify_archive_completeness.py --strict
+            python3 scripts/workflow/verify_workflow_integrity.py
+          verification: "All checks pass"
+      
+      day_6_automation:
+        - task: "Enable CI automation"
+          command: |
+            # Update .woodpecker/ci.yaml
+            # Enable auto-archive job
+          verification: "CI config updated"
+        
+        - task: "Monitor first runs"
+          command: |
+            # Watch for automated archival
+            tail -f /var/log/woodpecker/auto-archive.log
+          verification: "First automated run successful"
+        
+        - task: "Documentation updates"
+          command: |
+            # Update any docs based on learnings
+          verification: "Docs updated"
+      
+      day_7_retrospective:
+        - task: "Retrospective"
+          command: |
+            # Document lessons learned
+            # Identify improvements
+          deliverable: "docs/retrospectives/migration-retrospective.md"
+        
+        - task: "Lessons learned"
+          command: |
+            # Capture what worked and what didn't
+          deliverable: "docs/retrospectives/migration-lessons-learned.md"
+        
+        - task: "Process improvements"
+          command: |
+            # Update procedures based on learnings
+          verification: "Procedures updated"
+    
+    exit_criteria:
+      - "All eligible stories archived"
+      - "Workflow file < 1,500 lines"
+      - "No data loss verified"
+      - "Automation running"
+      - "All tests passing"
+      - "CI pipeline passes"
+      - "Documentation complete"
+    
+    go_no_go_criteria:
+      go:
+        - "All batches verified"
+        - "Workflow file size target met"
+        - "Qdrant promotion successful"
+        - "Automation enabled and tested"
+        - "All CI checks pass"
+      no_go:
+        - "Any batch verification failure"
+        - "Data loss detected"
+        - "Workflow file size > 2,000 lines"
+        - "Qdrant promotion failure"
+        - "Automation failure"
+        - "CI pipeline failure"
+    
+    rollback_plan:
+      emergency:
+        trigger: "Critical failure during migration"
+        steps:
+          - "Stop all operations"
+          - "Alert team"
+          - "Restore from pre-migration backup"
+          - "Delete all archives"
+          - "Clear Qdrant vectors"
+          - "Revert CI changes"
+          - "Verify restoration"
+        estimated_duration: "30 minutes"
+      
+      partial:
+        trigger: "Issue with specific batch"
+        steps:
+          - "Pause migration"
+          - "Assess impact"
+          - "Restore affected stories"
+          - "Fix issue"
+          - "Resume migration"
+        estimated_duration: "1 hour"
+
+  # ============================================================================
+  # PHASE 3: OPTIMIZATION
+  # ============================================================================
+  phase_3_optimization:
+    name: "Phase 3: Optimization"
+    duration: "2 weeks"
+    depends_on: "Phase 2"
+    status: "Not started"
+    story_id: "ST-ARCHIVE-003"
+    priority: "P1"
+    
+    objectives:
+      - "Performance tuning"
+      - "Advanced search features"
+      - "Analytics and reporting"
+      - "Process refinement"
+      - "Team training"
+    
+    deliverables:
+      - item: "Performance optimization"
+        description: "Optimized archival and retrieval"
+        acceptance_criteria:
+          - "Archive creation < 1s per story"
+          - "Retrieval < 500ms"
+          - "Search < 200ms"
+          - "Bulk operations optimized"
+        verification: |
+          python3 scripts/workflow/benchmark_performance.py
+          # Review benchmark results
+      
+      - item: "Analytics dashboard"
+        description: "Archival metrics and trends"
+        acceptance_criteria:
+          - "Grafana dashboard live (optional)"
+          - "Key metrics visible in Redis"
+          - "Alerts working"
+          - "Weekly reports automated"
+        verification: |
+          redis-cli HGETALL bmad:chiseai:workflow:archival:stats
+          # Check weekly report generated
+      
+      - item: "Advanced search"
+        description: "Enhanced Qdrant search capabilities"
+        acceptance_criteria:
+          - "Faceted search working"
+          - "Relevance scoring"
+          - "Search suggestions"
+          - "Filter by metadata"
+        verification: |
+          python3 scripts/memory/test_advanced_search.py
+      
+      - item: "Process documentation"
+        description: "Complete operational procedures"
+        acceptance_criteria:
+          - "Runbooks complete"
+          - "Troubleshooting guides updated"
+          - "Training materials created"
+          - "FAQ document published"
+        verification: |
+          ls docs/runbooks/*.md
+          # Review training materials
+      
+      - item: "Team training"
+        description: "All agents trained on new system"
+        acceptance_criteria:
+          - "Training sessions completed"
+          - "Documentation reviewed by all agents"
+          - "Practice exercises completed"
+          - "Feedback collected"
+        verification: |
+          # Training completion tracking
+          redis-cli SMEMBERS bmad:chiseai:training:archive-system:completed
+    
+    exit_criteria:
+      - "Performance targets met"
+      - "Dashboard live (if implemented)"
+      - "Process documented"
+      - "Team trained"
+      - "Feedback incorporated"
+    
+    go_no_go_criteria:
+      go:
+        - "Performance targets achieved"
+        - "Team trained and comfortable"
+        - "Documentation complete"
+        - "No critical issues"
+      no_go:
+        - "Performance issues persist"
+        - "Team not trained"
+        - "Documentation incomplete"
+        - "Critical UX issues"
+
+# ==============================================================================
+# ACCEPTANCE CRITERIA SUMMARY
+# ==============================================================================
+
+acceptance_criteria:
+  
+  overall_success:
+    - "Workflow status file < 1,500 lines (from ~3,500+)"
+    - "All completion evidence preserved (pr_number, merge_commit)"
+    - "Zero data loss verified"
+    - "Archive system fully functional"
+    - "Qdrant search operational"
+    - "Automation running daily"
+    - "All agents can access information"
+    - "CI pipeline passes"
+    - "Documentation complete"
+    - "Monitoring and alerting active"
+  
+  metrics:
+    - metric: "Workflow file size"
+      current: "~6,549 lines"
+      target: "< 1,500 lines"
+      measurement: "wc -l docs/bmm-workflow-status.yaml"
+      warning_threshold: "2,000 lines"
+    
+    - metric: "Archive coverage"
+      target: "100% of eligible stories"
+      measurement: "verify_archive_completeness.py"
+      minimum_acceptable: "95%"
+    
+    - metric: "Data integrity"
+      target: "0 violations"
+      measurement: "verify_archive_completeness.py"
+      critical: true
+    
+    - metric: "Retrieval time"
+      target: "< 500ms"
+      measurement: "Benchmark script"
+      warning_threshold: "1,000ms"
+    
+    - metric: "Search time"
+      target: "< 200ms"
+      measurement: "Qdrant query timing"
+      warning_threshold: "500ms"
+    
+    - metric: "Rollback time"
+      target: "< 60 seconds"
+      measurement: "restore_from_archive.py timing"
+      warning_threshold: "120 seconds"
+    
+    - metric: "Automation uptime"
+      target: "> 99%"
+      measurement: "Redis logs"
+      critical: true
+
+# ==============================================================================
+# RISK MITIGATION
+# ==============================================================================
+
+risk_mitigation:
+  
+  risk_1_data_loss:
+    id: "RISK-001"
+    name: "Data Loss During Migration"
+    probability: LOW
+    impact: CRITICAL
+    description: "Loss of story data during archival process"
+    mitigation:
+      - "Multiple backup layers (file-level + git)"
+      - "Hash verification at each step"
+      - "Completeness checks after each batch"
+      - "Rollback tested and ready"
+      - "Read-only operations until verification complete"
+    detection:
+      - "verify_archive_completeness.py --strict"
+      - "Hash comparison: original vs archive"
+      - "Content audit: spot-check archives"
+    response:
+      - "Immediate rollback to backup"
+      - "Halt all migration activities"
+      - "Incident response team activated"
+    owner: "senior-dev"
+
+  risk_2_automation_failure:
+    id: "RISK-002"
+    name: "Automation Failure"
+    probability: MEDIUM
+    impact: HIGH
+    description: "Automated archival fails or causes issues"
+    mitigation:
+      - "Dry-run mode for all operations"
+      - "Manual approval for bulk operations"
+      - "Monitoring and alerting"
+      - "Automatic rollback on failure"
+      - "Feature flag to disable automation"
+    detection:
+      - "CI pipeline failure alerts"
+      - "Redis error logs"
+      - "Archive verification failures"
+    response:
+      - "Disable automation: redis-cli SET bmad:chiseai:workflow:archival:enabled 0"
+      - "Manual investigation"
+      - "Fix and re-enable"
+    owner: "operations-team"
+
+  risk_3_performance_degradation:
+    id: "RISK-003"
+    name: "Performance Degradation"
+    probability: LOW
+    impact: MEDIUM
+    description: "Archival operations slow down system"
+    mitigation:
+      - "Performance benchmarks before deployment"
+      - "Load testing"
+      - "Caching strategy"
+      - "Batch processing"
+      - "Off-peak scheduling"
+    detection:
+      - "Response time monitoring"
+      - "Resource utilization alerts"
+      - "User complaints"
+    response:
+      - "Optimize slow operations"
+      - "Increase resources if needed"
+      - "Adjust scheduling"
+    owner: "senior-dev"
+
+  risk_4_user_adoption:
+    id: "RISK-004"
+    name: "User Adoption Issues"
+    probability: MEDIUM
+    impact: MEDIUM
+    description: "Agents struggle to access archived information"
+    mitigation:
+      - "Comprehensive documentation"
+      - "Agent training sessions"
+      - "UX guidance and examples"
+      - "Feedback loops"
+      - "Support channel"
+    detection:
+      - "Feedback surveys"
+      - "Support ticket volume"
+      - "Access pattern analysis"
+    response:
+      - "Additional training"
+      - "Documentation improvements"
+      - "UX enhancements"
+    owner: "team-lead"
+
+  risk_5_qdrant_failure:
+    id: "RISK-005"
+    name: "Qdrant Integration Failure"
+    probability: LOW
+    impact: MEDIUM
+    description: "Qdrant unavailable or failing during promotion"
+    mitigation:
+      - "Graceful degradation (file archives still work)"
+      - "Retry logic with exponential backoff"
+      - "Queue for later processing"
+      - "Health checks before promotion"
+    detection:
+      - "Qdrant health endpoint monitoring"
+      - "Promotion failure alerts"
+      - "Search functionality tests"
+    response:
+      - "Continue with file archival"
+      - "Queue for retry"
+      - "Manual promotion when Qdrant available"
+    owner: "senior-dev"
+
+  risk_6_concurrent_modification:
+    id: "RISK-006"
+    name: "Concurrent Modification"
+    probability: MEDIUM
+    impact: HIGH
+    description: "Workflow file modified during archival process"
+    mitigation:
+      - "File hash check before and after"
+      - "Git-based conflict detection"
+      - "Atomic operations where possible"
+      - "Retry with exponential backoff"
+    detection:
+      - "Hash mismatch detection"
+      - "Git conflict detection"
+      - "File modification timestamps"
+    response:
+      - "Abort current operation"
+      - "Refresh and retry"
+      - "Log conflict for investigation"
+    owner: "senior-dev"
+
+# ==============================================================================
+# MONITORING AND ALERTING
+# ==============================================================================
+
+monitoring:
+  
+  redis_metrics:
+    - key: "bmad:chiseai:workflow:archival:log"
+      type: "list"
+      description: "Archive operation log"
+      retention: "90 days"
+    
+    - key: "bmad:chiseai:workflow:archival:stats"
+      type: "hash"
+      description: "Archive statistics"
+      fields:
+        - total_archived
+        - last_archive_run
+        - archive_failures
+        - average_processing_time
+    
+    - key: "bmad:chiseai:workflow:archival:enabled"
+      type: "string"
+      description: "Archival feature flag"
+      values: "0 (disabled) | 1 (enabled)"
+    
+    - key: "bmad:chiseai:workflow:migration:status"
+      type: "hash"
+      description: "Migration progress tracking"
+      fields:
+        - phase
+        - status
+        - started_at
+        - completed_at
+        - stories_archived
+  
+  alerts:
+    - name: "archive_failure"
+      condition: "Archival script exits non-zero"
+      severity: "P1"
+      channel: "Discord #ops-alerts"
+      auto_page: false
+    
+    - name: "data_loss_detected"
+      condition: "Verify script finds missing archives"
+      severity: "P0-CRITICAL"
+      channel: "Discord #ops-alerts + PagerDuty"
+      auto_page: true
+    
+    - name: "workflow_corruption"
+      condition: "Workflow file fails validation"
+      severity: "P0-CRITICAL"
+      channel: "Discord #ops-alerts + PagerDuty"
+      auto_page: true
+    
+    - name: "qdrant_promotion_failure"
+      condition: "Qdrant indexing fails"
+      severity: "P2"
+      channel: "Discord #ops-alerts"
+      auto_page: false
+    
+    - name: "performance_degradation"
+      condition: "Archive operation > 5 minutes"
+      severity: "P2"
+      channel: "Discord #ops-alerts"
+      auto_page: false
+
+# ==============================================================================
+# SUCCESS METRICS AND REPORTING
+# ==============================================================================
+
+success_metrics:
+  
+  migration_completion:
+    - metric: "Stories archived"
+      target: "~50-80"
+      measurement: "Count of archive files"
+    
+    - metric: "Lines removed"
+      target: "> 2,000"
+      measurement: "wc -l before/after"
+    
+    - metric: "Qdrant memories"
+      target: "~20-30"
+      measurement: "Qdrant collection count"
+    
+    - metric: "Zero data loss"
+      target: "100%"
+      measurement: "verify_archive_completeness.py"
+  
+  ongoing_operations:
+    - metric: "Daily archival success rate"
+      target: "> 99%"
+      measurement: "Redis success/failure ratio"
+    
+    - metric: "Average archive time"
+      target: "< 1s per story"
+      measurement: "Redis timing logs"
+    
+    - metric: "Search response time"
+      target: "< 200ms"
+      measurement: "Qdrant query timing"
+    
+    - metric: "User satisfaction"
+      target: "> 4/5"
+      measurement: "Quarterly survey"
+
+# ==============================================================================
+# DOCUMENTATION REFERENCES
+# ==============================================================================
+
+documentation:
+  - file: "docs/governance/workflow-archival-migration-plan.yaml"
+    purpose: "Detailed migration plan and automation scripts"
+  
+  - file: "docs/governance/workflow-archival-system.md"
+    purpose: "Complete system documentation"
+  
+  - file: "docs/governance/archive-access-guide.md"
+    purpose: "How to access archived stories"
+  
+  - file: "docs/runbooks/workflow-archiving-runbook.md"
+    purpose: "Operational procedures"
+  
+  - file: "docs/governance/completion-evidence-requirements.md"
+    purpose: "Required fields for completion"
+  
+  - file: "docs/archives/workflow-status/archive-index.yaml"
+    purpose: "Master archive index"
+
+# ==============================================================================
+# APPROVAL AND SIGN-OFF
+# ==============================================================================
+
+approvals:
+  required:
+    - role: "Technical Lead"
+      responsibility: "Technical design approval"
+    
+    - role: "Operations Team"
+      responsibility: "Operational readiness"
+    
+    - role: "Security Reviewer"
+      responsibility: "Security assessment"
+    
+    - role: "Product Owner"
+      responsibility: "Business requirements"
+  
+  sign_off_criteria:
+    - "All validation levels passed"
+    - "All phases completed successfully"
+    - "Documentation complete"
+    - "Training completed"
+    - "Monitoring active"
+    - "Rollback tested"
+
+# ==============================================================================
+# REVISION HISTORY
+# ==============================================================================
+
+revision_history:
+  - version: "1.0"
+    date: "2026-03-09"
+    author: "senior-dev"
+    changes:
+      - "Initial validation plan and roadmap"
+      - "Defined 4 validation levels"
+      - "Created 4-phase implementation roadmap"
+      - "Documented risk mitigation strategies"
+      - "Established acceptance criteria"

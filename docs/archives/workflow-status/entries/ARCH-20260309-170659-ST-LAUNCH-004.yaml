@@ -1,0 +1,69 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260309-170659-ST-LAUNCH-004
+original_story_id: ST-LAUNCH-004
+archived_at: '2026-03-09T17:06:59.813249Z'
+archive_reason: age (15 days)
+archive_reason_detail: Story archived due to age (15 days)
+migration:
+  phase: pilot
+  migrated_by: senior-dev
+  migration_script_version: 1.0.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260309-170659-ST-LAUNCH-004
+  id: ST-LAUNCH-004
+  status: archived
+  title: Scheduler Verification
+  priority: P1-HIGH
+  epic_id: EP-LAUNCH-001
+  completion_date: '2026-02-22'
+archived_fields:
+  description: Verify all schedulers (signal generation, ECE updates, retraining checks)
+    start on boot and recover from crashes
+  acceptance_criteria:
+  - Boot startup - All schedulers start automatically on application initialization,
+    health checks pass within 30 seconds
+  - Crash recovery - Scheduler restarts automatically on failure, state restored from
+    last checkpoint
+  - Job persistence - Missed jobs rescheduled on recovery, no duplicate executions
+  - Health monitoring - Status of all schedulers returned via health endpoint, failed
+    schedulers identified
+  implementation_notes:
+  - Scheduler health monitor: src/execution/schedulers/scheduler_health_monitor.py
+      (807 lines)
+  - Verification script: scripts/ops/verify_schedulers.py (354 lines)
+  - All schedulers start automatically on boot within 30 seconds
+  - Crash recovery with state restoration
+  - Missed jobs rescheduled, no duplicates
+  - Health endpoint returns all scheduler statuses
+  test_results:
+    coverage: Scheduler startup, crash recovery, job persistence, health monitoring
+    unit_tests: 50 passed, 0 failed
+  live_validation_gates:
+  - check: Query health endpoint
+    gate: scheduler_health
+    threshold: All schedulers reporting healthy
+  rollback_plan:
+  - action: Restart schedulers
+    command: systemctl restart chiseai-schedulers
+  scope_globs:
+  - src/execution/schedulers/scheduler_health_monitor.py
+  - scripts/ops/verify_schedulers.py
+  - tests/test_execution/test_scheduler_verification.py
+  depends_on: []
+  test_strategy:
+    e2e: pytest tests/e2e/test_scheduler_lifecycle.py -v
+    integration: pytest tests/test_execution/integration/test_scheduler_recovery.py
+      -v
+    unit: pytest tests/test_execution/test_scheduler_verification.py -v
+  sprint_id: LAUNCH-SPRINT-1
+  story_points: 2
+  fr_coverage:
+  - FR-DEV-005
+  validation_status: validated
+completion_evidence: null
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-170659-ST-LAUNCH-004.yaml
+integrity:
+  original_checksum: 0c1e103b9d177b113df2501829c979b94e0e7505528c19eee365adb3fc798951
+  archived_checksum: fed18250cb564d17e83110f44a2f3bb611048bee26974df2db46f8c049328be6
+  verification_date: '2026-03-09T17:06:59.813296Z'

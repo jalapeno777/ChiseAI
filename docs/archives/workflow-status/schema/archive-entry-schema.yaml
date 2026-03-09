@@ -1,0 +1,350 @@
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# WORKFLOW STATUS ARCHIVE ENTRY SCHEMA
+# Version: 1.0.0
+# Story: ST-WORKFLOW-ARCHIVAL-001
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#
+# Purpose: Define the schema for archived workflow status entries
+# This schema ensures data integrity and enables safe migration of long-form
+# fields to archive storage while preserving lean status references.
+#
+# Archive Reason Codes:
+#   - age: Story completed > 7 days ago
+#   - size: Entry exceeds size threshold (> 2KB lean fields)
+#   - completion_status: Story marked as completed/merged
+#   - manual: Explicit manual archival request
+#
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+schema_version: "1.0.0"
+schema_name: "workflow_status_archive_entry"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# REQUIRED FIELDS
+# ═══════════════════════════════════════════════════════════════════════════════
+required_fields:
+  - archive_ref
+  - original_story_id
+  - archived_at
+  - archive_reason
+  - archive_location
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ARCHIVE ENTRY STRUCTURE
+# ═══════════════════════════════════════════════════════════════════════════════
+archive_entry:
+  # Unique identifier for this archive entry
+  # Format: ARCH-{timestamp}-{story_id}
+  archive_ref:
+    type: string
+    pattern: "^ARCH-[0-9]{8}-[0-9]{6}-[A-Z0-9-]+$"
+    required: true
+    description: "Unique archive reference identifier"
+
+  # Original story ID from workflow-status.yaml
+  original_story_id:
+    type: string
+    pattern: "^[A-Z0-9-]+$"
+    required: true
+    description: "Original story identifier (e.g., ST-LAUNCH-001)"
+
+  # ISO 8601 timestamp when archival occurred
+  archived_at:
+    type: string
+    format: "date-time"
+    required: true
+    description: "Timestamp when story was archived (ISO 8601)"
+
+  # Reason for archival
+  archive_reason:
+    type: string
+    enum: ["age", "size", "completion_status", "manual"]
+    required: true
+    description: "Primary reason for archival"
+
+  # Additional context for archive_reason
+  archive_reason_detail:
+    type: string
+    max_length: 500
+    required: false
+    description: "Human-readable explanation for archival"
+
+  # Migration metadata
+  migration:
+    type: object
+    required: true
+    properties:
+      phase:
+        type: string
+        enum: ["pilot", "batch_1", "batch_2", "full"]
+        description: "Migration phase when archived"
+      migrated_by:
+        type: string
+        description: "Agent or script that performed migration"
+      migration_script_version:
+        type: string
+        pattern: "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        description: "Version of migration script used"
+      verification_status:
+        type: string
+        enum: ["pending", "verified", "failed"]
+        description: "Data integrity verification status"
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # LEAN STATUS FIELDS (preserved in workflow-status.yaml)
+  # ════════════════════════════════════════════════════════════════════════════
+  lean_status:
+    type: object
+    required: true
+    description: "Minimal fields retained for active reference"
+    properties:
+      id:
+        type: string
+        required: true
+        description: "Story ID"
+      status:
+        type: string
+        enum: ["planned", "in_progress", "completed", "merged", "archived"]
+        required: true
+        description: "Current story status"
+      title:
+        type: string
+        max_length: 200
+        required: true
+        description: "Story title"
+      priority:
+        type: string
+        enum: ["P0-CRITICAL", "P0", "P1-HIGH", "P1", "P2-MEDIUM", "P2", "P3-LOW"]
+        required: false
+        description: "Story priority"
+      epic_id:
+        type: string
+        required: false
+        description: "Associated epic ID"
+      completion_date:
+        type: string
+        format: "date"
+        required: false
+        description: "Date of completion (YYYY-MM-DD)"
+      merge_commit:
+        type: string
+        pattern: "^[a-f0-9]{7,40}$"
+        required: false
+        description: "Git merge commit SHA"
+      pr_number:
+        type: [integer, string]
+        required: false
+        description: "Pull request number"
+      archive_ref:
+        type: string
+        required: true
+        description: "Reference to full archive (this document)"
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # ARCHIVED LONG-FORM FIELDS (moved from workflow-status.yaml)
+  # ════════════════════════════════════════════════════════════════════════════
+  archived_fields:
+    type: object
+    required: true
+    description: "Long-form fields moved to archive"
+    properties:
+      description:
+        type: string
+        required: false
+        description: "Full story description"
+      acceptance_criteria:
+        type: array
+        items:
+          type: string
+        required: false
+        description: "List of acceptance criteria"
+      notes:
+        type: array
+        items:
+          type: string
+        required: false
+        description: "Implementation notes and observations"
+      implementation_notes:
+        type: string
+        required: false
+        description: "Detailed implementation notes"
+      test_results:
+        type: object
+        required: false
+        description: "Test execution results"
+      live_validation_gates:
+        type: array
+        required: false
+        description: "Live validation gate definitions"
+      rollback_plan:
+        type: array
+        items:
+          type: object
+        required: false
+        description: "Rollback procedures"
+      scope_globs:
+        type: array
+        items:
+          type: string
+        required: false
+        description: "File scope patterns"
+      files_changed:
+        type: array
+        items:
+          type: string
+        required: false
+        description: "List of changed files"
+      evidence_files:
+        type: array
+        items:
+          type: string
+        required: false
+        description: "Evidence file paths"
+      phases:
+        type: array
+        required: false
+        description: "Story phases/sub-tasks"
+      branches:
+        type: array
+        items:
+          type: string
+        required: false
+        description: "Associated branches"
+      commit_shas:
+        type: array
+        items:
+          type: string
+        required: false
+        description: "Related commit SHAs"
+      depends_on:
+        type: array
+        items:
+          type: string
+        required: false
+        description: "Story dependencies"
+      remediation_pr_numbers:
+        type: array
+        items:
+          type: integer
+        required: false
+        description: "Remediation PR numbers"
+      merge_commits:
+        type: array
+        items:
+          type: string
+        required: false
+        description: "Multiple merge commits"
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # COMPLETION EVIDENCE (preserved for audit)
+  # ════════════════════════════════════════════════════════════════════════════
+  completion_evidence:
+    type: object
+    required: false
+    description: "Evidence of story completion"
+    properties:
+      pr_number:
+        type: [integer, string]
+        description: "Primary PR number"
+      merge_commit:
+        type: string
+        pattern: "^[a-f0-9]{7,40}$"
+        description: "Primary merge commit SHA"
+      pr_numbers:
+        type: array
+        items:
+          type: [integer, string]
+        description: "Multiple PR numbers"
+      merge_commits:
+        type: array
+        items:
+          type: string
+        description: "Multiple merge commits"
+      commit_sha:
+        type: string
+        description: "Primary commit SHA"
+      evidence_files:
+        type: array
+        items:
+          type: string
+        description: "Paths to evidence files"
+      ci_evidence:
+        type: object
+        description: "CI validation evidence"
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # ARCHIVE LOCATION
+  # ════════════════════════════════════════════════════════════════════════════
+  archive_location:
+    type: string
+    format: "uri"
+    required: true
+    description: "Path to full archive document"
+    example: "docs/archives/workflow-status/entries/ARCH-20260309-123456-ST-LAUNCH-001.yaml"
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # CHECKSUMS FOR DATA INTEGRITY
+  # ════════════════════════════════════════════════════════════════════════════
+  integrity:
+    type: object
+    required: true
+    properties:
+      original_checksum:
+        type: string
+        pattern: "^[a-f0-9]{64}$"
+        description: "SHA-256 checksum of original entry before archival"
+      archived_checksum:
+        type: string
+        pattern: "^[a-f0-9]{64}$"
+        description: "SHA-256 checksum of archived entry"
+      verification_date:
+        type: string
+        format: "date-time"
+        description: "When integrity was last verified"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EXAMPLE ARCHIVE ENTRY
+# ═══════════════════════════════════════════════════════════════════════════════
+example:
+  archive_ref: "ARCH-20260309-123456-ST-LAUNCH-001"
+  original_story_id: "ST-LAUNCH-001"
+  archived_at: "2026-03-09T12:34:56Z"
+  archive_reason: "age"
+  archive_reason_detail: "Story completed 14 days ago, exceeds 7-day threshold"
+  migration:
+    phase: "pilot"
+    migrated_by: "senior-dev"
+    migration_script_version: "1.0.0"
+    verification_status: "verified"
+  lean_status:
+    id: "ST-LAUNCH-001"
+    status: "archived"
+    title: "Bybit Environment Assertions"
+    priority: "P0-CRITICAL"
+    epic_id: "EP-LAUNCH-001"
+    completion_date: "2026-02-22"
+    merge_commit: "8086ae9"
+    archive_ref: "ARCH-20260309-123456-ST-LAUNCH-001"
+  archived_fields:
+    description: "Implement environment assertions..."
+    acceptance_criteria:
+      - "Demo mode enforcement..."
+      - "Environment validation..."
+    notes:
+      - "SecurityException class implemented..."
+    implementation_notes: "SecurityException class implemented in bybit_safety.py..."
+    test_results:
+      coverage: "Demo endpoint validation..."
+      unit_tests: "39 passed, 0 failed"
+    scope_globs:
+      - "src/data/exchange/bybit_connector.py"
+  completion_evidence:
+    pr_number: null
+    merge_commit: "8086ae9"
+    evidence_files:
+      - "docs/evidence/ST-LAUNCH-001-evidence.json"
+  archive_location: "docs/archives/workflow-status/entries/ARCH-20260309-123456-ST-LAUNCH-001.yaml"
+  integrity:
+    original_checksum: "a1b2c3d4e5f6..."
+    archived_checksum: "a1b2c3d4e5f6..."
+    verification_date: "2026-03-09T12:34:56Z"
