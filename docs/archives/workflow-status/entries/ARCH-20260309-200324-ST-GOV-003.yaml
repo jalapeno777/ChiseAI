@@ -1,0 +1,75 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260309-200324-ST-GOV-003
+original_story_id: ST-GOV-003
+archived_at: '2026-03-09T20:03:24.258025Z'
+archive_reason: age
+archive_reason_detail: Story completed 14 days ago, exceeds 14-day threshold
+migration:
+  phase: batch_1
+  migrated_by: senior-dev
+  migration_script_version: 1.0.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260309-200324-ST-GOV-003
+  id: ST-GOV-003
+  status: archived
+  title: Task Decomposition Sentinel
+  priority: P0-CRITICAL
+  epic_id: EP-GOV-001
+  completion_date: '2026-02-23'
+  merge_commit: eba2024
+  pr_number: LEGACY
+archived_fields:
+  description: Validate task decomposition against constitution bounds and detect
+    scope conflicts
+  acceptance_criteria:
+  - Validates task decomposition against constitution bounds
+  - Detects overly broad tasks (>5 story points requires approval)
+  - Enforces dependency declaration for all subtasks
+  - Blocks parallel execution of conflicting tasks
+  - Integration with existing Redis ownership system
+  notes:
+  - 'CONSOLIDATION REMEDIATION 2026-03-08: Verified merged to main via cross-branch
+    verification'
+  - 'Merge commit: eba2024 - Merge feature/ST-GOV-003-task-decomposition-sentinel'
+  - PR number marked LEGACY due to branch deletion - evidence in docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md
+  implementation_notes:
+  - Created src/governance/sentinel/task_sentinel.py (486 lines)
+  - Created src/governance/sentinel/conflict_detector.py (383 lines)
+  - Created src/governance/sentinel/dependency_validator.py (441 lines)
+  - Updated src/governance/sentinel/__init__.py (28 lines)
+  - Updated tests/test_governance/test_task_sentinel.py (841 lines)
+  - Implemented ConflictDetector with ownership conflict detection
+  - Implemented DependencyValidator with circular dependency detection
+  - Added topological sort for task execution ordering
+  - Full Redis integration for approval workflow
+  test_results:
+    coverage_percent: 98
+    coverage_target: 85
+    failed: 0
+    passed: 103
+    status: All tests pass, coverage exceeds target
+    total_tests: 103
+  validation_gates:
+  - task_validation_rate: 100% for >5 SP
+  - conflict_detection_accuracy: 90%
+  - api_latency: <200ms
+  completion_notes:
+  - 4,469 lines of code across 14 files implemented
+  - 122 tests passing, 0 failed
+  - 'API latency: 0.02ms avg, 0.25ms max, 0.03ms p95 (well under 200ms target)'
+  - 'Task validation rate: 100% for >5 SP tasks'
+  - 'Conflict detection accuracy: 100%'
+  sprint_id: GOV-PHASE1-002
+  story_points: 8
+  fr_coverage:
+  - FR-GOV-003
+  validation_status: validated
+completion_evidence:
+  pr_number: LEGACY
+  merge_commit: eba2024
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-200324-ST-GOV-003.yaml
+integrity:
+  original_checksum: 18c1c9e9f5a4646004ec1ddf46c28501b76be696346eb23f866b0bc58bec05b1
+  archived_checksum: 53eb1d191ff192eebeda47914f8d3c3df40a75b3fbf73c120515e4f68c366419
+  verification_date: '2026-03-09T20:03:24.258066Z'

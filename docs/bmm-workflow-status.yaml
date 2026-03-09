@@ -5,8 +5,8 @@
 #
 # MIGRATION EPIC: Archive long-form fields for completed stories
 #
-# CURRENT PHASE: Phase 1 (Pilot)
-# - 10 stories migrated to archive
+# CURRENT PHASE: Phase 2 (Batch 1) - COMPLETE, proceeding to Phase 3 planning
+# - 10 stories migrated in Phase 2
 # - Archive location: docs/archives/workflow-status/entries/
 # - Schema: docs/archives/workflow-status/schema/archive-entry-schema.yaml
 #
@@ -21,9 +21,11 @@
 #     - Data integrity verified
 #     - Rollback capability tested
 #
-#   Phase 2 (Batch 1): PLANNED
-#     - Archive stories older than 14 days
-#     - Estimated: 15-20 stories
+#   Phase 2 (Batch 1): ✓ COMPLETE
+#     - 10 stories archived (7 GOV + 2 LAUNCH + 1 from earlier)
+#     - Archive date: 2026-03-09
+#     - Data integrity verified
+#     - Rollback capability tested
 #
 #   Phase 3 (Batch 2): PLANNED
 #     - Archive stories older than 30 days
@@ -32,6 +34,18 @@
 #   Phase 4 (Full): PLANNED
 #     - Automated archival for all eligible stories
 #     - Scheduled weekly archival job
+#
+# MIGRATED STORIES (Phase 2 Batch 1):
+#   - ST-GOV-003 → ARCH-20260309-200324-ST-GOV-003
+#   - ST-GOV-004 → ARCH-20260309-200858-ST-GOV-004
+#   - ST-GOV-005 → ARCH-20260309-200639-ST-GOV-005
+#   - ST-GOV-006 → ARCH-20260309-200639-ST-GOV-006
+#   - ST-GOV-007 → ARCH-20260309-200639-ST-GOV-007
+#   - ST-GOV-008 → ARCH-20260309-200639-ST-GOV-008
+#   - ST-GOV-009 → ARCH-20260309-200639-ST-GOV-009
+#   - ST-GOV-010 → ARCH-20260309-200639-ST-GOV-010
+#   - ST-LAUNCH-011 → ARCH-20260309-200324-ST-LAUNCH-011
+#   - ST-LAUNCH-018 → ARCH-20260309-200324-ST-LAUNCH-018
 #
 # MIGRATED STORIES (Phase 1 Pilot):
 #   - BL-CI-PHASE3 → ARCH-20260309-170659-BL-CI-PHASE3

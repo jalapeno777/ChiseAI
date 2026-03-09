@@ -1,0 +1,69 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260309-200639-ST-GOV-010
+original_story_id: ST-GOV-010
+archived_at: '2026-03-09T20:06:39.318092Z'
+archive_reason: age
+archive_reason_detail: Story completed 14 days ago, exceeds 14-day threshold
+migration:
+  phase: batch_1
+  migrated_by: senior-dev
+  migration_script_version: 1.0.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260309-200639-ST-GOV-010
+  id: ST-GOV-010
+  status: archived
+  title: Parallel Execution Optimizer
+  priority: P2-MEDIUM
+  epic_id: EP-GOV-001
+  completion_date: '2026-02-23'
+  merge_commit: a945f16
+  pr_number: LEGACY
+archived_fields:
+  description: Maximize agent productivity while preventing conflicts through intelligent
+    scheduling
+  acceptance_criteria:
+  - Analyzes task dependencies automatically
+  - Optimizes parallel execution plans
+  - Resolves resource conflicts proactively
+  - "Achieves \u226530% throughput improvement vs sequential"
+  - Rollback capability if conflicts detected
+  notes:
+  - 'CONSOLIDATION REMEDIATION 2026-03-08: Verified merged to main via cross-branch
+    verification'
+  - 'Merge commit: a945f16 - Merge ST-GOV-010: Parallel Execution Optimizer'
+  - PR number marked LEGACY due to branch deletion - evidence in docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md
+  test_results:
+    coverage_percent: 87
+    failed: 0
+    passed: 81
+    status: All tests pass, coverage exceeds 80% target
+    total: 81
+  validation_gates:
+  - throughput_improvement: "\u226530%"
+  - conflict_rate: <2%
+  - rollback_success_rate: 100%
+  completion_evidence:
+  - 8 source files (conflict_analyzer, dependency_graph, models, optimizer, rollback,
+    scheduler, throughput, __init__) - 2,676 lines
+  - 5 test files (test_conflict_analyzer, test_dependency_graph, test_models, test_optimizer_integration,
+    test_scheduler) - 1,417 lines
+  - 81 tests passing, 0 failed, 87% coverage
+  - Dependency graph builder with circular dependency detection
+  - Conflict analyzer with scope overlap detection
+  - Execution scheduler with batch optimization
+  - "Throughput comparator with \u226530% improvement target"
+  - Rollback capability with full state restoration
+  sprint_id: GOV-PHASE3-001
+  story_points: 8
+  fr_coverage:
+  - FR-GOV-010
+  validation_status: validated
+completion_evidence:
+  pr_number: LEGACY
+  merge_commit: a945f16
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-200639-ST-GOV-010.yaml
+integrity:
+  original_checksum: 9a113be08cea89450b0aee4f696771e0cdb444d13730ab84c4ac22f8a1b5e9e7
+  archived_checksum: 4472053cb84c243d841c5a1ed7d22743ec9e4197b340d4856b7e5fe60a837e95
+  verification_date: '2026-03-09T20:06:39.318116Z'
