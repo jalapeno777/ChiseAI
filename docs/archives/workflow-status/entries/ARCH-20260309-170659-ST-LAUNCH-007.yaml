@@ -1,0 +1,67 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260309-170659-ST-LAUNCH-007
+original_story_id: ST-LAUNCH-007
+archived_at: '2026-03-09T17:06:59.851987Z'
+archive_reason: age (15 days)
+archive_reason_detail: Story archived due to age (15 days)
+migration:
+  phase: pilot
+  migrated_by: senior-dev
+  migration_script_version: 1.0.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260309-170659-ST-LAUNCH-007
+  id: ST-LAUNCH-007
+  status: archived
+  title: Feature Extractor Completion
+  priority: P0-CRITICAL
+  epic_id: EP-LAUNCH-002
+  completion_date: '2026-02-22'
+  merge_commit: 8f033dc
+  pr_number: 244
+archived_fields:
+  description: Complete the feature extractor stubs with OHLCV data integration, indicator
+    calculation, and Markov state extraction
+  acceptance_criteria:
+  - OHLCV data integration - Data loaded from InfluxDB, freshness validated <5 min
+    old
+  - Technical indicator calculation - RSI, MACD, Bollinger Bands calculated correctly,
+    match reference implementations
+  - Markov state extraction - Trend state extracted (bullish/bearish/neutral/transitional),
+    probabilities returned
+  - Feature caching - Cached features returned within TTL (5 min), cache hit rate
+    >80%
+  - Feature schema - Schema has 10+ features, all normalized to [0,1] range
+  notes:
+  - Can start immediately (no dependencies)
+  - If delayed: Ship with 5 core features, add others post-launch
+  live_validation_gates:
+  - check: Extract features for 100 signals
+    gate: feature_extraction
+    threshold: <200ms per signal, 10+ features
+  rollback_plan:
+  - action: Use cached features only
+    command: redis-cli SET launch:feedback:feature_extraction:enabled 0
+  scope_globs:
+  - src/ml/training/extractor.py
+  - src/ml/features/ohlcv_loader.py
+  - src/ml/features/indicator_calculator.py
+  - tests/test_ml/test_feature_extractor.py
+  depends_on: []
+  test_strategy:
+    e2e: pytest tests/e2e/test_feature_extraction.py -v
+    integration: pytest tests/test_ml/integration/test_influxdb_features.py -v
+    unit: pytest tests/test_ml/test_feature_extractor.py -v
+  sprint_id: LAUNCH-SPRINT-1
+  story_points: 4
+  fr_coverage:
+  - FR-020
+  validation_status: validated
+completion_evidence:
+  pr_number: 244
+  merge_commit: 8f033dc
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-170659-ST-LAUNCH-007.yaml
+integrity:
+  original_checksum: 3278ee951e12b4f7606cbd519ea11e79697815d6d7c46568b76284af5c06754f
+  archived_checksum: 65db07e98ae6aa2b1dad38dcadc4e629e329ab8e56ba7db38439f5711850576c
+  verification_date: '2026-03-09T17:06:59.852033Z'

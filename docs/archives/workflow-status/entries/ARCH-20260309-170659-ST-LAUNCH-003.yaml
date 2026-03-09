@@ -1,0 +1,61 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260309-170659-ST-LAUNCH-003
+original_story_id: ST-LAUNCH-003
+archived_at: '2026-03-09T17:06:59.801284Z'
+archive_reason: age (15 days)
+archive_reason_detail: Story archived due to age (15 days)
+migration:
+  phase: pilot
+  migrated_by: senior-dev
+  migration_script_version: 1.0.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260309-170659-ST-LAUNCH-003
+  id: ST-LAUNCH-003
+  status: archived
+  title: Order Idempotency
+  priority: P0-CRITICAL
+  epic_id: EP-LAUNCH-001
+  completion_date: '2026-02-22'
+  merge_commit: 57818ba
+  pr_number: 246
+archived_fields:
+  description: Implement order idempotency using clientOrderId with Redis-based deduplication
+    to prevent duplicate orders
+  acceptance_criteria:
+  - Client order ID generation - Unique ID generated with timestamp, token, random
+    component for each order
+  - Duplicate detection - Orders with existing clientOrderId rejected with DuplicateOrderException,
+    original response returned
+  - Redis TTL management - Idempotency keys stored with 24-hour TTL, automatic expiration
+  - Idempotency scope - Each token has independent idempotency space, cross-token
+    orders not deduplicated
+  live_validation_gates:
+  - check: Submit same order twice with same clientOrderId
+    gate: duplicate_prevention
+    threshold: Second order rejected, first order returned
+  rollback_plan:
+  - action: Disable idempotency
+    command: redis-cli SET launch:safety:order_idempotency:enabled 0
+  scope_globs:
+  - src/data/exchange/bybit_connector.py
+  - src/execution/order_idempotency.py
+  - tests/test_execution/test_order_idempotency.py
+  depends_on: []
+  test_strategy:
+    e2e: pytest tests/e2e/test_duplicate_order_prevention.py -v
+    integration: pytest tests/test_execution/integration/test_idempotency.py -v
+    unit: pytest tests/test_execution/test_order_idempotency.py -v
+  sprint_id: LAUNCH-SPRINT-1
+  story_points: 3
+  fr_coverage:
+  - FR-029
+  validation_status: validated
+completion_evidence:
+  pr_number: 246
+  merge_commit: 57818ba
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-170659-ST-LAUNCH-003.yaml
+integrity:
+  original_checksum: 2c8398ba0a3eab55473a0d0a53a10bfddd27e3a64b92646dcbc1000e90a7e33c
+  archived_checksum: 4a109c8cda4db891c523e27ad6de558133ddcdac3c17e3d17eb90e79b11c4a63
+  verification_date: '2026-03-09T17:06:59.801340Z'

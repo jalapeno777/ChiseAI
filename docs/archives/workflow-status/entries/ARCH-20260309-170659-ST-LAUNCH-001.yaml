@@ -1,0 +1,75 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260309-170659-ST-LAUNCH-001
+original_story_id: ST-LAUNCH-001
+archived_at: '2026-03-09T17:06:59.774623Z'
+archive_reason: age (15 days)
+archive_reason_detail: Story archived due to age (15 days)
+migration:
+  phase: pilot
+  migrated_by: senior-dev
+  migration_script_version: 1.0.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260309-170659-ST-LAUNCH-001
+  id: ST-LAUNCH-001
+  status: archived
+  title: Bybit Environment Assertions
+  priority: P0-CRITICAL
+  epic_id: EP-LAUNCH-001
+  completion_date: '2026-02-22'
+archived_fields:
+  description: Implement environment assertions to ensure Bybit connector always operates
+    in demo mode with comprehensive safety checks
+  acceptance_criteria:
+  - Demo mode enforcement - Only demo/testnet endpoints are allowed, production endpoint
+    access raises SecurityException
+  - Environment validation - All API calls are validated against allowed demo patterns
+    with full audit trail
+  - Kill switch integration - Connector responds to kill switch triggers with position
+    closure within 5 seconds
+  - Audit logging - All order operations logged with timestamp, order_id, price, quantity;
+    logs queryable for 90 days
+  implementation_notes:
+  - SecurityException class implemented in bybit_safety.py with comprehensive error
+    handling
+  - BybitConfig.__post_init__ modified to validate all endpoints are demo/testnet
+    only
+  - Production endpoints (api.bybit.com, api.bytick.com) blocked with SecurityException
+  - Demo endpoints (api-demo.bybit.com, api-testnet.bybit.com) validated and allowed
+  - WebSocket endpoints validated for demo/testnet patterns
+  - 39 unit tests pass covering all endpoint validation scenarios
+  - Audit logging framework implemented for order operations
+  - Kill switch integration ready for position closure on trigger
+  test_results:
+    branch: feature/ST-LAUNCH-001-demo-enforcement-fix
+    commit_sha: 8086ae9
+    coverage: Demo endpoint validation, production blocking, audit logging, kill switch
+    unit_tests: 39 passed, 0 failed
+  live_validation_gates:
+  - check: Attempt production endpoint access
+    gate: demo_mode_enforced
+    threshold: SecurityException raised 100% of time
+  rollback_plan:
+  - action: Disable safety assertions
+    command: redis-cli SET launch:safety:assertions:enabled 0
+  scope_globs:
+  - src/data/exchange/bybit_connector.py
+  - src/data/exchange/credential_resolver.py
+  - tests/test_data_exchange/test_bybit_safety.py
+  depends_on: []
+  test_strategy:
+    e2e: pytest tests/e2e/test_bybit_safety_flow.py -v
+    integration: pytest tests/test_execution/integration/test_bybit_safety.py -v
+    unit: pytest tests/test_data_exchange/test_bybit_safety.py -v
+  sprint_id: LAUNCH-SPRINT-1
+  story_points: 2
+  fr_coverage:
+  - FR-029
+  - FR-DEV-001
+  validation_status: validated
+completion_evidence: null
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-170659-ST-LAUNCH-001.yaml
+integrity:
+  original_checksum: 8f1460ab975761163d3e1559401152227ed58804c51a74ffebdbcfe4f78fe18b
+  archived_checksum: 92a8bdb21c34cfe2710b50c7c44a3f144658f526f42a2463ff679132a6c59972
+  verification_date: '2026-03-09T17:06:59.774669Z'

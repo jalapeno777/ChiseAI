@@ -1,0 +1,69 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260309-170659-ST-LAUNCH-006
+original_story_id: ST-LAUNCH-006
+archived_at: '2026-03-09T17:06:59.840394Z'
+archive_reason: age (15 days)
+archive_reason_detail: Story archived due to age (15 days)
+migration:
+  phase: pilot
+  migrated_by: senior-dev
+  migration_script_version: 1.0.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260309-170659-ST-LAUNCH-006
+  id: ST-LAUNCH-006
+  status: archived
+  title: Signal-to-Outcome Pipeline
+  priority: P0-CRITICAL
+  epic_id: EP-LAUNCH-002
+  completion_date: '2026-02-22'
+  merge_commit: 7dc761d
+  pr_number: 247
+archived_fields:
+  description: Create complete signal-to-outcome pipeline capturing TP/SL fills from
+    Bybit execution and matching to original signals
+  acceptance_criteria:
+  - Outcome capture service - Every filled order captured with signal_id, exit_price,
+    pnl, timestamp
+  - Signal matching - Outcome matched to originating signal with >95% match confidence
+  - Database schema - signal_outcomes table exists with proper indexes, query latency
+    <100ms
+  - Pipeline latency - Outcome available for ECE calculation within 1 hour, 99% capture
+    rate
+  - Outcome types - Types recorded: tp_hit, sl_hit, manual_close, expired, each with
+      metadata
+  notes:
+  - CRITICAL for launch - enables ML learning from day one
+  - Fallback: CSV export if pipeline delays
+  live_validation_gates:
+  - check: Execute 100 trades, verify capture
+    gate: outcome_capture_rate
+    threshold: '>=99% captured'
+  rollback_plan:
+  - action: Disable outcome capture
+    command: redis-cli SET launch:feedback:signal_capture:enabled 0
+  scope_globs:
+  - src/ml/feedback/outcome_capture_service.py
+  - src/ml/feedback/signal_outcome_matcher.py
+  - src/ml/models/signal_outcome.py
+  - tests/test_ml/test_outcome_capture.py
+  depends_on:
+  - ST-LAUNCH-001
+  test_strategy:
+    e2e: pytest tests/e2e/test_signal_to_outcome.py -v
+    integration: pytest tests/test_ml/integration/test_bybit_outcomes.py -v
+    unit: pytest tests/test_ml/test_outcome_capture.py -v
+  sprint_id: LAUNCH-SPRINT-1
+  story_points: 5
+  fr_coverage:
+  - FR-017
+  - FR-018
+  validation_status: validated
+completion_evidence:
+  pr_number: 247
+  merge_commit: 7dc761d
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-170659-ST-LAUNCH-006.yaml
+integrity:
+  original_checksum: 1d305fd640b80dec585a4a6a9796dcb2dd07cd2ddd07d10cf91e0742d4cb7ffc
+  archived_checksum: be68bcc75abdeb37d9c7f1f845b5e868cd33691929a97dd1685817a9a06e9320
+  verification_date: '2026-03-09T17:06:59.840438Z'
