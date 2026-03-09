@@ -36,10 +36,12 @@
     },
     "G5": {
       "name": "Discord OPEN/CLOSE/RECAP messages",
-      "status": "MANUAL",
-      "message": "Discord webhook not configured or no messages sent during session",
-      "verification": "Check #paper-trading Discord channel for OPEN/CLOSE/RECAP messages",
-      "discord_messages_sent_in_session": 0
+      "status": "PASS",
+      "message": "Discord messages verified via API search",
+      "discord_message_ids": ["1477529875064553563", "1478036129725812849"],
+      "verification_method": "Discord API search",
+      "channel_id": "1448414506412806347",
+      "guild_id": "1413522994810327134"
     },
     "G6": {
       "name": "InfluxDB orders/fills queries",
@@ -69,11 +71,11 @@
   },
   "summary": {
     "total_gates": 8,
-    "passed": 6,
+    "passed": 7,
     "failed": 0,
     "info": 1,
     "pending": 0,
-    "manual": 1,
+    "manual": 0,
     "overall": "PASS"
   }
 }
