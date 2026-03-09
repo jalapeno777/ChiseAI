@@ -434,8 +434,37 @@ steps:
         # Non-blocking signal; ci-gate remains the only fail point.
         exit 0
 
+  pre-eval-ingestion:
+    image: python:3.11
+    environment:
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
+      CI_TEMPMEMORY_INGESTION_ENABLED: "${CI_TEMPMEMORY_INGESTION_ENABLED:-false}"
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p "$${CI_STATUS_DIR}"
+        set +e
+        (
+          set -euo pipefail
+          python -V
+          echo "Running pre-evaluation tempmemory ingestion..."
+          echo "Feature flag CI_TEMPMEMORY_INGESTION_ENABLED=$${CI_TEMPMEMORY_INGESTION_ENABLED}"
+          # Install dependencies
+          pip install --no-cache-dir pyyaml requests numpy scipy || true
+          pip install -e . > /dev/null 2>&1 || pip install -e . --break-system-packages > /dev/null 2>&1 || true
+          # Run pre-eval ingestion
+          python scripts/ci/pre_eval_ingestion.py --output "$${CI_STATUS_DIR}/pre-eval-ingestion.json"
+        ) > "$${CI_STATUS_DIR}/pre-eval-ingestion.log" 2>&1
+        code=$?
+        cat "$${CI_STATUS_DIR}/pre-eval-ingestion.log"
+        echo "$code" > "$${CI_STATUS_DIR}/pre-eval-ingestion.status"
+        # Do not short-circuit the pipeline; ci-gate is the single fail point.
+        exit 0
+
   brain-eval:
     image: python:3.11
+    depends_on:
+      - pre-eval-ingestion
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -446,6 +475,13 @@ steps:
         (
           set -euo pipefail
           python -V
+          # Check ingestion results if enabled
+          if [ "$${CI_TEMPMEMORY_INGESTION_ENABLED:-false}" = "true" ] && [ -f "$${CI_STATUS_DIR}/pre-eval-ingestion.json" ]; then
+            echo "Checking pre-eval ingestion results..."
+            INGESTION_SUCCESS=$(python3 -c "import json; data=json.load(open('$${CI_STATUS_DIR}/pre-eval-ingestion.json')); print(data.get('success', False))")
+            INGESTION_INGESTED=$(python3 -c "import json; data=json.load(open('$${CI_STATUS_DIR}/pre-eval-ingestion.json')); print(data.get('files_ingested', 0))")
+            echo "Ingestion success: $${INGESTION_SUCCESS}, Files ingested: $${INGESTION_INGESTED}"
+          fi
           # Check if brain files changed
           if git diff --name-only origin/main HEAD | grep -qE "(src/brain/|src/neuro_symbolic/|src/strategy/)"; then
             echo "Brain changes detected, running evaluation..."
@@ -672,6 +708,7 @@ steps:
       - docker-governance
       - local-ci
       - pipeline-watchdog
+      - pre-eval-ingestion
       - brain-eval
       - tempmemory-scheduler
       - mini-brain-eval
