@@ -1,0 +1,154 @@
+---
+# Example Story Details Archive
+# This file demonstrates the structure for archived story details
+# Location: docs/archives/story-details/ST-EXAMPLE-001-details.yaml
+
+archive_metadata:
+  version: "1.0"
+  archived_date: "2026-03-09T02:00:00Z"
+  archived_by: "archive_old_stories.py"
+  source_file: "docs/bmm-workflow-status.yaml"
+  retention_until: "2033-03-09T00:00:00Z"
+  policy_version: "1.0.0"
+
+story_summary:
+  id: "ST-EXAMPLE-001"
+  title: "Example Story for Data Retention Policy"
+  epic_id: "EP-EXAMPLE-001"
+  status: "merged"
+  owner: "senior-dev"
+  priority: "P1"
+  story_points: 5
+  created_date: "2026-02-28T10:00:00Z"
+  completed_date: "2026-03-01T15:30:00Z"
+  merged_date: "2026-03-01T16:00:00Z"
+  pr_number: 400
+  merge_commit: "abc123def456"
+
+acceptance_criteria:
+  - criterion: "Create comprehensive data retention policy document"
+    status: "completed"
+    evidence: "docs/policy/data_retention_policy.yaml"
+  - criterion: "Define retention tiers with clear criteria"
+    status: "completed"
+    evidence: "Section 1 of policy document"
+  - criterion: "Specify archival triggers and automation"
+    status: "completed"
+    evidence: "Section 2 of policy document"
+  - criterion: "Document archive structure and schemas"
+    status: "completed"
+    evidence: "Section 3 of policy document"
+  - criterion: "Define Qdrant promotion criteria"
+    status: "completed"
+    evidence: "Section 4 of policy document"
+  - criterion: "Specify cleanup policies"
+    status: "completed"
+    evidence: "Section 5 of policy document"
+
+evidence_manifest:
+  files:
+    - path: "docs/policy/data_retention_policy.yaml"
+      type: "yaml"
+      size_bytes: 15234
+      checksum: "sha256:abc123..."
+      commit: "def456abc789"
+    - path: "docs/archives/examples/ST-EXAMPLE-001-details.yaml"
+      type: "yaml"
+      size_bytes: 2345
+      checksum: "sha256:xyz789..."
+      commit: "ghi012jkl345"
+    - path: "docs/tempmemories/ST-EXAMPLE-001-decisions.md"
+      type: "md"
+      size_bytes: 4567
+      checksum: "sha256:mno678..."
+      commit: "pqr901stu234"
+
+test_results:
+  unit_tests:
+    total: 45
+    passed: 45
+    failed: 0
+    skipped: 0
+  integration_tests:
+    total: 12
+    passed: 12
+    failed: 0
+  coverage_percent: 87.5
+  test_strategy:
+    - "Unit tests for all validation functions"
+    - "Integration tests for archival workflow"
+    - "End-to-end test for full archival cycle"
+
+validation_summary:
+  gates_passed:
+    - "Schema validation"
+    - "Reference integrity check"
+    - "Policy compliance review"
+  manual_verifications:
+    - "Reviewed by Jarvis on 2026-03-01"
+    - "Approved by Merlin on 2026-03-01"
+  sign_offs:
+    - role: "senior-dev"
+      date: "2026-03-01T15:30:00Z"
+    - role: "jarvis"
+      date: "2026-03-01T15:45:00Z"
+    - role: "merlin"
+      date: "2026-03-01T16:00:00Z"
+
+notes_and_decisions:
+  implementation_notes:
+    - "Policy designed to balance file size with accessibility"
+    - "7-day retention in active file allows for post-completion updates"
+    - "Archive structure supports referential integrity"
+    - "Qdrant promotion criteria focus on high-value learnings"
+  
+  key_decisions:
+    - decision: "Use 7-day retention for completed stories in active file"
+      date: "2026-03-01T11:00:00Z"
+      rationale: "Balances operational visibility with file size management"
+    - decision: "Keep archives indefinitely (until cold storage)"
+      date: "2026-03-01T11:30:00Z"
+      rationale: "Historical reference valuable for pattern recognition"
+    - decision: "Auto-promote P0/P1 stories and anti-patterns to Qdrant"
+      date: "2026-03-01T12:00:00Z"
+      rationale: "Critical stories contain high-value learnings"
+  
+  lessons_learned:
+    - "Clear retention tiers prevent confusion about data location"
+    - "Automated archival reduces manual overhead"
+    - "Referential integrity validation prevents broken links"
+    - "Qdrant promotion should be selective to maintain quality"
+  
+  blockers_resolved:
+    - blocker: "Determining optimal retention period for active file"
+      resolution: "Selected 7 days based on sprint cycle and operational needs"
+    - blocker: "Defining Qdrant promotion criteria"
+      resolution: "Multi-factor criteria including priority, size, and type"
+
+qdrant_promotion:
+  promoted: true
+  promotion_date: "2026-03-09T02:00:00Z"
+  vectors_created:
+    - type: "decision"
+      description: "7-day retention period for active workflow file"
+      vector_id: "decision-st-example-001-001"
+    - type: "pattern"
+      description: "Multi-factor promotion criteria for Qdrant"
+      vector_id: "pattern-st-example-001-001"
+  promotion_reason: "P1 story with architectural decisions"
+
+related_stories:
+  - story_id: "ST-MEMORY-INGEST-003"
+    relationship: "similar_archival_automation"
+  - story_id: "EP-GOV-001"
+    relationship: "governance_framework"
+
+iterlog_references:
+  - "bmad:chiseai:iterlog:story:ST-EXAMPLE-001"
+  - "docs/tempmemories/iterlog-ST-EXAMPLE-001.md"
+
+# Archive integrity
+integrity:
+  checksum_algorithm: "sha256"
+  last_verified: "2026-03-09T02:00:00Z"
+  verification_status: "valid"
