@@ -11,6 +11,7 @@ Purpose:
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import sys
 from dataclasses import dataclass
@@ -102,6 +103,119 @@ def _read_body(path: Path) -> str:
     return text[end + 5 :]
 
 
+def _extract_tp_session_ids(body: str) -> list[str]:
+    pattern = r"(?im)^\s*(?:[-*]\s*)?(?:\*\*|`)?tp_session_id(?:\*\*|`)?\s*:\s*([A-Za-z0-9._:-]+)\s*$"
+    ids: list[str] = []
+    seen: set[str] = set()
+    for m in re.findall(pattern, body):
+        sid = m.strip()
+        if sid and sid not in seen:
+            seen.add(sid)
+            ids.append(sid)
+    return ids
+
+
+def _extract_story_id(path: Path, fm: dict[str, Any], body: str) -> str:
+    if "story_id" in fm:
+        return str(fm.get("story_id", "")).strip()
+    stem = path.stem
+    if stem.startswith("iterlog-"):
+        return stem.replace("iterlog-", "", 1)
+    match = re.search(
+        r"(?im)^\s*(?:[-*]\s*)?(?:\*\*|`)?story_id(?:\*\*|`)?\s*:\s*([A-Za-z0-9_-]+)\s*$",
+        body,
+    )
+    if match:
+        return match.group(1).strip()
+    return ""
+
+
+def _get_redis_clients():
+    try:
+        import redis
+
+        host = os.getenv("REDIS_HOST", "host.docker.internal")
+        port = int(os.getenv("REDIS_PORT", "6380"))
+        primary_db = int(os.getenv("REDIS_DB", "0"))
+        db_candidates = [primary_db] if primary_db == 0 else [primary_db, 0]
+        clients: dict[int, redis.Redis] = {}
+        for db in db_candidates:
+            client = redis.Redis(
+                host=host,
+                port=port,
+                db=db,
+                decode_responses=True,
+                socket_connect_timeout=3,
+                socket_timeout=3,
+            )
+            client.ping()
+            clients[db] = client
+        return clients
+    except Exception:
+        return None
+
+
+def _enforce_tp_session_artifacts(
+    path: Path, fm: dict[str, Any], body: str, mode: str, self_heal: bool, result: Result
+) -> None:
+    if mode == "off":
+        return
+
+    session_ids = _extract_tp_session_ids(body)
+    if not session_ids:
+        # Handled by structural field checks above.
+        return
+
+    clients = _get_redis_clients()
+    if clients is None:
+        msg = f"{path}: Redis unavailable; cannot validate tp session artifact(s)"
+        if mode == "strict":
+            result.err(msg)
+        else:
+            result.warn(msg)
+        return
+
+    story_id = _extract_story_id(path, fm, body) or "unknown"
+    primary_db = int(os.getenv("REDIS_DB", "0"))
+    now_utc = str(fm.get("updated", "")).strip()
+    if not now_utc:
+        now_utc = "unknown"
+
+    for session_id in session_ids:
+        key = f"bmad:chiseai:tp:session:{session_id}"
+        found_db = next((db for db, client in clients.items() if client.exists(key) == 1), None)
+        if found_db is None and self_heal:
+            client0 = clients.get(0) or next(iter(clients.values()))
+            try:
+                client0.hset(
+                    key,
+                    mapping={
+                        "story_id": story_id,
+                        "tp_mode": "DEGRADED",
+                        "scope": story_id,
+                        "created_at": now_utc,
+                        "source": "insight_validator_self_heal",
+                    },
+                )
+                client0.expire(key, 432000)
+                if client0.exists(key) == 1:
+                    found_db = 0
+                    result.warn(f"{path}: self-healed missing tp session artifact {key} in Redis DB 0")
+            except Exception:
+                pass
+
+        if found_db is None:
+            msg = f"{path}: missing tp session artifact {key}"
+            if mode == "strict":
+                result.err(msg)
+            else:
+                result.warn(msg)
+        elif found_db != primary_db:
+            result.warn(
+                f"{path}: found tp session artifact {key} in Redis DB {found_db} (REDIS_DB={primary_db})"
+            )
+
+
 def _extract_blocks(body: str, tag: str) -> list[str]:
     """Extract governance blocks from text or yaml fences.
 
@@ -181,7 +295,12 @@ def _validate_aria_decision(block: str, path: Path, idx: int, result: Result) ->
 
 
 def _validate_file(
-    path: Path, require_for_completed: bool, strict: bool, result: Result
+    path: Path,
+    require_for_completed: bool,
+    strict: bool,
+    tp_session_artifact_mode: str,
+    tp_session_self_heal: bool,
+    result: Result,
 ) -> None:
     fm = _read_frontmatter(path)
     status = str(fm.get("status", "")).strip()
@@ -217,9 +336,7 @@ def _validate_file(
             result.err(msg)
         else:
             result.warn(msg)
-    tp_session_pattern = (
-        r"(?im)^\s*(?:[-*]\s*)?(?:\*\*|`)?tp_session_id(?:\*\*|`)?\s*:"
-    )
+    tp_session_pattern = r"(?im)^\s*(?:[-*]\s*)?(?:\*\*|`)?tp_session_id(?:\*\*|`)?\s*:"
     if should_require and not re.search(tp_session_pattern, body):
         msg = f"{path}: missing tp_session_id in Thinking Partner status"
         if strict:
@@ -237,6 +354,15 @@ def _validate_file(
         _validate_insight_packet(block, path, i, result)
     for i, block in enumerate(decision_blocks, start=1):
         _validate_aria_decision(block, path, i, result)
+    if should_require:
+        _enforce_tp_session_artifacts(
+            path=path,
+            fm=fm,
+            body=body,
+            mode=tp_session_artifact_mode,
+            self_heal=tp_session_self_heal,
+            result=result,
+        )
 
 
 def main() -> int:
@@ -252,6 +378,17 @@ def main() -> int:
         action="store_true",
         help="Treat missing sections/blocks as errors (CI gate mode)",
     )
+    ap.add_argument(
+        "--tp-session-artifact-mode",
+        choices=["off", "warn", "strict"],
+        default=os.getenv("TP_SESSION_ARTIFACT_MODE", "off"),
+        help="Redis tp:session artifact enforcement mode (default: off)",
+    )
+    ap.add_argument(
+        "--tp-session-self-heal",
+        action="store_true",
+        help="Attempt to backfill missing tp:session artifacts in Redis DB0",
+    )
     args = ap.parse_args()
 
     paths = sorted(ITERLOG_DIR.glob(ITERLOG_GLOB))
@@ -263,7 +400,14 @@ def main() -> int:
         result.err(f"No iterlog files found in {ITERLOG_DIR}/")
     else:
         for path in paths:
-            _validate_file(path, args.require_for_completed_only, args.strict, result)
+            _validate_file(
+                path,
+                args.require_for_completed_only,
+                args.strict,
+                args.tp_session_artifact_mode,
+                args.tp_session_self_heal,
+                result,
+            )
 
     for w in result.warnings:
         print(w)

@@ -78,7 +78,11 @@ CHANGED_ITERLOGS="$(git diff --name-only origin/main...HEAD 2>/dev/null | grep -
     printf "%s\n" "${CHANGED_ITERLOGS}" | while IFS= read -r iterlog_path; do
       [ -z "$iterlog_path" ] && continue
       story_id="$(basename "$iterlog_path" .md | sed "s/^iterlog-//")"
-      python3 scripts/validation/validate_insight_governance.py --story-id "${story_id}" --strict
+      TP_SESSION_ARGS=""
+      if [ "${CI_TP_SESSION_SELF_HEAL:-1}" = "1" ]; then
+        TP_SESSION_ARGS="--tp-session-self-heal"
+      fi
+      python3 scripts/validation/validate_insight_governance.py --story-id "${story_id}" --strict --tp-session-artifact-mode "${CI_TP_SESSION_ARTIFACT_MODE:-warn}" ${TP_SESSION_ARGS}
       if [ "${CI_REQUIRE_REDIS_METACOG_ARTIFACTS:-0}" = "1" ]; then
         python3 scripts/validation/validate_metacog_compliance.py --story-id "${story_id}" --strict --require-artifacts
       else

@@ -109,7 +109,15 @@ steps:
               [ -z "$iterlog_path" ] && continue
               story_id="$(basename "$iterlog_path" .md | sed 's/^iterlog-//')"
               echo " - validating story_id=${story_id} from ${iterlog_path}"
-              python scripts/validation/validate_insight_governance.py --story-id "${story_id}" --strict
+              TP_SESSION_ARGS=""
+              if [ "${CI_TP_SESSION_SELF_HEAL:-1}" = "1" ]; then
+                TP_SESSION_ARGS="--tp-session-self-heal"
+              fi
+              python scripts/validation/validate_insight_governance.py \
+                --story-id "${story_id}" \
+                --strict \
+                --tp-session-artifact-mode "${CI_TP_SESSION_ARTIFACT_MODE:-warn}" \
+                ${TP_SESSION_ARGS}
             done
             echo "metacog-governance: validating changed iterlogs (blocking)"
             printf '%s\n' "$CHANGED_ITERLOGS" | while IFS= read -r iterlog_path; do

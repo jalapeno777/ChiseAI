@@ -75,7 +75,16 @@ python3 scripts/validation/validate_insight_governance.py
 python3 scripts/validation/validate_insight_governance.py --story-id ST-XXX
 python3 scripts/validation/validate_insight_governance.py --require-for-completed-only
 python3 scripts/validation/validate_insight_governance.py --require-for-completed-only --strict
+python3 scripts/validation/validate_insight_governance.py --story-id ST-XXX --strict --tp-session-artifact-mode warn --tp-session-self-heal
 ```
+
+`--tp-session-artifact-mode` options:
+- `off`: skip Redis tp-session checks
+- `warn`: warning-only when tp-session artifact is missing
+- `strict`: fail validation when tp-session artifact is missing
+
+`--tp-session-self-heal`:
+- attempts to backfill missing `bmad:chiseai:tp:session:<tp_session_id>` in Redis DB0 with 5-day TTL
 
 ### validation/validate_metacog_compliance.py
 

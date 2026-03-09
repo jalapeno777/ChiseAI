@@ -62,7 +62,11 @@ Run these gates before PR/merge. If a referenced script is missing, explicitly n
 
 6. Insight-governance conformance (if present)
    - If `scripts/validation/validate_insight_governance.py` exists, run:
-     - `python3 scripts/validation/validate_insight_governance.py --story-id=<story_id> --strict`
+     - `python3 scripts/validation/validate_insight_governance.py --story-id=<story_id> --strict --tp-session-artifact-mode=warn --tp-session-self-heal`
+   - Phased enforcement policy (default autonomous mode):
+     - Week 1: `--tp-session-artifact-mode=warn` (non-blocking warning + self-heal).
+     - Week 2+: use `--tp-session-artifact-mode=strict` only for `P0/P1` and completed stories.
+     - Keep `P2+` in-progress stories on `warn` mode to avoid productivity stalls.
    - If `<story_id>` is not known, run a non-blocking scan:
      - `python3 scripts/validation/validate_insight_governance.py --require-for-completed-only`
 

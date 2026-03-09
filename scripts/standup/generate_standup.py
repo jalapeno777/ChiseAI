@@ -309,6 +309,9 @@ class StandupGenerator:
         status = {
             "mode": "OFF",
             "tp_sessions_24h": 0,
+            "tp_sessions_expected_24h": 0,
+            "tp_sessions_found_24h": 0,
+            "tp_session_gap_count": 0,
             "insight_packets_24h": 0,
             "aria_decisions_24h": 0,
             "open_risk_items": 0,
@@ -342,6 +345,8 @@ class StandupGenerator:
             with_proof = 0
             latest_ip = "none"
             latest_ad = "none"
+            expected_sessions: set[str] = set()
+            found_sessions = 0
 
             for path in iterlog_paths:
                 body = path.read_text(encoding="utf-8", errors="replace")
@@ -362,6 +367,29 @@ class StandupGenerator:
                     re.findall(r"urgency:\s*(medium|high|critical)", body, flags=re.IGNORECASE)
                 )
                 status["decision_debt_open"] += len(re.findall(r"\bdebt_id:\b", body))
+                for session_id in re.findall(
+                    r"(?im)^\s*(?:[-*]\s*)?(?:\*\*|`)?tp_session_id(?:\*\*|`)?\s*:\s*([A-Za-z0-9._:-]+)\s*$",
+                    body,
+                ):
+                    expected_sessions.add(session_id.strip())
+
+            status["tp_sessions_expected_24h"] = len(expected_sessions)
+            if self.redis_client and expected_sessions:
+                for session_id in expected_sessions:
+                    key = f"bmad:chiseai:tp:session:{session_id}"
+                    try:
+                        if self.redis_client.exists(key) == 1:
+                            found_sessions += 1
+                    except Exception:
+                        continue
+                status["tp_sessions_found_24h"] = found_sessions
+            else:
+                status["tp_sessions_found_24h"] = min(
+                    status["tp_sessions_24h"], status["tp_sessions_expected_24h"]
+                )
+            status["tp_session_gap_count"] = max(
+                status["tp_sessions_expected_24h"] - status["tp_sessions_found_24h"], 0
+            )
 
             status["last_proof_chain"] = f"IP:{latest_ip} -> AD:{latest_ad}"
             if total > 0:
@@ -506,6 +534,9 @@ class StandupGenerator:
 
 - **Mode**: {tp["mode"]}
 - **TP Sessions (24h)**: {tp["tp_sessions_24h"]}
+- **TP Sessions Expected (Iterlogs)**: {tp["tp_sessions_expected_24h"]}
+- **TP Sessions Found (Redis)**: {tp["tp_sessions_found_24h"]}
+- **TP Session Gap**: {tp["tp_session_gap_count"]}
 - **Insight Packets (24h)**: {tp["insight_packets_24h"]}
 - **Aria Decisions (24h)**: {tp["aria_decisions_24h"]}
 - **Open Risk Items**: {tp["open_risk_items"]}
@@ -626,7 +657,7 @@ class StandupGenerator:
 🔄 **Today**: {metrics["in_progress"]} in progress
 🚫 **Blockers**: {metrics["blocked"]} active
 ⚠️ **Risks**: Check full report
-🤝 **Thinking Partner**: {tp["mode"]} (Proof {tp["proof_coverage_percent"]}%)
+🤝 **Thinking Partner**: {tp["mode"]} (Proof {tp["proof_coverage_percent"]}%, Gap {tp["tp_session_gap_count"]})
 
 Full report: `{report_path}`
 """
