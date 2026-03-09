@@ -413,14 +413,14 @@ backlog:
   - Completion report (line 496-498) identified this as Month 1 short-term priority
   - Reduces ingestion failures due to malformed frontmatter
   - Consistent frontmatter quality improves semantic search quality
-  implementation_commit: null
-  merge_commit: null
-  note: Implementation complete in working directory, pending merge to main. Files exist - validate_frontmatter.py, frontmatter_validator.py, .git/hooks/pre-commit
+  implementation_commit: 2c2bc9d
+  merge_commit: 0d6c9b9
+  note: Merged to main. Files added - validate_frontmatter.py, frontmatter_validator.py
   owner: TBD
   pr_number: feature/ST-MEMORY-INGEST-004-frontmatter-hook
   priority: P2
   related_story: ST-MEMORY-INGEST-001
-  status: implementation_complete_pending_merge
+  status: completed
   status_correction:
     corrected_at: 2026-03-08T00:00:00Z
     correction_reason: Aria verification found status mismatch - files exist in working directory but not in main
