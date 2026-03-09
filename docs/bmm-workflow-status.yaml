@@ -5,8 +5,11 @@
 #
 # MIGRATION EPIC: Archive long-form fields for completed stories
 #
-# CURRENT PHASE: Phase 2 (Batch 1) - COMPLETE, proceeding to Phase 3 planning
-# - 10 stories migrated in Phase 2
+# CURRENT PHASE: Phase 3 (Batch 2) - COMPLETE
+# - Phase 3 Assessment Date: 2026-03-09
+# - Stories checked: 56
+# - New archives: 0 (all >30 day stories already archived in Phases 1-2)
+# - Total archived to date: 20 stories
 # - Archive location: docs/archives/workflow-status/entries/
 # - Schema: docs/archives/workflow-status/schema/archive-entry-schema.yaml
 #
@@ -27,24 +30,17 @@
 #     - Data integrity verified
 #     - Rollback capability tested
 #
-#   Phase 3 (Batch 2): ✓ COMPLETE - ASSESSMENT ONLY
+#   Phase 3 (Batch 2): ✓ COMPLETE
 #     - Assessment date: 2026-03-09
-#     - Criteria: Stories >30 days old (before 2026-02-07)
-#     - Result: NO eligible stories found
-#     - All stories >30 days old already archived in Phase 1 & 2
-#     - Next assessment: 2026-03-16 (when ST-LAUNCH-009, 010, 018 become eligible)
+#     - Stories checked: 56
+#     - Eligible stories: 0 (all >30 day stories already archived)
+#     - Already archived: 20
+#     - Too recent: 36 (will become eligible for Phase 4)
 #
-#   Phase 4 (Full): PLANNED
-#     - Automated archival for all eligible stories
-#     - Scheduled weekly archival job
-#
-# PHASE 3 ASSESSMENT RESULTS (2026-03-09):
-#   - Stories checked: 56 total across completed, backlog, launch_stories
-#   - Eligible for archival: 0
-#   - Already archived: 20 stories (Phase 1: 10, Phase 2: 10)
-#   - Too recent (<30 days): 36 stories
-#   - Next eligible batch: ST-LAUNCH-009, 010, 018 (become eligible 2026-03-16)
-#   - Assessment performed by: jarvis
+#   Phase 4 (Full Automation): PLANNED
+#     - Automated weekly archival job
+#     - Estimated first run: 2026-03-16 (when ST-LAUNCH-009/010 become eligible)
+#     - Target: Archive stories automatically when they exceed 30-day threshold
 #
 # MIGRATED STORIES (Phase 2 Batch 1):
 #   - ST-GOV-003 → ARCH-20260309-200324-ST-GOV-003
