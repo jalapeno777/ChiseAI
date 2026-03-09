@@ -78,11 +78,22 @@ CHANGED_ITERLOGS="$(git diff --name-only origin/main...HEAD 2>/dev/null | grep -
     printf "%s\n" "${CHANGED_ITERLOGS}" | while IFS= read -r iterlog_path; do
       [ -z "$iterlog_path" ] && continue
       story_id="$(basename "$iterlog_path" .md | sed "s/^iterlog-//")"
+      iterlog_priority="$(sed -n "s/^priority:[[:space:]]*//p" "$iterlog_path" | head -n1 | tr -d "\"" | tr "[:lower:]" "[:upper:]")"
+      iterlog_status="$(sed -n "s/^status:[[:space:]]*//p" "$iterlog_path" | head -n1 | tr -d "\"" | tr "[:upper:]" "[:lower:]")"
+      TP_SESSION_MODE="${CI_TP_SESSION_ARTIFACT_MODE:-warn}"
+      if [ "${CI_TP_SESSION_STRICT_P0P1_COMPLETED:-1}" = "1" ]; then
+        if [ "$iterlog_priority" = "P0" ] || [ "$iterlog_priority" = "P1" ]; then
+          if [ "$iterlog_status" = "completed" ] || [ "$iterlog_status" = "complete" ] || [ "$iterlog_status" = "done" ]; then
+            TP_SESSION_MODE="strict"
+          fi
+        fi
+      fi
       TP_SESSION_ARGS=""
       if [ "${CI_TP_SESSION_SELF_HEAL:-1}" = "1" ]; then
         TP_SESSION_ARGS="--tp-session-self-heal"
       fi
-      python3 scripts/validation/validate_insight_governance.py --story-id "${story_id}" --strict --tp-session-artifact-mode "${CI_TP_SESSION_ARTIFACT_MODE:-warn}" ${TP_SESSION_ARGS}
+      echo "tp_session_artifact_mode=${TP_SESSION_MODE} story_id=${story_id} priority=${iterlog_priority:-unknown} status=${iterlog_status:-unknown}"
+      python3 scripts/validation/validate_insight_governance.py --story-id "${story_id}" --strict --tp-session-artifact-mode "${TP_SESSION_MODE}" ${TP_SESSION_ARGS}
       if [ "${CI_REQUIRE_REDIS_METACOG_ARTIFACTS:-0}" = "1" ]; then
         python3 scripts/validation/validate_metacog_compliance.py --story-id "${story_id}" --strict --require-artifacts
       else
