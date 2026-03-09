@@ -238,9 +238,7 @@ def run_post_verification(verbose: bool = False) -> tuple[bool, int, str]:
         return False, -2, f"Failed to run verification: {e}"
 
 
-def send_notification(
-    report: ExecutionReport, webhook_url: Optional[str] = None
-) -> bool:
+def send_notification(report: ExecutionReport, webhook_url: str | None = None) -> bool:
     """
     Send notification about archival results.
 
@@ -251,9 +249,7 @@ def send_notification(
         return False
 
     # Determine notification level
-    if not report.preflight_passed:
-        level = "ERROR"
-    elif not report.archival_executed:
+    if not report.preflight_passed or not report.archival_executed:
         level = "ERROR"
     elif not report.post_verification_passed:
         level = "CRITICAL"
