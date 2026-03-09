@@ -1,0 +1,43 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260309-170659-BL-CI-PHASE3
+original_story_id: BL-CI-PHASE3
+archived_at: '2026-03-09T17:06:59.751517Z'
+archive_reason: age (7 days)
+archive_reason_detail: Story archived due to age (7 days)
+migration:
+  phase: pilot
+  migrated_by: senior-dev
+  migration_script_version: 1.0.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260309-170659-BL-CI-PHASE3
+  id: BL-CI-PHASE3
+  status: archived
+  title: CI Phase 3 Enhancements
+  priority: P2
+  merge_commit: 51b206e
+  pr_number: LEGACY
+archived_fields:
+  description: Advanced CI enhancements beyond Phase 2 hardening
+  acceptance_criteria:
+  - Phase 1 assessment completed (31 issues identified)
+  - Phase 2 pipeline hardening completed
+  - Phase 3 remediation merged to main
+  notes:
+  - 'Phase 1 (Assessment) completed: 31 issues identified (P0:2, P1:6, P2:7)'
+  - 'Phase 2 (Pipeline Hardening) completed: Epic status sync fixed, CI documentation
+    updated'
+  - Phase 3 remediation MERGED to main (commit 51b206e)
+  - Status corrected per Aria verification 2026-03-08
+  depends_on:
+  - ST-CI-001
+  created_date: '2026-03-02'
+  owner: ST-CI-001 continuation
+completion_evidence:
+  pr_number: LEGACY
+  merge_commit: 51b206e
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-170659-BL-CI-PHASE3.yaml
+integrity:
+  original_checksum: c66fff3070c42e63fbebe044d4c5b74feaf54dd3e1c3ef8d955b23f1a83dc2dc
+  archived_checksum: d1da51d38c6ba96780158f9b6bc04dca8f72119236a58ef511a6209b34c45292
+  verification_date: '2026-03-09T17:06:59.751583Z'
