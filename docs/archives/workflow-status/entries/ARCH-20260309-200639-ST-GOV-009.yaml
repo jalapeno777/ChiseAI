@@ -1,0 +1,64 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260309-200639-ST-GOV-009
+original_story_id: ST-GOV-009
+archived_at: '2026-03-09T20:06:39.314361Z'
+archive_reason: age
+archive_reason_detail: Story completed 14 days ago, exceeds 14-day threshold
+migration:
+  phase: batch_1
+  migrated_by: senior-dev
+  migration_script_version: 1.0.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260309-200639-ST-GOV-009
+  id: ST-GOV-009
+  status: archived
+  title: Decision Audit Trail Export
+  priority: P2-MEDIUM
+  epic_id: EP-GOV-001
+  completion_date: '2026-02-23'
+  merge_commit: 86224f5
+  pr_number: LEGACY
+archived_fields:
+  description: Complete audit trail for compliance with tamper-evident logging and
+    7-year retention
+  acceptance_criteria:
+  - Exports all autonomous decisions to immutable storage
+  - Queryable by agent, time range, decision type, outcome
+  - Tamper-evident logging (hash chain)
+  - Automated daily exports to S3
+  - Retention: 7 years
+  notes:
+  - 'CONSOLIDATION REMEDIATION 2026-03-08: Verified merged to main via cross-branch
+    verification'
+  - 'Merge commit: 86224f5 - Merge ST-GOV-009: Decision Audit Trail Export'
+  - PR number marked LEGACY due to branch deletion - evidence in docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md
+  test_results:
+    coverage_percent: 83
+    failed: 0
+    passed: 75
+    status: All tests pass, coverage exceeds target
+    total: 75
+  validation_gates:
+  - audit_completeness: 100%
+  - integrity_verification: pass
+  - export_reliability: 100%
+  completion_evidence:
+  - 5 source files (decision, trail, query, exporter, __init__) - 2,037 lines
+  - 4 test files - 75 tests passing, 0 failed
+  - Hash chain with SHA-256 tamper-evident logging
+  - S3 export with 7-year retention compliance
+  - Query interface supporting agent, time range, decision type, outcome filters
+  sprint_id: GOV-PHASE3-001
+  story_points: 5
+  fr_coverage:
+  - FR-GOV-009
+  validation_status: validated
+completion_evidence:
+  pr_number: LEGACY
+  merge_commit: 86224f5
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-200639-ST-GOV-009.yaml
+integrity:
+  original_checksum: 4da512df4a910c6f0f18f733e6d4281b1234214532094d36c2abd8441bcfb336
+  archived_checksum: 7eb709c84700bccdd474dec10c4f38c77d0a08e6759a37403ceb2b2945074eee
+  verification_date: '2026-03-09T20:06:39.314397Z'
