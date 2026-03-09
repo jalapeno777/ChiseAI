@@ -56,7 +56,7 @@ steps:
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
       DISCORD_WEBHOOK_URL:
-        from_secret: discord_webhook_url
+        from_secret: DISCORD_DEV_WEBHOOK_URL
     commands:
       - |
         set -euo pipefail
@@ -83,7 +83,7 @@ steps:
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
       DISCORD_WEBHOOK_URL:
-        from_secret: discord_webhook_url
+        from_secret: DISCORD_DEV_WEBHOOK_URL
     commands:
       - |
         set -euo pipefail
