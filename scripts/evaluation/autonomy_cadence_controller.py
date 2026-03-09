@@ -66,6 +66,8 @@ def cadence_seconds(cadence: str) -> int | None:
     }
     if normalized in table:
         return table[normalized]
+    if normalized.endswith("m") and normalized[:-1].isdigit():
+        return int(normalized[:-1]) * 60
     if normalized.endswith("h") and normalized[:-1].isdigit():
         return int(normalized[:-1]) * 3600
     return None

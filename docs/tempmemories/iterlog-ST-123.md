@@ -142,3 +142,19 @@ Thinking Partner Proof: ACTIVE | ST-123 | IP:IP-20260309-FULL-PILOT-OPS | AD:AD-
 5. E2E validation command:
    - `python3 scripts/e2e/full_pilot_e2e.py`
    - Validates cadence registry, dry-force tick, phase runs, event schema, and artifacts.
+
+6. Opencode auto-dispatch routing:
+   - Script: `python3 scripts/ops/opencode_autodispatch.py --dry-run`
+   - Cadence job: `ops.opencode_autodispatch_5m` (every 5 minutes)
+   - Purpose: auto-route policy-safe low/medium alerts to Aria prompt bundles.
+   - Artifacts:
+     - `_bmad-output/autonomy-dispatch/state.json`
+     - `_bmad-output/autonomy-dispatch/tasks.jsonl`
+     - `_bmad-output/autonomy-dispatch/prompts/*.md`
+   - Recommended defaults:
+     - `CHISE_AUTODISPATCH_MAX_CONCURRENT=2`
+     - `CHISE_AUTODISPATCH_RETRY_BUDGET=2`
+     - `CHISE_AUTODISPATCH_DEDUPE_HOURS=24`
+   - Optional live dispatch:
+     - `CHISE_OPENCODE_AUTODISPATCH_ENABLED=true`
+     - `CHISE_OPENCODE_AUTODISPATCH_CMD="opencode run --agent Aria --prompt-file {prompt_file}"`

@@ -84,6 +84,7 @@ Prefer repeatable workflow execution through `.opencode/command/*` rather than a
 - `.opencode/command/chise-full-pilot-e2e.md`
 - `.opencode/command/chise-full-pilot-daily-summary.md`
 - `.opencode/command/chise-approvals.md`
+- `.opencode/command/chise-opencode-autodispatch.md`
 
 ### PR review bot setup + review:
 - `.opencode/command/chise-gitea-review-bot-setup.md`
