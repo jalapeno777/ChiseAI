@@ -29,3 +29,4 @@ python3 scripts/ops/full_pilot_phase_runner.py --phase phase4
 - Event log: `_bmad-output/full-pilot/events.jsonl`
 - Scorecard JSON: `_bmad-output/full-pilot/scorecard.json`
 - Scorecard Markdown: `_bmad-output/full-pilot/scorecard.md`
+- Go/No-Go packet: `_bmad-output/full-pilot/go-no-go-packet.json`

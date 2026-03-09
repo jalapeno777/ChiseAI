@@ -51,7 +51,12 @@ def generate_scorecard(
     pilot_events: list[dict[str, Any]],
 ) -> dict[str, Any]:
     statuses = Counter(str(r.get("status", "unknown")) for r in cadence_runs)
-    total_runs = max(sum(statuses.values()), 1)
+    executable_runs = (
+        statuses.get("success", 0)
+        + statuses.get("failed", 0)
+        + statuses.get("timeout", 0)
+    )
+    total_runs = max(executable_runs, 1)
     success = statuses.get("success", 0)
     dry = statuses.get("dry_run", 0)
     failures = statuses.get("failed", 0) + statuses.get("timeout", 0)

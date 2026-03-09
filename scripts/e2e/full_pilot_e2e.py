@@ -100,12 +100,19 @@ def main() -> int:
     if p.returncode != 0:
         return 1
 
+    # 2b) Validate event envelope schema.
+    p = run(["python3", "scripts/validation/validate_autonomy_event_schema.py"])
+    record("event_schema_validate", p)
+    if p.returncode != 0:
+        return 1
+
     # 3) Verify key artifacts.
     assert_exists(PROJECT_ROOT / "_bmad-output" / "autonomy-cadence" / "state.json")
     assert_exists(PROJECT_ROOT / "_bmad-output" / "autonomy-cadence" / "runs.jsonl")
     assert_exists(PROJECT_ROOT / "_bmad-output" / "full-pilot" / "events.jsonl")
     assert_exists(PROJECT_ROOT / "_bmad-output" / "full-pilot" / "scorecard.json")
     assert_exists(PROJECT_ROOT / "_bmad-output" / "full-pilot" / "scorecard.md")
+    assert_exists(PROJECT_ROOT / "_bmad-output" / "full-pilot" / "go-no-go-packet.json")
 
     scorecard = load_json(PROJECT_ROOT / "_bmad-output" / "full-pilot" / "scorecard.json")
     if "cadence" not in scorecard or "events" not in scorecard:
