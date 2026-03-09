@@ -198,16 +198,12 @@ def check_no_data_loss() -> PreflightCheck:
             check.passed = True
             return check
 
-        # Load workflow status
-        with open(WORKFLOW_STATUS_PATH, "r") as f:
-            workflow_data = yaml.safe_load(f)
-
         # Check each existing archive entry
         archives_checked = 0
         checksum_mismatches = 0
 
         for archive_file in ARCHIVE_ENTRIES_DIR.glob("ARCH-*.yaml"):
-            with open(archive_file, "r") as f:
+            with open(archive_file) as f:
                 archive_entry = yaml.safe_load(f)
 
             archives_checked += 1
@@ -542,7 +538,7 @@ def main():
         if check_name in skip_checks:
             skipped_check = PreflightCheck(
                 name=check_name,
-                description=f"Skipped per --skip flag",
+                description="Skipped per --skip flag",
             )
             skipped_check.passed = True
             skipped_check.details["skipped"] = True

@@ -25,12 +25,11 @@ import argparse
 import json
 import os
 import sys
+import urllib.error
+import urllib.request
 from datetime import datetime
 from enum import Enum
 from typing import Optional
-
-import urllib.request
-import urllib.error
 
 
 class NotificationLevel(Enum):
@@ -79,8 +78,8 @@ def send_discord_webhook(
     title: str,
     message: str,
     level: NotificationLevel,
-    fields: Optional[list] = None,
-    footer: Optional[str] = None,
+    fields: list | None = None,
+    footer: str | None = None,
 ) -> bool:
     """
     Send notification via Discord webhook.
@@ -144,7 +143,7 @@ def send_discord_webhook(
 def send_discord_channel_message(
     channel_id: str,
     message: str,
-    bot_token: Optional[str] = None,
+    bot_token: str | None = None,
 ) -> bool:
     """
     Send message directly to Discord channel (requires bot token).

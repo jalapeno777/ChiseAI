@@ -21,11 +21,12 @@ Exit Codes:
 import argparse
 import hashlib
 import json
+import os
 import subprocess
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import yaml
 
@@ -47,7 +48,7 @@ class HealthMetric:
     """Represents a single health metric."""
 
     def __init__(
-        self, name: str, value: Any, unit: str = "", threshold: Optional[Any] = None
+        self, name: str, value: Any, unit: str = "", threshold: Any | None = None
     ):
         self.name = name
         self.value = value
@@ -90,7 +91,7 @@ class HealthReport:
         severity: str,
         category: str,
         description: str,
-        details: Optional[dict] = None,
+        details: dict | None = None,
     ):
         self.issues.append(
             {
@@ -138,9 +139,7 @@ class HealthReport:
                 status_icon = (
                     "✓"
                     if metric.status == "ok"
-                    else "⚠"
-                    if metric.status == "warning"
-                    else "✗"
+                    else "⚠" if metric.status == "warning" else "✗"
                 )
                 threshold_str = (
                     f" (threshold: {metric.threshold})" if metric.threshold else ""
@@ -226,7 +225,7 @@ def check_orphaned_archives(workflow_data: dict) -> tuple[int, list[dict]]:
     orphans = []
 
     for archive_file in ARCHIVE_ENTRIES_DIR.glob("ARCH-*.yaml"):
-        with open(archive_file, "r") as f:
+        with open(archive_file) as f:
             archive_entry = yaml.safe_load(f)
 
         story_id = archive_entry.get("original_story_id")
@@ -366,7 +365,7 @@ def generate_health_report(verbose: bool = False) -> HealthReport:
     report = HealthReport()
 
     # Load workflow status
-    with open(WORKFLOW_STATUS_PATH, "r") as f:
+    with open(WORKFLOW_STATUS_PATH) as f:
         workflow_data = yaml.safe_load(f)
 
     # Count stories
@@ -456,7 +455,7 @@ def generate_health_report(verbose: bool = False) -> HealthReport:
 
 
 def send_health_notification(
-    report: HealthReport, webhook_url: Optional[str] = None
+    report: HealthReport, webhook_url: str | None = None
 ) -> bool:
     """Send health report notification."""
     if not NOTIFIER_SCRIPT.exists():
