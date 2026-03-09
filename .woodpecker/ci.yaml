@@ -108,7 +108,18 @@ steps:
             printf '%s\n' "$CHANGED_ITERLOGS" | while IFS= read -r iterlog_path; do
               [ -z "$iterlog_path" ] && continue
               story_id="$(basename "$iterlog_path" .md | sed 's/^iterlog-//')"
+              iterlog_priority="$(sed -n 's/^priority:[[:space:]]*//p' "$iterlog_path" | head -n1 | tr -d "\"'" | tr '[:lower:]' '[:upper:]')"
+              iterlog_status="$(sed -n 's/^status:[[:space:]]*//p' "$iterlog_path" | head -n1 | tr -d "\"'" | tr '[:upper:]' '[:lower:]')"
+              TP_SESSION_MODE="${CI_TP_SESSION_ARTIFACT_MODE:-warn}"
+              if [ "${CI_TP_SESSION_STRICT_P0P1_COMPLETED:-1}" = "1" ]; then
+                if [ "$iterlog_priority" = "P0" ] || [ "$iterlog_priority" = "P1" ]; then
+                  if [ "$iterlog_status" = "completed" ] || [ "$iterlog_status" = "complete" ] || [ "$iterlog_status" = "done" ]; then
+                    TP_SESSION_MODE="strict"
+                  fi
+                fi
+              fi
               echo " - validating story_id=${story_id} from ${iterlog_path}"
+              echo "   tp_session_artifact_mode=${TP_SESSION_MODE} (priority=${iterlog_priority:-unknown}, status=${iterlog_status:-unknown})"
               TP_SESSION_ARGS=""
               if [ "${CI_TP_SESSION_SELF_HEAL:-1}" = "1" ]; then
                 TP_SESSION_ARGS="--tp-session-self-heal"
@@ -116,7 +127,7 @@ steps:
               python scripts/validation/validate_insight_governance.py \
                 --story-id "${story_id}" \
                 --strict \
-                --tp-session-artifact-mode "${CI_TP_SESSION_ARTIFACT_MODE:-warn}" \
+                --tp-session-artifact-mode "${TP_SESSION_MODE}" \
                 ${TP_SESSION_ARGS}
             done
             echo "metacog-governance: validating changed iterlogs (blocking)"
