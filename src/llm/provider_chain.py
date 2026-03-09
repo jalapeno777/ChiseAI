@@ -265,6 +265,11 @@ class LLMProviderChain:
             enable_metrics: Whether to collect metrics during burn-in
             metrics_exporter: Optional exporter for InfluxDB integration
         """
+        # Provider Order Enforcement (LLM-PROVIDER-FIX-003):
+        # 1. kimi_compat MUST be tried before kimi (adapter preferred over direct)
+        # 2. KIMI_COMPAT_ENABLED defaults to true (see PROVIDER_CONFIGS)
+        # 3. Adapter container health is checked before use
+        #
         # TEMPORARY: MiniMax disabled due to PAPER-LLM-DIAG-001
         # To re-enable: Add "minimax" back to the list
         # Re-enable checklist:
@@ -273,8 +278,8 @@ class LLMProviderChain:
         # 3. Test with: python -m pytest tests/test_llm/test_provider_chain.py -v -k minimax
         # 4. Monitor burn-in metrics for MiniMax success rate
         self.provider_order = provider_order or [
-            "kimi_compat",
-            "kimi",
+            "kimi_compat",  # Adapter first (LLM-PROVIDER-FIX-003)
+            "kimi",  # Direct API fallback
             "zai",
             "zhipu",
             # "minimax",  # Disabled per PAPER-LLM-DIAG-001
@@ -326,7 +331,45 @@ class LLMProviderChain:
                     return True, None
             return False, f"{config.api_key_env} not set"
 
+        # Special case: Check KIMI adapter container is reachable
+        if provider_name == "kimi_compat":
+            if not self._is_adapter_container_reachable():
+                return False, "KIMI adapter container not reachable"
+
         return True, None
+
+    def _is_adapter_container_reachable(self) -> bool:
+        """Check if KIMI adapter container is reachable.
+
+        Performs a lightweight health check on the adapter container
+        to ensure it's available before attempting to use it.
+
+        Returns:
+            True if adapter is reachable, False otherwise.
+        """
+        import socket
+
+        base_url = os.getenv(
+            "KIMI_COMPAT_BASE_URL", "http://chiseai-kimi-adapter:8002/v1"
+        )
+
+        # Extract host and port from URL
+        try:
+            from urllib.parse import urlparse
+
+            parsed = urlparse(base_url)
+            host = parsed.hostname or "chiseai-kimi-adapter"
+            port = parsed.port or 8002
+
+            # Try to connect with a short timeout
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(2.0)  # 2 second timeout for health check
+            result = sock.connect_ex((host, port))
+            sock.close()
+
+            return result == 0
+        except Exception:
+            return False
 
     def _record_attempt(self, provider_name: str, latency_ms: float = 0.0) -> None:
         """Record a provider attempt for metrics.
