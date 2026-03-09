@@ -27,6 +27,7 @@ SCORECARD_7D_PATH = FULL_PILOT_DIR / "scorecard-7d.json"
 GO_NO_GO_PATH = FULL_PILOT_DIR / "go-no-go-packet.json"
 CADENCE_STATE_PATH = PROJECT_ROOT / "_bmad-output" / "autonomy-cadence" / "state.json"
 CADENCE_RUNS_PATH = PROJECT_ROOT / "_bmad-output" / "autonomy-cadence" / "runs.jsonl"
+AUTODISPATCH_TASKS_PATH = PROJECT_ROOT / "_bmad-output" / "autonomy-dispatch" / "tasks.jsonl"
 
 
 def now_iso() -> str:
@@ -187,6 +188,36 @@ def recovery_snapshot() -> dict[str, Any]:
     }
 
 
+def autodispatch_snapshot() -> dict[str, int]:
+    if not AUTODISPATCH_TASKS_PATH.exists():
+        return {
+            "queued_24h": 0,
+            "dispatched_24h": 0,
+            "dispatch_failed_24h": 0,
+        }
+    cutoff = datetime.now(UTC).timestamp() - 86400
+    stats = {"queued_24h": 0, "dispatched_24h": 0, "dispatch_failed_24h": 0}
+    for line in AUTODISPATCH_TASKS_PATH.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            item = json.loads(line)
+            dt = datetime.fromisoformat(str(item.get("timestamp_utc", "")).replace("Z", "+00:00")).astimezone(UTC)
+        except Exception:
+            continue
+        if dt.timestamp() < cutoff:
+            continue
+        status = str(item.get("status", "")).lower()
+        if status in {"queued"}:
+            stats["queued_24h"] += 1
+        elif status in {"dispatched"}:
+            stats["dispatched_24h"] += 1
+        elif status in {"dispatch_failed"}:
+            stats["dispatch_failed_24h"] += 1
+    return stats
+
+
 def build_message(
     scorecard_30d: dict[str, Any], scorecard_7d: dict[str, Any], packet: dict[str, Any]
 ) -> str:
@@ -199,6 +230,7 @@ def build_message(
     op_score = operational_score_7d(scorecard_7d, pending_approvals)
     trend = failure_trend(scorecard_7d, scorecard_30d)
     recovery = recovery_snapshot()
+    autod = autodispatch_snapshot()
 
     approval_lines = ["None"]
     if pending_approvals:
@@ -221,6 +253,8 @@ def build_message(
             f"Failed Runs: {cadence.get('failed_runs', 0)}",
             f"Dry Runs: {cadence.get('dry_runs', 0)}",
             f"Total Alerts (30d): {alerts.get('total_alerts', 0)}",
+            "",
+            f"Auto-Dispatch (24h): queued={autod['queued_24h']} dispatched={autod['dispatched_24h']} failed={autod['dispatch_failed_24h']}",
             "",
             f"Fixes Applied (Recovered Jobs, 24h): {len(recovery['recovered_jobs_24h'])}",
             *(

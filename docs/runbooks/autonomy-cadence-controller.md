@@ -145,3 +145,33 @@ How you know fixes are applied:
   - `Fixes Applied (Recovered Jobs, 24h)`
   - `Unresolved Failed Jobs (24h)`
 - Cadence alerts include `job_recovered` when a previously failed/timeout job returns to success.
+
+## 9. Opencode Auto-Dispatch (Aria)
+
+Purpose:
+- automatically route policy-safe low/medium alerts to Aria via Opencode CLI prompt bundles.
+
+Script:
+```bash
+python3 scripts/ops/opencode_autodispatch.py --dry-run
+python3 scripts/ops/opencode_autodispatch.py
+```
+
+Cadence job:
+- `ops.opencode_autodispatch_5m` (every 5 minutes)
+
+Recommended settings:
+- `CHISE_AUTODISPATCH_MAX_CONCURRENT=2`
+- `CHISE_AUTODISPATCH_RETRY_BUDGET=2`
+- `CHISE_AUTODISPATCH_DEDUPE_HOURS=24`
+- `CHISE_OPENCODE_AUTODISPATCH_ENABLED=false` by default until ready
+
+Optional CLI template:
+```bash
+CHISE_OPENCODE_AUTODISPATCH_CMD="opencode run --agent Aria --prompt-file {prompt_file}"
+```
+
+Artifacts:
+- `_bmad-output/autonomy-dispatch/state.json`
+- `_bmad-output/autonomy-dispatch/tasks.jsonl`
+- `_bmad-output/autonomy-dispatch/prompts/*.md`
