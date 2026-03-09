@@ -122,3 +122,26 @@ Discord errors:
 ```bash
 python3 scripts/discord/test_webhook.py --webhook-url "<url>" --message "autonomy test"
 ```
+
+## 8. Approval Workflow (Phase 3 Guardrails)
+
+List pending approvals:
+```bash
+python3 scripts/ops/manage_approvals.py --list-pending
+```
+
+Approve guarded strategy autopilot:
+```bash
+python3 scripts/ops/manage_approvals.py --approve strategy-autopilot
+```
+
+Revoke approval:
+```bash
+python3 scripts/ops/manage_approvals.py --revoke strategy-autopilot
+```
+
+How you know fixes are applied:
+- Daily summary includes:
+  - `Fixes Applied (Recovered Jobs, 24h)`
+  - `Unresolved Failed Jobs (24h)`
+- Cadence alerts include `job_recovered` when a previously failed/timeout job returns to success.

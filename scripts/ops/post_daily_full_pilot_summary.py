@@ -26,6 +26,7 @@ SCORECARD_PATH = FULL_PILOT_DIR / "scorecard.json"
 SCORECARD_7D_PATH = FULL_PILOT_DIR / "scorecard-7d.json"
 GO_NO_GO_PATH = FULL_PILOT_DIR / "go-no-go-packet.json"
 CADENCE_STATE_PATH = PROJECT_ROOT / "_bmad-output" / "autonomy-cadence" / "state.json"
+CADENCE_RUNS_PATH = PROJECT_ROOT / "_bmad-output" / "autonomy-cadence" / "runs.jsonl"
 
 
 def now_iso() -> str:
@@ -131,6 +132,61 @@ def failure_trend(score_7d: dict[str, Any], score_30d: dict[str, Any]) -> str:
     return "stable"
 
 
+def parse_runs_24h() -> list[dict[str, Any]]:
+    if not CADENCE_RUNS_PATH.exists():
+        return []
+    cutoff = datetime.now(UTC).timestamp() - 86400
+    rows: list[dict[str, Any]] = []
+    for line in CADENCE_RUNS_PATH.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            item = json.loads(line)
+        except Exception:
+            continue
+        ts = item.get("timestamp_utc")
+        try:
+            dt = datetime.fromisoformat(str(ts).replace("Z", "+00:00")).astimezone(UTC)
+        except Exception:
+            continue
+        if dt.timestamp() >= cutoff:
+            rows.append(item)
+    return rows
+
+
+def recovery_snapshot() -> dict[str, Any]:
+    rows = parse_runs_24h()
+    by_job: dict[str, list[str]] = {}
+    for item in rows:
+        jid = str(item.get("job_id", "")).strip()
+        status = str(item.get("status", "")).strip().lower()
+        if not jid:
+            continue
+        by_job.setdefault(jid, []).append(status)
+
+    recovered: list[str] = []
+    unresolved: list[str] = []
+    for job_id, statuses in by_job.items():
+        has_fail = any(s in {"failed", "timeout"} for s in statuses)
+        has_success_after = False
+        seen_fail = False
+        for s in statuses:
+            if s in {"failed", "timeout"}:
+                seen_fail = True
+            if s == "success" and seen_fail:
+                has_success_after = True
+        if has_fail and has_success_after:
+            recovered.append(job_id)
+        elif statuses and statuses[-1] in {"failed", "timeout"}:
+            unresolved.append(job_id)
+
+    return {
+        "recovered_jobs_24h": sorted(set(recovered)),
+        "unresolved_failed_jobs_24h": sorted(set(unresolved)),
+    }
+
+
 def build_message(
     scorecard_30d: dict[str, Any], scorecard_7d: dict[str, Any], packet: dict[str, Any]
 ) -> str:
@@ -142,6 +198,7 @@ def build_message(
     pending_approvals = pending_approvals_from_state()
     op_score = operational_score_7d(scorecard_7d, pending_approvals)
     trend = failure_trend(scorecard_7d, scorecard_30d)
+    recovery = recovery_snapshot()
 
     approval_lines = ["None"]
     if pending_approvals:
@@ -164,6 +221,19 @@ def build_message(
             f"Failed Runs: {cadence.get('failed_runs', 0)}",
             f"Dry Runs: {cadence.get('dry_runs', 0)}",
             f"Total Alerts (30d): {alerts.get('total_alerts', 0)}",
+            "",
+            f"Fixes Applied (Recovered Jobs, 24h): {len(recovery['recovered_jobs_24h'])}",
+            *(
+                [f"- {x}" for x in recovery["recovered_jobs_24h"][:3]]
+                if recovery["recovered_jobs_24h"]
+                else ["- None"]
+            ),
+            f"Unresolved Failed Jobs (24h): {len(recovery['unresolved_failed_jobs_24h'])}",
+            *(
+                [f"- {x}" for x in recovery["unresolved_failed_jobs_24h"][:3]]
+                if recovery["unresolved_failed_jobs_24h"]
+                else ["- None"]
+            ),
             "",
             "Pending Approvals:",
             *[f"- {line}" for line in approval_lines],

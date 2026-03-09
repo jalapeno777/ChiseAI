@@ -342,6 +342,7 @@ def evaluate_alerts(
 
 
 def run_job(job: Job, *, dry_run: bool, output_dir: Path, job_state: dict[str, Any]) -> int:
+    prev_status = str(job_state.get("last_status", "")).strip().lower()
     for flag in job.required_flags:
         if not is_flag_enabled(flag):
             logger.info(f"Skipping {job.job_id}: required flag disabled ({flag})")
@@ -435,6 +436,27 @@ def run_job(job: Job, *, dry_run: bool, output_dir: Path, job_state: dict[str, A
             job_state["last_success_at"] = iso()
             if idem:
                 job_state["last_idempotency_key"] = idem
+            if prev_status in {"failed", "timeout"}:
+                emit_alert(
+                    output_dir=output_dir,
+                    alert_type="job_recovered",
+                    job_id=job.job_id,
+                    severity="info",
+                    message=f"Job recovered from {prev_status} to success",
+                    details={"previous_status": prev_status},
+                )
+        else:
+            emit_alert(
+                output_dir=output_dir,
+                alert_type="job_failed",
+                job_id=job.job_id,
+                severity="high",
+                message="Job execution failed",
+                details={
+                    "exit_code": proc.returncode,
+                    "stderr_tail": proc.stderr[-300:],
+                },
+            )
         return 0 if ok else 1
     except subprocess.TimeoutExpired:
         duration = time.time() - started_ts
