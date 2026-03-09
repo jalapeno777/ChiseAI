@@ -166,12 +166,11 @@ jobs:
       - --phase
       - phase4
 
-  - job_id: ops.opencode_autodispatch_5m
+  - job_id: ops.opencode_autodispatch_15m
     enabled: true
-    cadence: 5m
+    cadence: 15m
     timeout_seconds: 300
     risk_level: low
-    idempotency_key: ops.opencode_autodispatch_5m:{date}
     retry_policy:
       max_retries: 1
       backoff_seconds: 2
