@@ -1,0 +1,169 @@
+# Woodpecker CI Pipeline for Workflow Status Archival Automation
+# Story: ST-WORKFLOW-ARCHIVAL-001
+#
+# DESIGN PRINCIPLE: Non-blocking steps with single fail point
+# - Individual steps capture exit codes but always exit 0
+# - The ci-gate step (at the end) is the SINGLE authoritative failure point
+#
+# Schedule:
+#   - Weekly archival: Sundays at 02:00 UTC
+#   - Daily health check: Every day at 06:00 UTC
+#
+# Version: 1.0.0
+
+when:
+  event:
+    - cron
+  cron:
+    - workflow-archive-weekly
+    - workflow-archive-daily
+
+clone:
+  git:
+    image: woodpeckerci/plugin-git
+    settings:
+      remote:
+        from_secret: gitea_clone_url
+
+steps:
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # WEEKLY ARCHIVAL JOB (Sundays at 02:00 UTC)
+  # ═══════════════════════════════════════════════════════════════════════════════
+  weekly-preflight:
+    image: python:3.11
+    environment:
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p "$${CI_STATUS_DIR}"
+        set +e
+        (
+          set -euo pipefail
+          echo "Running weekly archival preflight checks..."
+          pip install --no-cache-dir pyyaml 2>/dev/null || true
+          python3 scripts/workflow/preflight_archive.py --verbose
+        ) > "$${CI_STATUS_DIR}/weekly-preflight.log" 2>&1
+        code=$?
+        cat "$${CI_STATUS_DIR}/weekly-preflight.log"
+        echo "$code" > "$${CI_STATUS_DIR}/weekly-preflight.status"
+        exit 0
+    when:
+      cron: workflow-archive-weekly
+
+  weekly-archive:
+    image: python:3.11
+    environment:
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
+      DISCORD_WEBHOOK_URL:
+        from_secret: discord_webhook_url
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p "$${CI_STATUS_DIR}"
+        set +e
+        (
+          set -euo pipefail
+          echo "Running automated archival..."
+          pip install --no-cache-dir pyyaml 2>/dev/null || true
+          python3 scripts/workflow/automated_archive.py --batch-size 20 --verbose --notify
+        ) > "$${CI_STATUS_DIR}/weekly-archive.log" 2>&1
+        code=$?
+        cat "$${CI_STATUS_DIR}/weekly-archive.log"
+        echo "$code" > "$${CI_STATUS_DIR}/weekly-archive.status"
+        exit 0
+    when:
+      cron: workflow-archive-weekly
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # DAILY HEALTH CHECK JOB (Every day at 06:00 UTC)
+  # ═══════════════════════════════════════════════════════════════════════════════
+  daily-health:
+    image: python:3.11
+    environment:
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
+      DISCORD_WEBHOOK_URL:
+        from_secret: discord_webhook_url
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p "$${CI_STATUS_DIR}"
+        set +e
+        (
+          set -euo pipefail
+          echo "Running daily health check..."
+          pip install --no-cache-dir pyyaml 2>/dev/null || true
+          python3 scripts/workflow/daily_health_report.py --verbose --notify
+        ) > "$${CI_STATUS_DIR}/daily-health.log" 2>&1
+        code=$?
+        cat "$${CI_STATUS_DIR}/daily-health.log"
+        echo "$code" > "$${CI_STATUS_DIR}/daily-health.status"
+        exit 0
+    when:
+      cron: workflow-archive-daily
+
+  # ═══════════════════════════════════════════════════════════════════════════════
+  # CI GATE (Single Failure Point)
+  # ═══════════════════════════════════════════════════════════════════════════════
+  ci-gate:
+    image: python:3.11
+    environment:
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
+    commands:
+      - |
+        set -euo pipefail
+        echo "═══════════════════════════════════════════════════════════════════"
+        echo "WORKFLOW ARCHIVE CI GATE"
+        echo "═══════════════════════════════════════════════════════════════════"
+        echo ""
+        
+        # Determine which jobs to check based on cron trigger
+        if [ "${CI_PIPELINE_EVENT}" = "cron" ]; then
+          if [ "${CI_PIPELINE_CRON}" = "workflow-archive-weekly" ]; then
+            echo "Mode: Weekly Archival"
+            CHECK_JOBS="weekly-preflight weekly-archive"
+          elif [ "${CI_PIPELINE_CRON}" = "workflow-archive-daily" ]; then
+            echo "Mode: Daily Health Check"
+            CHECK_JOBS="daily-health"
+          else
+            echo "Unknown cron trigger: ${CI_PIPELINE_CRON}"
+            exit 1
+          fi
+        else
+          echo "Not a cron event, skipping"
+          exit 0
+        fi
+        
+        echo ""
+        echo "Checking job results..."
+        echo ""
+        
+        FAILED_JOBS=""
+        for job in $CHECK_JOBS; do
+          status_file="$${CI_STATUS_DIR}/${job}.status"
+          if [ -f "$status_file" ]; then
+            exit_code=$(cat "$status_file")
+            if [ "$exit_code" = "0" ]; then
+              echo "✓ $job: PASSED"
+            else
+              echo "✗ $job: FAILED (exit code: $exit_code)"
+              FAILED_JOBS="$FAILED_JOBS $job"
+            fi
+          else
+            echo "✗ $job: NO STATUS FILE"
+            FAILED_JOBS="$FAILED_JOBS $job"
+          fi
+        done
+        
+        echo ""
+        echo "═══════════════════════════════════════════════════════════════════"
+        
+        if [ -z "$FAILED_JOBS" ]; then
+          echo "RESULT: ✓ ALL CHECKS PASSED"
+          echo "═══════════════════════════════════════════════════════════════════"
+          exit 0
+        else
+          echo "RESULT: ✗ FAILED JOBS:$FAILED_JOBS"
+          echo "═══════════════════════════════════════════════════════════════════"
+          exit 1
+        fi
