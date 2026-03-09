@@ -133,6 +133,28 @@ completed:
   status: merged
   title: LLM Provider Infrastructure Remediation and Testing Framework (Phases A-E)
 - acceptance_criteria:
+  - KIMI adapter smoke test passes (container reachable)
+  - Z.AI coding endpoint returns HTTP 200 with reasoning_content
+  - Provider chain tests pass (313/324, 98.77%)
+  - Zhipu client shows deprecation warning for ZHIPU_API_KEY
+  - KIMI adapter prioritized over direct API
+  created_date: '2026-03-09'
+  description: Final remediation to make provider lane operational. Includes Zhipu→Z.AI
+    alias, KIMI adapter enforcement, reasoning field parsing, and NA-safe endpoints.
+  evidence_files:
+  - docs/evidence/LLM-PROVIDER-OPERATIONAL-20260309.json
+  - Smoke test results
+  id: LLM-PROVIDER-FIX-003
+  notes:
+  - 'Z.AI coding endpoint: https://api.z.ai/api/coding/paas/v4'
+  - 'KIMI adapter: http://chiseai-kimi-adapter:8002/v1'
+  - 'Reasoning field parsing: verified in Z.AI response'
+  - 'Test pass rate: 98.77% (313/324)'
+  owner: senior-dev
+  priority: P0
+  status: completed
+  title: LLM Provider Lane Operational - KIMI/Z.AI Integration
+- acceptance_criteria:
   - Cross-branch verification guardrail implemented in AGENTS.md and agent files
   - AUDIT-DELTA evidence files created and committed
   - All three remediation PRs merged (#407, #408, #410)
