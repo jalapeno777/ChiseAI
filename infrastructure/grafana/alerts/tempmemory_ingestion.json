@@ -1,0 +1,293 @@
+{
+  "apiVersion": 1,
+  "groups": [
+    {
+      "orgId": 1,
+      "name": "tempmemory_ingestion_alerts",
+      "folder": "Governance",
+      "interval": "1m",
+      "rules": [
+        {
+          "uid": "tempmemory-consecutive-failures",
+          "title": "Tempmemory Ingestion - Consecutive Failures",
+          "condition": "B",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "influxdb",
+              "model": {
+                "query": "from(bucket: \"governance\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"governance.tempmemory.ingestion.consecutive_failures\")\n  |> last()",
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [2],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "query": {
+                      "params": ["A"]
+                    },
+                    "reducer": {
+                      "params": [],
+                      "type": "last"
+                    },
+                    "type": "query"
+                  }
+                ],
+                "datasource": {
+                  "type": "__expr__",
+                  "uid": "__expr__"
+                },
+                "expression": "A",
+                "refId": "B",
+                "type": "threshold"
+              }
+            }
+          ],
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "2m",
+          "annotations": {
+            "summary": "Tempmemory ingestion has failed {{ $values.A }} times consecutively",
+            "description": "The tempmemory ingestion runner has failed {{ $values.A }} times in a row. This may indicate a problem with the ingestion pipeline, Redis connectivity, or file system access.",
+            "runbook_url": "https://docs.chiseai.ai/runbooks/tempmemory-ingestion-failures"
+          },
+          "labels": {
+            "severity": "critical",
+            "feature": "tempmemory",
+            "alert_type": "consecutive_failures"
+          }
+        },
+        {
+          "uid": "tempmemory-high-latency",
+          "title": "Tempmemory Ingestion - High Latency",
+          "condition": "B",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "influxdb",
+              "model": {
+                "query": "from(bucket: \"governance\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"governance.tempmemory.ingestion.duration\")\n  |> last()",
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [300],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "query": {
+                      "params": ["A"]
+                    },
+                    "reducer": {
+                      "params": [],
+                      "type": "last"
+                    },
+                    "type": "query"
+                  }
+                ],
+                "datasource": {
+                  "type": "__expr__",
+                  "uid": "__expr__"
+                },
+                "expression": "A",
+                "refId": "B",
+                "type": "threshold"
+              }
+            }
+          ],
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "3m",
+          "annotations": {
+            "summary": "Tempmemory ingestion duration is {{ $values.A }}s (>300s threshold)",
+            "description": "The tempmemory ingestion is taking longer than expected ({{ $values.A }} seconds). This may indicate performance issues with file parsing, Redis operations, or an unusually large backlog of files.",
+            "runbook_url": "https://docs.chiseai.ai/runbooks/tempmemory-ingestion-performance"
+          },
+          "labels": {
+            "severity": "warning",
+            "feature": "tempmemory",
+            "alert_type": "high_latency"
+          }
+        },
+        {
+          "uid": "tempmemory-backlog",
+          "title": "Tempmemory Ingestion - High Backlog",
+          "condition": "B",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 300,
+                "to": 0
+              },
+              "datasourceUid": "influxdb",
+              "model": {
+                "query": "from(bucket: \"governance\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"governance.tempmemory.ingestion.backlog\")\n  |> last()",
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [100],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "query": {
+                      "params": ["A"]
+                    },
+                    "reducer": {
+                      "params": [],
+                      "type": "last"
+                    },
+                    "type": "query"
+                  }
+                ],
+                "datasource": {
+                  "type": "__expr__",
+                  "uid": "__expr__"
+                },
+                "expression": "A",
+                "refId": "B",
+                "type": "threshold"
+              }
+            }
+          ],
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "5m",
+          "annotations": {
+            "summary": "Tempmemory ingestion backlog has {{ $values.A }} files (>100 threshold)",
+            "description": "There are {{ $values.A }} files pending ingestion in the tempmemory backlog. This may indicate the ingestion runner is not keeping up with new file creation, or there may be a processing bottleneck.",
+            "runbook_url": "https://docs.chiseai.ai/runbooks/tempmemory-ingestion-backlog"
+          },
+          "labels": {
+            "severity": "warning",
+            "feature": "tempmemory",
+            "alert_type": "backlog"
+          }
+        },
+        {
+          "uid": "tempmemory-no-recent-run",
+          "title": "Tempmemory Ingestion - No Recent Run",
+          "condition": "B",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 7200,
+                "to": 0
+              },
+              "datasourceUid": "influxdb",
+              "model": {
+                "query": "from(bucket: \"governance\")\n  |> range(start: -2h)\n  |> filter(fn: (r) => r._measurement == \"governance.tempmemory.ingestion.last_run_age\")\n  |> last()",
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "queryType": "",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [7200],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "query": {
+                      "params": ["A"]
+                    },
+                    "reducer": {
+                      "params": [],
+                      "type": "last"
+                    },
+                    "type": "query"
+                  }
+                ],
+                "datasource": {
+                  "type": "__expr__",
+                  "uid": "__expr__"
+                },
+                "expression": "A",
+                "refId": "B",
+                "type": "threshold"
+              }
+            }
+          ],
+          "noDataState": "NoData",
+          "execErrState": "Error",
+          "for": "5m",
+          "annotations": {
+            "summary": "Tempmemory ingestion has not run in {{ $values.A }}s (>2h threshold)",
+            "description": "No tempmemory ingestion has been recorded in the last {{ $values.A }} seconds. This may indicate the cron job is not running, the ingestion runner is stuck, or there is a connectivity issue with InfluxDB.",
+            "runbook_url": "https://docs.chiseai.ai/runbooks/tempmemory-ingestion-stalled"
+          },
+          "labels": {
+            "severity": "critical",
+            "feature": "tempmemory",
+            "alert_type": "no_recent_run"
+          }
+        }
+      ]
+    }
+  ]
+}
