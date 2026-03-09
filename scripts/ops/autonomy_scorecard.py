@@ -126,6 +126,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Generate autonomy scorecard")
     ap.add_argument("--lookback-days", type=int, default=30)
     ap.add_argument("--output-dir", default="_bmad-output/full-pilot")
+    ap.add_argument("--output-json", help="Optional explicit json output path")
+    ap.add_argument("--output-md", help="Optional explicit markdown output path")
     args = ap.parse_args()
 
     output_dir = Path(args.output_dir)
@@ -151,11 +153,19 @@ def main() -> int:
         cadence_alerts=cadence_alerts,
         pilot_events=pilot_events,
     )
-    (output_dir / "scorecard.json").write_text(
+    scorecard["lookback_days"] = max(args.lookback_days, 1)
+
+    output_json = Path(args.output_json) if args.output_json else (output_dir / "scorecard.json")
+    output_md = Path(args.output_md) if args.output_md else (output_dir / "scorecard.md")
+
+    output_json.parent.mkdir(parents=True, exist_ok=True)
+    output_md.parent.mkdir(parents=True, exist_ok=True)
+
+    output_json.write_text(
         json.dumps(scorecard, indent=2) + "\n", encoding="utf-8"
     )
-    write_markdown(scorecard, output_dir / "scorecard.md")
-    print(f"Scorecard generated: {output_dir / 'scorecard.json'}")
+    write_markdown(scorecard, output_md)
+    print(f"Scorecard generated: {output_json}")
     return 0
 
 

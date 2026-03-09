@@ -23,7 +23,9 @@ bootstrap(load_env=True)
 
 FULL_PILOT_DIR = PROJECT_ROOT / "_bmad-output" / "full-pilot"
 SCORECARD_PATH = FULL_PILOT_DIR / "scorecard.json"
+SCORECARD_7D_PATH = FULL_PILOT_DIR / "scorecard-7d.json"
 GO_NO_GO_PATH = FULL_PILOT_DIR / "go-no-go-packet.json"
+CADENCE_STATE_PATH = PROJECT_ROOT / "_bmad-output" / "autonomy-cadence" / "state.json"
 
 
 def now_iso() -> str:
@@ -59,6 +61,21 @@ def ensure_artifacts() -> None:
         rc = run_cmd(["python3", "scripts/ops/autonomy_scorecard.py", "--lookback-days", "30"])
         if rc != 0:
             raise RuntimeError("Failed generating scorecard")
+    if not SCORECARD_7D_PATH.exists():
+        rc = run_cmd(
+            [
+                "python3",
+                "scripts/ops/autonomy_scorecard.py",
+                "--lookback-days",
+                "7",
+                "--output-json",
+                str(SCORECARD_7D_PATH),
+                "--output-md",
+                str(FULL_PILOT_DIR / "scorecard-7d.md"),
+            ]
+        )
+        if rc != 0:
+            raise RuntimeError("Failed generating 7d scorecard")
     if not GO_NO_GO_PATH.exists():
         rc = run_cmd(["python3", "scripts/ops/generate_go_no_go_packet.py"])
         if rc != 0:
@@ -69,11 +86,66 @@ def load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def build_message(scorecard: dict[str, Any], packet: dict[str, Any]) -> str:
-    cadence = scorecard.get("cadence", {})
-    alerts = scorecard.get("alerts", {})
+def pending_approvals_from_state() -> list[dict[str, Any]]:
+    if not CADENCE_STATE_PATH.exists():
+        return []
+    try:
+        state = load_json(CADENCE_STATE_PATH)
+    except Exception:
+        return []
+    jobs = state.get("jobs", {})
+    if not isinstance(jobs, dict):
+        return []
+    pending: list[dict[str, Any]] = []
+    for job_id, payload in jobs.items():
+        if not isinstance(payload, dict):
+            continue
+        msg = str(payload.get("last_error") or "")
+        if "missing approval:" in msg:
+            pending.append(
+                {
+                    "job_id": job_id,
+                    "reason": msg,
+                }
+            )
+    return pending
+
+
+def operational_score_7d(scorecard_7d: dict[str, Any], pending_approvals: list[dict[str, Any]]) -> int:
+    cadence = scorecard_7d.get("cadence", {})
+    alerts = scorecard_7d.get("alerts", {})
+    success_rate = float(cadence.get("success_rate_percent", 0.0))
+    total_alerts = int(alerts.get("total_alerts", 0))
+    failed_runs = int(cadence.get("failed_runs", 0))
+    score = success_rate - (failed_runs * 5) - (total_alerts * 2) - (len(pending_approvals) * 3)
+    return max(0, min(100, int(round(score))))
+
+
+def failure_trend(score_7d: dict[str, Any], score_30d: dict[str, Any]) -> str:
+    fail_7 = int(score_7d.get("cadence", {}).get("failed_runs", 0))
+    fail_30 = int(score_30d.get("cadence", {}).get("failed_runs", 0))
+    if fail_7 < fail_30:
+        return "improving"
+    if fail_7 > fail_30:
+        return "worsening"
+    return "stable"
+
+
+def build_message(
+    scorecard_30d: dict[str, Any], scorecard_7d: dict[str, Any], packet: dict[str, Any]
+) -> str:
+    cadence = scorecard_30d.get("cadence", {})
+    alerts = scorecard_30d.get("alerts", {})
+    cadence_7 = scorecard_7d.get("cadence", {})
     decision = packet.get("decision", "UNKNOWN")
     rationale = packet.get("rationale", "")
+    pending_approvals = pending_approvals_from_state()
+    op_score = operational_score_7d(scorecard_7d, pending_approvals)
+    trend = failure_trend(scorecard_7d, scorecard_30d)
+
+    approval_lines = ["None"]
+    if pending_approvals:
+        approval_lines = [f"{p['job_id']}" for p in pending_approvals[:3]]
 
     return "\n".join(
         [
@@ -83,11 +155,18 @@ def build_message(scorecard: dict[str, Any], packet: dict[str, Any]) -> str:
             f"Decision: {decision}",
             f"Rationale: {rationale}",
             "",
+            f"7-Day Operational Score: {op_score}/100",
+            f"7-Day Success Rate: {cadence_7.get('success_rate_percent', 0)}%",
+            f"Failure Trend (7d vs 30d): {trend}",
+            "",
             f"Cadence Success Rate: {cadence.get('success_rate_percent', 0)}%",
             f"Successful Runs: {cadence.get('success_runs', 0)}",
             f"Failed Runs: {cadence.get('failed_runs', 0)}",
             f"Dry Runs: {cadence.get('dry_runs', 0)}",
             f"Total Alerts (30d): {alerts.get('total_alerts', 0)}",
+            "",
+            "Pending Approvals:",
+            *[f"- {line}" for line in approval_lines],
             "",
             "Top Required Actions:",
             *[f"- {x}" for x in packet.get("required_actions", [])[:3]],
@@ -130,14 +209,28 @@ def main() -> int:
     if args.regenerate:
         if run_cmd(["python3", "scripts/ops/autonomy_scorecard.py", "--lookback-days", "30"]) != 0:
             return 1
+        if run_cmd(
+            [
+                "python3",
+                "scripts/ops/autonomy_scorecard.py",
+                "--lookback-days",
+                "7",
+                "--output-json",
+                str(SCORECARD_7D_PATH),
+                "--output-md",
+                str(FULL_PILOT_DIR / "scorecard-7d.md"),
+            ]
+        ) != 0:
+            return 1
         if run_cmd(["python3", "scripts/ops/generate_go_no_go_packet.py"]) != 0:
             return 1
     else:
         ensure_artifacts()
 
     scorecard = load_json(SCORECARD_PATH)
+    scorecard_7d = load_json(SCORECARD_7D_PATH)
     packet = load_json(GO_NO_GO_PATH)
-    message = build_message(scorecard, packet)
+    message = build_message(scorecard, scorecard_7d, packet)
 
     if args.dry_run:
         print(message)
