@@ -1,0 +1,67 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260309-200324-ST-LAUNCH-011
+original_story_id: ST-LAUNCH-011
+archived_at: '2026-03-09T20:03:24.252294Z'
+archive_reason: age
+archive_reason_detail: Story completed 15 days ago, exceeds 14-day threshold
+migration:
+  phase: batch_1
+  migrated_by: senior-dev
+  migration_script_version: 1.0.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260309-200324-ST-LAUNCH-011
+  id: ST-LAUNCH-011
+  status: archived
+  title: Model Retraining Trigger
+  priority: P0-CRITICAL
+  epic_id: EP-LAUNCH-003
+  completion_date: '2026-02-22'
+  merge_commit: batch4-final
+  pr_number: 257
+archived_fields:
+  description: Implement automatic model retraining triggers based on ECE degradation,
+    performance thresholds, and schedule
+  acceptance_criteria:
+  - ECE-based trigger - Retraining triggered automatically when ECE > 0.15, alert
+    sent to Discord
+  - Performance-based trigger - Retraining triggered when win rate <55% over 20 trades,
+    reason logged
+  - Scheduled trigger - Retraining triggered at scheduled time, starts within 1 hour
+  - Trigger deduplication - New trigger queued if retraining in progress, duplicates
+    within 24h ignored
+  - Pre-training validation - Training data quality validated, proceeds only if quality
+    >90%
+  notes:
+  - CRITICAL for launch - model retraining must be automatic
+  live_validation_gates:
+  - check: Set ECE to 0.18, wait for trigger
+    gate: trigger_accuracy
+    threshold: Trigger fires within 5 minutes
+  rollback_plan:
+  - action: Disable auto-trigger
+    command: redis-cli SET launch:training:auto_trigger:enabled 0
+  scope_globs:
+  - src/ml/training/retraining_trigger.py
+  - src/ml/training/training_orchestrator.py
+  - tests/test_ml/test_retraining_trigger.py
+  depends_on:
+  - ST-LAUNCH-009
+  test_strategy:
+    e2e: pytest tests/e2e/test_retraining_flow.py -v
+    integration: pytest tests/test_ml/integration/test_trigger_scheduler.py -v
+    unit: pytest tests/test_ml/test_retraining_trigger.py -v
+  sprint_id: LAUNCH-SPRINT-2
+  story_points: 5
+  fr_coverage:
+  - FR-018
+  - FR-020
+  validation_status: validated
+completion_evidence:
+  pr_number: 257
+  merge_commit: batch4-final
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-200324-ST-LAUNCH-011.yaml
+integrity:
+  original_checksum: eebf2ab41299627dbf34effbaf07b8877d2b88dd23db89d8c02c4276b8c687f3
+  archived_checksum: c5f1c704e48b8d48cd8c6375850290588fc82c9b8176c66e712a7a80571e7d0d
+  verification_date: '2026-03-09T20:03:24.252330Z'

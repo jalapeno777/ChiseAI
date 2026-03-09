@@ -1,0 +1,66 @@
+schema_version: 1.0.0
+archive_ref: ARCH-20260309-200639-ST-GOV-008
+original_story_id: ST-GOV-008
+archived_at: '2026-03-09T20:06:39.312222Z'
+archive_reason: age
+archive_reason_detail: Story completed 14 days ago, exceeds 14-day threshold
+migration:
+  phase: batch_1
+  migrated_by: senior-dev
+  migration_script_version: 1.0.0
+  verification_status: verified
+lean_status:
+  archive_ref: ARCH-20260309-200639-ST-GOV-008
+  id: ST-GOV-008
+  status: archived
+  title: Swarm Health Sentinel
+  priority: P1-HIGH
+  epic_id: EP-GOV-001
+  completion_date: '2026-02-23'
+  merge_commit: 5fc64e2
+  pr_number: LEGACY
+archived_fields:
+  description: Monitor overall swarm health with predictive alerts and auto-remediation
+  acceptance_criteria:
+  - Real-time health scoring per agent
+  - Aggregated swarm health score
+  - Predictive alerts (15 min before impact)
+  - Auto-remediation for known issues
+  - Integration with EP-NS-008 (ACP)
+  notes:
+  - 'CONSOLIDATION REMEDIATION 2026-03-08: Verified merged to main via cross-branch
+    verification'
+  - 'Merge commit: 5fc64e2 - feat(governance): implement Swarm Health Sentinel'
+  - PR number marked LEGACY due to branch deletion - evidence in docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md
+  test_results:
+    coverage_percent: 82
+    failed: 0
+    passed: 89
+    status: All tests pass, coverage exceeds target
+    total: 89
+  validation_gates:
+  - health_update_frequency: 60s
+  - alert_latency: <30s
+  - prediction_accuracy: "\u226575%"
+  completion_evidence:
+  - 6 source files (metrics, scorer, predictor, remediator, sentinel, __init__) -
+    1,694 lines
+  - 5 test files - 89 tests passing, 0 failed
+  - 'Health dimensions: performance (25%), quality (25%), reliability (25%), collaboration
+    (25%)'
+  - 15-minute lookahead prediction with configurable confidence threshold
+  - Auto-remediation with cooldown, human approval for critical actions
+  - Prometheus metrics export for Grafana integration
+  sprint_id: GOV-PHASE2-002
+  story_points: 6
+  fr_coverage:
+  - FR-GOV-008
+  validation_status: validated
+completion_evidence:
+  pr_number: LEGACY
+  merge_commit: 5fc64e2
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-200639-ST-GOV-008.yaml
+integrity:
+  original_checksum: bd167f6d2b51126e9d7f40677e34216b2525e13f0d7c080ba4f45f365a504026
+  archived_checksum: 2e102cb074c0e6214aef71480abde72525ca4fbe8120cecb4085debc6613d237
+  verification_date: '2026-03-09T20:06:39.312248Z'
