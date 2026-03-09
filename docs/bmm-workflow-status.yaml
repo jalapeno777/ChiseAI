@@ -353,23 +353,18 @@ backlog:
     health, metrics, and trends. Currently metrics exist in Redis but no visual dashboard.
   estimated_points: 5
   id: ST-MEMORY-INGEST-002
+  merge_commit: 30304ce
   notes:
   - Completion report (line 474-477) identified this as immediate Week 1 priority
   - 'Metrics available in Redis: chise:governance:consolidation:metrics:ingestion'
   - 'Status key available: bmad:chiseai:tempmemory:ingestion:status'
   - Should integrate with existing data quality monitoring infrastructure
-  implementation_commit: c286b48
-  merge_commit: null
-  note: Implementation complete in working directory, pending merge to main. Dashboard file exists at infrastructure/grafana/dashboards/tempmemory_ingestion.json
+  - 'MERGED: Dashboard committed and merged to main 2026-03-08'
   owner: TBD
-  pr_number: feature/ST-MEMORY-INGEST-002-grafana-dashboard
+  pr_number: LEGACY
   priority: P1
   related_story: ST-MEMORY-INGEST-001
-  status: implementation_complete_pending_merge
-  status_correction:
-    corrected_at: 2026-03-08T00:00:00Z
-    correction_reason: Aria verification found status mismatch - file exists in working directory but not in main
-    previous_status: planned
+  status: completed
   title: Grafana Dashboard for Tempmemory Ingestion Monitoring
 - acceptance_criteria:
   - Configurable auto-archive modes: immediate, daily, or after N days
