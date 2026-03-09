@@ -25,6 +25,8 @@ from autonomous_control_plane.config.settings import Settings
 from autonomous_control_plane.core.orchestrator import ACPOrchestrator
 from autonomous_control_plane.events.bus import Event, EventBus, EventPriority
 
+INFLUX_TOKEN = os.getenv("ACP_INFLUXDB_TOKEN") or os.getenv("INFLUXDB_TOKEN", "")
+
 
 class TestSettingsConnectionChecks:
     """Test connection health check methods in Settings."""
@@ -43,9 +45,8 @@ class TestSettingsConnectionChecks:
         assert s.influxdb.bucket == "chiseai"
         assert s.influxdb.org == "chiseai"
 
-        # Token should be the real token from terraform.tfvars
-        assert len(s.influxdb.token) > 50  # Real token is long
-        assert s.influxdb.token.startswith("xBJwtATdOa7Sig8vIi4R")
+        # Token should come from environment, never from a hardcoded default.
+        assert s.influxdb.token == INFLUX_TOKEN
 
     def test_check_redis_connection(self):
         """Test Redis connection check."""
@@ -59,6 +60,9 @@ class TestSettingsConnectionChecks:
 
     def test_check_influxdb_connection(self):
         """Test InfluxDB connection check."""
+        if not INFLUX_TOKEN:
+            pytest.skip("INFLUXDB_TOKEN / ACP_INFLUXDB_TOKEN not configured")
+
         s = Settings.from_env()
         is_healthy, message = s.check_influxdb_connection()
 
@@ -69,6 +73,9 @@ class TestSettingsConnectionChecks:
 
     def test_check_all_connections(self):
         """Test checking all persistence connections."""
+        if not INFLUX_TOKEN:
+            pytest.skip("INFLUXDB_TOKEN / ACP_INFLUXDB_TOKEN not configured")
+
         s = Settings.from_env()
         results = s.check_all_connections()
 

@@ -27,7 +27,20 @@ import os
 import sys
 import uuid
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
+
+# Ensure project root is importable for shared env bootstrap.
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+try:
+    from src.config.env_loader import bootstrap_environment
+
+    bootstrap_environment()
+except Exception:
+    pass
 
 # Configure logging
 logging.basicConfig(
@@ -38,10 +51,7 @@ logger = logging.getLogger(__name__)
 
 # InfluxDB configuration from environment or defaults
 INFLUXDB_URL = os.getenv("INFLUXDB_URL", "http://localhost:18087")
-INFLUXDB_TOKEN = os.getenv(
-    "INFLUXDB_TOKEN",
-    "REDACTED_INFLUXDB_TOKEN",
-)
+INFLUXDB_TOKEN = os.getenv("INFLUXDB_TOKEN") or os.getenv("ACP_INFLUXDB_TOKEN", "")
 INFLUXDB_ORG = os.getenv("INFLUXDB_ORG", "chiseai")
 INFLUXDB_BUCKET = os.getenv("INFLUXDB_BUCKET", "chiseai")
 

@@ -30,6 +30,7 @@ import argparse
 import contextlib
 import json
 import logging
+import os
 import sys
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -97,14 +98,39 @@ def get_redis_client() -> Any:
         return None
 
     try:
-        client = redis.Redis(
-            host="host.docker.internal",
-            port=6380,
-            decode_responses=True,
+        port = int(
+            os.getenv("REDIS_PORT")
+            or os.getenv("CHISE_REDIS_PORT")
+            or os.getenv("ACP_REDIS_PORT")
+            or "6380"
         )
-        client.ping()
-        logger.info("Connected to Redis at host.docker.internal:6380")
-        return client
+        hosts = [
+            os.getenv("REDIS_HOST"),
+            os.getenv("CHISE_REDIS_HOST"),
+            os.getenv("ACP_REDIS_HOST"),
+            "chiseai-redis",
+            "host.docker.internal",
+            "localhost",
+        ]
+        hosts = [h for i, h in enumerate(hosts) if h and h not in hosts[:i]]
+        last_error: Exception | None = None
+        for host in hosts:
+            try:
+                client = redis.Redis(
+                    host=host,
+                    port=port,
+                    decode_responses=True,
+                )
+                client.ping()
+                logger.info(f"Connected to Redis at {host}:{port}")
+                return client
+            except Exception as e:
+                last_error = e
+                continue
+        raise RuntimeError(
+            f"Failed Redis connection across host candidates: {hosts}. "
+            f"Last error: {last_error}"
+        )
     except Exception as e:
         logger.warning(f"Failed to connect to Redis: {e}")
         return None

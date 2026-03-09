@@ -26,6 +26,11 @@ Run these gates before PR/merge. If a referenced script is missing, explicitly n
 4. Iterloop compliance (if present)
    - If `scripts/validate_iterloop_compliance.py` exists, run:
      - `python3 scripts/validate_iterloop_compliance.py --story-id=<story_id>`
+   - Forward-strict default:
+     - Do **not** pass `--include-legacy` for normal/new story work.
+     - Legacy items are controlled via `docs/governance/legacy-exemptions.yaml`.
+     - To refresh the baseline manifest deterministically:
+       - `python3 scripts/governance/manage_legacy_exemptions.py --bootstrap-all --no-include-existing --generated-from validator_findings_baseline_<YYYY-MM-DD>`
 
 5. Metacognition compliance (REQUIRED for completed stories)
    - **For P0/P1 stories (BLOCKING GATE):**
@@ -33,6 +38,8 @@ Run these gates before PR/merge. If a referenced script is missing, explicitly n
        ```bash
        python3 scripts/validation/validate_metacog_compliance.py --story-id=<story_id> --strict --require-artifacts
        ```
+     - Forward-strict default:
+       - Do **not** pass `--include-legacy` for normal/new story work.
      - `--require-artifacts` requires Redis availability and validates:
        - `bmad:chiseai:metacog:prediction:story:<story_id>`
        - `bmad:chiseai:metacog:outcome:story:<story_id>`
@@ -63,6 +70,8 @@ Run these gates before PR/merge. If a referenced script is missing, explicitly n
 6. Insight-governance conformance (if present)
    - If `scripts/validation/validate_insight_governance.py` exists, run:
      - `python3 scripts/validation/validate_insight_governance.py --story-id=<story_id> --strict --tp-session-artifact-mode=warn --tp-session-self-heal`
+   - Forward-strict default:
+     - Do **not** pass `--include-legacy` for normal/new story work.
    - Phased enforcement policy (default autonomous mode):
      - Week 1: `--tp-session-artifact-mode=warn` (non-blocking warning + self-heal).
      - Week 2+: use `--tp-session-artifact-mode=strict` only for `P0/P1` and completed stories.

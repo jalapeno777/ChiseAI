@@ -9,6 +9,15 @@ import os
 from dataclasses import dataclass
 from typing import Any
 
+try:
+    # Ensure .env values are available when running local scripts/services directly.
+    from src.config.env_loader import bootstrap_environment
+
+    bootstrap_environment()
+except Exception:
+    # Never fail module import due to optional env bootstrap behavior.
+    pass
+
 
 @dataclass
 class RedisConfig:
@@ -69,10 +78,7 @@ class InfluxDBConfig:
     port: int = 18087
     bucket: str = "chiseai"
     org: str = "chiseai"
-    # Token from infrastructure/terraform/terraform.tfvars
-    token: str = (
-        "REDACTED_INFLUXDB_TOKEN"
-    )
+    token: str = ""
 
     @property
     def url(self) -> str:
@@ -82,14 +88,13 @@ class InfluxDBConfig:
     @classmethod
     def from_env(cls) -> InfluxDBConfig:
         """Load from environment variables."""
-        # Default token from terraform.tfvars - can be overridden via env var
-        default_token = "REDACTED_INFLUXDB_TOKEN"
         return cls(
             host=os.getenv("ACP_INFLUXDB_HOST", "chiseai-influxdb"),
             port=int(os.getenv("ACP_INFLUXDB_PORT", "18087")),
             bucket=os.getenv("ACP_INFLUXDB_BUCKET", "chiseai"),
             org=os.getenv("ACP_INFLUXDB_ORG", "chiseai"),
-            token=os.getenv("ACP_INFLUXDB_TOKEN", default_token),
+            token=os.getenv("ACP_INFLUXDB_TOKEN")
+            or os.getenv("INFLUXDB_TOKEN", ""),
         )
 
 

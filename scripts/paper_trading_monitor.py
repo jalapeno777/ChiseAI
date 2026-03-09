@@ -27,6 +27,18 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+# Ensure project root is importable for shared env bootstrap.
+PROJECT_DIR = Path(__file__).resolve().parent.parent
+if str(PROJECT_DIR) not in sys.path:
+    sys.path.insert(0, str(PROJECT_DIR))
+
+try:
+    from src.config.env_loader import bootstrap_environment
+
+    bootstrap_environment()
+except Exception:
+    pass
+
 # Configure logging
 LOG_DIR = Path(__file__).parent.parent / "logs"
 LOG_DIR.mkdir(exist_ok=True)
@@ -43,17 +55,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Configuration
-PROJECT_DIR = Path(__file__).parent.parent
 PID_FILE = Path(tempfile.gettempdir()) / "continuous_paper_emitter.pid"
 STATUS_FILE = Path(tempfile.gettempdir()) / "continuous_paper_emitter.status"
 EMITTER_SCRIPT = PROJECT_DIR / "scripts" / "continuous_paper_emitter.py"
 MANAGER_SCRIPT = PROJECT_DIR / "scripts" / "paper_trading_manager.sh"
 
 INFLUXDB_URL = os.getenv("INFLUXDB_URL", "http://host.docker.internal:18087")
-INFLUXDB_TOKEN = os.getenv(
-    "INFLUXDB_TOKEN",
-    "REDACTED_INFLUXDB_TOKEN",
-)
+INFLUXDB_TOKEN = os.getenv("INFLUXDB_TOKEN") or os.getenv("ACP_INFLUXDB_TOKEN", "")
 INFLUXDB_ORG = os.getenv("INFLUXDB_ORG", "chiseai")
 INFLUXDB_BUCKET = os.getenv("INFLUXDB_BUCKET", "chiseai")
 

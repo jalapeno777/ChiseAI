@@ -20,6 +20,7 @@ Cron Setup:
 
 import argparse
 import logging
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -48,15 +49,36 @@ def create_redis_client() -> Any | None:
     try:
         import redis
 
-        # Try to connect to Redis
-        client = redis.Redis(
-            host="host.docker.internal",
-            port=6380,
-            decode_responses=True,
+        port = int(
+            os.getenv("REDIS_PORT")
+            or os.getenv("CHISE_REDIS_PORT")
+            or os.getenv("ACP_REDIS_PORT")
+            or "6380"
         )
-        client.ping()
-        logger.info("Redis client connected")
-        return client
+        db = int(os.getenv("REDIS_DB", "0"))
+        hosts = [
+            os.getenv("REDIS_HOST"),
+            os.getenv("CHISE_REDIS_HOST"),
+            os.getenv("ACP_REDIS_HOST"),
+            "chiseai-redis",
+            "host.docker.internal",
+            "localhost",
+        ]
+        hosts = [h for i, h in enumerate(hosts) if h and h not in hosts[:i]]
+        for host in hosts:
+            try:
+                client = redis.Redis(
+                    host=host,
+                    port=port,
+                    db=db,
+                    decode_responses=True,
+                )
+                client.ping()
+                logger.info(f"Redis client connected: {host}:{port}/{db}")
+                return client
+            except Exception:
+                continue
+        return None
     except Exception as e:
         logger.warning(f"Redis not available: {e}")
         return None
@@ -67,12 +89,27 @@ def create_qdrant_client() -> Any | None:
     try:
         from qdrant_client import QdrantClient
 
-        client = QdrantClient(
-            host="host.docker.internal",
-            port=6334,
-        )
-        logger.info("Qdrant client connected")
-        return client
+        port = int(os.getenv("QDRANT_PORT", "6334"))
+        hosts = [
+            os.getenv("QDRANT_HOST"),
+            os.getenv("CHISE_QDRANT_HOST"),
+            "chiseai-qdrant",
+            "host.docker.internal",
+            "localhost",
+        ]
+        hosts = [h for i, h in enumerate(hosts) if h and h not in hosts[:i]]
+        for host in hosts:
+            try:
+                client = QdrantClient(
+                    host=host,
+                    port=port,
+                )
+                client.get_collections()
+                logger.info(f"Qdrant client connected: {host}:{port}")
+                return client
+            except Exception:
+                continue
+        return None
     except Exception as e:
         logger.warning(f"Qdrant not available: {e}")
         return None

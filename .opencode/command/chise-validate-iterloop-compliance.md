@@ -18,6 +18,13 @@ python3 scripts/validation/validate_insight_governance.py --story-id=<story_id> 
 python3 scripts/validation/validate_metacog_compliance.py --story-id=<story_id> --strict
 ```
 
+Forward-strict default:
+- Run without `--include-legacy` for active/new story validation.
+- Legacy artifacts are controlled by `docs/governance/legacy-exemptions.yaml`.
+- Refresh legacy manifest with:
+  - `python3 scripts/governance/manage_legacy_exemptions.py --bootstrap-all --no-include-existing --generated-from validator_findings_baseline_<YYYY-MM-DD>`
+- Use `--include-legacy` only for debt-audit sweeps.
+
 ## Checks Performed
 - Acceptance criteria defined in Redis iterlog
 - Proper phase tracking

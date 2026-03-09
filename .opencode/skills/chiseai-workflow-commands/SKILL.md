@@ -78,6 +78,11 @@ Prefer repeatable workflow execution through `.opencode/command/*` rather than a
 - `.opencode/command/chise-skill-rollback.md`
 - `.opencode/command/chise-skill-weekly.md`
 
+### Full pilot autonomy loops:
+- `.opencode/command/chise-autonomy-cadence-tick.md`
+- `.opencode/command/chise-full-pilot-run.md`
+- `.opencode/command/chise-full-pilot-e2e.md`
+
 ### PR review bot setup + review:
 - `.opencode/command/chise-gitea-review-bot-setup.md`
 - `.opencode/command/chise-pr-review-bot.md`
