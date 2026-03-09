@@ -98,6 +98,11 @@ Verify:
 tail -f /home/tacopants/projects/ChiseAI/logs/autonomy-cadence/tick-$(date -u +%Y%m%d).log
 ```
 
+Daily executive summary post to Discord:
+```bash
+0 13 * * * /home/tacopants/projects/ChiseAI/scripts/cron/full_pilot_daily_summary.sh
+```
+
 ## 7. Troubleshooting
 
 No jobs run:
