@@ -5,20 +5,18 @@
 #
 # MIGRATION EPIC: Archive long-form fields for completed stories
 #
-# CURRENT PHASE: Phase 3 (Batch 2) - EXECUTED
-# - Phase 3 Assessment Date: 2026-03-09
-# - Phase 3 Execution Date: 2026-03-09
-# - Stories archived in Phase 3: 10
-#   * ST-LAUNCH-011 → ARCH-20260309-211613-ST-LAUNCH-011
-#   * ST-LAUNCH-018 → ARCH-20260309-211613-ST-LAUNCH-018
-#   * ST-GOV-003 → ARCH-20260309-211613-ST-GOV-003
-#   * ST-GOV-004 → ARCH-20260309-211613-ST-GOV-004
-#   * ST-GOV-005 → ARCH-20260309-211613-ST-GOV-005
-#   * ST-GOV-006 → ARCH-20260309-211613-ST-GOV-006
-#   * ST-GOV-007 → ARCH-20260309-211613-ST-GOV-007
-#   * ST-GOV-008 → ARCH-20260309-211613-ST-GOV-008
-#   * ST-GOV-009 → ARCH-20260309-211614-ST-GOV-009
-#   * ST-GOV-010 → ARCH-20260309-211614-ST-GOV-010
+# CURRENT PHASE: Phase 4 (Full Automation) - ACTIVE
+# - Phase 4 Activation Date: 2026-03-09
+# - Phase 4 Components Deployed:
+#   * Preflight Guard: scripts/workflow/preflight_archive.py
+#   * Automated Archive: scripts/workflow/automated_archive.py
+#   * Daily Health Report: scripts/workflow/daily_health_report.py
+#   * Discord Notifier: scripts/notifications/discord_workflow_notifier.py
+#   * CI Pipeline: .woodpecker/workflow-archive.yaml
+#   * Runbook: docs/runbooks/workflow-archival-automation.md
+# - Automation Schedule:
+#   * Weekly Archival: Sundays at 02:00 UTC (cron: workflow-archive-weekly)
+#   * Daily Health Check: Every day at 06:00 UTC (cron: workflow-archive-daily)
 # - Total archived to date: 20 stories
 # - Archive location: docs/archives/workflow-status/entries/
 # - Schema: docs/archives/workflow-status/schema/archive-entry-schema.yaml
@@ -28,12 +26,16 @@
 #   Phase 1 (Pilot): ✓ COMPLETE
 #   Phase 2 (Batch 1): ✓ COMPLETE
 #   Phase 3 (Batch 2): ✓ EXECUTED
-#   Phase 4 (Full Automation): PLANNED
+#   Phase 4 (Full Automation): ✓ ACTIVE
 #
 # SCRIPTS:
 #   - Migration: scripts/workflow/migration/archive_stories.py
 #   - Verification: scripts/workflow/migration/verify_archive.py
 #   - Rollback: scripts/workflow/migration/rollback_archive.py
+#   - Preflight: scripts/workflow/preflight_archive.py
+#   - Automated: scripts/workflow/automated_archive.py
+#   - Health Report: scripts/workflow/daily_health_report.py
+#   - Discord Notifier: scripts/notifications/discord_workflow_notifier.py
 #
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
