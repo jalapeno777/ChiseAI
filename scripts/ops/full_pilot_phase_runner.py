@@ -144,22 +144,26 @@ def phase3(*, dry_run: bool) -> list[StepResult]:
 
 
 def phase4(*, dry_run: bool) -> list[StepResult]:
-    cmd = ["python3", "scripts/ops/autonomy_scorecard.py", "--lookback-days", "30"]
-    result = run_step("autonomy_scorecard", cmd, dry_run=dry_run)
+    steps = [
+        ("autonomy_scorecard", ["python3", "scripts/ops/autonomy_scorecard.py", "--lookback-days", "30"]),
+        ("go_no_go_packet", ["python3", "scripts/ops/generate_go_no_go_packet.py"]),
+    ]
+    results = [run_step(name, cmd, dry_run=dry_run) for name, cmd in steps]
+    ok = all(r.exit_code == 0 for r in results)
     publish_event(
         build_event(
             event_type="experiment.candidate.created",
             producer="full_pilot_phase_runner",
-            severity="info" if result.exit_code == 0 else "high",
+            severity="info" if ok else "high",
             payload={
                 "phase": "phase4",
-                "ok": result.exit_code == 0,
-                "step": result.__dict__,
+                "ok": ok,
+                "steps": [r.__dict__ for r in results],
             },
         ),
         output_dir=OUTPUT_DIR,
     )
-    return [result]
+    return results
 
 
 def summarize(label: str, results: list[StepResult]) -> tuple[bool, dict[str, Any]]:

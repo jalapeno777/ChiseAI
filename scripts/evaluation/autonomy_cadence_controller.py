@@ -80,6 +80,10 @@ class Job:
     risk_level: str
     command: list[str]
     required_flags: list[str]
+    preconditions: list[str]
+    required_approvals: list[str]
+    idempotency_key: str | None
+    retry_policy: dict[str, Any]
 
 
 def load_registry(path: Path) -> tuple[dict[str, Any], list[Job]]:
@@ -112,6 +116,24 @@ def load_registry(path: Path) -> tuple[dict[str, Any], list[Job]]:
                     for v in row.get("required_flags", [])
                     if str(v).strip()
                 ],
+                preconditions=[
+                    str(v).strip()
+                    for v in row.get("preconditions", [])
+                    if str(v).strip()
+                ],
+                required_approvals=[
+                    str(v).strip()
+                    for v in row.get("required_approvals", [])
+                    if str(v).strip()
+                ],
+                idempotency_key=(
+                    str(row.get("idempotency_key", "")).strip() or None
+                ),
+                retry_policy=(
+                    row.get("retry_policy", {})
+                    if isinstance(row.get("retry_policy", {}), dict)
+                    else {}
+                ),
             )
         )
     return raw, jobs
@@ -185,6 +207,44 @@ def is_flag_enabled(flag_name: str) -> bool:
     env_name = f"CHISE_FLAG_{flag_name.upper().replace('-', '_')}"
     raw = (os.getenv(env_name) or "").strip().lower()
     return raw in {"1", "true", "yes", "on"}
+
+
+def evaluate_preconditions(job: Job) -> tuple[bool, str | None]:
+    for cond in job.preconditions:
+        if cond.startswith("env:"):
+            expr = cond.replace("env:", "", 1)
+            if "=" in expr:
+                key, expected = expr.split("=", 1)
+                if (os.getenv(key, "") or "").strip().lower() != expected.strip().lower():
+                    return False, f"precondition failed: {cond}"
+            else:
+                if not os.getenv(expr.strip()):
+                    return False, f"precondition failed: {cond}"
+        elif cond.startswith("file_exists:"):
+            p = Path(cond.replace("file_exists:", "", 1).strip())
+            if not p.exists():
+                return False, f"precondition failed: {cond}"
+    return True, None
+
+
+def approvals_granted(job: Job) -> tuple[bool, str | None]:
+    for approval in job.required_approvals:
+        env_name = f"CHISE_APPROVAL_{approval.upper().replace('-', '_')}"
+        raw = (os.getenv(env_name, "") or "").strip().lower()
+        if raw not in {"1", "true", "yes", "approved"}:
+            return False, f"missing approval: {approval} ({env_name})"
+    return True, None
+
+
+def resolved_idempotency_key(template: str | None) -> str | None:
+    if not template:
+        return None
+    now = now_utc()
+    value = template
+    value = value.replace("{date}", now.strftime("%Y-%m-%d"))
+    value = value.replace("{week}", now.strftime("%G-W%V"))
+    value = value.replace("{month}", now.strftime("%Y-%m"))
+    return value
 
 
 def should_run(job: Job, job_state: dict[str, Any], force: bool) -> bool:
@@ -286,6 +346,18 @@ def run_job(job: Job, *, dry_run: bool, output_dir: Path, job_state: dict[str, A
         if not is_flag_enabled(flag):
             logger.info(f"Skipping {job.job_id}: required flag disabled ({flag})")
             return 0
+    ok, reason = evaluate_preconditions(job)
+    if not ok:
+        logger.info(f"Skipping {job.job_id}: {reason}")
+        return 0
+    ok, reason = approvals_granted(job)
+    if not ok:
+        logger.info(f"Skipping {job.job_id}: {reason}")
+        return 0
+    idem = resolved_idempotency_key(job.idempotency_key)
+    if idem and job_state.get("last_idempotency_key") == idem and job_state.get("last_status") == "success":
+        logger.info(f"Skipping {job.job_id}: idempotency key already succeeded ({idem})")
+        return 0
 
     started_at = iso()
     job_state["last_started_at"] = started_at
@@ -303,20 +375,31 @@ def run_job(job: Job, *, dry_run: bool, output_dir: Path, job_state: dict[str, A
             },
         )
         job_state["last_status"] = "dry_run"
+        if idem:
+            job_state["last_idempotency_key"] = idem
         job_state.pop("running_since", None)
         return 0
 
     logger.info(f"Running {job.job_id}: {' '.join(job.command)}")
     started_ts = time.time()
+    attempts = max(int(job.retry_policy.get("max_retries", 0)), 0) + 1
+    backoff = max(int(job.retry_policy.get("backoff_seconds", 0)), 0)
     try:
-        proc = subprocess.run(
-            job.command,
-            cwd=PROJECT_ROOT,
-            capture_output=True,
-            text=True,
-            timeout=job.timeout_seconds,
-            check=False,
-        )
+        proc: subprocess.CompletedProcess[str] | None = None
+        for attempt in range(1, attempts + 1):
+            proc = subprocess.run(
+                job.command,
+                cwd=PROJECT_ROOT,
+                capture_output=True,
+                text=True,
+                timeout=job.timeout_seconds,
+                check=False,
+            )
+            if proc.returncode == 0:
+                break
+            if attempt < attempts and backoff > 0:
+                time.sleep(backoff)
+        assert proc is not None
         duration = time.time() - started_ts
         ok = proc.returncode == 0
         status = "success" if ok else "failed"
@@ -337,6 +420,8 @@ def run_job(job: Job, *, dry_run: bool, output_dir: Path, job_state: dict[str, A
         job_state["last_error"] = proc.stderr[-500:] if not ok else None
         if ok:
             job_state["last_success_at"] = iso()
+            if idem:
+                job_state["last_idempotency_key"] = idem
         return 0 if ok else 1
     except subprocess.TimeoutExpired:
         duration = time.time() - started_ts

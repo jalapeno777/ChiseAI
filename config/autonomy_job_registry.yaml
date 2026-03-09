@@ -9,6 +9,12 @@ jobs:
     cadence: 6h
     timeout_seconds: 300
     risk_level: low
+    preconditions:
+      - file_exists:scripts/evaluation/run_mini_eval.py
+    idempotency_key: ops.kpi_ingest_6h:{date}
+    retry_policy:
+      max_retries: 1
+      backoff_seconds: 2
     command:
       - python3
       - scripts/evaluation/run_mini_eval.py
@@ -18,6 +24,12 @@ jobs:
     cadence: daily
     timeout_seconds: 600
     risk_level: low
+    preconditions:
+      - file_exists:scripts/evaluation/run_daily_trends.py
+    idempotency_key: ops.daily_trends:{date}
+    retry_policy:
+      max_retries: 1
+      backoff_seconds: 2
     command:
       - python3
       - scripts/evaluation/run_daily_trends.py
@@ -27,6 +39,12 @@ jobs:
     cadence: daily
     timeout_seconds: 600
     risk_level: low
+    preconditions:
+      - file_exists:scripts/standup/generate_daily_reflection_report.py
+    idempotency_key: governance.daily_reflection:{date}
+    retry_policy:
+      max_retries: 0
+      backoff_seconds: 0
     command:
       - python3
       - scripts/standup/generate_daily_reflection_report.py
@@ -36,6 +54,10 @@ jobs:
     cadence: weekly
     timeout_seconds: 300
     risk_level: low
+    idempotency_key: governance.metacog_weekly:{week}
+    retry_policy:
+      max_retries: 0
+      backoff_seconds: 0
     command:
       - python3
       - scripts/validation/validate_metacog_compliance.py
@@ -46,6 +68,10 @@ jobs:
     cadence: daily
     timeout_seconds: 900
     risk_level: medium
+    idempotency_key: memory.daily_sweep:{date}
+    retry_policy:
+      max_retries: 1
+      backoff_seconds: 5
     command:
       - python3
       - scripts/ops/memory_sweep.py
@@ -56,6 +82,10 @@ jobs:
     cadence: weekly
     timeout_seconds: 600
     risk_level: low
+    idempotency_key: skills.autonomy_weekly:{week}
+    retry_policy:
+      max_retries: 0
+      backoff_seconds: 0
     command:
       - python3
       - scripts/ops/skill_autonomy_tick.py
@@ -66,6 +96,10 @@ jobs:
     cadence: weekly
     timeout_seconds: 600
     risk_level: medium
+    idempotency_key: strategy.experiment_triage_weekly:{week}
+    retry_policy:
+      max_retries: 1
+      backoff_seconds: 3
     command:
       - python3
       - scripts/ops/ingest_skill_backlog_candidates.py
@@ -76,6 +110,10 @@ jobs:
     cadence: weekly
     timeout_seconds: 300
     risk_level: medium
+    idempotency_key: strategy.canary_review_weekly:{week}
+    retry_policy:
+      max_retries: 0
+      backoff_seconds: 0
     command:
       - python3
       - scripts/canary_auto_eval.py
@@ -86,6 +124,10 @@ jobs:
     cadence: daily
     timeout_seconds: 1800
     risk_level: medium
+    idempotency_key: pilot.phase2_daily:{date}
+    retry_policy:
+      max_retries: 1
+      backoff_seconds: 3
     command:
       - python3
       - scripts/ops/full_pilot_phase_runner.py
@@ -97,6 +139,12 @@ jobs:
     cadence: weekly
     timeout_seconds: 1800
     risk_level: medium
+    required_approvals:
+      - strategy-autopilot
+    idempotency_key: pilot.phase3_weekly:{week}
+    retry_policy:
+      max_retries: 0
+      backoff_seconds: 0
     command:
       - python3
       - scripts/ops/full_pilot_phase_runner.py
@@ -108,6 +156,10 @@ jobs:
     cadence: monthly
     timeout_seconds: 900
     risk_level: low
+    idempotency_key: pilot.phase4_monthly:{month}
+    retry_policy:
+      max_retries: 0
+      backoff_seconds: 0
     command:
       - python3
       - scripts/ops/full_pilot_phase_runner.py
