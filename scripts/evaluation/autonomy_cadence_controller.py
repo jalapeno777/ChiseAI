@@ -353,6 +353,19 @@ def run_job(job: Job, *, dry_run: bool, output_dir: Path, job_state: dict[str, A
     ok, reason = approvals_granted(job)
     if not ok:
         logger.info(f"Skipping {job.job_id}: {reason}")
+        job_state["last_status"] = "awaiting_approval"
+        job_state["last_error"] = reason
+        approval_alert_key = f"{reason}|{resolved_idempotency_key(job.idempotency_key) or now_utc().strftime('%Y-%m-%d')}"
+        if job_state.get("last_approval_alert_key") != approval_alert_key:
+            emit_alert(
+                output_dir=output_dir,
+                alert_type="approval_required",
+                job_id=job.job_id,
+                severity="medium",
+                message=reason or "Approval required",
+                details={"required_approvals": job.required_approvals},
+            )
+            job_state["last_approval_alert_key"] = approval_alert_key
         return 0
     idem = resolved_idempotency_key(job.idempotency_key)
     if idem and job_state.get("last_idempotency_key") == idem and job_state.get("last_status") == "success":

@@ -16,6 +16,11 @@ Dry-run preview without posting:
 python3 scripts/ops/post_daily_full_pilot_summary.py --regenerate --dry-run
 ```
 
+Includes:
+- 7-day operational score
+- failure trend (7d vs 30d)
+- pending approval jobs (for guarded Phase 3 actions)
+
 Cron wrapper:
 
 ```bash
