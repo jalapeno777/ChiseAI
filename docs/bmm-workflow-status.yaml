@@ -414,8 +414,9 @@ backlog:
   - Reduces ingestion failures due to malformed frontmatter
   - Consistent frontmatter quality improves semantic search quality
   implementation_commit: 2c2bc9d
-  merge_commit: 0d6c9b9
+  merge_commit: 07698c5
   note: Merged to main. Files added - validate_frontmatter.py, frontmatter_validator.py
+  audit_note: Merge commit corrected per Party Mode audit 2026-03-09
   owner: TBD
   pr_number: feature/ST-MEMORY-INGEST-004-frontmatter-hook
   priority: P2
