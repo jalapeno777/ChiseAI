@@ -9,9 +9,37 @@ mkdir -p _bmad-output/ci
 export PYTHONPATH="$(pwd)/src:$(python3 -m site --user-site)"
 export PYTHONNOUSERSITE=1
 
+# PHASE 3: Parse command line arguments
 SCOPE_MODE="full"
-if [ "${1:-}" = "--merged-only" ]; then
-  SCOPE_MODE="merged-only"
+PARALLEL_MODE=""
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --merged-only)
+      SCOPE_MODE="merged-only"
+      shift
+      ;;
+    --parallel)
+      PARALLEL_MODE="1"
+      shift
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
+# PHASE 3: Configure parallel test execution
+PARALLEL_ARGS=""
+if [ "${PARALLEL_MODE:-}" = "1" ]; then
+  WORKERS="${PYTEST_WORKERS:-auto}"
+  MAX_WORKERS="${PYTEST_MAX_WORKERS:-4}"
+  if [ "$WORKERS" = "auto" ]; then
+    # Auto-detect CPU count and cap at MAX_WORKERS
+    CPU_COUNT=$(nproc 2>/dev/null || echo 1)
+    WORKERS=$((CPU_COUNT > MAX_WORKERS ? MAX_WORKERS : CPU_COUNT))
+  fi
+  PARALLEL_ARGS="-n $WORKERS"
+  echo "PHASE 3: Parallel test execution enabled with $WORKERS workers"
 fi
 
 # Swarm context is enforced by a dedicated Woodpecker step.
@@ -123,6 +151,7 @@ if [ "$SCOPE_MODE" = "merged-only" ]; then
 
   printf "Merged-only pytest targets (%s): %s\n" "${#TARGETS[@]}" "${TARGETS[*]}"
   python3 -m pytest \
+    $PARALLEL_ARGS \
     --junitxml=_bmad-output/ci/pytest-junit.xml \
     "${TARGETS[@]}" \
     2>&1 | tee _bmad-output/ci/local-ci.log
@@ -165,6 +194,7 @@ for batch_dir in "${TEST_DIRS[@]}"; do
   if python3 -c "import pytest_cov" >/dev/null 2>&1; then
     python3 -m pytest \
       "$batch_dir" \
+      $PARALLEL_ARGS \
       --cov=src \
       --cov-report=term-missing \
       --cov-append \
@@ -175,13 +205,16 @@ for batch_dir in "${TEST_DIRS[@]}"; do
     echo "pytest-cov not installed; running pytest without coverage enforcement" >&2
     python3 -m pytest \
       "$batch_dir" \
+      $PARALLEL_ARGS \
       $FORKED_ARGS \
       --junitxml="_bmad-output/ci/pytest-junit-${batch_dir//\//_}.xml" \
       2>&1 || echo "$batch_dir" >> "$BATCH_TMP"
   fi
   
-  # Small delay between batches to allow file handle cleanup
-  sleep 1
+  # Small delay between batches to allow file handle cleanup (only in non-parallel mode)
+  if [ -z "$PARALLEL_MODE" ]; then
+    sleep 1
+  fi
 done
 
 # Check for batch failures
