@@ -1,7 +1,7 @@
 schema_version: 1.0.0
-archive_ref: ARCH-20260309-200639-ST-GOV-007
+archive_ref: ARCH-20260309-211613-ST-GOV-007
 original_story_id: ST-GOV-007
-archived_at: '2026-03-09T20:06:39.310379Z'
+archived_at: '2026-03-09T21:16:13.969070Z'
 archive_reason: age
 archive_reason_detail: Story completed 14 days ago, exceeds 14-day threshold
 migration:
@@ -10,7 +10,7 @@ migration:
   migration_script_version: 1.0.0
   verification_status: verified
 lean_status:
-  archive_ref: ARCH-20260309-200639-ST-GOV-007
+  archive_ref: ARCH-20260309-211613-ST-GOV-007
   id: ST-GOV-007
   status: archived
   title: Retrieval Quality Evaluator
@@ -58,8 +58,8 @@ archived_fields:
 completion_evidence:
   pr_number: LEGACY
   merge_commit: 437fa8c
-archive_location: docs/archives/workflow-status/entries/ARCH-20260309-200639-ST-GOV-007.yaml
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-211613-ST-GOV-007.yaml
 integrity:
   original_checksum: dfccd709c0ac693ef4db9102b4125c6862b19c5244ce4124ce2e76decac9df70
-  archived_checksum: af9c3ac422c8dd189cf360c8ae814eba40fe4b6a3b7798cf5589243e86d483e3
-  verification_date: '2026-03-09T20:06:39.310405Z'
+  archived_checksum: e2cdb9178a9ee194015bfd81bd116ca59e8ace80577698373d30a60944ab043e
+  verification_date: '2026-03-09T21:16:13.969117Z'

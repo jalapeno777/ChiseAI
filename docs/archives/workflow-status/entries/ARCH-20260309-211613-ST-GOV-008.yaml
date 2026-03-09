@@ -1,7 +1,7 @@
 schema_version: 1.0.0
-archive_ref: ARCH-20260309-200639-ST-GOV-008
+archive_ref: ARCH-20260309-211613-ST-GOV-008
 original_story_id: ST-GOV-008
-archived_at: '2026-03-09T20:06:39.312222Z'
+archived_at: '2026-03-09T21:16:13.989374Z'
 archive_reason: age
 archive_reason_detail: Story completed 14 days ago, exceeds 14-day threshold
 migration:
@@ -10,7 +10,7 @@ migration:
   migration_script_version: 1.0.0
   verification_status: verified
 lean_status:
-  archive_ref: ARCH-20260309-200639-ST-GOV-008
+  archive_ref: ARCH-20260309-211613-ST-GOV-008
   id: ST-GOV-008
   status: archived
   title: Swarm Health Sentinel
@@ -59,8 +59,8 @@ archived_fields:
 completion_evidence:
   pr_number: LEGACY
   merge_commit: 5fc64e2
-archive_location: docs/archives/workflow-status/entries/ARCH-20260309-200639-ST-GOV-008.yaml
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-211613-ST-GOV-008.yaml
 integrity:
   original_checksum: bd167f6d2b51126e9d7f40677e34216b2525e13f0d7c080ba4f45f365a504026
-  archived_checksum: 2e102cb074c0e6214aef71480abde72525ca4fbe8120cecb4085debc6613d237
-  verification_date: '2026-03-09T20:06:39.312248Z'
+  archived_checksum: a421a3b69c0138a91d8ecd687b178d76c6a97106b200a642aa69213cf48a6ab7
+  verification_date: '2026-03-09T21:16:13.989425Z'

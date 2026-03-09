@@ -1,7 +1,7 @@
 schema_version: 1.0.0
-archive_ref: ARCH-20260309-200324-ST-GOV-003
+archive_ref: ARCH-20260309-211613-ST-GOV-003
 original_story_id: ST-GOV-003
-archived_at: '2026-03-09T20:03:24.258025Z'
+archived_at: '2026-03-09T21:16:13.912328Z'
 archive_reason: age
 archive_reason_detail: Story completed 14 days ago, exceeds 14-day threshold
 migration:
@@ -10,7 +10,7 @@ migration:
   migration_script_version: 1.0.0
   verification_status: verified
 lean_status:
-  archive_ref: ARCH-20260309-200324-ST-GOV-003
+  archive_ref: ARCH-20260309-211613-ST-GOV-003
   id: ST-GOV-003
   status: archived
   title: Task Decomposition Sentinel
@@ -68,8 +68,8 @@ archived_fields:
 completion_evidence:
   pr_number: LEGACY
   merge_commit: eba2024
-archive_location: docs/archives/workflow-status/entries/ARCH-20260309-200324-ST-GOV-003.yaml
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-211613-ST-GOV-003.yaml
 integrity:
   original_checksum: 18c1c9e9f5a4646004ec1ddf46c28501b76be696346eb23f866b0bc58bec05b1
-  archived_checksum: 53eb1d191ff192eebeda47914f8d3c3df40a75b3fbf73c120515e4f68c366419
-  verification_date: '2026-03-09T20:03:24.258066Z'
+  archived_checksum: 8db7c5cfa001a886492c4a7917a1fa4efea8e8b920c659679301e20dd9c32e4b
+  verification_date: '2026-03-09T21:16:13.912361Z'

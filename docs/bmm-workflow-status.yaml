@@ -5,100 +5,35 @@
 #
 # MIGRATION EPIC: Archive long-form fields for completed stories
 #
-# CURRENT PHASE: Phase 3 (Batch 2) - COMPLETE
+# CURRENT PHASE: Phase 3 (Batch 2) - EXECUTED
 # - Phase 3 Assessment Date: 2026-03-09
-# - Stories checked: 56
-# - New archives: 0 (all >30 day stories already archived in Phases 1-2)
+# - Phase 3 Execution Date: 2026-03-09
+# - Stories archived in Phase 3: 10
+#   * ST-LAUNCH-011 → ARCH-20260309-211613-ST-LAUNCH-011
+#   * ST-LAUNCH-018 → ARCH-20260309-211613-ST-LAUNCH-018
+#   * ST-GOV-003 → ARCH-20260309-211613-ST-GOV-003
+#   * ST-GOV-004 → ARCH-20260309-211613-ST-GOV-004
+#   * ST-GOV-005 → ARCH-20260309-211613-ST-GOV-005
+#   * ST-GOV-006 → ARCH-20260309-211613-ST-GOV-006
+#   * ST-GOV-007 → ARCH-20260309-211613-ST-GOV-007
+#   * ST-GOV-008 → ARCH-20260309-211613-ST-GOV-008
+#   * ST-GOV-009 → ARCH-20260309-211614-ST-GOV-009
+#   * ST-GOV-010 → ARCH-20260309-211614-ST-GOV-010
 # - Total archived to date: 20 stories
 # - Archive location: docs/archives/workflow-status/entries/
 # - Schema: docs/archives/workflow-status/schema/archive-entry-schema.yaml
 #
 # PHASE GATES:
 #   Phase 0 (Foundation): ✓ COMPLETE
-#     - Archive schema defined
-#     - Migration scripts created
-#     - Directory structure established
-#
 #   Phase 1 (Pilot): ✓ COMPLETE
-#     - 10 stories archived
-#     - Data integrity verified
-#     - Rollback capability tested
-#
 #   Phase 2 (Batch 1): ✓ COMPLETE
-#     - 10 stories archived (7 GOV + 2 LAUNCH + 1 from earlier)
-#     - Archive date: 2026-03-09
-#     - Data integrity verified
-#     - Rollback capability tested
-#
-#   Phase 3 (Batch 2): ✓ COMPLETE
-#     - Assessment date: 2026-03-09
-#     - Stories checked: 56
-#     - Eligible stories: 0 (all >30 day stories already archived)
-#     - Already archived: 20
-#     - Too recent: 36 (will become eligible for Phase 4)
-#
+#   Phase 3 (Batch 2): ✓ EXECUTED
 #   Phase 4 (Full Automation): PLANNED
-#     - Automated weekly archival job
-#     - Estimated first run: 2026-03-16 (when ST-LAUNCH-009/010 become eligible)
-#     - Target: Archive stories automatically when they exceed 30-day threshold
-#
-# MIGRATED STORIES (Phase 2 Batch 1):
-#   - ST-GOV-003 → ARCH-20260309-200324-ST-GOV-003
-#   - ST-GOV-004 → ARCH-20260309-200858-ST-GOV-004
-#   - ST-GOV-005 → ARCH-20260309-200639-ST-GOV-005
-#   - ST-GOV-006 → ARCH-20260309-200639-ST-GOV-006
-#   - ST-GOV-007 → ARCH-20260309-200639-ST-GOV-007
-#   - ST-GOV-008 → ARCH-20260309-200639-ST-GOV-008
-#   - ST-GOV-009 → ARCH-20260309-200639-ST-GOV-009
-#   - ST-GOV-010 → ARCH-20260309-200639-ST-GOV-010
-#   - ST-LAUNCH-011 → ARCH-20260309-200324-ST-LAUNCH-011
-#   - ST-LAUNCH-018 → ARCH-20260309-200324-ST-LAUNCH-018
-#
-# MIGRATED STORIES (Phase 1 Pilot):
-#   - BL-CI-PHASE3 → ARCH-20260309-170659-BL-CI-PHASE3
-#   - BL-PAPER-G5-MANUAL → ARCH-20260309-170659-BL-PAPER-G5-MANUAL
-#   - ST-LAUNCH-001 → ARCH-20260309-170659-ST-LAUNCH-001
-#   - ST-LAUNCH-002 → ARCH-20260309-170659-ST-LAUNCH-002
-#   - ST-LAUNCH-003 → ARCH-20260309-170659-ST-LAUNCH-003
-#   - ST-LAUNCH-004 → ARCH-20260309-170659-ST-LAUNCH-004
-#   - ST-LAUNCH-005 → ARCH-20260309-170659-ST-LAUNCH-005
-#   - ST-LAUNCH-006 → ARCH-20260309-170659-ST-LAUNCH-006
-#   - ST-LAUNCH-007 → ARCH-20260309-170659-ST-LAUNCH-007
-#   - ST-LAUNCH-008 → ARCH-20260309-170659-ST-LAUNCH-008
 #
 # SCRIPTS:
 #   - Migration: scripts/workflow/migration/archive_stories.py
 #   - Verification: scripts/workflow/migration/verify_archive.py
 #   - Rollback: scripts/workflow/migration/rollback_archive.py
-#
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# COMPLETION EVIDENCE REQUIREMENTS
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-#
-# Stories marked with status "completed" or "merged" MUST have the following evidence:
-#
-# REQUIRED FIELDS:
-#   - pr_number: The GitHub PR number that was merged
-#   - merge_commit: The SHA of the merge commit on main branch
-#
-# VALIDATION:
-#   - Pre-commit hook validates evidence before allowing commits
-#   - Script: scripts/validate_completion_evidence.py
-#   - Hook: .githooks/pre-commit-status-guardrail
-#
-# EXAMPLE VALID COMPLETION:
-#   - id: ST-EXAMPLE-001
-#     status: completed
-#     pr_number: 383
-#     merge_commit: 8bf1c7b
-#     title: Example Story
-#
-# ALTERNATIVE FOR MULTI-PR STORIES:
-#   - remediation_pr_numbers: [407, 408, 410]
-#   - merge_commits: [sha1, sha2, sha3]
-#
-# INCIDENT REFERENCE: GOV-BATCH-003-STATUS-FALSIFICATION
-# DOCUMENTATION: docs/governance/completion-evidence-requirements.md
 #
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -1349,51 +1284,15 @@ launch_stories:
     unit: pytest tests/test_ml/test_dynamic_threshold.py -v
   title: Dynamic Threshold Adjustment
   validation_status: validated
-- acceptance_criteria:
-  - ECE-based trigger - Retraining triggered automatically when ECE > 0.15, alert
-    sent to Discord
-  - Performance-based trigger - Retraining triggered when win rate <55% over 20 trades,
-    reason logged
-  - Scheduled trigger - Retraining triggered at scheduled time, starts within 1 hour
-  - Trigger deduplication - New trigger queued if retraining in progress, duplicates
-    within 24h ignored
-  - Pre-training validation - Training data quality validated, proceeds only if quality
-    >90%
-  completion_date: '2026-02-22'
-  depends_on:
-  - ST-LAUNCH-009
-  description: Implement automatic model retraining triggers based on ECE degradation,
-    performance thresholds, and schedule
-  epic_id: EP-LAUNCH-003
-  fr_coverage:
-  - FR-018
-  - FR-020
+- archive_ref: ARCH-20260309-211613-ST-LAUNCH-011
   id: ST-LAUNCH-011
-  live_validation_gates:
-  - check: Set ECE to 0.18, wait for trigger
-    gate: trigger_accuracy
-    threshold: Trigger fires within 5 minutes
-  merge_commit: batch4-final
-  notes:
-  - CRITICAL for launch - model retraining must be automatic
-  pr_number: 257
-  priority: P0-CRITICAL
-  rollback_plan:
-  - action: Disable auto-trigger
-    command: redis-cli SET launch:training:auto_trigger:enabled 0
-  scope_globs:
-  - src/ml/training/retraining_trigger.py
-  - src/ml/training/training_orchestrator.py
-  - tests/test_ml/test_retraining_trigger.py
-  sprint_id: LAUNCH-SPRINT-2
-  status: completed
-  story_points: 5
-  test_strategy:
-    e2e: pytest tests/e2e/test_retraining_flow.py -v
-    integration: pytest tests/test_ml/integration/test_trigger_scheduler.py -v
-    unit: pytest tests/test_ml/test_retraining_trigger.py -v
+  status: archived
   title: Model Retraining Trigger
-  validation_status: validated
+  priority: P0-CRITICAL
+  epic_id: EP-LAUNCH-003
+  completion_date: '2026-02-22'
+  merge_commit: batch4-final
+  pr_number: 257
 - acceptance_criteria:
   - Feature integration - Feature extractor provides training data, split 70/15/15
     train/validation/test
@@ -1632,52 +1531,15 @@ launch_stories:
     e2e: pytest tests/e2e/test_launch_readiness.py -v
   title: Final E2E Validation & Go/No-Go
   validation_status: planned
-- acceptance_criteria:
-  - WebSocket listener - Connects to Bybit private WebSocket, subscribes to execution
-    channel
-  - Fill event parsing - Parses fill events to extract order_id, symbol, side, price,
-    quantity, timestamp
-  - Outcome storage - Stores outcomes in signal_outcomes table with proper schema
-  - Signal matching - Matches fills to originating signals using order metadata
-  - Error handling - Handles missed events, reconnections, and duplicate fills
-  - Latency target - Outcomes available within 5 minutes of fill
-  completion_date: '2026-02-21'
-  depends_on:
-  - ST-LAUNCH-001
-  description: Create outcome capture service that listens to Bybit WebSocket fill
-    events and stores trade outcomes for signal-to-outcome matching
-  epic_id: EP-LAUNCH-005
-  fr_coverage:
-  - FR-017
-  - FR-018
+- archive_ref: ARCH-20260309-211613-ST-LAUNCH-018
   id: ST-LAUNCH-018
-  live_validation_gates:
-  - check: Execute trade, measure capture time
-    gate: capture_latency
-    threshold: <5 minutes
-  merge_commit: 3eaa16c268677f2fdd6274eaf85b7f2a015d1eab
-  notes:
-  - CRITICAL PATH - blocks all feedback loop stories
-  - Must start on Day 1
-  - Fallback: CSV export if WebSocket issues
-  pr_number: 242
-  priority: P0-CRITICAL
-  rollback_plan:
-  - action: Disable capture service
-    command: systemctl stop outcome-capture
-  scope_globs:
-  - src/ml/feedback/outcome_capture_service.py
-  - src/ml/feedback/bybit_fill_listener.py
-  - tests/test_ml/test_outcome_capture_service.py
-  sprint_id: LAUNCH-SPRINT-1
-  status: completed
-  story_points: 8
-  test_strategy:
-    e2e: pytest tests/e2e/test_fill_to_outcome.py -v
-    integration: pytest tests/test_ml/integration/test_bybit_websocket.py -v
-    unit: pytest tests/test_ml/test_outcome_capture_service.py -v
+  status: archived
   title: Outcome Capture Service Implementation
-  validation_status: validated
+  priority: P0-CRITICAL
+  epic_id: EP-LAUNCH-005
+  completion_date: '2026-02-21'
+  merge_commit: 3eaa16c268677f2fdd6274eaf85b7f2a015d1eab
+  pr_number: 242
 - acceptance_criteria:
   - Model versioning - Semantic versioning (MAJOR.MINOR.PATCH) for all models
   - Model storage - Stores model artifacts with metadata (hyperparams, metrics, timestamp)
@@ -2025,405 +1887,78 @@ launch_stories:
   story_points: 3
   title: Week 2 Optimization Feedback Loop
   validation_status: planned
-- acceptance_criteria:
-  - Validates task decomposition against constitution bounds
-  - Detects overly broad tasks (>5 story points requires approval)
-  - Enforces dependency declaration for all subtasks
-  - Blocks parallel execution of conflicting tasks
-  - Integration with existing Redis ownership system
-  completion_date: '2026-02-23'
-  completion_notes:
-  - 4,469 lines of code across 14 files implemented
-  - 122 tests passing, 0 failed
-  - 'API latency: 0.02ms avg, 0.25ms max, 0.03ms p95 (well under 200ms target)'
-  - 'Task validation rate: 100% for >5 SP tasks'
-  - 'Conflict detection accuracy: 100%'
-  description: Validate task decomposition against constitution bounds and detect
-    scope conflicts
-  epic_id: EP-GOV-001
-  fr_coverage:
-  - FR-GOV-003
-  governance_feature: GF-003
+- archive_ref: ARCH-20260309-211613-ST-GOV-003
   id: ST-GOV-003
-  implementation_notes:
-  - Created src/governance/sentinel/task_sentinel.py (486 lines)
-  - Created src/governance/sentinel/conflict_detector.py (383 lines)
-  - Created src/governance/sentinel/dependency_validator.py (441 lines)
-  - Updated src/governance/sentinel/__init__.py (28 lines)
-  - Updated tests/test_governance/test_task_sentinel.py (841 lines)
-  - Implemented ConflictDetector with ownership conflict detection
-  - Implemented DependencyValidator with circular dependency detection
-  - Added topological sort for task execution ordering
-  - Full Redis integration for approval workflow
+  status: archived
+  title: Task Decomposition Sentinel
   priority: P0-CRITICAL
-  sprint_id: GOV-PHASE1-002
-  status: completed
-  story_points: 8
+  epic_id: EP-GOV-001
+  completion_date: '2026-02-23'
   merge_commit: eba2024
   pr_number: LEGACY
-  merge_evidence_source: git-history-verification
-  verification_date: '2026-03-08'
-  cross_branch_verified: true
-  test_results:
-    coverage_percent: 98
-    coverage_target: 85
-    failed: 0
-    passed: 103
-    status: All tests pass, coverage exceeds target
-    total_tests: 103
-  title: Task Decomposition Sentinel
-  validation_gates:
-  - task_validation_rate: 100% for >5 SP
-  - conflict_detection_accuracy: 90%
-  - api_latency: <200ms
-  validation_status: validated
-  notes:
-  - 'CONSOLIDATION REMEDIATION 2026-03-08: Verified merged to main via cross-branch
-    verification'
-  - 'Merge commit: eba2024 - Merge feature/ST-GOV-003-task-decomposition-sentinel'
-  - PR number marked LEGACY due to branch deletion - evidence in docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md
-- acceptance_criteria:
-  - Grafana dashboard: Agent Governance Metrics
-  - Real-time metrics for all Phase 1 features
-  - Alerting on governance failures
-  - Historical trend analysis (7-day, 30-day, 90-day)
-  completion_date: '2026-02-23'
-  completion_notes:
-  - 3,215 lines across 13 files implemented
-  - 'Grafana dashboard: ''Agent Governance Metrics'' created'
-  - 4 feature exporters deployed (constitution, sentinel, memory, base)
-  - 'Dashboard refresh: 15s'
-  - 'Historical trends: 7d/30d/90d supported'
-  dashboard_url: /d/governance-metrics-st-gov-004/agent-governance-metrics
-  description: Grafana dashboard for real-time governance metrics and feature effectiveness
-  epic_id: EP-GOV-001
-  fr_coverage:
-  - FR-GOV-004
-  governance_feature: GF-004
+- archive_ref: ARCH-20260309-211613-ST-GOV-004
   id: ST-GOV-004
-  implementation_notes:
-  - Created infrastructure/grafana/dashboards/governance_metrics.json (556 lines)
-  - Created src/governance/metrics/__init__.py (32 lines)
-  - Created src/governance/metrics/exporter.py (428 lines)
-  - Created tests/test_governance/test_metrics.py (703 lines)
-  - Dashboard includes 15 panels with 7d/30d/90d trend analysis
-  - Metrics exporter with 15s refresh interval
-  - InfluxDB integration with graceful fallback
-  - Feature flag control via Redis
-  merge_commit: faf62dc
-  priority: P1-HIGH
-  pr_number: RETROSPECTIVE
-  retrospective_pr_evidence:
-    implementation_commit: f04a424
-    merged_date: '2026-02-23'
-    note: Evidence from git history - direct merge to main
-  sprint_id: GOV-PHASE1-002
-  status: completed
-  story_points: 5
-  test_results:
-    coverage_percent: 85
-    coverage_target: 80
-    failed: 0
-    passed: 44
-    status: All tests pass, coverage exceeds target
-    total_tests: 44
+  status: archived
   title: Meta-KPI Dashboard
-  validation_gates:
-  - dashboard_load_time: <3s
-  - metrics_refresh: 15s
-  - retention: 7_days
-  validation_status: validated
-  notes:
-  - 'RETROSPECTIVE EVIDENCE ADDED 2026-03-08: Merge commit faf62dc verified on main'
-- acceptance_criteria:
-  - Scheduled consolidation runs (daily at 2 AM UTC)
-  - Archives memories >90 days to cold storage
-  - Promotes high-value memories to "golden" set
-  - Configurable retention policies per memory type
-  - Rollback capability for 7 days post-consolidation
-  completion_date: '2026-02-23'
-  description: Automate memory lifecycle management with scheduled archiving and promotion
-  epic_id: EP-GOV-001
-  fr_coverage:
-  - FR-GOV-005
-  governance_feature: GF-005
-  id: ST-GOV-005
-  implementation_notes:
-  - 13 files added (4,018 lines) - all tracked in git
-  - 'Scheduled consolidation: daily at 2 AM UTC via APScheduler'
-  - 'Memory archiver: archives >90 days to cold storage'
-  - 'Golden memory promoter: weighted scoring for high-value memories'
-  - Configurable retention policies per MemoryType
-  - 7-day rollback capability with Redis-backed recovery
-  - 'CLI: scripts/governance/consolidation_scheduler.py'
   priority: P1-HIGH
-  sprint_id: GOV-PHASE2-001
-  status: completed
-  story_points: 5
+  epic_id: EP-GOV-001
+  completion_date: '2026-02-23'
+  merge_commit: faf62dc
+  pr_number: RETROSPECTIVE
+- archive_ref: ARCH-20260309-211613-ST-GOV-005
+  id: ST-GOV-005
+  status: archived
+  title: Memory Consolidation Scheduler
+  priority: P1-HIGH
+  epic_id: EP-GOV-001
+  completion_date: '2026-02-23'
   merge_commit: 437fa8c
   pr_number: LEGACY
-  merge_evidence_source: git-history-verification
-  verification_date: '2026-03-08'
-  cross_branch_verified: true
-  test_results:
-    coverage_percent: 85
-    coverage_target: 80
-    failed: 0
-    passed: 113
-    status: All tests pass, coverage exceeds target
-    total_tests: 113
-  title: Memory Consolidation Scheduler
-  validation_gates:
-  - data_loss_incidents: 0
-  - rollback_time: <5min
-  - storage_reduction: "\u226520%"
-  validation_status: validated
-  notes:
-  - 'CONSOLIDATION REMEDIATION 2026-03-08: Verified merged to main via cross-branch
-    verification'
-  - 'Merge commit: 437fa8c (shared with ST-GOV-007)'
-  - PR number marked LEGACY due to branch deletion - evidence in docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md
-- acceptance_criteria:
-  - Automated self-review for all PRs
-  - Quality score algorithm (style, coverage, security, constitution, docs)
-  - Blocks PR if quality score <80%
-  - Human can override with justification
-  - Integration with GitReviewBot (ST-AUTO-003)
-  completion_date: '2026-02-23'
-  description: Automated self-review for all PRs with quality scoring and constitution
-    alignment
-  epic_id: EP-GOV-001
-  fr_coverage:
-  - FR-GOV-006
-  governance_feature: GF-006
+- archive_ref: ARCH-20260309-211613-ST-GOV-006
   id: ST-GOV-006
-  implementation_notes:
-  - 10 files added (3,852 lines) - merged to main from feature branch
-  - 'Quality scoring: Style 20%, Coverage 25%, Security 20%, Constitution 20%, Docs
-    15%'
-  - 'PR blocking: automatic block when quality score <80%'
-  - 'Human override: OverrideManager with approval workflow and justification'
-  - 'GitReviewBot integration: REST API + CLI script'
-  - 'CLI: scripts/governance/self_review.py'
+  status: archived
+  title: Self-Review Quality Gate
   priority: P1-HIGH
-  sprint_id: GOV-PHASE2-001
-  status: completed
-  story_points: 8
+  epic_id: EP-GOV-001
+  completion_date: '2026-02-23'
   merge_commit: a565de0
   pr_number: LEGACY
-  merge_evidence_source: git-history-verification
-  verification_date: '2026-03-08'
-  cross_branch_verified: true
-  test_results:
-    coverage_percent: 82
-    coverage_target: 80
-    failed: 0
-    passed: 65
-    status: All tests pass, coverage exceeds target
-    total_tests: 65
-  title: Self-Review Quality Gate
-  validation_gates:
-  - false_negative_rate: <5%
-  - false_positive_rate: <10%
-  - review_time: <2min
-  validation_status: validated
-  notes:
-  - 'CONSOLIDATION REMEDIATION 2026-03-08: Verified merged to main via cross-branch
-    verification'
-  - 'Merge commit: a565de0 - Merge feature/ST-GOV-006-self-review-quality-gate'
-  - PR number marked LEGACY due to branch deletion - evidence in docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md
-- acceptance_criteria:
-  - Tracks retrieval relevance scores
-  - A/B tests retrieval strategies
-  - Automatically tunes similarity thresholds
-  - Reports on retrieval accuracy
-  completion_date: '2026-02-23'
-  completion_evidence:
-  - 5 source files (evaluator, ab_tester, threshold_tuner, metrics, __init__) - 1,850+
-    lines
-  - 6 test files - 121 tests passing, 0 failed
-  - RetrievalEvaluator with precision/recall/MRR tracking
-  - ABTester with statistical significance analysis (t-test)
-  - ThresholdTuner with gradient, binary search, and adaptive strategies
-  - RetrievalMetricsExporter with Prometheus-compatible output
-  - Redis persistence for experiment results
-  description: Monitor and improve memory retrieval accuracy with A/B testing
-  epic_id: EP-GOV-001
-  fr_coverage:
-  - FR-GOV-007
-  governance_feature: GF-007
+- archive_ref: ARCH-20260309-211613-ST-GOV-007
   id: ST-GOV-007
+  status: archived
+  title: Retrieval Quality Evaluator
   priority: P2-MEDIUM
-  sprint_id: GOV-PHASE2-002
-  status: completed
-  story_points: 5
+  epic_id: EP-GOV-001
+  completion_date: '2026-02-23'
   merge_commit: 437fa8c
   pr_number: LEGACY
-  merge_evidence_source: git-history-verification
-  verification_date: '2026-03-08'
-  cross_branch_verified: true
-  test_results:
-    coverage_percent: 85
-    failed: 0
-    passed: 121
-    status: All tests pass, coverage exceeds target
-    total: 121
-  title: Retrieval Quality Evaluator
-  validation_gates:
-  - precision_at_5: "\u226585%"
-  - recall_at_10: "\u226580%"
-  - mrr: "\u22650.75"
-  validation_status: validated
-  notes:
-  - 'CONSOLIDATION REMEDIATION 2026-03-08: Verified merged to main via cross-branch
-    verification'
-  - 'Merge commit: 437fa8c (shared with ST-GOV-005)'
-  - PR number marked LEGACY due to branch deletion - evidence in docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md
-- acceptance_criteria:
-  - Real-time health scoring per agent
-  - Aggregated swarm health score
-  - Predictive alerts (15 min before impact)
-  - Auto-remediation for known issues
-  - Integration with EP-NS-008 (ACP)
-  completion_date: '2026-02-23'
-  completion_evidence:
-  - 6 source files (metrics, scorer, predictor, remediator, sentinel, __init__) -
-    1,694 lines
-  - 5 test files - 89 tests passing, 0 failed
-  - 'Health dimensions: performance (25%), quality (25%), reliability (25%), collaboration
-    (25%)'
-  - 15-minute lookahead prediction with configurable confidence threshold
-  - Auto-remediation with cooldown, human approval for critical actions
-  - Prometheus metrics export for Grafana integration
-  description: Monitor overall swarm health with predictive alerts and auto-remediation
-  epic_id: EP-GOV-001
-  fr_coverage:
-  - FR-GOV-008
-  governance_feature: GF-008
+- archive_ref: ARCH-20260309-211613-ST-GOV-008
   id: ST-GOV-008
+  status: archived
+  title: Swarm Health Sentinel
   priority: P1-HIGH
-  sprint_id: GOV-PHASE2-002
-  status: completed
-  story_points: 6
+  epic_id: EP-GOV-001
+  completion_date: '2026-02-23'
   merge_commit: 5fc64e2
   pr_number: LEGACY
-  merge_evidence_source: git-history-verification
-  verification_date: '2026-03-08'
-  cross_branch_verified: true
-  test_results:
-    coverage_percent: 82
-    failed: 0
-    passed: 89
-    status: All tests pass, coverage exceeds target
-    total: 89
-  title: Swarm Health Sentinel
-  validation_gates:
-  - health_update_frequency: 60s
-  - alert_latency: <30s
-  - prediction_accuracy: "\u226575%"
-  validation_status: validated
-  notes:
-  - 'CONSOLIDATION REMEDIATION 2026-03-08: Verified merged to main via cross-branch
-    verification'
-  - 'Merge commit: 5fc64e2 - feat(governance): implement Swarm Health Sentinel'
-  - PR number marked LEGACY due to branch deletion - evidence in docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md
-- acceptance_criteria:
-  - Exports all autonomous decisions to immutable storage
-  - Queryable by agent, time range, decision type, outcome
-  - Tamper-evident logging (hash chain)
-  - Automated daily exports to S3
-  - Retention: 7 years
-  completion_date: '2026-02-23'
-  completion_evidence:
-  - 5 source files (decision, trail, query, exporter, __init__) - 2,037 lines
-  - 4 test files - 75 tests passing, 0 failed
-  - Hash chain with SHA-256 tamper-evident logging
-  - S3 export with 7-year retention compliance
-  - Query interface supporting agent, time range, decision type, outcome filters
-  description: Complete audit trail for compliance with tamper-evident logging and
-    7-year retention
-  epic_id: EP-GOV-001
-  fr_coverage:
-  - FR-GOV-009
-  governance_feature: GF-009
+- archive_ref: ARCH-20260309-211614-ST-GOV-009
   id: ST-GOV-009
+  status: archived
+  title: Decision Audit Trail Export
   priority: P2-MEDIUM
-  sprint_id: GOV-PHASE3-001
-  status: completed
-  story_points: 5
+  epic_id: EP-GOV-001
+  completion_date: '2026-02-23'
   merge_commit: 86224f5
   pr_number: LEGACY
-  merge_evidence_source: git-history-verification
-  verification_date: '2026-03-08'
-  cross_branch_verified: true
-  test_results:
-    coverage_percent: 83
-    failed: 0
-    passed: 75
-    status: All tests pass, coverage exceeds target
-    total: 75
-  title: Decision Audit Trail Export
-  validation_gates:
-  - audit_completeness: 100%
-  - integrity_verification: pass
-  - export_reliability: 100%
-  validation_status: validated
-  notes:
-  - 'CONSOLIDATION REMEDIATION 2026-03-08: Verified merged to main via cross-branch
-    verification'
-  - 'Merge commit: 86224f5 - Merge ST-GOV-009: Decision Audit Trail Export'
-  - PR number marked LEGACY due to branch deletion - evidence in docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md
-- acceptance_criteria:
-  - Analyzes task dependencies automatically
-  - Optimizes parallel execution plans
-  - Resolves resource conflicts proactively
-  - "Achieves \u226530% throughput improvement vs sequential"
-  - Rollback capability if conflicts detected
-  completion_date: '2026-02-23'
-  completion_evidence:
-  - 8 source files (conflict_analyzer, dependency_graph, models, optimizer, rollback,
-    scheduler, throughput, __init__) - 2,676 lines
-  - 5 test files (test_conflict_analyzer, test_dependency_graph, test_models, test_optimizer_integration,
-    test_scheduler) - 1,417 lines
-  - 81 tests passing, 0 failed, 87% coverage
-  - Dependency graph builder with circular dependency detection
-  - Conflict analyzer with scope overlap detection
-  - Execution scheduler with batch optimization
-  - "Throughput comparator with \u226530% improvement target"
-  - Rollback capability with full state restoration
-  description: Maximize agent productivity while preventing conflicts through intelligent
-    scheduling
-  epic_id: EP-GOV-001
-  fr_coverage:
-  - FR-GOV-010
-  governance_feature: GF-010
+- archive_ref: ARCH-20260309-211614-ST-GOV-010
   id: ST-GOV-010
+  status: archived
+  title: Parallel Execution Optimizer
   priority: P2-MEDIUM
-  sprint_id: GOV-PHASE3-001
-  status: completed
-  story_points: 8
+  epic_id: EP-GOV-001
+  completion_date: '2026-02-23'
   merge_commit: a945f16
   pr_number: LEGACY
-  merge_evidence_source: git-history-verification
-  verification_date: '2026-03-08'
-  cross_branch_verified: true
-  test_results:
-    coverage_percent: 87
-    failed: 0
-    passed: 81
-    status: All tests pass, coverage exceeds 80% target
-    total: 81
-  title: Parallel Execution Optimizer
-  validation_gates:
-  - throughput_improvement: "\u226530%"
-  - conflict_rate: <2%
-  - rollback_success_rate: 100%
-  validation_status: validated
-  notes:
-  - 'CONSOLIDATION REMEDIATION 2026-03-08: Verified merged to main via cross-branch
-    verification'
-  - 'Merge commit: a945f16 - Merge ST-GOV-010: Parallel Execution Optimizer'
-  - PR number marked LEGACY due to branch deletion - evidence in docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md
 - acceptance_criteria:
   - All Taiga containers (taiga-front, taiga-back, taiga-events, taiga-postgres, taiga-redis,
     taiga-rabbitmq) removed from Terraform

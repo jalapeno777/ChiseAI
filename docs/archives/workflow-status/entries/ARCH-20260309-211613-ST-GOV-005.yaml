@@ -1,7 +1,7 @@
 schema_version: 1.0.0
-archive_ref: ARCH-20260309-200639-ST-GOV-005
+archive_ref: ARCH-20260309-211613-ST-GOV-005
 original_story_id: ST-GOV-005
-archived_at: '2026-03-09T20:06:39.305581Z'
+archived_at: '2026-03-09T21:16:13.942986Z'
 archive_reason: age
 archive_reason_detail: Story completed 14 days ago, exceeds 14-day threshold
 migration:
@@ -10,7 +10,7 @@ migration:
   migration_script_version: 1.0.0
   verification_status: verified
 lean_status:
-  archive_ref: ARCH-20260309-200639-ST-GOV-005
+  archive_ref: ARCH-20260309-211613-ST-GOV-005
   id: ST-GOV-005
   status: archived
   title: Memory Consolidation Scheduler
@@ -59,8 +59,8 @@ archived_fields:
 completion_evidence:
   pr_number: LEGACY
   merge_commit: 437fa8c
-archive_location: docs/archives/workflow-status/entries/ARCH-20260309-200639-ST-GOV-005.yaml
+archive_location: docs/archives/workflow-status/entries/ARCH-20260309-211613-ST-GOV-005.yaml
 integrity:
   original_checksum: 8dc7f235d07ac49651dfbeeb6b7dba4806b8a555e91a1246eb163b526a9855d0
-  archived_checksum: d3d996098cdc5d816078c17fad93e50a483d92ba421c78e159e50afc88dc093c
-  verification_date: '2026-03-09T20:06:39.305620Z'
+  archived_checksum: ae1d878b2311f03bfe29dbca83ac04c6fd2f5b426b7ed4400c03b8d3b75cb9d3
+  verification_date: '2026-03-09T21:16:13.943043Z'
