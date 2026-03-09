@@ -7,6 +7,7 @@ Analyzes branches and recommends cleanup actions.
 import argparse
 import json
 import subprocess
+import sys
 from datetime import UTC, datetime
 
 from config.bootstrap import bootstrap, check_environment
@@ -96,6 +97,173 @@ def check_branch_naming(branch_name):
             return True, None
 
     return False, f"Invalid naming: {branch_name}"
+
+
+def check_pr_exists(branch_name, base_ref="main"):
+    """Check if a PR exists for the branch in Gitea."""
+    import os
+    import urllib.error
+    import urllib.parse
+    import urllib.request
+
+    token = (os.getenv("GITEA_TOKEN") or "").strip()
+    owner = (
+        os.getenv("GITEA_OWNER")
+        or os.getenv("CI_REPO_OWNER")
+        or os.getenv("WOODPECKER_REPO_OWNER")
+        or ""
+    ).strip()
+    repo = (
+        os.getenv("GITEA_REPO")
+        or os.getenv("CI_REPO_NAME")
+        or os.getenv("WOODPECKER_REPO_NAME")
+        or ""
+    ).strip()
+    base_url = (
+        os.getenv("GITEA_BASE_URL") or "http://host.docker.internal:3000"
+    ).rstrip("/")
+
+    if not token or not owner or not repo:
+        return False, "Gitea token/owner/repo env vars missing"
+
+    page = 1
+    while page <= 10:
+        qs = urllib.parse.urlencode({"state": "all", "limit": 50, "page": page})
+        url = f"{base_url}/api/v1/repos/{owner}/{repo}/pulls?{qs}"
+        req = urllib.request.Request(
+            url,
+            headers={"Authorization": f"token {token}", "Accept": "application/json"},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
+                rows = json.loads(resp.read().decode("utf-8"))
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+            return False, f"Gitea PR check failed: {exc}"
+
+        if not isinstance(rows, list) or not rows:
+            break
+
+        for pr in rows:
+            if not isinstance(pr, dict):
+                continue
+            head_ref = str((pr.get("head") or {}).get("ref", "")).strip()
+            base_pr_ref = str((pr.get("base") or {}).get("ref", "")).strip()
+            if head_ref != branch_name or base_pr_ref != base_ref:
+                continue
+            if bool(pr.get("merged")):
+                return True, f"merged PR #{pr.get('number')}"
+            if str(pr.get("state", "")).lower() == "open":
+                return True, f"open PR #{pr.get('number')}"
+
+        if len(rows) < 50:
+            break
+        page += 1
+
+    return False, "No open/merged PR found for branch"
+
+
+def check_branch_deletion_eligibility(branch_name, base_ref="main"):
+    """
+    Check if a branch is eligible for deletion.
+
+    Returns:
+        dict: {
+            'eligible': bool,
+            'reason': str,
+            'has_pr': bool,
+            'pr_detail': str,
+            'is_merged': bool,
+            'has_merge_evidence': bool,
+        }
+    """
+    result = {
+        "eligible": False,
+        "reason": "",
+        "has_pr": False,
+        "pr_detail": "",
+        "is_merged": False,
+        "has_merge_evidence": False,
+    }
+
+    # Check if merged to main
+    merged_result = subprocess.run(  # nosec B607
+        ["git", "branch", "--merged", base_ref, "--list", branch_name],
+        capture_output=True,
+        text=True,
+    )
+    result["is_merged"] = branch_name in merged_result.stdout
+
+    if result["is_merged"]:
+        result["eligible"] = True
+        result["reason"] = "Branch is merged to main"
+        result["has_merge_evidence"] = True
+        return result
+
+    # Check for merge commit evidence
+    commit_result = subprocess.run(  # nosec B607
+        ["git", "rev-parse", branch_name],
+        capture_output=True,
+        text=True,
+    )
+    if commit_result.returncode == 0:
+        branch_commit = commit_result.stdout.strip()
+        ancestor_result = subprocess.run(  # nosec B607
+            ["git", "merge-base", "--is-ancestor", branch_commit, base_ref],
+            capture_output=True,
+            text=True,
+        )
+        if ancestor_result.returncode == 0:
+            result["eligible"] = True
+            result["reason"] = (
+                f"Branch commit {branch_commit[:8]} is ancestor of {base_ref}"
+            )
+            result["has_merge_evidence"] = True
+            return result
+
+    # Check for PR
+    has_pr, pr_detail = check_pr_exists(branch_name, base_ref)
+    result["has_pr"] = has_pr
+    result["pr_detail"] = pr_detail
+
+    if has_pr:
+        result["eligible"] = True
+        result["reason"] = pr_detail
+        return result
+
+    # Not eligible
+    result["reason"] = "No PR or merge evidence found"
+    return result
+
+
+def log_deletion_attempt_to_redis(branch_name, result, force_used=False):
+    """Log deletion check to Redis."""
+    if not REDIS_AVAILABLE:
+        return
+
+    try:
+        r = redis.Redis(host="host.docker.internal", port=6380, db=0)
+
+        log_entry = {
+            "branch": branch_name,
+            "eligible": result["eligible"],
+            "reason": result["reason"],
+            "has_pr": result["has_pr"],
+            "is_merged": result["is_merged"],
+            "force_used": force_used,
+            "checked_at": datetime.now().isoformat(),
+        }
+
+        # Add to list of deletion checks
+        r.lpush(
+            "bmad:chiseai:branch_hygiene:deletion_checks",
+            json.dumps(log_entry),
+        )
+
+        # Keep only last 1000 checks
+        r.ltrim("bmad:chiseai:branch_hygiene:deletion_checks", 0, 999)
+
+    except Exception as e:
+        print(f"Warning: Could not log to Redis: {e}")
 
 
 def analyze_branches():
@@ -261,8 +429,33 @@ def main():
     parser.add_argument(
         "--force", action="store_true", help="Force cleanup (dangerous)"
     )
+    parser.add_argument(
+        "--check-deletion",
+        metavar="BRANCH",
+        help="Check if a branch is eligible for deletion",
+    )
 
     args = parser.parse_args()
+
+    # Handle deletion eligibility check
+    if args.check_deletion:
+        result = check_branch_deletion_eligibility(args.check_deletion)
+        log_deletion_attempt_to_redis(args.check_deletion, result, args.force)
+
+        status = "✅ ELIGIBLE" if result["eligible"] else "❌ BLOCKED"
+        print(f"{status} for deletion: {args.check_deletion}")
+        print(f"  Reason: {result['reason']}")
+        print(f"  Has PR: {result['has_pr']}")
+        if result["pr_detail"]:
+            print(f"  PR Detail: {result['pr_detail']}")
+        print(f"  Is Merged: {result['is_merged']}")
+        print(f"  Has Merge Evidence: {result['has_merge_evidence']}")
+
+        if not result["eligible"]:
+            print("\n⚠️  This branch cannot be safely deleted.")
+            print("   Either create a PR and merge it, or use --force to override.")
+            sys.exit(1)
+        sys.exit(0)
 
     categories = analyze_branches()
 
