@@ -384,10 +384,14 @@ backlog:
   - Completion report (line 469-472) identified this as immediate Week 1 priority
   - Ensures BrainEval evaluations use most recent memory artifacts
   - Prevents stale memories from affecting evaluation quality
-  owner: TBD
+  - IMPLEMENTED: ci_integration.py module with full CI integration
+  - IMPLEMENTED: pre_eval_ingestion.py CLI script for CI pipeline
+  - IMPLEMENTED: Updated .woodpecker/ci.yaml with pre-eval-ingestion step
+  - IMPLEMENTED: Feature flag CI_TEMPMEMORY_INGESTION_ENABLED for backward compatibility
+  owner: dev
   priority: P2
   related_story: ST-MEMORY-INGEST-001
-  status: planned
+  status: in_progress
   title: CI Pipeline Integration for Tempmemory Ingestion
 current_phase:
   note: 'ACTIVATED on 2026-02-22. Paper trading now fully autonomous. All launch flags
@@ -2177,9 +2181,15 @@ launch_stories:
   - Metrics exporter with 15s refresh interval
   - InfluxDB integration with graceful fallback
   - Feature flag control via Redis
+  merge_commit: faf62dc
   priority: P1-HIGH
+  pr_number: RETROSPECTIVE
+  retrospective_pr_evidence:
+    implementation_commit: f04a424
+    merged_date: '2026-02-23'
+    note: Evidence from git history - direct merge to main
   sprint_id: GOV-PHASE1-002
-  status: implementation_complete_pending_merge
+  status: completed
   story_points: 5
   test_results:
     coverage_percent: 85
@@ -2194,6 +2204,8 @@ launch_stories:
   - metrics_refresh: 15s
   - retention: 7_days
   validation_status: validated
+  notes:
+  - 'RETROSPECTIVE EVIDENCE ADDED 2026-03-08: Merge commit faf62dc verified on main'
 - acceptance_criteria:
   - Scheduled consolidation runs (daily at 2 AM UTC)
   - Archives memories >90 days to cold storage
