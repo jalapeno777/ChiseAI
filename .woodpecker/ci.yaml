@@ -480,7 +480,11 @@ steps:
     image: python:3.11
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
-      CI_TEMPMEMORY_INGESTION_ENABLED: "${CI_TEMPMEMORY_INGESTION_ENABLED:-false}"
+      # CI_TEMPMEMORY_INGESTION_ENABLED: Feature flag for tempmemory ingestion
+      # - Default: enabled for staging (non-main branches), disabled for production (main)
+      # - Override: Set CI_TEMPMEMORY_INGESTION_ENABLED=true/false at pipeline level
+      # - Rollback: Set to "false" or remove this step from pipeline
+      CI_TEMPMEMORY_INGESTION_ENABLED: "${CI_TEMPMEMORY_INGESTION_ENABLED:-auto}"
     commands:
       - |
         set -euo pipefail
@@ -490,6 +494,17 @@ steps:
           set -euo pipefail
           python -V
           echo "Running pre-evaluation tempmemory ingestion..."
+          # Determine feature flag value
+          # "auto" mode: enabled for non-main branches (staging), disabled for main (production)
+          if [ "$${CI_TEMPMEMORY_INGESTION_ENABLED}" = "auto" ]; then
+            if [ "$${CI_COMMIT_BRANCH}" != "main" ] && [ "$${CI_COMMIT_BRANCH}" != "$${CI_REPO_DEFAULT_BRANCH:-main}" ]; then
+              CI_TEMPMEMORY_INGESTION_ENABLED="true"
+              echo "Staging branch detected ($${CI_COMMIT_BRANCH}). Enabling tempmemory ingestion."
+            else
+              CI_TEMPMEMORY_INGESTION_ENABLED="false"
+              echo "Production branch detected ($${CI_COMMIT_BRANCH}). Disabling tempmemory ingestion."
+            fi
+          fi
           echo "Feature flag CI_TEMPMEMORY_INGESTION_ENABLED=$${CI_TEMPMEMORY_INGESTION_ENABLED}"
           # Install dependencies
           pip install --no-cache-dir pyyaml requests numpy scipy || true
@@ -509,6 +524,7 @@ steps:
       - pre-eval-ingestion
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
+      CI_TEMPMEMORY_INGESTION_ENABLED: "${CI_TEMPMEMORY_INGESTION_ENABLED:-auto}"
     commands:
       - |
         set -euo pipefail
@@ -517,8 +533,16 @@ steps:
         (
           set -euo pipefail
           python -V
+          # Determine feature flag value (same logic as pre-eval-ingestion)
+          if [ "$${CI_TEMPMEMORY_INGESTION_ENABLED}" = "auto" ]; then
+            if [ "$${CI_COMMIT_BRANCH}" != "main" ] && [ "$${CI_COMMIT_BRANCH}" != "$${CI_REPO_DEFAULT_BRANCH:-main}" ]; then
+              CI_TEMPMEMORY_INGESTION_ENABLED="true"
+            else
+              CI_TEMPMEMORY_INGESTION_ENABLED="false"
+            fi
+          fi
           # Check ingestion results if enabled
-          if [ "$${CI_TEMPMEMORY_INGESTION_ENABLED:-false}" = "true" ] && [ -f "$${CI_STATUS_DIR}/pre-eval-ingestion.json" ]; then
+          if [ "$${CI_TEMPMEMORY_INGESTION_ENABLED}" = "true" ] && [ -f "$${CI_STATUS_DIR}/pre-eval-ingestion.json" ]; then
             echo "Checking pre-eval ingestion results..."
             INGESTION_SUCCESS=$(python3 -c "import json; data=json.load(open('$${CI_STATUS_DIR}/pre-eval-ingestion.json')); print(data.get('success', False))")
             INGESTION_INGESTED=$(python3 -c "import json; data=json.load(open('$${CI_STATUS_DIR}/pre-eval-ingestion.json')); print(data.get('files_ingested', 0))")
