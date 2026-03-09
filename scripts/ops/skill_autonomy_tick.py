@@ -66,19 +66,37 @@ def redis_client():
         import os
         import redis
 
-        host = os.getenv("REDIS_HOST", "host.docker.internal")
-        port = int(os.getenv("REDIS_PORT", "6380"))
-        db = int(os.getenv("REDIS_DB", "0"))
-        client = redis.Redis(
-            host=host,
-            port=port,
-            db=db,
-            decode_responses=True,
-            socket_connect_timeout=3,
-            socket_timeout=3,
+        port = int(
+            os.getenv("REDIS_PORT")
+            or os.getenv("CHISE_REDIS_PORT")
+            or os.getenv("ACP_REDIS_PORT")
+            or "6380"
         )
-        client.ping()
-        return client
+        db = int(os.getenv("REDIS_DB", "0"))
+        hosts = [
+            os.getenv("REDIS_HOST"),
+            os.getenv("CHISE_REDIS_HOST"),
+            os.getenv("ACP_REDIS_HOST"),
+            "chiseai-redis",
+            "host.docker.internal",
+            "localhost",
+        ]
+        hosts = [h for i, h in enumerate(hosts) if h and h not in hosts[:i]]
+        for host in hosts:
+            try:
+                client = redis.Redis(
+                    host=host,
+                    port=port,
+                    db=db,
+                    decode_responses=True,
+                    socket_connect_timeout=3,
+                    socket_timeout=3,
+                )
+                client.ping()
+                return client
+            except Exception:
+                continue
+        return None
     except Exception:
         return None
 

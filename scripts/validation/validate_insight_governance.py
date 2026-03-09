@@ -22,6 +22,7 @@ import yaml
 
 ITERLOG_DIR = Path("docs/tempmemories")
 ITERLOG_GLOB = "iterlog-*.md"
+LEGACY_EXEMPTIONS_PATH = Path("docs/governance/legacy-exemptions.yaml")
 
 REQUIRED_INSIGHT_FIELDS = {
     "insight_packet_id:",
@@ -103,6 +104,37 @@ def _read_body(path: Path) -> str:
     return text[end + 5 :]
 
 
+def _to_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _is_legacy_exempt(path: Path, fm: dict[str, Any], include_archived: bool) -> bool:
+    if _to_bool(fm.get("legacy_exempt")):
+        return True
+    if str(fm.get("compliance_mode", "")).strip().lower() == "legacy_exempt":
+        return True
+    if include_archived and "docs/tempmemories/archived/" in str(path).replace("\\", "/"):
+        return True
+    return False
+
+
+def _load_legacy_exemptions() -> set[str]:
+    if not LEGACY_EXEMPTIONS_PATH.exists():
+        return set()
+    try:
+        data = yaml.safe_load(LEGACY_EXEMPTIONS_PATH.read_text(encoding="utf-8")) or {}
+        story_ids = data.get("iterlog_story_ids", [])
+        if not isinstance(story_ids, list):
+            return set()
+        return {str(s).strip() for s in story_ids if str(s).strip()}
+    except Exception:
+        return set()
+
+
 def _extract_tp_session_ids(body: str) -> list[str]:
     pattern = r"(?im)^\s*(?:[-*]\s*)?(?:\*\*|`)?tp_session_id(?:\*\*|`)?\s*:\s*([A-Za-z0-9._:-]+)\s*$"
     ids: list[str] = []
@@ -134,22 +166,40 @@ def _get_redis_clients():
     try:
         import redis
 
-        host = os.getenv("REDIS_HOST", "host.docker.internal")
-        port = int(os.getenv("REDIS_PORT", "6380"))
+        port = int(
+            os.getenv("REDIS_PORT")
+            or os.getenv("CHISE_REDIS_PORT")
+            or os.getenv("ACP_REDIS_PORT")
+            or "6380"
+        )
         primary_db = int(os.getenv("REDIS_DB", "0"))
         db_candidates = [primary_db] if primary_db == 0 else [primary_db, 0]
+        hosts = [
+            os.getenv("REDIS_HOST"),
+            os.getenv("CHISE_REDIS_HOST"),
+            os.getenv("ACP_REDIS_HOST"),
+            "chiseai-redis",
+            "host.docker.internal",
+            "localhost",
+        ]
+        hosts = [h for i, h in enumerate(hosts) if h and h not in hosts[:i]]
         clients: dict[int, redis.Redis] = {}
         for db in db_candidates:
-            client = redis.Redis(
-                host=host,
-                port=port,
-                db=db,
-                decode_responses=True,
-                socket_connect_timeout=3,
-                socket_timeout=3,
-            )
-            client.ping()
-            clients[db] = client
+            for host in hosts:
+                try:
+                    client = redis.Redis(
+                        host=host,
+                        port=port,
+                        db=db,
+                        decode_responses=True,
+                        socket_connect_timeout=3,
+                        socket_timeout=3,
+                    )
+                    client.ping()
+                    clients[db] = client
+                    break
+                except Exception:
+                    continue
         return clients
     except Exception:
         return None
@@ -389,15 +439,55 @@ def main() -> int:
         action="store_true",
         help="Attempt to backfill missing tp:session artifacts in Redis DB0",
     )
+    ap.add_argument(
+        "--include-legacy",
+        action="store_true",
+        help="Include legacy-exempt iterlogs (default: skip legacy-exempt files).",
+    )
+    ap.add_argument(
+        "--legacy-archive-exempt",
+        action="store_true",
+        default=True,
+        help="Treat docs/tempmemories/archived/* iterlogs as legacy-exempt (default: true).",
+    )
+    ap.add_argument(
+        "--no-legacy-archive-exempt",
+        dest="legacy_archive_exempt",
+        action="store_false",
+        help="Do not auto-exempt archived iterlogs.",
+    )
     args = ap.parse_args()
 
     paths = sorted(ITERLOG_DIR.glob(ITERLOG_GLOB))
     if args.story_id:
         paths = [p for p in paths if args.story_id in p.name]
 
+    exempt_story_ids = _load_legacy_exemptions()
+    skipped_legacy = 0
+    if not args.include_legacy:
+        filtered = []
+        for path in paths:
+            fm = _read_frontmatter(path)
+            body = _read_body(path)
+            story_id = _extract_story_id(path, fm, body)
+            if story_id in exempt_story_ids:
+                skipped_legacy += 1
+                continue
+            if _is_legacy_exempt(path, fm, include_archived=args.legacy_archive_exempt):
+                skipped_legacy += 1
+                continue
+            filtered.append(path)
+        paths = filtered
+
     result = Result()
     if not paths:
-        result.err(f"No iterlog files found in {ITERLOG_DIR}/")
+        if args.story_id:
+            result.err(f"No eligible iterlog files found in {ITERLOG_DIR}/ for story_id={args.story_id}")
+        else:
+            result.warn(
+                f"No eligible iterlog files found in {ITERLOG_DIR}/ "
+                "(legacy exemptions and/or archive filters may have excluded all files)"
+            )
     else:
         for path in paths:
             _validate_file(
@@ -413,6 +503,11 @@ def main() -> int:
         print(w)
     for e in result.errors:
         print(e, file=sys.stderr)
+    if skipped_legacy:
+        print(
+            f"INFO: skipped {skipped_legacy} legacy-exempt iterlog file(s) "
+            "(use --include-legacy to include)"
+        )
 
     return 1 if result.errors else 0
 

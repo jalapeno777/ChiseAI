@@ -30,6 +30,7 @@ bootstrap(load_env=True)
 
 ITERLOG_GLOB = "iterlog-*.md"
 ITERLOG_DIR = Path("docs/tempmemories")
+LEGACY_EXEMPTIONS_PATH = Path("docs/governance/legacy-exemptions.yaml")
 
 REQUIRED_FIELDS = {"story_id", "story_title", "phase", "status", "started_at"}
 VALID_PHASES = {"analysis", "planning", "solutioning", "implementation", "testing"}
@@ -91,6 +92,47 @@ def _read_body(md_path: Path) -> str:
     if end == -1:
         return ""
     return text[end + 5 :]
+
+
+def _to_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _is_legacy_exempt(path: Path, fm: dict[str, Any], include_archived: bool) -> bool:
+    if _to_bool(fm.get("legacy_exempt")):
+        return True
+    if str(fm.get("compliance_mode", "")).strip().lower() == "legacy_exempt":
+        return True
+    if include_archived and "docs/tempmemories/archived/" in str(path).replace("\\", "/"):
+        return True
+    return False
+
+
+def _load_legacy_exemptions() -> set[str]:
+    if not LEGACY_EXEMPTIONS_PATH.exists():
+        return set()
+    try:
+        data = yaml.safe_load(LEGACY_EXEMPTIONS_PATH.read_text(encoding="utf-8")) or {}
+        story_ids = data.get("iterlog_story_ids", [])
+        if not isinstance(story_ids, list):
+            return set()
+        return {str(s).strip() for s in story_ids if str(s).strip()}
+    except Exception:
+        return set()
+
+
+def _story_id_for_filter(path: Path, fm: dict[str, Any]) -> str:
+    sid = str(fm.get("story_id", "")).strip()
+    if sid:
+        return sid
+    stem = path.stem
+    if stem.startswith("iterlog-"):
+        return stem.replace("iterlog-", "", 1).strip()
+    return ""
 
 
 def _extract_structured_issues(body: str) -> tuple[list[dict[str, Any]] | None, str]:
@@ -280,10 +322,45 @@ def main() -> int:
         action="store_false",
         help="Disable structured issues requirement (for backward compatibility).",
     )
+    parser.add_argument(
+        "--include-legacy",
+        action="store_true",
+        help="Include legacy-exempt iterlogs (default: skip legacy-exempt files).",
+    )
+    parser.add_argument(
+        "--legacy-archive-exempt",
+        action="store_true",
+        default=True,
+        help="Treat docs/tempmemories/archived/* iterlogs as legacy-exempt (default: true).",
+    )
+    parser.add_argument(
+        "--no-legacy-archive-exempt",
+        dest="legacy_archive_exempt",
+        action="store_false",
+        help="Do not auto-exempt archived iterlogs.",
+    )
     args = parser.parse_args()
 
     result = Result()
     paths = sorted(ITERLOG_DIR.glob(ITERLOG_GLOB)) if ITERLOG_DIR.exists() else []
+    exempt_story_ids = _load_legacy_exemptions()
+    skipped_legacy = 0
+    if not args.include_legacy:
+        filtered_paths: list[Path] = []
+        for p in paths:
+            try:
+                fm = _read_frontmatter(p)
+            except Exception:
+                fm = {}
+            story_id = _story_id_for_filter(p, fm)
+            if story_id in exempt_story_ids:
+                skipped_legacy += 1
+                continue
+            if _is_legacy_exempt(p, fm, include_archived=args.legacy_archive_exempt):
+                skipped_legacy += 1
+                continue
+            filtered_paths.append(p)
+        paths = filtered_paths
     if not paths:
         result.warn(
             f"No iterlog files found under {ITERLOG_DIR}/. "
@@ -308,6 +385,11 @@ def main() -> int:
         print(msg, file=sys.stderr)
     for msg in result.warnings:
         print(msg)
+    if skipped_legacy:
+        print(
+            f"INFO: skipped {skipped_legacy} legacy-exempt iterlog file(s) "
+            "(use --include-legacy to include)"
+        )
 
     exit_code = result.exit_code()
     if args.fail_on_warn and result.warnings and exit_code == 0:

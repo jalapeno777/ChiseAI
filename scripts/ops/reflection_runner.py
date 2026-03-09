@@ -53,6 +53,12 @@ from governance.reflection.artifacts import (
     RootCause,
 )
 from governance.reflection.loops import ReflectionLoops
+from governance.reflection.feature_flags import (
+    get_flag_status as shared_get_flag_status,
+    get_redis_client as shared_get_redis_client,
+    is_flag_enabled as shared_is_flag_enabled,
+    set_flag_enabled as shared_set_flag_enabled,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -62,34 +68,13 @@ logging.basicConfig(
 logger = logging.getLogger("reflection_runner")
 
 
-# Feature flag configuration
-FEATURE_FLAG_KEY = "chise:feature_flags:governance:reflection_enabled"
-
-
 def get_redis_client() -> Any | None:
-    """Get Redis client from environment or return None."""
-    try:
-        import os
-
-        import redis
-
-        host = os.getenv("REDIS_HOST", "host.docker.internal")
-        port = int(os.getenv("REDIS_PORT", "6380"))
-        db = int(os.getenv("REDIS_DB", "0"))
-
-        client = redis.Redis(
-            host=host,
-            port=port,
-            db=db,
-            decode_responses=True,
-        )
-
-        client.ping()
-        logger.info(f"Connected to Redis at {host}:{port}")
-        return client
-    except Exception as e:
-        logger.warning(f"Could not connect to Redis: {e}")
+    """Get Redis client from shared governance feature-flag utility."""
+    client = shared_get_redis_client()
+    if client is None:
+        logger.warning("Could not connect to Redis")
         return None
+    return client
 
 
 def check_feature_flag(redis_client: Any | None) -> bool:
@@ -99,26 +84,10 @@ def check_feature_flag(redis_client: Any | None) -> bool:
     Returns True if enabled, False otherwise.
     Safe default: OFF (disabled) when flag is not set or Redis unavailable.
     """
-    if redis_client is None:
-        logger.warning(
-            "Redis unavailable - feature flag check failed, defaulting to disabled"
-        )
-        return False
-
-    try:
-        value = redis_client.get(FEATURE_FLAG_KEY)
-        if value is None:
-            logger.info(
-                f"Feature flag {FEATURE_FLAG_KEY} not set - defaulting to disabled"
-            )
-            return False
-
-        is_enabled = value.lower() in ("true", "1", "yes", "enabled")
-        logger.info(f"Feature flag {FEATURE_FLAG_KEY} = {value} (enabled={is_enabled})")
-        return is_enabled
-    except Exception as e:
-        logger.error(f"Error checking feature flag: {e}")
-        return False
+    # Keep existing safe default for runner execution regardless of module defaults.
+    enabled = shared_is_flag_enabled("reflection_enabled", default=False)
+    logger.info(f"reflection_enabled (governance) = {enabled}")
+    return enabled
 
 
 def set_feature_flag(redis_client: Any | None, enabled: bool) -> bool:
@@ -135,15 +104,12 @@ def set_feature_flag(redis_client: Any | None, enabled: bool) -> bool:
     if redis_client is None:
         logger.error("Redis unavailable - cannot set feature flag")
         return False
-
-    try:
-        value = "true" if enabled else "false"
-        redis_client.set(FEATURE_FLAG_KEY, value)
-        logger.info(f"Feature flag {FEATURE_FLAG_KEY} set to {value}")
-        return True
-    except Exception as e:
-        logger.error(f"Error setting feature flag: {e}")
-        return False
+    ok = shared_set_flag_enabled("reflection_enabled", enabled, write_legacy=True)
+    if ok:
+        logger.info(f"reflection_enabled set to {enabled}")
+    else:
+        logger.error("Error setting reflection_enabled feature flag")
+    return ok
 
 
 def get_feature_flag_status(redis_client: Any | None) -> dict:
@@ -156,47 +122,37 @@ def get_feature_flag_status(redis_client: Any | None) -> dict:
         - raw_value: Raw value from Redis (or None)
         - default: Whether using default value (bool)
     """
-    status = {
-        "key": FEATURE_FLAG_KEY,
-        "enabled": False,
-        "raw_value": None,
-        "default": True,
-    }
-
     if redis_client is None:
+        status = shared_get_flag_status("reflection_enabled")
         status["error"] = "Redis unavailable"
         return status
-
-    try:
-        value = redis_client.get(FEATURE_FLAG_KEY)
-        status["raw_value"] = value
-
-        if value is None:
-            status["enabled"] = False
-            status["default"] = True
-        else:
-            status["enabled"] = value.lower() in ("true", "1", "yes", "enabled")
-            status["default"] = False
-
-    except Exception as e:
-        status["error"] = str(e)
-
-    return status
+    return shared_get_flag_status("reflection_enabled")
 
 
 def get_qdrant_client() -> Any | None:
     """Get Qdrant client from environment or return None."""
     try:
-        import os
-
         from qdrant_client import QdrantClient
 
-        host = os.getenv("QDRANT_HOST", "host.docker.internal")
         port = int(os.getenv("QDRANT_PORT", "6334"))
-
-        client = QdrantClient(host=host, port=port)
-        logger.info(f"Connected to Qdrant at {host}:{port}")
-        return client
+        hosts = [
+            os.getenv("QDRANT_HOST"),
+            os.getenv("CHISE_QDRANT_HOST"),
+            "chiseai-qdrant",
+            "host.docker.internal",
+            "localhost",
+        ]
+        deduped_hosts = [h for i, h in enumerate(hosts) if h and h not in hosts[:i]]
+        for host in deduped_hosts:
+            try:
+                client = QdrantClient(host=host, port=port)
+                client.get_collections()
+                logger.info(f"Connected to Qdrant at {host}:{port}")
+                return client
+            except Exception:
+                continue
+        logger.warning(f"Could not connect to Qdrant via hosts: {deduped_hosts}")
+        return None
     except Exception as e:
         logger.warning(f"Could not connect to Qdrant: {e}")
         return None
@@ -533,9 +489,12 @@ Examples:
         if args.status:
             status = get_feature_flag_status(redis_client)
             print("Feature Flag Status:")
-            print(f"  Key: {status['key']}")
+            print(f"  Hash Key: {status['hash_key']}")
+            print(f"  Field: {status['field']}")
+            print(f"  Legacy Key: {status['legacy_key']}")
             print(f"  Enabled: {status['enabled']}")
-            print(f"  Raw Value: {status['raw_value']}")
+            print(f"  Hash Raw Value: {status['raw_hash_value']}")
+            print(f"  Legacy Raw Value: {status['raw_legacy_value']}")
             print(f"  Using Default: {status['default']}")
             if "error" in status:
                 print(f"  Error: {status['error']}")

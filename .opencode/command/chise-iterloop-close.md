@@ -154,6 +154,9 @@ Follow these steps exactly (do not skip):
      ```bash
      python3 scripts/validation/validate_metacog_compliance.py --story-id=<story_id> --strict
      ```
+   - Forward-strict default:
+     - Do **not** pass `--include-legacy` for active/new story closure.
+     - Legacy exemptions are handled via `docs/governance/legacy-exemptions.yaml`.
    - Gate FAILS if:
      - Prediction card missing
      - Outcome card missing
@@ -200,6 +203,8 @@ Follow these steps exactly (do not skip):
        --tp-session-artifact-mode=warn \
        --tp-session-self-heal
      ```
+   - Forward-strict default:
+     - Do **not** pass `--include-legacy` for active/new story closure.
    - If self-heal occurs, append a line in iterlog:
      - `tp_session_self_healed: true`
    - Do not block completion for P2+ in-progress stories; escalate only for repeated failures or P0/P1 completed stories.

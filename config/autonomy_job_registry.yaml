@@ -1,0 +1,115 @@
+version: 1
+description: Full Pilot Phase 1 unified autonomy cadence registry
+default_tick_seconds: 60
+default_missed_cadence_factor: 1.5
+
+jobs:
+  - job_id: ops.kpi_ingest_6h
+    enabled: true
+    cadence: 6h
+    timeout_seconds: 300
+    risk_level: low
+    command:
+      - python3
+      - scripts/evaluation/run_mini_eval.py
+
+  - job_id: ops.daily_trends
+    enabled: true
+    cadence: daily
+    timeout_seconds: 600
+    risk_level: low
+    command:
+      - python3
+      - scripts/evaluation/run_daily_trends.py
+
+  - job_id: governance.daily_reflection
+    enabled: true
+    cadence: daily
+    timeout_seconds: 600
+    risk_level: low
+    command:
+      - python3
+      - scripts/standup/generate_daily_reflection_report.py
+
+  - job_id: governance.metacog_weekly
+    enabled: true
+    cadence: weekly
+    timeout_seconds: 300
+    risk_level: low
+    command:
+      - python3
+      - scripts/validation/validate_metacog_compliance.py
+      - --require-for-completed-only
+
+  - job_id: memory.daily_sweep
+    enabled: true
+    cadence: daily
+    timeout_seconds: 900
+    risk_level: medium
+    command:
+      - python3
+      - scripts/ops/memory_sweep.py
+      - --full-sweep
+
+  - job_id: skills.autonomy_weekly
+    enabled: true
+    cadence: weekly
+    timeout_seconds: 600
+    risk_level: low
+    command:
+      - python3
+      - scripts/ops/skill_autonomy_tick.py
+      - --mode=weekly
+
+  - job_id: strategy.experiment_triage_weekly
+    enabled: true
+    cadence: weekly
+    timeout_seconds: 600
+    risk_level: medium
+    command:
+      - python3
+      - scripts/ops/ingest_skill_backlog_candidates.py
+      - --max-items=25
+
+  - job_id: strategy.canary_review_weekly
+    enabled: true
+    cadence: weekly
+    timeout_seconds: 300
+    risk_level: medium
+    command:
+      - python3
+      - scripts/canary_auto_eval.py
+      - status
+
+  - job_id: pilot.phase2_daily
+    enabled: true
+    cadence: daily
+    timeout_seconds: 1800
+    risk_level: medium
+    command:
+      - python3
+      - scripts/ops/full_pilot_phase_runner.py
+      - --phase
+      - phase2
+
+  - job_id: pilot.phase3_weekly
+    enabled: true
+    cadence: weekly
+    timeout_seconds: 1800
+    risk_level: medium
+    command:
+      - python3
+      - scripts/ops/full_pilot_phase_runner.py
+      - --phase
+      - phase3
+
+  - job_id: pilot.phase4_monthly
+    enabled: true
+    cadence: monthly
+    timeout_seconds: 900
+    risk_level: low
+    command:
+      - python3
+      - scripts/ops/full_pilot_phase_runner.py
+      - --phase
+      - phase4
