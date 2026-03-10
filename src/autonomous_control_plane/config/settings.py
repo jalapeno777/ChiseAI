@@ -93,8 +93,7 @@ class InfluxDBConfig:
             port=int(os.getenv("ACP_INFLUXDB_PORT", "18087")),
             bucket=os.getenv("ACP_INFLUXDB_BUCKET", "chiseai"),
             org=os.getenv("ACP_INFLUXDB_ORG", "chiseai"),
-            token=os.getenv("ACP_INFLUXDB_TOKEN")
-            or os.getenv("INFLUXDB_TOKEN", ""),
+            token=os.getenv("ACP_INFLUXDB_TOKEN") or os.getenv("INFLUXDB_TOKEN", ""),
         )
 
 

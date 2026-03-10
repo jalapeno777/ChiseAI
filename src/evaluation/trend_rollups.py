@@ -10,6 +10,7 @@ multiple time windows (24h, 7d, 30d).
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import os
@@ -813,10 +814,8 @@ def _calculate_test_count(stories: list[dict]) -> int:
         # Also check for test_count field directly
         test_count = story.get("test_count", 0)
         if test_count:
-            try:
+            with contextlib.suppress(ValueError, TypeError):
                 total_tests += int(test_count)
-            except (ValueError, TypeError):
-                pass
 
     return total_tests
 
