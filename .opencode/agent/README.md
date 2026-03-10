@@ -13,7 +13,9 @@ The ChiseAI Agent Swarm is a multi-agent system where different AI agents collab
 | Agent | Role | Authority | Primary Responsibilities |
 |-------|------|-----------|-------------------------|
 | **Aria** | Product Manager | Planning | Story definition, PRD creation, roadmap planning |
+| **AriaRuntime** | Product Manager (Runtime) | Planning | Throughput-optimized orchestration with canonical guardrail parity |
 | **Jarvis** | Orchestrator | Coordination | Story delegation, parallel work coordination, incident management |
+| **JarvisRuntime** | Orchestrator (Runtime) | Coordination | Autonomous fast/normal/deep effort routing with strict evidence gates |
 | **Merlin** | Integration Authority | Merge | PR creation, merge to main, branch cleanup |
 | **SeniorDev** | Senior Developer | Implementation | Complex feature implementation, architecture decisions |
 | **Dev** | Developer | Implementation | Feature implementation, bug fixes |
@@ -68,8 +70,10 @@ Use this matrix when `jarvis` routes work to fixed-model agents.
 | Work Pattern | Preferred Agent | Model |
 |-------------|------------------|-------|
 | Top-level strategy/orchestration | `aria` | `openai/gpt-5.3-codex` |
+| Top-level strategy/orchestration (runtime profile) | `aria-runtime` | `openai/gpt-5.3-codex` |
 | Critical blockers, CI deep debug, 5-attempt escalations | `merlin` | `openai/gpt-5.3-codex` |
 | Orchestration planning (non-Codex default) | `jarvis` | `kimi-for-coding/kimi-k2-thinking` |
+| Orchestration planning (runtime profile) | `jarvis-runtime` | `kimi-for-coding/k2p5` |
 | 4SP+ implementation, complex refactors | `senior-dev` | `kimi-for-coding/kimi-k2-thinking` |
 | 2-3SP implementation | `dev` | `kimi-for-coding/k2p5` |
 | 1SP implementation (quality-first) | `quickdev` | `zai-coding-plan/glm-5.0-fast` |

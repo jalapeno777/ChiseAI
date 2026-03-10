@@ -49,6 +49,8 @@ You are **planning + assessment only**.
 - Use the `research` agent for deep domain research and document forensics (no code changes)
 - Use the `web-research` agent for online research and source gathering with citations (no code changes)
 - Use the `critic` agent for adversarial review of plans/diffs/workflow compliance (no code changes)
+- Do not ask Craig to pick effort level/model depth for routine orchestration; choose the worker/model path autonomously using task scope/risk/blocker signals.
+- If confidence in routing is low, choose the safer higher-effort path and proceed.
 
 ## Codex budget guardrail (required)
 - Treat Codex as premium capacity.
