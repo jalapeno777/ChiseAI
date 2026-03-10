@@ -177,21 +177,21 @@ steps:
         # Determine which jobs to check based on cron trigger.
         # Woodpecker may not always populate CI_PIPELINE_CRON for manual cron runs;
         # fall back to message/sender fields used by cron invocations.
-        if [ "${CI_PIPELINE_EVENT}" = "cron" ]; then
-          CRON_TRIGGER="${CI_PIPELINE_CRON:-}"
-          if [ -z "${CRON_TRIGGER}" ]; then
-            CRON_TRIGGER="${CI_PIPELINE_MESSAGE:-${CI_COMMIT_MESSAGE:-${CI_BUILD_MESSAGE:-${CI_PIPELINE_SENDER:-}}}}"
+        if [ "$${CI_PIPELINE_EVENT}" = "cron" ]; then
+          CRON_TRIGGER="$${CI_PIPELINE_CRON:-}"
+          if [ -z "$${CRON_TRIGGER}" ]; then
+            CRON_TRIGGER="$${CI_PIPELINE_MESSAGE:-$${CI_COMMIT_MESSAGE:-$${CI_BUILD_MESSAGE:-$${CI_PIPELINE_SENDER:-}}}}"
           fi
-          echo "Detected cron trigger: ${CRON_TRIGGER:-<empty>}"
+          echo "Detected cron trigger: $${CRON_TRIGGER:-<empty>}"
 
-          if [ "${CRON_TRIGGER}" = "workflow-archive-weekly" ]; then
+          if [ "$${CRON_TRIGGER}" = "workflow-archive-weekly" ]; then
             echo "Mode: Weekly Archival"
             CHECK_JOBS="weekly-preflight weekly-archive"
-          elif [ "${CRON_TRIGGER}" = "workflow-archive-daily" ]; then
+          elif [ "$${CRON_TRIGGER}" = "workflow-archive-daily" ]; then
             echo "Mode: Daily Health Check"
             CHECK_JOBS="daily-health"
           else
-            echo "Unknown cron trigger: ${CRON_TRIGGER:-<empty>}"
+            echo "Unknown cron trigger: $${CRON_TRIGGER:-<empty>}"
             exit 1
           fi
         else
@@ -204,31 +204,31 @@ steps:
         echo ""
         
         FAILED_JOBS=""
-        for job in $CHECK_JOBS; do
-          status_file="$${CI_STATUS_DIR}/${job}.status"
-          if [ -f "$status_file" ]; then
-            exit_code=$(cat "$status_file")
-            if [ "$exit_code" = "0" ]; then
-              echo "✓ $job: PASSED"
+        for job in $${CHECK_JOBS}; do
+          status_file="$${CI_STATUS_DIR}/$${job}.status"
+          if [ -f "$${status_file}" ]; then
+            exit_code=$(cat "$${status_file}")
+            if [ "$${exit_code}" = "0" ]; then
+              echo "✓ $${job}: PASSED"
             else
-              echo "✗ $job: FAILED (exit code: $exit_code)"
-              FAILED_JOBS="$FAILED_JOBS $job"
+              echo "✗ $${job}: FAILED (exit code: $${exit_code})"
+              FAILED_JOBS="$${FAILED_JOBS} $${job}"
             fi
           else
-            echo "✗ $job: NO STATUS FILE"
-            FAILED_JOBS="$FAILED_JOBS $job"
+            echo "✗ $${job}: NO STATUS FILE"
+            FAILED_JOBS="$${FAILED_JOBS} $${job}"
           fi
         done
         
         echo ""
         echo "═══════════════════════════════════════════════════════════════════"
         
-        if [ -z "$FAILED_JOBS" ]; then
+        if [ -z "$${FAILED_JOBS}" ]; then
           echo "RESULT: ✓ ALL CHECKS PASSED"
           echo "═══════════════════════════════════════════════════════════════════"
           exit 0
         else
-          echo "RESULT: ✗ FAILED JOBS:$FAILED_JOBS"
+          echo "RESULT: ✗ FAILED JOBS:$${FAILED_JOBS}"
           echo "═══════════════════════════════════════════════════════════════════"
           exit 1
         fi
