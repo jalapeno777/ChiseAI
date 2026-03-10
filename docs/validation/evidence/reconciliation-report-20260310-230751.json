@@ -1,0 +1,72 @@
+{
+  "execution_id": "d8c30ed2",
+  "timestamp_utc": "2026-03-10T23:07:51.214833+00:00",
+  "period_start": "2026-03-10T19:07:51.214000+00:00",
+  "period_end": "2026-03-10T23:07:51.214000+00:00",
+  "bybit_trade_count": 5,
+  "journal_trade_count": 6,
+  "matched_count": 4,
+  "mismatched_count": 1,
+  "critical_mismatches": 0,
+  "missing_in_journal": [],
+  "missing_in_bybit": [
+    "entry-phantom"
+  ],
+  "tolerance_pct": 0.1,
+  "tolerance_pnl": 0.01,
+  "overall_passed": false,
+  "bybit_total_pnl": -7.694,
+  "journal_total_pnl": 290.0,
+  "pnl_diff": 297.694,
+  "mismatches": [
+    {
+      "order_id": "ord-005",
+      "entry_id": "entry-005",
+      "type": "price",
+      "bybit_value": 64800.0,
+      "journal_value": 64900.0,
+      "diff": 100.0,
+      "pct_diff": 0.15432098765432098,
+      "tolerance": 0.1,
+      "within_tolerance": false
+    }
+  ],
+  "matched": [
+    {
+      "order_id": "ord-001",
+      "entry_id": "entry-001",
+      "symbol": "BTCUSDT",
+      "side": "Buy",
+      "price_diff_pct": 0.0,
+      "qty_diff_pct": 0.0,
+      "fee_diff": 0.0
+    },
+    {
+      "order_id": "ord-002",
+      "entry_id": "entry-002",
+      "symbol": "BTCUSDT",
+      "side": "Sell",
+      "price_diff_pct": 0.0,
+      "qty_diff_pct": 0.0,
+      "fee_diff": 0.0
+    },
+    {
+      "order_id": "ord-003",
+      "entry_id": "entry-003",
+      "symbol": "ETHUSDT",
+      "side": "Buy",
+      "price_diff_pct": 0.0,
+      "qty_diff_pct": 0.0,
+      "fee_diff": 0.0
+    },
+    {
+      "order_id": "ord-004",
+      "entry_id": "entry-004",
+      "symbol": "ETHUSDT",
+      "side": "Sell",
+      "price_diff_pct": 0.0,
+      "qty_diff_pct": 0.0,
+      "fee_diff": 0.0
+    }
+  ]
+}
