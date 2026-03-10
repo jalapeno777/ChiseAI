@@ -256,6 +256,53 @@ completed:
   status: completed
   title: AUDIT-DELTA Remediation - Cross-Branch Verification Guardrail
 backlog:
+- id: COVERAGE-BLOCKER-001
+  priority: high
+  title: Resolve test collection errors blocking authoritative coverage runs
+  owner: devops-team
+  scope_globs: ["tests/", "scripts/validation/", "src/config/"]
+  acceptance_criteria:
+  - pytest tests/ --collect-only runs without errors
+  - All 8 collection errors resolved
+  - coverage.improvement module created or imports fixed
+  - config.trading_mode imports working
+  - scripts.validation.recap_validator fully implemented
+  verification_command: python3 -m pytest tests/ --collect-only
+  story_points: 2
+  dependencies: []
+  notes: Blocks authoritative coverage measurement for ST-COVERAGE slices
+  created_date: '2026-03-10'
+  status: planned
+- id: COVERAGE-BLOCKER-002
+  priority: high
+  title: Fix brain promotion smoke test serialization failures
+  owner: qa-team
+  scope_globs: ["tests/test_brain/test_promotion_smoke.py", "src/brain/promotion.py"]
+  acceptance_criteria:
+  - test_packet_serialization_roundtrip passes
+  - test_packet_with_all_field_types passes
+  - All 101 brain smoke tests pass
+  verification_command: pytest tests/test_brain/test_promotion_smoke.py -v
+  story_points: 1
+  dependencies: [COVERAGE-BLOCKER-001]
+  notes: 2 failing tests in promotion smoke test suite
+  created_date: '2026-03-10'
+  status: planned
+- id: COVERAGE-BLOCKER-003
+  priority: high
+  title: Resolve remaining import-path inconsistencies
+  owner: dev-team
+  scope_globs: ["scripts/", "tests/", "src/"]
+  acceptance_criteria:
+  - coverage.improvement module exists or references removed
+  - config.trading_mode properly importable from all test locations
+  - scripts.validation.recap_validator fully functional
+  verification_command: python3 -c "from scripts.validation import RecapValidator; from config.trading_mode import TradingModeConfig"
+  story_points: 2
+  dependencies: []
+  notes: Import errors prevent full test suite execution
+  created_date: '2026-03-10'
+  status: planned
 - acceptance_criteria:
   - AGENTS.md updated with new merge policy including senior-dev authority and merge
     attempt definitions
