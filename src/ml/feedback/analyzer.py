@@ -28,6 +28,11 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from ml.feedback.matcher import PredictionOutcomeMatch
 
+try:
+    from redis_state import redis_state_hset
+except ImportError:
+    redis_state_hset = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -318,6 +323,8 @@ class FeedbackAnalyzer:
         """
         self.config = config or AnalysisConfig()
         self._baseline_metrics: dict[str, float] = {}
+        self._last_analysis_time: datetime | None = None
+        self._total_analyses: int = 0
 
     async def analyze_matches(
         self,
@@ -375,6 +382,10 @@ class FeedbackAnalyzer:
             f"{report.overall_accuracy:.2%} accuracy, "
             f"{len(report.drift_indicators)} drift indicators"
         )
+
+        # Track analysis metrics
+        self._last_analysis_time = datetime.now(UTC)
+        self._total_analyses += 1
 
         return report
 
@@ -807,3 +818,61 @@ class FeedbackAnalyzer:
             Baseline metrics
         """
         return self._baseline_metrics.copy()
+
+    def get_health_status(self) -> dict[str, Any]:
+        """Get health status for the analyzer.
+
+        Returns:
+            Health status dictionary with:
+            - is_active: whether analysis is being performed
+            - last_analysis_time: ISO timestamp of last analysis
+            - total_analyses: total number of analyses performed
+            - is_healthy: boolean indicating health
+            - reason: human-readable status reason
+        """
+        now = datetime.now(UTC)
+
+        # Determine if active
+        is_active = self._last_analysis_time is not None
+
+        # Determine health
+        is_healthy = True
+        reason_parts = []
+
+        if self._last_analysis_time:
+            time_since = (now - self._last_analysis_time).total_seconds()
+            minutes_ago = int(time_since / 60)
+            reason_parts.append(f"Last analysis {minutes_ago} minutes ago")
+
+            # Consider unhealthy if no analysis in 24 hours
+            if time_since > 86400:
+                is_healthy = False
+                reason_parts.append("No analysis in 24 hours")
+        else:
+            reason_parts.append("No analyses recorded")
+            is_healthy = False
+
+        reason_parts.append(f"{self._total_analyses} total analyses performed")
+
+        # Store in Redis if available
+        if redis_state_hset is not None:
+            try:
+                redis_state_hset(
+                    name="chiseai:ml:feedback:analyzer:health",
+                    key="last_analysis_timestamp",
+                    value=now.isoformat(),
+                    expire_seconds=86400,
+                )
+            except Exception as e:
+                logger.debug(f"Failed to store health timestamp in Redis: {e}")
+
+        return {
+            "component": "FeedbackAnalyzer",
+            "is_active": is_active,
+            "last_analysis_time": self._last_analysis_time.isoformat()
+            if self._last_analysis_time
+            else None,
+            "total_analyses": self._total_analyses,
+            "is_healthy": is_healthy,
+            "reason": "; ".join(reason_parts),
+        }

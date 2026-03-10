@@ -1,0 +1,155 @@
+{
+  "story_id": "PAPER-GO-REMEDIATION-001",
+  "validation_date": "2026-03-10",
+  "validation_type": "live_provider_tests",
+  "validator": "quickdev",
+  "batch": "1",
+  
+  "environment_variables": {
+    "KIMI_API_KEY": {
+      "set": true,
+      "length": 72,
+      "credential_status": "VALID_FORMAT"
+    },
+    "Z_AI_API_KEY": {
+      "set": true,
+      "length": 49,
+      "credential_status": "VALID_FORMAT"
+    },
+    "ZHIPU_API_KEY": {
+      "set": true,
+      "length": 49,
+      "credential_status": "VALID_FORMAT"
+    },
+    "MINIMAX_API_KEY": {
+      "set": true,
+      "length": 125,
+      "credential_status": "VALID_FORMAT"
+    }
+  },
+  
+  "provider_tests": {
+    "zai_coding": {
+      "endpoint": "https://api.z.ai/api/coding/paas/v4",
+      "status": "OPERATIONAL",
+      "latency": {
+        "glm-5": "1331ms",
+        "glm-4.5-air": "948ms",
+        "glm-4.7": "8397ms"
+      },
+      "models_tested": ["glm-5", "glm-4.5-air", "glm-4.7"],
+      "response_validation": {
+        "http_code": 200,
+        "reasoning_content": true,
+        "models_available": ["glm-5", "glm-4.5-air", "glm-4.7"]
+      },
+      "notes": "Primary working provider with reasoning_content support"
+    },
+    "zhipu": {
+      "endpoint": "https://open.bigmodel.cn/api/paas/v4",
+      "status": "DEGRADED",
+      "latency": {
+        "test": "1691ms"
+      },
+      "response_validation": {
+        "http_code": 429,
+        "error_code": "1113",
+        "error_message": "余额不足或无可用资源包,请充值。"
+      },
+      "notes": "Quota exhausted - needs recharge at open.bigmodel.cn"
+    },
+    "kimi_moonshot": {
+      "endpoint": "https://api.moonshot.cn/v1",
+      "status": "UNAVAILABLE",
+      "latency": {
+        "test": "1547ms"
+      },
+      "response_validation": {
+        "http_code": 401,
+        "error_message": "Invalid Authentication"
+      },
+      "notes": "Auth failure - needs key rotation from platform.moonshot.cn"
+    },
+    "kimi_coding": {
+      "endpoint": "https://api.kimi.com/coding/v1",
+      "status": "UNAVAILABLE",
+      "latency": {
+        "test": "751ms"
+      },
+      "response_validation": {
+        "http_code": 403,
+        "error_message": "Kimi For Coding is currently only available for Coding Agents such as Kimi CLI, Claude Code, Roo Code, Kilo Code, etc."
+      },
+      "notes": "Access restricted to Coding Agents only - not available for standard API access"
+    },
+    "kimi_adapter": {
+      "endpoint": "http://localhost:8002/v1",
+      "container_status": "healthy",
+      "health_endpoint": "http://localhost:8002/health",
+      "http_code": 200,
+      "notes": "Container operational but upstream KIMI API has auth issues - requests timeout"
+    },
+    "minimax": {
+      "endpoint": "https://api.minimax.chat/v1",
+      "status": "DISABLED",
+      "latency": {
+        "test": "1334ms"
+      },
+      "response_validation": {
+        "http_code": 200,
+        "error_message": "invalid api key"
+      },
+      "notes": "Disabled per PAPER-LLM-DIAG-001 policy - no action needed"
+    }
+  },
+  
+  "recommended_fallback_order": [
+    {
+      "provider": "zai_coding",
+      "model": "glm-5",
+      "priority": 1,
+      "notes": "Primary - fully operational with reasoning_content"
+    },
+    {
+      "provider": "zai_coding",
+      "model": "glm-4.5-air",
+      "priority": 2,
+      "notes": "Fast fallback for cheap operations"
+    },
+    {
+      "provider": "zhipu",
+      "model": "glm-4.7",
+      "priority": 3,
+      "notes": "Tertiary - use only if quota recharged"
+    },
+    {
+      "provider": "kimi_adapter",
+      "model": "kimi-k2.5",
+      "priority": 4,
+      "notes": "Quaternary - blocked by upstream auth issues"
+    }
+  ],
+  
+  "credential_resolution_status": {
+    "kimi_moonshot": "STILL_BLOCKED - needs new key from https://platform.moonshot.cn/",
+    "zhipu": "STILL_BLOCKED - needs quota recharge at https://open.bigmodel.cn/",
+    "minimax": "DISABLED - no action needed (disabled by policy)"
+  },
+  
+  "craig_statement_verification": {
+    "statement": "Credentials SHOULD be resolved now",
+    "partial_resolution": true,
+    "notes": [
+      "Z.AI is now fully operational (confirmed via live tests)",
+      "KIMI still blocked (auth issues)",
+      "Zhipu still blocked (quota exhausted)",
+      "System has a working primary provider (Z.AI)"
+    ]
+  },
+  
+  "related_documents": [
+    "docs/evidence/LLM-PROVIDER-OPERATIONAL-20260309.json",
+    "docs/tempmemories/llm-provider-matrix.md",
+    "docs/blockers/LLM-CREDENTIAL-BLOCKER-001.md"
+  ]
+}

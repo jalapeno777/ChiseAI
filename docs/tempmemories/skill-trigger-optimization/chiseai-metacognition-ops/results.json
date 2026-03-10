@@ -1,0 +1,80 @@
+{
+  "skill_name": "chiseai-metacognition-ops",
+  "evaluated_at": "2026-03-10T19:36:34.567714Z",
+  "method": "fallback_keyword_heuristic",
+  "total_evaluations": 10,
+  "correct": 10,
+  "accuracy": 1.0,
+  "evaluations": [
+    {
+      "query": "Start a metacognition loop for this story",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.9,
+      "correct": true
+    },
+    {
+      "query": "Capture prediction card before implementation",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.95,
+      "correct": true
+    },
+    {
+      "query": "Close the metacognition loop and capture outcome",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.95,
+      "correct": true
+    },
+    {
+      "query": "Calculate calibration delta for my predictions",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.75,
+      "correct": true
+    },
+    {
+      "query": "What is my confidence calibration score?",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.6,
+      "correct": true
+    },
+    {
+      "query": "Generate weekly metacognition trend report",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.75,
+      "correct": true
+    },
+    {
+      "query": "Create a prevention rule from this incident",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.9,
+      "correct": true
+    },
+    {
+      "query": "Validate metacognition compliance for P0 story",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.9,
+      "correct": true
+    },
+    {
+      "query": "Promote metacognition learnings to Qdrant",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.9,
+      "correct": true
+    },
+    {
+      "query": "What are the metacognition iterlog requirements?",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.6,
+      "correct": true
+    }
+  ]
+}

@@ -18,6 +18,8 @@ import logging
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from enum import Enum
 from typing import Any
 
 import websockets
@@ -25,6 +27,16 @@ from src.ml.models.signal_outcome import BybitFillEvent, SignalOutcome
 from websockets.exceptions import ConnectionClosed, InvalidStatus
 
 logger = logging.getLogger(__name__)
+
+
+class FreshnessReason(Enum):
+    """Reason codes for freshness status."""
+
+    FRESH = "fresh"
+    STALE_NO_COLLECTION = "stale_no_collection"
+    STALE_OLD = "stale_old"
+    STALE_API_ERROR = "stale_api_error"
+    STALE_REDIS_ERROR = "stale_redis_error"
 
 
 @dataclass
@@ -64,6 +76,8 @@ class ConnectionState:
         reconnect_count: Number of reconnections
         messages_received: Total messages received
         fills_received: Total fill events received
+        last_fill_timestamp: ISO timestamp of last fill event
+        freshness_status: Current freshness status
     """
 
     is_connected: bool = False
@@ -73,6 +87,8 @@ class ConnectionState:
     reconnect_count: int = 0
     messages_received: int = 0
     fills_received: int = 0
+    last_fill_timestamp: str = ""
+    freshness_status: str = "unknown"
 
     @property
     def time_since_last_message(self) -> float:
@@ -80,6 +96,19 @@ class ConnectionState:
         if self.last_message == 0:
             return float("inf")
         return time.time() - self.last_message
+
+    @property
+    def time_since_last_fill(self) -> float:
+        """Time since last fill in seconds."""
+        if not self.last_fill_timestamp:
+            return float("inf")
+        try:
+            last_fill = datetime.fromisoformat(
+                self.last_fill_timestamp.replace("Z", "+00:00")
+            )
+            return (datetime.now(UTC) - last_fill).total_seconds()
+        except (ValueError, TypeError):
+            return float("inf")
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
@@ -92,6 +121,9 @@ class ConnectionState:
             "reconnect_count": self.reconnect_count,
             "messages_received": self.messages_received,
             "fills_received": self.fills_received,
+            "last_fill_timestamp": self.last_fill_timestamp,
+            "time_since_last_fill": self.time_since_last_fill,
+            "freshness_status": self.freshness_status,
         }
 
 
@@ -300,9 +332,9 @@ class BybitFillListener:
         Returns:
             True if authentication succeeded
         """
-        assert (
-            self._ws is not None
-        ), "_authenticate should only be called when connected"
+        assert self._ws is not None, (
+            "_authenticate should only be called when connected"
+        )
         if not self.config.api_key or not self.config.api_secret:
             logger.error("API key and secret required for authentication")
             return False
@@ -342,9 +374,9 @@ class BybitFillListener:
 
     async def _subscribe_execution(self) -> None:
         """Subscribe to execution channel."""
-        assert (
-            self._ws is not None
-        ), "_subscribe_execution should only be called when connected"
+        assert self._ws is not None, (
+            "_subscribe_execution should only be called when connected"
+        )
         subscribe_msg = {
             "op": "subscribe",
             "args": [{"channel": "execution"}],
@@ -420,6 +452,11 @@ class BybitFillListener:
 
                 self.state.fills_received += 1
 
+                # Update freshness tracking
+                self.state.last_fill_timestamp = datetime.now(UTC).isoformat()
+                self.state.freshness_status = FreshnessReason.FRESH.value
+                await self._update_redis_freshness(outcome)
+
                 # Notify callbacks
                 for callback in self._fill_callbacks:
                     try:
@@ -430,6 +467,81 @@ class BybitFillListener:
             except Exception as e:
                 logger.error(f"Error processing fill: {e}")
                 self._notify_error(e)
+
+    async def _update_redis_freshness(self, outcome: SignalOutcome) -> None:
+        """Update Redis with freshness timestamp on fill event.
+
+        Args:
+            outcome: Signal outcome from fill event
+        """
+        if not self.redis:
+            return
+
+        try:
+            timestamp = datetime.now(UTC).isoformat()
+            redis_key = "bmad:chiseai:bybit_truth:websocket_last_fill"
+            await self.redis.set(redis_key, timestamp)
+            logger.debug(f"Updated Redis freshness timestamp: {timestamp}")
+        except Exception as e:
+            logger.warning(f"Failed to update Redis freshness: {e}")
+
+    def get_freshness_status(self, threshold_hours: float = 24.0) -> dict[str, Any]:
+        """Get current freshness status.
+
+        Args:
+            threshold_hours: Hours before data is considered stale
+
+        Returns:
+            Dictionary with freshness status information
+        """
+        now = datetime.now(UTC)
+
+        # Check if we have any fill data
+        if not self.state.last_fill_timestamp:
+            return {
+                "is_fresh": False,
+                "status": "stale",
+                "reason": FreshnessReason.STALE_NO_COLLECTION.value,
+                "hours_since_last_fill": float("inf"),
+                "last_fill_timestamp": None,
+                "fills_received": self.state.fills_received,
+            }
+
+        # Calculate hours since last fill
+        try:
+            last_fill = datetime.fromisoformat(
+                self.state.last_fill_timestamp.replace("Z", "+00:00")
+            )
+            hours_since = (now - last_fill).total_seconds() / 3600
+        except (ValueError, TypeError):
+            return {
+                "is_fresh": False,
+                "status": "error",
+                "reason": FreshnessReason.STALE_REDIS_ERROR.value,
+                "hours_since_last_fill": float("inf"),
+                "last_fill_timestamp": self.state.last_fill_timestamp,
+                "fills_received": self.state.fills_received,
+            }
+
+        # Determine freshness
+        if hours_since > threshold_hours:
+            is_fresh = False
+            status = "stale"
+            reason = FreshnessReason.STALE_OLD.value
+        else:
+            is_fresh = True
+            status = "fresh"
+            reason = FreshnessReason.FRESH.value
+
+        return {
+            "is_fresh": is_fresh,
+            "status": status,
+            "reason": reason,
+            "hours_since_last_fill": round(hours_since, 2),
+            "last_fill_timestamp": self.state.last_fill_timestamp,
+            "fills_received": self.state.fills_received,
+            "threshold_hours": threshold_hours,
+        }
 
     async def _is_duplicate(self, order_id: str) -> bool:
         """Check if order_id has been processed (deduplication).

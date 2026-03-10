@@ -241,6 +241,66 @@ class SignalOutcome:
         else:
             return (self.entry_price - current) * self.position_size * self.leverage
 
+    def detect_is_test(self) -> bool:
+        """Detect if this outcome represents a test trade.
+
+        Test trades are identified by:
+        - signal_id starting with "test-" or "TEST-"
+        - order_id containing "test" or "TEST"
+        - metadata flag is_test=True
+        - execution_mode is "test" or "testnet"
+        - execution_source contains "test" or "e2e"
+
+        Returns:
+            True if this is a test trade, False otherwise
+        """
+        # Check signal_id prefix
+        signal_id_str = str(self.signal_id) if self.signal_id else ""
+        if signal_id_str.lower().startswith("test-"):
+            return True
+
+        # Check order_id
+        if self.order_id and "test" in self.order_id.lower():
+            return True
+
+        # Check metadata flag
+        if self.metadata.get("is_test", False):
+            return True
+
+        # Check execution mode
+        if self.execution_mode and self.execution_mode.lower() in ("test", "testnet"):
+            return True
+
+        # Check execution source
+        if self.execution_source and (
+            "test" in self.execution_source.lower()
+            or "e2e" in self.execution_source.lower()
+        ):
+            return True
+
+        return False
+
+    def validate_test_labeling(self) -> tuple[bool, str | None]:
+        """Validate that test trades are properly labeled.
+
+        Returns:
+            Tuple of (is_valid, error_message)
+        """
+        detected_as_test = self.detect_is_test()
+
+        if detected_as_test and not self.is_test:
+            return False, (
+                f"Test trade detected but is_test=False: "
+                f"signal_id={self.signal_id}, order_id={self.order_id}"
+            )
+
+        if self.is_test and not detected_as_test:
+            # This is a warning case - trade is marked as test but doesn't
+            # have obvious test indicators
+            return True, None  # Still valid, just flagged
+
+        return True, None
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization.
 

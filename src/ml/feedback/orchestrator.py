@@ -31,6 +31,12 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from ml.feedback.matcher import PredictionOutcomeMatch
 
+try:
+    from redis_state import redis_state_hset, redis_state_hget
+except ImportError:
+    redis_state_hset = None
+    redis_state_hget = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -352,6 +358,90 @@ class FeedbackOrchestrator:
                 "enable_auto_update": self.config.enable_auto_update,
                 "schedule_interval_hours": self.config.schedule_interval_hours,
             },
+        }
+
+    def get_health_status(self) -> dict[str, Any]:
+        """Get health status for the orchestrator.
+
+        Returns:
+            Health status dictionary with:
+            - loop_status: idle/running/completed/failed
+            - last_iteration_time: ISO timestamp of last iteration
+            - total_iterations: total number of iterations completed
+            - error_count: number of failed iterations
+            - is_healthy: boolean indicating health
+            - reason: human-readable status reason
+        """
+        # Determine loop status
+        if self._is_running:
+            loop_status = "running"
+        elif not self._iteration_history:
+            loop_status = "idle"
+        else:
+            last_status = self._iteration_history[-1].status
+            loop_status = (
+                last_status.value
+                if hasattr(last_status, "value")
+                else str(last_status).lower()
+            )
+
+        # Get last iteration time
+        last_iteration_time = None
+        if self._iteration_history:
+            last_iteration_time = self._iteration_history[-1].start_time.isoformat()
+
+        # Count errors
+        error_count = sum(
+            1
+            for i in self._iteration_history
+            if i.status == LoopStatus.FAILED or i.status == LoopStatus.TIMEOUT
+        )
+
+        # Determine health
+        is_healthy = True
+        reason_parts = []
+
+        if self._is_running:
+            reason_parts.append("Loop is currently running")
+        elif self._iteration_history:
+            last = self._iteration_history[-1]
+            time_since = (datetime.now(UTC) - last.start_time).total_seconds()
+            minutes_ago = int(time_since / 60)
+            reason_parts.append(f"Last iteration {minutes_ago} minutes ago")
+
+            if last.status == LoopStatus.FAILED:
+                is_healthy = False
+                reason_parts.append("Last iteration failed")
+            elif last.status == LoopStatus.TIMEOUT:
+                is_healthy = False
+                reason_parts.append("Last iteration timed out")
+        else:
+            reason_parts.append("No iterations recorded")
+
+        if error_count > 3:
+            is_healthy = False
+            reason_parts.append(f"{error_count} errors in history")
+
+        # Store in Redis if available
+        if redis_state_hset is not None:
+            try:
+                redis_state_hset(
+                    name="chiseai:ml:feedback:orchestrator:health",
+                    key="last_iteration_timestamp",
+                    value=datetime.now(UTC).isoformat(),
+                    expire_seconds=86400,  # 24 hours
+                )
+            except Exception as e:
+                logger.debug(f"Failed to store health timestamp in Redis: {e}")
+
+        return {
+            "component": "FeedbackOrchestrator",
+            "loop_status": loop_status,
+            "last_iteration_time": last_iteration_time,
+            "total_iterations": len(self._iteration_history),
+            "error_count": error_count,
+            "is_healthy": is_healthy,
+            "reason": "; ".join(reason_parts),
         }
 
     def get_iteration_history(

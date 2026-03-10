@@ -375,3 +375,80 @@ class TestPredictionOutcomeMatcher:
         matcher.clear_history()
 
         assert len(matcher._match_history) == 0
+
+
+class TestMatcherHealth:
+    """Tests for matcher health status."""
+
+    @pytest.fixture
+    def matcher(self) -> PredictionOutcomeMatcher:
+        """Create matcher fixture."""
+        return PredictionOutcomeMatcher()
+
+    def test_get_health_status_no_matches(self, matcher) -> None:
+        """Test health status with no matches."""
+        health = matcher.get_health_status()
+
+        assert health["component"] == "PredictionOutcomeMatcher"
+        assert health["is_active"] is False
+        assert health["total_matches"] == 0
+        assert health["match_rate"] == 0.0
+        assert health["is_healthy"] is False
+        assert "No matches recorded" in health["reason"]
+        assert health["last_match_time"] is None
+
+    def test_get_health_status_with_matches(self, matcher) -> None:
+        """Test health status with matches."""
+        from datetime import UTC, datetime
+
+        # Add some matches
+        matcher._match_history = [
+            PredictionOutcomeMatch(
+                signal_id=f"test-{i}",
+                signal=MagicMock(),
+                status=MatchStatus.MATCHED,
+            )
+            for i in range(10)
+        ]
+        matcher._total_matches_processed = 10
+        matcher._last_match_timestamp = datetime.now(UTC)
+
+        health = matcher.get_health_status()
+
+        assert health["is_active"] is True
+        assert health["total_matches"] == 10
+        assert health["match_rate"] == 1.0
+        assert health["is_healthy"] is True
+        assert "Last match" in health["reason"]
+        assert "10 total matches processed" in health["reason"]
+
+    def test_get_health_status_partial_match_rate(self, matcher) -> None:
+        """Test health status with partial match rate."""
+        from datetime import UTC, datetime
+
+        # Add mixed matches
+        matcher._match_history = [
+            PredictionOutcomeMatch(
+                signal_id=f"matched-{i}",
+                signal=MagicMock(),
+                status=MatchStatus.MATCHED,
+            )
+            for i in range(7)
+        ]
+        matcher._match_history.extend(
+            [
+                PredictionOutcomeMatch(
+                    signal_id=f"expired-{i}",
+                    signal=MagicMock(),
+                    status=MatchStatus.EXPIRED,
+                )
+                for i in range(3)
+            ]
+        )
+        matcher._total_matches_processed = 10
+        matcher._last_match_timestamp = datetime.now(UTC)
+
+        health = matcher.get_health_status()
+
+        assert health["match_rate"] == 0.7
+        assert "Match rate: 70.0%" in health["reason"]

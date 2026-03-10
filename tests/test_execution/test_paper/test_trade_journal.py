@@ -1534,3 +1534,272 @@ class TestTradeJournal:
         assert restored_entry is not None
         assert restored_entry.is_closed is True
         assert restored_entry.exit_price == 51000.0
+
+
+class TestTradeJournalTestTradeSegregation:
+    """Test test trade segregation (P0-KPI-GUARDRAILS-002)."""
+
+    def test_trade_entry_is_test_field(self):
+        """Test that TradeJournalEntry has is_test field."""
+        entry = TradeJournalEntry(
+            entry_id="entry_123",
+            symbol="BTCUSDT",
+            side="buy",
+            entry_price=50000.0,
+            entry_time=datetime.now(UTC),
+            position_size=0.1,
+            signal_id="sig_456",
+            signal_confidence=0.85,
+            signal_strategy="momentum",
+            is_test=False,
+        )
+        assert entry.is_test is False
+
+        test_entry = TradeJournalEntry(
+            entry_id="test-entry-123",
+            symbol="BTCUSDT",
+            side="buy",
+            entry_price=50000.0,
+            entry_time=datetime.now(UTC),
+            position_size=0.1,
+            signal_id="test-sig-456",
+            signal_confidence=0.85,
+            signal_strategy="momentum",
+            is_test=True,
+        )
+        assert test_entry.is_test is True
+
+    def test_trade_journal_get_test_trades(self):
+        """Test TradeJournal.get_test_trades() method."""
+        journal = TradeJournal()
+
+        # Create production trade
+        prod_entry = TradeJournalEntry(
+            entry_id="prod_1",
+            symbol="BTCUSDT",
+            side="buy",
+            entry_price=50000.0,
+            entry_time=datetime.now(UTC),
+            position_size=0.1,
+            signal_id="sig_1",
+            signal_confidence=0.85,
+            signal_strategy="momentum",
+            is_test=False,
+        )
+
+        # Create test trade
+        test_entry = TradeJournalEntry(
+            entry_id="test_1",
+            symbol="ETHUSDT",
+            side="buy",
+            entry_price=3000.0,
+            entry_time=datetime.now(UTC),
+            position_size=0.5,
+            signal_id="sig_2",
+            signal_confidence=0.75,
+            signal_strategy="e2e_test",
+            is_test=True,
+        )
+
+        journal._entries[prod_entry.entry_id] = prod_entry
+        journal._entries[test_entry.entry_id] = test_entry
+
+        test_trades = journal.get_test_trades()
+        assert len(test_trades) == 1
+        assert test_trades[0].entry_id == "test_1"
+
+    def test_trade_journal_get_production_trades(self):
+        """Test TradeJournal.get_production_trades() method."""
+        journal = TradeJournal()
+
+        # Create production trade
+        prod_entry = TradeJournalEntry(
+            entry_id="prod_1",
+            symbol="BTCUSDT",
+            side="buy",
+            entry_price=50000.0,
+            entry_time=datetime.now(UTC),
+            position_size=0.1,
+            signal_id="sig_1",
+            signal_confidence=0.85,
+            signal_strategy="momentum",
+            is_test=False,
+        )
+
+        # Create test trade
+        test_entry = TradeJournalEntry(
+            entry_id="test_1",
+            symbol="ETHUSDT",
+            side="buy",
+            entry_price=3000.0,
+            entry_time=datetime.now(UTC),
+            position_size=0.5,
+            signal_id="sig_2",
+            signal_confidence=0.75,
+            signal_strategy="e2e_test",
+            is_test=True,
+        )
+
+        journal._entries[prod_entry.entry_id] = prod_entry
+        journal._entries[test_entry.entry_id] = test_entry
+
+        prod_trades = journal.get_production_trades()
+        assert len(prod_trades) == 1
+        assert prod_trades[0].entry_id == "prod_1"
+
+    def test_list_entries_include_test_trades_default_false(self):
+        """Test that list_entries excludes test trades by default."""
+        journal = TradeJournal()
+
+        # Create production trade
+        prod_entry = TradeJournalEntry(
+            entry_id="prod_1",
+            symbol="BTCUSDT",
+            side="buy",
+            entry_price=50000.0,
+            entry_time=datetime.now(UTC),
+            position_size=0.1,
+            signal_id="sig_1",
+            signal_confidence=0.85,
+            signal_strategy="momentum",
+            is_test=False,
+        )
+
+        # Create test trade
+        test_entry = TradeJournalEntry(
+            entry_id="test_1",
+            symbol="ETHUSDT",
+            side="buy",
+            entry_price=3000.0,
+            entry_time=datetime.now(UTC),
+            position_size=0.5,
+            signal_id="sig_2",
+            signal_confidence=0.75,
+            signal_strategy="e2e_test",
+            is_test=True,
+        )
+
+        journal._entries[prod_entry.entry_id] = prod_entry
+        journal._entries[test_entry.entry_id] = test_entry
+
+        # Default should exclude test trades
+        entries = journal.list_entries()
+        assert len(entries) == 1
+        assert entries[0].entry_id == "prod_1"
+
+    def test_list_entries_include_test_trades_true(self):
+        """Test that list_entries includes test trades when requested."""
+        journal = TradeJournal()
+
+        # Create production trade
+        prod_entry = TradeJournalEntry(
+            entry_id="prod_1",
+            symbol="BTCUSDT",
+            side="buy",
+            entry_price=50000.0,
+            entry_time=datetime.now(UTC),
+            position_size=0.1,
+            signal_id="sig_1",
+            signal_confidence=0.85,
+            signal_strategy="momentum",
+            is_test=False,
+        )
+
+        # Create test trade
+        test_entry = TradeJournalEntry(
+            entry_id="test_1",
+            symbol="ETHUSDT",
+            side="buy",
+            entry_price=3000.0,
+            entry_time=datetime.now(UTC),
+            position_size=0.5,
+            signal_id="sig_2",
+            signal_confidence=0.75,
+            signal_strategy="e2e_test",
+            is_test=True,
+        )
+
+        journal._entries[prod_entry.entry_id] = prod_entry
+        journal._entries[test_entry.entry_id] = test_entry
+
+        # Include test trades
+        entries = journal.list_entries(include_test_trades=True)
+        assert len(entries) == 2
+
+    def test_detect_test_trade_by_signal_id(self):
+        """Test detect_test_trade detects test trades by signal_id."""
+        journal = TradeJournal()
+
+        entry = TradeJournalEntry(
+            entry_id="entry_1",
+            symbol="BTCUSDT",
+            side="buy",
+            entry_price=50000.0,
+            entry_time=datetime.now(UTC),
+            position_size=0.1,
+            signal_id="test-signal-123",
+            signal_confidence=0.85,
+            signal_strategy="momentum",
+            is_test=False,
+        )
+
+        assert journal.detect_test_trade(entry) is True
+
+    def test_detect_test_trade_by_entry_id(self):
+        """Test detect_test_trade detects test trades by entry_id."""
+        journal = TradeJournal()
+
+        entry = TradeJournalEntry(
+            entry_id="test-entry-123",
+            symbol="BTCUSDT",
+            side="buy",
+            entry_price=50000.0,
+            entry_time=datetime.now(UTC),
+            position_size=0.1,
+            signal_id="sig_1",
+            signal_confidence=0.85,
+            signal_strategy="momentum",
+            is_test=False,
+        )
+
+        assert journal.detect_test_trade(entry) is True
+
+    def test_detect_test_trade_by_strategy(self):
+        """Test detect_test_trade detects test trades by signal_strategy."""
+        journal = TradeJournal()
+
+        entry = TradeJournalEntry(
+            entry_id="entry_1",
+            symbol="BTCUSDT",
+            side="buy",
+            entry_price=50000.0,
+            entry_time=datetime.now(UTC),
+            position_size=0.1,
+            signal_id="sig_1",
+            signal_confidence=0.85,
+            signal_strategy="e2e_test_strategy",
+            is_test=False,
+        )
+
+        assert journal.detect_test_trade(entry) is True
+
+    def test_serialization_preserves_is_test(self):
+        """Test that is_test field is preserved during serialization."""
+        entry = TradeJournalEntry(
+            entry_id="test_entry",
+            symbol="BTCUSDT",
+            side="buy",
+            entry_price=50000.0,
+            entry_time=datetime.now(UTC),
+            position_size=0.1,
+            signal_id="sig_1",
+            signal_confidence=0.85,
+            signal_strategy="e2e_test",
+            is_test=True,
+        )
+
+        data = entry.to_dict()
+        assert data["is_test"] is True
+
+        restored = TradeJournalEntry.from_dict(data)
+        assert restored.is_test is True

@@ -213,6 +213,11 @@ class PaperTradingKPIs:
     losing_trades: int = 0
     open_trades: int = 0
 
+    # Test trade segregation (P0-KPI-GUARDRAILS-002)
+    test_trades_excluded_count: int = 0
+    production_trades_count: int = 0
+    include_test_trades: bool = False
+
     # Target assessment - field with default factory
     target_assessment: dict[str, Any] = field(default_factory=dict)
 
@@ -359,6 +364,78 @@ def calculate_latency_stats(entries: list[dict]) -> LatencyStats | None:
         p99_ms=round(calculate_percentile(latencies, 99), 2),
         count=len(latencies),
     )
+
+
+def is_test_trade(entry: dict) -> bool:
+    """Detect if a trade entry is a test trade.
+
+    Test trades are identified by:
+    - is_test field is True
+    - signal_id starting with "test-" or "TEST-"
+    - entry_id containing "test" or "TEST"
+    - session_id containing "test" or "TEST"
+    - correlation_id containing "test" or "TEST"
+    - signal_strategy containing "test" or "e2e"
+
+    Args:
+        entry: Trade journal entry dictionary
+
+    Returns:
+        True if this is a test trade
+    """
+    # Check explicit is_test flag
+    if entry.get("is_test", False):
+        return True
+
+    # Check signal_id
+    signal_id = entry.get("signal_id", "")
+    if signal_id and signal_id.lower().startswith("test-"):
+        return True
+
+    # Check entry_id
+    entry_id = entry.get("entry_id", "")
+    if entry_id and "test" in entry_id.lower():
+        return True
+
+    # Check session_id
+    session_id = entry.get("session_id", "")
+    if session_id and "test" in session_id.lower():
+        return True
+
+    # Check correlation_id
+    correlation_id = entry.get("correlation_id", "")
+    if correlation_id and "test" in correlation_id.lower():
+        return True
+
+    # Check signal_strategy
+    signal_strategy = entry.get("signal_strategy", "")
+    if signal_strategy and (
+        "test" in signal_strategy.lower() or "e2e" in signal_strategy.lower()
+    ):
+        return True
+
+    return False
+
+
+def filter_test_trades(entries: list[dict]) -> tuple[list[dict], int]:
+    """Filter out test trades from entries.
+
+    Args:
+        entries: List of trade journal entries
+
+    Returns:
+        Tuple of (filtered_entries, excluded_test_count)
+    """
+    production_entries = []
+    test_count = 0
+
+    for entry in entries:
+        if is_test_trade(entry):
+            test_count += 1
+        else:
+            production_entries.append(entry)
+
+    return production_entries, test_count
 
 
 def assess_targets(kpis: PaperTradingKPIs) -> dict[str, Any]:
@@ -547,25 +624,42 @@ class PaperKPICalculator:
         self.extractor = extractor
 
     def calculate(
-        self, lookback_days: int = 7, story_id: str = "PAPER-GO-REMEDIATION-001"
+        self,
+        lookback_days: int = 7,
+        story_id: str = "PAPER-GO-REMEDIATION-001",
+        include_test_trades: bool = False,
     ) -> PaperTradingKPIs:
         """Calculate all KPIs.
 
         Args:
             lookback_days: Number of days to look back
             story_id: Story ID for tracking
+            include_test_trades: If True, include test trades in KPI calculation
 
         Returns:
             PaperTradingKPIs with all calculated metrics
         """
         logger.info(f"Calculating KPIs for last {lookback_days} days...")
+        logger.info(f"Test trades inclusion: {include_test_trades}")
 
         # Fetch data
         entries = self.extractor.fetch_journal_entries(lookback_days)
+        total_raw_entries = len(entries)
+
+        # Filter out test trades if needed
+        test_trades_excluded = 0
+        if not include_test_trades:
+            entries, test_trades_excluded = filter_test_trades(entries)
+            if test_trades_excluded > 0:
+                logger.info(
+                    f"Excluded {test_trades_excluded} test trades from KPI calculation"
+                )
 
         if not entries:
             logger.warning("No entries found in lookback period")
-            return self._create_empty_kpis(lookback_days, story_id)
+            return self._create_empty_kpis(
+                lookback_days, story_id, include_test_trades, test_trades_excluded
+            )
 
         # Parse timestamps for data range
         timestamps = []
@@ -697,6 +791,10 @@ class PaperKPICalculator:
             is_data_fresh=freshness_hours < 24,
             net_pnl_validation_passed=net_pnl_validation_passed,
             data_quality_flags=data_quality_flags,
+            # Test trade segregation
+            test_trades_excluded_count=test_trades_excluded,
+            production_trades_count=len(entries),
+            include_test_trades=include_test_trades,
         )
 
         # Assess against targets
@@ -707,7 +805,13 @@ class PaperKPICalculator:
 
         return kpis
 
-    def _create_empty_kpis(self, lookback_days: int, story_id: str) -> PaperTradingKPIs:
+    def _create_empty_kpis(
+        self,
+        lookback_days: int,
+        story_id: str,
+        include_test_trades: bool = False,
+        test_trades_excluded: int = 0,
+    ) -> PaperTradingKPIs:
         """Create empty KPIs when no data available."""
         now = datetime.now(UTC)
         kpis = PaperTradingKPIs(
@@ -750,6 +854,10 @@ class PaperKPICalculator:
                     "total_count": 4,
                 }
             },
+            # Test trade segregation
+            test_trades_excluded_count=test_trades_excluded,
+            production_trades_count=0,
+            include_test_trades=include_test_trades,
         )
 
         # Validate source is non-canonical (hard guardrail)
@@ -784,6 +892,11 @@ def generate_json_output(kpis: PaperTradingKPIs, output_path: Path) -> None:
             "winning_trades": kpis.winning_trades,
             "losing_trades": kpis.losing_trades,
             "open_trades": kpis.open_trades,
+        },
+        "test_trade_segregation": {
+            "include_test_trades": kpis.include_test_trades,
+            "test_trades_excluded_count": kpis.test_trades_excluded_count,
+            "production_trades_count": kpis.production_trades_count,
         },
         "kpis": {
             "win_rate_percent": kpis.win_rate,
@@ -863,6 +976,14 @@ def generate_markdown_report(kpis: PaperTradingKPIs, output_path: Path) -> None:
 | Winning Trades | {kpis.winning_trades} |
 | Losing Trades | {kpis.losing_trades} |
 | Open Trades | {kpis.open_trades} |
+
+## Test Trade Segregation (P0-KPI-GUARDRAILS-002)
+
+| Metric | Value |
+|--------|-------|
+| Test Trades Included | {"✅ Yes" if kpis.include_test_trades else "❌ No"} |
+| Test Trades Excluded | {kpis.test_trades_excluded_count} |
+| Production Trades | {kpis.production_trades_count} |
 
 ## Key Performance Indicators
 
@@ -949,6 +1070,7 @@ def generate_markdown_report(kpis: PaperTradingKPIs, output_path: Path) -> None:
 
 - **⚠️ SIMULATION DATA**: This report uses Redis paper trading journal data
 - **Not Canonical**: For GO gate decisions, use `calculate_bybit_kpis.py` instead
+- **Test Trade Segregation**: Test trades are excluded from KPI by default (P0-KPI-GUARDRAILS-002)
 - Win rate calculated from closed trades only
 - Drawdown calculated from sequential PnL series
 - Turnover aggregated by UTC calendar day
@@ -979,6 +1101,10 @@ def print_summary(kpis: PaperTradingKPIs) -> None:
     print(f"  Winning: {kpis.winning_trades}")
     print(f"  Losing: {kpis.losing_trades}")
     print(f"  Open: {kpis.open_trades}")
+    print(f"\nTest Trade Segregation:")
+    print(f"  Test Trades Included: {'Yes' if kpis.include_test_trades else 'No'}")
+    print(f"  Test Trades Excluded: {kpis.test_trades_excluded_count}")
+    print(f"  Production Trades: {kpis.production_trades_count}")
     print(f"\nKey Metrics:")
     print(f"  Win Rate: {kpis.win_rate:.2f}%")
     print(f"  Gross PnL: {kpis.total_gross_pnl:.4f}")
@@ -1045,6 +1171,18 @@ def main() -> int:
         default=None,
         help="Redis port (default: from env or 6380)",
     )
+    parser.add_argument(
+        "--include-test-trades",
+        action="store_true",
+        default=False,
+        help="Include test trades in KPI calculation (default: False)",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        default=False,
+        help="Perform a dry run without saving outputs",
+    )
 
     args = parser.parse_args()
 
@@ -1065,6 +1203,7 @@ def main() -> int:
     calculator = PaperKPICalculator(extractor)
     kpis = calculator.calculate(
         lookback_days=args.days,
+        include_test_trades=args.include_test_trades,
         story_id=args.story_id,
     )
 
@@ -1078,8 +1217,9 @@ def main() -> int:
     json_path = output_dir / f"{args.story_id}-KPI-SNAPSHOT-{date_str}.json"
     md_path = output_dir / f"{args.story_id}-KPI-REPORT-{date_str}.md"
 
-    generate_json_output(kpis, json_path)
-    generate_markdown_report(kpis, md_path)
+    if not args.dry_run:
+        generate_json_output(kpis, json_path)
+        generate_markdown_report(kpis, md_path)
 
     # Exit conditions check
     if kpis.total_trades == 0:

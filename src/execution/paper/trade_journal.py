@@ -231,6 +231,9 @@ class TradeJournalEntry:
     session_id: str = ""
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
+    # Test trade flag (P0-KPI-GUARDRAILS-002)
+    is_test: bool = False
+
     def __post_init__(self) -> None:
         """Validate trade journal entry data."""
         # Normalize side to lowercase
@@ -383,6 +386,8 @@ class TradeJournalEntry:
             "correlation_id": self.correlation_id,
             "session_id": self.session_id,
             "created_at": self.created_at.isoformat(),
+            # Test trade flag
+            "is_test": self.is_test,
             # Computed
             "is_open": self.is_open,
             "is_closed": self.is_closed,
@@ -430,6 +435,8 @@ class TradeJournalEntry:
             correlation_id=data.get("correlation_id", ""),
             session_id=data.get("session_id", ""),
             created_at=datetime.fromisoformat(data["created_at"]),
+            # Test trade flag
+            is_test=data.get("is_test", False),
         )
 
         # Restore fills
@@ -598,6 +605,7 @@ class TradeJournal:
         exit_reason: ExitReason | None = None,
         signal_strategy: str | None = None,
         session_id: str | None = None,
+        include_test_trades: bool = False,
     ) -> list[TradeJournalEntry]:
         """List trade entries with optional filters.
 
@@ -608,6 +616,7 @@ class TradeJournal:
             exit_reason: Filter by exit reason
             signal_strategy: Filter by signal strategy name
             session_id: Filter by session ID
+            include_test_trades: If False, exclude test trades (default: False)
 
         Returns:
             List of matching TradeJournalEntry objects
@@ -631,6 +640,9 @@ class TradeJournal:
 
         if session_id:
             entries = [e for e in entries if e.session_id == session_id]
+
+        if not include_test_trades:
+            entries = [e for e in entries if not e.is_test]
 
         return entries
 
@@ -657,6 +669,63 @@ class TradeJournal:
             List of closed TradeJournalEntry objects
         """
         return [e for e in self._entries.values() if e.is_closed]
+
+    def get_test_trades(self) -> list[TradeJournalEntry]:
+        """Get all test trades.
+
+        Returns:
+            List of test TradeJournalEntry objects (is_test=True)
+        """
+        return [e for e in self._entries.values() if e.is_test]
+
+    def get_production_trades(self) -> list[TradeJournalEntry]:
+        """Get all production (non-test) trades.
+
+        Returns:
+            List of production TradeJournalEntry objects (is_test=False)
+        """
+        return [e for e in self._entries.values() if not e.is_test]
+
+    def detect_test_trade(self, entry: TradeJournalEntry) -> bool:
+        """Detect if a trade entry is a test trade based on various indicators.
+
+        Test trades are identified by:
+        - signal_id starting with "test-" or "TEST-"
+        - entry_id containing "test" or "TEST"
+        - session_id containing "test" or "TEST"
+        - correlation_id containing "test" or "TEST"
+        - signal_strategy containing "test" or "e2e"
+
+        Args:
+            entry: The trade journal entry to check
+
+        Returns:
+            True if this appears to be a test trade
+        """
+        # Check signal_id
+        if entry.signal_id and entry.signal_id.lower().startswith("test-"):
+            return True
+
+        # Check entry_id
+        if entry.entry_id and "test" in entry.entry_id.lower():
+            return True
+
+        # Check session_id
+        if entry.session_id and "test" in entry.session_id.lower():
+            return True
+
+        # Check correlation_id
+        if entry.correlation_id and "test" in entry.correlation_id.lower():
+            return True
+
+        # Check signal_strategy
+        if entry.signal_strategy and (
+            "test" in entry.signal_strategy.lower()
+            or "e2e" in entry.signal_strategy.lower()
+        ):
+            return True
+
+        return False
 
     def get_stats(self) -> dict[str, Any]:
         """Get journal statistics.

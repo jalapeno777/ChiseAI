@@ -449,3 +449,70 @@ class TestModelUpdater:
 
         assert len(loaded) == 3
         assert loaded[0].version_id == "v1"  # Chronological order
+
+
+class TestUpdaterHealth:
+    """Tests for updater health status."""
+
+    @pytest.fixture
+    def temp_storage(self):
+        """Create temporary storage directory."""
+        temp_dir = tempfile.mkdtemp()
+        yield temp_dir
+        shutil.rmtree(temp_dir)
+
+    @pytest.fixture
+    def updater(self, temp_storage) -> ModelUpdater:
+        """Create updater fixture."""
+        return ModelUpdater(model_storage_path=temp_storage)
+
+    def test_get_health_status_no_updates(self, updater) -> None:
+        """Test health status with no updates."""
+        health = updater.get_health_status()
+
+        assert health["component"] == "ModelUpdater"
+        assert health["is_active"] is False
+        assert health["total_updates"] == 0
+        assert health["successful_updates"] == 0
+        assert health["failed_updates"] == 0
+        assert health["success_rate"] == 0.0
+        assert health["is_healthy"] is False
+        assert "No updates recorded" in health["reason"]
+        assert health["last_update_time"] is None
+
+    def test_get_health_status_with_updates(self, updater) -> None:
+        """Test health status with updates."""
+        from datetime import UTC, datetime
+
+        # Simulate successful updates
+        updater._last_update_time = datetime.now(UTC)
+        updater._total_updates = 10
+        updater._successful_updates = 8
+        updater._failed_updates = 2
+
+        health = updater.get_health_status()
+
+        assert health["is_active"] is True
+        assert health["total_updates"] == 10
+        assert health["successful_updates"] == 8
+        assert health["failed_updates"] == 2
+        assert health["success_rate"] == 0.8
+        assert health["is_healthy"] is True
+        assert "Last update" in health["reason"]
+        assert "8/10 updates successful" in health["reason"]
+
+    def test_get_health_status_many_failures(self, updater) -> None:
+        """Test health status with many failures."""
+        from datetime import UTC, datetime
+
+        # Simulate many failed updates
+        updater._last_update_time = datetime.now(UTC)
+        updater._total_updates = 10
+        updater._successful_updates = 5
+        updater._failed_updates = 5
+
+        health = updater.get_health_status()
+
+        assert health["success_rate"] == 0.5
+        assert health["is_healthy"] is False  # Too many failures
+        assert "5 failed updates" in health["reason"]

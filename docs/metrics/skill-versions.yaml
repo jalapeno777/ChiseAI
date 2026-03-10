@@ -1,20 +1,53 @@
 version: 1
-updated_at_utc: "2026-03-10T00:00:00Z"
-
-# Preferred-version registry for autonomy routing decisions.
-# Updated by:
-# - scripts/ops/skill_promote_from_benchmark.py
-# - scripts/ops/skill_rollback_from_evidence.py
-#
-# Structure:
-# skills:
-#   <skill_name>:
-#     preferred_version: "<version>"
-#     previous_preferred_version: "<version_or_empty>"
-#     status: "active|on_hold"
-#     last_decision: "PROMOTE|ROLLBACK|HOLD"
-#     last_decision_at_utc: "<iso8601>"
-#     degraded_versions: ["vX", ...]
-#     evidence_refs: ["path-or-key", ...]
-
-skills: {}
+updated_at_utc: '2026-03-10T22:49:58Z'
+skills:
+  chiseai-git-workflow:
+    preferred_version: '1.1'
+    previous_preferred_version: '1.1'
+    status: active
+    last_decision: PROMOTE
+    last_decision_at_utc: '2026-03-10T22:49:56Z'
+    degraded_versions: []
+    evidence_refs:
+    - _bmad-output/skill-benchmarks/chiseai-git-workflow/iteration-1/benchmark.json
+    - _bmad-output/skill-benchmarks/chiseai-git-workflow/iteration-1/benchmark.md
+  chiseai-validation:
+    preferred_version: '1.1'
+    previous_preferred_version: '1.0'
+    status: active
+    last_decision: PROMOTE
+    last_decision_at_utc: '2026-03-10T19:39:00Z'
+    degraded_versions: []
+    evidence_refs:
+    - _bmad-output/skill-benchmarks/chiseai-validation/iteration-1/benchmark.json
+    - _bmad-output/skill-benchmarks/chiseai-validation/iteration-1/benchmark.md
+  chiseai-skill-autonomy:
+    preferred_version: '1.1'
+    previous_preferred_version: '1.0'
+    status: active
+    last_decision: PROMOTE
+    last_decision_at_utc: '2026-03-10T19:39:01Z'
+    degraded_versions: []
+    evidence_refs:
+    - _bmad-output/skill-benchmarks/chiseai-skill-autonomy/iteration-1/benchmark.json
+    - _bmad-output/skill-benchmarks/chiseai-skill-autonomy/iteration-1/benchmark.md
+  chiseai-worker-contracts:
+    preferred_version: '1.1'
+    previous_preferred_version: '1.0'
+    status: active
+    last_decision: PROMOTE
+    last_decision_at_utc: '2026-03-10T19:39:03Z'
+    degraded_versions: []
+    evidence_refs:
+    - _bmad-output/skill-benchmarks/chiseai-worker-contracts/iteration-1/benchmark.json
+    - _bmad-output/skill-benchmarks/chiseai-worker-contracts/iteration-1/benchmark.md
+  chiseai-metacognition-ops:
+    preferred_version: '1.1'
+    previous_preferred_version: '1.1'
+    status: active
+    last_decision: PROMOTE
+    last_decision_at_utc: '2026-03-10T22:49:58Z'
+    degraded_versions: []
+    evidence_refs:
+    - _bmad-output/skill-benchmarks/chiseai-metacognition-ops/iteration-1/benchmark.json
+    - _bmad-output/skill-benchmarks/chiseai-metacognition-ops/iteration-1/benchmark.md

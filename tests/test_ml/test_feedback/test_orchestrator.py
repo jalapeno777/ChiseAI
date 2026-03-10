@@ -396,3 +396,93 @@ class TestFeedbackOrchestrator:
         assert finalized.end_time is not None
         assert finalized.duration_seconds > 0
         assert len(orchestrator._iteration_history) == 1
+
+
+class TestOrchestratorHealth:
+    """Tests for orchestrator health status."""
+
+    @pytest.fixture
+    def orchestrator(self) -> FeedbackOrchestrator:
+        """Create orchestrator fixture."""
+        return FeedbackOrchestrator()
+
+    def test_get_health_status_idle(self, orchestrator) -> None:
+        """Test health status when idle."""
+        health = orchestrator.get_health_status()
+
+        assert health["component"] == "FeedbackOrchestrator"
+        assert health["loop_status"] == "idle"
+        assert health["total_iterations"] == 0
+        assert health["error_count"] == 0
+        assert health["is_healthy"] is True  # Idle is healthy state
+        assert "No iterations recorded" in health["reason"]
+        assert health["last_iteration_time"] is None
+
+    def test_get_health_status_running(self, orchestrator) -> None:
+        """Test health status when running."""
+        orchestrator._is_running = True
+        orchestrator._current_iteration = LoopIterationResult(
+            iteration_id="test-001",
+            start_time=datetime.now(UTC),
+            status=LoopStatus.RUNNING,
+        )
+
+        health = orchestrator.get_health_status()
+
+        assert health["loop_status"] == "running"
+        assert health["is_healthy"] is True
+        assert "Loop is currently running" in health["reason"]
+
+    def test_get_health_status_with_history(self, orchestrator) -> None:
+        """Test health status with iteration history."""
+        # Add completed iteration
+        orchestrator._iteration_history.append(
+            LoopIterationResult(
+                iteration_id="test-001",
+                start_time=datetime.now(UTC) - timedelta(minutes=5),
+                status=LoopStatus.COMPLETED,
+            )
+        )
+
+        health = orchestrator.get_health_status()
+
+        assert health["loop_status"] == "completed"
+        assert health["total_iterations"] == 1
+        assert health["is_healthy"] is True
+        assert "Last iteration" in health["reason"]
+
+    def test_get_health_status_with_errors(self, orchestrator) -> None:
+        """Test health status with failed iterations."""
+        # Add failed iterations
+        for i in range(4):
+            orchestrator._iteration_history.append(
+                LoopIterationResult(
+                    iteration_id=f"test-{i}",
+                    start_time=datetime.now(UTC) - timedelta(hours=i),
+                    status=LoopStatus.FAILED,
+                    errors=["Test error"],
+                )
+            )
+
+        health = orchestrator.get_health_status()
+
+        assert health["error_count"] == 4
+        assert health["is_healthy"] is False  # Too many errors
+        assert "4 errors in history" in health["reason"]
+
+    def test_get_health_status_last_failed(self, orchestrator) -> None:
+        """Test health status when last iteration failed."""
+        orchestrator._iteration_history.append(
+            LoopIterationResult(
+                iteration_id="test-001",
+                start_time=datetime.now(UTC) - timedelta(minutes=5),
+                status=LoopStatus.FAILED,
+                errors=["Test error"],
+            )
+        )
+
+        health = orchestrator.get_health_status()
+
+        assert health["loop_status"] == "failed"
+        assert health["is_healthy"] is False
+        assert "Last iteration failed" in health["reason"]

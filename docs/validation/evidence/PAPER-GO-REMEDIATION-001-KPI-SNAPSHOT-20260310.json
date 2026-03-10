@@ -1,0 +1,79 @@
+{
+  "calculation_id": "PAPER-KPI-20260310-224726",
+  "story_id": "PAPER-GO-REMEDIATION-001",
+  "source": "paper_journal_sim",
+  "trading_mode": "paper",
+  "canonical_for_go": false,
+  "calculation_timestamp": "2026-03-10T22:47:26.187924+00:00",
+  "data_range": {
+    "start_time": "2026-03-10T11:21:49.208686+00:00",
+    "end_time": "2026-03-10T19:41:49.254966+00:00",
+    "lookback_days": 1
+  },
+  "trade_summary": {
+    "total_trades": 3,
+    "winning_trades": 0,
+    "losing_trades": 3,
+    "open_trades": 0
+  },
+  "kpis": {
+    "win_rate_percent": 0.0,
+    "total_pnl": -0.0279,
+    "total_net_pnl": -0.0279,
+    "total_gross_pnl": -0.0279,
+    "total_fees": 0,
+    "fee_impact_percent": 0.0,
+    "avg_pnl_per_trade": -0.0093,
+    "max_drawdown_percent": 0.0,
+    "max_drawdown_amount": 0.0,
+    "turnover": {
+      "avg_trades_per_day": 3.0,
+      "p95_trades_per_day": 3,
+      "max_trades_per_day": 3,
+      "total_days": 1,
+      "daily_counts": {
+        "2026-03-10": 3
+      }
+    },
+    "latency_ms": {
+      "p50_ms": 5.12,
+      "p95_ms": 5.96,
+      "p99_ms": 6.03,
+      "count": 3
+    },
+    "risk_gate_adherence_percent": 100.0
+  },
+  "data_quality": {
+    "freshness_hours": 3.09,
+    "is_fresh": true,
+    "net_pnl_validation_passed": true,
+    "data_quality_flags": []
+  },
+  "target_assessment": {
+    "win_rate": {
+      "value": 0.0,
+      "target": "> 55%",
+      "passed": false
+    },
+    "max_drawdown": {
+      "value": 0.0,
+      "target": "< 5%",
+      "passed": true
+    },
+    "data_freshness": {
+      "value": 3.09,
+      "target": "< 24 hours",
+      "passed": true
+    },
+    "risk_gate_adherence": {
+      "value": 100.0,
+      "target": "> 95%",
+      "passed": true
+    },
+    "overall": {
+      "status": "FAIL",
+      "passed_count": 3,
+      "total_count": 4
+    }
+  }
+}

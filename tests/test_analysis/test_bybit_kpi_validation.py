@@ -12,6 +12,7 @@ For ST-KPI-FIX-001: Bybit-Journal KPI Separation
 from __future__ import annotations
 
 import json
+import os
 import sys
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -503,6 +504,71 @@ class TestDataQualityValidation:
             )
 
         assert "net_pnl validation failed" in flags[0]
+
+
+class TestActualImplementationImports:
+    """Test that actual implementation modules can be imported."""
+
+    def test_bybit_kpi_module_imports(self):
+        """Test that calculate_bybit_kpis module can be imported."""
+        try:
+            from scripts.analysis.calculate_bybit_kpis import (
+                BybitTradingKPIs,
+                BybitKPICalculator,
+                BybitAPIExtractor,
+            )
+
+            assert True
+        except ImportError as e:
+            pytest.fail(f"Failed to import Bybit KPI module: {e}")
+
+    def test_paper_kpi_module_imports(self):
+        """Test that calculate_paper_kpis module can be imported."""
+        try:
+            from scripts.analysis.calculate_paper_kpis import (
+                PaperTradingKPIs,
+                PaperKPICalculator,
+            )
+
+            assert True
+        except ImportError as e:
+            pytest.fail(f"Failed to import Paper KPI module: {e}")
+
+
+class TestUnifiedRunner:
+    """Test unified KPI runner functionality."""
+
+    def test_detect_trading_mode_from_env(self):
+        """Test trading mode detection from environment variables."""
+        from scripts.analysis.run_kpi_evaluation import detect_trading_mode
+
+        # Test with no env vars (should default to paper)
+        with patch.dict(os.environ, {}, clear=True):
+            mode = detect_trading_mode()
+            assert mode == "paper"
+
+        # Test with demo credentials
+        with patch.dict(
+            os.environ,
+            {
+                "BYBIT_DEMO_API_KEY": "test_key",
+                "BYBIT_DEMO_API_SECRET": "test_secret",
+            },
+            clear=True,
+        ):
+            mode = detect_trading_mode()
+            assert mode == "demo"
+
+        # Test with explicit TRADING_MODE
+        with patch.dict(
+            os.environ,
+            {
+                "TRADING_MODE": "live",
+            },
+            clear=True,
+        ):
+            mode = detect_trading_mode()
+            assert mode == "live"
 
 
 if __name__ == "__main__":

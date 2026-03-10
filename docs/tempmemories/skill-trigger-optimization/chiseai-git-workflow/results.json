@@ -1,0 +1,80 @@
+{
+  "skill_name": "chiseai-git-workflow",
+  "evaluated_at": "2026-03-10T19:36:34.373418Z",
+  "method": "fallback_keyword_heuristic",
+  "total_evaluations": 10,
+  "correct": 10,
+  "accuracy": 1.0,
+  "evaluations": [
+    {
+      "query": "I need to create a feature branch for my new story",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.9,
+      "correct": true
+    },
+    {
+      "query": "How do I merge my changes to main?",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.6,
+      "correct": true
+    },
+    {
+      "query": "Create a branch for story ST-123",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.75,
+      "correct": true
+    },
+    {
+      "query": "I have merge conflicts that need resolution",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.9,
+      "correct": true
+    },
+    {
+      "query": "What is the PR handoff procedure?",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.6,
+      "correct": true
+    },
+    {
+      "query": "How do I switch branches safely?",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.6,
+      "correct": true
+    },
+    {
+      "query": "Who has authority to merge to main?",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.6,
+      "correct": true
+    },
+    {
+      "query": "Show me the commit message format for this repo",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.95,
+      "correct": true
+    },
+    {
+      "query": "I need to do an emergency merge override",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.75,
+      "correct": true
+    },
+    {
+      "query": "What are the branch naming conventions?",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.75,
+      "correct": true
+    }
+  ]
+}

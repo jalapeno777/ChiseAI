@@ -1,0 +1,80 @@
+{
+  "skill_name": "chiseai-worker-contracts",
+  "evaluated_at": "2026-03-10T19:36:34.521967Z",
+  "method": "fallback_keyword_heuristic",
+  "total_evaluations": 10,
+  "correct": 10,
+  "accuracy": 1.0,
+  "evaluations": [
+    {
+      "query": "Create a worker contract for this delegation",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.95,
+      "correct": true
+    },
+    {
+      "query": "Delegate this task to a sub-agent",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.9,
+      "correct": true
+    },
+    {
+      "query": "What should be in the SCOPE_GLOBS for this work?",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.9,
+      "correct": true
+    },
+    {
+      "query": "Set up parallel batch delegation for multiple workers",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.9,
+      "correct": true
+    },
+    {
+      "query": "Define exit conditions for the worker",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.9,
+      "correct": true
+    },
+    {
+      "query": "What evidence should the worker provide?",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.9,
+      "correct": true
+    },
+    {
+      "query": "Check for scope conflicts before delegation",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.95,
+      "correct": true
+    },
+    {
+      "query": "Create an emergency delegation contract",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.9,
+      "correct": true
+    },
+    {
+      "query": "What are the forbidden globs for this task?",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.9,
+      "correct": true
+    },
+    {
+      "query": "Generate structured issue reporting template",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.9,
+      "correct": true
+    }
+  ]
+}
