@@ -33,6 +33,11 @@ if TYPE_CHECKING:
     from ml.feedback.analyzer import FeedbackAnalysisReport
     from ml.feedback.matcher import PredictionOutcomeMatch
 
+try:
+    from redis_state import redis_state_hset
+except ImportError:
+    redis_state_hset = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -242,6 +247,12 @@ class ModelUpdater:
         self._versions: dict[str, list[ModelVersion]] = {}
         self._current_versions: dict[str, str] = {}  # model_id -> version_id
 
+        # Track health metrics
+        self._last_update_time: datetime | None = None
+        self._total_updates: int = 0
+        self._successful_updates: int = 0
+        self._failed_updates: int = 0
+
     async def update_from_matches(
         self,
         model: Any,
@@ -336,6 +347,11 @@ class ModelUpdater:
             result.version = version
             result.status = UpdateStatus.COMPLETED
 
+            # Track successful update
+            self._last_update_time = datetime.now(UTC)
+            self._total_updates += 1
+            self._successful_updates += 1
+
             logger.info(
                 f"Model {model_id} updated to version {version.version_id}: "
                 f"accuracy={val_metrics.get('accuracy', 0):.2%}"
@@ -344,6 +360,8 @@ class ModelUpdater:
         except Exception as e:
             result.status = UpdateStatus.FAILED
             result.error_message = str(e)
+            self._total_updates += 1
+            self._failed_updates += 1
             logger.error(f"Model update failed: {e}")
 
             # Auto-rollback if enabled
@@ -750,3 +768,78 @@ class ModelUpdater:
             self._current_versions[model_id] = latest.version_id
 
         return versions
+
+    def get_health_status(self) -> dict[str, Any]:
+        """Get health status for the updater.
+
+        Returns:
+            Health status dictionary with:
+            - is_active: whether updates are being applied
+            - last_update_time: ISO timestamp of last update
+            - total_updates: total number of updates attempted
+            - successful_updates: number of successful updates
+            - failed_updates: number of failed updates
+            - success_rate: success rate (0.0-1.0)
+            - is_healthy: boolean indicating health
+            - reason: human-readable status reason
+        """
+        now = datetime.now(UTC)
+
+        # Determine if active
+        is_active = self._last_update_time is not None
+
+        # Calculate success rate
+        success_rate = 0.0
+        if self._total_updates > 0:
+            success_rate = self._successful_updates / self._total_updates
+
+        # Determine health
+        is_healthy = True
+        reason_parts = []
+
+        if self._last_update_time:
+            time_since = (now - self._last_update_time).total_seconds()
+            minutes_ago = int(time_since / 60)
+            reason_parts.append(f"Last update {minutes_ago} minutes ago")
+
+            # Consider unhealthy if no updates in 24 hours
+            if time_since > 86400:
+                is_healthy = False
+                reason_parts.append("No updates in 24 hours")
+        else:
+            reason_parts.append("No updates recorded")
+            is_healthy = False
+
+        reason_parts.append(
+            f"{self._successful_updates}/{self._total_updates} updates successful ({success_rate:.1%})"
+        )
+
+        if self._failed_updates > 3:
+            is_healthy = False
+            reason_parts.append(f"{self._failed_updates} failed updates")
+
+        # Store in Redis if available
+        if redis_state_hset is not None:
+            try:
+                redis_state_hset(
+                    name="chiseai:ml:feedback:updater:health",
+                    key="last_update_timestamp",
+                    value=now.isoformat(),
+                    expire_seconds=86400,
+                )
+            except Exception as e:
+                logger.debug(f"Failed to store health timestamp in Redis: {e}")
+
+        return {
+            "component": "ModelUpdater",
+            "is_active": is_active,
+            "last_update_time": self._last_update_time.isoformat()
+            if self._last_update_time
+            else None,
+            "total_updates": self._total_updates,
+            "successful_updates": self._successful_updates,
+            "failed_updates": self._failed_updates,
+            "success_rate": round(success_rate, 4),
+            "is_healthy": is_healthy,
+            "reason": "; ".join(reason_parts),
+        }

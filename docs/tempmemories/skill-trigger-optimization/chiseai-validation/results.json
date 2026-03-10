@@ -1,0 +1,80 @@
+{
+  "skill_name": "chiseai-validation",
+  "evaluated_at": "2026-03-10T19:36:34.428467Z",
+  "method": "fallback_keyword_heuristic",
+  "total_evaluations": 10,
+  "correct": 10,
+  "accuracy": 1.0,
+  "evaluations": [
+    {
+      "query": "CI failed on my PR, help me diagnose the issue",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.75,
+      "correct": true
+    },
+    {
+      "query": "Run pre-commit checks before I commit",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.9,
+      "correct": true
+    },
+    {
+      "query": "Validate status sync for my changes",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.9,
+      "correct": true
+    },
+    {
+      "query": "Black formatting check is failing",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.9,
+      "correct": true
+    },
+    {
+      "query": "Ruff linter is reporting errors",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.75,
+      "correct": true
+    },
+    {
+      "query": "My tests are failing in CI",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.6,
+      "correct": true
+    },
+    {
+      "query": "Run the status sync validation script",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.9,
+      "correct": true
+    },
+    {
+      "query": "What validation gates do I need to pass before PR?",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.95,
+      "correct": true
+    },
+    {
+      "query": "Generate a CI failure report",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.6,
+      "correct": true
+    },
+    {
+      "query": "Check if mypy type checking passes",
+      "should_trigger": true,
+      "predicted": true,
+      "confidence": 0.9,
+      "correct": true
+    }
+  ]
+}

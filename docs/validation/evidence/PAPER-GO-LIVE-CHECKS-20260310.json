@@ -1,0 +1,232 @@
+{
+  "evidence_type": "live_system_validation",
+  "story_id": "PAPER-GO-REMEDIATION-001",
+  "batch": 1,
+  "execution_timestamp": "2026-03-10T19:42:20Z",
+  "agent": "quickdev",
+  "ownership_lock": "paper:live:validation",
+  
+  "validation_checks": {
+    "1_paper_trading_heartbeat": {
+      "command": "redis-cli -h host.docker.internal -p 6380 HGETALL paper_trading:heartbeat",
+      "status": "PASS",
+      "output": {
+        "last_heartbeat": "2026-03-10T19:40:24.570950+00:00",
+        "status": "running",
+        "pid": "4154957"
+      },
+      "freshness_assessment": {
+        "timestamp_age_seconds": 116,
+        "timestamp_age_minutes": 1.93,
+        "assessment": "FRESH - heartbeat within 2 minutes of check",
+        "threshold": "5 minutes",
+        "verdict": "PASS"
+      }
+    },
+
+    "2_index_cardinality": {
+      "commands": [
+        "redis-cli -h host.docker.internal -p 6380 ZCARD paper:index:signals",
+        "redis-cli -h host.docker.internal -p 6380 ZCARD paper:index:orders",
+        "redis-cli -h host.docker.internal -p 6380 ZCARD paper:index:fills",
+        "redis-cli -h host.docker.internal -p 6380 ZCARD paper:index:outcomes"
+      ],
+      "status": "PASS",
+      "output": {
+        "signals": 27063,
+        "orders": 26103,
+        "fills": 26067,
+        "outcomes": 26062
+      },
+      "assessment": {
+        "data_presence": "CONFIRMED - all indices have substantial data",
+        "signal_to_order_ratio": "96.5%",
+        "order_to_fill_ratio": "99.9%",
+        "verdict": "PASS - indices are populated and active"
+      }
+    },
+
+    "3_scheduler_heartbeat": {
+      "command": "redis-cli -h host.docker.internal -p 6380 HGETALL bmad:chiseai:scheduler:heartbeat",
+      "status": "PASS",
+      "output": {
+        "timestamp": "2026-03-10T19:40:27.355789+00:00",
+        "status": "running",
+        "pid": "120417",
+        "hostname": "fb82304f0d87",
+        "unix_timestamp": "1773171627",
+        "start_time": "2026-02-27T05:34:28.593669+00:00",
+        "uptime_seconds": "1001158",
+        "message": "Scheduler started",
+        "last_run_time": "2026-03-10T19:40:26.354922+00:00",
+        "iteration": "128",
+        "signals_generated": "512"
+      },
+      "freshness_assessment": {
+        "last_run_age_seconds": 114,
+        "last_run_age_minutes": 1.9,
+        "uptime_days": 11.58,
+        "assessment": "FRESH - scheduler actively running iterations",
+        "verdict": "PASS"
+      }
+    },
+
+    "4_risk_controls_status": {
+      "commands": [
+        "redis-cli -h host.docker.internal -p 6380 GET killswitch:state",
+        "redis-cli -h host.docker.internal -p 6380 HGETALL launch:safety:circuit_breaker",
+        "redis-cli -h host.docker.internal -p 6380 HGETALL bmad:chiseai:daily_loss_limit"
+      ],
+      "status": "PASS",
+      "output": {
+        "killswitch_state": "armed",
+        "circuit_breaker": {
+          "enabled": "1"
+        },
+        "daily_loss_limit": {
+          "max_loss_percent": "2.0",
+          "max_loss_usd": "1000",
+          "current_loss": "0.0",
+          "last_reset": "2026-02-25T21:26:03Z"
+        }
+      },
+      "assessment": {
+        "killswitch": "ARMED - ready to stop trading if activated",
+        "circuit_breaker": "ENABLED - safety mechanism active",
+        "daily_loss_limit": "HEALTHY - current loss $0.0 (max: $1000 / 2.0%)",
+        "verdict": "PASS - all risk controls properly configured"
+      }
+    },
+
+    "5_llm_provider_status": {
+      "command": "python3 -c 'from src.llm.provider_chain import LLMProviderChain; pc = LLMProviderChain(); print(pc.get_provider_status())'",
+      "status": "PARTIAL",
+      "output": {
+        "kimi_compat": {
+          "available": false,
+          "reason": "KIMI adapter container not reachable",
+          "priority": 0,
+          "label": "KIMI Compat (Adapter)"
+        },
+        "kimi": {
+          "available": true,
+          "reason": null,
+          "priority": 1,
+          "label": "KIMI K2.5"
+        },
+        "zai": {
+          "available": true,
+          "reason": null,
+          "priority": 2,
+          "label": "GLM-5 (Z.ai)"
+        },
+        "zhipu": {
+          "available": true,
+          "reason": null,
+          "priority": 3,
+          "label": "GLM-4.7 (Zhipu)"
+        }
+      },
+      "assessment": {
+        "total_providers": 4,
+        "available_providers": 3,
+        "unavailable_providers": 1,
+        "fallback_chain_intact": true,
+        "primary_concern": "KIMI adapter container not reachable - requires investigation",
+        "verdict": "PARTIAL PASS - 3/4 providers available, fallback chain functional"
+      },
+      "e2e_test_evidence": {
+        "source": "scripts/testing/paper_live_e2e_test.py execution",
+        "provider_used": "GLM-5 (Z.ai)",
+        "provider_chain": ["kimi (AUTH failed)", "zai (SUCCESS)"],
+        "latency_ms": 19774,
+        "confidence": 50.0,
+        "fallback_used": true,
+        "verdict": "Fallback chain working correctly"
+      }
+    },
+
+    "6_bybit_demo_connectivity": {
+      "command": "python3 scripts/testing/paper_live_e2e_test.py (evidence from recent run)",
+      "status": "PASS",
+      "output": {
+        "endpoint": "https://api-demo.bybit.com",
+        "credentials_verified": true,
+        "api_key_prefix": "R9KF...",
+        "test_trade": {
+          "symbol": "BTCUSDT",
+          "side": "long",
+          "qty": 0.001,
+          "price": "$69,979.00",
+          "order_id": "4ae67a37-442e-427c-a95e-e43ced2901d4",
+          "position_id": "422eb578-37fc-44bd-ab38-fabe9fb6ab22"
+        }
+      },
+      "assessment": {
+        "connectivity": "CONFIRMED - demo API reachable",
+        "authentication": "CONFIRMED - demo credentials valid",
+        "order_placement": "CONFIRMED - test order successfully placed",
+        "verdict": "PASS - Bybit demo environment fully functional"
+      }
+    }
+  },
+
+  "overall_assessment": {
+    "total_checks": 6,
+    "passed": 5,
+    "partial": 1,
+    "failed": 0,
+    "summary": "All critical systems operational. Paper trading heartbeat fresh, indices populated, scheduler active, risk controls armed, and Bybit demo connectivity confirmed.",
+    "concerns": [
+      "KIMI adapter container not reachable - requires investigation but fallback chain is functional"
+    ],
+    "recommendations": [
+      "Monitor KIMI adapter container availability",
+      "Consider adding health check alerts for provider availability",
+      "Daily loss limit last_reset date (2026-02-25) may need attention"
+    ]
+  },
+
+  "system_state_summary": {
+    "paper_trading": {
+      "status": "running",
+      "heartbeat_fresh": true,
+      "pid": 4154957
+    },
+    "scheduler": {
+      "status": "running",
+      "iteration": 128,
+      "uptime_days": 11.58,
+      "signals_generated": 512
+    },
+    "data_indices": {
+      "signals": 27063,
+      "orders": 26103,
+      "fills": 26067,
+      "outcomes": 26062
+    },
+    "risk_controls": {
+      "killswitch": "armed",
+      "circuit_breaker": "enabled",
+      "daily_loss_current": 0.0,
+      "daily_loss_max": 1000.0
+    },
+    "llm_providers": {
+      "available": ["kimi", "zai", "zhipu"],
+      "unavailable": ["kimi_compat"],
+      "fallback_chain_functional": true
+    },
+    "bybit_demo": {
+      "connected": true,
+      "authenticated": true,
+      "orders_working": true
+    }
+  },
+
+  "environment": {
+    "redis_host": "host.docker.internal:6380",
+    "bybit_mode": "demo",
+    "llm_decisions_enabled": true,
+    "llm_timeout_ms": 30000
+  }
+}

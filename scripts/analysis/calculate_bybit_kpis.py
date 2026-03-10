@@ -176,6 +176,13 @@ class BybitTradingKPIs:
     data_freshness_hours: float
     is_data_fresh: bool
     data_quality_flags: list[str]  # List of data quality issues
+
+    # Test trade segregation (P0-KPI-GUARDRAILS-002) - fields with defaults
+    test_trades_excluded_count: int = 0
+    production_trades_count: int = 0
+    include_test_trades: bool = False
+
+    # Target assessment - field with default factory
     target_assessment: dict[str, Any] = field(default_factory=dict)
 
 
@@ -297,6 +304,60 @@ def calculate_latency_stats(executions: list[dict]) -> LatencyStats | None:
     # We could infer from order creation to execution time if available
     # For now, return None as this requires additional order data
     return None
+
+
+def is_test_trade_bybit(exec_data: dict) -> bool:
+    """Detect if a Bybit execution is a test trade.
+
+    Test trades are identified by:
+    - orderId containing "test" or "TEST"
+    - execId containing "test" or "TEST"
+    - symbol containing "TEST" (test symbols)
+    - Metadata/tags indicating test trades
+
+    Args:
+        exec_data: Bybit execution data dictionary
+
+    Returns:
+        True if this is a test trade
+    """
+    # Check orderId
+    order_id = exec_data.get("orderId", "")
+    if order_id and "test" in order_id.lower():
+        return True
+
+    # Check execId
+    exec_id = exec_data.get("execId", "")
+    if exec_id and "test" in exec_id.lower():
+        return True
+
+    # Check symbol for test symbols
+    symbol = exec_data.get("symbol", "")
+    if symbol and "TEST" in symbol.upper():
+        return True
+
+    return False
+
+
+def filter_test_trades_bybit(executions: list[dict]) -> tuple[list[dict], int]:
+    """Filter out test trades from Bybit executions.
+
+    Args:
+        executions: List of Bybit execution entries
+
+    Returns:
+        Tuple of (filtered_executions, excluded_test_count)
+    """
+    production_executions = []
+    test_count = 0
+
+    for exec_data in executions:
+        if is_test_trade_bybit(exec_data):
+            test_count += 1
+        else:
+            production_executions.append(exec_data)
+
+    return production_executions, test_count
 
 
 def assess_targets(kpis: BybitTradingKPIs) -> dict[str, Any]:
@@ -635,25 +696,39 @@ class BybitKPICalculator:
         self,
         lookback_days: int = 7,
         story_id: str = "ST-KPI-FIX-001",
+        include_test_trades: bool = False,
     ) -> BybitTradingKPIs:
         """Calculate all KPIs from Bybit API.
 
         Args:
             lookback_days: Number of days to look back
             story_id: Story ID for tracking
+            include_test_trades: If True, include test trades in KPI calculation
 
         Returns:
             BybitTradingKPIs with all calculated metrics
         """
         logger.info(f"Calculating Bybit KPIs for last {lookback_days} days...")
+        logger.info(f"Test trades inclusion: {include_test_trades}")
 
         # Fetch data from Bybit API
         executions = await self.extractor.fetch_executions(lookback_days)
         closed_pnl_entries = await self.extractor.fetch_closed_pnl(lookback_days)
 
+        # Filter out test trades if needed
+        test_trades_excluded = 0
+        if not include_test_trades:
+            executions, test_trades_excluded = filter_test_trades_bybit(executions)
+            if test_trades_excluded > 0:
+                logger.info(
+                    f"Excluded {test_trades_excluded} test trades from KPI calculation"
+                )
+
         if not executions and not closed_pnl_entries:
             logger.warning("No execution or closed PnL data available from Bybit API")
-            return self._create_empty_kpis(lookback_days, story_id)
+            return self._create_empty_kpis(
+                lookback_days, story_id, include_test_trades, test_trades_excluded
+            )
 
         if not closed_pnl_entries:
             logger.warning(
@@ -779,7 +854,13 @@ class BybitKPICalculator:
 
         return kpis
 
-    def _create_empty_kpis(self, lookback_days: int, story_id: str) -> BybitTradingKPIs:
+    def _create_empty_kpis(
+        self,
+        lookback_days: int,
+        story_id: str,
+        include_test_trades: bool = False,
+        test_trades_excluded: int = 0,
+    ) -> BybitTradingKPIs:
         """Create empty KPIs when no data available."""
         now = datetime.now(UTC)
         kpis = BybitTradingKPIs(
@@ -824,6 +905,10 @@ class BybitKPICalculator:
                     "total_count": 4,
                 }
             },
+            # Test trade segregation
+            test_trades_excluded_count=test_trades_excluded,
+            production_trades_count=0,
+            include_test_trades=include_test_trades,
         )
 
         # Validate source is canonical (hard guardrail)
@@ -858,6 +943,11 @@ def generate_json_output(kpis: BybitTradingKPIs, output_path: Path) -> None:
             "winning_trades": kpis.winning_trades,
             "losing_trades": kpis.losing_trades,
             "open_trades": kpis.open_trades,
+        },
+        "test_trade_segregation": {
+            "include_test_trades": kpis.include_test_trades,
+            "test_trades_excluded_count": kpis.test_trades_excluded_count,
+            "production_trades_count": kpis.production_trades_count,
         },
         "kpis": {
             "win_rate_percent": kpis.win_rate,
@@ -1049,6 +1139,10 @@ def print_summary(kpis: BybitTradingKPIs) -> None:
     print(f"  Total Trades: {kpis.total_trades}")
     print(f"  Winning: {kpis.winning_trades}")
     print(f"  Losing: {kpis.losing_trades}")
+    print(f"\nTest Trade Segregation:")
+    print(f"  Test Trades Included: {'Yes' if kpis.include_test_trades else 'No'}")
+    print(f"  Test Trades Excluded: {kpis.test_trades_excluded_count}")
+    print(f"  Production Trades: {kpis.production_trades_count}")
     print(f"\nKey Metrics:")
     print(f"  Win Rate: {kpis.win_rate:.2f}%")
     print(f"  Gross PnL: {kpis.total_gross_pnl:.4f}")
@@ -1106,6 +1200,12 @@ async def async_main() -> int:
         default=None,
         help="Optional symbol filter (e.g., BTCUSDT)",
     )
+    parser.add_argument(
+        "--include-test-trades",
+        action="store_true",
+        default=False,
+        help="Include test trades in KPI calculation (default: False)",
+    )
 
     args = parser.parse_args()
 
@@ -1117,6 +1217,7 @@ async def async_main() -> int:
         kpis = await calculator.calculate(
             lookback_days=args.days,
             story_id=args.story_id,
+            include_test_trades=args.include_test_trades,
         )
 
     # Print summary

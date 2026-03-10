@@ -560,10 +560,6 @@ class KPIPersistence:
 
         return result
 
-        except Exception as e:
-            logger.error(f"Failed to export KPI snapshot to file: {e}")
-            raise KPIPersistenceError(f"Failed to export snapshot: {e}") from e
-
     def _store_in_redis(self, snapshot: KPISnapshot) -> None:
         """Store snapshot in Redis with appropriate TTL.
 

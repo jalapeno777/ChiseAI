@@ -33,6 +33,8 @@ class PaperPosition:
         opened_at: Position open timestamp
         closed_at: Position close timestamp (if closed)
         metadata: Additional position metadata
+        entry_fees: Entry fees paid
+        exit_fees: Exit fees paid
     """
 
     position_id: str
@@ -45,6 +47,13 @@ class PaperPosition:
     opened_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     closed_at: datetime | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
+    entry_fees: float = 0.0
+    exit_fees: float = 0.0
+
+    @property
+    def total_fees(self) -> float:
+        """Calculate total fees paid (entry + exit)."""
+        return self.entry_fees + self.exit_fees
 
     @property
     def is_open(self) -> bool:
@@ -56,19 +65,25 @@ class PaperPosition:
         """Calculate position value."""
         return self.quantity * self.entry_price
 
-    def calculate_pnl(self, current_price: float) -> float:
+    def calculate_pnl(self, current_price: float, deduct_fees: bool = False) -> float:
         """Calculate unrealized PnL at current price.
 
         Args:
             current_price: Current market price
+            deduct_fees: If True, subtract total fees from result
 
         Returns:
-            Unrealized PnL
+            Unrealized PnL (gross or net depending on deduct_fees)
         """
         if self.side == "long":
-            return (current_price - self.entry_price) * self.quantity
+            pnl = (current_price - self.entry_price) * self.quantity
         else:  # short
-            return (self.entry_price - current_price) * self.quantity
+            pnl = (self.entry_price - current_price) * self.quantity
+
+        if deduct_fees:
+            pnl -= self.total_fees
+
+        return pnl
 
 
 class PaperPositionTracker:
@@ -101,6 +116,7 @@ class PaperPositionTracker:
         entry_price: float,
         quantity: float,
         metadata: dict[str, Any] | None = None,
+        entry_fees: float = 0.0,
     ) -> PaperPosition:
         """Open a new position.
 
@@ -110,6 +126,7 @@ class PaperPositionTracker:
             entry_price: Entry price
             quantity: Position size
             metadata: Optional metadata
+            entry_fees: Entry fees paid (default 0.0)
 
         Returns:
             New PaperPosition
@@ -122,6 +139,7 @@ class PaperPositionTracker:
                 entry_price=entry_price,
                 quantity=quantity,
                 metadata=metadata or {},
+                entry_fees=entry_fees,
             )
 
             self._open_positions[position.position_id] = position
@@ -138,12 +156,14 @@ class PaperPositionTracker:
         self,
         position_id: str,
         exit_price: float,
+        exit_fees: float = 0.0,
     ) -> tuple[PaperPosition, float]:
         """Close a position.
 
         Args:
             position_id: Position to close
             exit_price: Exit price
+            exit_fees: Exit fees paid (default 0.0)
 
         Returns:
             Tuple of (closed position, realized PnL)
@@ -156,8 +176,11 @@ class PaperPositionTracker:
             if position is None:
                 raise ValueError(f"Position {position_id} not found")
 
-            # Calculate realized PnL
-            realized_pnl = position.calculate_pnl(exit_price)
+            # Set exit fees
+            position.exit_fees = exit_fees
+
+            # Calculate realized PnL with fees deducted
+            realized_pnl = position.calculate_pnl(exit_price, deduct_fees=True)
             position.realized_pnl = realized_pnl
             position.unrealized_pnl = 0.0
             position.closed_at = datetime.now(UTC)
@@ -168,8 +191,9 @@ class PaperPositionTracker:
 
             logger.info(
                 f"Closed position: {position_id} "
-                f"PnL={realized_pnl:.4f} "
-                f"exit={exit_price:.2f}"
+                f"PnL={realized_pnl:.4f} (net after fees) "
+                f"exit={exit_price:.2f} "
+                f"fees={position.total_fees:.4f}"
             )
 
             return position, realized_pnl

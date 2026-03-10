@@ -1,12 +1,11 @@
-"""
-Validation module for forensic evidence collection and gate validation.
+"""Validation module for forensic evidence collection and gate validation.
 
 This module provides collectors and validators for the ChiseAI
 forensic validation harness. It includes collectors for:
 - Discord messages (G5 validation)
 - Redis deltas (G1-G4 validation)
 - InfluxDB queries (G6-G7 validation)
-- Recap validation (G5 source verification)
+- Bybit-Journal reconciliation
 
 Example:
     from scripts.validation import (
@@ -15,7 +14,7 @@ Example:
         DiscordEvidenceCollector,
         RedisDeltaCollector,
         InfluxEvidenceCollector,
-        RecapValidator,
+        BybitJournalReconciler,
     )
 
     # Use integrated harness with all collectors
@@ -29,8 +28,11 @@ from scripts.validation.forensic_harness import (
     IntegratedForensicHarness,
 )
 from scripts.validation.influx_evidence import InfluxEvidenceCollector
-from scripts.validation.recap_validator import RecapValidator
 from scripts.validation.redis_deltas import RedisDeltaCollector
+from scripts.validation.reconcile_bybit_journal import (
+    BybitJournalReconciler,
+    ReconciliationReport,
+)
 
 __all__ = [
     "ForensicHarness",
@@ -38,7 +40,8 @@ __all__ = [
     "DiscordEvidenceCollector",
     "RedisDeltaCollector",
     "InfluxEvidenceCollector",
-    "RecapValidator",
+    "BybitJournalReconciler",
+    "ReconciliationReport",
 ]
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"

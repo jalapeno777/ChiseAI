@@ -1,0 +1,75 @@
+{
+  "calculation_id": "BYBIT-KPI-20260310-224713",
+  "story_id": "ST-KPI-FIX-001",
+  "source": "bybit_truth",
+  "trading_mode": "demo",
+  "canonical_for_go": true,
+  "calculation_timestamp": "2026-03-10T22:47:13.793517+00:00",
+  "data_range": {
+    "start_time": "2026-03-10T11:21:45.246000+00:00",
+    "end_time": "2026-03-10T19:41:47.687000+00:00",
+    "lookback_days": 1
+  },
+  "trade_summary": {
+    "total_trades": 4,
+    "winning_trades": 0,
+    "losing_trades": 0,
+    "open_trades": 0
+  },
+  "kpis": {
+    "win_rate_percent": 0.0,
+    "total_pnl": -0.1214,
+    "total_net_pnl": -0.1214,
+    "total_gross_pnl": 0.0,
+    "total_fees": 0.1214,
+    "fee_impact_percent": 0.0,
+    "avg_pnl_per_trade": -0.0304,
+    "max_drawdown_percent": 0.0,
+    "max_drawdown_amount": 0.0,
+    "turnover": {
+      "avg_trades_per_day": 4.0,
+      "p95_trades_per_day": 4.0,
+      "max_trades_per_day": 4.0,
+      "total_days": 1,
+      "daily_counts": {
+        "2026-03-10": 4
+      }
+    },
+    "latency_ms": null,
+    "risk_gate_adherence_percent": 100.0
+  },
+  "data_quality": {
+    "freshness_hours": 3.09,
+    "is_fresh": true,
+    "data_quality_flags": [
+      "No closed PnL data available"
+    ]
+  },
+  "target_assessment": {
+    "win_rate": {
+      "value": 0.0,
+      "target": "> 55%",
+      "passed": false
+    },
+    "max_drawdown": {
+      "value": 0.0,
+      "target": "< 5%",
+      "passed": true
+    },
+    "data_freshness": {
+      "value": 3.09,
+      "target": "< 24 hours",
+      "passed": true
+    },
+    "risk_gate_adherence": {
+      "value": 100.0,
+      "target": "> 95%",
+      "passed": true
+    },
+    "overall": {
+      "status": "FAIL",
+      "passed_count": 3,
+      "total_count": 4
+    }
+  }
+}

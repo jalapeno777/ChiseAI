@@ -475,8 +475,7 @@ class BybitConnector:
         payload = ""
 
         if signed:
-            # Sync server time on first signed request or if stale (>5 minutes)
-            if self._last_time_sync == 0 or (time.time() - self._last_time_sync) > 300:
+            if self._last_time_sync == 0 or (time.time() - self._last_time_sync) > 30:
                 await self._sync_server_time()
 
             timestamp = self._get_timestamp()
@@ -484,7 +483,10 @@ class BybitConnector:
             headers["X-BAPI-RECV-WINDOW"] = str(self.config.recv_window)
 
             if method == "GET" and params:
-                payload = "&".join(f"{k}={v}" for k, v in sorted(params.items()))
+                # Build query string in the SAME order as params dict
+                # Bybit requires exact ordering - params must match the URL order
+                # Python 3.7+ preserves dict insertion order
+                payload = "&".join(f"{k}={v}" for k, v in params.items())
             elif params:
                 payload = json.dumps(params)
 

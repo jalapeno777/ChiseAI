@@ -535,3 +535,127 @@ class TestFeedbackAnalyzer:
         retrieved = analyzer.get_baseline_metrics()
 
         assert retrieved == metrics
+
+
+class TestAnalyzerHealth:
+    """Tests for analyzer health status."""
+
+    @pytest.fixture
+    def analyzer(self) -> FeedbackAnalyzer:
+        """Create analyzer fixture."""
+        return FeedbackAnalyzer()
+
+    @pytest.fixture
+    def sample_matches(self) -> list[PredictionOutcomeMatch]:
+        """Create sample matches fixture."""
+        matches = []
+        for i in range(50):
+            signal = SignalRecord(
+                signal_id=f"test-{i}",
+                token="BTC",
+                timestamp=1000000 + i * 1000,
+                direction=SignalDirection.LONG if i % 2 == 0 else SignalDirection.SHORT,
+                confidence=0.7 + (i % 3) * 0.1,
+                entry_price=50000.0,
+                score=70.0 + (i % 5) * 5,
+                indicators_used=["rsi"] if i % 2 == 0 else ["macd"],
+                timeframes_used=["1h"] if i % 3 == 0 else ["4h"],
+            )
+
+            outcome = OutcomeRecord(
+                signal_id=f"test-{i}",
+                exit_timestamp=signal.timestamp + 10000,
+                is_win=i % 3 != 0,
+                pnl=100.0 if i % 3 != 0 else -50.0,
+                exit_price=signal.entry_price * (1.02 if i % 3 != 0 else 0.98),
+                duration_hours=2.78,
+                outcome_type=OutcomeType.TP_HIT if i % 3 != 0 else OutcomeType.SL_HIT,
+            )
+
+            match = PredictionOutcomeMatch(
+                signal_id=f"test-{i}",
+                signal=signal,
+                outcome=outcome,
+                status=MatchStatus.MATCHED,
+                confidence=MatchConfidence.HIGH,
+                resolution_quality=0.9,
+            )
+            matches.append(match)
+
+        return matches
+
+    def test_get_health_status_no_analyses(self, analyzer) -> None:
+        """Test health status with no analyses."""
+        health = analyzer.get_health_status()
+
+        assert health["component"] == "FeedbackAnalyzer"
+        assert health["is_active"] is False
+        assert health["total_analyses"] == 0
+        assert health["is_healthy"] is False
+        assert "No analyses recorded" in health["reason"]
+        assert health["last_analysis_time"] is None
+
+    @pytest.mark.asyncio
+    async def test_get_health_status_after_analysis(self, analyzer) -> None:
+        """Test health status after running analysis."""
+        from datetime import UTC, datetime
+
+        # Create sample matches for testing
+        sample_matches = []
+        for i in range(50):
+            signal = SignalRecord(
+                signal_id=f"test-{i}",
+                token="BTC",
+                timestamp=1000000 + i * 1000,
+                direction=SignalDirection.LONG if i % 2 == 0 else SignalDirection.SHORT,
+                confidence=0.7 + (i % 3) * 0.1,
+                entry_price=50000.0,
+                score=70.0 + (i % 5) * 5,
+                indicators_used=["rsi"] if i % 2 == 0 else ["macd"],
+                timeframes_used=["1h"] if i % 3 == 0 else ["4h"],
+            )
+
+            outcome = OutcomeRecord(
+                signal_id=f"test-{i}",
+                exit_timestamp=signal.timestamp + 10000,
+                is_win=i % 3 != 0,
+                pnl=100.0 if i % 3 != 0 else -50.0,
+                exit_price=signal.entry_price * (1.02 if i % 3 != 0 else 0.98),
+                duration_hours=2.78,
+                outcome_type=OutcomeType.TP_HIT if i % 3 != 0 else OutcomeType.SL_HIT,
+            )
+
+            match = PredictionOutcomeMatch(
+                signal_id=f"test-{i}",
+                signal=signal,
+                outcome=outcome,
+                status=MatchStatus.MATCHED,
+                confidence=MatchConfidence.HIGH,
+                resolution_quality=0.9,
+            )
+            sample_matches.append(match)
+
+        # Run analysis to populate health metrics
+        await analyzer.analyze_matches(sample_matches)
+
+        health = analyzer.get_health_status()
+
+        assert health["is_active"] is True
+        assert health["total_analyses"] == 1
+        assert health["is_healthy"] is True
+        assert "Last analysis" in health["reason"]
+        assert "1 total analyses performed" in health["reason"]
+        assert health["last_analysis_time"] is not None
+
+    def test_get_health_status_tracks_analyses(self, analyzer) -> None:
+        """Test that health status tracks multiple analyses."""
+        from datetime import UTC, datetime
+
+        # Simulate multiple analyses by directly setting the counters
+        analyzer._total_analyses = 5
+        analyzer._last_analysis_time = datetime.now(UTC)
+
+        health = analyzer.get_health_status()
+
+        assert health["total_analyses"] == 5
+        assert "5 total analyses performed" in health["reason"]

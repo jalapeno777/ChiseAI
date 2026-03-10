@@ -49,6 +49,11 @@ if TYPE_CHECKING:
         SignalRecord,
     )
 
+try:
+    from redis_state import redis_state_hset
+except ImportError:
+    redis_state_hset = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -404,6 +409,12 @@ class PredictionOutcomeMatcher:
             for signal_type in SignalType
         }
 
+        # Track health metrics
+        self._last_match_timestamp: datetime | None = None
+        self._total_matches_processed: int = 0
+        self._last_batch_time: datetime | None = None
+        self._is_active: bool = False
+
     async def match_single(
         self,
         signal: SignalRecord,
@@ -551,6 +562,8 @@ class PredictionOutcomeMatcher:
 
             self._match_history.append(match_result)
             self._update_metrics(match_result)
+            self._last_match_timestamp = datetime.now(UTC)
+            self._total_matches_processed += 1
             return match_result
 
         except Exception as e:
@@ -1053,4 +1066,73 @@ class PredictionOutcomeMatcher:
             "metrics_by_signal_type": {
                 st.value: m.to_dict() for st, m in all_metrics.items()
             },
+        }
+
+    def get_health_status(self) -> dict[str, Any]:
+        """Get health status for the matcher.
+
+        Returns:
+            Health status dictionary with:
+            - is_active: whether matching is active
+            - last_match_time: ISO timestamp of last match
+            - total_matches: total number of matches processed
+            - match_rate: overall match rate (0.0-1.0)
+            - is_healthy: boolean indicating health
+            - reason: human-readable status reason
+        """
+        now = datetime.now(UTC)
+
+        # Determine if active
+        is_active = self._last_match_timestamp is not None
+
+        # Calculate match rate
+        match_rate = 0.0
+        if self._match_history:
+            matched = sum(
+                1 for m in self._match_history if m.status == MatchStatus.MATCHED
+            )
+            match_rate = matched / len(self._match_history)
+
+        # Determine health
+        is_healthy = True
+        reason_parts = []
+
+        if self._last_match_timestamp:
+            time_since = (now - self._last_match_timestamp).total_seconds()
+            minutes_ago = int(time_since / 60)
+            reason_parts.append(f"Last match {minutes_ago} minutes ago")
+
+            # Consider unhealthy if no matches in 24 hours
+            if time_since > 86400:
+                is_healthy = False
+                reason_parts.append("No matches in 24 hours")
+        else:
+            reason_parts.append("No matches recorded")
+            is_healthy = False
+
+        reason_parts.append(f"{self._total_matches_processed} total matches processed")
+        reason_parts.append(f"Match rate: {match_rate:.1%}")
+
+        # Store in Redis if available
+        if redis_state_hset is not None:
+            try:
+                redis_state_hset(
+                    name="chiseai:ml:feedback:matcher:health",
+                    key="last_match_timestamp",
+                    value=now.isoformat(),
+                    expire_seconds=86400,
+                )
+            except Exception as e:
+                logger.debug(f"Failed to store health timestamp in Redis: {e}")
+
+        return {
+            "component": "PredictionOutcomeMatcher",
+            "is_active": is_active,
+            "last_match_time": self._last_match_timestamp.isoformat()
+            if self._last_match_timestamp
+            else None,
+            "total_matches": self._total_matches_processed,
+            "match_rate": round(match_rate, 4),
+            "is_healthy": is_healthy,
+            "reason": "; ".join(reason_parts),
         }
