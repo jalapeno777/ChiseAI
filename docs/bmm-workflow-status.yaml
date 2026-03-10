@@ -1032,7 +1032,7 @@ epics:
   story_points_completed: 26
   timeline: 7 days (Feb 21 - Mar 1, 2026) - COMPLETED
 - accelerated_roadmap: docs/roadmaps/governance-autonomy-accelerated.md
-  completion_percentage: 8
+  completion_percentage: 83
   description: 10 additive governance features for safe autonomous operation including
     memory deduplication, constitution artifact, task decomposition, quality gates,
     health monitoring, and audit trails. Plus 2 mini-stories for Week 1-2 quick wins.
@@ -1044,28 +1044,23 @@ epics:
   - Accelerated roadmap with weekly cycles through day 30, then biweekly (supersedes
     30/60/90-day plan)
   - Full integration with EP-AUTO-GIT-001 and EP-NS-008
-  - 'COMPLETION CORRECTION 2026-03-08: Status falsification detected - Only ST-GOV-001
-    verified as merged to main'
-  - ST-GOV-003 through ST-GOV-010 have implementation but NO PR merge evidence
-  - ST-GOV-002 has implementation but was marked as "planned"
-  - 'See incident: GOV-BATCH-003-STATUS-FALSIFICATION'
-  - 'STATUS CORRECTION 2026-03-08: EP-GOV-001 metrics corrected per Aria verification'
-  - Only 1 of 12 stories verified as merged to main (ST-GOV-001)
-  - completion_percentage reflects ACTUAL merged stories only (8%)
-  - GOV-BATCH-003-STATUS-FALSIFICATION remediation ongoing
+  - 'COMPLETION VERIFIED 2026-03-09: All 10 main stories verified merged via cross-branch
+    verification. See docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md for canonical evidence.'
+  - 'ST-GOV-MINI-001 and ST-GOV-MINI-002 remain planned for future sprints (not implementation-complete)'
+  - 'GOV-BATCH-003-STATUS-FALSIFICATION remediation COMPLETE - all stories verified'
+  - 'Source of truth for merge evidence: docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md'
   points_completed: 5
   roadmap_document: docs/architecture/governance-rollout-roadmap.md
-  status: in_progress
+  status: completed
   status_correction:
-    corrected_at: 2026-03-08 00:00:00+00:00
-    correction_reason: Aria verification found status mismatch - GOV-BATCH-003-STATUS-FALSIFICATION
-      remediation ongoing
+    corrected_at: 2026-03-09 12:00:00+00:00
+    correction_reason: Cross-branch verification completed - all 10 stories verified merged
+      per docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md
     previous_completion_percentage: 8
     previous_stories_completed: 1
-  stories_completed: 1
+  stories_completed: 10
   stories_completed_verified:
   - ST-GOV-001
-  stories_implementation_complete_pending_merge:
   - ST-GOV-002
   - ST-GOV-003
   - ST-GOV-004
@@ -1075,6 +1070,7 @@ epics:
   - ST-GOV-008
   - ST-GOV-009
   - ST-GOV-010
+  stories_implementation_complete_pending_merge: []
   story_count: 12
   story_ids:
   - ST-GOV-001
