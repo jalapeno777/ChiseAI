@@ -506,9 +506,15 @@ steps:
             fi
           fi
           echo "Feature flag CI_TEMPMEMORY_INGESTION_ENABLED=$${CI_TEMPMEMORY_INGESTION_ENABLED}"
-          # Install dependencies
-          pip install --no-cache-dir pyyaml requests numpy scipy || true
-          pip install -e . > /dev/null 2>&1 || pip install -e . --break-system-packages > /dev/null 2>&1 || true
+          # Fast-path when ingestion is disabled (main/prod by default):
+          # avoid expensive dependency bootstrapping and emit a compatible report.
+          if [ "$${CI_TEMPMEMORY_INGESTION_ENABLED}" != "true" ]; then
+            echo "Ingestion disabled for this branch; writing skip report and exiting step early."
+            printf '%s\n' '{"success": true, "skipped": true, "reason": "Feature flag disabled", "files_processed": 0, "files_ingested": 0, "files_failed": 0, "files_skipped": 0, "duration_seconds": 0, "errors": [], "ingested_memory_ids": []}' > "$${CI_STATUS_DIR}/pre-eval-ingestion.json"
+            exit 0
+          fi
+          # Install only dependencies needed for enabled ingestion mode.
+          pip install --no-cache-dir pyyaml redis qdrant-client || true
           # Run pre-eval ingestion
           python scripts/ci/pre_eval_ingestion.py --output "$${CI_STATUS_DIR}/pre-eval-ingestion.json"
         ) > "$${CI_STATUS_DIR}/pre-eval-ingestion.log" 2>&1
