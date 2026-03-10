@@ -89,6 +89,12 @@
 #
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+metadata:
+  version: "1.0.0"
+  last_updated: "2026-03-10"
+  schema_version: "1.0.0"
+  recent_changes: []
+
 completed:
 - acceptance_criteria:
   - Task 1.1: Grafana validation evidence created and merged

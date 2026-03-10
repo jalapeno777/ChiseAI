@@ -5,12 +5,13 @@ Validates YAML frontmatter in markdown files according to the tempmemory schema.
 """
 
 import re
-import yaml
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any
+
+import yaml
 
 
 class FrontmatterType(str, Enum):
@@ -40,9 +41,9 @@ class ValidationResult:
 
     file_path: Path
     is_valid: bool = True
-    errors: List[ValidationError] = field(default_factory=list)
-    warnings: List[ValidationError] = field(default_factory=list)
-    frontmatter: Optional[dict] = None
+    errors: list[ValidationError] = field(default_factory=list)
+    warnings: list[ValidationError] = field(default_factory=list)
+    frontmatter: dict | None = None
 
     def add_error(self, field: str, message: str) -> None:
         """Add an error to the result."""
@@ -61,7 +62,7 @@ class ValidationResult:
         """Check if there are any warnings."""
         return len(self.warnings) > 0
 
-    def get_all_issues(self) -> List[ValidationError]:
+    def get_all_issues(self) -> list[ValidationError]:
         """Get all errors and warnings."""
         return self.errors + self.warnings
 
@@ -94,10 +95,10 @@ class ValidationRule:
         self,
         field: str,
         required: bool = False,
-        allowed_values: Optional[List[str]] = None,
-        value_type: Optional[type] = None,
-        validator: Optional[Any] = None,
-        custom_message: Optional[str] = None,
+        allowed_values: list[str] | None = None,
+        value_type: type | None = None,
+        validator: Any | None = None,
+        custom_message: str | None = None,
     ):
         self.field = field
         self.required = required
@@ -183,7 +184,7 @@ class FrontmatterValidator:
         self.strict = strict
         self.rules = self._build_rules()
 
-    def _build_rules(self) -> List[ValidationRule]:
+    def _build_rules(self) -> list[ValidationRule]:
         """Build the validation rules."""
         rules = [
             # Required fields
@@ -214,7 +215,7 @@ class FrontmatterValidator:
 
         return rules
 
-    def _validate_story_id(self, value: str) -> tuple[bool, Optional[str]]:
+    def _validate_story_id(self, value: str) -> tuple[bool, str | None]:
         """Validate story_id format (e.g., ST-123, CH-456)."""
         if not isinstance(value, str):
             return False, "story_id must be a string"
@@ -229,7 +230,7 @@ class FrontmatterValidator:
 
         return True, None
 
-    def _validate_iso_date(self, value: Any) -> tuple[bool, Optional[str]]:
+    def _validate_iso_date(self, value: Any) -> tuple[bool, str | None]:
         """Validate ISO 8601 date format.
 
         Accepts both string dates and datetime objects (YAML parses dates as datetime).
@@ -270,7 +271,7 @@ class FrontmatterValidator:
             f"got '{value}'"
         )
 
-    def extract_frontmatter(self, content: str) -> tuple[Optional[dict], Optional[str]]:
+    def extract_frontmatter(self, content: str) -> tuple[dict | None, str | None]:
         """
         Extract YAML frontmatter from markdown content.
 
@@ -357,7 +358,7 @@ class FrontmatterValidator:
 
     def validate_directory(
         self, directory: Path, pattern: str = "*.md", recursive: bool = True
-    ) -> List[ValidationResult]:
+    ) -> list[ValidationResult]:
         """
         Validate all markdown files in a directory.
 
