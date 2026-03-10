@@ -760,6 +760,26 @@ steps:
         # Do not short-circuit the pipeline; ci-gate is the single fail point.
         exit 0
 
+  governance-drift-check:
+    image: python:3.11
+    environment:
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p "$${CI_STATUS_DIR}"
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir pyyaml
+          python3 scripts/validation/governance_drift_guard.py --verbose
+        ) > "$${CI_STATUS_DIR}/governance-drift-check.log" 2>&1
+        code=$?
+        cat "$${CI_STATUS_DIR}/governance-drift-check.log"
+        echo "$code" > "$${CI_STATUS_DIR}/governance-drift-check.status"
+        # Do not short-circuit the pipeline; ci-gate is the single fail point.
+        exit 0
+
   performance-gate:
     image: python:3.11
     depends_on:
@@ -837,6 +857,7 @@ steps:
       - compass-apply
       - compass-gate
       - status-write-gate
+      - governance-drift-check
       - changed-lines-coverage
       - performance-gate
     environment:
