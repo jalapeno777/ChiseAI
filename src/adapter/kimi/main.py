@@ -211,7 +211,7 @@ async def _forward_to_kimi(request: ChatCompletionRequest) -> dict[str, Any]:
                 headers=headers,
                 timeout=aiohttp.ClientTimeout(total=60),
             ) as response:
-                response_data = await response.json()
+                response_data: dict[str, Any] = await response.json()
 
                 # Map Kimi API errors to HTTP status codes
                 if response.status == 401:

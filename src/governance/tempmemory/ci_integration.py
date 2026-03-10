@@ -22,8 +22,6 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from governance.tempmemory.ingestion_runner import (
-    IngestionStatus,
-    MigrationReport,
     TempmemoryIngestionRunner,
 )
 from governance.tempmemory.migration import MigrationStatus
@@ -442,20 +440,20 @@ def format_report_for_logs(report: CIIngestionReport) -> str:
         f"Timestamp: {report.timestamp}",
         f"Pipeline ID: {report.pipeline_id or 'N/A'}",
         f"Git Commit: {report.git_commit or 'N/A'}",
-        f"",
+        "",
         f"Files Processed: {report.files_processed}",
         f"Files Ingested:  {report.files_ingested}",
         f"Files Failed:    {report.files_failed}",
         f"Files Skipped:   {report.files_skipped}",
         f"Duration:        {report.duration_seconds:.2f}s",
-        f"",
+        "",
         f"Success: {'YES' if report.success else 'NO'}",
     ]
 
     if report.errors:
         lines.extend(
             [
-                f"",
+                "",
                 f"Errors ({len(report.errors)}):",
             ]
         )
@@ -467,7 +465,7 @@ def format_report_for_logs(report: CIIngestionReport) -> str:
     if report.ingested_memory_ids:
         lines.extend(
             [
-                f"",
+                "",
                 f"Ingested Memories ({len(report.ingested_memory_ids)}):",
             ]
         )

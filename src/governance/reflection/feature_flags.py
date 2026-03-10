@@ -92,7 +92,9 @@ def is_flag_enabled(flag_name: str, default: bool | None = None) -> bool:
     client = get_redis_client()
     if client is None:
         fallback = _fail_open() or default
-        logger.debug(f"Redis unavailable, returning fallback={fallback} for {flag_name}")
+        logger.debug(
+            f"Redis unavailable, returning fallback={fallback} for {flag_name}"
+        )
         return fallback
 
     try:
