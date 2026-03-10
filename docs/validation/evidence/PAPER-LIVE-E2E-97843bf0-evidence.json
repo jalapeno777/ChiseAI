@@ -1,0 +1,146 @@
+{
+  "test_id": "PAPER-LIVE-E2E-97843bf0",
+  "start_time": "2026-03-10T11:21:21.497750+00:00",
+  "environment": {
+    "USE_LLM_TRADE_DECISIONS": "true",
+    "LLM_DECISION_TIMEOUT_MS": "60000"
+  },
+  "safety_checks": {
+    "bybit_demo_mode": {
+      "passed": true,
+      "mode": "demo",
+      "api_key_prefix": "R9KF..."
+    },
+    "kill_switch": {
+      "passed": true,
+      "triggered": false,
+      "reason": null
+    },
+    "discord_webhook": {
+      "passed": true,
+      "configured": true,
+      "url_prefix": "https://discord.com/api/webhoo..."
+    },
+    "llm_config": {
+      "passed": true,
+      "USE_LLM_TRADE_DECISIONS": true,
+      "LLM_DECISION_TIMEOUT_MS": "60000"
+    }
+  },
+  "signal": {
+    "signal_id": "bbe3f26c-e22f-4751-9df6-246e8f2d9351",
+    "timestamp": "2026-03-10T11:21:23.830110+00:00",
+    "symbol": "BTCUSDT",
+    "direction": "long",
+    "confidence": 0.85,
+    "base_score": 85.0,
+    "status": "actionable",
+    "timeframe": "1h"
+  },
+  "llm_analysis": {
+    "go_no_go": true,
+    "confidence": 50.0,
+    "rationale": "No rationale provided",
+    "provider": "GLM-5 (Z.ai)",
+    "fallback_used": true,
+    "latency_ms": 23618.34,
+    "position_size": null,
+    "stop_loss": null,
+    "take_profit": null,
+    "risk_recommendation": ""
+  },
+  "risk_checks": {
+    "timestamp": "2026-03-10T11:21:45.089419+00:00",
+    "risk_config": {
+      "max_position_pct": 0.01,
+      "max_leverage": 1.0,
+      "min_confidence": 0.75,
+      "max_drawdown_pct": 0.15
+    },
+    "checks": {
+      "confidence_check": {
+        "passed": true,
+        "signal_confidence": 0.85,
+        "min_required": 0.75
+      },
+      "llm_decision_check": {
+        "passed": true,
+        "go_no_go": true,
+        "fallback_used": true
+      },
+      "position_size_check": {
+        "passed": true,
+        "max_position_value_usd": 100.0,
+        "test_quantity": 0.001
+      }
+    },
+    "all_passed": true
+  },
+  "execution": {},
+  "trade": {
+    "entry": {
+      "order_id": "51991871-e2d6-4e89-b9d3-5c8a182bcb33",
+      "symbol": "BTCUSDT",
+      "side": "buy",
+      "quantity": 0.001,
+      "entry_price": 70633.4,
+      "position_value_usd": 70.63,
+      "timestamp": "2026-03-10T11:21:47.068246+00:00",
+      "latency_ms": 1035.35,
+      "demo_mode": true,
+      "endpoint": "https://api-demo.bybit.com",
+      "api_key_prefix": "R9KF",
+      "position_id": "effafbf3-86ef-439a-b227-491267182e9b"
+    },
+    "exit": {
+      "position_id": "effafbf3-86ef-439a-b227-491267182e9b",
+      "exit_price": 70630.1,
+      "pnl": -0.0033,
+      "timestamp": "2026-03-10T11:21:48.798727+00:00",
+      "latency_ms": 0.01,
+      "reason": "test_complete"
+    }
+  },
+  "journal": {
+    "entry_id": "be549afc-83be-457f-bbbe-39dd98337506",
+    "created": true,
+    "closed": true,
+    "total_entries": 1,
+    "closed_entries": 1,
+    "entry_data": {
+      "symbol": "BTCUSDT",
+      "side": "buy",
+      "entry_price": 70633.4,
+      "position_size": 0.001,
+      "exit_price": 70630.1,
+      "net_pnl": -0.0033,
+      "exit_reason": "manual_close"
+    },
+    "timestamp": "2026-03-10T11:21:49.216865+00:00"
+  },
+  "discord": {
+    "open": {
+      "sent": true,
+      "message_id": "1480888392769212518",
+      "timestamp": "2026-03-10T11:21:48.534339+00:00",
+      "error": null,
+      "retry_count": 0
+    },
+    "close": {
+      "sent": true,
+      "message_id": "1480888395369680899",
+      "timestamp": "2026-03-10T11:21:49.148171+00:00",
+      "error": null,
+      "retry_count": 0
+    }
+  },
+  "cleanup": {
+    "trade_closed": true,
+    "flat_position_state": true,
+    "open_positions": 0,
+    "timestamp": "2026-03-10T11:21:49.217198+00:00"
+  },
+  "errors": [],
+  "status": "SUCCESS",
+  "end_time": "2026-03-10T11:21:49.218288+00:00"
+}
