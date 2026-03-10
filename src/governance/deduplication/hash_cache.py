@@ -6,10 +6,10 @@ Provides caching of content hashes to prevent near-duplicate ingestion.
 Story: ST-GOV-001
 """
 
+import contextlib
 import hashlib
 import json
 from datetime import datetime
-from typing import Optional
 
 from src.governance.deduplication.config import DeduplicationConfig
 
@@ -22,8 +22,8 @@ class HashCacheEntry:
         content_hash: str,
         source_id: str,
         collection: str,
-        timestamp: Optional[datetime] = None,
-        metadata: Optional[dict] = None,
+        timestamp: datetime | None = None,
+        metadata: dict | None = None,
     ):
         self.content_hash = content_hash
         self.source_id = source_id
@@ -61,7 +61,7 @@ class HashCache:
     with configurable TTL.
     """
 
-    def __init__(self, config: Optional[DeduplicationConfig] = None):
+    def __init__(self, config: DeduplicationConfig | None = None):
         self.config = config or DeduplicationConfig()
         self._redis_client = None
 
@@ -104,7 +104,7 @@ class HashCache:
         hasher.update(content)
         return hasher.hexdigest()
 
-    def is_duplicate(self, content: str | bytes) -> tuple[bool, Optional[str]]:
+    def is_duplicate(self, content: str | bytes) -> tuple[bool, str | None]:
         """
         Check if content is a known duplicate.
 
@@ -134,7 +134,7 @@ class HashCache:
         content: str | bytes,
         source_id: str,
         collection: str,
-        metadata: Optional[dict] = None,
+        metadata: dict | None = None,
     ) -> str:
         """
         Add a content hash to the cache.
@@ -167,7 +167,7 @@ class HashCache:
 
         return content_hash
 
-    def get_entry(self, content_hash: str) -> Optional[HashCacheEntry]:
+    def get_entry(self, content_hash: str) -> HashCacheEntry | None:
         """
         Retrieve a cached entry by hash.
 
@@ -202,7 +202,7 @@ class HashCache:
         redis_client = self._get_redis_client()
         key = self._make_key(content_hash)
 
-        return redis_client.delete(key) > 0
+        return int(redis_client.delete(key)) > 0
 
     def get_cache_stats(self) -> dict:
         """
@@ -221,13 +221,11 @@ class HashCache:
         # Calculate memory usage (approximate)
         memory_bytes = 0
         for key in keys[:100]:  # Sample first 100
-            try:
+            with contextlib.suppress(Exception):
                 memory_bytes += redis_client.memory_usage(key) or 0
-            except Exception:
-                pass
 
         if keys:
-            memory_bytes = memory_bytes * (count / min(len(keys), 100))
+            memory_bytes = memory_bytes * (count // min(len(keys), 100))
 
         return {
             "entry_count": count,
@@ -248,5 +246,5 @@ class HashCache:
 
         keys = list(redis_client.scan_iter(match=pattern))
         if keys:
-            return redis_client.delete(*keys)
+            return int(redis_client.delete(*keys))
         return 0

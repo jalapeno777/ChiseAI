@@ -8,10 +8,10 @@ Story: ST-GOV-001
 
 import json
 import uuid
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from src.governance.deduplication.config import DeduplicationConfig
 
@@ -56,13 +56,13 @@ class AuditEntry:
     source_id: str = ""
     """ID of the source entry"""
 
-    duplicate_id: Optional[str] = None
+    duplicate_id: str | None = None
     """ID of the duplicate entry (if applicable)"""
 
     collection: str = ""
     """Collection name"""
 
-    similarity_score: Optional[float] = None
+    similarity_score: float | None = None
     """Similarity score if applicable (0.0-1.0)"""
 
     threshold_used: float = 0.85
@@ -121,7 +121,7 @@ class AuditTrail:
     for complete auditability.
     """
 
-    def __init__(self, config: Optional[DeduplicationConfig] = None):
+    def __init__(self, config: DeduplicationConfig | None = None):
         self.config = config or DeduplicationConfig()
         self._redis_client = None
 
@@ -153,11 +153,11 @@ class AuditTrail:
         result: DeduplicationResult,
         source_id: str,
         collection: str,
-        duplicate_id: Optional[str] = None,
-        similarity_score: Optional[float] = None,
-        threshold_used: Optional[float] = None,
+        duplicate_id: str | None = None,
+        similarity_score: float | None = None,
+        threshold_used: float | None = None,
         reason: str = "",
-        metadata: Optional[dict] = None,
+        metadata: dict | None = None,
     ) -> AuditEntry:
         """
         Log a deduplication decision to the audit trail.
@@ -210,7 +210,7 @@ class AuditTrail:
 
         return entry
 
-    def get_entry(self, entry_id: str) -> Optional[AuditEntry]:
+    def get_entry(self, entry_id: str) -> AuditEntry | None:
         """
         Retrieve a specific audit entry.
 
@@ -235,8 +235,8 @@ class AuditTrail:
     def get_recent_entries(
         self,
         limit: int = 100,
-        collection: Optional[str] = None,
-        action: Optional[DeduplicationAction] = None,
+        collection: str | None = None,
+        action: DeduplicationAction | None = None,
     ) -> list[AuditEntry]:
         """
         Get recent audit entries.
@@ -289,8 +289,8 @@ class AuditTrail:
         count = len(keys)
 
         # Count by action type
-        action_counts = {}
-        result_counts = {}
+        action_counts: dict[str, int] = {}
+        result_counts: dict[str, int] = {}
 
         for key in keys:
             if key.endswith(":list"):
@@ -326,5 +326,5 @@ class AuditTrail:
 
         keys = list(redis_client.scan_iter(match=pattern))
         if keys:
-            return redis_client.delete(*keys)
+            return int(redis_client.delete(*keys))
         return 0

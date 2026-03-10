@@ -10,12 +10,10 @@ Story: ST-GOV-001
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
-
 from src.governance.deduplication.audit import (
-    AuditEntry,
     AuditTrail,
     DeduplicationAction,
     DeduplicationResult,
@@ -132,7 +130,7 @@ class MemoryDeduplicationEngine:
     - Dry-run mode for safety
     """
 
-    def __init__(self, config: Optional[DeduplicationConfig] = None):
+    def __init__(self, config: DeduplicationConfig | None = None):
         """
         Initialize the deduplication engine.
 
@@ -213,7 +211,7 @@ class MemoryDeduplicationEngine:
 
     def check_duplicate(
         self, content: str, collection: str = "ChiseAI"
-    ) -> tuple[bool, Optional[float], Optional[str]]:
+    ) -> tuple[bool, float | None, str | None]:
         """
         Check if content is a duplicate.
 
@@ -251,8 +249,8 @@ class MemoryDeduplicationEngine:
 
     def deduplicate(
         self,
-        dry_run: Optional[bool] = None,
-        collections: Optional[list[str]] = None,
+        dry_run: bool | None = None,
+        collections: list[str] | None = None,
     ) -> DeduplicationStats:
         """
         Run deduplication across specified collections.
@@ -371,9 +369,11 @@ class MemoryDeduplicationEngine:
                     # Log what would be removed (dry run or not enough duplicates)
                     self.audit_trail.log(
                         action=DeduplicationAction.DUPLICATE_DETECTED,
-                        result=DeduplicationResult.SKIPPED
-                        if dry_run
-                        else DeduplicationResult.KEPT,
+                        result=(
+                            DeduplicationResult.SKIPPED
+                            if dry_run
+                            else DeduplicationResult.KEPT
+                        ),
                         source_id=group.canonical_id,
                         collection=collection,
                         duplicate_id=",".join(group.duplicate_ids),

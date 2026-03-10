@@ -1,7 +1,7 @@
 # Promotion Packet: strategy-001
 
 **Packet ID:** packet-001  
-**Generated:** 2026-03-01T09:57:09  
+**Generated:** 2026-03-10T11:33:35  
 **Status:** PENDING
 
 ---
@@ -15,7 +15,7 @@ promotion to paper full.
 
 | Metric | Value | Threshold | Status |
 |--------|-------|-----------|--------|
-| Duration | -20505.62 days | 7.0 days | ✅ PASS |
+| Duration | -20514.65 days | 7.0 days | ✅ PASS |
 | Win Rate | 60.00% | 55.0% | ✅ PASS |
 | Max Drawdown | 3.00% | ≤5.0% | ✅ PASS |
 | Total Trades | 10 | - | - |

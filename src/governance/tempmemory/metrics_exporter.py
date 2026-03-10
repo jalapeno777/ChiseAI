@@ -405,7 +405,7 @@ class TempmemoryMetricsExporter(BaseMetricsExporter):
             status_data = self._redis_client.hgetall(MIGRATION_STATUS_KEY)
             if status_data:
                 pending_count = 0
-                for file_path, status_json in status_data.items():
+                for _file_path, status_json in status_data.items():
                     try:
                         status_str = (
                             status_json.decode()
