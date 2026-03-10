@@ -174,16 +174,24 @@ steps:
         echo "═══════════════════════════════════════════════════════════════════"
         echo ""
         
-        # Determine which jobs to check based on cron trigger
+        # Determine which jobs to check based on cron trigger.
+        # Woodpecker may not always populate CI_PIPELINE_CRON for manual cron runs;
+        # fall back to message/sender fields used by cron invocations.
         if [ "${CI_PIPELINE_EVENT}" = "cron" ]; then
-          if [ "${CI_PIPELINE_CRON}" = "workflow-archive-weekly" ]; then
+          CRON_TRIGGER="${CI_PIPELINE_CRON:-}"
+          if [ -z "${CRON_TRIGGER}" ]; then
+            CRON_TRIGGER="${CI_PIPELINE_MESSAGE:-${CI_COMMIT_MESSAGE:-${CI_BUILD_MESSAGE:-${CI_PIPELINE_SENDER:-}}}}"
+          fi
+          echo "Detected cron trigger: ${CRON_TRIGGER:-<empty>}"
+
+          if [ "${CRON_TRIGGER}" = "workflow-archive-weekly" ]; then
             echo "Mode: Weekly Archival"
             CHECK_JOBS="weekly-preflight weekly-archive"
-          elif [ "${CI_PIPELINE_CRON}" = "workflow-archive-daily" ]; then
+          elif [ "${CRON_TRIGGER}" = "workflow-archive-daily" ]; then
             echo "Mode: Daily Health Check"
             CHECK_JOBS="daily-health"
           else
-            echo "Unknown cron trigger: ${CI_PIPELINE_CRON}"
+            echo "Unknown cron trigger: ${CRON_TRIGGER:-<empty>}"
             exit 1
           fi
         else
