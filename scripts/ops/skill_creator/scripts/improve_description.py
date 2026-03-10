@@ -2,8 +2,11 @@
 """Improve a skill description based on eval results.
 
 Takes eval results (from run_eval.py) and generates an improved description
-by calling `claude -p` as a subprocess (same auth pattern as run_eval.py —
-uses the session's Claude Code auth, no separate ANTHROPIC_API_KEY needed).
+by calling an LLM backend (opencode or claude) as a subprocess.
+
+Backends:
+- opencode: Uses `opencode run --agent Aria --prompt-file <file>` (default)
+- claude: Uses `claude -p` with stdin (legacy, for backward compatibility)
 """
 
 import argparse
@@ -12,6 +15,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 from scripts.utils import parse_skill_md
@@ -47,6 +51,58 @@ def _call_claude(prompt: str, model: str | None, timeout: int = 300) -> str:
     return result.stdout
 
 
+def _call_opencode(prompt: str, timeout: int = 300) -> str:
+    """Run `opencode run --agent Aria --prompt-file <file>` and return the text response.
+
+    Writes the prompt to a temporary file and passes it to opencode via --prompt-file
+    to avoid command line length limitations.
+    """
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+        f.write(prompt)
+        prompt_file = f.name
+
+    try:
+        cmd = ["opencode", "run", "--agent", "Aria", "--prompt-file", prompt_file]
+
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"opencode run exited {result.returncode}\nstderr: {result.stderr}"
+            )
+        return result.stdout
+    finally:
+        # Clean up temp file
+        try:
+            os.unlink(prompt_file)
+        except OSError:
+            pass
+
+
+def _call_llm(prompt: str, backend: str, model: str | None, timeout: int = 300) -> str:
+    """Dispatch to the appropriate LLM backend.
+
+    Args:
+        prompt: The prompt text to send to the LLM
+        backend: Either 'opencode' or 'claude'
+        model: Model name (only used by claude backend)
+        timeout: Maximum time to wait for response
+
+    Returns:
+        The LLM response text
+    """
+    if backend == "opencode":
+        return _call_opencode(prompt, timeout)
+    elif backend == "claude":
+        return _call_claude(prompt, model, timeout)
+    else:
+        raise ValueError(f"Unknown backend: {backend}. Must be 'opencode' or 'claude'.")
+
+
 def improve_description(
     skill_name: str,
     skill_content: str,
@@ -57,21 +113,40 @@ def improve_description(
     test_results: dict | None = None,
     log_dir: Path | None = None,
     iteration: int | None = None,
+    backend: str = "opencode",
 ) -> str:
-    """Call Claude to improve the description based on eval results."""
+    """Call LLM to improve the description based on eval results.
+
+    Args:
+        skill_name: Name of the skill being improved
+        skill_content: Full content of the SKILL.md file
+        current_description: Current skill description
+        eval_results: Evaluation results from run_eval.py
+        history: List of previous improvement attempts
+        model: Model name (for claude backend)
+        test_results: Optional test set results
+        log_dir: Optional directory for logging transcripts
+        iteration: Current iteration number
+        backend: LLM backend to use ('opencode' or 'claude')
+
+    Returns:
+        The improved description text
+    """
     failed_triggers = [
-        r for r in eval_results["results"]
-        if r["should_trigger"] and not r["pass"]
+        r for r in eval_results["results"] if r["should_trigger"] and not r["pass"]
     ]
     false_triggers = [
-        r for r in eval_results["results"]
-        if not r["should_trigger"] and not r["pass"]
+        r for r in eval_results["results"] if not r["should_trigger"] and not r["pass"]
     ]
 
     # Build scores summary
-    train_score = f"{eval_results['summary']['passed']}/{eval_results['summary']['total']}"
+    train_score = (
+        f"{eval_results['summary']['passed']}/{eval_results['summary']['total']}"
+    )
     if test_results:
-        test_score = f"{test_results['summary']['passed']}/{test_results['summary']['total']}"
+        test_score = (
+            f"{test_results['summary']['passed']}/{test_results['summary']['total']}"
+        )
         scores_summary = f"Train: {train_score}, Test: {test_score}"
     else:
         scores_summary = f"Train: {train_score}"
@@ -91,22 +166,30 @@ Current scores ({scores_summary}):
     if failed_triggers:
         prompt += "FAILED TO TRIGGER (should have triggered but didn't):\n"
         for r in failed_triggers:
-            prompt += f'  - "{r["query"]}" (triggered {r["triggers"]}/{r["runs"]} times)\n'
+            prompt += (
+                f'  - "{r["query"]}" (triggered {r["triggers"]}/{r["runs"]} times)\n'
+            )
         prompt += "\n"
 
     if false_triggers:
         prompt += "FALSE TRIGGERS (triggered but shouldn't have):\n"
         for r in false_triggers:
-            prompt += f'  - "{r["query"]}" (triggered {r["triggers"]}/{r["runs"]} times)\n'
+            prompt += (
+                f'  - "{r["query"]}" (triggered {r["triggers"]}/{r["runs"]} times)\n'
+            )
         prompt += "\n"
 
     if history:
         prompt += "PREVIOUS ATTEMPTS (do NOT repeat these — try something structurally different):\n\n"
         for h in history:
             train_s = f"{h.get('train_passed', h.get('passed', 0))}/{h.get('train_total', h.get('total', 0))}"
-            test_s = f"{h.get('test_passed', '?')}/{h.get('test_total', '?')}" if h.get('test_passed') is not None else None
+            test_s = (
+                f"{h.get('test_passed', '?')}/{h.get('test_total', '?')}"
+                if h.get("test_passed") is not None
+                else None
+            )
             score_str = f"train={train_s}" + (f", test={test_s}" if test_s else "")
-            prompt += f'<attempt {score_str}>\n'
+            prompt += f"<attempt {score_str}>\n"
             prompt += f'Description: "{h["description"]}"\n'
             if "results" in h:
                 prompt += "Train results:\n"
@@ -114,7 +197,7 @@ Current scores ({scores_summary}):
                     status = "PASS" if r["pass"] else "FAIL"
                     prompt += f'  [{status}] "{r["query"][:80]}" (triggered {r["triggers"]}/{r["runs"]})\n'
             if h.get("note"):
-                prompt += f'Note: {h["note"]}\n'
+                prompt += f"Note: {h['note']}\n"
             prompt += "</attempt>\n\n"
 
     prompt += f"""</scores_summary>
@@ -141,10 +224,12 @@ I'd encourage you to be creative and mix up the style in different iterations si
 
 Please respond with only the new description text in <new_description> tags, nothing else."""
 
-    text = _call_claude(prompt, model)
+    text = _call_llm(prompt, backend, model)
 
     match = re.search(r"<new_description>(.*?)</new_description>", text, re.DOTALL)
-    description = match.group(1).strip().strip('"') if match else text.strip().strip('"')
+    description = (
+        match.group(1).strip().strip('"') if match else text.strip().strip('"')
+    )
 
     transcript: dict = {
         "iteration": iteration,
@@ -171,9 +256,15 @@ Please respond with only the new description text in <new_description> tags, not
             f"important trigger words and intent coverage. Respond with only "
             f"the new description in <new_description> tags."
         )
-        shorten_text = _call_claude(shorten_prompt, model)
-        match = re.search(r"<new_description>(.*?)</new_description>", shorten_text, re.DOTALL)
-        shortened = match.group(1).strip().strip('"') if match else shorten_text.strip().strip('"')
+        shorten_text = _call_llm(shorten_prompt, backend, model)
+        match = re.search(
+            r"<new_description>(.*?)</new_description>", shorten_text, re.DOTALL
+        )
+        shortened = (
+            match.group(1).strip().strip('"')
+            if match
+            else shorten_text.strip().strip('"')
+        )
 
         transcript["rewrite_prompt"] = shorten_prompt
         transcript["rewrite_response"] = shorten_text
@@ -192,12 +283,32 @@ Please respond with only the new description text in <new_description> tags, not
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Improve a skill description based on eval results")
-    parser.add_argument("--eval-results", required=True, help="Path to eval results JSON (from run_eval.py)")
+    parser = argparse.ArgumentParser(
+        description="Improve a skill description based on eval results"
+    )
+    parser.add_argument(
+        "--eval-results",
+        required=True,
+        help="Path to eval results JSON (from run_eval.py)",
+    )
     parser.add_argument("--skill-path", required=True, help="Path to skill directory")
-    parser.add_argument("--history", default=None, help="Path to history JSON (previous attempts)")
-    parser.add_argument("--model", required=True, help="Model for improvement")
-    parser.add_argument("--verbose", action="store_true", help="Print thinking to stderr")
+    parser.add_argument(
+        "--history", default=None, help="Path to history JSON (previous attempts)"
+    )
+    parser.add_argument(
+        "--model",
+        required=True,
+        help="Model for improvement (used by claude backend; ignored by opencode)",
+    )
+    parser.add_argument(
+        "--backend",
+        choices=["opencode", "claude"],
+        default="opencode",
+        help="LLM backend to use (default: opencode)",
+    )
+    parser.add_argument(
+        "--verbose", action="store_true", help="Print thinking to stderr"
+    )
     args = parser.parse_args()
 
     skill_path = Path(args.skill_path)
@@ -215,7 +326,10 @@ def main():
 
     if args.verbose:
         print(f"Current: {current_description}", file=sys.stderr)
-        print(f"Score: {eval_results['summary']['passed']}/{eval_results['summary']['total']}", file=sys.stderr)
+        print(
+            f"Score: {eval_results['summary']['passed']}/{eval_results['summary']['total']}",
+            file=sys.stderr,
+        )
 
     new_description = improve_description(
         skill_name=name,
@@ -224,6 +338,7 @@ def main():
         eval_results=eval_results,
         history=history,
         model=args.model,
+        backend=args.backend,
     )
 
     if args.verbose:
@@ -232,13 +347,16 @@ def main():
     # Output as JSON with both the new description and updated history
     output = {
         "description": new_description,
-        "history": history + [{
-            "description": current_description,
-            "passed": eval_results["summary"]["passed"],
-            "failed": eval_results["summary"]["failed"],
-            "total": eval_results["summary"]["total"],
-            "results": eval_results["results"],
-        }],
+        "history": history
+        + [
+            {
+                "description": current_description,
+                "passed": eval_results["summary"]["passed"],
+                "failed": eval_results["summary"]["failed"],
+                "total": eval_results["summary"]["total"],
+                "results": eval_results["results"],
+            }
+        ],
     }
     print(json.dumps(output, indent=2))
 
