@@ -760,6 +760,81 @@ steps:
         # Do not short-circuit the pipeline; ci-gate is the single fail point.
         exit 0
 
+  status-evidence-gate:
+    image: python:3.11
+    environment:
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p "$${CI_STATUS_DIR}"
+        set +e
+        (
+          set -euo pipefail
+          CHANGED_FILES="$(printf '%s' \"${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
+          if ! printf '%s\n' "$CHANGED_FILES" | grep -qx "docs/bmm-workflow-status.yaml"; then
+            echo "status-evidence-gate: workflow status file unchanged; skipping"
+            exit 0
+          fi
+          echo "status-evidence-gate: workflow status file changed; running validation..."
+          python3 scripts/validation/validate_status_evidence.py
+        ) > "$${CI_STATUS_DIR}/status-evidence-gate.log" 2>&1
+        code=$?
+        cat "$${CI_STATUS_DIR}/status-evidence-gate.log"
+        echo "$code" > "$${CI_STATUS_DIR}/status-evidence-gate.status"
+        # Do not short-circuit the pipeline; ci-gate is the single fail point.
+        exit 0
+
+  completion-evidence-gate:
+    image: python:3.11
+    environment:
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p "$${CI_STATUS_DIR}"
+        set +e
+        (
+          set -euo pipefail
+          CHANGED_FILES="$(printf '%s' \"${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
+          if ! printf '%s\n' "$CHANGED_FILES" | grep -qx "docs/bmm-workflow-status.yaml"; then
+            echo "completion-evidence-gate: workflow status file unchanged; skipping"
+            exit 0
+          fi
+          echo "completion-evidence-gate: workflow status file changed; running validation..."
+          python3 scripts/validate_completion_evidence.py
+        ) > "$${CI_STATUS_DIR}/completion-evidence-gate.log" 2>&1
+        code=$?
+        cat "$${CI_STATUS_DIR}/completion-evidence-gate.log"
+        echo "$code" > "$${CI_STATUS_DIR}/completion-evidence-gate.status"
+        # Do not short-circuit the pipeline; ci-gate is the single fail point.
+        exit 0
+
+  workflow-transition-gate:
+    image: python:3.11
+    environment:
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p "$${CI_STATUS_DIR}"
+        set +e
+        (
+          set -euo pipefail
+          CHANGED_FILES="$(printf '%s' \"${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
+          if ! printf '%s\n' "$CHANGED_FILES" | grep -qx "docs/bmm-workflow-status.yaml"; then
+            echo "workflow-transition-gate: workflow status file unchanged; skipping"
+            exit 0
+          fi
+          echo "workflow-transition-gate: workflow status file changed; running validation..."
+          python3 scripts/validation/validate_workflow_transitions.py
+        ) > "$${CI_STATUS_DIR}/workflow-transition-gate.log" 2>&1
+        code=$?
+        cat "$${CI_STATUS_DIR}/workflow-transition-gate.log"
+        echo "$code" > "$${CI_STATUS_DIR}/workflow-transition-gate.status"
+        # Do not short-circuit the pipeline; ci-gate is the single fail point.
+        exit 0
+
   governance-drift-check:
     image: python:3.11
     environment:
@@ -857,6 +932,9 @@ steps:
       - compass-apply
       - compass-gate
       - status-write-gate
+      - status-evidence-gate
+      - completion-evidence-gate
+      - workflow-transition-gate
       - governance-drift-check
       - changed-lines-coverage
       - performance-gate
