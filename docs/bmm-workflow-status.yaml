@@ -2501,6 +2501,14 @@ launch_stories:
     1.'
   project_name: ChiseAI
   recent_changes:
+  - action: remediation-closeout-2026-03-10
+    actor: jarvis
+    description: 'Remediation closeout: ST-KPI-FIX-001 KPI accuracy fix, ST-SKILL-EVAL-001 skill evaluation cycle, and PAPER-GO-REMEDIATION-001 KPI calc fixes all merged to main. Daily operational cycle review scheduled for next standup.'
+    files_changed:
+    - docs/tempmemories/skill-eval-session-close-canonical-2026-03-10.md
+    - docs/bmm-workflow-status.yaml
+    status: completed
+    timestamp: '2026-03-10T22:00:00Z'
   - action: status-falsification-remediation
     actor: jarvis
     description: 'GOV-BATCH-003-STATUS-FALSIFICATION: Corrected false completion claims
@@ -2991,6 +2999,16 @@ launch_stories:
     status: completed
     story_id: CH-KIMI-FIX-001
   version: 2.5.11
+canary_recommendation:
+  date: '2026-03-10'
+  status: GO
+  source_of_truth: bybit_truth
+  notes:
+  - 'Bybit truth is the GO-gate source of truth'
+  - 'paper_journal_sim is non-canonical (reference only)'
+  - 'Z.AI is canonical primary LLM provider'
+  - 'Other LLM provider cleanup deferred to future sprint'
+  - 'Next daily operational cycle review required at standup'
 sprints:
 - completion_date: '2025-12-30'
   id: q1-1
