@@ -24,6 +24,13 @@ when:
     - cron
   branch:
     - main
+  # Only run this pipeline for dedicated KPI scheduler crons.
+  # Prevents cron-eval from running on unrelated crons (e.g. workflow-archive-*).
+  cron:
+    - 6h-mini-eval
+    - 6h-eval
+    - daily-trends
+    - weekly-reflection
 
 clone:
   git:
@@ -35,6 +42,10 @@ clone:
 steps:
   kpi-scheduler-6h:
     image: python:3.11
+    when:
+      cron:
+        - 6h-mini-eval
+        - 6h-eval
     commands:
       - |
         set -euo pipefail
@@ -43,12 +54,6 @@ steps:
         (
           set -euo pipefail
           pip install --no-cache-dir pyyaml requests numpy scipy redis
-          
-          # Check if this is a 6h cron trigger
-          if [ "${CI_COMMIT_MESSAGE:-}" != "cron:6h-eval" ]; then
-            echo "kpi-scheduler-6h: not 6h cron trigger, skipping"
-            exit 0
-          fi
           
           echo "Running 6-hour KPI mini eval cycle..."
           python3 scripts/evaluation/kpi_scheduler.py --cycle 6h
@@ -64,6 +69,9 @@ steps:
 
   kpi-scheduler-daily:
     image: python:3.11
+    when:
+      cron:
+        - daily-trends
     commands:
       - |
         set -euo pipefail
@@ -72,12 +80,6 @@ steps:
         (
           set -euo pipefail
           pip install --no-cache-dir pyyaml requests numpy scipy redis
-          
-          # Check if this is a daily cron trigger
-          if [ "${CI_COMMIT_MESSAGE:-}" != "cron:daily-trends" ]; then
-            echo "kpi-scheduler-daily: not daily cron trigger, skipping"
-            exit 0
-          fi
           
           echo "Running daily KPI trend cycle..."
           python3 scripts/evaluation/kpi_scheduler.py --cycle daily
@@ -93,6 +95,9 @@ steps:
 
   kpi-scheduler-weekly:
     image: python:3.11
+    when:
+      cron:
+        - weekly-reflection
     commands:
       - |
         set -euo pipefail
@@ -101,12 +106,6 @@ steps:
         (
           set -euo pipefail
           pip install --no-cache-dir pyyaml requests numpy scipy redis
-          
-          # Check if this is a weekly cron trigger
-          if [ "${CI_COMMIT_MESSAGE:-}" != "cron:weekly-reflection" ]; then
-            echo "kpi-scheduler-weekly: not weekly cron trigger, skipping"
-            exit 0
-          fi
           
           echo "Running weekly KPI reflection cycle..."
           python3 scripts/evaluation/kpi_scheduler.py --cycle weekly
@@ -122,6 +121,9 @@ steps:
 
   skill-autonomy-weekly:
     image: python:3.11
+    when:
+      cron:
+        - weekly-reflection
     commands:
       - |
         set -euo pipefail
@@ -130,12 +132,6 @@ steps:
         (
           set -euo pipefail
           pip install --no-cache-dir pyyaml redis
-
-          # Check if this is a weekly cron trigger
-          if [ "${CI_COMMIT_MESSAGE:-}" != "cron:weekly-reflection" ]; then
-            echo "skill-autonomy-weekly: not weekly cron trigger, skipping"
-            exit 0
-          fi
 
           echo "Running weekly skill autonomy tick..."
           python3 scripts/ops/skill_autonomy_tick.py --mode=weekly
@@ -153,6 +149,9 @@ steps:
   # Fallback: auto-detect cycle from commit message pattern
   kpi-scheduler-auto:
     image: python:3.11
+    when:
+      event:
+        - manual
     commands:
       - |
         set -euo pipefail
@@ -160,8 +159,6 @@ steps:
         set +e
         (
           set -euo pipefail
-          pip install --no-cache-dir pyyaml requests numpy scipy redis
-          
           CRON_MSG="${CI_COMMIT_MESSAGE:-}"
           
           # Skip if already handled by specific steps
@@ -171,6 +168,8 @@ steps:
               exit 0
               ;;
           esac
+
+          pip install --no-cache-dir pyyaml requests numpy scipy redis
           
           # Try to extract cycle from message pattern
           CYCLE=""
