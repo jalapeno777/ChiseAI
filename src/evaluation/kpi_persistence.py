@@ -92,6 +92,113 @@ class KPIPersistenceError(Exception):
     pass
 
 
+class NonCanonicalSourceError(KPIPersistenceError):
+    """Raised when non-canonical source is used for GO gate decisions."""
+
+    pass
+
+
+# Canonical source configuration
+CANONICAL_SOURCE = "bybit_truth"
+NON_CANONICAL_SOURCES = ["paper_journal_sim"]
+
+
+def validate_canonical_source(
+    kpi_source: str,
+    trading_mode: str,
+    enforce: bool = True,
+) -> tuple[bool, str]:
+    """Validate that KPI source is canonical for GO gate decisions.
+
+    This is a HARD GUARDRAIL - enforces that only bybit_truth can be used
+    for GO gate decisions in demo/live trading modes.
+
+    Args:
+        kpi_source: The KPI source identifier (e.g., 'bybit_truth', 'paper_journal_sim')
+        trading_mode: Trading mode ('demo', 'live', 'paper', 'backtest')
+        enforce: If True, raises exception on validation failure.
+                 If False, returns (False, reason) without raising.
+
+    Returns:
+        Tuple of (is_valid, reason) where:
+        - is_valid: True if source is canonical for the trading mode
+        - reason: Human-readable explanation
+
+    Raises:
+        NonCanonicalSourceError: If enforce=True and source is not canonical
+                                 for demo/live trading modes
+
+    Examples:
+        >>> validate_canonical_source("bybit_truth", "demo")
+        (True, "Source 'bybit_truth' is canonical for demo trading mode")
+
+        >>> validate_canonical_source("paper_journal_sim", "demo")
+        Traceback (most recent call last):
+            ...
+        NonCanonicalSourceError: Source 'paper_journal_sim' is NOT canonical...
+    """
+    # Normalize inputs
+    kpi_source = kpi_source.lower().strip()
+    trading_mode = trading_mode.lower().strip()
+
+    # Define which sources are canonical for which modes
+    canonical_sources_by_mode = {
+        "demo": ["bybit_truth"],
+        "live": ["bybit_truth"],
+        "paper": ["paper_journal_sim"],  # Paper mode only allows paper source
+        "backtest": ["paper_journal_sim", "backtest_sim"],
+    }
+
+    # Get canonical sources for this mode
+    mode_canonical = canonical_sources_by_mode.get(trading_mode, [])
+
+    # Check if source is canonical for this mode
+    is_canonical = kpi_source in mode_canonical
+
+    if is_canonical:
+        reason = f"Source '{kpi_source}' is canonical for {trading_mode} trading mode"
+        return True, reason
+
+    # Source is not canonical - determine appropriate message
+    if kpi_source == "bybit_truth" and trading_mode == "paper":
+        reason = (
+            f"Source '{kpi_source}' is NOT expected in {trading_mode} mode. "
+            f"Paper mode should use 'paper_journal_sim' source. "
+            f"This may indicate data contamination."
+        )
+    elif kpi_source in NON_CANONICAL_SOURCES and trading_mode in ["demo", "live"]:
+        reason = (
+            f"Source '{kpi_source}' is NOT canonical for {trading_mode} trading mode. "
+            f"GO gate decisions in {trading_mode} mode MUST use '{CANONICAL_SOURCE}'. "
+            f"Using non-canonical source for GO gates is PROHIBITED."
+        )
+    else:
+        reason = (
+            f"Source '{kpi_source}' is not recognized as canonical for {trading_mode} mode. "
+            f"Canonical sources for {trading_mode}: {mode_canonical}"
+        )
+
+    # Raise exception if enforcing
+    if enforce and trading_mode in ["demo", "live"]:
+        raise NonCanonicalSourceError(reason)
+
+    return False, reason
+
+
+def is_source_canonical_for_go(kpi_source: str, trading_mode: str) -> bool:
+    """Check if source is canonical for GO gates without raising.
+
+    Args:
+        kpi_source: The KPI source identifier
+        trading_mode: Trading mode ('demo', 'live', 'paper', 'backtest')
+
+    Returns:
+        True if source is canonical for GO gates in the given mode
+    """
+    is_valid, _ = validate_canonical_source(kpi_source, trading_mode, enforce=False)
+    return is_valid
+
+
 class KPIPersistence:
     """Persists and retrieves KPI snapshots with time-bucketed storage.
 
@@ -326,6 +433,132 @@ class KPIPersistence:
 
             logger.info(f"Exported KPI snapshot to {filepath}")
             return filepath
+
+        except Exception as e:
+            logger.error(f"Failed to export KPI snapshot to file: {e}")
+            raise KPIPersistenceError(f"Failed to export snapshot: {e}") from e
+
+    def check_bybit_truth_freshness(
+        self,
+        threshold_hours: float = 24.0,
+    ) -> dict[str, Any]:
+        """Check if bybit_truth data is fresh before loading KPIs.
+
+        Queries Redis for the last collection timestamp and determines
+        if the data is stale. Returns a warning if data is stale.
+
+        Args:
+            threshold_hours: Hours before data is considered stale
+
+        Returns:
+            Dictionary with freshness status and warning information
+        """
+        result = {
+            "is_fresh": False,
+            "status": "unknown",
+            "reason": "unknown",
+            "hours_since_collection": 0.0,
+            "last_collection_timestamp": None,
+            "last_collection_count": 0,
+            "warning": None,
+        }
+
+        if not self.redis_client:
+            result["status"] = "error"
+            result["reason"] = "no_redis_client"
+            result["warning"] = "No Redis client available for freshness check"
+            return result
+
+        try:
+            # Fetch collection metadata from Redis
+            timestamp_str = self.redis_client.get(
+                "bmad:chiseai:bybit_truth:last_collection_timestamp"
+            )
+            count_str = self.redis_client.get(
+                "bmad:chiseai:bybit_truth:last_collection_count"
+            )
+            status_str = self.redis_client.get(
+                "bmad:chiseai:bybit_truth:last_collection_status"
+            )
+
+            result["last_collection_count"] = int(count_str) if count_str else 0
+
+            # Check if we have any collection data
+            if not timestamp_str:
+                result["status"] = "stale"
+                result["reason"] = "no_collection"
+                result["warning"] = (
+                    "WARNING: No bybit_truth collection data found in Redis. "
+                    "KPIs may be based on stale data."
+                )
+                return result
+
+            result["last_collection_timestamp"] = timestamp_str
+
+            # Parse timestamp
+            try:
+                if timestamp_str.endswith("Z"):
+                    timestamp_str = timestamp_str[:-1] + "+00:00"
+                last_collection = datetime.fromisoformat(timestamp_str)
+            except (ValueError, TypeError):
+                result["status"] = "error"
+                result["reason"] = "invalid_timestamp"
+                result["warning"] = (
+                    f"WARNING: Invalid collection timestamp in Redis: {timestamp_str}"
+                )
+                return result
+
+            # Calculate hours since collection
+            now = datetime.now(UTC)
+            if last_collection.tzinfo is None:
+                last_collection = last_collection.replace(tzinfo=UTC)
+
+            hours_since = (now - last_collection).total_seconds() / 3600
+            result["hours_since_collection"] = round(hours_since, 2)
+
+            # Check if collection had an error
+            if status_str == "api_error":
+                result["status"] = "stale"
+                result["reason"] = "api_error"
+                result["warning"] = (
+                    f"WARNING: Last bybit_truth collection failed with API error "
+                    f"({hours_since:.1f}h ago). KPIs may be based on stale data."
+                )
+                return result
+
+            if status_str == "redis_error":
+                result["status"] = "stale"
+                result["reason"] = "redis_error"
+                result["warning"] = (
+                    f"WARNING: Last bybit_truth collection failed with Redis error "
+                    f"({hours_since:.1f}h ago). KPIs may be based on stale data."
+                )
+                return result
+
+            # Check if data is stale based on threshold
+            if hours_since > threshold_hours:
+                result["is_fresh"] = False
+                result["status"] = "stale"
+                result["reason"] = "old_data"
+                result["warning"] = (
+                    f"WARNING: bybit_truth data is stale "
+                    f"({hours_since:.1f}h > {threshold_hours}h threshold). "
+                    f"KPIs may be based on outdated data."
+                )
+                return result
+
+            # Data is fresh
+            result["is_fresh"] = True
+            result["status"] = "fresh"
+            result["reason"] = "fresh"
+            result["warning"] = None
+
+        except Exception as e:
+            result["status"] = "error"
+            result["reason"] = "redis_error"
+            result["warning"] = f"WARNING: Redis error during freshness check: {e}"
+
+        return result
 
         except Exception as e:
             logger.error(f"Failed to export KPI snapshot to file: {e}")
