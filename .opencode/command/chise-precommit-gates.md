@@ -91,6 +91,15 @@ Run these gates before PR/merge. If a referenced script is missing, explicitly n
      - missing skills are never blocking in this gate
      - script failure should warn, not fail precommit
 
+7.1 Skill stack registry validation (WARNING-ONLY)
+   - If `scripts/validation/validate_skill_stack_registry.py` exists, run:
+     ```bash
+     python3 scripts/validation/validate_skill_stack_registry.py --stack-map-path=docs/metrics/skill-stacks.yaml --skills-dir=.opencode/skills
+     ```
+   - Policy:
+     - structural registry errors: warn in precommit gate output
+     - missing skill refs: warning by default; use `--strict-missing-skills` only in hardening sweeps
+
 8. Session close anti-drift (required at handoff/finish)
    - `python3 scripts/swarm/session.py close --enforce-merged`
    - If intentionally closing with open PR and branch ahead of main:

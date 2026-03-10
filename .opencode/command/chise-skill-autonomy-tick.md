@@ -39,6 +39,8 @@ Use this as the single entry point for skills autonomy operations.
      - weekly KPI artifact in `docs/tempmemories/`
      - backlog candidates in `docs/backlog/` (threshold-based)
      - Redis queue items in `bmad:chiseai:skills:backlog:candidates`
+     - stack coverage summary (`stack_coverage_summary`)
+     - promotion/rollback decision summaries from recent artifacts
 
 3. Combined tick
    - Run both eval and weekly aggregation in one call:

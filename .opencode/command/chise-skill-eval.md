@@ -12,6 +12,7 @@ Run at iteration start (coverage) and/or close (effectiveness).
 
 2. Determine recommended skills (advisory)
    - Load `docs/metrics/skill-task-map.yaml`.
+   - Load `docs/metrics/skill-stacks.yaml` and expand any stack references.
    - Read recommended list for `task_class`.
 
 3. Detect available skills
@@ -47,6 +48,7 @@ Run at iteration start (coverage) and/or close (effectiveness).
 7. Output contract
    - Emit summary with:
      - `recommended_skills`
+     - `recommended_stacks`
      - `available_skills`
      - `missing_skills`
      - `coverage_status`

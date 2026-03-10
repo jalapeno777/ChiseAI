@@ -62,6 +62,7 @@ Minimum fields to capture:
 - `story_id`
 - `task_class`
 - `recommended_skills`
+- `recommended_stacks`
 - `available_skills`
 - `missing_skills`
 - `coverage_status` (`full|partial|none`)
@@ -72,6 +73,7 @@ Minimum fields to capture:
 
 Use:
 - `docs/metrics/skill-task-map.yaml`
+- `docs/metrics/skill-stacks.yaml`
 
 If task class is unknown:
 - set `task_class: unclassified`
@@ -87,6 +89,9 @@ Redis keys (DB 0):
 
 Fallback:
 - write markdown artifact under `docs/tempmemories/`.
+
+Version routing registry:
+- `docs/metrics/skill-versions.yaml`
 
 ## Runtime Safeguards
 
@@ -115,3 +120,5 @@ A skill version is promotable only if it improves at least one quality metric wi
 
 - `docs/governance/skills-autonomy-control-plane.md`
 - `docs/governance/metacognition-integration-blueprint.md`
+- `docs/metrics/skill-stacks.yaml`
+- `docs/metrics/skill-versions.yaml`

@@ -19,6 +19,7 @@ from typing import Any
 import yaml
 
 TASK_MAP_PATH = Path("docs/metrics/skill-task-map.yaml")
+STACK_MAP_PATH = Path("docs/metrics/skill-stacks.yaml")
 SKILLS_DIR = Path(".opencode/skills")
 TEMPMEM_DIR = Path("docs/tempmemories")
 
@@ -50,6 +51,65 @@ def _load_task_map(path: Path) -> dict[str, Any]:
     data.setdefault("task_classes", {})
     data.setdefault("default_task_class", "unclassified")
     return data
+
+
+def _load_stack_map(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {"stacks": {}, "task_class_stacks": {}}
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    if not isinstance(data, dict):
+        return {"stacks": {}, "task_class_stacks": {}}
+    data.setdefault("stacks", {})
+    data.setdefault("task_class_stacks", {})
+    return data
+
+
+def _unique_ordered(items: list[str]) -> list[str]:
+    out: list[str] = []
+    seen: set[str] = set()
+    for item in items:
+        clean = str(item).strip()
+        if not clean or clean in seen:
+            continue
+        seen.add(clean)
+        out.append(clean)
+    return out
+
+
+def _resolve_recommended_skills(
+    *,
+    task_class: str,
+    task_classes: dict[str, Any],
+    stack_map: dict[str, Any],
+    warnings: list[str],
+) -> tuple[list[str], list[str]]:
+    base_recommended = []
+    base_stack_names = []
+    if task_class in task_classes:
+        base_recommended = list(task_classes[task_class].get("recommended_skills", []))
+        base_stack_names = list(task_classes[task_class].get("recommended_stacks", []))
+
+    stack_names_from_registry = list(stack_map.get("task_class_stacks", {}).get(task_class, []))
+    stack_names = _unique_ordered(base_stack_names + stack_names_from_registry)
+
+    stack_definitions = stack_map.get("stacks", {})
+    stack_skills: list[str] = []
+    for stack_name in stack_names:
+        stack = stack_definitions.get(stack_name)
+        if not isinstance(stack, dict):
+            warnings.append(
+                f"stack '{stack_name}' referenced by task_class '{task_class}' is missing (non-blocking)"
+            )
+            continue
+        skills = stack.get("skills", [])
+        if not isinstance(skills, list):
+            warnings.append(
+                f"stack '{stack_name}' has invalid skills list (non-blocking)"
+            )
+            continue
+        stack_skills.extend([str(s) for s in skills])
+
+    return _unique_ordered(base_recommended + stack_skills), stack_names
 
 
 def _discover_skills(skills_dir: Path) -> set[str]:
@@ -120,6 +180,7 @@ def _persist_redis(payload: dict[str, Any], missing: list[str], task_class: str)
             "task_class": task_class,
             "coverage_status": payload["coverage_status"],
             "recommended_skills": json.dumps(payload["recommended_skills"]),
+            "recommended_stacks": json.dumps(payload.get("recommended_stacks", [])),
             "available_skills": json.dumps(payload["available_skills"]),
             "missing_skills": json.dumps(payload["missing_skills"]),
             "fallback_used": str(payload["fallback_used"]).lower(),
@@ -174,6 +235,7 @@ def _persist_markdown(payload: dict[str, Any]) -> Path:
 
     body = {
         "recommended_skills": payload["recommended_skills"],
+        "recommended_stacks": payload.get("recommended_stacks", []),
         "available_skills": payload["available_skills"],
         "missing_skills": payload["missing_skills"],
         "fallback_used": payload["fallback_used"],
@@ -206,6 +268,7 @@ def evaluate(args: argparse.Namespace) -> Outcome:
     warnings: list[str] = []
 
     task_map = _load_task_map(Path(args.task_map_path))
+    stack_map = _load_stack_map(Path(args.stack_map_path))
     task_classes = task_map.get("task_classes", {})
 
     task_class = args.task_class or task_map.get("default_task_class", "unclassified")
@@ -214,9 +277,12 @@ def evaluate(args: argparse.Namespace) -> Outcome:
             f"task_class '{task_class}' not found in task map; treating as unclassified (non-blocking)"
         )
 
-    recommended = []
-    if task_class in task_classes:
-        recommended = list(task_classes[task_class].get("recommended_skills", []))
+    recommended, recommended_stacks = _resolve_recommended_skills(
+        task_class=task_class,
+        task_classes=task_classes,
+        stack_map=stack_map,
+        warnings=warnings,
+    )
 
     available_set = _discover_skills(Path(args.skills_dir))
     available = sorted([s for s in recommended if s in available_set])
@@ -229,6 +295,7 @@ def evaluate(args: argparse.Namespace) -> Outcome:
         "story_id": args.story_id,
         "task_class": task_class,
         "recommended_skills": recommended,
+        "recommended_stacks": recommended_stacks,
         "available_skills": available,
         "missing_skills": missing,
         "coverage_status": coverage_status,
@@ -277,6 +344,7 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--rework-flag", action="store_true", help="Mark event as rework")
     ap.add_argument("--regression-flag", action="store_true", help="Mark event as regression")
     ap.add_argument("--task-map-path", default=str(TASK_MAP_PATH))
+    ap.add_argument("--stack-map-path", default=str(STACK_MAP_PATH))
     ap.add_argument("--skills-dir", default=str(SKILLS_DIR))
     ap.add_argument(
         "--strict",
