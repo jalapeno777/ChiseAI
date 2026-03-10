@@ -1,0 +1,136 @@
+{
+  "_audit_note": "Audit report created at PAPER-AUDIT-20260310-report.json",
+  "validation_type": "PAPER-E2E-LIVE",
+  "story_id": "PAPER-E2E-001",
+  "timestamp": "2026-03-10T11:21:49Z",
+  "agent": "senior-dev",
+  "evidence_bundle_version": "1.0",
+
+  "bybit_demo_connectivity": {
+    "status": "CONNECTED",
+    "api_endpoint": "https://api-demo.bybit.com",
+    "api_mode": "demo",
+    "api_key_configured": true,
+    "api_key_prefix": "R9KF",
+    "test_order_executed": true,
+    "test_order_id": "51991871-e2d6-4e89-b9d3-5c8a182bcb33",
+    "test_symbol": "BTCUSDT",
+    "test_quantity": 0.001,
+    "entry_price": 70633.4,
+    "exit_price": 70630.1,
+    "pnl": -0.0033,
+    "latency_ms": 1035.35
+  },
+
+  "llm_provider_availability": {
+    "providers_tested": [
+      {
+        "name": "kimi_compat",
+        "label": "KIMI Compat (Adapter)",
+        "available": false,
+        "reason": "KIMI adapter container not reachable"
+      },
+      {
+        "name": "kimi",
+        "label": "KIMI K2.5",
+        "available": true,
+        "reason": null
+      },
+      {
+        "name": "zai",
+        "label": "GLM-5 (Z.ai)",
+        "available": true,
+        "reason": null,
+        "used_in_test": true
+      },
+      {
+        "name": "zhipu",
+        "label": "GLM-4.7 (Zhipu)",
+        "available": true,
+        "reason": null
+      }
+    ],
+    "provider_used": "GLM-5 (Z.ai)",
+    "fallback_used": true,
+    "llm_latency_ms": 23618.34,
+    "llm_decision": "GO",
+    "llm_confidence": 50.0
+  },
+
+  "e2e_test_results": {
+    "test_id": "PAPER-LIVE-E2E-97843bf0",
+    "status": "SUCCESS",
+    "start_time": "2026-03-10T11:21:21Z",
+    "end_time": "2026-03-10T11:21:49Z",
+    "duration_seconds": 28,
+    "steps_completed": [
+      "pre_flight_checks",
+      "signal_generation",
+      "llm_analysis",
+      "risk_checks",
+      "open_trade_execution",
+      "discord_open_alert",
+      "close_trade_execution",
+      "discord_close_alert",
+      "journal_entry_creation",
+      "cleanup_verification"
+    ],
+    "safety_checks": {
+      "bybit_demo_mode": {"passed": true},
+      "kill_switch": {"passed": true, "triggered": false},
+      "discord_webhook": {"passed": true},
+      "llm_config": {"passed": true}
+    },
+    "risk_checks": {
+      "confidence_check": {"passed": true, "signal_confidence": 0.85},
+      "llm_decision_check": {"passed": true},
+      "position_size_check": {"passed": true},
+      "all_passed": true
+    },
+    "discord_alerts": {
+      "open_alert": {
+        "sent": true,
+        "message_id": "1480888392769212518"
+      },
+      "close_alert": {
+        "sent": true,
+        "message_id": "1480888395369680899"
+      }
+    },
+    "journal_entry": {
+      "entry_id": "be549afc-83be-457f-bbbe-39dd98337506",
+      "created": true,
+      "closed": true
+    },
+    "flat_position_verified": true
+  },
+
+  "missing_credentials": [],
+
+  "blockers": [],
+
+  "notes": [
+    "E2E test completed successfully with full lifecycle validation",
+    "Bybit demo API connectivity verified - test order executed and closed",
+    "LLM provider chain working - GLM-5 (Z.ai) used as primary after KIMI auth failure",
+    "Discord alerts delivered successfully for both open and close",
+    "Trade journal entry created and verified",
+    "Flat position state confirmed after cleanup",
+    "KIMI adapter container not running - available providers: kimi, zai, zhipu"
+  ],
+
+  "validation_gates": {
+    "bybit_demo_connectivity": "PASS",
+    "llm_provider_available": "PASS",
+    "e2e_test_execution": "PASS",
+    "risk_checks": "PASS",
+    "discord_integration": "PASS",
+    "journal_persistence": "PASS",
+    "cleanup_verification": "PASS"
+  },
+
+  "references": {
+    "detailed_evidence": "docs/validation/evidence/PAPER-LIVE-E2E-97843bf0-evidence.json",
+    "test_script": "scripts/testing/paper_live_e2e_test.py"
+  }
+}

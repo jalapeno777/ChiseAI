@@ -1,0 +1,152 @@
+{
+  "rerun_id": "PAPER-E2E-20260310-rerun",
+  "test_id": "PAPER-LIVE-E2E-ff59ed74",
+  "story_id": "PAPER-E2E-002",
+  "rerun_date": "2026-03-10T11:52:53.597145+00:00",
+  "verdict": "PASS",
+  "summary": {
+    "all_steps_passed": true,
+    "total_duration_seconds": 29.34,
+    "test_environment": "demo"
+  },
+  "step_results": {
+    "step_1_preflight_checks": {
+      "status": "PASS",
+      "details": {
+        "bybit_demo_mode": {
+          "passed": true,
+          "api_key_prefix": "R9KF"
+        },
+        "kill_switch": {
+          "passed": true,
+          "triggered": false
+        },
+        "discord_webhook": {
+          "passed": true,
+          "configured": true
+        },
+        "llm_config": {
+          "passed": true,
+          "USE_LLM_TRADE_DECISIONS": true,
+          "LLM_DECISION_TIMEOUT_MS": "30000"
+        }
+      }
+    },
+    "step_2_signal_generation": {
+      "status": "PASS",
+      "details": {
+        "signal_id": "98c3ea5e-23a8-4dfc-ba48-d51a3dcc0a5b",
+        "symbol": "BTCUSDT",
+        "direction": "long",
+        "confidence": 0.85
+      }
+    },
+    "step_3_llm_analysis": {
+      "status": "PASS",
+      "details": {
+        "go_no_go": true,
+        "confidence": 50.0,
+        "provider": "GLM-5 (Z.ai)",
+        "latency_ms": 27051.79,
+        "fallback_used": true
+      }
+    },
+    "step_4_risk_checks": {
+      "status": "PASS",
+      "details": {
+        "confidence_check_passed": true,
+        "llm_decision_check_passed": true,
+        "position_size_check_passed": true,
+        "all_passed": true
+      }
+    },
+    "step_5_open_trade_execution": {
+      "status": "PASS",
+      "details": {
+        "order_id": "d6b349fe-e3a3-44be-a6b1-3aa532d6735a",
+        "position_id": "4fad4a48-81ce-425d-848a-623e4f4989fb",
+        "symbol": "BTCUSDT",
+        "side": "buy",
+        "quantity": 0.001,
+        "entry_price": 70655.3,
+        "position_value_usd": 70.66,
+        "latency_ms": 1005.99,
+        "demo_mode": true
+      }
+    },
+    "step_6_discord_open_alert": {
+      "status": "PASS",
+      "details": {
+        "sent": true,
+        "message_id": "1480896218778304655",
+        "timestamp": "2026-03-10T11:52:52.567572+00:00"
+      }
+    },
+    "step_7_close_trade_execution": {
+      "status": "PASS",
+      "details": {
+        "position_id": "4fad4a48-81ce-425d-848a-623e4f4989fb",
+        "exit_price": 70655.2,
+        "pnl": -0.0001,
+        "latency_ms": 0.01
+      }
+    },
+    "step_8_discord_close_alert": {
+      "status": "PASS",
+      "details": {
+        "sent": true,
+        "message_id": "1480896222456971367",
+        "timestamp": "2026-03-10T11:52:53.513250+00:00"
+      }
+    },
+    "step_9_journal_entry": {
+      "status": "PASS",
+      "details": {
+        "entry_id": "3d0700db-8995-439b-96e5-cb7140a7977a",
+        "created": true,
+        "closed": true,
+        "symbol": "BTCUSDT",
+        "entry_price": 70655.3,
+        "exit_price": 70655.2,
+        "net_pnl": -0.0001
+      }
+    },
+    "step_10_cleanup_verification": {
+      "status": "PASS",
+      "details": {
+        "trade_closed": true,
+        "flat_position_state": true,
+        "open_positions": 0
+      }
+    }
+  },
+  "connectivity_verification": {
+    "bybit_demo": {
+      "connected": true,
+      "api_key_prefix": "R9KF",
+      "endpoint": "https://api-demo.bybit.com"
+    },
+    "llm_provider": {
+      "provider": "GLM-5 (Z.ai)",
+      "fallback_used": true,
+      "latency_ms": 27051.79,
+      "status": "operational"
+    },
+    "discord_webhook": {
+      "connected": true,
+      "open_message_id": "1480896218778304655",
+      "close_message_id": "1480896222456971367"
+    }
+  },
+  "evidence_files": [
+    "docs/validation/evidence/PAPER-LIVE-E2E-ff59ed74-evidence.json"
+  ],
+  "notes": [
+    "All 10 E2E test steps passed successfully",
+    "Bybit demo connectivity verified - API key prefix: R9KF",
+    "LLM provider (GLM-5) operational with fallback chain",
+    "Discord alerts delivered successfully for both open and close",
+    "Trade journal entry created and verified",
+    "Flat position state confirmed after cleanup"
+  ]
+}
