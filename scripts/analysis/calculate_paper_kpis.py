@@ -37,6 +37,93 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Constants for source validation
+NON_CANONICAL_SOURCE = "paper_journal_sim"
+REQUIRED_CANONICAL_FOR_GO = False  # Paper is NEVER canonical for GO gates
+
+# Non-canonical warning banner
+NON_CANONICAL_BANNER = """
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  ⚠️  NON-CANONICAL: paper_journal_sim NOT for GO gates  ⚠️                    ║
+║                                                                              ║
+║  This KPI calculator uses SIMULATION data from Redis paper trading journal.  ║
+║  It is NOT canonical for GO gate decisions in demo/live trading modes.       ║
+║                                                                              ║
+║  For GO gate decisions, use calculate_bybit_kpis.py which reads from         ║
+║  Bybit API directly as the canonical source of truth.                        ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+"""
+
+
+class PaperSourceValidationError(Exception):
+    """Raised when Paper KPI source validation fails."""
+
+    pass
+
+
+def validate_paper_source(source: str, canonical_for_go: bool) -> None:
+    """Hard guardrail: Validate Paper KPI source is always non-canonical.
+
+    This function enforces that:
+    1. Source is ALWAYS "paper_journal_sim" (NOT "bybit_truth")
+    2. canonical_for_go is ALWAYS False
+
+    Args:
+        source: The source identifier to validate
+        canonical_for_go: The canonical_for_go flag to validate
+
+    Raises:
+        PaperSourceValidationError: If any validation fails
+    """
+    errors = []
+
+    # Reject if source is "bybit_truth" - this indicates data contamination
+    if source == "bybit_truth":
+        errors.append(
+            "CRITICAL ERROR: Paper KPI source cannot be 'bybit_truth'. "
+            "This indicates data contamination between paper and live sources. "
+            f"Paper KPI must use '{NON_CANONICAL_SOURCE}' source only."
+        )
+
+    # Enforce source is "paper_journal_sim"
+    if source != NON_CANONICAL_SOURCE:
+        errors.append(
+            f"CRITICAL ERROR: Paper KPI source must be '{NON_CANONICAL_SOURCE}', "
+            f"but got '{source}'. This violates the source separation contract."
+        )
+
+    # Enforce canonical_for_go is always False
+    if canonical_for_go:
+        errors.append(
+            "CRITICAL ERROR: Paper KPI must have canonical_for_go=False. "
+            "Paper trading data is NEVER canonical for GO gates."
+        )
+
+    if errors:
+        error_msg = "\n".join(
+            [
+                "\n" + "=" * 70,
+                "PAPER SOURCE VALIDATION FAILURE",
+                "=" * 70,
+                *errors,
+                "=" * 70,
+            ]
+        )
+        logger.error(error_msg)
+        raise PaperSourceValidationError(error_msg)
+
+    logger.debug(
+        f"✓ Paper source validation passed: source='{source}', "
+        "canonical_for_go=False (non-canonical)"
+    )
+
+
+def print_non_canonical_banner() -> None:
+    """Print the non-canonical warning banner."""
+    print(NON_CANONICAL_BANNER, file=sys.stderr)
+    logger.warning("Non-canonical source banner displayed")
+
+
 # Add src to path for imports
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root / "src"))
@@ -70,9 +157,16 @@ class LatencyStats:
 
 @dataclass
 class PaperTradingKPIs:
-    """Canonical KPIs for paper trading performance."""
+    """KPIs for paper trading performance from simulation data.
 
-    # Metadata
+    ⚠️ IMPORTANT: These KPIs are derived from Redis journal entries
+    and represent SIMULATION data. For live trading decisions,
+    use calculate_bybit_kpis.py which reads from Bybit API directly.
+
+    Source: paper_journal_sim (simulation data, NOT canonical for GO gates)
+    """
+
+    # Metadata (required)
     calculation_id: str
     story_id: str
     calculation_timestamp: str
@@ -80,13 +174,7 @@ class PaperTradingKPIs:
     data_end_time: str
     lookback_days: int
 
-    # Trade counts
-    total_trades: int
-    winning_trades: int
-    losing_trades: int
-    open_trades: int
-
-    # Core KPIs
+    # Core KPIs (required)
     win_rate: float  # percentage
     total_pnl: float  # Net PnL (total_net_pnl alias)
     total_net_pnl: float  # Sum of net_pnl (realized_pnl - fees)
@@ -97,22 +185,35 @@ class PaperTradingKPIs:
     max_drawdown: float  # percentage
     max_drawdown_amount: float
 
-    # Turnover
+    # Turnover (required)
     turnover: dict[str, Any]  # trades per day aggregated by UTC day
 
-    # Latency stats
+    # Latency stats (required)
     latency_ms: LatencyStats | None
 
-    # Risk gate adherence
+    # Risk gate adherence (required)
     risk_gate_adherence: float  # percentage passing all checks
 
-    # Data quality
+    # Data quality (required)
     data_freshness_hours: float
     is_data_fresh: bool
     net_pnl_validation_passed: (
         bool  # True if net_pnl = realized_pnl - fees for all entries
     )
     data_quality_flags: list[str]  # List of data quality issues
+
+    # Source identification (CRITICAL for GO gates) - fields with defaults
+    source: str = "paper_journal_sim"  # Always "paper_journal_sim" for this calculator
+    trading_mode: str = "paper"  # Always "paper" for simulation
+    canonical_for_go: bool = False  # Paper data is NOT canonical for GO gates
+
+    # Trade counts - fields with defaults
+    total_trades: int = 0
+    winning_trades: int = 0
+    losing_trades: int = 0
+    open_trades: int = 0
+
+    # Target assessment - field with default factory
     target_assessment: dict[str, Any] = field(default_factory=dict)
 
 
@@ -601,12 +702,15 @@ class PaperKPICalculator:
         # Assess against targets
         kpis.target_assessment = assess_targets(kpis)
 
+        # Validate source is non-canonical (hard guardrail)
+        validate_paper_source(kpis.source, kpis.canonical_for_go)
+
         return kpis
 
     def _create_empty_kpis(self, lookback_days: int, story_id: str) -> PaperTradingKPIs:
         """Create empty KPIs when no data available."""
         now = datetime.now(UTC)
-        return PaperTradingKPIs(
+        kpis = PaperTradingKPIs(
             calculation_id=f"PAPER-KPI-{now.strftime('%Y%m%d-%H%M%S')}",
             story_id=story_id,
             calculation_timestamp=now.isoformat(),
@@ -648,6 +752,11 @@ class PaperKPICalculator:
             },
         )
 
+        # Validate source is non-canonical (hard guardrail)
+        validate_paper_source(kpis.source, kpis.canonical_for_go)
+
+        return kpis
+
 
 def generate_json_output(kpis: PaperTradingKPIs, output_path: Path) -> None:
     """Generate JSON output file.
@@ -661,6 +770,9 @@ def generate_json_output(kpis: PaperTradingKPIs, output_path: Path) -> None:
     data = {
         "calculation_id": kpis.calculation_id,
         "story_id": kpis.story_id,
+        "source": kpis.source,
+        "trading_mode": kpis.trading_mode,
+        "canonical_for_go": kpis.canonical_for_go,
         "calculation_timestamp": kpis.calculation_timestamp,
         "data_range": {
             "start_time": kpis.data_start_time,
@@ -713,9 +825,27 @@ def generate_markdown_report(kpis: PaperTradingKPIs, output_path: Path) -> None:
 
     report = f"""# Paper Trading KPI Report
 
+**⚠️ SIMULATION DATA - NOT CANONICAL FOR GO GATES ⚠️**
+
+> This report uses data from the Redis paper trading journal (simulation).
+> For live trading GO gate decisions, use `calculate_bybit_kpis.py` which reads
+> directly from Bybit API as the canonical source of truth.
+
 **Story ID:** {kpis.story_id}  
 **Calculation ID:** {kpis.calculation_id}  
+**Source:** `{kpis.source}`  
+**Trading Mode:** `{kpis.trading_mode}`  
+**Canonical for GO Gates:** {"❌ No" if not kpis.canonical_for_go else "✅ Yes"}  
 **Generated:** {kpis.calculation_timestamp}
+
+## Data Source
+
+| Attribute | Value |
+|-----------|-------|
+| Source | `{kpis.source}` |
+| Trading Mode | `{kpis.trading_mode}` |
+| Canonical for GO Gates | {"❌ No (Simulation Data)" if not kpis.canonical_for_go else "✅ Yes"} |
+| Data Origin | Redis Paper Trading Journal |
 
 ## Data Range
 
@@ -817,6 +947,8 @@ def generate_markdown_report(kpis: PaperTradingKPIs, output_path: Path) -> None:
 
 ## Notes
 
+- **⚠️ SIMULATION DATA**: This report uses Redis paper trading journal data
+- **Not Canonical**: For GO gate decisions, use `calculate_bybit_kpis.py` instead
 - Win rate calculated from closed trades only
 - Drawdown calculated from sequential PnL series
 - Turnover aggregated by UTC calendar day
@@ -825,7 +957,8 @@ def generate_markdown_report(kpis: PaperTradingKPIs, output_path: Path) -> None:
 
 ---
 
-*Report generated by scripts/analysis/calculate_paper_kpis.py*
+*Report generated by scripts/analysis/calculate_paper_kpis.py*  
+*⚠️ This is SIMULATION data - NOT canonical for live trading decisions*
 """
 
     with open(output_path, "w") as f:
@@ -914,6 +1047,9 @@ def main() -> int:
     )
 
     args = parser.parse_args()
+
+    # Print non-canonical warning banner at startup
+    print_non_canonical_banner()
 
     # Connect to Redis
     extractor = RedisPaperKPIExtractor(
