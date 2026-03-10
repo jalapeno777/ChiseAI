@@ -24,6 +24,9 @@ thresholds:
   promote_quality_gain_min: 0.10
   promote_rework_reduction_min: 0.20
   max_cycle_time_degradation: 0.10
+  rollback_quality_drop_min: 0.05
+  rollback_cycle_time_increase_max: 0.15
+  rollback_regression_rate_max: 0.20
 
 backlog:
   enabled: true

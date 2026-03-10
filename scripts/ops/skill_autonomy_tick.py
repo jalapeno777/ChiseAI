@@ -34,6 +34,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 VALIDATOR = PROJECT_ROOT / "scripts" / "validation" / "validate_skill_autonomy.py"
 TEMPMEM_DIR = PROJECT_ROOT / "docs" / "tempmemories"
 DEFAULT_CONFIG = PROJECT_ROOT / "config" / "skill_autonomy.yaml"
+STACK_MAP_PATH = PROJECT_ROOT / "docs" / "metrics" / "skill-stacks.yaml"
+VERSION_REGISTRY_PATH = PROJECT_ROOT / "docs" / "metrics" / "skill-versions.yaml"
 
 
 def utc_now() -> datetime:
@@ -126,6 +128,55 @@ def read_kpi_body_yaml(body: str) -> dict[str, Any]:
         return data if isinstance(data, dict) else {}
     except Exception:
         return {}
+
+
+def read_section_yaml(body: str, marker: str) -> dict[str, Any]:
+    if marker not in body:
+        return {}
+    chunk = body.split(marker, 1)[1].strip()
+    try:
+        data = yaml.safe_load(chunk) or {}
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def collect_decision_summary(
+    *,
+    file_glob: str,
+    marker: str,
+    cutoff: datetime,
+    max_scan: int,
+) -> dict[str, Any]:
+    files = sorted(TEMPMEM_DIR.glob(file_glob), key=lambda p: p.stat().st_mtime, reverse=True)[:max_scan]
+    counts: Counter[str] = Counter()
+    latest_by_skill: dict[str, dict[str, Any]] = {}
+
+    for path in files:
+        mtime = datetime.fromtimestamp(path.stat().st_mtime, tz=UTC)
+        if mtime < cutoff:
+            continue
+        fm, body = read_frontmatter_and_body(path)
+        payload = read_section_yaml(body, marker)
+        skill = str(fm.get("skill_name") or payload.get("skill_name") or "").strip()
+        decision = str(fm.get("decision") or payload.get("decision") or "").strip().upper()
+        generated = str(fm.get("generated_at_utc") or payload.get("generated_at_utc") or iso(mtime))
+        if not decision:
+            continue
+        counts[decision] += 1
+        if skill:
+            prev = latest_by_skill.get(skill)
+            if not prev or str(prev.get("generated_at_utc", "")) < generated:
+                latest_by_skill[skill] = {
+                    "decision": decision,
+                    "generated_at_utc": generated,
+                    "artifact": str(path.relative_to(PROJECT_ROOT)),
+                }
+
+    return {
+        "counts": dict(counts),
+        "latest_by_skill": latest_by_skill,
+    }
 
 
 @dataclass
@@ -221,6 +272,10 @@ def run_weekly_tick(
     cutoff = now - timedelta(days=lookback_days)
     files = sorted(TEMPMEM_DIR.glob("skill-autonomy-*.md"), key=lambda p: p.stat().st_mtime, reverse=True)
     files = [p for p in files if "skill-autonomy-weekly-" not in p.name][:max_artifacts_scan]
+    stack_map = parse_yaml_file(STACK_MAP_PATH, {"stacks": {}})
+    stack_defs = stack_map.get("stacks", {}) if isinstance(stack_map, dict) else {}
+    if not isinstance(stack_defs, dict):
+        stack_defs = {}
 
     total = 0
     coverage_counter: Counter[str] = Counter()
@@ -233,6 +288,8 @@ def run_weekly_tick(
     skill_quality_n: Counter[str] = Counter()
     skill_rework: Counter[str] = Counter()
     skill_regression: Counter[str] = Counter()
+    stack_total: Counter[str] = Counter()
+    stack_full: Counter[str] = Counter()
 
     for path in files:
         mtime = datetime.fromtimestamp(path.stat().st_mtime, tz=UTC)
@@ -245,6 +302,8 @@ def run_weekly_tick(
         task_class = str(fm.get("task_class", payload.get("task_class", "unclassified")))
         coverage = str(fm.get("coverage_status", payload.get("coverage_status", "none")))
         missing = payload.get("missing_skills", []) or []
+        missing_set = {str(x) for x in missing}
+        recommended_stacks = payload.get("recommended_stacks", []) or []
 
         total += 1
         coverage_counter[coverage] += 1
@@ -266,6 +325,18 @@ def run_weekly_tick(
             if bool(payload.get("regression_flag", False)):
                 skill_regression[skill_name] += 1
 
+        for stack_name in recommended_stacks:
+            sname = str(stack_name).strip()
+            if not sname:
+                continue
+            stack_total[sname] += 1
+            stack = stack_defs.get(sname)
+            skills = stack.get("skills", []) if isinstance(stack, dict) else []
+            if isinstance(skills, list) and skills:
+                stack_missing = any(str(skill) in missing_set for skill in skills)
+                if not stack_missing:
+                    stack_full[sname] += 1
+
     missing_rate_by_class: dict[str, float] = {}
     for tclass, cnt in task_class_total.items():
         missing_rate_by_class[tclass] = (task_class_missing[tclass] / cnt) if cnt else 0.0
@@ -280,6 +351,40 @@ def run_weekly_tick(
             "regression_rate": (skill_regression[skill] / n) if n else 0.0,
         }
 
+    stack_coverage_summary: dict[str, Any] = {}
+    for sname, n in stack_total.items():
+        full = stack_full[sname]
+        stack_coverage_summary[sname] = {
+            "events": n,
+            "full_coverage_events": full,
+            "coverage_rate": (full / n) if n else 0.0,
+        }
+
+    promotion_summary = collect_decision_summary(
+        file_glob="skill-promotion-*.md",
+        marker="## Skill Promotion Decision",
+        cutoff=cutoff,
+        max_scan=max_artifacts_scan,
+    )
+    rollback_summary = collect_decision_summary(
+        file_glob="skill-rollback-*.md",
+        marker="## Skill Rollback Decision",
+        cutoff=cutoff,
+        max_scan=max_artifacts_scan,
+    )
+    versions_registry = parse_yaml_file(VERSION_REGISTRY_PATH, {"skills": {}})
+    tracked_skills = versions_registry.get("skills", {}) if isinstance(versions_registry, dict) else {}
+    if not isinstance(tracked_skills, dict):
+        tracked_skills = {}
+    version_snapshot = {
+        "skills_tracked": len(tracked_skills),
+        "preferred_versions": {
+            skill: str(entry.get("preferred_version", ""))
+            for skill, entry in tracked_skills.items()
+            if isinstance(entry, dict) and str(entry.get("preferred_version", "")).strip()
+        },
+    }
+
     report = {
         "week_id": week_id(now),
         "generated_at_utc": iso(now),
@@ -291,7 +396,11 @@ def run_weekly_tick(
             {"skill": skill, "count": count}
             for skill, count in missing_skill_counter.most_common(10)
         ],
+        "stack_coverage_summary": stack_coverage_summary,
         "skill_effectiveness_summary": effectiveness_summary,
+        "promotion_decisions_summary": promotion_summary,
+        "rollback_decisions_summary": rollback_summary,
+        "version_registry_snapshot": version_snapshot,
         "recommended_actions": [],
         "backlog_candidates": [],
     }
@@ -301,6 +410,12 @@ def run_weekly_tick(
     else:
         report["recommended_actions"].append("Prioritize hardening skills with highest rework/regression rates.")
         report["recommended_actions"].append("Only add new skills when missing-skill patterns are repeated over time.")
+        if stack_coverage_summary:
+            report["recommended_actions"].append("Improve low-coverage skill stacks before adding new stack definitions.")
+        if promotion_summary.get("counts", {}).get("PROMOTE", 0) > 0:
+            report["recommended_actions"].append("Monitor newly promoted skill versions for regression canaries.")
+        if rollback_summary.get("counts", {}).get("ROLLBACK", 0) > 0:
+            report["recommended_actions"].append("Open hardening cycles for rolled-back skill versions.")
 
     candidates: list[dict[str, Any]] = []
     candidate_id = 1

@@ -1,0 +1,63 @@
+version: 1
+updated_at_utc: "2026-03-10T00:00:00Z"
+
+# Stack registry for composing multi-skill routing bundles.
+# Task classes can reference stack names via:
+# - docs/metrics/skill-task-map.yaml -> task_classes.<task_class>.recommended_stacks
+# - task_class_stacks map below
+#
+# Resolution order:
+# 1. task-map recommended_skills
+# 2. task-map recommended_stacks (expanded in listed order)
+# 3. task_class_stacks (expanded in listed order)
+# 4. de-duplicate while preserving first occurrence
+
+stacks:
+  core_engineering:
+    skills:
+      - chiseai-git-workflow
+      - chiseai-workflow-commands
+
+  quality_gates:
+    skills:
+      - chiseai-validation
+      - chiseai-testing-patterns
+
+  incident_ops:
+    skills:
+      - chiseai-incident-response
+      - chiseai-validation
+
+  parallel_coordination:
+    skills:
+      - chiseai-parallel-safety
+      - chiseai-worker-contracts
+
+  planning_ops:
+    skills:
+      - chiseai-workflow-commands
+      - chiseai-metacognition-ops
+
+  infra_ops:
+    skills:
+      - chiseai-docker-governance
+      - chiseai-validation
+
+task_class_stacks:
+  coding_small:
+    - core_engineering
+  coding_complex:
+    - core_engineering
+    - quality_gates
+  ci_failure:
+    - incident_ops
+  incident_response:
+    - incident_ops
+  parallel_execution:
+    - parallel_coordination
+  docker_infra:
+    - infra_ops
+  planning:
+    - planning_ops
+  validation:
+    - quality_gates

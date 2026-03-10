@@ -18,6 +18,8 @@ Preferred entry point:
    - quality score trend by skill.
    - cycle time trend by skill.
    - rework/regression trend by skill.
+   - stack coverage trend by stack name.
+   - promotion/rollback decision counts and latest decisions by skill.
 
 3. Generate recommendations
    - Top skills to harden.
@@ -29,9 +31,12 @@ Preferred entry point:
      - `week_id`
      - `missing_skill_rate_by_task_class`
      - `top_missing_skills`
+     - `stack_coverage_summary`
      - `skill_effectiveness_summary`
      - `promotion_candidates`
      - `rollback_candidates`
+     - `promotion_decisions_summary`
+     - `rollback_decisions_summary`
      - `recommended_actions`
 
 5. Persist

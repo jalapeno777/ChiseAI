@@ -9,6 +9,8 @@ task_classes:
       - chiseai-git-workflow
       - python-quality
       - chiseai-testing-patterns
+    recommended_stacks:
+      - core_engineering
 
   coding_complex:
     recommended_skills:
@@ -16,26 +18,37 @@ task_classes:
       - chiseai-validation
       - chiseai-testing-patterns
       - chiseai-worker-contracts
+    recommended_stacks:
+      - core_engineering
+      - quality_gates
 
   ci_failure:
     recommended_skills:
       - chiseai-validation
       - chiseai-incident-response
+    recommended_stacks:
+      - incident_ops
 
   incident_response:
     recommended_skills:
       - chiseai-incident-response
       - chiseai-validation
+    recommended_stacks:
+      - incident_ops
 
   parallel_execution:
     recommended_skills:
       - chiseai-parallel-safety
       - chiseai-worker-contracts
+    recommended_stacks:
+      - parallel_coordination
 
   docker_infra:
     recommended_skills:
       - chiseai-docker-governance
       - chiseai-validation
+    recommended_stacks:
+      - infra_ops
 
   research:
     recommended_skills:
@@ -45,8 +58,12 @@ task_classes:
     recommended_skills:
       - chiseai-workflow-commands
       - chiseai-metacognition-ops
+    recommended_stacks:
+      - planning_ops
 
   validation:
     recommended_skills:
       - chiseai-validation
       - chiseai-metacognition-ops
+    recommended_stacks:
+      - quality_gates

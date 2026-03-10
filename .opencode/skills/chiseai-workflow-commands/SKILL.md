@@ -77,6 +77,11 @@ Prefer repeatable workflow execution through `.opencode/command/*` rather than a
 - `.opencode/command/chise-skill-promote.md`
 - `.opencode/command/chise-skill-rollback.md`
 - `.opencode/command/chise-skill-weekly.md`
+- `.opencode/command/chise-skill-create.md`
+- `.opencode/command/chise-skill-trigger-optimize.md`
+- `.opencode/command/chise-skill-benchmark.md`
+- `.opencode/command/chise-skill-benchmark-run.md`
+- `.opencode/command/chise-skill-lifecycle.md`
 
 ### Full pilot autonomy loops:
 - `.opencode/command/chise-autonomy-cadence-tick.md`

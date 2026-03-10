@@ -1,0 +1,20 @@
+version: 1
+updated_at_utc: "2026-03-10T00:00:00Z"
+
+# Preferred-version registry for autonomy routing decisions.
+# Updated by:
+# - scripts/ops/skill_promote_from_benchmark.py
+# - scripts/ops/skill_rollback_from_evidence.py
+#
+# Structure:
+# skills:
+#   <skill_name>:
+#     preferred_version: "<version>"
+#     previous_preferred_version: "<version_or_empty>"
+#     status: "active|on_hold"
+#     last_decision: "PROMOTE|ROLLBACK|HOLD"
+#     last_decision_at_utc: "<iso8601>"
+#     degraded_versions: ["vX", ...]
+#     evidence_refs: ["path-or-key", ...]
+
+skills: {}
