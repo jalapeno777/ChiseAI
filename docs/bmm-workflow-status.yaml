@@ -5,7 +5,52 @@
 #
 # MIGRATION EPIC: Archive long-form fields for completed stories
 #
+# ════════════════════════════════════════════════════════════════════════════════
+# COMPLETION STATUS SUMMARY (Task 4.1)
+# ════════════════════════════════════════════════════════════════════════════════
+#
+# ALREADY COMPLETED ITEMS:
+#   Phase 4 (Full Automation) - ACTIVE since 2026-03-09
+#   - Preflight Guard: scripts/workflow/preflight_archive.py (350 lines)
+#   - Automated Archive: scripts/workflow/automated_archive.py v2.0.0 (772 lines)
+#   - Daily Health Report: scripts/workflow/daily_health_report.py
+#   - Discord Notifier: scripts/notifications/discord_workflow_notifier.py
+#   - CI Pipeline: .woodpecker/workflow-archive.yaml v2.0.0 (221 lines)
+#   - Archive Schema: docs/archives/workflow-status/schema/archive-entry-schema.yaml
+#   - Migration Scripts: scripts/workflow/migration/ (archive, verify, rollback)
+#   - Total archived to date: 20 stories
+#   - Legacy Integrity Cleanup: COMPLETED 2026-03-09 (10 archives repaired)
+#
+# NEWLY IMPLEMENTED ITEMS (Task 4.1):
+#   - CI Validation Gates:
+#     * validate_status_evidence.py - Status evidence validation
+#     * validate_completion_evidence.py - Completion criteria validation
+#     * validate_workflow_transitions.py - State machine validation (781 lines)
+#   - Live Mode with Safety Controls:
+#     * Dual-flag activation (WORKFLOW_ARCHIVE_LIVE + WORKFLOW_ARCHIVE_LIVE_CONFIRM)
+#     * Redis lock protection (bmad:chiseai:workflow:archival:lock)
+#     * Automatic backup creation with checksum verification
+#     * Fail-closed design with preflight checks
+#   - State Machine Validator:
+#     * Valid transitions: planned→in_progress→completed→archived/merged
+#     * Epic-story consistency validation
+#     * Terminal status enforcement
+#
+# INTENTIONALLY DEFERRED ITEMS:
+#   - Full live mode enablement: Requires manual activation via Woodpecker secrets
+#   - Additional CI gate runbooks: Basic usage covered by script docstrings
+#
+# ANTI-REGRESSION RULE:
+#   Do NOT re-audit Phase 4 unless:
+#   - CI gate fails on unrelated PRs (investigate, don't re-audit)
+#   - Archival causes data loss (incident response)
+#   - New workflow fields introduced (update validators)
+#   - Regulatory changes require compliance updates
+#
+# ════════════════════════════════════════════════════════════════════════════════
 # CURRENT PHASE: Phase 4 (Full Automation) - ACTIVE
+# ════════════════════════════════════════════════════════════════════════════════
+#
 # - Phase 4 Activation Date: 2026-03-09
 # - Phase 4 Components Deployed:
 #   * Preflight Guard: scripts/workflow/preflight_archive.py
@@ -40,6 +85,7 @@
 #   - Automated: scripts/workflow/automated_archive.py
 #   - Health Report: scripts/workflow/daily_health_report.py
 #   - Discord Notifier: scripts/notifications/discord_workflow_notifier.py
+#   - State Machine Validator: scripts/validation/validate_workflow_transitions.py
 #
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
