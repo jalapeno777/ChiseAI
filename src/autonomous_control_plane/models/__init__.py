@@ -12,6 +12,7 @@ from autonomous_control_plane.models.circuit_breaker import (
     StateChangeEvent,
     StateTransitionReason,
 )
+from autonomous_control_plane.models.healing import LogEntry
 
 __all__ = [
     "CircuitBreakerConfig",
@@ -21,4 +22,5 @@ __all__ = [
     "CircuitBreakerStateModel",
     "StateChangeEvent",
     "StateTransitionReason",
+    "LogEntry",
 ]

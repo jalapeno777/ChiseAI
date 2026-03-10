@@ -13,6 +13,12 @@ EP-NS-008: Autonomous Control Plane
 #   from autonomous_control_plane.core.orchestrator import ACPOrchestrator
 #   from autonomous_control_plane.events.bus import EventBus
 
+from autonomous_control_plane.components import (
+    FailurePatternMatcher,
+    SelfHealingEngine,
+)
+from autonomous_control_plane.models import LogEntry
+
 __version__ = "0.1.0"
 __all__ = [
     "components",
@@ -22,4 +28,7 @@ __all__ = [
     "config",
     "core",
     "events",
+    "FailurePatternMatcher",
+    "LogEntry",
+    "SelfHealingEngine",
 ]
