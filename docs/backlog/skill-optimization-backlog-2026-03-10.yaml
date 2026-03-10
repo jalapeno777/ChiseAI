@@ -1,0 +1,564 @@
+# Skill Optimization Backlog
+# Generated: 2026-03-10
+# Total Skills: 31
+# PROMOTED: 5 | PENDING: 26
+
+backlog_version: "1.0"
+generation_date: "2026-03-10"
+skill_count:
+  total: 31
+  promoted: 5
+  pending: 26
+  by_priority:
+    P0: 5
+    P1: 14
+    P2: 12
+
+# Special Notes for Skills on Hold That Were Promoted
+hold_to_promoted_notes:
+  - skill_name: chiseai-validation
+    original_status: HOLD
+    new_status: PROMOTED
+    reason: "Opencode backend migration completed; skill evaluated and promoted"
+    follow_up: "Verify commands work correctly with opencode backend (v1.1.60+)"
+    risk_level: low
+    
+  - skill_name: chiseai-skill-autonomy
+    original_status: HOLD
+    new_status: PROMOTED
+    reason: "Opencode backend migration completed; skill evaluated and promoted"
+    follow_up: "Verify tick/promote/rollback flows work with opencode backend"
+    risk_level: low
+    
+  - skill_name: chiseai-worker-contracts
+    original_status: HOLD
+    new_status: PROMOTED
+    reason: "Opencode backend migration completed; skill evaluated and promoted"
+    follow_up: "Verify contract validation works with opencode backend"
+    risk_level: low
+
+# Backlog Items - All Skills
+backlog_items:
+  # ============ PROMOTED SKILLS (Already Optimized) ============
+  
+  - skill_name: chiseai-git-workflow
+    current_status: promoted
+    priority: N/A
+    estimated_effort: 0
+    dependencies: []
+    acceptance_criteria:
+      - "Commands execute without errors"
+      - "Branch strategy documented"
+      - "Merge authority rules clear"
+      - "Emergency procedures defined"
+    notes: "Successfully promoted. Git workflow standard for all swarm operations."
+    optimization_date: "2026-03-07"
+    
+  - skill_name: chiseai-metacognition-ops
+    current_status: promoted
+    priority: N/A
+    estimated_effort: 0
+    dependencies: []
+    acceptance_criteria:
+      - "Prediction cards capture confidence"
+      - "Outcome tracking implemented"
+      - "Calibration loops functional"
+      - "Redis/Qdrant integration working"
+    notes: "Successfully promoted. Metacognitive loops for decision quality."
+    optimization_date: "2026-03-09"
+    
+  - skill_name: chiseai-validation
+    current_status: promoted
+    priority: N/A
+    estimated_effort: 0
+    dependencies: [chiseai-git-workflow]
+    acceptance_criteria:
+      - "Validation layers defined"
+      - "CI diagnosis commands work"
+      - "Pre-commit gates functional"
+      - "Status sync validation operational"
+    notes: "PROMOTED from HOLD. Originally blocked on opencode backend migration."
+    optimization_date: "2026-03-10"
+    follow_up_required: true
+    follow_up_task: "Verify validation commands work with opencode backend v1.1.60+"
+    
+  - skill_name: chiseai-skill-autonomy
+    current_status: promoted
+    priority: N/A
+    estimated_effort: 0
+    dependencies: [chiseai-validation]
+    acceptance_criteria:
+      - "Autonomous routing functional"
+      - "KPI tracking operational"
+      - "Missing skill fallback non-blocking"
+      - "Promotion/rollback workflows work"
+    notes: "PROMOTED from HOLD. Originally blocked on opencode backend migration."
+    optimization_date: "2026-03-10"
+    follow_up_required: true
+    follow_up_task: "Verify tick/promote/rollback flows with opencode backend"
+    
+  - skill_name: chiseai-worker-contracts
+    current_status: promoted
+    priority: N/A
+    estimated_effort: 0
+    dependencies: [chiseai-git-workflow, chiseai-parallel-safety]
+    acceptance_criteria:
+      - "Contract templates complete"
+      - "Safety guards defined"
+      - "Evidence requirements clear"
+      - "Handoff protocols functional"
+    notes: "PROMOTED from HOLD. Originally blocked on opencode backend migration."
+    optimization_date: "2026-03-10"
+    follow_up_required: true
+    follow_up_task: "Verify contract validation with opencode backend"
+
+  # ============ P0 - CRITICAL PRIORITY ============
+  # Core workflow dependencies, blocking other work
+  
+  - skill_name: chiseai-workflow-commands
+    current_status: pending
+    priority: P0
+    estimated_effort: 5
+    dependencies: [chiseai-git-workflow, chiseai-validation]
+    acceptance_criteria:
+      - "All BMAD commands documented and tested"
+      - "Command routing logic verified"
+      - "Error handling robust"
+      - "Integration with validation layer working"
+    notes: "Core skill for BMAD workflow execution. Required for planning/implementation/review commands."
+    category: "core-workflow"
+    blockers: []
+    
+  - skill_name: chiseai-memory-ops
+    current_status: pending
+    priority: P0
+    estimated_effort: 5
+    dependencies: []
+    acceptance_criteria:
+      - "Redis operations stable"
+      - "Qdrant vector search functional"
+      - "TTL and key patterns documented"
+      - "Fallback strategies implemented"
+    notes: "Foundation skill used by iteration loops and knowledge retention. Critical path for most skills."
+    category: "core-infrastructure"
+    blockers: []
+    
+  - skill_name: chiseai-parallel-safety
+    current_status: pending
+    priority: P0
+    estimated_effort: 4
+    dependencies: [chiseai-memory-ops]
+    acceptance_criteria:
+      - "Scope ownership mechanism working"
+      - "Global locks implemented"
+      - "Incident handling procedures defined"
+      - "Redis-based ownership tracking functional"
+    notes: "Required for safe parallel agent execution. Dependencies on memory-ops for state tracking."
+    category: "core-safety"
+    blockers: []
+    
+  - skill_name: chiseai-incident-response
+    current_status: pending
+    priority: P0
+    estimated_effort: 4
+    dependencies: [chiseai-memory-ops, chiseai-git-workflow]
+    acceptance_criteria:
+      - "Incident logging template complete"
+      - "Response procedures documented"
+      - "Post-mortem creation workflow tested"
+      - "Redis incident tracking functional"
+    notes: "Critical for handling failures and learning from incidents. Required for production safety."
+    category: "core-safety"
+    blockers: []
+    
+  - skill_name: python-quality
+    current_status: pending
+    priority: P0
+    estimated_effort: 3
+    dependencies: [chiseai-validation]
+    acceptance_criteria:
+      - "Black formatting rules configured"
+      - "Ruff linting setup"
+      - "Pytest coverage requirements defined"
+      - "Integration with CI gates working"
+    notes: "Foundation for all Python code quality. Required by validation layer."
+    category: "core-quality"
+    blockers: []
+
+  # ============ P1 - HIGH PRIORITY ============
+  # Important skills supporting core operations
+  
+  - skill_name: chiseai-sprint-cleanup
+    current_status: pending
+    priority: P1
+    estimated_effort: 3
+    dependencies: [chiseai-git-workflow, chiseai-branch-hygiene]
+    acceptance_criteria:
+      - "Cleanup automation scripts working"
+      - "Branch hygiene checks integrated"
+      - "Main branch sync procedures tested"
+      - "Pre-sprint validation complete"
+    notes: "Important for repository hygiene before new sprints. Depends on branch hygiene."
+    category: "maintenance"
+    blockers: [chiseai-branch-hygiene]
+    
+  - skill_name: chiseai-data-first
+    current_status: pending
+    priority: P1
+    estimated_effort: 4
+    dependencies: []
+    acceptance_criteria:
+      - "Phase 0 data gathering checklist complete"
+      - "Validation gates for data completeness"
+      - "Integration with workflow commands"
+      - "Documentation of data requirements"
+    notes: "Enforces data-before-analysis workflow. Important for quality but not blocking other skills."
+    category: "quality-gates"
+    blockers: []
+    
+  - skill_name: chiseai-metrics-dashboard
+    current_status: pending
+    priority: P1
+    estimated_effort: 3
+    dependencies: []
+    acceptance_criteria:
+      - "Grafana dashboard interaction patterns documented"
+      - "Metrics reference guide complete"
+      - "Query examples provided"
+      - "Alert configuration guidance"
+    notes: "Important for observability but standalone skill. Lower priority than core workflow."
+    category: "observability"
+    blockers: []
+    
+  - skill_name: chiseai-prd-quality
+    current_status: pending
+    priority: P1
+    estimated_effort: 4
+    dependencies: [chiseai-workflow-commands]
+    acceptance_criteria:
+      - "PRD quality criteria defined"
+      - "Traceability requirements specified"
+      - "Success criteria templates"
+      - "Integration with BMAD workflow"
+    notes: "Raises PRD quality standards. Important for planning phase but depends on workflow-commands."
+    category: "quality-gates"
+    blockers: [chiseai-workflow-commands]
+    
+  - skill_name: chiseai-branch-hygiene
+    current_status: pending
+    priority: P1
+    estimated_effort: 3
+    dependencies: [chiseai-git-workflow, chiseai-memory-ops]
+    acceptance_criteria:
+      - "Branch lifecycle procedures documented"
+      - "Cleanup automation working"
+      - "Redis tracking for branch status"
+      - "Stale branch detection implemented"
+    notes: "Important for repository maintenance. Required by sprint-cleanup."
+    category: "maintenance"
+    blockers: [chiseai-git-workflow]
+    
+  - skill_name: chiseai-docker-governance
+    current_status: pending
+    priority: P1
+    estimated_effort: 4
+    dependencies: []
+    acceptance_criteria:
+      - "Network configuration standards documented"
+      - "chiseai network requirements specified"
+      - "Protected container list maintained"
+      - "Port mapping conventions defined"
+    notes: "Critical for infrastructure but lower priority than core workflow skills."
+    category: "infrastructure"
+    blockers: []
+    
+  - skill_name: chiseai-testing-patterns
+    current_status: pending
+    priority: P1
+    estimated_effort: 4
+    dependencies: [python-quality]
+    acceptance_criteria:
+      - "Testing patterns documented"
+      - "Coverage requirements specified"
+      - "Pytest best practices defined"
+      - "Integration with validation gates"
+    notes: "Supports code quality. Important for all development work."
+    category: "quality-gates"
+    blockers: [python-quality]
+    
+  - skill_name: chiseai-skill-validation
+    current_status: pending
+    priority: P1
+    estimated_effort: 3
+    dependencies: []
+    acceptance_criteria:
+      - "Skill structure validation rules defined"
+      - "Frontmatter requirements specified"
+      - "Required sections checklist"
+      - "Automated validation working"
+    notes: "Important for skill quality but not blocking initial optimization work."
+    category: "quality-gates"
+    blockers: []
+    
+  - skill_name: chiseai-risk-audit
+    current_status: pending
+    priority: P1
+    estimated_effort: 4
+    dependencies: [chiseai-validation, chiseai-worker-contracts]
+    acceptance_criteria:
+      - "Risk constraints defined"
+      - "POC-mode enforcement rules"
+      - "Confidence thresholds specified"
+      - "Audit procedures documented"
+    notes: "Important for safe strategy recommendations. Depends on validation and contracts."
+    category: "safety"
+    blockers: [chiseai-validation, chiseai-worker-contracts]
+    
+  - skill_name: chiseai-promotion-packet
+    current_status: pending
+    priority: P1
+    estimated_effort: 3
+    dependencies: [chiseai-git-workflow, chiseai-validation]
+    acceptance_criteria:
+      - "Promotion packet template complete"
+      - "Evidence requirements specified"
+      - "Risk assessment format defined"
+      - "Rollback plan template"
+    notes: "Supports strategy/brain promotion process. Important for CI/CD workflow."
+    category: "ci-cd"
+    blockers: [chiseai-git-workflow]
+    
+  - skill_name: chiseai-strategy-cicd-gates
+    current_status: pending
+    priority: P1
+    estimated_effort: 5
+    dependencies: [chiseai-validation, chiseai-promotion-packet, chiseai-turnover-metrics]
+    acceptance_criteria:
+      - "Strategy selection criteria defined"
+      - "Turnover gates specified"
+      - "Promotion rules documented"
+      - "backtest→paper→live workflow defined"
+    notes: "Critical for strategy deployment pipeline. Multiple dependencies."
+    category: "ci-cd"
+    blockers: [chiseai-validation, chiseai-promotion-packet, chiseai-turnover-metrics]
+    
+  - skill_name: chiseai-brain-cicd
+    current_status: pending
+    priority: P1
+    estimated_effort: 5
+    dependencies: [chiseai-validation, chiseai-promotion-packet]
+    acceptance_criteria:
+      - "Brain versioning procedure defined"
+      - "Evaluation framework specified"
+      - "Shadow-test protocols documented"
+      - "Human approval gates defined"
+    notes: "Critical for brain upgrades. Similar to strategy-cicd-gates but for agent brain."
+    category: "ci-cd"
+    blockers: [chiseai-validation, chiseai-promotion-packet]
+    
+  - skill_name: chiseai-turnover-metrics
+    current_status: pending
+    priority: P1
+    estimated_effort: 4
+    dependencies: []
+    acceptance_criteria:
+      - "Turnover calculation formulas defined"
+      - "Trades/day aggregation specified"
+      - "avg/p95/max metrics documented"
+      - "Reporting format established"
+    notes: "Supports strategy evaluation. Required by strategy-cicd-gates."
+    category: "metrics"
+    blockers: []
+    
+  - skill_name: chiseai-paper-trading-canary
+    current_status: pending
+    priority: P1
+    estimated_effort: 4
+    dependencies: [chiseai-strategy-cicd-gates, chiseai-turnover-metrics]
+    acceptance_criteria:
+      - "Canary deployment procedure defined"
+      - "Trade budget enforcement rules"
+      - "Promotion packet generation"
+      - "Validation criteria specified"
+    notes: "Important for safe strategy promotion. Depends on strategy CI/CD gates."
+    category: "ci-cd"
+    blockers: [chiseai-strategy-cicd-gates, chiseai-turnover-metrics]
+
+  # ============ P2 - MEDIUM PRIORITY ============
+  # Specialized/advanced skills
+  
+  - skill_name: chiseai-strategy-dsl-design
+    current_status: pending
+    priority: P2
+    estimated_effort: 5
+    dependencies: [chiseai-validation, chiseai-risk-audit]
+    acceptance_criteria:
+      - "Strategy DSL schema defined"
+      - "Parameter evolution rules specified"
+      - "Structure auditability requirements"
+      - "Safe evolution patterns documented"
+    notes: "Advanced skill for strategy DSL design. Lower priority until core workflow stable."
+    category: "advanced"
+    blockers: [chiseai-validation, chiseai-risk-audit]
+    
+  - skill_name: webapp-testing
+    current_status: pending
+    priority: P2
+    estimated_effort: 4
+    dependencies: []
+    acceptance_criteria:
+      - "Playwright testing patterns documented"
+      - "Frontend verification procedures"
+      - "UI debugging workflows defined"
+      - "Screenshot capture guidelines"
+    notes: "Specialized skill for web app testing. Not blocking core swarm operations."
+    category: "specialized"
+    blockers: []
+    
+  - skill_name: theme-factory
+    current_status: pending
+    priority: P2
+    estimated_effort: 3
+    dependencies: []
+    acceptance_criteria:
+      - "Theme system documented"
+      - "10 pre-set themes defined"
+      - "Application procedures specified"
+      - "Custom theme generation guide"
+    notes: "Styling skill for artifacts. Nice-to-have for presentation."
+    category: "specialized"
+    blockers: []
+    
+  - skill_name: web-artifacts-builder
+    current_status: pending
+    priority: P2
+    estimated_effort: 5
+    dependencies: [theme-factory]
+    acceptance_criteria:
+      - "Multi-component artifact building guide"
+      - "React/Tailwind integration documented"
+      - "shadcn/ui usage patterns"
+      - "State management examples"
+    notes: "Advanced skill for complex HTML artifacts. Depends on theme-factory."
+    category: "specialized"
+    blockers: [theme-factory]
+    
+  - skill_name: frontend-design
+    current_status: pending
+    priority: P2
+    estimated_effort: 5
+    dependencies: [theme-factory, web-artifacts-builder]
+    acceptance_criteria:
+      - "Design quality standards defined"
+      - "Component building patterns"
+      - "Tailwind CSS best practices"
+      - "UI/UX guidelines"
+    notes: "Advanced frontend design skill. Builds on theme and artifacts skills."
+    category: "specialized"
+    blockers: [theme-factory, web-artifacts-builder]
+    
+  - skill_name: mcp-builder
+    current_status: pending
+    priority: P2
+    estimated_effort: 5
+    dependencies: []
+    acceptance_criteria:
+      - "MCP server design patterns documented"
+      - "FastMCP usage guide (Python)"
+      - "MCP SDK guide (Node/TypeScript)"
+      - "Tool design best practices"
+    notes: "Specialized skill for MCP server development. Important for integrations."
+    category: "specialized"
+    blockers: []
+    
+  - skill_name: skill-creator
+    current_status: pending
+    priority: P2
+    estimated_effort: 4
+    dependencies: [chiseai-skill-validation]
+    acceptance_criteria:
+      - "Skill creation workflow documented"
+      - "Structure templates provided"
+      - "Frontmatter requirements specified"
+      - "Quality guidelines defined"
+    notes: "Meta-skill for creating new skills. Depends on skill-validation."
+    category: "meta"
+    blockers: [chiseai-skill-validation]
+
+# Dependency Graph Summary
+dependency_graph:
+  root_skills:
+    - chiseai-memory-ops
+    - chiseai-git-workflow
+    - chiseai-validation
+    
+  critical_path:
+    - chiseai-memory-ops
+    - chiseai-parallel-safety
+    - chiseai-worker-contracts
+    - chiseai-workflow-commands
+    
+  blocked_by_validation:
+    - python-quality
+    - chiseai-testing-patterns
+    - chiseai-risk-audit
+    - chiseai-strategy-cicd-gates
+    - chiseai-brain-cicd
+    
+  blocked_by_memory_ops:
+    - chiseai-parallel-safety
+    - chiseai-branch-hygiene
+    - chiseai-incident-response
+
+# Optimization Roadmap
+roadmap:
+  phase_1:
+    name: "Core Infrastructure"
+    duration: "2 weeks"
+    skills:
+      - chiseai-memory-ops
+      - chiseai-parallel-safety
+      - python-quality
+      - chiseai-incident-response
+      
+  phase_2:
+    name: "Workflow Foundation"
+    duration: "2 weeks"
+    skills:
+      - chiseai-workflow-commands
+      - chiseai-branch-hygiene
+      - chiseai-data-first
+      - chiseai-prd-quality
+      
+  phase_3:
+    name: "Quality & Maintenance"
+    duration: "2 weeks"
+    skills:
+      - chiseai-sprint-cleanup
+      - chiseai-testing-patterns
+      - chiseai-skill-validation
+      - chiseai-metrics-dashboard
+      
+  phase_4:
+    name: "CI/CD Pipeline"
+    duration: "2 weeks"
+    skills:
+      - chiseai-turnover-metrics
+      - chiseai-promotion-packet
+      - chiseai-strategy-cicd-gates
+      - chiseai-brain-cicd
+      - chiseai-paper-trading-canary
+      
+  phase_5:
+    name: "Advanced & Specialized"
+    duration: "3 weeks"
+    skills:
+      - chiseai-risk-audit
+      - chiseai-strategy-dsl-design
+      - chiseai-docker-governance
+      - webapp-testing
+      - theme-factory
+      - web-artifacts-builder
+      - frontend-design
+      - mcp-builder
+      - skill-creator

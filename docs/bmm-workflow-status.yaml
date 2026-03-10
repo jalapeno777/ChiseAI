@@ -96,6 +96,41 @@ metadata:
   recent_changes: []
 
 completed:
+- id: ST-SKILL-EVAL-001
+  title: Skills-System Evaluation and Optimization Cycle
+  status: completed
+  priority: P1
+  owner: jarvis
+  story_points: 8
+  created_date: '2026-03-10'
+  completed_date: '2026-03-10'
+  description: |
+    Complete skills-system evaluation cycle including inventory, trigger optimization,
+    A/B benchmarks, promotion/rollback decisions, and weekly synthesis. Evaluated 5
+    skills with evals, promoted all 5. Created backlog for remaining 26 unoptimized skills.
+  acceptance_criteria:
+    - Inventory of 31 skills completed with coverage analysis
+    - Trigger optimization completed (fallback method due to claude CLI unavailability)
+    - A/B benchmarks run on 5 eval-enabled skills
+    - 5 promotion decisions generated with evidence artifacts
+    - Weekly synthesis aggregated for 2026-W11
+    - Backlog artifacts created for 26 remaining skills
+  files_changed:
+    - docs/tempmemories/skill-evaluation-summary-2026-03-10.md
+    - docs/tempmemories/skill-eval-execution-summary-2026-03-10.md
+    - docs/backlog/skill-optimization-backlog-2026-03-10.md
+    - docs/backlog/skill-optimization-backlog-2026-03-10.yaml
+    - _bmad-output/skill-eval/*.json
+  evidence_files:
+    - docs/tempmemories/skill-promotion-*.md (5 files)
+    - _bmad-output/skill-eval/inventory.json
+    - _bmad-output/skill-eval/benchmark-summary.json
+  notes:
+    - '5 skills evaluated: chiseai-git-workflow, chiseai-validation, chiseai-skill-autonomy, chiseai-worker-contracts, chiseai-metacognition-ops'
+    - 'All 5 skills promoted with average 18.3% pass rate improvement'
+    - '3 held skills (validation, skill-autonomy, worker-contracts) now promoted'
+    - '26 skills remain in backlog for future optimization'
+    - 'Opencode backend parsing issue identified and documented'
 - acceptance_criteria:
   - Task 1.1: Grafana validation evidence created and merged
   - Task 1.2: CI staging enablement merged with tempmemory ingestion step
@@ -395,6 +430,27 @@ backlog:
   notes: Import errors prevent full test suite execution
   created_date: '2026-03-10'
   status: planned
+- id: SKILL-OPTIMIZATION-BACKLOG
+  priority: medium
+  title: Skills System Optimization Backlog
+  owner: jarvis
+  description: |
+    Backlog of 26 skills pending optimization (no evals yet). See
+    docs/backlog/skill-optimization-backlog-2026-03-10.yaml for full details.
+    Skills requiring eval creation: chiseai-paper-trading-canary, chiseai-promotion-packet,
+    chiseai-risk-audit, chiseai-data-first, chiseai-brain-cicd, and 21 others.
+  acceptance_criteria:
+  - Eval suites created for each skill
+  - A/B benchmarks run with improvement metrics
+  - Promotion/rollback decisions documented
+  related_story: ST-SKILL-EVAL-001
+  backlog_artifact: docs/backlog/skill-optimization-backlog-2026-03-10.yaml
+  created_date: '2026-03-10'
+  status: planned
+  notes:
+  - 5 skills evaluated and promoted in ST-SKILL-EVAL-001
+  - 26 skills remain in backlog for future sprints
+  - Estimated 5-6 skills per sprint to complete optimization
 - acceptance_criteria:
   - AGENTS.md updated with new merge policy including senior-dev authority and merge
     attempt definitions
