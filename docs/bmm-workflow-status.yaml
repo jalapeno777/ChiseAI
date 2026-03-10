@@ -142,6 +142,98 @@ completed:
   status: merged
   story_points: 8
   title: FAST CLOSURE SPRINT - Batch 2 Merge Coordination
+- id: ST-KPI-FIX-001
+  title: KPI Accuracy Fix - Fee Deduction and Reconciliation
+  status: completed
+  priority: P0-CRITICAL
+  owner: dev
+  story_points: 5
+  created_date: '2026-03-10'
+  completed_date: '2026-03-10'
+  branch: feature/ST-KPI-FIX-001-docs
+  description: |
+    Fixed critical KPI accuracy issue where position tracker was not deducting
+    trading fees from realized PnL calculations. Implemented three coordinated
+    fixes: position tracker enhancement with fee tracking, KPI calculator
+    enhancement with gross vs net PnL validation, and Bybit-Journal reconciliation
+    tool for data consistency verification.
+  acceptance_criteria:
+    - Position tracker deducts fees from realized PnL (deduct_fees=True)
+    - Fee fields added to PaperPosition (entry_fees, exit_fees, total_fees)
+    - KPI calculator tracks gross vs net PnL separately
+    - KPI calculator validates net_pnl = realized_pnl - fees formula
+    - Reconciliation script created with tolerance-based matching
+    - All position tracker tests pass (17/17)
+    - All reconciliation tests pass (29/29)
+    - Evidence files created and committed
+    - GO/HOLD decision documented with rationale
+  files_changed:
+    - src/execution/paper/position_tracker.py
+    - scripts/analysis/calculate_paper_kpis.py
+    - scripts/validation/reconcile_bybit_journal.py
+    - tests/test_execution/test_paper/test_position_tracker.py
+    - tests/test_validation/test_reconcile_bybit_journal.py
+    - docs/evidence/PARTY-MODE-KPI-FIX-001-SYNTHESIS.md
+  evidence_files:
+    - docs/validation/evidence/PAPER-GO-REMEDIATION-001-KPI-REPORT-20260310.md
+    - docs/validation/evidence/reconciliation-report-20260310-203036.md
+    - docs/validation/evidence/reconciliation-report-20260310-202927.md
+    - docs/validation/evidence/reconciliation-report-20260310-202647.md
+  test_results:
+    position_tracker: 17 passed
+    reconciliation: 29 passed
+  go_hold_decision:
+    decision: GO
+    confidence: 95%
+    rationale: |
+      Core fix verified with comprehensive test coverage. Fee deduction working
+      correctly. Risk controls functional. Win rate below target is a strategy
+      performance issue, not a system issue. Rollback plan documented.
+  notes:
+    - 'Root cause: Position tracker calculate_pnl() did not deduct fees'
+    - 'Fix: Added deduct_fees parameter to calculate_pnl() method'
+    - 'Enhancement: KPI calculator now tracks gross vs net PnL'
+    - 'Artifact: Bybit-Journal reconciliation script for data validation'
+    - 'Test coverage: 46 tests total (17 position + 29 reconciliation)'
+    - 'Party Mode synthesis document created with full evidence'
+- id: ST-COVERAGE-001
+  title: Coverage Uplift Slice 1 - Import fixes and smoke tests
+  status: completed
+  priority: P1
+  owner: jarvis
+  story_points: 7
+  created_date: '2026-03-10'
+  completed_date: '2026-03-10'
+  description: |
+    First 48h coverage uplift slice. Fixed import errors blocking test collection,
+    added smoke tests for execution safety (100% coverage), evaluation parsers
+    (80% coverage), and brain module (88% coverage). Identified 3 high-priority
+    blockers for next slices.
+  acceptance_criteria:
+    - Import errors resolved in autonomous_control_plane
+    - scripts/validation/recap_validator.py created
+    - 241 new smoke tests added (50 + 90 + 101)
+    - Target modules achieve >80% coverage
+    - Blockers documented in backlog
+  verification_command: pytest tests/test_execution/test_safety/ tests/test_evaluation/test_parsers/ tests/test_brain/ -v
+  files_changed:
+    - src/autonomous_control_plane/__init__.py
+    - src/autonomous_control_plane/components/__init__.py
+    - src/autonomous_control_plane/models/__init__.py
+    - scripts/validation/recap_validator.py
+    - tests/test_brain/test_*_smoke.py (4 files)
+    - tests/test_execution/test_safety/*.py (3 files)
+    - tests/test_evaluation/test_parsers/*.py (4 files)
+  blockers_identified:
+    - COVERAGE-BLOCKER-001: Full-suite collection errors
+    - COVERAGE-BLOCKER-002: Brain promotion test failures
+    - COVERAGE-BLOCKER-003: Import-path inconsistencies
+  notes:
+    - Overall coverage remains at 8.47% (baseline)
+    - Target modules achieved 84.42% average coverage
+    - Next slice (ST-COVERAGE-002) should address blockers first
+    - Estimated 15-20 additional slices needed to reach 80% overall
+  commit_sha: 84caf63
 - acceptance_criteria:
   - Phase A: Kimi adapter infrastructure verified (kimi_model default updated to kimi-k2.5)
   - Phase B: Smoke matrix completed with all 4 providers tested (0/4 functional -
