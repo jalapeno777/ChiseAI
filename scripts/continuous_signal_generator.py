@@ -112,6 +112,9 @@ def generate_signals_batch(r: redis.Redis, generator: SignalGenerator, count: in
     symbols = [
         ("BTC/USDT", 50000.0, "up"),
         ("ETH/USDT", 3000.0, "down"),
+        ("SOL/USDT", 150.0, "up"),
+        ("LINK/USDT", 15.0, "up"),
+        ("BNB/USDT", 600.0, "down"),
     ]
 
     for _ in range(count):

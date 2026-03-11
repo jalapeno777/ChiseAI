@@ -70,6 +70,20 @@ symbols:
     market_impact:
       base_coefficient: 1.3
 
+  LINK/USDT:
+    slippage:
+      base_slippage_bps: 3.0
+      max_slippage_bps: 150.0
+    market_impact:
+      base_coefficient: 1.2
+
+  BNB/USDT:
+    slippage:
+      base_slippage_bps: 2.0
+      max_slippage_bps: 100.0
+    market_impact:
+      base_coefficient: 1.0
+
   # Smaller cap - higher slippage
   # Note: Wildcard removed to allow proper fallback to defaults
   # Use explicit symbol configs or defaults will be applied

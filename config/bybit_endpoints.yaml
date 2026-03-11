@@ -88,6 +88,9 @@ bybit:
   test_symbols:
     - "BTCUSDT"
     - "ETHUSDT"
+    - "SOLUSDT"
+    - "LINKUSDT"
+    - "BNBUSDT"
 
   # Health check endpoints
   health_checks:
