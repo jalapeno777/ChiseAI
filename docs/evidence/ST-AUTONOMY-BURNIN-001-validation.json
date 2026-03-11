@@ -1,0 +1,120 @@
+{
+  "story_id": "ST-AUTONOMY-BURNIN-001",
+  "validation_type": "integration",
+  "timestamp": "2026-03-11T01:50:55+00:00",
+  "branches_merged": [
+    "feature/ST-AUTONOMY-BURNIN-001-A-kill-switch-bootstrap",
+    "feature/ST-AUTONOMY-BURNIN-001-B-cron-evidence",
+    "feature/ST-AUTONOMY-BURNIN-001-C-cadence-diagnostics"
+  ],
+  "test_results": {
+    "kill_switch_tests": {
+      "test_file": "tests/test_execution/test_kill_switch/",
+      "total_tests": 115,
+      "passed": 115,
+      "failed": 0,
+      "status": "PASSED"
+    },
+    "cron_evidence_tests": {
+      "test_file": "tests/test_monitoring/test_cron_evidence.py",
+      "total_tests": 28,
+      "passed": 28,
+      "failed": 0,
+      "status": "PASSED"
+    },
+    "autonomy_cadence_tests": {
+      "test_file": "tests/test_evaluation/test_autonomy_cadence.py",
+      "total_tests": 45,
+      "passed": 45,
+      "failed": 0,
+      "status": "PASSED"
+    }
+  },
+  "live_validation": {
+    "kill_switch_bootstrap": {
+      "status": "success",
+      "redis_keys_created": true,
+      "keys": {
+        "enabled": "1",
+        "triggered": "0",
+        "initialized_at": "2026-03-11T01:28:05.124270+00:00",
+        "initialized_by": "bootstrap"
+      }
+    },
+    "redis_verification": {
+      "connection": "successful",
+      "kill_switch_keys": "verified",
+      "cron_evidence_keys": {
+        "chise:cron:hourly-health:invocation_id": "abf8f377-843a-4ef4-a358-2aef3b316385",
+        "chise:cron:hourly-health:status": "success",
+        "chise:cron:hourly-health:last_run": "2026-03-11T01:50:55.148076+00:00",
+        "chise:cron:hourly-health:write_mode": "direct"
+      }
+    },
+    "hourly_health_check": {
+      "status": "success",
+      "output": "Discord webhook post successful",
+      "execution_time": "2026-03-11T01:48:18.489357+00:00",
+      "discord_post": "successful"
+    },
+    "cron_evidence": {
+      "write_status": "success",
+      "invocation_id": "abf8f377-843a-4ef4-a358-2aef3b316385",
+      "keys_written": [
+        "chise:cron:hourly-health:invocation_id",
+        "chise:cron:hourly-health:last_run",
+        "chise:cron:hourly-health:status",
+        "chise:cron:hourly-health:missed_count",
+        "chise:cron:hourly-health:expected_interval",
+        "chise:cron:hourly-health:write_mode"
+      ]
+    },
+    "diagnostic_script": {
+      "command": "scripts/ops/autonomy_job_health.py --format table",
+      "status": "success",
+      "jobs_found": 4,
+      "health_summary": {
+        "total": 4,
+        "healthy": 4,
+        "degraded": 0,
+        "critical": 0,
+        "need_attention": 0
+      },
+      "jobs": [
+        {
+          "job_id": "hourly-health",
+          "status": "success",
+          "last_success": "5m 17s ago",
+          "health": "100/100 (healthy)"
+        },
+        {
+          "job_id": "pager",
+          "status": "success",
+          "last_success": "23m 36s ago",
+          "health": "100/100 (healthy)"
+        },
+        {
+          "job_id": "signal-growth",
+          "status": "success",
+          "last_success": "8m 36s ago",
+          "health": "100/100 (healthy)"
+        },
+        {
+          "job_id": "checkpoint-audit",
+          "status": "success",
+          "last_success": "1h 53m ago",
+          "health": "100/100 (healthy)"
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_tests": 188,
+    "total_passed": 188,
+    "total_failed": 0,
+    "test_coverage": "100%",
+    "redis_connection": "verified",
+    "all_live_validations": "passed"
+  },
+  "conclusion": "All integration tests passed successfully. All three branches merged cleanly with no conflicts. Kill switch bootstrap, cron evidence tracking, and autonomy cadence diagnostics are all functioning correctly."
+}
