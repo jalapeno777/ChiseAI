@@ -65,7 +65,9 @@ def load_config() -> dict:
         "exchange_id": get_env_var("EXCHANGE_ID", "binance"),
         "symbols": [
             s.strip()
-            for s in get_env_var("SYMBOLS", "BTC/USDT,ETH/USDT,SOL/USDT").split(",")
+            for s in get_env_var(
+                "SYMBOLS", "BTC/USDT,ETH/USDT,SOL/USDT,LINK/USDT,BNB/USDT"
+            ).split(",")
         ],
         "timeframes": [
             timeframe_from_string(tf.strip())
