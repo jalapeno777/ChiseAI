@@ -1,0 +1,211 @@
+# Hourly-Health G5 Cadence Repair Backlog
+# Generated: 2026-03-11
+# Source: sanity tick findings
+# Priority: HIGH
+
+backlog_version: "1.0"
+generation_date: "2026-03-11"
+source: "sanity_tick_findings"
+cadence: "G5"
+total_items: 4
+priority_distribution:
+  HIGH: 4
+  MEDIUM: 0
+  LOW: 0
+
+metadata:
+  created_by: "dev"
+  story_id: "HOURLY-HEALTH-BACKLOG-001"
+  branch: "feature/HOURLY-HEALTH-BACKLOG-001"
+  related_systems:
+    - hourly_health_check.py
+    - cron_wrapper.py
+    - cron_evidence.py
+    - checkpoint/gates.py
+  redis_key_prefix: "chise:cron:hourly-health"
+
+backlog_items:
+  - id: "HOURLY-HEALTH-001"
+    title: "Restore hourly-health cron cadence/wrapper path"
+    priority: HIGH
+    status: "backlog"
+    description: |
+      Verify and restore hourly-health cron job cadence. The cron wrapper path may be 
+      misconfigured, preventing proper execution of the health check script. This item 
+      ensures the cron job runs on schedule and the wrapper correctly invokes the main script.
+    acceptance_criteria:
+      - Cron job configured for hourly execution (0 * * * *)
+      - Wrapper path correctly points to scripts/monitoring/cron_wrapper.py
+      - Script executes without path errors
+      - Evidence written to Redis chise:cron:hourly-health:* keys
+    files_referenced:
+      - path: "scripts/monitoring/cron_wrapper.py"
+        purpose: "Cron wrapper for environment setup"
+      - path: "scripts/monitoring/hourly_health_check.py"
+        purpose: "Main health check script"
+      - path: "crontab"
+        purpose: "System cron configuration"
+    verification_commands:
+      - command: "crontab -l | grep hourly-health"
+        expected_output: "Contains '0 * * * *' schedule"
+      - command: "ls -la scripts/monitoring/cron_wrapper.py"
+        expected_output: "File exists and is executable"
+      - command: "redis_state_hget(name='chise:cron:hourly-health:last_run', key='timestamp')"
+        expected_output: "Recent timestamp within last hour"
+    estimated_effort: 2
+    dependencies: []
+    notes: "Check both user crontab and system cron directories (/etc/cron.d, /etc/cron.hourly)"
+
+  - id: "HOURLY-HEALTH-002"
+    title: "Verify deterministic evidence writes for hourly-health"
+    priority: HIGH
+    status: "backlog"
+    description: |
+      Ensure hourly-health evidence writes are deterministic and consistent. The 
+      cron_evidence.py write_cron_evidence() function should always write expected 
+      keys to Redis without race conditions or missing data. This item validates 
+      the complete evidence write chain.
+    acceptance_criteria:
+      - All expected Redis keys written on each execution:
+        - chise:cron:hourly-health:last_run
+        - chise:cron:hourly-health:expected_interval (3600)
+        - chise:cron:hourly-health:status
+        - chise:cron:hourly-health:missed_count
+      - Write mode tracked (direct vs wrapper)
+      - No race conditions in evidence writes
+      - Evidence timestamp is accurate
+    files_referenced:
+      - path: "scripts/monitoring/cron_evidence.py"
+        purpose: "Evidence tracking with write_cron_evidence() function"
+      - path: "scripts/monitoring/hourly_health_check.py"
+        purpose: "Main health check that calls evidence writes"
+    verification_commands:
+      - command: "python3 -c \"from scripts.monitoring.cron_evidence import write_cron_evidence; write_cron_evidence('hourly-health')\""
+        expected_output: "Success, no errors"
+      - command: "redis_state_hgetall(name='chise:cron:hourly-health:last_run')"
+        expected_output: "Contains timestamp and status fields"
+      - command: "redis_state_hget(name='chise:cron:hourly-health:expected_interval', key='value')"
+        expected_output: "3600"
+      - command: "redis_state_hget(name='chise:cron:hourly-health:missed_count', key='count')"
+        expected_output: "Numeric value (0 or current count)"
+    estimated_effort: 3
+    dependencies:
+      - "HOURLY-HEALTH-001"
+    notes: "Ensure write_cron_evidence() is called both in wrapper and direct execution paths"
+
+  - id: "HOURLY-HEALTH-003"
+    title: "Reduce/clear inflated missed_count after successful runs"
+    priority: HIGH
+    status: "backlog"
+    description: |
+      The missed_count in Redis may be inflated from previous failures. Implement 
+      logic to clear or reset the missed_count after successful runs to prevent 
+      false positives in missed execution detection. The G5 gate reads this value 
+      to determine cron cadence stability.
+    acceptance_criteria:
+      - missed_count resets to 0 after successful execution
+      - Logic exists to clear accumulated missed_count
+      - No false positives for missed execution detection
+      - G5 gate reads accurate missed_count
+      - Reset is atomic (no race conditions)
+    files_referenced:
+      - path: "scripts/monitoring/cron_evidence.py"
+        purpose: "Evidence tracking with missed_count logic"
+      - path: "src/governance/checkpoint/gates.py"
+        purpose: "G5 gate checks cron cadence and reads missed_count"
+    redis_keys:
+      - "chise:cron:hourly-health:missed_count"
+      - "chise:cron:hourly-health:status"
+      - "chise:cron:hourly-health:last_run"
+    verification_commands:
+      - command: "redis_state_hget(name='chise:cron:hourly-health:missed_count', key='count')"
+        expected_output: "0 after successful run"
+      - command: "python3 -c \"from src.governance.checkpoint.gates import check_g5_cron_cadence; print(check_g5_cron_cadence())\""
+        expected_output: "PASS or appropriate status"
+      - command: "grep -A 10 'missed_count' scripts/monitoring/cron_evidence.py"
+        expected_output: "Shows reset logic implementation"
+    estimated_effort: 2
+    dependencies:
+      - "HOURLY-HEALTH-002"
+    notes: "Consider adding a manual reset command for emergency clearing of missed_count"
+
+  - id: "HOURLY-HEALTH-004"
+    title: "Re-run checkpoint audit and confirm G5 stability criteria"
+    priority: HIGH
+    status: "backlog"
+    description: |
+      Run checkpoint gate audit to verify G5 (cron cadence) stability. G5 checks 
+      if hourly-health is running on schedule by examining Redis evidence. This 
+      final validation item ensures all previous fixes are working and the system 
+      is stable.
+    acceptance_criteria:
+      - checkpoint_gate_audit.py runs successfully
+      - G5 gate shows PASS status
+      - No stale cron evidence (>2x interval without execution)
+      - All cron jobs (hourly-health, pager, signal-growth, checkpoint-audit) reporting
+      - Evidence timestamps are within acceptable drift (<5 minutes)
+    files_referenced:
+      - path: "scripts/monitoring/checkpoint_gate_audit.py"
+        purpose: "Checkpoint gate audit execution script"
+      - path: "src/governance/checkpoint/gates.py"
+        purpose: "G5 gate implementation for cron cadence checks"
+    verification_commands:
+      - command: "python3 scripts/monitoring/checkpoint_gate_audit.py"
+        expected_output: "All gates PASS, including G5"
+      - command: "python3 -c \"from src.governance.checkpoint.gates import check_g5_cron_cadence; result = check_g5_cron_cadence(); print(f'G5 Status: {result.status}')\""
+        expected_output: "G5 Status: PASS"
+      - command: "redis_state_hget(name='chise:cron:hourly-health:status', key='value')"
+        expected_output: "healthy or ok"
+      - command: "redis_state_hgetall(name='chise:cron:hourly-health:last_run')"
+        expected_output: "Timestamp within last 60 minutes"
+    estimated_effort: 2
+    dependencies:
+      - "HOURLY-HEALTH-001"
+      - "HOURLY-HEALTH-002"
+      - "HOURLY-HEALTH-003"
+    notes: "Final validation step - only proceed after all other items complete"
+
+# Execution Order
+dependency_graph:
+  parallel_groups:
+    - group: 1
+      items:
+        - "HOURLY-HEALTH-001"
+    - group: 2
+      items:
+        - "HOURLY-HEALTH-002"
+      depends_on:
+        - group: 1
+    - group: 3
+      items:
+        - "HOURLY-HEALTH-003"
+      depends_on:
+        - group: 2
+    - group: 4
+      items:
+        - "HOURLY-HEALTH-004"
+      depends_on:
+        - group: 3
+
+# Completion Criteria
+exit_criteria:
+  - All 4 backlog items have status "done"
+  - G5 gate consistently shows PASS for 24 hours
+  - No stale cron evidence detected
+  - hourly-health runs every hour without failure
+  - missed_count stays at 0 during normal operation
+
+# Risk Assessment
+risks:
+  - risk: "Cron job may fail silently without proper logging"
+    mitigation: "Add explicit error handling and logging to wrapper script"
+    probability: medium
+    impact: high
+  - risk: "Redis connection failures may prevent evidence writes"
+    mitigation: "Add retry logic and fallback logging to file"
+    probability: low
+    impact: high
+  - risk: "Race conditions in missed_count updates"
+    mitigation: "Use atomic Redis operations (HINCRBY, etc.)"
+    probability: low
+    impact: medium
