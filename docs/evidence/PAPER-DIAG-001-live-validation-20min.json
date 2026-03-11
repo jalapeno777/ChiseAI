@@ -1,0 +1,219 @@
+{
+  "validation_start": "2026-03-11T15:00:51.990931",
+  "validation_end": "2026-03-11T15:21:08.944948",
+  "duration_minutes": 20,
+  "initial_signals": 2976,
+  "final_signals": 3296,
+  "checks": [
+    {
+      "elapsed_min": 0,
+      "timestamp": "2026-03-11T15:00:52.884155",
+      "signal_gen_pid": "567810",
+      "pipeline_status": "running",
+      "signals_generated": "24",
+      "iteration": "3",
+      "total_signals": 2976,
+      "new_signals": 0
+    },
+    {
+      "elapsed_min": 0,
+      "timestamp": "2026-03-11T15:01:50.874407",
+      "signal_gen_pid": "567810",
+      "pipeline_status": "running",
+      "signals_generated": "40",
+      "iteration": "5",
+      "total_signals": 2992,
+      "new_signals": 16
+    },
+    {
+      "elapsed_min": 1,
+      "timestamp": "2026-03-11T15:02:48.844055",
+      "signal_gen_pid": "567810",
+      "pipeline_status": "running",
+      "signals_generated": "56",
+      "iteration": "7",
+      "total_signals": 3008,
+      "new_signals": 32
+    },
+    {
+      "elapsed_min": 2,
+      "timestamp": "2026-03-11T15:03:46.759063",
+      "signal_gen_pid": "567810",
+      "pipeline_status": "running",
+      "signals_generated": "72",
+      "iteration": "9",
+      "total_signals": 3024,
+      "new_signals": 48
+    },
+    {
+      "elapsed_min": 3,
+      "timestamp": "2026-03-11T15:04:44.687008",
+      "signal_gen_pid": "567810",
+      "pipeline_status": "running",
+      "signals_generated": "88",
+      "iteration": "11",
+      "total_signals": 3040,
+      "new_signals": 64
+    },
+    {
+      "elapsed_min": 4,
+      "timestamp": "2026-03-11T15:05:42.716354",
+      "signal_gen_pid": "567810",
+      "pipeline_status": "running",
+      "signals_generated": "104",
+      "iteration": "13",
+      "total_signals": 3056,
+      "new_signals": 80
+    },
+    {
+      "elapsed_min": 5,
+      "timestamp": "2026-03-11T15:06:40.657440",
+      "signal_gen_pid": "567810",
+      "pipeline_status": "running",
+      "signals_generated": "120",
+      "iteration": "15",
+      "total_signals": 3072,
+      "new_signals": 96
+    },
+    {
+      "elapsed_min": 6,
+      "timestamp": "2026-03-11T15:07:38.566475",
+      "signal_gen_pid": "567810",
+      "pipeline_status": "running",
+      "signals_generated": "136",
+      "iteration": "17",
+      "total_signals": 3088,
+      "new_signals": 112
+    },
+    {
+      "elapsed_min": 7,
+      "timestamp": "2026-03-11T15:08:36.473284",
+      "signal_gen_pid": "567810",
+      "pipeline_status": "running",
+      "signals_generated": "152",
+      "iteration": "19",
+      "total_signals": 3104,
+      "new_signals": 128
+    },
+    {
+      "elapsed_min": 8,
+      "timestamp": "2026-03-11T15:09:34.332148",
+      "signal_gen_pid": "567810",
+      "pipeline_status": "running",
+      "signals_generated": "168",
+      "iteration": "21",
+      "total_signals": 3120,
+      "new_signals": 144
+    },
+    {
+      "elapsed_min": 9,
+      "timestamp": "2026-03-11T15:10:32.276331",
+      "signal_gen_pid": "567810",
+      "pipeline_status": "running",
+      "signals_generated": "184",
+      "iteration": "23",
+      "total_signals": 3136,
+      "new_signals": 160
+    },
+    {
+      "elapsed_min": 10,
+      "timestamp": "2026-03-11T15:11:30.153817",
+      "signal_gen_pid": "567810",
+      "pipeline_status": "running",
+      "signals_generated": "200",
+      "iteration": "25",
+      "total_signals": 3152,
+      "new_signals": 176
+    },
+    {
+      "elapsed_min": 11,
+      "timestamp": "2026-03-11T15:12:28.130454",
+      "signal_gen_pid": "567810",
+      "pipeline_status": "running",
+      "signals_generated": "216",
+      "iteration": "27",
+      "total_signals": 3168,
+      "new_signals": 192
+    },
+    {
+      "elapsed_min": 12,
+      "timestamp": "2026-03-11T15:13:26.023179",
+      "signal_gen_pid": "567810",
+      "pipeline_status": "running",
+      "signals_generated": "232",
+      "iteration": "29",
+      "total_signals": 3184,
+      "new_signals": 208
+    },
+    {
+      "elapsed_min": 13,
+      "timestamp": "2026-03-11T15:14:23.895007",
+      "signal_gen_pid": "567810",
+      "pipeline_status": "running",
+      "signals_generated": "248",
+      "iteration": "31",
+      "total_signals": 3200,
+      "new_signals": 224
+    },
+    {
+      "elapsed_min": 14,
+      "timestamp": "2026-03-11T15:15:21.921129",
+      "signal_gen_pid": "567810",
+      "pipeline_status": "running",
+      "signals_generated": "264",
+      "iteration": "33",
+      "total_signals": 3216,
+      "new_signals": 240
+    },
+    {
+      "elapsed_min": 15,
+      "timestamp": "2026-03-11T15:16:19.799384",
+      "signal_gen_pid": "567810",
+      "pipeline_status": "running",
+      "signals_generated": "280",
+      "iteration": "35",
+      "total_signals": 3232,
+      "new_signals": 256
+    },
+    {
+      "elapsed_min": 16,
+      "timestamp": "2026-03-11T15:17:17.793553",
+      "signal_gen_pid": "567810",
+      "pipeline_status": "running",
+      "signals_generated": "296",
+      "iteration": "37",
+      "total_signals": 3248,
+      "new_signals": 272
+    },
+    {
+      "elapsed_min": 17,
+      "timestamp": "2026-03-11T15:18:15.734437",
+      "signal_gen_pid": "567810",
+      "pipeline_status": "running",
+      "signals_generated": "312",
+      "iteration": "39",
+      "total_signals": 3264,
+      "new_signals": 288
+    },
+    {
+      "elapsed_min": 18,
+      "timestamp": "2026-03-11T15:19:13.604320",
+      "signal_gen_pid": "567810",
+      "pipeline_status": "running",
+      "signals_generated": "328",
+      "iteration": "41",
+      "total_signals": 3280,
+      "new_signals": 304
+    },
+    {
+      "elapsed_min": 19,
+      "timestamp": "2026-03-11T15:20:11.432486",
+      "signal_gen_pid": "567810",
+      "pipeline_status": "running",
+      "signals_generated": "344",
+      "iteration": "43",
+      "total_signals": 3296,
+      "new_signals": 320
+    }
+  ]
+}
