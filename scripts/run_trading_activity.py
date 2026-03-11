@@ -33,6 +33,15 @@ from typing import Any
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
+# Handle case where config was already imported from a different location
+if "config" in sys.modules:
+    # Remove the cached config module to ensure we import from src
+    del sys.modules["config"]
+    # Also remove any config submodules
+    for mod_name in list(sys.modules.keys()):
+        if mod_name.startswith("config."):
+            del sys.modules[mod_name]
+
 from config.bootstrap import bootstrap
 from config.trading_mode import ModuleType, TradingMode, TradingModeConfig
 
