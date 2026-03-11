@@ -91,9 +91,41 @@
 
 metadata:
   version: "1.0.0"
-  last_updated: "2026-03-11"
+  last_updated: "2026-03-12"
   schema_version: "1.0.0"
   recent_changes:
+    - action: "paper-diag-closeout-PAPER-DIAG-001"
+      actor: "jarvis"
+      description: "PAPER-DIAG-001 closeout - Created 2 follow-up backlog items (Grafana panels + operational hardening) per Aria recommendations"
+      timestamp: "2026-03-12T00:00:00Z"
+      status: "completed"
+      story_id: "PAPER-DIAG-001"
+      backlog_items_created:
+        - PAPER-DIAG-001-FOLLOWUP-001
+        - PAPER-DIAG-001-FOLLOWUP-002
+      files_changed:
+        - docs/backlog/PAPER-DIAG-001-FOLLOWUP-001.yaml
+        - docs/backlog/PAPER-DIAG-001-FOLLOWUP-002.yaml
+        - docs/bmm-workflow-status.yaml
+    - action: "sprint-completion-SPRINT-2026-03-12"
+      actor: "jarvis"
+      description: "SPRINT-2026-03-12 completion - Added 11 completed stories to workflow status (6 coverage stories + 5 skill framework stories)"
+      timestamp: "2026-03-12T00:00:00Z"
+      status: "completed"
+      sprint_id: "SPRINT-2026-03-12"
+      stories_completed:
+        - ST-COVERAGE-001A
+        - ST-COVERAGE-001B
+        - ST-COVERAGE-001C
+        - ST-COVERAGE-001D
+        - ST-COVERAGE-002
+        - ST-COVERAGE-003
+        - ST-SKILL-001A
+        - ST-SKILL-001B
+        - ST-SKILL-001C
+        - ST-SKILL-002A
+        - ST-SKILL-002B
+      total_story_points: 20
     - action: "autonomy-incident-closeout-INC-AUTONOMY-CADENCE-001"
       actor: "jarvis"
       description: "Autonomy cadence controller incident remediation and closeout - verification backlog item created with follow-up check scheduled"
@@ -134,6 +166,268 @@ completed:
     - "Backlog item: AUTONOMY-VERIFY-001"
     - "Follow-up duration: 6+ hours from closeout timestamp"
     - "Incident type: Autonomy cadence controller malfunction"
+- id: ST-COVERAGE-001A
+  title: "Coverage Uplift - Import Fixes Batch A (config/ modules)"
+  status: merged
+  priority: P1
+  owner: jarvis
+  story_points: 2
+  created_date: '2026-03-12'
+  merged_date: '2026-03-12'
+  description: |
+    Resolved import errors blocking test collection in config/ modules.
+    Part of SPRINT-2026-03-12 coverage uplift initiative.
+  acceptance_criteria:
+    - Import errors resolved in config/__init__.py
+    - Test collection succeeds for config module
+    - No regression in existing functionality
+  files_changed:
+    - config/__init__.py
+  merge_commit: 5c0c393b
+  evidence_files:
+    - docs/tempmemories/ST-COVERAGE-001-session-summary.md
+  notes:
+    - "Part of Batch 1 coverage improvements"
+    - "Merged via commit 5c0c393b"
+    - "SPRINT-2026-03-12 deliverable"
+- id: ST-COVERAGE-001B
+  title: "Coverage Uplift - Import Fixes Batch B (bootstrap/env modules)"
+  status: merged
+  priority: P1
+  owner: jarvis
+  story_points: 2
+  created_date: '2026-03-12'
+  merged_date: '2026-03-12'
+  description: |
+    Resolved import errors in bootstrap and environment loader modules.
+    Part of SPRINT-2026-03-12 coverage uplift initiative.
+  acceptance_criteria:
+    - Import errors resolved in config/bootstrap.py
+    - Import errors resolved in config/env_loader.py
+    - Clean test collection for affected modules
+  files_changed:
+    - config/bootstrap.py
+    - config/env_loader.py
+  merge_commit: 5c0c393b
+  evidence_files:
+    - docs/tempmemories/ST-COVERAGE-001-session-summary.md
+  notes:
+    - "Part of Batch 1 coverage improvements"
+    - "Merged via commit 5c0c393b"
+    - "SPRINT-2026-03-12 deliverable"
+- id: ST-COVERAGE-001C
+  title: "Coverage Uplift - Import Fixes Batch C (feature flags/trading mode)"
+  status: merged
+  priority: P1
+  owner: jarvis
+  story_points: 2
+  created_date: '2026-03-12'
+  merged_date: '2026-03-12'
+  description: |
+    Resolved import errors in feature flags and trading mode configuration.
+    Part of SPRINT-2026-03-12 coverage uplift initiative.
+  acceptance_criteria:
+    - Import errors resolved in config/feature_flags.py
+    - Import errors resolved in config/trading_mode.py
+    - Clean test collection for affected modules
+  files_changed:
+    - config/feature_flags.py
+    - config/trading_mode.py
+  merge_commit: 5c0c393b
+  evidence_files:
+    - docs/tempmemories/ST-COVERAGE-001-session-summary.md
+  notes:
+    - "Part of Batch 1 coverage improvements"
+    - "Merged via commit 5c0c393b"
+    - "SPRINT-2026-03-12 deliverable"
+- id: ST-COVERAGE-001D
+  title: "Coverage Uplift - Import Fixes Batch D (scripts validation)"
+  status: merged
+  priority: P1
+  owner: jarvis
+  story_points: 1
+  created_date: '2026-03-12'
+  merged_date: '2026-03-12'
+  description: |
+    Resolved import errors in scripts/validation/ modules.
+    Part of SPRINT-2026-03-12 coverage uplift initiative.
+  acceptance_criteria:
+    - Import errors resolved in scripts/run_trading_activity.py
+    - Import errors resolved in scripts/validation/__init__.py
+    - Clean test collection for affected modules
+  files_changed:
+    - scripts/run_trading_activity.py
+    - scripts/validation/__init__.py
+  merge_commit: 5c0c393b
+  evidence_files:
+    - docs/tempmemories/ST-COVERAGE-001-session-summary.md
+  notes:
+    - "Part of Batch 1 coverage improvements"
+    - "Merged via commit 5c0c393b"
+    - "SPRINT-2026-03-12 deliverable"
+- id: ST-COVERAGE-002
+  title: "Coverage Uplift - Promotion Serialization Smoke Tests"
+  status: merged
+  priority: P1
+  owner: jarvis
+  story_points: 1
+  created_date: '2026-03-12'
+  merged_date: '2026-03-12'
+  description: |
+    Added serialization smoke tests for promotion packet module to improve test coverage.
+    Part of SPRINT-2026-03-12 coverage uplift initiative.
+  acceptance_criteria:
+    - Serialization smoke tests added for promotion packet
+    - Tests cover packet serialization roundtrip
+    - Tests cover all field types
+    - 80%+ coverage achieved for target module
+  files_changed:
+    - tests/test_brain/test_promotion_smoke.py
+  merge_commit: 844b26bd
+  evidence_files:
+    - docs/tempmemories/ST-COVERAGE-001-session-summary.md
+  notes:
+    - "Batch 2 coverage improvements"
+    - "Merged via commit 844b26bd"
+    - "SPRINT-2026-03-12 deliverable"
+- id: ST-COVERAGE-003
+  title: "Coverage Uplift - Promotion Edge Case Smoke Tests"
+  status: merged
+  priority: P1
+  owner: jarvis
+  story_points: 2
+  created_date: '2026-03-12'
+  merged_date: '2026-03-12'
+  description: |
+    Added edge case smoke tests for promotion module to improve test coverage.
+    Tests cover boundary conditions and error handling paths.
+    Part of SPRINT-2026-03-12 coverage uplift initiative.
+  acceptance_criteria:
+    - Edge case smoke tests added for promotion module
+    - Tests cover boundary conditions
+    - Tests cover error handling paths
+    - 80%+ coverage achieved for target module
+  files_changed:
+    - tests/test_brain/test_promotion_smoke.py
+  merge_commit: 844b26bd
+  evidence_files:
+    - docs/tempmemories/ST-COVERAGE-001-session-summary.md
+  notes:
+    - "Batch 2 coverage improvements"
+    - "Merged via commit 844b26bd"
+    - "SPRINT-2026-03-12 deliverable"
+- id: ST-SKILL-001A
+  title: "Skill Framework - Core Skill Definition Structure"
+  status: merged
+  priority: P1
+  owner: jarvis
+  story_points: 2
+  created_date: '2026-03-12'
+  merged_date: '2026-03-12'
+  description: |
+    Implemented core skill definition structure and YAML schema for skill framework.
+    Part of SPRINT-2026-03-12 skill framework initiative.
+  acceptance_criteria:
+    - Skill definition schema documented
+    - YAML structure standardized
+    - Schema validation implemented
+    - Documentation complete
+  files_changed:
+    - .opencode/skills/*/SKILL.md
+  merge_commit: 844b26bd
+  notes:
+    - "SPRINT-2026-03-12 deliverable"
+    - "Skill framework foundation"
+- id: ST-SKILL-001B
+  title: "Skill Framework - Skill Metadata and Versioning"
+  status: merged
+  priority: P1
+  owner: jarvis
+  story_points: 2
+  created_date: '2026-03-12'
+  merged_date: '2026-03-12'
+  description: |
+    Implemented skill metadata schema and versioning system for skill framework.
+    Part of SPRINT-2026-03-12 skill framework initiative.
+  acceptance_criteria:
+    - Skill metadata schema defined
+    - Versioning system implemented
+    - Migration path documented
+    - Backward compatibility maintained
+  files_changed:
+    - .opencode/skills/*/SKILL.md
+  merge_commit: 844b26bd
+  notes:
+    - "SPRINT-2026-03-12 deliverable"
+    - "Skill framework versioning"
+- id: ST-SKILL-001C
+  title: "Skill Framework - Skill Validation Rules"
+  status: merged
+  priority: P1
+  owner: jarvis
+  story_points: 2
+  created_date: '2026-03-12'
+  merged_date: '2026-03-12'
+  description: |
+    Implemented validation rules and compliance checks for skill framework.
+    Part of SPRINT-2026-03-12 skill framework initiative.
+  acceptance_criteria:
+    - Validation rules defined
+    - Compliance checks implemented
+    - Error reporting clear
+    - Integration with CI gates
+  files_changed:
+    - .opencode/skills/*/SKILL.md
+    - scripts/validation/validate_skill_structure.py
+  merge_commit: 844b26bd
+  notes:
+    - "SPRINT-2026-03-12 deliverable"
+    - "Skill validation framework"
+- id: ST-SKILL-002A
+  title: "Skill Framework - Skill Discovery and Routing"
+  status: merged
+  priority: P1
+  owner: jarvis
+  story_points: 2
+  created_date: '2026-03-12'
+  merged_date: '2026-03-12'
+  description: |
+    Implemented skill discovery mechanism and routing system for autonomous skill selection.
+    Part of SPRINT-2026-03-12 skill framework initiative.
+  acceptance_criteria:
+    - Skill discovery mechanism implemented
+    - Routing system functional
+    - Autonomous selection working
+    - Fallback mechanisms in place
+  files_changed:
+    - .opencode/skills/chiseai-skill-autonomy/SKILL.md
+  merge_commit: 844b26bd
+  notes:
+    - "SPRINT-2026-03-12 deliverable"
+    - "Skill autonomy foundation"
+- id: ST-SKILL-002B
+  title: "Skill Framework - Skill KPI Tracking and Metrics"
+  status: merged
+  priority: P1
+  owner: jarvis
+  story_points: 2
+  created_date: '2026-03-12'
+  merged_date: '2026-03-12'
+  description: |
+    Implemented KPI tracking and metrics collection for skill effectiveness measurement.
+    Part of SPRINT-2026-03-12 skill framework initiative.
+  acceptance_criteria:
+    - KPI tracking implemented
+    - Metrics collection functional
+    - Effectiveness measurement working
+    - Reporting dashboard updated
+  files_changed:
+    - .opencode/skills/chiseai-skill-autonomy/SKILL.md
+    - docs/tempmemories/skill-*.md
+  merge_commit: 844b26bd
+  notes:
+    - "SPRINT-2026-03-12 deliverable"
+    - "Skill metrics and tracking"
 - id: ST-SKILL-EVAL-001
   title: Skills-System Evaluation and Optimization Cycle
   status: completed
@@ -421,6 +715,28 @@ completed:
   status: completed
   title: AUDIT-DELTA Remediation - Cross-Branch Verification Guardrail
 backlog:
+- id: PROCESS-IMPROVEMENT-001
+  title: "Enforce Metacognition and Risk Documentation in Story Templates"
+  priority: P1
+  status: planned
+  created_date: '2026-03-12'
+  description: |
+    Process improvement to address compliance gaps identified in SPRINT-2026-03-12:
+    1. Add metacognition compliance check to pre-commit gates
+    2. Update story template to include risks: section
+    3. Enforce prediction/outcome/calibration artifacts for all P1+ stories
+  acceptance_criteria:
+    - Story template updated with metacog and risk sections
+    - Pre-commit gate validates metacog compliance
+    - CI gate fails if P1+ story lacks metacog artifacts
+    - Documentation updated with new requirements
+  related:
+    - SPRINT-2026-03-12 (identified gap)
+    - Compliance audit findings
+  owner: jarvis
+  notes:
+    - "Addresses compliance gaps from SPRINT-2026-03-12"
+    - "Requires chiseai-metacognition-ops skill integration"
 - id: COVERAGE-BLOCKER-001
   priority: high
   title: Resolve test collection errors blocking authoritative coverage runs
