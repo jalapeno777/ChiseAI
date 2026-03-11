@@ -91,14 +91,15 @@
 
 metadata:
   version: "1.0.0"
-  last_updated: "2026-03-10"
+  last_updated: "2026-03-11"
   schema_version: "1.0.0"
   recent_changes:
     - action: "session-closeout-2026-03-11"
       actor: "jarvis"
       description: "Session closeout: Updated workflow status, persisted memories, ran validation, merged to main, cleaned branches, generated evidence"
       timestamp: "2026-03-11T12:38:24Z"
-      status: "in_progress"
+      status: "completed"
+      merge_commit: "2c8c005"
 
 completed:
 - id: ST-SKILL-EVAL-001
