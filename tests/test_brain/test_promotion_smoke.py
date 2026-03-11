@@ -396,6 +396,95 @@ class TestPromotionStatusSmoke:
         assert PromotionStatus.OVERRIDDEN.value == "overridden"
 
 
+class TestPromotionPacketSerializationSmoke:
+    """Smoke tests for promotion packet serialization."""
+
+    def test_packet_serialization_roundtrip(self) -> None:
+        """Test that packets can be serialized and deserialized correctly."""
+        # Create a packet with all field types populated
+        packet = PromotionPacket(
+            version="2.0.0",
+            previous_version="1.0.0",
+            evaluation_passed=True,
+            shadow_test_passed=True,
+            latency_acceptable=True,
+            risk_assessment="Low risk",
+            rollback_plan="Rollback to v1.0.0",
+        )
+
+        # Set all required fields
+        for name in packet.required_fields:
+            packet.set_field(name, f"data_for_{name}", RequiredFieldStatus.VERIFIED)
+
+        # Approve the packet
+        packet.approve("test_approver", "Approved for production")
+
+        # Serialize to dict
+        data = packet.to_dict()
+
+        # Deserialize from dict
+        restored = PromotionPacket.from_dict(data)
+
+        # Verify all fields are correctly restored
+        assert restored.version == packet.version
+        assert restored.previous_version == packet.previous_version
+        assert restored.evaluation_passed == packet.evaluation_passed
+        assert restored.shadow_test_passed == packet.shadow_test_passed
+        assert restored.latency_acceptable == packet.latency_acceptable
+        assert restored.risk_assessment == packet.risk_assessment
+        assert restored.rollback_plan == packet.rollback_plan
+        assert restored.approver == packet.approver
+        assert restored.approval_notes == packet.approval_notes
+        assert restored.status == packet.status
+        assert restored.all_fields_complete == packet.all_fields_complete
+        assert restored.completion_percentage == packet.completion_percentage
+
+        # Verify required fields are restored
+        assert len(restored.required_fields) == len(packet.required_fields)
+        for name in packet.required_fields:
+            assert name in restored.required_fields
+            assert (
+                restored.required_fields[name].status
+                == packet.required_fields[name].status
+            )
+            assert (
+                restored.required_fields[name].value
+                == packet.required_fields[name].value
+            )
+
+    def test_packet_with_all_field_types(self) -> None:
+        """Test packet serialization with all possible field types."""
+        packet = PromotionPacket(version="3.0.0")
+
+        # Test with various value types
+        test_values = [
+            ("string_field", "test string"),
+            ("int_field", 42),
+            ("float_field", 3.14159),
+            ("bool_field", True),
+            ("list_field", ["item1", "item2", "item3"]),
+            ("dict_field", {"key1": "value1", "key2": "value2"}),
+            ("nested_dict", {"outer": {"inner": "value"}}),
+            ("none_field", None),
+        ]
+
+        for field_name, value in test_values:
+            packet.set_field(field_name, value, RequiredFieldStatus.PRESENT)
+
+        # Serialize and deserialize
+        data = packet.to_dict()
+        restored = PromotionPacket.from_dict(data)
+
+        # Verify all custom fields are restored correctly
+        for field_name, expected_value in test_values:
+            assert field_name in restored.required_fields
+            assert restored.required_fields[field_name].value == expected_value
+            assert (
+                restored.required_fields[field_name].status
+                == RequiredFieldStatus.PRESENT
+            )
+
+
 class TestPromotionExceptionsSmoke:
     """Smoke tests for promotion exceptions."""
 
@@ -406,3 +495,110 @@ class TestPromotionExceptionsSmoke:
     def test_promotion_blocked_error(self) -> None:
         """Test PromotionBlockedError is PromotionError."""
         assert issubclass(PromotionBlockedError, PromotionError)
+
+
+class TestPromotionPacketEdgeCasesSmoke:
+    """Smoke tests for promotion packet edge cases."""
+
+    def test_packet_status_from_string(self) -> None:
+        """Test that status can be initialized from string."""
+        # This covers line 142-143 in promotion.py
+        packet = PromotionPacket(version="1.0.0")
+        # Simulate loading from dict with string status
+        data = packet.to_dict()
+        data["status"] = "approved"  # String instead of enum
+        restored = PromotionPacket.from_dict(data)
+        assert restored.status == PromotionStatus.APPROVED
+
+    def test_packet_created_at_auto_set(self) -> None:
+        """Test that created_at is auto-set if not provided."""
+        # This covers line 139-140 in promotion.py
+        packet = PromotionPacket(version="1.0.0", created_at="")
+        assert packet.created_at != ""
+        # Verify it's a valid ISO timestamp
+        assert "T" in packet.created_at
+
+    def test_empty_required_fields_completion(self) -> None:
+        """Test completion percentage with empty required fields."""
+        # This covers line 156-157 in promotion.py
+        packet = PromotionPacket(version="1.0.0")
+        # Manually clear required fields to test edge case
+        packet.required_fields = {}
+        assert packet.completion_percentage == 0.0
+
+    def test_packet_from_dict_missing_optional_fields(self) -> None:
+        """Test packet creation from dict with missing optional fields."""
+        # This covers default value handling in from_dict
+        minimal_data = {
+            "version": "1.0.0",
+            "previous_version": None,
+            "evaluation_passed": False,
+            "shadow_test_passed": False,
+            "latency_acceptable": False,
+            "required_fields": {},
+            "risk_assessment": "",
+            "rollback_plan": "",
+            "approver": None,
+            "approval_timestamp": None,
+            "approval_notes": "",
+            "created_at": "",
+            "status": "pending",
+        }
+        packet = PromotionPacket.from_dict(minimal_data)
+        assert packet.version == "1.0.0"
+        assert packet.evaluation_passed is False
+
+    def test_required_field_from_dict_defaults(self) -> None:
+        """Test RequiredField from_dict with default status."""
+        # This covers line 73 in promotion.py (default status)
+        data = {
+            "name": "test_field",
+            "description": "Test description",
+            # status is missing, should default to MISSING
+        }
+        field = RequiredField.from_dict(data)
+        assert field.status == RequiredFieldStatus.MISSING
+        assert field.value is None
+
+
+class TestPromotionGateEdgeCasesSmoke:
+    """Smoke tests for promotion gate edge cases."""
+
+    def test_load_packet_invalid_json(self) -> None:
+        """Test loading packet with invalid JSON."""
+        import json
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            gate = PromotionGate(tmpdir)
+            # Create an invalid JSON file
+            packet_file = Path(tmpdir) / "promotion_invalid.json"
+            packet_file.write_text("not valid json")
+
+            loaded = gate.load_packet("invalid")
+            assert loaded is None
+
+    def test_load_packet_missing_version(self) -> None:
+        """Test loading packet with missing version key."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            gate = PromotionGate(tmpdir)
+            # Create a JSON file missing required version key
+            packet_file = Path(tmpdir) / "promotion_bad.json"
+            packet_file.write_text('{"status": "pending"}')
+
+            loaded = gate.load_packet("bad")
+            assert loaded is None
+
+    def test_list_packets_invalid_files(self) -> None:
+        """Test listing packets skips invalid files."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            gate = PromotionGate(tmpdir)
+            # Create a valid packet
+            gate.create_packet("1.0.0")
+            # Create an invalid JSON file
+            packet_file = Path(tmpdir) / "promotion_invalid.json"
+            packet_file.write_text("not valid json")
+
+            packets = gate.list_packets()
+            # Should only return the valid packet
+            assert len(packets) == 1
+            assert packets[0].version == "1.0.0"
