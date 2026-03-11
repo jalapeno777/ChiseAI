@@ -1,0 +1,28 @@
+---
+# Backlog Item: PAPER-DIAG-001-FOLLOWUP-001
+# Created: 2026-03-12
+# Context: Follow-up from PAPER-DIAG-001 diagnostic recommendations by Aria
+
+id: PAPER-DIAG-001-FOLLOWUP-001
+title: "Grafana dashboard panels for pipeline_status, signals_15m, stale/recovery transitions"
+priority: P2
+owner: TBD
+status: planned
+created_date: "2026-03-12"
+context: |
+  Follow-up from PAPER-DIAG-001 diagnostic recommendations by Aria.
+  The diagnostic identified the need for better observability into
+  pipeline health, signal generation, and state transitions.
+
+acceptance_criteria:
+  - Panel for pipeline_status metric with real-time display
+  - Panel for signals_15m with trend visualization
+  - Panel for stale/recovery transition tracking
+  - Alert rules configured for stale state detection
+  - Dashboard JSON exported and committed to docs/evidence/
+
+notes:
+  - "Source story: PAPER-DIAG-001"
+  - "Recommended by: Aria"
+  - "Related to: EP-OPS-001 (Grafana-first Observability)"
+  - "Estimated effort: 3-5 story points"

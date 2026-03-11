@@ -1,0 +1,29 @@
+---
+# Backlog Item: PAPER-DIAG-001-FOLLOWUP-002
+# Created: 2026-03-12
+# Context: Follow-up from PAPER-DIAG-001 diagnostic recommendations by Aria
+
+id: PAPER-DIAG-001-FOLLOWUP-002
+title: "Operational hardening for log rotation + startup Discord webhook validation"
+priority: P2
+owner: TBD
+status: planned
+created_date: "2026-03-12"
+context: |
+  Follow-up from PAPER-DIAG-001 diagnostic recommendations by Aria.
+  The diagnostic identified operational gaps in log management and
+  service startup validation that need to be addressed for production
+  readiness.
+
+acceptance_criteria:
+  - Log rotation policy configured (size/time-based)
+  - Discord webhook validation on service startup
+  - Alert on webhook delivery failures
+  - Documentation updated with operational runbook
+  - Tests for webhook validation logic
+
+notes:
+  - "Source story: PAPER-DIAG-001"
+  - "Recommended by: Aria"
+  - "Related to: EP-OPS-001 (Grafana-first Observability)"
+  - "Estimated effort: 3-5 story points"
