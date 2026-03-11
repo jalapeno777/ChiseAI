@@ -19,6 +19,13 @@ from execution.signal_delivery.latency_monitor import (
     LatencyMonitor,
     LatencyThresholds,
 )
+from execution.signal_delivery.throughput_tracker import (
+    LatencyPercentiles,
+    SignalRecord,
+    ThroughputMetrics,
+    ThroughputTracker,
+    create_tracker,
+)
 
 __all__ = [
     # Pipeline
@@ -29,8 +36,14 @@ __all__ = [
     # Cache
     "SignalMetadataCache",
     "SignalMetadataEntry",
-    # Monitor
+    # Latency Monitor
     "LatencyMonitor",
     "LatencyMetric",
     "LatencyThresholds",
+    # Throughput Tracker
+    "ThroughputTracker",
+    "ThroughputMetrics",
+    "LatencyPercentiles",
+    "SignalRecord",
+    "create_tracker",
 ]
