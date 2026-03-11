@@ -1,0 +1,12 @@
+[
+  {"id": "eval-001", "query": "How do I start a story iteration with Redis?", "priority": "high", "should_trigger": true},
+  {"id": "eval-002", "query": "Log a decision to the story iterlog", "priority": "high", "should_trigger": true},
+  {"id": "eval-003", "query": "Store long-term knowledge in Qdrant", "priority": "high", "should_trigger": true},
+  {"id": "eval-004", "query": "Refresh TTL on Redis keys", "priority": "medium", "should_trigger": true},
+  {"id": "eval-005", "query": "Claim scope ownership in Redis", "priority": "high", "should_trigger": true},
+  {"id": "eval-006", "query": "What to do when Redis is unavailable?", "priority": "high", "should_trigger": true},
+  {"id": "eval-007", "query": "Store metacognition prediction card", "priority": "medium", "should_trigger": true},
+  {"id": "eval-008", "query": "Query prior decisions from Qdrant", "priority": "medium", "should_trigger": true},
+  {"id": "eval-009", "query": "What's the weather like today?", "priority": "low", "should_trigger": false},
+  {"id": "eval-010", "query": "How to write a Python function?", "priority": "low", "should_trigger": false}
+]
