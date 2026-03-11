@@ -396,6 +396,95 @@ class TestPromotionStatusSmoke:
         assert PromotionStatus.OVERRIDDEN.value == "overridden"
 
 
+class TestPromotionPacketSerializationSmoke:
+    """Smoke tests for promotion packet serialization."""
+
+    def test_packet_serialization_roundtrip(self) -> None:
+        """Test that packets can be serialized and deserialized correctly."""
+        # Create a packet with all field types populated
+        packet = PromotionPacket(
+            version="2.0.0",
+            previous_version="1.0.0",
+            evaluation_passed=True,
+            shadow_test_passed=True,
+            latency_acceptable=True,
+            risk_assessment="Low risk",
+            rollback_plan="Rollback to v1.0.0",
+        )
+
+        # Set all required fields
+        for name in packet.required_fields:
+            packet.set_field(name, f"data_for_{name}", RequiredFieldStatus.VERIFIED)
+
+        # Approve the packet
+        packet.approve("test_approver", "Approved for production")
+
+        # Serialize to dict
+        data = packet.to_dict()
+
+        # Deserialize from dict
+        restored = PromotionPacket.from_dict(data)
+
+        # Verify all fields are correctly restored
+        assert restored.version == packet.version
+        assert restored.previous_version == packet.previous_version
+        assert restored.evaluation_passed == packet.evaluation_passed
+        assert restored.shadow_test_passed == packet.shadow_test_passed
+        assert restored.latency_acceptable == packet.latency_acceptable
+        assert restored.risk_assessment == packet.risk_assessment
+        assert restored.rollback_plan == packet.rollback_plan
+        assert restored.approver == packet.approver
+        assert restored.approval_notes == packet.approval_notes
+        assert restored.status == packet.status
+        assert restored.all_fields_complete == packet.all_fields_complete
+        assert restored.completion_percentage == packet.completion_percentage
+
+        # Verify required fields are restored
+        assert len(restored.required_fields) == len(packet.required_fields)
+        for name in packet.required_fields:
+            assert name in restored.required_fields
+            assert (
+                restored.required_fields[name].status
+                == packet.required_fields[name].status
+            )
+            assert (
+                restored.required_fields[name].value
+                == packet.required_fields[name].value
+            )
+
+    def test_packet_with_all_field_types(self) -> None:
+        """Test packet serialization with all possible field types."""
+        packet = PromotionPacket(version="3.0.0")
+
+        # Test with various value types
+        test_values = [
+            ("string_field", "test string"),
+            ("int_field", 42),
+            ("float_field", 3.14159),
+            ("bool_field", True),
+            ("list_field", ["item1", "item2", "item3"]),
+            ("dict_field", {"key1": "value1", "key2": "value2"}),
+            ("nested_dict", {"outer": {"inner": "value"}}),
+            ("none_field", None),
+        ]
+
+        for field_name, value in test_values:
+            packet.set_field(field_name, value, RequiredFieldStatus.PRESENT)
+
+        # Serialize and deserialize
+        data = packet.to_dict()
+        restored = PromotionPacket.from_dict(data)
+
+        # Verify all custom fields are restored correctly
+        for field_name, expected_value in test_values:
+            assert field_name in restored.required_fields
+            assert restored.required_fields[field_name].value == expected_value
+            assert (
+                restored.required_fields[field_name].status
+                == RequiredFieldStatus.PRESENT
+            )
+
+
 class TestPromotionExceptionsSmoke:
     """Smoke tests for promotion exceptions."""
 
