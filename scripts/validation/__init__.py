@@ -33,6 +33,14 @@ from scripts.validation.reconcile_bybit_journal import (
     BybitJournalReconciler,
     ReconciliationReport,
 )
+from scripts.validation.recap_validator import (
+    RecapValidator,
+    RecapValidationEvidence,
+    DiscordMessageEvidence,
+    OutcomeSourceProof,
+    GateResult,
+    GateStatus,
+)
 
 __all__ = [
     "ForensicHarness",
@@ -42,6 +50,12 @@ __all__ = [
     "InfluxEvidenceCollector",
     "BybitJournalReconciler",
     "ReconciliationReport",
+    "RecapValidator",
+    "RecapValidationEvidence",
+    "DiscordMessageEvidence",
+    "OutcomeSourceProof",
+    "GateResult",
+    "GateStatus",
 ]
 
 __version__ = "1.1.0"
