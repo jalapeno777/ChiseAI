@@ -1,0 +1,200 @@
+[
+  {
+    "id": "eval-001",
+    "query": "I need to delegate work to multiple agents in parallel",
+    "priority": "critical",
+    "should_trigger": true,
+    "context": {
+      "task_class": "parallel_execution",
+      "stack": "parallel_coordination"
+    },
+    "tags": ["delegation", "parallel", "critical-path"]
+  },
+  {
+    "id": "eval-002",
+    "query": "How do I claim ownership for a scope before delegating work?",
+    "priority": "high",
+    "should_trigger": true,
+    "context": {
+      "task_class": "parallel_execution",
+      "stack": "parallel_coordination"
+    },
+    "tags": ["ownership", "delegation"]
+  },
+  {
+    "id": "eval-003",
+    "query": "Check if this scope is already owned by another story",
+    "priority": "high",
+    "should_trigger": true,
+    "context": {
+      "task_class": "parallel_execution",
+      "stack": "parallel_coordination"
+    },
+    "tags": ["ownership", "conflict-check"]
+  },
+  {
+    "id": "eval-004",
+    "query": "What are the global-lock areas that require sequential execution?",
+    "priority": "high",
+    "should_trigger": true,
+    "context": {
+      "task_class": "parallel_execution",
+      "stack": "parallel_coordination"
+    },
+    "tags": ["global-lock", "sequential"]
+  },
+  {
+    "id": "eval-005",
+    "query": "I detected an ownership conflict between two workers",
+    "priority": "critical",
+    "should_trigger": true,
+    "context": {
+      "task_class": "incident_response",
+      "stack": "parallel_coordination"
+    },
+    "tags": ["conflict", "incident", "critical-path"]
+  },
+  {
+    "id": "eval-006",
+    "query": "Plan a parallel batch execution for these three independent tasks",
+    "priority": "high",
+    "should_trigger": true,
+    "context": {
+      "task_class": "parallel_execution",
+      "stack": "parallel_coordination"
+    },
+    "tags": ["batch-planning", "parallel"]
+  },
+  {
+    "id": "eval-007",
+    "query": "Can these work items run in parallel safely?",
+    "priority": "high",
+    "should_trigger": true,
+    "context": {
+      "task_class": "parallel_execution",
+      "stack": "parallel_coordination"
+    },
+    "tags": ["safety-check", "parallel-safe"]
+  },
+  {
+    "id": "eval-008",
+    "query": "How do I handle a conflict when two workers try to edit the same file?",
+    "priority": "high",
+    "should_trigger": true,
+    "context": {
+      "task_class": "incident_response",
+      "stack": "parallel_coordination"
+    },
+    "tags": ["conflict", "resolution"]
+  },
+  {
+    "id": "eval-009",
+    "query": "What is the Redis ownership schema for scope tracking?",
+    "priority": "medium",
+    "should_trigger": true,
+    "context": {
+      "task_class": "parallel_execution",
+      "stack": "parallel_coordination"
+    },
+    "tags": ["redis", "schema"]
+  },
+  {
+    "id": "eval-010",
+    "query": "I accidentally touched a global-lock file, what should I do?",
+    "priority": "high",
+    "should_trigger": true,
+    "context": {
+      "task_class": "incident_response",
+      "stack": "parallel_coordination"
+    },
+    "tags": ["global-lock", "recovery"]
+  },
+  {
+    "id": "eval-011",
+    "query": "How do I convert a parallel batch plan to sequential execution?",
+    "priority": "medium",
+    "should_trigger": true,
+    "context": {
+      "task_class": "parallel_execution",
+      "stack": "parallel_coordination"
+    },
+    "tags": ["sequential", "conversion"]
+  },
+  {
+    "id": "eval-012",
+    "query": "Write a Python function to calculate Fibonacci numbers",
+    "priority": "low",
+    "should_trigger": false,
+    "context": {
+      "task_class": "coding_small",
+      "stack": "core_engineering"
+    },
+    "tags": ["negative", "coding", "no-trigger"]
+  },
+  {
+    "id": "eval-013",
+    "query": "Help me debug this JavaScript error in my web app",
+    "priority": "low",
+    "should_trigger": false,
+    "context": {
+      "task_class": "coding_small",
+      "stack": "core_engineering"
+    },
+    "tags": ["negative", "debugging", "no-trigger"]
+  },
+  {
+    "id": "eval-014",
+    "query": "What is the weather forecast for tomorrow?",
+    "priority": "low",
+    "should_trigger": false,
+    "context": {
+      "task_class": "research",
+      "stack": "planning_ops"
+    },
+    "tags": ["negative", "irrelevant", "no-trigger"]
+  },
+  {
+    "id": "eval-015",
+    "query": "Set up parallel execution safety for my multi-worker story",
+    "priority": "critical",
+    "should_trigger": true,
+    "context": {
+      "task_class": "parallel_execution",
+      "stack": "parallel_coordination"
+    },
+    "tags": ["setup", "multi-worker", "critical-path"]
+  },
+  {
+    "id": "eval-016",
+    "query": "Log an incident for scope overlap detected during parallel work",
+    "priority": "high",
+    "should_trigger": true,
+    "context": {
+      "task_class": "incident_response",
+      "stack": "parallel_coordination"
+    },
+    "tags": ["incident", "logging", "overlap"]
+  },
+  {
+    "id": "eval-017",
+    "query": "Check scope overlap between two work items before parallel execution",
+    "priority": "high",
+    "should_trigger": true,
+    "context": {
+      "task_class": "parallel_execution",
+      "stack": "parallel_coordination"
+    },
+    "tags": ["overlap-check", "pre-flight"]
+  },
+  {
+    "id": "eval-018",
+    "query": "What is the TTL for Redis ownership entries?",
+    "priority": "low",
+    "should_trigger": true,
+    "context": {
+      "task_class": "parallel_execution",
+      "stack": "parallel_coordination"
+    },
+    "tags": ["redis", "ttl", "configuration"]
+  }
+]

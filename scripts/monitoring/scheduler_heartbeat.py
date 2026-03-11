@@ -38,6 +38,9 @@ from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any, cast
 
+# Import pipeline alerting
+from scripts.monitoring.pipeline_alerts import PipelineAlertManager
+
 # Add project root to path for imports
 sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -61,6 +64,7 @@ LAST_SEEN_KEY = "bmad:chiseai:scheduler:last_seen"
 WATCHDOG_KEY = "bmad:chiseai:scheduler:watchdog"
 RECOVERY_KEY = "bmad:chiseai:scheduler:recovery"
 CIRCUIT_KEY = "bmad:chiseai:scheduler:circuit_breaker"
+LIVENESS_KEY = "bmad:chiseai:scheduler:liveness"
 
 # TTL settings (5 minutes)
 HEARTBEAT_TTL_SECONDS = 300
@@ -354,6 +358,7 @@ def record_heartbeat(
     uptime_seconds: int | None = None,
     circuit_breaker: CircuitBreaker | None = None,
     force: bool = False,
+    include_liveness: bool = True,
 ) -> bool:
     """Record a scheduler heartbeat to Redis with P0 hardening.
 
@@ -363,12 +368,14 @@ def record_heartbeat(
         metadata: Additional metadata to store
         uptime_seconds: Process uptime in seconds
         circuit_breaker: Circuit breaker for Redis failures
+        force: Force heartbeat even if circuit breaker is open
+        include_liveness: Include pipeline liveness metrics in heartbeat
 
     Returns:
         True if successful, False otherwise
     """
     # Check circuit breaker
-    if circuit_breaker and not circuit_breaker.can_execute():
+    if circuit_breaker and not circuit_breaker.can_execute() and not force:
         logger.warning(
             f"Circuit breaker is {circuit_breaker.get_state()}, skipping heartbeat"
         )
@@ -394,6 +401,21 @@ def record_heartbeat(
         # Add any additional metadata
         if metadata:
             heartbeat_data.update({k: str(v) for k, v in metadata.items()})
+
+        # Include liveness data if requested
+        if include_liveness:
+            liveness = check_pipeline_liveness(redis_client)
+            heartbeat_data.update(
+                {
+                    "pipeline_status": liveness["status"],
+                    "signals_15m": str(liveness["analysis_attempts_last_15m"]),
+                    "actionable_15m": str(liveness["actionable_signals_last_15m"]),
+                    "consumer_backlog": str(liveness["consumer_backlog"]),
+                    "latest_signal_age_m": f"{liveness['latest_signal_age_minutes']:.1f}"
+                    if liveness["latest_signal_age_minutes"] is not None
+                    else "N/A",
+                }
+            )
 
         # Store in hash
         redis_client.hset(HEARTBEAT_HASH_KEY, mapping=heartbeat_data)
@@ -531,6 +553,7 @@ def run_daemon(
     # Initialize P0 hardening components
     circuit_breaker = CircuitBreaker()
     backoff = ExponentialBackoff()
+    alert_manager = PipelineAlertManager(redis_client=client)
     start_time = time.time()
     running = True
     consecutive_failures = 0
@@ -572,6 +595,12 @@ def run_daemon(
                 time.sleep(delay)
                 continue
 
+            # Check and alert on pipeline health
+            try:
+                alert_manager.check_and_alert()
+            except Exception as e:
+                logger.error(f"Alert manager error: {e}")
+
             # Sleep with interrupt handling
             for _ in range(interval):
                 if not running:
@@ -589,6 +618,222 @@ def run_daemon(
         logger.info("Daemon stopped")
 
     return 0
+
+
+def check_pipeline_liveness(
+    redis_client: Any | None,
+    max_stale_minutes: int = 15,
+) -> dict[str, Any]:
+    """Check pipeline liveness beyond heartbeat timestamp.
+
+    Validates:
+    - Signal generation attempts in last N minutes
+    - Consumer processing activity
+    - Data freshness via signal timestamps
+
+    Args:
+        redis_client: Redis client connection (can be None)
+        max_stale_minutes: Maximum age in minutes before pipeline is considered stale
+
+    Returns:
+        Dict containing:
+        - healthy: bool - Whether pipeline is healthy
+        - status: str - "healthy", "stale", "no_recent_data", or "error"
+        - analysis_attempts_last_15m: int - Number of signals in last 15m
+        - actionable_signals_last_15m: int - Number of actionable signals in last 15m
+        - consumer_backlog: int - Number of unprocessed signals
+        - latest_signal_age_minutes: float - Age of most recent signal in minutes
+    """
+    if redis_client is None:
+        return {
+            "healthy": False,
+            "status": "no_recent_data",
+            "analysis_attempts_last_15m": 0,
+            "actionable_signals_last_15m": 0,
+            "consumer_backlog": 0,
+            "latest_signal_age_minutes": None,
+            "error": "No Redis connection",
+        }
+
+    try:
+        now = datetime.now(UTC)
+        cutoff = now - timedelta(minutes=max_stale_minutes)
+
+        # Count signals in last 15 minutes
+        total_signals = 0
+        actionable_signals = 0
+        latest_signal_time = None
+
+        try:
+            # Scan for paper:signal:* keys
+            cursor = 0
+            signal_keys = []
+            while True:
+                cursor, keys = redis_client.scan(
+                    cursor,
+                    match="paper:signal:*",
+                    count=100,
+                )
+                signal_keys.extend(keys)
+                if cursor == 0:
+                    break
+
+            # Process each signal
+            for key in signal_keys:
+                try:
+                    signal_data = redis_client.hgetall(key)
+                    timestamp_str = signal_data.get("timestamp", "")
+                    if timestamp_str:
+                        try:
+                            signal_time = datetime.fromisoformat(timestamp_str)
+                            if signal_time > cutoff:
+                                total_signals += 1
+                                if signal_data.get("status") == "actionable":
+                                    actionable_signals += 1
+                            if (
+                                latest_signal_time is None
+                                or signal_time > latest_signal_time
+                            ):
+                                latest_signal_time = signal_time
+                        except (ValueError, TypeError):
+                            pass
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        # Calculate consumer backlog
+        consumer_backlog = 0
+        try:
+            processed = redis_client.scard("paper:signals:processed") or 0
+            all_signals = len(list(redis_client.scan_iter(match="paper:signal:*")))
+            consumer_backlog = max(0, all_signals - processed)
+        except Exception:
+            pass
+
+        # Determine health status
+        latest_age = (
+            (now - latest_signal_time).total_seconds() / 60
+            if latest_signal_time
+            else None
+        )
+
+        # Check if no signals exist at all
+        if latest_signal_time is None:
+            status = "no_recent_data"
+            healthy = False
+        elif latest_age > max_stale_minutes:
+            status = "stale"
+            healthy = False
+        else:
+            status = "healthy"
+            healthy = True
+
+        return {
+            "healthy": healthy,
+            "status": status,
+            "analysis_attempts_last_15m": total_signals,
+            "actionable_signals_last_15m": actionable_signals,
+            "consumer_backlog": consumer_backlog,
+            "latest_signal_age_minutes": latest_age,
+        }
+
+    except Exception as e:
+        return {
+            "healthy": False,
+            "status": "error",
+            "analysis_attempts_last_15m": 0,
+            "actionable_signals_last_15m": 0,
+            "consumer_backlog": 0,
+            "latest_signal_age_minutes": None,
+            "error": str(e),
+        }
+
+
+def record_enhanced_heartbeat(
+    redis_client: Any,
+    liveness_data: dict[str, Any],
+) -> bool:
+    """Record enhanced liveness data to Redis.
+
+    Args:
+        redis_client: Redis client connection
+        liveness_data: Dict containing liveness metrics from check_pipeline_liveness
+
+    Returns:
+        True if successful, False otherwise
+    """
+    if redis_client is None:
+        return False
+
+    try:
+        now = datetime.now(UTC)
+
+        # Build heartbeat record
+        heartbeat_record = {
+            "timestamp": now.isoformat(),
+            "status": "running" if liveness_data.get("healthy") else "degraded",
+            "pipeline_status": liveness_data.get("status", "unknown"),
+            "analysis_attempts_15m": str(
+                liveness_data.get("analysis_attempts_last_15m", 0)
+            ),
+            "actionable_signals_15m": str(
+                liveness_data.get("actionable_signals_last_15m", 0)
+            ),
+            "consumer_backlog": str(liveness_data.get("consumer_backlog", 0)),
+            "data_freshness_minutes": str(
+                liveness_data.get("data_freshness_minutes", 999.0)
+            ),
+        }
+
+        # Store in Redis hash
+        redis_client.hset(LIVENESS_KEY, mapping=heartbeat_record)
+        redis_client.expire(LIVENESS_KEY, HEARTBEAT_TTL_SECONDS)
+
+        return True
+
+    except Exception as e:
+        logger.error(f"Failed to record enhanced heartbeat: {e}")
+        return False
+
+
+def run_liveness_check(
+    redis_host: str = DEFAULT_REDIS_HOST,
+    redis_port: int = DEFAULT_REDIS_PORT,
+    max_stale_minutes: int = 15,
+) -> dict[str, Any]:
+    """Run a complete liveness check and record the results.
+
+    This is the main entry point for pipeline liveness monitoring.
+
+    Args:
+        redis_host: Redis host
+        redis_port: Redis port
+        max_stale_minutes: Maximum age before pipeline is considered stale
+
+    Returns:
+        Dict with liveness check results
+    """
+    # Get Redis client
+    client = get_redis_client(redis_host, redis_port)
+    if client is None:
+        return {
+            "healthy": False,
+            "status": "error",
+            "error": "Cannot connect to Redis",
+            "analysis_attempts_last_15m": 0,
+            "actionable_signals_last_15m": 0,
+            "consumer_backlog": 0,
+            "data_freshness_minutes": 999.0,
+        }
+
+    # Run liveness check
+    liveness_data = check_pipeline_liveness(client, max_stale_minutes)
+
+    # Record the results
+    record_enhanced_heartbeat(client, liveness_data)
+
+    return liveness_data
 
 
 def main() -> int:

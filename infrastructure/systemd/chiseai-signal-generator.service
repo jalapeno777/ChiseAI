@@ -1,0 +1,43 @@
+[Unit]
+Description=ChiseAI Signal Generator Supervisor
+Documentation=https://docs.chiseai.io/signal-generation
+After=network.target redis.service
+Wants=redis.service
+
+[Service]
+Type=simple
+User=chiseai
+Group=chiseai
+WorkingDirectory=/home/tacopants/projects/ChiseAI
+ExecStart=/usr/bin/python3 scripts/monitoring/supervisor.py --duration 0 --interval 30
+ExecStop=/bin/kill -TERM $MAINPID
+ExecReload=/bin/kill -HUP $MAINPID
+
+# Restart configuration
+Restart=always
+RestartSec=5
+StartLimitInterval=60
+StartLimitBurst=3
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=chiseai-signal-supervisor
+
+# Environment
+Environment="PYTHONUNBUFFERED=1"
+Environment="REDIS_HOST=host.docker.internal"
+Environment="REDIS_PORT=6380"
+
+# Security hardening
+NoNewPrivileges=false
+ProtectSystem=false
+ProtectHome=false
+ReadWritePaths=/var/log/chiseai
+
+[Install]
+WantedBy=multi-user.target
