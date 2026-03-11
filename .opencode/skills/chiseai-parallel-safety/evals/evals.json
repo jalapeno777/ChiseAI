@@ -1,0 +1,12 @@
+[
+  {"id": "eval-001", "query": "How do I claim scope ownership before delegating work?", "priority": "high", "should_trigger": true},
+  {"id": "eval-002", "query": "Check for ownership conflicts before editing files", "priority": "high", "should_trigger": true},
+  {"id": "eval-003", "query": "What are the global-lock areas that require sequential execution?", "priority": "high", "should_trigger": true},
+  {"id": "eval-004", "query": "Plan a parallel batch for multiple workers", "priority": "high", "should_trigger": true},
+  {"id": "eval-005", "query": "Handle an ownership conflict detected during work", "priority": "high", "should_trigger": true},
+  {"id": "eval-006", "query": "What makes work items parallel-safe?", "priority": "medium", "should_trigger": true},
+  {"id": "eval-007", "query": "Convert parallel plan to sequential due to conflicts", "priority": "medium", "should_trigger": true},
+  {"id": "eval-008", "query": "Release scope ownership when work is complete", "priority": "medium", "should_trigger": true},
+  {"id": "eval-009", "query": "What's the best pizza topping?", "priority": "low", "should_trigger": false},
+  {"id": "eval-010", "query": "How to optimize SQL queries?", "priority": "low", "should_trigger": false}
+]

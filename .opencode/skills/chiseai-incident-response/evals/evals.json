@@ -1,0 +1,62 @@
+[
+  {
+    "id": "eval-001",
+    "query": "How do I classify an incident severity level P0, P1, P2, or P3?",
+    "priority": "high",
+    "should_trigger": true
+  },
+  {
+    "id": "eval-002",
+    "query": "We had a merge conflict between two workers. How do I log this incident?",
+    "priority": "high",
+    "should_trigger": true
+  },
+  {
+    "id": "eval-003",
+    "query": "What is the structure of a post-mortem meeting for a production outage?",
+    "priority": "high",
+    "should_trigger": true
+  },
+  {
+    "id": "eval-004",
+    "query": "How do we conduct blameless post-mortems and learn from failures?",
+    "priority": "high",
+    "should_trigger": true
+  },
+  {
+    "id": "eval-005",
+    "query": "I need to document the timeline for a CI regression incident. What format should I use?",
+    "priority": "medium",
+    "should_trigger": true
+  },
+  {
+    "id": "eval-006",
+    "query": "How do I perform root cause analysis using the 5 Whys technique for an incident?",
+    "priority": "high",
+    "should_trigger": true
+  },
+  {
+    "id": "eval-007",
+    "query": "After resolving an incident, how do I identify and document prevention rules?",
+    "priority": "medium",
+    "should_trigger": true
+  },
+  {
+    "id": "eval-008",
+    "query": "How should I assign follow-up tasks after an incident post-mortem?",
+    "priority": "medium",
+    "should_trigger": true
+  },
+  {
+    "id": "eval-009",
+    "query": "How do I store incident data in Redis for story ST-XXX?",
+    "priority": "high",
+    "should_trigger": true
+  },
+  {
+    "id": "eval-010",
+    "query": "What is the weather forecast for tomorrow?",
+    "priority": "low",
+    "should_trigger": false
+  }
+]
