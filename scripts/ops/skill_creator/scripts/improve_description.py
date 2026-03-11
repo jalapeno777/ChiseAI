@@ -11,96 +11,12 @@ Backends:
 
 import argparse
 import json
-import os
 import re
-import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
-from scripts.utils import parse_skill_md
-
-
-def _call_claude(prompt: str, model: str | None, timeout: int = 300) -> str:
-    """Run `claude -p` with the prompt on stdin and return the text response.
-
-    Prompt goes over stdin (not argv) because it embeds the full SKILL.md
-    body and can easily exceed comfortable argv length.
-    """
-    cmd = ["claude", "-p", "--output-format", "text"]
-    if model:
-        cmd.extend(["--model", model])
-
-    # Remove CLAUDECODE env var to allow nesting claude -p inside a
-    # Claude Code session. The guard is for interactive terminal conflicts;
-    # programmatic subprocess usage is safe. Same pattern as run_eval.py.
-    env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}
-
-    result = subprocess.run(
-        cmd,
-        input=prompt,
-        capture_output=True,
-        text=True,
-        env=env,
-        timeout=timeout,
-    )
-    if result.returncode != 0:
-        raise RuntimeError(
-            f"claude -p exited {result.returncode}\nstderr: {result.stderr}"
-        )
-    return result.stdout
-
-
-def _call_opencode(prompt: str, timeout: int = 300) -> str:
-    """Run `opencode run --agent Aria --prompt-file <file>` and return the text response.
-
-    Writes the prompt to a temporary file and passes it to opencode via --prompt-file
-    to avoid command line length limitations.
-    """
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-        f.write(prompt)
-        prompt_file = f.name
-
-    try:
-        cmd = ["opencode", "run", "--agent", "Aria", "--prompt-file", prompt_file]
-
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
-        if result.returncode != 0:
-            raise RuntimeError(
-                f"opencode run exited {result.returncode}\nstderr: {result.stderr}"
-            )
-        return result.stdout
-    finally:
-        # Clean up temp file
-        try:
-            os.unlink(prompt_file)
-        except OSError:
-            pass
-
-
-def _call_llm(prompt: str, backend: str, model: str | None, timeout: int = 300) -> str:
-    """Dispatch to the appropriate LLM backend.
-
-    Args:
-        prompt: The prompt text to send to the LLM
-        backend: Either 'opencode' or 'claude'
-        model: Model name (only used by claude backend)
-        timeout: Maximum time to wait for response
-
-    Returns:
-        The LLM response text
-    """
-    if backend == "opencode":
-        return _call_opencode(prompt, timeout)
-    elif backend == "claude":
-        return _call_claude(prompt, model, timeout)
-    else:
-        raise ValueError(f"Unknown backend: {backend}. Must be 'opencode' or 'claude'.")
+from llm_runner import Backend, call_llm
+from utils import parse_skill_md
 
 
 def improve_description(
@@ -113,7 +29,7 @@ def improve_description(
     test_results: dict | None = None,
     log_dir: Path | None = None,
     iteration: int | None = None,
-    backend: str = "opencode",
+    backend: Backend = "opencode",
 ) -> str:
     """Call LLM to improve the description based on eval results.
 
@@ -224,7 +140,7 @@ I'd encourage you to be creative and mix up the style in different iterations si
 
 Please respond with only the new description text in <new_description> tags, nothing else."""
 
-    text = _call_llm(prompt, backend, model)
+    text = call_llm(prompt, backend=backend, model=model)
 
     match = re.search(r"<new_description>(.*?)</new_description>", text, re.DOTALL)
     description = (
@@ -256,7 +172,7 @@ Please respond with only the new description text in <new_description> tags, not
             f"important trigger words and intent coverage. Respond with only "
             f"the new description in <new_description> tags."
         )
-        shorten_text = _call_llm(shorten_prompt, backend, model)
+        shorten_text = call_llm(shorten_prompt, backend=backend, model=model)
         match = re.search(
             r"<new_description>(.*?)</new_description>", shorten_text, re.DOTALL
         )
