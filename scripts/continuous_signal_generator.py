@@ -142,8 +142,14 @@ def generate_signals_batch(r: redis.Redis, generator: SignalGenerator, count: in
 async def continuous_signal_generation(
     duration_minutes: int = 60, interval_seconds: int = 30
 ):
-    """Continuously generate signals for the specified duration."""
-    logger.info(f"Starting continuous signal generation for {duration_minutes} minutes")
+    """Continuously generate signals for the specified duration.
+
+    Args:
+        duration_minutes: Duration in minutes (0 = run forever)
+        interval_seconds: Seconds between signal generation batches
+    """
+    duration_str = f"{duration_minutes} minutes" if duration_minutes > 0 else "forever"
+    logger.info(f"Starting continuous signal generation for {duration_str}")
     logger.info(f"Signal interval: every {interval_seconds} seconds")
 
     # Connect to Redis
@@ -181,17 +187,27 @@ async def continuous_signal_generation(
     # Track metrics
     total_generated = 0
     start_time = time.time()
-    end_time = start_time + (duration_minutes * 60)
+    end_time = start_time + (duration_minutes * 60) if duration_minutes > 0 else None
 
     # Signal generation loop
     iteration = 0
-    while time.time() < end_time:
+    while True:
+        # Check if we should stop (only if duration is set)
+        if end_time is not None and time.time() >= end_time:
+            logger.info("Duration reached, stopping signal generation")
+            break
         iteration += 1
         elapsed = time.time() - start_time
-        remaining = (end_time - time.time()) / 60
+
+        # Calculate remaining time (only if duration is set)
+        if end_time is not None:
+            remaining = (end_time - time.time()) / 60
+            remaining_str = f"{remaining:.1f}min"
+        else:
+            remaining_str = "∞"
 
         logger.info(
-            f"[Iteration {iteration}] Elapsed: {elapsed / 60:.1f}min, Remaining: {remaining:.1f}min"
+            f"[Iteration {iteration}] Elapsed: {elapsed / 60:.1f}min, Remaining: {remaining_str}"
         )
 
         # Generate signals
@@ -238,7 +254,10 @@ if __name__ == "__main__":
         description="Continuous signal generator for proof loop"
     )
     parser.add_argument(
-        "--duration", type=int, default=60, help="Duration in minutes (default: 60)"
+        "--duration",
+        type=int,
+        default=60,
+        help="Duration in minutes (default: 60, 0 = run forever)",
     )
     parser.add_argument(
         "--interval",
