@@ -8,9 +8,11 @@ to ensure G5 source verification passes.
 
 from __future__ import annotations
 
+import json
 import re
+import uuid
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any, Optional
 
@@ -419,3 +421,97 @@ def create_recap_validator(
         redis_collector=redis_collector,
         influx_collector=influx_collector,
     )
+
+
+async def main() -> int:
+    """
+    Main CLI entry point for recap validation.
+
+    Validates recap messages against canonical outcomes in Redis and InfluxDB.
+
+    Returns:
+        Exit code (0 for success, 1 for validation failure)
+    """
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Validate Discord recap messages against canonical outcomes"
+    )
+    parser.add_argument(
+        "--recap-content",
+        type=str,
+        help="Recap message content to validate",
+    )
+    parser.add_argument(
+        "--recap-id",
+        type=str,
+        default="",
+        help="Recap message ID",
+    )
+    parser.add_argument(
+        "--start-time",
+        type=str,
+        help="Start time for validation window (ISO format)",
+    )
+    parser.add_argument(
+        "--end-time",
+        type=str,
+        help="End time for validation window (ISO format)",
+    )
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="Enable verbose output",
+    )
+
+    args = parser.parse_args()
+
+    # Create validator
+    validator = create_recap_validator()
+
+    # Parse time window
+    start_time = datetime.now(UTC) - timedelta(hours=24)
+    end_time = datetime.now(UTC)
+
+    if args.start_time:
+        start_time = datetime.fromisoformat(args.start_time.replace("Z", "+00:00"))
+    if args.end_time:
+        end_time = datetime.fromisoformat(args.end_time.replace("Z", "+00:00"))
+
+    # Create mock recap message if content provided
+    if args.recap_content:
+        recap_message = DiscordMessageEvidence(
+            message_id=args.recap_id or str(uuid.uuid4()),
+            channel_id="",
+            author_id="",
+            content=args.recap_content,
+            timestamp=datetime.now(UTC).isoformat(),
+        )
+
+        # Validate
+        result = await validator.validate_recap_message(
+            recap_message, start_time, end_time
+        )
+
+        if args.verbose:
+            print(f"Gate: {result.gate_name}")
+            print(f"Status: {result.status.value}")
+            print(f"Message: {result.message}")
+            if result.evidence:
+                print(f"Evidence: {json.dumps(result.evidence, indent=2)}")
+
+        return 0 if result.passed else 1
+    else:
+        # No recap content provided - print help
+        parser.print_help()
+        return 0
+
+
+if __name__ == "__main__":
+    import asyncio
+    import json
+    import uuid
+
+    exit_code = asyncio.run(main())
+    exit(exit_code)
