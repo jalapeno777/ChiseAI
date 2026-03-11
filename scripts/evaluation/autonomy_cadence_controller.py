@@ -73,6 +73,125 @@ def cadence_seconds(cadence: str) -> int | None:
     return None
 
 
+def format_duration(seconds: int) -> str:
+    """Format seconds into human-readable duration string."""
+    if seconds < 60:
+        return f"{seconds}s"
+    if seconds < 3600:
+        return f"{seconds // 60}m {seconds % 60}s"
+    if seconds < 86400:
+        hours = seconds // 3600
+        mins = (seconds % 3600) // 60
+        return f"{hours}h {mins}m"
+    days = seconds // 86400
+    hours = (seconds % 86400) // 3600
+    return f"{days}d {hours}h"
+
+
+def format_age_human(timestamp_str: str | None) -> str | None:
+    """Format the age of a timestamp as human-readable string (e.g., '2h 15m ago')."""
+    if not timestamp_str:
+        return None
+    dt = parse_iso(timestamp_str)
+    if not dt:
+        return None
+    age_seconds = int((now_utc() - dt).total_seconds())
+    return f"{format_duration(age_seconds)} ago"
+
+
+def calculate_job_health_score(
+    job_state: dict[str, Any], interval: int | None
+) -> tuple[int, dict[str, Any]]:
+    """Calculate job health score (0-100) based on cadence adherence.
+
+    Returns:
+        Tuple of (score, details_dict)
+    """
+    details: dict[str, Any] = {
+        "score_factors": [],
+        "deductions": [],
+    }
+
+    # Start with perfect score
+    score = 100
+
+    last_status = job_state.get("last_status", "unknown")
+    last_success = parse_iso(job_state.get("last_success_at"))
+    last_started = parse_iso(job_state.get("last_started_at"))
+
+    # Factor 1: Last run status
+    if last_status == "success":
+        details["score_factors"].append("last_run_success:+0")
+    elif last_status in ("failed", "timeout"):
+        score -= 30
+        details["deductions"].append("last_run_failed:-30")
+        details["score_factors"].append(f"last_run_{last_status}:-30")
+    elif last_status == "awaiting_approval":
+        score -= 10
+        details["deductions"].append("awaiting_approval:-10")
+        details["score_factors"].append("awaiting_approval:-10")
+    else:
+        score -= 5
+        details["deductions"].append(f"unknown_status:{last_status}:-5")
+        details["score_factors"].append(f"unknown_status:{last_status}:-5")
+
+    # Factor 2: Cadence adherence (if we have interval and last success)
+    if interval and last_success:
+        age = (now_utc() - last_success).total_seconds()
+        expected_next = last_success.timestamp() + interval
+        time_until_next = expected_next - now_utc().timestamp()
+
+        details["expected_next_run"] = (
+            datetime.fromtimestamp(expected_next, UTC)
+            .isoformat()
+            .replace("+00:00", "Z")
+        )
+
+        if time_until_next < 0:
+            # Overdue
+            overdue_ratio = abs(time_until_next) / interval
+            if overdue_ratio >= 1.0:
+                deduction = min(40, int(20 + overdue_ratio * 20))
+                score -= deduction
+                details["deductions"].append(f"severely_overdue:{deduction}")
+                details["score_factors"].append(
+                    f"overdue_ratio:{overdue_ratio:.2f}:-{deduction}"
+                )
+            elif overdue_ratio >= 0.5:
+                score -= 15
+                details["deductions"].append("moderately_overdue:-15")
+                details["score_factors"].append(
+                    f"overdue_ratio:{overdue_ratio:.2f}:-15"
+                )
+            else:
+                score -= 5
+                details["deductions"].append("slightly_overdue:-5")
+                details["score_factors"].append(f"overdue_ratio:{overdue_ratio:.2f}:-5")
+        else:
+            details["score_factors"].append("within_cadence:+0")
+
+    # Factor 3: Time since last run
+    if last_started:
+        time_since_run = (now_utc() - last_started).total_seconds()
+        if interval and time_since_run > interval * 2:
+            # Haven't run in 2x the cadence
+            score -= 10
+            details["deductions"].append("long_time_since_run:-10")
+            details["score_factors"].append("long_gap_since_run:-10")
+
+    # Factor 4: Error history
+    last_error = job_state.get("last_error")
+    if last_error and last_status != "success":
+        score -= 5
+        details["deductions"].append("has_recent_error:-5")
+        details["score_factors"].append("recent_error:-5")
+
+    score = max(0, min(100, score))
+    details["final_score"] = score
+
+    return score, details
+
+
 @dataclass
 class Job:
     job_id: str
@@ -128,9 +247,7 @@ def load_registry(path: Path) -> tuple[dict[str, Any], list[Job]]:
                     for v in row.get("required_approvals", [])
                     if str(v).strip()
                 ],
-                idempotency_key=(
-                    str(row.get("idempotency_key", "")).strip() or None
-                ),
+                idempotency_key=(str(row.get("idempotency_key", "")).strip() or None),
                 retry_policy=(
                     row.get("retry_policy", {})
                     if isinstance(row.get("retry_policy", {}), dict)
@@ -217,7 +334,9 @@ def evaluate_preconditions(job: Job) -> tuple[bool, str | None]:
             expr = cond.replace("env:", "", 1)
             if "=" in expr:
                 key, expected = expr.split("=", 1)
-                if (os.getenv(key, "") or "").strip().lower() != expected.strip().lower():
+                if (
+                    os.getenv(key, "") or ""
+                ).strip().lower() != expected.strip().lower():
                     return False, f"precondition failed: {cond}"
             else:
                 if not os.getenv(expr.strip()):
@@ -273,28 +392,42 @@ def emit_alert(
     message: str,
     details: dict[str, Any] | None = None,
 ) -> None:
+    details = details or {}
     payload = {
         "timestamp_utc": iso(),
         "alert_type": alert_type,
         "job_id": job_id,
         "severity": severity,
         "message": message,
-        "details": details or {},
+        "details": details,
     }
     append_jsonl(output_dir / "alerts.jsonl", payload)
     logger.warning(
         f"ALERT [{severity}] {alert_type} job={job_id} message={message} details={payload['details']}"
     )
-    send_discord(
-        "\n".join(
-            [
-                f"[AUTONOMY ALERT] {severity.upper()}",
-                f"job={job_id}",
-                f"type={alert_type}",
-                f"message={message}",
-            ]
-        )
-    )
+
+    # Build Discord notification with enhanced context
+    discord_lines = [
+        f"[AUTONOMY ALERT] {severity.upper()}",
+        f"job={job_id}",
+        f"type={alert_type}",
+        f"message={message}",
+    ]
+
+    # Add human-readable time context for missed cadence alerts
+    if alert_type == "missed_cadence":
+        if "last_success_age_human" in details:
+            discord_lines.append(f"last_success={details['last_success_age_human']}")
+        if "expected_next_run" in details:
+            discord_lines.append(f"expected_next={details['expected_next_run']}")
+        if "job_health_score" in details:
+            score = details["job_health_score"]
+            score_emoji = "🟢" if score >= 80 else "🟡" if score >= 50 else "🔴"
+            discord_lines.append(f"health_score={score_emoji} {score}/100")
+        if "idempotency_key" in details:
+            discord_lines.append(f"idempotency={details['idempotency_key']}")
+
+    send_discord("\n".join(discord_lines))
 
 
 def evaluate_alerts(
@@ -333,17 +466,35 @@ def evaluate_alerts(
         age = (now_utc() - last_success).total_seconds()
         limit = interval * missed_factor
         if age > limit:
+            # Calculate health score and additional context
+            health_score, health_details = calculate_job_health_score(js, interval)
+
+            # Build enhanced alert details
+            alert_details: dict[str, Any] = {
+                "age_seconds": int(age),
+                "allowed_seconds": int(limit),
+                "last_success_at": js.get("last_success_at"),
+                "last_success_age_human": format_age_human(js.get("last_success_at")),
+                "expected_next_run": health_details.get("expected_next_run"),
+                "job_health_score": health_score,
+                "idempotency_key": js.get("last_idempotency_key"),
+                "cadence": job.cadence,
+                "interval_seconds": interval,
+            }
+
             emit_alert(
                 output_dir=output_dir,
                 alert_type="missed_cadence",
                 job_id=job.job_id,
                 severity="high",
                 message="Job has exceeded expected cadence window",
-                details={"age_seconds": int(age), "allowed_seconds": int(limit)},
+                details=alert_details,
             )
 
 
-def run_job(job: Job, *, dry_run: bool, output_dir: Path, job_state: dict[str, Any]) -> int:
+def run_job(
+    job: Job, *, dry_run: bool, output_dir: Path, job_state: dict[str, Any]
+) -> int:
     prev_status = str(job_state.get("last_status", "")).strip().lower()
     for flag in job.required_flags:
         if not is_flag_enabled(flag):
@@ -371,8 +522,14 @@ def run_job(job: Job, *, dry_run: bool, output_dir: Path, job_state: dict[str, A
             job_state["last_approval_alert_key"] = approval_alert_key
         return 0
     idem = resolved_idempotency_key(job.idempotency_key)
-    if idem and job_state.get("last_idempotency_key") == idem and job_state.get("last_status") == "success":
-        logger.info(f"Skipping {job.job_id}: idempotency key already succeeded ({idem})")
+    if (
+        idem
+        and job_state.get("last_idempotency_key") == idem
+        and job_state.get("last_status") == "success"
+    ):
+        logger.info(
+            f"Skipping {job.job_id}: idempotency key already succeeded ({idem})"
+        )
         return 0
 
     started_at = iso()
@@ -515,7 +672,9 @@ def tick(
         if max_jobs > 0 and ran >= max_jobs:
             break
 
-    logger.info(f"Tick complete: ran={ran}, failures={failures}, eligible={len(eligible)}")
+    logger.info(
+        f"Tick complete: ran={ran}, failures={failures}, eligible={len(eligible)}"
+    )
     if ran > 0 or failures > 0:
         send_discord(
             "\n".join(
@@ -623,7 +782,9 @@ def main() -> int:
     state = load_state(state_path)
     job_filter = set(args.job_id) if args.job_id else None
     missed_factor = args.missed_cadence_factor
-    tick_seconds = args.tick_seconds or int(registry_raw.get("default_tick_seconds", 60))
+    tick_seconds = args.tick_seconds or int(
+        registry_raw.get("default_tick_seconds", 60)
+    )
 
     if not args.daemon:
         rc = tick(
