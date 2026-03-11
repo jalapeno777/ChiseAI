@@ -18,9 +18,15 @@ import logging
 import os
 import subprocess
 import sys
+import time
+import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+# Retry configuration for evidence writes
+MAX_RETRY_ATTEMPTS = 3
+RETRY_DELAY_SECONDS = 0.5
 
 
 def setup_logging(log_dir: str | Path | None = None) -> logging.Logger:
@@ -96,18 +102,65 @@ def get_job_name_from_path(script_path: str | Path) -> str | None:
     return job_mapping.get(basename)
 
 
-def write_cron_evidence(
+def write_cron_evidence_with_retry(
     job_name: str, status: str, error_msg: str | None = None
-) -> None:
-    """Write cron execution evidence to Redis."""
-    try:
-        sys.path.insert(0, str(Path(__file__).parent))
-        from cron_evidence import write_cron_evidence as write_evidence
+) -> tuple[bool, str | None]:
+    """Write cron execution evidence to Redis with retry logic.
 
-        write_evidence(job_name, status=status, error_message=error_msg)
-        logger.info(f"Cron evidence written for {job_name}: {status}")
-    except Exception as e:
-        logger.warning(f"Failed to write cron evidence for {job_name}: {e}")
+    Args:
+        job_name: Name of the cron job
+        status: "success" or "error"
+        error_msg: Optional error message if status is "error"
+
+    Returns:
+        Tuple of (success: bool, invocation_id: str | None)
+    """
+    invocation_id = str(uuid.uuid4())
+    last_error = None
+
+    for attempt in range(1, MAX_RETRY_ATTEMPTS + 1):
+        try:
+            sys.path.insert(0, str(Path(__file__).parent))
+            from cron_evidence import write_cron_evidence as write_evidence
+
+            success, returned_id = write_evidence(
+                job_name,
+                status=status,
+                error_message=error_msg,
+                invocation_id=invocation_id,
+                write_mode="wrapper",
+            )
+
+            if success:
+                logger.info(
+                    f"Cron evidence written for {job_name}: {status} "
+                    f"(invocation_id={returned_id}, attempt={attempt})"
+                )
+                return True, returned_id
+            else:
+                logger.warning(
+                    f"Cron evidence write returned False for {job_name} on attempt {attempt}"
+                )
+                last_error = "Write returned False"
+
+        except Exception as e:
+            last_error = str(e)
+            logger.warning(
+                f"Failed to write cron evidence for {job_name} on attempt {attempt}: {e}"
+            )
+
+        # Retry with backoff if not the last attempt
+        if attempt < MAX_RETRY_ATTEMPTS:
+            sleep_time = RETRY_DELAY_SECONDS * attempt
+            logger.info(f"Retrying evidence write in {sleep_time}s...")
+            time.sleep(sleep_time)
+
+    # All retries exhausted
+    logger.error(
+        f"Failed to write cron evidence for {job_name} after {MAX_RETRY_ATTEMPTS} attempts. "
+        f"Last error: {last_error}"
+    )
+    return False, invocation_id
 
 
 def run_script(script_path: str, project_root: Path) -> int:
@@ -132,6 +185,10 @@ def run_script(script_path: str, project_root: Path) -> int:
     if job_name:
         logger.info(f"Job name for cron evidence: {job_name}")
 
+    # Generate invocation ID for this execution
+    execution_invocation_id = str(uuid.uuid4())
+    logger.info(f"Execution invocation ID: {execution_invocation_id}")
+
     # Run the script
     logger.info(f"Running script: {full_script_path}")
 
@@ -154,30 +211,55 @@ def run_script(script_path: str, project_root: Path) -> int:
             logger.info(
                 f"Script completed successfully (exit code: {result.returncode})"
             )
-            # Write success evidence
+            # Write success evidence with retry
             if job_name:
-                write_cron_evidence(job_name, status="success")
+                success, evidence_id = write_cron_evidence_with_retry(
+                    job_name, status="success"
+                )
+                if not success:
+                    logger.error(
+                        f"Failed to write success evidence for {job_name} "
+                        f"despite script succeeding"
+                    )
         else:
             logger.error(f"Script failed (exit code: {result.returncode})")
-            # Write error evidence
+            # Write error evidence with retry
             if job_name:
                 error_msg = result.stderr[:500] if result.stderr else "Script failed"
-                write_cron_evidence(job_name, status="error", error_msg=error_msg)
+                success, evidence_id = write_cron_evidence_with_retry(
+                    job_name, status="error", error_msg=error_msg
+                )
+                if not success:
+                    logger.error(
+                        f"Failed to write error evidence for {job_name} "
+                        f"after script failure - this is a critical gap"
+                    )
 
         return result.returncode
 
     except subprocess.TimeoutExpired:
         logger.error("Script timed out after 5 minutes")
         if job_name:
-            write_cron_evidence(
+            success, evidence_id = write_cron_evidence_with_retry(
                 job_name, status="error", error_msg="Timeout after 5 minutes"
             )
+            if not success:
+                logger.error(
+                    f"Failed to write timeout evidence for {job_name} - "
+                    f"this is a critical gap"
+                )
         return 1
     except Exception as e:
         logger.exception(f"Error running script: {e}")
         if job_name:
-            write_cron_evidence(job_name, status="error", error_msg=str(e)[:500])
-        return 1
+            success, evidence_id = write_cron_evidence_with_retry(
+                job_name, status="error", error_msg=str(e)[:500]
+            )
+            if not success:
+                logger.error(
+                    f"Failed to write error evidence for {job_name} - "
+                    f"this is a critical gap"
+                )
         return 1
 
 

@@ -7,6 +7,8 @@ Used by all monitoring scripts to write evidence keys to Redis.
 
 import logging
 import os
+import time
+import uuid
 from datetime import UTC, datetime
 from typing import Any, cast
 
@@ -37,6 +39,10 @@ CRON_JOBS = {
 # Redis key prefixes
 KEY_PREFIX = "chise:cron"
 
+# Retry configuration
+MAX_RETRY_ATTEMPTS = 3
+RETRY_DELAY_SECONDS = 0.5
+
 
 def get_redis_connection() -> Any | None:
     """Get Redis connection for cron evidence tracking."""
@@ -59,45 +65,26 @@ def get_redis_connection() -> Any | None:
         return None
 
 
-def write_cron_evidence(
-    job_name: str, status: str = "success", error_message: str | None = None
-) -> bool:
-    """Write cron execution evidence to Redis.
+def _calculate_missed_count(
+    r: Any, job_name: str, now: datetime, timestamp: str
+) -> int:
+    """Calculate the number of missed runs based on time since last run.
 
     Args:
-        job_name: Name of the cron job (must be in CRON_JOBS)
-        status: "success" or "error"
-        error_message: Optional error message if status is "error"
+        r: Redis connection
+        job_name: Name of the cron job
+        now: Current datetime
+        timestamp: Current run timestamp string
 
     Returns:
-        True if evidence was written successfully, False otherwise
+        Number of missed runs (0 if none or error)
     """
-    if job_name not in CRON_JOBS:
-        logger.error(f"Unknown cron job: {job_name}")
-        return False
-
-    r = get_redis_connection()
-    if not r:
-        logger.error("Cannot connect to Redis for cron evidence")
-        return False
+    job_config = CRON_JOBS[job_name]
+    last_run_key = f"{KEY_PREFIX}:{job_name}:last_run"
 
     try:
-        now = datetime.now(UTC)
-        timestamp = now.isoformat()
-        job_config = CRON_JOBS[job_name]
-
-        # Write evidence keys
-        r.set(f"{KEY_PREFIX}:{job_name}:last_run", timestamp)
-        r.set(f"{KEY_PREFIX}:{job_name}:expected_interval", str(job_config["interval"]))
-        r.set(f"{KEY_PREFIX}:{job_name}:status", status)
-
-        # Update missed count based on time since last run
-        last_run_key = f"{KEY_PREFIX}:{job_name}:last_run"
         prev_run = r.get(last_run_key)
-        missed_count_key = f"{KEY_PREFIX}:{job_name}:missed_count"
-
         if prev_run and prev_run != timestamp:
-            # We have a previous run, calculate if we missed any
             try:
                 prev_dt = datetime.fromisoformat(prev_run)
                 elapsed = (now - prev_dt).total_seconds()
@@ -108,31 +95,192 @@ def write_cron_evidence(
                 grace_period = expected * 0.2
                 if elapsed > expected + grace_period:
                     missed = int((elapsed - expected) / expected)
-                    current_missed = int(r.get(missed_count_key) or "0")
-                    r.set(missed_count_key, str(current_missed + missed))
-                else:
-                    # Reset missed count on successful run within window
-                    r.set(missed_count_key, "0")
+                    return missed
             except Exception as e:
                 logger.warning(f"Error calculating missed runs: {e}")
-                r.set(missed_count_key, "0")
-        else:
-            # First run or no previous data
-            r.set(missed_count_key, "0")
-
-        # Write error message if provided
-        if error_message:
-            r.set(f"{KEY_PREFIX}:{job_name}:last_error", error_message)
-        else:
-            # Clear any previous error
-            r.delete(f"{KEY_PREFIX}:{job_name}:last_error")
-
-        logger.info(f"Cron evidence written for {job_name}: {status} at {timestamp}")
-        return True
-
     except Exception as e:
-        logger.error(f"Error writing cron evidence for {job_name}: {e}")
+        logger.warning(f"Error reading previous run timestamp: {e}")
+
+    return 0
+
+
+def _write_evidence_with_pipeline(
+    r: Any,
+    job_name: str,
+    status: str,
+    timestamp: str,
+    invocation_id: str,
+    write_mode: str,
+    error_message: str | None,
+) -> bool:
+    """Write evidence using Redis pipeline for atomicity.
+
+    Args:
+        r: Redis connection
+        job_name: Name of the cron job
+        status: "success" or "error"
+        timestamp: ISO format timestamp string
+        invocation_id: Unique invocation ID for traceability
+        write_mode: "wrapper" or "direct"
+        error_message: Optional error message if status is "error"
+
+    Returns:
+        True if evidence was written successfully, False otherwise
+    """
+    job_config = CRON_JOBS[job_name]
+    now = datetime.fromisoformat(timestamp)
+
+    # Calculate missed count
+    missed_count = _calculate_missed_count(r, job_name, now, timestamp)
+
+    # Use pipeline for atomic write
+    pipe = r.pipeline()
+
+    # Write all evidence keys atomically
+    pipe.set(f"{KEY_PREFIX}:{job_name}:last_run", timestamp)
+    pipe.set(f"{KEY_PREFIX}:{job_name}:expected_interval", str(job_config["interval"]))
+    pipe.set(f"{KEY_PREFIX}:{job_name}:status", status)
+    pipe.set(f"{KEY_PREFIX}:{job_name}:invocation_id", invocation_id)
+    pipe.set(f"{KEY_PREFIX}:{job_name}:write_mode", write_mode)
+    pipe.set(f"{KEY_PREFIX}:{job_name}:missed_count", str(missed_count))
+
+    # Handle error message
+    if error_message:
+        pipe.set(f"{KEY_PREFIX}:{job_name}:last_error", error_message)
+    else:
+        pipe.delete(f"{KEY_PREFIX}:{job_name}:last_error")
+
+    # Execute pipeline
+    results = pipe.execute()
+
+    # Verify write succeeded - check that no command returned None (error)
+    # Note: delete() returns 0 or 1 (int), which is acceptable
+    if any(r is None for r in results):
+        logger.warning(f"Pipeline write returned None for some commands: {results}")
         return False
+
+    return True
+
+
+def _verify_evidence_write(
+    r: Any, job_name: str, timestamp: str, invocation_id: str
+) -> bool:
+    """Verify that evidence was written correctly.
+
+    Args:
+        r: Redis connection
+        job_name: Name of the cron job
+        timestamp: Expected timestamp
+        invocation_id: Expected invocation ID
+
+    Returns:
+        True if evidence matches expected values
+    """
+    try:
+        stored_timestamp = r.get(f"{KEY_PREFIX}:{job_name}:last_run")
+        stored_invocation_id = r.get(f"{KEY_PREFIX}:{job_name}:invocation_id")
+
+        if stored_timestamp != timestamp:
+            logger.warning(
+                f"Timestamp mismatch: expected {timestamp}, got {stored_timestamp}"
+            )
+            return False
+
+        if stored_invocation_id != invocation_id:
+            logger.warning(
+                f"Invocation ID mismatch: expected {invocation_id}, got {stored_invocation_id}"
+            )
+            return False
+
+        return True
+    except Exception as e:
+        logger.error(f"Error verifying evidence write: {e}")
+        return False
+
+
+def write_cron_evidence(
+    job_name: str,
+    status: str = "success",
+    error_message: str | None = None,
+    invocation_id: str | None = None,
+    write_mode: str = "direct",
+) -> tuple[bool, str | None]:
+    """Write cron execution evidence to Redis.
+
+    Args:
+        job_name: Name of the cron job (must be in CRON_JOBS)
+        status: "success" or "error"
+        error_message: Optional error message if status is "error"
+        invocation_id: Optional unique invocation ID for traceability.
+                      If not provided, a new UUID will be generated.
+        write_mode: "wrapper" if called from cron_wrapper, "direct" otherwise
+
+    Returns:
+        Tuple of (success: bool, invocation_id: str | None)
+        - success: True if evidence was written successfully
+        - invocation_id: The invocation ID used (or None if failed before generation)
+    """
+    if job_name not in CRON_JOBS:
+        logger.error(f"Unknown cron job: {job_name}")
+        return False, None
+
+    # Generate invocation ID if not provided
+    if invocation_id is None:
+        invocation_id = str(uuid.uuid4())
+
+    r = get_redis_connection()
+    if not r:
+        logger.error("Cannot connect to Redis for cron evidence")
+        return False, invocation_id
+
+    now = datetime.now(UTC)
+    timestamp = now.isoformat()
+
+    # Retry loop for resilience
+    last_error = None
+    for attempt in range(1, MAX_RETRY_ATTEMPTS + 1):
+        try:
+            # Write evidence atomically with pipeline
+            write_success = _write_evidence_with_pipeline(
+                r, job_name, status, timestamp, invocation_id, write_mode, error_message
+            )
+
+            if not write_success:
+                logger.warning(f"Pipeline write returned False on attempt {attempt}")
+                last_error = "Pipeline write failed"
+                if attempt < MAX_RETRY_ATTEMPTS:
+                    time.sleep(RETRY_DELAY_SECONDS * attempt)  # Exponential backoff
+                continue
+
+            # Verify the write
+            if _verify_evidence_write(r, job_name, timestamp, invocation_id):
+                logger.info(
+                    f"Cron evidence written for {job_name}: {status} at {timestamp} "
+                    f"(invocation_id={invocation_id}, mode={write_mode})"
+                )
+                return True, invocation_id
+            else:
+                logger.warning(f"Evidence verification failed on attempt {attempt}")
+                last_error = "Verification failed"
+                if attempt < MAX_RETRY_ATTEMPTS:
+                    time.sleep(RETRY_DELAY_SECONDS * attempt)
+                continue
+
+        except Exception as e:
+            last_error = str(e)
+            logger.error(
+                f"Error writing cron evidence for {job_name} on attempt {attempt}: {e}"
+            )
+            if attempt < MAX_RETRY_ATTEMPTS:
+                time.sleep(RETRY_DELAY_SECONDS * attempt)
+            continue
+
+    # All retries exhausted
+    logger.error(
+        f"Failed to write cron evidence for {job_name} after {MAX_RETRY_ATTEMPTS} attempts. "
+        f"Last error: {last_error}"
+    )
+    return False, invocation_id
 
 
 def check_cron_cadence(r: Any | None = None) -> dict[str, Any]:
@@ -152,6 +300,8 @@ def check_cron_cadence(r: Any | None = None) -> dict[str, Any]:
                     "elapsed_seconds": 123,
                     "expected_interval": 300,
                     "missed_count": 0,
+                    "invocation_id": "...",
+                    "write_mode": "...",
                     "detail": "..."
                 },
                 ...
@@ -178,6 +328,8 @@ def check_cron_cadence(r: Any | None = None) -> dict[str, Any]:
             "elapsed_seconds": None,
             "expected_interval": config["interval"],
             "missed_count": None,
+            "invocation_id": None,
+            "write_mode": None,
             "detail": "No data available",
         }
 
@@ -185,7 +337,15 @@ def check_cron_cadence(r: Any | None = None) -> dict[str, Any]:
             # Get evidence keys
             last_run = r.get(f"{KEY_PREFIX}:{job_name}:last_run")
             missed_count = r.get(f"{KEY_PREFIX}:{job_name}:missed_count")
+            invocation_id = r.get(f"{KEY_PREFIX}:{job_name}:invocation_id")
+            write_mode = r.get(f"{KEY_PREFIX}:{job_name}:write_mode")
             r.get(f"{KEY_PREFIX}:{job_name}:status")
+
+            # Store invocation_id and write_mode for traceability
+            if invocation_id:
+                job_result["invocation_id"] = invocation_id
+            if write_mode:
+                job_result["write_mode"] = write_mode
 
             if last_run:
                 try:
@@ -296,8 +456,8 @@ if __name__ == "__main__":
 
     # Test writing evidence
     print("Testing cron evidence write...")
-    success = write_cron_evidence("pager", status="success")
-    print(f"Write result: {success}")
+    success, invocation_id = write_cron_evidence("pager", status="success")
+    print(f"Write result: success={success}, invocation_id={invocation_id}")
 
     # Test checking cadence
     print("\nTesting cron cadence check...")

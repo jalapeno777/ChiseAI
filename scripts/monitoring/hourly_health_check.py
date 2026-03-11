@@ -230,17 +230,54 @@ def check_scheduler_health() -> dict[str, Any]:
 
 
 def check_kill_switch(r: Any) -> dict[str, Any]:
-    """Check kill switch state."""
-    try:
-        enabled = r.hget("bmad:chiseai:kill_switch", "enabled")
-        triggered = r.hget("bmad:chiseai:kill_switch", "triggered")
+    """Check kill switch state.
 
-        if enabled == "1" and triggered == "0":
-            return {"status": "✅", "armed": True, "detail": "Armed"}
-        elif triggered == "1":
-            return {"status": "🚨", "armed": False, "detail": "TRIGGERED"}
-        else:
+    Automatically bootstraps kill-switch if not initialized,
+    then returns the current status.
+    """
+    try:
+        # Import bootstrap function
+        import sys
+
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+        from src.execution.kill_switch.bootstrap import (
+            bootstrap_kill_switch,
+            get_kill_switch_status,
+            is_kill_switch_initialized,
+        )
+
+        # Check if initialized, bootstrap if needed
+        if not is_kill_switch_initialized(r):
+            logger.info("Kill-switch not initialized, bootstrapping...")
+            bootstrap_result = bootstrap_kill_switch(r)
+            if not bootstrap_result:
+                return {
+                    "status": "⚠️",
+                    "armed": False,
+                    "detail": "Bootstrap failed - check Redis",
+                }
+
+        # Get full status
+        status = get_kill_switch_status(r)
+
+        if status.get("error"):
+            return {
+                "status": "❌",
+                "armed": False,
+                "detail": f"Error: {status['error']}",
+            }
+
+        if not status.get("initialized"):
             return {"status": "⚠️", "armed": False, "detail": "Not configured"}
+
+        if status.get("triggered"):
+            return {"status": "🚨", "armed": False, "detail": "TRIGGERED"}
+
+        if status.get("enabled"):
+            return {"status": "✅", "armed": True, "detail": "Armed"}
+        else:
+            return {"status": "⚠️", "armed": False, "detail": "Disabled"}
+
     except redis.RedisError as e:
         logger.error(f"Redis error checking kill switch: {e}")
         return {"status": "❌", "armed": False, "detail": "Redis error"}
