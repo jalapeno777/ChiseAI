@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  signal-generator-supervisor:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.signals
+    container_name: chiseai-signal-supervisor
+    restart: unless-stopped
+    networks:
+      - chiseai
+    environment:
+      - REDIS_HOST=chiseai-redis
+      - REDIS_PORT=6380
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ../../scripts:/app/scripts:ro
+      - ../../src:/app/src:ro
+      - signal-generator-logs:/var/log/chiseai
+    command: >
+      python3 scripts/monitoring/supervisor.py
+      --duration 0
+      --interval 30
+      --max-restarts 10
+      --restart-delay 5
+      --log-dir /var/log/chiseai
+    labels:
+      - "project=chiseai"
+      - "service=signal-supervisor"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import redis; r=redis.Redis(host='chiseai-redis', port=6380); r.ping() and r.exists('bmad:chiseai:supervisor:state')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+networks:
+  chiseai:
+    external: true
+
+volumes:
+  signal-generator-logs:
+    driver: local

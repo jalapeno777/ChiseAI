@@ -1,11 +1,10 @@
-"""Test coverage analysis and improvement package.
+"""Coverage analysis and improvement package.
 
-Provides tools for analyzing coverage gaps, generating coverage reports,
-and identifying untested critical paths.
+This package re-exports from tests.coverage for backward compatibility.
 """
 
-# Use relative imports to avoid circular dependency with root coverage package
-from .improvement.analyzer import (
+# Re-export from tests.coverage
+from tests.coverage.improvement.analyzer import (
     CoverageAnalyzer,
     CoverageGap,
     CoverageReport,
@@ -13,7 +12,7 @@ from .improvement.analyzer import (
     Priority,
     CRITICAL_MODULES,
 )
-from .improvement.reporter import (
+from tests.coverage.improvement.reporter import (
     CoverageReporter,
     CoverageThresholds,
     ReportFormat,

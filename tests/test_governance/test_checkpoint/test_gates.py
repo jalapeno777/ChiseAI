@@ -239,29 +239,52 @@ class TestG2SignalCadence:
         assert result.gate == "G2"
         assert result.status == GateChecker.STATUS_FAIL
 
-    def test_g2_no_signals(self, mock_redis_client):
-        """Test G2 when no signals exist."""
-        mock_redis_client.keys.return_value = []
-        checker = GateChecker(redis_client=mock_redis_client)
-        result = checker.check_g2_signal_cadence()
-
-        assert result.gate == "G2"
-        assert result.status == GateChecker.STATUS_CHECK
-        assert "No signals found" in result.detail
-
-    def test_g2_with_signals(self, mock_redis_client):
-        """Test G2 when signals exist."""
-        mock_redis_client.keys.return_value = ["signal:1", "signal:2", "signal:3"]
+    def test_g2_pipeline_healthy(self, mock_redis_client):
+        """Test G2 when pipeline is healthy (uses liveness from heartbeat)."""
+        mock_redis_client.hgetall.return_value = {
+            "pipeline_status": "healthy",
+            "signals_15m": "10",
+            "actionable_15m": "3",
+            "consumer_backlog": "2",
+        }
         checker = GateChecker(redis_client=mock_redis_client)
         result = checker.check_g2_signal_cadence()
 
         assert result.gate == "G2"
         assert result.status == GateChecker.STATUS_PASS
-        assert "3 signals" in result.detail
+        assert "10 attempts" in result.detail
+        assert "3 actionable" in result.detail
+
+    def test_g2_pipeline_stale(self, mock_redis_client):
+        """Test G2 when pipeline is stale (no signals in 15m)."""
+        mock_redis_client.hgetall.return_value = {
+            "pipeline_status": "stale",
+            "signals_15m": "0",
+            "actionable_15m": "0",
+            "consumer_backlog": "0",
+            "latest_signal_age_m": "25.5",
+        }
+        checker = GateChecker(redis_client=mock_redis_client)
+        result = checker.check_g2_signal_cadence()
+
+        assert result.gate == "G2"
+        assert result.status == GateChecker.STATUS_FAIL
+        assert "stale" in result.detail.lower()
+        assert "25.5" in result.detail
+
+    def test_g2_pipeline_unknown(self, mock_redis_client):
+        """Test G2 when pipeline status is unknown (no heartbeat data)."""
+        mock_redis_client.hgetall.return_value = {}
+        checker = GateChecker(redis_client=mock_redis_client)
+        result = checker.check_g2_signal_cadence()
+
+        assert result.gate == "G2"
+        assert result.status == GateChecker.STATUS_CHECK
+        assert "unknown" in result.detail.lower()
 
     def test_g2_exception(self, mock_redis_client):
         """Test G2 when exception occurs."""
-        mock_redis_client.keys.side_effect = Exception("Redis error")
+        mock_redis_client.hgetall.side_effect = Exception("Redis error")
         checker = GateChecker(redis_client=mock_redis_client)
         result = checker.check_g2_signal_cadence()
 

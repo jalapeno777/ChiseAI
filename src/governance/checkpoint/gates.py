@@ -196,9 +196,11 @@ class GateChecker:
             )
 
     def check_g2_signal_cadence(self) -> GateResult:
-        """G2: Signal Cadence - Check for active signals in Redis.
+        """G2: Signal Cadence - Check for active signal generation.
 
-        Validates that signals are being generated and stored in Redis.
+        Now uses pipeline liveness metrics to distinguish:
+        - Healthy no-signal (attempts > 0, actionable = 0)
+        - Stale pipeline (no attempts in 15m)
         """
         r = self._get_redis()
         if not r:
@@ -209,18 +211,30 @@ class GateChecker:
             )
 
         try:
-            count = len(r.keys("bmad:chiseai:signals:*"))
-            if count > 0:
+            # Get liveness data from heartbeat
+            heartbeat = r.hgetall("bmad:chiseai:scheduler:heartbeat")
+            pipeline_status = heartbeat.get("pipeline_status", "unknown")
+            signals_15m = int(heartbeat.get("signals_15m", "0"))
+            actionable_15m = int(heartbeat.get("actionable_15m", "0"))
+            backlog = int(heartbeat.get("consumer_backlog", "0"))
+
+            if pipeline_status == "healthy":
                 return GateResult(
                     gate="G2",
                     status=self.STATUS_PASS,
-                    detail=f"{count} signals in Redis",
+                    detail=f"Pipeline healthy: {signals_15m} attempts, {actionable_15m} actionable, {backlog} backlog",
+                )
+            elif pipeline_status == "stale":
+                return GateResult(
+                    gate="G2",
+                    status=self.STATUS_FAIL,
+                    detail=f"Pipeline stale: No signals in 15m, last age: {heartbeat.get('latest_signal_age_m', 'N/A')}m",
                 )
             else:
                 return GateResult(
                     gate="G2",
                     status=self.STATUS_CHECK,
-                    detail="No signals found in Redis",
+                    detail=f"Pipeline status: {pipeline_status}, attempts: {signals_15m}",
                 )
         except Exception as e:
             logger.error(f"Error checking G2: {e}")
