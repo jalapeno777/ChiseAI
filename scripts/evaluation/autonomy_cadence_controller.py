@@ -365,6 +365,8 @@ def resolved_idempotency_key(template: str | None) -> str | None:
     value = value.replace("{date}", now.strftime("%Y-%m-%d"))
     value = value.replace("{week}", now.strftime("%G-W%V"))
     value = value.replace("{month}", now.strftime("%Y-%m"))
+    value = value.replace("{hour}", now.strftime("%H"))
+    value = value.replace("{6h_bucket}", str((now.hour // 6) * 6))
     return value
 
 

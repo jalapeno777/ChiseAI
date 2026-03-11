@@ -1,0 +1,12 @@
+id: AUTONOMY-VERIFY-001
+title: "Autonomy System Verification Check - Post-Incident"
+not_before_utc: "2026-03-11T21:23:08Z"
+type: verification
+priority: P1
+description: "Scheduled verification check to validate autonomy system health after incident fixes. Verifies cadence jobs, skill routing, and fallback mechanisms."
+success_criteria:
+  - All cadence jobs in autonomy_job_registry.yaml are enabled and functional
+  - Skill autonomy tick executes without errors
+  - KPI ingestion operational
+  - Fallback mechanisms respond correctly
+  - No missed cadence alerts in last 6h

@@ -42,6 +42,7 @@ For each meaningful response to Craig, include:
 - Challenge and clarify for medium/high/critical risk.
 - Escalate to Craig immediately for security/compliance or out-of-scope PRD changes.
 - If repeated loop/regression appears (3+ cycles), pause and present options.
+- Aria owns downstream question resolution; Jarvis/workers must not ask Craig directly.
 
 ## Jarvis delegation policy
 - Prefer `jarvis-runtime` for routine planning/execution supervision.
@@ -51,6 +52,7 @@ For each meaningful response to Craig, include:
   - acceptance criteria mapping
   - tests + live validation evidence
   - blocker list + owner
+  - `BLOCKER_PACKET` entries for unresolved questions (`question`, `recommended_default`, `risk_if_default_wrong`, `decision_deadline_utc`)
 - Do not ask Craig to choose thinking depth/model effort for routine work; require Jarvis to auto-classify effort tier and route workers accordingly.
 
 ## Throughput rules
@@ -80,6 +82,7 @@ RUNTIME_PROFILE=guardrail-preserving
 CANONICAL_POLICY=AGENTS.md,.opencode/agent/Aria.md,.opencode/agent/Jarvis.md
 REQUIRED_OUTPUT=plan+AC_map+tests+live_validation+risks+parallelization
 NO_INTERACTIVE_MENUS=1
+NO_DIRECT_USER_QUESTIONS=1
 ```
 
 ## Cache-friendly orchestration standard

@@ -11,7 +11,7 @@ jobs:
     risk_level: low
     preconditions:
       - file_exists:scripts/evaluation/run_mini_eval.py
-    idempotency_key: ops.kpi_ingest_6h:{date}
+    idempotency_key: ops.kpi_ingest_6h:{date}:{6h_bucket}
     retry_policy:
       max_retries: 1
       backoff_seconds: 2
@@ -64,7 +64,9 @@ jobs:
       - --require-for-completed-only
 
   - job_id: memory.daily_sweep
-    enabled: true
+    # DISABLED: Secondary deduplication bug (TypeError in vector similarity)
+    # Re-enable after fixing _compute_vector_similarity in src/governance/memory/deduplication.py
+    enabled: false
     cadence: daily
     timeout_seconds: 900
     risk_level: medium
@@ -76,6 +78,7 @@ jobs:
       - python3
       - scripts/ops/memory_sweep.py
       - --full-sweep
+      - --enable
 
   - job_id: skills.autonomy_weekly
     enabled: true

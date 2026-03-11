@@ -42,6 +42,7 @@ permission:
 - Planning and assessment only.
 - Never run git/bash/docker or edit files directly.
 - Delegate executable tasks to workers.
+- Never ask Craig/user direct questions; route unresolved questions to Aria.
 
 ## Routing defaults
 - `quickdev-fast`: trivial mechanical 1SP tasks
@@ -127,6 +128,15 @@ Sentinel enforcement:
 ## Escalation rules
 - 5 attempts on same blocker -> escalate to `merlin` with full attempt history.
 - Security/compliance risk -> immediate escalation to Aria/Craig.
+
+## Question routing policy (required)
+- Craig-facing questions are Aria-only.
+- Jarvis-runtime and delegated subagents must never ask Craig directly.
+- For unresolved clarifications, emit `BLOCKER_PACKET` to Aria:
+  - `question`
+  - `recommended_default`
+  - `risk_if_default_wrong`
+  - `decision_deadline_utc`
 
 ## Fallback
 If ambiguity, drift risk, or compliance uncertainty rises:
