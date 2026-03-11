@@ -178,6 +178,17 @@ When starting work:
 - **senior-dev**: May merge to main after green CI and review
 - **Merlin**: Required merge authority after >2 failed merge attempts (see merge attempt definition below)
 
+### Question Routing Authority (REQUIRED)
+- **Only Aria may ask Craig direct questions.**
+- **Jarvis and all other subagents/workers must never ask Craig/user direct questions.**
+- If a subagent needs clarification, it must escalate upward to the orchestrator (Jarvis -> Aria) using a structured blocker packet with:
+  - `question`
+  - `recommended_default`
+  - `risk_if_default_wrong`
+  - `decision_deadline_utc`
+- Orchestrators are responsible for answering all subagent questions, choosing defaults when safe, and only escalating to Craig under Aria's strict escalation criteria.
+- In orchestrated task mode, menu-driven "wait for user input" behavior is forbidden unless the session is explicitly marked interactive by Aria.
+
 ### Merge Attempt Definition
 One merge attempt = sync/rebase OR conflict resolution + required checks rerun + merge attempt
 

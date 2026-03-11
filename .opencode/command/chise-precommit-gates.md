@@ -79,6 +79,13 @@ Run these gates before PR/merge. If a referenced script is missing, explicitly n
    - If `<story_id>` is not known, run a non-blocking scan:
      - `python3 scripts/validation/validate_insight_governance.py --require-for-completed-only`
 
+6.1 Question-routing governance conformance (if present)
+   - If `scripts/validation/validate_question_routing_policy.py` exists, run:
+     - `python3 scripts/validation/validate_question_routing_policy.py`
+   - Policy:
+     - BLOCKING for orchestrator/runtime/agent-definition changes
+     - Warning-only for unrelated story work
+
 7. Skills autonomy KPI check (WARNING-ONLY)
    - If `scripts/ops/skill_autonomy_tick.py` exists and `<story_id>` is known, run:
      ```bash

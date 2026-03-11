@@ -67,6 +67,38 @@ steps:
         echo "$code" > _bmad-output/ci/kpi-scheduler-6h.status
         exit 0
 
+  # INC-AUTONOMY-CADENCE-001: Trigger autonomy cadence controller for 6h jobs
+  # This runs the ops.kpi_ingest_6h job from autonomy_job_registry.yaml
+  # --force is used because cron schedule is the authoritative trigger
+  # Idempotency key prevents duplicate runs on the same day
+  autonomy-cadence-6h:
+    image: python:3.11
+    when:
+      cron:
+        - 6h-mini-eval
+        - 6h-eval
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        mkdir -p _bmad-output/autonomy-cadence
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir pyyaml redis
+          
+          echo "Running autonomy cadence controller for 6h jobs..."
+          python3 scripts/evaluation/autonomy_cadence_controller.py --job-id ops.kpi_ingest_6h --force
+          
+          # List autonomy artifacts
+          echo "Autonomy artifacts produced:"
+          find _bmad-output/autonomy-cadence -name "*.json" -type f 2>/dev/null || echo "No autonomy artifacts found"
+        ) > _bmad-output/ci/autonomy-cadence-6h.log 2>&1
+        code=$?
+        cat _bmad-output/ci/autonomy-cadence-6h.log
+        echo "$code" > _bmad-output/ci/autonomy-cadence-6h.status
+        exit 0
+
   kpi-scheduler-daily:
     image: python:3.11
     when:
@@ -93,6 +125,36 @@ steps:
         echo "$code" > _bmad-output/ci/kpi-scheduler-daily.status
         exit 0
 
+  # INC-AUTONOMY-CADENCE-001: Trigger autonomy cadence controller for daily jobs
+  autonomy-cadence-daily:
+    image: python:3.11
+    when:
+      cron:
+        - daily-trends
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        mkdir -p _bmad-output/autonomy-cadence
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir pyyaml redis
+          
+          echo "Running autonomy cadence controller for daily jobs..."
+          python3 scripts/evaluation/autonomy_cadence_controller.py \
+            --job-id ops.daily_trends \
+            --job-id governance.daily_reflection \
+            --force
+          
+          echo "Autonomy artifacts produced:"
+          find _bmad-output/autonomy-cadence -name "*.json" -type f 2>/dev/null || echo "No autonomy artifacts found"
+        ) > _bmad-output/ci/autonomy-cadence-daily.log 2>&1
+        code=$?
+        cat _bmad-output/ci/autonomy-cadence-daily.log
+        echo "$code" > _bmad-output/ci/autonomy-cadence-daily.status
+        exit 0
+
   kpi-scheduler-weekly:
     image: python:3.11
     when:
@@ -117,6 +179,36 @@ steps:
         code=$?
         cat _bmad-output/ci/kpi-scheduler-weekly.log
         echo "$code" > _bmad-output/ci/kpi-scheduler-weekly.status
+        exit 0
+
+  # INC-AUTONOMY-CADENCE-001: Trigger autonomy cadence controller for weekly jobs
+  autonomy-cadence-weekly:
+    image: python:3.11
+    when:
+      cron:
+        - weekly-reflection
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p _bmad-output/ci
+        mkdir -p _bmad-output/autonomy-cadence
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir pyyaml redis
+          
+          echo "Running autonomy cadence controller for weekly jobs..."
+          python3 scripts/evaluation/autonomy_cadence_controller.py \
+            --job-id governance.metacog_weekly \
+            --job-id strategy.canary_review_weekly \
+            --force
+          
+          echo "Autonomy artifacts produced:"
+          find _bmad-output/autonomy-cadence -name "*.json" -type f 2>/dev/null || echo "No autonomy artifacts found"
+        ) > _bmad-output/ci/autonomy-cadence-weekly.log 2>&1
+        code=$?
+        cat _bmad-output/ci/autonomy-cadence-weekly.log
+        echo "$code" > _bmad-output/ci/autonomy-cadence-weekly.status
         exit 0
 
   skill-autonomy-weekly:

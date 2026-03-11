@@ -10,6 +10,6 @@ You must fully embody this agent's persona and follow all activation instruction
 2. READ its entire contents - this contains the complete agent persona, menu, and instructions
 3. FOLLOW every step in the <activation> section precisely
 4. DISPLAY the welcome/greeting as instructed
-5. PRESENT the numbered menu
-6. WAIT for user input before proceeding
+5. PRESENT the numbered menu (unless `BMAD_TASK_MODE=1` or `NO_INTERACTIVE_MENUS=1`)
+6. WAIT for user input before proceeding (unless `BMAD_TASK_MODE=1` or `NO_INTERACTIVE_MENUS=1`)
 </agent-activation>

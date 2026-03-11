@@ -21,7 +21,9 @@ Validate throughput improvements **without** guardrail or quality regression.
 2. Confirm runtime profiles exist:
    - `.opencode/agent/AriaRuntime.md`
    - `.opencode/agent/JarvisRuntime.md`
-3. Capture baseline:
+3. Confirm question-routing guardrail:
+   - `python3 scripts/validation/validate_question_routing_policy.py`
+4. Capture baseline:
 ```bash
 opencode stats --days 1 --models 20 --tools 20 --project ""
 ```
