@@ -495,3 +495,110 @@ class TestPromotionExceptionsSmoke:
     def test_promotion_blocked_error(self) -> None:
         """Test PromotionBlockedError is PromotionError."""
         assert issubclass(PromotionBlockedError, PromotionError)
+
+
+class TestPromotionPacketEdgeCasesSmoke:
+    """Smoke tests for promotion packet edge cases."""
+
+    def test_packet_status_from_string(self) -> None:
+        """Test that status can be initialized from string."""
+        # This covers line 142-143 in promotion.py
+        packet = PromotionPacket(version="1.0.0")
+        # Simulate loading from dict with string status
+        data = packet.to_dict()
+        data["status"] = "approved"  # String instead of enum
+        restored = PromotionPacket.from_dict(data)
+        assert restored.status == PromotionStatus.APPROVED
+
+    def test_packet_created_at_auto_set(self) -> None:
+        """Test that created_at is auto-set if not provided."""
+        # This covers line 139-140 in promotion.py
+        packet = PromotionPacket(version="1.0.0", created_at="")
+        assert packet.created_at != ""
+        # Verify it's a valid ISO timestamp
+        assert "T" in packet.created_at
+
+    def test_empty_required_fields_completion(self) -> None:
+        """Test completion percentage with empty required fields."""
+        # This covers line 156-157 in promotion.py
+        packet = PromotionPacket(version="1.0.0")
+        # Manually clear required fields to test edge case
+        packet.required_fields = {}
+        assert packet.completion_percentage == 0.0
+
+    def test_packet_from_dict_missing_optional_fields(self) -> None:
+        """Test packet creation from dict with missing optional fields."""
+        # This covers default value handling in from_dict
+        minimal_data = {
+            "version": "1.0.0",
+            "previous_version": None,
+            "evaluation_passed": False,
+            "shadow_test_passed": False,
+            "latency_acceptable": False,
+            "required_fields": {},
+            "risk_assessment": "",
+            "rollback_plan": "",
+            "approver": None,
+            "approval_timestamp": None,
+            "approval_notes": "",
+            "created_at": "",
+            "status": "pending",
+        }
+        packet = PromotionPacket.from_dict(minimal_data)
+        assert packet.version == "1.0.0"
+        assert packet.evaluation_passed is False
+
+    def test_required_field_from_dict_defaults(self) -> None:
+        """Test RequiredField from_dict with default status."""
+        # This covers line 73 in promotion.py (default status)
+        data = {
+            "name": "test_field",
+            "description": "Test description",
+            # status is missing, should default to MISSING
+        }
+        field = RequiredField.from_dict(data)
+        assert field.status == RequiredFieldStatus.MISSING
+        assert field.value is None
+
+
+class TestPromotionGateEdgeCasesSmoke:
+    """Smoke tests for promotion gate edge cases."""
+
+    def test_load_packet_invalid_json(self) -> None:
+        """Test loading packet with invalid JSON."""
+        import json
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            gate = PromotionGate(tmpdir)
+            # Create an invalid JSON file
+            packet_file = Path(tmpdir) / "promotion_invalid.json"
+            packet_file.write_text("not valid json")
+
+            loaded = gate.load_packet("invalid")
+            assert loaded is None
+
+    def test_load_packet_missing_version(self) -> None:
+        """Test loading packet with missing version key."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            gate = PromotionGate(tmpdir)
+            # Create a JSON file missing required version key
+            packet_file = Path(tmpdir) / "promotion_bad.json"
+            packet_file.write_text('{"status": "pending"}')
+
+            loaded = gate.load_packet("bad")
+            assert loaded is None
+
+    def test_list_packets_invalid_files(self) -> None:
+        """Test listing packets skips invalid files."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            gate = PromotionGate(tmpdir)
+            # Create a valid packet
+            gate.create_packet("1.0.0")
+            # Create an invalid JSON file
+            packet_file = Path(tmpdir) / "promotion_invalid.json"
+            packet_file.write_text("not valid json")
+
+            packets = gate.list_packets()
+            # Should only return the valid packet
+            assert len(packets) == 1
+            assert packets[0].version == "1.0.0"
