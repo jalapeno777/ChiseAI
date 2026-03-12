@@ -1,11 +1,11 @@
 ---
 name: chiseai-parallel-safety
-description: Safety patterns for parallel agent execution (scope ownership, global locks, incident handling).
+description: Safety patterns for parallel agent execution including scope ownership, scope overlap analysis, global locks, conflict detection, batch planning, incident handling, and recovery procedures for accidental global-lock touches.
 metadata:
-  version: "1.1"
+  version: "1.2"
   opencode_min_version: "1.1.60"
   author: "ChiseAI Team"
-  last_updated: "2026-02-23"
+  last_updated: "2026-03-11"
 ---
 
 # chiseai-parallel-safety
