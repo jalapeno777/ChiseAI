@@ -165,6 +165,100 @@ LRANGE bmad:chiseai:alerts:active 0 49
 - P1 (High): Address within 1 hour
 - P2 (Medium): Address within 4 hours
 
+---
+
+## Phase 3 Pipeline Status Panels (New)
+
+The following panels were added as part of **PAPER-DIAG-001-FOLLOWUP-001** for enhanced pipeline visibility:
+
+### 7. Pipeline Status
+
+**Type:** Stat Panel
+
+**Description:** Shows current state of paper trading pipeline with color-coded status indicators.
+
+**Status Values:**
+- `running` (Green): Pipeline actively processing signals
+- `paused` (Yellow): Pipeline temporarily paused
+- `error` (Red): Pipeline in error state
+- `recovering` (Blue): Pipeline recovering from error/stale state
+- `stopped` (Gray): Pipeline stopped
+
+**Query:**
+```redis
+GET chise:paper:status:pipeline
+```
+
+**Visual:** Background color changes based on status value with clear text label.
+
+**Interpretation:**
+- Green: Normal operation
+- Yellow: Manual pause or scheduled maintenance
+- Red: Investigation required
+- Blue: Recovery in progress, monitor closely
+
+### 8. Signals (15m)
+
+**Type:** Time Series Panel
+
+**Description:** Displays signal count over the last 15 minutes with trend indicators and statistical aggregations.
+
+**Metrics:**
+- Signal count per aggregation window
+- Mean, max, min values shown in legend
+
+**Query:**
+```redis
+TS.RANGE chise:paper:metrics:signals:count
+```
+
+**Visual:** Line chart with 15-minute time window, showing signal volume trends.
+
+**Interpretation:**
+- Steady signal flow: Normal operation
+- Sudden drops: May indicate upstream data issues
+- Spikes: High market activity or system stress
+- Zero signals: Pipeline may be paused or stopped
+
+### 9. Stale-Recovery Transitions
+
+**Type:** Table Panel
+
+**Description:** Tracks recovery events from stale state, showing the transition details and recovery duration.
+
+**Columns:**
+- **Timestamp**: When the recovery occurred
+- **From State**: Previous state (stale, paused, running, error)
+- **To State**: New state after recovery (recovering, running, paused)
+- **Duration (ms)**: Time taken for recovery in milliseconds
+
+**Query:**
+```redis
+LRANGE chise:paper:events:recovery 0 49
+```
+
+**Data Format:**
+Each event is stored as JSON:
+```json
+{
+  "timestamp": "2026-03-11T10:30:00Z",
+  "from_state": "stale",
+  "to_state": "recovering",
+  "duration_ms": 1250
+}
+```
+
+**Visual:** Table with color-coded state columns:
+- From State: Red for stale/error, Yellow for paused, Green for running
+- To State: Blue for recovering, Green for running
+
+**Interpretation:**
+- Frequent stale states: Check data source connectivity
+- Long recovery durations: Investigate recovery mechanism performance
+- Successful recoveries: System resilience working as expected
+
+---
+
 ## Alert Configuration Guide
 
 ### Grafana Alert Rules
