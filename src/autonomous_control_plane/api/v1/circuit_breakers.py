@@ -20,8 +20,44 @@ from autonomous_control_plane.models.circuit_breaker import (
 
 router = APIRouter(prefix="/circuit-breakers", tags=["circuit-breakers"])
 
-# Get singleton registry instance
-_registry = CircuitBreakerRegistry()
+# Global registry instance (initialized by application)
+_registry: CircuitBreakerRegistry | None = None
+
+
+def set_registry(registry: CircuitBreakerRegistry) -> None:
+    """Set the global circuit breaker registry instance.
+
+    Args:
+        registry: CircuitBreakerRegistry instance
+    """
+    global _registry
+    _registry = registry
+
+
+def get_registry() -> CircuitBreakerRegistry | None:
+    """Get the global circuit breaker registry instance.
+
+    Returns:
+        CircuitBreakerRegistry instance or None
+    """
+    return _registry
+
+
+def _get_registry_or_raise() -> CircuitBreakerRegistry:
+    """Get the registry or raise HTTPException if not initialized.
+
+    Returns:
+        CircuitBreakerRegistry instance
+
+    Raises:
+        HTTPException: If registry not initialized
+    """
+    if _registry is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Circuit breaker registry not initialized",
+        )
+    return _registry
 
 
 @router.get("", response_model=dict[str, Any])
@@ -31,7 +67,8 @@ async def get_all_circuit_breakers() -> dict[str, Any]:
     Returns:
         Dictionary of all circuit breaker states
     """
-    states = _registry.get_all_states_dict()
+    registry = _get_registry_or_raise()
+    states = registry.get_all_states_dict()
     return {
         "count": len(states),
         "circuit_breakers": states,
@@ -51,7 +88,8 @@ async def get_circuit_breaker(name: str) -> dict[str, Any]:
     Raises:
         HTTPException: If circuit breaker not found
     """
-    state = _registry.get(name)
+    registry = _get_registry_or_raise()
+    state = registry.get(name)
     if state is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -76,7 +114,8 @@ async def create_circuit_breaker(
     Returns:
         Created circuit breaker state
     """
-    state = _registry.register(name, config or CircuitBreakerConfig())
+    registry = _get_registry_or_raise()
+    state = registry.register(name, config or CircuitBreakerConfig())
     return cast(dict[str, Any], state.to_dict())
 
 
@@ -90,7 +129,8 @@ async def delete_circuit_breaker(name: str) -> None:
     Raises:
         HTTPException: If circuit breaker not found
     """
-    state = _registry.unregister(name)
+    registry = _get_registry_or_raise()
+    state = registry.unregister(name)
     if state is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -115,14 +155,15 @@ async def force_open_circuit_breaker(
     Raises:
         HTTPException: If circuit breaker not found
     """
-    success = _registry.force_open(name, reason)
+    registry = _get_registry_or_raise()
+    success = registry.force_open(name, reason)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Circuit breaker '{name}' not found",
         )
 
-    state = _registry.get(name)
+    state = registry.get(name)
     return state.to_dict() if state else {}
 
 
@@ -143,14 +184,15 @@ async def force_close_circuit_breaker(
     Raises:
         HTTPException: If circuit breaker not found
     """
-    success = _registry.force_close(name, reason)
+    registry = _get_registry_or_raise()
+    success = registry.force_close(name, reason)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Circuit breaker '{name}' not found",
         )
 
-    state = _registry.get(name)
+    state = registry.get(name)
     return state.to_dict() if state else {}
 
 
@@ -167,14 +209,15 @@ async def reset_circuit_breaker(name: str) -> dict[str, Any]:
     Raises:
         HTTPException: If circuit breaker not found
     """
-    success = _registry.reset(name)
+    registry = _get_registry_or_raise()
+    success = registry.reset(name)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Circuit breaker '{name}' not found",
         )
 
-    state = _registry.get(name)
+    state = registry.get(name)
     return state.to_dict() if state else {}
 
 
@@ -185,7 +228,8 @@ async def reset_all_circuit_breakers() -> dict[str, Any]:
     Returns:
         Status message
     """
-    _registry.reset_all()
+    registry = _get_registry_or_raise()
+    registry.reset_all()
     return {"message": "All circuit breakers reset"}
 
 
@@ -201,7 +245,8 @@ async def force_open_all_circuit_breakers(
     Returns:
         Status message
     """
-    _registry.force_open_all(reason)
+    registry = _get_registry_or_raise()
+    registry.force_open_all(reason)
     return {"message": f"All circuit breakers forced open ({reason})"}
 
 
@@ -217,7 +262,8 @@ async def force_close_all_circuit_breakers(
     Returns:
         Status message
     """
-    _registry.force_close_all(reason)
+    registry = _get_registry_or_raise()
+    registry.force_close_all(reason)
     return {"message": f"All circuit breakers forced closed ({reason})"}
 
 
@@ -228,7 +274,8 @@ async def get_all_health() -> dict[str, Any]:
     Returns:
         Dictionary of health statuses
     """
-    health = _registry.get_all_health()
+    registry = _get_registry_or_raise()
+    health = registry.get_all_health()
     return {
         "count": len(health),
         "overall_healthy": all(h.is_healthy for h in health.values()),
@@ -249,7 +296,8 @@ async def get_circuit_breaker_health(name: str) -> dict[str, Any]:
     Raises:
         HTTPException: If circuit breaker not found
     """
-    health = _registry.get_health(name)
+    registry = _get_registry_or_raise()
+    health = registry.get_health(name)
     if health is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -265,7 +313,8 @@ async def flush_telemetry() -> dict[str, Any]:
     Returns:
         Status message
     """
-    _registry.flush_telemetry()
+    registry = _get_registry_or_raise()
+    registry.flush_telemetry()
     return {"message": "Telemetry flushed"}
 
 
@@ -285,7 +334,8 @@ async def get_adaptive_metrics(name: str) -> dict[str, Any]:
     Raises:
         HTTPException: If circuit breaker not found
     """
-    metrics = _registry.get_adaptive_metrics(name)
+    registry = _get_registry_or_raise()
+    metrics = registry.get_adaptive_metrics(name)
     if metrics is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -310,14 +360,15 @@ async def get_canary_state(name: str) -> dict[str, Any]:
     Raises:
         HTTPException: If circuit breaker not found
     """
-    canary_state = _registry.get_canary_state(name)
+    registry = _get_registry_or_raise()
+    canary_state = registry.get_canary_state(name)
     if canary_state is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Circuit breaker '{name}' not found",
         )
 
-    traffic_percent = _registry.get_canary_traffic_percent(name)
+    traffic_percent = registry.get_canary_traffic_percent(name)
     return {
         **canary_state,
         "traffic_percent": traffic_percent,
@@ -340,7 +391,8 @@ async def get_predictive_state(name: str) -> dict[str, Any]:
     Raises:
         HTTPException: If circuit breaker not found
     """
-    predictive_state = _registry.get_predictive_state(name)
+    registry = _get_registry_or_raise()
+    predictive_state = registry.get_predictive_state(name)
     if predictive_state is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -356,7 +408,8 @@ async def check_predictive_alerts() -> dict[str, Any]:
     Returns:
         List of triggered alerts
     """
-    alerts = _registry.check_all_predictive_alerts()
+    registry = _get_registry_or_raise()
+    alerts = registry.check_all_predictive_alerts()
     return {
         "count": len(alerts),
         "alerts": alerts,
@@ -386,7 +439,8 @@ async def create_group(
     Returns:
         Created group
     """
-    group = _registry.create_group(
+    registry = _get_registry_or_raise()
+    group = registry.create_group(
         name=name,
         member_names=member_names,
         cascade_open=cascade_open,
@@ -402,7 +456,8 @@ async def list_groups() -> dict[str, Any]:
     Returns:
         List of group names
     """
-    groups = _registry.list_groups()
+    registry = _get_registry_or_raise()
+    groups = registry.list_groups()
     return {
         "count": len(groups),
         "groups": groups,
@@ -422,7 +477,8 @@ async def get_group(name: str) -> dict[str, Any]:
     Raises:
         HTTPException: If group not found
     """
-    group = _registry.get_group(name)
+    registry = _get_registry_or_raise()
+    group = registry.get_group(name)
     if group is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -441,7 +497,8 @@ async def delete_group(name: str) -> None:
     Raises:
         HTTPException: If group not found
     """
-    success = _registry.delete_group(name)
+    registry = _get_registry_or_raise()
+    success = registry.delete_group(name)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -466,14 +523,15 @@ async def add_to_group(name: str, circuit_breaker_name: str) -> dict[str, Any]:
     Raises:
         HTTPException: If group not found
     """
-    success = _registry.add_to_group(name, circuit_breaker_name)
+    registry = _get_registry_or_raise()
+    success = registry.add_to_group(name, circuit_breaker_name)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Group '{name}' not found",
         )
 
-    group = _registry.get_group(name)
+    group = registry.get_group(name)
     return cast(dict[str, Any], group.to_dict()) if group else {}
 
 
@@ -494,14 +552,15 @@ async def remove_from_group(name: str, circuit_breaker_name: str) -> dict[str, A
     Raises:
         HTTPException: If group not found
     """
-    success = _registry.remove_from_group(name, circuit_breaker_name)
+    registry = _get_registry_or_raise()
+    success = registry.remove_from_group(name, circuit_breaker_name)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Group '{name}' or member '{circuit_breaker_name}' not found",
         )
 
-    group = _registry.get_group(name)
+    group = registry.get_group(name)
     return cast(dict[str, Any], group.to_dict()) if group else {}
 
 
@@ -518,7 +577,8 @@ async def get_group_metrics(name: str) -> dict[str, Any]:
     Raises:
         HTTPException: If group not found
     """
-    metrics = _registry.get_group_metrics(name)
+    registry = _get_registry_or_raise()
+    metrics = registry.get_group_metrics(name)
     if metrics is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
