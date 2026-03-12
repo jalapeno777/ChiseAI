@@ -18,6 +18,42 @@ from typing import Any
 import joblib
 
 
+class ModelRegistryError(Exception):
+    """Base exception for model registry errors."""
+
+    pass
+
+
+class ModelNotFoundError(ModelRegistryError):
+    """Raised when a model or version is not found."""
+
+    pass
+
+
+class ModelVersionExistsError(ModelRegistryError):
+    """Raised when attempting to register a version that already exists."""
+
+    pass
+
+
+class ModelValidationError(ModelRegistryError):
+    """Raised when model validation fails."""
+
+    pass
+
+
+class ModelIntegrityError(ModelRegistryError):
+    """Raised when model integrity check fails."""
+
+    pass
+
+
+class StorageBackendError(ModelRegistryError):
+    """Raised when storage backend operation fails."""
+
+    pass
+
+
 @dataclass(frozen=True)
 class ModelMetadata:
     """Metadata for a registered model version.
@@ -30,6 +66,7 @@ class ModelMetadata:
         hyperparameters: Model hyperparameters dict
         metrics: Performance metrics dict (accuracy, precision, recall, F1, etc.)
         tags: List of tags for categorization
+        checksum: Optional SHA256 checksum of model artifact for integrity verification
     """
 
     model_name: str
@@ -39,10 +76,11 @@ class ModelMetadata:
     hyperparameters: dict[str, Any]
     metrics: dict[str, float]
     tags: list[str]
+    checksum: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert metadata to dictionary for JSON serialization."""
-        return {
+        result = {
             "model_name": self.model_name,
             "version": self.version,
             "created_at": self.created_at.isoformat(),
@@ -51,6 +89,9 @@ class ModelMetadata:
             "metrics": self.metrics,
             "tags": self.tags,
         }
+        if self.checksum is not None:
+            result["checksum"] = self.checksum
+        return result
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ModelMetadata:
@@ -63,6 +104,7 @@ class ModelMetadata:
             hyperparameters=data["hyperparameters"],
             metrics=data["metrics"],
             tags=data["tags"],
+            checksum=data.get("checksum"),
         )
 
 
@@ -76,6 +118,7 @@ class ModelVersion:
         created_at: UTC timestamp
         metadata_path: Path to metadata file
         model_path: Path to model artifact
+        checksum: SHA256 checksum of model artifact
     """
 
     model_name: str
@@ -83,6 +126,7 @@ class ModelVersion:
     created_at: datetime
     metadata_path: str
     model_path: str
+    checksum: str | None = None
 
 
 class StorageBackend(ABC):
