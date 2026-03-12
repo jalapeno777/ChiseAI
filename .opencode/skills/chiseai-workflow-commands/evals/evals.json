@@ -1,0 +1,62 @@
+[
+  {
+    "id": "eval-001",
+    "query": "How do I create a PRD using BMAD workflow commands?",
+    "priority": "high",
+    "should_trigger": true
+  },
+  {
+    "id": "eval-002",
+    "query": "What command should I use for sprint planning and creating epics?",
+    "priority": "high",
+    "should_trigger": true
+  },
+  {
+    "id": "eval-003",
+    "query": "Start an iteration loop for my current story",
+    "priority": "high",
+    "should_trigger": true
+  },
+  {
+    "id": "eval-004",
+    "query": "How do I run the metacognition start and close commands?",
+    "priority": "medium",
+    "should_trigger": true
+  },
+  {
+    "id": "eval-005",
+    "query": "What are the available skill autonomy commands?",
+    "priority": "medium",
+    "should_trigger": true
+  },
+  {
+    "id": "eval-006",
+    "query": "How do I claim ownership before parallel work?",
+    "priority": "high",
+    "should_trigger": true
+  },
+  {
+    "id": "eval-007",
+    "query": "Show me the command map for code review workflow",
+    "priority": "medium",
+    "should_trigger": true
+  },
+  {
+    "id": "eval-008",
+    "query": "What command should I use for domain research tasks?",
+    "priority": "medium",
+    "should_trigger": true
+  },
+  {
+    "id": "eval-009",
+    "query": "What's the best restaurant in New York?",
+    "priority": "low",
+    "should_trigger": false
+  },
+  {
+    "id": "eval-010",
+    "query": "How do I install Python on my computer?",
+    "priority": "low",
+    "should_trigger": false
+  }
+]

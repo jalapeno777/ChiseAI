@@ -2505,13 +2505,26 @@ launch_stories:
   fr_coverage:
   - FR-GOV-002
   governance_feature: GF-002-mini
+  completion_criteria:
+  - Optimization pipeline active and processing metrics
+  - First optimization pass complete using Week 1 data
+  - Measurable improvements documented (3 KPIs identified for improvement)
+  - Optimization recommendations stored in Redis
+  - Feedback loop latency under 5 minutes (actual: 0.02s)
+  completion_date: '2026-03-11'
+  completion_evidence:
+  - docs/evidence/ST-GOV-MINI-002/optimization-results-week1-20260312_022432.json
+  - Redis key: bmad:chiseai:governance:optimization:recommendations
+  - scripts/governance/optimization_feedback_loop.py
   id: ST-GOV-MINI-002
+  merge_commit: TBD
   priority: P0-CRITICAL
+  pr_number: TBD
   sprint_id: GOV-ACCEL-W2
-  status: planned
+  status: completed
   story_points: 3
   title: Week 2 Optimization Feedback Loop
-  validation_status: planned
+  validation_status: validated
 - archive_ref: ARCH-20260309-211613-ST-GOV-003
   id: ST-GOV-003
   status: archived
