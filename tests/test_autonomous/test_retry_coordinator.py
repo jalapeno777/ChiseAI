@@ -18,11 +18,11 @@ import contextlib
 from datetime import datetime
 
 import pytest
-from src.autonomous_control_plane.components.retry_coordinator import (
+from autonomous_control_plane.components.retry_coordinator import (
     RetryCoordinator,
     RetryMetricsCollector,
 )
-from src.autonomous_control_plane.models.retry_policy import (
+from autonomous_control_plane.models.retry_policy import (
     BackoffStrategy,
     BudgetExceededError,
     JitterType,
@@ -30,7 +30,7 @@ from src.autonomous_control_plane.models.retry_policy import (
     RetryAborted,
     RetryPolicy,
 )
-from src.common.circuit_breaker import CircuitBreakerRegistry
+from common.circuit_breaker import CircuitBreakerRegistry
 
 
 class TestRetryCoordinator:
