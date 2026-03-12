@@ -146,13 +146,11 @@ class TestProviderChainInitialization:
         """Test default provider order."""
         chain = LLMProviderChain()
 
-        # MiniMax temporarily disabled per PAPER-LLM-DIAG-001
+        # Zhipu is deprecated alias for Z.ai; MiniMax remains disabled by default.
         assert chain.provider_order == [
             "kimi_compat",
             "kimi",
             "zai",
-            "zhipu",
-            # "minimax",  # Disabled per PAPER-LLM-DIAG-001
         ]
         assert chain.max_retries == 3
         assert chain.retry_delay == 1.0
@@ -389,7 +387,9 @@ class TestProviderFallbackChain:
             chain._query_zai = AsyncMock(return_value=zai_response)
             chain._query_zhipu = AsyncMock(return_value=zhipu_response)
 
-            result = await chain.query("Test prompt")
+            result = await chain.query(
+                "Test prompt", providers=["kimi", "zai", "zhipu"]
+            )
 
             assert result.success is True
             assert result.provider == "GLM-4.7 (Zhipu)"
@@ -554,7 +554,7 @@ class TestProviderStatus:
 
             assert status["kimi"]["available"] is True
             assert status["zai"]["available"] is True
-            assert status["zhipu"]["available"] is True
+            assert "zhipu" not in status
             # MiniMax disabled per PAPER-LLM-DIAG-001 - not in provider_order
             # Can still be checked via explicit provider list
             assert "minimax" not in chain.provider_order

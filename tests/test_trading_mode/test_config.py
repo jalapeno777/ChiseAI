@@ -186,7 +186,7 @@ class TestTradingModeConfig:
         assert config.enabled_modules[ModuleType.PAPER_ORCHESTRATOR] is True
         assert config.enabled_modules[ModuleType.LLM_PROVIDER_CHAIN] is True
         assert config.health_check_interval == 30
-        assert config.llm_provider_priority == ["kimi", "zai", "zhipu", "minimax"]
+        assert config.llm_provider_priority == ["kimi_compat", "kimi", "zai"]
 
     def test_get_module_status_returns_copy(self):
         """Test that get_module_status returns a copy of the status dict.

@@ -27,7 +27,7 @@ def paper_config():
             ModuleType.PAPER_ORCHESTRATOR: True,
             ModuleType.LLM_PROVIDER_CHAIN: True,
         },
-        llm_provider_priority=["kimi", "zai", "zhipu", "minimax"],
+        llm_provider_priority=["kimi_compat", "kimi", "zai"],
         health_check_interval=30,
     )
 
@@ -47,7 +47,7 @@ def live_config():
             ModuleType.PAPER_ORCHESTRATOR: True,
             ModuleType.LLM_PROVIDER_CHAIN: True,
         },
-        llm_provider_priority=["kimi", "zai", "zhipu", "minimax"],
+        llm_provider_priority=["kimi_compat", "kimi", "zai"],
         health_check_interval=30,
     )
 

@@ -27,7 +27,7 @@ app = FastAPI(
 # Configuration from environment
 KIMI_API_KEY = os.getenv("KIMI_API_KEY")
 KIMI_BASE_URL = os.getenv("KIMI_BASE_URL", "https://api.kimi.com/coding/v1")
-KIMI_MODEL = os.getenv("KIMI_MODEL", "kimi-k2.5")
+KIMI_MODEL = os.getenv("KIMI_MODEL", "kimi-for-coding")
 
 
 # Request/Response Models
@@ -47,6 +47,7 @@ class ChatCompletionRequest(BaseModel):
     top_p: float = Field(default=0.95, ge=0.0, le=1.0)
     max_tokens: int = Field(default=2048, ge=1)
     stream: bool = False
+    thinking: dict[str, Any] | None = None
     stop: str | list[str] | None = None
     presence_penalty: float = Field(default=0.0, ge=-2.0, le=2.0)
     frequency_penalty: float = Field(default=0.0, ge=-2.0, le=2.0)
@@ -187,6 +188,8 @@ async def _forward_to_kimi(request: ChatCompletionRequest) -> dict[str, Any]:
         "top_p": request.top_p,
         "max_tokens": request.max_tokens,
         "stream": request.stream,
+        # Force direct answer content for coding models unless caller overrides.
+        "thinking": request.thinking or {"type": "disabled"},
     }
 
     # Add optional parameters if provided
@@ -289,6 +292,9 @@ async def _forward_to_kimi(request: ChatCompletionRequest) -> dict[str, Any]:
                 }
             },
         ) from e
+    except HTTPException:
+        # Preserve mapped upstream HTTP status and payload.
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -316,12 +322,16 @@ def _map_kimi_response_to_openai(
     choices = []
     for i, choice in enumerate(kimi_response.get("choices", [])):
         message = choice.get("message", {})
+        content = message.get("content", "")
+        if not content:
+            # Kimi coding models may emit reasoning_content when thinking is enabled.
+            content = message.get("reasoning_content", "")
         choices.append(
             Choice(
                 index=i,
                 message=ChatMessage(
                     role=message.get("role", "assistant"),
-                    content=message.get("content", ""),
+                    content=content,
                 ),
                 finish_reason=choice.get("finish_reason"),
             )
