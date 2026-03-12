@@ -164,7 +164,7 @@ class TestRetryAPIBudgets:
         data = response.json()
         assert data["success"] is True
         assert "test_service" in data["message"]
-        mock_coordinator.reset_budget.assert_called_once_with("test_service")
+        mock_coordinator.reset_budget.assert_called_once_with("test_service", None)
 
     def test_reset_budget_error(self, client, mock_coordinator):
         """Test POST /api/v1/retry/budgets/{service}/reset handles errors."""

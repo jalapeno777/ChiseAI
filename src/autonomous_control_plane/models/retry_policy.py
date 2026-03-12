@@ -4,6 +4,7 @@ Provides dataclasses and enums for configuring retry behavior,
 budget management, and dead letter queue operations.
 
 For ST-NS-039: Retry Coordinator with Budget Management
+For ST-SAFETY-002: Retry Budget Implementation
 """
 
 from __future__ import annotations
@@ -52,6 +53,48 @@ class RetryStatus(Enum):
     DLQ = auto()  # Moved to dead letter queue
 
 
+class BudgetExhaustionStrategy(Enum):
+    """Strategy to use when retry budget is exhausted.
+
+    - FAIL_FAST: Immediately reject requests
+    - DEGRADED: Reduce request rate (throttle)
+    - QUEUE: Queue requests for later processing
+    """
+
+    FAIL_FAST = auto()
+    DEGRADED = auto()
+    QUEUE = auto()
+
+
+@dataclass
+class BudgetBurstConfig:
+    """Configuration for budget burst allowance.
+
+    Allows temporary budget increases beyond the base limit.
+
+    Attributes:
+        burst_percentage: Percentage of base budget for burst (e.g., 150 = 150%)
+        cooldown_seconds: Seconds before burst can be used again
+        max_bursts_per_window: Maximum bursts allowed per time window
+    """
+
+    burst_percentage: float = 150.0  # 150% of base budget
+    cooldown_seconds: int = 60
+    max_bursts_per_window: int = 3
+
+    def calculate_burst_limit(self, base_limit: int) -> int:
+        """Calculate the burst limit based on base limit."""
+        return int(base_limit * (self.burst_percentage / 100.0))
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert burst config to dictionary."""
+        return {
+            "burst_percentage": self.burst_percentage,
+            "cooldown_seconds": self.cooldown_seconds,
+            "max_bursts_per_window": self.max_bursts_per_window,
+        }
+
+
 @dataclass
 class RetryPolicy:
     """Configuration for retry behavior.
@@ -67,6 +110,10 @@ class RetryPolicy:
         jitter_type: Jitter algorithm to use
         retryable_exceptions: Tuple of exception types to retry on
         non_retryable_exceptions: Tuple of exception types to not retry
+        endpoint_pattern: Optional endpoint pattern for per-endpoint budgets
+        burst_config: Budget burst configuration
+        exhaustion_strategy: Strategy when budget is exhausted
+        pool_id: Optional budget pool ID for cross-service sharing
     """
 
     max_attempts: int = 3
@@ -81,6 +128,10 @@ class RetryPolicy:
         default_factory=lambda: (Exception,)
     )
     non_retryable_exceptions: tuple[type[Exception], ...] = field(default_factory=tuple)
+    endpoint_pattern: str | None = None
+    burst_config: BudgetBurstConfig = field(default_factory=BudgetBurstConfig)
+    exhaustion_strategy: BudgetExhaustionStrategy = BudgetExhaustionStrategy.FAIL_FAST
+    pool_id: str | None = None
 
     def __post_init__(self) -> None:
         """Validate configuration."""
@@ -142,11 +193,22 @@ class RetryPolicy:
             "circuit_breaker_name": self.circuit_breaker_name,
             "backoff_strategy": self.backoff_strategy.name,
             "jitter_type": self.jitter_type.name,
+            "endpoint_pattern": self.endpoint_pattern,
+            "burst_config": self.burst_config.to_dict(),
+            "exhaustion_strategy": self.exhaustion_strategy.name,
+            "pool_id": self.pool_id,
         }
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> RetryPolicy:
         """Create policy from dictionary."""
+        burst_config_data = data.get("burst_config", {})
+        burst_config = BudgetBurstConfig(
+            burst_percentage=burst_config_data.get("burst_percentage", 150.0),
+            cooldown_seconds=burst_config_data.get("cooldown_seconds", 60),
+            max_bursts_per_window=burst_config_data.get("max_bursts_per_window", 3),
+        )
+
         return cls(
             max_attempts=data.get("max_attempts", 3),
             base_delay_ms=data.get("base_delay_ms", 100),
@@ -158,6 +220,12 @@ class RetryPolicy:
                 data.get("backoff_strategy", "EXPONENTIAL")
             ],
             jitter_type=JitterType[data.get("jitter_type", "FULL")],
+            endpoint_pattern=data.get("endpoint_pattern"),
+            burst_config=burst_config,
+            exhaustion_strategy=BudgetExhaustionStrategy[
+                data.get("exhaustion_strategy", "FAIL_FAST")
+            ],
+            pool_id=data.get("pool_id"),
         )
 
 
@@ -214,6 +282,156 @@ class RetryBudget:
             "limit": self.limit,
             "is_exceeded": self.is_exceeded,
             "remaining": max(0, self.limit - self.current_count),
+        }
+
+
+@dataclass
+class EndpointRetryBudget:
+    """Budget tracking for per-endpoint retry limits.
+
+    Supports hierarchical budget inheritance from service to endpoint level.
+
+    Attributes:
+        service_name: Name of the service
+        endpoint_pattern: Endpoint pattern (e.g., "api/v1/orders/*")
+        current_count: Current retry count for the window
+        window_start: Start of the current minute window
+        limit: Maximum retries allowed per minute
+        is_exceeded: Whether budget has been exceeded
+        parent_service: Parent service budget reference
+        exhaustion_strategy: Strategy when budget is exhausted
+    """
+
+    service_name: str
+    endpoint_pattern: str
+    current_count: int = 0
+    window_start: datetime = field(default_factory=datetime.utcnow)
+    limit: int = 100
+    is_exceeded: bool = False
+    parent_service: str | None = None
+    exhaustion_strategy: BudgetExhaustionStrategy = BudgetExhaustionStrategy.FAIL_FAST
+
+    def record_attempt(self) -> bool:
+        """Record a retry attempt.
+
+        Returns:
+            True if attempt is allowed, False if budget exceeded
+        """
+        now = datetime.utcnow()
+        window_minute = now.replace(second=0, microsecond=0)
+
+        # Reset if we're in a new minute window
+        if window_minute > self.window_start:
+            self.current_count = 0
+            self.window_start = window_minute
+            self.is_exceeded = False
+
+        # Check if budget exceeded
+        if self.current_count >= self.limit:
+            self.is_exceeded = True
+            return False
+
+        self.current_count += 1
+        # Set is_exceeded if we've now reached the limit
+        if self.current_count >= self.limit:
+            self.is_exceeded = True
+        return True
+
+    def get_full_key(self) -> str:
+        """Get the full budget key including service and endpoint."""
+        return f"{self.service_name}:{self.endpoint_pattern}"
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert endpoint budget to dictionary."""
+        return {
+            "service_name": self.service_name,
+            "endpoint_pattern": self.endpoint_pattern,
+            "full_key": self.get_full_key(),
+            "current_count": self.current_count,
+            "window_start": self.window_start.isoformat(),
+            "limit": self.limit,
+            "is_exceeded": self.is_exceeded,
+            "remaining": max(0, self.limit - self.current_count),
+            "parent_service": self.parent_service,
+            "exhaustion_strategy": self.exhaustion_strategy.name,
+        }
+
+
+@dataclass
+class BudgetPool:
+    """Shared budget pool for cross-service budget sharing.
+
+    Allows related services to share a common retry budget.
+
+    Attributes:
+        pool_id: Unique pool identifier
+        name: Human-readable pool name
+        services: List of services in the pool
+        total_budget: Total budget for the pool
+        used_budget: Currently used budget
+        priority_allocation: Priority-based allocation percentages
+        emergency_reserve: Emergency reserve that can be unlocked
+        emergency_reserve_unlocked: Whether emergency reserve is available
+    """
+
+    pool_id: str
+    name: str
+    services: list[str] = field(default_factory=list)
+    total_budget: int = 1000
+    used_budget: int = 0
+    priority_allocation: dict[str, int] = field(default_factory=dict)
+    emergency_reserve: int = 100
+    emergency_reserve_unlocked: bool = False
+
+    def get_available_budget(self) -> int:
+        """Get remaining budget including emergency reserve if unlocked."""
+        available = self.total_budget - self.used_budget
+        if self.emergency_reserve_unlocked:
+            available += self.emergency_reserve
+        return max(0, available)
+
+    def get_service_allocation(self, service_name: str) -> int:
+        """Get allocated budget for a specific service."""
+        if not self.priority_allocation:
+            # Equal distribution if no priorities set
+            return self.total_budget // max(len(self.services), 1)
+        return self.priority_allocation.get(service_name, 0)
+
+    def consume_budget(self, amount: int = 1) -> bool:
+        """Consume budget from the pool.
+
+        Returns:
+            True if budget was available, False otherwise
+        """
+        if self.get_available_budget() >= amount:
+            self.used_budget += amount
+            return True
+        return False
+
+    def release_budget(self, amount: int = 1) -> None:
+        """Release budget back to the pool."""
+        self.used_budget = max(0, self.used_budget - amount)
+
+    def unlock_emergency_reserve(self) -> None:
+        """Unlock the emergency reserve."""
+        self.emergency_reserve_unlocked = True
+
+    def lock_emergency_reserve(self) -> None:
+        """Lock the emergency reserve."""
+        self.emergency_reserve_unlocked = False
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert pool to dictionary."""
+        return {
+            "pool_id": self.pool_id,
+            "name": self.name,
+            "services": self.services,
+            "total_budget": self.total_budget,
+            "used_budget": self.used_budget,
+            "available_budget": self.get_available_budget(),
+            "priority_allocation": self.priority_allocation,
+            "emergency_reserve": self.emergency_reserve,
+            "emergency_reserve_unlocked": self.emergency_reserve_unlocked,
         }
 
 
