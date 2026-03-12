@@ -1,0 +1,57 @@
+{
+  "metadata": {
+    "capture_time": "2026-03-12T01:08:35.853781+00:00",
+    "baseline_type": "retrieval_quality",
+    "story_id": "ST-GOV-MINI-001",
+    "test_queries_count": 10,
+    "collection": "ChiseAI"
+  },
+  "latency": {
+    "p50_ms": 25.0,
+    "p95_ms": 25.0,
+    "p99_ms": 25.0,
+    "mean_ms": 25.0,
+    "min_ms": 25.0,
+    "max_ms": 25.0,
+    "samples": 3
+  },
+  "relevance": {
+    "mean_score": 0.784,
+    "min_score": 0.55,
+    "max_score": 0.95,
+    "std_dev": 0.11124747188138703
+  },
+  "top_k_accuracy": {
+    "k5_precision": 1.0,
+    "k5_recall": 0.8194444444444445,
+    "k10_precision": 0.7999999999999999,
+    "k10_recall": 1.0,
+    "mrr": 1.0
+  },
+  "coverage": {
+    "total_queries": 3,
+    "queries_with_results": 3,
+    "coverage_ratio": 1.0,
+    "empty_results_count": 0
+  },
+  "query_results": [
+    {
+      "query_id": "test_query_1",
+      "query_text": "memory retrieval patterns",
+      "result_count": 10,
+      "latency_ms": 25.0
+    },
+    {
+      "query_id": "test_query_2",
+      "query_text": "vector similarity search",
+      "result_count": 10,
+      "latency_ms": 25.0
+    },
+    {
+      "query_id": "test_query_3",
+      "query_text": "retrieval optimization",
+      "result_count": 5,
+      "latency_ms": 25.0
+    }
+  ]
+}
