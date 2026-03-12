@@ -1,0 +1,291 @@
+{
+  "version": "1.0",
+  "description": "Paper Trading Pipeline Status Panels - PAPER-DIAG-001-FOLLOWUP-001",
+  "created_at": "2026-03-11T00:00:00Z",
+  "panels": [
+    {
+      "id": "pipeline_status",
+      "title": "Pipeline Status",
+      "type": "stat",
+      "description": "Current state of paper trading pipeline (running, paused, error, recovering)",
+      "gridPos": {"h": 6, "w": 8, "x": 0, "y": 0},
+      "datasource": {
+        "type": "redis-datasource",
+        "uid": "redis"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "redis-datasource",
+            "uid": "redis"
+          },
+          "command": "GET",
+          "key": "chise:paper:status:pipeline",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [
+            {
+              "options": {
+                "running": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "RUNNING"
+                },
+                "paused": {
+                  "color": "yellow",
+                  "index": 1,
+                  "text": "PAUSED"
+                },
+                "error": {
+                  "color": "red",
+                  "index": 2,
+                  "text": "ERROR"
+                },
+                "recovering": {
+                  "color": "blue",
+                  "index": 3,
+                  "text": "RECOVERING"
+                },
+                "stopped": {
+                  "color": "gray",
+                  "index": 4,
+                  "text": "STOPPED"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "gray", "value": null}
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.0.0",
+      "cache_ttl": 10
+    },
+    {
+      "id": "signals_15m",
+      "title": "Signals (15m)",
+      "type": "timeseries",
+      "description": "Signal count over last 15 minutes with trend",
+      "gridPos": {"h": 8, "w": 16, "x": 8, "y": 0},
+      "datasource": {
+        "type": "redis-datasource",
+        "uid": "redis"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "redis-datasource",
+            "uid": "redis"
+          },
+          "command": "TS.RANGE",
+          "key": "chise:paper:metrics:signals:count",
+          "refId": "A",
+          "legend": "Signal Count"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Signals",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 4,
+            "scaleDistribution": {"type": "linear"},
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {"mode": "off"}
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null}
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": ["mean", "max", "min"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "timeFrom": "15m",
+      "cache_ttl": 30
+    },
+    {
+      "id": "stale_recovery_transitions",
+      "title": "Stale-Recovery Transitions",
+      "type": "table",
+      "description": "Recovery events from stale state showing timestamp, from_state, to_state, duration",
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 8},
+      "datasource": {
+        "type": "redis-datasource",
+        "uid": "redis"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "redis-datasource",
+            "uid": "redis"
+          },
+          "command": "LRANGE",
+          "key": "chise:paper:events:recovery",
+          "start": "0",
+          "end": "49",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{"color": "green", "value": null}]
+          },
+          "unit": "none"
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "timestamp"},
+            "properties": [
+              {"id": "displayName", "value": "Timestamp"},
+              {"id": "unit", "value": "dateTime"}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "from_state"},
+            "properties": [
+              {"id": "displayName", "value": "From State"},
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "stale": {"color": "red", "index": 0, "text": "STALE"},
+                      "paused": {"color": "yellow", "index": 1, "text": "PAUSED"},
+                      "running": {"color": "green", "index": 2, "text": "RUNNING"},
+                      "error": {"color": "red", "index": 3, "text": "ERROR"}
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "to_state"},
+            "properties": [
+              {"id": "displayName", "value": "To State"},
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "recovering": {"color": "blue", "index": 0, "text": "RECOVERING"},
+                      "running": {"color": "green", "index": 1, "text": "RUNNING"},
+                      "paused": {"color": "yellow", "index": 2, "text": "PAUSED"}
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "duration_ms"},
+            "properties": [
+              {"id": "displayName", "value": "Duration"},
+              {"id": "unit", "value": "ms"}
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [{"displayName": "Timestamp", "desc": true}]
+      },
+      "transformations": [
+        {
+          "id": "json",
+          "options": {
+            "source": "Value"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "indexByName": {
+              "timestamp": 0,
+              "from_state": 1,
+              "to_state": 2,
+              "duration_ms": 3
+            }
+          }
+        }
+      ],
+      "cache_ttl": 60
+    }
+  ],
+  "metadata": {
+    "redis_keys": [
+      {"key": "chise:paper:status:pipeline", "type": "string", "description": "Current pipeline status"},
+      {"key": "chise:paper:metrics:signals:count", "type": "timeseries", "description": "Signal count over time"},
+      {"key": "chise:paper:events:recovery", "type": "list", "description": "List of recovery events"}
+    ],
+    "version_info": {
+      "schema_version": "1.0",
+      "grafana_version": "10.0+",
+      "created_by": "PHASE-3-TASK-1"
+    }
+  }
+}
