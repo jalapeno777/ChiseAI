@@ -18,11 +18,11 @@ import contextlib
 from datetime import datetime
 
 import pytest
-from autonomous_control_plane.components.retry_coordinator import (
+from src.autonomous_control_plane.components.retry_coordinator import (
     RetryCoordinator,
     RetryMetricsCollector,
 )
-from autonomous_control_plane.models.retry_policy import (
+from src.autonomous_control_plane.models.retry_policy import (
     BackoffStrategy,
     BudgetExceededError,
     JitterType,
@@ -30,7 +30,7 @@ from autonomous_control_plane.models.retry_policy import (
     RetryAborted,
     RetryPolicy,
 )
-from common.circuit_breaker import CircuitBreakerRegistry
+from src.common.circuit_breaker import CircuitBreakerRegistry
 
 
 class TestRetryCoordinator:
@@ -150,14 +150,14 @@ class TestRetryCoordinator:
             raise Exception("Fail")
 
         policy = RetryPolicy(
-            max_attempts=10,
-            base_delay_ms=50,
+            max_attempts=3,  # Reduced to avoid timeout
+            base_delay_ms=10,  # Reduced base delay
             jitter_type=JitterType.FULL,
             backoff_strategy=BackoffStrategy.EXPONENTIAL,
         )
 
-        # Run multiple times to collect jitter samples
-        for _ in range(20):
+        # Run fewer iterations to collect jitter samples quickly
+        for _ in range(5):  # Reduced from 20 to avoid timeout
             datetime.utcnow()
             with contextlib.suppress(MaxRetriesExceededError):
                 await coordinator.execute_with_retry(

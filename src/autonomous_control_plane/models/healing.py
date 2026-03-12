@@ -278,6 +278,7 @@ class HealingContext:
         log_entry: Original log entry that triggered healing
         resource_limits: Resource limits for sandboxed execution
         timeout_seconds: Execution timeout
+        kill_switch_active: Whether master kill switch is active
     """
 
     service: str
@@ -287,6 +288,7 @@ class HealingContext:
     log_entry: LogEntry | None = None
     resource_limits: ResourceLimits = field(default_factory=ResourceLimits)
     timeout_seconds: float = 30.0
+    kill_switch_active: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
@@ -298,6 +300,7 @@ class HealingContext:
             "log_entry": self.log_entry.to_dict() if self.log_entry else None,
             "resource_limits": self.resource_limits.to_dict(),
             "timeout_seconds": self.timeout_seconds,
+            "kill_switch_active": self.kill_switch_active,
         }
 
 
