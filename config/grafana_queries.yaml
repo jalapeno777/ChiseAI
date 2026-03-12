@@ -396,6 +396,109 @@ dashboards:
             |> aggregateWindow(every: 1d, fn: mean, createEmpty: false)
         cache_ttl: 3600
 
+  # Paper Trading Pipeline Status Dashboard (New - PHASE-3-TASK-1)
+  paper_pipeline_status:
+    description: "Paper trading pipeline status, signal counts, and recovery events"
+    default_time_range: "now-1h"
+    refresh_interval: "5s"
+    
+    panels:
+      # Panel 1: pipeline_status - Shows current state of paper trading pipeline
+      pipeline_status:
+        type: stat
+        time_range: "now-5m"
+        description: "Current state of paper trading pipeline (running, paused, error, recovering)"
+        redis_key: "chise:paper:status:pipeline"
+        redis_command: "GET"
+        field_config:
+          mappings:
+            - value: "running"
+              text: "RUNNING"
+              color: "green"
+            - value: "paused"
+              text: "PAUSED"
+              color: "yellow"
+            - value: "error"
+              text: "ERROR"
+              color: "red"
+            - value: "recovering"
+              text: "RECOVERING"
+              color: "blue"
+            - value: "stopped"
+              text: "STOPPED"
+              color: "gray"
+        options:
+          colorMode: "background"
+          graphMode: "none"
+          justifyMode: "center"
+          textMode: "value"
+        cache_ttl: 10
+        
+      # Panel 2: signals_15m - Signal count over last 15 minutes with trend
+      signals_15m:
+        type: timeseries
+        time_range: "now-15m"
+        description: "Signal count over last 15 minutes with trend"
+        redis_key: "chise:paper:metrics:signals:count"
+        redis_command: "TS.RANGE"
+        aggregation: "15m"
+        field_config:
+          color:
+            mode: "palette-classic"
+          custom:
+            drawStyle: "line"
+            fillOpacity: 20
+            lineWidth: 2
+            pointSize: 4
+          unit: "short"
+        options:
+          legend:
+            displayMode: "table"
+            placement: "bottom"
+            showLegend: true
+            calcs: ["mean", "max", "min"]
+        cache_ttl: 30
+        
+      # Panel 3: stale_recovery_transitions - Recovery events from stale state
+      stale_recovery_transitions:
+        type: table
+        time_range: "now-24h"
+        description: "Recovery events from stale state with timestamp, from_state, to_state, duration"
+        redis_key: "chise:paper:events:recovery"
+        redis_command: "LRANGE"
+        redis_range: [0, 49]  # Last 50 events
+        field_config:
+          overrides:
+            - field: "timestamp"
+              displayName: "Timestamp"
+            - field: "from_state"
+              displayName: "From State"
+              color:
+                mode: "thresholds"
+              thresholds:
+                - value: "stale"
+                  color: "red"
+                - value: "paused"
+                  color: "yellow"
+                - value: "running"
+                  color: "green"
+            - field: "to_state"
+              displayName: "To State"
+              color:
+                mode: "thresholds"
+              thresholds:
+                - value: "recovering"
+                  color: "blue"
+                - value: "running"
+                  color: "green"
+            - field: "duration_ms"
+              displayName: "Duration (ms)"
+              unit: "ms"
+        options:
+          showHeader: true
+          sortBy: [{"displayName": "Timestamp", "desc": true}]
+        cache_ttl: 60
+
 # Performance targets
 performance_targets:
   dashboard_load_time: "<3s"
