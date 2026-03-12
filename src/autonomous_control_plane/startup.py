@@ -17,9 +17,13 @@ from autonomous_control_plane.components.circuit_breaker_registry import (
 )
 from autonomous_control_plane.components.incident_manager import IncidentManager
 from autonomous_control_plane.components.log_monitor import LogMonitor
+from autonomous_control_plane.components.retry_budget_manager import RetryBudgetManager
 from autonomous_control_plane.components.retry_coordinator import RetryCoordinator
 from autonomous_control_plane.components.rollback_coordinator import (
     RollbackCoordinator,
+)
+from autonomous_control_plane.components.rollback_automation import (
+    RollbackAutomationCoordinator,
 )
 from autonomous_control_plane.components.self_healing_engine import (
     SelfHealingEngine,
@@ -443,3 +447,66 @@ def create_acp_container(
 
     set_acp_container(container)
     return container
+
+
+async def initialize_coordinators() -> dict[str, Any]:
+    """Initialize all coordinators and inject them into API routers.
+
+    This function creates coordinator instances and injects them into
+    the API routers for dependency injection. It also stores them in
+    the app state for access across requests.
+
+    Returns:
+        Dictionary containing initialized coordinator instances
+
+    Example:
+        >>> coordinators = await initialize_coordinators()
+        >>> print(coordinators["circuit_breaker_registry"])
+        <CircuitBreakerRegistry instance>
+    """
+    logger.info("Initializing coordinators...")
+
+    # Import API router setters here to avoid circular imports
+    from autonomous_control_plane.api.v1.circuit_breakers import set_registry
+    from autonomous_control_plane.api.v1.retry import set_budget_manager
+    from autonomous_control_plane.api.v1.rollback import (
+        set_coordinator,
+        set_automation_coordinator,
+    )
+
+    # Create coordinator instances
+    registry = CircuitBreakerRegistry()
+    budget_manager = RetryBudgetManager()
+    rollback_coordinator = RollbackCoordinator()
+    automation_coordinator = RollbackAutomationCoordinator(rollback_coordinator)
+
+    # Inject coordinators into API routers
+    set_registry(registry)
+    set_budget_manager(budget_manager)
+    set_coordinator(rollback_coordinator)
+    set_automation_coordinator(automation_coordinator)
+
+    logger.info("Coordinators initialized and injected into API routers")
+
+    return {
+        "circuit_breaker_registry": registry,
+        "retry_budget_manager": budget_manager,
+        "rollback_coordinator": rollback_coordinator,
+        "rollback_automation_coordinator": automation_coordinator,
+    }
+
+
+def store_coordinators_in_app_state(app: Any, coordinators: dict[str, Any]) -> None:
+    """Store coordinators in app state for access across requests.
+
+    Args:
+        app: FastAPI application instance
+        coordinators: Dictionary of coordinator instances from initialize_coordinators()
+    """
+    app.state.circuit_breaker_registry = coordinators.get("circuit_breaker_registry")
+    app.state.retry_budget_manager = coordinators.get("retry_budget_manager")
+    app.state.rollback_coordinator = coordinators.get("rollback_coordinator")
+    app.state.rollback_automation_coordinator = coordinators.get(
+        "rollback_automation_coordinator"
+    )
+    logger.info("Coordinators stored in app state")
