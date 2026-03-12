@@ -513,3 +513,262 @@ class TestRollbackAPIIntegration:
 
         assert result["total_operations"] == 1
         assert result["successful"] == 1
+
+
+# ==================== ST-SAFETY-003: Rollback Automation Integration Tests ====================
+
+from autonomous_control_plane.components.rollback_automation import (
+    RollbackAutomationCoordinator,
+)
+from autonomous_control_plane.models.rollback import (
+    RollbackTemplateType,
+)
+
+
+class TestRollbackAutomationIntegration:
+    """Integration tests for Rollback Automation (ST-SAFETY-003)."""
+
+    @pytest.fixture
+    def automation_coordinator(self):
+        """Create automation coordinator."""
+        base_coordinator = RollbackCoordinator()
+        return RollbackAutomationCoordinator(base_coordinator)
+
+    @pytest.mark.asyncio
+    async def test_full_automation_pipeline(self, automation_coordinator):
+        """Test complete automation pipeline from trigger to validation."""
+        # Create default triggers
+        triggers = automation_coordinator.create_default_triggers(
+            target_state="v1.2.3",
+            sensitivity="medium",
+        )
+        assert len(triggers) == 3
+
+        # Analyze impact
+        analysis = await automation_coordinator.analyze_rollback_impact(
+            target_state="v1.2.3",
+            services=["api", "worker"],
+        )
+        assert hasattr(analysis, "risk_score")
+
+        # Execute rollback with automation
+        result = await automation_coordinator.execute_rollback_with_automation(
+            target_state="v1.2.3",
+            skip_impact_analysis=True,
+        )
+        assert "target_state" in result
+
+    @pytest.mark.asyncio
+    async def test_coordinated_rollback_integration(self, automation_coordinator):
+        """Test coordinated multi-service rollback."""
+        from autonomous_control_plane.models.rollback import CoordinatedRollbackConfig
+
+        config = CoordinatedRollbackConfig(
+            service_order=["api", "worker", "scheduler"],
+            parallel_groups=[["api", "worker"], ["scheduler"]],
+        )
+
+        results = await automation_coordinator.execute_coordinated_rollback(
+            config=config,
+            target_state="v1.2.3",
+        )
+
+        assert len(results) == 3
+        for service, operation in results.items():
+            assert operation.status == RollbackStatus.COMPLETED
+
+    @pytest.mark.asyncio
+    async def test_post_rollback_validation_integration(self, automation_coordinator):
+        """Test post-rollback validation suite."""
+        # Execute rollback first
+        result = await automation_coordinator.execute_rollback_with_automation(
+            target_state="v1.2.3",
+            skip_impact_analysis=True,
+        )
+
+        operation_id = result.get("operation", {}).get("operation_id", "test-op-id")
+
+        # Run validation
+        validation = await automation_coordinator.run_post_rollback_validation(
+            operation_id=operation_id,
+            services=["api"],
+        )
+
+        assert validation.operation_id == operation_id
+        assert validation.completed_at is not None
+
+    @pytest.mark.asyncio
+    async def test_template_library_integration(self, automation_coordinator):
+        """Test template library with built-in templates."""
+        templates = automation_coordinator.list_templates()
+        assert len(templates) >= 3
+
+        # Get full deployment template
+        full_template = automation_coordinator.get_template_by_type(
+            RollbackTemplateType.FULL_DEPLOYMENT
+        )
+        assert full_template is not None
+        assert full_template.template_type == RollbackTemplateType.FULL_DEPLOYMENT
+
+    @pytest.mark.asyncio
+    async def test_impact_analysis_risk_scoring(self, automation_coordinator):
+        """Test impact analysis with risk scoring."""
+        # Low risk scenario
+        low_analysis = await automation_coordinator.analyze_rollback_impact(
+            target_state="v1.2.3",
+            services=["api"],
+            template_type=RollbackTemplateType.CONFIGURATION,
+        )
+
+        # High risk scenario
+        high_analysis = await automation_coordinator.analyze_rollback_impact(
+            target_state="v1.2.3",
+            services=["api", "worker", "scheduler", "database", "cache"],
+            template_type=RollbackTemplateType.FULL_DEPLOYMENT,
+        )
+
+        # High risk should require confirmation
+        if high_analysis.risk_score.value in ("medium", "high"):
+            assert high_analysis.confirmation_required is True
+
+
+class TestRollbackAutomationAPIIntegration:
+    """API integration tests for rollback automation."""
+
+    @pytest.mark.asyncio
+    async def test_api_automated_execute_endpoint(self):
+        """Test the automated execute API endpoint."""
+        from src.autonomous_control_plane.api.v1.rollback import (
+            execute_automated_rollback,
+            set_automation_coordinator,
+        )
+        from autonomous_control_plane.components.rollback_automation import (
+            RollbackAutomationCoordinator,
+        )
+
+        base_coordinator = RollbackCoordinator()
+        automation_coordinator = RollbackAutomationCoordinator(base_coordinator)
+        set_automation_coordinator(automation_coordinator)
+
+        result = await execute_automated_rollback(
+            target_state="v1.2.3",
+            skip_impact_analysis=True,
+        )
+
+        assert result["target_state"] == "v1.2.3"
+
+    @pytest.mark.asyncio
+    async def test_api_impact_analysis_endpoint(self):
+        """Test the impact analysis API endpoint."""
+        from src.autonomous_control_plane.api.v1.rollback import (
+            analyze_rollback_impact,
+            set_automation_coordinator,
+        )
+        from autonomous_control_plane.components.rollback_automation import (
+            RollbackAutomationCoordinator,
+        )
+
+        base_coordinator = RollbackCoordinator()
+        automation_coordinator = RollbackAutomationCoordinator(base_coordinator)
+        set_automation_coordinator(automation_coordinator)
+
+        result = await analyze_rollback_impact(
+            target_state="v1.2.3",
+            services=["api", "worker"],
+        )
+
+        assert "estimated_affected_users" in result
+        assert "risk_score" in result
+
+    @pytest.mark.asyncio
+    async def test_api_templates_endpoint(self):
+        """Test the templates API endpoint."""
+        from src.autonomous_control_plane.api.v1.rollback import (
+            list_rollback_templates,
+            set_automation_coordinator,
+        )
+        from autonomous_control_plane.components.rollback_automation import (
+            RollbackAutomationCoordinator,
+        )
+
+        base_coordinator = RollbackCoordinator()
+        automation_coordinator = RollbackAutomationCoordinator(base_coordinator)
+        set_automation_coordinator(automation_coordinator)
+
+        result = await list_rollback_templates()
+
+        assert len(result) >= 3
+        assert any(t["template_type"] == "full_deployment" for t in result)
+
+    @pytest.mark.asyncio
+    async def test_api_triggers_endpoint(self):
+        """Test the triggers API endpoint."""
+        from src.autonomous_control_plane.api.v1.rollback import (
+            create_default_triggers,
+            list_rollback_triggers,
+            set_automation_coordinator,
+        )
+        from autonomous_control_plane.components.rollback_automation import (
+            RollbackAutomationCoordinator,
+        )
+
+        base_coordinator = RollbackCoordinator()
+        automation_coordinator = RollbackAutomationCoordinator(base_coordinator)
+        set_automation_coordinator(automation_coordinator)
+
+        # Create default triggers
+        await create_default_triggers(target_state="v1.2.3", sensitivity="medium")
+
+        # List triggers
+        result = await list_rollback_triggers()
+
+        assert len(result) == 3
+        assert all(t["enabled"] for t in result)
+
+    @pytest.mark.asyncio
+    async def test_api_coordinated_rollback_endpoint(self):
+        """Test the coordinated rollback API endpoint."""
+        from src.autonomous_control_plane.api.v1.rollback import (
+            execute_coordinated_rollback,
+            set_automation_coordinator,
+        )
+        from autonomous_control_plane.components.rollback_automation import (
+            RollbackAutomationCoordinator,
+        )
+
+        base_coordinator = RollbackCoordinator()
+        automation_coordinator = RollbackAutomationCoordinator(base_coordinator)
+        set_automation_coordinator(automation_coordinator)
+
+        result = await execute_coordinated_rollback(
+            target_state="v1.2.3",
+            services=["api", "worker"],
+            parallel_groups=[["api", "worker"]],
+        )
+
+        assert "api" in result
+        assert "worker" in result
+        assert result["api"]["status"] == "completed"
+
+    @pytest.mark.asyncio
+    async def test_api_validation_endpoint(self):
+        """Test the post-rollback validation API endpoint."""
+        from src.autonomous_control_plane.api.v1.rollback import (
+            run_post_rollback_validation,
+            set_automation_coordinator,
+        )
+        from autonomous_control_plane.components.rollback_automation import (
+            RollbackAutomationCoordinator,
+        )
+
+        base_coordinator = RollbackCoordinator()
+        automation_coordinator = RollbackAutomationCoordinator(base_coordinator)
+        set_automation_coordinator(automation_coordinator)
+
+        result = await run_post_rollback_validation(
+            operation_id="test-op-id",
+            services=["api"],
+        )
+
+        assert result["operation_id"] == "test-op-id"
+        assert "validation_report" in result
