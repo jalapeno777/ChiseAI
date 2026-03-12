@@ -133,14 +133,14 @@ class TestAdapterHealth:
             "status": "healthy",
             "version": "1.0.0",
             "kimi_base_url": "https://api.moonshot.cn/v1",
-            "kimi_model": "kimi-k2.5",
+            "kimi_model": "kimi-for-coding",
         }
         response = HealthResponse(**health_data)
 
         assert response.status == "healthy"
         assert response.version == "1.0.0"
         assert response.kimi_base_url == "https://api.moonshot.cn/v1"
-        assert response.kimi_model == "kimi-k2.5"
+        assert response.kimi_model == "kimi-for-coding"
 
     @pytest.mark.asyncio
     async def test_adapter_models_endpoint(self):
@@ -226,6 +226,7 @@ class TestProviderChainKimiCompat:
     ):
         """Verify chain tries adapter first when KIMI_COMPAT_ENABLED=true."""
         chain = LLMProviderChain()
+        chain._is_adapter_container_reachable = MagicMock(return_value=True)
 
         # Mock _query_kimi_compat directly to return success
         kimi_compat_response = LLMResponse(
@@ -251,6 +252,7 @@ class TestProviderChainKimiCompat:
     async def test_provider_chain_fallback_to_direct_kimi(self, env_with_kimi_compat):
         """Verify fallback to direct kimi when adapter fails."""
         chain = LLMProviderChain()
+        chain._is_adapter_container_reachable = MagicMock(return_value=True)
 
         # Mock kimi_compat to fail with connection error
         kimi_compat_response = LLMResponse(
@@ -321,10 +323,11 @@ class TestProviderChainKimiCompat:
 
     @pytest.mark.asyncio
     async def test_provider_chain_full_fallback_chain(self, env_with_kimi_compat):
-        """Verify full chain: kimi_compat -> kimi -> zai -> zhipu."""
+        """Verify default chain: kimi_compat -> kimi -> zai."""
         chain = LLMProviderChain()
+        chain._is_adapter_container_reachable = MagicMock(return_value=True)
 
-        # Mock all providers to fail except zhipu
+        # Mock all default providers to fail
         kimi_compat_response = LLMResponse(
             success=False,
             provider="KIMI Compat (Adapter)",
@@ -355,27 +358,16 @@ class TestProviderChainKimiCompat:
             ),
         )
 
-        zhipu_response = LLMResponse(
-            success=True,
-            content="Zhipu response",
-            confidence_score=70.0,
-            rationale="Zhipu rationale",
-            provider="GLM-4.7 (Zhipu)",
-        )
-
         chain._query_kimi_compat = AsyncMock(return_value=kimi_compat_response)
         chain._query_kimi = AsyncMock(return_value=kimi_response)
         chain._query_zai = AsyncMock(return_value=zai_response)
-        chain._query_zhipu = AsyncMock(return_value=zhipu_response)
 
         result = await chain.query("Test prompt")
 
-        assert result.success is True
-        assert result.provider == "GLM-4.7 (Zhipu)"
+        assert result.success is False
         chain._query_kimi_compat.assert_called_once()
         chain._query_kimi.assert_called_once()
         chain._query_zai.assert_called_once()
-        chain._query_zhipu.assert_called_once()
 
 
 # =============================================================================
@@ -688,11 +680,11 @@ class TestKimiAdapterConfiguration:
         assert config.name == "KIMI Compat (Adapter)"
         assert config.api_key_env == "KIMI_API_KEY"
         assert config.enabled_env == "KIMI_COMPAT_ENABLED"
-        assert config.enabled_default is False
+        assert config.enabled_default is True
         assert config.priority == 0
 
-    def test_kimi_compat_disabled_by_default(self):
-        """Verify kimi_compat is disabled by default."""
+    def test_kimi_compat_availability_requires_reachable_adapter(self):
+        """Verify kimi_compat requires reachable adapter even when enabled by default."""
         with patch.dict(
             os.environ,
             {"KIMI_API_KEY": "test-key"},
@@ -702,7 +694,7 @@ class TestKimiAdapterConfiguration:
             available, reason = chain._is_provider_available("kimi_compat")
 
             assert available is False
-            assert reason is not None and "KIMI_COMPAT_ENABLED" in reason
+            assert reason is not None and "adapter container" in reason.lower()
 
     def test_kimi_compat_enabled_with_flag(self):
         """Verify kimi_compat is enabled when KIMI_COMPAT_ENABLED=true."""
@@ -712,6 +704,7 @@ class TestKimiAdapterConfiguration:
             clear=True,
         ):
             chain = LLMProviderChain()
+            chain._is_adapter_container_reachable = MagicMock(return_value=True)
             available, reason = chain._is_provider_available("kimi_compat")
 
             assert available is True

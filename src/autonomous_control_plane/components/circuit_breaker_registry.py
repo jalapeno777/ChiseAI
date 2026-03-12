@@ -4,6 +4,7 @@ Provides centralized management of circuit breakers across all services
 with automatic state persistence and telemetry emission.
 
 ST-NS-038: Circuit Breaker Registry & Unified Telemetry
+ST-SAFETY-001: Circuit Breaker Enhancement - Adaptive Thresholds, Canary Recovery, Groups
 """
 
 from __future__ import annotations
@@ -19,6 +20,8 @@ from typing import TYPE_CHECKING, Any, cast
 from autonomous_control_plane.config.settings import settings
 from autonomous_control_plane.models.circuit_breaker import (
     CircuitBreakerConfig,
+    CircuitBreakerGroup,
+    CircuitBreakerGroupMetrics,
     CircuitBreakerHealth,
     CircuitBreakerMetrics,
     CircuitBreakerState,
@@ -723,3 +726,536 @@ class CircuitBreakerRegistry:
             for name, state in self._registry.items():
                 self._emit_telemetry(name, state)
         logger.info("Telemetry flushed for all circuit breakers")
+
+    # ==================== Adaptive Threshold Methods ====================
+
+    def _check_and_adjust_adaptive_threshold(
+        self, name: str, state: CircuitBreakerStateModel
+    ) -> None:
+        """Check and adjust adaptive threshold based on failure patterns.
+
+        Args:
+            name: Circuit breaker identifier
+            state: Current circuit breaker state
+        """
+        if not state.config.adaptive_threshold.enabled:
+            return
+
+        config = state.config.adaptive_threshold
+        metrics = state.metrics.adaptive
+
+        # Check cooldown
+        if metrics.last_adjustment_time is not None:
+            elapsed = (datetime.utcnow() - metrics.last_adjustment_time).total_seconds()
+            if elapsed < config.adjustment_cooldown_seconds:
+                return
+
+        # Update baseline from 15min window
+        metrics.update_baseline()
+
+        # Calculate new threshold based on baseline
+        if metrics.baseline_failure_rate > 0:
+            # Estimate calls in a typical window (use 1min window total as proxy)
+            window_1min = metrics.windows.get(60)
+            if window_1min and window_1min.total_calls > 0:
+                estimated_calls_per_minute = window_1min.total_calls
+                baseline_failures = (
+                    metrics.baseline_failure_rate * estimated_calls_per_minute
+                )
+                new_threshold = int(baseline_failures * config.baseline_multiplier)
+
+                # Clamp to min/max
+                new_threshold = max(
+                    config.min_threshold, min(config.max_threshold, new_threshold)
+                )
+
+                if new_threshold != metrics.current_threshold:
+                    old_threshold = metrics.current_threshold
+                    metrics.current_threshold = new_threshold
+                    metrics.last_adjustment_time = datetime.utcnow()
+                    metrics.adjustment_count += 1
+
+                    logger.info(
+                        f"Circuit breaker '{name}': Adaptive threshold adjusted "
+                        f"{old_threshold} -> {new_threshold} "
+                        f"(baseline_rate={metrics.baseline_failure_rate:.2%})"
+                    )
+
+                    # Update the config threshold as well
+                    state.config.failure_threshold = new_threshold
+
+    def get_adaptive_metrics(self, name: str) -> dict[str, Any] | None:
+        """Get adaptive threshold metrics for a circuit breaker.
+
+        Args:
+            name: Circuit breaker identifier
+
+        Returns:
+            Adaptive metrics dictionary or None if not found
+        """
+        with self._lock:
+            state = self._registry.get(name)
+            if state is None:
+                return None
+            return state.metrics.adaptive.to_dict()
+
+    # ==================== Canary Recovery Methods ====================
+
+    def _check_canary_promotion(
+        self, name: str, state: CircuitBreakerStateModel
+    ) -> bool:
+        """Check if canary recovery should promote to next step or close.
+
+        Args:
+            name: Circuit breaker identifier
+            state: Current circuit breaker state
+
+        Returns:
+            True if circuit should be closed (fully recovered)
+        """
+        if not state.config.canary_recovery.enabled:
+            # Default behavior: close after consecutive successes
+            return (
+                state.metrics.consecutive_successes >= state.config.half_open_max_calls
+            )
+
+        config = state.config.canary_recovery
+        canary = state.metrics.canary
+
+        # Record this success in canary state
+        canary.record_success()
+
+        # Check if we've met criteria for current step
+        if canary.current_step_requests >= config.min_requests_per_step:
+            if canary.current_step_success_rate >= config.success_rate_threshold:
+                # Promote to next step
+                steps = config.progression_steps
+                if canary.current_step_index + 1 >= len(steps):
+                    # Fully recovered
+                    logger.info(
+                        f"Circuit breaker '{name}': Canary recovery complete, "
+                        f"closing circuit"
+                    )
+                    return True
+                else:
+                    canary.promote_to_next_step()
+                    logger.info(
+                        f"Circuit breaker '{name}': Canary promoted to step "
+                        f"{canary.current_step_index} ({steps[canary.current_step_index]:.0%} traffic)"
+                    )
+                    self._emit_state_change_event(
+                        name,
+                        state.state,
+                        state.state,
+                        StateTransitionReason.CANARY_PROMOTION,
+                    )
+
+        return False
+
+    def get_canary_state(self, name: str) -> dict[str, Any] | None:
+        """Get canary recovery state for a circuit breaker.
+
+        Args:
+            name: Circuit breaker identifier
+
+        Returns:
+            Canary state dictionary or None if not found
+        """
+        with self._lock:
+            state = self._registry.get(name)
+            if state is None:
+                return None
+            return state.metrics.canary.to_dict()
+
+    def get_canary_traffic_percent(self, name: str) -> float:
+        """Get the current canary traffic percentage for a circuit breaker.
+
+        Args:
+            name: Circuit breaker identifier
+
+        Returns:
+            Traffic percentage (0.0 - 1.0) or 0.0 if not in canary mode
+        """
+        with self._lock:
+            state = self._registry.get(name)
+            if state is None:
+                return 0.0
+
+            if not state.config.canary_recovery.enabled:
+                return 1.0 if state.state == CircuitBreakerState.CLOSED else 0.0
+
+            if state.state != CircuitBreakerState.HALF_OPEN:
+                return 1.0 if state.state == CircuitBreakerState.CLOSED else 0.0
+
+            steps = state.config.canary_recovery.progression_steps
+            step_index = state.metrics.canary.current_step_index
+            return steps[min(step_index, len(steps) - 1)]
+
+    # ==================== Predictive Alert Methods ====================
+
+    def _check_predictive_alert(
+        self, name: str, state: CircuitBreakerStateModel
+    ) -> dict[str, Any] | None:
+        """Check if a predictive alert should be triggered.
+
+        Args:
+            name: Circuit breaker identifier
+            state: Current circuit breaker state
+
+        Returns:
+            Alert data if triggered, None otherwise
+        """
+        if not state.config.predictive_alerts.enabled:
+            return None
+
+        config = state.config.predictive_alerts
+        predictive = state.metrics.predictive
+
+        # Update threshold approach
+        predictive.update_threshold_approach(
+            state.metrics.consecutive_failures, state.config.failure_threshold
+        )
+
+        # Check for velocity alert
+        velocity_alert = predictive.failure_velocity >= config.velocity_threshold
+
+        # Check for threshold approach alert
+        threshold_alert = predictive.should_alert(
+            config.threshold_warning_percent, config.alert_cooldown_seconds
+        )
+
+        if velocity_alert or threshold_alert:
+            predictive.record_alert()
+
+            alert_data = {
+                "circuit_breaker": name,
+                "timestamp": datetime.utcnow().isoformat(),
+                "velocity": predictive.failure_velocity,
+                "threshold_approach": predictive.threshold_approach_percent,
+                "velocity_alert": velocity_alert,
+                "threshold_alert": threshold_alert,
+                "message": self._generate_alert_message(
+                    name, state, velocity_alert, threshold_alert
+                ),
+            }
+
+            logger.warning(
+                f"Circuit breaker '{name}': Predictive alert triggered - "
+                f"velocity={predictive.failure_velocity:.2f}/s, "
+                f"threshold_at={predictive.threshold_approach_percent:.0%}"
+            )
+
+            return alert_data
+
+        return None
+
+    def _generate_alert_message(
+        self,
+        name: str,
+        state: CircuitBreakerStateModel,
+        velocity_alert: bool,
+        threshold_alert: bool,
+    ) -> str:
+        """Generate human-readable alert message."""
+        messages = []
+        if velocity_alert:
+            messages.append(
+                f"High failure velocity detected ({state.metrics.predictive.failure_velocity:.2f} failures/sec)"
+            )
+        if threshold_alert:
+            messages.append(
+                f"Approaching failure threshold ({state.metrics.predictive.threshold_approach_percent:.0%})"
+            )
+        return f"Circuit breaker '{name}': {'; '.join(messages)}"
+
+    def get_predictive_state(self, name: str) -> dict[str, Any] | None:
+        """Get predictive alert state for a circuit breaker.
+
+        Args:
+            name: Circuit breaker identifier
+
+        Returns:
+            Predictive state dictionary or None if not found
+        """
+        with self._lock:
+            state = self._registry.get(name)
+            if state is None:
+                return None
+            return state.metrics.predictive.to_dict()
+
+    def check_all_predictive_alerts(self) -> list[dict[str, Any]]:
+        """Check predictive alerts for all circuit breakers.
+
+        Returns:
+            List of alert data for triggered alerts
+        """
+        alerts = []
+        with self._lock:
+            for name, state in self._registry.items():
+                alert = self._check_predictive_alert(name, state)
+                if alert:
+                    alerts.append(alert)
+        return alerts
+
+    # ==================== Circuit Breaker Group Methods ====================
+
+    def create_group(
+        self,
+        name: str,
+        member_names: list[str] | None = None,
+        cascade_open: bool = True,
+        cascade_close: bool = False,
+    ) -> CircuitBreakerGroup:
+        """Create a new circuit breaker group.
+
+        Args:
+            name: Group name
+            member_names: List of circuit breaker names to add
+            cascade_open: Whether to cascade open operations
+            cascade_close: Whether to cascade close operations
+
+        Returns:
+            Created CircuitBreakerGroup
+        """
+        with self._lock:
+            group = CircuitBreakerGroup(
+                name=name,
+                member_names=member_names or [],
+                cascade_open=cascade_open,
+                cascade_close=cascade_close,
+            )
+
+            # Persist to Redis
+            if self._redis:
+                try:
+                    key = f"{self._key_prefix}group:{name}"
+                    self._redis.set(key, json.dumps(group.to_dict()))
+                except Exception as e:
+                    logger.warning(f"Failed to persist group '{name}' to Redis: {e}")
+
+            logger.info(
+                f"Created circuit breaker group '{name}' with {len(group.member_names)} members"
+            )
+            return group
+
+    def get_group(self, name: str) -> CircuitBreakerGroup | None:
+        """Get a circuit breaker group by name.
+
+        Args:
+            name: Group name
+
+        Returns:
+            CircuitBreakerGroup or None if not found
+        """
+        with self._lock:
+            # Try to load from Redis
+            if self._redis:
+                try:
+                    key = f"{self._key_prefix}group:{name}"
+                    data = self._redis.get(key)
+                    if data:
+                        return CircuitBreakerGroup.from_dict(json.loads(data))
+                except Exception as e:
+                    logger.warning(f"Failed to load group '{name}' from Redis: {e}")
+
+            return None
+
+    def delete_group(self, name: str) -> bool:
+        """Delete a circuit breaker group.
+
+        Args:
+            name: Group name
+
+        Returns:
+            True if deleted, False if not found
+        """
+        with self._lock:
+            if self._redis:
+                try:
+                    key = f"{self._key_prefix}group:{name}"
+                    result = self._redis.delete(key)
+                    if result:
+                        logger.info(f"Deleted circuit breaker group '{name}'")
+                        return True
+                except Exception as e:
+                    logger.warning(f"Failed to delete group '{name}' from Redis: {e}")
+
+            return False
+
+    def add_to_group(self, group_name: str, circuit_breaker_name: str) -> bool:
+        """Add a circuit breaker to a group.
+
+        Args:
+            group_name: Group name
+            circuit_breaker_name: Circuit breaker name
+
+        Returns:
+            True if added successfully
+        """
+        with self._lock:
+            group = self.get_group(group_name)
+            if group is None:
+                logger.warning(f"Cannot add to unknown group '{group_name}'")
+                return False
+
+            group.add_member(circuit_breaker_name)
+
+            # Persist updated group
+            if self._redis:
+                try:
+                    key = f"{self._key_prefix}group:{group_name}"
+                    self._redis.set(key, json.dumps(group.to_dict()))
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to update group '{group_name}' in Redis: {e}"
+                    )
+
+            return True
+
+    def remove_from_group(self, group_name: str, circuit_breaker_name: str) -> bool:
+        """Remove a circuit breaker from a group.
+
+        Args:
+            group_name: Group name
+            circuit_breaker_name: Circuit breaker name
+
+        Returns:
+            True if removed successfully
+        """
+        with self._lock:
+            group = self.get_group(group_name)
+            if group is None:
+                return False
+
+            result = group.remove_member(circuit_breaker_name)
+
+            if result and self._redis:
+                try:
+                    key = f"{self._key_prefix}group:{group_name}"
+                    self._redis.set(key, json.dumps(group.to_dict()))
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to update group '{group_name}' in Redis: {e}"
+                    )
+
+            return result
+
+    def _cascade_to_group(
+        self, name: str, operation: str, reason: str = "cascade"
+    ) -> list[str]:
+        """Cascade an operation to all members of a circuit breaker's groups.
+
+        Args:
+            name: Circuit breaker that triggered the cascade
+            operation: 'open' or 'close'
+            reason: Reason for the cascade
+
+        Returns:
+            List of affected circuit breaker names
+        """
+        affected = []
+
+        # Find all groups containing this circuit breaker
+        # Note: In a production system, we'd maintain an index for efficiency
+        # For now, we scan (this is a simplification)
+
+        if self._redis:
+            try:
+                pattern = f"{self._key_prefix}group:*"
+                keys = self._redis.keys(pattern)
+                for key in cast(list, keys) if keys else []:
+                    try:
+                        data = self._redis.get(key)
+                        if data:
+                            group = CircuitBreakerGroup.from_dict(json.loads(data))
+                            if name in group.member_names:
+                                # Cascade to other members
+                                for member_name in group.member_names:
+                                    if member_name != name:
+                                        if operation == "open" and group.cascade_open:
+                                            if self.force_open(
+                                                member_name, f"{reason} from {name}"
+                                            ):
+                                                affected.append(member_name)
+                                        elif (
+                                            operation == "close" and group.cascade_close
+                                        ):
+                                            if self.force_close(
+                                                member_name, f"{reason} from {name}"
+                                            ):
+                                                affected.append(member_name)
+                    except Exception as e:
+                        logger.warning(f"Failed to process group key {key}: {e}")
+            except Exception as e:
+                logger.warning(f"Failed to cascade operation: {e}")
+
+        return affected
+
+    def get_group_metrics(self, group_name: str) -> CircuitBreakerGroupMetrics | None:
+        """Get aggregated metrics for a circuit breaker group.
+
+        Args:
+            group_name: Group name
+
+        Returns:
+            CircuitBreakerGroupMetrics or None if group not found
+        """
+        with self._lock:
+            group = self.get_group(group_name)
+            if group is None:
+                return None
+
+            metrics = CircuitBreakerGroupMetrics(group_name=group_name)
+            metrics.total_members = len(group.member_names)
+
+            for member_name in group.member_names:
+                state = self._registry.get(member_name)
+                if state:
+                    health = self.get_health(member_name)
+                    if health:
+                        metrics.member_health[member_name] = health
+
+                        # Count states
+                        if state.state == CircuitBreakerState.OPEN:
+                            metrics.open_count += 1
+                        elif state.state == CircuitBreakerState.CLOSED:
+                            metrics.closed_count += 1
+                        elif state.state == CircuitBreakerState.HALF_OPEN:
+                            metrics.half_open_count += 1
+
+                        # Aggregate metrics
+                        metrics.total_failures += state.metrics.failure_count
+                        metrics.total_successes += state.metrics.success_count
+                        metrics.total_rejections += state.metrics.rejection_count
+
+            # Calculate overall health
+            if metrics.total_members > 0:
+                healthy_count = sum(
+                    1 for h in metrics.member_health.values() if h.is_healthy
+                )
+                metrics.overall_health_percent = (
+                    healthy_count / metrics.total_members
+                ) * 100
+
+            return metrics
+
+    def list_groups(self) -> list[str]:
+        """List all circuit breaker group names.
+
+        Returns:
+            List of group names
+        """
+        groups = []
+
+        if self._redis:
+            try:
+                pattern = f"{self._key_prefix}group:*"
+                keys = self._redis.keys(pattern)
+                for key in cast(list, keys) if keys else []:
+                    # Extract group name from key
+                    name = key.replace(f"{self._key_prefix}group:", "")
+                    groups.append(name)
+            except Exception as e:
+                logger.warning(f"Failed to list groups: {e}")
+
+        return groups

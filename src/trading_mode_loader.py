@@ -81,7 +81,7 @@ class TradingModeConfig(BaseModel):
         }
     )
     llm_provider_priority: list[str] = Field(
-        default_factory=lambda: ["kimi", "zai", "zhipu", "minimax"]
+        default_factory=lambda: ["kimi_compat", "kimi", "zai"]
     )
     health_check_interval: int = Field(default=30, ge=5)
 
@@ -343,7 +343,7 @@ class TradingModeLoader:
 
             # Initialize provider chain with KIMI-first priority
             provider_chain = LLMProviderChain(
-                provider_priority=self.config.llm_provider_priority
+                provider_order=self.config.llm_provider_priority
             )
 
             # Perform any async initialization if available

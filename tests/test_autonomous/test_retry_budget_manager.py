@@ -78,7 +78,7 @@ class TestRetryBudgetManager:
         manager.check_and_consume("test_service", limit=10)
 
         status = manager.get_budget_status("test_service", limit=10)
-        assert status["service_name"] == "test_service"
+        assert status["budget_key"] == "test_service"
         assert status["current_count"] == 2
         assert status["limit"] == 10
         assert status["remaining"] == 8
@@ -87,7 +87,7 @@ class TestRetryBudgetManager:
     def test_get_budget_status_no_usage(self, manager):
         """Test getting status for service with no usage."""
         status = manager.get_budget_status("new_service", limit=10)
-        assert status["service_name"] == "new_service"
+        assert status["budget_key"] == "new_service"
         assert status["current_count"] == 0
         assert status["remaining"] == 10
         assert status["is_exceeded"] is False
@@ -121,8 +121,8 @@ class TestRetryBudgetManager:
         budgets = manager.get_all_budgets()
         assert len(budgets) == 3
 
-        service_names = {b["service_name"] for b in budgets}
-        assert service_names == {"service_a", "service_b", "service_c"}
+        budget_keys = {b["budget_key"] for b in budgets}
+        assert budget_keys == {"service_a", "service_b", "service_c"}
 
     def test_get_all_budgets_empty(self, manager):
         """Test getting all budgets when none exist."""
@@ -155,7 +155,7 @@ class TestRetryBudgetKeyGeneration:
     def test_get_budget_key_specific_time(self, manager):
         """Test budget key generation with specific time."""
         dt = datetime(2026, 2, 20, 12, 30, 0)
-        key = manager._get_budget_key("test_service", dt)
+        key = manager._get_budget_key("test_service", dt=dt)
         assert key == "retry_budget:test_service:2026-02-20-12-30"
 
     def test_get_current_window(self, manager):

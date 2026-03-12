@@ -2,12 +2,16 @@
 
 Provides centralized retry logic with:
 - Exponential backoff with jitter
-- Per-service retry budgets
+- Per-service and per-endpoint retry budgets
+- Budget burst allowance
+- Cross-service budget pools
 - Circuit breaker integration
 - Dead letter queue for failed operations
+- Budget exhaustion strategies (FAIL_FAST, DEGRADED, QUEUE)
 - Metrics export
 
 For ST-NS-039: Retry Coordinator with Budget Management
+For ST-SAFETY-002: Retry Budget Implementation
 """
 
 from __future__ import annotations
@@ -21,10 +25,12 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 from autonomous_control_plane.components.dead_letter_queue import DeadLetterQueue
 from autonomous_control_plane.components.retry_budget_manager import (
+    BudgetAnalytics,
     RetryBudgetManager,
 )
 from autonomous_control_plane.models.retry_policy import (
     BudgetExceededError,
+    BudgetExhaustionStrategy,
     MaxRetriesExceededError,
     RetryAborted,
     RetryOperation,
@@ -55,6 +61,8 @@ class RetryMetricsCollector:
         - retry_budget_exceeded_total: Budget exceeded events
         - retry_dead_letter_total: Items added to DLQ
         - retry_backoff_ms: Backoff delay histogram
+        - retry_endpoint_attempts: Per-endpoint retry attempts
+        - retry_pool_usage: Budget pool usage
     """
 
     def __init__(
@@ -77,6 +85,8 @@ class RetryMetricsCollector:
             "budget_exceeded": {},
             "dlq": {},
             "backoff_ms": [],
+            "endpoint_attempts": {},
+            "pool_usage": {},
         }
 
     def record_attempt(
@@ -84,6 +94,7 @@ class RetryMetricsCollector:
         service_name: str,
         attempt_number: int,
         backoff_ms: float,
+        endpoint: str | None = None,
     ) -> None:
         """Record a retry attempt.
 
@@ -91,6 +102,7 @@ class RetryMetricsCollector:
             service_name: Service being retried
             attempt_number: Current attempt number
             backoff_ms: Backoff delay in milliseconds
+            endpoint: Optional endpoint path
         """
         # Update local metrics
         key = f"{service_name}:{attempt_number}"
@@ -99,31 +111,47 @@ class RetryMetricsCollector:
         )
         self._local_metrics["backoff_ms"].append(backoff_ms)
 
+        # Track endpoint-specific metrics
+        if endpoint:
+            endpoint_key = f"{service_name}:{endpoint}"
+            self._local_metrics["endpoint_attempts"][endpoint_key] = (
+                self._local_metrics["endpoint_attempts"].get(endpoint_key, 0) + 1
+            )
+
         # Export to InfluxDB if available
         if self._influx:
+            tags = {
+                "service": service_name,
+                "attempt_number": str(attempt_number),
+            }
+            if endpoint:
+                tags["endpoint"] = endpoint
+
             self._write_to_influx(
                 measurement="retry_attempts",
-                tags={
-                    "service": service_name,
-                    "attempt_number": str(attempt_number),
-                },
+                tags=tags,
                 fields={"count": 1, "backoff_ms": backoff_ms},
             )
 
-    def record_success(self, service_name: str) -> None:
+    def record_success(self, service_name: str, endpoint: str | None = None) -> None:
         """Record a successful retry.
 
         Args:
             service_name: Service that succeeded
+            endpoint: Optional endpoint path
         """
         self._local_metrics["successes"][service_name] = (
             self._local_metrics["successes"].get(service_name, 0) + 1
         )
 
         if self._influx:
+            tags = {"service": service_name}
+            if endpoint:
+                tags["endpoint"] = endpoint
+
             self._write_to_influx(
                 measurement="retry_success",
-                tags={"service": service_name},
+                tags=tags,
                 fields={"count": 1},
             )
 
@@ -131,12 +159,14 @@ class RetryMetricsCollector:
         self,
         service_name: str,
         reason: str,
+        endpoint: str | None = None,
     ) -> None:
         """Record a failed retry.
 
         Args:
             service_name: Service that failed
             reason: Failure reason (max_retries, budget_exceeded, circuit_open)
+            endpoint: Optional endpoint path
         """
         key = f"{service_name}:{reason}"
         self._local_metrics["failures"][key] = (
@@ -144,47 +174,86 @@ class RetryMetricsCollector:
         )
 
         if self._influx:
+            tags = {
+                "service": service_name,
+                "reason": reason,
+            }
+            if endpoint:
+                tags["endpoint"] = endpoint
+
             self._write_to_influx(
                 measurement="retry_failure",
-                tags={
-                    "service": service_name,
-                    "reason": reason,
-                },
+                tags=tags,
                 fields={"count": 1},
             )
 
-    def record_budget_exceeded(self, service_name: str) -> None:
+    def record_budget_exceeded(
+        self,
+        service_name: str,
+        endpoint: str | None = None,
+        strategy: str = "FAIL_FAST",
+    ) -> None:
         """Record a budget exceeded event.
 
         Args:
             service_name: Service that exceeded budget
+            endpoint: Optional endpoint path
+            strategy: Exhaustion strategy used
         """
         self._local_metrics["budget_exceeded"][service_name] = (
             self._local_metrics["budget_exceeded"].get(service_name, 0) + 1
         )
 
         if self._influx:
+            tags = {
+                "service": service_name,
+                "strategy": strategy,
+            }
+            if endpoint:
+                tags["endpoint"] = endpoint
+
             self._write_to_influx(
                 measurement="retry_budget_exceeded",
-                tags={"service": service_name},
+                tags=tags,
                 fields={"count": 1},
             )
 
-    def record_dlq(self, service_name: str) -> None:
+    def record_dlq(self, service_name: str, endpoint: str | None = None) -> None:
         """Record an item added to dead letter queue.
 
         Args:
             service_name: Service for DLQ item
+            endpoint: Optional endpoint path
         """
         self._local_metrics["dlq"][service_name] = (
             self._local_metrics["dlq"].get(service_name, 0) + 1
         )
 
         if self._influx:
+            tags = {"service": service_name}
+            if endpoint:
+                tags["endpoint"] = endpoint
+
             self._write_to_influx(
                 measurement="retry_dead_letter",
-                tags={"service": service_name},
+                tags=tags,
                 fields={"count": 1},
+            )
+
+    def record_pool_usage(self, pool_id: str, usage: int) -> None:
+        """Record budget pool usage.
+
+        Args:
+            pool_id: Pool identifier
+            usage: Current usage amount
+        """
+        self._local_metrics["pool_usage"][pool_id] = usage
+
+        if self._influx:
+            self._write_to_influx(
+                measurement="retry_pool_usage",
+                tags={"pool_id": pool_id},
+                fields={"usage": usage},
             )
 
     def _write_to_influx(
@@ -244,6 +313,8 @@ class RetryMetricsCollector:
                 "successes": self._local_metrics["successes"],
                 "failures": self._local_metrics["failures"],
             },
+            "by_endpoint": self._local_metrics["endpoint_attempts"],
+            "pool_usage": self._local_metrics["pool_usage"],
         }
 
 
@@ -252,9 +323,12 @@ class RetryCoordinator:
 
     Coordinates retry operations with:
     - Configurable backoff strategies and jitter
-    - Per-service retry budgets
+    - Per-service and per-endpoint retry budgets
+    - Budget burst allowance with cooldown
+    - Cross-service budget pools
     - Circuit breaker state checking
     - Dead letter queue for failures
+    - Budget exhaustion strategies (FAIL_FAST, DEGRADED, QUEUE)
     - Metrics collection
 
     Example:
@@ -271,6 +345,18 @@ class RetryCoordinator:
             policy=RetryPolicy(max_attempts=3),
         )
 
+        # Execute with endpoint-specific budget
+        result = await coordinator.execute_with_retry(
+            service_name="api_client",
+            operation_name="fetch_order",
+            endpoint="api/v1/orders/123",
+            func=lambda: api.get_order(123),
+            policy=RetryPolicy(
+                max_attempts=3,
+                exhaustion_strategy=BudgetExhaustionStrategy.DEGRADED,
+            ),
+        )
+
         # Get metrics
         metrics = coordinator.get_metrics()
     """
@@ -281,6 +367,7 @@ class RetryCoordinator:
         db_engine: Engine | None = None,
         influx_client: InfluxDBClient | None = None,
         default_policy: RetryPolicy | None = None,
+        global_budget_limit: int | None = None,
     ):
         """Initialize retry coordinator.
 
@@ -289,15 +376,67 @@ class RetryCoordinator:
             db_engine: Database engine for DLQ
             influx_client: InfluxDB client for metrics
             default_policy: Default retry policy
+            global_budget_limit: Optional global budget limit
         """
         self._budget_manager = RetryBudgetManager(
             redis_client=redis_client,
             default_limit=100,
+            global_limit=global_budget_limit,
         )
         self._dlq = DeadLetterQueue(db_engine=db_engine)
         self._metrics = RetryMetricsCollector(influx_client=influx_client)
         self._default_policy = default_policy or RetryPolicy()
         self._circuit_breaker_registry = CircuitBreakerRegistry()
+        self._queued_operations: list[RetryOperation] = []
+        self._degraded_services: dict[str, float] = {}  # service -> throttle rate
+
+    def register_endpoint_pattern(
+        self,
+        service_name: str,
+        endpoint_pattern: str,
+        limit: int | None = None,
+        exhaustion_strategy: BudgetExhaustionStrategy | None = None,
+    ) -> None:
+        """Register an endpoint pattern for budget tracking.
+
+        Args:
+            service_name: Service identifier
+            endpoint_pattern: Endpoint pattern (e.g., "api/v1/orders/*")
+            limit: Budget limit for this endpoint
+            exhaustion_strategy: Strategy when budget is exhausted
+        """
+        strategy = exhaustion_strategy or BudgetExhaustionStrategy.FAIL_FAST
+        self._budget_manager.register_endpoint_pattern(
+            service_name, endpoint_pattern, limit, strategy
+        )
+
+    def create_budget_pool(
+        self,
+        pool_id: str,
+        name: str,
+        services: list[str],
+        total_budget: int = 1000,
+        priority_allocation: dict[str, int] | None = None,
+        emergency_reserve: int = 100,
+    ) -> None:
+        """Create a budget pool for cross-service sharing.
+
+        Args:
+            pool_id: Unique pool identifier
+            name: Human-readable pool name
+            services: List of services in the pool
+            total_budget: Total budget for the pool
+            priority_allocation: Priority-based allocation percentages
+            emergency_reserve: Emergency reserve amount
+        """
+        self._budget_manager.create_budget_pool(
+            pool_id=pool_id,
+            name=name,
+            services=services,
+            total_budget=total_budget,
+            priority_allocation=priority_allocation,
+            emergency_reserve=emergency_reserve,
+        )
 
     async def execute_with_retry(
         self,
@@ -306,6 +445,7 @@ class RetryCoordinator:
         func: Callable[[], Awaitable[T]],
         policy: RetryPolicy | None = None,
         operation_id: str | None = None,
+        endpoint: str | None = None,
     ) -> T:
         """Execute a function with retry logic.
 
@@ -315,6 +455,7 @@ class RetryCoordinator:
             func: Async function to execute
             policy: Retry policy (uses default if None)
             operation_id: Optional operation identifier
+            endpoint: Optional endpoint path for per-endpoint budgets
 
         Returns:
             Function result
@@ -349,8 +490,20 @@ class RetryCoordinator:
                     self._check_circuit_breaker(policy.circuit_breaker_name)
                 except CircuitBreakerOpen as e:
                     operation.status = RetryStatus.CIRCUIT_OPEN
-                    self._metrics.record_failure(service_name, "circuit_open")
+                    self._metrics.record_failure(service_name, "circuit_open", endpoint)
                     raise RetryAborted(f"Circuit breaker open: {e}") from e
+
+            # Check for degraded mode throttling
+            if service_name in self._degraded_services:
+                throttle_rate = self._degraded_services[service_name]
+                import random
+
+                if random.random() > throttle_rate:
+                    logger.warning(
+                        f"Throttling request for {service_name} in degraded mode"
+                    )
+                    await asyncio.sleep(0.1)
+                    continue
 
             try:
                 # Attempt execution
@@ -358,7 +511,7 @@ class RetryCoordinator:
 
                 # Success
                 operation.status = RetryStatus.SUCCESS
-                self._metrics.record_success(service_name)
+                self._metrics.record_success(service_name, endpoint)
                 logger.info(
                     f"Operation {operation_name} succeeded on attempt {attempt}"
                 )
@@ -367,7 +520,7 @@ class RetryCoordinator:
             except policy.non_retryable_exceptions as e:
                 # Non-retryable exception - fail immediately
                 operation.status = RetryStatus.FAILED
-                self._metrics.record_failure(service_name, "non_retryable")
+                self._metrics.record_failure(service_name, "non_retryable", endpoint)
                 logger.error(
                     f"Operation {operation_name} failed with non-retryable error: {e}"
                 )
@@ -382,26 +535,68 @@ class RetryCoordinator:
                     break
 
                 # Check retry budget
-                allowed, remaining = self._budget_manager.check_and_consume(
-                    service_name, policy.budget_limit_per_minute
-                )
+                if endpoint and policy.endpoint_pattern:
+                    # Use endpoint-specific budget check
+                    allowed, remaining, strategy = (
+                        self._budget_manager.check_and_consume_endpoint(
+                            service_name,
+                            endpoint,
+                            policy.budget_limit_per_minute,
+                            policy.burst_config,
+                        )
+                    )
+                else:
+                    # Use service-level budget check
+                    allowed, remaining = self._budget_manager.check_and_consume(
+                        service_name,
+                        policy.budget_limit_per_minute,
+                        policy.burst_config,
+                    )
+                    strategy = policy.exhaustion_strategy
 
                 if not allowed:
                     operation.status = RetryStatus.BUDGET_EXCEEDED
-                    self._metrics.record_budget_exceeded(service_name)
+                    self._metrics.record_budget_exceeded(
+                        service_name, endpoint, strategy.name
+                    )
 
-                    # Add to DLQ
-                    self._add_to_dlq(operation, str(e))
+                    # Handle based on exhaustion strategy
+                    if strategy == BudgetExhaustionStrategy.FAIL_FAST:
+                        # Add to DLQ and fail
+                        self._add_to_dlq(operation, str(e))
+                        raise BudgetExceededError(
+                            f"Retry budget exceeded for {service_name}"
+                        ) from e
+                    elif strategy == BudgetExhaustionStrategy.DEGRADED:
+                        # Enter degraded mode (throttle)
+                        logger.warning(f"Entering degraded mode for {service_name}")
+                        self._degraded_services[service_name] = 0.5  # 50% throttle
+                        # Continue with retry but throttled
+                    elif strategy == BudgetExhaustionStrategy.QUEUE:
+                        # Queue for later processing
+                        logger.info(f"Queuing operation {operation_name} for later")
+                        self._queued_operations.append(operation)
+                        raise BudgetExceededError(
+                            f"Operation queued due to budget exhaustion"
+                        ) from e
 
-                    raise BudgetExceededError(
-                        f"Retry budget exceeded for {service_name}"
-                    ) from e
+                # Check pool budget if configured
+                if policy.pool_id:
+                    pool_consumed = self._budget_manager.consume_from_pool(
+                        policy.pool_id, service_name, amount=1
+                    )
+                    if not pool_consumed:
+                        logger.warning(
+                            f"Pool {policy.pool_id} budget exhausted for {service_name}"
+                        )
 
                 # Calculate backoff
                 backoff_ms = policy.calculate_delay(attempt)
                 backoff_seconds = backoff_ms / 1000.0
 
-                self._metrics.record_attempt(service_name, attempt, backoff_ms)
+                self._metrics.record_attempt(
+                    service_name, attempt, backoff_ms, endpoint
+                )
 
                 logger.warning(
                     f"Operation {operation_name} attempt {attempt} failed: {e}. "
@@ -414,7 +609,7 @@ class RetryCoordinator:
 
         # Max retries exceeded
         operation.status = RetryStatus.FAILED
-        self._metrics.record_failure(service_name, "max_retries")
+        self._metrics.record_failure(service_name, "max_retries", endpoint)
 
         # Add to DLQ
         error_msg = str(last_exception) if last_exception else "Max retries exceeded"
@@ -468,6 +663,24 @@ class RetryCoordinator:
         """
         return self._budget_manager.get_budget_status(service_name)
 
+    def get_endpoint_budget_status(
+        self,
+        service_name: str,
+        endpoint_pattern: str,
+    ) -> dict[str, Any]:
+        """Get retry budget status for an endpoint.
+
+        Args:
+            service_name: Service identifier
+            endpoint_pattern: Endpoint pattern
+
+        Returns:
+            Budget status dictionary
+        """
+        return self._budget_manager.get_endpoint_budget_status(
+            service_name, endpoint_pattern
+        )
+
     def get_all_budgets(self) -> list[dict[str, Any]]:
         """Get all service budgets.
 
@@ -476,13 +689,66 @@ class RetryCoordinator:
         """
         return self._budget_manager.get_all_budgets()
 
-    def reset_budget(self, service_name: str) -> None:
-        """Reset retry budget for a service.
+    def get_all_endpoint_budgets(self) -> list[dict[str, Any]]:
+        """Get all endpoint budgets.
+
+        Returns:
+            List of endpoint budget status dictionaries
+        """
+        return [
+            self._budget_manager.get_endpoint_budget_status(
+                budget.service_name, budget.endpoint_pattern
+            )
+            for budget in self._budget_manager._local_endpoint_budgets.values()
+        ]
+
+    def reset_budget(
+        self,
+        service_name: str,
+        endpoint_pattern: str | None = None,
+    ) -> None:
+        """Reset retry budget for a service or endpoint.
 
         Args:
             service_name: Service to reset
+            endpoint_pattern: Optional endpoint pattern
         """
-        self._budget_manager.reset_budget(service_name)
+        self._budget_manager.reset_budget(service_name, endpoint_pattern)
+
+        # Also exit degraded mode if active
+        if service_name in self._degraded_services:
+            del self._degraded_services[service_name]
+            logger.info(f"Exited degraded mode for {service_name}")
+
+    def get_pool_status(self, pool_id: str) -> dict[str, Any] | None:
+        """Get status of a budget pool.
+
+        Args:
+            pool_id: Pool identifier
+
+        Returns:
+            Pool status dictionary or None
+        """
+        return self._budget_manager.get_pool_status(pool_id)
+
+    def get_all_pools(self) -> list[dict[str, Any]]:
+        """Get all budget pools.
+
+        Returns:
+            List of pool status dictionaries
+        """
+        return self._budget_manager.get_all_pools()
+
+    def unlock_emergency_reserve(self, pool_id: str) -> bool:
+        """Unlock emergency reserve for a pool.
+
+        Args:
+            pool_id: Pool identifier
+
+        Returns:
+            True if unlocked successfully
+        """
+        return self._budget_manager.unlock_emergency_reserve(pool_id)
 
     def get_dlq_items(
         self,
@@ -523,6 +789,24 @@ class RetryCoordinator:
         """
         return self._dlq.delete(item_id)
 
+    def get_queued_operations(self) -> list[dict[str, Any]]:
+        """Get queued operations (for QUEUE exhaustion strategy).
+
+        Returns:
+            List of queued operations
+        """
+        return [op.to_dict() for op in self._queued_operations]
+
+    def clear_queued_operations(self) -> int:
+        """Clear all queued operations.
+
+        Returns:
+            Number of operations cleared
+        """
+        count = len(self._queued_operations)
+        self._queued_operations.clear()
+        return count
+
     def get_metrics(self) -> dict[str, Any]:
         """Get retry metrics.
 
@@ -538,6 +822,27 @@ class RetryCoordinator:
             Dictionary of circuit breaker states
         """
         return self._circuit_breaker_registry.get_all_states()
+
+    def get_analytics(self) -> BudgetAnalytics:
+        """Get budget analytics.
+
+        Returns:
+            BudgetAnalytics instance
+        """
+        return self._budget_manager.get_analytics()
+
+    def export_analytics_to_influxdb(
+        self,
+        bucket: str = "chiseai",
+    ) -> None:
+        """Export analytics to InfluxDB.
+
+        Args:
+            bucket: InfluxDB bucket name
+        """
+        # This would need the influx_client to be passed or stored
+        # For now, just log that it would be exported
+        logger.info("Analytics export requested")
 
 
 def datetime_now() -> Any:

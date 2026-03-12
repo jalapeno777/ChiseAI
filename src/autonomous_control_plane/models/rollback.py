@@ -3,6 +3,7 @@
 Provides dataclasses for rollback operations, steps, and validation.
 
 For ST-NS-042: Rollback Coordinator with Pre-flight Validation
+For ST-SAFETY-003: Rollback Automation
 """
 
 from __future__ import annotations
@@ -14,6 +15,387 @@ from enum import StrEnum
 from typing import Any, Protocol
 
 from pydantic import BaseModel, Field
+
+
+class RollbackTriggerType(StrEnum):
+    """Types of automated rollback triggers."""
+
+    CIRCUIT_BREAKER_GROUP = "circuit_breaker_group"
+    RETRY_BUDGET_POOL = "retry_budget_pool"
+    ERROR_RATE_THRESHOLD = "error_rate_threshold"
+    HEALTH_CHECK_CASCADE = "health_check_cascade"
+    MANUAL = "manual"
+
+
+class RollbackRiskLevel(StrEnum):
+    """Risk levels for rollback operations."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+class RollbackTemplateType(StrEnum):
+    """Built-in rollback template types."""
+
+    FULL_DEPLOYMENT = "full_deployment"
+    PARTIAL_SERVICE = "partial_service"
+    CONFIGURATION = "configuration"
+    CUSTOM = "custom"
+
+
+@dataclass
+class RollbackTrigger:
+    """Automated trigger configuration for rollback.
+
+    Attributes:
+        trigger_id: Unique trigger identifier
+        trigger_type: Type of trigger
+        name: Human-readable trigger name
+        description: Detailed description
+        enabled: Whether trigger is active
+        sensitivity: Sensitivity level (low/medium/high)
+        conditions: Trigger conditions dict
+        target_state: Target state to rollback to
+        template_id: Template to use for rollback
+        require_confirmation: Whether to require manual confirmation
+        created_at: When trigger was created
+        last_triggered: When trigger last fired
+        trigger_count: Number of times triggered
+    """
+
+    trigger_type: RollbackTriggerType
+    name: str
+    description: str = ""
+    trigger_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    enabled: bool = True
+    sensitivity: str = "medium"  # low, medium, high
+    conditions: dict[str, Any] = field(default_factory=dict)
+    target_state: str = ""
+    template_id: str = ""
+    require_confirmation: bool = False
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    last_triggered: datetime | None = None
+    trigger_count: int = 0
+
+    def mark_triggered(self) -> None:
+        """Mark trigger as fired."""
+        self.last_triggered = datetime.now(UTC)
+        self.trigger_count += 1
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "trigger_id": self.trigger_id,
+            "trigger_type": self.trigger_type.value,
+            "name": self.name,
+            "description": self.description,
+            "enabled": self.enabled,
+            "sensitivity": self.sensitivity,
+            "conditions": self.conditions,
+            "target_state": self.target_state,
+            "template_id": self.template_id,
+            "require_confirmation": self.require_confirmation,
+            "created_at": self.created_at.isoformat(),
+            "last_triggered": self.last_triggered.isoformat()
+            if self.last_triggered
+            else None,
+            "trigger_count": self.trigger_count,
+        }
+
+
+@dataclass
+class RollbackTemplateStep:
+    """Single step in a rollback template.
+
+    Attributes:
+        name: Step name
+        description: Step description
+        action: Action identifier
+        timeout_seconds: Step timeout
+        parameters: Step parameters
+        validation_check: Validation to run after step
+    """
+
+    name: str
+    description: str
+    action: str
+    timeout_seconds: float = 10.0
+    parameters: dict[str, Any] = field(default_factory=dict)
+    validation_check: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "name": self.name,
+            "description": self.description,
+            "action": self.action,
+            "timeout_seconds": self.timeout_seconds,
+            "parameters": self.parameters,
+            "validation_check": self.validation_check,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> RollbackTemplateStep:
+        """Create from dictionary."""
+        return cls(
+            name=data["name"],
+            description=data.get("description", ""),
+            action=data["action"],
+            timeout_seconds=data.get("timeout_seconds", 10.0),
+            parameters=data.get("parameters", {}),
+            validation_check=data.get("validation_check"),
+        )
+
+
+@dataclass
+class RollbackTemplate:
+    """Pre-defined rollback template.
+
+    Attributes:
+        template_id: Unique template identifier
+        template_type: Type of template
+        name: Human-readable name
+        description: Detailed description
+        steps: Template steps
+        parameters: Template parameters (for customization)
+        created_at: When template was created
+        updated_at: When template was last updated
+        usage_count: Number of times used
+    """
+
+    template_type: RollbackTemplateType
+    name: str
+    description: str = ""
+    steps: list[RollbackTemplateStep] = field(default_factory=list)
+    parameters: dict[str, Any] = field(default_factory=dict)
+    template_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    usage_count: int = 0
+
+    def add_step(self, step: RollbackTemplateStep) -> None:
+        """Add a step to the template."""
+        self.steps.append(step)
+        self.updated_at = datetime.now(UTC)
+
+    def mark_used(self) -> None:
+        """Mark template as used."""
+        self.usage_count += 1
+        self.updated_at = datetime.now(UTC)
+
+    def validate(self) -> list[str]:
+        """Validate template configuration.
+
+        Returns:
+            List of validation errors (empty if valid)
+        """
+        errors = []
+
+        if not self.steps:
+            errors.append("Template must have at least one step")
+
+        for i, step in enumerate(self.steps):
+            if not step.name:
+                errors.append(f"Step {i}: name is required")
+            if not step.action:
+                errors.append(f"Step {i}: action is required")
+
+        return errors
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "template_id": self.template_id,
+            "template_type": self.template_type.value,
+            "name": self.name,
+            "description": self.description,
+            "steps": [s.to_dict() for s in self.steps],
+            "parameters": self.parameters,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
+            "usage_count": self.usage_count,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> RollbackTemplate:
+        """Create from dictionary."""
+        template = cls(
+            template_type=RollbackTemplateType(data.get("template_type", "custom")),
+            name=data["name"],
+            description=data.get("description", ""),
+            steps=[RollbackTemplateStep.from_dict(s) for s in data.get("steps", [])],
+            parameters=data.get("parameters", {}),
+            template_id=data.get("template_id", str(uuid.uuid4())),
+            created_at=datetime.fromisoformat(data["created_at"])
+            if "created_at" in data
+            else datetime.now(UTC),
+            updated_at=datetime.fromisoformat(data["updated_at"])
+            if "updated_at" in data
+            else datetime.now(UTC),
+            usage_count=data.get("usage_count", 0),
+        )
+        return template
+
+
+@dataclass
+class RollbackImpactAnalysis:
+    """Impact analysis for rollback operations.
+
+    Attributes:
+        estimated_affected_users: Estimated number of users affected
+        estimated_affected_requests: Estimated number of requests affected
+        estimated_downtime_seconds: Estimated downtime in seconds
+        affected_services: List of services that will be affected
+        affected_dependencies: List of dependencies that may be affected
+        risk_score: Calculated risk score (low/medium/high)
+        risk_factors: List of risk factors identified
+        confirmation_required: Whether explicit confirmation is required
+        analysis_timestamp: When analysis was performed
+    """
+
+    estimated_affected_users: int = 0
+    estimated_affected_requests: int = 0
+    estimated_downtime_seconds: float = 0.0
+    affected_services: list[str] = field(default_factory=list)
+    affected_dependencies: list[str] = field(default_factory=list)
+    risk_score: RollbackRiskLevel = RollbackRiskLevel.LOW
+    risk_factors: list[str] = field(default_factory=list)
+    confirmation_required: bool = False
+    analysis_timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "estimated_affected_users": self.estimated_affected_users,
+            "estimated_affected_requests": self.estimated_affected_requests,
+            "estimated_downtime_seconds": self.estimated_downtime_seconds,
+            "affected_services": self.affected_services,
+            "affected_dependencies": self.affected_dependencies,
+            "risk_score": self.risk_score.value,
+            "risk_factors": self.risk_factors,
+            "confirmation_required": self.confirmation_required,
+            "analysis_timestamp": self.analysis_timestamp.isoformat(),
+        }
+
+
+@dataclass
+class CoordinatedRollbackConfig:
+    """Configuration for coordinated multi-service rollback.
+
+    Attributes:
+        service_order: Ordered list of services to rollback
+        parallel_groups: Groups of services that can rollback in parallel
+        dependencies: Service dependency mapping
+        circuit_breaker_integration: Whether to open breakers before rollback
+        retry_budget_preservation: Whether to preserve retry budgets
+        checkpoint_interval: Interval for creating checkpoints
+    """
+
+    service_order: list[str] = field(default_factory=list)
+    parallel_groups: list[list[str]] = field(default_factory=list)
+    dependencies: dict[str, list[str]] = field(default_factory=dict)
+    circuit_breaker_integration: bool = True
+    retry_budget_preservation: bool = True
+    checkpoint_interval: int = 1  # Create checkpoint after every N services
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "service_order": self.service_order,
+            "parallel_groups": self.parallel_groups,
+            "dependencies": self.dependencies,
+            "circuit_breaker_integration": self.circuit_breaker_integration,
+            "retry_budget_preservation": self.retry_budget_preservation,
+            "checkpoint_interval": self.checkpoint_interval,
+        }
+
+
+@dataclass
+class RollbackCheckpoint:
+    """Checkpoint for partial rollback recovery.
+
+    Attributes:
+        checkpoint_id: Unique checkpoint identifier
+        operation_id: Parent operation ID
+        services_completed: Services that have been rolled back
+        services_remaining: Services still to rollback
+        timestamp: When checkpoint was created
+        metadata: Additional checkpoint data
+    """
+
+    operation_id: str
+    services_completed: list[str] = field(default_factory=list)
+    services_remaining: list[str] = field(default_factory=list)
+    checkpoint_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "checkpoint_id": self.checkpoint_id,
+            "operation_id": self.operation_id,
+            "services_completed": self.services_completed,
+            "services_remaining": self.services_remaining,
+            "timestamp": self.timestamp.isoformat(),
+            "metadata": self.metadata,
+        }
+
+
+@dataclass
+class PostRollbackValidationResult:
+    """Result of post-rollback validation suite.
+
+    Attributes:
+        validation_id: Unique validation identifier
+        operation_id: Parent operation ID
+        health_checks_passed: Whether all health checks passed
+        smoke_tests_passed: Whether smoke tests passed
+        circuit_breaker_states_verified: Whether CB states are correct
+        retry_budgets_reset: Whether retry budgets were reset
+        validation_report: Detailed validation report
+        completed_at: When validation completed
+    """
+
+    operation_id: str
+    health_checks_passed: bool = False
+    smoke_tests_passed: bool = False
+    circuit_breaker_states_verified: bool = False
+    retry_budgets_reset: bool = False
+    validation_report: dict[str, Any] = field(default_factory=dict)
+    validation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    completed_at: datetime | None = None
+
+    def mark_completed(self, report: dict[str, Any]) -> None:
+        """Mark validation as completed."""
+        self.validation_report = report
+        self.completed_at = datetime.now(UTC)
+
+    def all_passed(self) -> bool:
+        """Check if all validations passed."""
+        return (
+            self.health_checks_passed
+            and self.smoke_tests_passed
+            and self.circuit_breaker_states_verified
+            and self.retry_budgets_reset
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "validation_id": self.validation_id,
+            "operation_id": self.operation_id,
+            "health_checks_passed": self.health_checks_passed,
+            "smoke_tests_passed": self.smoke_tests_passed,
+            "circuit_breaker_states_verified": self.circuit_breaker_states_verified,
+            "retry_budgets_reset": self.retry_budgets_reset,
+            "validation_report": self.validation_report,
+            "completed_at": self.completed_at.isoformat()
+            if self.completed_at
+            else None,
+            "all_passed": self.all_passed(),
+        }
 
 
 class RollbackStatus(StrEnum):
