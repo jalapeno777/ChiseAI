@@ -1,6 +1,7 @@
 """FastAPI routes for circuit breaker management.
 
 ST-NS-038: Circuit Breaker Registry & Unified Telemetry
+ST-SAFETY-001: Circuit Breaker Enhancement - API Endpoints
 """
 
 from __future__ import annotations
@@ -12,7 +13,10 @@ from fastapi import APIRouter, HTTPException, status
 from autonomous_control_plane.components.circuit_breaker_registry import (
     CircuitBreakerRegistry,
 )
-from autonomous_control_plane.models.circuit_breaker import CircuitBreakerConfig
+from autonomous_control_plane.models.circuit_breaker import (
+    CircuitBreakerConfig,
+    CircuitBreakerGroup,
+)
 
 router = APIRouter(prefix="/circuit-breakers", tags=["circuit-breakers"])
 
@@ -263,3 +267,261 @@ async def flush_telemetry() -> dict[str, Any]:
     """
     _registry.flush_telemetry()
     return {"message": "Telemetry flushed"}
+
+
+# ==================== Adaptive Threshold Endpoints ====================
+
+
+@router.get("/{name}/adaptive", response_model=dict[str, Any])
+async def get_adaptive_metrics(name: str) -> dict[str, Any]:
+    """Get adaptive threshold metrics for a circuit breaker.
+
+    Args:
+        name: Circuit breaker name
+
+    Returns:
+        Adaptive threshold metrics
+
+    Raises:
+        HTTPException: If circuit breaker not found
+    """
+    metrics = _registry.get_adaptive_metrics(name)
+    if metrics is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Circuit breaker '{name}' not found",
+        )
+    return metrics
+
+
+# ==================== Canary Recovery Endpoints ====================
+
+
+@router.get("/{name}/canary", response_model=dict[str, Any])
+async def get_canary_state(name: str) -> dict[str, Any]:
+    """Get canary recovery state for a circuit breaker.
+
+    Args:
+        name: Circuit breaker name
+
+    Returns:
+        Canary recovery state
+
+    Raises:
+        HTTPException: If circuit breaker not found
+    """
+    canary_state = _registry.get_canary_state(name)
+    if canary_state is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Circuit breaker '{name}' not found",
+        )
+
+    traffic_percent = _registry.get_canary_traffic_percent(name)
+    return {
+        **canary_state,
+        "traffic_percent": traffic_percent,
+    }
+
+
+# ==================== Predictive Alert Endpoints ====================
+
+
+@router.get("/{name}/predictive", response_model=dict[str, Any])
+async def get_predictive_state(name: str) -> dict[str, Any]:
+    """Get predictive alert state for a circuit breaker.
+
+    Args:
+        name: Circuit breaker name
+
+    Returns:
+        Predictive alert state
+
+    Raises:
+        HTTPException: If circuit breaker not found
+    """
+    predictive_state = _registry.get_predictive_state(name)
+    if predictive_state is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Circuit breaker '{name}' not found",
+        )
+    return predictive_state
+
+
+@router.get("/alerts/predictive", response_model=dict[str, Any])
+async def check_predictive_alerts() -> dict[str, Any]:
+    """Check predictive alerts for all circuit breakers.
+
+    Returns:
+        List of triggered alerts
+    """
+    alerts = _registry.check_all_predictive_alerts()
+    return {
+        "count": len(alerts),
+        "alerts": alerts,
+    }
+
+
+# ==================== Circuit Breaker Group Endpoints ====================
+
+
+@router.post(
+    "/groups", response_model=dict[str, Any], status_code=status.HTTP_201_CREATED
+)
+async def create_group(
+    name: str,
+    member_names: list[str] | None = None,
+    cascade_open: bool = True,
+    cascade_close: bool = False,
+) -> dict[str, Any]:
+    """Create a new circuit breaker group.
+
+    Args:
+        name: Group name
+        member_names: List of circuit breaker names to add
+        cascade_open: Whether to cascade open operations
+        cascade_close: Whether to cascade close operations
+
+    Returns:
+        Created group
+    """
+    group = _registry.create_group(
+        name=name,
+        member_names=member_names,
+        cascade_open=cascade_open,
+        cascade_close=cascade_close,
+    )
+    return cast(dict[str, Any], group.to_dict())
+
+
+@router.get("/groups", response_model=dict[str, Any])
+async def list_groups() -> dict[str, Any]:
+    """List all circuit breaker groups.
+
+    Returns:
+        List of group names
+    """
+    groups = _registry.list_groups()
+    return {
+        "count": len(groups),
+        "groups": groups,
+    }
+
+
+@router.get("/groups/{name}", response_model=dict[str, Any])
+async def get_group(name: str) -> dict[str, Any]:
+    """Get a circuit breaker group.
+
+    Args:
+        name: Group name
+
+    Returns:
+        Group details
+
+    Raises:
+        HTTPException: If group not found
+    """
+    group = _registry.get_group(name)
+    if group is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Group '{name}' not found",
+        )
+    return cast(dict[str, Any], group.to_dict())
+
+
+@router.delete("/groups/{name}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_group(name: str) -> None:
+    """Delete a circuit breaker group.
+
+    Args:
+        name: Group name
+
+    Raises:
+        HTTPException: If group not found
+    """
+    success = _registry.delete_group(name)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Group '{name}' not found",
+        )
+
+
+@router.post(
+    "/groups/{name}/members/{circuit_breaker_name}",
+    response_model=dict[str, Any],
+)
+async def add_to_group(name: str, circuit_breaker_name: str) -> dict[str, Any]:
+    """Add a circuit breaker to a group.
+
+    Args:
+        name: Group name
+        circuit_breaker_name: Circuit breaker name
+
+    Returns:
+        Updated group
+
+    Raises:
+        HTTPException: If group not found
+    """
+    success = _registry.add_to_group(name, circuit_breaker_name)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Group '{name}' not found",
+        )
+
+    group = _registry.get_group(name)
+    return cast(dict[str, Any], group.to_dict()) if group else {}
+
+
+@router.delete(
+    "/groups/{name}/members/{circuit_breaker_name}",
+    response_model=dict[str, Any],
+)
+async def remove_from_group(name: str, circuit_breaker_name: str) -> dict[str, Any]:
+    """Remove a circuit breaker from a group.
+
+    Args:
+        name: Group name
+        circuit_breaker_name: Circuit breaker name
+
+    Returns:
+        Updated group
+
+    Raises:
+        HTTPException: If group not found
+    """
+    success = _registry.remove_from_group(name, circuit_breaker_name)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Group '{name}' or member '{circuit_breaker_name}' not found",
+        )
+
+    group = _registry.get_group(name)
+    return cast(dict[str, Any], group.to_dict()) if group else {}
+
+
+@router.get("/groups/{name}/metrics", response_model=dict[str, Any])
+async def get_group_metrics(name: str) -> dict[str, Any]:
+    """Get aggregated metrics for a circuit breaker group.
+
+    Args:
+        name: Group name
+
+    Returns:
+        Group metrics
+
+    Raises:
+        HTTPException: If group not found
+    """
+    metrics = _registry.get_group_metrics(name)
+    if metrics is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Group '{name}' not found",
+        )
+    return cast(dict[str, Any], metrics.to_dict())

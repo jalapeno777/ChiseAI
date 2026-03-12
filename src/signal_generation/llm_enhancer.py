@@ -4,7 +4,7 @@ Provides LLMConfidenceEnhancer class that uses LLM APIs to analyze
 base signals and provide enhanced confidence scores with rationale.
 
 Uses LLMProviderChain for KIMI-first priority with automatic fallback:
-KIMI → Z.ai (GLM-5) → Zhipu → MiniMax
+KIMI Adapter → KIMI Direct → Z.ai (GLM-5)
 
 Implements caching to avoid repeated calls for identical signal patterns.
 """
@@ -226,7 +226,7 @@ class LLMConfidenceEnhancer:
 
     Features:
     - Uses LLMProviderChain with KIMI-first priority
-    - Automatic fallback: KIMI → Z.ai → Zhipu → MiniMax
+    - Automatic fallback: KIMI Adapter → KIMI Direct → Z.ai
     - Captures fallback reasons in provider traces
     - Caches results to avoid redundant LLM calls
     - Logs all LLM interactions with timestamps
@@ -258,8 +258,8 @@ RISK_ASSESSMENT: <risk evaluation>
 CONFIDENCE_SCORE: <number 0-100>
 RATIONALE: <your reasoning>"""
 
-    # Default provider order: KIMI → Z.ai → Zhipu → MiniMax
-    DEFAULT_PROVIDER_ORDER = ["kimi", "zai", "zhipu", "minimax"]
+    # Default provider order: KIMI Adapter → KIMI Direct → Z.ai
+    DEFAULT_PROVIDER_ORDER = ["kimi_compat", "kimi", "zai"]
 
     def __init__(
         self,
@@ -274,7 +274,7 @@ RATIONALE: <your reasoning>"""
             use_llm: Whether to use LLM enhancement (from env if None)
             cache_size: Maximum cache entries
             cache_ttl: Cache TTL in seconds
-            provider_order: Custom provider order (default: KIMI → Z.ai → Zhipu → MiniMax)
+            provider_order: Custom provider order (default: KIMI Adapter → KIMI Direct → Z.ai)
         """
         self.use_llm = self._resolve_use_llm(use_llm)
         self.cache = LLMCache(max_size=cache_size, ttl_seconds=cache_ttl)

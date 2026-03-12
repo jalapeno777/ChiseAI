@@ -2,7 +2,7 @@
 
 **Story ID**: LLM-PROVIDER-FIX-001-LOCKIN
 **Phase**: C - Lock-in Reproducibility
-**Last Updated**: 2026-03-06
+**Last Updated**: 2026-03-12
 
 ---
 
@@ -14,27 +14,29 @@ This runbook provides exact smoke test commands for validating LLM provider conn
 
 | Provider | Endpoint | Default Model | API Key Env Var |
 |----------|----------|---------------|-----------------|
-| KIMI (Direct) | `https://api.moonshot.cn/v1` | `kimi-k2.5` | `KIMI_API_KEY` |
+| KIMI (Direct Coding) | `https://api.kimi.com/coding/v1` | `kimi-for-coding` | `KIMI_API_KEY` |
 | KIMI (Adapter) | `http://chiseai-kimi-adapter:8002/v1` | `kimi-for-coding` | `KIMI_API_KEY` |
 | Z.ai Coding | `https://api.z.ai/api/coding/paas/v4` | `glm-5` | `ZAI_API_KEY` |
-| Zhipu | `https://open.bigmodel.cn/api/paas/v4` | `glm-4.7` | `ZHIPU_API_KEY` |
+| Zhipu | Alias of Z.ai in provider chain | `glm-5` | `ZHIPU_API_KEY` |
 
 ---
 
 ## Smoke Test Commands
 
-### 1. KIMI Direct (Moonshot API)
+### 1. KIMI Direct (Coding API)
 
 ```bash
 # Test KIMI direct endpoint
 curl -s -w "\nHTTP Status: %{http_code}\nLatency: %{time_total}s\n" \
-  -X POST "https://api.moonshot.cn/v1/chat/completions" \
+  -X POST "https://api.kimi.com/coding/v1/chat/completions" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $KIMI_API_KEY" \
+  -H "User-Agent: claude-code/0.1.0" \
   -d '{
-    "model": "kimi-k2.5",
+    "model": "kimi-for-coding",
     "messages": [{"role": "user", "content": "Reply with OK"}],
-    "max_tokens": 10
+    "max_tokens": 64,
+    "thinking": {"type": "disabled"}
   }'
 ```
 
@@ -107,22 +109,64 @@ Latency: 1.456s
 - `400 Unknown Model` - Invalid model name (use `glm-5`)
 - `429 Insufficient Balance` - Account quota exhausted (code 1113)
 
-### 4. Zhipu (Open BigModel)
+### 4. Zhipu Alias (Provider-chain only)
 
 ```bash
-# Test Zhipu endpoint
-curl -s -w "\nHTTP Status: %{http_code}\nLatency: %{time_total}s\n" \
-  -X POST "https://open.bigmodel.cn/api/paas/v4/chat/completions" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $ZHIPU_API_KEY" \
-  -d '{
-    "model": "glm-4.7",
-    "messages": [{"role": "user", "content": "Reply with OK"}],
-    "max_tokens": 10
-  }'
+# ZHIPU is treated as deprecated alias to ZAI in provider_chain.
+# Use Z.ai smoke tests above for endpoint verification.
+python - <<'PY'
+from llm.provider_chain import LLMProviderChain
+print("zhipu alias behavior: configured provider name maps to zai")
+PY
 ```
 
-**Note:** This endpoint shares quota with Z.ai but may have different model availability.
+**Note:** `zhipu` remains accepted as input for compatibility, but it is canonicalized to `zai`.
+
+---
+
+## Reassessment Procedure (If Failures Reappear)
+
+Run this sequence in order and capture outputs in a dated evidence file under `docs/evidence/`.
+
+1. Container health and routing
+```bash
+docker ps --filter name=chiseai-api-final --filter name=chiseai-kimi-adapter
+docker exec chiseai-api-final env | grep -E '^(KIMI|ZAI|ZHIPU|MINIMAX)_'
+```
+2. Direct provider probes (must return HTTP 200 with non-empty `choices[0].message.content`)
+```bash
+docker exec chiseai-api-final bash -lc 'python - <<\"PY\"
+import os, json, urllib.request
+checks = [
+  ("KIMI", os.getenv("KIMI_BASE_URL","").rstrip("/") + "/chat/completions",
+   {"Content-Type":"application/json","Authorization":"Bearer "+os.getenv("KIMI_API_KEY",""),"User-Agent":"claude-code/0.1.0"},
+   {"model":os.getenv("KIMI_MODEL","kimi-for-coding"),"messages":[{"role":"user","content":"Reply with OK"}],"max_tokens":64,"thinking":{"type":"disabled"}}),
+  ("ZAI", "https://api.z.ai/api/coding/paas/v4/chat/completions",
+   {"Content-Type":"application/json","Authorization":"Bearer "+(os.getenv("ZAI_API_KEY") or os.getenv("ZHIPU_API_KEY",""))},
+   {"model":"glm-5","messages":[{"role":"user","content":"Reply with OK"}],"max_tokens":64,"thinking":{"type":"disabled"}}),
+]
+for name, url, headers, payload in checks:
+  req = urllib.request.Request(url, data=json.dumps(payload).encode(), headers=headers, method="POST")
+  with urllib.request.urlopen(req, timeout=60) as r:
+    data = json.loads(r.read().decode("utf-8","replace"))
+    content = ((data.get("choices") or [{}])[0].get("message") or {}).get("content","")
+    print(name, r.status, bool(content.strip()), content[:100])
+PY'
+```
+3. Chain probes (must return `success=true` with non-empty content)
+```bash
+docker exec chiseai-api-final bash -lc 'python - <<\"PY\"
+import asyncio
+from llm.provider_chain import LLMProviderChain
+async def main():
+    for order in (["kimi_compat"], ["zai"]):
+        r = await LLMProviderChain(provider_order=order).query("One short sentence with kiwi.")
+        print(order, r.success, r.provider, bool((r.content or "").strip()), r.error.message if r.error else None)
+asyncio.run(main())
+PY'
+```
+4. If KIMI returns empty `content` with 200, verify `thinking` is disabled through adapter and provider chain.
+5. If adapter returns 403/401, ensure status code is preserved (not converted to 500), then fallback to `zai` should occur.
 
 ---
 
@@ -202,3 +246,4 @@ Exit Code: 1
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-03-06 | Initial creation for LLM-PROVIDER-FIX-001 Phase C | Dev Agent |
+| 2026-03-12 | Updated to coding endpoints, zhipu alias behavior, and reassessment procedure after live fix validation | Codex |

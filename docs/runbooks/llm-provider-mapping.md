@@ -4,6 +4,8 @@
 
 This document provides the canonical mapping of LLM providers, endpoints, and configuration for the ChiseAI Neuro-Symbolic Brain System.
 
+**Status (2026-03-12):** LLM connectivity issues are resolved for KIMI and Z.AI in live container validation.
+
 ## ⚠️ CRITICAL: Mandatory Bridge Route for KIMI
 
 **KIMI MUST route through the `chiseai-kimi-adapter` container.**
@@ -31,8 +33,8 @@ Direct API calls to `https://api.moonshot.cn/v1` are deprecated and may be disab
 | Provider | Endpoint | Model | API Key Env | Status | Notes |
 |----------|----------|-------|-------------|--------|-------|
 | **KIMI (via adapter)** | http://chiseai-kimi-adapter:8002/v1 | kimi-for-coding | KIMI_API_KEY | **MANDATORY** | OpenAI-compatible adapter - REQUIRED route |
-| KIMI (direct) | https://api.moonshot.cn/v1 | kimi-k2.5 | KIMI_API_KEY | Deprecated | Direct API access - DO NOT USE |
-| Z.ai/Zhipu Group | https://api.z.ai/api/paas/v4 | glm-5 | ZAI_API_KEY or ZHIPU_API_KEY | Active | Usage-equivalent providers (see grouping below) |
+| KIMI (direct coding) | https://api.kimi.com/coding/v1 | kimi-for-coding | KIMI_API_KEY | Fallback | Direct coding API access |
+| Z.ai/Zhipu Group | https://api.z.ai/api/coding/paas/v4 | glm-5 | ZAI_API_KEY or ZHIPU_API_KEY | Active | `zhipu` name is deprecated alias to `zai` |
 | MiniMax | N/A | N/A | MINIMAX_API_KEY | **DISABLED** | Removed from provider chain - DO NOT USE |
 
 ## Endpoint Details
@@ -58,16 +60,15 @@ Direct API calls to `https://api.moonshot.cn/v1` are deprecated and may be disab
 
 ### KIMI (Direct)
 
-**Endpoint:** `https://api.moonshot.cn/v1`
+**Endpoint:** `https://api.kimi.com/coding/v1`
 
-**Model:** `kimi-k2.5`
+**Model:** `kimi-for-coding` (fallback: `kimi-k2.5`)
 
 **API Key:** `KIMI_API_KEY`
 
 **Description:**
-- Direct access to Moonshot AI's API
-- No intermediate adapter layer
-- Lower latency for production workloads
+- Direct access to Kimi coding API
+- Used as fallback path when adapter route is unavailable
 
 **When to Use:**
 - Production deployments without local adapter
@@ -104,7 +105,7 @@ Direct API calls to `https://api.moonshot.cn/v1` are deprecated and may be disab
 ### What This Means
 
 - Both providers offer the same GLM-5 model with identical capabilities
-- They share the same endpoint: `https://api.z.ai/api/paas/v4/chat/completions`
+- They share the same endpoint: `https://api.z.ai/api/coding/paas/v4/chat/completions`
 - Either `ZAI_API_KEY` or `ZHIPU_API_KEY` can be used interchangeably
 - The provider chain treats them as alternatives within the same group
 

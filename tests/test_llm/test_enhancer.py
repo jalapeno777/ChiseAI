@@ -128,10 +128,10 @@ class TestLLMConfidenceEnhancerInitialization:
         assert enhancer.is_available() is False
 
     def test_default_provider_order(self):
-        """Test that default provider order is KIMI → Z.ai → Zhipu → MiniMax."""
+        """Test that default provider order is Adapter → KIMI → Z.ai."""
         enhancer = LLMConfidenceEnhancer(use_llm=False)
 
-        expected_order = ["kimi", "zai", "zhipu", "minimax"]
+        expected_order = ["kimi_compat", "kimi", "zai"]
         assert enhancer.get_provider_order() == expected_order
         assert expected_order == enhancer.DEFAULT_PROVIDER_ORDER
 
@@ -195,7 +195,7 @@ class TestProviderChainIntegration:
             # Verify KIMI was attempted first
             mock_provider_chain.query.assert_called_once()
             call_kwargs = mock_provider_chain.query.call_args[1]
-            assert call_kwargs.get("providers") == ["kimi", "zai", "zhipu", "minimax"]
+            assert call_kwargs.get("providers") == ["kimi_compat", "kimi", "zai"]
 
             # Verify result shows KIMI as provider (no fallback)
             assert result.llm_provider == "KIMI K2.5"
