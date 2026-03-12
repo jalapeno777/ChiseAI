@@ -14,10 +14,14 @@ from src.api.ece_router import router as ece_router
 from src.api.health_router import router as health_router
 from src.api.health_router import set_health_monitor
 from src.api.paper_router import router as paper_router
+from src.autonomous_control_plane.api.v1.circuit_breakers import (
+    router as circuit_breakers_router,
+)
 from src.autonomous_control_plane.api.v1.healing import router as healing_router
 
 # ACP (Autonomous Control Plane) routes - EP-NS-008
 from src.autonomous_control_plane.api.v1.incidents import router as incidents_router
+from src.autonomous_control_plane.api.v1.retry import router as retry_router
 from src.autonomous_control_plane.api.v1.rollback import router as rollback_router
 
 # ACP startup and dependency verification - PM-BATCH-1
@@ -90,9 +94,12 @@ app.include_router(health_router)
 app.include_router(paper_router)
 
 # Mount ACP routers - EP-NS-008
+# Note: healing, incidents, and retry routers already have /api/v1 prefix in their definitions
+app.include_router(circuit_breakers_router, prefix="/api/v1")
 app.include_router(incidents_router)
 app.include_router(healing_router)
-app.include_router(rollback_router)
+app.include_router(retry_router)
+app.include_router(rollback_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["health"])
