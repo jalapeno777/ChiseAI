@@ -1,0 +1,95 @@
+{
+  "metadata": {
+    "capture_time": "2026-03-12T01:08:17.903927+00:00",
+    "agent_version": "1.0.0",
+    "data_sources": [
+      "redis",
+      "qdrant"
+    ],
+    "snapshot_type": "week1_audit",
+    "story_id": "ST-GOV-MINI-001"
+  },
+  "active_stories": [],
+  "memory_stats": {
+    "redis_keys_total": 11236,
+    "redis_keys_by_db": {
+      "db0": 10524,
+      "db1": 712
+    },
+    "redis_memory_used_mb": 22.077110290527344,
+    "qdrant_collections": [
+      "ChiseAI"
+    ],
+    "qdrant_total_vectors": 417
+  },
+  "governance_metrics": {
+    "retrieval_latency_ms": 25.0,
+    "memory_hit_rate": 75.0,
+    "deduplication_ratio": 0.7,
+    "active_ownership_locks": 20,
+    "parallel_workers": 3
+  },
+  "agent_activity": {
+    "timestamp": "2026-03-12T01:08:17.931670+00:00",
+    "active_agents": [
+      {
+        "agent": "dev",
+        "scopes": [
+          "src:brain",
+          "tests:test_brain",
+          "config:bybit_endpoints.yaml",
+          "config:market_realism.yaml",
+          "scripts:run_ohlcv_ingestion.py",
+          "scripts:monitoring",
+          "src:governance:checkpoint",
+          "tests:test_monitoring",
+          "skills:memory-benchmark",
+          "src:discord_alerts",
+          "scripts:validation",
+          "scripts:health",
+          "opencode:skills:chiseai-parallel-safety",
+          "opencode:templates",
+          "git:hooks"
+        ]
+      },
+      {
+        "agent": "executor",
+        "scopes": [
+          "scripts:ops:skill_creator:scripts:improve_description.py"
+        ]
+      },
+      {
+        "agent": "senior-dev",
+        "scopes": [
+          "src:execution:paper",
+          "src:ml:models",
+          "scripts:continuous_signal_generator.py",
+          "scripts:monitoring:supervisor.py"
+        ]
+      }
+    ],
+    "total_stories_tracked": 0,
+    "ownership_claims": {
+      "src:brain": "ST-COVERAGE-001/dev/2026-03-10T17:12:26Z",
+      "tests:test_brain": "ST-COVERAGE-001/dev/2026-03-10T17:12:26Z",
+      "scripts:ops:skill_creator:scripts:improve_description.py": "ST-SKILL-CLI-001/executor/2026-03-10T20:09:35Z",
+      "src:execution:paper": "P0-KPI-GUARDRAILS-002/senior-dev/2026-03-10T22:40:26Z",
+      "src:ml:models": "P0-KPI-GUARDRAILS-002/senior-dev/2026-03-10T22:40:26Z",
+      "scripts:continuous_signal_generator.py": "PAPER-DIAG-001/senior-dev/2026-03-11T18:35:15Z",
+      "config:bybit_endpoints.yaml": "ST-PAPER-TOKEN-001/dev/2026-03-11T00:27:31Z",
+      "config:market_realism.yaml": "ST-PAPER-TOKEN-001/dev/2026-03-11T00:27:31Z",
+      "scripts:run_ohlcv_ingestion.py": "ST-PAPER-TOKEN-001/dev/2026-03-11T00:27:31Z",
+      "scripts:monitoring": "PAPER-DIAG-001/dev/2026-03-11T18:14:05Z",
+      "src:governance:checkpoint": "PAPER-DIAG-001/dev/2026-03-11T15:51:42Z",
+      "tests:test_monitoring": "PAPER-DIAG-001/dev/2026-03-11T15:51:42Z",
+      "skills:memory-benchmark": "ST-SKILL-001C/dev/2026-03-11T16:34:51Z",
+      "src:discord_alerts": "PAPER-DIAG-001/dev/2026-03-11T18:14:05Z",
+      "scripts:monitoring:supervisor.py": "PAPER-DIAG-001/senior-dev/2026-03-11T18:35:15Z",
+      "scripts:validation": "HOURLY-HEALTH-004/dev/2026-03-11T21:08:58Z",
+      "scripts:health": "HOURLY-HEALTH-004/dev/2026-03-11T21:08:58Z",
+      "opencode:skills:chiseai-parallel-safety": "ST-SKILL-OPT-002/dev/2026-03-11T21:55:13Z",
+      "opencode:templates": "PROCESS-IMPROVEMENT-001/dev/2026-03-11T22:22:04Z",
+      "git:hooks": "PROCESS-IMPROVEMENT-001/dev/2026-03-11T22:22:04Z"
+    }
+  }
+}
