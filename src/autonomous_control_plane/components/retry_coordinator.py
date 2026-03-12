@@ -28,7 +28,7 @@ from autonomous_control_plane.components.retry_budget_manager import (
     BudgetAnalytics,
     RetryBudgetManager,
 )
-from autonomous_control_plane.models.retry_policy import (
+from src.autonomous_control_plane.models.retry_policy import (
     BudgetExceededError,
     BudgetExhaustionStrategy,
     MaxRetriesExceededError,
@@ -37,7 +37,7 @@ from autonomous_control_plane.models.retry_policy import (
     RetryPolicy,
     RetryStatus,
 )
-from common.circuit_breaker import CircuitBreakerOpen, CircuitBreakerRegistry
+from src.common.circuit_breaker import CircuitBreakerOpen, CircuitBreakerRegistry
 
 if TYPE_CHECKING:
     from influxdb_client import InfluxDBClient
