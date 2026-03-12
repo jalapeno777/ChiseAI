@@ -60,8 +60,8 @@ def test_environment_defaults():
 
         importlib.reload(main_module)
 
-        assert main_module.KIMI_BASE_URL == "https://api.moonshot.cn/v1"
-        assert main_module.KIMI_MODEL == "kimi-k2.5"
+        assert main_module.KIMI_BASE_URL == "https://api.kimi.com/coding/v1"
+        assert main_module.KIMI_MODEL == "kimi-for-coding"
 
 
 if __name__ == "__main__":

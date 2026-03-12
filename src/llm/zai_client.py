@@ -171,9 +171,8 @@ class ZaiClient:
             "stream": stream,
         }
 
-        # Add thinking mode if enabled (GLM-5 feature)
-        if thinking:
-            payload["thinking"] = {"type": "enabled"}
+        # Set thinking mode explicitly to avoid reasoning-only outputs when disabled.
+        payload["thinking"] = {"type": "enabled"} if thinking else {"type": "disabled"}
 
         return payload
 

@@ -34,6 +34,12 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 # Expose adapter port
 EXPOSE 8002
 
+# Copy adapter source into image
+COPY src/adapter/kimi/ /app/kimi_adapter/
+
+# Ensure module import path resolves in all runtimes
+ENV PYTHONPATH=/app/kimi_adapter:$PYTHONPATH
+
 # Switch to non-root user
 USER kimi
 

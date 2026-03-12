@@ -8,10 +8,14 @@ Provides a unified interface for multiple LLM providers with:
 - Metrics collection for burn-in observability
 
 Provider Priority (default):
-1. KIMI (K2.5) - Primary
-2. Z.ai (GLM-5) - Secondary
-3. Zhipu (GLM-4.7) - Tertiary
-4. MiniMax - Quaternary (disabled by default)
+1. KIMI Compat (Adapter) - Primary
+2. KIMI (Direct) - Secondary
+3. Z.ai (GLM-5) - Tertiary
+
+Deprecated aliases:
+- zhipu -> zai
+
+MiniMax remains supported but disabled by default and omitted from default order.
 """
 
 from __future__ import annotations
@@ -237,7 +241,7 @@ def classify_error(error: Exception, status_code: int | None = None) -> Provider
 class LLMProviderChain:
     """Manages LLM provider fallback chain with error classification.
 
-    Provider order: KIMI → GLM-5 → GLM-4.7 → MiniMax (disabled by default)
+    Provider order: KIMI Compat -> KIMI Direct -> GLM-5 (MiniMax disabled by default)
 
     Usage:
         chain = LLMProviderChain()
@@ -277,13 +281,15 @@ class LLMProviderChain:
         # 2. Set MINIMAX_ENABLED=true
         # 3. Test with: python -m pytest tests/test_llm/test_provider_chain.py -v -k minimax
         # 4. Monitor burn-in metrics for MiniMax success rate
-        self.provider_order = provider_order or [
-            "kimi_compat",  # Adapter first (LLM-PROVIDER-FIX-003)
-            "kimi",  # Direct API fallback
-            "zai",
-            "zhipu",
-            # "minimax",  # Disabled per PAPER-LLM-DIAG-001
-        ]
+        self.provider_order = self._normalize_provider_order(
+            provider_order
+            or [
+                "kimi_compat",  # Adapter first (LLM-PROVIDER-FIX-003)
+                "kimi",  # Direct API fallback
+                "zai",
+                # "minimax",  # Disabled per PAPER-LLM-DIAG-001
+            ]
+        )
         self.max_retries = max_retries
         self.retry_delay = retry_delay
         self._provider_stats: dict[str, dict[str, Any]] = {}
@@ -296,6 +302,59 @@ class LLMProviderChain:
             from llm.observability import ChainMetrics
 
             self._chain_metrics = ChainMetrics()
+
+    def _normalize_provider_order(self, provider_order: list[str]) -> list[str]:
+        """Normalize provider order with backward-compatible aliases.
+
+        - "zhipu" is treated as a deprecated alias for "zai".
+        - Duplicates are removed while preserving order.
+        """
+        normalized: list[str] = []
+        for provider in provider_order:
+            canonical = provider
+            if provider == "zhipu":
+                logger.warning(
+                    "Provider 'zhipu' is deprecated and treated as alias for 'zai'"
+                )
+                canonical = "zai"
+
+            if canonical not in normalized:
+                normalized.append(canonical)
+
+        return normalized
+
+    def _resolve_adapter_base_urls(self) -> list[str]:
+        """Resolve adapter base URLs for mixed network topologies.
+
+        Priority:
+        1. Explicit KIMI_COMPAT_BASE_URL (single source of truth when provided)
+        2. Docker service DNS (intra-network)
+        3. host.docker.internal (agent/container to host)
+        """
+        explicit = os.getenv("KIMI_COMPAT_BASE_URL")
+        if explicit:
+            return [explicit]
+
+        return [
+            "http://chiseai-kimi-adapter:8002/v1",
+            "http://host.docker.internal:8002/v1",
+        ]
+
+    def _resolve_kimi_compat_models(self) -> list[str]:
+        """Resolve ordered KIMI models for adapter requests.
+
+        Priority:
+        1. KIMI_MODEL (default: kimi-for-coding)
+        2. KIMI_FALLBACK_MODEL (default: kimi-k2.5)
+        """
+        primary = os.getenv("KIMI_MODEL", "kimi-for-coding")
+        fallback = os.getenv("KIMI_FALLBACK_MODEL", "kimi-k2.5")
+
+        ordered: list[str] = []
+        for model in (primary, fallback):
+            if model and model not in ordered:
+                ordered.append(model)
+        return ordered
 
     def _is_provider_available(self, provider_name: str) -> tuple[bool, str | None]:
         """Check if a provider is available based on environment.
@@ -349,25 +408,23 @@ class LLMProviderChain:
         """
         import socket
 
-        base_url = os.getenv(
-            "KIMI_COMPAT_BASE_URL", "http://chiseai-kimi-adapter:8002/v1"
-        )
-
-        # Extract host and port from URL
         try:
             from urllib.parse import urlparse
 
-            parsed = urlparse(base_url)
-            host = parsed.hostname or "chiseai-kimi-adapter"
-            port = parsed.port or 8002
+            for base_url in self._resolve_adapter_base_urls():
+                parsed = urlparse(base_url)
+                host = parsed.hostname or "chiseai-kimi-adapter"
+                port = parsed.port or 8002
 
-            # Try to connect with a short timeout
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(2.0)  # 2 second timeout for health check
-            result = sock.connect_ex((host, port))
-            sock.close()
+                # Try to connect with a short timeout
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(2.0)  # 2 second timeout for health check
+                result = sock.connect_ex((host, port))
+                sock.close()
 
-            return result == 0
+                if result == 0:
+                    return True
+            return False
         except Exception:
             return False
 
@@ -590,9 +647,6 @@ class LLMProviderChain:
 
         import aiohttp
 
-        base_url = os.getenv(
-            "KIMI_COMPAT_BASE_URL", "http://chiseai-kimi-adapter:8002/v1"
-        )
         api_key = os.getenv("KIMI_API_KEY")
 
         if not api_key:
@@ -607,19 +661,47 @@ class LLMProviderChain:
                 ),
             )
 
+        # Resolve adapter endpoint for this runtime (service DNS or host fallback)
+        base_url = None
+        for candidate in self._resolve_adapter_base_urls():
+            try:
+                from urllib.parse import urlparse
+
+                parsed = urlparse(candidate)
+                host = parsed.hostname or "chiseai-kimi-adapter"
+                port = parsed.port or 8002
+                import socket
+
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(2.0)
+                result = sock.connect_ex((host, port))
+                sock.close()
+                if result == 0:
+                    base_url = candidate
+                    break
+            except Exception:
+                continue
+
+        if not base_url:
+            return LLMResponse(
+                success=False,
+                provider="KIMI Compat (Adapter)",
+                error=ProviderError(
+                    category=ErrorCategory.NETWORK,
+                    message=(
+                        "KIMI adapter unreachable via configured routes: "
+                        + ", ".join(self._resolve_adapter_base_urls())
+                    ),
+                    retryable=True,
+                    should_fallback=True,
+                ),
+            )
+
         # Build messages
         messages = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
-
-        # Build request payload
-        payload = {
-            "model": "kimi-for-coding",
-            "messages": messages,
-            "temperature": 0.3,
-            "max_tokens": 500,
-        }
 
         headers = {
             "Content-Type": "application/json",
@@ -628,33 +710,46 @@ class LLMProviderChain:
         }
 
         try:
+            model_candidates = self._resolve_kimi_compat_models()
             async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    f"{base_url}/chat/completions",
-                    json=payload,
-                    headers=headers,
-                    timeout=aiohttp.ClientTimeout(total=60),
-                ) as response:
-                    response_data = await response.json()
+                for idx, model_name in enumerate(model_candidates):
+                    payload = {
+                        "model": model_name,
+                        "messages": messages,
+                        "temperature": 0.3,
+                        "max_tokens": 500,
+                        # Request direct answer content instead of reasoning-only output.
+                        "thinking": {"type": "disabled"},
+                    }
+                    async with session.post(
+                        f"{base_url}/chat/completions",
+                        json=payload,
+                        headers=headers,
+                        timeout=aiohttp.ClientTimeout(total=60),
+                    ) as response:
+                        response_data = await response.json()
 
-                    if response.status == 200:
-                        # Extract content from response
-                        choices = response_data.get("choices", [])
-                        if choices:
-                            content = choices[0].get("message", {}).get("content", "")
-                            confidence, rationale = self._parse_confidence_response(
-                                content
-                            )
+                        if response.status == 200:
+                            # Extract content from response
+                            choices = response_data.get("choices", [])
+                            if choices:
+                                message = choices[0].get("message", {})
+                                content = message.get("content", "")
+                                if not content:
+                                    # Some models return reasoning_content when content is empty.
+                                    content = message.get("reasoning_content", "")
+                                confidence, rationale = self._parse_confidence_response(
+                                    content
+                                )
 
-                            return LLMResponse(
-                                success=True,
-                                content=content,
-                                confidence_score=confidence,
-                                rationale=rationale,
-                                provider="KIMI Compat (Adapter)",
-                                raw_response=response_data,
-                            )
-                        else:
+                                return LLMResponse(
+                                    success=True,
+                                    content=content,
+                                    confidence_score=confidence,
+                                    rationale=rationale,
+                                    provider="KIMI Compat (Adapter)",
+                                    raw_response=response_data,
+                                )
                             return LLMResponse(
                                 success=False,
                                 provider="KIMI Compat (Adapter)",
@@ -666,80 +761,94 @@ class LLMProviderChain:
                                 ),
                             )
 
-                    # Handle errors
-                    error_msg = response_data.get("error", {}).get(
-                        "message", f"HTTP {response.status}"
-                    )
+                        # Handle errors
+                        error_msg = response_data.get("error", {}).get(
+                            "message", f"HTTP {response.status}"
+                        )
 
-                    if response.status == 401:
-                        return LLMResponse(
-                            success=False,
-                            provider="KIMI Compat (Adapter)",
-                            error=ProviderError(
-                                category=ErrorCategory.AUTH,
-                                message=f"Authentication failed: {error_msg}",
-                                status_code=401,
-                                retryable=False,
-                                should_fallback=True,
-                            ),
+                        # Retry same provider with next model on model-selection failures.
+                        model_related_failure = response.status in (400, 404, 422) or (
+                            response.status == 403 and "model" in error_msg.lower()
                         )
-                    elif response.status == 403:
-                        # Telemetry tag for Kimi entitlement block tracking
-                        fallback_reason = "kimi-entitlement-block"
-                        if "coding agent" in error_msg.lower():
+                        has_next_model = idx < len(model_candidates) - 1
+                        if model_related_failure and has_next_model:
+                            logger.warning(
+                                "KIMI adapter model '%s' failed (%s); trying fallback model '%s'",
+                                model_name,
+                                error_msg,
+                                model_candidates[idx + 1],
+                            )
+                            continue
+
+                        if response.status == 401:
+                            return LLMResponse(
+                                success=False,
+                                provider="KIMI Compat (Adapter)",
+                                error=ProviderError(
+                                    category=ErrorCategory.AUTH,
+                                    message=f"Authentication failed: {error_msg}",
+                                    status_code=401,
+                                    retryable=False,
+                                    should_fallback=True,
+                                ),
+                            )
+                        elif response.status == 403:
+                            # Telemetry tag for Kimi entitlement block tracking
                             fallback_reason = "kimi-entitlement-block"
-                        self._record_failure(
-                            "kimi_compat",
-                            ErrorCategory.SCOPE,
-                            fallback_reason=fallback_reason,
-                        )
-                        return LLMResponse(
-                            success=False,
-                            provider="KIMI Compat (Adapter)",
-                            error=ProviderError(
-                                category=ErrorCategory.SCOPE,
-                                message=f"Permission denied: {error_msg}",
-                                status_code=403,
-                                retryable=False,
-                                should_fallback=True,
-                            ),
-                        )
-                    elif response.status == 429:
-                        return LLMResponse(
-                            success=False,
-                            provider="KIMI Compat (Adapter)",
-                            error=ProviderError(
-                                category=ErrorCategory.RATE_LIMIT,
-                                message=f"Rate limit exceeded: {error_msg}",
-                                status_code=429,
-                                retryable=True,
-                                should_fallback=True,
-                            ),
-                        )
-                    elif response.status >= 500:
-                        return LLMResponse(
-                            success=False,
-                            provider="KIMI Compat (Adapter)",
-                            error=ProviderError(
-                                category=ErrorCategory.SERVER,
-                                message=f"Server error: {error_msg}",
-                                status_code=response.status,
-                                retryable=True,
-                                should_fallback=True,
-                            ),
-                        )
-                    else:
-                        return LLMResponse(
-                            success=False,
-                            provider="KIMI Compat (Adapter)",
-                            error=ProviderError(
-                                category=ErrorCategory.CLIENT,
-                                message=f"Client error: {error_msg}",
-                                status_code=response.status,
-                                retryable=False,
-                                should_fallback=True,
-                            ),
-                        )
+                            if "coding agent" in error_msg.lower():
+                                fallback_reason = "kimi-entitlement-block"
+                            self._record_failure(
+                                "kimi_compat",
+                                ErrorCategory.SCOPE,
+                                fallback_reason=fallback_reason,
+                            )
+                            return LLMResponse(
+                                success=False,
+                                provider="KIMI Compat (Adapter)",
+                                error=ProviderError(
+                                    category=ErrorCategory.SCOPE,
+                                    message=f"Permission denied: {error_msg}",
+                                    status_code=403,
+                                    retryable=False,
+                                    should_fallback=True,
+                                ),
+                            )
+                        elif response.status == 429:
+                            return LLMResponse(
+                                success=False,
+                                provider="KIMI Compat (Adapter)",
+                                error=ProviderError(
+                                    category=ErrorCategory.RATE_LIMIT,
+                                    message=f"Rate limit exceeded: {error_msg}",
+                                    status_code=429,
+                                    retryable=True,
+                                    should_fallback=True,
+                                ),
+                            )
+                        elif response.status >= 500:
+                            return LLMResponse(
+                                success=False,
+                                provider="KIMI Compat (Adapter)",
+                                error=ProviderError(
+                                    category=ErrorCategory.SERVER,
+                                    message=f"Server error: {error_msg}",
+                                    status_code=response.status,
+                                    retryable=True,
+                                    should_fallback=True,
+                                ),
+                            )
+                        else:
+                            return LLMResponse(
+                                success=False,
+                                provider="KIMI Compat (Adapter)",
+                                error=ProviderError(
+                                    category=ErrorCategory.CLIENT,
+                                    message=f"Client error: {error_msg}",
+                                    status_code=response.status,
+                                    retryable=False,
+                                    should_fallback=True,
+                                ),
+                            )
 
         except aiohttp.ClientError as e:
             return LLMResponse(
@@ -794,7 +903,10 @@ class LLMProviderChain:
                 messages.append(KimiMessage(role="user", content=prompt))
 
                 result = await client.chat(
-                    messages=messages, temperature=0.3, max_tokens=500
+                    messages=messages,
+                    temperature=0.3,
+                    max_tokens=500,
+                    thinking=False,
                 )
 
                 if not result.success:
@@ -814,7 +926,7 @@ class LLMProviderChain:
                     )
 
                 # Parse response for confidence score
-                content = result.content or ""
+                content = result.content or result.reasoning_content or ""
                 confidence, rationale = self._parse_confidence_response(content)
 
                 return LLMResponse(
