@@ -31,6 +31,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Path, Query, Body
 from pydantic import BaseModel, Field
 
+from autonomous_control_plane.components.retry_budget_manager import RetryBudgetManager
 from autonomous_control_plane.components.retry_coordinator import RetryCoordinator
 from autonomous_control_plane.models.retry_policy import (
     BudgetExhaustionStrategy,
@@ -44,6 +45,9 @@ router = APIRouter(prefix="/api/v1/retry", tags=["retry"])
 
 # Global coordinator instance (initialized by application)
 _coordinator: RetryCoordinator | None = None
+
+# Global budget manager instance (initialized by application)
+_budget_manager: RetryBudgetManager | None = None
 
 
 # Pydantic models for request/response
@@ -103,6 +107,26 @@ def get_retry_coordinator() -> RetryCoordinator | None:
         RetryCoordinator instance or None
     """
     return _coordinator
+
+
+def set_budget_manager(budget_manager: RetryBudgetManager) -> None:
+    """Set the global retry budget manager instance.
+
+    Args:
+        budget_manager: RetryBudgetManager instance
+    """
+    global _budget_manager
+    _budget_manager = budget_manager
+    logger.info("Retry budget manager registered with API")
+
+
+def get_budget_manager() -> RetryBudgetManager | None:
+    """Get the global retry budget manager instance.
+
+    Returns:
+        RetryBudgetManager instance or None
+    """
+    return _budget_manager
 
 
 @router.get("/budgets", response_model=dict[str, Any])
