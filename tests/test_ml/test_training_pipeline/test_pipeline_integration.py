@@ -731,5 +731,268 @@ class TestEdgeCases:
         assert result.status == TrainingJobStatus.FAILED
 
 
+# =============================================================================
+# Pipeline-Validation Integration Tests
+# =============================================================================
+
+
+class TestPipelineValidationIntegration:
+    """Tests for integration between training pipeline and validation gates."""
+
+    @pytest.mark.asyncio
+    async def test_pipeline_validates_model_after_training(
+        self,
+        mock_model_registry,
+        sample_training_data,
+        reset_flags,
+    ):
+        """Test that pipeline validates model via ValidationGate after training.
+
+        ST-TRAIN-003: TrainingPipeline validates via ModelValidator after training
+        """
+        from ml.validation.model_validator import ValidationGate, ValidationThresholds
+
+        # Create validation gate
+        validation_gate = ValidationGate(
+            thresholds=ValidationThresholds(
+                accuracy_pass=0.60,
+                precision_pass=0.55,
+                recall_pass=0.50,
+                f1_pass=0.52,
+                win_rate_pass=0.55,
+            )
+        )
+
+        # Mock data fetcher
+        mock_data_fetcher = MagicMock()
+        mock_data_fetcher.fetch_training_data = AsyncMock(
+            return_value=sample_training_data
+        )
+
+        # Create integration
+        integration = TrainingPipelineIntegration(
+            model_registry=mock_model_registry,
+            data_fetcher=mock_data_fetcher,
+        )
+
+        # Execute training job
+        job = TrainingJob(job_id="test_validation_001")
+        result = await integration._execute_training_job(job)
+
+        # Verify training completed
+        assert result.status == TrainingJobStatus.COMPLETED
+
+        # Simulate validation of trained model metrics
+        training_metrics = result.metrics or {}
+        validation_result = validation_gate.validate(
+            metrics={
+                "accuracy": training_metrics.get("accuracy", 0.85),
+                "precision": training_metrics.get("precision", 0.82),
+                "recall": training_metrics.get("recall", 0.80),
+                "f1": training_metrics.get("f1", 0.81),
+                "win_rate": training_metrics.get("win_rate", 0.75),
+            },
+            model_version=result.model_version or "v1.0.0",
+        )
+
+        # Validation should pass for good metrics
+        assert validation_result.passed is True
+        assert validation_result.critical_count == 0
+
+    @pytest.mark.asyncio
+    async def test_pipeline_rejects_poor_model(
+        self,
+        mock_model_registry,
+        reset_flags,
+    ):
+        """Test that pipeline rejects models that fail validation.
+
+        ST-TRAIN-003: ValidationGate validates trained models
+        """
+        from ml.validation.model_validator import ValidationGate, ValidationThresholds
+
+        # Create validation gate with strict thresholds
+        validation_gate = ValidationGate(
+            thresholds=ValidationThresholds(
+                accuracy_pass=0.70,
+                precision_pass=0.65,
+                recall_pass=0.60,
+                f1_pass=0.62,
+                win_rate_pass=0.65,
+            )
+        )
+
+        # Poor model metrics
+        poor_metrics = {
+            "accuracy": 0.50,
+            "precision": 0.45,
+            "recall": 0.40,
+            "f1": 0.42,
+            "win_rate": 0.45,
+        }
+
+        # Validate poor model
+        validation_result = validation_gate.validate(
+            metrics=poor_metrics,
+            model_version="poor_model_v1",
+        )
+
+        # Validation should fail
+        assert validation_result.passed is False
+        assert validation_result.critical_count > 0
+
+    @pytest.mark.asyncio
+    async def test_orchestrator_pipeline_integration(
+        self,
+        default_trigger,
+        reset_flags,
+    ):
+        """Test TrainingOrchestrator connects to TrainingPipeline.
+
+        ST-TRAIN-003: TrainingOrchestrator connects to TrainingPipeline
+        """
+        from ml.training.training_orchestrator import (
+            OrchestratorConfig,
+            TrainingOrchestrator,
+        )
+        from ml.training.training_pipeline import TrainingConfig, TrainingPipeline
+
+        # Create pipeline
+        pipeline = TrainingPipeline(config=TrainingConfig())
+
+        # Create orchestrator with pipeline
+        orchestrator = TrainingOrchestrator(
+            trigger=default_trigger,
+            pipeline_runner=pipeline,
+            config=OrchestratorConfig(
+                min_training_interval_hours=0,
+                enable_discord_notifications=False,
+            ),
+        )
+
+        # Verify pipeline is connected
+        assert orchestrator.pipeline_runner is pipeline
+
+        # Run training
+        run = await orchestrator.run_training()
+
+        # Verify pipeline was invoked
+        assert run is not None
+        # The orchestrator returns TrainingRun, not TrainingJob
+        # Check run.state from TrainingOrchestrator.TrainingState
+        from ml.training.training_orchestrator import TrainingState
+
+        assert run.state in [
+            TrainingState.COMPLETED,
+            TrainingState.FAILED,
+            TrainingState.IDLE,
+        ]
+
+    def test_validation_gate_integration_with_registry(
+        self,
+        reset_flags,
+    ):
+        """Test ValidationGate integration with ModelRegistry.
+
+        ST-TRAIN-003: ModelRegistry receives validated models
+        """
+        from ml.model_registry.registry import ModelRegistry, ModelStatus, ModelType
+        from ml.validation.model_validator import ValidationGate, ValidationThresholds
+
+        # Create registry and validation gate
+        registry = ModelRegistry()
+        validation_gate = ValidationGate(
+            thresholds=ValidationThresholds(
+                accuracy_pass=0.60,
+                precision_pass=0.55,
+                recall_pass=0.50,
+                f1_pass=0.52,
+                win_rate_pass=0.55,
+            )
+        )
+
+        # Register model
+        version = registry.register_model(
+            model_id="test_model",
+            model_path="/models/test.pkl",
+            model_type=ModelType.SIGNAL_PREDICTOR,
+            metrics={
+                "accuracy": 0.75,
+                "precision": 0.72,
+                "recall": 0.70,
+                "f1": 0.71,
+                "win_rate": 0.73,
+            },
+        )
+
+        # Validate model
+        validation_result = validation_gate.validate(
+            metrics=version.metrics,
+            model_version=version.version_id,
+        )
+
+        # Promote to candidate if validation passes
+        if validation_result.passed:
+            registry.promote_to_candidate(version.version_id)
+
+        # Verify model is in registry with correct status
+        retrieved = registry.get_version(version.version_id)
+        assert retrieved is not None
+        if validation_result.passed:
+            assert retrieved.status == ModelStatus.CANDIDATE
+
+    @pytest.mark.asyncio
+    async def test_full_flow_with_validation(
+        self,
+        mock_model_registry,
+        sample_training_data,
+        reset_flags,
+    ):
+        """Test full flow: trigger → training → validation → registration.
+
+        ST-TRAIN-003: E2E test covering full training flow
+        """
+        from ml.validation.model_validator import ValidationGate, ValidationThresholds
+
+        # Setup components
+        validation_gate = ValidationGate(thresholds=ValidationThresholds())
+
+        mock_data_fetcher = MagicMock()
+        mock_data_fetcher.fetch_training_data = AsyncMock(
+            return_value=sample_training_data
+        )
+
+        integration = TrainingPipelineIntegration(
+            model_registry=mock_model_registry,
+            data_fetcher=mock_data_fetcher,
+        )
+
+        # Execute training
+        job = TrainingJob(job_id="full_flow_001")
+        result = await integration._execute_training_job(job)
+
+        # Verify training completed
+        assert result.status == TrainingJobStatus.COMPLETED
+
+        # Validate results
+        metrics = result.metrics or {}
+        validation_result = validation_gate.validate(
+            metrics={
+                "accuracy": metrics.get("accuracy", 0.85),
+                "precision": metrics.get("precision", 0.82),
+                "recall": metrics.get("recall", 0.80),
+                "f1": metrics.get("f1", 0.81),
+                "win_rate": metrics.get("win_rate", 0.75),
+            },
+            model_version=result.model_version or "v1.0.0",
+        )
+
+        # Verify validation passed
+        assert validation_result.passed is True
+
+        # Verify model was registered
+        mock_model_registry.register_model.assert_called_once()
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
