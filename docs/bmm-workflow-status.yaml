@@ -94,6 +94,21 @@ metadata:
   last_updated: "2026-03-12"
   schema_version: "1.0.0"
   recent_changes:
+    - action: "phase-4-merge-complete"
+      actor: "senior-dev"
+      description: "Phase 4 Merge - Merged all 3 branches to main: AUTONOMY-VERIFY-001 (cadence check), SKILL-EVAL-001 (eval suites for 4 skills), ST-GOV-MINI-002 (optimization feedback loop). All cross-branch verifications passed."
+      timestamp: "2026-03-12T02:00:00Z"
+      status: "completed"
+      story_id: "PHASE-4-MERGE"
+      merge_commits:
+        - "21418ca9 docs(verification): AUTONOMY-VERIFY-001 cadence check"
+        - "aa1f3eb6 feat(evals): Create eval suites for P0/P1 skills"
+        - "4bf80946 feat(governance): Week 2 Optimization Feedback Loop"
+        - "c6bb4e60 merge(PHASE-4): Final merge to main"
+      verification_results:
+        autonomy_verify_001: "✓ on main"
+        skill_eval_001: "✓ on main"
+        st_gov_mini_002: "✓ on main"
     - action: "phase-3-integration-complete"
       actor: "senior-dev"
       description: "Phase 3 Integration - Merged all 3 tasks to main: Task 1 (Grafana panels, 1288 lines), Task 2 (Log rotation + webhook, 2082 lines), Task 3 (Governance audit, 2212 lines). Total: ~5,582 lines, 90/90 tests passed. All E2E validations passed."
@@ -1004,12 +1019,16 @@ backlog:
     title: Parallel Execution Optimizer
   - id: ST-GOV-MINI-001
     points: 2
-    status: planned
+    status: completed
     title: Week 1 Audit Snapshot + Retrieval Baseline
+    completion_date: '2026-03-12'
+    merge_commit: 6fba1df8
   - id: ST-GOV-MINI-002
     points: 3
-    status: planned
+    status: completed
     title: Week 2 Optimization Feedback Loop
+    completion_date: '2026-03-12'
+    merge_commit: 4bf80946
   consolidation_remediation_note: '2026-03-08: Cross-branch verification completed
     for ST-GOV-002 through ST-GOV-010. All merge commits verified on main. See docs/evidence/GOVERNANCE_MERGE_EVIDENCE_2026-03-08.md'
   status: in_progress
