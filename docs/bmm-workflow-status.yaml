@@ -222,7 +222,9 @@ metadata:
 completed:
 - id: ST-VALIDATION-002
   title: "Documentation & Runbooks Validation"
-  status: completed
+  status: merged
+  merged_date: '2026-03-13'
+  merge_commit: '8b10118d'
   priority: P1
   owner: dev
   story_points: 2
@@ -4825,7 +4827,9 @@ stories:
   epic_id: EP-VALIDATION-001
   id: ST-VALIDATION-001
   priority: P1-HIGH
-  status: in_progress
+  status: merged
+  merged_date: '2026-03-13'
+  merge_commit: 'e66f8c63'
   story_points: 4
   title: Full System E2E Validation
   validation_status: in_progress
