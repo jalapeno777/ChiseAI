@@ -1,0 +1,378 @@
+{
+  "story_id": "ST-VALIDATION-002",
+  "timestamp": "2026-03-13T06:15:38.842968+00:00",
+  "validator": "dev",
+  "summary": {
+    "total_runbooks_checked": 6,
+    "passed": 0,
+    "failed": 5,
+    "partial": 1,
+    "p0_status": {
+      "total": 3,
+      "passed": 0,
+      "failed": 2
+    },
+    "p1_status": {
+      "total": 3,
+      "passed": 0,
+      "failed": 3
+    }
+  },
+  "runbooks": [
+    {
+      "name": "self-healing-procedures.md",
+      "priority": "P0",
+      "file_path": "docs/runbooks/self-healing-procedures.md",
+      "checks": [
+        {
+          "criterion": "File exists",
+          "status": "PASS",
+          "details": "File exists and is readable"
+        },
+        {
+          "criterion": "Has purpose/scope statement",
+          "status": "PASS",
+          "details": "Found matching section"
+        },
+        {
+          "criterion": "Lists prerequisites",
+          "status": "PASS",
+          "details": "Found matching section"
+        },
+        {
+          "criterion": "Has numbered steps",
+          "status": "FAIL",
+          "details": "No numbered steps found"
+        },
+        {
+          "criterion": "Has validation/verification",
+          "status": "PASS",
+          "details": "Found validation steps"
+        },
+        {
+          "criterion": "Has rollback procedure",
+          "status": "PASS",
+          "details": "Rollback procedure found for destructive operations"
+        },
+        {
+          "criterion": "Command syntax valid",
+          "status": "PASS",
+          "details": "No obvious syntax issues found"
+        },
+        {
+          "criterion": "Has examples/output samples",
+          "status": "SKIP",
+          "details": "No example outputs found (optional but recommended)"
+        }
+      ],
+      "live_tests": [],
+      "issues": [],
+      "overall_status": "FAIL"
+    },
+    {
+      "name": "model-registry-operations.md",
+      "priority": "P0",
+      "file_path": "docs/runbooks/model-registry-operations.md",
+      "checks": [
+        {
+          "criterion": "File exists",
+          "status": "PASS",
+          "details": "File exists and is readable"
+        },
+        {
+          "criterion": "Has purpose/scope statement",
+          "status": "PASS",
+          "details": "Found matching section"
+        },
+        {
+          "criterion": "Lists prerequisites",
+          "status": "PASS",
+          "details": "Found matching section"
+        },
+        {
+          "criterion": "Has numbered steps",
+          "status": "PASS",
+          "details": "Found numbered procedure steps"
+        },
+        {
+          "criterion": "Has validation/verification",
+          "status": "PASS",
+          "details": "Found validation steps"
+        },
+        {
+          "criterion": "Has rollback procedure",
+          "status": "PASS",
+          "details": "Rollback procedure found for destructive operations"
+        },
+        {
+          "criterion": "Command syntax valid",
+          "status": "PASS",
+          "details": "No obvious syntax issues found"
+        },
+        {
+          "criterion": "Has examples/output samples",
+          "status": "SKIP",
+          "details": "No example outputs found (optional but recommended)"
+        }
+      ],
+      "live_tests": [],
+      "issues": [],
+      "overall_status": "PARTIAL"
+    },
+    {
+      "name": "paper-trading-operations.md",
+      "priority": "P0",
+      "file_path": "docs/runbooks/paper-trading-operations.md",
+      "checks": [
+        {
+          "criterion": "File exists",
+          "status": "PASS",
+          "details": "File exists and is readable"
+        },
+        {
+          "criterion": "Has purpose/scope statement",
+          "status": "PASS",
+          "details": "Found matching section"
+        },
+        {
+          "criterion": "Lists prerequisites",
+          "status": "FAIL",
+          "details": "No section matching 'Prerequisite|Requirements|Before|Pre-condition' found"
+        },
+        {
+          "criterion": "Has numbered steps",
+          "status": "PASS",
+          "details": "Found numbered procedure steps"
+        },
+        {
+          "criterion": "Has validation/verification",
+          "status": "PASS",
+          "details": "Found validation steps"
+        },
+        {
+          "criterion": "Has rollback procedure",
+          "status": "PASS",
+          "details": "Rollback procedure found for destructive operations"
+        },
+        {
+          "criterion": "Command syntax valid",
+          "status": "FAIL",
+          "details": "Found 4 potential syntax issues"
+        },
+        {
+          "criterion": "Has examples/output samples",
+          "status": "PASS",
+          "details": "Found example outputs"
+        }
+      ],
+      "live_tests": [],
+      "issues": [
+        "Unbalanced braces: curl http://localhost:8001/api/v1/paper/pnl/daily ...",
+        "Unbalanced braces: }'...",
+        "Unbalanced braces: curl http://localhost:8001/api/v1/risk/metrics | j..."
+      ],
+      "overall_status": "FAIL"
+    },
+    {
+      "name": "autonomous_control_plane.md",
+      "priority": "P1",
+      "file_path": "docs/runbooks/autonomous_control_plane.md",
+      "checks": [
+        {
+          "criterion": "File exists",
+          "status": "PASS",
+          "details": "File exists and is readable"
+        },
+        {
+          "criterion": "Has purpose/scope statement",
+          "status": "PASS",
+          "details": "Found matching section"
+        },
+        {
+          "criterion": "Lists prerequisites",
+          "status": "FAIL",
+          "details": "No section matching 'Prerequisite|Requirements|Before|Pre-condition' found"
+        },
+        {
+          "criterion": "Has numbered steps",
+          "status": "PASS",
+          "details": "Found numbered procedure steps"
+        },
+        {
+          "criterion": "Has validation/verification",
+          "status": "PASS",
+          "details": "Found validation steps"
+        },
+        {
+          "criterion": "Has rollback procedure",
+          "status": "PASS",
+          "details": "Rollback procedure found for destructive operations"
+        },
+        {
+          "criterion": "Command syntax valid",
+          "status": "PASS",
+          "details": "No obvious syntax issues found"
+        },
+        {
+          "criterion": "Has examples/output samples",
+          "status": "SKIP",
+          "details": "No example outputs found (optional but recommended)"
+        }
+      ],
+      "live_tests": [],
+      "issues": [],
+      "overall_status": "FAIL"
+    },
+    {
+      "name": "incident_response.md",
+      "priority": "P1",
+      "file_path": "docs/runbooks/incident_response.md",
+      "checks": [
+        {
+          "criterion": "File exists",
+          "status": "PASS",
+          "details": "File exists and is readable"
+        },
+        {
+          "criterion": "Has purpose/scope statement",
+          "status": "PASS",
+          "details": "Found matching section"
+        },
+        {
+          "criterion": "Lists prerequisites",
+          "status": "FAIL",
+          "details": "No section matching 'Prerequisite|Requirements|Before|Pre-condition' found"
+        },
+        {
+          "criterion": "Has numbered steps",
+          "status": "PASS",
+          "details": "Found numbered procedure steps"
+        },
+        {
+          "criterion": "Has validation/verification",
+          "status": "PASS",
+          "details": "Found validation steps"
+        },
+        {
+          "criterion": "Has rollback procedure",
+          "status": "PASS",
+          "details": "Rollback procedure found for destructive operations"
+        },
+        {
+          "criterion": "Command syntax valid",
+          "status": "FAIL",
+          "details": "Found 10 potential syntax issues"
+        },
+        {
+          "criterion": "Has examples/output samples",
+          "status": "PASS",
+          "details": "Found example outputs"
+        }
+      ],
+      "live_tests": [],
+      "issues": [
+        "Unbalanced braces: -d '{...",
+        "Unbalanced braces: }'...",
+        "Unbalanced braces: -d '{..."
+      ],
+      "overall_status": "FAIL"
+    },
+    {
+      "name": "redis-failure-response.md",
+      "priority": "P1",
+      "file_path": "docs/runbooks/redis-failure-response.md",
+      "checks": [
+        {
+          "criterion": "File exists",
+          "status": "PASS",
+          "details": "File exists and is readable"
+        },
+        {
+          "criterion": "Has purpose/scope statement",
+          "status": "PASS",
+          "details": "Found matching section"
+        },
+        {
+          "criterion": "Lists prerequisites",
+          "status": "FAIL",
+          "details": "No section matching 'Prerequisite|Requirements|Before|Pre-condition' found"
+        },
+        {
+          "criterion": "Has numbered steps",
+          "status": "PASS",
+          "details": "Found numbered procedure steps"
+        },
+        {
+          "criterion": "Has validation/verification",
+          "status": "PASS",
+          "details": "Found validation steps"
+        },
+        {
+          "criterion": "Has rollback procedure",
+          "status": "PASS",
+          "details": "Rollback procedure found for destructive operations"
+        },
+        {
+          "criterion": "Command syntax valid",
+          "status": "FAIL",
+          "details": "Found 2 potential syntax issues"
+        },
+        {
+          "criterion": "Has examples/output samples",
+          "status": "SKIP",
+          "details": "No example outputs found (optional but recommended)"
+        }
+      ],
+      "live_tests": [],
+      "issues": [
+        "Unbalanced braces: curl http://localhost:8001/api/v1/paper/sync-statu...",
+        "Unbalanced braces: }'..."
+      ],
+      "overall_status": "FAIL"
+    }
+  ],
+  "live_tests": [
+    {
+      "command": "redis-cli -h host.docker.internal -p 6380 ping",
+      "status": "PASS",
+      "output": "PONG",
+      "error": "",
+      "timestamp": "2026-03-13T06:15:38.939826+00:00"
+    },
+    {
+      "command": "redis-cli -h host.docker.internal -p 6380 dbsize",
+      "status": "PASS",
+      "output": "39669",
+      "error": "",
+      "timestamp": "2026-03-13T06:15:38.957798+00:00"
+    },
+    {
+      "command": "curl -s -o /dev/null -w %{http_code} http://host.docker.internal:8502/_stcore/health",
+      "status": "PASS",
+      "output": "200",
+      "error": "",
+      "timestamp": "2026-03-13T06:15:38.981099+00:00"
+    },
+    {
+      "command": "docker ps --filter name=chiseai --format {{.Names}}",
+      "status": "PASS",
+      "output": "chiseai-api-final\nchiseai-kimi-adapter\nchiseai-brain-scheduler\nchiseai-data-quality-monitor\nchiseai-datasource-health-monitor\nchiseai-daily-summary\nchiseai-grafana\nchiseai-postgres\nchiseai-redis\nchiseai-qdrant\nchiseai-influxdb\nchiseai-ohlcv-ingestion",
+      "error": "",
+      "timestamp": "2026-03-13T06:15:39.015330+00:00"
+    },
+    {
+      "command": "redis-cli -h host.docker.internal -p 6380 info server",
+      "status": "PASS",
+      "output": "# Server\nredis_version:7.4.7\nredis_git_sha1:00000000\nredis_git_dirty:0\nredis_build_id:bbc098ffb697e20\nredis_mode:standalone\nos:Linux 6.6.87.2-microsoft-standard-WSL2 x86_64\narch_bits:64\nmonotonic_clock:POSIX clock_gettime\nmultiplexing_api:epoll\natomicvar_api:c11-builtin\ngcc_version:12.2.0\nprocess_id:1\nprocess_supervised:no\nrun_id:5d190d3a6ea0c0356565aae1d6c6241558d97ff0\ntcp_port:6380\nserver_time_usec:1773382539365006\nuptime_in_seconds:1351222\nuptime_in_days:15\nhz:10\nconfigured_hz:10\nlru_clock:11",
+      "error": "",
+      "timestamp": "2026-03-13T06:15:39.351935+00:00"
+    },
+    {
+      "command": "redis-cli -h host.docker.internal -p 6380 info memory",
+      "status": "PASS",
+      "output": "# Memory\nused_memory:39973784\nused_memory_human:38.12M\nused_memory_rss:43425792\nused_memory_rss_human:41.41M\nused_memory_peak:43031568\nused_memory_peak_human:41.04M\nused_memory_peak_perc:92.89%\nused_memory_overhead:4596208\nused_memory_startup:948496\nused_memory_dataset:35377576\nused_memory_dataset_perc:90.65%\nallocator_allocated:40815096\nallocator_active:41226240\nallocator_resident:45637632\nallocator_muzzy:0\ntotal_system_memory:42060685312\ntotal_system_memory_human:39.17G\nused_memory_lua:32768\nu",
+      "error": "",
+      "timestamp": "2026-03-13T06:15:39.367205+00:00"
+    }
+  ]
+}
