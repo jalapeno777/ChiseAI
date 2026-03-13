@@ -15,6 +15,13 @@ Aria review protocol:
      - `summary`
      - `evidence`
      - `recommended_action`
+     - `layman_alert`:
+       - `title`
+       - `why_this_happened`
+       - `intended_resolution`
+       - `expected_improvement`
+       - `result_status`
+       - `evidence_reasoning[]`
 4. Severity policy:
    - low/medium -> mark as `auto_action_candidate=true`
    - high/critical -> mark as `escalation_required=true`
@@ -22,4 +29,3 @@ Aria review protocol:
    - immediate
    - near-term
    - deferred
-

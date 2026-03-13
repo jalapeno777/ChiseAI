@@ -162,6 +162,46 @@
       },
       "timeout": 60000
     },
+    "grafana": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "--from",
+        "mcp-grafana",
+        "mcp-grafana",
+        "-t",
+        "stdio"
+      ],
+      "enabled": true,
+      "environment": {
+        "GRAFANA_URL": "http://host.docker.internal:3001",
+        "GRAFANA_SERVICE_ACCOUNT_TOKEN": "{env:GRAFANA_SERVICE_ACCOUNT_TOKEN}"
+      },
+      "timeout": 60000
+    },
+    "gitea": {
+      "type": "local",
+      "command": [
+        "go",
+        "run",
+        "gitea.com/gitea/gitea-mcp@latest",
+        "-transport",
+        "stdio",
+        "-host",
+        "http://host.docker.internal:3000",
+        "-read-only"
+      ],
+      "enabled": true,
+      "environment": {
+        "GITEA_ACCESS_TOKEN": "{env:GITEA_TOKEN}"
+      },
+      "timeout": 60000
+    },
+    "otel_tempo": {
+      "type": "remote",
+      "url": "http://host.docker.internal:3200/api/mcp",
+      "enabled": false
+    },
     "redis_state": {
       "type": "local",
       "enabled": true,

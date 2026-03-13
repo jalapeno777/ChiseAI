@@ -93,6 +93,24 @@ class AutonomousCognitionFullCycle:
                         top_metrics={"conflicts": len(conflicts)},
                         artifact_path=str(assessment_path),
                         run_id=run_id,
+                        title="Belief Conflict Detected",
+                        issue=(
+                            "Two active beliefs disagree, so the system could reason "
+                            "in inconsistent ways."
+                        ),
+                        intended_resolution=(
+                            "Run belief revision to reconcile the contradiction using "
+                            "higher-quality evidence."
+                        ),
+                        expected_improvement=(
+                            "Keeps strategy reasoning internally consistent and "
+                            "reduces contradictory decisions."
+                        ),
+                        outcome_status="in_progress",
+                        evidence_reasoning=[
+                            f"conflicts_detected={len(conflicts)}",
+                            explain_conflict(conflicts[0]),
+                        ],
                     )
                 )
 
@@ -111,6 +129,24 @@ class AutonomousCognitionFullCycle:
                         top_metrics={"revisions": len(revisions)},
                         artifact_path=str(assessment_path),
                         run_id=run_id,
+                        title="Belief Revision Applied",
+                        issue=(
+                            "Conflicting beliefs were found and needed a deterministic "
+                            "resolution."
+                        ),
+                        intended_resolution=(
+                            "Adjust belief confidence/state to preserve the strongest "
+                            "evidence-backed interpretation."
+                        ),
+                        expected_improvement=(
+                            "Reduces internal contradictions and improves downstream "
+                            "decision reliability."
+                        ),
+                        outcome_status="success",
+                        evidence_reasoning=[
+                            f"revisions_applied={len(revisions)}",
+                            explain_revision(revisions[0]),
+                        ],
                     )
                 )
 
@@ -141,6 +177,24 @@ class AutonomousCognitionFullCycle:
                                 top_metrics=exp.to_metrics(),
                                 artifact_path=str(assessment_path),
                                 run_id=run_id,
+                                title="Improvement Candidate Promoted",
+                                issue=(
+                                    "A new candidate policy outperformed the current "
+                                    "baseline under promotion gates."
+                                ),
+                                intended_resolution=(
+                                    "Promote the validated candidate into the active "
+                                    "improvement set."
+                                ),
+                                expected_improvement=(
+                                    "Improves trading/portfolio behavior while staying "
+                                    "inside risk controls."
+                                ),
+                                outcome_status="success",
+                                evidence_reasoning=[
+                                    f"candidate={hypothesis.hypothesis_id}",
+                                    outcome.reason,
+                                ],
                             )
                         )
                 else:
@@ -155,6 +209,24 @@ class AutonomousCognitionFullCycle:
                                 top_metrics=exp.to_metrics(),
                                 artifact_path=str(assessment_path),
                                 run_id=run_id,
+                                title="Improvement Candidate Rejected",
+                                issue=(
+                                    "A candidate policy failed one or more promotion "
+                                    "criteria."
+                                ),
+                                intended_resolution=(
+                                    "Reject the candidate and preserve the current "
+                                    "champion policy."
+                                ),
+                                expected_improvement=(
+                                    "Prevents degraded strategy performance from being "
+                                    "deployed."
+                                ),
+                                outcome_status="failed",
+                                evidence_reasoning=[
+                                    f"candidate={hypothesis.hypothesis_id}",
+                                    outcome.reason,
+                                ],
                             )
                         )
             result.promotions = promotions
@@ -187,6 +259,24 @@ class AutonomousCognitionFullCycle:
                         top_metrics={"ece": 0.05 if promotions > 0 else 0.12},
                         artifact_path=str(assessment_path),
                         run_id=run_id,
+                        title="Autonomy Level Updated",
+                        issue=(
+                            "Calibration and control signals indicated autonomy settings "
+                            "needed adjustment."
+                        ),
+                        intended_resolution=(
+                            "Apply tuner-recommended autonomy level while honoring "
+                            "guardrails."
+                        ),
+                        expected_improvement=(
+                            "Balances execution speed with safety and calibration quality."
+                        ),
+                        outcome_status="success",
+                        evidence_reasoning=[
+                            f"previous_level={tuning.previous_level}",
+                            f"new_level={tuning.new_level}",
+                            tuning.reason,
+                        ],
                     )
                 )
 
@@ -206,6 +296,24 @@ class AutonomousCognitionFullCycle:
                         top_metrics={"violations": len(audit_result.violations)},
                         artifact_path=str(assessment_path),
                         run_id=run_id,
+                        title="Constitution Violation Detected",
+                        issue=(
+                            "At least one action conflicted with project constitution "
+                            "or safety policy."
+                        ),
+                        intended_resolution=(
+                            "Escalate violation details and constrain unsafe autonomous "
+                            "actions."
+                        ),
+                        expected_improvement=(
+                            "Keeps the system aligned to safety rules and project scope."
+                        ),
+                        outcome_status="failed",
+                        evidence_reasoning=[
+                            f"critical_violations={audit_result.critical_count}",
+                            f"total_violations={len(audit_result.violations)}",
+                            f"top_rule={top.rule_id}",
+                        ],
                     )
                 )
 
@@ -225,6 +333,18 @@ class AutonomousCognitionFullCycle:
                         top_metrics={"status": "failed"},
                         artifact_path=result.artifact_paths.get("self_assessment"),
                         run_id=run_id,
+                        title="Autonomous Cycle Failed",
+                        issue="The full cognition cycle terminated due to an exception.",
+                        intended_resolution=(
+                            "Stop execution safely, persist what is available, and alert "
+                            "for investigation."
+                        ),
+                        expected_improvement=(
+                            "Prevents silent failures and supports faster root-cause "
+                            "recovery."
+                        ),
+                        outcome_status="failed",
+                        evidence_reasoning=[f"exception={e}"],
                     )
                 )
             raise
@@ -252,6 +372,29 @@ class AutonomousCognitionFullCycle:
                         },
                         artifact_path=str(cycle_path),
                         run_id=run_id,
+                        title="Autonomous Cycle Completed",
+                        issue=(
+                            "A scheduled end-to-end cognition maintenance and "
+                            "improvement run was executed."
+                        ),
+                        intended_resolution=(
+                            "Complete the full phase pipeline and persist decision "
+                            "artifacts."
+                        ),
+                        expected_improvement=(
+                            "Sustains continuous learning, calibration, and governance "
+                            "visibility."
+                        ),
+                        outcome_status="success"
+                        if result.status == "completed"
+                        else "failed",
+                        evidence_reasoning=[
+                            f"status={result.status}",
+                            f"belief_conflicts={result.belief_conflicts}",
+                            f"belief_revisions={result.belief_revisions}",
+                            f"experiments_run={result.experiments_run}",
+                            f"promotions={result.promotions}",
+                        ],
                     )
                 )
                 notify_loop.run_until_complete(notifier.close())
