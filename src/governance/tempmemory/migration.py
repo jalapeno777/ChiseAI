@@ -9,6 +9,7 @@ This module is part of Phase 1 of the Tempmemory Migration story (ST-MEMORY-003)
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import re
@@ -21,6 +22,20 @@ from typing import Any
 import yaml
 
 logger = logging.getLogger(__name__)
+
+
+def _deterministic_embedding(text: str, dimensions: int = 384) -> list[float]:
+    """Generate deterministic fallback embedding for tempmemory content."""
+    if not text:
+        return [0.0] * dimensions
+
+    values: list[float] = []
+    data = text.encode("utf-8")
+    for i in range(dimensions):
+        digest = hashlib.sha256(data + i.to_bytes(4, "little")).digest()
+        raw = int.from_bytes(digest[:4], "little")
+        values.append((raw % 20000) / 10000 - 1.0)
+    return values
 
 
 class MigrationStatus(Enum):
@@ -423,7 +438,8 @@ class TempmemoryMigrationEngine:
                         ),
                         "timestamp": datetime.now(UTC).isoformat(),
                     }
-                    asyncio.create_task(notifier.notify_decision(decision_data))
+                    loop = asyncio.get_running_loop()
+                    loop.create_task(notifier.notify_decision(decision_data))
                 except Exception as e:
                     logger.debug(f"Discord notification skipped: {e}")
 
@@ -455,18 +471,57 @@ class TempmemoryMigrationEngine:
 
         try:
             entry = temp_file.to_qdrant_entry()
+            vector_size = int(entry["metadata"].get("vector_size", 384))
+            vector = _deterministic_embedding(entry["content"], dimensions=vector_size)
+            collection_name = "ChiseAI"
+            point_seed = (
+                f"{temp_file.relative_path}|"
+                f"{temp_file.story_id or 'unknown'}|"
+                f"{temp_file.memory_type or 'unknown'}"
+            )
+            point_id = hashlib.sha256(point_seed.encode("utf-8")).hexdigest()[:32]
 
-            # Note: Actual Qdrant storage would require vectorization
-            # For now, we just log that we would store it
-            # Full implementation would use qdrant_client.upsert()
+            # Best-effort collection bootstrap for direct Qdrant clients.
+            if hasattr(self._qdrant_client, "get_collection") and hasattr(
+                self._qdrant_client, "create_collection"
+            ):
+                try:
+                    self._qdrant_client.get_collection(collection_name=collection_name)
+                except Exception:
+                    try:
+                        from qdrant_client.models import Distance, VectorParams
 
-            logger.debug(
-                f"[QDRANT] Would store: {temp_file.relative_path} "
-                f"with metadata: {entry['metadata']}"
+                        self._qdrant_client.create_collection(
+                            collection_name=collection_name,
+                            vectors_config=VectorParams(
+                                size=vector_size, distance=Distance.COSINE
+                            ),
+                        )
+                    except Exception as e:
+                        logger.debug(
+                            "Collection bootstrap skipped for %s: %s",
+                            collection_name,
+                            e,
+                        )
+
+            self._qdrant_client.upsert(
+                collection_name=collection_name,
+                points=[
+                    {
+                        "id": point_id,
+                        "vector": vector,
+                        "payload": {
+                            **entry["metadata"],
+                            "content": entry["content"][:10000],
+                        },
+                    }
+                ],
             )
 
-            # TODO: Implement actual Qdrant vectorization and storage
-            # This requires embedding generation which is not yet implemented
+            logger.debug(
+                f"[QDRANT] Migrated: {temp_file.relative_path} "
+                f"point_id={point_id} story_id={temp_file.story_id or 'unknown'}"
+            )
             return True
 
         except Exception as e:
@@ -539,7 +594,13 @@ class TempmemoryMigrationEngine:
         try:
             status = self._redis_client.hget(self.REDIS_STATUS_KEY, file_path)
             if status:
-                return MigrationStatus(status)
+                parsed_status = status
+                if isinstance(status, bytes):
+                    parsed_status = status.decode("utf-8")
+                if isinstance(parsed_status, str) and parsed_status.startswith("{"):
+                    parsed = json.loads(parsed_status)
+                    parsed_status = parsed.get("status", "")
+                return MigrationStatus(str(parsed_status))
             return None
         except Exception as e:
             logger.warning(f"Failed to get status for {file_path}: {e}")

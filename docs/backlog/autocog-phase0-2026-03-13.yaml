@@ -1,0 +1,90 @@
+metadata:
+  initiative: "AUTOCOG-PHASE0"
+  title: "Autonomous Cognitive Self-Improvement - Phase 0 Stabilization"
+  created_utc: "2026-03-13T00:00:00Z"
+  owner: "dev"
+  status: "in_progress"
+  source_spec: "docs/architecture/autonomous-cognitive-self-improvement-spec.md"
+  scope:
+    - "src/operations/iteration_logging.py"
+    - "src/governance/tempmemory/migration.py"
+    - "src/governance/memory/deduplication.py"
+    - "src/governance/notifications/discord_notifier.py"
+    - "src/governance/constitution/violation_detector.py"
+    - "config/autonomy_job_registry.yaml"
+
+stories:
+  - story_id: "AUTOCOG-001"
+    title: "Real Qdrant writes for iteration learnings"
+    priority: "P0"
+    status: "in_progress"
+    owner: "dev"
+    problem:
+      - "Iteration learning promotion reports simulated success path instead of guaranteed persistent Qdrant write."
+    deliverables:
+      - "Implement real Qdrant upsert path in _store_in_qdrant"
+      - "Add deterministic embedding fallback for environments without sentence-transformers"
+      - "Add production-fail-fast semantics when writes are enabled but unavailable"
+    acceptance_criteria:
+      - "When CHISEAI_ENABLE_QDRANT_WRITE=true and Qdrant reachable, entries are upserted with IDs and payload"
+      - "When writes enabled but storage fails in production, QdrantStorageError is raised"
+      - "Existing tests for promote_to_qdrant pass"
+
+  - story_id: "AUTOCOG-002"
+    title: "Real Qdrant writes for tempmemory migration"
+    priority: "P0"
+    status: "in_progress"
+    owner: "dev"
+    problem:
+      - "Tempmemory migration currently logs 'would store' for Qdrant path and returns success."
+    deliverables:
+      - "Implement actual upsert in _migrate_to_qdrant"
+      - "Persist metadata + vector and deterministic point_id"
+      - "Preserve dry-run and non-blocking behavior for non-production"
+    acceptance_criteria:
+      - "qdrant_client.upsert is invoked in non-dry-run mode"
+      - "Qdrant failure returns false and is reflected in migration result"
+      - "Tempmemory migration unit tests pass"
+
+  - story_id: "AUTOCOG-003"
+    title: "Fix memory dedup vector similarity TypeError and re-enable daily sweep"
+    priority: "P0"
+    status: "in_progress"
+    owner: "dev"
+    problem:
+      - "memory.daily_sweep disabled due to vector similarity TypeError in dedup engine"
+    deliverables:
+      - "Normalize vector formats (list/tuple/dict/named vectors) before similarity"
+      - "Guard against non-numeric values and dimension mismatch"
+      - "Re-enable memory.daily_sweep job after validation"
+    acceptance_criteria:
+      - "Dedup engine handles named-vector payloads without TypeError"
+      - "Relevant dedup tests pass"
+      - "autonomy_job_registry memory.daily_sweep enabled=true"
+
+  - story_id: "AUTOCOG-004"
+    title: "Discord governance notification hardening and channel validation"
+    priority: "P1"
+    status: "in_progress"
+    owner: "dev"
+    problem:
+      - "Governance notifier has fragile init path and constitution alerts are placeholder-style."
+    deliverables:
+      - "Fix notifier initialization for injected clients"
+      - "Add discord routing config validator for governance channels"
+      - "Switch constitution violation channel to actual Discord client send path"
+    acceptance_criteria:
+      - "Discord notifier unit tests pass"
+      - "Constitution alert path attempts real Discord delivery when configured"
+      - "Validation errors for malformed/missing channel routing are explicit"
+
+execution_order:
+  - "AUTOCOG-001"
+  - "AUTOCOG-002"
+  - "AUTOCOG-003"
+  - "AUTOCOG-004"
+
+evidence_required:
+  - "Targeted pytest output"
+  - "git diff for modified files"
+  - "Updated scheduler config with memory.daily_sweep enabled"
