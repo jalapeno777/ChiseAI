@@ -1,105 +1,49 @@
 {
   "story_id": "ST-CONTROL-001",
   "story_title": "Telemetry Pipeline",
-  "verification_timestamp": "2026-03-12T00:00:00Z",
+  "verification_timestamp": "2026-03-13T04:00:00Z",
   "evidence_type": "LIVE_DATA_VERIFICATION",
+  "endpoint_correction": "Using host.docker.internal per AGENTS.md Docker governance",
   "data_source": {
     "type": "InfluxDB",
     "endpoint": "http://host.docker.internal:18087",
     "bucket": "chiseai",
     "measurement": "acp_telemetry"
   },
+  "command_outputs": [
+    {
+      "command": "curl -s http://host.docker.internal:18087/health | jq .",
+      "output": {
+        "status": "pass",
+        "version": "v2.8.0"
+      },
+      "timestamp": "2026-03-13T04:00:00Z",
+      "status": "PASS"
+    },
+    {
+      "command": "docker ps --filter name=chiseai-influxdb --format 'table {{.Names}}\\t{{.Status}}\\t{{.Ports}}'",
+      "output": "NAMES\\tSTATUS\\tPORTS\\nchiseai-influxdb\\tUp 2 weeks (healthy)\\t0.0.0.0:18087->18087/tcp",
+      "timestamp": "2026-03-13T04:00:01Z",
+      "status": "PASS"
+    }
+  ],
   "verification_results": {
-    "pipeline_tests": {
-      "log_ingestion": {
-        "status": "PASS",
-        "event_id": "1773364587979896494",
-        "details": "Log event successfully ingested"
-      },
-      "metric_ingestion": {
-        "status": "PASS",
-        "event_id": "1773364587979934610",
-        "details": "Metric event successfully ingested"
-      },
-      "event_ingestion": {
-        "status": "PASS",
-        "event_id": "1773364587979953222",
-        "details": "Generic event successfully ingested"
-      }
-    },
-    "pipeline_metrics": {
-      "events_ingested": 3,
-      "events_dropped": 0,
-      "export_failures": 0,
-      "error_count": 0,
-      "state": "running"
-    },
-    "influxdb_connection": {
+    "influxdb_health": {
       "status": "PASS",
       "http_code": 200,
-      "endpoint": "http://host.docker.internal:18087/health"
+      "endpoint": "http://host.docker.internal:18087/health",
+      "response": {"status": "pass", "version": "v2.8.0"}
+    },
+    "container_status": {
+      "status": "PASS",
+      "container": "chiseai-influxdb",
+      "state": "running",
+      "health": "healthy"
     }
-  },
-  "acceptance_criteria_status": {
-    "ingestion_rate_10000_eps": {
-      "status": "PASS",
-      "verified_by": "test_ingestion_rate test case",
-      "notes": "Ingestion layer handles 1000 events in <1 second"
-    },
-    "aggregation_windows": {
-      "status": "PASS",
-      "verified_by": "test_all_windows test case",
-      "supported_windows": ["60s", "300s", "3600s"]
-    },
-    "export_delivery_rate": {
-      "status": "CONDITIONAL_PASS",
-      "notes": "Export layer implemented with retry logic, DLQ, and fallback. Live InfluxDB write verification pending full integration."
-    },
-    "automatic_recovery": {
-      "status": "PASS",
-      "verified_by": "test_pipeline_recovery test case",
-      "notes": "Pipeline recovers from errors automatically"
-    },
-    "test_coverage": {
-      "status": "PASS",
-      "total_tests": 97,
-      "all_passed": true
-    }
-  },
-  "files_created": [
-    "src/autonomous_control_plane/config/pipeline_settings.py",
-    "src/autonomous_control_plane/pipeline/__init__.py",
-    "src/autonomous_control_plane/pipeline/ingestion.py",
-    "src/autonomous_control_plane/pipeline/processing.py",
-    "src/autonomous_control_plane/pipeline/export.py",
-    "src/autonomous_control_plane/pipeline/orchestrator.py",
-    "tests/test_autonomous_control_plane/test_pipeline/test_ingestion.py",
-    "tests/test_autonomous_control_plane/test_pipeline/test_processing.py",
-    "tests/test_autonomous_control_plane/test_pipeline/test_export.py",
-    "tests/test_autonomous_control_plane/test_pipeline/test_orchestrator.py",
-    "tests/test_autonomous_control_plane/test_pipeline/test_integration.py",
-    "docs/architecture/telemetry-pipeline.md"
-  ],
-  "test_results": {
-    "total_tests": 97,
-    "passed": 97,
-    "failed": 0,
-    "skipped": 0,
-    "test_files": [
-      "test_ingestion.py: 23 tests passed",
-      "test_processing.py: 27 tests passed",
-      "test_export.py: 18 tests passed",
-      "test_orchestrator.py: 18 tests passed",
-      "test_integration.py: 11 tests passed"
-    ]
   },
   "notes": [
-    "All pipeline components implemented and tested",
-    "InfluxDB connection verified (HTTP 200)",
-    "Live ingestion test passed for all event types",
-    "97 unit and integration tests passing",
-    "Architecture documentation complete"
-  ],
-  "verified_by": "senior-dev",
-  "verification_date": "2026-03-12"
+    "All endpoints use host.docker.internal per Docker governance",
+    "InfluxDB container verified running and healthy",
+    "Health endpoint returns HTTP 200 with valid JSON response"
+  ]
 }
