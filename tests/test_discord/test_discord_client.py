@@ -5,6 +5,8 @@ Tests for ST-NS-009: Discord Alert Integration
 
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import pytest
 
 from discord_alerts.config import DiscordConfig
@@ -270,3 +272,36 @@ class TestDiscordClient:
         health = await client.health_check()
 
         assert health["guild_restricted"] is False
+
+    @pytest.mark.asyncio
+    async def test_restore_queued_messages_accepts_dict_items(self, webhook_config) -> None:
+        """Restore should support dict payloads (already deserialized by redis_state)."""
+        client = DiscordClient(webhook_config)
+        item = {
+            "message_id": "m1",
+            "content": "hello",
+            "channel_id": "123",
+            "channel_name": None,
+            "embeds": None,
+            "priority": 2,
+            "created_at": "2026-03-13T00:00:00+00:00",
+            "retry_count": 0,
+            "last_error": None,
+        }
+        with patch(
+            "discord_alerts.discord_client._load_redis_state_helpers",
+            return_value={"lrange": lambda *_args, **_kwargs: [item]},
+        ):
+            await client._restore_queued_messages()
+        assert client._message_queue.qsize() == 1
+
+    @pytest.mark.asyncio
+    async def test_restore_queued_messages_no_helper(self, webhook_config) -> None:
+        """Restore should no-op safely when redis helper cannot be loaded."""
+        client = DiscordClient(webhook_config)
+        with patch(
+            "discord_alerts.discord_client._load_redis_state_helpers",
+            return_value={"lrange": None},
+        ):
+            await client._restore_queued_messages()
+        assert client._message_queue.qsize() == 0

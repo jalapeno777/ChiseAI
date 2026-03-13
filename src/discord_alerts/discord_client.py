@@ -16,17 +16,47 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import importlib
 import json
 import logging
+import sys
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from discord_alerts.config import DiscordConfig
 
 logger = logging.getLogger(__name__)
+
+
+def _load_redis_state_helpers() -> dict[str, Any]:
+    """Load redis_state helpers with script-mode import fallback."""
+    candidates = ["tools.redis_state", "src.tools.redis_state"]
+    for module_name in candidates:
+        with contextlib.suppress(Exception):
+            module = importlib.import_module(module_name)
+            return {
+                "lpush": getattr(module, "redis_state_lpush", None),
+                "lrange": getattr(module, "redis_state_lrange", None),
+                "hset": getattr(module, "redis_state_hset", None),
+            }
+
+    # Fallback: ensure repo root is in sys.path, then retry tools.redis_state.
+    repo_root = Path(__file__).resolve().parents[2]
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+    with contextlib.suppress(Exception):
+        module = importlib.import_module("tools.redis_state")
+        return {
+            "lpush": getattr(module, "redis_state_lpush", None),
+            "lrange": getattr(module, "redis_state_lrange", None),
+            "hset": getattr(module, "redis_state_hset", None),
+        }
+
+    return {"lpush": None, "lrange": None, "hset": None}
 
 
 @dataclass
@@ -442,8 +472,11 @@ class DiscordClient:
     async def _persist_queue_state(self) -> None:
         """Persist queue state to Redis."""
         try:
-            # Import here to avoid circular dependency
-            from tools.redis_state import redis_state_lpush
+            helpers = _load_redis_state_helpers()
+            redis_state_lpush = helpers.get("lpush")
+            if redis_state_lpush is None:
+                logger.debug("Redis state helper unavailable for queue persistence")
+                return
 
             # Get all messages from queue
             messages = []
@@ -479,7 +512,11 @@ class DiscordClient:
     async def _restore_queued_messages(self) -> None:
         """Restore queued messages from Redis on reconnect."""
         try:
-            from tools.redis_state import redis_state_lrange
+            helpers = _load_redis_state_helpers()
+            redis_state_lrange = helpers.get("lrange")
+            if redis_state_lrange is None:
+                logger.debug("Redis state helper unavailable for queue restore")
+                return
 
             redis_key = f"{self.REDIS_KEY_PREFIX}:queued_messages"
             stored = redis_state_lrange(redis_key, 0, 99)
@@ -488,12 +525,26 @@ class DiscordClient:
                 restored_count = 0
                 for item in stored:
                     try:
-                        msg_dict = json.loads(item)
+                        if isinstance(item, dict):
+                            msg_dict = item
+                        elif isinstance(item, str):
+                            msg_dict = json.loads(item)
+                        elif isinstance(item, bytes):
+                            msg_dict = json.loads(item.decode("utf-8"))
+                        else:
+                            raise TypeError(
+                                f"unsupported queued message type: {type(item).__name__}"
+                            )
                         msg = QueuedMessage.from_dict(msg_dict)
-                        await self._queue_message(msg)
+                        # Restore without repersisting queue on every element.
+                        async with self._queue_lock:
+                            await self._message_queue.put(
+                                (msg.priority, msg.created_at, msg)
+                            )
+                            self._total_messages_queued += 1
                         restored_count += 1
                     except Exception as e:
-                        logger.error(f"Failed to restore queued message: {e}")
+                        logger.warning("Failed to restore queued message: %s", e)
 
                 logger.info(f"Restored {restored_count} queued messages from Redis")
 
@@ -503,7 +554,11 @@ class DiscordClient:
     async def _store_checkpoint_status(self, success: bool, error: str | None) -> None:
         """Store checkpoint status in Redis."""
         try:
-            from tools.redis_state import redis_state_hset
+            helpers = _load_redis_state_helpers()
+            redis_state_hset = helpers.get("hset")
+            if redis_state_hset is None:
+                logger.debug("Redis state helper unavailable for checkpoint status")
+                return
 
             redis_key = f"{self.REDIS_KEY_PREFIX}:checkpoint"
             redis_state_hset(
@@ -521,7 +576,11 @@ class DiscordClient:
     async def _store_health_metrics(self, health: dict[str, Any]) -> None:
         """Store health metrics in Redis."""
         try:
-            from tools.redis_state import redis_state_hset
+            helpers = _load_redis_state_helpers()
+            redis_state_hset = helpers.get("hset")
+            if redis_state_hset is None:
+                logger.debug("Redis state helper unavailable for health metrics")
+                return
 
             redis_key = f"{self.REDIS_KEY_PREFIX}:health"
             redis_state_hset(redis_key, "timestamp", datetime.now(UTC).isoformat())

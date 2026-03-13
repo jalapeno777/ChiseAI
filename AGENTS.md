@@ -105,6 +105,11 @@ skill(name="chiseai-git-workflow")          # Load git workflow skill
 **Then run:** `chise-skill-autonomy-tick` (`mode=start|close|weekly`)
 **Why:** Captures missing-skill gaps as KPI/reflection data while allowing execution to continue
 
+### "I want Aria to run autonomous cognition oversight and auto-fix low/medium issues..."
+**Load:** `chiseai-autocog-orchestration`
+**Then run:** `chise-autocog-daily-run` → `chise-autocog-review` → `chise-autocog-action`
+**Why:** Adds backend+Aria dual-layer review, severity-based routing, and Discord-observable actions.
+
 ## 📋 Quick Skill Reference Table
 
 | Skill | Primary Use | Key Commands |
@@ -123,6 +128,7 @@ skill(name="chiseai-git-workflow")          # Load git workflow skill
 | `chiseai-testing-patterns` | Testing patterns and coverage | N/A |
 | `chiseai-metacognition-ops` | Decision quality calibration and reflection loops | `chise-metacog-start`, `chise-metacog-close`, `chise-metacog-weekly` |
 | `chiseai-skill-autonomy` | Autonomous skill routing/coverage/effectiveness with non-blocking fallback | `chise-skill-autonomy-tick`, `chise-skill-backlog-ingest`, `chise-skill-promote`, `chise-skill-rollback` |
+| `chiseai-autocog-orchestration` | Autonomous cognition oversight, Aria review, and severity-based auto-action | `chise-autocog-daily-run`, `chise-autocog-review`, `chise-autocog-action` |
 | `python-quality` | Python code quality | N/A |
 
 ## 🔧 Skill Loading Pattern
@@ -503,3 +509,4 @@ docker run --network chiseai --name my-service [image]
 - `chiseai-testing-patterns` - Testing patterns and best practices
 - `chiseai-metacognition-ops` - Metacognitive prediction/outcome/calibration workflow
 - `chiseai-skill-autonomy` - Autonomous skill KPI loop with non-blocking missing-skill fallback
+- `chiseai-autocog-orchestration` - Aria autonomous cognition oversight with backend review and severity-based action routing
