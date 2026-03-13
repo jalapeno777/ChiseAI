@@ -1,10 +1,10 @@
 """Tests for Discord notifier."""
 
-import pytest
-import asyncio
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import AsyncMock, Mock, patch
 
-from governance.notifications.discord_notifier import DiscordNotifier, get_redis_client
+import pytest
+
+from governance.notifications.discord_notifier import DiscordNotifier
 
 
 class TestDiscordNotifier:
@@ -103,3 +103,28 @@ class TestDiscordNotifier:
 
         assert result is False
         assert mock_client.send_message.call_count == 3
+
+    @pytest.mark.asyncio
+    async def test_notify_self_assessment_success(self, mock_client):
+        """Test self-assessment completion notification path."""
+        mock_client.send_message.return_value = Mock(success=True)
+        notifier = DiscordNotifier(client=mock_client, channel_id="123")
+
+        class Artifact:
+            assessment_date = "2026-03-13"
+            assessment_id = "sa-20260313-test"
+            created_at = "2026-03-13T00:00:00+00:00"
+            status = "ok"
+            overall_score = 0.9
+            findings = ["No critical issues"]
+            recommendations = ["Continue monitoring"]
+
+        with patch.object(notifier, "_is_enabled", return_value=True):
+            with patch.object(notifier, "_is_duplicate", return_value=False):
+                with patch.object(notifier, "_mark_sent") as mark_sent:
+                    result = await notifier.notify_self_assessment(
+                        artifact=Artifact(),
+                        artifact_path="docs/governance/self_assessments/a.json",
+                    )
+        assert result is True
+        mark_sent.assert_called_once()
