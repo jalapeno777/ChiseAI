@@ -2,13 +2,30 @@
 # Story: TEMPO-2026-001
 # Phase: 1 (Infrastructure)
 
-resource "docker_volume" "tempo-data" {
+# Template rendering for Tempo config
+data "template_file" "tempo_config" {
+  template = file("${path.module}/config/tempo.yaml.tpl")
+
+  vars = {
+    log_level       = var.tempo_log_level
+    retention_hours = var.tempo_retention_hours
+  }
+}
+
+resource "local_file" "tempo_config" {
+  content  = data.template_file.tempo_config.rendered
+  filename = "${path.module}/config/tempo.yaml"
+}
+
+# Tempo data volume
+resource "docker_volume" "tempo_data" {
   name = "chiseai-tempo-data"
 }
 
-resource "docker_container" "chiseai-tempo" {
+# Tempo container
+resource "docker_container" "chiseai_tempo" {
   name  = "chiseai-tempo"
-  image = "grafana/tempo:2.3.1"
+  image = "grafana/tempo:${var.tempo_version}"
 
   networks_advanced {
     name    = "chiseai"
@@ -34,18 +51,18 @@ resource "docker_container" "chiseai-tempo" {
   }
 
   volumes {
-    volume_name    = docker_volume.tempo-data.name
+    volume_name    = docker_volume.tempo_data.name
     container_path = "/tmp/tempo"
   }
 
   volumes {
-    host_path      = "${path.module}/config/tempo.yaml"
+    host_path      = abspath(local_file.tempo_config.filename)
     container_path = "/etc/tempo.yaml"
     read_only      = true
   }
 
   env = [
-    "TEMPO_ENVIRONMENT=${var.environment}",
+    "TEMPO_LOG_LEVEL=${var.tempo_log_level}",
   ]
 
   command = ["-config.file=/etc/tempo.yaml"]
@@ -77,6 +94,7 @@ resource "docker_container" "chiseai-tempo" {
   restart = "unless-stopped"
 
   depends_on = [
-    docker_volume.tempo-data,
+    docker_volume.tempo_data,
+    local_file.tempo_config,
   ]
 }
