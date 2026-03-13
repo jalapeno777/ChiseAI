@@ -392,8 +392,9 @@ This is test content.
         )
         result = engine.migrate_file(temp_file)
 
-        # Qdrant migration is currently logged but not fully implemented
         assert result.status == MigrationStatus.COMPLETED
+        assert result.qdrant_success is True
+        mock_qdrant.upsert.assert_called_once()
 
     def test_migrate_file_dry_run(self, mock_redis, temp_dir):
         """Test that dry_run doesn't modify Redis."""

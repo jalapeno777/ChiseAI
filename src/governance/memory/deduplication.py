@@ -12,6 +12,7 @@ import contextlib
 import hashlib
 import json
 import logging
+import math
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
@@ -517,7 +518,7 @@ class MemoryDeduplicationEngine:
 
         return hashlib.md5(content.encode("utf-8"), usedforsecurity=False).hexdigest()
 
-    def _compute_vector_similarity(self, vec1: list[float], vec2: list[float]) -> float:
+    def _compute_vector_similarity(self, vec1: Any, vec2: Any) -> float:
         """
         Compute cosine similarity between two vectors.
 
@@ -528,20 +529,56 @@ class MemoryDeduplicationEngine:
         Returns:
             Cosine similarity score between 0.0 and 1.0.
         """
-        if not vec1 or not vec2 or len(vec1) != len(vec2):
+        norm_vec1 = self._normalize_vector(vec1)
+        norm_vec2 = self._normalize_vector(vec2)
+
+        if not norm_vec1 or not norm_vec2 or len(norm_vec1) != len(norm_vec2):
             return 0.0
 
         # Compute dot product
-        dot_product = sum(a * b for a, b in zip(vec1, vec2, strict=False))
+        dot_product = sum(a * b for a, b in zip(norm_vec1, norm_vec2, strict=False))
 
         # Compute magnitudes
-        mag1 = sum(a * a for a in vec1) ** 0.5
-        mag2 = sum(b * b for b in vec2) ** 0.5
+        mag1 = sum(a * a for a in norm_vec1) ** 0.5
+        mag2 = sum(b * b for b in norm_vec2) ** 0.5
 
         if mag1 == 0 or mag2 == 0:
             return 0.0
 
         return dot_product / (mag1 * mag2)
+
+    def _normalize_vector(self, vector: Any) -> list[float]:
+        """
+        Normalize Qdrant vector formats into a numeric list.
+
+        Qdrant can return vectors as:
+        - list[float]
+        - tuple[float, ...]
+        - dict[str, list[float]] for named vectors
+        """
+        if vector is None:
+            return []
+
+        if isinstance(vector, dict):
+            if not vector:
+                return []
+            first_key = sorted(vector.keys())[0]
+            return self._normalize_vector(vector.get(first_key))
+
+        if not isinstance(vector, (list, tuple)):
+            return []
+
+        normalized: list[float] = []
+        for value in vector:
+            try:
+                val = float(value)
+                if not math.isfinite(val):
+                    return []
+                normalized.append(val)
+            except (TypeError, ValueError):
+                return []
+
+        return normalized
 
     def _identify_duplicates(
         self,

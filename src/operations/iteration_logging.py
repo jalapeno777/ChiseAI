@@ -30,7 +30,9 @@ Usage:
 
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
@@ -616,6 +618,36 @@ class QdrantStorageError(Exception):
     pass
 
 
+def _deterministic_embedding(text: str, dimensions: int = 384) -> list[float]:
+    """Generate deterministic fallback embedding for environments without ML deps."""
+    if not text:
+        return [0.0] * dimensions
+
+    values: list[float] = []
+    data = text.encode("utf-8")
+    for i in range(dimensions):
+        digest = hashlib.sha256(data + i.to_bytes(4, "little")).digest()
+        raw = int.from_bytes(digest[:4], "little")
+        values.append((raw % 20000) / 10000 - 1.0)
+    return values
+
+
+def _create_embedding(text: str, dimensions: int = 384) -> list[float]:
+    """Create embedding vector with sentence-transformers if available."""
+    try:
+        from sentence_transformers import SentenceTransformer
+
+        model = SentenceTransformer("all-MiniLM-L6-v2")
+        vector = model.encode(text, convert_to_numpy=True).tolist()
+        if len(vector) == dimensions:
+            return [float(v) for v in vector]
+    except Exception:
+        # Fall back to deterministic embedding if dependency/model unavailable.
+        pass
+
+    return _deterministic_embedding(text, dimensions=dimensions)
+
+
 def _store_in_qdrant(
     information: str,
     metadata: dict[str, Any],
@@ -633,21 +665,9 @@ def _store_in_qdrant(
     Returns:
         Dictionary with storage result info
     """
-    import logging
-    import os
-
     logger = logging.getLogger(__name__)
 
-    # In production with MCP tools enabled, this would trigger actual storage
-    # The actual qdrant_qdrant-store call is made by the agent framework
-    if os.environ.get("CHISEAI_ENABLE_QDRANT_WRITE", "false").lower() == "true":
-        logger.info(f"Qdrant storage enabled for: {information[:50]}...")
-        return {
-            "stored": True,
-            "information": information,
-            "metadata": metadata,
-        }
-    else:
+    if os.environ.get("CHISEAI_ENABLE_QDRANT_WRITE", "false").lower() != "true":
         logger.debug(f"Qdrant storage skipped (disabled): {information[:50]}...")
         return {
             "stored": False,
@@ -655,6 +675,59 @@ def _store_in_qdrant(
             "metadata": metadata,
             "_reason": "Qdrant writes disabled (set CHISEAI_ENABLE_QDRANT_WRITE=true to enable)",
         }
+
+    qdrant_host = os.getenv("QDRANT_HOST", "host.docker.internal")
+    qdrant_port = int(os.getenv("QDRANT_PORT", "6334"))
+    collection = os.getenv("QDRANT_COLLECTION", "ChiseAI")
+    vector_size = int(os.getenv("QDRANT_VECTOR_SIZE", "384"))
+
+    from qdrant_client import QdrantClient
+    from qdrant_client.models import Distance, PointStruct, VectorParams
+
+    client = QdrantClient(host=qdrant_host, port=qdrant_port, timeout=10.0)
+
+    # Ensure collection exists before upserting points.
+    try:
+        client.get_collection(collection_name=collection)
+    except Exception:
+        client.create_collection(
+            collection_name=collection,
+            vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
+        )
+
+    payload = {
+        "information": information,
+        "metadata": metadata,
+        "stored_at": _get_current_timestamp(),
+    }
+    point_seed = f"{information}|{json.dumps(metadata, sort_keys=True)}"
+    point_id = hashlib.sha256(point_seed.encode("utf-8")).hexdigest()[:32]
+    vector = _create_embedding(information, dimensions=vector_size)
+
+    client.upsert(
+        collection_name=collection,
+        points=[
+            PointStruct(
+                id=point_id,
+                vector=vector,
+                payload=payload,
+            )
+        ],
+    )
+
+    logger.info(
+        "Stored Qdrant learning: collection=%s point_id=%s story_id=%s",
+        collection,
+        point_id,
+        metadata.get("story_id", ""),
+    )
+    return {
+        "stored": True,
+        "information": information,
+        "metadata": metadata,
+        "collection": collection,
+        "point_id": point_id,
+    }
 
 
 def promote_to_qdrant(

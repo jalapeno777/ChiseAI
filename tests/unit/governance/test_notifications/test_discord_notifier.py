@@ -34,6 +34,16 @@ class TestDiscordNotifier:
         ):
             assert notifier._is_duplicate("event:123") is False
 
+    def test_init_with_injected_client_without_channel_id(self, mock_client):
+        """Test init path does not require config var when client injected."""
+        with patch(
+            "governance.notifications.discord_notifier.DiscordConfig.from_env",
+            side_effect=Exception("missing env"),
+        ):
+            notifier = DiscordNotifier(client=mock_client)
+        assert notifier.client is mock_client
+        assert notifier.channel_id is None
+
     @pytest.mark.asyncio
     async def test_notify_reflection_non_blocking_on_error(self, mock_client):
         """Test that reflection notification is non-blocking on error."""

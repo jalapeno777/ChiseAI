@@ -64,9 +64,7 @@ jobs:
       - --require-for-completed-only
 
   - job_id: memory.daily_sweep
-    # DISABLED: Secondary deduplication bug (TypeError in vector similarity)
-    # Re-enable after fixing _compute_vector_similarity in src/governance/memory/deduplication.py
-    enabled: false
+    enabled: true
     cadence: daily
     timeout_seconds: 900
     risk_level: medium

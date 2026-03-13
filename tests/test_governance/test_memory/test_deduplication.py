@@ -258,6 +258,20 @@ class TestB32DeduplicationLogic:
         # Should not raise
         engine._store_hash("abc123")
 
+    def test_normalize_vector_named_qdrant_vector(self):
+        """Test named-vector dictionaries are normalized safely."""
+        engine = MemoryDeduplicationEngine()
+        vector = {"default": [1.0, 0.0, 0.0]}
+        assert engine._normalize_vector(vector) == [1.0, 0.0, 0.0]
+
+    def test_compute_vector_similarity_handles_named_vectors(self):
+        """Test similarity works with named-vector dicts (no TypeError)."""
+        engine = MemoryDeduplicationEngine()
+        vec1 = {"default": [1.0, 0.0, 0.0]}
+        vec2 = {"default": [1.0, 0.0, 0.0]}
+        similarity = engine._compute_vector_similarity(vec1, vec2)
+        assert abs(similarity - 1.0) < 0.001
+
     def test_deduplicate_content_finds_duplicate(self):
         """Test deduplicate_content finds and reports duplicate."""
         mock_redis = MagicMock()

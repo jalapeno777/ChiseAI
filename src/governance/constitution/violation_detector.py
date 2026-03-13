@@ -10,6 +10,8 @@ from __future__ import annotations
 import json
 import logging
 import re
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -128,11 +130,32 @@ class DiscordAlertChannel(AlertChannel):
         # Try webhook first
         if self.webhook_url:
             try:
-                # Would use httpx/requests here in production
-                logger.info(f"Would send Discord webhook: {message[:100]}...")
-                return True
-            except Exception as e:
+                payload = json.dumps({"content": message}).encode("utf-8")
+                request = Request(
+                    self.webhook_url,
+                    data=payload,
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                with urlopen(request, timeout=10) as response:
+                    if 200 <= response.status < 300:
+                        logger.info(
+                            "Discord violation alert sent: channel=%s status=%s",
+                            self.channel_id,
+                            response.status,
+                        )
+                        return True
+                    logger.error(
+                        "Discord webhook failed: status=%s channel=%s",
+                        response.status,
+                        self.channel_id,
+                    )
+                    return False
+            except (HTTPError, URLError, TimeoutError, ValueError) as e:
                 logger.error(f"Failed to send Discord webhook: {e}")
+                return False
+            except Exception as e:
+                logger.error(f"Unexpected Discord webhook failure: {e}")
                 return False
 
         # Fall back to logging (MCP integration would be added here)

@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import re
 from datetime import UTC, datetime
 from typing import Any
 
@@ -33,14 +34,44 @@ class DiscordNotifier:
             client: DiscordClient instance (created if None)
             channel_id: Target channel ID for development events
         """
+        config: DiscordConfig | None = None
+        if client is None or channel_id is None:
+            try:
+                config = DiscordConfig.from_env()
+            except Exception as e:
+                logger.warning("Failed to load DiscordConfig from env: %s", e)
         if client is None:
-            config = DiscordConfig.from_env()
+            if config is None:
+                config = DiscordConfig.from_env()
             client = DiscordClient(config)
             self._owns_client = True
         else:
             self._owns_client = False
         self.client = client
-        self.channel_id = channel_id or config.development_channel_id
+        default_channel = config.development_channel_id if config else None
+        resolved_channel = channel_id or default_channel
+        self.channel_id = self._validate_channel_id(
+            resolved_channel,
+            fallback=default_channel,
+        )
+
+    @staticmethod
+    def _validate_channel_id(
+        channel_id: str | None,
+        fallback: str | None = None,
+    ) -> str | None:
+        """Validate Discord channel identifier with safe fallback."""
+        if not channel_id:
+            return fallback
+
+        value = str(channel_id).strip()
+
+        # Allow numeric snowflake IDs and channel names in local/dev tests.
+        if re.fullmatch(r"\d{3,22}", value) or value.startswith("#"):
+            return value
+
+        logger.warning("Invalid Discord channel_id '%s', using fallback", value)
+        return fallback
 
     def _is_enabled(self) -> bool:
         """Check if Discord notifications are enabled via feature flag."""
