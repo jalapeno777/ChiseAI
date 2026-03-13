@@ -91,9 +91,31 @@
 
 metadata:
   version: "1.0.0"
-  last_updated: "2026-03-12"
+  last_updated: "2026-03-13"
   schema_version: "1.0.0"
   recent_changes:
+    - action: "phase-4-control-plane-complete"
+      actor: "senior-dev"
+      description: "Phase 4 Control Plane completion - Added ST-CONTROL-001 (Telemetry Pipeline), ST-CONTROL-002 (Self-Healing Automation), ST-CONTROL-003 (Control Plane Dashboard), and PHASE-4-E2E (E2E Integration Tests) to workflow status. Total 12 story points."
+      timestamp: "2026-03-13T00:00:00Z"
+      status: "completed"
+      story_id: "PHASE-4-CONTROL-PLANE"
+      stories_completed:
+        - ST-CONTROL-001
+        - ST-CONTROL-002
+        - ST-CONTROL-003
+        - PHASE-4-E2E
+      total_story_points: 12
+      merge_commits:
+        - "95bb8a83 feat(control): Telemetry Pipeline (ST-CONTROL-001)"
+        - "b8084290 feat(control): Self-Healing Automation (ST-CONTROL-002)"
+        - "8207b917 feat(control): Control Plane Dashboard (ST-CONTROL-003)"
+        - "a351e23d test(control): Phase 4 E2E Integration Tests (PHASE-4-E2E)"
+      evidence_files:
+        - docs/evidence/ST-CONTROL-001-live-data-evidence.json
+        - docs/evidence/ST-CONTROL-002-live-data-evidence.json
+        - docs/evidence/ST-CONTROL-003-live-data-evidence.json
+        - docs/evidence/phase4-e2e-results.json
     - action: "phase-4-merge-complete"
       actor: "senior-dev"
       description: "Phase 4 Merge - Merged all 3 branches to main: AUTONOMY-VERIFY-001 (cadence check), SKILL-EVAL-001 (eval suites for 4 skills), ST-GOV-MINI-002 (optimization feedback loop). All cross-branch verifications passed."
@@ -198,6 +220,153 @@ metadata:
         - feature/ST-MODEL-REG-003-monitoring-alerting
 
 completed:
+- id: ST-CONTROL-001
+  title: "Telemetry Pipeline"
+  status: merged
+  priority: P1
+  owner: senior-dev
+  story_points: 4
+  created_date: '2026-03-12'
+  merged_date: '2026-03-12'
+  merge_commit: 95bb8a83
+  description: |
+    Complete telemetry pipeline for the autonomous control plane with ingestion,
+    processing, export, and orchestration layers. Handles 10,000+ events/second
+    with 99.9% delivery rate to InfluxDB.
+  acceptance_criteria:
+    - Ingestion layer handles 10,000 events/second
+    - Processing layer supports 1m/5m/1h aggregation windows
+    - Export layer achieves 99.9% delivery rate to InfluxDB
+    - Pipeline recovers automatically from component failures
+    - All components have >80% test coverage
+    - Integration test validates end-to-end flow
+  files_changed:
+    - src/autonomous_control_plane/config/pipeline_settings.py
+    - src/autonomous_control_plane/pipeline/ingestion.py
+    - src/autonomous_control_plane/pipeline/processing.py
+    - src/autonomous_control_plane/pipeline/export.py
+    - src/autonomous_control_plane/pipeline/orchestrator.py
+    - tests/test_autonomous_control_plane/test_pipeline/
+    - docs/architecture/telemetry-pipeline.md
+  evidence_files:
+    - docs/evidence/ST-CONTROL-001-live-data-evidence.json
+  test_results:
+    total_tests: 97
+    passed: 97
+    failed: 0
+  notes:
+    - "Part of Phase 4 Control Plane (12 SP total)"
+    - "Foundation story - other stories depend on this"
+    - "Live data verified with InfluxDB"
+
+- id: ST-CONTROL-002
+  title: "Self-Healing Automation"
+  status: merged
+  priority: P1
+  owner: senior-dev
+  story_points: 5
+  created_date: '2026-03-12'
+  merged_date: '2026-03-12'
+  merge_commit: b8084290
+  description: |
+    Comprehensive self-healing automation with closed-loop remediation, runbook
+    integration, and operational automation. Handles 50+ concurrent workflows
+    with <1s step latency.
+  acceptance_criteria:
+    - Automation controller handles 50+ concurrent remediation workflows
+    - Runbook engine executes procedures with <1s step latency
+    - 10+ predefined remediation workflows available
+    - All healing actions have automatic rollback capability
+    - Human approval gates for P0/P1 actions in live mode
+    - Integration with telemetry pipeline for metrics export
+  files_changed:
+    - src/autonomous_control_plane/automation/controller.py
+    - src/autonomous_control_plane/automation/runbook_engine.py
+    - src/autonomous_control_plane/automation/workflows/
+    - src/autonomous_control_plane/healing_actions/
+    - tests/test_autonomous_control_plane/test_automation/
+    - docs/architecture/self-healing-automation.md
+  evidence_files:
+    - docs/evidence/ST-CONTROL-002-live-data-evidence.json
+  test_results:
+    total_tests: 101
+    passed: 101
+    failed: 0
+    skipped: 1
+  notes:
+    - "Part of Phase 4 Control Plane (12 SP total)"
+    - "Depends on ST-CONTROL-001 (telemetry pipeline)"
+    - "12 predefined workflows implemented (exceeds 10+ requirement)"
+
+- id: ST-CONTROL-003
+  title: "Control Plane Dashboard"
+  status: merged
+  priority: P1
+  owner: dev
+  story_points: 3
+  created_date: '2026-03-12'
+  merged_date: '2026-03-12'
+  merge_commit: 8207b917
+  description: |
+    Comprehensive control plane dashboard with real-time visibility into ACP
+    subsystems. Provides visualization, alerting, and operational controls with
+    <200ms API response time.
+  acceptance_criteria:
+    - Dashboard displays real-time circuit breaker states
+    - Self-healing activity visible with success/failure rates
+    - Incident timeline with filtering and search
+    - System health score calculation and display
+    - WebSocket updates every 5 seconds
+    - REST API response time <200ms for all endpoints
+  files_changed:
+    - src/autonomous_control_plane/dashboard/
+    - src/autonomous_control_plane/dashboard/components/
+    - scripts/dashboard/
+    - tests/test_autonomous_control_plane/test_dashboard/
+    - docs/architecture/control-plane-dashboard.md
+  evidence_files:
+    - docs/evidence/ST-CONTROL-003-live-data-evidence.json
+  test_results:
+    total_tests: 48
+    passed: 48
+    failed: 0
+  notes:
+    - "Part of Phase 4 Control Plane (12 SP total)"
+    - "Can parallel with ST-CONTROL-002 when APIs stable"
+    - "5 panel components implemented"
+
+- id: PHASE-4-E2E
+  title: "Phase 4 E2E Integration Tests"
+  status: merged
+  priority: P1
+  owner: senior-dev
+  story_points: 0
+  created_date: '2026-03-13'
+  merged_date: '2026-03-13'
+  merge_commit: a351e23d
+  description: |
+    Comprehensive E2E integration tests validating all Phase 4 stories work
+    together correctly. Tests cross-story integration and performance targets.
+  acceptance_criteria:
+    - All E2E tests pass (100% pass rate)
+    - Integration between all 3 stories verified
+    - Live data flows through entire pipeline
+    - Performance meets targets (<5s end-to-end latency)
+  files_changed:
+    - tests/e2e/test_phase4_control_plane.py
+    - scripts/validation/phase4_e2e_validation.py
+    - docs/evidence/phase4-e2e-results.json
+  evidence_files:
+    - docs/evidence/phase4-e2e-results.json
+  test_results:
+    total_tests: 31
+    passed: 31
+    failed: 0
+  notes:
+    - "Cross-story integration validation"
+    - "Performance benchmarks included"
+    - "100% pass rate achieved"
+
 - id: ST-MODEL-REG-001
   title: "Model Registry Core Implementation"
   status: merged
