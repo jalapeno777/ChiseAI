@@ -447,6 +447,29 @@ If worker reports an incident:
 3. Re-plan with sequential integration if needed
 4. Schedule post-mortem for P0/P1 incidents
 
+#### Step 5: Missing Artifact Recovery (required)
+
+Trigger:
+- A worker/subagent reports "complete", but expected files are not visible in the target branch/worktree.
+
+Required response:
+1. Do not mark completion.
+2. Delegate `research` (or `research-fast` first, then `research`) to perform git forensics:
+   - identify worker-reported branch/worktree/head SHA,
+   - compare expected files vs files present in current scope,
+   - locate commits containing the missing files/changes.
+3. If the forensic pass confirms files exist in another branch/worktree/commit, route execution to a git-capable executor (`senior-dev` or `merlin`) to migrate the changes safely using commit-based transfer (prefer `cherry-pick` or scoped patch), not manual copy.
+4. Re-verify in target branch/worktree with evidence:
+   - `git show <sha> --name-only`
+   - `git branch --contains <sha>`
+   - file presence checks in expected paths.
+5. Only then accept completion and proceed to integration/merge flow.
+
+Escalate as incident:
+- if commit source cannot be proven,
+- if migration introduces conflicts across protected/global-lock files,
+- or if evidence is contradictory across branches/worktrees.
+
 ### Incident Handling and Post-Mortems
 
 When incidents occur (conflicts, CI regressions, repeated blockers):

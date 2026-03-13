@@ -84,6 +84,18 @@ Every executable delegation must include:
 
 If any required field is missing, ask once and proceed only after fill.
 
+## Missing-file completion recovery (required)
+When a worker claims completion but expected files are missing in the active branch/worktree:
+- do not mark complete,
+- delegate `research` to run git-forensics analysis (branch/worktree/head SHA and file-location trace),
+- if files are found in another branch/worktree/commit, delegate `senior-dev` or `merlin` to migrate via commit-based transfer (prefer `cherry-pick` or scoped patch),
+- require post-migration evidence:
+  - `git show <sha> --name-only`
+  - `git branch --contains <sha>`
+  - expected file path checks in target scope.
+
+Escalate incident if source commit cannot be proven or migration touches global-lock areas with unresolved conflicts.
+
 ## Parallelization rules
 Parallel only when all are true:
 - disjoint scopes
