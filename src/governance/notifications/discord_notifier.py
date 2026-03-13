@@ -226,3 +226,42 @@ class DiscordNotifier:
         except Exception as e:
             logger.error(f"Failed to send decision notification: {e}")
             return False  # Non-blocking: return False on error
+
+    async def notify_self_assessment(
+        self,
+        artifact: Any,
+        artifact_path: str | None = None,
+    ) -> bool:
+        """Send self-assessment completion event to Discord.
+
+        Event type: self_assessment_completed
+        """
+        if not self._is_enabled():
+            logger.info("Discord notifications disabled by feature flag")
+            return False
+
+        event_date = getattr(artifact, "assessment_date", "")
+        event_id = f"self_assessment_completed:{event_date}"
+
+        if self._is_duplicate(event_id):
+            logger.info(
+                f"Skipping duplicate self-assessment notification: {event_id}"
+            )
+            return False
+
+        try:
+            from .formatters import SelfAssessmentNotificationFormatter
+
+            formatter = SelfAssessmentNotificationFormatter()
+            content = formatter.format_self_assessment(
+                artifact=artifact,
+                artifact_path=artifact_path,
+            )
+            success = await self._send_with_retry(content)
+            if success:
+                self._mark_sent(event_id)
+                logger.info("Sent self-assessment completion to Discord")
+            return success
+        except Exception as e:
+            logger.error(f"Failed to send self-assessment notification: {e}")
+            return False

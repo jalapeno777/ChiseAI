@@ -1,0 +1,39 @@
+backlog_id: AUTOCOG-PHASE1-2026-03-13
+created_utc: "2026-03-13T00:00:00Z"
+phase: "Phase 1: Autonomous Self-Assessment Core"
+stories:
+  - id: AUTOCOG-101
+    title: "Autonomous cognition controller + daily self-assessment cycle"
+    status: done
+    priority: critical
+    scope:
+      - "Add autonomous_cognition controller"
+      - "Generate daily artifact"
+      - "Persist artifacts to file + Redis (+ optional Qdrant)"
+    acceptance:
+      - "Daily run executes without manual prompting"
+      - "Artifacts persisted and retrievable"
+
+  - id: AUTOCOG-102
+    title: "Unified self-assessment artifact schema"
+    status: done
+    priority: high
+    scope:
+      - "Define schema dataclass with serialization"
+      - "Standardize status/score/findings/recommendations/evidence fields"
+    acceptance:
+      - "Schema round-trip via JSON"
+      - "Controller outputs conforming artifact"
+
+  - id: AUTOCOG-103
+    title: "Discord eventing for self_assessment_completed"
+    status: done
+    priority: high
+    scope:
+      - "Add formatter for self-assessment completion events"
+      - "Add notifier method + dedup path"
+      - "Wire daily job to notify Discord"
+    acceptance:
+      - "Completion event sent with artifact context"
+      - "Dedup prevents duplicate sends for same day"
+

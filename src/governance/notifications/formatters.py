@@ -143,3 +143,47 @@ class DecisionNotificationFormatter:
         ]
 
         return "\n".join(lines)
+
+
+class SelfAssessmentNotificationFormatter:
+    """Formats autonomous self-assessment events for Discord notifications."""
+
+    def format_self_assessment(
+        self,
+        artifact: Any,
+        artifact_path: str | None = None,
+    ) -> str:
+        """Format a self-assessment completion event."""
+        status = getattr(artifact, "status", "unknown")
+        assessment_id = getattr(artifact, "assessment_id", "unknown")
+        assessment_date = getattr(artifact, "assessment_date", "unknown")
+        created_at = getattr(artifact, "created_at", datetime.now(UTC).isoformat())
+        score = getattr(artifact, "overall_score", 0.0)
+        findings = list(getattr(artifact, "findings", []))
+        recommendations = list(getattr(artifact, "recommendations", []))
+
+        status_icon = {"ok": "✅", "degraded": "⚠️", "failed": "🚨"}.get(status, "📌")
+
+        lines = [
+            f"{status_icon} **Autonomous Self-Assessment Completed**",
+            "",
+            "**Event Type:** `self_assessment_completed`",
+            f"**Assessment ID:** `{assessment_id}`",
+            f"**Date:** {assessment_date}",
+            f"**Status:** {status}",
+            f"**Overall Score:** {score}",
+            f"**Timestamp:** {created_at}",
+        ]
+
+        if findings:
+            lines.extend(["", "**Findings:**"])
+            for item in findings[:3]:
+                lines.append(f"  • {item}")
+
+        if recommendations:
+            lines.extend(["", "**Recommendations:**"])
+            for item in recommendations[:3]:
+                lines.append(f"  • {item}")
+
+        lines.extend(["", f"**Artifact Path:** `{artifact_path or 'N/A'}`"])
+        return "\n".join(lines)

@@ -49,6 +49,22 @@ jobs:
       - python3
       - scripts/standup/generate_daily_reflection_report.py
 
+  - job_id: autonomous.self_assessment_daily
+    enabled: true
+    cadence: daily
+    timeout_seconds: 600
+    risk_level: low
+    preconditions:
+      - file_exists:scripts/ops/run_autonomous_self_assessment.py
+    idempotency_key: autonomous.self_assessment_daily:{date}
+    retry_policy:
+      max_retries: 1
+      backoff_seconds: 5
+    command:
+      - python3
+      - scripts/ops/run_autonomous_self_assessment.py
+      - --notify-discord
+
   - job_id: governance.metacog_weekly
     enabled: true
     cadence: weekly
