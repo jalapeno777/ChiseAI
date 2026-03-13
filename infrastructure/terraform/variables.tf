@@ -168,3 +168,40 @@ variable "minimax_enabled" {
   description = "Enable MiniMax LLM provider (true/false)."
   default     = "false"
 }
+
+# TEMPO-2026-001: Grafana Tempo Variables
+variable "tempo_enabled" {
+  description = "Enable Grafana Tempo distributed tracing"
+  type        = bool
+  default     = true
+}
+
+variable "tempo_version" {
+  description = "Grafana Tempo Docker image version"
+  type        = string
+  default     = "2.3.1"
+}
+
+variable "tempo_log_level" {
+  description = "Tempo server log level"
+  type        = string
+  default     = "info"
+}
+
+variable "tempo_retention_hours" {
+  description = "Trace retention period in hours"
+  type        = number
+  default     = 168 # 7 days
+}
+
+variable "tempo_memory_mb" {
+  description = "Memory limit for Tempo container in MB"
+  type        = number
+  default     = 2048 # 2GB
+}
+
+variable "environment" {
+  description = "Environment name (e.g., production, staging, development)"
+  type        = string
+  default     = "production"
+}
