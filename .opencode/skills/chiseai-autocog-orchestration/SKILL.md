@@ -67,6 +67,14 @@ Aria must produce:
   - `escalations[]` (high/critical)
   - `open_risks[]`
 
+Discord/autocog event summaries must also include plain-language fields:
+- `title`
+- `why_this_happened`
+- `intended_resolution`
+- `expected_improvement`
+- `result_status`
+- `evidence_reasoning[]`
+
 ## Safety Constraints
 
 - Never auto-change protected risk caps or governance bypasses.
@@ -79,4 +87,3 @@ Aria must produce:
 - `chiseai-skill-autonomy`
 - `chiseai-validation`
 - `chiseai-worker-contracts`
-

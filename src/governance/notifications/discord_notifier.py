@@ -275,6 +275,12 @@ class DiscordNotifier:
         top_metrics: dict[str, Any] | None,
         artifact_path: str | None,
         run_id: str,
+        title: str | None = None,
+        issue: str | None = None,
+        intended_resolution: str | None = None,
+        expected_improvement: str | None = None,
+        outcome_status: str | None = None,
+        evidence_reasoning: list[str] | None = None,
     ) -> bool:
         """Send autonomous cognition event notification to Discord."""
         if not self._is_enabled():
@@ -298,6 +304,12 @@ class DiscordNotifier:
                 top_metrics=top_metrics or {},
                 artifact_path=artifact_path,
                 run_id=run_id,
+                title=title,
+                issue=issue,
+                intended_resolution=intended_resolution,
+                expected_improvement=expected_improvement,
+                outcome_status=outcome_status,
+                evidence_reasoning=evidence_reasoning or [],
             )
             success = await self._send_with_retry(content)
             if success:

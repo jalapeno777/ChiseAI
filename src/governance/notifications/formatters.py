@@ -201,16 +201,48 @@ class AutocogEventFormatter:
         top_metrics: dict[str, Any],
         artifact_path: str | None,
         run_id: str,
+        title: str | None = None,
+        issue: str | None = None,
+        intended_resolution: str | None = None,
+        expected_improvement: str | None = None,
+        outcome_status: str | None = None,
+        evidence_reasoning: list[str] | None = None,
     ) -> str:
         """Format a standardized autonomous cognition event."""
+        evidence_reasoning = evidence_reasoning or []
         icon = {
             "critical": "🚨",
             "high": "⚠️",
             "medium": "📌",
             "low": "✅",
         }.get(severity.lower(), "📌")
+
+        display_title = title or event_type.replace("_", " ").title()
+        layman_issue = issue or summary
+        layman_resolution = intended_resolution or impact
+        layman_improvement = expected_improvement or "No explicit improvement target provided."
+        normalized_outcome = (outcome_status or "unknown").strip().lower()
+        outcome_display = {
+            "success": "Succeeded",
+            "succeeded": "Succeeded",
+            "pass": "Succeeded",
+            "failed": "Failed",
+            "failure": "Failed",
+            "error": "Failed",
+            "partial": "Partially Succeeded",
+            "in_progress": "In Progress",
+            "in progress": "In Progress",
+            "unknown": "Unknown",
+        }.get(normalized_outcome, outcome_status or "Unknown")
+
         lines = [
             f"{icon} **Autonomous Cognition Event**",
+            "",
+            f"**Title:** {display_title}",
+            f"**Why This Happened (Plain English):** {layman_issue}",
+            f"**Intended Resolution:** {layman_resolution}",
+            f"**How This Should Improve Things:** {layman_improvement}",
+            f"**Result:** {outcome_display}",
             "",
             f"**Event Type:** `{event_type}`",
             f"**Severity:** {severity}",
@@ -219,6 +251,11 @@ class AutocogEventFormatter:
             f"**Run ID:** `{run_id}`",
             f"**Timestamp:** {datetime.now(UTC).isoformat()}",
         ]
+
+        if evidence_reasoning:
+            lines.extend(["", "**Evidence / Reasoning:**"])
+            for reason in evidence_reasoning[:5]:
+                lines.append(f"  • {reason}")
 
         if top_metrics:
             lines.extend(["", "**Top Metrics:**"])
