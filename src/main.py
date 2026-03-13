@@ -16,13 +16,20 @@ from src.api.health_router import set_health_monitor
 from src.api.paper_router import router as paper_router
 from src.autonomous_control_plane.api.v1.circuit_breakers import (
     router as circuit_breakers_router,
+    set_registry as set_circuit_breaker_registry,
 )
 from src.autonomous_control_plane.api.v1.healing import router as healing_router
 
 # ACP (Autonomous Control Plane) routes - EP-NS-008
 from src.autonomous_control_plane.api.v1.incidents import router as incidents_router
-from src.autonomous_control_plane.api.v1.retry import router as retry_router
-from src.autonomous_control_plane.api.v1.rollback import router as rollback_router
+from src.autonomous_control_plane.api.v1.retry import (
+    router as retry_router,
+    set_retry_coordinator,
+)
+from src.autonomous_control_plane.api.v1.rollback import (
+    router as rollback_router,
+    set_coordinator as set_rollback_coordinator,
+)
 
 # ACP startup and dependency verification - PM-BATCH-1
 from src.autonomous_control_plane.startup import (
@@ -52,6 +59,13 @@ async def lifespan(app: FastAPI):
         # Verify container is properly initialized
         _ = get_acp_container()
         logger.info("ACP container initialized successfully")
+
+        # Inject coordinators into API routers
+        logger.info("Injecting coordinators into API routers...")
+        set_circuit_breaker_registry(container.circuit_breaker_registry)
+        set_retry_coordinator(container.retry_coordinator)
+        set_rollback_coordinator(container.rollback_coordinator)
+        logger.info("Coordinators injected successfully")
 
         # Create and register HealthMonitor
         logger.info("Initializing HealthMonitor...")
