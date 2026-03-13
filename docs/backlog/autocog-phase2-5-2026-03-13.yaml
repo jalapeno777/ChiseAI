@@ -1,0 +1,47 @@
+backlog_id: AUTOCOG-PHASE2-5-2026-03-13
+created_utc: "2026-03-13T00:00:00Z"
+phase: "Phase 2-5 Completion"
+stories:
+  - id: AUTOCOG-201
+    title: "Belief graph, contradiction detection, and revision engine"
+    status: done
+    priority: critical
+    acceptance:
+      - "Conflicts detected among active beliefs"
+      - "Revisions are provenance-linked"
+      - "Conflict/revision Discord events emitted"
+
+  - id: AUTOCOG-301
+    title: "Strategy and portfolio improvement engine with champion-challenger"
+    status: done
+    priority: critical
+    acceptance:
+      - "Hypotheses generated and evaluated autonomously"
+      - "Promotion/rejection decisions pass policy gates"
+      - "Improvement eventing wired"
+
+  - id: AUTOCOG-401
+    title: "Neuro-symbolic runtime integration shadow/canary pathway"
+    status: done
+    priority: high
+    acceptance:
+      - "Shadow mode integration runs with safe fallback"
+      - "Divergence/non-regression metrics captured"
+
+  - id: AUTOCOG-501
+    title: "Autonomy tuning and constitution audit automation"
+    status: done
+    priority: high
+    acceptance:
+      - "Autonomy level tune decision produced from calibration/incident signals"
+      - "Constitution audit detects and escalates violations"
+
+  - id: AUTOCOG-599
+    title: "Full-cycle orchestration and E2E validation"
+    status: done
+    priority: critical
+    acceptance:
+      - "Single runner executes phases 1-5 end-to-end"
+      - "Cycle artifact emitted with evidence"
+      - "E2E test passes"
+
