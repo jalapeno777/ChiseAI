@@ -187,3 +187,43 @@ class SelfAssessmentNotificationFormatter:
 
         lines.extend(["", f"**Artifact Path:** `{artifact_path or 'N/A'}`"])
         return "\n".join(lines)
+
+
+class AutocogEventFormatter:
+    """Formats generic autonomous cognition events for Discord notifications."""
+
+    def format_event(
+        self,
+        event_type: str,
+        severity: str,
+        summary: str,
+        impact: str,
+        top_metrics: dict[str, Any],
+        artifact_path: str | None,
+        run_id: str,
+    ) -> str:
+        """Format a standardized autonomous cognition event."""
+        icon = {
+            "critical": "🚨",
+            "high": "⚠️",
+            "medium": "📌",
+            "low": "✅",
+        }.get(severity.lower(), "📌")
+        lines = [
+            f"{icon} **Autonomous Cognition Event**",
+            "",
+            f"**Event Type:** `{event_type}`",
+            f"**Severity:** {severity}",
+            f"**Summary:** {summary}",
+            f"**Impact:** {impact}",
+            f"**Run ID:** `{run_id}`",
+            f"**Timestamp:** {datetime.now(UTC).isoformat()}",
+        ]
+
+        if top_metrics:
+            lines.extend(["", "**Top Metrics:**"])
+            for key, value in list(top_metrics.items())[:5]:
+                lines.append(f"  • {key}: {value}")
+
+        lines.extend(["", f"**Artifact Path:** `{artifact_path or 'N/A'}`"])
+        return "\n".join(lines)

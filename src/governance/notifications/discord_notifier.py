@@ -265,3 +265,54 @@ class DiscordNotifier:
         except Exception as e:
             logger.error(f"Failed to send self-assessment notification: {e}")
             return False
+
+    async def notify_autocog_event(
+        self,
+        event_type: str,
+        severity: str,
+        summary: str,
+        impact: str,
+        top_metrics: dict[str, Any] | None,
+        artifact_path: str | None,
+        run_id: str,
+    ) -> bool:
+        """Send autonomous cognition event notification to Discord."""
+        if not self._is_enabled():
+            logger.info("Discord notifications disabled by feature flag")
+            return False
+
+        event_id = f"autocog:{event_type}:{run_id}"
+        if self._is_duplicate(event_id):
+            logger.info(f"Skipping duplicate autocog notification: {event_id}")
+            return False
+
+        try:
+            from .formatters import AutocogEventFormatter
+
+            formatter = AutocogEventFormatter()
+            content = formatter.format_event(
+                event_type=event_type,
+                severity=severity,
+                summary=summary,
+                impact=impact,
+                top_metrics=top_metrics or {},
+                artifact_path=artifact_path,
+                run_id=run_id,
+            )
+            success = await self._send_with_retry(content)
+            if success:
+                self._mark_sent(event_id)
+                logger.info("Sent autonomous cognition event: %s", event_type)
+            return success
+        except Exception as e:
+            logger.error("Failed to send autonomous cognition event %s: %s", event_type, e)
+            return False
+
+    async def close(self) -> None:
+        """Close owned Discord client resources."""
+        if not self._owns_client:
+            return
+        try:
+            await self.client.disconnect()
+        except Exception as e:
+            logger.debug("Discord client close skipped: %s", e)

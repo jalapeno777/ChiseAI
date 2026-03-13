@@ -62,6 +62,7 @@ def main() -> int:
                     artifact_path=str(Path(artifact_path)),
                 )
             )
+            asyncio.run(notifier.close())
 
         print(
             json.dumps(
@@ -98,6 +99,7 @@ def main() -> int:
                         artifact_path=None,
                     )
                 )
+                asyncio.run(notifier.close())
             except Exception as notify_error:
                 logger.error(
                     "Failed to send Discord failure notification: %s", notify_error
@@ -107,4 +109,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

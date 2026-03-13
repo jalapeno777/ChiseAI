@@ -128,3 +128,23 @@ class TestDiscordNotifier:
                     )
         assert result is True
         mark_sent.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_notify_autocog_event_success(self, mock_client):
+        """Test generic autonomous cognition event notification path."""
+        mock_client.send_message.return_value = Mock(success=True)
+        notifier = DiscordNotifier(client=mock_client, channel_id="123")
+        with patch.object(notifier, "_is_enabled", return_value=True):
+            with patch.object(notifier, "_is_duplicate", return_value=False):
+                with patch.object(notifier, "_mark_sent") as mark_sent:
+                    result = await notifier.notify_autocog_event(
+                        event_type="autocog_cycle_completed",
+                        severity="low",
+                        summary="Cycle completed",
+                        impact="All phases passed",
+                        top_metrics={"promotions": 1},
+                        artifact_path="_bmad-output/autocog/cycles/run.json",
+                        run_id="autocog-run-1",
+                    )
+        assert result is True
+        mark_sent.assert_called_once()
