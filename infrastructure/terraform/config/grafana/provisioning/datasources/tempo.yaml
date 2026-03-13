@@ -1,0 +1,46 @@
+# TEMPO-2026-001: Grafana Tempo Datasource Configuration
+apiVersion: 1
+
+datasources:
+  - name: Tempo
+    type: tempo
+    access: proxy
+    url: http://chiseai-tempo:3200
+    isDefault: false
+    editable: false
+    
+    # JSON data configuration
+    jsonData:
+      httpMethod: GET
+      serviceMap:
+        datasourceUid: prometheus
+      nodeGraph:
+        enabled: true
+      traceQuery:
+        timeShiftEnabled: true
+        spanStartTimeShift: 1h
+        spanEndTimeShift: 1h
+      
+      # Trace to logs linking
+      tracesToLogs:
+        datasourceUid: loki
+        tags: ['service.name', 'service.namespace']
+        mappedTags: [{ key: 'service.name', value: 'service' }]
+        mapTagNamesEnabled: false
+        spanStartTimeShift: 1h
+        spanEndTimeShift: 1h
+        filterByTraceID: false
+        filterBySpanID: false
+      
+      # Trace to metrics linking
+      tracesToMetrics:
+        datasourceUid: prometheus
+        tags: [{ key: 'service.name', value: 'service' }]
+        spanStartTimeShift: 1h
+        spanEndTimeShift: 1h
+    
+    # Secure JSON data (empty for now)
+    secureJsonData: {}
+    
+    version: 1
+    readOnly: false

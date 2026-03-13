@@ -20,6 +20,7 @@ resource "docker_volume" "postgres" { name = "chiseai-postgres-data" }
 resource "docker_volume" "influxdb" { name = "chiseai-influxdb-data" }
 resource "docker_volume" "qdrant" { name = "chiseai-qdrant-data" }
 resource "docker_volume" "grafana" { name = "chiseai-grafana-data" }
+resource "docker_volume" "grafana_datasources" { name = "chiseai-grafana-datasources" }
 resource "docker_volume" "gitea" { name = "chiseai-gitea-data" }
 resource "docker_volume" "woodpecker" { name = "chiseai-woodpecker-data" }
 resource "docker_volume" "woodpecker_tmp" { name = "chiseai-woodpecker-tmp" }
@@ -231,6 +232,13 @@ resource "docker_container" "grafana" {
   volumes {
     volume_name    = docker_volume.grafana.name
     container_path = "/var/lib/grafana"
+  }
+
+  # TEMPO-2026-001: Mount Tempo datasource provisioning configuration
+  volumes {
+    volume_name    = docker_volume.grafana_datasources.name
+    container_path = "/etc/grafana/provisioning/datasources"
+    read_only      = true
   }
 
 }
