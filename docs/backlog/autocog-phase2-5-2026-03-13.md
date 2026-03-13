@@ -27,3 +27,33 @@ Complete the remaining autonomous cognition phases:
 - Added operational runner script (`scripts/ops/run_autonomous_full_cycle.py`).
 - Added E2E coverage and registry jobs for autonomous cadence.
 
+## Technical Debt - Scheduled Maintenance
+
+### Item: Datetime Deprecation Warnings Cleanup
+- **Added:** 2026-03-13
+- **Severity:** Low
+- **Due Date:** 2026-03-27
+- **Owner:** engineering
+- **Action ID:** AA-20260313-002
+
+**Description:**
+Approximately 20 deprecation warnings related to `datetime.utcnow()` usage detected during autonomous cognition daily run regression tests. These warnings indicate use of deprecated APIs that may become errors in future Python versions.
+
+**Impact:**
+- No current functional impact (all 12 tests pass)
+- Future Python compatibility risk
+- Warning noise in test output
+
+**Resolution:**
+Replace deprecated `datetime.utcnow()` with `datetime.now(datetime.UTC)` or equivalent modern patterns across the codebase.
+
+**Evidence:**
+- Run ID: `autocog-20260313-144824-c95f4f`
+- Test output shows: "DeprecationWarning: datetime.datetime.utcnow() is deprecated"
+- Location: Various files in autonomous_cognition module and potentially others
+
+**Command to find occurrences:**
+```bash
+grep -r "datetime.utcnow" --include="*.py" . 2>/dev/null
+```
+
