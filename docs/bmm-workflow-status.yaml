@@ -4712,6 +4712,36 @@ sprints:
   validation_status: planned
 stories:
 - acceptance_criteria:
+  - Create tests/e2e/test_full_system_validation.py with comprehensive E2E tests
+  - Test cross-component integration: Telemetry → Automation → Dashboard
+  - Test live data flows through entire pipeline
+  - Test error handling and recovery scenarios
+  - Minimum 20 E2E tests covering all major integration points
+  - Create scripts/validation/full_system_e2e.py validation script
+  - Create docs/evidence/ST-VALIDATION-001-live-data-evidence.json evidence file
+  - All tests pass with 100% pass rate target
+  description: |
+    Implement comprehensive full-system E2E validation that tests the entire
+    ChiseAI platform integration including Redis → Telemetry → InfluxDB → Dashboard
+    data flows and cross-component integration points.
+  epic_id: EP-VALIDATION-001
+  id: ST-VALIDATION-001
+  priority: P1-HIGH
+  status: in_progress
+  story_points: 4
+  title: Full System E2E Validation
+  validation_status: in_progress
+  files_changed:
+  - tests/e2e/test_full_system_validation.py
+  - scripts/validation/full_system_e2e.py
+  - docs/evidence/ST-VALIDATION-001-live-data-evidence.json
+  evidence_files:
+  - docs/evidence/ST-VALIDATION-001-live-data-evidence.json
+  test_results:
+    total_tests: 24
+    passed: 24
+    failed: 0
+- acceptance_criteria:
   - Brain versioning follows semantic versioning (MAJOR.MINOR.PATCH)
   - Evaluation runs automatically on new versions within 5 minutes of push
   - Shadow testing runs against live brain in parallel with <100ms latency overhead
@@ -6811,8 +6841,8 @@ summary:
     story_points: 338
   stories_by_status:
     completed: 59
-    in_progress: 0
+    in_progress: 1
     planned: 48
   total_epics: 24
-  total_stories: 119
-  total_story_points: 643
+  total_stories: 120
+  total_story_points: 647
