@@ -319,12 +319,12 @@ class TelemetryPipeline:
 
                 # Get events from ingestion sources
                 for source_name, source in self._ingestion._sources.items():
-                    events = source.get_events(max_count=100, timeout=0.1)
+                    events = source.get_events(max_count=1000, timeout=0.1)
                     if events:
                         self._coordinator.submit_to_processing(events)
 
                 # Process events
-                events = self._coordinator.get_processing_batch(max_size=100)
+                events = self._coordinator.get_processing_batch(max_size=1000)
                 if events:
                     processed = self._processing.process_batch(events)
                     self._coordinator.submit_to_export(self._processing.flush())
@@ -341,7 +341,7 @@ class TelemetryPipeline:
                     self._metrics.processing_time_ms = elapsed_ms
 
                 # Small sleep to prevent tight loop
-                time.sleep(0.01)
+                time.sleep(0.001)
 
             except Exception as e:
                 self._handle_error("processing_loop", e)
@@ -359,7 +359,7 @@ class TelemetryPipeline:
                     continue
 
                 # Get metrics from queue
-                metrics = self._coordinator.get_export_batch(max_size=100)
+                metrics = self._coordinator.get_export_batch(max_size=1000)
                 if metrics:
                     results = self._export.export_metrics(metrics)
 
@@ -375,7 +375,7 @@ class TelemetryPipeline:
                     self._export.retry_dlq(max_count=50)
 
                 # Small sleep to prevent tight loop
-                time.sleep(0.01)
+                time.sleep(0.001)
 
             except Exception as e:
                 self._handle_error("export_loop", e)

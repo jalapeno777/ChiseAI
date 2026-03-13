@@ -40,9 +40,9 @@ class ExportDestinationType(Enum):
 class BufferConfig:
     """Buffer configuration for ingestion."""
 
-    max_size: int = 10000
+    max_size: int = 50000
     overflow_strategy: str = "drop_oldest"  # drop_oldest, drop_newest, block
-    flush_threshold: int = 1000
+    flush_threshold: int = 5000
     flush_interval_seconds: float = 5.0
 
     def to_dict(self) -> dict[str, Any]:
@@ -60,9 +60,9 @@ class RateLimitConfig:
     """Rate limiting configuration for ingestion."""
 
     enabled: bool = True
-    events_per_second: int = 10000
-    burst_size: int = 15000
-    backpressure_threshold: float = 0.8  # 80% buffer full triggers backpressure
+    events_per_second: int = 25000
+    burst_size: int = 100000
+    backpressure_threshold: float = 0.95  # 95% buffer full triggers backpressure
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
@@ -116,6 +116,7 @@ class ProcessingConfig:
     derive_derivatives: bool = True
     enrichment_rules: list[dict[str, Any]] = field(default_factory=list)
     filter_rules: list[dict[str, Any]] = field(default_factory=list)
+    high_throughput_mode: bool = False  # When True, disables expensive features
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
@@ -127,6 +128,7 @@ class ProcessingConfig:
             "derive_derivatives": self.derive_derivatives,
             "enrichment_rules": self.enrichment_rules,
             "filter_rules": self.filter_rules,
+            "high_throughput_mode": self.high_throughput_mode,
         }
 
 
