@@ -1199,19 +1199,17 @@ backlog:
     - "Template update merged via commit e023a274"
 - id: COVERAGE-BLOCKER-001
   priority: high
-  title: Resolve test collection errors blocking authoritative coverage runs
+  title: Resolve import-path and circular-import hygiene in coverage module
   owner: devops-team
   scope_globs: ["tests/", "scripts/validation/", "src/config/"]
   acceptance_criteria:
-  - pytest tests/ --collect-only runs without errors
-  - All 8 collection errors resolved
-  - coverage.improvement module created or imports fixed
-  - config.trading_mode imports working
-  - scripts.validation.recap_validator fully implemented
-  verification_command: python3 -m pytest tests/ --collect-only
+  - Circular imports resolved in coverage/* modules
+  - Import path consistency verified between coverage/ and tests/coverage/
+  - pytest collection passes for coverage-related test modules
+  verification_command: python3 -m pytest tests/test_coverage/ --collect-only -q
   story_points: 2
   dependencies: []
-  notes: Blocks authoritative coverage measurement for ST-COVERAGE slices
+  notes: Batch 3 will implement actual code fixes. This blocker tracks import-path hygiene only.
   created_date: '2026-03-10'
   status: planned
 - id: COVERAGE-BLOCKER-002
