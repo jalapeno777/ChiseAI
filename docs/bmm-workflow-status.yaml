@@ -1211,7 +1211,16 @@ backlog:
   dependencies: []
   notes: Batch 3 will implement actual code fixes. This blocker tracks import-path hygiene only.
   created_date: '2026-03-10'
-  status: planned
+  status: completed
+  completed_date: '2026-03-14'
+  evidence_notes:
+  - "Verification: 2026-03-14 - All 6 ACs verified"
+  - "Circular imports: PASS - python3 -c 'from coverage.improvement import analyzer, reporter'"
+  - "coverage/__init__.py exports: PASS - _ANALYZER, _REPORTER, _CLASSES, _IMPORTS"
+  - "analyzer.py: 426 lines (verified)"
+  - "reporter.py: 396 lines (verified)"
+  - "import-path-hygiene.md: 131 lines (verified)"
+  - "Merge commit 5b4d338c: verified on main"
 - id: COVERAGE-BLOCKER-002
   title: Fix brain promotion smoke test serialization failures
   status: completed
@@ -1230,6 +1239,11 @@ backlog:
     total_tests: 43
     passed: 43
     failed: 0
+    skipped: 0
+    pass_rate: "100%"
+    execution_time: "1.85s"
+    verification_date: '2026-03-14'
+    verification_command: "python3 -m pytest tests/test_brain/test_promotion_smoke.py -v"
   notes:
     - "All 43 smoke tests pass. Serialization tests verified working."
     - "No code changes required - tests were already passing"
@@ -1247,7 +1261,14 @@ backlog:
   dependencies: []
   notes: Import errors prevent full test suite execution
   created_date: '2026-03-10'
-  status: planned
+  status: completed
+  completed_date: '2026-03-14'
+  evidence_notes:
+  - "Verification: 2026-03-14 - All ACs verified"
+  - "config.trading_mode importable: PASS - TradingModeConfig verified"
+  - "scripts.validation.recap_validator: PASS - 517 lines, fully functional"
+  - "import-path-hygiene.md: 131 lines (verified)"
+  - "Merge commit 5b4d338c: verified on main (Thu Mar 13 2026)"
 - id: SKILL-OPTIMIZATION-BACKLOG
   priority: medium
   title: Skills System Optimization Backlog
