@@ -25,7 +25,6 @@ class AutonomousPolicyEngine:
             failures.append("calibration_gate")
         if metrics.get("drawdown", 1.0) > 0.20:
             failures.append("risk_regression_gate")
-        if metrics.get("constitution_violations", 1.0) > 0:
+        if metrics.get("constitution_violations", 0.0) > 0:
             failures.append("constitution_gate")
         return GateDecision(passed=not failures, failed_gates=failures)
-

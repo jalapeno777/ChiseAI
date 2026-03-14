@@ -220,12 +220,29 @@ class AutonomousCognitionController:
                 self._redis_client.ping()
                 return True
 
-            if redis_state_get_client is None:
-                return False
-            client = redis_state_get_client()
-            if client is None:
-                return False
-            client.ping()
+            if redis_state_get_client is not None:
+                client = redis_state_get_client()
+                if client is not None:
+                    client.ping()
+                    return True
+
+            # Fallback for script/cron contexts where tools package import may be unavailable.
+            import redis
+
+            host = os.getenv("REDIS_HOST", "host.docker.internal")
+            port = int(os.getenv("REDIS_PORT", "6380"))
+            db = int(os.getenv("REDIS_DB", "0"))
+            password = os.getenv("REDIS_PASSWORD") or None
+            direct_client = redis.Redis(
+                host=host,
+                port=port,
+                db=db,
+                password=password,
+                decode_responses=True,
+                socket_connect_timeout=3,
+                socket_timeout=3,
+            )
+            direct_client.ping()
             return True
         except Exception:
             return False
@@ -233,11 +250,26 @@ class AutonomousCognitionController:
     def _check_qdrant_available(self) -> bool:
         """Check whether Qdrant is reachable."""
         try:
-            if self._qdrant_client is None:
-                return False
-            if hasattr(self._qdrant_client, "get_collections"):
-                self._qdrant_client.get_collections()
+            if self._qdrant_client is not None:
+                if hasattr(self._qdrant_client, "get_collections"):
+                    self._qdrant_client.get_collections()
+                    return True
                 return True
+
+            from qdrant_client import QdrantClient
+
+            qdrant_url = os.getenv("QDRANT_URL")
+            if qdrant_url:
+                client = QdrantClient(url=qdrant_url, timeout=3)
+            else:
+                host = (
+                    os.getenv("QDRANT_HOST")
+                    or os.getenv("CHISE_QDRANT_HOST")
+                    or "host.docker.internal"
+                )
+                port = int(os.getenv("QDRANT_PORT", "6334"))
+                client = QdrantClient(host=host, port=port, timeout=3)
+            client.get_collections()
             return True
         except Exception:
             return False
