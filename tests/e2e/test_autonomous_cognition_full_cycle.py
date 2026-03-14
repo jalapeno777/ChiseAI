@@ -29,4 +29,7 @@ def test_belief_consistency_mode_skips_improvement_phase() -> None:
         assert len(details) >= 1
         assert "old_belief_id" in details[0]
         assert "new_belief_id" in details[0]
+        assert "old_belief_statement" in details[0]
+        assert "new_belief_statement" in details[0]
         assert "reason" in details[0]
+        assert result.artifact_paths.get("belief_revisions")
