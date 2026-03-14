@@ -52,12 +52,43 @@ class AutonomousCognitionFullCycle:
         self._tuner = AutonomyTuner()
         self._audit = ConstitutionAuditEngine()
 
-    def run(self, notify_discord: bool = False) -> CycleResult:
-        """Run full autonomous cognition cycle and persist artifact."""
+    def run(self, notify_discord: bool = False, mode: str = "full") -> CycleResult:
+        """Run autonomous cognition cycle and persist artifact.
+
+        Modes:
+        - full: Phases 1-5
+        - belief_consistency: self-assessment + belief check/revision
+        - improvement_cycle: self-assessment + strategy improvement
+        - calibration/autonomy_tune: self-assessment + autonomy tuning
+        - constitution_audit: self-assessment + constitution audit
+        """
+        allowed_modes = {
+            "full",
+            "belief_consistency",
+            "improvement_cycle",
+            "calibration",
+            "autonomy_tune",
+            "constitution_audit",
+        }
+        if mode not in allowed_modes:
+            raise ValueError(f"Unsupported autocog mode: {mode}")
+
+        run_self_assessment = True
+        run_belief = mode in {"full", "belief_consistency"}
+        run_improvement = mode in {"full", "improvement_cycle"}
+        run_runtime = mode == "full"
+        run_tuning = mode in {"full", "calibration", "autonomy_tune"}
+        run_audit = mode in {"full", "constitution_audit"}
+
         run_id = f"autocog-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:6]}"
         state_machine = AutonomousCycleStateMachine()
         result = CycleResult.create(run_id=run_id)
         actions: list[str] = []
+        assessment = None
+        assessment_path: Path | None = None
+        conflicts: list[Any] = []
+        promotions = 0
+        rejections = 0
 
         notifier = DiscordNotifier() if notify_discord else None
         notify_loop: asyncio.AbstractEventLoop | None = None
@@ -65,257 +96,265 @@ class AutonomousCognitionFullCycle:
             notify_loop = asyncio.new_event_loop()
         try:
             state_machine.transition(CycleState.SELF_ASSESSING)
-            actions.append("daily self assessment")
-            assessment, assessment_path = self._controller.run_daily_self_assessment()
-            result.self_assessment_status = assessment.status
-            result.artifact_paths["self_assessment"] = str(assessment_path)
+            if run_self_assessment:
+                actions.append("daily self assessment")
+                assessment, assessment_path = self._controller.run_daily_self_assessment()
+                result.self_assessment_status = assessment.status
+                result.artifact_paths["self_assessment"] = str(assessment_path)
 
-            if notifier and notify_loop:
-                notify_loop.run_until_complete(
-                    notifier.notify_self_assessment(
-                        artifact=assessment,
-                        artifact_path=str(assessment_path),
+                if notifier and notify_loop:
+                    notify_loop.run_until_complete(
+                        notifier.notify_self_assessment(
+                            artifact=assessment,
+                            artifact_path=str(assessment_path),
+                        )
                     )
-                )
 
             state_machine.transition(CycleState.BELIEF_CHECK)
-            actions.append("belief consistency check")
-            beliefs = self._seed_beliefs_from_assessment(assessment.findings)
-            conflicts = self._checker.detect_conflicts(beliefs)
-            result.belief_conflicts = len(conflicts)
-            if conflicts and notifier and notify_loop:
-                notify_loop.run_until_complete(
-                    notifier.notify_autocog_event(
-                        event_type="belief_conflict_detected",
-                        severity="high",
-                        summary=explain_conflict(conflicts[0]),
-                        impact="Belief graph contradiction requires revision or review.",
-                        top_metrics={"conflicts": len(conflicts)},
-                        artifact_path=str(assessment_path),
-                        run_id=run_id,
-                        title="Belief Conflict Detected",
-                        issue=(
-                            "Two active beliefs disagree, so the system could reason "
-                            "in inconsistent ways."
-                        ),
-                        intended_resolution=(
-                            "Run belief revision to reconcile the contradiction using "
-                            "higher-quality evidence."
-                        ),
-                        expected_improvement=(
-                            "Keeps strategy reasoning internally consistent and "
-                            "reduces contradictory decisions."
-                        ),
-                        outcome_status="in_progress",
-                        evidence_reasoning=[
-                            f"conflicts_detected={len(conflicts)}",
-                            explain_conflict(conflicts[0]),
-                        ],
+            if run_belief:
+                actions.append("belief consistency check")
+                findings = assessment.findings if assessment is not None else []
+                beliefs = self._seed_beliefs_from_assessment(findings)
+                conflicts = self._checker.detect_conflicts(beliefs)
+                result.belief_conflicts = len(conflicts)
+                if conflicts and notifier and notify_loop:
+                    notify_loop.run_until_complete(
+                        notifier.notify_autocog_event(
+                            event_type="belief_conflict_detected",
+                            severity="high",
+                            summary=explain_conflict(conflicts[0]),
+                            impact="Belief graph contradiction requires revision or review.",
+                            top_metrics={"conflicts": len(conflicts)},
+                            artifact_path=str(assessment_path) if assessment_path else None,
+                            run_id=run_id,
+                            title="Belief Conflict Detected",
+                            issue=(
+                                "Two active beliefs disagree, so the system could reason "
+                                "in inconsistent ways."
+                            ),
+                            intended_resolution=(
+                                "Run belief revision to reconcile the contradiction using "
+                                "higher-quality evidence."
+                            ),
+                            expected_improvement=(
+                                "Keeps strategy reasoning internally consistent and "
+                                "reduces contradictory decisions."
+                            ),
+                            outcome_status="in_progress",
+                            evidence_reasoning=[
+                                f"conflicts_detected={len(conflicts)}",
+                                explain_conflict(conflicts[0]),
+                            ],
+                        )
                     )
-                )
 
-            revisions = self._revision_engine.apply_revisions(
-                beliefs={b.belief_id: b for b in beliefs},
-                conflicts=conflicts,
-            )
-            result.belief_revisions = len(revisions)
-            if revisions and notifier and notify_loop:
-                notify_loop.run_until_complete(
-                    notifier.notify_autocog_event(
-                        event_type="belief_revision_applied",
-                        severity="medium",
-                        summary=explain_revision(revisions[0]),
-                        impact="Belief inconsistency resolved using evidence-weighted revision.",
-                        top_metrics={"revisions": len(revisions)},
-                        artifact_path=str(assessment_path),
-                        run_id=run_id,
-                        title="Belief Revision Applied",
-                        issue=(
-                            "Conflicting beliefs were found and needed a deterministic "
-                            "resolution."
-                        ),
-                        intended_resolution=(
-                            "Adjust belief confidence/state to preserve the strongest "
-                            "evidence-backed interpretation."
-                        ),
-                        expected_improvement=(
-                            "Reduces internal contradictions and improves downstream "
-                            "decision reliability."
-                        ),
-                        outcome_status="success",
-                        evidence_reasoning=[
-                            f"revisions_applied={len(revisions)}",
-                            explain_revision(revisions[0]),
-                        ],
-                    )
+                revisions = self._revision_engine.apply_revisions(
+                    beliefs={b.belief_id: b for b in beliefs},
+                    conflicts=conflicts,
                 )
+                result.belief_revisions = len(revisions)
+                if revisions and notifier and notify_loop:
+                    notify_loop.run_until_complete(
+                        notifier.notify_autocog_event(
+                            event_type="belief_revision_applied",
+                            severity="medium",
+                            summary=explain_revision(revisions[0]),
+                            impact="Belief inconsistency resolved using evidence-weighted revision.",
+                            top_metrics={"revisions": len(revisions)},
+                            artifact_path=str(assessment_path) if assessment_path else None,
+                            run_id=run_id,
+                            title="Belief Revision Applied",
+                            issue=(
+                                "Conflicting beliefs were found and needed a deterministic "
+                                "resolution."
+                            ),
+                            intended_resolution=(
+                                "Adjust belief confidence/state to preserve the strongest "
+                                "evidence-backed interpretation."
+                            ),
+                            expected_improvement=(
+                                "Reduces internal contradictions and improves downstream "
+                                "decision reliability."
+                            ),
+                            outcome_status="success",
+                            evidence_reasoning=[
+                                f"revisions_applied={len(revisions)}",
+                                explain_revision(revisions[0]),
+                            ],
+                        )
+                    )
 
             state_machine.transition(CycleState.IMPROVEMENT)
-            actions.append("strategy portfolio improvement cycle")
-            hypotheses = self._hypothesis_generator.generate(
-                self_assessment=assessment.to_dict(),
-                conflicts_count=len(conflicts),
-            )
-            result.experiments_run = len(hypotheses)
-            promotions = 0
-            rejections = 0
-            for hypothesis in hypotheses:
-                exp = self._lab.run(hypothesis)
-                outcome = self._champion_engine.evaluate_candidate(
-                    candidate_id=hypothesis.hypothesis_id,
-                    metrics=exp.to_metrics(),
+            if run_improvement:
+                actions.append("strategy portfolio improvement cycle")
+                assessment_payload = assessment.to_dict() if assessment is not None else {}
+                hypotheses = self._hypothesis_generator.generate(
+                    self_assessment=assessment_payload,
+                    conflicts_count=len(conflicts),
                 )
-                if outcome.promoted:
-                    promotions += 1
-                    if notifier and notify_loop:
-                        notify_loop.run_until_complete(
-                            notifier.notify_autocog_event(
-                                event_type="improvement_promoted",
-                                severity="low",
-                                summary=f"Promoted {hypothesis.hypothesis_id}",
-                                impact="Candidate passed promotion gates.",
-                                top_metrics=exp.to_metrics(),
-                                artifact_path=str(assessment_path),
-                                run_id=run_id,
-                                title="Improvement Candidate Promoted",
-                                issue=(
-                                    "A new candidate policy outperformed the current "
-                                    "baseline under promotion gates."
-                                ),
-                                intended_resolution=(
-                                    "Promote the validated candidate into the active "
-                                    "improvement set."
-                                ),
-                                expected_improvement=(
-                                    "Improves trading/portfolio behavior while staying "
-                                    "inside risk controls."
-                                ),
-                                outcome_status="success",
-                                evidence_reasoning=[
-                                    f"candidate={hypothesis.hypothesis_id}",
-                                    outcome.reason,
-                                ],
+                result.experiments_run = len(hypotheses)
+                for hypothesis in hypotheses:
+                    exp = self._lab.run(hypothesis)
+                    outcome = self._champion_engine.evaluate_candidate(
+                        candidate_id=hypothesis.hypothesis_id,
+                        metrics=exp.to_metrics(),
+                    )
+                    if outcome.promoted:
+                        promotions += 1
+                        if notifier and notify_loop:
+                            notify_loop.run_until_complete(
+                                notifier.notify_autocog_event(
+                                    event_type="improvement_promoted",
+                                    severity="low",
+                                    summary=f"Promoted {hypothesis.hypothesis_id}",
+                                    impact="Candidate passed promotion gates.",
+                                    top_metrics=exp.to_metrics(),
+                                    artifact_path=str(assessment_path) if assessment_path else None,
+                                    run_id=run_id,
+                                    title="Improvement Candidate Promoted",
+                                    issue=(
+                                        "A new candidate policy outperformed the current "
+                                        "baseline under promotion gates."
+                                    ),
+                                    intended_resolution=(
+                                        "Promote the validated candidate into the active "
+                                        "improvement set."
+                                    ),
+                                    expected_improvement=(
+                                        "Improves trading/portfolio behavior while staying "
+                                        "inside risk controls."
+                                    ),
+                                    outcome_status="success",
+                                    evidence_reasoning=[
+                                        f"candidate={hypothesis.hypothesis_id}",
+                                        outcome.reason,
+                                    ],
+                                )
                             )
-                        )
-                else:
-                    rejections += 1
-                    if notifier and notify_loop:
-                        notify_loop.run_until_complete(
-                            notifier.notify_autocog_event(
-                                event_type="improvement_rejected",
-                                severity="medium",
-                                summary=f"Rejected {hypothesis.hypothesis_id}",
-                                impact=outcome.reason,
-                                top_metrics=exp.to_metrics(),
-                                artifact_path=str(assessment_path),
-                                run_id=run_id,
-                                title="Improvement Candidate Rejected",
-                                issue=(
-                                    "A candidate policy failed one or more promotion "
-                                    "criteria."
-                                ),
-                                intended_resolution=(
-                                    "Reject the candidate and preserve the current "
-                                    "champion policy."
-                                ),
-                                expected_improvement=(
-                                    "Prevents degraded strategy performance from being "
-                                    "deployed."
-                                ),
-                                outcome_status="failed",
-                                evidence_reasoning=[
-                                    f"candidate={hypothesis.hypothesis_id}",
-                                    outcome.reason,
-                                ],
+                    else:
+                        rejections += 1
+                        if notifier and notify_loop:
+                            notify_loop.run_until_complete(
+                                notifier.notify_autocog_event(
+                                    event_type="improvement_rejected",
+                                    severity="medium",
+                                    summary=f"Rejected {hypothesis.hypothesis_id}",
+                                    impact=outcome.reason,
+                                    top_metrics=exp.to_metrics(),
+                                    artifact_path=str(assessment_path) if assessment_path else None,
+                                    run_id=run_id,
+                                    title="Improvement Candidate Rejected",
+                                    issue=(
+                                        "A candidate policy failed one or more promotion "
+                                        "criteria."
+                                    ),
+                                    intended_resolution=(
+                                        "Reject the candidate and preserve the current "
+                                        "champion policy."
+                                    ),
+                                    expected_improvement=(
+                                        "Prevents degraded strategy performance from being "
+                                        "deployed."
+                                    ),
+                                    outcome_status="failed",
+                                    evidence_reasoning=[
+                                        f"candidate={hypothesis.hypothesis_id}",
+                                        outcome.reason,
+                                    ],
+                                )
                             )
-                        )
             result.promotions = promotions
             result.rejections = rejections
 
             state_machine.transition(CycleState.RUNTIME_INTEGRATION)
-            actions.append("neuro-symbolic runtime integration")
-            runtime_result = self._runtime.run(mode="shadow")
-            result.metrics["runtime_divergence_score"] = runtime_result.divergence_score
-            result.metrics["runtime_non_regression_passed"] = runtime_result.passed_non_regression
+            if run_runtime:
+                actions.append("neuro-symbolic runtime integration")
+                runtime_result = self._runtime.run(mode="shadow")
+                result.metrics["runtime_divergence_score"] = runtime_result.divergence_score
+                result.metrics["runtime_non_regression_passed"] = (
+                    runtime_result.passed_non_regression
+                )
 
             state_machine.transition(CycleState.TUNING)
-            actions.append("autonomy tuning")
-            result.autonomy_level_before = "bounded"
-            tuning = self._tuner.tune(
-                current_level=result.autonomy_level_before,
-                ece=0.05 if promotions > 0 else 0.12,
-                incident_count=0,
-            )
-            result.autonomy_level_after = tuning.new_level
-            if notifier and notify_loop and tuning.new_level != tuning.previous_level:
-                notify_loop.run_until_complete(
-                    notifier.notify_autocog_event(
-                        event_type="autonomy_level_changed",
-                        severity="low",
-                        summary=(
-                            f"Autonomy level {tuning.previous_level} -> {tuning.new_level}"
-                        ),
-                        impact=tuning.reason,
-                        top_metrics={"ece": 0.05 if promotions > 0 else 0.12},
-                        artifact_path=str(assessment_path),
-                        run_id=run_id,
-                        title="Autonomy Level Updated",
-                        issue=(
-                            "Calibration and control signals indicated autonomy settings "
-                            "needed adjustment."
-                        ),
-                        intended_resolution=(
-                            "Apply tuner-recommended autonomy level while honoring "
-                            "guardrails."
-                        ),
-                        expected_improvement=(
-                            "Balances execution speed with safety and calibration quality."
-                        ),
-                        outcome_status="success",
-                        evidence_reasoning=[
-                            f"previous_level={tuning.previous_level}",
-                            f"new_level={tuning.new_level}",
-                            tuning.reason,
-                        ],
-                    )
+            if run_tuning:
+                actions.append("autonomy tuning")
+                result.autonomy_level_before = "bounded"
+                tuning = self._tuner.tune(
+                    current_level=result.autonomy_level_before,
+                    ece=0.05 if promotions > 0 else 0.12,
+                    incident_count=0,
                 )
+                result.autonomy_level_after = tuning.new_level
+                if notifier and notify_loop and tuning.new_level != tuning.previous_level:
+                    notify_loop.run_until_complete(
+                        notifier.notify_autocog_event(
+                            event_type="autonomy_level_changed",
+                            severity="low",
+                            summary=(
+                                f"Autonomy level {tuning.previous_level} -> {tuning.new_level}"
+                            ),
+                            impact=tuning.reason,
+                            top_metrics={"ece": 0.05 if promotions > 0 else 0.12},
+                            artifact_path=str(assessment_path) if assessment_path else None,
+                            run_id=run_id,
+                            title="Autonomy Level Updated",
+                            issue=(
+                                "Calibration and control signals indicated autonomy settings "
+                                "needed adjustment."
+                            ),
+                            intended_resolution=(
+                                "Apply tuner-recommended autonomy level while honoring "
+                                "guardrails."
+                            ),
+                            expected_improvement=(
+                                "Balances execution speed with safety and calibration quality."
+                            ),
+                            outcome_status="success",
+                            evidence_reasoning=[
+                                f"previous_level={tuning.previous_level}",
+                                f"new_level={tuning.new_level}",
+                                tuning.reason,
+                            ],
+                        )
+                    )
 
             state_machine.transition(CycleState.GOVERNANCE_AUDIT)
-            actions.append("constitution audit")
-            audit_result = self._audit.run(actions=actions)
-            result.constitution_violations = len(audit_result.violations)
-            result.metrics["constitution_critical"] = audit_result.critical_count
-            if notifier and notify_loop and audit_result.violations:
-                top = audit_result.violations[0]
-                notify_loop.run_until_complete(
-                    notifier.notify_autocog_event(
-                        event_type="constitution_violation_detected",
-                        severity="critical" if audit_result.critical_count else "high",
-                        summary=f"Constitution violation: {top.rule_id}",
-                        impact=top.description,
-                        top_metrics={"violations": len(audit_result.violations)},
-                        artifact_path=str(assessment_path),
-                        run_id=run_id,
-                        title="Constitution Violation Detected",
-                        issue=(
-                            "At least one action conflicted with project constitution "
-                            "or safety policy."
-                        ),
-                        intended_resolution=(
-                            "Escalate violation details and constrain unsafe autonomous "
-                            "actions."
-                        ),
-                        expected_improvement=(
-                            "Keeps the system aligned to safety rules and project scope."
-                        ),
-                        outcome_status="failed",
-                        evidence_reasoning=[
-                            f"critical_violations={audit_result.critical_count}",
-                            f"total_violations={len(audit_result.violations)}",
-                            f"top_rule={top.rule_id}",
-                        ],
+            if run_audit:
+                actions.append("constitution audit")
+                audit_result = self._audit.run(actions=actions)
+                result.constitution_violations = len(audit_result.violations)
+                result.metrics["constitution_critical"] = audit_result.critical_count
+                if notifier and notify_loop and audit_result.violations:
+                    top = audit_result.violations[0]
+                    notify_loop.run_until_complete(
+                        notifier.notify_autocog_event(
+                            event_type="constitution_violation_detected",
+                            severity="critical" if audit_result.critical_count else "high",
+                            summary=f"Constitution violation: {top.rule_id}",
+                            impact=top.description,
+                            top_metrics={"violations": len(audit_result.violations)},
+                            artifact_path=str(assessment_path) if assessment_path else None,
+                            run_id=run_id,
+                            title="Constitution Violation Detected",
+                            issue=(
+                                "At least one action conflicted with project constitution "
+                                "or safety policy."
+                            ),
+                            intended_resolution=(
+                                "Escalate violation details and constrain unsafe autonomous "
+                                "actions."
+                            ),
+                            expected_improvement=(
+                                "Keeps the system aligned to safety rules and project scope."
+                            ),
+                            outcome_status="failed",
+                            evidence_reasoning=[
+                                f"critical_violations={audit_result.critical_count}",
+                                f"total_violations={len(audit_result.violations)}",
+                                f"top_rule={top.rule_id}",
+                            ],
+                        )
                     )
-                )
 
             state_machine.transition(CycleState.COMPLETED)
             result.status = "completed"
@@ -359,7 +398,7 @@ class AutonomousCognitionFullCycle:
                         severity="low" if result.status == "completed" else "critical",
                         summary=f"Autonomous cycle {result.status}",
                         impact=(
-                            "Phases 1-5 executed end-to-end."
+                            "Mode pipeline executed successfully."
                             if result.status == "completed"
                             else "Cycle terminated with failure."
                         ),
@@ -389,6 +428,7 @@ class AutonomousCognitionFullCycle:
                         if result.status == "completed"
                         else "failed",
                         evidence_reasoning=[
+                            f"mode={mode}",
                             f"status={result.status}",
                             f"belief_conflicts={result.belief_conflicts}",
                             f"belief_revisions={result.belief_revisions}",

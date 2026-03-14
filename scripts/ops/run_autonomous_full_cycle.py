@@ -42,8 +42,7 @@ def main() -> int:
     runner = AutonomousCognitionFullCycle()
 
     try:
-        # For now, all modes reuse full cycle; phase-specific modes remain aliases.
-        result = runner.run(notify_discord=args.notify_discord)
+        result = runner.run(notify_discord=args.notify_discord, mode=args.mode)
         logger.info(
             "Autonomous cycle completed: run_id=%s status=%s",
             result.run_id,
@@ -59,4 +58,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-
