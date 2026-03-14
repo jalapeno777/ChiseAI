@@ -54,6 +54,18 @@ resource "grafana_dashboard" "tempo_trace_exploration" {
   ]
 }
 
+# TEMPO-2026-001: SLO Alerts Dashboard
+resource "grafana_dashboard" "tempo_slo_alerts" {
+  config_json = file("${path.module}/dashboards/tempo-alerts.json")
+  folder      = grafana_folder.chiseai.id
+  overwrite   = true
+
+  depends_on = [
+    grafana_folder.chiseai,
+    grafana_data_source.influxdb,
+  ]
+}
+
 # ChiseAI folder for organizing dashboards
 resource "grafana_folder" "chiseai" {
   title = "ChiseAI"
@@ -89,6 +101,7 @@ output "dashboard_uids" {
     datasource_health        = grafana_dashboard.datasource_health.uid
     autonomous_control_plane = grafana_dashboard.autonomous_control_plane.uid
     tempo_trace_exploration  = grafana_dashboard.tempo_trace_exploration.uid
+    tempo_slo_alerts         = grafana_dashboard.tempo_slo_alerts.uid
   }
 }
 
