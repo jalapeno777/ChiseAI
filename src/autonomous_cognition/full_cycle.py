@@ -115,6 +115,7 @@ class AutonomousCognitionFullCycle:
                 actions.append("belief consistency check")
                 findings = assessment.findings if assessment is not None else []
                 beliefs = self._seed_beliefs_from_assessment(findings)
+                belief_map = {b.belief_id: b for b in beliefs}
                 conflicts = self._checker.detect_conflicts(beliefs)
                 result.belief_conflicts = len(conflicts)
                 if conflicts and notifier and notify_loop:
@@ -149,17 +150,26 @@ class AutonomousCognitionFullCycle:
                     )
 
                 revisions = self._revision_engine.apply_revisions(
-                    beliefs={b.belief_id: b for b in beliefs},
+                    beliefs=belief_map,
                     conflicts=conflicts,
                 )
                 result.belief_revisions = len(revisions)
+                revision_artifact_path: Path | None = None
                 if revisions:
-                    result.metrics["belief_revision_details"] = [
-                        self._revision_detail_payload(revision)
+                    revision_details = [
+                        self._revision_detail_payload(revision, belief_map)
                         for revision in revisions[:10]
                     ]
+                    result.metrics["belief_revision_details"] = revision_details
+                    revision_artifact_path = self._persist_belief_revisions(
+                        run_id=run_id,
+                        revision_details=revision_details,
+                    )
+                    result.artifact_paths["belief_revisions"] = str(revision_artifact_path)
                 if revisions and notifier and notify_loop:
                     first_revision = revisions[0]
+                    old_belief = belief_map.get(first_revision.old_belief_id)
+                    new_belief = belief_map.get(first_revision.new_belief_id)
                     notify_loop.run_until_complete(
                         notifier.notify_autocog_event(
                             event_type="belief_revision_applied",
@@ -167,7 +177,11 @@ class AutonomousCognitionFullCycle:
                             summary=explain_revision(first_revision),
                             impact="Belief inconsistency resolved using evidence-weighted revision.",
                             top_metrics={"revisions": len(revisions)},
-                            artifact_path=str(assessment_path) if assessment_path else None,
+                            artifact_path=(
+                                str(revision_artifact_path)
+                                if revision_artifact_path is not None
+                                else (str(assessment_path) if assessment_path else None)
+                            ),
                             run_id=run_id,
                             title="Belief Revision Applied",
                             issue=(
@@ -200,6 +214,18 @@ class AutonomousCognitionFullCycle:
                                     + ",".join(first_revision.evidence_refs)
                                     if first_revision.evidence_refs
                                     else "evidence_refs=none"
+                                ),
+                                (
+                                    "old_statement="
+                                    + self._truncate_text(old_belief.statement)
+                                    if old_belief is not None
+                                    else "old_statement=unknown"
+                                ),
+                                (
+                                    "new_statement="
+                                    + self._truncate_text(new_belief.statement)
+                                    if new_belief is not None
+                                    else "new_statement=unknown"
                                 ),
                             ],
                         )
@@ -501,15 +527,57 @@ class AutonomousCognitionFullCycle:
         return out_path
 
     @staticmethod
-    def _revision_detail_payload(revision: Any) -> dict[str, Any]:
+    def _revision_detail_payload(
+        revision: Any, beliefs: dict[str, Belief]
+    ) -> dict[str, Any]:
         """Build a durable revision payload for auditing and rollback analysis."""
+        old_belief = beliefs.get(revision.old_belief_id)
+        new_belief = beliefs.get(revision.new_belief_id)
         return {
             "revision_id": revision.revision_id,
             "old_belief_id": revision.old_belief_id,
             "new_belief_id": revision.new_belief_id,
+            "old_belief_statement": old_belief.statement if old_belief is not None else None,
+            "new_belief_statement": new_belief.statement if new_belief is not None else None,
+            "old_belief_domain": old_belief.domain if old_belief is not None else None,
+            "new_belief_domain": new_belief.domain if new_belief is not None else None,
             "confidence_before": revision.confidence_before,
             "confidence_after": revision.confidence_after,
+            "confidence_delta": round(
+                revision.confidence_after - revision.confidence_before, 6
+            ),
             "reason": revision.reason,
             "evidence_refs": list(revision.evidence_refs),
             "applied_at": revision.applied_at,
         }
+
+    def _persist_belief_revisions(
+        self,
+        *,
+        run_id: str,
+        revision_details: list[dict[str, Any]],
+    ) -> Path:
+        """Persist detailed belief revision history for audit and rollback support."""
+        out_dir = Path("_bmad-output/autocog/belief_revisions")
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_path = out_dir / f"{run_id}.json"
+        out_path.write_text(
+            json.dumps(
+                {
+                    "run_id": run_id,
+                    "generated_at": datetime.now(UTC).isoformat(),
+                    "revision_count": len(revision_details),
+                    "revisions": revision_details,
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        return out_path
+
+    @staticmethod
+    def _truncate_text(text: str, max_len: int = 180) -> str:
+        """Trim verbose text for Discord evidence lines."""
+        if len(text) <= max_len:
+            return text
+        return text[: max_len - 3] + "..."
