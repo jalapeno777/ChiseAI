@@ -25,7 +25,7 @@ resource "docker_volume" "tempo_data" {
 # Tempo container
 resource "docker_container" "chiseai_tempo" {
   name  = "chiseai-tempo"
-  image = "grafana/tempo:${var.tempo_version}"
+  image = "chiseai/tempo:local"
 
   networks_advanced {
     name    = "chiseai"
@@ -55,17 +55,8 @@ resource "docker_container" "chiseai_tempo" {
     container_path = "/tmp/tempo"
   }
 
-  volumes {
-    host_path      = abspath(local_file.tempo_config.filename)
-    container_path = "/etc/tempo.yaml"
-    read_only      = true
-  }
-
-  env = [
-    "TEMPO_LOG_LEVEL=${var.tempo_log_level}",
-  ]
-
-  command = ["-config.file=/etc/tempo.yaml"]
+  # Config is baked into the chiseai/tempo:local image at /etc/tempo.yaml
+  # No need for external config volume
 
   healthcheck {
     test     = ["CMD", "wget", "-q", "--spider", "http://localhost:3200/ready"]
