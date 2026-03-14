@@ -193,3 +193,9 @@ variable "tempo_retention_hours" {
   type        = number
   default     = 168
 }
+
+variable "tempo_storage_quota_alert_threshold" {
+  description = "Storage quota alert threshold percentage (0.0-1.0). Alerts when storage exceeds this percentage."
+  type        = number
+  default     = 0.8
+}
