@@ -220,6 +220,37 @@ metadata:
         - feature/ST-MODEL-REG-003-monitoring-alerting
 
 completed:
+- id: TEMPO-2026-001
+  title: "Phase 5 Closeout - Head-based Sampling Configuration"
+  status: completed
+  priority: P1
+  owner: worker
+  story_points: 3
+  created_date: '2026-03-13'
+  completed_date: '2026-03-14'
+  merge_commit: 1192d20d
+  pr_number: '469'
+  description: |
+    Head-based sampling configuration with environment-based rates for OpenTelemetry
+    tracing. Implements configurable sampling rates per environment (dev: 10%, staging: 25%,
+    prod: 5%) with validation, logging, and export integration.
+  acceptance_criteria:
+    - Environment variable support for OTEL_SAMPLING_RATE
+    - Default rates per environment (dev/staging/prod)
+    - Rate validation (0.0-1.0 range)
+    - Sampling decision logging at DEBUG level
+    - Export integration with tracing pipeline
+  files_changed:
+    - src/observability/tracing.py
+  test_results:
+    total_tests: 9
+    passed: 9
+    failed: 0
+  notes:
+    - "Phase 5 closeout story - completes head-based sampling implementation"
+    - "All 5 acceptance criteria verified"
+    - "Merged to main via PR #469"
+
 - id: ST-VALIDATION-002
   title: "Documentation & Runbooks Validation"
   status: merged
@@ -1502,9 +1533,9 @@ backlog:
   - Completion report (line 496-498) identified this as Month 1 short-term priority
   - Reduces ingestion failures due to malformed frontmatter
   - Consistent frontmatter quality improves semantic search quality
-  implementation_commit: 2c2bc9d
-  merge_commit: 07698c5
-  note: Merged to main. Files added - validate_frontmatter.py, frontmatter_validator.py
+  implementation_commit: null
+  merge_commit: null
+  note: Historical commit references pending re-verification. Files added - validate_frontmatter.py, frontmatter_validator.py
   audit_note: Merge commit corrected per Party Mode audit 2026-03-09
   owner: TBD
   pr_number: feature/ST-MEMORY-INGEST-004-frontmatter-hook

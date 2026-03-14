@@ -1,11 +1,12 @@
 ---
 # Validation Registry - Paired with docs/bmm-workflow-status.yaml
 # CI guard: edits must be paired with workflow status updates
+# Pairing sync: TEMPO-2026-001 Phase 7 merge correction
 
 metadata:
   project_name: ChiseAI
   version: "2.2.0"
-  last_updated: "2026-02-20"
+  last_updated: "2026-03-14"
 
 # Validation entries
 validations:
