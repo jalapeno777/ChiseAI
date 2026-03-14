@@ -153,12 +153,18 @@ class AutonomousCognitionFullCycle:
                     conflicts=conflicts,
                 )
                 result.belief_revisions = len(revisions)
+                if revisions:
+                    result.metrics["belief_revision_details"] = [
+                        self._revision_detail_payload(revision)
+                        for revision in revisions[:10]
+                    ]
                 if revisions and notifier and notify_loop:
+                    first_revision = revisions[0]
                     notify_loop.run_until_complete(
                         notifier.notify_autocog_event(
                             event_type="belief_revision_applied",
                             severity="medium",
-                            summary=explain_revision(revisions[0]),
+                            summary=explain_revision(first_revision),
                             impact="Belief inconsistency resolved using evidence-weighted revision.",
                             top_metrics={"revisions": len(revisions)},
                             artifact_path=str(assessment_path) if assessment_path else None,
@@ -179,7 +185,22 @@ class AutonomousCognitionFullCycle:
                             outcome_status="success",
                             evidence_reasoning=[
                                 f"revisions_applied={len(revisions)}",
-                                explain_revision(revisions[0]),
+                                f"revision_id={first_revision.revision_id}",
+                                (
+                                    f"replaced={first_revision.old_belief_id}"
+                                    f"->{first_revision.new_belief_id}"
+                                ),
+                                (
+                                    f"confidence={first_revision.confidence_before:.2f}"
+                                    f"->{first_revision.confidence_after:.2f}"
+                                ),
+                                f"reason={first_revision.reason}",
+                                (
+                                    "evidence_refs="
+                                    + ",".join(first_revision.evidence_refs)
+                                    if first_revision.evidence_refs
+                                    else "evidence_refs=none"
+                                ),
                             ],
                         )
                     )
@@ -478,3 +499,17 @@ class AutonomousCognitionFullCycle:
         out_path = out_dir / f"{result.run_id}.json"
         out_path.write_text(json.dumps(result.to_dict(), indent=2), encoding="utf-8")
         return out_path
+
+    @staticmethod
+    def _revision_detail_payload(revision: Any) -> dict[str, Any]:
+        """Build a durable revision payload for auditing and rollback analysis."""
+        return {
+            "revision_id": revision.revision_id,
+            "old_belief_id": revision.old_belief_id,
+            "new_belief_id": revision.new_belief_id,
+            "confidence_before": revision.confidence_before,
+            "confidence_after": revision.confidence_after,
+            "reason": revision.reason,
+            "evidence_refs": list(revision.evidence_refs),
+            "applied_at": revision.applied_at,
+        }

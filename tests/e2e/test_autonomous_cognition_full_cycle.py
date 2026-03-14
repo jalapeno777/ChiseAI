@@ -23,3 +23,10 @@ def test_belief_consistency_mode_skips_improvement_phase() -> None:
     assert result.experiments_run == 0
     assert result.promotions == 0
     assert result.rejections == 0
+    if result.belief_revisions > 0:
+        details = result.metrics.get("belief_revision_details")
+        assert isinstance(details, list)
+        assert len(details) >= 1
+        assert "old_belief_id" in details[0]
+        assert "new_belief_id" in details[0]
+        assert "reason" in details[0]

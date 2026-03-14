@@ -254,7 +254,7 @@ class AutocogEventFormatter:
 
         if evidence_reasoning:
             lines.extend(["", "**Evidence / Reasoning:**"])
-            for reason in evidence_reasoning[:5]:
+            for reason in evidence_reasoning[:8]:
                 lines.append(f"  • {reason}")
 
         if top_metrics:
