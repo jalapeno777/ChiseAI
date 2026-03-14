@@ -21,11 +21,15 @@ from src.api.pagination import (
     TimeSeriesPaginator,
     create_paginator_from_data,
 )
+from src.api.tracing import (
+    get_trace_context,
+    get_current_trace_id,
+    trace_api_endpoint,
+    trace_api_middleware,
+)
 
 __all__ = [
-    "ece_router",
     # Pagination
-    "TimeSeriesPaginator",
     "AdaptivePaginator",
     "PageResult",
     "CursorCodec",
@@ -38,4 +42,9 @@ __all__ = [
     "PanDirection",
     "Resolution",
     "create_lazy_loader",
+    # Tracing utilities
+    "get_trace_context",
+    "get_current_trace_id",
+    "trace_api_endpoint",
+    "trace_api_middleware",
 ]
