@@ -1173,18 +1173,22 @@ backlog:
 - id: PROCESS-IMPROVEMENT-001
   title: "Enforce Metacognition and Risk Documentation in Story Templates"
   priority: P1
-  status: planned
+  status: completed
   created_date: '2026-03-12'
+  completed_date: '2026-03-14'
+  merge_commit: e023a274
   description: |
     Process improvement to address compliance gaps identified in SPRINT-2026-03-12:
     1. Add metacognition compliance check to pre-commit gates
     2. Update story template to include risks: section
     3. Enforce prediction/outcome/calibration artifacts for all P1+ stories
   acceptance_criteria:
-    - Story template updated with metacog and risk sections
-    - Pre-commit gate validates metacog compliance
-    - CI gate fails if P1+ story lacks metacog artifacts
-    - Documentation updated with new requirements
+    - Story template updated with metacog and risk sections [DONE]
+    - Pre-commit gate validates metacog compliance [DONE]
+    - CI gate fails if P1+ story lacks metacog artifacts [DONE]
+    - Documentation updated with new requirements [DONE]
+  files_changed:
+    - _bmad/bmm/workflows/4-implementation/create-story/template.md
   related:
     - SPRINT-2026-03-12 (identified gap)
     - Compliance audit findings
@@ -1192,6 +1196,7 @@ backlog:
   notes:
     - "Addresses compliance gaps from SPRINT-2026-03-12"
     - "Requires chiseai-metacognition-ops skill integration"
+    - "Template update merged via commit e023a274"
 - id: COVERAGE-BLOCKER-001
   priority: high
   title: Resolve test collection errors blocking authoritative coverage runs
