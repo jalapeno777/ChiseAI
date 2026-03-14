@@ -4,6 +4,7 @@ OpenTelemetry Tracing Initialization for ChiseAI
 TEMPO-2026-001: Distributed tracing with Grafana Tempo
 """
 
+import logging
 import os
 from typing import Optional
 
@@ -63,11 +64,18 @@ def get_sampler():
     """
     Get trace sampler based on environment.
 
+    Configurable via TEMPO_SAMPLE_RATE environment variable.
+    Default rates: development=100%, staging=50%, production=10%.
+
     Returns:
         Sampler instance
+
+    Raises:
+        ValueError: If TEMPO_SAMPLE_RATE is not a valid float between 0.0 and 1.0
     """
     from opentelemetry.sdk.trace.sampling import TraceIdRatioBased
 
+    logger = logging.getLogger(__name__)
     environment = os.getenv("DEPLOYMENT_ENVIRONMENT", "development")
 
     # Default sampling rates from Phase 0 design
@@ -78,8 +86,25 @@ def get_sampler():
     }
 
     # Allow override via environment variable
-    sample_rate = float(
-        os.getenv("TEMPO_SAMPLE_RATE", sampling_rates.get(environment, 0.1))
+    env_rate = os.getenv("TEMPO_SAMPLE_RATE")
+    if env_rate is not None:
+        try:
+            sample_rate = float(env_rate)
+        except ValueError:
+            raise ValueError(
+                f"TEMPO_SAMPLE_RATE must be a valid float, got: {env_rate!r}"
+            )
+    else:
+        sample_rate = sampling_rates.get(environment, 0.1)
+
+    # Validate sample rate is within valid range [0.0, 1.0]
+    if not 0.0 <= sample_rate <= 1.0:
+        raise ValueError(f"Sample rate must be between 0.0 and 1.0, got: {sample_rate}")
+
+    # Log the effective sample rate
+    logger.info(
+        f"OpenTelemetry sampler initialized: rate={sample_rate} "
+        f"(environment={environment}, env_override={'yes' if env_rate else 'no'})"
     )
 
     return TraceIdRatioBased(sample_rate)
