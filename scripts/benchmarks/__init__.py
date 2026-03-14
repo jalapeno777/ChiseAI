@@ -1,8 +1,5 @@
 """
-Benchmark scripts for ChiseAI.
+Benchmarks package for ChiseAI performance testing.
 
-This package contains performance benchmarking tools for measuring
-various aspects of the ChiseAI system including tracing overhead.
+TEMPO-2026-001: Tracing overhead benchmarks
 """
-
-__version__ = "0.1.0"
