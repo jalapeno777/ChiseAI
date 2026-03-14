@@ -13,20 +13,20 @@ if str(_src_path) not in sys.path:
     sys.path.insert(0, str(_src_path))
 
 # Re-export all config modules from src.config
-from config.bootstrap import bootstrap
-from config.bootstrap import get_bootstrap_state
-from config.env_loader import (
+from src.config.bootstrap import bootstrap
+from src.config.bootstrap import get_bootstrap_state
+from src.config.env_loader import (
     EnvLoader,
     kimi_loader,
     load_discord_config,
     load_kimi_config,
 )
-from config.feature_flags import (
+from src.config.feature_flags import (
     FeatureFlags,
     reset_feature_flags,
     set_feature_flags,
 )
-from config.trading_mode import (
+from src.config.trading_mode import (
     ModuleStatus,
     ModuleType,
     TradingMode,
