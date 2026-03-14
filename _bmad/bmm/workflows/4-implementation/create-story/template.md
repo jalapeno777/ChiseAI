@@ -47,3 +47,21 @@ so that {{benefit}}.
 ### Completion Notes List
 
 ### File List
+
+## Metacognition
+
+### Predictions (Fill at start)
+- **Predicted effort**: [hours/story points]
+- **Predicted risks**: [List potential blockers]
+- **Confidence level**: [0-1 scale]
+
+### Outcomes (Fill at completion)
+- **Actual effort**: [hours/story points]
+- **Blockers encountered**: [List actual blockers]
+- **Confidence calibration**: [Were predictions accurate?]
+
+## Risks
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|------------|
+| [Risk 1] | High/Med/Low | High/Med/Low | [Mitigation strategy] |
