@@ -287,6 +287,16 @@ class AutocogEventFormatter:
             if isinstance(expected, list):
                 for item in expected[:2]:
                     lines.append(f"  • Expected Improvement: {item}")
+            source_diversity = decision_packet.get("source_diversity")
+            if isinstance(source_diversity, dict):
+                lines.append(
+                    "  • Source Diversity: "
+                    f"distinct={source_diversity.get('distinct_source_families', 0)} "
+                    f"non_llm={source_diversity.get('non_llm_source_families', 0)}"
+                )
+                families = source_diversity.get("source_families")
+                if isinstance(families, list) and families:
+                    lines.append("  • Source Families: " + ", ".join(families[:5]))
             rollback_hint = decision_packet.get("rollback_hint")
             if rollback_hint:
                 lines.append(f"  • Rollback Hint: {rollback_hint}")

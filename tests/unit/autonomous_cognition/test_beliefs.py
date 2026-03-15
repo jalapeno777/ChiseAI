@@ -36,7 +36,11 @@ def test_belief_revision_applied_when_confidence_gap_exists() -> None:
         statement="Use guarded promotion gates for safety.",
         domain="governance",
         confidence=0.9,
-        evidence_refs=["self_assessment_daily"],
+        evidence_refs=[
+            "self_assessment_daily",
+            "runtime_health_window",
+            "governance_stability_window",
+        ],
     )
     low = Belief(
         belief_id="low",
@@ -51,11 +55,38 @@ def test_belief_revision_applied_when_confidence_gap_exists() -> None:
             EvidenceRecord(
                 evidence_id="self_assessment_daily",
                 source="test",
+                source_family="self_assessment_current",
+                is_llm_judgment=True,
                 timestamp="2026-03-14T00:00:00+00:00",
                 reliability=0.9,
                 summary="High confidence governance check",
+                metrics={"confirmed_runs": 3},
             )
-        ]
+        ],
+        "runtime_health_window": [
+            EvidenceRecord(
+                evidence_id="runtime_health_window",
+                source="test-runtime",
+                source_family="runtime_telemetry",
+                is_llm_judgment=False,
+                timestamp="2026-03-14T00:00:00+00:00",
+                reliability=0.9,
+                summary="Runtime non-regression stable",
+                metrics={"confirmed_runs": 3},
+            )
+        ],
+        "governance_stability_window": [
+            EvidenceRecord(
+                evidence_id="governance_stability_window",
+                source="test-governance",
+                source_family="governance_metrics",
+                is_llm_judgment=False,
+                timestamp="2026-03-14T00:00:00+00:00",
+                reliability=0.9,
+                summary="Constitution violations stayed zero",
+                metrics={"confirmed_runs": 3},
+            )
+        ],
     }
     revisions = engine.apply_revisions(
         beliefs={high.belief_id: high, low.belief_id: low},
@@ -92,3 +123,47 @@ def test_belief_revision_blocked_without_sufficient_evidence() -> None:
     assert revisions == []
     assert len(engine.last_blocked_revisions) >= 1
     assert engine.last_blocked_revisions[0]["reason"].startswith("insufficient_evidence")
+
+
+def test_belief_revision_blocked_when_source_diversity_is_low() -> None:
+    """Revision should be blocked when winner lacks enough distinct evidence families."""
+    checker = BeliefConsistencyChecker()
+    a = Belief(
+        belief_id="a",
+        statement="This strategy is valid and active.",
+        domain="memory",
+        confidence=0.9,
+        evidence_refs=["self_assessment_daily"],
+    )
+    b = Belief(
+        belief_id="b",
+        statement="This strategy is no longer valid and obsolete.",
+        domain="memory",
+        confidence=0.6,
+    )
+    conflicts = checker.detect_conflicts([a, b])
+    engine = BeliefRevisionEngine(min_confidence_delta=0.1)
+    evidence_index = {
+        "self_assessment_daily": [
+            EvidenceRecord(
+                evidence_id="self_assessment_daily",
+                source="test",
+                source_family="self_assessment_current",
+                is_llm_judgment=True,
+                timestamp="2026-03-14T00:00:00+00:00",
+                reliability=0.95,
+                summary="Single-source evidence only",
+                metrics={"confirmed_runs": 3},
+            )
+        ]
+    }
+    revisions = engine.apply_revisions(
+        beliefs={a.belief_id: a, b.belief_id: b},
+        conflicts=conflicts,
+        evidence_index=evidence_index,
+    )
+    assert revisions == []
+    assert len(engine.last_blocked_revisions) >= 1
+    assert engine.last_blocked_revisions[0]["reason"].startswith(
+        "insufficient_source_diversity"
+    )

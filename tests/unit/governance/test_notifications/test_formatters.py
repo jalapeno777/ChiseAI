@@ -83,6 +83,15 @@ class TestAutocogEventFormatter:
                     "Reduce contradictions.",
                     "Improve policy consistency.",
                 ],
+                "source_diversity": {
+                    "distinct_source_families": 3,
+                    "non_llm_source_families": 2,
+                    "source_families": [
+                        "self_assessment_current",
+                        "runtime_telemetry",
+                        "governance_metrics",
+                    ],
+                },
                 "rollback_hint": "Restore belief-memory-outdated if regressions occur.",
             },
         )
@@ -92,4 +101,5 @@ class TestAutocogEventFormatter:
         assert "Previous Belief: belief-memory-outdated | Memory is outdated." in content
         assert "Replacement Belief: belief-memory-health | Memory is healthy." in content
         assert "Why This Won: Winner had stronger evidence support." in content
+        assert "Source Diversity: distinct=3 non_llm=2" in content
         assert "Rollback Hint: Restore belief-memory-outdated if regressions occur." in content
