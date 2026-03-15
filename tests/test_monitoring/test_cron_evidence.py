@@ -722,3 +722,168 @@ class TestCronEvidenceFormatStatus:
 
         assert "❌" in formatted
         assert "Cannot connect to Redis" in formatted
+
+
+class TestBybitTruthCollectorCronJobs:
+    """Test Bybit truth collector cron job configuration."""
+
+    def test_bybit_truth_collector_in_cron_jobs(self):
+        """Verify bybit-truth-collector is in CRON_JOBS."""
+        from scripts.monitoring.cron_evidence import CRON_JOBS
+
+        # Bybit truth collector should be registered in CRON_JOBS
+        # Note: If this test fails, add bybit-truth-collector to CRON_JOBS
+        # in scripts/monitoring/cron_evidence.py
+        assert "bybit-truth-collector" in CRON_JOBS, (
+            "bybit-truth-collector should be registered in CRON_JOBS. "
+            "Add it to scripts/monitoring/cron_evidence.py"
+        )
+
+    def test_bybit_truth_collector_30m_interval(self):
+        """Verify 30-minute interval is correct for bybit-truth-collector."""
+        from scripts.monitoring.cron_evidence import CRON_JOBS
+
+        # Skip test if not yet configured
+        if "bybit-truth-collector" not in CRON_JOBS:
+            pytest.skip("bybit-truth-collector not yet in CRON_JOBS")
+
+        job_config = CRON_JOBS["bybit-truth-collector"]
+
+        # Expected interval: 1800 seconds = 30 minutes
+        expected_interval = 1800
+        assert job_config["interval"] == expected_interval, (
+            f"bybit-truth-collector interval should be {expected_interval}s (30m), "
+            f"got {job_config['interval']}s"
+        )
+
+    def test_bybit_truth_collector_has_description(self):
+        """Verify bybit-truth-collector has a description."""
+        from scripts.monitoring.cron_evidence import CRON_JOBS
+
+        if "bybit-truth-collector" not in CRON_JOBS:
+            pytest.skip("bybit-truth-collector not yet in CRON_JOBS")
+
+        job_config = CRON_JOBS["bybit-truth-collector"]
+
+        assert "description" in job_config
+        assert len(job_config["description"]) > 0
+        assert "bybit" in job_config["description"].lower()
+
+    def test_bybit_truth_collector_cadence_check(self):
+        """Verify check_cron_cadence returns bybit-truth-collector status."""
+        from datetime import UTC, datetime
+
+        from scripts.monitoring.cron_evidence import check_cron_cadence, KEY_PREFIX
+
+        # Skip if not in CRON_JOBS yet
+        from scripts.monitoring.cron_evidence import CRON_JOBS
+
+        if "bybit-truth-collector" not in CRON_JOBS:
+            pytest.skip("bybit-truth-collector not yet in CRON_JOBS")
+
+        now = datetime.now(UTC)
+        recent_run = now.isoformat()
+
+        mock_redis = Mock()
+        mock_redis.get.side_effect = lambda key: {
+            f"{KEY_PREFIX}:bybit-truth-collector:last_run": recent_run,
+            f"{KEY_PREFIX}:bybit-truth-collector:missed_count": "0",
+            f"{KEY_PREFIX}:bybit-truth-collector:invocation_id": "test-id",
+            f"{KEY_PREFIX}:bybit-truth-collector:write_mode": "wrapper",
+            f"{KEY_PREFIX}:bybit-truth-collector:status": "success",
+        }.get(key)
+
+        results = check_cron_cadence(mock_redis)
+
+        assert "bybit-truth-collector" in results["jobs"]
+        assert results["jobs"]["bybit-truth-collector"]["status"] == "PASS"
+
+    def test_bybit_truth_collector_evidence_write(self):
+        """Verify evidence can be written for bybit-truth-collector."""
+        from datetime import UTC, datetime
+
+        from scripts.monitoring.cron_evidence import (
+            CRON_JOBS,
+            KEY_PREFIX,
+            write_cron_evidence,
+        )
+
+        if "bybit-truth-collector" not in CRON_JOBS:
+            pytest.skip("bybit-truth-collector not yet in CRON_JOBS")
+
+        mock_redis = Mock()
+        mock_pipeline = Mock()
+        mock_redis.pipeline.return_value = mock_pipeline
+        mock_pipeline.execute.return_value = [True] * 7
+
+        with (
+            patch(
+                "scripts.monitoring.cron_evidence.get_redis_connection",
+                return_value=mock_redis,
+            ),
+            patch(
+                "scripts.monitoring.cron_evidence._verify_evidence_write",
+                return_value=True,
+            ),
+        ):
+            success, invocation_id = write_cron_evidence(
+                "bybit-truth-collector",
+                status="success",
+                invocation_id="test-bybit-id",
+            )
+
+        assert success is True
+        assert invocation_id == "test-bybit-id"
+        # Verify the correct key prefix was used
+        mock_pipeline.set.assert_any_call(
+            f"{KEY_PREFIX}:bybit-truth-collector:status", "success"
+        )
+
+    def test_bybit_truth_collector_interval_consistency(self):
+        """Verify collector interval matches cron job interval."""
+        from scripts.monitoring.cron_evidence import CRON_JOBS
+
+        if "bybit-truth-collector" not in CRON_JOBS:
+            pytest.skip("bybit-truth-collector not yet in CRON_JOBS")
+
+        # The bybit_truth_collector.py default interval is 300s (5 min)
+        # But cron job should run every 30 minutes (1800s)
+        # This test documents this relationship
+        job_config = CRON_JOBS["bybit-truth-collector"]
+        cron_interval = job_config["interval"]
+
+        # Collector runs more frequently internally than cron triggers
+        # Cron is the orchestrator, collector handles internal pacing
+        assert cron_interval >= 1800, (
+            "Cron interval should be at least 30 minutes to avoid overlap"
+        )
+
+    def test_bybit_truth_collector_missed_runs_detection(self):
+        """Verify missed runs are detected for bybit-truth-collector."""
+        from datetime import UTC, datetime, timedelta
+
+        from scripts.monitoring.cron_evidence import check_cron_cadence, KEY_PREFIX
+
+        # Skip if not in CRON_JOBS yet
+        from scripts.monitoring.cron_evidence import CRON_JOBS
+
+        if "bybit-truth-collector" not in CRON_JOBS:
+            pytest.skip("bybit-truth-collector not yet in CRON_JOBS")
+
+        # Simulate last run was 2 hours ago (should show as missed runs)
+        two_hours_ago = (datetime.now(UTC) - timedelta(hours=2)).isoformat()
+
+        mock_redis = Mock()
+        mock_redis.get.side_effect = lambda key: {
+            f"{KEY_PREFIX}:bybit-truth-collector:last_run": two_hours_ago,
+            f"{KEY_PREFIX}:bybit-truth-collector:missed_count": "3",
+            f"{KEY_PREFIX}:bybit-truth-collector:invocation_id": "old-id",
+            f"{KEY_PREFIX}:bybit-truth-collector:write_mode": "wrapper",
+            f"{KEY_PREFIX}:bybit-truth-collector:status": "success",
+        }.get(key)
+
+        results = check_cron_cadence(mock_redis)
+
+        job_result = results["jobs"]["bybit-truth-collector"]
+        assert job_result["missed_count"] == 3
+        assert job_result["status"] in ["CHECK", "FAIL"]
