@@ -234,6 +234,34 @@ metadata:
         - feature/ST-MODEL-REG-002-api-cli-interface
         - feature/ST-MODEL-REG-003-monitoring-alerting
 
+in_progress:
+- id: P0-REMEDIATION-001
+  title: "P0 Remediation - Consumer Activation and Runtime Validation"
+  status: in_progress
+  priority: P0-CRITICAL
+  owner: worker
+  story_points: 3
+  created_date: '2026-03-14'
+  started_date: '2026-03-14'
+  merge_commit: d9dec052
+  description: |
+    Batch2a consumer activation merged, runtime validation in progress.
+    Remediation focuses on ensuring consumer activation is properly functioning
+    and validating runtime behavior against acceptance criteria AC1-AC5.
+  acceptance_criteria:
+    - AC1: Batch2a consumer activation verified and merged
+    - AC2: Runtime validation executing without errors
+    - AC3: Consumer metrics flowing correctly
+    - AC4: No regression in existing consumer behavior
+    - AC5: Evidence packet prepared for promotion decision
+  evidence_files:
+    - docs/evidence/P0-REMEDIATION-001-runtime-validation.json
+    - docs/evidence/P0-REMEDIATION-001-consumer-metrics.json
+  notes:
+    - "Batch2a merged successfully (commit d9dec052)"
+    - "Runtime validation currently executing"
+    - "Evidence packet preparation in progress"
+
 completed:
 - id: TEMPO-2026-001
   title: "Phase 5 Closeout - Head-based Sampling Configuration"
