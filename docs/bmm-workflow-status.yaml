@@ -243,11 +243,31 @@ in_progress:
   story_points: 3
   created_date: '2026-03-14'
   started_date: '2026-03-14'
-  merge_commit: d9dec052
   description: |
-    Batch2a consumer activation merged, runtime validation in progress.
     Remediation focuses on ensuring consumer activation is properly functioning
     and validating runtime behavior against acceptance criteria AC1-AC5.
+    
+    Batch Progress:
+    - Batch 2A: COMPLETED and MERGED to main (commit d9dec052)
+    - Batch 2B: Branch exists but NOT MERGED (pending merge)
+    - Overall status remains in_progress until Batch 2B is merged
+  batch_2a:
+    status: completed
+    merge_commit: d9dec052
+    merge_date: '2026-03-14'
+    description: "Consumer activation implementation and verification"
+    files_changed:
+      - src/consumers/activation.py
+      - tests/consumers/test_activation.py
+      - docs/evidence/P0-REMEDIATION-001-batch2a-evidence.json
+  batch_2b:
+    status: pending_merge
+    branch: feature/P0-REMEDIATION-001-batch2b
+    description: "Runtime validation and metrics integration"
+    pending_files:
+      - src/consumers/runtime_validator.py
+      - src/metrics/consumer_metrics.py
+      - tests/consumers/test_runtime_validation.py
   acceptance_criteria:
     - AC1: Batch2a consumer activation verified and merged
     - AC2: Runtime validation executing without errors
@@ -255,12 +275,18 @@ in_progress:
     - AC4: No regression in existing consumer behavior
     - AC5: Evidence packet prepared for promotion decision
   evidence_files:
+    - docs/evidence/P0-REMEDIATION-001-batch2a-evidence.json
+    - docs/evidence/P0-REMEDIATION-001-batch2b-pending.json
     - docs/evidence/P0-REMEDIATION-001-runtime-validation.json
     - docs/evidence/P0-REMEDIATION-001-consumer-metrics.json
+    - docs/evidence/P0-REMEDIATION-001-merge-evidence-d9dec052.json
   notes:
-    - "Batch2a merged successfully (commit d9dec052)"
-    - "Runtime validation currently executing"
-    - "Evidence packet preparation in progress"
+    - "Batch 2A COMPLETED: Consumer activation merged successfully (commit d9dec052)"
+    - "Batch 2A delivered: Consumer activation module with full test coverage"
+    - "Batch 2B PENDING: Branch exists but not yet merged to main"
+    - "Runtime validation implementation complete in Batch 2B branch"
+    - "Overall story remains in_progress until Batch 2B is merged"
+    - "Evidence packet partially prepared - awaiting Batch 2B completion"
 
 completed:
 - id: TEMPO-2026-001

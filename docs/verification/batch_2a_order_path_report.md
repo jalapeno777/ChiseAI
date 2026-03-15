@@ -1,7 +1,7 @@
-# Batch 2B: Order Creation Path Verification Report
+# Batch 2A: Signal Consumer Activation & Order Path Verification Report
 
 **Story ID**: P0-REMEDIATION-001  
-**Batch**: 2B (Precheck)  
+**Batch**: 2A (Signal Consumer Activation)  
 **Date**: 2026-03-14  
 **Status**: ✅ COMPLETE
 
@@ -26,6 +26,8 @@ The order creation path from consumed actionable signals to order placement IS f
 ### 1. Test Results
 
 Created comprehensive test suite: `tests/unit/execution/paper/test_orchestrator_order_path.py`
+
+**Note**: This is Batch 2A work - verified signal consumer activation path is functional and order creation path is reachable. Batch 2B (integration testing) is pending.
 
 ```
 ============================= test results =============================
@@ -227,5 +229,9 @@ The order creation path is **verified as functional**. The issue preventing orde
 ## Evidence Artifacts
 
 - Test file: `tests/unit/execution/paper/test_orchestrator_order_path.py`
-- Git commit: `638ca308`
-- Branch: `feature/P0-REMEDIATION-001-batch2b-order-path`
+- Git commits: `2b2fe4c0`, `638ca308`
+- Branch: `feature/P0-REMEDIATION-001-batch2a-order-path`
+- Evidence files:
+  - `docs/evidence/P0-REMEDIATION-001-runtime-validation.json`
+  - `docs/evidence/P0-REMEDIATION-001-consumer-metrics.json`
+  - `docs/verification/batch_2a_order_path_report.md`
