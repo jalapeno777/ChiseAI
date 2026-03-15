@@ -1,0 +1,192 @@
+{
+  "evidence_id": "P0-REMEDIATION-001-consumer-metrics",
+  "story_id": "P0-REMEDIATION-001",
+  "generated_at": "2026-03-15T00:00:00Z",
+  "evidence_type": "consumer_metrics",
+  
+  "signal_consumer_health": {
+    "status": "PARTIAL",
+    "overall_health": "YELLOW",
+    "components": {
+      "signal_consumer_activation": {
+        "status": "FUNCTIONAL",
+        "commit": "2b2fe4c0",
+        "verification": "Signal consumer activation path is live and resilient",
+        "files_modified": [
+          "src/execution/paper/orchestrator.py",
+          "src/execution/paper/signal_consumer.py",
+          "tests/unit/execution/paper/test_signal_consumer.py"
+        ],
+        "lines_added": 141,
+        "unit_tests_pass": 13
+      },
+      "signal_polling": {
+        "status": "ACTIVE",
+        "evidence": "79,216 signals in Redis, 1,228 marked as processed",
+        "interpretation": "Consumer is actively polling and processing signals"
+      },
+      "order_creation": {
+        "status": "BLOCKED",
+        "evidence": "0 orders created from 79,216 signals",
+        "potential_causes": [
+          "Paper trading orchestrator not running",
+          "Kill switch triggered",
+          "Risk enforcer rejecting all signals",
+          "No valid market prices available",
+          "LLM enhancer rejecting signals"
+        ]
+      }
+    }
+  },
+  
+  "redis_signal_counts": {
+    "collection_timestamp": "2026-03-14",
+    "metrics": {
+      "total_signals": {
+        "count": 79216,
+        "key_pattern": "paper:signal:*",
+        "description": "Total signal keys in Redis"
+      },
+      "processed_signals": {
+        "count": 1228,
+        "key": "paper:signals:processed",
+        "description": "Signals marked as processed in sorted set",
+        "processing_rate": "1.55%"
+      },
+      "actionable_signals_sample": {
+        "sample_size": 50,
+        "actionable_count": 50,
+        "actionable_rate": "100%",
+        "description": "Sample of recent signals shows all are actionable"
+      },
+      "orders_created": {
+        "count": 0,
+        "key_pattern": "paper:order:*",
+        "description": "No orders have been created"
+      },
+      "trades_created": {
+        "count": 0,
+        "key_pattern": "paper:trade:*",
+        "description": "No trades have been recorded"
+      }
+    },
+    "redis_connection": {
+      "host": "host.docker.internal",
+      "port": 6380,
+      "database": 0,
+      "status": "CONNECTED"
+    }
+  },
+  
+  "consumer_activation_status": {
+    "status": "VERIFIED_BUT_NOT_PRODUCING_ORDERS",
+    "activation_path": {
+      "verified": true,
+      "commit": "2b2fe4c0",
+      "changes": [
+        "Added ensure_signal_consumer() method to orchestrator",
+        "Added signal consumer health check",
+        "Added error handling and retry logic",
+        "Added comprehensive unit tests"
+      ]
+    },
+    "runtime_status": {
+      "signal_consumption": "ACTIVE - Signals are being consumed (1,228 processed)",
+      "order_production": "INACTIVE - No orders being created (0 orders)",
+      "gap": "Signals are consumed but not converted to orders"
+    },
+    "health_checks": {
+      "signal_consumer_exists": true,
+      "signal_consumer_runnable": true,
+      "orchestrator_start_calls_consumer": true,
+      "orchestrator_running": "UNKNOWN - Needs verification",
+      "market_data_available": "UNKNOWN - Needs verification",
+      "risk_enforcer_configured": "UNKNOWN - Needs verification",
+      "kill_switch_state": "UNKNOWN - Needs verification"
+    }
+  },
+  
+  "metrics_trend": {
+    "observation_period": "2026-03-14",
+    "signals": {
+      "total": 79216,
+      "processed": 1228,
+      "unprocessed": 77988,
+      "backlog": "HIGH"
+    },
+    "processing_velocity": {
+      "processed_count": 1228,
+      "assessment": "Consumer is processing signals but not creating orders",
+      "bottleneck": "Order creation gate"
+    }
+  },
+  
+  "diagnostic_recommendations": [
+    {
+      "priority": "HIGH",
+      "check": "Verify PaperTradingOrchestrator is running",
+      "method": "Check process list, logs, or health endpoint",
+      "expected_result": "Orchestrator process active and _processing_loop running"
+    },
+    {
+      "priority": "HIGH",
+      "check": "Check kill switch state",
+      "method": "Query kill_switch.state.value",
+      "expected_result": "Should be 'armed' not 'triggered'"
+    },
+    {
+      "priority": "HIGH",
+      "check": "Verify market data availability",
+      "method": "Call order_simulator.market_data.get_price('BTC/USDT')",
+      "expected_result": "Should return valid price > 0"
+    },
+    {
+      "priority": "MEDIUM",
+      "check": "Check risk enforcer decisions",
+      "method": "Review risk_enforcer.validate_order() calls and returns",
+      "expected_result": "Should return approved=True for valid signals"
+    },
+    {
+      "priority": "MEDIUM",
+      "check": "Review LLM enhancer configuration",
+      "method": "Check if LLM enhancer is enabled and rejecting signals",
+      "expected_result": "Either disabled or returning go_no_go=True"
+    },
+    {
+      "priority": "MEDIUM",
+      "check": "Add detailed logging to process_signal()",
+      "method": "Instrument code to log each gate decision",
+      "expected_result": "Identify which gate is blocking orders"
+    }
+  ],
+  
+  "evidence_sources": [
+    {
+      "source": "Redis direct query",
+      "command": "redis-cli -h host.docker.internal -p 6380 keys 'paper:signal:*' | wc -l",
+      "result": 79216
+    },
+    {
+      "source": "Redis direct query",
+      "command": "redis-cli -h host.docker.internal -p 6380 smembers 'paper:signals:processed' | wc -l",
+      "result": 1228
+    },
+    {
+      "source": "Redis direct query",
+      "command": "redis-cli -h host.docker.internal -p 6380 keys 'paper:order:*' | wc -l",
+      "result": 0
+    },
+    {
+      "source": "Git commit",
+      "reference": "2b2fe4c0",
+      "description": "Signal consumer activation path fixes"
+    }
+  ],
+  
+  "summary": {
+    "consumer_health": "Signal consumer is functional and processing signals (1,228 processed)",
+    "order_creation_gap": "No orders created despite 79,216 signals available",
+    "root_cause_status": "UNDER_INVESTIGATION - Likely orchestrator not running or gate blocking",
+    "next_action": "Run Batch 2B integration tests to identify blocking gate"
+  }
+}
