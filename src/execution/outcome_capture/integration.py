@@ -51,6 +51,7 @@ class OutcomeCaptureIntegration:
         persistence: OutcomePersistence for canonical storage
         alerts: ExecutionAlertIntegration for Discord notifications
         enabled: Whether capture is enabled
+        connector_provenance: Provenance info from the connector for SignalOutcome
     """
 
     def __init__(
@@ -58,6 +59,7 @@ class OutcomeCaptureIntegration:
         persistence: OutcomePersistence | None = None,
         alerts: ExecutionAlertIntegration | None = None,
         enabled: bool = True,
+        connector_provenance: dict[str, str] | None = None,
     ):
         """Initialize outcome capture integration.
 
@@ -65,10 +67,13 @@ class OutcomeCaptureIntegration:
             persistence: OutcomePersistence instance (created if None)
             alerts: ExecutionAlertIntegration instance (created if None)
             enabled: Whether capture is enabled
+            connector_provenance: Optional provenance dict from connector
         """
         self._persistence = persistence
         self._alerts = alerts
         self.enabled = enabled
+        # PAPER-FORENSIC-001: Store connector provenance for SignalOutcome population
+        self._connector_provenance = connector_provenance or {}
 
         # Track capture statistics
         self._stats = {
@@ -81,7 +86,22 @@ class OutcomeCaptureIntegration:
             "errors": 0,
         }
 
-        logger.info(f"OutcomeCaptureIntegration initialized: enabled={enabled}")
+        logger.info(
+            f"OutcomeCaptureIntegration initialized: enabled={enabled}, "
+            f"provenance={self._connector_provenance}"
+        )
+
+    def set_connector_provenance(self, provenance: dict[str, str]) -> None:
+        """Set connector provenance information.
+
+        PAPER-FORENSIC-001: Allows the orchestrator to set provenance info
+        after initialization so SignalOutcome objects get populated correctly.
+
+        Args:
+            provenance: Dictionary with execution_venue, execution_mode, execution_source
+        """
+        self._connector_provenance = provenance or {}
+        logger.info(f"[OUTCOME-CAPTURE] Connector provenance set: {provenance}")
 
     def _get_persistence(self) -> OutcomePersistence:
         """Get or create OutcomePersistence."""
@@ -264,6 +284,17 @@ class OutcomeCaptureIntegration:
         if final_exit_price is None and hasattr(position, "exit_price"):
             final_exit_price = position.exit_price
 
+        # PAPER-FORENSIC-001: Populate provenance fields from connector
+        provenance = self._connector_provenance
+        execution_venue = provenance.get("execution_venue", "")
+        execution_mode = provenance.get("execution_mode", "")
+        execution_source = provenance.get("execution_source", "")
+
+        logger.debug(
+            f"[OUTCOME-CREATE] Creating SignalOutcome with provenance: "
+            f"venue={execution_venue}, mode={execution_mode}, source={execution_source}"
+        )
+
         return SignalOutcome(
             order_id=position.position_id,
             symbol=position.symbol,
@@ -279,6 +310,10 @@ class OutcomeCaptureIntegration:
             pnl=Decimal(str(realized_pnl)),
             status=SignalOutcomeStatus.CLOSED,
             metadata=getattr(position, "metadata", {}),
+            # PAPER-FORENSIC-001: Populate provenance fields
+            execution_venue=execution_venue,
+            execution_mode=execution_mode,
+            execution_source=execution_source,
         )
 
     def get_stats(self) -> dict[str, Any]:
