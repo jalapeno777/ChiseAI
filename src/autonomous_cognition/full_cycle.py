@@ -41,7 +41,9 @@ class AutonomousCognitionFullCycle:
         controller: AutonomousCognitionController | None = None,
         redis_client: Any | None = None,
     ):
-        self._controller = controller or AutonomousCognitionController(redis_client=redis_client)
+        self._controller = controller or AutonomousCognitionController(
+            redis_client=redis_client
+        )
         self._belief_store = BeliefStore(redis_client=redis_client)
         self._checker = BeliefConsistencyChecker()
         self._revision_engine = BeliefRevisionEngine()
@@ -98,7 +100,9 @@ class AutonomousCognitionFullCycle:
             state_machine.transition(CycleState.SELF_ASSESSING)
             if run_self_assessment:
                 actions.append("daily self assessment")
-                assessment, assessment_path = self._controller.run_daily_self_assessment()
+                assessment, assessment_path = (
+                    self._controller.run_daily_self_assessment()
+                )
                 result.self_assessment_status = assessment.status
                 result.artifact_paths["self_assessment"] = str(assessment_path)
 
@@ -126,7 +130,9 @@ class AutonomousCognitionFullCycle:
                             summary=explain_conflict(conflicts[0]),
                             impact="Belief graph contradiction requires revision or review.",
                             top_metrics={"conflicts": len(conflicts)},
-                            artifact_path=str(assessment_path) if assessment_path else None,
+                            artifact_path=str(assessment_path)
+                            if assessment_path
+                            else None,
                             run_id=run_id,
                             title="Belief Conflict Detected",
                             issue=(
@@ -165,7 +171,9 @@ class AutonomousCognitionFullCycle:
                         run_id=run_id,
                         revision_details=revision_details,
                     )
-                    result.artifact_paths["belief_revisions"] = str(revision_artifact_path)
+                    result.artifact_paths["belief_revisions"] = str(
+                        revision_artifact_path
+                    )
                 if revisions and notifier and notify_loop:
                     first_revision = revisions[0]
                     old_belief = belief_map.get(first_revision.old_belief_id)
@@ -234,7 +242,9 @@ class AutonomousCognitionFullCycle:
             state_machine.transition(CycleState.IMPROVEMENT)
             if run_improvement:
                 actions.append("strategy portfolio improvement cycle")
-                assessment_payload = assessment.to_dict() if assessment is not None else {}
+                assessment_payload = (
+                    assessment.to_dict() if assessment is not None else {}
+                )
                 hypotheses = self._hypothesis_generator.generate(
                     self_assessment=assessment_payload,
                     conflicts_count=len(conflicts),
@@ -256,7 +266,9 @@ class AutonomousCognitionFullCycle:
                                     summary=f"Promoted {hypothesis.hypothesis_id}",
                                     impact="Candidate passed promotion gates.",
                                     top_metrics=exp.to_metrics(),
-                                    artifact_path=str(assessment_path) if assessment_path else None,
+                                    artifact_path=str(assessment_path)
+                                    if assessment_path
+                                    else None,
                                     run_id=run_id,
                                     title="Improvement Candidate Promoted",
                                     issue=(
@@ -288,7 +300,9 @@ class AutonomousCognitionFullCycle:
                                     summary=f"Rejected {hypothesis.hypothesis_id}",
                                     impact=outcome.reason,
                                     top_metrics=exp.to_metrics(),
-                                    artifact_path=str(assessment_path) if assessment_path else None,
+                                    artifact_path=str(assessment_path)
+                                    if assessment_path
+                                    else None,
                                     run_id=run_id,
                                     title="Improvement Candidate Rejected",
                                     issue=(
@@ -317,7 +331,9 @@ class AutonomousCognitionFullCycle:
             if run_runtime:
                 actions.append("neuro-symbolic runtime integration")
                 runtime_result = self._runtime.run(mode="shadow")
-                result.metrics["runtime_divergence_score"] = runtime_result.divergence_score
+                result.metrics["runtime_divergence_score"] = (
+                    runtime_result.divergence_score
+                )
                 result.metrics["runtime_non_regression_passed"] = (
                     runtime_result.passed_non_regression
                 )
@@ -332,7 +348,11 @@ class AutonomousCognitionFullCycle:
                     incident_count=0,
                 )
                 result.autonomy_level_after = tuning.new_level
-                if notifier and notify_loop and tuning.new_level != tuning.previous_level:
+                if (
+                    notifier
+                    and notify_loop
+                    and tuning.new_level != tuning.previous_level
+                ):
                     notify_loop.run_until_complete(
                         notifier.notify_autocog_event(
                             event_type="autonomy_level_changed",
@@ -342,7 +362,9 @@ class AutonomousCognitionFullCycle:
                             ),
                             impact=tuning.reason,
                             top_metrics={"ece": 0.05 if promotions > 0 else 0.12},
-                            artifact_path=str(assessment_path) if assessment_path else None,
+                            artifact_path=str(assessment_path)
+                            if assessment_path
+                            else None,
                             run_id=run_id,
                             title="Autonomy Level Updated",
                             issue=(
@@ -376,11 +398,15 @@ class AutonomousCognitionFullCycle:
                     notify_loop.run_until_complete(
                         notifier.notify_autocog_event(
                             event_type="constitution_violation_detected",
-                            severity="critical" if audit_result.critical_count else "high",
+                            severity="critical"
+                            if audit_result.critical_count
+                            else "high",
                             summary=f"Constitution violation: {top.rule_id}",
                             impact=top.description,
                             top_metrics={"violations": len(audit_result.violations)},
-                            artifact_path=str(assessment_path) if assessment_path else None,
+                            artifact_path=str(assessment_path)
+                            if assessment_path
+                            else None,
                             run_id=run_id,
                             title="Constitution Violation Detected",
                             issue=(
@@ -537,8 +563,12 @@ class AutonomousCognitionFullCycle:
             "revision_id": revision.revision_id,
             "old_belief_id": revision.old_belief_id,
             "new_belief_id": revision.new_belief_id,
-            "old_belief_statement": old_belief.statement if old_belief is not None else None,
-            "new_belief_statement": new_belief.statement if new_belief is not None else None,
+            "old_belief_statement": old_belief.statement
+            if old_belief is not None
+            else None,
+            "new_belief_statement": new_belief.statement
+            if new_belief is not None
+            else None,
             "old_belief_domain": old_belief.domain if old_belief is not None else None,
             "new_belief_domain": new_belief.domain if new_belief is not None else None,
             "confidence_before": revision.confidence_before,
@@ -557,23 +587,116 @@ class AutonomousCognitionFullCycle:
         run_id: str,
         revision_details: list[dict[str, Any]],
     ) -> Path:
-        """Persist detailed belief revision history for audit and rollback support."""
+        """Persist detailed belief revision history for audit and rollback support.
+
+        Creates:
+        - Individual artifact at _bmad-output/autocog/belief_revisions/{run_id}.json
+        - Index entry in _bmad-output/autocog/belief_revisions/index.json for 7-day retrieval
+        """
         out_dir = Path("_bmad-output/autocog/belief_revisions")
         out_dir.mkdir(parents=True, exist_ok=True)
         out_path = out_dir / f"{run_id}.json"
+
+        # Build artifact with full schema
+        generated_at = datetime.now(UTC)
+        artifact = {
+            "run_id": run_id,
+            "generated_at": generated_at.isoformat(),
+            "revision_count": len(revision_details),
+            "revisions": revision_details,
+            "schema_version": "1.0",
+            "artifact_type": "belief_revision_audit",
+        }
+
+        # Persist individual artifact
         out_path.write_text(
-            json.dumps(
-                {
-                    "run_id": run_id,
-                    "generated_at": datetime.now(UTC).isoformat(),
-                    "revision_count": len(revision_details),
-                    "revisions": revision_details,
-                },
-                indent=2,
-            ),
+            json.dumps(artifact, indent=2),
             encoding="utf-8",
         )
+
+        # Update index for 7-day retrieval
+        self._update_belief_revision_index(
+            run_id=run_id,
+            generated_at=generated_at,
+            revision_count=len(revision_details),
+            artifact_path=str(out_path),
+            revision_details=revision_details,
+        )
+
         return out_path
+
+    def _update_belief_revision_index(
+        self,
+        *,
+        run_id: str,
+        generated_at: datetime,
+        revision_count: int,
+        artifact_path: str,
+        revision_details: list[dict[str, Any]],
+    ) -> None:
+        """Update the belief revision index for efficient 7-day queries.
+
+        Index schema:
+        - last_updated: ISO timestamp of last index update
+        - entries: list of revision summaries with metadata for filtering
+        """
+        out_dir = Path("_bmad-output/autocog/belief_revisions")
+        index_path = out_dir / "index.json"
+
+        # Load existing index or create new
+        if index_path.exists():
+            try:
+                index_data = json.loads(index_path.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, IOError):
+                index_data = {"schema_version": "1.0", "entries": []}
+        else:
+            index_data = {"schema_version": "1.0", "entries": []}
+
+        # Build entry summary with filterable fields
+        entry = {
+            "run_id": run_id,
+            "generated_at": generated_at.isoformat(),
+            "revision_count": revision_count,
+            "artifact_path": artifact_path,
+            "belief_ids": list(
+                set(r["old_belief_id"] for r in revision_details)
+                | set(r["new_belief_id"] for r in revision_details)
+            ),
+            "domains": list(
+                set(
+                    r.get("old_belief_domain") or r.get("new_belief_domain")
+                    for r in revision_details
+                    if r.get("old_belief_domain") or r.get("new_belief_domain")
+                )
+            ),
+            "severity_summary": self._summarize_severities(revision_details),
+        }
+
+        # Add entry to index (prepend for chronological order)
+        index_data["entries"].insert(0, entry)
+        index_data["last_updated"] = datetime.now(UTC).isoformat()
+
+        # Persist index
+        index_path.write_text(
+            json.dumps(index_data, indent=2),
+            encoding="utf-8",
+        )
+
+    @staticmethod
+    def _summarize_severities(revision_details: list[dict[str, Any]]) -> dict[str, int]:
+        """Summarize severity distribution from revision details."""
+        severity_counts: dict[str, int] = {}
+        for detail in revision_details:
+            # Severity based on confidence delta magnitude
+            delta = abs(detail.get("confidence_delta", 0))
+            if delta >= 0.3:
+                severity = "high"
+            elif delta >= 0.15:
+                severity = "medium"
+            else:
+                severity = "low"
+            severity_counts[severity] = severity_counts.get(severity, 0) + 1
+        return severity_counts
 
     @staticmethod
     def _truncate_text(text: str, max_len: int = 180) -> str:
