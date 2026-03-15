@@ -1,6 +1,6 @@
-"""Gate validation implementation for G1-G9 checkpoint gates.
+"""Gate validation implementation for G1-G12 checkpoint gates.
 
-This module provides the GateChecker class that validates all 9 governance gates:
+This module provides the GateChecker class that validates all 12 governance gates:
 - G1: Scheduler Continuity
 - G2: Signal Cadence
 - G3: Data Flow Movement
@@ -10,6 +10,9 @@ This module provides the GateChecker class that validates all 9 governance gates
 - G7: Observability Health
 - G8: End-to-End Pipeline
 - G9: Metric Integrity
+- G10: Chain Integrity
+- G11: Provenance (signal_outcomes table validation)
+- G12: Bybit Truth Freshness
 
 Additional monitoring:
 - ActionableZeroAlert: Detects sustained periods with signals but no actionable output
@@ -211,6 +214,7 @@ class GateChecker:
         - HEALTHY: Normal operation with signals flowing through pipeline
 
         Uses pipeline liveness metrics from scheduler heartbeat to determine state.
+        Paper-aware: checks both bmad:chiseai:signals:* and paper:signal:* keys.
         """
         r = self._get_redis()
         if not r:
@@ -228,6 +232,13 @@ class GateChecker:
             actionable_15m = int(heartbeat.get("actionable_15m", "0"))
             backlog = int(heartbeat.get("consumer_backlog", "0"))
 
+            # Paper-aware: Count paper signals separately
+            paper_signal_keys = r.keys("paper:signal:*")
+            paper_signals = len(paper_signal_keys)
+
+            # Calculate live (non-paper) signals
+            live_signals = max(0, signals_15m - paper_signals)
+
             # Backlog threshold for bottleneck detection (configurable)
             backlog_threshold = int(os.getenv("G2_BACKLOG_THRESHOLD", "10"))
 
@@ -239,12 +250,12 @@ class GateChecker:
                     return GateResult(
                         gate="G2",
                         status=self.STATUS_FAIL,
-                        detail=f"NO_SIGNALS: No signals generated in 15m window (pipeline stale, last age: {heartbeat.get('latest_signal_age_m', 'N/A')}m)",
+                        detail=f"NO_SIGNALS: PAPER:{paper_signals} LIVE:{live_signals} signals in 15m window (pipeline stale, last age: {heartbeat.get('latest_signal_age_m', 'N/A')}m)",
                     )
                 return GateResult(
                     gate="G2",
                     status=self.STATUS_PASS,
-                    detail="NO_SIGNALS: No signals generated in 15m window (healthy idle state)",
+                    detail=f"NO_SIGNALS: PAPER:{paper_signals} LIVE:{live_signals} signals in 15m window (healthy idle state)",
                 )
 
             # State 2: FILTERED - Signals generated but none actionable (filters working)
@@ -252,7 +263,7 @@ class GateChecker:
                 return GateResult(
                     gate="G2",
                     status=self.STATUS_PASS,
-                    detail=f"FILTERED: {signals_15m} signals generated, 0 actionable (filters active)",
+                    detail=f"FILTERED: PAPER:{paper_signals} LIVE:{live_signals} signals generated, 0 actionable (filters active)",
                 )
 
             # State 3: BOTTLENECK - Actionable signals present but downstream stalled
@@ -260,14 +271,14 @@ class GateChecker:
                 return GateResult(
                     gate="G2",
                     status=self.STATUS_CHECK,
-                    detail=f"BOTTLENECK: {actionable_15m} actionable signals, {backlog} backlog (downstream stalled, threshold: {backlog_threshold})",
+                    detail=f"BOTTLENECK: PAPER:{paper_signals} LIVE:{live_signals} signals, {actionable_15m} actionable, {backlog} backlog (downstream stalled, threshold: {backlog_threshold})",
                 )
 
             # State 4: HEALTHY - Normal operation
             return GateResult(
                 gate="G2",
                 status=self.STATUS_PASS,
-                detail=f"HEALTHY: {signals_15m} signals, {actionable_15m} actionable, backlog {backlog} (normal)",
+                detail=f"HEALTHY: PAPER:{paper_signals} LIVE:{live_signals} signals, {actionable_15m} actionable, backlog {backlog} (normal)",
             )
 
         except Exception as e:
@@ -617,8 +628,329 @@ class GateChecker:
                 detail=f"Exception: {str(e)[:100]}",
             )
 
+    def check_g11_provenance(self) -> GateResult:
+        """G11: Provenance - Check signal_outcomes table for missing provenance fields.
+
+        Validates that execution_venue, execution_mode, and execution_source fields
+        are populated for all records in the last 60 minutes.
+
+        Returns:
+            GateResult with status:
+            - PASS: No data in window OR all records have all provenance fields
+            - FAIL: Any records missing provenance fields
+            - CHECK: Connection error or query failure
+        """
+        import os
+
+        # Database connection parameters
+        db_host = os.getenv("DB_HOST", "host.docker.internal")
+        db_port = os.getenv("DB_PORT", "5434")
+        db_name = os.getenv("DB_NAME", "chiseai")
+        db_user = os.getenv("DB_USER", "chiseai")
+        db_password = os.getenv("DB_PASSWORD", "chiseai")
+
+        try:
+            # Try psycopg2 first, fallback to asyncpg if available
+            try:
+                import psycopg2
+
+                conn = psycopg2.connect(
+                    host=db_host,
+                    port=db_port,
+                    database=db_name,
+                    user=db_user,
+                    password=db_password,
+                    connect_timeout=5,
+                )
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT
+                        COUNT(*) as total,
+                        COUNT(execution_venue) as with_venue,
+                        COUNT(execution_mode) as with_mode,
+                        COUNT(execution_source) as with_source
+                    FROM signal_outcomes
+                    WHERE created_at >= NOW() - INTERVAL '60 minutes'
+                """)
+                row = cursor.fetchone()
+                cursor.close()
+                conn.close()
+
+                total, with_venue, with_mode, with_source = row
+
+            except ImportError:
+                # Fallback to asyncpg if psycopg2 not available
+                try:
+                    import asyncio
+                    import asyncpg
+
+                    async def query():
+                        conn = await asyncpg.connect(
+                            host=db_host,
+                            port=db_port,
+                            database=db_name,
+                            user=db_user,
+                            password=db_password,
+                            timeout=5,
+                        )
+                        row = await conn.fetchrow("""
+                            SELECT
+                                COUNT(*) as total,
+                                COUNT(execution_venue) as with_venue,
+                                COUNT(execution_mode) as with_mode,
+                                COUNT(execution_source) as with_source
+                            FROM signal_outcomes
+                            WHERE created_at >= NOW() - INTERVAL '60 minutes'
+                        """)
+                        await conn.close()
+                        return row
+
+                    row = asyncio.run(query())
+                    total = row["total"]
+                    with_venue = row["with_venue"]
+                    with_mode = row["with_mode"]
+                    with_source = row["with_source"]
+
+                except ImportError:
+                    return GateResult(
+                        gate="G11",
+                        status=self.STATUS_CHECK,
+                        detail="No PostgreSQL driver available (psycopg2 or asyncpg required)",
+                    )
+
+            # Calculate missing counts
+            missing_venue = total - with_venue
+            missing_mode = total - with_mode
+            missing_source = total - with_source
+
+            # Build detail string
+            detail = f"total={total} venue={with_venue} mode={with_mode} source={with_source} missing_venue={missing_venue} missing_mode={missing_mode} missing_source={missing_source}"
+
+            # Determine status
+            if total == 0:
+                # No data in window - PASS (no provenance to check)
+                return GateResult(
+                    gate="G11",
+                    status=self.STATUS_PASS,
+                    detail=f"{detail} | No data in 60m window",
+                )
+            elif missing_venue == 0 and missing_mode == 0 and missing_source == 0:
+                # All records have all provenance fields
+                return GateResult(
+                    gate="G11",
+                    status=self.STATUS_PASS,
+                    detail=f"{detail} | All records have provenance",
+                )
+            else:
+                # Some records missing provenance fields
+                missing_fields = []
+                if missing_venue > 0:
+                    missing_fields.append(f"venue({missing_venue})")
+                if missing_mode > 0:
+                    missing_fields.append(f"mode({missing_mode})")
+                if missing_source > 0:
+                    missing_fields.append(f"source({missing_source})")
+                return GateResult(
+                    gate="G11",
+                    status=self.STATUS_FAIL,
+                    detail=f"{detail} | Missing: {', '.join(missing_fields)}",
+                )
+
+        except Exception as e:
+            logger.error(f"Error checking G11: {e}")
+            return GateResult(
+                gate="G11",
+                status=self.STATUS_CHECK,
+                detail=f"Connection/query error: {str(e)[:100]}",
+            )
+
+    def check_g10_chain_integrity(self) -> GateResult:
+        """G10: Chain Integrity - Count signals -> orders -> fills -> outcomes in last 6h.
+
+        Validates the complete pipeline chain by counting entities in the last 6 hours:
+        - Signals (bmad:chiseai:signals:* and paper:signal:*)
+        - Orders (paper:order:* keys with timestamp >= now-6h)
+        - Fills (paper:fill:* keys with timestamp >= now-6h)
+        - Outcomes (bmad:chiseai:outcomes:index members with timestamp >= now-6h)
+
+        Status logic:
+        - PASS: signals > 0 AND orders > 0 AND fills > 0 AND outcomes > 0
+        - CHECK: signals = 0 (no activity in window)
+        - FAIL: signals > 0 but any downstream stage = 0 (pipeline broken)
+        """
+        r = self._get_redis()
+        if not r:
+            return GateResult(
+                gate="G10",
+                status=self.STATUS_FAIL,
+                detail="Redis unavailable - cannot check chain integrity",
+            )
+
+        try:
+            # Calculate 6-hour window threshold
+            now = datetime.now(UTC)
+            six_hours_ago = now.timestamp() - 21600  # 6 hours in seconds
+
+            # Count signals in last 6h (both bmad and paper signal keys)
+            signal_keys = list(r.scan_iter(match="bmad:chiseai:signals:*", count=1000))
+            signal_keys.extend(list(r.scan_iter(match="paper:signal:*", count=1000)))
+            signal_count = len(signal_keys)
+
+            # Count orders in last 6h (paper:order:* keys with timestamp >= now-6h)
+            order_count = 0
+            for key in r.scan_iter(match="paper:order:*", count=1000):
+                try:
+                    # Extract timestamp from key (format: paper:order:<timestamp>:<id>)
+                    parts = key.split(":")
+                    if len(parts) >= 3:
+                        ts = float(parts[2])
+                        if ts >= six_hours_ago:
+                            order_count += 1
+                except (ValueError, IndexError):
+                    continue
+
+            # Count fills in last 6h (paper:fill:* keys with timestamp >= now-6h)
+            fill_count = 0
+            for key in r.scan_iter(match="paper:fill:*", count=1000):
+                try:
+                    # Extract timestamp from key (format: paper:fill:<timestamp>:<id>)
+                    parts = key.split(":")
+                    if len(parts) >= 3:
+                        ts = float(parts[2])
+                        if ts >= six_hours_ago:
+                            fill_count += 1
+                except (ValueError, IndexError):
+                    continue
+
+            # Count outcomes in last 6h via score range if available
+            outcome_count = len(
+                r.zrangebyscore("bmad:chiseai:outcomes", six_hours_ago, now.timestamp())
+            )
+
+            # Build detail string
+            detail = f"signals={signal_count} orders={order_count} fills={fill_count} outcomes={outcome_count}"
+
+            # Determine status based on chain integrity
+            if signal_count == 0:
+                # No signals = no activity in window (CHECK status)
+                return GateResult(
+                    gate="G10",
+                    status=self.STATUS_CHECK,
+                    detail=f"{detail} | healthy idle (no activity in 6h window)",
+                )
+            elif (
+                signal_count > 0
+                and order_count > 0
+                and fill_count > 0
+                and outcome_count > 0
+            ):
+                # Complete chain - all stages have activity
+                return GateResult(
+                    gate="G10",
+                    status=self.STATUS_PASS,
+                    detail=f"{detail} | Chain intact",
+                )
+            else:
+                # Pipeline broken - signals exist but downstream stage is empty
+                missing = []
+                if order_count == 0:
+                    missing.append("orders")
+                if fill_count == 0:
+                    missing.append("fills")
+                if outcome_count == 0:
+                    missing.append("outcomes")
+                return GateResult(
+                    gate="G10",
+                    status=self.STATUS_FAIL,
+                    detail=f"{detail} | Pipeline broken: no {'/'.join(missing)}",
+                )
+
+        except Exception as e:
+            logger.error(f"Error checking G10: {e}")
+            return GateResult(
+                gate="G10",
+                status=self.STATUS_FAIL,
+                detail=f"Exception: {str(e)[:100]}",
+            )
+
+    def check_g12_bybit_freshness(self) -> GateResult:
+        """G12: Bybit Truth Freshness - Check if Bybit truth data is fresh.
+
+        Validates that Bybit truth data collection is recent by checking:
+        - bmad:chiseai:bybit_truth:last_collection_timestamp (ISO format timestamp)
+        - bmad:chiseai:bybit_truth:last_collection_status (optional context)
+
+        Freshness threshold: 60 minutes (3600 seconds)
+
+        Returns:
+            GateResult with status:
+            - PASS: Collection within last 60 minutes
+            - FAIL: Collection older than 60 minutes
+            - CHECK: Key missing or timestamp unparseable
+        """
+        r = self._get_redis()
+        if not r:
+            return GateResult(
+                gate="G12",
+                status=self.STATUS_FAIL,
+                detail="Redis unavailable - cannot check Bybit truth freshness",
+            )
+
+        try:
+            # Get the last collection timestamp
+            timestamp_str = r.get("bmad:chiseai:bybit_truth:last_collection_timestamp")
+
+            if not timestamp_str:
+                return GateResult(
+                    gate="G12",
+                    status=self.STATUS_CHECK,
+                    detail="missing collection timestamp",
+                )
+
+            # Parse ISO timestamp
+            try:
+                last_collection = datetime.fromisoformat(timestamp_str)
+            except ValueError:
+                return GateResult(
+                    gate="G12",
+                    status=self.STATUS_CHECK,
+                    detail=f"unparseable timestamp: {timestamp_str[:50]}",
+                )
+
+            # Calculate age in minutes
+            now = datetime.now(UTC)
+            age_seconds = (now - last_collection).total_seconds()
+            age_minutes = age_seconds / 60
+
+            # Freshness threshold: 60 minutes
+            max_age_minutes = 60
+
+            freshness = "stale" if age_minutes > max_age_minutes else "fresh"
+            detail = f"last_collection={age_minutes:.1f}m ago | status={freshness}"
+
+            if age_minutes > max_age_minutes:
+                return GateResult(
+                    gate="G12",
+                    status=self.STATUS_FAIL,
+                    detail=detail,
+                )
+            else:
+                return GateResult(
+                    gate="G12",
+                    status=self.STATUS_PASS,
+                    detail=detail,
+                )
+
+        except Exception as e:
+            logger.error(f"Error checking G12: {e}")
+            return GateResult(
+                gate="G12",
+                status=self.STATUS_FAIL,
+                detail=f"Exception: {str(e)[:100]}",
+            )
+
     def run_all_checks(self) -> GateSummary:
-        """Run all G1-G9 checks and return summary.
+        """Run all G1-G12 checks and return summary.
 
         Returns:
             GateSummary with all results and counts
@@ -632,7 +964,10 @@ class GateChecker:
             self.check_g6_bybit_connectivity(),
             self.check_g7_observability(),
             self.check_g8_pipeline(),
-            self.check_g9_metric_integrity(),  # NEW
+            self.check_g9_metric_integrity(),
+            self.check_g10_chain_integrity(),
+            self.check_g11_provenance(),  # NEW
+            self.check_g12_bybit_freshness(),
         ]
 
         pass_count = sum(1 for c in checks if self.STATUS_PASS in c.status)
@@ -749,4 +1084,140 @@ class GateChecker:
                 gate="AZ",
                 status=self.STATUS_FAIL,
                 detail=f"Exception: {str(e)[:100]}",
+            )
+
+    def check_g11_provenance(self) -> GateResult:
+        """G11: Provenance - Check signal_outcomes table for missing provenance fields.
+
+        Validates that execution_venue, execution_mode, and execution_source fields
+        are populated for all records in the last 60 minutes.
+
+        Returns:
+            GateResult with status:
+            - PASS: No data in window OR all records have all provenance fields
+            - FAIL: Any records missing provenance fields
+            - CHECK: Connection error or query failure
+        """
+        import os
+
+        # Database connection parameters
+        db_host = os.getenv("DB_HOST", "host.docker.internal")
+        db_port = os.getenv("DB_PORT", "5434")
+        db_name = os.getenv("DB_NAME", "chiseai")
+        db_user = os.getenv("DB_USER", "chiseai")
+        db_password = os.getenv("DB_PASSWORD", "chiseai")
+
+        try:
+            # Try psycopg2 first, fallback to asyncpg if available
+            try:
+                import psycopg2
+
+                conn = psycopg2.connect(
+                    host=db_host,
+                    port=db_port,
+                    database=db_name,
+                    user=db_user,
+                    password=db_password,
+                    connect_timeout=5,
+                )
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT
+                        COUNT(*) as total,
+                        COUNT(execution_venue) as with_venue,
+                        COUNT(execution_mode) as with_mode,
+                        COUNT(execution_source) as with_source
+                    FROM signal_outcomes
+                    WHERE created_at >= NOW() - INTERVAL '60 minutes'
+                """)
+                row = cursor.fetchone()
+                cursor.close()
+                conn.close()
+
+                total, with_venue, with_mode, with_source = row
+
+            except ImportError:
+                # Fallback to asyncpg if psycopg2 not available
+                try:
+                    import asyncio
+                    import asyncpg
+
+                    async def query():
+                        conn = await asyncpg.connect(
+                            host=db_host,
+                            port=db_port,
+                            database=db_name,
+                            user=db_user,
+                            password=db_password,
+                            timeout=5,
+                        )
+                        row = await conn.fetchrow("""
+                            SELECT
+                                COUNT(*) as total,
+                                COUNT(execution_venue) as with_venue,
+                                COUNT(execution_mode) as with_mode,
+                                COUNT(execution_source) as with_source
+                            FROM signal_outcomes
+                            WHERE created_at >= NOW() - INTERVAL '60 minutes'
+                        """)
+                        await conn.close()
+                        return row
+
+                    row = asyncio.run(query())
+                    total = row["total"]
+                    with_venue = row["with_venue"]
+                    with_mode = row["with_mode"]
+                    with_source = row["with_source"]
+
+                except ImportError:
+                    return GateResult(
+                        gate="G11",
+                        status=self.STATUS_CHECK,
+                        detail="No PostgreSQL driver available (psycopg2 or asyncpg required)",
+                    )
+
+            # Calculate missing counts
+            missing_venue = total - with_venue
+            missing_mode = total - with_mode
+            missing_source = total - with_source
+
+            # Build detail string
+            detail = f"total={total} venue={with_venue} mode={with_mode} source={with_source} missing_venue={missing_venue} missing_mode={missing_mode} missing_source={missing_source}"
+
+            # Determine status
+            if total == 0:
+                # No data in window - PASS (no provenance to check)
+                return GateResult(
+                    gate="G11",
+                    status=self.STATUS_PASS,
+                    detail=f"{detail} | No data in 60m window",
+                )
+            elif missing_venue == 0 and missing_mode == 0 and missing_source == 0:
+                # All records have all provenance fields
+                return GateResult(
+                    gate="G11",
+                    status=self.STATUS_PASS,
+                    detail=f"{detail} | All records have provenance",
+                )
+            else:
+                # Some records missing provenance fields
+                missing_fields = []
+                if missing_venue > 0:
+                    missing_fields.append(f"venue({missing_venue})")
+                if missing_mode > 0:
+                    missing_fields.append(f"mode({missing_mode})")
+                if missing_source > 0:
+                    missing_fields.append(f"source({missing_source})")
+                return GateResult(
+                    gate="G11",
+                    status=self.STATUS_FAIL,
+                    detail=f"{detail} | Missing: {', '.join(missing_fields)}",
+                )
+
+        except Exception as e:
+            logger.error(f"Error checking G11: {e}")
+            return GateResult(
+                gate="G11",
+                status=self.STATUS_CHECK,
+                detail=f"Connection/query error: {str(e)[:100]}",
             )

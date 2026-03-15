@@ -697,6 +697,174 @@ class TestG8Pipeline:
         assert result.status == GateChecker.STATUS_FAIL
 
 
+class TestG10ChainIntegrity:
+    """Tests for G10: Chain Integrity gate."""
+
+    def test_g10_no_redis(self):
+        """Test G10 when Redis is unavailable."""
+        checker = GateChecker()
+        with patch.object(checker, "_get_redis", return_value=None):
+            result = checker.check_g10_chain_integrity()
+
+        assert result.gate == "G10"
+        assert result.status == GateChecker.STATUS_FAIL
+        assert "Redis unavailable" in result.detail
+
+    def test_g10_no_signals(self, mock_redis_client):
+        """Test G10 when no signals in 6h window."""
+        mock_redis_client.scan_iter.return_value = []
+        checker = GateChecker(redis_client=mock_redis_client)
+        result = checker.check_g10_chain_integrity()
+
+        assert result.gate == "G10"
+        assert result.status == GateChecker.STATUS_CHECK
+        assert "signals=0" in result.detail
+        assert "healthy idle" in result.detail
+
+    def test_g10_signals_no_downstream(self, mock_redis_client):
+        """Test G10 when signals exist but no downstream activity."""
+        from datetime import UTC, datetime, timedelta
+
+        now = datetime.now(UTC)
+        recent_ts = now.isoformat()
+
+        # Mock signals but no orders/fills/outcomes
+        def mock_scan_iter(match=None, count=None):
+            if "signal" in (match or ""):
+                return ["bmad:chiseai:signals:test-1", "paper:signal:test-2"]
+            return []
+
+        mock_redis_client.scan_iter.side_effect = mock_scan_iter
+        mock_redis_client.hget.return_value = recent_ts
+        mock_redis_client.zrangebyscore.return_value = []
+        mock_redis_client.smembers.return_value = set()
+
+        checker = GateChecker(redis_client=mock_redis_client)
+        result = checker.check_g10_chain_integrity()
+
+        assert result.gate == "G10"
+        assert result.status == GateChecker.STATUS_FAIL
+        assert "Pipeline broken" in result.detail
+
+    def test_g10_healthy_pipeline(self, mock_redis_client):
+        """Test G10 when all pipeline stages have activity."""
+        from datetime import UTC, datetime
+
+        now = datetime.now(UTC)
+        now_ts = now.timestamp()
+
+        # Mock signals, orders, fills, and outcomes
+        def mock_scan_iter(match=None, count=None):
+            if "signal" in (match or ""):
+                return ["bmad:chiseai:signals:test-1"]
+            elif "order" in (match or ""):
+                return [f"paper:order:{now_ts}:order-1"]
+            elif "fill" in (match or ""):
+                return [f"paper:fill:{now_ts}:fill-1"]
+            return []
+
+        mock_redis_client.scan_iter.side_effect = mock_scan_iter
+        mock_redis_client.hget.return_value = now.isoformat()
+        mock_redis_client.zrangebyscore.return_value = ["outcome-1", "outcome-2"]
+
+        checker = GateChecker(redis_client=mock_redis_client)
+        result = checker.check_g10_chain_integrity()
+
+        assert result.gate == "G10"
+        assert result.status == GateChecker.STATUS_PASS
+        # Check that counts are present (exact numbers depend on mock behavior)
+        assert "signals=" in result.detail
+        assert "orders=1" in result.detail
+        assert "fills=1" in result.detail
+        assert "outcomes=2" in result.detail
+
+    def test_g10_exception(self, mock_redis_client):
+        """Test G10 when exception occurs."""
+        mock_redis_client.scan_iter.side_effect = Exception("Redis error")
+        checker = GateChecker(redis_client=mock_redis_client)
+        result = checker.check_g10_chain_integrity()
+
+        assert result.gate == "G10"
+        assert result.status == GateChecker.STATUS_FAIL
+        assert "Exception" in result.detail
+
+
+class TestG12BybitFreshness:
+    """Tests for G12: Bybit Freshness gate."""
+
+    def test_g12_no_redis(self):
+        """Test G12 when Redis is unavailable."""
+        checker = GateChecker()
+        with patch.object(checker, "_get_redis", return_value=None):
+            result = checker.check_g12_bybit_freshness()
+
+        assert result.gate == "G12"
+        assert result.status == GateChecker.STATUS_FAIL
+        assert "Redis unavailable" in result.detail
+
+    def test_g12_missing_timestamp(self, mock_redis_client):
+        """Test G12 when timestamp key is missing."""
+        mock_redis_client.get.return_value = None
+        checker = GateChecker(redis_client=mock_redis_client)
+        result = checker.check_g12_bybit_freshness()
+
+        assert result.gate == "G12"
+        assert result.status == GateChecker.STATUS_CHECK
+        assert "missing" in result.detail
+
+    def test_g12_unparseable_timestamp(self, mock_redis_client):
+        """Test G12 when timestamp is unparseable."""
+        mock_redis_client.get.return_value = "not-a-timestamp"
+        checker = GateChecker(redis_client=mock_redis_client)
+        result = checker.check_g12_bybit_freshness()
+
+        assert result.gate == "G12"
+        assert result.status == GateChecker.STATUS_CHECK
+        assert "unparseable" in result.detail
+
+    def test_g12_fresh_data(self, mock_redis_client):
+        """Test G12 when data is fresh (<=60m)."""
+        from datetime import UTC, datetime, timedelta
+
+        now = datetime.now(UTC)
+        recent = now - timedelta(minutes=30)
+        mock_redis_client.get.return_value = recent.isoformat()
+
+        checker = GateChecker(redis_client=mock_redis_client)
+        result = checker.check_g12_bybit_freshness()
+
+        assert result.gate == "G12"
+        assert result.status == GateChecker.STATUS_PASS
+        assert "30.0m ago" in result.detail
+        assert "fresh" in result.detail
+
+    def test_g12_stale_data(self, mock_redis_client):
+        """Test G12 when data is stale (>60m)."""
+        from datetime import UTC, datetime, timedelta
+
+        now = datetime.now(UTC)
+        old = now - timedelta(minutes=90)
+        mock_redis_client.get.return_value = old.isoformat()
+
+        checker = GateChecker(redis_client=mock_redis_client)
+        result = checker.check_g12_bybit_freshness()
+
+        assert result.gate == "G12"
+        assert result.status == GateChecker.STATUS_FAIL
+        assert "90.0m ago" in result.detail
+        assert "stale" in result.detail
+
+    def test_g12_exception(self, mock_redis_client):
+        """Test G12 when exception occurs."""
+        mock_redis_client.get.side_effect = Exception("Redis error")
+        checker = GateChecker(redis_client=mock_redis_client)
+        result = checker.check_g12_bybit_freshness()
+
+        assert result.gate == "G12"
+        assert result.status == GateChecker.STATUS_FAIL
+        assert "Exception" in result.detail
+
+
 class TestRunAllChecks:
     """Tests for running all gate checks."""
 
@@ -722,9 +890,25 @@ class TestRunAllChecks:
                     timestamp=datetime.now(UTC),
                 )
 
-                summary = checker.run_all_checks()
+                # Patch G10 and G12 to avoid scan_iter complexity
+                with patch.object(checker, "check_g10_chain_integrity") as mock_g10:
+                    mock_g10.return_value = GateResult(
+                        gate="G10",
+                        status=GateChecker.STATUS_PASS,
+                        detail="signals=5 orders=3 fills=3 outcomes=5",
+                        timestamp=datetime.now(UTC),
+                    )
+                    with patch.object(checker, "check_g12_bybit_freshness") as mock_g12:
+                        mock_g12.return_value = GateResult(
+                            gate="G12",
+                            status=GateChecker.STATUS_PASS,
+                            detail="last_collection=15.0m ago | status=fresh",
+                            timestamp=datetime.now(UTC),
+                        )
 
-        assert len(summary.results) == 9  # G1-G9
+                        summary = checker.run_all_checks()
+
+        assert len(summary.results) == 12  # G1-G12 (including G11)
         assert summary.pass_count >= 6  # Most should pass with mock data
         assert isinstance(summary.timestamp, datetime)
 
