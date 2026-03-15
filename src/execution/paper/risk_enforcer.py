@@ -129,11 +129,9 @@ class PaperRiskEnforcer:
             violations.append(violation)
             self._log_violation(violation, signal)
 
-        # 3. Calculate position size
-        position_size = self.calculate_position_size(signal, portfolio_value)
-
-        # Get entry price for calculations
+        # 3. Calculate position size (pass entry_price to ensure correct calculation)
         price = entry_price or signal.metadata.get("entry_price", 0.0)
+        position_size = self.calculate_position_size(signal, portfolio_value, price)
         if price <= 0:
             # Try to get from signal stop loss and risk reward ratio
             if signal.stop_loss and signal.risk_reward_ratio > 0:
@@ -282,6 +280,7 @@ class PaperRiskEnforcer:
         self,
         signal: Signal,
         portfolio_value: float,
+        entry_price: float | None = None,
     ) -> float:
         """Calculate safe position size based on risk rules.
 
@@ -292,6 +291,7 @@ class PaperRiskEnforcer:
         Args:
             signal: Trading signal
             portfolio_value: Current portfolio value
+            entry_price: Entry price (uses signal metadata if None)
 
         Returns:
             Recommended position size in units (rounded to 3 decimal places)
@@ -300,31 +300,37 @@ class PaperRiskEnforcer:
         default_risk_pct = 0.01
         risk_amount = portfolio_value * default_risk_pct
 
-        # Get stop loss distance
-        entry_price = signal.metadata.get("entry_price", 0.0)
-        stop_loss = signal.stop_loss
+        # Get entry price from parameter or signal metadata
+        effective_entry_price: float = entry_price or 0.0
+        if effective_entry_price <= 0:
+            effective_entry_price = signal.metadata.get("entry_price", 0.0)
+        stop_loss: float | None = signal.stop_loss
         position_size: float = 0.0
 
-        if entry_price > 0 and stop_loss and stop_loss > 0:
+        if effective_entry_price > 0 and stop_loss is not None and stop_loss > 0:
             # Calculate position size based on risk amount and stop distance
-            stop_distance = abs(entry_price - stop_loss)
+            stop_distance = abs(effective_entry_price - stop_loss)
             if stop_distance > 0:
                 position_size = risk_amount / stop_distance
             else:
                 # Fallback: use fixed fractional
-                position_size = (portfolio_value * default_risk_pct) / entry_price
+                position_size = (
+                    portfolio_value * default_risk_pct
+                ) / effective_entry_price
         else:
             # Fallback: fixed fractional sizing (1% of portfolio)
-            if entry_price > 0:
-                position_size = (portfolio_value * default_risk_pct) / entry_price
+            if effective_entry_price > 0:
+                position_size = (
+                    portfolio_value * default_risk_pct
+                ) / effective_entry_price
             else:
                 # No price info, use notional value approach
                 position_size = portfolio_value * default_risk_pct
 
         # Cap at max position percentage (10% of portfolio)
         max_position_value = portfolio_value * self.config.max_position_pct
-        if entry_price > 0:
-            max_size = max_position_value / entry_price
+        if effective_entry_price > 0:
+            max_size = max_position_value / effective_entry_price
             position_size = min(position_size, max_size)
 
         # FIX: Round to 3 decimal places for exchange precision (e.g., BTCUSDT qtyStep=0.001)
