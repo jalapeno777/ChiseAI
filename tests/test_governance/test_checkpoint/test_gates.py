@@ -252,7 +252,7 @@ class TestG2SignalCadence:
 
         assert result.gate == "G2"
         assert result.status == GateChecker.STATUS_PASS
-        assert "10 attempts" in result.detail
+        assert "10 signals" in result.detail
         assert "3 actionable" in result.detail
 
     def test_g2_pipeline_stale(self, mock_redis_client):
@@ -279,8 +279,9 @@ class TestG2SignalCadence:
         result = checker.check_g2_signal_cadence()
 
         assert result.gate == "G2"
-        assert result.status == GateChecker.STATUS_CHECK
-        assert "unknown" in result.detail.lower()
+        # Empty heartbeat returns NO_SIGNALS with PASS status (healthy idle state)
+        assert result.status == GateChecker.STATUS_PASS
+        assert "NO_SIGNALS" in result.detail
 
     def test_g2_exception(self, mock_redis_client):
         """Test G2 when exception occurs."""
