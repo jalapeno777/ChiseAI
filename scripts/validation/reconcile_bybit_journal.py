@@ -484,7 +484,7 @@ class BybitJournalReconciler:
 
             async with BybitConnector.from_env() as connector:
                 # Get execution history
-                response = await connector.get_executions(
+                response = await connector.get_fills(
                     symbol=symbol,
                     start_time=start_time,
                     end_time=end_time,
