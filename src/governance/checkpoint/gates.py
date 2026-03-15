@@ -792,13 +792,13 @@ class GateChecker:
             six_hours_ago = now.timestamp() - 21600  # 6 hours in seconds
 
             # Count signals in last 6h (both bmad and paper signal keys)
-            signal_keys = r.keys("bmad:chiseai:signals:*") + r.keys("paper:signal:*")
+            signal_keys = list(r.scan_iter(match="bmad:chiseai:signals:*", count=1000))
+            signal_keys.extend(list(r.scan_iter(match="paper:signal:*", count=1000)))
             signal_count = len(signal_keys)
 
             # Count orders in last 6h (paper:order:* keys with timestamp >= now-6h)
-            order_keys = r.keys("paper:order:*")
             order_count = 0
-            for key in order_keys:
+            for key in r.scan_iter(match="paper:order:*", count=1000):
                 try:
                     # Extract timestamp from key (format: paper:order:<timestamp>:<id>)
                     parts = key.split(":")
@@ -810,9 +810,8 @@ class GateChecker:
                     continue
 
             # Count fills in last 6h (paper:fill:* keys with timestamp >= now-6h)
-            fill_keys = r.keys("paper:fill:*")
             fill_count = 0
-            for key in fill_keys:
+            for key in r.scan_iter(match="paper:fill:*", count=1000):
                 try:
                     # Extract timestamp from key (format: paper:fill:<timestamp>:<id>)
                     parts = key.split(":")
@@ -823,33 +822,10 @@ class GateChecker:
                 except (ValueError, IndexError):
                     continue
 
-            # Count outcomes in last 6h (bmad:chiseai:outcomes:index members)
-            outcome_ids = r.smembers("bmad:chiseai:outcomes:index")
-            outcome_count = 0
-            for outcome_id in outcome_ids:
-                try:
-                    # Outcome IDs contain timestamp (format includes timestamp)
-                    # Try to get the outcome hash for timestamp
-                    outcome_data = r.hgetall(f"bmad:chiseai:outcome:{outcome_id}")
-                    if outcome_data:
-                        ts_str = outcome_data.get("timestamp", "")
-                        if ts_str:
-                            ts = datetime.fromisoformat(ts_str).timestamp()
-                            if ts >= six_hours_ago:
-                                outcome_count += 1
-                        else:
-                            # If no timestamp in hash, check if outcome_id contains timestamp
-                            parts = outcome_id.split(":")
-                            for part in parts:
-                                try:
-                                    ts = float(part)
-                                    if ts >= six_hours_ago:
-                                        outcome_count += 1
-                                        break
-                                except ValueError:
-                                    continue
-                except Exception:
-                    continue
+            # Count outcomes in last 6h via score range if available
+            outcome_count = len(
+                r.zrangebyscore("bmad:chiseai:outcomes", six_hours_ago, now.timestamp())
+            )
 
             # Build detail string
             detail = f"signals={signal_count} orders={order_count} fills={fill_count} outcomes={outcome_count}"
@@ -860,7 +836,7 @@ class GateChecker:
                 return GateResult(
                     gate="G10",
                     status=self.STATUS_CHECK,
-                    detail=f"{detail} | No activity in 6h window",
+                    detail=f"{detail} | healthy idle (no activity in 6h window)",
                 )
             elif (
                 signal_count > 0
@@ -923,13 +899,12 @@ class GateChecker:
         try:
             # Get the last collection timestamp
             timestamp_str = r.get("bmad:chiseai:bybit_truth:last_collection_timestamp")
-            status = r.get("bmad:chiseai:bybit_truth:last_collection_status")
 
             if not timestamp_str:
                 return GateResult(
                     gate="G12",
                     status=self.STATUS_CHECK,
-                    detail="no collection data",
+                    detail="missing collection timestamp",
                 )
 
             # Parse ISO timestamp
@@ -950,12 +925,8 @@ class GateChecker:
             # Freshness threshold: 60 minutes
             max_age_minutes = 60
 
-            # Build detail string
-            detail_parts = [f"last_collection={age_minutes:.0f}m ago"]
-            if status:
-                detail_parts.append(f"status={status}")
-
-            detail = " | ".join(detail_parts)
+            freshness = "stale" if age_minutes > max_age_minutes else "fresh"
+            detail = f"last_collection={age_minutes:.1f}m ago | status={freshness}"
 
             if age_minutes > max_age_minutes:
                 return GateResult(
