@@ -8,7 +8,9 @@ import sys
 import os
 
 # Set up paths BEFORE any imports
+# Add src to path so imports work without 'src.' prefix
 sys.path.insert(0, "/tmp/worktrees/PAPER-NOGO-REMEDIATION-002")
+sys.path.insert(0, "/tmp/worktrees/PAPER-NOGO-REMEDIATION-002/src")
 
 import asyncio
 import logging
@@ -23,23 +25,23 @@ logger = logging.getLogger(__name__)
 
 async def main():
     """Start the SignalConsumer."""
-    from src.config.bootstrap import bootstrap
-    from src.config.trading_mode import TradingModeConfig
-    from src.data_ingestion.ohlcv_fetcher import OHLCVFetcher
-    from src.execution.kill_switch.executor import KillSwitchExecutor
-    from src.execution.outcome_capture.integration import OutcomeCaptureIntegration
-    from src.execution.paper import (
+    from config.bootstrap import bootstrap
+    from config.trading_mode import TradingModeConfig
+    from data_ingestion.ohlcv_fetcher import OHLCVFetcher
+    from execution.kill_switch.executor import KillSwitchExecutor
+    from execution.outcome_capture.integration import OutcomeCaptureIntegration
+    from execution.paper import (
         OrderSimulator,
         PaperPositionTracker,
         create_simulator,
     )
-    from src.execution.paper.orchestrator import PaperTradingOrchestrator
-    from src.execution.paper.risk_enforcer import PaperRiskEnforcer
-    from src.execution.paper.risk_models import RiskCheck
-    from src.execution.paper.signal_consumer import SignalConsumer
-    from src.execution.telemetry.collector import ExecutionCollector
-    from src.execution.telemetry.exporter import ExecutionTelemetryExporter
-    from src.signal_generation.signal_generator import SignalGenerator
+    from execution.paper.orchestrator import PaperTradingOrchestrator
+    from execution.paper.risk_enforcer import PaperRiskEnforcer
+    from execution.paper.risk_models import RiskCheck
+    from execution.paper.signal_consumer import SignalConsumer
+    from execution.telemetry.collector import ExecutionCollector
+    from execution.telemetry.exporter import ExecutionTelemetryExporter
+    from signal_generation.signal_generator import SignalGenerator
 
     logger.info("Bootstrapping environment...")
     bootstrap(load_env=True, verbose=False)
