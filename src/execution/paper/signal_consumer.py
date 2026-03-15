@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -91,6 +91,7 @@ class SignalConsumer:
             return
 
         self._running = True
+        start_time = datetime.now(UTC)
 
         # Load previously processed signals from Redis set
         await self._load_processed_signals()
@@ -98,7 +99,13 @@ class SignalConsumer:
         # Start polling task
         self._poll_task = asyncio.create_task(self._polling_loop())
 
-        logger.info("SignalConsumer started")
+        # Set health marker in Redis
+        await self._set_health_marker(start_time)
+
+        logger.info(
+            f"SignalConsumer started: poll_interval={self.poll_interval}s, "
+            f"processed_signals={len(self._processed_signals)}"
+        )
 
     async def stop(self) -> None:
         """Stop the signal consumer gracefully."""
@@ -118,6 +125,9 @@ class SignalConsumer:
             await self._redis.close()
             self._redis = None
 
+        # Clear health marker
+        await self._clear_health_marker()
+
         logger.info("SignalConsumer stopped")
 
     async def _load_processed_signals(self) -> None:
@@ -130,6 +140,34 @@ class SignalConsumer:
         except Exception as e:
             logger.warning(f"Failed to load processed signals: {e}")
             self._processed_signals = set()
+
+    async def _set_health_marker(self, start_time: datetime) -> None:
+        """Set a health marker in Redis to indicate consumer is active.
+
+        Args:
+            start_time: When the consumer was started
+        """
+        try:
+            redis = await self._get_redis()
+            health_data = {
+                "status": "active",
+                "started_at": start_time.isoformat(),
+                "poll_interval": str(self.poll_interval),
+                "processed_count": str(len(self._processed_signals)),
+            }
+            await redis.hset("paper:signal_consumer:health", mapping=health_data)
+            logger.debug("Health marker set in Redis")
+        except Exception as e:
+            logger.warning(f"Failed to set health marker: {e}")
+
+    async def _clear_health_marker(self) -> None:
+        """Clear the health marker when consumer stops."""
+        try:
+            redis = await self._get_redis()
+            await redis.delete("paper:signal_consumer:health")
+            logger.debug("Health marker cleared from Redis")
+        except Exception as e:
+            logger.warning(f"Failed to clear health marker: {e}")
 
     async def _mark_signal_processed(self, signal_id: str) -> None:
         """Mark a signal as processed in Redis.
@@ -297,7 +335,7 @@ class SignalConsumer:
                 # Handle ISO format with timezone
                 timestamp = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
             else:
-                timestamp = datetime.utcnow()
+                timestamp = datetime.now(UTC)
 
             # Parse status
             status_str = signal_data.get("status", "logged_only")
@@ -373,3 +411,28 @@ class SignalConsumer:
             logger.info("Cleared processed signals set")
         except Exception as e:
             logger.error(f"Failed to clear processed set: {e}")
+
+    async def check_health(self) -> dict[str, Any]:
+        """Check the health status of the signal consumer.
+
+        Returns:
+            Dictionary with health status information
+        """
+        health = {
+            "healthy": self._running,
+            "running": self._running,
+            "poll_task_active": self._poll_task is not None
+            and not self._poll_task.done(),
+            "processed_count": len(self._processed_signals),
+            "poll_interval": self.poll_interval,
+        }
+
+        # Check Redis health marker
+        try:
+            redis = await self._get_redis()
+            marker = await redis.hgetall("paper:signal_consumer:health")
+            health["redis_marker"] = marker if marker else None
+        except Exception as e:
+            health["redis_marker_error"] = str(e)
+
+        return health

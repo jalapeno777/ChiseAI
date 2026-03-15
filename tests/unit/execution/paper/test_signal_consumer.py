@@ -310,6 +310,75 @@ class TestSignalConsumerIntegration:
         assert count == 3
         assert mock_orchestrator.submit_signal.call_count == 3
 
+    @pytest.mark.asyncio
+    async def test_health_check(self, mock_orchestrator):
+        """Test that health check returns correct status."""
+        mock_redis = AsyncMock()
+        mock_redis.hgetall = AsyncMock(return_value={"status": "active"})
+        mock_redis.delete = AsyncMock()
+        mock_redis.close = AsyncMock()
+
+        consumer = SignalConsumer(
+            orchestrator=mock_orchestrator,
+            redis_client=mock_redis,
+            poll_interval=5.0,
+        )
+
+        # Check health before start
+        health = await consumer.check_health()
+        assert health["healthy"] is False
+        assert health["running"] is False
+
+        # Start consumer
+        await consumer.start()
+
+        # Check health after start
+        health = await consumer.check_health()
+        assert health["healthy"] is True
+        assert health["running"] is True
+        assert health["poll_interval"] == 5.0
+
+        # Stop consumer
+        await consumer.stop()
+
+        # Check health after stop
+        health = await consumer.check_health()
+        assert health["healthy"] is False
+        assert health["running"] is False
+
+    @pytest.mark.asyncio
+    async def test_health_marker_set_on_start(self, mock_orchestrator):
+        """Test that health marker is set in Redis on start."""
+        mock_redis = AsyncMock()
+        mock_redis.smembers = AsyncMock(return_value=set())
+        mock_redis.hset = AsyncMock()
+        mock_redis.delete = AsyncMock()
+        mock_redis.close = AsyncMock()
+
+        consumer = SignalConsumer(
+            orchestrator=mock_orchestrator,
+            redis_client=mock_redis,
+            poll_interval=5.0,
+        )
+
+        await consumer.start()
+
+        # Verify health marker was set
+        mock_redis.hset.assert_called_with(
+            "paper:signal_consumer:health",
+            mapping={
+                "status": "active",
+                "started_at": mock_redis.hset.call_args[1]["mapping"]["started_at"],
+                "poll_interval": "5.0",
+                "processed_count": "0",
+            },
+        )
+
+        await consumer.stop()
+
+        # Verify health marker was cleared
+        mock_redis.delete.assert_called_with("paper:signal_consumer:health")
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
