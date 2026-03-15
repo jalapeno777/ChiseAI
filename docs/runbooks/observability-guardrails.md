@@ -600,10 +600,436 @@ Is variance sudden or gradual?
 
 ---
 
-## 7. Change Log
+## 3. Bybit Freshness Watchdog
+
+### 3.1 Purpose
+
+The Bybit Freshness Watchdog provides automated monitoring and recovery for Bybit truth data freshness (G12 gate). It ensures:
+- Continuous monitoring of truth data collection timestamps
+- Early warning before data becomes stale (45-minute threshold)
+- Alert and optional auto-recovery when data goes stale (60-minute threshold)
+- Prevention of G12 failures due to stale truth data
+
+### 3.2 Watchdog Configuration
+
+| Parameter | Value | Description |
+|-----------|-------|-------------|
+| **Check Interval** | 5 minutes | How often to check freshness |
+| **Warning Threshold** | 45 minutes | 75% of G12 threshold |
+| **Fail Threshold** | 60 minutes | G12 threshold for stale data |
+| **Recovery Lock TTL** | 5 minutes | Prevents concurrent recovery attempts |
+| **Recovery Timeout** | 2 minutes | Subprocess timeout for collector |
+
+### 3.3 Alert Logic
+
+```python
+# Pseudo-code for watchdog logic
+minutes_since = calculate_minutes_since_last_collection()
+
+if minutes_since > 60:
+    status = "STALE"
+    alert()
+    if auto_recover:
+        trigger_collector()
+elif minutes_since > 45:
+    status = "WARNING"
+    warn()
+else:
+    status = "FRESH"
+```
+
+### 3.4 Redis Keys Monitored
+
+**Collection Metadata (from collector):**
+```
+Key: bmad:chiseai:bybit_truth:last_collection_timestamp
+Key: bmad:chiseai:bybit_truth:last_collection_count
+Key: bmad:chiseai:bybit_truth:last_collection_status
+```
+
+**Watchdog State:**
+```
+Key: bmad:chiseai:bybit_truth:watchdog:last_check
+Key: bmad:chiseai:bybit_truth:watchdog:status
+Key: bmad:chiseai:bybit_truth:watchdog:alert_count
+Key: bmad:chiseai:bybit_truth:recovery_lock
+```
+
+### 3.5 Running the Watchdog
+
+**Manual Check:**
+```bash
+# Single check
+python3 scripts/monitoring/bybit_freshness_watchdog.py
+
+# With verbose output
+python3 scripts/monitoring/bybit_freshness_watchdog.py -v
+
+# JSON output for automation
+python3 scripts/monitoring/bybit_freshness_watchdog.py --output json
+```
+
+**With Auto-Recovery:**
+```bash
+# Check and recover if stale
+python3 scripts/monitoring/bybit_freshness_watchdog.py --auto-recover
+
+# Continuous loop with auto-recovery
+python3 scripts/monitoring/bybit_freshness_watchdog.py --loop --auto-recover
+```
+
+**Custom Thresholds:**
+```bash
+# Adjust thresholds (useful for testing)
+python3 scripts/monitoring/bybit_freshness_watchdog.py \
+  --warning-threshold 30 \
+  --fail-threshold 45
+```
+
+### 3.6 Common Causes and Remediation
+
+#### Cause 1: Collector Not Running
+
+**Symptoms:**
+- Last collection timestamp old or missing
+- No collection status in Redis
+- Watchdog shows "STALE_NO_COLLECTION"
+
+**Investigation:**
+```bash
+# Check if collector is in cron jobs
+redis-cli -h host.docker.internal -p 6380 GET chise:cron:bybit-truth-collector:last_run
+
+# Check cron evidence for collector
+python3 -c "from scripts.monitoring.cron_evidence import check_cron_cadence; print(check_cron_cadence())"
+```
+
+**Remediation:**
+```bash
+# Start collector manually
+python3 scripts/validation/bybit_truth_collector.py --dry-run
+
+# Or trigger via cron evidence
+python3 -c "from scripts.monitoring.cron_evidence import write_cron_evidence; write_cron_evidence('bybit-truth-collector')"
+```
+
+#### Cause 2: API Errors
+
+**Symptoms:**
+- Collection status shows "api_error"
+- Error message mentions Bybit API
+- Intermittent failures
+
+**Investigation:**
+```bash
+# Check error details
+redis-cli -h host.docker.internal -p 6380 GET bmad:chiseai:bybit_truth:last_collection_error
+
+# Check API connectivity
+curl -s "https://api.bybit.com/v5/market/time" | jq '.time'
+```
+
+**Remediation:**
+```bash
+# Check if API is globally down
+curl -s "https://status.bybit.com/api/v2/status.json"
+
+# Restart collector after API recovers
+python3 scripts/validation/bybit_truth_collector.py
+```
+
+#### Cause 3: Redis Connection Issues
+
+**Symptoms:**
+- Collection status shows "redis_error"
+- Cannot read/write to Redis
+- Watchdog cannot acquire lock
+
+**Investigation:**
+```bash
+# Check Redis connectivity
+redis-cli -h host.docker.internal -p 6380 PING
+
+# Check Redis memory
+redis-cli -h host.docker.internal -p 6380 INFO memory | grep used_memory_human
+```
+
+**Remediation:**
+```bash
+# Restart Redis if needed
+docker restart chiseai-redis
+
+# Verify recovery
+redis-cli -h host.docker.internal -p 6380 PING
+```
+
+### 3.7 Recovery Lock Behavior
+
+The recovery lock prevents multiple concurrent recovery attempts:
+
+**Lock Acquisition:**
+```python
+# Try to acquire lock with 5-minute TTL
+lock_acquired = redis.set(
+    "bmad:chiseai:bybit_truth:recovery_lock",
+    timestamp,
+    nx=True,  # Only if not exists
+    ex=300    # 5-minute expiry
+)
+```
+
+**Lock Release:**
+- Lock is released after recovery completes (success or failure)
+- Lock expires automatically after 5 minutes (TTL)
+- Stale locks (> 5 minutes) are force-acquired
+
+**Monitoring Lock State:**
+```bash
+# Check if recovery is in progress
+redis-cli -h host.docker.internal -p 6380 GET bmad:chiseai:bybit_truth:recovery_lock
+
+# Check lock TTL
+redis-cli -h host.docker.internal -p 6380 TTL bmad:chiseai:bybit_truth:recovery_lock
+```
+
+### 3.8 Integration with G12
+
+The watchdog integrates with G12 (Bybit Freshness Gate):
+
+```
+Watchdog Monitors: bmad:chiseai:bybit_truth:last_collection_timestamp
+                           ↓
+                   Compares against 60-minute threshold
+                           ↓
+         ┌──────────────────┼──────────────────┐
+         ↓                  ↓                  ↓
+     Fresh (<45m)    Warning (45-60m)    Stale (>60m)
+         ↓                  ↓                  ↓
+       PASS            G12 CHECK           G12 FAIL
+         ↓                  ↓                  ↓
+       Green            Yellow               Red
+```
+
+### 3.9 Example Output
+
+**Fresh Status:**
+```
+======================================================================
+BYBIT TRUTH FRESHNESS WATCHDOG
+======================================================================
+Check Time: 2026-03-15T10:30:00+00:00
+Warning Threshold: 45 minutes
+Fail Threshold: 60 minutes
+----------------------------------------------------------------------
+
+📊 STATUS: ✓ FRESH
+  Minutes since collection: 12.34
+
+📋 LAST COLLECTION
+  Timestamp: 2026-03-15T10:17:40+00:00
+  Count: 5
+
+======================================================================
+```
+
+**Warning Status:**
+```
+======================================================================
+BYBIT TRUTH FRESHNESS WATCHDOG
+======================================================================
+Check Time: 2026-03-15T11:05:00+00:00
+Warning Threshold: 45 minutes
+Fail Threshold: 60 minutes
+----------------------------------------------------------------------
+
+📊 STATUS: ⚠ WARNING
+  Minutes since collection: 47.50
+
+📋 LAST COLLECTION
+  Timestamp: 2026-03-15T10:17:30+00:00
+  Count: 5
+
+⚠️  ERROR MESSAGE
+  Data is aging: 47.50m since last collection (warning: 45m, fail: 60m)
+
+======================================================================
+```
+
+**Stale with Auto-Recovery:**
+```
+======================================================================
+BYBIT TRUTH FRESHNESS WATCHDOG
+======================================================================
+Check Time: 2026-03-15T11:20:00+00:00
+Warning Threshold: 45 minutes
+Fail Threshold: 60 minutes
+----------------------------------------------------------------------
+
+📊 STATUS: ✗ STALE
+  Minutes since collection: 62.50
+
+📋 LAST COLLECTION
+  Timestamp: 2026-03-15T10:17:30+00:00
+  Count: 5
+
+🔄 RECOVERY ATTEMPT
+  Status: success
+  Output: Collection successful: 5 executions (execution_id: abc123)...
+
+======================================================================
+```
+
+---
+
+## 4. Integration with Checkpoint Gates
+
+### 4.1 G2 Signal Cadence + Actionable-Zero
+
+The G2 gate provides the real-time state that feeds into the actionable-zero alert:
+
+```
+G2 Output: FILTERED: 12 signals generated, 0 actionable (filters active)
+    ↓
+Actionable-Zero Alert: Counts consecutive FILTERED states
+    ↓
+Alert fires after 3 consecutive windows (45 minutes)
+```
+
+### 4.2 G9 Metric Integrity + G2 Signal Cadence
+
+G9 validates the data that G2 relies on:
+
+```
+G9 Output: PASS - Raw count matches aggregate
+    ↓
+G2 uses validated aggregate: signals_15m, actionable_15m
+    ↓
+Reliable signal cadence assessment
+```
+
+### 4.3 G12 Bybit Freshness + Watchdog
+
+The watchdog provides early warning and auto-recovery for G12:
+
+```
+Watchdog Monitors: bmad:chiseai:bybit_truth:last_collection_timestamp
+    ↓
+Warning at 45m → G12 remains PASS (but flagged)
+    ↓
+Stale at 60m → G12 FAIL (unless auto-recovery succeeds)
+```
+
+### 4.4 Monitoring Dashboard
+
+**Checkpoint Gates Dashboard:** http://localhost:3001/d/checkpoint/checkpoint-gates
+
+**Panels:**
+- G2 Signal Cadence State (NO_SIGNALS/FILTERED/BOTTLENECK/HEALTHY)
+- Actionable-Zero Alert Status
+- Metric Integrity Variance %
+- Raw vs Aggregate Count
+- G12 Bybit Freshness Status
+- Watchdog Status (last check, alert count)
+
+---
+
+## 5. Troubleshooting Summary
+
+### 5.1 Quick Diagnostic Commands
+
+```bash
+# Check all guardrail statuses
+python -c "
+from src.governance.checkpoint import GateChecker
+checker = GateChecker()
+print('G2:', checker.check_g2_signal_cadence().detail)
+print('G9:', checker.check_g9_metric_integrity().detail)
+print('G12:', checker.check_g12_bybit_freshness().detail)
+"
+
+# Check alert status
+redis-cli -h host.docker.internal -p 6380 HGETALL bmad:chiseai:alerts:actionable_zero
+
+# Check integrity results
+redis-cli -h host.docker.internal -p 6380 HGETALL bmad:chiseai:metric_integrity:latest
+
+# Check watchdog status
+python3 scripts/monitoring/bybit_freshness_watchdog.py --output json
+
+# Check Bybit freshness
+python3 scripts/validation/bybit_freshness_check.py
+```
+
+### 5.2 Decision Tree
+
+**Actionable-Zero Alert Fired:**
+```
+Is market volatile?
+├── Yes → Expected behavior, monitor
+└── No → Check confidence threshold
+    ├── Threshold recently changed? → Revert or adjust
+    └── Threshold unchanged? → Check signal quality
+        ├── Signals malformed? → Restart scheduler
+        └── Signals normal? → Lower threshold slightly
+```
+
+**Metric Integrity Failed:**
+```
+Is variance sudden or gradual?
+├── Sudden → Check Redis memory/cleanup
+│   ├── Memory pressure? → Increase memory/clear old data
+│   └── Cleanup job issue? → Adjust TTLs
+└── Gradual → Check clock skew/aggregation logic
+    ├── Clock skew? → Sync clocks
+    └── Logic error? → Review recent changes
+```
+
+**Bybit Freshness Stale (G12):**
+```
+Is collector running?
+├── Yes → Check for API errors
+│   ├── API error? → Wait for API recovery, restart collector
+│   └── No API error? → Check Redis connectivity
+│       ├── Redis down? → Restart Redis
+│       └── Redis OK? → Trigger manual collection
+└── No → Start collector
+    ├── Via cron: Trigger bybit-truth-collector job
+    └── Manual: python3 scripts/validation/bybit_truth_collector.py
+```
+
+---
+
+## 6. Related Documentation
+
+- [Checkpoint Gates](./checkpoint-gates.md) - Full gate reference including G12
+- [Incident Response](./incident_response.md) - Incident handling
+- [Kill Switch Trigger](./kill-switch-trigger.md) - Emergency procedures
+- [Scheduler Operations](./autonomy-cadence-operations.md) - Scheduler management
+
+---
+
+## 7. Appendix: Redis Key Reference
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `bmad:chiseai:alerts:actionable_zero` | Hash | Alert state and suppression |
+| `bmad:chiseai:metric_integrity:latest` | Hash | Latest integrity check results |
+| `bmad:chiseai:metric_integrity:history` | List | Historical variance readings |
+| `bmad:chiseai:config` | Hash | Configuration including thresholds |
+| `bmad:chiseai:bybit_truth:last_collection_timestamp` | String | Last collector timestamp |
+| `bmad:chiseai:bybit_truth:last_collection_status` | String | Last collector status |
+| `bmad:chiseai:bybit_truth:watchdog:last_check` | String | Last watchdog check time |
+| `bmad:chiseai:bybit_truth:watchdog:status` | String | Current watchdog status |
+| `bmad:chiseai:bybit_truth:watchdog:alert_count` | String | Number of stale alerts |
+| `bmad:chiseai:bybit_truth:recovery_lock` | String | Recovery lock timestamp |
+
+---
+
+## 8. Change Log
 
 | Date | Change | Story |
 |------|--------|-------|
 | 2026-03-14 | Initial documentation | BATCH3-DOCS-004 |
 | 2026-03-14 | Added G2 taxonomy | BATCH3-DOCS-004 |
 | 2026-03-14 | Added G9 metric integrity | BATCH3-DOCS-004 |
+| 2026-03-15 | Added Bybit Freshness Watchdog section | ST-BYBIT-FRESHNESS-001 |
