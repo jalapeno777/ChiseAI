@@ -96,6 +96,9 @@ class PaperOrder(BaseModel):
     correlation_id: str | None = Field(None, description="Correlation ID for tracing")
     created_at: datetime = Field(..., description="Order creation time")
     updated_at: datetime | None = Field(None, description="Last update time")
+    filled_at: datetime | None = Field(
+        None, description="Order fill time (when fully filled)"
+    )
     metadata: dict[str, Any] = Field(
         default_factory=dict, description="Additional metadata"
     )
@@ -116,6 +119,7 @@ class PaperOrder(BaseModel):
             "correlation_id": self.correlation_id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "filled_at": self.filled_at.isoformat() if self.filled_at else None,
             "metadata": self.metadata,
         }
 
