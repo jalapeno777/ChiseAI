@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import logging
+import time
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -35,6 +37,8 @@ class AutonomousCognitionFullCycle:
     """Coordinates Phases 1-5 for autonomous cognition."""
 
     DEFAULT_CYCLE_DIR = "_bmad-output/autocog/cycles"
+    DEFAULT_GOVERNANCE_STATE_PATH = "_bmad-output/autocog/governance_state.json"
+    DEFAULT_WEEKLY_META_AUDIT_DIR = "_bmad-output/autocog/meta_audit"
 
     def __init__(
         self,
@@ -85,12 +89,18 @@ class AutonomousCognitionFullCycle:
         run_id = f"autocog-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:6]}"
         state_machine = AutonomousCycleStateMachine()
         result = CycleResult.create(run_id=run_id)
+        governance_state = self._load_governance_state()
         actions: list[str] = []
         assessment = None
         assessment_path: Path | None = None
         conflicts: list[Any] = []
         promotions = 0
         rejections = 0
+        phase_durations: dict[str, float] = {}
+        max_phase_seconds = 60.0
+        max_cycle_seconds = 240.0
+        cycle_started_monotonic = time.monotonic()
+        trigger_context: dict[str, Any] = {}
 
         notifier = DiscordNotifier() if notify_discord else None
         notify_loop: asyncio.AbstractEventLoop | None = None
@@ -99,12 +109,22 @@ class AutonomousCognitionFullCycle:
         try:
             state_machine.transition(CycleState.SELF_ASSESSING)
             if run_self_assessment:
+                phase_started = time.monotonic()
                 actions.append("daily self assessment")
                 assessment, assessment_path = (
                     self._controller.run_daily_self_assessment()
                 )
                 result.self_assessment_status = assessment.status
                 result.artifact_paths["self_assessment"] = str(assessment_path)
+                trigger_context = self._build_trigger_context(assessment=assessment)
+                result.metrics["trigger_context"] = trigger_context
+                phase_durations["self_assessment_seconds"] = round(
+                    time.monotonic() - phase_started, 3
+                )
+                if phase_durations["self_assessment_seconds"] > max_phase_seconds:
+                    result.metrics["budget_warning_self_assessment"] = (
+                        "phase_budget_exceeded"
+                    )
 
                 if notifier and notify_loop:
                     notify_loop.run_until_complete(
@@ -116,12 +136,29 @@ class AutonomousCognitionFullCycle:
 
             state_machine.transition(CycleState.BELIEF_CHECK)
             if run_belief:
+                phase_started = time.monotonic()
                 actions.append("belief consistency check")
                 findings = assessment.findings if assessment is not None else []
                 beliefs = self._seed_beliefs_from_assessment(findings)
                 belief_map = {b.belief_id: b for b in beliefs}
-                conflicts = self._checker.detect_conflicts(beliefs)
-                result.belief_conflicts = len(conflicts)
+                should_run_belief, belief_skip_reason = self._should_run_belief_phase(
+                    governance_state=governance_state,
+                    trigger_context=trigger_context,
+                    mode=mode,
+                )
+                if not should_run_belief:
+                    result.metrics["belief_check_skipped"] = belief_skip_reason
+                    conflicts = []
+                    result.belief_conflicts = 0
+                else:
+                    conflicts = self._checker.detect_conflicts(beliefs)
+                    result.belief_conflicts = len(conflicts)
+                    conflicts = self._filter_conflicts_by_revision_cooldown(
+                        governance_state=governance_state,
+                        conflicts=conflicts,
+                        trigger_context=trigger_context,
+                    )
+                    result.metrics["conflicts_after_cooldown"] = len(conflicts)
                 if conflicts and notifier and notify_loop:
                     notify_loop.run_until_complete(
                         notifier.notify_autocog_event(
@@ -159,10 +196,14 @@ class AutonomousCognitionFullCycle:
                 result.metrics["belief_evidence_summary"] = (
                     self._summarize_belief_evidence(evidence_index)
                 )
-                revisions = self._revision_engine.apply_revisions(
-                    beliefs=belief_map,
-                    conflicts=conflicts,
-                    evidence_index=evidence_index,
+                revisions = (
+                    self._revision_engine.apply_revisions(
+                        beliefs=belief_map,
+                        conflicts=conflicts,
+                        evidence_index=evidence_index,
+                    )
+                    if should_run_belief
+                    else []
                 )
                 result.belief_revisions = len(revisions)
                 if self._revision_engine.last_support_scores:
@@ -200,6 +241,49 @@ class AutonomousCognitionFullCycle:
                     )
                 elif self._revision_engine.last_blocked_revisions and notifier and notify_loop:
                     first_block = self._revision_engine.last_blocked_revisions[0]
+                    manual_blocks = [
+                        block
+                        for block in self._revision_engine.last_blocked_revisions
+                        if str(block.get("reason", "")).startswith("manual_approval_required")
+                    ]
+                    if manual_blocks:
+                        approval_packet_path = self._persist_manual_approval_packet(
+                            run_id=run_id,
+                            blocked_revisions=manual_blocks,
+                        )
+                        result.artifact_paths["manual_approval_packet"] = str(
+                            approval_packet_path
+                        )
+                        result.metrics["manual_approval_required"] = True
+                        notify_loop.run_until_complete(
+                            notifier.notify_autocog_event(
+                                event_type="human_approval_required",
+                                severity="high",
+                                summary="High-impact belief revision requires human approval.",
+                                impact=(
+                                    "Revision withheld until manual approval decision is recorded."
+                                ),
+                                top_metrics={"pending_approvals": len(manual_blocks)},
+                                artifact_path=str(approval_packet_path),
+                                run_id=run_id,
+                                title="Human Approval Required",
+                                issue=(
+                                    "A high-impact belief change exceeded autonomous approval "
+                                    "thresholds."
+                                ),
+                                intended_resolution=(
+                                    "Submit approval packet for manual go/no-go decision."
+                                ),
+                                expected_improvement=(
+                                    "Prevents unsafe high-impact autonomous changes."
+                                ),
+                                outcome_status="in_progress",
+                                evidence_reasoning=[
+                                    f"manual_approval_blocks={len(manual_blocks)}",
+                                    f"top_reason={manual_blocks[0].get('reason', 'unknown')}",
+                                ],
+                            )
+                        )
                     notify_loop.run_until_complete(
                         notifier.notify_autocog_event(
                             event_type="belief_revision_blocked",
@@ -318,9 +402,28 @@ class AutonomousCognitionFullCycle:
                             decision_packet=revision_decision_packet,
                         )
                     )
+                self._update_belief_lifecycle_state(
+                    governance_state=governance_state,
+                    beliefs=belief_map,
+                    revisions=revisions,
+                    blocked_revisions=self._revision_engine.last_blocked_revisions,
+                    trigger_context=trigger_context,
+                )
+                self._record_revision_cooldowns(
+                    governance_state=governance_state,
+                    revisions=revisions,
+                )
+                phase_durations["belief_check_seconds"] = round(
+                    time.monotonic() - phase_started, 3
+                )
+                if phase_durations["belief_check_seconds"] > max_phase_seconds:
+                    result.metrics["budget_warning_belief_check"] = (
+                        "phase_budget_exceeded"
+                    )
 
             state_machine.transition(CycleState.IMPROVEMENT)
             if run_improvement:
+                phase_started = time.monotonic()
                 actions.append("strategy portfolio improvement cycle")
                 assessment_payload = (
                     assessment.to_dict() if assessment is not None else {}
@@ -329,15 +432,102 @@ class AutonomousCognitionFullCycle:
                     self_assessment=assessment_payload,
                     conflicts_count=len(conflicts),
                 )
+                eligible_hypotheses: list[Any] = []
+                evidence_signature = self._build_candidate_evidence_signature(
+                    assessment=assessment,
+                    conflicts_count=len(conflicts),
+                )
+                skipped_candidates: list[dict[str, Any]] = []
+                for hypothesis in hypotheses:
+                    eligible, reason = self._is_candidate_eligible(
+                        governance_state=governance_state,
+                        hypothesis=hypothesis,
+                        evidence_signature=evidence_signature,
+                        trigger_context=trigger_context,
+                    )
+                    if eligible:
+                        eligible_hypotheses.append(hypothesis)
+                    else:
+                        skipped_candidates.append(
+                            {
+                                "candidate": hypothesis.hypothesis_id,
+                                "reason": reason,
+                            }
+                        )
+                max_experiments = 3
+                hypotheses = eligible_hypotheses[:max_experiments]
+                if len(eligible_hypotheses) > max_experiments:
+                    skipped_candidates.append(
+                        {
+                            "candidate": "additional_candidates",
+                            "reason": (
+                                "cost_budget_exceeded:"
+                                f"max_experiments={max_experiments}"
+                            ),
+                        }
+                    )
+                result.metrics["candidate_skips"] = skipped_candidates
                 result.experiments_run = len(hypotheses)
                 for hypothesis in hypotheses:
                     exp = self._lab.run(hypothesis)
+                    if self._is_uncertain_candidate_result(exp.to_metrics()):
+                        rejections += 1
+                        self._record_candidate_outcome(
+                            governance_state=governance_state,
+                            hypothesis=hypothesis,
+                            outcome="rejected",
+                            reason="insufficient_certainty",
+                            evidence_signature=evidence_signature,
+                        )
+                        if notifier and notify_loop:
+                            notify_loop.run_until_complete(
+                                notifier.notify_autocog_event(
+                                    event_type="improvement_rejected",
+                                    severity="medium",
+                                    summary=f"Rejected {hypothesis.hypothesis_id}",
+                                    impact=(
+                                        "Candidate result uncertainty exceeded threshold; "
+                                        "decision deferred."
+                                    ),
+                                    top_metrics=exp.to_metrics(),
+                                    artifact_path=str(assessment_path)
+                                    if assessment_path
+                                    else None,
+                                    run_id=run_id,
+                                    title="Improvement Candidate Rejected",
+                                    issue=(
+                                        "Candidate metrics were too close to decision "
+                                        "thresholds to be considered reliable."
+                                    ),
+                                    intended_resolution=(
+                                        "Reject for now and wait for stronger "
+                                        "evidence/clearer margin."
+                                    ),
+                                    expected_improvement=(
+                                        "Avoids unstable policy churn from noisy signals."
+                                    ),
+                                    outcome_status="failed",
+                                    evidence_reasoning=[
+                                        f"candidate={hypothesis.hypothesis_id}",
+                                        "reason=insufficient_certainty",
+                                    ],
+                                )
+                            )
+                        continue
                     outcome = self._champion_engine.evaluate_candidate(
                         candidate_id=hypothesis.hypothesis_id,
                         metrics=exp.to_metrics(),
                     )
                     if outcome.promoted:
                         promotions += 1
+                        self._record_candidate_outcome(
+                            governance_state=governance_state,
+                            hypothesis=hypothesis,
+                            outcome="promoted",
+                            reason=outcome.reason,
+                            evidence_signature=evidence_signature,
+                            version_id=outcome.version_id,
+                        )
                         if notifier and notify_loop:
                             notify_loop.run_until_complete(
                                 notifier.notify_autocog_event(
@@ -372,6 +562,14 @@ class AutonomousCognitionFullCycle:
                             )
                     else:
                         rejections += 1
+                        self._record_candidate_outcome(
+                            governance_state=governance_state,
+                            hypothesis=hypothesis,
+                            outcome="rejected",
+                            reason=outcome.reason,
+                            evidence_signature=evidence_signature,
+                            version_id=outcome.version_id,
+                        )
                         if notifier and notify_loop:
                             notify_loop.run_until_complete(
                                 notifier.notify_autocog_event(
@@ -404,11 +602,19 @@ class AutonomousCognitionFullCycle:
                                     ],
                                 )
                             )
+                phase_durations["improvement_seconds"] = round(
+                    time.monotonic() - phase_started, 3
+                )
+                if phase_durations["improvement_seconds"] > max_phase_seconds:
+                    result.metrics["budget_warning_improvement"] = (
+                        "phase_budget_exceeded"
+                    )
             result.promotions = promotions
             result.rejections = rejections
 
             state_machine.transition(CycleState.RUNTIME_INTEGRATION)
             if run_runtime:
+                phase_started = time.monotonic()
                 actions.append("neuro-symbolic runtime integration")
                 runtime_result = self._runtime.run(mode="shadow")
                 result.metrics["runtime_divergence_score"] = (
@@ -417,9 +623,13 @@ class AutonomousCognitionFullCycle:
                 result.metrics["runtime_non_regression_passed"] = (
                     runtime_result.passed_non_regression
                 )
+                phase_durations["runtime_integration_seconds"] = round(
+                    time.monotonic() - phase_started, 3
+                )
 
             state_machine.transition(CycleState.TUNING)
             if run_tuning:
+                phase_started = time.monotonic()
                 actions.append("autonomy tuning")
                 result.autonomy_level_before = "bounded"
                 tuning = self._tuner.tune(
@@ -466,9 +676,13 @@ class AutonomousCognitionFullCycle:
                             ],
                         )
                     )
+                phase_durations["tuning_seconds"] = round(
+                    time.monotonic() - phase_started, 3
+                )
 
             state_machine.transition(CycleState.GOVERNANCE_AUDIT)
             if run_audit:
+                phase_started = time.monotonic()
                 actions.append("constitution audit")
                 audit_result = self._audit.run(actions=actions)
                 result.constitution_violations = len(audit_result.violations)
@@ -508,6 +722,33 @@ class AutonomousCognitionFullCycle:
                             ],
                         )
                     )
+                phase_durations["governance_audit_seconds"] = round(
+                    time.monotonic() - phase_started, 3
+                )
+
+            verification_actions = self._process_pending_verifications(
+                governance_state=governance_state,
+                result=result,
+            )
+            if verification_actions:
+                result.metrics["post_change_verifications"] = verification_actions
+
+            rollback_actions = self._process_incident_linked_rollbacks(
+                governance_state=governance_state,
+                result=result,
+            )
+            if rollback_actions:
+                result.metrics["incident_rollbacks"] = rollback_actions
+
+            result.metrics["phase_durations"] = phase_durations
+            result.metrics["cycle_elapsed_seconds"] = round(
+                time.monotonic() - cycle_started_monotonic, 3
+            )
+            if result.metrics["cycle_elapsed_seconds"] > max_cycle_seconds:
+                result.metrics["budget_warning_cycle"] = "cycle_budget_exceeded"
+
+            weekly_meta_audit_path = self._persist_weekly_meta_audit()
+            result.artifact_paths["meta_audit"] = str(weekly_meta_audit_path)
 
             state_machine.transition(CycleState.COMPLETED)
             result.status = "completed"
@@ -544,6 +785,7 @@ class AutonomousCognitionFullCycle:
             result.completed_at = datetime.now(UTC).isoformat()
             cycle_path = self._persist_cycle_result(result)
             result.artifact_paths["cycle"] = str(cycle_path)
+            self._save_governance_state(governance_state)
             if notifier and notify_loop:
                 notify_loop.run_until_complete(
                     notifier.notify_autocog_event(
@@ -655,6 +897,7 @@ class AutonomousCognitionFullCycle:
                         "overall_score": assessment.overall_score,
                         "status": assessment.status,
                         "confirmed_runs": 1,
+                        "causal_strength": 0.55,
                     },
                 )
             ]
@@ -680,6 +923,7 @@ class AutonomousCognitionFullCycle:
                         "ok_count": ok_count,
                         "window_size": total,
                         "confirmed_runs": total,
+                        "causal_strength": 0.4,
                     },
                 )
             ]
@@ -711,6 +955,7 @@ class AutonomousCognitionFullCycle:
                             "runtime_passes": runtime_passes,
                             "window_size": total_runtime,
                             "confirmed_runs": total_runtime,
+                            "causal_strength": 0.8,
                         },
                     )
                 ]
@@ -740,6 +985,7 @@ class AutonomousCognitionFullCycle:
                             "zero_violations": zero_violations,
                             "window_size": total_gov,
                             "confirmed_runs": total_gov,
+                            "causal_strength": 0.75,
                         },
                     )
                 ]
@@ -789,7 +1035,11 @@ class AutonomousCognitionFullCycle:
             snapshots.append(
                 {
                     "run_id": payload.get("run_id"),
+                    "started_at": payload.get("started_at"),
                     "metrics": payload.get("metrics", {}),
+                    "promotions": payload.get("promotions", 0),
+                    "rejections": payload.get("rejections", 0),
+                    "belief_revisions": payload.get("belief_revisions", 0),
                     "constitution_violations": payload.get("constitution_violations"),
                     "status": payload.get("status"),
                 }
@@ -828,6 +1078,533 @@ class AutonomousCognitionFullCycle:
                 default=0,
             ),
         }
+
+    def _load_governance_state(self) -> dict[str, Any]:
+        """Load autonomy governance state used for cadence and cooldown controls."""
+        path = Path(self.DEFAULT_GOVERNANCE_STATE_PATH)
+        if not path.exists():
+            return {
+                "schema_version": "1.0",
+                "updated_at": datetime.now(UTC).isoformat(),
+                "candidate_registry": {},
+                "belief_registry": {},
+                "revision_registry": {},
+                "pending_verifications": [],
+                "rollbacks": [],
+            }
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(payload, dict):
+                payload.setdefault("candidate_registry", {})
+                payload.setdefault("belief_registry", {})
+                payload.setdefault("revision_registry", {})
+                payload.setdefault("pending_verifications", [])
+                payload.setdefault("rollbacks", [])
+                return payload
+        except (json.JSONDecodeError, OSError):
+            pass
+        return {
+            "schema_version": "1.0",
+            "updated_at": datetime.now(UTC).isoformat(),
+            "candidate_registry": {},
+            "belief_registry": {},
+            "revision_registry": {},
+            "pending_verifications": [],
+            "rollbacks": [],
+        }
+
+    def _save_governance_state(self, state: dict[str, Any]) -> None:
+        """Persist autonomy governance state."""
+        path = Path(self.DEFAULT_GOVERNANCE_STATE_PATH)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        state["updated_at"] = datetime.now(UTC).isoformat()
+        path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+    @staticmethod
+    def _build_trigger_context(assessment: Any | None) -> dict[str, Any]:
+        """Build trigger context used for cadence and re-check activation."""
+        if assessment is None:
+            return {"has_incident_trigger": False}
+        infra_down = any(
+            phrase in finding.lower()
+            for finding in getattr(assessment, "findings", [])
+            for phrase in ("unavailable", "failed", "disabled")
+        )
+        score = float(getattr(assessment, "overall_score", 0.0))
+        status = str(getattr(assessment, "status", "unknown")).lower()
+        incident = status in {"degraded", "failed"} or score < 0.75 or infra_down
+        return {
+            "assessment_status": status,
+            "assessment_score": score,
+            "infra_trigger": infra_down,
+            "has_incident_trigger": incident,
+        }
+
+    def _should_run_belief_phase(
+        self,
+        *,
+        governance_state: dict[str, Any],
+        trigger_context: dict[str, Any],
+        mode: str,
+    ) -> tuple[bool, str]:
+        """Decide whether to run full belief re-check or defer by cadence."""
+        if mode == "belief_consistency":
+            return True, "explicit_mode"
+        if trigger_context.get("has_incident_trigger"):
+            return True, "incident_trigger"
+        registry = governance_state.setdefault("belief_registry", {})
+        global_state = registry.setdefault(
+            "__global__",
+            {
+                "lifecycle_state": "active",
+                "next_check_after": datetime.now(UTC).isoformat(),
+                "stability_runs": 0,
+            },
+        )
+        due_at = datetime.fromisoformat(global_state["next_check_after"].replace("Z", "+00:00"))
+        if datetime.now(UTC) >= due_at:
+            return True, "scheduled_recheck"
+        return False, "cadence_deferred"
+
+    def _update_belief_lifecycle_state(
+        self,
+        *,
+        governance_state: dict[str, Any],
+        beliefs: dict[str, Belief],
+        revisions: list[Any],
+        blocked_revisions: list[dict[str, Any]],
+        trigger_context: dict[str, Any],
+    ) -> None:
+        """Update belief lifecycle to avoid hourly full re-check churn."""
+        registry = governance_state.setdefault("belief_registry", {})
+        global_state = registry.setdefault(
+            "__global__",
+            {
+                "lifecycle_state": "active",
+                "next_check_after": datetime.now(UTC).isoformat(),
+                "stability_runs": 0,
+            },
+        )
+        if trigger_context.get("has_incident_trigger"):
+            global_state["lifecycle_state"] = "invalidated"
+            global_state["stability_runs"] = 0
+            global_state["next_check_after"] = datetime.now(UTC).isoformat()
+            return
+        if revisions:
+            global_state["lifecycle_state"] = "active"
+            global_state["stability_runs"] = 0
+            global_state["next_check_after"] = (
+                datetime.now(UTC) + timedelta(hours=4)
+            ).isoformat()
+        elif blocked_revisions:
+            global_state["lifecycle_state"] = "active"
+            global_state["stability_runs"] = 0
+            global_state["next_check_after"] = (
+                datetime.now(UTC) + timedelta(hours=2)
+            ).isoformat()
+        else:
+            stability = int(global_state.get("stability_runs", 0)) + 1
+            global_state["stability_runs"] = stability
+            if stability >= 12:
+                global_state["lifecycle_state"] = "dormant"
+                global_state["next_check_after"] = (
+                    datetime.now(UTC) + timedelta(days=1)
+                ).isoformat()
+            elif stability >= 4:
+                global_state["lifecycle_state"] = "stabilized"
+                global_state["next_check_after"] = (
+                    datetime.now(UTC) + timedelta(hours=6)
+                ).isoformat()
+            else:
+                global_state["lifecycle_state"] = "active"
+                global_state["next_check_after"] = (
+                    datetime.now(UTC) + timedelta(hours=1)
+                ).isoformat()
+        for belief_id, belief in beliefs.items():
+            registry[belief_id] = {
+                "status": belief.status,
+                "confidence": belief.confidence,
+                "updated_at": belief.updated_at,
+            }
+
+    @staticmethod
+    def _build_candidate_evidence_signature(
+        *,
+        assessment: Any | None,
+        conflicts_count: int,
+    ) -> str:
+        """Fingerprint candidate context to detect novel vs repeated retries."""
+        findings = getattr(assessment, "findings", []) if assessment is not None else []
+        raw = {
+            "assessment_status": getattr(assessment, "status", "unknown")
+            if assessment is not None
+            else "unknown",
+            "assessment_score": round(float(getattr(assessment, "overall_score", 0.0)), 3)
+            if assessment is not None
+            else 0.0,
+            "findings": findings[:3],
+            "conflicts_count": conflicts_count,
+        }
+        return hashlib.sha256(
+            json.dumps(raw, sort_keys=True).encode("utf-8")
+        ).hexdigest()[:16]
+
+    def _is_candidate_eligible(
+        self,
+        *,
+        governance_state: dict[str, Any],
+        hypothesis: Any,
+        evidence_signature: str,
+        trigger_context: dict[str, Any],
+    ) -> tuple[bool, str]:
+        """Gate candidate retests by cooldown, novelty, and trigger urgency."""
+        registry = governance_state.setdefault("candidate_registry", {})
+        entry = registry.get(hypothesis.hypothesis_id)
+        if entry is None:
+            return True, "new_candidate"
+        now = datetime.now(UTC)
+        if trigger_context.get("has_incident_trigger"):
+            return True, "incident_override"
+        next_eligible_raw = entry.get("next_eligible_at")
+        if next_eligible_raw:
+            next_eligible = datetime.fromisoformat(next_eligible_raw.replace("Z", "+00:00"))
+            if now < next_eligible:
+                return False, "cooldown_active"
+        if (
+            entry.get("last_outcome") == "rejected"
+            and entry.get("evidence_signature") == evidence_signature
+        ):
+            return False, "duplicate_recheck_without_new_evidence"
+        return True, "eligible"
+
+    def _record_candidate_outcome(
+        self,
+        *,
+        governance_state: dict[str, Any],
+        hypothesis: Any,
+        outcome: str,
+        reason: str,
+        evidence_signature: str,
+        version_id: str | None = None,
+    ) -> None:
+        """Persist candidate lifecycle state and schedule next check."""
+        registry = governance_state.setdefault("candidate_registry", {})
+        existing = registry.get(hypothesis.hypothesis_id, {})
+        rejected_count = int(existing.get("rejected_count", 0))
+        promoted_count = int(existing.get("promoted_count", 0))
+        if outcome == "rejected":
+            rejected_count += 1
+        if outcome == "promoted":
+            promoted_count += 1
+        cooldown_hours = min(48, 2 ** min(rejected_count, 5)) if outcome == "rejected" else 12
+        next_eligible_at = (datetime.now(UTC) + timedelta(hours=cooldown_hours)).isoformat()
+        if outcome == "promoted":
+            lifecycle_state = "active"
+        elif rejected_count >= 6:
+            lifecycle_state = "dormant"
+        elif rejected_count >= 3:
+            lifecycle_state = "stabilized"
+        else:
+            lifecycle_state = "active"
+        registry[hypothesis.hypothesis_id] = {
+            "last_outcome": outcome,
+            "last_reason": reason,
+            "last_evaluated_at": datetime.now(UTC).isoformat(),
+            "next_eligible_at": next_eligible_at,
+            "rejected_count": rejected_count,
+            "promoted_count": promoted_count,
+            "evidence_signature": evidence_signature,
+            "version_id": version_id,
+            "target_component": getattr(hypothesis, "target_component", "unknown"),
+            "lifecycle_state": lifecycle_state,
+        }
+        if outcome == "promoted" and version_id:
+            pending = governance_state.setdefault("pending_verifications", [])
+            pending.append(
+                {
+                    "type": "candidate_promotion",
+                    "candidate_id": hypothesis.hypothesis_id,
+                    "version_id": version_id,
+                    "created_at": datetime.now(UTC).isoformat(),
+                    "verify_after": (datetime.now(UTC) + timedelta(hours=2)).isoformat(),
+                    "status": "pending",
+                }
+            )
+
+    @staticmethod
+    def _is_uncertain_candidate_result(metrics: dict[str, float]) -> bool:
+        """Uncertainty-aware gate for promotion candidate metrics."""
+        sharpe = float(metrics.get("sharpe", 0.0))
+        ece = float(metrics.get("ece", 1.0))
+        sharpe_margin = abs(sharpe - 1.1)
+        ece_margin = abs(0.15 - ece)
+        return sharpe_margin < 0.03 or ece_margin < 0.02
+
+    def _process_pending_verifications(
+        self,
+        *,
+        governance_state: dict[str, Any],
+        result: CycleResult,
+    ) -> list[dict[str, Any]]:
+        """Verify post-change outcomes and mark potential regressions."""
+        pending = governance_state.setdefault("pending_verifications", [])
+        if not pending:
+            return []
+        now = datetime.now(UTC)
+        actions: list[dict[str, Any]] = []
+        for item in pending:
+            if item.get("status") != "pending":
+                continue
+            verify_after_raw = item.get("verify_after")
+            if not verify_after_raw:
+                continue
+            verify_after = datetime.fromisoformat(verify_after_raw.replace("Z", "+00:00"))
+            if now < verify_after:
+                continue
+            regression = (
+                bool(result.metrics.get("runtime_non_regression_passed") is False)
+                or int(result.constitution_violations) > 0
+            )
+            if regression:
+                item["status"] = "failed"
+                item["verified_at"] = now.isoformat()
+                item["rollback_required"] = True
+                actions.append(
+                    {
+                        "type": item.get("type"),
+                        "candidate_id": item.get("candidate_id"),
+                        "status": "failed",
+                        "reason": "post_change_regression_detected",
+                    }
+                )
+            else:
+                item["status"] = "passed"
+                item["verified_at"] = now.isoformat()
+                actions.append(
+                    {
+                        "type": item.get("type"),
+                        "candidate_id": item.get("candidate_id"),
+                        "status": "passed",
+                        "reason": "verification_window_passed",
+                    }
+                )
+        return actions
+
+    def _filter_conflicts_by_revision_cooldown(
+        self,
+        *,
+        governance_state: dict[str, Any],
+        conflicts: list[Any],
+        trigger_context: dict[str, Any],
+    ) -> list[Any]:
+        """Skip recently revised conflict pairs unless incident-triggered."""
+        if trigger_context.get("has_incident_trigger"):
+            return conflicts
+        registry = governance_state.setdefault("revision_registry", {})
+        now = datetime.now(UTC)
+        filtered: list[Any] = []
+        for conflict in conflicts:
+            pair_key = "|".join(sorted([conflict.belief_id_a, conflict.belief_id_b]))
+            record = registry.get(pair_key)
+            if not isinstance(record, dict):
+                filtered.append(conflict)
+                continue
+            cooldown_until_raw = record.get("cooldown_until")
+            if not cooldown_until_raw:
+                filtered.append(conflict)
+                continue
+            cooldown_until = datetime.fromisoformat(
+                cooldown_until_raw.replace("Z", "+00:00")
+            )
+            if now >= cooldown_until:
+                filtered.append(conflict)
+        return filtered
+
+    def _record_revision_cooldowns(
+        self,
+        *,
+        governance_state: dict[str, Any],
+        revisions: list[Any],
+    ) -> None:
+        """Record cooldowns to prevent rapid flip-flop revisions."""
+        registry = governance_state.setdefault("revision_registry", {})
+        for revision in revisions:
+            pair_key = "|".join(
+                sorted([revision.old_belief_id, revision.new_belief_id])
+            )
+            registry[pair_key] = {
+                "last_revision_id": revision.revision_id,
+                "last_applied_at": revision.applied_at,
+                "cooldown_until": (
+                    datetime.now(UTC) + timedelta(hours=6)
+                ).isoformat(),
+            }
+
+    def _process_incident_linked_rollbacks(
+        self,
+        *,
+        governance_state: dict[str, Any],
+        result: CycleResult,
+    ) -> list[dict[str, Any]]:
+        """Auto-rollback when incidents/regressions invalidate recent changes."""
+        actions: list[dict[str, Any]] = []
+        pending = governance_state.setdefault("pending_verifications", [])
+        for item in pending:
+            if item.get("status") != "failed" or not item.get("rollback_required"):
+                continue
+            if item.get("type") == "candidate_promotion":
+                version_id = str(item.get("version_id", ""))
+                promoted_version = self._champion_engine._registry.get_version(version_id)  # noqa: SLF001
+                if promoted_version is not None:
+                    rollback_target = self._champion_engine._registry.get_rollback_target(  # noqa: SLF001
+                        model_type=promoted_version.model_type
+                    )
+                    if rollback_target is not None:
+                        self._champion_engine._registry.promote_to_champion(  # noqa: SLF001
+                            rollback_target.version_id,
+                            force=True,
+                        )
+                        actions.append(
+                            {
+                                "type": "candidate_rollback",
+                                "candidate_id": item.get("candidate_id"),
+                                "rollback_to": rollback_target.version_id,
+                            }
+                        )
+                item["rollback_required"] = False
+                item["rolled_back_at"] = datetime.now(UTC).isoformat()
+
+        # Belief rollback from latest revision artifact on incident.
+        if result.constitution_violations > 0 or result.metrics.get("runtime_non_regression_passed") is False:
+            latest = self._load_latest_revision_artifact()
+            if latest and latest.get("revisions"):
+                first = latest["revisions"][0]
+                old_id = first.get("old_belief_id")
+                new_id = first.get("new_belief_id")
+                old_belief = self._belief_store.get(str(old_id)) if old_id else None
+                new_belief = self._belief_store.get(str(new_id)) if new_id else None
+                if old_belief is not None and new_belief is not None:
+                    old_belief.status = "active"
+                    old_belief.updated_at = datetime.now(UTC).isoformat()
+                    new_belief.status = "superseded"
+                    new_belief.updated_at = datetime.now(UTC).isoformat()
+                    self._belief_store.put(old_belief)
+                    self._belief_store.put(new_belief)
+                    actions.append(
+                        {
+                            "type": "belief_rollback",
+                            "rollback_to": old_id,
+                            "superseded": new_id,
+                            "reason": "incident_triggered_automatic_rollback",
+                        }
+                    )
+        governance_state.setdefault("rollbacks", []).extend(actions)
+        return actions
+
+    def _persist_weekly_meta_audit(self) -> Path:
+        """Generate weekly meta-audit for reflection quality and efficiency."""
+        now = datetime.now(UTC)
+        week_id = now.strftime("%G-W%V")
+        out_dir = Path(self.DEFAULT_WEEKLY_META_AUDIT_DIR)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        cycles = self._recent_cycle_window(max_items=300)
+        seven_days_ago = now - timedelta(days=7)
+        scoped: list[dict[str, Any]] = []
+        for cycle in cycles:
+            started_at = cycle.get("started_at")
+            if isinstance(started_at, str):
+                try:
+                    ts = datetime.fromisoformat(started_at.replace("Z", "+00:00"))
+                except ValueError:
+                    ts = None
+            else:
+                ts = None
+            if ts is None or ts >= seven_days_ago:
+                scoped.append(cycle)
+        total = len(scoped)
+        promotions = sum(int(c.get("promotions", 0)) for c in scoped)
+        rejections = sum(int(c.get("rejections", 0)) for c in scoped)
+        revisions = sum(int(c.get("belief_revisions", 0)) for c in scoped)
+        blocked = sum(
+            len(c.get("metrics", {}).get("belief_revision_blocks", [])) for c in scoped
+        )
+        duplicate_rechecks = sum(
+            len(
+                [
+                    s
+                    for s in c.get("metrics", {}).get("candidate_skips", [])
+                    if s.get("reason") == "duplicate_recheck_without_new_evidence"
+                ]
+            )
+            for c in scoped
+        )
+        rollback_count = len(
+            [r for r in self._load_governance_state().get("rollbacks", []) if isinstance(r, dict)]
+        )
+        artifact = {
+            "week_id": week_id,
+            "generated_at": now.isoformat(),
+            "window_days": 7,
+            "runs": total,
+            "promotions": promotions,
+            "rejections": rejections,
+            "belief_revisions": revisions,
+            "belief_revision_blocks": blocked,
+            "duplicate_rechecks_prevented": duplicate_rechecks,
+            "rollbacks_executed": rollback_count,
+            "false_positive_proxy_rate": round(rollback_count / max(revisions, 1), 4),
+            "efficiency_notes": [
+                "Higher duplicate_rechecks_prevented indicates better candidate dedupe.",
+                "Lower false_positive_proxy_rate indicates better revision quality.",
+            ],
+        }
+        out_path = out_dir / f"weekly_meta_audit_{week_id}.json"
+        out_path.write_text(json.dumps(artifact, indent=2), encoding="utf-8")
+        return out_path
+
+    def _load_latest_revision_artifact(self) -> dict[str, Any] | None:
+        """Load latest belief revision artifact for rollback support."""
+        out_dir = Path("_bmad-output/autocog/belief_revisions")
+        if not out_dir.exists():
+            return None
+        files = sorted(
+            out_dir.glob("autocog-*.json"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
+        for path in files:
+            try:
+                return json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+        return None
+
+    def _persist_manual_approval_packet(
+        self,
+        *,
+        run_id: str,
+        blocked_revisions: list[dict[str, Any]],
+    ) -> Path:
+        """Persist packet for manual approval of high-impact revisions."""
+        out_dir = Path("_bmad-output/autocog/manual_approval_packets")
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_path = out_dir / f"{run_id}.json"
+        packet = {
+            "run_id": run_id,
+            "generated_at": datetime.now(UTC).isoformat(),
+            "approval_required": True,
+            "reason": "high_impact_belief_revision",
+            "blocked_revisions": blocked_revisions,
+            "decision_fields": [
+                "approved_by",
+                "approved_at",
+                "decision",
+                "notes",
+            ],
+            "schema_version": "1.0",
+        }
+        out_path.write_text(json.dumps(packet, indent=2), encoding="utf-8")
+        return out_path
 
     def _persist_cycle_result(self, result: CycleResult) -> Path:
         """Write cycle artifact to disk."""

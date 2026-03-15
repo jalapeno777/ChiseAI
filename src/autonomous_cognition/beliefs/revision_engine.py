@@ -26,6 +26,9 @@ class BeliefRevisionEngine:
         min_distinct_source_families: int = 3,
         min_non_llm_source_families: int = 2,
         min_temporal_confirmations: int = 2,
+        min_avg_causal_strength: float = 0.45,
+        min_support_delta_for_certainty: float = 0.08,
+        high_impact_confidence_delta: float = 0.25,
     ):
         self._min_confidence_delta = min_confidence_delta
         self._min_support_delta = min_support_delta
@@ -33,6 +36,9 @@ class BeliefRevisionEngine:
         self._min_distinct_source_families = min_distinct_source_families
         self._min_non_llm_source_families = min_non_llm_source_families
         self._min_temporal_confirmations = min_temporal_confirmations
+        self._min_avg_causal_strength = min_avg_causal_strength
+        self._min_support_delta_for_certainty = min_support_delta_for_certainty
+        self._high_impact_confidence_delta = high_impact_confidence_delta
         self.last_blocked_revisions: list[dict[str, Any]] = []
         self.last_support_scores: dict[str, dict[str, Any]] = {}
 
@@ -185,6 +191,63 @@ class BeliefRevisionEngine:
                 )
                 continue
 
+            if winner_source_summary["avg_causal_strength"] < self._min_avg_causal_strength:
+                self.last_blocked_revisions.append(
+                    self._build_blocked_revision(
+                        conflict=conflict,
+                        winner=winner,
+                        loser=loser,
+                        winner_score=winner_score,
+                        loser_score=loser_score,
+                        winner_source_summary=winner_source_summary,
+                        reason=(
+                            "insufficient_causal_support:"
+                            "avg_causal_strength="
+                            f"{winner_source_summary['avg_causal_strength']:.3f}"
+                        ),
+                    )
+                )
+                continue
+
+            uncertainty = self._estimate_uncertainty(
+                support_delta=support_delta,
+                winner_evidence_count=winner_score.evidence_count,
+            )
+            if uncertainty > 0.5 or support_delta < self._min_support_delta_for_certainty:
+                self.last_blocked_revisions.append(
+                    self._build_blocked_revision(
+                        conflict=conflict,
+                        winner=winner,
+                        loser=loser,
+                        winner_score=winner_score,
+                        loser_score=loser_score,
+                        winner_source_summary=winner_source_summary,
+                        reason=(
+                            "insufficient_certainty:"
+                            f"uncertainty={uncertainty:.3f}"
+                            f",support_delta={support_delta:.3f}"
+                        ),
+                    )
+                )
+                continue
+
+            if confidence_delta >= self._high_impact_confidence_delta:
+                self.last_blocked_revisions.append(
+                    self._build_blocked_revision(
+                        conflict=conflict,
+                        winner=winner,
+                        loser=loser,
+                        winner_score=winner_score,
+                        loser_score=loser_score,
+                        winner_source_summary=winner_source_summary,
+                        reason=(
+                            "manual_approval_required:"
+                            f"high_impact_confidence_delta={confidence_delta:.3f}"
+                        ),
+                    )
+                )
+                continue
+
             loser.status = "superseded"
             loser.updated_at = datetime.now(UTC).isoformat()
 
@@ -240,11 +303,17 @@ class BeliefRevisionEngine:
             sum(r.reliability for r in records) / evidence_count if evidence_count else 0.0
         )
         evidence_factor = min(1.0, evidence_count / 3)
+        avg_freshness = (
+            sum(self._freshness_weight(r.timestamp) for r in records) / evidence_count
+            if evidence_count
+            else 0.0
+        )
         support_score = (
-            0.4 * belief.confidence
+            0.35 * belief.confidence
             + 0.2 * belief.sources_quality_score
             + 0.2 * avg_reliability
-            + 0.2 * evidence_factor
+            + 0.15 * evidence_factor
+            + 0.1 * avg_freshness
         )
         if evidence_count == 0:
             support_score *= 0.5
@@ -286,6 +355,7 @@ class BeliefRevisionEngine:
             "winner_temporal_confirmations": winner_source_summary[
                 "temporal_confirmations"
             ],
+            "winner_avg_causal_strength": winner_source_summary["avg_causal_strength"],
             "winner_source_families": winner_source_summary["source_families"],
             "reason": reason,
             "blocked_at": datetime.now(UTC).isoformat(),
@@ -314,9 +384,44 @@ class BeliefRevisionEngine:
             ),
             default=0,
         )
+        causal_strengths: list[float] = []
+        for record in records:
+            value = record.metrics.get("causal_strength", 0.0)
+            if isinstance(value, (float, int)):
+                causal_strengths.append(float(value))
         return {
             "distinct_source_families": len(source_families),
             "non_llm_source_families": len(non_llm_families),
             "temporal_confirmations": temporal_confirmations,
+            "avg_causal_strength": (
+                round(sum(causal_strengths) / len(causal_strengths), 3)
+                if causal_strengths
+                else 0.0
+            ),
             "source_families": sorted(source_families),
         }
+
+    @staticmethod
+    def _estimate_uncertainty(
+        *,
+        support_delta: float,
+        winner_evidence_count: int,
+    ) -> float:
+        """Estimate decision uncertainty from margin and sample size."""
+        margin_risk = max(0.0, 0.2 - support_delta) / 0.2
+        sample_risk = max(0.0, 3 - winner_evidence_count) / 3
+        return round(0.6 * margin_risk + 0.4 * sample_risk, 3)
+
+    @staticmethod
+    def _freshness_weight(timestamp: str) -> float:
+        """Compute freshness weight with ~7-day half-life."""
+        try:
+            normalized = timestamp.replace("Z", "+00:00")
+            observed = datetime.fromisoformat(normalized)
+            if observed.tzinfo is None:
+                observed = observed.replace(tzinfo=UTC)
+        except Exception:
+            return 0.5
+        age_days = max(0.0, (datetime.now(UTC) - observed.astimezone(UTC)).total_seconds() / 86400)
+        half_life_days = 7.0
+        return round(0.5 ** (age_days / half_life_days), 3)
