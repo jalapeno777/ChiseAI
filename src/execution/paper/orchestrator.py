@@ -133,6 +133,12 @@ class PaperTradingOrchestrator:
         self.decision_enhancer = decision_enhancer or TradeDecisionEnhancer()
         self.symbol_registry = symbol_registry
 
+        # PAPER-FORENSIC-001: Extract and store connector provenance
+        self._connector_provenance = self._extract_connector_provenance(order_simulator)
+        logger.info(
+            f"[ORCHESTRATOR-INIT] Connector provenance: {self._connector_provenance}"
+        )
+
         # Initialize trade journal service if trade_journal is provided
         self.trade_journal_service: TradeJournalService | None = None
         self.trade_journal: TradeJournal | None = None
@@ -173,6 +179,76 @@ class PaperTradingOrchestrator:
         logger.info(
             f"PaperTradingOrchestrator initialized: portfolio=${portfolio_value:.2f}"
         )
+
+    def _extract_connector_provenance(self, order_simulator: Any) -> dict[str, str]:
+        """Extract provenance information from the order simulator/connector.
+
+        PAPER-FORENSIC-001: Extracts venue, mode, and source from the connector
+        to populate SignalOutcome provenance fields.
+
+        Args:
+            order_simulator: The order simulator or connector instance
+
+        Returns:
+            Dictionary with execution_venue, execution_mode, execution_source
+        """
+        # Default provenance (fallback)
+        provenance = {
+            "execution_venue": "unknown",
+            "execution_mode": "unknown",
+            "execution_source": "unknown",
+        }
+
+        # Check if it's a BybitDemoConnector
+        if hasattr(order_simulator, "get_provenance"):
+            # BybitDemoConnector has get_provenance() method
+            try:
+                prov = order_simulator.get_provenance()
+                provenance = {
+                    "execution_venue": "bybit_demo",
+                    "execution_mode": "demo",
+                    "execution_source": "bybit_demo_connector",
+                    "endpoint": getattr(prov, "endpoint", "unknown"),
+                    "api_key_prefix": getattr(prov, "api_key_prefix", "****"),
+                }
+                logger.info(
+                    f"[PROVENANCE-EXTRACT] BybitDemoConnector detected: {provenance}"
+                )
+            except Exception as e:
+                logger.warning(
+                    f"[PROVENANCE-EXTRACT] Failed to extract BybitDemoConnector provenance: {e}"
+                )
+                provenance = {
+                    "execution_venue": "bybit_demo",
+                    "execution_mode": "demo",
+                    "execution_source": "bybit_demo_connector",
+                }
+        elif type(order_simulator).__name__ == "OrderSimulator":
+            # OrderSimulator (local simulation)
+            provenance = {
+                "execution_venue": "local_sim",
+                "execution_mode": "paper",
+                "execution_source": "order_simulator",
+            }
+            logger.info(f"[PROVENANCE-EXTRACT] OrderSimulator detected: {provenance}")
+        else:
+            # Unknown connector type - log for debugging
+            logger.warning(
+                f"[PROVENANCE-EXTRACT] Unknown connector type: {type(order_simulator).__name__}. "
+                f"Using default provenance."
+            )
+
+        return provenance
+
+    def get_connector_provenance(self) -> dict[str, str]:
+        """Get the connector provenance information.
+
+        PAPER-FORENSIC-001: Runtime verification of connector type and provenance.
+
+        Returns:
+            Dictionary with execution_venue, execution_mode, execution_source
+        """
+        return self._connector_provenance.copy()
 
     async def start(self) -> None:
         """Start the orchestrator and begin processing signals."""
@@ -585,6 +661,15 @@ class PaperTradingOrchestrator:
                 logger.info(
                     f"Trade executed: {signal.token} position={position.position_id} "
                     f"latency={total_latency_ms:.1f}ms (correlation_id={correlation_id})"
+                )
+
+                # PAPER-FORENSIC-001: Log connector type and provenance on each trade
+                prov = self._connector_provenance
+                logger.info(
+                    f"[TRADE-PROVENANCE] {signal.token} position={position.position_id} "
+                    f"venue={prov.get('execution_venue', 'unknown')}, "
+                    f"mode={prov.get('execution_mode', 'unknown')}, "
+                    f"source={prov.get('execution_source', 'unknown')}"
                 )
 
                 async with self._lock:
