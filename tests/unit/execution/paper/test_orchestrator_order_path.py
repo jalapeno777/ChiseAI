@@ -26,6 +26,7 @@ def mock_dependencies():
     order_simulator = MagicMock()
     order_simulator.market_data = MagicMock()
     order_simulator.market_data.get_price = MagicMock(return_value=50000.0)
+    order_simulator.set_market_price = MagicMock()
     order_simulator.place_order = AsyncMock()
 
     position_tracker = MagicMock()
@@ -43,6 +44,9 @@ def mock_dependencies():
     kill_switch.state = MagicMock()
     kill_switch.state.value = "armed"  # Not triggered
 
+    decision_enhancer = MagicMock()
+    decision_enhancer.enabled = False  # Disable LLM enhancement for tests
+
     return {
         "signal_generator": signal_generator,
         "order_simulator": order_simulator,
@@ -50,6 +54,7 @@ def mock_dependencies():
         "risk_enforcer": risk_enforcer,
         "telemetry": telemetry,
         "kill_switch": kill_switch,
+        "decision_enhancer": decision_enhancer,
     }
 
 
@@ -81,6 +86,7 @@ class TestSignalToOrderPath:
             risk_enforcer=mock_dependencies["risk_enforcer"],
             telemetry_collector=mock_dependencies["telemetry"],
             kill_switch=mock_dependencies["kill_switch"],
+            decision_enhancer=mock_dependencies["decision_enhancer"],
         )
 
         # Submit signal
@@ -143,6 +149,7 @@ class TestSignalToOrderPath:
             risk_enforcer=mock_dependencies["risk_enforcer"],
             telemetry_collector=mock_dependencies["telemetry"],
             kill_switch=mock_dependencies["kill_switch"],
+            decision_enhancer=mock_dependencies["decision_enhancer"],
         )
 
         # Process signal
@@ -172,6 +179,7 @@ class TestSignalToOrderPath:
             risk_enforcer=mock_dependencies["risk_enforcer"],
             telemetry_collector=mock_dependencies["telemetry"],
             kill_switch=mock_dependencies["kill_switch"],
+            decision_enhancer=mock_dependencies["decision_enhancer"],
         )
 
         result = await orchestrator.process_signal(sample_signal)
@@ -189,7 +197,9 @@ class TestSignalToOrderPath:
     async def test_process_signal_blocked_by_no_market_price(
         self, mock_dependencies, sample_signal
     ):
-        """Test that missing market price blocks order creation."""
+        """Test that missing market price blocks order creation for unknown symbols."""
+        # Use an unknown symbol that has no default price
+        sample_signal.token = "UNKNOWN/XYZ"
         mock_dependencies["order_simulator"].market_data.get_price = MagicMock(
             return_value=None
         )
@@ -201,6 +211,7 @@ class TestSignalToOrderPath:
             risk_enforcer=mock_dependencies["risk_enforcer"],
             telemetry_collector=mock_dependencies["telemetry"],
             kill_switch=mock_dependencies["kill_switch"],
+            decision_enhancer=mock_dependencies["decision_enhancer"],
         )
 
         result = await orchestrator.process_signal(sample_signal)
@@ -234,6 +245,7 @@ class TestSignalToOrderPath:
             risk_enforcer=mock_dependencies["risk_enforcer"],
             telemetry_collector=mock_dependencies["telemetry"],
             kill_switch=mock_dependencies["kill_switch"],
+            decision_enhancer=mock_dependencies["decision_enhancer"],
         )
 
         result = await orchestrator.process_signal(sample_signal)
@@ -292,6 +304,7 @@ class TestSignalToOrderPath:
             risk_enforcer=mock_dependencies["risk_enforcer"],
             telemetry_collector=mock_dependencies["telemetry"],
             kill_switch=mock_dependencies["kill_switch"],
+            decision_enhancer=mock_dependencies["decision_enhancer"],
         )
 
         # Start orchestrator
@@ -331,6 +344,7 @@ class TestOrderCreationPathBlockers:
             risk_enforcer=mock_dependencies["risk_enforcer"],
             telemetry_collector=mock_dependencies["telemetry"],
             kill_switch=mock_dependencies["kill_switch"],
+            decision_enhancer=mock_dependencies["decision_enhancer"],
         )
 
         # Verify all required methods exist
@@ -362,6 +376,7 @@ class TestOrderCreationPathBlockers:
             risk_enforcer=mock_dependencies["risk_enforcer"],
             telemetry_collector=mock_dependencies["telemetry"],
             kill_switch=mock_dependencies["kill_switch"],
+            decision_enhancer=mock_dependencies["decision_enhancer"],
         )
 
         order = orchestrator._create_order(
