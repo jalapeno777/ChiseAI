@@ -12,7 +12,7 @@ from typing import Any
 
 from autonomous_cognition.beliefs.consistency_checker import BeliefConsistencyChecker
 from autonomous_cognition.beliefs.explanation import explain_conflict, explain_revision
-from autonomous_cognition.beliefs.models import Belief
+from autonomous_cognition.beliefs.models import Belief, EvidenceRecord
 from autonomous_cognition.beliefs.revision_engine import BeliefRevisionEngine
 from autonomous_cognition.beliefs.store import BeliefStore
 from autonomous_cognition.constitution_audit import ConstitutionAuditEngine
@@ -158,8 +158,17 @@ class AutonomousCognitionFullCycle:
                 revisions = self._revision_engine.apply_revisions(
                     beliefs=belief_map,
                     conflicts=conflicts,
+                    evidence_index=self._build_belief_evidence_index(assessment=assessment),
                 )
                 result.belief_revisions = len(revisions)
+                if self._revision_engine.last_support_scores:
+                    result.metrics["belief_support_scores"] = (
+                        self._revision_engine.last_support_scores
+                    )
+                if self._revision_engine.last_blocked_revisions:
+                    result.metrics["belief_revision_blocks"] = (
+                        self._revision_engine.last_blocked_revisions[:10]
+                    )
                 revision_artifact_path: Path | None = None
                 if revisions:
                     revision_details = [
@@ -543,6 +552,31 @@ class AutonomousCognitionFullCycle:
         for belief in seed:
             self._belief_store.put(belief)
         return seed
+
+    def _build_belief_evidence_index(
+        self,
+        *,
+        assessment: Any | None,
+    ) -> dict[str, list[EvidenceRecord]]:
+        """Construct evidence index used by belief support scoring."""
+        if assessment is None:
+            return {}
+        summary = (
+            f"status={assessment.status} score={assessment.overall_score} "
+            f"findings={'; '.join(assessment.findings[:2])}"
+        )
+        record = EvidenceRecord(
+            evidence_id="self_assessment_daily",
+            source="autonomous_self_assessment",
+            timestamp=assessment.created_at,
+            reliability=0.85,
+            summary=summary,
+            metrics={
+                "overall_score": assessment.overall_score,
+                "status": assessment.status,
+            },
+        )
+        return {"self_assessment_daily": [record]}
 
     def _persist_cycle_result(self, result: CycleResult) -> Path:
         """Write cycle artifact to disk."""

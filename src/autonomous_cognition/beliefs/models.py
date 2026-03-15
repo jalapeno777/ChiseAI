@@ -8,6 +8,50 @@ from typing import Any
 
 
 @dataclass
+class EvidenceRecord:
+    """Canonical evidence item used for belief support scoring."""
+
+    evidence_id: str
+    source: str
+    timestamp: str
+    reliability: float
+    summary: str
+    metrics: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "evidence_id": self.evidence_id,
+            "source": self.source,
+            "timestamp": self.timestamp,
+            "reliability": self.reliability,
+            "summary": self.summary,
+            "metrics": self.metrics,
+        }
+
+
+@dataclass
+class BeliefSupportScore:
+    """Evidence-weighted support score for a belief."""
+
+    belief_id: str
+    support_score: float
+    evidence_count: int
+    avg_reliability: float
+    confidence: float
+    sources_quality_score: float
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "belief_id": self.belief_id,
+            "support_score": self.support_score,
+            "evidence_count": self.evidence_count,
+            "avg_reliability": self.avg_reliability,
+            "confidence": self.confidence,
+            "sources_quality_score": self.sources_quality_score,
+        }
+
+
+@dataclass
 class Belief:
     """Belief entity in the autonomous cognition graph."""
 
@@ -100,4 +144,3 @@ class BeliefRevision:
             "confidence_after": self.confidence_after,
             "applied_at": self.applied_at,
         }
-
