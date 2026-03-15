@@ -281,16 +281,37 @@ class TradingModeLoader:
             # REMEDIATION-001: Use BybitDemoConnector if demo credentials available
             # This provides authenticated execution to Bybit demo API
             # Falls back to OrderSimulator if demo credentials not available
+            # PAPER-FORENSIC-001: Added explicit connector type logging and verification
+            connector_type = "unknown"
+            connector_provenance = {}
             try:
                 order_executor = BybitDemoConnector.from_env(market_data=market_data)
+                connector_type = "BybitDemoConnector"
+                # Extract provenance info for logging
+                if hasattr(order_executor, "get_provenance"):
+                    prov = order_executor.get_provenance()
+                    connector_provenance = {
+                        "venue": "bybit_demo",
+                        "mode": "demo",
+                        "source": "bybit_demo_connector",
+                        "endpoint": getattr(prov, "endpoint", "unknown"),
+                        "api_key_prefix": getattr(prov, "api_key_prefix", "****"),
+                    }
                 logger.info(
-                    "Paper orchestrator: Using BybitDemoConnector "
-                    "(authenticated demo execution)"
+                    f"[CONNECTOR-SELECT] Paper orchestrator: Using {connector_type} "
+                    f"(authenticated demo execution). Provenance: {connector_provenance}"
                 )
             except (ValueError, Exception) as e:
+                connector_type = "OrderSimulator"
+                connector_provenance = {
+                    "venue": "local_sim",
+                    "mode": "paper",
+                    "source": "order_simulator",
+                }
                 logger.warning(
-                    f"Bybit demo credentials not available ({e}). "
-                    "Falling back to OrderSimulator (simulated execution)."
+                    f"[CONNECTOR-SELECT] Bybit demo credentials not available ({e}). "
+                    f"Falling back to {connector_type} (simulated execution). "
+                    f"Provenance: {connector_provenance}"
                 )
                 order_executor = OrderSimulator(market_data=market_data)
 
@@ -303,10 +324,14 @@ class TradingModeLoader:
             telemetry = ExecutionCollector(exporter=telemetry_exporter)
 
             # Create outcome capture integration for Discord alerts
-            outcome_capture = OutcomeCaptureIntegration()
+            # PAPER-FORENSIC-001: Pass connector provenance to outcome capture
+            outcome_capture = OutcomeCaptureIntegration(
+                connector_provenance=connector_provenance
+            )
 
             # Initialize paper orchestrator with outcome capture
             # REMEDIATION-001: order_executor is either BybitDemoConnector or OrderSimulator
+            # PAPER-FORENSIC-001: Provenance is now extracted in orchestrator __init__
             paper_orchestrator = PaperTradingOrchestrator(
                 signal_generator=signal_generator,
                 order_simulator=order_executor,
@@ -315,6 +340,12 @@ class TradingModeLoader:
                 telemetry_collector=telemetry,
                 kill_switch=kill_switch,
                 outcome_capture=outcome_capture,
+            )
+
+            # PAPER-FORENSIC-001: Log orchestrator connector provenance for verification
+            logger.info(
+                f"[ORCHESTRATOR-READY] PaperTradingOrchestrator initialized with "
+                f"connector provenance: {paper_orchestrator.get_connector_provenance()}"
             )
 
             # Perform any async initialization if available
