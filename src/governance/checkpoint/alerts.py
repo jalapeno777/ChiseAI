@@ -411,7 +411,7 @@ class ActionableZeroAlert:
 
         try:
             r.delete(self.REDIS_KEY)
-            logger.info(f"Reset actionable-zero alert state")
+            logger.info("Reset actionable-zero alert state")
             return True
         except Exception as e:
             logger.error(f"Failed to reset alert state: {e}")
