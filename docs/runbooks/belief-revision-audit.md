@@ -309,3 +309,132 @@ Configure alerts for:
 - Severity-based filtering
 - Index-based retrieval
 - Rollback documentation
+## New Governance Artifacts (2026-03-15 Update)
+
+The autonomous cognition system now persists additional governance and memory artifacts:
+
+- `governance_state`: `_bmad-output/autocog/governance_state.json`
+- `weekly_meta_audit`: `_bmad-output/autocog/meta_audit/weekly_meta_audit_<YYYY-WW>.json`
+- `manual_approval_packet` (when required): `_bmad-output/autocog/manual_approval_packets/{run_id}.json`
+
+### Governance State Schema (v1.0)
+
+Tracks lifecycle and cadence controls to avoid repeated hourly reassessment of unchanged items.
+
+```json
+{
+  "schema_version": "1.0",
+  "updated_at": "2026-03-15T12:49:04+00:00",
+  "belief_registry": {
+    "__global__": {
+      "lifecycle_state": "stabilized",
+      "next_check_after": "2026-03-15T18:49:03+00:00",
+      "stability_runs": 4
+    }
+  },
+  "candidate_registry": {
+    "hyp-calibration-tune": {
+      "last_outcome": "rejected",
+      "next_eligible_at": "2026-03-15T14:48:49+00:00",
+      "evidence_signature": "7587c94ab5fcfb6b",
+      "lifecycle_state": "active"
+    }
+  },
+  "revision_registry": {
+    "belief-memory-health|belief-memory-outdated": {
+      "last_revision_id": "b6086156b357c7eb",
+      "cooldown_until": "2026-03-15T18:00:00+00:00"
+    }
+  },
+  "pending_verifications": [],
+  "rollbacks": []
+}
+```
+
+## Multi-Signal Revision Policy
+
+Belief revisions are now blocked unless all policy checks pass:
+
+- Minimum distinct source families
+- Minimum non-LLM source families
+- Minimum temporal confirmations
+- Minimum causal support strength
+- Minimum certainty margin
+- High-impact revisions require manual approval packet
+
+Blocked revisions are written to `metrics.belief_revision_blocks` with explicit `reason` values such as:
+
+- `insufficient_source_diversity`
+- `insufficient_non_llm_sources`
+- `insufficient_temporal_confirmation`
+- `insufficient_causal_support`
+- `insufficient_certainty`
+- `manual_approval_required`
+
+## Cadence and Cooldown Behavior
+
+### Belief checks
+
+Belief checks are cadence-controlled via `belief_registry.__global__`:
+
+- `active`: frequent checks
+- `stabilized`: reduced recheck frequency
+- `dormant`: daily recheck unless triggered
+- `invalidated`: immediate recheck on incident trigger
+
+Cycle artifact field:
+
+- `metrics.belief_check_skipped` indicates when checks are deferred (for example `cadence_deferred`).
+
+### Candidate experiments
+
+Candidate execution now includes:
+
+- Novelty dedupe (evidence-signature comparison)
+- Cooldown scheduling (`next_eligible_at`)
+- Uncertainty rejection path
+- Experiment budget cap
+
+Cycle artifact field:
+
+- `metrics.candidate_skips` includes candidate-level skip reasons.
+
+## Verification and Rollback Loops
+
+Post-change verification and rollback are tracked via governance state:
+
+- `pending_verifications`: verification windows for promoted changes
+- `rollbacks`: automatic rollback action history
+
+Cycle artifact fields:
+
+- `metrics.post_change_verifications`
+- `metrics.incident_rollbacks`
+
+## Weekly Meta-Audit
+
+Weekly reflection quality and efficiency audit is generated at:
+
+- `_bmad-output/autocog/meta_audit/weekly_meta_audit_<YYYY-WW>.json`
+
+Includes metrics for:
+
+- runs, promotions, rejections, belief revisions
+- blocked revisions
+- duplicate rechecks prevented
+- rollback count
+- false-positive proxy rate
+
+## Human Approval Workflow (High Impact)
+
+When a high-impact belief revision is detected, autonomous apply is blocked and a manual packet is emitted:
+
+- Event: `human_approval_required`
+- Artifact: `_bmad-output/autocog/manual_approval_packets/{run_id}.json`
+
+The packet includes required decision fields:
+
+- `approved_by`
+- `approved_at`
+- `decision`
+- `notes`
