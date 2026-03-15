@@ -399,7 +399,7 @@ class BybitFreshnessWatchdog:
             timestamp_str = redis.get(REDIS_KEYS["timestamp"]) or ""
             count_str = redis.get(REDIS_KEYS["count"]) or "0"
             status_str = redis.get(REDIS_KEYS["status"]) or ""
-            reason_str = redis.get(REDIS_KEYS["reason"]) or ""
+            _ = redis.get(REDIS_KEYS["reason"]) or ""  # Reserved for future use
             error_msg = redis.get(REDIS_KEYS["error_message"]) or ""
 
             result.last_collection_timestamp = timestamp_str
@@ -578,18 +578,18 @@ def print_result(result: WatchdogResult, output_format: str = "text") -> None:
     print(f"\n📊 STATUS: {status_icon} {status_text}")
     print(f"  Minutes since collection: {result.minutes_since_collection:.2f}")
 
-    print(f"\n📋 LAST COLLECTION")
+    print("\n📋 LAST COLLECTION")
     print(f"  Timestamp: {result.last_collection_timestamp or 'N/A'}")
     print(f"  Count: {result.last_collection_count}")
 
     if result.recovery_status != RecoveryStatus.NOT_ATTEMPTED.value:
-        print(f"\n🔄 RECOVERY ATTEMPT")
+        print("\n🔄 RECOVERY ATTEMPT")
         print(f"  Status: {result.recovery_status}")
         if result.recovery_output:
             print(f"  Output: {result.recovery_output[:200]}...")
 
     if result.error_message:
-        print(f"\n⚠️  ERROR MESSAGE")
+        print("\n⚠️  ERROR MESSAGE")
         print(f"  {result.error_message}")
 
     print("\n" + "=" * 70)
