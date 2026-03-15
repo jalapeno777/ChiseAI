@@ -177,15 +177,20 @@ class OutcomePersistence:
                         fill_price, fill_quantity, fill_timestamp, outcome_type, pnl, fee,
                         status, created_at, metadata,
                         entry_price, exit_price, entry_time, exit_time,
-                        leverage, entry_reason, position_size
+                        leverage, entry_reason, position_size,
+                        execution_venue, execution_mode, execution_source, venue_metadata
                     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-                              $17, $18, $19, $20, $21, $22, $23)
+                              $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)
                     ON CONFLICT (outcome_id) DO UPDATE SET
                         status = EXCLUDED.status,
                         exit_price = EXCLUDED.exit_price,
                         exit_time = EXCLUDED.exit_time,
                         pnl = EXCLUDED.pnl,
-                        metadata = EXCLUDED.metadata
+                        metadata = EXCLUDED.metadata,
+                        execution_venue = EXCLUDED.execution_venue,
+                        execution_mode = EXCLUDED.execution_mode,
+                        execution_source = EXCLUDED.execution_source,
+                        venue_metadata = EXCLUDED.venue_metadata
                     """,
                     str(outcome.outcome_id),
                     str(outcome.signal_id) if outcome.signal_id else None,
@@ -210,6 +215,13 @@ class OutcomePersistence:
                     float(outcome.leverage) if outcome.leverage else 1.0,
                     outcome.entry_reason,
                     float(outcome.position_size) if outcome.position_size else None,
+                    # PAPER-FORENSIC-001: Provenance fields for audit trail
+                    outcome.execution_venue if outcome.execution_venue else None,
+                    outcome.execution_mode if outcome.execution_mode else None,
+                    outcome.execution_source if outcome.execution_source else None,
+                    json.dumps(outcome.venue_metadata)
+                    if outcome.venue_metadata
+                    else None,
                 )
 
             logger.debug(f"Synced outcome {outcome.outcome_id} to PostgreSQL")
@@ -763,9 +775,10 @@ class OutcomePersistence:
                                     fill_price, fill_quantity, fill_timestamp, outcome_type, pnl, fee,
                                     status, created_at, metadata,
                                     entry_price, exit_price, entry_time, exit_time,
-                                    leverage, entry_reason, position_size
+                                    leverage, entry_reason, position_size,
+                                    execution_venue, execution_mode, execution_source, venue_metadata
                                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-                                          $17, $18, $19, $20, $21, $22, $23)
+                                          $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)
                                 ON CONFLICT (outcome_id) DO NOTHING
                                 """,
                                 outcome_data.get("outcome_id"),
@@ -825,6 +838,15 @@ class OutcomePersistence:
                                 (
                                     float(outcome_data["position_size"])
                                     if outcome_data.get("position_size")
+                                    else None
+                                ),
+                                # PAPER-FORENSIC-001: Provenance fields for audit trail
+                                outcome_data.get("execution_venue"),
+                                outcome_data.get("execution_mode"),
+                                outcome_data.get("execution_source"),
+                                (
+                                    json.dumps(outcome_data.get("venue_metadata"))
+                                    if outcome_data.get("venue_metadata")
                                     else None
                                 ),
                             )
