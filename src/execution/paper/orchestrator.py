@@ -187,7 +187,13 @@ class PaperTradingOrchestrator:
 
         # Start signal consumer if provided
         if self._signal_consumer:
+            logger.info("Starting signal consumer...")
             await self._signal_consumer.start()
+            logger.info("Signal consumer started successfully")
+        else:
+            logger.warning(
+                "No signal consumer configured - Redis signal bridge disabled"
+            )
 
         logger.info("PaperTradingOrchestrator started")
 
