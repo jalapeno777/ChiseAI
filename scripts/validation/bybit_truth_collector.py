@@ -38,6 +38,9 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+# Add project root to path for cron_evidence import
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -514,15 +517,48 @@ async def main() -> int:
         )
 
         if args.loop:
-            # Run continuous loop
+            # Run continuous loop - evidence written per-iteration in collect()
             await collector.run_loop(
                 interval_seconds=args.interval,
                 symbol=args.symbol,
             )
+            # Loop doesn't return, but if it exits, write evidence
+            try:
+                from scripts.monitoring.cron_evidence import write_cron_evidence
+
+                write_cron_evidence(
+                    "bybit-truth-collector",
+                    status="error",
+                    error_message="Loop exited unexpectedly",
+                    write_mode="direct",
+                )
+            except Exception as evidence_error:
+                logger.warning(f"Failed to write cron evidence: {evidence_error}")
+            return 2
         else:
             # Run single collection
             result = await collector.collect(symbol=args.symbol)
             print_result(result)
+
+            # Write cron evidence for the execution result
+            try:
+                from scripts.monitoring.cron_evidence import write_cron_evidence
+
+                evidence_status = (
+                    "success"
+                    if result.status == CollectionStatus.SUCCESS.value
+                    else "error"
+                )
+                error_msg = result.error_message if evidence_status == "error" else None
+
+                write_cron_evidence(
+                    "bybit-truth-collector",
+                    status=evidence_status,
+                    error_message=error_msg,
+                    write_mode="direct",
+                )
+            except Exception as evidence_error:
+                logger.warning(f"Failed to write cron evidence: {evidence_error}")
 
             # Return appropriate exit code
             if result.status == CollectionStatus.SUCCESS.value:
@@ -537,6 +573,18 @@ async def main() -> int:
 
     except Exception as e:
         logger.error(f"Collector failed: {e}")
+        # Write cron evidence for error
+        try:
+            from scripts.monitoring.cron_evidence import write_cron_evidence
+
+            write_cron_evidence(
+                "bybit-truth-collector",
+                status="error",
+                error_message=str(e),
+                write_mode="direct",
+            )
+        except Exception as evidence_error:
+            logger.warning(f"Failed to write cron evidence: {evidence_error}")
         return 2
 
 
