@@ -32,4 +32,9 @@ def test_belief_consistency_mode_skips_improvement_phase() -> None:
         assert "old_belief_statement" in details[0]
         assert "new_belief_statement" in details[0]
         assert "reason" in details[0]
+        packet = result.metrics.get("belief_revision_decision_packet")
+        assert isinstance(packet, dict)
+        assert "previous_belief" in packet
+        assert "replacement_belief" in packet
+        assert "selection_rationale" in packet
         assert result.artifact_paths.get("belief_revisions")

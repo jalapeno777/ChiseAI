@@ -56,3 +56,40 @@ class TestAutocogEventFormatter:
             in content
         )
         assert "**Result:** Unknown" in content
+
+    def test_format_event_includes_revision_decision_packet(self) -> None:
+        formatter = AutocogEventFormatter()
+
+        content = formatter.format_event(
+            event_type="belief_revision_applied",
+            severity="medium",
+            summary="Revision applied",
+            impact="Conflict resolved",
+            top_metrics={"revisions": 1},
+            artifact_path="_bmad-output/autocog/belief_revisions/run.json",
+            run_id="autocog-789",
+            decision_packet={
+                "contradiction": "Heuristic contradiction phrase detected",
+                "previous_belief": {
+                    "belief_id": "belief-memory-outdated",
+                    "statement": "Memory is outdated.",
+                },
+                "replacement_belief": {
+                    "belief_id": "belief-memory-health",
+                    "statement": "Memory is healthy.",
+                },
+                "selection_rationale": "Winner had stronger evidence support.",
+                "expected_improvements": [
+                    "Reduce contradictions.",
+                    "Improve policy consistency.",
+                ],
+                "rollback_hint": "Restore belief-memory-outdated if regressions occur.",
+            },
+        )
+
+        assert "**Revision Decision Packet:**" in content
+        assert "Contradiction: Heuristic contradiction phrase detected" in content
+        assert "Previous Belief: belief-memory-outdated | Memory is outdated." in content
+        assert "Replacement Belief: belief-memory-health | Memory is healthy." in content
+        assert "Why This Won: Winner had stronger evidence support." in content
+        assert "Rollback Hint: Restore belief-memory-outdated if regressions occur." in content

@@ -192,6 +192,8 @@ class SelfAssessmentNotificationFormatter:
 class AutocogEventFormatter:
     """Formats generic autonomous cognition events for Discord notifications."""
 
+    _MAX_DISCORD_MESSAGE_LEN = 1900
+
     def format_event(
         self,
         event_type: str,
@@ -207,9 +209,11 @@ class AutocogEventFormatter:
         expected_improvement: str | None = None,
         outcome_status: str | None = None,
         evidence_reasoning: list[str] | None = None,
+        decision_packet: dict[str, Any] | None = None,
     ) -> str:
         """Format a standardized autonomous cognition event."""
         evidence_reasoning = evidence_reasoning or []
+        decision_packet = decision_packet or {}
         icon = {
             "critical": "🚨",
             "high": "⚠️",
@@ -257,10 +261,50 @@ class AutocogEventFormatter:
             for reason in evidence_reasoning[:8]:
                 lines.append(f"  • {reason}")
 
+        if decision_packet:
+            lines.extend(["", "**Revision Decision Packet:**"])
+            contradiction = decision_packet.get("contradiction")
+            if contradiction:
+                lines.append(f"  • Contradiction: {contradiction}")
+            previous = decision_packet.get("previous_belief")
+            if isinstance(previous, dict):
+                lines.append(
+                    "  • Previous Belief: "
+                    f"{previous.get('belief_id', 'unknown')} | "
+                    f"{previous.get('statement', 'unknown')}"
+                )
+            replacement = decision_packet.get("replacement_belief")
+            if isinstance(replacement, dict):
+                lines.append(
+                    "  • Replacement Belief: "
+                    f"{replacement.get('belief_id', 'unknown')} | "
+                    f"{replacement.get('statement', 'unknown')}"
+                )
+            rationale = decision_packet.get("selection_rationale")
+            if rationale:
+                lines.append(f"  • Why This Won: {rationale}")
+            expected = decision_packet.get("expected_improvements")
+            if isinstance(expected, list):
+                for item in expected[:2]:
+                    lines.append(f"  • Expected Improvement: {item}")
+            rollback_hint = decision_packet.get("rollback_hint")
+            if rollback_hint:
+                lines.append(f"  • Rollback Hint: {rollback_hint}")
+
         if top_metrics:
             lines.extend(["", "**Top Metrics:**"])
             for key, value in list(top_metrics.items())[:5]:
                 lines.append(f"  • {key}: {value}")
 
         lines.extend(["", f"**Artifact Path:** `{artifact_path or 'N/A'}`"])
-        return "\n".join(lines)
+        return self._truncate_message("\n".join(lines))
+
+    def _truncate_message(self, content: str) -> str:
+        """Trim content to stay safely within Discord 2000-char limit."""
+        if len(content) <= self._MAX_DISCORD_MESSAGE_LEN:
+            return content
+        suffix = "\n\n[truncated for Discord length limit]"
+        head_len = self._MAX_DISCORD_MESSAGE_LEN - len(suffix)
+        if head_len <= 0:
+            return content[: self._MAX_DISCORD_MESSAGE_LEN]
+        return content[:head_len] + suffix

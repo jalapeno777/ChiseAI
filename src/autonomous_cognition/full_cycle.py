@@ -170,18 +170,83 @@ class AutonomousCognitionFullCycle:
                         self._revision_engine.last_blocked_revisions[:10]
                     )
                 revision_artifact_path: Path | None = None
+                revision_decision_packet: dict[str, Any] | None = None
                 if revisions:
                     revision_details = [
                         self._revision_detail_payload(revision, belief_map)
                         for revision in revisions[:10]
                     ]
+                    revision_decision_packet = self._build_revision_decision_packet(
+                        revision=revisions[0],
+                        beliefs=belief_map,
+                        conflicts=conflicts,
+                    )
                     result.metrics["belief_revision_details"] = revision_details
+                    result.metrics["belief_revision_decision_packet"] = (
+                        revision_decision_packet
+                    )
                     revision_artifact_path = self._persist_belief_revisions(
                         run_id=run_id,
                         revision_details=revision_details,
+                        decision_packet=revision_decision_packet,
                     )
                     result.artifact_paths["belief_revisions"] = str(
                         revision_artifact_path
+                    )
+                elif self._revision_engine.last_blocked_revisions and notifier and notify_loop:
+                    first_block = self._revision_engine.last_blocked_revisions[0]
+                    notify_loop.run_until_complete(
+                        notifier.notify_autocog_event(
+                            event_type="belief_revision_blocked",
+                            severity="medium",
+                            summary=(
+                                "Belief conflict remained unresolved because "
+                                "evidence/support gates blocked revision."
+                            ),
+                            impact=(
+                                "Belief state preserved until stronger supporting "
+                                "evidence is available."
+                            ),
+                            top_metrics={
+                                "blocked_revisions": len(
+                                    self._revision_engine.last_blocked_revisions
+                                )
+                            },
+                            artifact_path=str(assessment_path)
+                            if assessment_path
+                            else None,
+                            run_id=run_id,
+                            title="Belief Revision Blocked",
+                            issue=(
+                                "A contradiction was detected but the proposed winner "
+                                "did not meet evidence confidence policy gates."
+                            ),
+                            intended_resolution=(
+                                "Hold current beliefs and request stronger evidence "
+                                "before applying any supersession."
+                            ),
+                            expected_improvement=(
+                                "Prevents ungrounded self-modification and lowers "
+                                "rollback risk."
+                            ),
+                            outcome_status="failed",
+                            evidence_reasoning=[
+                                "revisions_applied=0",
+                                (
+                                    "blocked_revisions="
+                                    f"{len(self._revision_engine.last_blocked_revisions)}"
+                                ),
+                                f"block_reason={first_block.get('reason', 'unknown')}",
+                                (
+                                    "winner="
+                                    f"{first_block.get('winner_belief_id', 'unknown')}"
+                                ),
+                                (
+                                    "loser="
+                                    f"{first_block.get('loser_belief_id', 'unknown')}"
+                                ),
+                            ],
+                        )
                     )
                 if revisions and notifier and notify_loop:
                     first_revision = revisions[0]
@@ -245,6 +310,7 @@ class AutonomousCognitionFullCycle:
                                     else "new_statement=unknown"
                                 ),
                             ],
+                            decision_packet=revision_decision_packet,
                         )
                     )
 
@@ -620,6 +686,7 @@ class AutonomousCognitionFullCycle:
         *,
         run_id: str,
         revision_details: list[dict[str, Any]],
+        decision_packet: dict[str, Any] | None = None,
     ) -> Path:
         """Persist detailed belief revision history for audit and rollback support.
 
@@ -638,6 +705,7 @@ class AutonomousCognitionFullCycle:
             "generated_at": generated_at.isoformat(),
             "revision_count": len(revision_details),
             "revisions": revision_details,
+            "decision_packet": decision_packet or {},
             "schema_version": "1.0",
             "artifact_type": "belief_revision_audit",
         }
@@ -731,6 +799,59 @@ class AutonomousCognitionFullCycle:
                 severity = "low"
             severity_counts[severity] = severity_counts.get(severity, 0) + 1
         return severity_counts
+
+    def _build_revision_decision_packet(
+        self,
+        *,
+        revision: Any,
+        beliefs: dict[str, Belief],
+        conflicts: list[Any],
+    ) -> dict[str, Any]:
+        """Build explainable decision packet for Discord and rollback handling."""
+        old_belief = beliefs.get(revision.old_belief_id)
+        new_belief = beliefs.get(revision.new_belief_id)
+        conflict_reason = "No matching conflict reason found."
+        for conflict in conflicts:
+            ids = {conflict.belief_id_a, conflict.belief_id_b}
+            if revision.old_belief_id in ids and revision.new_belief_id in ids:
+                conflict_reason = conflict.reason
+                break
+        old_support = self._revision_engine.last_support_scores.get(
+            revision.old_belief_id, {}
+        )
+        new_support = self._revision_engine.last_support_scores.get(
+            revision.new_belief_id, {}
+        )
+        return {
+            "revision_id": revision.revision_id,
+            "contradiction": conflict_reason,
+            "previous_belief": {
+                "belief_id": revision.old_belief_id,
+                "statement": old_belief.statement if old_belief else "unknown",
+                "confidence": revision.confidence_before,
+                "support_score": old_support.get("support_score"),
+                "evidence_count": old_support.get("evidence_count"),
+            },
+            "replacement_belief": {
+                "belief_id": revision.new_belief_id,
+                "statement": new_belief.statement if new_belief else "unknown",
+                "confidence": revision.confidence_after,
+                "support_score": new_support.get("support_score"),
+                "evidence_count": new_support.get("evidence_count"),
+            },
+            "selection_rationale": (
+                "Replacement belief won on evidence-weighted support "
+                "and confidence policy thresholds."
+            ),
+            "expected_improvements": [
+                "Reduce contradictory internal reasoning paths.",
+                "Increase downstream decision consistency for policy selection.",
+            ],
+            "rollback_hint": (
+                "If regression is observed, reactivate previous belief id "
+                f"{revision.old_belief_id} and mark revision {revision.revision_id} as reverted."
+            ),
+        }
 
     @staticmethod
     def _truncate_text(text: str, max_len: int = 180) -> str:
