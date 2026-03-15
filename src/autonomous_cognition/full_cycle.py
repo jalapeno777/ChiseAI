@@ -155,10 +155,14 @@ class AutonomousCognitionFullCycle:
                         )
                     )
 
+                evidence_index = self._build_belief_evidence_index(assessment=assessment)
+                result.metrics["belief_evidence_summary"] = (
+                    self._summarize_belief_evidence(evidence_index)
+                )
                 revisions = self._revision_engine.apply_revisions(
                     beliefs=belief_map,
                     conflicts=conflicts,
-                    evidence_index=self._build_belief_evidence_index(assessment=assessment),
+                    evidence_index=evidence_index,
                 )
                 result.belief_revisions = len(revisions)
                 if self._revision_engine.last_support_scores:
@@ -180,6 +184,7 @@ class AutonomousCognitionFullCycle:
                         revision=revisions[0],
                         beliefs=belief_map,
                         conflicts=conflicts,
+                        evidence_index=evidence_index,
                     )
                     result.metrics["belief_revision_details"] = revision_details
                     result.metrics["belief_revision_decision_packet"] = (
@@ -603,7 +608,12 @@ class AutonomousCognitionFullCycle:
                 statement=statement_a,
                 domain="memory",
                 confidence=0.82,
-                evidence_refs=["self_assessment_daily"],
+                evidence_refs=[
+                    "self_assessment_daily",
+                    "self_assessment_history",
+                    "runtime_health_window",
+                    "governance_stability_window",
+                ],
                 sources_quality_score=0.85,
             ),
             Belief(
@@ -625,24 +635,199 @@ class AutonomousCognitionFullCycle:
         assessment: Any | None,
     ) -> dict[str, list[EvidenceRecord]]:
         """Construct evidence index used by belief support scoring."""
-        if assessment is None:
-            return {}
-        summary = (
-            f"status={assessment.status} score={assessment.overall_score} "
-            f"findings={'; '.join(assessment.findings[:2])}"
+        index: dict[str, list[EvidenceRecord]] = {}
+
+        if assessment is not None:
+            summary = (
+                f"status={assessment.status} score={assessment.overall_score} "
+                f"findings={'; '.join(assessment.findings[:2])}"
+            )
+            index["self_assessment_daily"] = [
+                EvidenceRecord(
+                    evidence_id="self_assessment_daily",
+                    source="autonomous_self_assessment",
+                    source_family="self_assessment_current",
+                    is_llm_judgment=True,
+                    timestamp=assessment.created_at,
+                    reliability=0.85,
+                    summary=summary,
+                    metrics={
+                        "overall_score": assessment.overall_score,
+                        "status": assessment.status,
+                        "confirmed_runs": 1,
+                    },
+                )
+            ]
+
+        assessment_window = self._recent_self_assessment_window(max_items=5)
+        if assessment_window:
+            ok_count = sum(1 for item in assessment_window if item.get("status") == "ok")
+            total = len(assessment_window)
+            history_conf = ok_count / total if total else 0.0
+            index["self_assessment_history"] = [
+                EvidenceRecord(
+                    evidence_id="self_assessment_history",
+                    source="autonomous_self_assessment_window",
+                    source_family="self_assessment_history",
+                    is_llm_judgment=True,
+                    timestamp=datetime.now(UTC).isoformat(),
+                    reliability=round(0.55 + 0.35 * history_conf, 3),
+                    summary=(
+                        "Recent self-assessment trend "
+                        f"ok_count={ok_count}/{total}"
+                    ),
+                    metrics={
+                        "ok_count": ok_count,
+                        "window_size": total,
+                        "confirmed_runs": total,
+                    },
+                )
+            ]
+
+        cycle_window = self._recent_cycle_window(max_items=10)
+        if cycle_window:
+            runtime_samples = [
+                c.get("metrics", {}).get("runtime_non_regression_passed")
+                for c in cycle_window
+                if c.get("metrics", {}).get("runtime_non_regression_passed") is not None
+            ]
+            if runtime_samples:
+                runtime_passes = sum(1 for s in runtime_samples if bool(s))
+                total_runtime = len(runtime_samples)
+                runtime_conf = runtime_passes / total_runtime
+                index["runtime_health_window"] = [
+                    EvidenceRecord(
+                        evidence_id="runtime_health_window",
+                        source="autocog_cycle_metrics",
+                        source_family="runtime_telemetry",
+                        is_llm_judgment=False,
+                        timestamp=datetime.now(UTC).isoformat(),
+                        reliability=round(0.5 + 0.45 * runtime_conf, 3),
+                        summary=(
+                            "Runtime non-regression trend "
+                            f"passed={runtime_passes}/{total_runtime}"
+                        ),
+                        metrics={
+                            "runtime_passes": runtime_passes,
+                            "window_size": total_runtime,
+                            "confirmed_runs": total_runtime,
+                        },
+                    )
+                ]
+
+            gov_samples = [
+                c.get("constitution_violations")
+                for c in cycle_window
+                if c.get("constitution_violations") is not None
+            ]
+            if gov_samples:
+                zero_violations = sum(1 for v in gov_samples if int(v) == 0)
+                total_gov = len(gov_samples)
+                gov_conf = zero_violations / total_gov
+                index["governance_stability_window"] = [
+                    EvidenceRecord(
+                        evidence_id="governance_stability_window",
+                        source="autocog_cycle_governance_metrics",
+                        source_family="governance_metrics",
+                        is_llm_judgment=False,
+                        timestamp=datetime.now(UTC).isoformat(),
+                        reliability=round(0.5 + 0.45 * gov_conf, 3),
+                        summary=(
+                            "Constitution violation trend "
+                            f"zero_violations={zero_violations}/{total_gov}"
+                        ),
+                        metrics={
+                            "zero_violations": zero_violations,
+                            "window_size": total_gov,
+                            "confirmed_runs": total_gov,
+                        },
+                    )
+                ]
+        return index
+
+    def _recent_self_assessment_window(self, max_items: int = 5) -> list[dict[str, Any]]:
+        """Load latest self-assessment artifacts for trend evidence."""
+        directory = Path("docs/governance/self_assessments")
+        if not directory.exists():
+            return []
+        files = sorted(
+            directory.glob("self_assessment_*.json"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
         )
-        record = EvidenceRecord(
-            evidence_id="self_assessment_daily",
-            source="autonomous_self_assessment",
-            timestamp=assessment.created_at,
-            reliability=0.85,
-            summary=summary,
-            metrics={
-                "overall_score": assessment.overall_score,
-                "status": assessment.status,
-            },
+        snapshots: list[dict[str, Any]] = []
+        for path in files[:max_items]:
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            snapshots.append(
+                {
+                    "assessment_id": payload.get("assessment_id"),
+                    "status": payload.get("status"),
+                    "created_at": payload.get("created_at"),
+                }
+            )
+        return snapshots
+
+    def _recent_cycle_window(self, max_items: int = 10) -> list[dict[str, Any]]:
+        """Load latest cycle artifacts for non-LLM evidence trends."""
+        directory = Path(self.DEFAULT_CYCLE_DIR)
+        if not directory.exists():
+            return []
+        files = sorted(
+            directory.glob("autocog-*.json"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
         )
-        return {"self_assessment_daily": [record]}
+        snapshots: list[dict[str, Any]] = []
+        for path in files[:max_items]:
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            snapshots.append(
+                {
+                    "run_id": payload.get("run_id"),
+                    "metrics": payload.get("metrics", {}),
+                    "constitution_violations": payload.get("constitution_violations"),
+                    "status": payload.get("status"),
+                }
+            )
+        return snapshots
+
+    @staticmethod
+    def _summarize_belief_evidence(
+        evidence_index: dict[str, list[EvidenceRecord]],
+    ) -> dict[str, Any]:
+        """Summarize evidence index for audit visibility in cycle metrics."""
+        all_records = [
+            record for records in evidence_index.values() for record in records
+        ]
+        families = sorted({record.source_family for record in all_records if record.source_family})
+        non_llm = sorted(
+            {
+                record.source_family
+                for record in all_records
+                if record.source_family and not record.is_llm_judgment
+            }
+        )
+        return {
+            "evidence_refs": sorted(evidence_index.keys()),
+            "record_count": len(all_records),
+            "distinct_source_families": len(families),
+            "non_llm_source_families": len(non_llm),
+            "source_families": families,
+            "non_llm_families": non_llm,
+            "max_temporal_confirmations": max(
+                (
+                    int(record.metrics.get("confirmed_runs", 1))
+                    for record in all_records
+                    if isinstance(record.metrics.get("confirmed_runs", 1), int)
+                ),
+                default=0,
+            ),
+        }
 
     def _persist_cycle_result(self, result: CycleResult) -> Path:
         """Write cycle artifact to disk."""
@@ -806,6 +991,7 @@ class AutonomousCognitionFullCycle:
         revision: Any,
         beliefs: dict[str, Belief],
         conflicts: list[Any],
+        evidence_index: dict[str, list[EvidenceRecord]],
     ) -> dict[str, Any]:
         """Build explainable decision packet for Discord and rollback handling."""
         old_belief = beliefs.get(revision.old_belief_id)
@@ -821,6 +1007,20 @@ class AutonomousCognitionFullCycle:
         )
         new_support = self._revision_engine.last_support_scores.get(
             revision.new_belief_id, {}
+        )
+        replacement_records: list[EvidenceRecord] = []
+        if new_belief is not None:
+            for ref in new_belief.evidence_refs:
+                replacement_records.extend(evidence_index.get(ref, []))
+        source_families = sorted(
+            {record.source_family for record in replacement_records if record.source_family}
+        )
+        non_llm_families = sorted(
+            {
+                record.source_family
+                for record in replacement_records
+                if record.source_family and not record.is_llm_judgment
+            }
         )
         return {
             "revision_id": revision.revision_id,
@@ -843,6 +1043,11 @@ class AutonomousCognitionFullCycle:
                 "Replacement belief won on evidence-weighted support "
                 "and confidence policy thresholds."
             ),
+            "source_diversity": {
+                "distinct_source_families": len(source_families),
+                "non_llm_source_families": len(non_llm_families),
+                "source_families": source_families,
+            },
             "expected_improvements": [
                 "Reduce contradictory internal reasoning paths.",
                 "Increase downstream decision consistency for policy selection.",

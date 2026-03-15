@@ -16,6 +16,8 @@ class EvidenceRecord:
     timestamp: str
     reliability: float
     summary: str
+    source_family: str = "unknown"
+    is_llm_judgment: bool = False
     metrics: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -25,6 +27,8 @@ class EvidenceRecord:
             "timestamp": self.timestamp,
             "reliability": self.reliability,
             "summary": self.summary,
+            "source_family": self.source_family,
+            "is_llm_judgment": self.is_llm_judgment,
             "metrics": self.metrics,
         }
 

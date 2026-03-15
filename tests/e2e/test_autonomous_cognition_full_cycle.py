@@ -23,6 +23,10 @@ def test_belief_consistency_mode_skips_improvement_phase() -> None:
     assert result.experiments_run == 0
     assert result.promotions == 0
     assert result.rejections == 0
+    evidence_summary = result.metrics.get("belief_evidence_summary")
+    assert isinstance(evidence_summary, dict)
+    assert "distinct_source_families" in evidence_summary
+    assert "non_llm_source_families" in evidence_summary
     if result.belief_revisions > 0:
         details = result.metrics.get("belief_revision_details")
         assert isinstance(details, list)
