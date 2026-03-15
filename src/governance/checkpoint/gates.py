@@ -9,6 +9,9 @@ This module provides the GateChecker class that validates all 8 governance gates
 - G6: Bybit Connectivity
 - G7: Observability Health
 - G8: End-to-End Pipeline
+
+Additional monitoring:
+- ActionableZeroAlert: Detects sustained periods with signals but no actionable output
 """
 
 from __future__ import annotations
@@ -22,6 +25,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 import redis
+
+from src.governance.checkpoint.alerts import ActionableZeroAlert
 
 logger = logging.getLogger(__name__)
 
@@ -198,9 +203,13 @@ class GateChecker:
     def check_g2_signal_cadence(self) -> GateResult:
         """G2: Signal Cadence - Check for active signal generation.
 
-        Now uses pipeline liveness metrics to distinguish:
-        - Healthy no-signal (attempts > 0, actionable = 0)
-        - Stale pipeline (no attempts in 15m)
+        Implements G2 Message Taxonomy with 4 distinct states:
+        - NO_SIGNALS: No signals generated in window (healthy idle state)
+        - FILTERED: Signals generated but none actionable (filters working)
+        - BOTTLENECK: Actionable signals present but downstream not converting
+        - HEALTHY: Normal operation with signals flowing through pipeline
+
+        Uses pipeline liveness metrics from scheduler heartbeat to determine state.
         """
         r = self._get_redis()
         if not r:
@@ -218,24 +227,48 @@ class GateChecker:
             actionable_15m = int(heartbeat.get("actionable_15m", "0"))
             backlog = int(heartbeat.get("consumer_backlog", "0"))
 
-            if pipeline_status == "healthy":
+            # Backlog threshold for bottleneck detection (configurable)
+            backlog_threshold = int(os.getenv("G2_BACKLOG_THRESHOLD", "10"))
+
+            # G2 Message Taxonomy implementation
+            # State 1: NO_SIGNALS - No signals generated in window (healthy idle)
+            if signals_15m == 0:
+                # Check if pipeline is stale (no signals for extended period)
+                if pipeline_status == "stale":
+                    return GateResult(
+                        gate="G2",
+                        status=self.STATUS_FAIL,
+                        detail=f"NO_SIGNALS: No signals generated in 15m window (pipeline stale, last age: {heartbeat.get('latest_signal_age_m', 'N/A')}m)",
+                    )
                 return GateResult(
                     gate="G2",
                     status=self.STATUS_PASS,
-                    detail=f"Pipeline healthy: {signals_15m} attempts, {actionable_15m} actionable, {backlog} backlog",
+                    detail="NO_SIGNALS: No signals generated in 15m window (healthy idle state)",
                 )
-            elif pipeline_status == "stale":
+
+            # State 2: FILTERED - Signals generated but none actionable (filters working)
+            if signals_15m > 0 and actionable_15m == 0:
                 return GateResult(
                     gate="G2",
-                    status=self.STATUS_FAIL,
-                    detail=f"Pipeline stale: No signals in 15m, last age: {heartbeat.get('latest_signal_age_m', 'N/A')}m",
+                    status=self.STATUS_PASS,
+                    detail=f"FILTERED: {signals_15m} signals generated, 0 actionable (filters active)",
                 )
-            else:
+
+            # State 3: BOTTLENECK - Actionable signals present but downstream stalled
+            if actionable_15m > 0 and backlog > backlog_threshold:
                 return GateResult(
                     gate="G2",
                     status=self.STATUS_CHECK,
-                    detail=f"Pipeline status: {pipeline_status}, attempts: {signals_15m}",
+                    detail=f"BOTTLENECK: {actionable_15m} actionable signals, {backlog} backlog (downstream stalled, threshold: {backlog_threshold})",
                 )
+
+            # State 4: HEALTHY - Normal operation
+            return GateResult(
+                gate="G2",
+                status=self.STATUS_PASS,
+                detail=f"HEALTHY: {signals_15m} signals, {actionable_15m} actionable, backlog {backlog} (normal)",
+            )
+
         except Exception as e:
             logger.error(f"Error checking G2: {e}")
             return GateResult(
@@ -624,3 +657,79 @@ class GateChecker:
             summary = self.run_all_checks()
 
         return summary.fail_count == 0
+
+    def check_actionable_zero_alert(self) -> GateResult:
+        """Check actionable-zero alert condition.
+
+        This gate monitors for sustained periods where signals are generated
+        but none are actionable (3 consecutive 15-minute windows = 45 minutes).
+
+        The alert helps detect:
+        - Confidence thresholds that are too high
+        - Market conditions not matching strategy criteria
+        - Signal filtering logic issues
+
+        Returns:
+            GateResult with status:
+            - PASS: No actionable-zero condition detected
+            - CHECK: Actionable-zero condition building up (1-2 windows)
+            - ALERT: Actionable-zero condition triggered (3+ windows)
+        """
+        r = self._get_redis()
+        if not r:
+            return GateResult(
+                gate="AZ",
+                status=self.STATUS_FAIL,
+                detail="Redis unavailable - cannot check actionable-zero alert",
+            )
+
+        try:
+            # Get current signal metrics from scheduler heartbeat
+            heartbeat = r.hgetall("bmad:chiseai:scheduler:heartbeat")
+            signals_15m = int(heartbeat.get("signals_15m", "0"))
+            actionable_15m = int(heartbeat.get("actionable_15m", "0"))
+
+            # Initialize alert checker
+            alert_checker = ActionableZeroAlert(redis_client=r)
+
+            # Check the condition
+            result = alert_checker.check(signals_15m, actionable_15m)
+
+            if result.triggered and not result.suppressed:
+                # Full alert triggered
+                return GateResult(
+                    gate="AZ",
+                    status=self.STATUS_ALERT,
+                    detail=f"🚨 {result.message}",
+                )
+            elif result.triggered and result.suppressed:
+                # Alert condition present but suppressed
+                return GateResult(
+                    gate="AZ",
+                    status=self.STATUS_CHECK,
+                    detail=f"Actionable-zero condition active ({result.metadata.get('consecutive_windows', '?')} windows) - alert suppressed",
+                )
+            elif result.metadata.get("consecutive_windows", 0) > 0:
+                # Building up but not yet at threshold
+                consecutive = result.metadata.get("consecutive_windows", 0)
+                threshold = result.metadata.get("threshold", 3)
+                return GateResult(
+                    gate="AZ",
+                    status=self.STATUS_CHECK,
+                    detail=f"Actionable-zero count: {consecutive}/{threshold} windows",
+                )
+            else:
+                # No actionable-zero condition
+                return GateResult(
+                    gate="AZ",
+                    status=self.STATUS_PASS,
+                    detail="No actionable-zero condition detected",
+                )
+
+        except Exception as e:
+            logger.error(f"Error checking actionable-zero alert: {e}")
+            return GateResult(
+                gate="AZ",
+                status=self.STATUS_FAIL,
+                detail=f"Exception: {str(e)[:100]}",
+            )
