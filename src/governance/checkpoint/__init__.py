@@ -14,14 +14,20 @@ Story: PAPER-GOVERNANCE-001
 Epic: EP-GOV-001
 """
 
+from src.governance.checkpoint.alerts import ActionableZeroAlert, AlertResult
 from src.governance.checkpoint.checkpoint import CheckpointManager
 from src.governance.checkpoint.evidence import EvidenceCollector
 from src.governance.checkpoint.gates import GateChecker
+from src.governance.checkpoint.integrity import IntegrityResult, MetricIntegrityChecker
 from src.governance.checkpoint.state import StateManager
 
 __all__ = [
+    "ActionableZeroAlert",
+    "AlertResult",
     "CheckpointManager",
     "GateChecker",
     "EvidenceCollector",
+    "IntegrityResult",
+    "MetricIntegrityChecker",
     "StateManager",
 ]
