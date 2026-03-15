@@ -97,6 +97,7 @@ def get_job_name_from_path(script_path: str | Path) -> str | None:
         "signal_growth_detector.py": "signal-growth",
         "hourly_health_check.py": "hourly-health",
         "checkpoint_gate_audit.py": "checkpoint-audit",
+        "bybit_truth_collector.py": "bybit-truth-collector",
     }
     basename = os.path.basename(script_path)
     return job_mapping.get(basename)
