@@ -420,6 +420,11 @@ class TestCronEvidenceNoFalseStale:
                 f"{KEY_PREFIX}:checkpoint-audit:invocation_id": "direct-invocation-id",
                 f"{KEY_PREFIX}:checkpoint-audit:write_mode": "direct",
                 f"{KEY_PREFIX}:checkpoint-audit:status": "success",
+                f"{KEY_PREFIX}:bybit-truth-collector:last_run": recent_run,
+                f"{KEY_PREFIX}:bybit-truth-collector:missed_count": "0",
+                f"{KEY_PREFIX}:bybit-truth-collector:invocation_id": "direct-invocation-id",
+                f"{KEY_PREFIX}:bybit-truth-collector:write_mode": "direct",
+                f"{KEY_PREFIX}:bybit-truth-collector:status": "success",
             }
             return job_keys.get(key)
 
