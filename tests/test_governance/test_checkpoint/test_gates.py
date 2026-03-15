@@ -723,7 +723,7 @@ class TestRunAllChecks:
 
                 summary = checker.run_all_checks()
 
-        assert len(summary.results) == 8
+        assert len(summary.results) == 9  # G1-G9
         assert summary.pass_count >= 6  # Most should pass with mock data
         assert isinstance(summary.timestamp, datetime)
 

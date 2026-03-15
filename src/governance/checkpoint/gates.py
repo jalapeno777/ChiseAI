@@ -1,6 +1,6 @@
-"""Gate validation implementation for G1-G8 checkpoint gates.
+"""Gate validation implementation for G1-G9 checkpoint gates.
 
-This module provides the GateChecker class that validates all 8 governance gates:
+This module provides the GateChecker class that validates all 9 governance gates:
 - G1: Scheduler Continuity
 - G2: Signal Cadence
 - G3: Data Flow Movement
@@ -9,6 +9,7 @@ This module provides the GateChecker class that validates all 8 governance gates
 - G6: Bybit Connectivity
 - G7: Observability Health
 - G8: End-to-End Pipeline
+- G9: Metric Integrity
 
 Additional monitoring:
 - ActionableZeroAlert: Detects sustained periods with signals but no actionable output
@@ -25,8 +26,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 import redis
-
 from src.governance.checkpoint.alerts import ActionableZeroAlert
+from src.governance.checkpoint.integrity import MetricIntegrityChecker
 
 logger = logging.getLogger(__name__)
 
@@ -601,8 +602,23 @@ class GateChecker:
                 detail=f"Exception: {str(e)[:100]}",
             )
 
+    def check_g9_metric_integrity(self) -> GateResult:
+        """G9: Metric Integrity - Validate heartbeat aggregates match raw data."""
+        try:
+            checker = MetricIntegrityChecker(
+                redis_host=self._redis_host,
+                redis_port=self._redis_port,
+            )
+            return checker.to_gate_result()
+        except Exception as e:
+            return GateResult(
+                gate="G9",
+                status=self.STATUS_FAIL,
+                detail=f"Exception: {str(e)[:100]}",
+            )
+
     def run_all_checks(self) -> GateSummary:
-        """Run all G1-G8 checks and return summary.
+        """Run all G1-G9 checks and return summary.
 
         Returns:
             GateSummary with all results and counts
@@ -616,6 +632,7 @@ class GateChecker:
             self.check_g6_bybit_connectivity(),
             self.check_g7_observability(),
             self.check_g8_pipeline(),
+            self.check_g9_metric_integrity(),  # NEW
         ]
 
         pass_count = sum(1 for c in checks if self.STATUS_PASS in c.status)

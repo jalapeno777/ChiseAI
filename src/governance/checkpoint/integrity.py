@@ -14,7 +14,6 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 import redis
-from src.governance.checkpoint.gates import GateResult
 
 logger = logging.getLogger(__name__)
 
@@ -259,9 +258,7 @@ class MetricIntegrityChecker:
                 message=f"Exception during integrity check: {str(e)[:100]}",
             )
 
-    def to_gate_result(
-        self, integrity_result: IntegrityResult | None = None
-    ) -> GateResult:
+    def to_gate_result(self, integrity_result: IntegrityResult | None = None):
         """Convert IntegrityResult to GateResult format.
 
         This method allows integration with the GateChecker system
@@ -274,6 +271,9 @@ class MetricIntegrityChecker:
         Returns:
             GateResult compatible with GateChecker format
         """
+        # Local import to avoid circular dependency
+        from src.governance.checkpoint.gates import GateResult
+
         if integrity_result is None:
             integrity_result = self.check_signal_count_integrity()
 
