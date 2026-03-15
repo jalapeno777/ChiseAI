@@ -917,6 +917,81 @@ Error: Connection timeout after 30s
 Recommendation: Verify NTP synchronization
 ```
 
+### 7.5 Freshness Watchdog
+
+The Bybit Freshness Watchdog (`scripts/monitoring/bybit_freshness_watchdog.py`) provides automated monitoring and recovery for Bybit truth data freshness.
+
+**Purpose:**
+- Monitors `bmad:chiseai:bybit_truth:last_collection_timestamp` every 5 minutes
+- Issues warning at 45 minutes (75% of threshold)
+- Triggers alert at 60 minutes (G12 threshold)
+- Optionally auto-recovers by triggering collector
+
+**Configuration:**
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| Check interval | 5 minutes | How often to check freshness |
+| Warning threshold | 45 minutes | When to issue warning |
+| Fail threshold | 60 minutes | When to trigger alert/G12 fail |
+| Recovery lock TTL | 5 minutes | Prevents concurrent recovery |
+
+**Redis Keys:**
+```
+bmad:chiseai:bybit_truth:watchdog:last_check       # Last check timestamp
+bmad:chiseai:bybit_truth:watchdog:status           # Current status (fresh/warning/stale)
+bmad:chiseai:bybit_truth:watchdog:alert_count      # Number of stale alerts
+bmad:chiseai:bybit_truth:recovery_lock             # Recovery lock (prevents concurrent)
+```
+
+**Running the Watchdog:**
+
+```bash
+# Single check
+python3 scripts/monitoring/bybit_freshness_watchdog.py
+
+# With auto-recovery enabled
+python3 scripts/monitoring/bybit_freshness_watchdog.py --auto-recover
+
+# Continuous monitoring loop
+python3 scripts/monitoring/bybit_freshness_watchdog.py --loop --interval 300
+
+# Custom thresholds
+python3 scripts/monitoring/bybit_freshness_watchdog.py \
+  --warning-threshold 45 \
+  --fail-threshold 60 \
+  --auto-recover
+
+# JSON output for automation
+python3 scripts/monitoring/bybit_freshness_watchdog.py --output json
+```
+
+**Exit Codes:**
+- `0` - Data is fresh
+- `1` - Data is stale (or recovery failed with --auto-recover)
+- `2` - Error occurred during check
+
+**Auto-Recovery:**
+When `--auto-recover` is enabled:
+1. Watchdog detects stale data (> 60 minutes)
+2. Acquires Redis lock (`bmad:chiseai:bybit_truth:recovery_lock`)
+3. Triggers `bybit_truth_collector.py` via subprocess
+4. Collector runs with 5-minute timeout
+5. Lock released regardless of outcome
+6. Watchdog continues monitoring
+
+**Manual Recovery:**
+If auto-recovery fails or is disabled:
+```bash
+# Trigger collector manually
+python3 scripts/validation/bybit_truth_collector.py --dry-run
+
+# Check current freshness
+python3 scripts/validation/bybit_freshness_check.py
+
+# Force collector via cron evidence
+python3 -c "from scripts.monitoring.cron_evidence import write_cron_evidence; write_cron_evidence('bybit-truth-collector')"
+```
+
 ### 7.5 Troubleshooting Guide
 
 **Symptom: Single data stream stale**
@@ -925,18 +1000,24 @@ Recommendation: Verify NTP synchronization
 ```
 
 **Investigation Steps:**
-1. Check specific stream status:
+1. Check watchdog status:
+   ```bash
+   redis-cli -h host.docker.internal -p 6380 GET bmad:chiseai:bybit_truth:watchdog:status
+   redis-cli -h host.docker.internal -p 6380 GET bmad:chiseai:bybit_truth:watchdog:last_check
+   ```
+
+2. Check specific stream status:
    ```bash
    redis-cli -h host.docker.internal -p 6380 HGETALL bmad:chiseai:market:bybit:klines:BTCUSDT:1m:timestamp
    ```
 
-2. Verify Bybit API directly:
+3. Verify Bybit API directly:
    ```bash
    curl -s "https://api.bybit.com/v5/market/kline?category=linear&symbol=BTCUSDT&interval=1" | \
      jq '.result.list[0][0]'
    ```
 
-3. Check market data service logs:
+4. Check market data service logs:
    ```bash
    docker logs chiseai-market-data --tail 500 | grep -i "klines\|bybit\|error" | tail -50
    ```
@@ -951,6 +1032,9 @@ Recommendation: Verify NTP synchronization
 ```bash
 # Check if issue is Bybit-wide or specific to our connection
 curl -s "https://api.bybit.com/v5/market/time" | jq '.time'
+
+# Check watchdog status and run recovery if needed
+python3 scripts/monitoring/bybit_freshness_watchdog.py --auto-recover
 
 # Restart market data service for affected stream
 docker restart chiseai-market-data

@@ -34,6 +34,10 @@ CRON_JOBS = {
         "interval": 21600,  # 6 hours
         "description": "6-hour checkpoint gate audit",
     },
+    "bybit-truth-collector": {
+        "interval": 1800,  # 30 minutes
+        "description": "Bybit truth data collector for G12 freshness",
+    },
 }
 
 # Redis key prefixes
