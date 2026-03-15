@@ -139,6 +139,17 @@ class PaperTradingOrchestrator:
             f"[ORCHESTRATOR-INIT] Connector provenance: {self._connector_provenance}"
         )
 
+        # PAPER-FORENSIC-001: Update outcome_capture with extracted provenance
+        # This ensures SignalOutcome records get populated with correct venue/mode/source
+        if self.outcome_capture and hasattr(
+            self.outcome_capture, "set_connector_provenance"
+        ):
+            self.outcome_capture.set_connector_provenance(self._connector_provenance)
+            logger.info(
+                f"[ORCHESTRATOR-INIT] Updated outcome_capture with provenance: "
+                f"{self._connector_provenance}"
+            )
+
         # Initialize trade journal service if trade_journal is provided
         self.trade_journal_service: TradeJournalService | None = None
         self.trade_journal: TradeJournal | None = None
