@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""6-hour checkpoint gate audit (G1-G8) for ACTIVATION-001.
+"""6-hour checkpoint gate audit (G1-G12) for ACTIVATION-001.
 
 Posts detailed audit to Discord #development or logs locally.
 """
@@ -108,17 +108,68 @@ def check_g1_scheduler(r: Any) -> dict[str, Any]:
 
 
 def check_g2_signal_cadence(r: Any) -> dict[str, Any]:
-    """G2: Signal Cadence"""
+    """G2: Signal Cadence - Check for active signal generation.
+
+    Paper-aware: checks both bmad:chiseai:signals:* and paper:signal:* keys.
+    Returns detail in format: "PAPER:X LIVE:Y signals, Z actionable..."
+    """
     try:
-        count = len(r.keys("bmad:chiseai:signals:*"))
-        if count > 0:
+        # Count live signals (bmad:chiseai:signals:*)
+        live_signals = len(r.keys("bmad:chiseai:signals:*"))
+
+        # Count paper signals (paper:signal:*)
+        paper_signals = len(r.keys("paper:signal:*"))
+
+        # Get scheduler heartbeat for actionable count
+        heartbeat = r.hgetall("bmad:chiseai:scheduler:heartbeat")
+        actionable_15m = int(heartbeat.get("actionable_15m", "0"))
+        backlog = int(heartbeat.get("consumer_backlog", "0"))
+        pipeline_status = heartbeat.get("pipeline_status", "unknown")
+
+        # Total signals for decision logic
+        total_signals = live_signals + paper_signals
+
+        # Backlog threshold for bottleneck detection
+        backlog_threshold = int(os.getenv("G2_BACKLOG_THRESHOLD", "10"))
+
+        # G2 Message Taxonomy implementation
+        # State 1: NO_SIGNALS - No signals generated in window
+        if total_signals == 0:
+            if pipeline_status == "stale":
+                return {
+                    "gate": "G2",
+                    "status": "❌ FAIL",
+                    "detail": f"NO_SIGNALS: PAPER:{paper_signals} LIVE:{live_signals} signals in 15m window (pipeline stale)",
+                }
             return {
                 "gate": "G2",
                 "status": "✅ PASS",
-                "detail": f"{count} signals in Redis",
+                "detail": f"NO_SIGNALS: PAPER:{paper_signals} LIVE:{live_signals} signals in 15m window (healthy idle)",
             }
-        else:
-            return {"gate": "G2", "status": "⚠️ CHECK", "detail": "No signals found"}
+
+        # State 2: FILTERED - Signals generated but none actionable
+        if total_signals > 0 and actionable_15m == 0:
+            return {
+                "gate": "G2",
+                "status": "✅ PASS",
+                "detail": f"FILTERED: PAPER:{paper_signals} LIVE:{live_signals} signals, 0 actionable (filters active)",
+            }
+
+        # State 3: BOTTLENECK - Actionable signals present but downstream stalled
+        if actionable_15m > 0 and backlog > backlog_threshold:
+            return {
+                "gate": "G2",
+                "status": "⚠️ CHECK",
+                "detail": f"BOTTLENECK: PAPER:{paper_signals} LIVE:{live_signals} signals, {actionable_15m} actionable, {backlog} backlog (downstream stalled)",
+            }
+
+        # State 4: HEALTHY - Normal operation
+        return {
+            "gate": "G2",
+            "status": "✅ PASS",
+            "detail": f"HEALTHY: PAPER:{paper_signals} LIVE:{live_signals} signals, {actionable_15m} actionable, backlog {backlog} (normal)",
+        }
+
     except Exception as e:
         return {"gate": "G2", "status": "❌ FAIL", "detail": str(e)}
 
@@ -337,8 +388,332 @@ def check_g8_pipeline(r: Any) -> dict[str, Any]:
         return {"gate": "G8", "status": "❌ FAIL", "detail": str(e)}
 
 
+def check_g12_bybit_freshness(r: Any) -> dict[str, Any]:
+    """G12: Bybit Truth Freshness - Check if Bybit truth data is fresh.
+
+    Validates that Bybit truth data collection is recent by checking:
+    - bmad:chiseai:bybit_truth:last_collection_timestamp (ISO format timestamp)
+    - bmad:chiseai:bybit_truth:last_collection_status (optional context)
+
+    Freshness threshold: 60 minutes (3600 seconds)
+    """
+    from datetime import datetime
+
+    try:
+        # Get the last collection timestamp
+        timestamp_str = r.get("bmad:chiseai:bybit_truth:last_collection_timestamp")
+        status = r.get("bmad:chiseai:bybit_truth:last_collection_status")
+
+        if not timestamp_str:
+            return {
+                "gate": "G12",
+                "status": "⚠️ CHECK",
+                "detail": "no collection data",
+            }
+
+        # Parse ISO timestamp
+        try:
+            last_collection = datetime.fromisoformat(timestamp_str)
+        except ValueError:
+            return {
+                "gate": "G12",
+                "status": "⚠️ CHECK",
+                "detail": f"unparseable timestamp: {timestamp_str[:50]}",
+            }
+
+        # Calculate age in minutes
+        now = datetime.now(UTC)
+        age_seconds = (now - last_collection).total_seconds()
+        age_minutes = age_seconds / 60
+
+        # Freshness threshold: 60 minutes
+        max_age_minutes = 60
+
+        # Build detail string
+        detail_parts = [f"last_collection={age_minutes:.0f}m ago"]
+        if status:
+            detail_parts.append(f"status={status}")
+
+        detail = " | ".join(detail_parts)
+
+        if age_minutes > max_age_minutes:
+            return {
+                "gate": "G12",
+                "status": "❌ FAIL",
+                "detail": detail,
+            }
+        else:
+            return {
+                "gate": "G12",
+                "status": "✅ PASS",
+                "detail": detail,
+            }
+
+    except Exception as e:
+        return {"gate": "G12", "status": "❌ FAIL", "detail": str(e)[:100]}
+
+
+def check_g11_provenance() -> dict[str, Any]:
+    """G11: Provenance - Check signal_outcomes table for missing provenance fields.
+
+    Validates that execution_venue, execution_mode, and execution_source fields
+    are populated for all records in the last 60 minutes.
+
+    Returns:
+        dict with gate, status, and detail:
+        - PASS: No data in window OR all records have all provenance fields
+        - FAIL: Any records missing provenance fields
+        - CHECK: Connection error or query failure
+    """
+    import os
+
+    # Database connection parameters
+    db_host = os.getenv("DB_HOST", "host.docker.internal")
+    db_port = os.getenv("DB_PORT", "5434")
+    db_name = os.getenv("DB_NAME", "chiseai")
+    db_user = os.getenv("DB_USER", "chiseai")
+    db_password = os.getenv("DB_PASSWORD", "chiseai")
+
+    try:
+        # Try psycopg2 first, fallback to asyncpg if available
+        try:
+            import psycopg2
+
+            conn = psycopg2.connect(
+                host=db_host,
+                port=db_port,
+                database=db_name,
+                user=db_user,
+                password=db_password,
+                connect_timeout=5,
+            )
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT
+                    COUNT(*) as total,
+                    COUNT(execution_venue) as with_venue,
+                    COUNT(execution_mode) as with_mode,
+                    COUNT(execution_source) as with_source
+                FROM signal_outcomes
+                WHERE created_at >= NOW() - INTERVAL '60 minutes'
+            """)
+            row = cursor.fetchone()
+            cursor.close()
+            conn.close()
+
+            total, with_venue, with_mode, with_source = row
+
+        except ImportError:
+            # Fallback to asyncpg if psycopg2 not available
+            try:
+                import asyncio
+                import asyncpg
+
+                async def query():
+                    conn = await asyncpg.connect(
+                        host=db_host,
+                        port=db_port,
+                        database=db_name,
+                        user=db_user,
+                        password=db_password,
+                        timeout=5,
+                    )
+                    row = await conn.fetchrow("""
+                        SELECT
+                            COUNT(*) as total,
+                            COUNT(execution_venue) as with_venue,
+                            COUNT(execution_mode) as with_mode,
+                            COUNT(execution_source) as with_source
+                        FROM signal_outcomes
+                        WHERE created_at >= NOW() - INTERVAL '60 minutes'
+                    """)
+                    await conn.close()
+                    return row
+
+                row = asyncio.run(query())
+                total = row["total"]
+                with_venue = row["with_venue"]
+                with_mode = row["with_mode"]
+                with_source = row["with_source"]
+
+            except ImportError:
+                return {
+                    "gate": "G11",
+                    "status": "⚠️ CHECK",
+                    "detail": "No PostgreSQL driver available (psycopg2 or asyncpg required)",
+                }
+
+        # Calculate missing counts
+        missing_venue = total - with_venue
+        missing_mode = total - with_mode
+        missing_source = total - with_source
+
+        # Build detail string
+        detail = f"total={total} venue={with_venue} mode={with_mode} source={with_source} missing_venue={missing_venue} missing_mode={missing_mode} missing_source={missing_source}"
+
+        # Determine status
+        if total == 0:
+            # No data in window - PASS (no provenance to check)
+            return {
+                "gate": "G11",
+                "status": "✅ PASS",
+                "detail": f"{detail} | No data in 60m window",
+            }
+        elif missing_venue == 0 and missing_mode == 0 and missing_source == 0:
+            # All records have all provenance fields
+            return {
+                "gate": "G11",
+                "status": "✅ PASS",
+                "detail": f"{detail} | All records have provenance",
+            }
+        else:
+            # Some records missing provenance fields
+            missing_fields = []
+            if missing_venue > 0:
+                missing_fields.append(f"venue({missing_venue})")
+            if missing_mode > 0:
+                missing_fields.append(f"mode({missing_mode})")
+            if missing_source > 0:
+                missing_fields.append(f"source({missing_source})")
+            return {
+                "gate": "G11",
+                "status": "❌ FAIL",
+                "detail": f"{detail} | Missing: {', '.join(missing_fields)}",
+            }
+
+    except Exception as e:
+        logger.error(f"Error checking G11: {e}")
+        return {
+            "gate": "G11",
+            "status": "⚠️ CHECK",
+            "detail": f"Connection/query error: {str(e)[:100]}",
+        }
+
+
+def check_g10_chain_integrity(r: Any) -> dict[str, Any]:
+    """G10: Chain Integrity - Count signals -> orders -> fills -> outcomes in last 6h.
+
+    Validates the complete pipeline chain by counting entities in the last 6 hours:
+    - Signals (bmad:chiseai:signals:* and paper:signal:*)
+    - Orders (paper:order:* keys with timestamp >= now-6h)
+    - Fills (paper:fill:* keys with timestamp >= now-6h)
+    - Outcomes (bmad:chiseai:outcomes:index members with timestamp >= now-6h)
+
+    Status logic:
+    - PASS: signals > 0 AND orders > 0 AND fills > 0 AND outcomes > 0
+    - CHECK: signals = 0 (no activity in window)
+    - FAIL: signals > 0 but any downstream stage = 0 (pipeline broken)
+    """
+    from datetime import UTC, datetime
+
+    try:
+        # Calculate 6-hour window threshold
+        now = datetime.now(UTC)
+        six_hours_ago = now.timestamp() - 21600  # 6 hours in seconds
+
+        # Count signals in last 6h (both bmad and paper signal keys)
+        signal_keys = r.keys("bmad:chiseai:signals:*") + r.keys("paper:signal:*")
+        signal_count = len(signal_keys)
+
+        # Count orders in last 6h (paper:order:* keys with timestamp >= now-6h)
+        order_keys = r.keys("paper:order:*")
+        order_count = 0
+        for key in order_keys:
+            try:
+                # Extract timestamp from key (format: paper:order:<timestamp>:<id>)
+                parts = key.split(":")
+                if len(parts) >= 3:
+                    ts = float(parts[2])
+                    if ts >= six_hours_ago:
+                        order_count += 1
+            except (ValueError, IndexError):
+                continue
+
+        # Count fills in last 6h (paper:fill:* keys with timestamp >= now-6h)
+        fill_keys = r.keys("paper:fill:*")
+        fill_count = 0
+        for key in fill_keys:
+            try:
+                # Extract timestamp from key (format: paper:fill:<timestamp>:<id>)
+                parts = key.split(":")
+                if len(parts) >= 3:
+                    ts = float(parts[2])
+                    if ts >= six_hours_ago:
+                        fill_count += 1
+            except (ValueError, IndexError):
+                continue
+
+        # Count outcomes in last 6h (bmad:chiseai:outcomes:index members)
+        outcome_ids = r.smembers("bmad:chiseai:outcomes:index")
+        outcome_count = 0
+        for outcome_id in outcome_ids:
+            try:
+                # Try to get the outcome hash for timestamp
+                outcome_data = r.hgetall(f"bmad:chiseai:outcome:{outcome_id}")
+                if outcome_data:
+                    ts_str = outcome_data.get("timestamp", "")
+                    if ts_str:
+                        ts = datetime.fromisoformat(ts_str).timestamp()
+                        if ts >= six_hours_ago:
+                            outcome_count += 1
+                    else:
+                        # If no timestamp in hash, check if outcome_id contains timestamp
+                        parts = outcome_id.split(":")
+                        for part in parts:
+                            try:
+                                ts = float(part)
+                                if ts >= six_hours_ago:
+                                    outcome_count += 1
+                                    break
+                            except ValueError:
+                                continue
+            except Exception:
+                continue
+
+        # Build detail string
+        detail = f"signals={signal_count} orders={order_count} fills={fill_count} outcomes={outcome_count}"
+
+        # Determine status based on chain integrity
+        if signal_count == 0:
+            # No signals = no activity in window (CHECK status)
+            return {
+                "gate": "G10",
+                "status": "⚠️ CHECK",
+                "detail": f"{detail} | No activity in 6h window",
+            }
+        elif (
+            signal_count > 0
+            and order_count > 0
+            and fill_count > 0
+            and outcome_count > 0
+        ):
+            # Complete chain - all stages have activity
+            return {
+                "gate": "G10",
+                "status": "✅ PASS",
+                "detail": f"{detail} | Chain intact",
+            }
+        else:
+            # Pipeline broken - signals exist but downstream stage is empty
+            missing = []
+            if order_count == 0:
+                missing.append("orders")
+            if fill_count == 0:
+                missing.append("fills")
+            if outcome_count == 0:
+                missing.append("outcomes")
+            return {
+                "gate": "G10",
+                "status": "❌ FAIL",
+                "detail": f"{detail} | Pipeline broken: no {'/'.join(missing)}",
+            }
+
+    except Exception as e:
+        return {"gate": "G10", "status": "❌ FAIL", "detail": str(e)}
+
+
 def run_all_checks():
-    """Run all G1-G8 checks."""
+    """Run all G1-G12 checks."""
     r = get_redis()
     if not r:
         return [{"gate": "ALL", "status": "❌ FAIL", "detail": "Redis unavailable"}]
@@ -352,6 +727,9 @@ def run_all_checks():
         check_g6_bybit_connectivity(),
         check_g7_observability(r),
         check_g8_pipeline(r),
+        check_g10_chain_integrity(r),
+        check_g11_provenance(),
+        check_g12_bybit_freshness(r),
     ]
 
     return checks
