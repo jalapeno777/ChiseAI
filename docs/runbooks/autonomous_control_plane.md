@@ -10,6 +10,18 @@
 
 This runbook covers operational procedures for the Autonomous Control Plane, which manages self-healing operations and incident management for the ChiseAI platform.
 
+## Prerequisites
+
+Before using this runbook, ensure you have:
+
+- [ ] kubectl CLI installed and configured for the chiseai namespace
+- [ ] Redis CLI access (host.docker.internal:6380)
+- [ ] PostgreSQL client access for database connectivity checks
+- [ ] Access to InfluxDB for metrics verification
+- [ ] curl command-line tool for API testing
+- [ ] Authorization tokens for API endpoints (if required)
+- [ ] Access to Prometheus/Grafana dashboards
+
 ---
 
 ## Alert: ControlPlaneDown

@@ -1,0 +1,714 @@
+{
+  "story_id": "ST-SKILL-EVAL-002-P0",
+  "timestamp": "2026-03-15T20:40:54.771389",
+  "evaluations": [
+    {
+      "skill": "chiseai-memory-ops",
+      "status": "evaluated",
+      "total": 10,
+      "passed": 8,
+      "pass_rate": 80.0,
+      "results": [
+        {
+          "id": "eval-001",
+          "query": "How do I start a story iteration with Redis?",
+          "priority": "high",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-002",
+          "query": "Log a decision to the story iterlog",
+          "priority": "high",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-003",
+          "query": "Store long-term knowledge in Qdrant",
+          "priority": "high",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-004",
+          "query": "Refresh TTL on Redis keys",
+          "priority": "medium",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-005",
+          "query": "Claim scope ownership in Redis",
+          "priority": "high",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-006",
+          "query": "What to do when Redis is unavailable?",
+          "priority": "high",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-007",
+          "query": "Store metacognition prediction card",
+          "priority": "medium",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-008",
+          "query": "Query prior decisions from Qdrant",
+          "priority": "medium",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-009",
+          "query": "What's the weather like today?",
+          "priority": "low",
+          "score": 0.5,
+          "passed": false,
+          "details": [
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-010",
+          "query": "How to write a Python function?",
+          "priority": "low",
+          "score": 0.5,
+          "passed": false,
+          "details": [
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "chiseai-parallel-safety",
+      "status": "evaluated",
+      "total": 10,
+      "passed": 8,
+      "pass_rate": 80.0,
+      "results": [
+        {
+          "id": "eval-001",
+          "query": "How do I claim scope ownership before delegating work?",
+          "priority": "high",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-002",
+          "query": "Check for ownership conflicts before editing files",
+          "priority": "high",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-003",
+          "query": "What are the global-lock areas that require sequential execu...",
+          "priority": "high",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-004",
+          "query": "Plan a parallel batch for multiple workers",
+          "priority": "high",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-005",
+          "query": "Handle an ownership conflict detected during work",
+          "priority": "high",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-006",
+          "query": "What makes work items parallel-safe?",
+          "priority": "medium",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-007",
+          "query": "Convert parallel plan to sequential due to conflicts",
+          "priority": "medium",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-008",
+          "query": "Release scope ownership when work is complete",
+          "priority": "medium",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-009",
+          "query": "What's the best pizza topping?",
+          "priority": "low",
+          "score": 0.5,
+          "passed": false,
+          "details": [
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-010",
+          "query": "How to optimize SQL queries?",
+          "priority": "low",
+          "score": 0.5,
+          "passed": false,
+          "details": [
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "chiseai-incident-response",
+      "status": "evaluated",
+      "total": 11,
+      "passed": 9,
+      "pass_rate": 81.82,
+      "results": [
+        {
+          "id": "eval-001",
+          "query": "How do I classify an incident severity level P0, P1, P2, or ...",
+          "priority": "high",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-002",
+          "query": "We had a merge conflict between two workers. How do I log th...",
+          "priority": "high",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-003",
+          "query": "What is the structure of a post-mortem meeting for a product...",
+          "priority": "high",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-004",
+          "query": "How do we conduct blameless post-mortems and learn from fail...",
+          "priority": "high",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-005",
+          "query": "I need to document the timeline for a CI regression incident...",
+          "priority": "medium",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-006",
+          "query": "How do I perform root cause analysis using the 5 Whys techni...",
+          "priority": "high",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-007",
+          "query": "After resolving an incident, how do I identify and document ...",
+          "priority": "medium",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-008",
+          "query": "How should I assign follow-up tasks after an incident post-m...",
+          "priority": "medium",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-009",
+          "query": "How do I store incident data in Redis for story ST-XXX?",
+          "priority": "high",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-010",
+          "query": "What is the weather forecast for tomorrow?",
+          "priority": "low",
+          "score": 0.5,
+          "passed": false,
+          "details": [
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-011",
+          "query": "How do I write a React component?",
+          "priority": "low",
+          "score": 0.5,
+          "passed": false,
+          "details": [
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "chiseai-workflow-commands",
+      "status": "evaluated",
+      "total": 10,
+      "passed": 8,
+      "pass_rate": 80.0,
+      "results": [
+        {
+          "id": "eval-001",
+          "query": "How do I create a PRD using BMAD workflow commands?",
+          "priority": "high",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-002",
+          "query": "What command should I use for sprint planning and creating e...",
+          "priority": "high",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-003",
+          "query": "Start an iteration loop for my current story",
+          "priority": "high",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-004",
+          "query": "How do I run the metacognition start and close commands?",
+          "priority": "medium",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-005",
+          "query": "What are the available skill autonomy commands?",
+          "priority": "medium",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-006",
+          "query": "Claim ownership for parallel work",
+          "priority": "high",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-007",
+          "query": "Show me the command map for code review workflow",
+          "priority": "medium",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-008",
+          "query": "What command should I use for domain research tasks?",
+          "priority": "medium",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-009",
+          "query": "What's the best restaurant in New York?",
+          "priority": "low",
+          "score": 0.5,
+          "passed": false,
+          "details": [
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "eval-010",
+          "query": "How do I install Python on my computer?",
+          "priority": "low",
+          "score": 0.5,
+          "passed": false,
+          "details": [
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "skill": "python-quality",
+      "status": "evaluated",
+      "total": 12,
+      "passed": 10,
+      "pass_rate": 83.33,
+      "results": [
+        {
+          "id": "quality-001",
+          "query": "Check Python files for syntax errors",
+          "priority": "high",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "quality-002",
+          "query": "Run black formatting check on src/",
+          "priority": "high",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "quality-003",
+          "query": "Run ruff linting on Python files",
+          "priority": "high",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "quality-004",
+          "query": "Run pytest for unit tests",
+          "priority": "high",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "quality-005",
+          "query": "Verify Python quality after editing src/module.py",
+          "priority": "high",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "quality-006",
+          "query": "What quality tools are configured in this repo?",
+          "priority": "medium",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "quality-007",
+          "query": "Python quality check when pyproject.toml exists",
+          "priority": "medium",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "quality-008",
+          "query": "Handle missing pytest gracefully",
+          "priority": "medium",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "quality-009",
+          "query": "What should I do if Python is not available?",
+          "priority": "medium",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "quality-010",
+          "query": "What is the expected output format for quality checks?",
+          "priority": "low",
+          "score": 1.0,
+          "passed": true,
+          "details": [
+            "has_should_trigger",
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "quality-011",
+          "query": "What is the capital of France?",
+          "priority": "low",
+          "score": 0.5,
+          "passed": false,
+          "details": [
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        },
+        {
+          "id": "quality-012",
+          "query": "How do I fix a flat tire on my car?",
+          "priority": "low",
+          "score": 0.5,
+          "passed": false,
+          "details": [
+            "has_skill_component",
+            "has_expected_behavior"
+          ]
+        }
+      ]
+    }
+  ],
+  "ab_benchmarks": [
+    {
+      "skill": "chiseai-memory-ops",
+      "baseline_pass_rate": 80.0,
+      "optimized_pass_rate": 80.0,
+      "improvement": 0.0,
+      "status": "complete"
+    },
+    {
+      "skill": "chiseai-parallel-safety",
+      "baseline_pass_rate": 80.0,
+      "optimized_pass_rate": 80.0,
+      "improvement": 0.0,
+      "status": "complete"
+    },
+    {
+      "skill": "chiseai-incident-response",
+      "baseline_pass_rate": 81.82,
+      "optimized_pass_rate": 81.82,
+      "improvement": 0.0,
+      "status": "complete"
+    },
+    {
+      "skill": "chiseai-workflow-commands",
+      "baseline_pass_rate": 80.0,
+      "optimized_pass_rate": 80.0,
+      "improvement": 0.0,
+      "status": "complete"
+    },
+    {
+      "skill": "python-quality",
+      "baseline_pass_rate": 83.33,
+      "optimized_pass_rate": 83.33,
+      "improvement": 0.0,
+      "status": "complete"
+    }
+  ]
+}
