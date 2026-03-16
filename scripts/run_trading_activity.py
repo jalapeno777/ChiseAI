@@ -46,11 +46,14 @@ from config.bootstrap import bootstrap
 from config.trading_mode import ModuleType, TradingMode, TradingModeConfig
 
 # Trading components for actual wiring
-from data_ingestion.ohlcv_fetcher import OHLCVFetcher
+from data_ingestion.ohlcv_fetcher import CCXTAdapter, OHLCVFetcher
 from data_ingestion.timeframe_config import Timeframe
+from execution.connectors.bybit_demo_connector import BybitDemoConnector
+from execution.incident_reporter import publish_execution_incident
 from execution.kill_switch.executor import KillSwitchExecutor
 from execution.outcome_capture.integration import OutcomeCaptureIntegration
 from execution.paper import (
+    MarketDataProvider,
     OrderSimulator,
     PaperPositionTracker,
     create_simulator,
@@ -70,6 +73,21 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+
+def _is_local_test_env() -> bool:
+    environment = os.getenv("ENVIRONMENT", "").strip().lower()
+    pytest_active = bool(os.getenv("PYTEST_CURRENT_TEST"))
+    return environment in {"local", "test", "dev"} or pytest_active
+
+
+def _allow_simulator_fallback() -> bool:
+    raw = os.getenv("ALLOW_SIMULATOR_FALLBACK", "").strip().lower()
+    if raw in {"1", "true", "yes", "on"}:
+        return True
+    if raw in {"0", "false", "no", "off"}:
+        return False
+    return _is_local_test_env()
 
 
 @dataclass
@@ -186,7 +204,10 @@ class TradingModeLoader:
         logger.info(f"Initializing module: {module_type.name}")
 
         if module_type == ModuleType.MARKET_DATA:
-            self.ohlcv_fetcher = OHLCVFetcher()
+            exchange_id = os.getenv("SIGNAL_EXCHANGE_ID", "bybit").strip().lower()
+            self.ohlcv_fetcher = OHLCVFetcher(
+                exchange_adapter=CCXTAdapter(exchange_id=exchange_id)
+            )
             self._modules[module_type] = {
                 "name": module_type.name,
                 "loaded": True,
@@ -208,13 +229,55 @@ class TradingModeLoader:
             }
 
         elif module_type == ModuleType.PAPER_EXECUTOR:
-            self.order_simulator = create_simulator()
+            executor_mode = (
+                os.getenv("PAPER_ORDER_EXECUTOR", "simulator").strip().lower()
+            )
+            allow_fallback = _allow_simulator_fallback()
+            bybit_requested = executor_mode == "bybit_demo"
+
+            if bybit_requested:
+                try:
+                    market_data = MarketDataProvider()
+                    try:
+                        connector = BybitDemoConnector.from_env(
+                            market_data=market_data
+                        )
+                    except TypeError:
+                        connector = BybitDemoConnector.from_env()
+                    if getattr(connector, "market_data", None) is None:
+                        connector.market_data = market_data
+                    self.order_simulator = connector
+                    instance_name = "BybitDemoConnector"
+                except Exception as exc:
+                    if not allow_fallback:
+                        await publish_execution_incident(
+                            incident_type="bybit_connector_init_failure",
+                            severity="P1",
+                            title="Bybit demo connector initialization failed",
+                            message=str(exc),
+                            context={
+                                "executor_mode": executor_mode,
+                                "allow_simulator_fallback": allow_fallback,
+                            },
+                        )
+                        raise RuntimeError(
+                            "Bybit demo connector initialization failed and simulator fallback is disabled."
+                        ) from exc
+                    logger.warning(
+                        "Bybit demo connector init failed (%s); using local simulator fallback",
+                        exc,
+                    )
+                    self.order_simulator = create_simulator()
+                    instance_name = "OrderSimulator"
+            else:
+                self.order_simulator = create_simulator()
+                instance_name = "OrderSimulator"
             self.position_tracker = PaperPositionTracker()
             self._modules[module_type] = {
                 "name": module_type.name,
                 "loaded": True,
                 "healthy": True,
-                "instance": "OrderSimulator",
+                "instance": instance_name,
                 "initialized_at": datetime.now(UTC).isoformat(),
             }
 
@@ -525,14 +588,18 @@ async def run_trading_loop(
     last_metrics_log = start_time
     metrics_interval = 60  # Log every 60 seconds
 
-    logger.info(f"Starting trading loop for {duration_seconds} seconds...")
+    run_forever = duration_seconds <= 0
+    if run_forever:
+        logger.info("Starting trading loop with no duration limit")
+    else:
+        logger.info(f"Starting trading loop for {duration_seconds} seconds...")
 
     while loader.is_running():
         current_time = time.time()
         elapsed = current_time - start_time
 
         # Check if duration exceeded
-        if elapsed >= duration_seconds:
+        if not run_forever and elapsed >= duration_seconds:
             logger.info(f"Duration limit ({duration_seconds}s) reached")
             break
 
@@ -592,117 +659,150 @@ async def _execute_trading_cycle(
         if fetcher is None or generator is None:
             return
 
-        # Trading parameters
-        symbol = "BTC/USDT"
-        timeframe = Timeframe.HOUR_1
+        # Trading parameters from deployment configuration
+        symbols_raw = os.getenv("TRADING_SYMBOLS", "BTC/USDT")
+        symbols = [s.strip() for s in symbols_raw.split(",") if s.strip()]
+        timeframe_raw = os.getenv("TRADING_TIMEFRAME", "1h").strip().lower()
+        timeframe = {
+            "1m": Timeframe.MINUTE_1,
+            "5m": Timeframe.MINUTE_5,
+            "15m": Timeframe.MINUTE_15,
+            "1h": Timeframe.HOUR_1,
+            "4h": Timeframe.HOUR_4,
+            "1d": Timeframe.DAY_1,
+        }.get(timeframe_raw, Timeframe.HOUR_1)
 
-        # Step 1: Fetch market data
-        try:
-            ohlcv_data = await fetcher.fetch(
-                symbol=symbol,
-                timeframe=timeframe,
-                limit=100,  # Last 100 candles
-            )
-            if not ohlcv_data:
-                logger.debug("No OHLCV data fetched")
-                return
-        except Exception as e:
-            logger.debug(f"Failed to fetch OHLCV data: {e}")
+        eval_interval_seconds = int(os.getenv("SYMBOL_EVAL_INTERVAL_SECONDS", "300"))
+        if not hasattr(loader, "_last_symbol_eval_ts"):
+            loader._last_symbol_eval_ts = {}
+        now_ts = time.time()
+        due_symbols = []
+        for symbol in symbols:
+            last_ts = loader._last_symbol_eval_ts.get(symbol.upper(), 0.0)
+            if (now_ts - last_ts) >= eval_interval_seconds:
+                due_symbols.append(symbol)
+
+        if not due_symbols:
             return
 
-        # Step 2: Generate signals
-        try:
-            # Extract current price from latest OHLCV data
-            current_price = ohlcv_data[-1].close_price if ohlcv_data else None
+        for symbol in due_symbols:
+            # Gate to at most one full evaluation per symbol per interval.
+            loader._last_symbol_eval_ts[symbol.upper()] = now_ts
 
-            signal = generator.generate_signal(
-                token=symbol,
-                timeframe=timeframe,
-                ohlcv_data=ohlcv_data,
-                current_price=current_price,
-            )
-            metrics.signals_generated += 1
-            logger.debug(
-                f"Signal generated: {symbol} {signal.direction.value} "
-                f"confidence={signal.confidence:.2%}"
-            )
-        except Exception as e:
-            logger.debug(f"Signal generation failed: {e}")
-            return
-
-        # Step 3: Run risk check (count even if no actionable signal)
-        metrics.risk_gate_checks_executed += 1
-
-        # Step 4: Only process actionable signals
-        if signal.status != SignalStatus.ACTIONABLE:
-            logger.debug(f"Signal not actionable: {signal.status.value}")
-            return
-
-        if signal.confidence < loader.config.signal_confidence_threshold:
-            logger.debug(
-                f"Signal below threshold: {signal.confidence:.2%} < "
-                f"{loader.config.signal_confidence_threshold:.2%}"
-            )
-            return
-
-        # Step 5: Execute paper trade via orchestrator
-        try:
-            # Set market price for order simulator
-            # Price must be set BEFORE process_signal is called
-            # Use the same symbol format as the signal (e.g., "BTC/USDT")
-            if orchestrator.order_simulator:
-                current_price = ohlcv_data[-1].close_price if ohlcv_data else 50000.0
-                orchestrator.order_simulator.set_market_price(
-                    symbol,  # Use "BTC/USDT" format to match signal.token
-                    current_price,
+            # Step 1: Fetch market data
+            try:
+                ohlcv_data = await fetcher.fetch(
+                    symbol=symbol,
+                    timeframe=timeframe,
+                    limit=100,  # Last 100 candles
                 )
-                logger.debug(f"Set market price for {symbol}: {current_price}")
+                if not ohlcv_data:
+                    logger.debug("No OHLCV data fetched for %s", symbol)
+                    continue
+            except Exception as e:
+                logger.debug(f"Failed to fetch OHLCV data for {symbol}: {e}")
+                continue
 
-            # Get initial closed position count before processing
-            initial_closed = 0
-            if orchestrator.position_tracker:
-                try:
-                    closed_positions = (
-                        await orchestrator.position_tracker.get_closed_positions()
-                    )
-                    initial_closed = len(closed_positions)
-                except Exception:
-                    initial_closed = 0
-
-            # Submit signal for processing
-            process_result = orchestrator.process_signal(signal)
-            if inspect.isawaitable(process_result):
-                result = await process_result
-            else:
-                result = process_result
-
-            # Update metrics based on result
-            if result.status.value == "executed":
-                metrics.paper_trades_opened += 1
-                logger.info(
-                    f"Paper trade executed: {symbol} {signal.direction.value} "
+            # Step 2: Generate signals
+            try:
+                current_price = ohlcv_data[-1].close_price if ohlcv_data else None
+                signal = generator.generate_signal(
+                    token=symbol,
+                    timeframe=timeframe,
+                    ohlcv_data=ohlcv_data,
+                    current_price=current_price,
+                )
+                metrics.signals_generated += 1
+                logger.debug(
+                    f"Signal generated: {symbol} {signal.direction.value} "
                     f"confidence={signal.confidence:.2%}"
                 )
-            elif result.status.value == "rejected":
-                logger.debug(f"Signal rejected by risk gate: {result.reject_reason}")
+            except Exception as e:
+                logger.debug(f"Signal generation failed for {symbol}: {e}")
+                continue
 
-            # Check for closed positions after processing
-            if orchestrator.position_tracker:
-                try:
-                    final_closed_positions = (
-                        await orchestrator.position_tracker.get_closed_positions()
+            # Step 3: Run risk check (count even if no actionable signal)
+            metrics.risk_gate_checks_executed += 1
+
+            # Step 4: Only process actionable signals
+            if signal.status != SignalStatus.ACTIONABLE:
+                logger.debug(f"Signal not actionable for {symbol}: {signal.status.value}")
+                continue
+
+            if signal.confidence < loader.config.signal_confidence_threshold:
+                logger.debug(
+                    f"Signal below threshold for {symbol}: {signal.confidence:.2%} < "
+                    f"{loader.config.signal_confidence_threshold:.2%}"
+                )
+                continue
+
+            # Step 5: Execute paper trade via orchestrator
+            try:
+                if orchestrator.order_simulator and hasattr(
+                    orchestrator.order_simulator, "set_market_price"
+                ):
+                    current_price = (
+                        ohlcv_data[-1].close_price if ohlcv_data else 50000.0
                     )
-                    final_closed = len(final_closed_positions)
-                    newly_closed = final_closed - initial_closed
+                    orchestrator.order_simulator.set_market_price(symbol, current_price)
+                    logger.debug(f"Set market price for {symbol}: {current_price}")
+                elif (
+                    orchestrator.order_simulator
+                    and hasattr(orchestrator.order_simulator, "market_data")
+                    and getattr(orchestrator.order_simulator, "market_data", None)
+                    is not None
+                    and hasattr(orchestrator.order_simulator.market_data, "set_price")
+                ):
+                    current_price = (
+                        ohlcv_data[-1].close_price if ohlcv_data else 50000.0
+                    )
+                    orchestrator.order_simulator.market_data.set_price(
+                        symbol, current_price
+                    )
+                    logger.debug(
+                        f"Set connector market_data price for {symbol}: {current_price}"
+                    )
 
-                    if newly_closed > 0:
-                        metrics.paper_trades_closed += newly_closed
-                        logger.info(f"Closed {newly_closed} position(s)")
-                except Exception as e:
-                    logger.debug(f"Failed to check closed positions: {e}")
+                initial_closed = 0
+                if orchestrator.position_tracker:
+                    try:
+                        closed_positions = (
+                            await orchestrator.position_tracker.get_closed_positions()
+                        )
+                        initial_closed = len(closed_positions)
+                    except Exception:
+                        initial_closed = 0
 
-        except Exception as e:
-            logger.warning(f"Failed to execute paper trade: {e}")
+                process_result = orchestrator.process_signal(signal)
+                if inspect.isawaitable(process_result):
+                    result = await process_result
+                else:
+                    result = process_result
+
+                if result.status.value == "executed":
+                    metrics.paper_trades_opened += 1
+                    logger.info(
+                        f"Paper trade executed: {symbol} {signal.direction.value} "
+                        f"confidence={signal.confidence:.2%}"
+                    )
+                elif result.status.value == "rejected":
+                    logger.debug(f"Signal rejected by risk gate: {result.reject_reason}")
+
+                if orchestrator.position_tracker:
+                    try:
+                        final_closed_positions = (
+                            await orchestrator.position_tracker.get_closed_positions()
+                        )
+                        final_closed = len(final_closed_positions)
+                        newly_closed = final_closed - initial_closed
+                        if newly_closed > 0:
+                            metrics.paper_trades_closed += newly_closed
+                            logger.info(f"Closed {newly_closed} position(s)")
+                    except Exception as e:
+                        logger.debug(f"Failed to check closed positions: {e}")
+
+            except Exception as e:
+                logger.warning(f"Failed to execute paper trade for {symbol}: {e}")
 
     except Exception as e:
         logger.error(f"Error in trading cycle: {e}", exc_info=True)

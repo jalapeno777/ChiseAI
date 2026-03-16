@@ -16,6 +16,7 @@ import asyncio
 import contextlib
 import inspect
 import logging
+import os
 import time
 import uuid
 from datetime import UTC, datetime
@@ -185,6 +186,10 @@ class PaperTradingOrchestrator:
             "total_latency_ms": 0.0,
             "avg_latency_ms": 0.0,
         }
+        self._symbol_eval_interval_seconds = max(
+            0, int(os.getenv("SYMBOL_EVAL_INTERVAL_SECONDS", "300"))
+        )
+        self._last_symbol_processed_ts: dict[str, float] = {}
         self._lock = asyncio.Lock()
 
         logger.info(
@@ -396,6 +401,34 @@ class PaperTradingOrchestrator:
             self._metrics["signals_processed"] += 1
 
         try:
+            # Enforce global per-symbol cadence across all ingress paths.
+            symbol_key = signal.token.upper().strip()
+            if symbol_key and self._symbol_eval_interval_seconds > 0:
+                now_ts = time.time()
+                last_ts = self._last_symbol_processed_ts.get(symbol_key, 0.0)
+                if (now_ts - last_ts) < self._symbol_eval_interval_seconds:
+                    logger.info(
+                        "Signal throttled for %s: %.1fs < %ss (correlation_id=%s)",
+                        symbol_key,
+                        now_ts - last_ts,
+                        self._symbol_eval_interval_seconds,
+                        correlation_id,
+                    )
+                    async with self._lock:
+                        self._metrics["trades_rejected"] += 1
+                    return PaperTradeResult(
+                        signal=signal,
+                        status=TradeStatus.REJECTED,
+                        reject_reason=[
+                            (
+                                "Signal throttled by per-symbol cadence: "
+                                f"{self._symbol_eval_interval_seconds}s"
+                            )
+                        ],
+                        correlation_id=correlation_id,
+                    )
+                self._last_symbol_processed_ts[symbol_key] = now_ts
+
             # Step 1: Check kill-switch state
             if self.kill_switch.state.value == "triggered":
                 logger.warning(
@@ -412,9 +445,32 @@ class PaperTradingOrchestrator:
                 )
 
             # Step 1.5: Get market price early (needed for position management)
-            entry_price = self.order_simulator.market_data.get_price(signal.token)
+            entry_price = None
+            market_data = getattr(self.order_simulator, "market_data", None)
+            if market_data is not None and hasattr(market_data, "get_price"):
+                entry_price = market_data.get_price(signal.token)
 
             # If no price available, try to set a default price for known symbols
+            if entry_price is None or entry_price <= 0:
+                # For live demo connector, try a direct ticker refresh first.
+                if hasattr(self.order_simulator, "get_market_price"):
+                    try:
+                        live_price_result = self.order_simulator.get_market_price(
+                            signal.token
+                        )
+                        if asyncio.iscoroutine(live_price_result):
+                            live_price = await live_price_result
+                        else:
+                            live_price = live_price_result
+                        if live_price is not None and live_price > 0:
+                            entry_price = float(live_price)
+                    except Exception as e:
+                        logger.debug(
+                            "Live market price refresh failed for %s: %s",
+                            signal.token,
+                            e,
+                        )
+
             if entry_price is None or entry_price <= 0:
                 default_price = self._get_default_price(signal.token)
                 if default_price is not None:
@@ -422,7 +478,10 @@ class PaperTradingOrchestrator:
                         f"No market price for {signal.token}, using default price "
                         f"${default_price:,.2f} (correlation_id={correlation_id})"
                     )
-                    self.order_simulator.set_market_price(signal.token, default_price)
+                    if hasattr(self.order_simulator, "set_market_price"):
+                        self.order_simulator.set_market_price(
+                            signal.token, default_price
+                        )
                     entry_price = default_price
                 else:
                     logger.warning(
@@ -612,7 +671,12 @@ class PaperTradingOrchestrator:
 
             # Step 4: Create order
             order = self._create_order(
-                signal, final_position_size, entry_price, correlation_id
+                signal,
+                final_position_size,
+                entry_price,
+                correlation_id,
+                recommended_stop_loss=llm_stop_loss,
+                recommended_take_profit=llm_take_profit,
             )
 
             # Step 5: Place order (with latency check)
@@ -623,6 +687,8 @@ class PaperTradingOrchestrator:
                 order_type=order.order_type,
                 quantity=order.quantity,
                 price=order.price,
+                take_profit=order.metadata.get("take_profit"),
+                stop_loss=order.metadata.get("stop_loss"),
             )
             order_latency_ms = (time.perf_counter() - order_start) * 1000
 
@@ -749,6 +815,8 @@ class PaperTradingOrchestrator:
         position_size: float,
         entry_price: float,
         correlation_id: str,
+        recommended_stop_loss: float | None = None,
+        recommended_take_profit: float | None = None,
     ) -> PaperOrder:
         """Create an order from a signal.
 
@@ -757,6 +825,8 @@ class PaperTradingOrchestrator:
             position_size: Calculated position size
             entry_price: Entry price for the order
             correlation_id: Correlation ID for tracing
+            recommended_stop_loss: Optional SL from LLM/risk stack
+            recommended_take_profit: Optional TP from LLM/risk stack
 
         Returns:
             PaperOrder ready for placement
@@ -783,9 +853,12 @@ class PaperTradingOrchestrator:
 
         # Store correlation_id and stop-loss in metadata
         order.metadata["correlation_id"] = correlation_id
-        if signal.stop_loss:
-            order.metadata["stop_loss"] = signal.stop_loss
+        effective_stop_loss = recommended_stop_loss or signal.stop_loss
+        if effective_stop_loss:
+            order.metadata["stop_loss"] = effective_stop_loss
             order.metadata["stop_loss_method"] = signal.stop_loss_method or "unknown"
+        if recommended_take_profit:
+            order.metadata["take_profit"] = recommended_take_profit
 
         logger.debug(
             f"Created {order.order_type} order: {order.symbol} "

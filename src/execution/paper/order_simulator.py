@@ -140,6 +140,7 @@ class OrderSimulator:
         order_type: str,
         quantity: float,
         price: float | None = None,
+        **_: Any,
     ) -> PaperOrder:
         """Place a new order.
 

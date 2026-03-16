@@ -1,5 +1,15 @@
 locals {
   project_label = "chiseai"
+  effective_bybit_demo_api_key = (
+    trimspace(var.bybit_demo_api_key) != ""
+    ? var.bybit_demo_api_key
+    : var.bybit_api_key
+  )
+  effective_bybit_demo_api_secret = (
+    trimspace(var.bybit_demo_api_secret) != ""
+    ? var.bybit_demo_api_secret
+    : var.bybit_api_secret
+  )
 }
 
 # ChiseAI Application Containers
@@ -635,6 +645,80 @@ resource "docker_container" "chiseai_ohlcv_ingestion" {
 
   healthcheck {
     test     = ["CMD-SHELL", "python3 -c \"import os; exit(0) if any('run_ohlcv_ingestion' in open(f'/proc/{p}/cmdline', 'r').read() for p in os.listdir('/proc') if p.isdigit()) else exit(1)\" || exit 1"]
+    interval = "60s"
+    timeout  = "10s"
+    retries  = 3
+  }
+}
+
+# Live paper trading executor daemon (Bybit demo + mandatory LLM decision path)
+resource "docker_container" "chiseai_paper_trading_executor" {
+  name  = "chiseai-paper-trading-executor"
+  image = "chiseai-api:latest"
+
+  command = [
+    "python3",
+    "scripts/run_trading_activity.py",
+    "--mode",
+    "paper",
+    "--duration",
+    "0",
+    "--confidence-threshold",
+    "0.75",
+    "--portfolio-value",
+    "10000",
+  ]
+
+  env = [
+    "REDIS_HOST=chiseai-redis",
+    "REDIS_PORT=6380",
+    "BYBIT_API_MODE=demo",
+    "BYBIT_DEMO_API_KEY=${local.effective_bybit_demo_api_key}",
+    "BYBIT_DEMO_API_SECRET=${local.effective_bybit_demo_api_secret}",
+    "PAPER_ORDER_EXECUTOR=bybit_demo",
+    "ALLOW_SIMULATOR_FALLBACK=false",
+    "USE_LLM_TRADE_DECISIONS=true",
+    "REQUIRE_LLM_TRADE_DECISION=true",
+    "SIGNAL_EXCHANGE_ID=bybit",
+    "TRADING_SYMBOLS=${var.trading_symbols}",
+    "TRADING_TIMEFRAME=${var.trading_timeframe}",
+    "SYMBOL_EVAL_INTERVAL_SECONDS=${var.trading_symbol_eval_interval_seconds}",
+    "TRADING_INCIDENT_STREAM=bmad:chiseai:incidents:stream",
+    "DISCORD_TRADING_WEBHOOK_URL=${var.discord_trading_webhook_url}",
+    "KIMI_API_KEY=${var.kimi_api_key}",
+    "KIMI_BASE_URL=${var.kimi_base_url}",
+    "KIMI_MODEL=${var.kimi_model}",
+    "ZHIPU_API_KEY=${var.zhipu_api_key}",
+    "Z_AI_API_KEY=${var.z_ai_api_key}",
+    "MINIMAX_API_KEY=${var.minimax_api_key}",
+    "MINIMAX_ENABLED=${var.minimax_enabled}",
+    "PYTHONUNBUFFERED=1",
+    "PYTHONPATH=/app:/app/src",
+  ]
+
+  restart = "always"
+
+  networks_advanced {
+    name = docker_network.chiseai.name
+  }
+
+  labels {
+    label = "project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.project"
+    value = local.project_label
+  }
+
+  labels {
+    label = "com.docker.compose.service"
+    value = "paper-trading-executor"
+  }
+
+  healthcheck {
+    test     = ["CMD-SHELL", "pgrep -f 'scripts/run_trading_activity.py --mode paper' || exit 1"]
     interval = "60s"
     timeout  = "10s"
     retries  = 3

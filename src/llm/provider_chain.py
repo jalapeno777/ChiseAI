@@ -647,19 +647,9 @@ class LLMProviderChain:
 
         import aiohttp
 
-        api_key = os.getenv("KIMI_API_KEY")
-
-        if not api_key:
-            return LLMResponse(
-                success=False,
-                provider="KIMI Compat (Adapter)",
-                error=ProviderError(
-                    category=ErrorCategory.NOT_CONFIGURED,
-                    message="KIMI_API_KEY not configured",
-                    retryable=False,
-                    should_fallback=True,
-                ),
-            )
+        # For adapter routing, upstream auth is handled by the adapter container itself.
+        # Do not require KIMI_API_KEY in this caller container.
+        api_key = os.getenv("KIMI_API_KEY", "")
 
         # Resolve adapter endpoint for this runtime (service DNS or host fallback)
         base_url = None
@@ -705,9 +695,10 @@ class LLMProviderChain:
 
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
             "User-Agent": "claude-code/0.1.0",
         }
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
 
         try:
             model_candidates = self._resolve_kimi_compat_models()
