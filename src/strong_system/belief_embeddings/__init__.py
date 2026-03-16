@@ -1,12 +1,24 @@
 """Strong AI System - Belief Embeddings Module.
 
 Provides belief vector representation, validation, serialization,
-and vector search capabilities for neural belief embeddings.
+vector search, and clustering capabilities for neural belief embeddings.
 """
 
 from __future__ import annotations
 
 from .cache import BeliefCache, CacheEntry, CacheMetrics
+from .clustering import (
+    BeliefClusteringEngine,
+    ClusterAssignment,
+    ClusterMetrics,
+    ClusteringError,
+)
+from .index import (
+    BeliefIndex,
+    ClusterInfo,
+    HierarchicalLevel,
+    IndexError,
+)
 from .pipeline import (
     BeliefPipeline,
     PipelineConfig,
@@ -38,15 +50,23 @@ from .vector import (
 
 __all__ = [
     "BeliefCache",
-    "CacheEntry",
-    "CacheMetrics",
+    "BeliefClusteringEngine",
+    "BeliefIndex",
     "BeliefMetadata",
     "BeliefPipeline",
     "BeliefSchema",
     "BeliefSearchIndex",
     "BeliefSerializer",
     "BeliefVector",
+    "CacheEntry",
+    "CacheMetrics",
+    "ClusterAssignment",
+    "ClusterInfo",
+    "ClusterMetrics",
+    "ClusteringError",
+    "HierarchicalLevel",
     "InMemoryBackend",
+    "IndexError",
     "PipelineConfig",
     "PipelineMetrics",
     "PipelineStage",
