@@ -151,6 +151,19 @@ class Node:
         """
         return self.__mul__(other)
 
+    def __matmul__(self, other: Node) -> Node:
+        """Matrix multiply this node with another node.
+
+        Args:
+            other: Another node for matrix multiplication
+
+        Returns:
+            A new node representing the matrix product
+        """
+        from src.strong_system.computational_graph.operations import MatMul
+
+        return MatMul.forward(self, other)
+
     def zero_grad(self) -> None:
         """Zero out the gradient for this node."""
         self.gradient = np.zeros_like(self.value)
