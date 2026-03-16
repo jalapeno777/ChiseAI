@@ -26,16 +26,15 @@ steps:
 
 ## Prerequisites
 
-Before using this runbook, ensure you have:
+Before following procedures in this runbook, ensure you have:
 
-- [ ] Docker CLI access with permissions to start/stop containers
-- [ ] Redis CLI installed and configured (port 6380)
-- [ ] Access to the chiseai Docker network
-- [ ] curl command-line tool for API testing
-- [ ] jq JSON processor for parsing responses
-- [ ] Access to application logs (docker logs chiseai-api)
-- [ ] Kill-switch check script permissions (./scripts/ops/kill_switch_check.sh)
-- [ ] Understanding of Redis memory limits and eviction policies
+- [ ] Docker access (`docker ps` shows running containers)
+- [ ] Redis CLI installed (`redis-cli --version` works)
+- [ ] Access to chiseai Docker network
+- [ ] Application logs access (`docker logs chiseai-api` works)
+- [ ] Grafana dashboard access for kill-switch panel
+- [ ] Kill-switch check script executable
+- [ ] Understanding of circuit breaker indicators
 
 ## Problem Description
 
@@ -98,9 +97,14 @@ docker logs chiseai-redis --tail 50
 ```bash
 # Basic connectivity test
 redis-cli -p 6380 PING
+```
 
-# Expected: PONG
+**Expected Output:**
+```
+PONG
+```
 
+```bash
 # If no response, check network
 docker network inspect chiseai | grep -A 5 redis
 ```
@@ -198,7 +202,11 @@ curl http://localhost:8001/api/v1/execution/kill-switch/status | jq '.circuit_br
 
 ```bash
 # Check sync status between Redis and memory
-curl http://localhost:8001/api/v1/paper/sync-status | jq '{divergence_pct: .divergence_pct, redis_connected: .redis_connected, last_sync: .last_sync_time}'
+curl http://localhost:8001/api/v1/paper/sync-status | jq '{
+  divergence_pct: .divergence_pct,
+  redis_connected: .redis_connected,
+  last_sync: .last_sync_time
+}'
 ```
 
 #### 3. Check Alert Pipeline

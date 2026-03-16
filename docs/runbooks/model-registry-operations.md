@@ -68,6 +68,13 @@ model, metadata = registry.get_model("price_predictor", "1.0.0")
 model, metadata = registry.get_model("price_predictor", "latest")
 ```
 
+**Expected Output:**
+```
+Model loaded: price_predictor@1.0.0
+Created: 2026-02-20T10:30:00Z
+Metrics: {'accuracy': 0.95, 'f1': 0.93}
+```
+
 ### Rollback to Previous Version
 
 ```python
