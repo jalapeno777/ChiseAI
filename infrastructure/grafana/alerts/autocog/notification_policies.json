@@ -1,0 +1,72 @@
+{
+  "apiVersion": 1,
+  "policies": [
+    {
+      "uid": "autocog-policy",
+      "title": "AUTOCOG Alert Routing",
+      "group_by": ["alertname", "severity"],
+      "group_wait": "30s",
+      "group_interval": "5m",
+      "repeat_interval": "4h",
+      "receiver": "discord-autocog",
+      "routes": [
+        {
+          "matcher": {
+            "severity": "critical"
+          },
+          "receiver": "discord-autocog-urgent"
+        },
+        {
+          "matcher": {
+            "severity": "warning"
+          },
+          "receiver": "discord-autocog"
+        }
+      ],
+      "mute_time_intervals": [
+        {
+          "name": "maintenance-window",
+          "time_intervals": [
+            {
+              "weekdays": ["saturday"],
+              "times": [
+                {
+                  "start_time": "02:00",
+                  "end_time": "06:00"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "contactPoints": [
+    {
+      "uid": "discord-autocog",
+      "name": "Discord AUTOCOG Channel",
+      "type": "discord",
+      "settings": {
+        "url": "${DISCORD_WEBHOOK_URL}",
+        "message": {
+          "username": "AUTOCOG Alert",
+          "avatar_url": "https://grafana.com/static/img/grafana_icon.png",
+          "content": "{{ .CommonAnnotations.summary }}\n\nSeverity: {{ .Labels.severity }}\nComponent: {{ .Labels.component }}\n\n{{ .CommonAnnotations.description }}"
+        }
+      }
+    },
+    {
+      "uid": "discord-autocog-urgent",
+      "name": "Discord AUTOCOG Urgent",
+      "type": "discord",
+      "settings": {
+        "url": "${DISCORD_WEBHOOK_URL_URGENT}",
+        "message": {
+          "username": "🚨 AUTOCOG URGENT",
+          "avatar_url": "https://grafana.com/static/img/grafana_icon.png",
+          "content": "@here 🚨 **CRITICAL ALERT**\n\n{{ .CommonAnnotations.summary }}\n\nSeverity: {{ .Labels.severity }}\nComponent: {{ .Labels.component }}\n\n{{ .CommonAnnotations.description }}"
+        }
+      }
+    }
+  ]
+}
