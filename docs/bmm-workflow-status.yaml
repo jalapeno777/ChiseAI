@@ -391,7 +391,69 @@ metadata:
         - feature/ST-MODEL-REG-002-api-cli-interface
         - feature/ST-MODEL-REG-003-monitoring-alerting
 
-in_progress: []
+in_progress:
+- id: STRONG-001-B
+  title: "Neural Belief Revision Components"
+  status: in_progress
+  priority: P1
+  owner: senior-dev
+  story_points: 4
+  created_date: '2026-03-16'
+  description: |
+    Implemented neural belief revision system with belief representation, revision engine,
+    confidence calibration, and conflict resolution. Enables the STRONG system to maintain
+    consistent, calibrated beliefs with proper handling of contradictory evidence.
+  files_changed:
+    - src/strong_system/neural_beliefs/__init__.py
+    - src/strong_system/neural_beliefs/belief.py
+    - src/strong_system/neural_beliefs/revision.py
+    - src/strong_system/neural_beliefs/calibrator.py
+    - src/strong_system/neural_beliefs/conflict.py
+    - tests/test_strong_system/test_neural_beliefs/__init__.py
+    - tests/test_strong_system/test_neural_beliefs/test_belief.py
+    - tests/test_strong_system/test_neural_beliefs/test_revision.py
+    - tests/test_strong_system/test_neural_beliefs/test_calibrator.py
+    - tests/test_strong_system/test_neural_beliefs/test_conflict.py
+  test_results:
+    total_tests: 120
+    passed: 120
+    failed: 0
+    pass_rate: "100%"
+  notes:
+    - "Belief representation with confidence scores and metadata"
+    - "Revision engine with AGM-inspired postulates"
+    - "Confidence calibrator with beta calibration"
+    - "Conflict resolution with multiple strategies"
+    - "120 comprehensive tests with 100% pass rate"
+
+- id: STRONG-002-B
+  title: "Vector Search and Belief Clustering"
+  status: in_progress
+  priority: P1
+  owner: dev
+  story_points: 4
+  created_date: '2026-03-16'
+  description: |
+    Implemented vector search capabilities and belief clustering for the STRONG system's
+    belief embedding layer. Includes clustering algorithms, vector indexing, and similarity
+    search with Qdrant backend integration.
+  files_changed:
+    - src/strong_system/belief_embeddings/clustering.py
+    - src/strong_system/belief_embeddings/index.py
+    - src/strong_system/belief_embeddings/__init__.py
+    - tests/test_strong_system/test_belief_embeddings/test_clustering.py
+    - tests/test_strong_system/test_belief_embeddings/test_index.py
+  test_results:
+    total_tests: 90
+    passed: 90
+    failed: 0
+    pass_rate: "100%"
+  notes:
+    - "K-means and hierarchical clustering for beliefs"
+    - "Vector indexing with Qdrant backend"
+    - "Similarity search with multiple metrics"
+    - "Cluster quality evaluation metrics"
+    - "90 comprehensive tests with 100% pass rate"
 
 completed:
 - id: STRONG-001-A-S3
