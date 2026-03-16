@@ -122,6 +122,17 @@ from ml.training.pipeline_integration import (
     TrainingPipelineIntegration,
 )
 
+# Pipeline status tracking (ST-LAUNCH-012)
+from ml.training.pipeline_status import (
+    PipelineStatus,
+    PipelineStatusTracker,
+    delete_pipeline_status,
+    get_pipeline_status,
+    get_pipeline_status_value,
+    is_pipeline_active,
+    set_pipeline_status,
+)
+
 # Retraining trigger components
 from ml.training.retraining_trigger import (
     ECE_TRIGGER_THRESHOLD,
@@ -252,4 +263,12 @@ __all__ = [
     "TrainingExecutionError",
     "ModelRegistrationError",
     "TrainingDataFetcher",
+    # Pipeline Status Tracking (ST-LAUNCH-012)
+    "PipelineStatus",
+    "PipelineStatusTracker",
+    "set_pipeline_status",
+    "get_pipeline_status",
+    "get_pipeline_status_value",
+    "delete_pipeline_status",
+    "is_pipeline_active",
 ]
