@@ -159,15 +159,19 @@ WORKER_COMPLETION_REPORT:
 
 ## Merge Authority
 
-### Only Merlin May:
+### Merlin (exclusive authority):
 - Open/update/close PRs
-- Merge to `main`
+- Merge to `main` after >2 failed merge attempts by senior-dev
+- Handle emergency merge overrides and complex merges
 - Run branch cleanup
 
 ### Jarvis Orchestrates:
 - Delegation to workers
 - Handoff to Merlin
 - Conflict resolution
+
+### Senior-dev (conditional authority):
+- May merge straightforward changes to `main` after green CI and review
 
 ### Workers (All Other Agents):
 - Push branches

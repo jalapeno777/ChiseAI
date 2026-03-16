@@ -15,7 +15,8 @@ disable-model-invocation: true
 
 ### 1. Active Sessions
 ```bash
-python3 scripts/swarm/session.py list
+git worktree list
+find . -type f -name ".swarm-session.json" -not -path "*/.git/*"
 ```
 Shows: Active worktrees, their branches, and story associations.
 
@@ -40,7 +41,8 @@ Run all checks together:
 
 ```bash
 echo "=== ACTIVE SESSIONS ==="
-python3 scripts/swarm/session.py list 2>/dev/null || echo "session.py not available"
+git worktree list 2>/dev/null || echo "git worktree not available"
+find . -type f -name ".swarm-session.json" -not -path "*/.git/*" 2>/dev/null || echo "no swarm session files found"
 
 echo -e "\n=== BRANCH HYGIENE ==="
 python3 scripts/swarm/branch_hygiene_check.py --report 2>/dev/null || echo "branch_hygiene_check.py not available"

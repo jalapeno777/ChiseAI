@@ -12,9 +12,9 @@ Run these gates before PR/merge. If a referenced script is missing, explicitly n
    - `git status -sb`
    - `git branch --show-current`
    - If this is agent-run story work, verify session:
-     - `python3 scripts/swarm/session.py verify --story-id=<story_id> --branch=<branch> --check-canonical`
+     - `python3 scripts/swarm/session.py verify --story-id=<story_id> --branch=<branch> --worktree-path=<worktree_path> --check-canonical`
    - For merge-to-main actions, enforce authority + lock:
-     - `python3 scripts/swarm/session.py verify --story-id=<story_id> --branch=<branch> --check-canonical --require-main-merge-authority --acquire-main-merge-lock`
+     - `python3 scripts/swarm/session.py verify --story-id=<story_id> --branch=<branch> --worktree-path=<worktree_path> --check-canonical --require-main-merge-authority --acquire-main-merge-lock`
 
 2. Local CI checks (best available)
    - If `scripts/local-ci-checks.sh` exists, run it.
@@ -107,10 +107,10 @@ Run these gates before PR/merge. If a referenced script is missing, explicitly n
      - structural registry errors: warn in precommit gate output
      - missing skill refs: warning by default; use `--strict-missing-skills` only in hardening sweeps
 
-8. Session close anti-drift (required at handoff/finish)
-   - `python3 scripts/swarm/session.py close --enforce-merged`
+8. Session close anti-drift (handoff/finish only; not every precommit run)
+   - `python3 scripts/swarm/session.py close --worktree-path=<worktree_path> --enforce-merged`
    - If intentionally closing with open PR and branch ahead of main:
-     - `python3 scripts/swarm/session.py close --enforce-merged --allow-unmerged`
+     - `python3 scripts/swarm/session.py close --worktree-path=<worktree_path> --enforce-merged --allow-unmerged`
 
 ## Priority-Based Gate Summary
 
