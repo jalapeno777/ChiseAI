@@ -430,12 +430,13 @@ completed:
     Added similarity search, hybrid search combining vector and metadata filters,
     and batch operations for efficient belief retrieval.
   files_changed:
-    - src/strong_system/belief_embeddings/vector_search.py
-    - tests/test_strong_system/test_belief_embeddings/test_vector_search.py
+    - src/strong_system/belief_embeddings/search.py
+    - tests/test_strong_system/test_belief_embeddings/test_search.py
   test_results:
-    total_tests: 25
-    passed: 25
+    total_tests: 49
+    passed: 49
     failed: 0
+    skipped: 2
     pass_rate: "100%"
   merge_commit: 50062db6
   notes:
@@ -443,7 +444,7 @@ completed:
     - "Similarity search with cosine distance metric"
     - "Hybrid search combining vector and metadata filters"
     - "Batch search and index management operations"
-    - "All 25 vector search tests passing"
+    - "All 49 vector search tests passing (2 skipped for optional qdrant-client)"
 
 - id: STABILIZE-002
   title: "CI Test Stage Verification"
