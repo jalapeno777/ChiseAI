@@ -288,8 +288,9 @@ class RunbookValidator:
         # Look for numbered steps (1., 1), Step 1, etc.)
         step_patterns = [
             r"^\s*\d+[\.\)]\s+\w+",  # 1. Step or 1) Step
+            r"^\s*\d+[\.\)]\s+\*\*",  # 1. **Bold Step** format
             r"^\s*Step\s+\d+",  # Step 1
-            r"^\s*####?\s+\d+",  # Markdown heading with number
+            r"^\s*###?#?\s+\d+",  # Markdown heading with number
             r"^\s*\*\*\d+\.\*\*",  # **1.** format
         ]
 
@@ -402,12 +403,48 @@ class RunbookValidator:
                 if not line or line.startswith("#"):
                     continue
 
+                # Skip lines containing jq filters or curl data (complex patterns that are valid)
+                if "jq " in line or "-d '" in line or '-d "' in line:
+                    continue
+
+                # Skip isolated closing braces (from multiline JSON)
+                if (
+                    line == "}'"
+                    or line == '}"'
+                    or line.startswith("}'")
+                    or line.startswith('}"')
+                ):
+                    continue
+
+                # Skip Docker format template strings ({{.Field}} syntax)
+                # These use double braces which are valid Go templates
+                docker_format_pattern = r"\{\{[\.\w]+\}\}"
+                line_for_checking = re.sub(docker_format_pattern, "PLACEHOLDER", line)
+
+                # Skip jq filter syntax (jq '.field' or jq '{...}')
+                # jq filters use single braces in quoted strings
+                jq_filter_pattern = r"jq\s+['\"].*?['\"]"
+                line_for_checking = re.sub(
+                    jq_filter_pattern, "JQ_FILTER", line_for_checking
+                )
+
+                # Skip curl POST data with JSON (-d '{...}' or --data '{...}')
+                # These have balanced braces inside single quotes
+                curl_data_pattern = r"-d\s+['\"]\{.*?\}['\"]"
+                line_for_checking = re.sub(
+                    curl_data_pattern, "CURL_DATA", line_for_checking
+                )
+                curl_data_long_pattern = r"--data\s+['\"]\{.*?\}['\"]"
+                line_for_checking = re.sub(
+                    curl_data_long_pattern, "CURL_DATA", line_for_checking
+                )
+
                 # Check for common syntax issues
-                if line.count("(") != line.count(")"):
+                if line_for_checking.count("(") != line_for_checking.count(")"):
                     issues.append(f"Unbalanced parentheses: {line[:50]}...")
-                if line.count("{") != line.count("}"):
+                if line_for_checking.count("{") != line_for_checking.count("}"):
                     issues.append(f"Unbalanced braces: {line[:50]}...")
-                if line.count('"') % 2 != 0:
+                if line_for_checking.count('"') % 2 != 0:
                     issues.append(f"Unbalanced quotes: {line[:50]}...")
 
         if issues:

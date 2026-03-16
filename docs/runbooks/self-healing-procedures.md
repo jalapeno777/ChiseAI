@@ -67,6 +67,15 @@ This document provides runbook templates and operational procedures for manual i
    - [ ] Response time < 500ms
    - [ ] No error spikes in logs
 
+   **Expected Output:**
+   ```bash
+   $ curl http://localhost:8000/health
+   {"status": "healthy", "timestamp": "2026-03-16T10:30:00Z"}
+   
+   $ curl http://localhost:8000/health/deps
+   {"redis": "connected", "database": "connected", "all_healthy": true}
+   ```
+
 5. **Rollback (if needed)**
    ```bash
    # If restart fails, check rollback status

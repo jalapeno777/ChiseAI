@@ -24,6 +24,18 @@ steps:
 
 # Redis Failure Response Runbook
 
+## Prerequisites
+
+Before following procedures in this runbook, ensure you have:
+
+- [ ] Docker access (`docker ps` shows running containers)
+- [ ] Redis CLI installed (`redis-cli --version` works)
+- [ ] Access to chiseai Docker network
+- [ ] Application logs access (`docker logs chiseai-api` works)
+- [ ] Grafana dashboard access for kill-switch panel
+- [ ] Kill-switch check script executable
+- [ ] Understanding of circuit breaker indicators
+
 ## Problem Description
 
 Redis failures can cause:
@@ -85,9 +97,14 @@ docker logs chiseai-redis --tail 50
 ```bash
 # Basic connectivity test
 redis-cli -p 6380 PING
+```
 
-# Expected: PONG
+**Expected Output:**
+```
+PONG
+```
 
+```bash
 # If no response, check network
 docker network inspect chiseai | grep -A 5 redis
 ```

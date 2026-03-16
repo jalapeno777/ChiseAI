@@ -35,6 +35,18 @@ steps:
 
 This runbook provides comprehensive procedures for incident management at ChiseAI, including classification, escalation, recovery, communication, post-mortem processes, and on-call procedures. All team members must be familiar with this runbook.
 
+## Prerequisites
+
+Before following procedures in this runbook, ensure you have:
+
+- [ ] API endpoint access (`curl http://localhost:8001/api/v1/health` responds)
+- [ ] PagerDuty access and notification configured
+- [ ] Slack access with incident channel permissions
+- [ ] Access to runbook scripts in `./scripts/ops/`
+- [ ] Grafana dashboard access for metrics verification
+- [ ] Knowledge of current on-call rotation schedule
+- [ ] Understanding of severity classification criteria (P0-P3)
+
 ---
 
 ## 1. Incident Classification

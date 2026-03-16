@@ -31,6 +31,17 @@ steps:
 
 This runbook covers daily operational procedures for the paper trading environment, including health checks, common issue resolution, and monitoring guidelines.
 
+## Prerequisites
+
+Before following procedures in this runbook, ensure you have:
+
+- [ ] Access to ChiseAI Docker containers (`docker ps` works)
+- [ ] API endpoint access (`curl http://localhost:8001` responds)
+- [ ] Redis CLI installed and accessible (`redis-cli -p 6380 ping` returns PONG)
+- [ ] Grafana dashboard access at `http://localhost:3001`
+- [ ] Kill-switch check script executable: `./scripts/ops/kill_switch_check.sh`
+- [ ] Paper trading mode is active (not live trading)
+
 ## Daily Operational Checks
 
 ### Morning Startup Checklist (9:00 AM)
