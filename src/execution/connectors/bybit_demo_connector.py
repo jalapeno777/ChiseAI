@@ -17,6 +17,7 @@ Key Features:
 from __future__ import annotations
 
 import logging
+import os
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -355,8 +356,34 @@ class BybitDemoConnector:
         if reference_price <= 0:
             return tp, sl
 
+        max_tp_distance_pct = float(os.getenv("BYBIT_TP_MAX_DISTANCE_PCT", "0.30"))
+        max_sl_distance_pct = float(os.getenv("BYBIT_SL_MAX_DISTANCE_PCT", "0.20"))
+        max_tp_distance_pct = max(0.01, min(max_tp_distance_pct, 5.0))
+        max_sl_distance_pct = max(0.01, min(max_sl_distance_pct, 1.0))
+
         side_norm = side.lower().strip()
         if side_norm == "buy":
+            # Cap unrealistic extremes to keep venue-level hard exits practical.
+            if tp is not None and tp > reference_price * (1 + max_tp_distance_pct):
+                clipped = reference_price * (1 + max_tp_distance_pct)
+                logger.warning(
+                    "Clipping long TP %.6f -> %.6f (max %.1f%% from ref %.6f)",
+                    tp,
+                    clipped,
+                    max_tp_distance_pct * 100.0,
+                    reference_price,
+                )
+                tp = clipped
+            if sl is not None and sl < reference_price * (1 - max_sl_distance_pct):
+                clipped = reference_price * (1 - max_sl_distance_pct)
+                logger.warning(
+                    "Clipping long SL %.6f -> %.6f (max %.1f%% from ref %.6f)",
+                    sl,
+                    clipped,
+                    max_sl_distance_pct * 100.0,
+                    reference_price,
+                )
+                sl = clipped
             if tp is not None and tp <= reference_price:
                 logger.warning(
                     "Discarding invalid long TP %.6f <= ref %.6f",
@@ -372,6 +399,26 @@ class BybitDemoConnector:
                 )
                 sl = None
         else:
+            if tp is not None and tp < reference_price * (1 - max_tp_distance_pct):
+                clipped = reference_price * (1 - max_tp_distance_pct)
+                logger.warning(
+                    "Clipping short TP %.6f -> %.6f (max %.1f%% from ref %.6f)",
+                    tp,
+                    clipped,
+                    max_tp_distance_pct * 100.0,
+                    reference_price,
+                )
+                tp = clipped
+            if sl is not None and sl > reference_price * (1 + max_sl_distance_pct):
+                clipped = reference_price * (1 + max_sl_distance_pct)
+                logger.warning(
+                    "Clipping short SL %.6f -> %.6f (max %.1f%% from ref %.6f)",
+                    sl,
+                    clipped,
+                    max_sl_distance_pct * 100.0,
+                    reference_price,
+                )
+                sl = clipped
             if tp is not None and tp >= reference_price:
                 logger.warning(
                     "Discarding invalid short TP %.6f >= ref %.6f",

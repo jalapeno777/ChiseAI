@@ -564,7 +564,13 @@ class PaperTradingOrchestrator:
                     f"chain_ready={self.decision_enhancer._chain is not None}"
                 )
                 try:
-                    enhanced = await self.decision_enhancer.enhance_decision(signal)
+                    enhanced = await self.decision_enhancer.enhance_decision(
+                        signal,
+                        market_context={
+                            "price": entry_price,
+                            "timeframe": str(getattr(signal, "timeframe", "1h")),
+                        },
+                    )
                     if not enhanced.go_no_go:
                         logger.info(
                             f"Signal rejected by LLM: {signal.token} - {enhanced.rationale}"
