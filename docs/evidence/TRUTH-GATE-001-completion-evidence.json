@@ -1,0 +1,68 @@
+{
+  "story_id": "TRUTH-GATE-001",
+  "title": "Command-Backed Truth Gate",
+  "status": "completed",
+  "completion_date": "2026-03-16T23:00:00Z",
+  "completed_by": "senior-dev",
+  "merge_commit": "63f6bfe9",
+  "original_commit": "4f5451f2",
+  "verification": {
+    "local_merge": {
+      "verified": true,
+      "timestamp": "2026-03-16T22:45:00Z"
+    },
+    "remote_push": {
+      "verified": true,
+      "timestamp": "2026-03-16T22:46:00Z"
+    },
+    "branch_contains": {
+      "local_main": true,
+      "remote_main": true
+    }
+  },
+  "test_results": {
+    "total_tests": 44,
+    "passed": 44,
+    "failed": 0,
+    "skipped": 0,
+    "pass_rate": "100%",
+    "test_file": "tests/test_validation/test_truth_gate.py"
+  },
+  "files_changed": [
+    "scripts/validation/truth_gate.py",
+    "scripts/validation/truth_gate_checks/__init__.py",
+    "scripts/validation/truth_gate_checks/merge_truth.py",
+    "scripts/validation/truth_gate_checks/test_counts.py",
+    "scripts/validation/truth_gate_checks/workflow_status.py",
+    "tests/test_validation/test_truth_gate.py"
+  ],
+  "lines_changed": {
+    "added": 1557,
+    "deleted": 0
+  },
+  "features_delivered": [
+    "Modular check system with plugin architecture",
+    "Workflow status validation",
+    "Test count verification",
+    "Merge truth verification",
+    "44 unit tests with 100% pass rate",
+    "JSON and human-readable output formats"
+  ],
+  "check_modules": {
+    "workflow_status": "Validates workflow status file entries",
+    "test_counts": "Verifies test counts match workflow records",
+    "merge_truth": "Validates merge commit presence on main"
+  },
+  "evidence_sources": {
+    "workflow_status": "docs/bmm-workflow-status.yaml",
+    "merge_commit": "63f6bfe9",
+    "test_file": "tests/test_validation/test_truth_gate.py"
+  },
+  "notes": [
+    "All 44 tests passing with 100% pass rate",
+    "Truth gate provides command-line interface for validation",
+    "Modular architecture allows easy addition of new checks",
+    "JSON output enables CI/CD integration",
+    "Human-readable output suitable for manual verification"
+  ]
+}
