@@ -10,6 +10,8 @@ Components:
     - backward: Main entry point for reverse-mode automatic differentiation
     - compute_gradients: Compute gradients for all nodes in a graph
     - clear_gradients: Reset all gradients to None
+    - GraphOptimizer: Optimizer for computational graphs
+    - MemoryProfiler: Memory profiling utilities
 
 Example:
     >>> from src.strong_system.computational_graph import Graph, Node, backward
@@ -32,6 +34,14 @@ from src.strong_system.computational_graph.autodiff import (
     compute_gradients,
 )
 from src.strong_system.computational_graph.graph import Graph
+from src.strong_system.computational_graph.memory import (
+    MemoryOptimizer,
+    MemoryProfiler,
+    MemoryReport,
+    estimate_graph_memory,
+    format_memory_size,
+    profile_memory,
+)
 from src.strong_system.computational_graph.node import Node, Operation
 from src.strong_system.computational_graph.operations import (
     Add,
@@ -39,6 +49,14 @@ from src.strong_system.computational_graph.operations import (
     Multiply,
     ReLU,
     Sum,
+)
+from src.strong_system.computational_graph.optimizer import (
+    CheckpointNode,
+    CheckpointStrategy,
+    GraphOptimizer,
+    OptimizationConfig,
+    OptimizationResult,
+    optimize_graph,
 )
 
 __all__ = [
@@ -53,4 +71,18 @@ __all__ = [
     "backward",
     "compute_gradients",
     "clear_gradients",
+    # Optimizer exports
+    "GraphOptimizer",
+    "OptimizationConfig",
+    "OptimizationResult",
+    "CheckpointStrategy",
+    "CheckpointNode",
+    "optimize_graph",
+    # Memory exports
+    "MemoryProfiler",
+    "MemoryReport",
+    "MemoryOptimizer",
+    "profile_memory",
+    "estimate_graph_memory",
+    "format_memory_size",
 ]
