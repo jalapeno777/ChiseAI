@@ -8,17 +8,22 @@
 1. **MEM-SCAN**: Read nearest AGENTS.md for your scope
 2. **Load Skill**: Identify task type → Load relevant skill (see "When to Use What" below)
 3. **Start Iteration**: `.opencode/command/chise-iterloop-start.md`
-4. **Claim Ownership**: `.opencode/command/chise-claim-ownership.md` (if parallel work)
+4. **Start Swarm Session**: `.opencode/command/chise-swarm-session.md` (`start`)
+5. **Verify Session Before Git Actions**: `.opencode/command/chise-swarm-session.md` (`verify`)
+6. **Claim Ownership**: `.opencode/command/chise-claim-ownership.md` (if parallel work)
 
 ### Standard Workflow
 ```
 skill(name="chiseai-git-workflow")          # Load git workflow skill
 → chise-iterloop-start                      # Start iteration
+→ chise-swarm-session (start)               # Create isolated worktree session
+→ chise-swarm-session (verify)              # Verify session before git actions
 → chise-metacog-start                       # Capture prediction card + confidence
 → chise-claim-ownership                     # Claim scope (if parallel)
 → [Do work following skill guidance]
 → chise-precommit-gates                     # Validate before PR
 → chise-metacog-close                       # Capture outcome + calibration
+→ chise-swarm-session (close)               # Close session and release leases
 → chise-iterloop-close                      # Close and promote learnings
 ```
 
@@ -26,8 +31,8 @@ skill(name="chiseai-git-workflow")          # Load git workflow skill
 
 ### "I'm starting a new story..."
 **Load:** `chiseai-git-workflow`
-**Then run:** `chise-iterloop-start` command
-**Why:** Sets up proper branch isolation and iteration tracking from the start
+**Then run:** `chise-iterloop-start` then `chise-swarm-session` (`start` + `verify`)
+**Why:** Sets up proper branch/worktree isolation and iteration tracking from the start
 
 ### "I need to delegate work to multiple agents..." (Jarvis only)
 **Load:** `chiseai-worker-contracts` + `chiseai-parallel-safety`
@@ -37,8 +42,8 @@ skill(name="chiseai-git-workflow")          # Load git workflow skill
 
 ### "I'm about to edit files..."
 **Load:** `chiseai-git-workflow`
-**Then run:** `chise-swarm-session` (verify) command
-**Why:** Ensures you're in the right branch/worktree with clean state
+**Then run:** `chise-swarm-session` (`start` if no active session, then `verify`)
+**Why:** Ensures you're in the right branch/worktree with a valid lease before git actions
 
 ### "I'm working with Redis or Qdrant..."
 **Load:** `chiseai-memory-ops`

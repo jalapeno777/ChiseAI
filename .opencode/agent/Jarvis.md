@@ -103,7 +103,7 @@ BLOCKER_PACKET
 - `jarvis` orchestrates handoff and explicitly instructs appropriate agent for PR creation, CI monitoring, merge actions, and branch pruning.
 - Before handing work to `merlin`, require workers to report: story id, branch, head SHA, local CI result, status-sync result, and blockers.
 - If intentionally closing while branch is ahead of main and PR is still open (handoff), use:
-  - `python3 scripts/swarm/session.py close --enforce-merged --allow-unmerged`
+  - `python3 scripts/swarm/session.py close --worktree-path=<path> --enforce-merged --allow-unmerged`
 
 ### Cross-Branch Verification Guardrail (REQUIRED)
 Before confirming any merge to main, verify the commit is actually on main:

@@ -11,8 +11,8 @@ disable-model-invocation: true
 - **Post-incident recovery**: After resolving conflicts, run to verify no lingering issues
 
 ## Do Not Use
-- **As a merge queue**: Use `chise-merge-queue-process` for actual merge queue operations
-- **For intake triage**: Use `chise-intake-triage` for processing incoming work items
+- **As a merge queue**: Use `chise-merge-queue-tick` for actual merge queue operations
+- **For intake triage**: Use `chise-reconcile-intake` for processing incoming work items
 - **For PR creation**: This is not for creating PRs; use Gitea CLI or web interface
 - **During active work**: Do not run while workers are actively editing (will cause interference)
 

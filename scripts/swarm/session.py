@@ -22,7 +22,17 @@ import urllib.request
 from pathlib import Path
 from typing import Any, cast
 
-from config.bootstrap import bootstrap, check_environment
+# Allow direct script execution from repo root in opencode harness:
+# ensure both repo root and src are importable before bootstrap import.
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+for _path in (str(_REPO_ROOT), str(_REPO_ROOT / "src")):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
+
+try:
+    from config.bootstrap import bootstrap, check_environment
+except ModuleNotFoundError:
+    from src.config.bootstrap import bootstrap, check_environment
 
 SESSION_FILE = ".swarm-session.json"
 

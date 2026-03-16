@@ -111,8 +111,8 @@ One merge attempt = sync/rebase OR conflict resolution + required checks rerun +
 | Command | Purpose | When to Run |
 |---------|---------|-------------|
 | `chise-reconcile-tick` | Periodic drift detection | Every 15-30 mins via cron/loop |
-| `chise-merge-queue-process` | Process merge queue items | When PRs are ready to merge |
-| `chise-intake-triage` | Triage new work items | On new story/bug intake |
+| `chise-merge-queue-tick` | Process merge queue items | When PRs are ready to merge |
+| `chise-reconcile-intake` | Triage new work items | On new story/bug intake |
 
 **Key Distinction**: `chise-reconcile-tick` is for **detection and hygiene**, not for **actual merging or intake processing**. Use the specific commands for those operations.
 
@@ -120,7 +120,7 @@ One merge attempt = sync/rebase OR conflict resolution + required checks rerun +
 
 Use `scripts/swarm/session.py` for isolated worktree sessions:
 - `start` before any git work
-- `verify` before git actions  
+- `verify` before git actions (use explicit `--worktree-path`)
 - `close` when done
 
 ## Exit Conditions
@@ -511,9 +511,7 @@ git push origin --delete [branch] # Delete remote
 | Type | Pattern | Example |
 |------|---------|---------|
 | Feature | `feature/[ST-XXX]-[slug]` | `feature/ST-DSL-042-grammar-extensions` |
-| Fix | `fix/[ST-XXX]-[slug]` | `fix/ST-EV-015-fitness-calc` |
 | Safety | `safety/[reason]-[date]` | `safety/hotfix-2026-02-23` |
-| Release | `release/[version]` | `release/v1.2.0` |
 
 ### PR Title Tokens (Required)
 

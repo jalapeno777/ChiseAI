@@ -37,7 +37,11 @@ permission:
 ## Scope + Lock Contract (required)
 - If the task does not include `SCOPE_GLOBS` and `LOCKS_REQUIRED`, ask once before starting.
 - If the task includes git actions, it must also include `BRANCH` and `WORKTREE_PATH`; run `python3 scripts/swarm/session.py verify --story-id=<story_id> --branch=<branch> --worktree-path=<path>` before any git command.
-- You must not merge or push `main`; only `jarvis` may perform main-merge operations.
+- You must not merge or push `main`.
+  - **Workers** (you): Push branches + handoff evidence only; do NOT open PRs or merge to main
+  - **Jarvis**: Orchestrates handoff to appropriate merge authority
+  - **senior-dev**: May merge to main after green CI and review for straightforward changes
+  - **Merlin**: Required merge authority after >2 failed merge attempts by senior-dev
 - Do not edit files outside `SCOPE_GLOBS`.
 - Treat canonical status files (`docs/bmm-workflow-status.yaml`, `docs/validation/validation-registry.yaml`) as single-writer global-lock files; lock usage is advisory and must be coordinated by `jarvis`.
 - If you discover hidden dependencies, global-lock areas, or non-trivial scope, STOP and report back to `jarvis` for re-scoping.
