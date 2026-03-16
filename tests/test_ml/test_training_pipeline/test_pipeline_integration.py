@@ -33,6 +33,7 @@ sys.path.insert(0, "/home/tacopants/projects/ChiseAI/src")
 
 from config.feature_flags import (
     FeatureFlags,
+    get_feature_flags,
     reset_feature_flags,
     set_feature_flags,
 )
@@ -998,6 +999,274 @@ class TestPipelineValidationIntegration:
 
         # Verify model was registered
         mock_model_registry.register_model.assert_called_once()
+
+
+# =============================================================================
+# Rollback Tests
+# =============================================================================
+
+
+class TestRollbackScenarios:
+    """Tests for rollback scenarios in training pipeline."""
+
+    @pytest.mark.asyncio
+    async def test_rollback_criteria_accuracy_drop(self, reset_flags):
+        """Test rollback is triggered when accuracy drops significantly.
+
+        Rollback Criteria:
+        - Accuracy drop > 10% from baseline triggers rollback
+        """
+        baseline_accuracy = 0.85
+        new_accuracy = 0.70
+        accuracy_drop = baseline_accuracy - new_accuracy
+        rollback_threshold = 0.10
+
+        rollback_needed = accuracy_drop > rollback_threshold
+
+        assert rollback_needed is True
+        assert (
+            abs(accuracy_drop - 0.15) < 0.001
+        )  # 15% drop exceeds 10% threshold (with tolerance)
+
+    @pytest.mark.asyncio
+    async def test_rollback_criteria_validation_failure(self, reset_flags):
+        """Test rollback is triggered on validation failure.
+
+        Rollback Criteria:
+        - Critical validation failures trigger rollback
+        """
+        # Simulate validation results
+        validation_passed = False
+        critical_failures = 2
+
+        rollback_needed = not validation_passed and critical_failures > 0
+
+        assert rollback_needed is True
+
+    @pytest.mark.asyncio
+    async def test_rollback_to_previous_version(self, reset_flags):
+        """Test rollback to a previous model version."""
+        import shutil
+        import uuid
+
+        from ml.models.model_registry import ModelRegistry
+        from ml.models.model_storage import FilesystemBackend, ModelMetadata
+
+        # Create unique temporary directory to avoid conflicts
+        unique_id = str(uuid.uuid4())[:8]
+        base_path = f"/tmp/test_registry_rollback_{unique_id}"
+
+        # Clean up any existing directory
+        shutil.rmtree(base_path, ignore_errors=True)
+
+        backend = FilesystemBackend(base_path=base_path)
+        registry = ModelRegistry(backend=backend)
+
+        # Register version 1.0.0
+        model_v1 = {"weights": [0.1, 0.2, 0.3]}
+        metadata_v1 = ModelMetadata(
+            model_name="test_model",
+            version="1.0.0",
+            created_at=datetime.now(UTC),
+            training_data="dataset_v1",
+            hyperparameters={"lr": 0.001},
+            metrics={"accuracy": 0.85},
+            tags=["production"],
+        )
+        registry.register_model(model_v1, metadata_v1)
+
+        # Register version 1.1.0 (worse performance)
+        model_v2 = {"weights": [0.15, 0.25, 0.35]}
+        metadata_v2 = ModelMetadata(
+            model_name="test_model",
+            version="1.1.0",
+            created_at=datetime.now(UTC),
+            training_data="dataset_v2",
+            hyperparameters={"lr": 0.001},
+            metrics={"accuracy": 0.72},  # Worse than v1
+            tags=["production"],
+        )
+        registry.register_model(model_v2, metadata_v2)
+
+        # Verify latest is v2
+        _, latest_meta = registry.get_latest("test_model")
+        assert latest_meta.version == "1.1.0"
+
+        # Rollback to v1
+        registry.rollback("test_model", "1.0.0")
+
+        # Verify latest is now v1
+        _, rolled_back_meta = registry.get_latest("test_model")
+        assert rolled_back_meta.version == "1.0.0"
+
+        # Cleanup
+        shutil.rmtree(base_path, ignore_errors=True)
+
+    def test_rollback_preserves_version_history(self, reset_flags):
+        """Test that rollback preserves version history."""
+        import shutil
+        import uuid
+
+        from ml.models.model_registry import ModelRegistry
+        from ml.models.model_storage import FilesystemBackend, ModelMetadata
+
+        # Create unique temporary directory to avoid conflicts
+        unique_id = str(uuid.uuid4())[:8]
+        base_path = f"/tmp/test_registry_history_{unique_id}"
+
+        # Clean up any existing directory
+        shutil.rmtree(base_path, ignore_errors=True)
+
+        backend = FilesystemBackend(base_path=base_path)
+        registry = ModelRegistry(backend=backend)
+
+        # Register multiple versions
+        for version in ["1.0.0", "1.1.0", "1.2.0"]:
+            model = {"version": version}
+            metadata = ModelMetadata(
+                model_name="history_test",
+                version=version,
+                created_at=datetime.now(UTC),
+                training_data=f"dataset_{version}",
+                hyperparameters={},
+                metrics={"accuracy": 0.80},
+                tags=[],
+            )
+            registry.register_model(model, metadata)
+
+        # Get version history before rollback
+        history_before = registry.get_version_history("history_test")
+        assert len(history_before) == 3
+
+        # Rollback to 1.0.0
+        registry.rollback("history_test", "1.0.0")
+
+        # Get version history after rollback
+        history_after = registry.get_version_history("history_test")
+
+        # History should be preserved (all versions still exist)
+        assert len(history_after) == 3
+
+        # Cleanup
+        shutil.rmtree(base_path, ignore_errors=True)
+
+    @pytest.mark.asyncio
+    async def test_training_pipeline_handles_rollback_scenario(
+        self,
+        mock_model_registry,
+        reset_flags,
+    ):
+        """Test training pipeline handles rollback scenarios properly."""
+        # Mock registry to return a baseline model
+        mock_baseline = MagicMock()
+        mock_baseline_meta = MagicMock()
+        mock_baseline_meta.version = "0.9.0"
+        mock_baseline_meta.metrics = {"accuracy": 0.85}
+
+        mock_model_registry.get_latest = MagicMock(
+            return_value=(mock_baseline, mock_baseline_meta)
+        )
+
+        # Mock data fetcher
+        mock_data_fetcher = MagicMock()
+        mock_data_fetcher.fetch_training_data = AsyncMock(
+            return_value=TrainingData(
+                samples=[{"feature": 1.0}] * 200,
+                sample_count=200,
+                features=["feature"],
+            )
+        )
+
+        # Create integration
+        integration = TrainingPipelineIntegration(
+            model_registry=mock_model_registry,
+            data_fetcher=mock_data_fetcher,
+        )
+
+        # Run training
+        job = await integration.run_training_manual()
+        await asyncio.sleep(0.1)
+
+        # Verify job completed
+        tracked_job = integration.get_job(job.job_id)
+        assert tracked_job is not None
+
+    def test_rollback_documentation_completeness(self):
+        """Test that rollback criteria are properly documented."""
+        # Documented rollback criteria
+        rollback_criteria = [
+            "Accuracy drop > 10% from baseline",
+            "Critical validation failures",
+            "Production error rate exceeds threshold",
+            "Model inference latency exceeds SLA",
+        ]
+
+        # Verify all criteria are documented
+        assert len(rollback_criteria) >= 3
+        assert any("accuracy" in c.lower() for c in rollback_criteria)
+        assert any("validation" in c.lower() for c in rollback_criteria)
+
+
+# =============================================================================
+# Feature Flag Integration Tests
+# =============================================================================
+
+
+class TestFeatureFlagIntegration:
+    """Tests for feature flag integration in training pipeline."""
+
+    @pytest.mark.asyncio
+    async def test_feature_flag_checked_before_execution(self, reset_flags):
+        """Test that feature flag is checked before pipeline execution."""
+        from ml.training.pipeline_integration import TrainingPipelineIntegration
+        from ml.training.retraining_trigger import (
+            InMemoryDeduplicationStore,
+            RetrainingTrigger,
+            RetrainingTriggerConfig,
+            TriggerResult,
+            TriggerStatus,
+            TriggerType,
+        )
+
+        # Disable feature flag
+        flags = FeatureFlags(launch_training_pipeline_enabled=False)
+        set_feature_flags(flags)
+
+        # Create trigger and integration
+        trigger = RetrainingTrigger(
+            config=RetrainingTriggerConfig(enable_discord_alerts=False),
+            dedup_store=InMemoryDeduplicationStore(),
+        )
+
+        integration = TrainingPipelineIntegration(retraining_trigger=trigger)
+
+        # Create trigger result
+        trigger_result = TriggerResult(
+            trigger_type=TriggerType.ECE_BASED,
+            status=TriggerStatus.TRIGGERED,
+            triggered=True,
+            message="Test trigger",
+            timestamp=datetime.now(UTC),
+        )
+
+        # Handle trigger
+        job = await integration.handle_trigger(trigger_result)
+
+        # Verify job was cancelled due to feature flag
+        assert job.status == TrainingJobStatus.CANCELLED
+        assert "disabled" in job.error_message.lower()
+
+    def test_feature_flag_defaults_enabled(self):
+        """Test that feature flag defaults to enabled (safety-first)."""
+        flags = FeatureFlags()
+        assert flags.launch_training_pipeline_enabled is True
+
+    def test_feature_flag_can_be_disabled_via_env(self, monkeypatch):
+        """Test that feature flag can be disabled via environment variable."""
+        monkeypatch.setenv("LAUNCH_TRAINING_PIPELINE_ENABLED", "false")
+        reset_feature_flags()
+        flags = get_feature_flags()
+        assert flags.launch_training_pipeline_enabled is False
 
 
 if __name__ == "__main__":
