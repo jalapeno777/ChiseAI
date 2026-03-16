@@ -1,0 +1,111 @@
+{
+  "story_id": "ST-BYBIT-FRESHNESS-001",
+  "title": "Bybit Truth Freshness Watchdog",
+  "commit_sha": "43e21c082e3ff1e36062ed67b9add33750e0db57",
+  "commit_timestamp": "2026-03-15T18:53:26-04:00",
+  "branch": "feature/ST-CHECKPOINT-GATES-001",
+  "evidence_generated_at": "2026-03-15T22:53:00Z",
+  "implementation_summary": {
+    "freshness_thresholds": {
+      "warning_minutes": 45,
+      "failure_minutes": 60
+    },
+    "cron_interval": "30m",
+    "auto_recovery": true,
+    "redis_lock_protection": true
+  },
+  "files_changed": [
+    {
+      "path": "scripts/monitoring/bybit_freshness_watchdog.py",
+      "status": "added",
+      "lines_added": 707,
+      "lines_deleted": 0,
+      "description": "Main watchdog implementation with freshness checking, auto-recovery, and Redis lock protection"
+    },
+    {
+      "path": "scripts/monitoring/cron_evidence.py",
+      "status": "modified",
+      "lines_added": 4,
+      "lines_deleted": 0,
+      "description": "Added bybit-truth-collector to CRON_JOBS with 30m interval"
+    },
+    {
+      "path": "docs/runbooks/checkpoint-gates.md",
+      "status": "modified",
+      "lines_added": 88,
+      "lines_deleted": 2,
+      "description": "Updated G12 gate documentation with freshness requirements"
+    },
+    {
+      "path": "docs/runbooks/observability-guardrails.md",
+      "status": "modified",
+      "lines_added": 426,
+      "lines_deleted": 2,
+      "description": "Added Bybit freshness watchdog runbook and operational procedures"
+    },
+    {
+      "path": "tests/test_monitoring/test_bybit_freshness_watchdog.py",
+      "status": "added",
+      "lines_added": 721,
+      "lines_deleted": 0,
+      "description": "Unit tests for watchdog (35 tests)"
+    },
+    {
+      "path": "tests/test_monitoring/test_bybit_freshness_integration.py",
+      "status": "added",
+      "lines_added": 564,
+      "lines_deleted": 0,
+      "description": "Integration tests for watchdog (22 tests)"
+    },
+    {
+      "path": "tests/test_monitoring/test_cron_evidence.py",
+      "status": "modified",
+      "lines_added": 165,
+      "lines_deleted": 0,
+      "description": "Added tests for bybit-truth-collector cron job"
+    }
+  ],
+  "total_changes": {
+    "files_changed": 7,
+    "insertions": 2675,
+    "deletions": 4
+  },
+  "test_summary": {
+    "total_tests": 57,
+    "unit_tests": 35,
+    "integration_tests": 22,
+    "test_files": [
+      "tests/test_monitoring/test_bybit_freshness_watchdog.py",
+      "tests/test_monitoring/test_bybit_freshness_integration.py",
+      "tests/test_monitoring/test_cron_evidence.py"
+    ]
+  },
+  "freshness_status": {
+    "note": "Redis freshness data will be populated on first watchdog run",
+    "redis_keys": {
+      "latest": "bybit:freshness:latest",
+      "history": "bybit:freshness:history",
+      "lock": "bybit:freshness:lock"
+    },
+    "g12_gate": {
+      "status": "configured",
+      "threshold_minutes": 60,
+      "description": "Gate stays green when freshness < 60 minutes"
+    }
+  },
+  "verification_commands": {
+    "check_freshness": "python3 scripts/monitoring/bybit_freshness_watchdog.py --check",
+    "force_collect": "python3 scripts/monitoring/bybit_freshness_watchdog.py --force",
+    "run_tests": "pytest tests/test_monitoring/test_bybit_freshness_watchdog.py tests/test_monitoring/test_bybit_freshness_integration.py -v",
+    "verify_cron": "python3 -c \"from scripts.monitoring.cron_evidence import CRON_JOBS; print('bybit-truth-collector' in [j['name'] for j in CRON_JOBS])\""
+  },
+  "ready_for_merge": true,
+  "blockers": [],
+  "notes": [
+    "Implementation complete and tested",
+    "All 57 tests passing",
+    "G12 gate configured with 60m threshold",
+    "Auto-recovery enabled with Redis lock protection",
+    "Redis freshness data will populate on first cron run"
+  ]
+}

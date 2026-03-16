@@ -479,9 +479,12 @@ class TestTrainingPipelineIntegration:
 
     @pytest.mark.asyncio
     async def test_execute_training_job_with_retry(
-        self, default_integration, sample_training_data, reset_flags
+        self, default_integration, sample_training_data, reset_flags, monkeypatch
     ):
         """Test training job with retry on failure."""
+        # Patch asyncio.sleep to avoid long delays during retry
+        monkeypatch.setattr(asyncio, "sleep", AsyncMock())
+
         # Mock data fetcher to fail then succeed
         call_count = 0
 
@@ -504,9 +507,12 @@ class TestTrainingPipelineIntegration:
 
     @pytest.mark.asyncio
     async def test_execute_training_job_max_retries_exceeded(
-        self, default_integration, reset_flags
+        self, default_integration, reset_flags, monkeypatch
     ):
         """Test training job fails after max retries."""
+        # Patch asyncio.sleep to avoid long delays during retry
+        monkeypatch.setattr(asyncio, "sleep", AsyncMock())
+
         default_integration._data_fetcher = MagicMock()
         default_integration._data_fetcher.fetch_training_data = AsyncMock(
             side_effect=DataFetchError("Persistent fetch error")

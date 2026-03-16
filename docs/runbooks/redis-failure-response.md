@@ -24,6 +24,19 @@ steps:
 
 # Redis Failure Response Runbook
 
+## Prerequisites
+
+Before using this runbook, ensure you have:
+
+- [ ] Docker CLI access with permissions to start/stop containers
+- [ ] Redis CLI installed and configured (port 6380)
+- [ ] Access to the chiseai Docker network
+- [ ] curl command-line tool for API testing
+- [ ] jq JSON processor for parsing responses
+- [ ] Access to application logs (docker logs chiseai-api)
+- [ ] Kill-switch check script permissions (./scripts/ops/kill_switch_check.sh)
+- [ ] Understanding of Redis memory limits and eviction policies
+
 ## Problem Description
 
 Redis failures can cause:
@@ -185,11 +198,7 @@ curl http://localhost:8001/api/v1/execution/kill-switch/status | jq '.circuit_br
 
 ```bash
 # Check sync status between Redis and memory
-curl http://localhost:8001/api/v1/paper/sync-status | jq '{
-  divergence_pct: .divergence_pct,
-  redis_connected: .redis_connected,
-  last_sync: .last_sync_time
-}'
+curl http://localhost:8001/api/v1/paper/sync-status | jq '{divergence_pct: .divergence_pct, redis_connected: .redis_connected, last_sync: .last_sync_time}'
 ```
 
 #### 3. Check Alert Pipeline

@@ -1,12 +1,12 @@
 {
   "story_id": "ST-VALIDATION-002",
-  "timestamp": "2026-03-13T06:46:43.539527+00:00",
+  "timestamp": "2026-03-16T00:35:26.269027+00:00",
   "validator": "dev",
   "summary": {
     "total_runbooks_checked": 6,
     "passed": 0,
-    "failed": 5,
-    "partial": 1,
+    "failed": 4,
+    "partial": 2,
     "p0_status": {
       "total": 3,
       "passed": 0,
@@ -15,7 +15,7 @@
     "p1_status": {
       "total": 3,
       "passed": 0,
-      "failed": 3
+      "failed": 2
     }
   },
   "runbooks": [
@@ -136,8 +136,8 @@
         },
         {
           "criterion": "Lists prerequisites",
-          "status": "FAIL",
-          "details": "No section matching 'Prerequisite|Requirements|Before|Pre-condition' found"
+          "status": "PASS",
+          "details": "Found matching section"
         },
         {
           "criterion": "Has numbered steps",
@@ -190,8 +190,8 @@
         },
         {
           "criterion": "Lists prerequisites",
-          "status": "FAIL",
-          "details": "No section matching 'Prerequisite|Requirements|Before|Pre-condition' found"
+          "status": "PASS",
+          "details": "Found matching section"
         },
         {
           "criterion": "Has numbered steps",
@@ -221,7 +221,7 @@
       ],
       "live_tests": [],
       "issues": [],
-      "overall_status": "FAIL"
+      "overall_status": "PARTIAL"
     },
     {
       "name": "incident_response.md",
@@ -240,8 +240,8 @@
         },
         {
           "criterion": "Lists prerequisites",
-          "status": "FAIL",
-          "details": "No section matching 'Prerequisite|Requirements|Before|Pre-condition' found"
+          "status": "PASS",
+          "details": "Found matching section"
         },
         {
           "criterion": "Has numbered steps",
@@ -294,8 +294,8 @@
         },
         {
           "criterion": "Lists prerequisites",
-          "status": "FAIL",
-          "details": "No section matching 'Prerequisite|Requirements|Before|Pre-condition' found"
+          "status": "PASS",
+          "details": "Found matching section"
         },
         {
           "criterion": "Has numbered steps",
@@ -337,42 +337,42 @@
       "status": "PASS",
       "output": "PONG",
       "error": "",
-      "timestamp": "2026-03-13T06:46:43.644086+00:00"
+      "timestamp": "2026-03-16T00:35:26.336546+00:00"
     },
     {
       "command": "redis-cli -h host.docker.internal -p 6380 dbsize",
       "status": "PASS",
-      "output": "40166",
+      "output": "103573",
       "error": "",
-      "timestamp": "2026-03-13T06:46:43.656826+00:00"
+      "timestamp": "2026-03-16T00:35:26.372937+00:00"
     },
     {
       "command": "curl -s -o /dev/null -w %{http_code} http://host.docker.internal:8502/_stcore/health",
       "status": "PASS",
       "output": "200",
       "error": "",
-      "timestamp": "2026-03-13T06:46:43.666557+00:00"
+      "timestamp": "2026-03-16T00:35:26.394740+00:00"
     },
     {
       "command": "docker ps --filter name=chiseai --format {{.Names}}",
       "status": "PASS",
-      "output": "chiseai-api-final\nchiseai-kimi-adapter\nchiseai-brain-scheduler\nchiseai-data-quality-monitor\nchiseai-datasource-health-monitor\nchiseai-daily-summary\nchiseai-grafana\nchiseai-postgres\nchiseai-redis\nchiseai-qdrant\nchiseai-influxdb\nchiseai-ohlcv-ingestion",
+      "output": "chiseai-grafana\nchiseai-tempo\nchiseai-api-final\nchiseai-kimi-adapter\nchiseai-brain-scheduler\nchiseai-data-quality-monitor\nchiseai-datasource-health-monitor\nchiseai-daily-summary\nchiseai-postgres\nchiseai-redis\nchiseai-qdrant\nchiseai-influxdb\nchiseai-ohlcv-ingestion",
       "error": "",
-      "timestamp": "2026-03-13T06:46:43.681448+00:00"
+      "timestamp": "2026-03-16T00:35:26.460605+00:00"
     },
     {
       "command": "redis-cli -h host.docker.internal -p 6380 info server",
       "status": "PASS",
-      "output": "# Server\nredis_version:7.4.7\nredis_git_sha1:00000000\nredis_git_dirty:0\nredis_build_id:bbc098ffb697e20\nredis_mode:standalone\nos:Linux 6.6.87.2-microsoft-standard-WSL2 x86_64\narch_bits:64\nmonotonic_clock:POSIX clock_gettime\nmultiplexing_api:epoll\natomicvar_api:c11-builtin\ngcc_version:12.2.0\nprocess_id:1\nprocess_supervised:no\nrun_id:5d190d3a6ea0c0356565aae1d6c6241558d97ff0\ntcp_port:6380\nserver_time_usec:1773384403784035\nuptime_in_seconds:1353086\nuptime_in_days:15\nhz:10\nconfigured_hz:10\nlru_clock:11",
+      "output": "# Server\nredis_version:7.4.7\nredis_git_sha1:00000000\nredis_git_dirty:0\nredis_build_id:bbc098ffb697e20\nredis_mode:standalone\nos:Linux 6.6.87.2-microsoft-standard-WSL2 x86_64\narch_bits:64\nmonotonic_clock:POSIX clock_gettime\nmultiplexing_api:epoll\natomicvar_api:c11-builtin\ngcc_version:12.2.0\nprocess_id:1\nprocess_supervised:no\nrun_id:5d190d3a6ea0c0356565aae1d6c6241558d97ff0\ntcp_port:6380\nserver_time_usec:1773621326715605\nuptime_in_seconds:1590009\nuptime_in_days:18\nhz:10\nconfigured_hz:10\nlru_clock:12",
       "error": "",
-      "timestamp": "2026-03-13T06:46:43.774864+00:00"
+      "timestamp": "2026-03-16T00:35:26.699473+00:00"
     },
     {
       "command": "redis-cli -h host.docker.internal -p 6380 info memory",
       "status": "PASS",
-      "output": "# Memory\nused_memory:41299080\nused_memory_human:39.39M\nused_memory_rss:44273664\nused_memory_rss_human:42.22M\nused_memory_peak:44393424\nused_memory_peak_human:42.34M\nused_memory_peak_perc:93.03%\nused_memory_overhead:4627992\nused_memory_startup:948496\nused_memory_dataset:36671088\nused_memory_dataset_perc:90.88%\nallocator_allocated:42159480\nallocator_active:42577920\nallocator_resident:46993408\nallocator_muzzy:0\ntotal_system_memory:42060685312\ntotal_system_memory_human:39.17G\nused_memory_lua:32768\nu",
+      "output": "# Memory\nused_memory:83300936\nused_memory_human:79.44M\nused_memory_rss:94900224\nused_memory_rss_human:90.50M\nused_memory_peak:91450848\nused_memory_peak_human:87.21M\nused_memory_peak_perc:91.09%\nused_memory_overhead:9752368\nused_memory_startup:948496\nused_memory_dataset:73548568\nused_memory_dataset_perc:89.31%\nallocator_allocated:84220696\nallocator_active:84656128\nallocator_resident:97370112\nallocator_muzzy:0\ntotal_system_memory:42060685312\ntotal_system_memory_human:39.17G\nused_memory_lua:32768\nu",
       "error": "",
-      "timestamp": "2026-03-13T06:46:43.785719+00:00"
+      "timestamp": "2026-03-16T00:35:26.718615+00:00"
     }
   ]
 }
