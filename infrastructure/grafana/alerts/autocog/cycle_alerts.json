@@ -1,0 +1,220 @@
+{
+  "apiVersion": 1,
+  "groups": [
+    {
+      "name": "autocog.rules",
+      "folder": "AUTOCOG",
+      "interval": "1m",
+      "rules": [
+        {
+          "uid": "autocog_cycle_failure",
+          "title": "AUTOCOG Cycle Failure Rate",
+          "condition": "B",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "influxdb",
+              "model": {
+                "expr": "sum(rate(autocog_cycle_total{status=\"success\"}[5m])) / sum(rate(autocog_cycle_total[5m]))",
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "type": "threshold",
+                "expression": "A",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "lt",
+                      "params": [0.95]
+                    }
+                  }
+                ],
+                "refId": "B"
+              }
+            }
+          ],
+          "noDataState": "NoData",
+          "execErrState": "Alerting",
+          "for": "5m",
+          "labels": {
+            "severity": "critical",
+            "component": "autocog",
+            "type": "availability"
+          },
+          "annotations": {
+            "description": "AUTOCOG cycle success rate has dropped below 95%",
+            "summary": "AUTOCOG cycle failure rate exceeds threshold"
+          }
+        },
+        {
+          "uid": "high_skip_rate",
+          "title": "AUTOCOG High Skip Rate",
+          "condition": "B",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "influxdb",
+              "model": {
+                "expr": "sum(rate(autocog_items_total{action=\"skipped\"}[5m])) / sum(rate(autocog_items_total[5m]))",
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "type": "threshold",
+                "expression": "A",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [0.15]
+                    }
+                  }
+                ],
+                "refId": "B"
+              }
+            }
+          ],
+          "noDataState": "NoData",
+          "execErrState": "OK",
+          "for": "10m",
+          "labels": {
+            "severity": "warning",
+            "component": "autocog",
+            "type": "performance"
+          },
+          "annotations": {
+            "description": "AUTOCOG skip rate is above 15%",
+            "summary": "AUTOCOG skip rate is high"
+          }
+        },
+        {
+          "uid": "calibration_drift",
+          "title": "AUTOCOG Calibration Drift",
+          "condition": "B",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 3600,
+                "to": 0
+              },
+              "datasourceUid": "influxdb",
+              "model": {
+                "expr": "abs(autocog_brier_score - autocog_brier_score offset 1h)",
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "relativeTimeRange": {
+                "from": 3600,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "type": "threshold",
+                "expression": "A",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [0.05]
+                    }
+                  }
+                ],
+                "refId": "B"
+              }
+            }
+          ],
+          "noDataState": "NoData",
+          "execErrState": "OK",
+          "for": "1h",
+          "labels": {
+            "severity": "warning",
+            "component": "autocog",
+            "type": "quality"
+          },
+          "annotations": {
+            "description": "Prediction calibration Brier score has drifted by more than 0.05",
+            "summary": "Prediction calibration is drifting"
+          }
+        },
+        {
+          "uid": "qdrant_write_failure",
+          "title": "Qdrant Write Failure Rate",
+          "condition": "B",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "influxdb",
+              "model": {
+                "expr": "sum(rate(qdrant_writes_total{status=\"success\"}[5m])) / sum(rate(qdrant_writes_total[5m]))",
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "B",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "type": "threshold",
+                "expression": "A",
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "lt",
+                      "params": [0.99]
+                    }
+                  }
+                ],
+                "refId": "B"
+              }
+            }
+          ],
+          "noDataState": "NoData",
+          "execErrState": "Alerting",
+          "for": "5m",
+          "labels": {
+            "severity": "critical",
+            "component": "autocog",
+            "type": "data_integrity"
+          },
+          "annotations": {
+            "description": "Qdrant write success rate has dropped below 99%",
+            "summary": "Qdrant write failures detected"
+          }
+        }
+      ]
+    }
+  ]
+}

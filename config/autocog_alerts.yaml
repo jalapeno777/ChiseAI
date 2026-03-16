@@ -1,0 +1,69 @@
+# AUTOCOG Alert Configuration
+# Alert definitions for autonomous cognition monitoring
+
+alerts:
+  - name: autocog_cycle_failure
+    severity: critical
+    condition: cycle_success_rate < 0.95
+    duration: 5m
+    message: "AUTOCOG cycle failure rate exceeds threshold"
+    labels:
+      component: autocog
+      type: availability
+    
+  - name: high_skip_rate
+    severity: warning
+    condition: skip_rate > 0.15
+    duration: 10m
+    message: "AUTOCOG skip rate is high"
+    labels:
+      component: autocog
+      type: performance
+    
+  - name: calibration_drift
+    severity: warning
+    condition: brier_score_delta > 0.05
+    duration: 1h
+    message: "Prediction calibration is drifting"
+    labels:
+      component: autocog
+      type: quality
+    
+  - name: qdrant_write_failure
+    severity: critical
+    condition: qdrant_write_success_rate < 0.99
+    duration: 5m
+    message: "Qdrant write failures detected"
+    labels:
+      component: autocog
+      type: data_integrity
+
+# Metric queries for alert conditions
+metrics:
+  cycle_success_rate:
+    query: 'sum(rate(autocog_cycle_total{status="success"}[5m])) / sum(rate(autocog_cycle_total[5m]))'
+    description: "Rate of successful autocog cycles"
+    
+  skip_rate:
+    query: 'sum(rate(autocog_items_total{action="skipped"}[5m])) / sum(rate(autocog_items_total[5m]))'
+    description: "Rate of skipped items in autocog cycles"
+    
+  brier_score_delta:
+    query: 'abs(autocog_brier_score - autocog_brier_score offset 1h)'
+    description: "Change in Brier score over last hour"
+    
+  qdrant_write_success_rate:
+    query: 'sum(rate(qdrant_writes_total{status="success"}[5m])) / sum(rate(qdrant_writes_total[5m]))'
+    description: "Rate of successful Qdrant writes"
+
+# Notification routing
+routing:
+  default_channel: "#autocog-alerts"
+  escalation:
+    - severity: critical
+      channels:
+        - "#autocog-alerts"
+        - "#ops-urgent"
+    - severity: warning
+      channels:
+        - "#autocog-alerts"
