@@ -6,6 +6,14 @@ and vector search capabilities for neural belief embeddings.
 
 from __future__ import annotations
 
+from .cache import BeliefCache, CacheEntry, CacheMetrics
+from .pipeline import (
+    BeliefPipeline,
+    PipelineConfig,
+    PipelineMetrics,
+    PipelineStage,
+    ProcessingResult,
+)
 from .search import (
     BeliefSearchIndex,
     InMemoryBackend,
@@ -29,19 +37,27 @@ from .vector import (
 )
 
 __all__ = [
+    "BeliefCache",
+    "CacheEntry",
+    "CacheMetrics",
     "BeliefMetadata",
+    "BeliefPipeline",
     "BeliefSchema",
-    "BeliefVector",
-    "ValidationError",
-    "to_dict",
-    "from_dict",
-    "to_json",
-    "from_json",
-    "save_to_file",
-    "load_from_file",
-    "BeliefSerializer",
     "BeliefSearchIndex",
-    "SearchResult",
+    "BeliefSerializer",
+    "BeliefVector",
     "InMemoryBackend",
+    "PipelineConfig",
+    "PipelineMetrics",
+    "PipelineStage",
+    "ProcessingResult",
     "QdrantBackend",
+    "SearchResult",
+    "ValidationError",
+    "from_dict",
+    "from_json",
+    "load_from_file",
+    "save_to_file",
+    "to_dict",
+    "to_json",
 ]
