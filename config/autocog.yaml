@@ -24,6 +24,32 @@ metrics:
   skip_rate_window_days: 7
   alert_on_high_skip_rate: true
 
+# Scheduling Configuration
+# Woodpecker cron triggers for autonomous cognition cycles
+scheduling:
+  version: 1
+  woodpecker_crons:
+    - name: autocog-hourly
+      schedule: "0 * * * *"
+      description: "Hourly belief consistency check"
+      job_id: autocog.belief_consistency.hourly
+    - name: autocog-improvement-daily
+      schedule: "0 2 * * *"
+      description: "Daily improvement cycle at 02:00 UTC"
+      job_id: autocog.improvement_cycle.daily
+    - name: autocog-constitution-daily
+      schedule: "0 3 * * *"
+      description: "Daily constitution audit at 03:00 UTC"
+      job_id: autocog.constitution_audit.daily
+    - name: autocog-calibration-weekly
+      schedule: "0 1 * * 1"
+      description: "Weekly calibration on Monday at 01:00 UTC"
+      job_id: autocog.calibration.weekly
+    - name: autocog-autonomy-tune-weekly
+      schedule: "0 2 * * 1"
+      description: "Weekly autonomy tune on Monday at 02:00 UTC"
+      job_id: autocog.autonomy_tune.weekly
+
 # Safety Guardrails (immutable via auto-actions)
 safety:
   max_risk_level: "medium"  # Auto-actions only up to medium
