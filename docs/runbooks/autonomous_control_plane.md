@@ -10,6 +10,17 @@
 
 This runbook covers operational procedures for the Autonomous Control Plane, which manages self-healing operations and incident management for the ChiseAI platform.
 
+## Prerequisites
+
+Before following procedures in this runbook, ensure you have:
+
+- [ ] Access to Kubernetes cluster (`kubectl get pods` works)
+- [ ] Access to ChiseAI namespace resources
+- [ ] Redis connectivity (`redis-cli -h chiseai-redis ping` returns PONG)
+- [ ] Prometheus/Grafana access for metrics verification
+- [ ] Appropriate RBAC permissions to restart deployments
+- [ ] PagerDuty access for escalation procedures
+
 ---
 
 ## Alert: ControlPlaneDown
@@ -179,6 +190,9 @@ This runbook covers operational procedures for the Autonomous Control Plane, whi
 ```bash
 # Check control plane health
 curl http://localhost:8000/health
+
+# Expected output:
+# {"status": "healthy", "services": {"redis": "connected", "database": "connected"}}
 
 # Get control plane metrics
 curl http://localhost:8000/metrics
