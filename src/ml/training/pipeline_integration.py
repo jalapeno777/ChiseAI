@@ -655,6 +655,26 @@ class TrainingPipelineIntegration:
         """
         job.started_at = datetime.now(UTC)
 
+        # Track status in Redis
+        from ml.training.pipeline_status import (
+            PipelineStatus,
+            set_pipeline_status,
+        )
+
+        set_pipeline_status(
+            job.job_id,
+            PipelineStatus.PENDING,
+            metadata={
+                "trigger_type": (
+                    job.trigger_result.trigger_type.name
+                    if job.trigger_result
+                    else "manual"
+                ),
+                "hyperparameters": job.hyperparameters.to_dict(),
+            },
+            expire_seconds=86400,  # 24 hours
+        )
+
         while job.retry_count <= job.max_retries:
             try:
                 # Phase 1: Fetch training data
@@ -717,6 +737,17 @@ class TrainingPipelineIntegration:
                 job.status = TrainingJobStatus.COMPLETED
                 job.completed_at = datetime.now(UTC)
 
+                # Update Redis status to completed
+                set_pipeline_status(
+                    job.job_id,
+                    PipelineStatus.COMPLETED,
+                    metadata={
+                        "model_version": job.model_version,
+                        "metrics": job.metrics,
+                        "duration_seconds": job.duration_seconds,
+                    },
+                )
+
                 # Export metrics
                 await self._metrics_exporter.export_job_metrics(job)
 
@@ -729,6 +760,15 @@ class TrainingPipelineIntegration:
 
                 if job.retry_count <= job.max_retries and self._enable_retry:
                     job.status = TrainingJobStatus.RETRYING
+                    set_pipeline_status(
+                        job.job_id,
+                        PipelineStatus.RUNNING,
+                        metadata={
+                            "phase": "retrying",
+                            "retry_count": job.retry_count,
+                            "error": str(e),
+                        },
+                    )
                     logger.warning(
                         f"Training job failed, retrying "
                         f"({job.retry_count}/{job.max_retries}): {e}"
@@ -738,6 +778,18 @@ class TrainingPipelineIntegration:
                     # Max retries exceeded
                     job.status = TrainingJobStatus.FAILED
                     job.completed_at = datetime.now(UTC)
+
+                    # Update Redis status to failed
+                    set_pipeline_status(
+                        job.job_id,
+                        PipelineStatus.FAILED,
+                        metadata={
+                            "error": str(e),
+                            "retry_count": job.retry_count,
+                            "duration_seconds": job.duration_seconds,
+                        },
+                    )
+
                     logger.error(
                         f"Training job failed after {job.retry_count} attempts: {e}"
                     )
