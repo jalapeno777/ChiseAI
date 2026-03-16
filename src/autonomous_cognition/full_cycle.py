@@ -26,11 +26,66 @@ from autonomous_cognition.experiments.champion_challenger import (
 from autonomous_cognition.experiments.hypothesis_generator import HypothesisGenerator
 from autonomous_cognition.experiments.portfolio_policy_lab import PortfolioPolicyLab
 from autonomous_cognition.metacog.autonomy_tuner import AutonomyTuner
+from autonomous_cognition.metrics.skip_rate_monitor import SkipRateMonitor
 from autonomous_cognition.runtime_integration import NeuroSymbolicRuntimeIntegrator
 from autonomous_cognition.state_machine import AutonomousCycleStateMachine, CycleState
 from governance.notifications.discord_notifier import DiscordNotifier
 
 logger = logging.getLogger(__name__)
+
+
+def _load_autocog_config() -> dict[str, Any]:
+    """Load autocog configuration from YAML file."""
+    config_path = Path("config/autocog.yaml")
+    if not config_path.exists():
+        logger.warning("Autocog config not found at %s, using defaults", config_path)
+        return _default_autocog_config()
+    try:
+        import yaml
+
+        data = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+        return _merge_autocog_with_defaults(data)
+    except Exception as e:
+        logger.warning("Failed loading autocog config: %s", e)
+        return _default_autocog_config()
+
+
+def _default_autocog_config() -> dict[str, Any]:
+    """Return default configuration."""
+    return {
+        "experiments": {
+            "enabled": False,
+            "max_experiments_per_cycle": 3,
+            "safe_mode": True,
+        },
+        "qdrant": {
+            "write_enabled": False,
+            "collection_name": "ChiseAI",
+            "vector_size": 384,
+        },
+        "metrics": {
+            "skip_rate_alert_threshold": 0.20,
+            "skip_rate_window_days": 7,
+            "alert_on_high_skip_rate": True,
+        },
+        "safety": {
+            "max_risk_level": "medium",
+            "require_approval_for": ["high", "critical"],
+        },
+    }
+
+
+def _merge_autocog_with_defaults(data: dict[str, Any]) -> dict[str, Any]:
+    """Merge loaded config with defaults."""
+    defaults = _default_autocog_config()
+    for key, default_value in defaults.items():
+        if key not in data:
+            data[key] = default_value
+        elif isinstance(default_value, dict) and isinstance(data[key], dict):
+            for sub_key, sub_default in default_value.items():
+                if sub_key not in data[key]:
+                    data[key][sub_key] = sub_default
+    return data
 
 
 class AutonomousCognitionFullCycle:
@@ -39,6 +94,7 @@ class AutonomousCognitionFullCycle:
     DEFAULT_CYCLE_DIR = "_bmad-output/autocog/cycles"
     DEFAULT_GOVERNANCE_STATE_PATH = "_bmad-output/autocog/governance_state.json"
     DEFAULT_WEEKLY_META_AUDIT_DIR = "_bmad-output/autocog/meta_audit"
+    CONFIG_PATH = Path("config/autocog.yaml")
 
     def __init__(
         self,
@@ -57,6 +113,7 @@ class AutonomousCognitionFullCycle:
         self._runtime = NeuroSymbolicRuntimeIntegrator()
         self._tuner = AutonomyTuner()
         self._audit = ConstitutionAuditEngine()
+        self._config = _load_autocog_config()
 
     def run(self, notify_discord: bool = False, mode: str = "full") -> CycleResult:
         """Run autonomous cognition cycle and persist artifact.
@@ -192,7 +249,9 @@ class AutonomousCognitionFullCycle:
                         )
                     )
 
-                evidence_index = self._build_belief_evidence_index(assessment=assessment)
+                evidence_index = self._build_belief_evidence_index(
+                    assessment=assessment
+                )
                 result.metrics["belief_evidence_summary"] = (
                     self._summarize_belief_evidence(evidence_index)
                 )
@@ -239,12 +298,18 @@ class AutonomousCognitionFullCycle:
                     result.artifact_paths["belief_revisions"] = str(
                         revision_artifact_path
                     )
-                elif self._revision_engine.last_blocked_revisions and notifier and notify_loop:
+                elif (
+                    self._revision_engine.last_blocked_revisions
+                    and notifier
+                    and notify_loop
+                ):
                     first_block = self._revision_engine.last_blocked_revisions[0]
                     manual_blocks = [
                         block
                         for block in self._revision_engine.last_blocked_revisions
-                        if str(block.get("reason", "")).startswith("manual_approval_required")
+                        if str(block.get("reason", "")).startswith(
+                            "manual_approval_required"
+                        )
                     ]
                     if manual_blocks:
                         approval_packet_path = self._persist_manual_approval_packet(
@@ -454,7 +519,9 @@ class AutonomousCognitionFullCycle:
                                 "reason": reason,
                             }
                         )
-                max_experiments = 3
+                max_experiments = self._config.get("experiments", {}).get(
+                    "max_experiments_per_cycle", 3
+                )
                 hypotheses = eligible_hypotheses[:max_experiments]
                 if len(eligible_hypotheses) > max_experiments:
                     skipped_candidates.append(
@@ -750,6 +817,28 @@ class AutonomousCognitionFullCycle:
             weekly_meta_audit_path = self._persist_weekly_meta_audit()
             result.artifact_paths["meta_audit"] = str(weekly_meta_audit_path)
 
+            # Check skip rate and record metric
+            skip_monitor = SkipRateMonitor(
+                window_days=self._config.get("metrics", {}).get(
+                    "skip_rate_window_days", 7
+                ),
+                alert_threshold=self._config.get("metrics", {}).get(
+                    "skip_rate_alert_threshold", 0.20
+                ),
+                cycles_dir=self.DEFAULT_CYCLE_DIR,
+            )
+            skip_rate_result = skip_monitor.check_skip_rate()
+            result.metrics["skip_rate_check"] = skip_rate_result
+
+            # Record skip metric for this run
+            total_candidates = result.experiments_run + len(
+                result.metrics.get("candidate_skips", [])
+            )
+            skipped_candidates = len(result.metrics.get("candidate_skips", []))
+            skip_monitor.record_skip_metric(
+                run_id, total_candidates, skipped_candidates
+            )
+
             state_machine.transition(CycleState.COMPLETED)
             result.status = "completed"
         except Exception as e:
@@ -904,7 +993,9 @@ class AutonomousCognitionFullCycle:
 
         assessment_window = self._recent_self_assessment_window(max_items=5)
         if assessment_window:
-            ok_count = sum(1 for item in assessment_window if item.get("status") == "ok")
+            ok_count = sum(
+                1 for item in assessment_window if item.get("status") == "ok"
+            )
             total = len(assessment_window)
             history_conf = ok_count / total if total else 0.0
             index["self_assessment_history"] = [
@@ -916,8 +1007,7 @@ class AutonomousCognitionFullCycle:
                     timestamp=datetime.now(UTC).isoformat(),
                     reliability=round(0.55 + 0.35 * history_conf, 3),
                     summary=(
-                        "Recent self-assessment trend "
-                        f"ok_count={ok_count}/{total}"
+                        f"Recent self-assessment trend ok_count={ok_count}/{total}"
                     ),
                     metrics={
                         "ok_count": ok_count,
@@ -991,7 +1081,9 @@ class AutonomousCognitionFullCycle:
                 ]
         return index
 
-    def _recent_self_assessment_window(self, max_items: int = 5) -> list[dict[str, Any]]:
+    def _recent_self_assessment_window(
+        self, max_items: int = 5
+    ) -> list[dict[str, Any]]:
         """Load latest self-assessment artifacts for trend evidence."""
         directory = Path("docs/governance/self_assessments")
         if not directory.exists():
@@ -1054,7 +1146,9 @@ class AutonomousCognitionFullCycle:
         all_records = [
             record for records in evidence_index.values() for record in records
         ]
-        families = sorted({record.source_family for record in all_records if record.source_family})
+        families = sorted(
+            {record.source_family for record in all_records if record.source_family}
+        )
         non_llm = sorted(
             {
                 record.source_family
@@ -1161,7 +1255,9 @@ class AutonomousCognitionFullCycle:
                 "stability_runs": 0,
             },
         )
-        due_at = datetime.fromisoformat(global_state["next_check_after"].replace("Z", "+00:00"))
+        due_at = datetime.fromisoformat(
+            global_state["next_check_after"].replace("Z", "+00:00")
+        )
         if datetime.now(UTC) >= due_at:
             return True, "scheduled_recheck"
         return False, "cadence_deferred"
@@ -1239,7 +1335,9 @@ class AutonomousCognitionFullCycle:
             "assessment_status": getattr(assessment, "status", "unknown")
             if assessment is not None
             else "unknown",
-            "assessment_score": round(float(getattr(assessment, "overall_score", 0.0)), 3)
+            "assessment_score": round(
+                float(getattr(assessment, "overall_score", 0.0)), 3
+            )
             if assessment is not None
             else 0.0,
             "findings": findings[:3],
@@ -1267,7 +1365,9 @@ class AutonomousCognitionFullCycle:
             return True, "incident_override"
         next_eligible_raw = entry.get("next_eligible_at")
         if next_eligible_raw:
-            next_eligible = datetime.fromisoformat(next_eligible_raw.replace("Z", "+00:00"))
+            next_eligible = datetime.fromisoformat(
+                next_eligible_raw.replace("Z", "+00:00")
+            )
             if now < next_eligible:
                 return False, "cooldown_active"
         if (
@@ -1296,8 +1396,12 @@ class AutonomousCognitionFullCycle:
             rejected_count += 1
         if outcome == "promoted":
             promoted_count += 1
-        cooldown_hours = min(48, 2 ** min(rejected_count, 5)) if outcome == "rejected" else 12
-        next_eligible_at = (datetime.now(UTC) + timedelta(hours=cooldown_hours)).isoformat()
+        cooldown_hours = (
+            min(48, 2 ** min(rejected_count, 5)) if outcome == "rejected" else 12
+        )
+        next_eligible_at = (
+            datetime.now(UTC) + timedelta(hours=cooldown_hours)
+        ).isoformat()
         if outcome == "promoted":
             lifecycle_state = "active"
         elif rejected_count >= 6:
@@ -1326,7 +1430,9 @@ class AutonomousCognitionFullCycle:
                     "candidate_id": hypothesis.hypothesis_id,
                     "version_id": version_id,
                     "created_at": datetime.now(UTC).isoformat(),
-                    "verify_after": (datetime.now(UTC) + timedelta(hours=2)).isoformat(),
+                    "verify_after": (
+                        datetime.now(UTC) + timedelta(hours=2)
+                    ).isoformat(),
                     "status": "pending",
                 }
             )
@@ -1358,7 +1464,9 @@ class AutonomousCognitionFullCycle:
             verify_after_raw = item.get("verify_after")
             if not verify_after_raw:
                 continue
-            verify_after = datetime.fromisoformat(verify_after_raw.replace("Z", "+00:00"))
+            verify_after = datetime.fromisoformat(
+                verify_after_raw.replace("Z", "+00:00")
+            )
             if now < verify_after:
                 continue
             regression = (
@@ -1435,9 +1543,7 @@ class AutonomousCognitionFullCycle:
             registry[pair_key] = {
                 "last_revision_id": revision.revision_id,
                 "last_applied_at": revision.applied_at,
-                "cooldown_until": (
-                    datetime.now(UTC) + timedelta(hours=6)
-                ).isoformat(),
+                "cooldown_until": (datetime.now(UTC) + timedelta(hours=6)).isoformat(),
             }
 
     def _process_incident_linked_rollbacks(
@@ -1454,10 +1560,14 @@ class AutonomousCognitionFullCycle:
                 continue
             if item.get("type") == "candidate_promotion":
                 version_id = str(item.get("version_id", ""))
-                promoted_version = self._champion_engine._registry.get_version(version_id)  # noqa: SLF001
+                promoted_version = self._champion_engine._registry.get_version(
+                    version_id
+                )  # noqa: SLF001
                 if promoted_version is not None:
-                    rollback_target = self._champion_engine._registry.get_rollback_target(  # noqa: SLF001
-                        model_type=promoted_version.model_type
+                    rollback_target = (
+                        self._champion_engine._registry.get_rollback_target(  # noqa: SLF001
+                            model_type=promoted_version.model_type
+                        )
                     )
                     if rollback_target is not None:
                         self._champion_engine._registry.promote_to_champion(  # noqa: SLF001
@@ -1475,7 +1585,10 @@ class AutonomousCognitionFullCycle:
                 item["rolled_back_at"] = datetime.now(UTC).isoformat()
 
         # Belief rollback from latest revision artifact on incident.
-        if result.constitution_violations > 0 or result.metrics.get("runtime_non_regression_passed") is False:
+        if (
+            result.constitution_violations > 0
+            or result.metrics.get("runtime_non_regression_passed") is False
+        ):
             latest = self._load_latest_revision_artifact()
             if latest and latest.get("revisions"):
                 first = latest["revisions"][0]
@@ -1539,7 +1652,11 @@ class AutonomousCognitionFullCycle:
             for c in scoped
         )
         rollback_count = len(
-            [r for r in self._load_governance_state().get("rollbacks", []) if isinstance(r, dict)]
+            [
+                r
+                for r in self._load_governance_state().get("rollbacks", [])
+                if isinstance(r, dict)
+            ]
         )
         artifact = {
             "week_id": week_id,
@@ -1790,7 +1907,11 @@ class AutonomousCognitionFullCycle:
             for ref in new_belief.evidence_refs:
                 replacement_records.extend(evidence_index.get(ref, []))
         source_families = sorted(
-            {record.source_family for record in replacement_records if record.source_family}
+            {
+                record.source_family
+                for record in replacement_records
+                if record.source_family
+            }
         )
         non_llm_families = sorted(
             {
