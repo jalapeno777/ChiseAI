@@ -1,11 +1,17 @@
 """Strong AI System - Belief Embeddings Module.
 
-Provides belief vector representation, validation, and serialization
-for neural belief embeddings.
+Provides belief vector representation, validation, serialization,
+and vector search capabilities for neural belief embeddings.
 """
 
 from __future__ import annotations
 
+from .search import (
+    BeliefSearchIndex,
+    InMemoryBackend,
+    QdrantBackend,
+    SearchResult,
+)
 from .serialization import (
     BeliefSerializer,
     from_dict,
@@ -34,4 +40,8 @@ __all__ = [
     "save_to_file",
     "load_from_file",
     "BeliefSerializer",
+    "BeliefSearchIndex",
+    "SearchResult",
+    "InMemoryBackend",
+    "QdrantBackend",
 ]
