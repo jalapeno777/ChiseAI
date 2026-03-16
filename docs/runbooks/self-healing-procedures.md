@@ -4,6 +4,16 @@
 
 This document provides runbook templates and operational procedures for manual intervention in the self-healing system.
 
+## Prerequisites
+
+Before using the procedures in this runbook, ensure you have:
+
+- [ ] Access to the ChiseAI infrastructure (Docker containers, Redis)
+- [ ] Understanding of the service architecture and dependencies
+- [ ] Knowledge of the escalation procedures and on-call contacts
+- [ ] Access to monitoring dashboards (Grafana, logs)
+- [ ] Appropriate permissions for service restart operations
+
 ## Quick Reference
 
 | Scenario | Workflow | Priority | Auto-Approval |
