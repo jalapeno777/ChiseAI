@@ -1,0 +1,99 @@
+# Autonomous Cognition Policy Configuration
+# Defines policies for decision validation and approval gates
+# Version: 1.0
+
+policies:
+  # Risk level policies define auto-approval and concurrent limits
+  risk_levels:
+    low:
+      auto_approve: true
+      max_concurrent: 10
+      description: "Low risk operations can be auto-approved with high concurrency"
+      
+    medium:
+      auto_approve: true
+      max_concurrent: 5
+      description: "Medium risk operations can be auto-approved with moderate concurrency"
+      
+    high:
+      auto_approve: false
+      requires_approval: true
+      approval_timeout: 3600  # 1 hour
+      description: "High risk operations require approval from designated roles"
+      
+    critical:
+      auto_approve: false
+      requires_approval: true
+      approval_timeout: 7200  # 2 hours
+      notify_immediately: true
+      description: "Critical operations require immediate notification and approval"
+
+  # Protected paths define files/directories with special handling
+  protected_paths:
+    # Blocked paths - operations on these are automatically rejected
+    - pattern: "src/core/risk_caps.py"
+      action: block
+      reason: "Risk caps are immutable via autonomous actions"
+      
+    - pattern: "src/core/governance_bypasses.py"
+      action: block
+      reason: "Governance bypasses cannot be modified autonomously"
+      
+    - pattern: "infrastructure/terraform/*"
+      action: block
+      reason: "Infrastructure changes require human review"
+      
+    - pattern: ".opencode/skills/*"
+      action: block
+      reason: "Skill files are protected governance assets"
+      
+    # Require approval paths - operations require explicit approval
+    - pattern: "docs/bmm-workflow-status.yaml"
+      action: require_approval
+      reason: "Workflow status is a critical coordination document"
+      
+    - pattern: "docs/validation/validation-registry.yaml"
+      action: require_approval
+      reason: "Validation registry affects all quality gates"
+      
+    - pattern: "src/autonomous_cognition/full_cycle.py"
+      action: require_approval
+      reason: "Core autonomous cognition cycle requires review"
+      
+    - pattern: "src/autonomous_cognition/controller.py"
+      action: require_approval
+      reason: "Autonomous cognition controller requires review"
+      
+    - pattern: "config/autocog.yaml"
+      action: require_approval
+      reason: "Autocog configuration affects all autonomous behavior"
+
+  # Approval gates define who can approve at each risk level
+  approval_gates:
+    high:
+      - role: senior-dev
+        min_approval_count: 1
+      - role: jarvis
+        min_approval_count: 1
+      - role: aria
+        min_approval_count: 1
+      
+    critical:
+      - role: craig
+        min_approval_count: 1
+        requires_explicit: true
+
+  # Policy enforcement settings
+  enforcement:
+    # Whether to enforce policies strictly (fail closed) or permissively (fail open)
+    strict_mode: true
+    
+    # Log all policy decisions for audit
+    log_all_decisions: true
+    
+    # Maximum time to wait for approval before auto-rejecting
+    max_approval_wait_seconds: 7200
+    
+    # Whether to cache policy results
+    cache_decisions: false
+    cache_ttl_seconds: 300
