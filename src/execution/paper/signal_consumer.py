@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
+import time
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
@@ -48,6 +50,7 @@ class SignalConsumer:
         orchestrator: PaperTradingOrchestrator,
         redis_client: Any | None = None,
         poll_interval: float = DEFAULT_POLL_INTERVAL,
+        symbol_throttle_seconds: float | None = None,
     ):
         """Initialize the signal consumer.
 
@@ -55,12 +58,24 @@ class SignalConsumer:
             orchestrator: Paper trading orchestrator instance
             redis_client: Redis client (if None, creates new connection)
             poll_interval: Seconds between polling cycles
+            symbol_throttle_seconds: Minimum seconds between submissions per symbol.
+                If None, uses SYMBOL_EVAL_INTERVAL_SECONDS env (default 300s).
         """
         self.orchestrator = orchestrator
         self.poll_interval = poll_interval
+        if symbol_throttle_seconds is None:
+            symbol_throttle_seconds = float(
+                os.getenv("SYMBOL_EVAL_INTERVAL_SECONDS", "300")
+            )
+        self.symbol_throttle_seconds = max(0.0, float(symbol_throttle_seconds))
+        symbols_raw = os.getenv("TRADING_SYMBOLS", "BTC/USDT")
+        self.allowed_symbols = {
+            s.strip().upper() for s in symbols_raw.split(",") if s.strip()
+        }
         self._running = False
         self._poll_task: asyncio.Task | None = None
         self._processed_signals: set[str] = set()
+        self._last_symbol_submit_ts: dict[str, float] = {}
 
         # Initialize Redis client
         if redis_client is not None:
@@ -70,7 +85,12 @@ class SignalConsumer:
             self._redis = None
             self._owns_redis = True
 
-        logger.info(f"SignalConsumer initialized: poll_interval={poll_interval}s")
+        logger.info(
+            "SignalConsumer initialized: poll_interval=%ss, symbol_throttle_seconds=%ss, allowed_symbols=%s",
+            poll_interval,
+            self.symbol_throttle_seconds,
+            sorted(self.allowed_symbols),
+        )
 
     async def _get_redis(self) -> Any:
         """Get or create Redis client."""
@@ -212,15 +232,21 @@ class SignalConsumer:
         import json
 
         try:
-            # First try hash format (HGETALL)
-            signal_data = await redis.hgetall(key)
-            if signal_data:
-                return signal_data
+            key_type = await redis.type(key)
+            if key_type == "hash":
+                signal_data = await redis.hgetall(key)
+                if signal_data:
+                    return signal_data
+                return None
 
-            # If hash is empty, try string format (GET + JSON parse)
-            raw_data = await redis.get(key)
-            if raw_data:
-                return json.loads(raw_data)
+            if key_type == "string":
+                raw_data = await redis.get(key)
+                if raw_data:
+                    return json.loads(raw_data)
+                return None
+
+            if key_type not in ("none", "hash", "string"):
+                logger.debug("Skipping key %s with unsupported type %s", key, key_type)
 
             return None
 
@@ -295,8 +321,19 @@ class SignalConsumer:
                     # Convert to Signal object and submit
                     signal = self._convert_to_signal(signal_data)
                     if signal:
-                        await self._submit_signal(signal, key)
-                        processed_count += 1
+                        token = (signal.token or "").upper().strip()
+                        if self.allowed_symbols and token not in self.allowed_symbols:
+                            await self._update_signal_status(key, "consumed")
+                            await self._mark_signal_processed(signal.signal_id)
+                            logger.debug(
+                                "Skipping signal %s for non-allowed symbol %s",
+                                signal.signal_id,
+                                token,
+                            )
+                            continue
+                        submitted = await self._submit_signal(signal, key)
+                        if submitted:
+                            processed_count += 1
 
                 except Exception as e:
                     logger.error(f"Error processing signal {key}: {e}")
@@ -370,8 +407,27 @@ class SignalConsumer:
             True if submitted successfully
         """
         try:
+            symbol = (signal.token or "").upper().strip()
+            now_ts = time.time()
+
+            if symbol and self.symbol_throttle_seconds > 0:
+                last_ts = self._last_symbol_submit_ts.get(symbol, 0.0)
+                if (now_ts - last_ts) < self.symbol_throttle_seconds:
+                    await self._update_signal_status(redis_key, "consumed")
+                    await self._mark_signal_processed(signal.signal_id)
+                    logger.info(
+                        "Skipped signal %s for %s due throttle (%.1fs < %.1fs)",
+                        signal.signal_id,
+                        symbol,
+                        now_ts - last_ts,
+                        self.symbol_throttle_seconds,
+                    )
+                    return False
+
             # Submit to orchestrator
             await self.orchestrator.submit_signal(signal)
+            if symbol:
+                self._last_symbol_submit_ts[symbol] = now_ts
 
             # Mark as consumed in Redis
             await self._update_signal_status(redis_key, "consumed")
@@ -399,6 +455,7 @@ class SignalConsumer:
         return {
             "running": self._running,
             "poll_interval": self.poll_interval,
+            "symbol_throttle_seconds": self.symbol_throttle_seconds,
             "processed_count": len(self._processed_signals),
         }
 

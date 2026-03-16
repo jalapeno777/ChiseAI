@@ -199,3 +199,56 @@ variable "tempo_storage_quota_alert_threshold" {
   type        = number
   default     = 0.8
 }
+
+variable "bybit_demo_api_key" {
+  type        = string
+  description = "Bybit demo API key for paper-live execution."
+  default     = ""
+  sensitive   = true
+}
+
+variable "bybit_demo_api_secret" {
+  type        = string
+  description = "Bybit demo API secret for paper-live execution."
+  default     = ""
+  sensitive   = true
+}
+
+variable "bybit_api_key" {
+  type        = string
+  description = "Primary Bybit API key (accepted as synonym for demo key for paper trading)."
+  default     = ""
+  sensitive   = true
+}
+
+variable "bybit_api_secret" {
+  type        = string
+  description = "Primary Bybit API secret (accepted as synonym for demo secret for paper trading)."
+  default     = ""
+  sensitive   = true
+}
+
+variable "discord_trading_webhook_url" {
+  type        = string
+  description = "Discord webhook URL for trading incidents."
+  default     = ""
+  sensitive   = true
+}
+
+variable "trading_symbols" {
+  type        = string
+  description = "Comma-separated symbols for live paper trading loop."
+  default     = "BTC/USDT,ETH/USDT,SOL/USDT"
+}
+
+variable "trading_timeframe" {
+  type        = string
+  description = "Trading timeframe for live paper trading loop (e.g. 1m,5m,15m,1h)."
+  default     = "1h"
+}
+
+variable "trading_symbol_eval_interval_seconds" {
+  type        = number
+  description = "Per-symbol signal evaluation cadence in seconds for paper trading executor."
+  default     = 300
+}

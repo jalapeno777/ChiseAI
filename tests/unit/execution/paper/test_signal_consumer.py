@@ -28,6 +28,7 @@ def mock_redis():
     """Create a mock Redis client."""
     redis = AsyncMock()
     redis.scan = AsyncMock(return_value=(0, []))
+    redis.type = AsyncMock(return_value="hash")
     redis.hgetall = AsyncMock(return_value={})
     redis.smembers = AsyncMock(return_value=set())
     redis.sadd = AsyncMock()
@@ -75,6 +76,7 @@ class TestSignalConsumer:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
+            symbol_throttle_seconds=0.0,
         )
 
         # Start consumer
@@ -129,6 +131,7 @@ class TestSignalConsumer:
 
         # Setup mock to return one signal key
         mock_redis.scan = AsyncMock(return_value=(0, [redis_key]))
+        mock_redis.type = AsyncMock(return_value="hash")
         mock_redis.hgetall = AsyncMock(return_value=sample_signal_data)
         mock_redis.smembers = AsyncMock(return_value=set())  # Not processed yet
 
@@ -136,6 +139,7 @@ class TestSignalConsumer:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
+            symbol_throttle_seconds=0.0,
         )
 
         count = await consumer._poll_once()
@@ -157,12 +161,14 @@ class TestSignalConsumer:
         sample_signal_data["status"] = "logged_only"
 
         mock_redis.scan = AsyncMock(return_value=(0, [redis_key]))
+        mock_redis.type = AsyncMock(return_value="hash")
         mock_redis.hgetall = AsyncMock(return_value=sample_signal_data)
 
         consumer = SignalConsumer(
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
+            symbol_throttle_seconds=0.0,
         )
 
         count = await consumer._poll_once()
@@ -179,6 +185,7 @@ class TestSignalConsumer:
         redis_key = f"bmad:chiseai:signals:2026-02-26:BTC_USDT:{signal_id}"
 
         mock_redis.scan = AsyncMock(return_value=(0, [redis_key]))
+        mock_redis.type = AsyncMock(return_value="hash")
         mock_redis.hgetall = AsyncMock(return_value=sample_signal_data)
         mock_redis.smembers = AsyncMock(return_value={signal_id})  # Already processed
 
@@ -186,6 +193,7 @@ class TestSignalConsumer:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
+            symbol_throttle_seconds=0.0,
         )
 
         # Load processed signals (normally done in start())
@@ -240,6 +248,7 @@ class TestSignalConsumerIntegration:
         # Create mock Redis that returns our test signal
         mock_redis = AsyncMock()
         mock_redis.scan = AsyncMock(return_value=(0, [redis_key]))
+        mock_redis.type = AsyncMock(return_value="hash")
         mock_redis.hgetall = AsyncMock(return_value=sample_signal_data)
         mock_redis.smembers = AsyncMock(return_value=set())
         mock_redis.sadd = AsyncMock()
@@ -294,6 +303,7 @@ class TestSignalConsumerIntegration:
         # Setup mock to return all keys
         mock_redis = AsyncMock()
         mock_redis.scan = AsyncMock(return_value=(0, redis_keys))
+        mock_redis.type = AsyncMock(return_value="hash")
         mock_redis.hgetall = AsyncMock(side_effect=signal_data_list)
         mock_redis.smembers = AsyncMock(return_value=set())
         mock_redis.sadd = AsyncMock()
@@ -303,6 +313,7 @@ class TestSignalConsumerIntegration:
             orchestrator=mock_orchestrator,
             redis_client=mock_redis,
             poll_interval=1.0,
+            symbol_throttle_seconds=0.0,
         )
 
         count = await consumer._poll_once()

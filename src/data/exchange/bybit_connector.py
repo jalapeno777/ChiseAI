@@ -49,7 +49,7 @@ import logging
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import ROUND_DOWN, Decimal
 from typing import Any, cast
 
 import aiohttp
@@ -546,6 +546,18 @@ class BybitConnector:
             params={"category": "linear", "symbol": symbol, "limit": limit},
         )
 
+    async def get_instrument_info(self, symbol: str) -> dict[str, Any]:
+        """Get instrument metadata (lot size, min qty, etc.) for a symbol."""
+        result = await self._make_request(
+            "GET",
+            "/v5/market/instruments-info",
+            params={"category": "linear", "symbol": symbol},
+        )
+        instruments = result.get("result", {}).get("list", [])
+        if not instruments:
+            return {}
+        return instruments[0]
+
     # === Private Account Methods (Signed) ===
 
     async def get_fills(
@@ -769,9 +781,28 @@ class BybitConnector:
         if is_duplicate:
             raise DuplicateOrderException(client_order_id, symbol)
 
-        # FIX: Round quantity to 3 decimal places to comply with Bybit lot size requirements
-        # This prevents "Qty invalid" errors for pairs like BTCUSDT (qtyStep=0.001)
-        qty_rounded = round(float(quantity), 3)
+        # Quantize quantity based on symbol lot size constraints when available.
+        qty_decimal = Decimal(str(quantity))
+        try:
+            instrument = await self.get_instrument_info(symbol)
+            lot_filter = instrument.get("lotSizeFilter", {})
+            qty_step = Decimal(str(lot_filter.get("qtyStep", "0")))
+            min_qty = Decimal(str(lot_filter.get("minOrderQty", "0")))
+            if qty_step > 0:
+                qty_decimal = (qty_decimal / qty_step).to_integral_value(
+                    rounding=ROUND_DOWN
+                ) * qty_step
+            if min_qty > 0 and qty_decimal < min_qty:
+                qty_decimal = min_qty
+        except Exception as e:
+            logger.warning(
+                "Failed to load instrument lot size for %s, using fallback rounding: %s",
+                symbol,
+                e,
+            )
+            qty_decimal = Decimal(str(round(float(quantity), 3)))
+
+        qty_rounded = float(qty_decimal)
 
         params: dict[str, Any] = {
             "category": "linear",
@@ -843,6 +874,56 @@ class BybitConnector:
             "order_id": order_id,
             "symbol": symbol,
             "status": "cancelled",
+            "raw_response": result,
+        }
+
+    async def set_trading_stop(
+        self,
+        symbol: str,
+        take_profit: float | None = None,
+        stop_loss: float | None = None,
+        position_idx: int = 0,
+    ) -> dict[str, Any]:
+        """Attach/replace TP-SL settings for a linear position.
+
+        Args:
+            symbol: Trading pair (e.g., "BTCUSDT")
+            take_profit: TP price (optional)
+            stop_loss: SL price (optional)
+            position_idx: Position index (0 one-way mode)
+
+        Returns:
+            Response summary from Bybit.
+        """
+        params: dict[str, Any] = {
+            "category": "linear",
+            "symbol": symbol,
+            "positionIdx": position_idx,
+            "tpslMode": "Full",
+        }
+
+        if take_profit is not None and take_profit > 0:
+            params["takeProfit"] = str(take_profit)
+            params["tpOrderType"] = "Market"
+        if stop_loss is not None and stop_loss > 0:
+            params["stopLoss"] = str(stop_loss)
+            params["slOrderType"] = "Market"
+
+        if "takeProfit" not in params and "stopLoss" not in params:
+            raise ValueError("set_trading_stop requires take_profit and/or stop_loss")
+
+        result = await self._make_request(
+            "POST",
+            "/v5/position/trading-stop",
+            params=params,
+            signed=True,
+        )
+
+        return {
+            "symbol": symbol,
+            "take_profit": take_profit,
+            "stop_loss": stop_loss,
+            "position_idx": position_idx,
             "raw_response": result,
         }
 

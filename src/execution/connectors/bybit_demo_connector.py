@@ -122,11 +122,16 @@ class BybitDemoConnector:
         )
 
     @classmethod
-    def from_env(cls, load_env: bool = True) -> BybitDemoConnector:
+    def from_env(
+        cls,
+        load_env: bool = True,
+        market_data: MarketDataProvider | None = None,
+    ) -> BybitDemoConnector:
         """Create connector from environment variables.
 
         Args:
             load_env: Whether to load .env file
+            market_data: Optional market data provider for cached prices
 
         Returns:
             Configured BybitDemoConnector instance
@@ -149,7 +154,43 @@ class BybitDemoConnector:
         # Create connector
         connector = BybitConnector(config)
 
-        return cls(connector)
+        return cls(connector, market_data=market_data)
+
+    @staticmethod
+    def _normalize_bybit_symbol(symbol: str) -> str:
+        """Normalize symbol into Bybit linear symbol format (e.g., BTCUSDT)."""
+        normalized = symbol.upper().strip()
+        normalized = normalized.replace("/", "").replace("-", "")
+        normalized = normalized.replace(":USDT", "USDT")
+        return normalized
+
+    async def get_market_price(self, symbol: str) -> float | None:
+        """Fetch latest market price from Bybit and update local market_data cache."""
+        try:
+            if self.connector._session is None or self.connector._session.closed:
+                await self.connector.connect()
+
+            bybit_symbol = self._normalize_bybit_symbol(symbol)
+            ticker = await self.connector.get_ticker(bybit_symbol)
+            price_raw = (
+                ticker.get("result", {})
+                .get("list", [{}])[0]
+                .get("lastPrice")
+            )
+            if price_raw is None:
+                return None
+            price = float(price_raw)
+            if price <= 0:
+                return None
+
+            if self.market_data is not None:
+                # Keep both normalized and source symbol keys warm.
+                self.market_data.set_price(symbol, price)
+                self.market_data.set_price(bybit_symbol, price)
+            return price
+        except Exception as e:
+            logger.warning("Failed to fetch live Bybit market price for %s: %s", symbol, e)
+            return None
 
     async def place_order(
         self,
@@ -158,6 +199,8 @@ class BybitDemoConnector:
         order_type: str,
         quantity: float,
         price: float | None = None,
+        take_profit: float | None = None,
+        stop_loss: float | None = None,
     ) -> PaperOrder:
         """Place an order via Bybit demo API.
 
@@ -171,6 +214,8 @@ class BybitDemoConnector:
             order_type: Order type - "market" or "limit"
             quantity: Order quantity
             price: Order price (required for limit orders)
+            take_profit: Optional TP price to attach on venue
+            stop_loss: Optional SL price to attach on venue
 
         Returns:
             PaperOrder with actual Bybit order details
@@ -186,9 +231,11 @@ class BybitDemoConnector:
             if self.connector._session is None or self.connector._session.closed:
                 await self.connector.connect()
 
+            venue_symbol = self._normalize_bybit_symbol(symbol)
+
             # Place order via Bybit API
             result = await self.connector.place_order(
-                symbol=symbol,
+                symbol=venue_symbol,
                 side=side,
                 order_type=order_type,
                 quantity=quantity,
@@ -212,7 +259,11 @@ class BybitDemoConnector:
                 fill_price = result.get("price", 0.0)
                 if fill_price == 0.0 and self.market_data:
                     # Fallback to market data price
-                    fill_price = self.market_data.get_price(symbol) or 0.0
+                    fill_price = (
+                        self.market_data.get_price(symbol)
+                        or self.market_data.get_price(venue_symbol)
+                        or 0.0
+                    )
 
                 fill = PaperFill(
                     fill_id=f"fill_{order.order_id}",
@@ -232,6 +283,27 @@ class BybitDemoConnector:
 
             # Store order
             self._orders[order.order_id] = order
+
+            # Attach venue-native TP/SL after order acceptance.
+            reference_price = float(result.get("price") or order.price or 0.0)
+            tp_valid, sl_valid = self._sanitize_trading_stops(
+                side=side,
+                reference_price=reference_price,
+                take_profit=take_profit,
+                stop_loss=stop_loss,
+            )
+            if tp_valid is not None:
+                order.metadata["venue_take_profit"] = tp_valid
+            if sl_valid is not None:
+                order.metadata["venue_stop_loss"] = sl_valid
+
+            if tp_valid is not None or sl_valid is not None:
+                await self._attach_trading_stops_with_retry(
+                    symbol=venue_symbol,
+                    order_id=order.order_id,
+                    take_profit=tp_valid,
+                    stop_loss=sl_valid,
+                )
 
             # Audit log
             from data.exchange.bybit_safety import audit_log_order_operation
@@ -270,6 +342,112 @@ class BybitDemoConnector:
 
             return order
 
+    def _sanitize_trading_stops(
+        self,
+        side: str,
+        reference_price: float,
+        take_profit: float | None,
+        stop_loss: float | None,
+    ) -> tuple[float | None, float | None]:
+        """Ensure TP/SL are on the correct side of entry for venue acceptance."""
+        tp = take_profit if take_profit and take_profit > 0 else None
+        sl = stop_loss if stop_loss and stop_loss > 0 else None
+        if reference_price <= 0:
+            return tp, sl
+
+        side_norm = side.lower().strip()
+        if side_norm == "buy":
+            if tp is not None and tp <= reference_price:
+                logger.warning(
+                    "Discarding invalid long TP %.6f <= ref %.6f",
+                    tp,
+                    reference_price,
+                )
+                tp = None
+            if sl is not None and sl >= reference_price:
+                logger.warning(
+                    "Discarding invalid long SL %.6f >= ref %.6f",
+                    sl,
+                    reference_price,
+                )
+                sl = None
+        else:
+            if tp is not None and tp >= reference_price:
+                logger.warning(
+                    "Discarding invalid short TP %.6f >= ref %.6f",
+                    tp,
+                    reference_price,
+                )
+                tp = None
+            if sl is not None and sl <= reference_price:
+                logger.warning(
+                    "Discarding invalid short SL %.6f <= ref %.6f",
+                    sl,
+                    reference_price,
+                )
+                sl = None
+
+        return tp, sl
+
+    async def _attach_trading_stops_with_retry(
+        self,
+        symbol: str,
+        order_id: str,
+        take_profit: float | None,
+        stop_loss: float | None,
+        retries: int = 3,
+        retry_delay_seconds: float = 1.0,
+    ) -> None:
+        """Best-effort TP/SL attachment with retries and incident reporting."""
+        import asyncio
+
+        last_error: Exception | None = None
+        for attempt in range(1, retries + 1):
+            try:
+                await self.connector.set_trading_stop(
+                    symbol=symbol,
+                    take_profit=take_profit,
+                    stop_loss=stop_loss,
+                    position_idx=0,
+                )
+                logger.info(
+                    "Attached Bybit TP/SL for %s (order_id=%s, tp=%s, sl=%s)",
+                    symbol,
+                    order_id,
+                    take_profit,
+                    stop_loss,
+                )
+                return
+            except Exception as e:
+                last_error = e
+                if attempt < retries:
+                    await asyncio.sleep(retry_delay_seconds)
+
+        logger.error(
+            "Failed to attach Bybit TP/SL for %s (order_id=%s) after %s attempts: %s",
+            symbol,
+            order_id,
+            retries,
+            last_error,
+        )
+        try:
+            from execution.incident_reporter import publish_execution_incident
+
+            await publish_execution_incident(
+                incident_type="bybit_trading_stop_attach_failure",
+                severity="P1",
+                title="Bybit TP/SL attach failed",
+                message=str(last_error),
+                context={
+                    "symbol": symbol,
+                    "order_id": order_id,
+                    "take_profit": take_profit,
+                    "stop_loss": stop_loss,
+                },
+            )
+        except Exception:
+            logger.exception("Failed to publish TP/SL attachment failure incident")
+
     async def cancel_order(self, order_id: str) -> bool:
         """Cancel an order via Bybit demo API.
 
@@ -290,7 +468,7 @@ class BybitDemoConnector:
                 await self.connector.connect()
 
             await self.connector.cancel_order(
-                symbol=order.symbol,
+                symbol=self._normalize_bybit_symbol(order.symbol),
                 order_id=order_id,
             )
 
