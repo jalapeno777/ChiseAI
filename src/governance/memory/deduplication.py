@@ -555,6 +555,9 @@ class MemoryDeduplicationEngine:
         - list[float]
         - tuple[float, ...]
         - dict[str, list[float]] for named vectors
+        - dict with 'vector' key containing the actual vector data
+
+        Non-numeric values are skipped rather than causing failure.
         """
         if vector is None:
             return []
@@ -562,6 +565,10 @@ class MemoryDeduplicationEngine:
         if isinstance(vector, dict):
             if not vector:
                 return []
+            # Prefer 'vector' key if present (common Qdrant named vector format)
+            if "vector" in vector:
+                return self._normalize_vector(vector["vector"])
+            # Otherwise use first available key
             first_key = sorted(vector.keys())[0]
             return self._normalize_vector(vector.get(first_key))
 
@@ -571,12 +578,15 @@ class MemoryDeduplicationEngine:
         normalized: list[float] = []
         for value in vector:
             try:
+                if value is None:
+                    continue
                 val = float(value)
                 if not math.isfinite(val):
-                    return []
+                    continue
                 normalized.append(val)
             except (TypeError, ValueError):
-                return []
+                # Skip non-numeric values instead of failing entirely
+                continue
 
         return normalized
 

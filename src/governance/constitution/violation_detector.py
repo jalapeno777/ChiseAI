@@ -7,6 +7,7 @@ For ST-GOV-002: Agent Constitution Artifact
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import re
@@ -15,9 +16,36 @@ from urllib.request import Request, urlopen
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from discord_alerts.discord_client import DiscordClient
+    from discord_alerts.config import DiscordConfig
 
 logger = logging.getLogger(__name__)
+
+# Global Discord client instance for constitution violations
+_global_discord_client: DiscordClient | None = None
+
+
+def set_global_discord_client(client: DiscordClient | None) -> None:
+    """Set the global Discord client for violation alerts.
+
+    Args:
+        client: DiscordClient instance or None to clear
+    """
+    global _global_discord_client
+    _global_discord_client = client
+    logger.debug(f"Global Discord client {'set' if client else 'cleared'}")
+
+
+def get_global_discord_client() -> DiscordClient | None:
+    """Get the global Discord client instance.
+
+    Returns:
+        DiscordClient instance or None
+    """
+    return _global_discord_client
 
 
 class ViolationSeverity(str, Enum):
@@ -82,18 +110,48 @@ class AlertChannel:
 
 
 class DiscordAlertChannel(AlertChannel):
-    """Sends violation alerts to Discord."""
+    """Sends violation alerts to Discord.
 
-    def __init__(self, webhook_url: str | None = None, channel_id: str = "#alerts"):
+    Uses DiscordClient for real bot-based delivery when available,
+    with webhook fallback for compatibility.
+    """
+
+    def __init__(
+        self,
+        webhook_url: str | None = None,
+        channel_id: str = "#alerts",
+        discord_client: DiscordClient | None = None,
+        use_global_client: bool = True,
+    ):
         """Initialize Discord alert channel.
 
         Args:
-            webhook_url: Discord webhook URL (optional, uses MCP if not provided)
+            webhook_url: Discord webhook URL (fallback if client unavailable)
             channel_id: Discord channel ID or name
+            discord_client: DiscordClient instance (optional, uses global if not provided)
+            use_global_client: Whether to use global Discord client if available
         """
         self.webhook_url = webhook_url
         self.channel_id = channel_id
-        self._mcp_available = False
+        self._discord_client = discord_client
+        self._use_global_client = use_global_client
+
+    def _get_discord_client(self) -> DiscordClient | None:
+        """Get the Discord client to use for sending.
+
+        Priority:
+        1. Instance-level client if set
+        2. Global client if use_global_client is True
+        3. None (fallback to webhook)
+
+        Returns:
+            DiscordClient instance or None
+        """
+        if self._discord_client is not None:
+            return self._discord_client
+        if self._use_global_client:
+            return get_global_discord_client()
+        return None
 
     def _format_message(self, violation: Violation) -> str:
         """Format violation as Discord message."""
@@ -119,6 +177,11 @@ class DiscordAlertChannel(AlertChannel):
     def send(self, violation: Violation) -> bool:
         """Send alert to Discord.
 
+        Priority:
+        1. DiscordClient (bot-based) if available and connected
+        2. Webhook URL if configured
+        3. Logging fallback
+
         Args:
             violation: The violation to alert about
 
@@ -127,40 +190,99 @@ class DiscordAlertChannel(AlertChannel):
         """
         message = self._format_message(violation)
 
-        # Try webhook first
-        if self.webhook_url:
+        # Priority 1: Try DiscordClient (bot-based) if available
+        client = self._get_discord_client()
+        if client is not None:
             try:
-                payload = json.dumps({"content": message}).encode("utf-8")
-                request = Request(
-                    self.webhook_url,
-                    data=payload,
-                    headers={"Content-Type": "application/json"},
-                    method="POST",
-                )
-                with urlopen(request, timeout=10) as response:
-                    if 200 <= response.status < 300:
-                        logger.info(
-                            "Discord violation alert sent: channel=%s status=%s",
-                            self.channel_id,
-                            response.status,
-                        )
-                        return True
-                    logger.error(
-                        "Discord webhook failed: status=%s channel=%s",
-                        response.status,
+                # Use asyncio.run to bridge sync -> async
+                result = asyncio.run(self._send_via_discord_client(client, message))
+                if result:
+                    logger.info(
+                        "Discord violation alert sent via bot: channel=%s violation=%s",
                         self.channel_id,
+                        violation.id,
                     )
-                    return False
-            except (HTTPError, URLError, TimeoutError, ValueError) as e:
-                logger.error(f"Failed to send Discord webhook: {e}")
-                return False
+                    return True
             except Exception as e:
-                logger.error(f"Unexpected Discord webhook failure: {e}")
-                return False
+                logger.warning(
+                    f"DiscordClient send failed, will try webhook fallback: {e}"
+                )
+                # Fall through to webhook
 
-        # Fall back to logging (MCP integration would be added here)
+        # Priority 2: Try webhook fallback
+        if self.webhook_url:
+            return self._send_via_webhook(message, violation.id)
+
+        # Priority 3: Fall back to logging
         logger.warning(f"Discord alert (channel={self.channel_id}): {message[:200]}...")
         return True
+
+    async def _send_via_discord_client(
+        self, client: DiscordClient, message: str
+    ) -> bool:
+        """Send message via DiscordClient.
+
+        Args:
+            client: DiscordClient instance
+            message: Message content
+
+        Returns:
+            True if sent successfully
+        """
+        try:
+            result = await client.send_message(
+                content=message,
+                channel_id=self.channel_id,
+            )
+            return result.success
+        except Exception as e:
+            logger.error(f"DiscordClient send error: {e}")
+            return False
+
+    def _send_via_webhook(self, message: str, violation_id: str) -> bool:
+        """Send message via Discord webhook.
+
+        Args:
+            message: Message content
+            violation_id: Violation ID for logging
+
+        Returns:
+            True if sent successfully
+        """
+        if not self.webhook_url:
+            logger.error("Webhook URL not configured")
+            return False
+
+        try:
+            payload = json.dumps({"content": message}).encode("utf-8")
+            request = Request(
+                self.webhook_url,  # type: ignore[arg-type]
+                data=payload,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urlopen(request, timeout=10) as response:
+                if 200 <= response.status < 300:
+                    logger.info(
+                        "Discord violation alert sent via webhook: channel=%s status=%s violation=%s",
+                        self.channel_id,
+                        response.status,
+                        violation_id,
+                    )
+                    return True
+                logger.error(
+                    "Discord webhook failed: status=%s channel=%s violation=%s",
+                    response.status,
+                    self.channel_id,
+                    violation_id,
+                )
+                return False
+        except (HTTPError, URLError, TimeoutError, ValueError) as e:
+            logger.error(f"Failed to send Discord webhook: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected Discord webhook failure: {e}")
+            return False
 
 
 class ViolationDetector:

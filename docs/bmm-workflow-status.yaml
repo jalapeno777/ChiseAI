@@ -237,6 +237,113 @@ metadata:
 in_progress: []
 
 completed:
+- id: AUTOCOG-001
+  title: "Real Qdrant Writes for Iteration Learnings"
+  status: completed
+  priority: P1
+  owner: quickdev
+  story_points: 2
+  created_date: '2026-03-16'
+  completed_date: '2026-03-16'
+  description: |
+    Verified existing Qdrant write implementation in iteration_logging.py.
+    Implementation already functional with CHISEAI_ENABLE_QDRANT_WRITE flag.
+    Real upsert calls confirmed at line 707 with proper collection auto-creation.
+  files_changed:
+    - src/operations/iteration_logging.py
+  test_results:
+    total_tests: 54
+    passed: 54
+    failed: 0
+    pass_rate: "100%"
+  notes:
+    - "T-001: Qdrant implementation verified as WORKING"
+    - "T-002: All 54 iteration logging tests passing"
+    - "Implementation was already functional - no code changes required"
+
+- id: AUTOCOG-002
+  title: "Real Qdrant Writes for Tempmemory Migration"
+  status: completed
+  priority: P1
+  owner: quickdev
+  story_points: 2
+  created_date: '2026-03-16'
+  completed_date: '2026-03-16'
+  description: |
+    Verified existing Qdrant migration implementation in tempmemory/migration.py.
+    Implementation already functional with real upsert calls.
+    Dry run mode properly separates behavior from actual writes.
+  files_changed:
+    - src/governance/tempmemory/migration.py
+  test_results:
+    total_tests: 30
+    passed: 30
+    failed: 0
+    pass_rate: "100%"
+  notes:
+    - "T-003: Qdrant migration verified as WORKING"
+    - "T-004: All 30 tempmemory migration tests passing"
+    - "Implementation was already functional - no code changes required"
+
+- id: AUTOCOG-003
+  title: "Fix Memory Dedup TypeError and Re-enable Daily Sweep"
+  status: completed
+  priority: P1
+  owner: dev
+  story_points: 4
+  created_date: '2026-03-16'
+  completed_date: '2026-03-16'
+  description: |
+    Fixed TypeError in memory deduplication _normalize_vector() function.
+    Added graceful handling for named vectors (dict format), non-numeric values,
+    and dimension mismatches. memory.daily_sweep confirmed already enabled.
+  files_changed:
+    - src/governance/memory/deduplication.py
+  test_results:
+    total_tests: 52
+    passed: 52
+    failed: 0
+    pass_rate: "100%"
+  fix_details:
+    component: "_normalize_vector()"
+    issue_type: "TypeError on named vectors and non-numeric values"
+    description: "Fixed to skip non-numeric values gracefully and prefer 'vector' key in dict format"
+  notes:
+    - "T-005: TypeError fixed with proper vector normalization"
+    - "T-006: memory.daily_sweep already enabled (no change needed)"
+    - "T-007: All 52 deduplication tests passing"
+
+- id: AUTOCOG-004
+  title: "Discord Governance Hardening"
+  status: completed
+  priority: P1
+  owner: dev
+  story_points: 3
+  created_date: '2026-03-16'
+  completed_date: '2026-03-16'
+  description: |
+    Enhanced Discord notifier to support injected clients and config.
+    Added routing config validator with comprehensive validation rules.
+    Switched constitution violation detector to use Discord client path.
+  files_changed:
+    - src/governance/notifications/discord_notifier.py
+    - src/governance/constitution/violation_detector.py
+  test_results:
+    total_tests: 59
+    passed: 59
+    failed: 0
+    pass_rate: "100%"
+  implementation_summary:
+    lines_added: 799
+    lines_removed: 32
+    new_tests: 59
+  notes:
+    - "T-008: Discord notifier initialization fixed for injected clients"
+    - "T-009: Routing config validator added (+381 lines of tests)"
+    - "T-010: Constitution violation uses Discord client path (+24 tests)"
+    - "T-011: All notification tests passing (59/59)"
+
+completed:
 - id: PAPER-NOGO-REMEDIATION-002
   title: "Paper Trading NO-GO Remediation - Signal Consumer Activation"
   status: completed
