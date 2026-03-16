@@ -699,11 +699,7 @@ DETECTED → ACKNOWLEDGED → INVESTIGATING → IDENTIFIED →
 ```bash
 # Update incident state
 curl -X POST http://localhost:8001/api/v1/incidents/INC-XXX/state \
-  -d '{
-    "state": "investigating",
-    "note": "Checking database logs",
-    "operator": "<name>"
-  }'
+  -d '{"state": "investigating", "note": "Checking database logs", "operator": "<name>"}'
 
 # Auto-transitions:
 # - Acknowledged → Investigating (after first update)
