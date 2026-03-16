@@ -106,7 +106,8 @@ def format_output(result: dict[str, Any], output_format: str) -> str:
     if "checks" in result:
         for check in result["checks"]:
             status = "✓" if check.get("passed", False) else "✗"
-            lines.append(f"{status} {check['name']}: {check.get('message', '')}")
+            check_name = check.get("name", check.get("check_type", "unknown"))
+            lines.append(f"{status} {check_name}: {check.get('message', '')}")
 
             if "details" in check and check["details"]:
                 for detail in check["details"]:
