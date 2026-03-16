@@ -2,7 +2,7 @@
 name: "quickdev-fast"
 description: "Ultra-fast executor subagent for trivial 1SP mechanical tasks: tiny fixes, formatting, renames, broad grep/summarize."
 mode: all
-model: "zai-coding-plan/glm-4.7-flash"
+model: "zai-coding-plan/glm-4.7"
 temperature: 0.25
 tools:
   task: true
