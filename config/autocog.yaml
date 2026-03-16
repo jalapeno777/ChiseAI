@@ -1,0 +1,34 @@
+# Autonomous Cognition Configuration
+# Auto-generated from AUTOCOG Phase 1C Action
+# Timestamp: 2026-03-16T15:38:00Z
+
+version: 1
+
+# Experimental Learning Mode
+# Enables safe experimentation (2-3 experiments per cycle)
+experiments:
+  enabled: true
+  max_experiments_per_cycle: 3
+  safe_mode: true  # Only run experiments within safety guardrails
+
+# Qdrant Integration
+qdrant:
+  write_enabled: true
+  collection_name: "ChiseAI"
+  vector_size: 384
+
+# Metrics and Monitoring
+metrics:
+  # Candidate skip rate monitoring
+  skip_rate_alert_threshold: 0.20  # 20%
+  skip_rate_window_days: 7
+  alert_on_high_skip_rate: true
+
+# Safety Guardrails (immutable via auto-actions)
+safety:
+  max_risk_level: "medium"  # Auto-actions only up to medium
+  require_approval_for: ["high", "critical"]
+  protected_files:
+    - "src/core/risk_caps.py"
+    - "src/core/governance_bypasses.py"
+    - "docs/bmm-workflow-status.yaml"

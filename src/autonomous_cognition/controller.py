@@ -31,6 +31,7 @@ class AutonomousCognitionController:
     REDIS_CURRENT_KEY = "bmad:chiseai:autocog:self_assessment:latest"
     REDIS_HISTORY_KEY = "bmad:chiseai:autocog:self_assessment:history"
     DEFAULT_ARTIFACTS_DIR = "docs/governance/self_assessments"
+    CONFIG_PATH = Path("config/autocog.yaml")
 
     def __init__(
         self,
@@ -41,6 +42,7 @@ class AutonomousCognitionController:
         self._artifacts_dir = Path(artifacts_dir or self.DEFAULT_ARTIFACTS_DIR)
         self._redis_client = redis_client
         self._qdrant_client = qdrant_client
+        self._config = self._load_config()
 
     def run_daily_self_assessment(self) -> tuple[SelfAssessmentArtifact, Path]:
         """Execute full self-assessment cycle and persist output."""
@@ -52,7 +54,9 @@ class AutonomousCognitionController:
 
     def _build_artifact(self) -> SelfAssessmentArtifact:
         """Build self-assessment artifact from live system signals."""
-        assessment_id = f"sa-{datetime.now(UTC).strftime('%Y%m%d')}-{uuid.uuid4().hex[:8]}"
+        assessment_id = (
+            f"sa-{datetime.now(UTC).strftime('%Y%m%d')}-{uuid.uuid4().hex[:8]}"
+        )
         artifact = SelfAssessmentArtifact.create_empty(assessment_id=assessment_id)
 
         signals = self._collect_signals()
@@ -64,11 +68,15 @@ class AutonomousCognitionController:
 
         if not signals["memory_daily_sweep_enabled"]:
             findings.append("Memory daily sweep is disabled.")
-            recommendations.append("Enable memory.daily_sweep to maintain memory hygiene.")
+            recommendations.append(
+                "Enable memory.daily_sweep to maintain memory hygiene."
+            )
 
         if signals["redis_available"] is False:
             findings.append("Redis unavailable during assessment.")
-            recommendations.append("Restore Redis connectivity for full autonomous operation.")
+            recommendations.append(
+                "Restore Redis connectivity for full autonomous operation."
+            )
 
         if signals["qdrant_available"] is False:
             findings.append("Qdrant unavailable during assessment.")
@@ -77,7 +85,9 @@ class AutonomousCognitionController:
             )
 
         if not findings:
-            findings.append("No critical cognition health issues detected in this cycle.")
+            findings.append(
+                "No critical cognition health issues detected in this cycle."
+            )
             recommendations.append("Continue autonomous monitoring and trend tracking.")
 
         status = "ok"
@@ -105,14 +115,22 @@ class AutonomousCognitionController:
         redis_available = self._check_redis_available()
         qdrant_available = self._check_qdrant_available()
 
+        # Check config and env for qdrant write enablement
+        config_qdrant_write = self._config.get("qdrant", {}).get("write_enabled", False)
+        env_qdrant_write = (
+            os.getenv("CHISEAI_ENABLE_QDRANT_WRITE", "false").lower().strip() == "true"
+        )
+        qdrant_write_enabled = config_qdrant_write or env_qdrant_write
+
+        # Check config for experiments enablement
+        experiments_enabled = self._config.get("experiments", {}).get("enabled", False)
+
         return {
             "memory_daily_sweep_enabled": memory_daily_sweep_enabled,
             "redis_available": redis_available,
             "qdrant_available": qdrant_available,
-            "qdrant_write_enabled": os.getenv("CHISEAI_ENABLE_QDRANT_WRITE", "false")
-            .lower()
-            .strip()
-            == "true",
+            "qdrant_write_enabled": qdrant_write_enabled,
+            "experiments_enabled": experiments_enabled,
             "timestamp_utc": datetime.now(UTC).isoformat(),
         }
 
@@ -141,14 +159,16 @@ class AutonomousCognitionController:
     def _persist_artifact(self, artifact: SelfAssessmentArtifact) -> Path:
         """Persist artifact to file system for auditability."""
         self._artifacts_dir.mkdir(parents=True, exist_ok=True)
-        filename = f"self_assessment_{artifact.assessment_date}_{artifact.assessment_id}.json"
+        filename = (
+            f"self_assessment_{artifact.assessment_date}_{artifact.assessment_id}.json"
+        )
         path = self._artifacts_dir / filename
         path.write_text(artifact.to_json(indent=2), encoding="utf-8")
         return path
 
     def _persist_redis(self, artifact: SelfAssessmentArtifact) -> None:
         """Persist latest and history to Redis with graceful fallback."""
-        payload = artifact.to_json(indent=None)
+        payload = artifact.to_json()
 
         if self._redis_client is not None:
             try:
@@ -194,6 +214,58 @@ class AutonomousCognitionController:
             )
         except Exception as e:
             logger.warning("Qdrant persistence skipped: %s", e)
+
+    def _load_config(self) -> dict[str, Any]:
+        """Load autocog configuration from YAML file."""
+        if not self.CONFIG_PATH.exists():
+            logger.warning(
+                "Autocog config not found at %s, using defaults", self.CONFIG_PATH
+            )
+            return self._default_config()
+        try:
+            import yaml
+
+            data = yaml.safe_load(self.CONFIG_PATH.read_text(encoding="utf-8")) or {}
+            return self._merge_with_defaults(data)
+        except Exception as e:
+            logger.warning("Failed loading autocog config: %s", e)
+            return self._default_config()
+
+    def _default_config(self) -> dict[str, Any]:
+        """Return default configuration."""
+        return {
+            "experiments": {
+                "enabled": False,
+                "max_experiments_per_cycle": 3,
+                "safe_mode": True,
+            },
+            "qdrant": {
+                "write_enabled": False,
+                "collection_name": "ChiseAI",
+                "vector_size": 384,
+            },
+            "metrics": {
+                "skip_rate_alert_threshold": 0.20,
+                "skip_rate_window_days": 7,
+                "alert_on_high_skip_rate": True,
+            },
+            "safety": {
+                "max_risk_level": "medium",
+                "require_approval_for": ["high", "critical"],
+            },
+        }
+
+    def _merge_with_defaults(self, data: dict[str, Any]) -> dict[str, Any]:
+        """Merge loaded config with defaults."""
+        defaults = self._default_config()
+        for key, default_value in defaults.items():
+            if key not in data:
+                data[key] = default_value
+            elif isinstance(default_value, dict) and isinstance(data[key], dict):
+                for sub_key, sub_default in default_value.items():
+                    if sub_key not in data[key]:
+                        data[key][sub_key] = sub_default
+        return data
 
     def _is_daily_sweep_enabled(self) -> bool:
         """Read memory.daily_sweep enablement from job registry."""
