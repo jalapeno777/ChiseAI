@@ -33,15 +33,14 @@ This runbook covers daily operational procedures for the paper trading environme
 
 ## Prerequisites
 
-Before using this runbook, ensure you have:
+Before following procedures in this runbook, ensure you have:
 
-- [ ] Docker CLI access and appropriate permissions
-- [ ] Redis CLI installed and configured (port 6380)
-- [ ] curl command-line tool
-- [ ] jq JSON processor installed
-- [ ] Access to the ChiseAI API (localhost:8001)
-- [ ] Grafana dashboard access for monitoring
-- [ ] Scripts directory permissions (./scripts/ops/)
+- [ ] Access to ChiseAI Docker containers (`docker ps` works)
+- [ ] API endpoint access (`curl http://localhost:8001` responds)
+- [ ] Redis CLI installed and accessible (`redis-cli -p 6380 ping` returns PONG)
+- [ ] Grafana dashboard access at `http://localhost:3001`
+- [ ] Kill-switch check script executable: `./scripts/ops/kill_switch_check.sh`
+- [ ] Paper trading mode is active (not live trading)
 
 ## Daily Operational Checks
 
@@ -132,13 +131,21 @@ curl http://localhost:8001/api/v1/paper/orders/pending | jq '.orders | length'
 **PnL Summary:**
 ```bash
 # Get daily PnL
-curl http://localhost:8001/api/v1/paper/pnl/daily | jq '{realized_pnl: .realized_pnl, unrealized_pnl: .unrealized_pnl, total_trades: .total_trades}'
+curl http://localhost:8001/api/v1/paper/pnl/daily | jq '{
+  realized_pnl: .realized_pnl,
+  unrealized_pnl: .unrealized_pnl,
+  total_trades: .total_trades
+}'
 ```
 
 **Risk Metrics:**
 ```bash
 # Current risk exposure
-curl http://localhost:8001/api/v1/risk/metrics | jq '{exposure_pct: .exposure_pct, margin_utilization: .margin_utilization.utilization_pct, concentration_risk: .concentration_risk}'
+curl http://localhost:8001/api/v1/risk/metrics | jq '{
+  exposure_pct: .exposure_pct,
+  margin_utilization: .margin_utilization.utilization_pct,
+  concentration_risk: .concentration_risk
+}'
 ```
 
 #### 2. Alert Review

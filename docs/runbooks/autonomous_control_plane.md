@@ -12,15 +12,14 @@ This runbook covers operational procedures for the Autonomous Control Plane, whi
 
 ## Prerequisites
 
-Before using this runbook, ensure you have:
+Before following procedures in this runbook, ensure you have:
 
-- [ ] kubectl CLI installed and configured for the chiseai namespace
-- [ ] Redis CLI access (host.docker.internal:6380)
-- [ ] PostgreSQL client access for database connectivity checks
-- [ ] Access to InfluxDB for metrics verification
-- [ ] curl command-line tool for API testing
-- [ ] Authorization tokens for API endpoints (if required)
-- [ ] Access to Prometheus/Grafana dashboards
+- [ ] Access to Kubernetes cluster (`kubectl get pods` works)
+- [ ] Access to ChiseAI namespace resources
+- [ ] Redis connectivity (`redis-cli -h chiseai-redis ping` returns PONG)
+- [ ] Prometheus/Grafana access for metrics verification
+- [ ] Appropriate RBAC permissions to restart deployments
+- [ ] PagerDuty access for escalation procedures
 
 ---
 
@@ -191,6 +190,9 @@ Before using this runbook, ensure you have:
 ```bash
 # Check control plane health
 curl http://localhost:8000/health
+
+# Expected output:
+# {"status": "healthy", "services": {"redis": "connected", "database": "connected"}}
 
 # Get control plane metrics
 curl http://localhost:8000/metrics

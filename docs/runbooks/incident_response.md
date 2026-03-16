@@ -37,18 +37,15 @@ This runbook provides comprehensive procedures for incident management at ChiseA
 
 ## Prerequisites
 
-Before responding to incidents using this runbook, ensure you have:
+Before following procedures in this runbook, ensure you have:
 
-- [ ] Access to the incident management system (API at localhost:8001)
-- [ ] PagerDuty access and acknowledgment permissions
-- [ ] Slack access with permissions to post in #incidents channel
-- [ ] curl command-line tool for API interactions
-- [ ] jq JSON processor for parsing responses
-- [ ] Access to Grafana dashboards for monitoring
-- [ ] Docker CLI access for service management
-- [ ] Authorization tokens for protected API endpoints
-- [ ] Contact information for escalation contacts (Engineering Manager, VP Engineering, CTO)
-- [ ] Knowledge of current on-call schedule and rotation
+- [ ] API endpoint access (`curl http://localhost:8001/api/v1/health` responds)
+- [ ] PagerDuty access and notification configured
+- [ ] Slack access with incident channel permissions
+- [ ] Access to runbook scripts in `./scripts/ops/`
+- [ ] Grafana dashboard access for metrics verification
+- [ ] Knowledge of current on-call rotation schedule
+- [ ] Understanding of severity classification criteria (P0-P3)
 
 ---
 
@@ -102,10 +99,20 @@ Before responding to incidents using this runbook, ensure you have:
 # Use classification helper
 curl -X POST http://localhost:8001/api/v1/incidents/classify \
   -H "Content-Type: application/json" \
-  -d '{"symptoms": ["trading_halted", "api_unresponsive"], "impact": "all_users", "financial_exposure": "high", "safety_systems_affected": true}'
+  -d '{
+    "symptoms": ["trading_halted", "api_unresponsive"],
+    "impact": "all_users",
+    "financial_exposure": "high",
+    "safety_systems_affected": true
+  }'
 
 # Response:
-# {"severity": "P0", "reason": "Complete system outage with safety impact", "response_sla": "immediate", "escalation_required": true}
+# {
+#   "severity": "P0",
+#   "reason": "Complete system outage with safety impact",
+#   "response_sla": "immediate",
+#   "escalation_required": true
+# }
 ```
 
 **Classification Decision Tree:**
@@ -178,14 +185,23 @@ Is the system completely down?
 # Trigger PagerDuty escalation
 curl -X POST http://localhost:8001/api/v1/incidents/escalate \
   -H "Content-Type: application/json" \
-  -d '{"incident_id": "inc-20260222-001", "severity": "P0", "auto_page": true, "escalation_policy": "platform_critical"}'
+  -d '{
+    "incident_id": "inc-20260222-001",
+    "severity": "P0",
+    "auto_page": true,
+    "escalation_policy": "platform_critical"
+  }'
 ```
 
 **Slack Notification:**
 ```bash
 # Post to #incidents channel
 curl -X POST http://localhost:8001/api/v1/incidents/notify \
-  -d '{"channel": "#incidents", "severity": "P1", "message": "Trading latency elevated - investigating"}'
+  -d '{
+    "channel": "#incidents",
+    "severity": "P1",
+    "message": "Trading latency elevated - investigating"
+  }'
 ```
 
 ---
@@ -572,7 +588,12 @@ Why? → [Root Cause]
 ```bash
 # Log post-mortem completion
 curl -X POST http://localhost:8001/api/v1/incidents/postmortem/complete \
-  -d '{"incident_id": "INC-20260222-001", "postmortem_url": "docs/postmortems/postmortem-INC-20260222-001.md", "action_items": 5, "completed_by": "<name>"}'
+  -d '{
+    "incident_id": "INC-20260222-001",
+    "postmortem_url": "docs/postmortems/postmortem-INC-20260222-001.md",
+    "action_items": 5,
+    "completed_by": "<name>"
+  }'
 ```
 
 ---
@@ -699,7 +720,11 @@ DETECTED → ACKNOWLEDGED → INVESTIGATING → IDENTIFIED →
 ```bash
 # Update incident state
 curl -X POST http://localhost:8001/api/v1/incidents/INC-XXX/state \
-  -d '{"state": "investigating", "note": "Checking database logs", "operator": "<name>"}'
+  -d '{
+    "state": "investigating",
+    "note": "Checking database logs",
+    "operator": "<name>"
+  }'
 
 # Auto-transitions:
 # - Acknowledged → Investigating (after first update)
