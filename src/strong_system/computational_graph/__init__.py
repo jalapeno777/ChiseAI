@@ -7,9 +7,12 @@ Components:
     - Node: Base class for graph nodes with value and gradient storage
     - Graph: Container for managing nodes and execution order
     - Operation: Base class for operations (Add, Multiply, ReLU, etc.)
+    - backward: Main entry point for reverse-mode automatic differentiation
+    - compute_gradients: Compute gradients for all nodes in a graph
+    - clear_gradients: Reset all gradients to None
 
 Example:
-    >>> from src.strong_system.computational_graph import Graph, Node
+    >>> from src.strong_system.computational_graph import Graph, Node, backward
     >>> import numpy as np
     >>>
     >>> # Create a simple computation: z = (x + y) * 2
@@ -17,8 +20,17 @@ Example:
     >>> y = Node(np.array([4.0, 5.0, 6.0]), name="y")
     >>> z = (x + y) * 2
     >>> print(z.value)  # [10. 14. 18.]
+    >>>
+    >>> # Compute gradients
+    >>> backward(z)
+    >>> print(x.gradient)  # [2. 2. 2.]
 """
 
+from src.strong_system.computational_graph.autodiff import (
+    backward,
+    clear_gradients,
+    compute_gradients,
+)
 from src.strong_system.computational_graph.graph import Graph
 from src.strong_system.computational_graph.node import Node, Operation
 from src.strong_system.computational_graph.operations import (
@@ -38,4 +50,7 @@ __all__ = [
     "ReLU",
     "MatMul",
     "Sum",
+    "backward",
+    "compute_gradients",
+    "clear_gradients",
 ]
