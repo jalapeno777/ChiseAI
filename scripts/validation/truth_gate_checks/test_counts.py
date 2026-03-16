@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os.path
 import re
 import subprocess
 from datetime import datetime
@@ -77,28 +78,108 @@ def run_pytest_collect(
         }
 
 
-def find_story_test_count(story_id: str, workflow_data: dict) -> int | None:
-    """Find the recorded test count for a story."""
-    # Check in_progress
-    for story in workflow_data.get("in_progress", []):
+def find_story_in_workflow(story_id: str, workflow_data: dict) -> dict | None:
+    """Find a story entry in the workflow data."""
+    # Check stories list (new format)
+    for story in workflow_data.get("stories", []):
         if story.get("id") == story_id:
-            test_results = story.get("test_results", {})
-            return test_results.get("total_tests")
+            return story
+
+    # Check in_progress
+    for story in workflow_data.get("in_progress", []) or []:
+        if story.get("id") == story_id:
+            return story
 
     # Check completed
-    for story in workflow_data.get("completed", []):
+    for story in workflow_data.get("completed", []) or []:
         if story.get("id") == story_id:
-            test_results = story.get("test_results", {})
-            return test_results.get("total_tests")
+            return story
 
     # Check recent_changes
-    for change in workflow_data.get("metadata", {}).get("recent_changes", []):
+    for change in workflow_data.get("metadata", {}).get("recent_changes", []) or []:
         if change.get("story_id") == story_id:
-            test_results = change.get("test_results", {})
-            if story_id in test_results:
-                return test_results[story_id].get("total_tests")
-            return test_results.get("total_tests")
+            return change
 
+    return None
+
+
+def find_story_test_count(story_id: str, workflow_data: dict) -> int | None:
+    """Find the recorded test count for a story."""
+    story = find_story_in_workflow(story_id, workflow_data)
+    if story:
+        test_results = story.get("test_results", {})
+        return test_results.get("total_tests")
+    return None
+
+
+def infer_test_path_from_story(
+    story: dict | None, story_id: str | None = None
+) -> str | None:
+    """
+    Infer the test path from story data.
+
+    Strategy:
+    1. Look for test files in files_changed entries
+    2. Derive from story_id pattern (e.g., STRONG-003-A -> tests/test_strong_system/...)
+    3. Fall back to None (caller should use default)
+
+    Args:
+        story: Story dictionary from workflow status
+        story_id: Optional story ID for pattern-based inference
+
+    Returns:
+        Test path string or None if no specific path can be determined
+    """
+    if story is None:
+        return None
+
+    # Strategy 1: Extract test directory from files_changed
+    files_changed = story.get("files_changed", [])
+    if files_changed:
+        test_dirs = set()
+        for file_path in files_changed:
+            if file_path.startswith("tests/"):
+                # Extract the directory containing the test file
+                path_parts = file_path.split("/")
+                if len(path_parts) >= 2:
+                    # Get the test module directory (e.g., tests/test_strong_system/)
+                    if len(path_parts) >= 3:
+                        test_module_dir = "/".join(path_parts[:3])
+                        test_dirs.add(test_module_dir)
+                    else:
+                        test_dirs.add("tests/")
+
+        if test_dirs:
+            # If all test files are in the same directory, use that
+            if len(test_dirs) == 1:
+                return test_dirs.pop()
+            # If multiple directories, find the common parent
+            common_prefix = "/".join(
+                os.path.commonprefix([d.split("/") for d in test_dirs])
+            )
+            if common_prefix and common_prefix != "tests":
+                return common_prefix
+            return "tests/"
+
+    # Strategy 2: Derive from story_id pattern
+    if story_id:
+        # Pattern: STRONG-XXX-Y -> tests/test_strong_system/test_...
+        strong_match = re.match(r"STRONG-(\d+)-[A-Z]", story_id)
+        if strong_match:
+            # Map STRONG story IDs to their test directories
+            strong_test_dirs = {
+                "001": "tests/test_strong_system/test_neural_beliefs/",
+                "002": "tests/test_strong_system/test_belief_embeddings/",
+                "003": "tests/test_strong_system/test_hypothesis_generator/",
+                "004": "tests/test_strong_system/test_symbolic_rules/",
+            }
+            story_num = strong_match.group(1)
+            if story_num in strong_test_dirs:
+                return strong_test_dirs[story_num]
+            # Generic fallback for other STRONG stories
+            return "tests/test_strong_system/"
+
+    # Strategy 3: No specific path found
     return None
 
 
@@ -144,13 +225,15 @@ def check_test_counts(
     expected_count: int | None = None
 
     if story_id and not path:
-        # Load workflow status to find expected count
+        # Load workflow status to find expected count and infer test path
         workflow_path = repo_root / workflow_file
+        story = None
         if workflow_path.exists():
             try:
                 with open(workflow_path) as f:
                     workflow_data = yaml.safe_load(f)
                 expected_count = find_story_test_count(story_id, workflow_data)
+                story = find_story_in_workflow(story_id, workflow_data)
             except Exception as e:
                 result["errors"].append(f"Failed to load workflow file: {e}")
 
@@ -159,8 +242,9 @@ def check_test_counts(
             result["errors"].append(f"No test count found for story {story_id}")
             return result
 
-        # Infer test path from story_id
-        path = f"tests/"
+        # Infer test path from story data and story_id
+        inferred_path = infer_test_path_from_story(story, story_id)
+        path = inferred_path if inferred_path else "tests/"
 
     # Run pytest collection
     collect_result = run_pytest_collect(path, repo_root)

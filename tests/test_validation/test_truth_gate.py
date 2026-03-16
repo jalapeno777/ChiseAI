@@ -23,6 +23,8 @@ from truth_gate_checks.test_counts import (
     check_test_counts,
     run_pytest_collect,
     find_story_test_count,
+    find_story_in_workflow as find_story_in_workflow_for_tests,
+    infer_test_path_from_story,
 )
 from truth_gate_checks.merge_truth import (
     check_merge_truth,
@@ -725,6 +727,224 @@ class TestTruthGateIntegration:
         result = check_merge_truth(["abc123"])
         assert result["passed"] is True
         assert result["total_checks"] == 1
+
+
+class TestInferTestPathFromStory:
+    """Tests for infer_test_path_from_story function - TG-002 regression tests."""
+
+    def test_infer_from_files_changed_single_test_dir(self):
+        """Test inferring path from files_changed with single test directory."""
+        story = {
+            "id": "STRONG-001-A",
+            "files_changed": [
+                "src/strong_system/neural_beliefs/belief.py",
+                "tests/test_strong_system/test_neural_beliefs/test_belief.py",
+                "tests/test_strong_system/test_neural_beliefs/test_revision.py",
+            ],
+        }
+        result = infer_test_path_from_story(story, "STRONG-001-A")
+        # Path is returned without trailing slash (os.path.commonprefix behavior)
+        assert result == "tests/test_strong_system/test_neural_beliefs"
+
+    def test_infer_from_files_changed_multiple_test_dirs(self):
+        """Test inferring path from files_changed with multiple test directories."""
+        story = {
+            "id": "MIXED-001",
+            "files_changed": [
+                "src/module_a/file.py",
+                "tests/test_module_a/test_file.py",
+                "tests/test_module_b/test_file.py",
+            ],
+        }
+        result = infer_test_path_from_story(story, "MIXED-001")
+        # Should fall back to tests/ when multiple directories
+        assert result == "tests/"
+
+    def test_infer_from_files_changed_no_tests(self):
+        """Test inferring path when no test files in files_changed."""
+        story = {
+            "id": "NO-TESTS-001",
+            "files_changed": [
+                "src/module/file.py",
+                "docs/readme.md",
+            ],
+        }
+        result = infer_test_path_from_story(story, "NO-TESTS-001")
+        assert result is None
+
+    def test_infer_from_story_id_strong_001(self):
+        """Test inferring path from STRONG-001 story ID pattern."""
+        story = {"id": "STRONG-001-A", "files_changed": []}
+        result = infer_test_path_from_story(story, "STRONG-001-A")
+        assert result == "tests/test_strong_system/test_neural_beliefs/"
+
+    def test_infer_from_story_id_strong_002(self):
+        """Test inferring path from STRONG-002 story ID pattern."""
+        story = {"id": "STRONG-002-A", "files_changed": []}
+        result = infer_test_path_from_story(story, "STRONG-002-A")
+        assert result == "tests/test_strong_system/test_belief_embeddings/"
+
+    def test_infer_from_story_id_strong_003(self):
+        """Test inferring path from STRONG-003 story ID pattern."""
+        story = {"id": "STRONG-003-A", "files_changed": []}
+        result = infer_test_path_from_story(story, "STRONG-003-A")
+        assert result == "tests/test_strong_system/test_hypothesis_generator/"
+
+    def test_infer_from_story_id_strong_004(self):
+        """Test inferring path from STRONG-004 story ID pattern."""
+        story = {"id": "STRONG-004-A", "files_changed": []}
+        result = infer_test_path_from_story(story, "STRONG-004-A")
+        assert result == "tests/test_strong_system/test_symbolic_rules/"
+
+    def test_infer_from_story_id_generic_strong(self):
+        """Test inferring path from generic STRONG story ID."""
+        story = {"id": "STRONG-999-A", "files_changed": []}
+        result = infer_test_path_from_story(story, "STRONG-999-A")
+        assert result == "tests/test_strong_system/"
+
+    def test_infer_no_story_no_id(self):
+        """Test inferring path with no story data and no story_id."""
+        result = infer_test_path_from_story(None, None)
+        assert result is None
+
+    def test_infer_empty_story(self):
+        """Test inferring path with empty story data."""
+        story = {}
+        result = infer_test_path_from_story(story, "UNKNOWN-001")
+        assert result is None
+
+
+class TestFindStoryInWorkflowForTests:
+    """Tests for find_story_in_workflow function in test_counts module."""
+
+    def test_find_in_stories_list(self):
+        """Test finding story in stories list (new format)."""
+        workflow_data = {
+            "stories": [
+                {"id": "STORY-001", "test_results": {"total_tests": 10}},
+                {"id": "STORY-002", "test_results": {"total_tests": 20}},
+            ],
+        }
+        result = find_story_in_workflow_for_tests("STORY-001", workflow_data)
+        assert result is not None
+        assert result["id"] == "STORY-001"
+        assert result["test_results"]["total_tests"] == 10
+
+    def test_find_in_in_progress_legacy(self):
+        """Test finding story in in_progress list (legacy format)."""
+        workflow_data = {
+            "in_progress": [
+                {"id": "STORY-001", "test_results": {"total_tests": 10}},
+            ],
+            "stories": [],
+        }
+        result = find_story_in_workflow_for_tests("STORY-001", workflow_data)
+        assert result is not None
+        assert result["id"] == "STORY-001"
+
+    def test_find_in_completed_legacy(self):
+        """Test finding story in completed list (legacy format)."""
+        workflow_data = {
+            "completed": [
+                {"id": "STORY-001", "test_results": {"total_tests": 10}},
+            ],
+            "stories": [],
+        }
+        result = find_story_in_workflow_for_tests("STORY-001", workflow_data)
+        assert result is not None
+        assert result["id"] == "STORY-001"
+
+    def test_find_not_found(self):
+        """Test when story is not found."""
+        workflow_data = {
+            "stories": [],
+            "in_progress": [],
+            "completed": [],
+        }
+        result = find_story_in_workflow_for_tests("NONEXISTENT", workflow_data)
+        assert result is None
+
+
+class TestStorySpecificPathInference:
+    """Integration tests for story-specific test path inference - TG-002."""
+
+    @patch("truth_gate_checks.test_counts.run_pytest_collect")
+    def test_story_specific_path_used(self, mock_collect, tmp_path):
+        """Test that story-specific path is inferred and used."""
+        mock_collect.return_value = {
+            "success": True,
+            "test_count": 59,
+        }
+
+        workflow_file = tmp_path / "workflow.yaml"
+        workflow_file.write_text(
+            yaml.dump(
+                {
+                    "stories": [
+                        {
+                            "id": "STRONG-001-A-S3",
+                            "test_results": {"total_tests": 59},
+                            "files_changed": [
+                                "src/strong_system/computational_graph/optimizer.py",
+                                "tests/test_strong_system/test_computational_graph/test_optimizer.py",
+                            ],
+                        }
+                    ],
+                }
+            )
+        )
+
+        result = check_test_counts(
+            story_id="STRONG-001-A-S3",
+            workflow_file="workflow.yaml",
+            repo_root=tmp_path,
+        )
+
+        # Should pass with matching counts
+        assert result["passed"] is True
+        # Verify the correct path was passed to pytest
+        mock_collect.assert_called_once()
+        call_args = mock_collect.call_args
+        # First positional arg should be the inferred path
+        assert "test_strong_system" in call_args[0][0]
+
+    @patch("truth_gate_checks.test_counts.run_pytest_collect")
+    def test_fallback_to_tests_when_no_specific_path(self, mock_collect, tmp_path):
+        """Test fallback to tests/ when no specific path can be inferred."""
+        mock_collect.return_value = {
+            "success": True,
+            "test_count": 42,
+        }
+
+        workflow_file = tmp_path / "workflow.yaml"
+        workflow_file.write_text(
+            yaml.dump(
+                {
+                    "stories": [
+                        {
+                            "id": "UNKNOWN-001",
+                            "test_results": {"total_tests": 42},
+                            "files_changed": [
+                                "src/module/file.py",
+                            ],
+                        }
+                    ],
+                }
+            )
+        )
+
+        result = check_test_counts(
+            story_id="UNKNOWN-001",
+            workflow_file="workflow.yaml",
+            repo_root=tmp_path,
+        )
+
+        # Should pass with matching counts
+        assert result["passed"] is True
+        # Verify fallback to tests/ was used
+        mock_collect.assert_called_once()
+        call_args = mock_collect.call_args
+        assert call_args[0][0] == "tests/"
 
 
 if __name__ == "__main__":
