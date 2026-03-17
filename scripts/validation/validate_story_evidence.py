@@ -364,7 +364,7 @@ Examples:
     else:
         # Validate all stories
         if args.verbose:
-            print(f"Validating evidence for all stories\n")
+            print("Validating evidence for all stories\n")
         validate_all_stories(data, evidence_dir, result, args.verbose)
 
     # Print results

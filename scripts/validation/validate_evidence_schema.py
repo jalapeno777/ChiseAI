@@ -25,7 +25,7 @@ import re
 import sys
 from datetime import UTC, datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 # Schema paths
 BASE_SCHEMA_PATH = Path("docs/validation/evidence-schema.json")

@@ -18,7 +18,7 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Optional
 
 
 @dataclass
@@ -26,10 +26,10 @@ class MergeClaim:
     """Represents a claimed merge to main."""
 
     commit_sha: str
-    story_id: Optional[str]
+    story_id: str | None
     source: str  # PR title, commit message, etc.
     verified: bool = False
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
 
 @dataclass
@@ -37,13 +37,13 @@ class VerificationReport:
     """Complete report of merge truth verification."""
 
     overall_passed: bool = False
-    claims: List[MergeClaim] = field(default_factory=list)
+    claims: list[MergeClaim] = field(default_factory=list)
     total_checked: int = 0
     total_verified: int = 0
     total_failed: int = 0
-    metadata: Dict = field(default_factory=dict)
+    metadata: dict = field(default_factory=dict)
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {
             "overall_passed": self.overall_passed,
             "total_checked": self.total_checked,
@@ -93,7 +93,7 @@ class MergeTruthVerifier:
         if self.verbose:
             print(f"[merge-truth] {message}")
 
-    def run_git_command(self, cmd: List[str]) -> Tuple[int, str, str]:
+    def run_git_command(self, cmd: list[str]) -> tuple[int, str, str]:
         """Run a git command and return exit code, stdout, stderr."""
         try:
             result = subprocess.run(
@@ -121,7 +121,7 @@ class MergeTruthVerifier:
 
         return self.main_branch in branches
 
-    def get_commit_sha_from_ref(self, ref: str) -> Optional[str]:
+    def get_commit_sha_from_ref(self, ref: str) -> str | None:
         """Resolve a ref (branch, tag, etc.) to a commit SHA."""
         exit_code, stdout, stderr = self.run_git_command(["rev-parse", "--verify", ref])
 
@@ -129,13 +129,13 @@ class MergeTruthVerifier:
             return stdout.strip()
         return None
 
-    def extract_story_ids(self, text: str) -> List[str]:
+    def extract_story_ids(self, text: str) -> list[str]:
         """Extract story IDs from text."""
         matches = self.STORY_ID_PATTERN.findall(text)
         # findall returns tuples for groups, extract full match
         return list(set(matches))
 
-    def find_merge_claims_in_pr(self, pr_title: str, pr_body: str) -> List[MergeClaim]:
+    def find_merge_claims_in_pr(self, pr_title: str, pr_body: str) -> list[MergeClaim]:
         """Find merge claims in PR title and body."""
         claims = []
         text = f"{pr_title}\n{pr_body}"
@@ -154,7 +154,7 @@ class MergeTruthVerifier:
 
         return claims
 
-    def find_merge_claims_in_commits(self, commit_range: str) -> List[MergeClaim]:
+    def find_merge_claims_in_commits(self, commit_range: str) -> list[MergeClaim]:
         """Find merge claims in commit messages."""
         claims = []
 
@@ -209,7 +209,7 @@ class MergeTruthVerifier:
 
         return claim
 
-    def verify_all_claims(self, claims: List[MergeClaim]) -> VerificationReport:
+    def verify_all_claims(self, claims: list[MergeClaim]) -> VerificationReport:
         """Verify all merge claims."""
         self.report.claims = []
         self.report.total_checked = len(claims)
@@ -331,7 +331,7 @@ class MergeTruthVerifier:
             with open(output_path, "w") as f:
                 json.dump(self.report.to_dict(), f, indent=2)
             self.log(f"Report written to: {output_path}")
-        except IOError as e:
+        except OSError as e:
             print(f"Warning: Could not write report: {e}")
 
 
