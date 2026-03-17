@@ -11,7 +11,6 @@ from __future__ import annotations
 import argparse
 import pathlib
 import sys
-from typing import List, Tuple
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
@@ -20,17 +19,17 @@ def read_text(rel_path: str) -> str:
     return (ROOT / rel_path).read_text(encoding="utf-8")
 
 
-def check_required_substrings(rel_path: str, required: List[str]) -> List[str]:
+def check_required_substrings(rel_path: str, required: list[str]) -> list[str]:
     text = read_text(rel_path)
-    errors: List[str] = []
+    errors: list[str] = []
     for needle in required:
         if needle not in text:
             errors.append(f"{rel_path}: missing required text: {needle}")
     return errors
 
 
-def check_bmad_wrappers() -> List[str]:
-    errors: List[str] = []
+def check_bmad_wrappers() -> list[str]:
+    errors: list[str] = []
     wrappers = sorted((ROOT / ".opencode/agent").glob("bmad-agent-*.md"))
     menu_rule = "5. PRESENT the numbered menu (unless `BMAD_TASK_MODE=1` or `NO_INTERACTIVE_MENUS=1`)"
     wait_rule = "6. WAIT for user input before proceeding (unless `BMAD_TASK_MODE=1` or `NO_INTERACTIVE_MENUS=1`)"
@@ -45,9 +44,9 @@ def check_bmad_wrappers() -> List[str]:
     return errors
 
 
-def run_checks() -> Tuple[List[str], List[str]]:
-    errors: List[str] = []
-    warnings: List[str] = []
+def run_checks() -> tuple[list[str], list[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
 
     required_map = {
         "AGENTS.md": [
@@ -84,7 +83,9 @@ def run_checks() -> Tuple[List[str], List[str]]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Validate orchestrator question-routing policy")
+    parser = argparse.ArgumentParser(
+        description="Validate orchestrator question-routing policy"
+    )
     _ = parser.parse_args()
 
     errors, warnings = run_checks()

@@ -586,10 +586,7 @@ class LiveReconciler:
         time_diff = abs(
             (bybit_exec.exec_datetime - journal_entry.entry_time).total_seconds()
         )
-        if time_diff > 300:  # 5 minutes
-            return False
-
-        return True
+        return time_diff <= 300  # 5 minutes
 
     async def reconcile(self, days: int = 7) -> LiveReconciliationReport:
         """Run full live reconciliation."""
@@ -753,7 +750,7 @@ def generate_markdown_report(report: LiveReconciliationReport) -> str:
         lines.extend(
             [
                 "**✅ YES** - All trades are net negative (or breakeven)",
-                f"",
+                "",
                 f"No profitable trades detected out of {report.profitable_trades + report.losing_trades + report.breakeven_trades} total trades.",
             ]
         )
@@ -761,7 +758,7 @@ def generate_markdown_report(report: LiveReconciliationReport) -> str:
         lines.extend(
             [
                 "**❌ NO** - Profitable trades detected!",
-                f"",
+                "",
                 f"{report.profitable_trades} trades were net positive.",
             ]
         )

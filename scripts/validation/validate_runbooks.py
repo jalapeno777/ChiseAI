@@ -8,10 +8,10 @@ Validates runbook structure, content, and tests safe commands against live syste
 import json
 import re
 import subprocess
-from datetime import datetime, timezone
+from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any
-from dataclasses import dataclass, field, asdict
 
 
 @dataclass
@@ -148,7 +148,7 @@ class RunbookValidator:
     def __init__(self, runbooks_dir: str = "docs/runbooks"):
         self.runbooks_dir = Path(runbooks_dir)
         self.results = []
-        self.timestamp = datetime.now(timezone.utc).isoformat()
+        self.timestamp = datetime.now(UTC).isoformat()
 
     def validate_all(self) -> dict:
         """Validate all critical runbooks."""
@@ -251,9 +251,7 @@ class RunbookValidator:
             status_icon = (
                 "✓"
                 if check.status == "PASS"
-                else "✗"
-                if check.status == "FAIL"
-                else "○"
+                else "✗" if check.status == "FAIL" else "○"
             )
             print(f"    {status_icon} {check.criterion}: {check.status}")
             if check.details:
@@ -508,7 +506,7 @@ class RunbookValidator:
             result = LiveTestResult(
                 command=" ".join(test["command"]),
                 status="PENDING",
-                timestamp=datetime.now(timezone.utc).isoformat(),
+                timestamp=datetime.now(UTC).isoformat(),
             )
 
             try:
@@ -526,25 +524,25 @@ class RunbookValidator:
                 if proc.returncode == 0:
                     if test["expected"] is None or test["expected"] in output:
                         result.status = "PASS"
-                        print(f"    Status: ✓ PASS")
+                        print("    Status: ✓ PASS")
                         print(f"    Output: {output[:100]}...")
                     else:
                         result.status = "FAIL"
                         result.error = (
                             f"Expected '{test['expected']}' not found in output"
                         )
-                        print(f"    Status: ✗ FAIL")
+                        print("    Status: ✗ FAIL")
                         print(f"    Error: {result.error}")
                 else:
                     result.status = "FAIL"
                     result.error = f"Exit code {proc.returncode}: {proc.stderr[:200]}"
-                    print(f"    Status: ✗ FAIL")
+                    print("    Status: ✗ FAIL")
                     print(f"    Error: {result.error}")
 
             except subprocess.TimeoutExpired:
                 result.status = "FAIL"
                 result.error = f"Timeout after {test['timeout']}s"
-                print(f"    Status: ✗ TIMEOUT")
+                print("    Status: ✗ TIMEOUT")
             except Exception as e:
                 result.status = "FAIL"
                 result.error = str(e)

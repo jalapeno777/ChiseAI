@@ -51,7 +51,7 @@ class OutcomeSourceProof:
     pnl: float
     source_query: str
     source_database: str
-    fill_id: Optional[str] = None
+    fill_id: str | None = None
     timestamp_utc: str = ""
 
     # Patterns to redact from source_query
@@ -83,7 +83,7 @@ class OutcomeSourceProof:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "OutcomeSourceProof":
+    def from_dict(cls, data: dict[str, Any]) -> OutcomeSourceProof:
         """Create from dictionary."""
         return cls(
             outcome_id=data["outcome_id"],
@@ -130,7 +130,7 @@ class RecapValidationEvidence:
     win_count: int
     loss_count: int
     source_verified: bool
-    discord_evidence: Optional[DiscordMessageEvidence] = None
+    discord_evidence: DiscordMessageEvidence | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
@@ -149,7 +149,7 @@ class RecapValidationEvidence:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "RecapValidationEvidence":
+    def from_dict(cls, data: dict[str, Any]) -> RecapValidationEvidence:
         """Create from dictionary."""
         outcome_proofs = [
             OutcomeSourceProof.from_dict(p) for p in data.get("outcome_proofs", [])
@@ -190,8 +190,8 @@ class RecapValidator:
 
     def __init__(
         self,
-        redis_collector: Optional[Any] = None,
-        influx_collector: Optional[Any] = None,
+        redis_collector: Any | None = None,
+        influx_collector: Any | None = None,
     ):
         """
         Initialize the RecapValidator.
@@ -233,7 +233,7 @@ class RecapValidator:
         trade_id: str,
         start_time: datetime,
         end_time: datetime,
-    ) -> Optional[OutcomeSourceProof]:
+    ) -> OutcomeSourceProof | None:
         """
         Verify an outcome exists in Redis.
 
@@ -256,7 +256,7 @@ class RecapValidator:
         trade_id: str,
         start_time: datetime,
         end_time: datetime,
-    ) -> Optional[OutcomeSourceProof]:
+    ) -> OutcomeSourceProof | None:
         """
         Verify an outcome exists in InfluxDB.
 
@@ -404,8 +404,8 @@ class RecapValidator:
 
 
 def create_recap_validator(
-    redis_collector: Optional[Any] = None,
-    influx_collector: Optional[Any] = None,
+    redis_collector: Any | None = None,
+    influx_collector: Any | None = None,
 ) -> RecapValidator:
     """
     Factory function to create a RecapValidator.

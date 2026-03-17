@@ -434,13 +434,13 @@ def print_result(result: CollectionResult) -> None:
     print(f"Lookback: {result.lookback_hours} hours")
     print("-" * 70)
 
-    print(f"\n📊 COLLECTION DATA")
+    print("\n📊 COLLECTION DATA")
     print(f"  Executions collected: {result.count}")
     print(f"  Status: {result.status}")
     print(f"  Reason: {result.reason}")
 
     if result.error_message:
-        print(f"\n⚠️  ERROR")
+        print("\n⚠️  ERROR")
         print(f"  {result.error_message}")
 
     print("\n" + "=" * 70)
