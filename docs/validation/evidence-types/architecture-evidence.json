@@ -1,0 +1,256 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://chiseai.io/schemas/evidence-types/architecture-evidence.json",
+  "title": "Architecture Evidence Schema",
+  "description": "Schema for architecture design and decision evidence extending base evidence schema",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "../evidence-schema.json"
+    }
+  ],
+  "required": [
+    "story_id",
+    "timestamp",
+    "evidence_type",
+    "summary",
+    "design_decisions",
+    "components"
+  ],
+  "properties": {
+    "evidence_type": {
+      "type": "string",
+      "const": "architecture_design"
+    },
+    "design_decisions": {
+      "type": "array",
+      "description": "Array of architectural design decisions",
+      "items": {
+        "type": "object",
+        "required": ["decision_id", "title", "rationale"],
+        "properties": {
+          "decision_id": {
+            "type": "string",
+            "description": "Unique identifier for the decision",
+            "pattern": "^ADR-[0-9]+$"
+          },
+          "title": {
+            "type": "string",
+            "description": "Title of the design decision"
+          },
+          "context": {
+            "type": "string",
+            "description": "Context and problem statement"
+          },
+          "decision": {
+            "type": "string",
+            "description": "The decision that was made"
+          },
+          "rationale": {
+            "type": "string",
+            "description": "Reasoning behind the decision"
+          },
+          "consequences": {
+            "type": "object",
+            "description": "Positive and negative consequences",
+            "properties": {
+              "positive": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "negative": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "risks": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "alternatives_considered": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "alternative": {
+                  "type": "string",
+                  "description": "Description of the alternative"
+                },
+                "reason_rejected": {
+                  "type": "string",
+                  "description": "Why this alternative was not chosen"
+                }
+              }
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": ["proposed", "accepted", "deprecated", "superseded"],
+            "description": "Current status of the decision"
+          },
+          "superseded_by": {
+            "type": "string",
+            "description": "ADR ID that supersedes this decision (if status is superseded)"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Date the decision was made"
+          },
+          "deciders": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "People involved in making the decision"
+          }
+        }
+      }
+    },
+    "components": {
+      "type": "array",
+      "description": "Array of architectural components",
+      "items": {
+        "type": "object",
+        "required": ["name", "type"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Component name"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "service",
+              "module",
+              "library",
+              "database",
+              "api",
+              "queue",
+              "cache",
+              "external_service",
+              "infrastructure"
+            ],
+            "description": "Type of component"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the component's purpose"
+          },
+          "responsibilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of component responsibilities"
+          },
+          "interfaces": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["rest", "grpc", "graphql", "message_queue", "function", "database"]
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Interfaces exposed by the component"
+          },
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "component": {
+                  "type": "string",
+                  "description": "Name of the dependency"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["required", "optional"]
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Components this component depends on"
+          },
+          "technology": {
+            "type": "string",
+            "description": "Primary technology used (e.g., Python, PostgreSQL, Redis)"
+          },
+          "location": {
+            "type": "string",
+            "description": "File path or location of the component"
+          }
+        }
+      }
+    },
+    "diagrams": {
+      "type": "array",
+      "description": "References to architecture diagrams",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Diagram name"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["context", "container", "component", "deployment", "sequence", "class"]
+          },
+          "format": {
+            "type": "string",
+            "enum": ["mermaid", "plantuml", "drawio", "svg", "png"]
+          },
+          "path": {
+            "type": "string",
+            "description": "Path to the diagram file"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "architecture_attributes": {
+      "type": "object",
+      "description": "High-level architecture attributes",
+      "properties": {
+        "style": {
+          "type": "string",
+          "enum": ["monolithic", "microservices", "serverless", "event-driven", "layered", "hexagonal", "clean"]
+        },
+        "scalability_approach": {
+          "type": "string"
+        },
+        "availability_target": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.?[0-9]*%$"
+        },
+        "security_considerations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

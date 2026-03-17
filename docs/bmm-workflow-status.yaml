@@ -127,6 +127,9 @@ metadata:
         - fc8871ca
       total_tests: 383
       total_lines_added: 11140
+      prunable_branches:
+        - feature/STRONG-001-B-neural-belief-revision
+        - feature/STRONG-002-B-belief-clustering
     - action: "phase-2-batch-2-completion"
       actor: "senior-dev"
       description: "BATCH-2 Phase 2 Integration: Truth gate validation and merge coordination for TG-002, STRONG-003-A, and STRONG-004-A. All three stories merged to main with truth verification. Workflow status updated with completion evidence. Total: 299 tests, ~6,825 lines added."
@@ -483,6 +486,7 @@ completed:
     passed: 57
     failed: 0
     pass_rate: "100%"
+  evidence_file: docs/evidence/TG-003-completion-evidence.json
   notes:
     - "Truth-gate CI step validates strong-system stories before merge"
     - "extract_story_id_from_pr.py extracts story IDs from PR titles/branches"
@@ -520,6 +524,7 @@ completed:
     passed: 139
     failed: 0
     pass_rate: "100%"
+  evidence_file: docs/evidence/STRONG-005-A-completion-evidence.json
   notes:
     - "MetaLearningController with adaptive learning and model selection"
     - "LSTM meta-learner for learning history encoding"
@@ -559,6 +564,7 @@ completed:
     passed: 187
     failed: 0
     pass_rate: "100%"
+  evidence_file: docs/evidence/STRONG-006-A-completion-evidence.json
   notes:
     - "DomainSpecificLanguage for syntax and semantics definition"
     - "ProgramGenerator with search-based and neural synthesis"

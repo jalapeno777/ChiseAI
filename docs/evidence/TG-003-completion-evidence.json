@@ -1,0 +1,56 @@
+{
+  "story_id": "TG-003",
+  "title": "CI Truth Gate Enforcement for Strong-System Stories",
+  "status": "completed",
+  "completion_date": "2026-03-17T01:40:00Z",
+  "completed_by": "senior-dev",
+  "merge_commit": "5737a8ee",
+  "verification": {
+    "local_merge": {
+      "verified": true,
+      "timestamp": "2026-03-17T01:30:00Z"
+    },
+    "remote_push": {
+      "verified": true,
+      "timestamp": "2026-03-17T01:35:00Z"
+    },
+    "branch_contains": {
+      "local_main": true,
+      "remote_main": true
+    }
+  },
+  "test_results": {
+    "total_tests": 57,
+    "passed": 57,
+    "failed": 0,
+    "skipped": 0,
+    "pass_rate": "100%",
+    "test_file": "tests/test_validation/test_truth_gate_ci_integration.py"
+  },
+  "files_changed": [
+    ".woodpecker/ci.yaml",
+    "scripts/validation/extract_story_id_from_pr.py",
+    "tests/test_validation/test_truth_gate_ci_integration.py"
+  ],
+  "lines_changed": {
+    "added": 885,
+    "deleted": 0
+  },
+  "features_delivered": [
+    "Truth-gate CI step validates strong-system stories before merge",
+    "extract_story_id_from_pr.py extracts story IDs from PR titles/branches",
+    "Support for STRONG-*, TG-*, and ST-* story patterns",
+    "57 integration tests for truth gate CI validation"
+  ],
+  "evidence_sources": {
+    "workflow_status": "docs/bmm-workflow-status.yaml",
+    "merge_commit": "5737a8ee",
+    "test_file": "tests/test_validation/test_truth_gate_ci_integration.py"
+  },
+  "notes": [
+    "All 57 tests passing with 100% pass rate",
+    "Truth gate enforcement active for strong-system stories",
+    "PR-scoped validation with story ID extraction",
+    "CI integration complete with blocking gate behavior"
+  ]
+}
