@@ -1,0 +1,54 @@
+{
+  "scenario_id": "F",
+  "scenario_name": "Critic Review Triggers Remediation Round 1 + Re-review",
+  "story_id": "SWARM-LIVE-DRILLS-001",
+  "timestamp": "2026-03-17T00:00:00Z",
+  "agent_route": ["dev", "critic", "dev"],
+  "attempt_count": 1,
+  "escalation_metadata": null,
+  "outcome": "success_after_remediation",
+  "critic_review": {
+    "reviewer": "critic",
+    "findings": [
+      {"issue": "Missing error handling", "severity": "medium", "file": "src/module.py", "line": 45},
+      {"issue": "Incomplete docstring", "severity": "low", "file": "src/module.py", "line": 23}
+    ],
+    "recommendation": "remediate"
+  },
+  "remediation": {
+    "round": 1,
+    "actions": [
+      {"action": "Added try/except block", "file": "src/module.py", "line": 45},
+      {"action": "Completed docstring", "file": "src/module.py", "line": 23}
+    ],
+    "re_review": {
+      "reviewer": "critic",
+      "findings": [],
+      "recommendation": "approve"
+    }
+  },
+  "proof_of_work": {
+    "files_changed": [
+      {"path": "src/module.py", "lines_added": 60, "lines_removed": 10}
+    ],
+    "commands_run": [
+      {"command": "pytest tests/ -v (initial)", "result": "passed", "output": "10 passed"},
+      {"command": "critic review", "result": "issues_found", "output": "2 issues found"},
+      {"command": "pytest tests/ -v (after remediation)", "result": "passed", "output": "10 passed"}
+    ],
+    "tests_run": {
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0
+    },
+    "logs_checked": [
+      {"log": "critic_review.log", "findings": "Initial: 2 issues, After remediation: 0 issues"}
+    ],
+    "acceptance_criteria_mapping": {
+      "AC1": {"criteria": "Feature implemented with quality standards", "evidence": "src/module.py", "status": "pass"}
+    }
+  },
+  "residual_risks": [],
+  "verification_status": "verified_after_remediation"
+}

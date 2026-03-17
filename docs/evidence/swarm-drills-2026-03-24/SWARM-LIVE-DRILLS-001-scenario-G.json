@@ -1,0 +1,88 @@
+{
+  "scenario_id": "G",
+  "scenario_name": "Unresolved After Remediation Round 2 Returns Blockers to Aria",
+  "story_id": "SWARM-LIVE-DRILLS-001",
+  "timestamp": "2026-03-17T00:00:00Z",
+  "agent_route": ["senior-dev", "critic", "senior-dev", "critic", "senior-dev", "critic"],
+  "attempt_count": 3,
+  "escalation_metadata": {
+    "attempt_count": 3,
+    "escalation_from": "senior-dev",
+    "escalation_reason": "Unresolved critical issues after 2 remediation rounds. Critic findings persist: security vulnerability and architectural inconsistency. Requires Aria decision on risk acceptance or scope change.",
+    "evidence_ref": "docs/evidence/swarm-drills-2026-03-24/SWARM-LIVE-DRILLS-001-scenario-G.json"
+  },
+  "outcome": "blocked",
+  "critic_review_round_1": {
+    "reviewer": "critic",
+    "findings": [
+      {"issue": "Security vulnerability in input validation", "severity": "critical", "file": "src/api.py", "line": 78},
+      {"issue": "Architectural inconsistency", "severity": "high", "file": "src/core.py", "line": 34}
+    ],
+    "recommendation": "remediate"
+  },
+  "remediation_round_1": {
+    "actions": [
+      {"action": "Added input validation", "file": "src/api.py", "line": 78}
+    ]
+  },
+  "critic_review_round_2": {
+    "reviewer": "critic",
+    "findings": [
+      {"issue": "Security vulnerability still present", "severity": "critical", "file": "src/api.py", "line": 82},
+      {"issue": "Architectural inconsistency unresolved", "severity": "high", "file": "src/core.py", "line": 34}
+    ],
+    "recommendation": "remediate"
+  },
+  "remediation_round_2": {
+    "actions": [
+      {"action": "Refactored validation logic", "file": "src/api.py", "line": 82},
+      {"action": "Partial architectural fix", "file": "src/core.py", "line": 34}
+    ]
+  },
+  "critic_review_round_3": {
+    "reviewer": "critic",
+    "findings": [
+      {"issue": "Security vulnerability - fundamental design issue", "severity": "critical", "file": "src/api.py", "line": 85},
+      {"issue": "Architectural inconsistency requires redesign", "severity": "high", "file": "src/core.py", "line": 34}
+    ],
+    "recommendation": "escalate_to_aria"
+  },
+  "blocker_packet": {
+    "blocker_id": "BP-SWARM-LIVE-DRILLS-001-20260317T000001Z-def456",
+    "story_id": "SWARM-LIVE-DRILLS-001",
+    "context": "Critical security vulnerability and architectural inconsistency persist after 2 remediation rounds",
+    "question": "Should we: A) Accept security risk and merge (requires Craig approval), B) Redesign architecture (adds 3SP), or C) Deprecate feature (scope reduction)?",
+    "recommended_default": "Option B - Redesign architecture",
+    "risk_if_default_wrong": "critical",
+    "decision_deadline_utc": "2026-03-18T00:00:00Z",
+    "continue_in_parallel": false
+  },
+  "proof_of_work": {
+    "files_changed": [
+      {"path": "src/api.py", "lines_added": 80, "lines_removed": 40},
+      {"path": "src/core.py", "lines_added": 50, "lines_removed": 30}
+    ],
+    "commands_run": [
+      {"command": "pytest tests/ -v (initial)", "result": "passed", "output": "15 passed"},
+      {"command": "critic review (round 1)", "result": "issues_found", "output": "2 critical issues"},
+      {"command": "pytest tests/ -v (after R1)", "result": "passed", "output": "15 passed"},
+      {"command": "critic review (round 2)", "result": "issues_found", "output": "2 critical issues"},
+      {"command": "pytest tests/ -v (after R2)", "result": "passed", "output": "15 passed"},
+      {"command": "critic review (round 3)", "result": "issues_found", "output": "2 critical issues - escalate"}
+    ],
+    "tests_run": {
+      "total": 15,
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0
+    },
+    "logs_checked": [
+      {"log": "critic_review.log", "findings": "Persistent critical issues after 2 remediation rounds"}
+    ],
+    "acceptance_criteria_mapping": {
+      "AC1": {"criteria": "Feature implemented with security standards", "evidence": "Partial - security issues persist", "status": "blocked"}
+    }
+  },
+  "residual_risks": ["Security vulnerability unpatched", "Architectural debt accumulating"],
+  "verification_status": "blocked_awaiting_aria_decision"
+}
