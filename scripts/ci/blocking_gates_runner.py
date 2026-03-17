@@ -18,7 +18,7 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 
 @dataclass
@@ -31,7 +31,7 @@ class GateResult:
     duration_seconds: float
     stdout: str = ""
     stderr: str = ""
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
 
 @dataclass
@@ -39,11 +39,11 @@ class GatesReport:
     """Complete report of all gate executions."""
 
     overall_passed: bool = False
-    gates: List[GateResult] = field(default_factory=list)
+    gates: list[GateResult] = field(default_factory=list)
     total_duration_seconds: float = 0.0
-    metadata: Dict = field(default_factory=dict)
+    metadata: dict = field(default_factory=dict)
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {
             "overall_passed": self.overall_passed,
             "total_duration_seconds": self.total_duration_seconds,
@@ -90,7 +90,7 @@ class BlockingGatesRunner:
     def __init__(
         self,
         verbose: bool = False,
-        ci_status_dir: Optional[str] = None,
+        ci_status_dir: str | None = None,
         force_full: bool = False,
     ):
         self.verbose = verbose
@@ -105,7 +105,7 @@ class BlockingGatesRunner:
         if self.verbose:
             print(f"[blocking-gates] {message}")
 
-    def read_status_file(self, gate_name: str) -> Optional[Tuple[int, str]]:
+    def read_status_file(self, gate_name: str) -> tuple[int, str] | None:
         """Read the status file for a gate."""
         status_file = Path(self.ci_status_dir) / f"{gate_name}.status"
         log_file = Path(self.ci_status_dir) / f"{gate_name}.log"
@@ -118,7 +118,7 @@ class BlockingGatesRunner:
             exit_code = int(status_file.read_text().strip())
             log_content = log_file.read_text() if log_file.exists() else ""
             return exit_code, log_content
-        except (ValueError, IOError) as e:
+        except (OSError, ValueError) as e:
             self.log(f"Error reading status file: {e}")
             return None
 
@@ -229,7 +229,7 @@ class BlockingGatesRunner:
                 f"Full-Only Gates: {full_only_passed} passed, {full_only_failed} failed"
             )
         else:
-            print(f"Full-Only Gates: skipped (PR mode)")
+            print("Full-Only Gates: skipped (PR mode)")
 
         if blocking_failed > 0:
             print("\nFailed blocking gates:")
@@ -246,7 +246,7 @@ class BlockingGatesRunner:
         else:
             print("\n✗ BLOCKING GATES FAILED")
 
-    def write_report(self, output_path: Optional[str] = None) -> None:
+    def write_report(self, output_path: str | None = None) -> None:
         """Write the report to a JSON file."""
         if output_path is None:
             output_path = os.path.join(self.ci_status_dir, "blocking-gates-report.json")
@@ -255,7 +255,7 @@ class BlockingGatesRunner:
             with open(output_path, "w") as f:
                 json.dump(self.report.to_dict(), f, indent=2)
             self.log(f"Report written to: {output_path}")
-        except IOError as e:
+        except OSError as e:
             print(f"Warning: Could not write report: {e}")
 
 

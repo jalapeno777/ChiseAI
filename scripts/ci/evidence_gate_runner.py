@@ -139,7 +139,7 @@ def run_evidence_validation(
         cmd.append("--verbose")
 
     # Run validation
-    print(f"Evidence gate: Running validation...")
+    print("Evidence gate: Running validation...")
     print(f"Evidence gate: Command: {' '.join(cmd)}")
 
     exit_code, stdout, stderr = run_command(cmd, capture_output=False)
