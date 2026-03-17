@@ -1,3 +1,15 @@
+---
+type: summary
+story_id: LESSONS-001
+created: 2026-03-17T00:00:00Z
+tags:
+  - lessons
+  - governance
+  - swarm
+author: jarvis
+priority: high
+---
+
 # Swarm Lessons
 
 Purpose: durable, actionable lessons that improve future execution quality.
@@ -28,3 +40,62 @@ LESSON
 ## Lessons
 
 <!-- Append new LESSON blocks below this line. -->
+
+```text
+LESSON
+- id: LESSON-20260317-test-path-inference
+- context: TG-002 fixed truth-gate test path inference for story-specific test directories
+- trigger: Hardcoded 'tests/' paths break story-specific test directories like 'tests_strong/'
+- actionable_rule: Always infer test paths from files_changed or story_id patterns rather than hardcoding 'tests/'
+- applies_to:
+  - quickdev
+  - dev
+  - senior-dev
+- expected_outcome: Test discovery works correctly for both standard and story-specific test directories
+- evidence_ref: TG-002 implementation
+- added_utc: 2026-03-17T00:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260317-meta-learning-architecture
+- context: STRONG-005-A meta-learning implementation with 139 tests passing
+- trigger: Meta-learning systems need careful architecture for learning history encoding
+- actionable_rule: Include task sampling and performance tracking from day one in meta-learning systems
+- applies_to:
+  - dev
+  - senior-dev
+- expected_outcome: Meta-learning systems have proper sampling and tracking infrastructure
+- evidence_ref: STRONG-005-A implementation, 139 tests passing
+- added_utc: 2026-03-17T00:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260317-program-synthesis-types
+- context: STRONG-006-A program synthesis implementation with 187 tests passing
+- trigger: DSLs need both search-based and neural synthesis approaches with type validation
+- actionable_rule: Implement type system early in DSL development for validation and type inference
+- applies_to:
+  - dev
+  - senior-dev
+- expected_outcome: Program synthesis systems have proper type safety and inference capabilities
+- evidence_ref: STRONG-006-A implementation, 187 tests passing
+- added_utc: 2026-03-17T00:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260317-truth-gate-validation
+- context: BATCH-2 Phase 2 and 3 integrations revealed false merge claims
+- trigger: Claiming merge complete without verifying commit is actually on main branch
+- actionable_rule: Always run `git branch --contains <commit>` before claiming merge to main is complete
+- applies_to:
+  - quickdev
+  - dev
+  - senior-dev
+  - merlin
+- expected_outcome: No false merge claims; all merge completions are truth-gate verified
+- evidence_ref: docs/evidence/PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI.md
+- added_utc: 2026-03-17T00:00:00Z
+```
