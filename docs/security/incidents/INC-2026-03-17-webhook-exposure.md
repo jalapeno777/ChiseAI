@@ -21,14 +21,31 @@
 1. [ ] Delete old webhooks via Discord server settings
 2. [ ] Create new webhooks to replace compromised ones
 3. [ ] Rotate Discord bot token
-4. [ ] Sanitize repository (remove from current files and history)
-5. [ ] Update .gitignore to prevent future commits
+4. [x] Sanitize repository (remove from current files and history)
+5. [x] Update .gitignore to prevent future commits
 
 ## Files Sanitized
 - .env (deleted from tracking)
 - infrastructure/cron/chiseai-daily-reflection (webhook URL removed)
+- docs/evidence/ST-OPS-DISCORD-WEBHOOK-001/* (regenerated with REDACTED values)
 
 ## Git History Rewrite
-- Commits affected: 18d6daceb, 5a842b9da, 4d3a6b152, b957f605a
+- Commits affected: All commits containing exposed tokens (2045 commits scanned)
 - Method: git filter-repo --replace-text
-- Status: [PENDING]
+- Status: COMPLETED
+- Duration: 53.16 seconds
+- Result: All exposed tokens replaced with REDACTED_* placeholders
+
+## Verification
+- [x] No exposed tokens found in current files
+- [x] No exposed tokens found in git history
+- [x] REDACTED placeholders verified in history
+- [x] .gitignore contains .env entries
+- [x] infrastructure/cron/chiseai-daily-reflection uses environment variable
+
+## Next Steps
+1. Delete compromised webhooks via Discord server settings
+2. Create new webhooks to replace them
+3. Rotate Discord bot token
+4. Update environment variables with new webhook URLs
+5. Test new webhooks
