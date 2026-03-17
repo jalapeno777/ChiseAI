@@ -2,7 +2,7 @@
 name: "research-fast"
 description: "High-throughput first-pass research subagent for source triage and quick evidence gathering. No code changes."
 mode: all
-model: "zai-coding-plan/glm-4.7-flash"
+model: "nvidia/minimaxai/minimax-m2.5"    # model: "zai-coding-plan/glm-4.7-flash"
 temperature: 0.3
 tools:
   task: true
