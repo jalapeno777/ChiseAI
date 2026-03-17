@@ -1,0 +1,100 @@
+[
+	{
+		"createdAt": "2026-02-07T17:59:41.445940489Z",
+		"description": "System bucket for monitoring logs",
+		"id": "a9f74705901631ea",
+		"labels": [],
+		"links": {
+			"labels": "/api/v2/buckets/a9f74705901631ea/labels",
+			"members": "/api/v2/buckets/a9f74705901631ea/members",
+			"org": "/api/v2/orgs/a05570ccb051076f",
+			"owners": "/api/v2/buckets/a9f74705901631ea/owners",
+			"self": "/api/v2/buckets/a9f74705901631ea",
+			"write": "/api/v2/write?org=a05570ccb051076f\u0026bucket=a9f74705901631ea"
+		},
+		"name": "_monitoring",
+		"orgID": "a05570ccb051076f",
+		"retentionRules": [
+			{
+				"everySeconds": 604800,
+				"shardGroupDurationSeconds": 86400,
+				"type": "expire"
+			}
+		],
+		"type": "system",
+		"updatedAt": "2026-02-07T17:59:41.445940531Z"
+	},
+	{
+		"createdAt": "2026-02-07T17:59:41.442628227Z",
+		"description": "System bucket for task logs",
+		"id": "faca19c4b4d47a1b",
+		"labels": [],
+		"links": {
+			"labels": "/api/v2/buckets/faca19c4b4d47a1b/labels",
+			"members": "/api/v2/buckets/faca19c4b4d47a1b/members",
+			"org": "/api/v2/orgs/a05570ccb051076f",
+			"owners": "/api/v2/buckets/faca19c4b4d47a1b/owners",
+			"self": "/api/v2/buckets/faca19c4b4d47a1b",
+			"write": "/api/v2/write?org=a05570ccb051076f\u0026bucket=faca19c4b4d47a1b"
+		},
+		"name": "_tasks",
+		"orgID": "a05570ccb051076f",
+		"retentionRules": [
+			{
+				"everySeconds": 259200,
+				"shardGroupDurationSeconds": 86400,
+				"type": "expire"
+			}
+		],
+		"type": "system",
+		"updatedAt": "2026-02-07T17:59:41.44262829Z"
+	},
+	{
+		"createdAt": "2026-02-07T17:59:41.454697697Z",
+		"id": "5363c8bf37453dfb",
+		"labels": [],
+		"links": {
+			"labels": "/api/v2/buckets/5363c8bf37453dfb/labels",
+			"members": "/api/v2/buckets/5363c8bf37453dfb/members",
+			"org": "/api/v2/orgs/a05570ccb051076f",
+			"owners": "/api/v2/buckets/5363c8bf37453dfb/owners",
+			"self": "/api/v2/buckets/5363c8bf37453dfb",
+			"write": "/api/v2/write?org=a05570ccb051076f\u0026bucket=5363c8bf37453dfb"
+		},
+		"name": "chiseai",
+		"orgID": "a05570ccb051076f",
+		"retentionRules": [
+			{
+				"everySeconds": 0,
+				"shardGroupDurationSeconds": 604800,
+				"type": "expire"
+			}
+		],
+		"type": "user",
+		"updatedAt": "2026-02-07T17:59:41.45469777Z"
+	},
+	{
+		"createdAt": "2026-03-17T13:46:45.858300041Z",
+		"id": "df5a0119afbc03db",
+		"labels": [],
+		"links": {
+			"labels": "/api/v2/buckets/df5a0119afbc03db/labels",
+			"members": "/api/v2/buckets/df5a0119afbc03db/members",
+			"org": "/api/v2/orgs/a05570ccb051076f",
+			"owners": "/api/v2/buckets/df5a0119afbc03db/owners",
+			"self": "/api/v2/buckets/df5a0119afbc03db",
+			"write": "/api/v2/write?org=a05570ccb051076f\u0026bucket=df5a0119afbc03db"
+		},
+		"name": "governance",
+		"orgID": "a05570ccb051076f",
+		"retentionRules": [
+			{
+				"everySeconds": 604800,
+				"shardGroupDurationSeconds": 86400,
+				"type": "expire"
+			}
+		],
+		"type": "user",
+		"updatedAt": "2026-03-17T13:46:45.858300104Z"
+	}
+]

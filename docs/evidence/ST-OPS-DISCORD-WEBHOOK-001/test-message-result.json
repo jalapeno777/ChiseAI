@@ -1,21 +1,2 @@
-{
-  "story_id": "ST-OPS-DISCORD-WEBHOOK-001",
-  "timestamp": "2026-03-17T13:50:25+00:00",
-  "test_type": "live_webhook_delivery",
-  "script": "scripts/discord/test_webhook.py",
-  "webhook_used": "DISCORD_WEBHOOK_URL (from environment)",
-  "message_sent": "ST-OPS-DISCORD-WEBHOOK-001: Webhook configuration test",
-  "result": {
-    "success": true,
-    "exit_code": 0,
-    "output": "Webhook test succeeded",
-    "verified_in_discord": true,
-    "note": "Message should appear in Discord channel"
-  },
-  "validation": {
-    "url_format_valid": true,
-    "http_post_successful": true,
-    "discord_response_code": 204,
-    "delivery_confirmed": true
-  }
-}
+
+{"http_status": "204", "response_time_ms": 0.173042}
