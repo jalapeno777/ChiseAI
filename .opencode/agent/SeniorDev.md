@@ -30,6 +30,7 @@ permission:
 - Before git actions, run session verification: `python3 scripts/swarm/session.py verify --story-id=<story_id> --branch=<branch> --worktree-path=<path>`.
 - You may merge to `main` after green CI and review for straightforward changes.
 - After >2 failed merge attempts, escalate to `merlin` as required merge authority.
+- Maximum 2 passes on the same blocker; if unresolved, escalate to `merlin` with full evidence.
 - Prefer safe, reversible changes; add tests when making behavior changes.
 - If repo workflow requires Redis/Qdrant logging, do it as you go, not at the end.
 
@@ -60,5 +61,10 @@ Before implementing, confirm:
 Return:
 - Files changed (paths)
 - Commands run (tests/lint/migrations/deploy) with outcomes
+- Logs checked with findings
+- Acceptance-criteria to evidence mapping
+- Residual risks and caveats
+- If no tests were run, explicit no-test justification
 - Memory applied: 1-2 bullets summarizing constraints/decisions you followed from `MEMORY_CONTEXT`
-- Risks, TODOs, and rollback notes (when behavior or infra changes)
+- TODOs and rollback notes (when behavior or infra changes)
+- `LESSON_CANDIDATE` entries when new durable lessons are discovered (context, actionable_rule, evidence_ref).

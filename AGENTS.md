@@ -515,3 +515,100 @@ docker run --network chiseai --name my-service [image]
 - `chiseai-metacognition-ops` - Metacognitive prediction/outcome/calibration workflow
 - `chiseai-skill-autonomy` - Autonomous skill KPI loop with non-blocking missing-skill fallback
 - `chiseai-autocog-orchestration` - Aria autonomous cognition oversight with backend review and severity-based action routing
+
+---
+
+## Swarm Policy Hardening Addendum (Required)
+
+This addendum hardens orchestration behavior for Aria/Jarvis and all executor agents.
+These rules are additive and must be enforced consistently across `AGENTS.md` and `.opencode/agent/*.md`.
+
+### A) Canonical Routing and Escalation State Machine (Required)
+
+- Task sizing policy:
+  - `quickdev`: all 1SP tasks
+  - `dev`: all tasks >1SP up to 3SP
+  - `senior-dev`: tasks >3SP, cross-cutting refactors, complex/systemic failures
+- Escalation pass limits (strict):
+  - `quickdev`: max 2 passes on the same blocker, then escalate to `dev`
+  - `dev`: max 2 passes on the same blocker, then escalate to `senior-dev`
+  - `senior-dev`: max 2 passes on the same blocker, then escalate to `merlin`
+  - `merlin`: max 3 passes on the same blocker, then return blocker packet to Aria and wait for direction
+- Legacy five-attempt escalation references are superseded by this policy.
+
+### B) Planning and Replanning Gates (Required)
+
+- Rule: plan first, execute second.
+- No executor delegation until Aria marks `PLAN_APPROVED=true`.
+- If any of the following happen, stop that execution path and replan before continuing:
+  - failed validation gate
+  - scope drift or hidden dependency discovery
+  - escalation threshold reached
+  - new medium/high/critical risk signal invalidating assumptions
+- Never "push through" failed validation with hopeful retries.
+
+### C) Subagent Offload and Context Hygiene (Required)
+
+- Aria/Jarvis must offload complex analysis and execution to subagents to keep orchestrator context clean.
+- Use bounded escalation and tiering, not unbounded "more compute".
+- Parallelization is allowed only with disjoint scope + explicit locks + no ordering dependency.
+
+### D) Proof-of-Work Completion Gate (Required)
+
+- No task may be marked complete without evidence.
+- Required completion evidence:
+  - commands run
+  - tests run and results
+  - log checks performed and findings
+  - acceptance criteria mapping to evidence
+  - residual risk notes
+- Exceptions (for no-test tasks such as docs-only changes) require explicit no-test justification.
+
+### E) Autonomous Bug-Fix Policy (Required)
+
+- Bug tasks default to autonomous root-cause-first execution:
+  - reproduce -> isolate root cause -> patch -> verify -> regression check
+- No user hand-holding for routine bug fixes.
+- Escalate to Aria when:
+  - requirements are ambiguous and risky
+  - security/compliance impact exists
+  - production-impacting decision needs authority
+
+### F) Critic and Remediation Loop (Required)
+
+- After implementation, Jarvis must run read-only critic review per completed task (parallel where safe).
+- If issues are found:
+  - run remediation round 1
+  - re-review
+  - run remediation round 2 (if needed)
+- If unresolved after two remediation rounds, return blockers to Aria with full evidence.
+
+### G) Lessons Loop (Required)
+
+- Every session must capture lessons in `docs/tempmemories/lessons.md` in addition to existing memory flows.
+- At session start, Aria/Jarvis must read relevant lesson entries and apply them.
+- Single-writer rule:
+  - workers emit `LESSON_CANDIDATE`
+  - Jarvis normalizes/deduplicates and appends final entries at session close
+
+### H) Machine-Checkable Governance (Required)
+
+- CI must include policy consistency checks that fail on:
+  - contradictory escalation thresholds across files
+  - contradictory routing rules across files
+  - missing required completion/evidence fields
+- Add explicit handoff metadata schema:
+  - `attempt_count`
+  - `escalation_from`
+  - `escalation_reason`
+  - `evidence_ref`
+- Add task budget caps:
+  - `max_total_attempts`
+  - `max_wall_clock_minutes`
+  - `max_token_budget`
+
+### I) Fast-Agent Soft Deprecation (Policy)
+
+- `quickdev-fast` (and optionally `juniordev`) are soft-deprecated for default routing.
+- Default 1SP route is `quickdev`; fast agents remain fallback-only during transition.
+- Remove fast agents from default routing tables first, then fully retire after verified non-use.

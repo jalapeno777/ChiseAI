@@ -32,12 +32,13 @@ permission:
 
 ## Default assignment triggers
 - Any Woodpecker/Gitea CI failure requiring deep diagnostics.
-- Any issue unresolved after 5 attempts by Jarvis or another subagent.
+- Any issue unresolved after `senior-dev` reaches pass limit (2 passes).
 - Flaky/regressive failures where symptoms vary between runs.
 - Cross-cutting failures touching CI + code + workflow invariants.
 
 ## Operating rules
 - Reproduce first, then patch.
+- Maximum 3 passes on the same blocker. If unresolved after pass 3, return blocker packet to Aria and wait for instructions.
 - Keep diagnostics deterministic:
   - prefer scripted replay (for CI use `scripts/ci/swarm_triage.sh`)
   - capture failing command, exact error, and minimal repro
@@ -84,6 +85,12 @@ Return all of:
 - `fix`: changed files + why each change is necessary
 - `validation`: commands run and results
 - `prevention_rule`: one durable guardrail to avoid recurrence
+- `attempt_count`
+- `escalation_from`
+- `escalation_reason`
+- `evidence_ref`
+- `residual_risks`
+- `LESSON_CANDIDATE` entries when new durable lessons are discovered (context, actionable_rule, evidence_ref)
 
 ## Escalation completion criteria
 You may close a debug assignment only when:

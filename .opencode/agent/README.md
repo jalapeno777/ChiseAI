@@ -71,17 +71,17 @@ Use this matrix when `jarvis` routes work to fixed-model agents.
 |-------------|------------------|-------|
 | Top-level strategy/orchestration | `aria` | `openai/gpt-5.3-codex` |
 | Top-level strategy/orchestration (runtime profile) | `aria-runtime` | `openai/gpt-5.3-codex` |
-| Critical blockers, CI deep debug, 5-attempt escalations | `merlin` | `openai/gpt-5.3-codex` |
+| Critical blockers, CI deep debug, escalation terminal tier | `merlin` | `openai/gpt-5.3-codex` |
 | Orchestration planning (non-Codex default) | `jarvis` | `kimi-for-coding/kimi-k2-thinking` |
 | Orchestration planning (runtime profile) | `jarvis-runtime` | `kimi-for-coding/k2p5` |
-| 4SP+ implementation, complex refactors | `senior-dev` | `kimi-for-coding/kimi-k2-thinking` |
-| 2-3SP implementation | `dev` | `kimi-for-coding/k2p5` |
+| 4SP+ implementation, complex refactors | `senior-dev` | `nvidia/moonshotai/kimi-k2-thinking` |
+| 2-3SP implementation | `dev` | `nvidia/moonshotai/kimi-k2.5` |
 | 1SP implementation (quality-first) | `quickdev` | `zai-coding-plan/glm-5.0-fast` |
-| Trivial 1SP mechanical throughput | `quickdev-fast` | `zai-coding-plan/glm-4.7-flash` |
-| Adversarial review / risk challenge | `critic` | `kimi-for-coding/kimi-k2-thinking` |
+| Trivial 1SP mechanical throughput (fallback-only, deprecated) | `quickdev-fast` | `nvidia/minimaxai/minimax-m2.5` |
+| Adversarial review / risk challenge | `critic` | `zai-coding-plan/glm-5.0-thinking` |
 | Automated PR review decisions | `git-review-bot` | `zai-coding-plan/glm-5.0-thinking` |
-| Deep synthesis research | `research` | `kimi-for-coding/kimi-k2-thinking` |
-| First-pass high-volume source triage | `research-fast` | `zai-coding-plan/glm-4.7-flash` |
+| Deep synthesis research | `research` | `nvidia/moonshotai/kimi-k2.5` |
+| First-pass high-volume source triage | `research-fast` | `nvidia/minimaxai/minimax-m2.5` |
 | Web-citation-heavy external research | `web-research` | `zai-coding-plan/glm-5` |
 
 ### Codex Budget Policy
@@ -89,6 +89,19 @@ Use this matrix when `jarvis` routes work to fixed-model agents.
 - Reserve Codex for `aria` and `merlin` by default.
 - Route routine implementation/research/review to Kimi/Z.ai agents.
 - Escalate to `merlin` when blocker depth or risk justifies premium reasoning.
+
+### Canonical Escalation Ladder (Required)
+
+- `quickdev`: max 2 passes on same blocker
+- `dev`: max 2 passes on same blocker
+- `senior-dev`: max 2 passes on same blocker
+- `merlin`: max 3 passes on same blocker
+- On unresolved blocker after `merlin` pass 3, return blocker packet to Aria.
+
+### Fast-Agent Deprecation Status
+
+- `quickdev-fast` and `juniordev` are soft-deprecated for default routing.
+- Use only as explicit fallback paths when Jarvis decides they are necessary.
 
 ## Autonomous PR Pipeline
 

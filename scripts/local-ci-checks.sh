@@ -50,6 +50,9 @@ else
   python3 scripts/ci/validate_swarm_context.py
 fi
 
+# Enforce policy consistency across AGENTS and agent profiles.
+python3 scripts/validate_swarm_policy_consistency.py
+
 if [ "$SCOPE_MODE" = "merged-only" ]; then
   echo "Running merged-files-only local CI checks"
   mapfile -t CHANGED_PY < <(python3 scripts/ci/ci_change_scope.py --mode changed-python)

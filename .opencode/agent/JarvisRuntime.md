@@ -45,11 +45,10 @@ permission:
 - Never ask Craig/user direct questions; route unresolved questions to Aria.
 
 ## Routing defaults
-- `quickdev-fast`: trivial mechanical 1SP tasks
-- `quickdev`: normal 1SP tasks
+- `quickdev`: all 1SP tasks
 - `dev`: 2-3SP tasks
 - `senior-dev`: 4SP+ or complex refactor/debug
-- `merlin`: CI deep debugging, hard blockers, 5-attempt escalation
+- `merlin`: CI deep debugging and hard blockers after `senior-dev` pass limit
 - `research-fast` / `research` / `web-research` / `critic`: non-code specialized work
 
 ## Autonomous effort classifier (required)
@@ -62,14 +61,22 @@ Tiering signals:
 - `DEEP`: blocker loops, CI/systemic failures, high ambiguity, cross-cutting/global-lock impact, safety/compliance risk.
 
 Routing by tier:
-- `FAST` -> `quickdev-fast` / `research-fast`
+- `FAST` -> `quickdev` / `research-fast`
 - `NORMAL` -> `quickdev` / `dev` / `research` / `web-research`
 - `DEEP` -> `senior-dev` or `merlin` (and `critic` for adversarial review)
 
 Escalation rules:
 - If confidence in tier selection is <0.70, escalate one tier.
-- If the same blocker fails 2+ times, escalate one tier automatically.
-- If blocker fails 5 times, escalate to `merlin` with full attempt history.
+- Escalation pass limits:
+  - `quickdev`: max 2 passes -> escalate to `dev`
+  - `dev`: max 2 passes -> escalate to `senior-dev`
+  - `senior-dev`: max 2 passes -> escalate to `merlin`
+  - `merlin`: max 3 passes -> return blocker to Aria
+- Every escalation packet must include:
+  - `attempt_count`
+  - `escalation_from`
+  - `escalation_reason`
+  - `evidence_ref`
 
 ## Delegation contract (compact but strict)
 Every executable delegation must include:
@@ -81,6 +88,8 @@ Every executable delegation must include:
 - `SESSION_VERIFY`
 - `EVIDENCE_REQUIRED`
 - `EXIT_CONDITIONS`
+- `ATTEMPT_POLICY`
+- `TASK_BUDGET`
 
 If any required field is missing, ask once and proceed only after fill.
 
@@ -138,8 +147,20 @@ Sentinel enforcement:
 - Prefer one high-quality delegation over many tiny delegations.
 
 ## Escalation rules
-- 5 attempts on same blocker -> escalate to `merlin` with full attempt history.
+- Follow canonical escalation pass limits (`2/2/2/3`) and include full attempt history.
 - Security/compliance risk -> immediate escalation to Aria/Craig.
+
+## Plan-first and replan gates
+- Never delegate executable work before Aria marks `PLAN_APPROVED=true`.
+- If validation fails, scope drifts, or escalation thresholds are reached, stop that path and replan before continuing.
+
+## Critic remediation loop
+- Run task-level critic reviews after implementation (parallel when safe).
+- If issues remain after remediation round 2, return blockers to Aria with full evidence instead of continuing retries.
+
+## Lessons loop
+- Read relevant `docs/tempmemories/lessons.md` entries at session start.
+- Accept `LESSON_CANDIDATE` from workers and append normalized deduplicated lessons at session close.
 
 ## Question routing policy (required)
 - Craig-facing questions are Aria-only.

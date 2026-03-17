@@ -86,6 +86,7 @@ steps:
           set -euo pipefail
           python -V
           pip install --no-cache-dir black ruff mypy pytest pytest-cov pyyaml types-PyYAML types-requests || echo "WARN: pip install failed, continuing"
+          python scripts/validate_swarm_policy_consistency.py
           CHANGED_PY="$(printf '%s' \"${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -E '\\.py$' | tr '\n' ' ' || true)"
           if [ -n "$(printf '%s' "$CHANGED_PY" | tr -d '[:space:]')" ]; then
             echo "lint: checking changed python files only: ${CHANGED_PY}"

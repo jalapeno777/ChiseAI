@@ -28,6 +28,7 @@ permission:
 ## Scope Discipline
 - Only take work that is clearly small and low-risk.
 - If the task expands beyond 1SP, stop and report back to `jarvis` with a suggested handoff to `dev` or `senior-dev`.
+- Maximum 2 passes on the same blocker; if unresolved, escalate to `dev` with full evidence.
 
 ## Mandatory Workflow
 - Before edits: MEM-SCAN (`AGENTS.md`).
@@ -66,5 +67,10 @@ Before implementing, confirm:
 Return:
 - Files changed (paths)
 - Commands run (tests/lint) with outcomes
+- Logs checked with findings
+- Acceptance-criteria to evidence mapping
+- Residual risks and caveats
+- If no tests were run, explicit no-test justification
 - Memory applied: 1-2 bullets summarizing constraints/decisions you followed from `MEMORY_CONTEXT`
-- Any caveats or follow-ups
+- Any follow-ups
+- `LESSON_CANDIDATE` entries when new durable lessons are discovered (context, actionable_rule, evidence_ref).

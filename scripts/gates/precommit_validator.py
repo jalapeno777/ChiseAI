@@ -159,6 +159,22 @@ class PrecommitValidator:
             self.warnings.append("traceability: issues found")
             return True
 
+    def validate_swarm_policy(self) -> bool:
+        """Validate AGENTS/agent policy consistency."""
+        print("→ Validating swarm policy consistency...")
+
+        exit_code, _, _ = self.run_command(
+            ["python3", "scripts/validate_swarm_policy_consistency.py"],
+            "Swarm policy consistency validation",
+        )
+
+        if exit_code == 0:
+            print("  ✓ Swarm policy consistency OK")
+            return True
+
+        print("  ✗ Swarm policy consistency failed")
+        return False
+
     def validate_git_sanity(self) -> bool:
         """Validate git state is sane."""
         print("→ Validating git sanity...")
@@ -238,8 +254,9 @@ class PrecommitValidator:
         # Status and governance checks
         status_ok = self.validate_status_sync()
         traceability_ok = self.validate_traceability()
+        swarm_policy_ok = self.validate_swarm_policy()
 
-        if not all([status_ok, traceability_ok]):
+        if not all([status_ok, traceability_ok, swarm_policy_ok]):
             return False
 
         return True
