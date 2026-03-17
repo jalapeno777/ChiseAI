@@ -1,0 +1,116 @@
+{
+  "story_id": "GOV-002-B",
+  "timestamp": "2026-03-17T10:30:00Z",
+  "evidence_type": "architecture_design",
+  "summary": "Architecture evidence schema with design decisions and component definitions",
+  "status": "SUCCESS",
+  "design_decisions": [
+    {
+      "decision_id": "ADR-001",
+      "title": "Use JSON Schema for Evidence Validation",
+      "context": "Need to validate evidence files consistently across the system",
+      "decision": "Adopt JSON Schema draft-07 for all evidence type definitions",
+      "rationale": "JSON Schema provides strong typing, validation, and is widely supported",
+      "consequences": {
+        "positive": [
+          "Strong validation of evidence files",
+          "Clear schema definitions",
+          "Tooling support available"
+        ],
+        "negative": [
+          "Learning curve for team members",
+          "Additional validation overhead"
+        ],
+        "risks": [
+          "Schema evolution complexity"
+        ]
+      },
+      "alternatives_considered": [
+        {
+          "alternative": "Use Python dataclasses with Pydantic",
+          "reason_rejected": "Less portable, language-specific"
+        },
+        {
+          "alternative": "Use Protocol Buffers",
+          "reason_rejected": "Too heavy for simple JSON files"
+        }
+      ],
+      "status": "accepted",
+      "date": "2026-03-17",
+      "deciders": ["GOV-002-B"]
+    }
+  ],
+  "components": [
+    {
+      "name": "EvidenceValidator",
+      "type": "module",
+      "description": "Validates evidence files against schemas",
+      "responsibilities": [
+        "Load JSON schemas",
+        "Validate evidence files",
+        "Report validation errors"
+      ],
+      "interfaces": [
+        {
+          "name": "validate",
+          "type": "function",
+          "description": "Validates an evidence file against a schema"
+        }
+      ],
+      "dependencies": [
+        {
+          "component": "jsonschema",
+          "type": "required",
+          "description": "JSON Schema validation library"
+        }
+      ],
+      "technology": "Python",
+      "location": "src/validation/evidence_validator.py"
+    },
+    {
+      "name": "SchemaRegistry",
+      "type": "service",
+      "description": "Manages schema registration and lookup",
+      "responsibilities": [
+        "Register schemas",
+        "Lookup schemas by type",
+        "Schema versioning"
+      ],
+      "interfaces": [
+        {
+          "name": "get_schema",
+          "type": "function",
+          "description": "Retrieve schema by evidence type"
+        }
+      ],
+      "dependencies": [],
+      "technology": "Python",
+      "location": "src/validation/schema_registry.py"
+    }
+  ],
+  "diagrams": [
+    {
+      "name": "Evidence Validation Flow",
+      "type": "sequence",
+      "format": "mermaid",
+      "path": "docs/diagrams/evidence-validation-flow.mmd",
+      "description": "Sequence diagram showing evidence validation process"
+    }
+  ],
+  "architecture_attributes": {
+    "style": "layered",
+    "scalability_approach": "Schema validation is stateless and horizontally scalable",
+    "availability_target": "99.9%",
+    "security_considerations": [
+      "Schema files are read-only",
+      "Validation does not execute code",
+      "Input sanitization on file paths"
+    ]
+  },
+  "metadata": {
+    "collector": "GOV-002-B-arch",
+    "source": "architecture-design",
+    "version": "1.0.0",
+    "tags": ["validation", "schema", "architecture"]
+  }
+}
