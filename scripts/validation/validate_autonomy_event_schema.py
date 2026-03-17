@@ -31,7 +31,7 @@ def validate_event(event: dict[str, Any], idx: int) -> list[str]:
         errs.append(f"event#{idx}: invalid severity {sev!r}")
     if not re.match(r"^evt-[a-f0-9-]+$", str(event.get("event_id", ""))):
         errs.append(f"event#{idx}: invalid event_id format")
-    if not isinstance(event.get("payload", None), dict):
+    if not isinstance(event.get("payload"), dict):
         errs.append(f"event#{idx}: payload must be object")
     return errs
 

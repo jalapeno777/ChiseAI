@@ -189,7 +189,7 @@ class ValidationResult:
                         print(f"    {key}: {value}")
 
         if verbose:
-            print(f"\n📊 Summary:")
+            print("\n📊 Summary:")
             print(f"  Transitions checked: {self.transition_count}")
             print(f"  Epics checked: {self.epic_count}")
             print(f"  Stories checked: {self.story_count}")

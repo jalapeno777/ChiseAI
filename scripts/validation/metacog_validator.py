@@ -315,7 +315,6 @@ class MetacogValidator:
         """Validate semantic correctness of field values."""
         # Extract sections
         pred_text = self._extract_section(body, "## Metacognitive Predictions")
-        out_text = self._extract_section(body, "## Metacognitive Outcomes")
         cal_text = self._extract_section(body, "## Metacognitive Calibration")
 
         # Validate confidence in predictions

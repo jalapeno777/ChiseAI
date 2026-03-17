@@ -238,7 +238,7 @@ class KimiAdapterValidator:
                             self.add_result(
                                 "health_endpoint",
                                 "PASS",
-                                f"Health endpoint returned healthy status",
+                                "Health endpoint returned healthy status",
                                 duration_ms,
                             )
                             return True
@@ -414,7 +414,7 @@ class KimiAdapterValidator:
         import time
 
         start = time.time()
-        self.log(f"Checking chat completions endpoint...")
+        self.log("Checking chat completions endpoint...")
 
         api_key = os.getenv("KIMI_API_KEY")
         if not api_key:
@@ -515,7 +515,7 @@ class KimiAdapterValidator:
             invariant_found = False
             for file_path in safety_files:
                 try:
-                    with open(file_path, "r") as f:
+                    with open(file_path) as f:
                         content = f.read()
                         if (
                             "one_trade_per_symbol" in content
@@ -567,13 +567,10 @@ class KimiAdapterValidator:
 
         try:
             sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
-            from src.execution.llm.trade_decision_enhancer import TradeDecisionEnhancer
-
-            # Check that the enhancer has safe defaults
-            enhancer_source = TradeDecisionEnhancer.__init__.__module__
-
             # Import and check the source
             import inspect
+
+            from src.execution.llm.trade_decision_enhancer import TradeDecisionEnhancer
 
             source = inspect.getsource(TradeDecisionEnhancer.enhance_decision)
 

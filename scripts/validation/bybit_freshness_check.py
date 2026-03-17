@@ -224,7 +224,6 @@ class BybitFreshnessChecker:
             timestamp_str = redis.get(REDIS_KEYS["timestamp"]) or ""
             count_str = redis.get(REDIS_KEYS["count"]) or "0"
             status_str = redis.get(REDIS_KEYS["status"]) or ""
-            reason_str = redis.get(REDIS_KEYS["reason"]) or ""
             error_msg = redis.get(REDIS_KEYS["error_message"]) or ""
 
             result.last_collection_timestamp = timestamp_str
@@ -342,13 +341,13 @@ def print_result(result: FreshnessCheckResult, output_format: str = "text") -> N
     print(f"  Reason: {result.reason}")
     print(f"  Hours since collection: {result.hours_since_collection:.2f}")
 
-    print(f"\n📋 LAST COLLECTION")
+    print("\n📋 LAST COLLECTION")
     print(f"  Timestamp: {result.last_collection_timestamp or 'N/A'}")
     print(f"  Count: {result.last_collection_count}")
     print(f"  Status: {result.last_collection_status}")
 
     if result.error_message:
-        print(f"\n⚠️  ERROR MESSAGE")
+        print("\n⚠️  ERROR MESSAGE")
         print(f"  {result.error_message}")
 
     print("\n" + "=" * 70)

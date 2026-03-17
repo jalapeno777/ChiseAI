@@ -239,7 +239,7 @@ def main() -> int:
         logger.info("✅ INGESTION COMPLETED SUCCESSFULLY")
         logger.info("=" * 60)
         logger.info(f"Files ingested: {report.files_ingested}")
-        logger.info(f"BrainEval can now proceed with updated tempmemory")
+        logger.info("BrainEval can now proceed with updated tempmemory")
         return 0
     elif should_fail:
         logger.error("❌ INGESTION FAILED - CI WILL FAIL")

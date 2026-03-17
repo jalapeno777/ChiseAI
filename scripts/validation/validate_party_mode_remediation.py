@@ -187,7 +187,7 @@ class PartyModeRemediationValidator:
 
         # Get line count and size
         try:
-            with open(full_path, "r", encoding="utf-8") as f:
+            with open(full_path, encoding="utf-8") as f:
                 content = f.read()
                 line_count = len(content.splitlines())
                 size_bytes = len(content.encode("utf-8"))

@@ -78,9 +78,11 @@ class Phase4E2EValidator:
             # Mock the entire influxdb_client module
             mock_influxdb_module = MagicMock()
             mock_influxdb_module.InfluxDBClient.return_value = mock_influx
-            
+
             with patch.dict("sys.modules", {"influxdb_client": mock_influxdb_module}):
-                with patch.dict("sys.modules", {"influxdb_client.client.write_api": MagicMock()}):
+                with patch.dict(
+                    "sys.modules", {"influxdb_client.client.write_api": MagicMock()}
+                ):
                     pipeline = TelemetryPipeline()
 
             # Test lifecycle
@@ -255,9 +257,13 @@ class Phase4E2EValidator:
                 # Mock the entire influxdb_client module
                 mock_influxdb_module = MagicMock()
                 mock_influxdb_module.InfluxDBClient.return_value = mock_influx
-                
-                with patch.dict("sys.modules", {"influxdb_client": mock_influxdb_module}):
-                    with patch.dict("sys.modules", {"influxdb_client.client.write_api": MagicMock()}):
+
+                with patch.dict(
+                    "sys.modules", {"influxdb_client": mock_influxdb_module}
+                ):
+                    with patch.dict(
+                        "sys.modules", {"influxdb_client.client.write_api": MagicMock()}
+                    ):
                         pipeline = TelemetryPipeline()
 
                 controller = AutomationController(
@@ -382,9 +388,13 @@ class Phase4E2EValidator:
                 # Mock the entire influxdb_client module
                 mock_influxdb_module = MagicMock()
                 mock_influxdb_module.InfluxDBClient.return_value = mock_influx
-                
-                with patch.dict("sys.modules", {"influxdb_client": mock_influxdb_module}):
-                    with patch.dict("sys.modules", {"influxdb_client.client.write_api": MagicMock()}):
+
+                with patch.dict(
+                    "sys.modules", {"influxdb_client": mock_influxdb_module}
+                ):
+                    with patch.dict(
+                        "sys.modules", {"influxdb_client.client.write_api": MagicMock()}
+                    ):
                         pipeline = TelemetryPipeline()
 
                 controller = AutomationController(
@@ -404,7 +414,7 @@ class Phase4E2EValidator:
                     {"metric_name": "test", "value": 1.0, "service": "test"}
                 )
 
-                workflow = await controller.start_remediation(
+                await controller.start_remediation(
                     service="test",
                     pattern_type=FailurePatternType.API_TIMEOUT,
                 )
@@ -446,9 +456,11 @@ class Phase4E2EValidator:
             # Mock the entire influxdb_client module
             mock_influxdb_module = MagicMock()
             mock_influxdb_module.InfluxDBClient.return_value = mock_influx
-            
+
             with patch.dict("sys.modules", {"influxdb_client": mock_influxdb_module}):
-                with patch.dict("sys.modules", {"influxdb_client.client.write_api": MagicMock()}):
+                with patch.dict(
+                    "sys.modules", {"influxdb_client.client.write_api": MagicMock()}
+                ):
                     pipeline = TelemetryPipeline()
 
             pipeline.start()

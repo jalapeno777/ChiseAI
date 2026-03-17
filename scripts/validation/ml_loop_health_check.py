@@ -303,7 +303,7 @@ def check_redis_health(redis_host: str, redis_port: int) -> ComponentHealth | No
                 reason="Redis connection active",
                 details={"host": redis_host, "port": redis_port},
             )
-    except Exception as e:
+    except Exception:
         pass
 
     return ComponentHealth(

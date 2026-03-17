@@ -12,15 +12,15 @@ Usage:
 
 import sys
 from dataclasses import dataclass
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 
 # Add src to path for imports
 sys.path.insert(0, "/home/tacopants/projects/ChiseAI/src")
 
 from signal_generation.confidence_filter import ConfidenceFilter
-from signal_generation.signal_generator import SignalGenerationConfig
 from signal_generation.models import Signal, SignalDirection, SignalStatus
+from signal_generation.signal_generator import SignalGenerationConfig
 
 
 @dataclass

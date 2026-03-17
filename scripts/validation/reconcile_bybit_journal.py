@@ -827,10 +827,7 @@ class BybitJournalReconciler:
         time_diff = abs(
             (bybit_exec.exec_datetime - journal_entry.entry_time).total_seconds()
         )
-        if time_diff > 60:  # 60 seconds tolerance
-            return False
-
-        return True
+        return time_diff <= 60  # 60 seconds tolerance
 
     def _validate_match(
         self,
@@ -972,7 +969,7 @@ def print_report(report: ReconciliationReport) -> None:
     print(f"  Missing in Journal: {len(report.missing_in_journal)}")
     print(f"  Missing in Bybit:   {len(report.missing_in_bybit)}")
 
-    print(f"\n💰 PnL COMPARISON")
+    print("\n💰 PnL COMPARISON")
     print(f"  Bybit total:   ${report.bybit_total_pnl:.4f}")
     print(f"  Journal total: ${report.journal_total_pnl:.4f}")
     print(f"  Difference:    ${report.pnl_diff:.4f}")

@@ -111,9 +111,9 @@ def _is_legacy_exempt(path: Path, fm: dict[str, Any], include_archived: bool) ->
         return True
     if str(fm.get("compliance_mode", "")).strip().lower() == "legacy_exempt":
         return True
-    if include_archived and "docs/tempmemories/archived/" in str(path).replace("\\", "/"):
-        return True
-    return False
+    return include_archived and "docs/tempmemories/archived/" in str(path).replace(
+        "\\", "/"
+    )
 
 
 def _load_legacy_exemptions() -> set[str]:
@@ -160,7 +160,11 @@ def _is_float_0_1(value: str) -> bool:
 
 
 def _validate_semantics(
-    path: Path, pred_text: str | None, out_text: str | None, cal_text: str | None, result: Result
+    path: Path,
+    pred_text: str | None,
+    out_text: str | None,
+    cal_text: str | None,
+    result: Result,
 ) -> None:
     if pred_text:
         confidence = _extract_field_value(pred_text, "confidence")
@@ -173,7 +177,9 @@ def _validate_semantics(
             if stripped in {"[]", "{}", '""', "''"}:
                 result.err(f"{path}: {SECTION_PRED} expected_metrics must be non-empty")
             # Encourage measurable targets (number/comparator/percent).
-            if not re.search(r"(\d|>=|<=|>|<|%|ms|sec|minutes|hours)", stripped, re.IGNORECASE):
+            if not re.search(
+                r"(\d|>=|<=|>|<|%|ms|sec|minutes|hours)", stripped, re.IGNORECASE
+            ):
                 result.warn(
                     f"{path}: {SECTION_PRED} expected_metrics has no explicit numeric/comparator target"
                 )
@@ -181,15 +187,21 @@ def _validate_semantics(
     if cal_text:
         predicted_confidence = _extract_field_value(cal_text, "predicted_confidence")
         if predicted_confidence is not None and not _is_float_0_1(predicted_confidence):
-            result.err(f"{path}: {SECTION_CAL} predicted_confidence must be in [0.0, 1.0]")
+            result.err(
+                f"{path}: {SECTION_CAL} predicted_confidence must be in [0.0, 1.0]"
+            )
 
         observed_result = _extract_field_value(cal_text, "observed_result")
         if observed_result is not None:
             normalized_observed_result = observed_result.strip().lower()
             compact = re.sub(r"\s+", " ", normalized_observed_result)
-            if compact.startswith(("success", "pass", "passed", "full_pass", "full pass")):
+            if compact.startswith(
+                ("success", "pass", "passed", "full_pass", "full pass")
+            ):
                 normalized_observed_result = "success"
-            elif compact.startswith(("partial_pass", "partial pass", "partial", "partial-fail")):
+            elif compact.startswith(
+                ("partial_pass", "partial pass", "partial", "partial-fail")
+            ):
                 normalized_observed_result = "partial"
             elif compact.startswith(("failure", "fail", "failed")):
                 normalized_observed_result = "failure"
@@ -251,7 +263,9 @@ def _extract_status(fm: dict[str, Any], body: str) -> str:
     return ""
 
 
-def _validate_file(path: Path, require_for_completed: bool, strict: bool, result: Result) -> None:
+def _validate_file(
+    path: Path, require_for_completed: bool, strict: bool, result: Result
+) -> None:
     fm = _read_frontmatter(path)
     body = _read_body(path)
     story_id = _extract_story_id(path, fm, body)
@@ -266,7 +280,9 @@ def _validate_file(path: Path, require_for_completed: bool, strict: bool, result
 
     status = _extract_status(fm, body)
 
-    should_require = status in {"completed", "complete", "done"} if require_for_completed else True
+    should_require = (
+        status in {"completed", "complete", "done"} if require_for_completed else True
+    )
     if not should_require:
         return
 
@@ -352,8 +368,12 @@ def _validate_artifacts_in_redis(paths: list[Path], result: Result) -> None:
 
         pred_key = f"bmad:chiseai:metacog:prediction:story:{story_id}"
         out_key = f"bmad:chiseai:metacog:outcome:story:{story_id}"
-        pred_found_db = next((db for db, client in clients.items() if client.exists(pred_key) == 1), None)
-        out_found_db = next((db for db, client in clients.items() if client.exists(out_key) == 1), None)
+        pred_found_db = next(
+            (db for db, client in clients.items() if client.exists(pred_key) == 1), None
+        )
+        out_found_db = next(
+            (db for db, client in clients.items() if client.exists(out_key) == 1), None
+        )
         if pred_found_db is None:
             result.err(f"{path}: missing Redis artifact {pred_key}")
         if out_found_db is None:
@@ -436,7 +456,9 @@ def main() -> int:
     result = Result()
     if not paths:
         if args.story_id:
-            result.err(f"No eligible iterlog files found in {ITERLOG_DIR}/ for story_id={args.story_id}")
+            result.err(
+                f"No eligible iterlog files found in {ITERLOG_DIR}/ for story_id={args.story_id}"
+            )
         else:
             result.warn(
                 f"No eligible iterlog files found in {ITERLOG_DIR}/ "

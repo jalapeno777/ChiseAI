@@ -117,9 +117,9 @@ def _is_legacy_exempt(path: Path, fm: dict[str, Any], include_archived: bool) ->
         return True
     if str(fm.get("compliance_mode", "")).strip().lower() == "legacy_exempt":
         return True
-    if include_archived and "docs/tempmemories/archived/" in str(path).replace("\\", "/"):
-        return True
-    return False
+    return include_archived and "docs/tempmemories/archived/" in str(path).replace(
+        "\\", "/"
+    )
 
 
 def _load_legacy_exemptions() -> set[str]:
@@ -206,7 +206,12 @@ def _get_redis_clients():
 
 
 def _enforce_tp_session_artifacts(
-    path: Path, fm: dict[str, Any], body: str, mode: str, self_heal: bool, result: Result
+    path: Path,
+    fm: dict[str, Any],
+    body: str,
+    mode: str,
+    self_heal: bool,
+    result: Result,
 ) -> None:
     if mode == "off":
         return
@@ -233,7 +238,9 @@ def _enforce_tp_session_artifacts(
 
     for session_id in session_ids:
         key = f"bmad:chiseai:tp:session:{session_id}"
-        found_db = next((db for db, client in clients.items() if client.exists(key) == 1), None)
+        found_db = next(
+            (db for db, client in clients.items() if client.exists(key) == 1), None
+        )
         if found_db is None and self_heal:
             client0 = clients.get(0) or next(iter(clients.values()))
             try:
@@ -250,7 +257,9 @@ def _enforce_tp_session_artifacts(
                 client0.expire(key, 432000)
                 if client0.exists(key) == 1:
                     found_db = 0
-                    result.warn(f"{path}: self-healed missing tp session artifact {key} in Redis DB 0")
+                    result.warn(
+                        f"{path}: self-healed missing tp session artifact {key} in Redis DB 0"
+                    )
             except Exception:
                 pass
 
@@ -277,22 +286,32 @@ def _extract_blocks(body: str, tag: str) -> list[str]:
     blocks: list[str] = []
 
     # Case 1: collect all text/yaml fenced blocks and filter by tag semantics.
-    fenced_blocks = re.findall(r"```(?:text|yaml)\s*(.*?)```", body, flags=re.DOTALL | re.IGNORECASE)
+    fenced_blocks = re.findall(
+        r"```(?:text|yaml)\s*(.*?)```", body, flags=re.DOTALL | re.IGNORECASE
+    )
     tag_lower = tag.lower()
     for b in fenced_blocks:
         b_low = b.lower()
         if tag_lower == "insight_packet":
-            if "insight_packet_id:" in b_low or re.search(r"(?im)^\s*insight_packet\b", b_low):
+            if "insight_packet_id:" in b_low or re.search(
+                r"(?im)^\s*insight_packet\b", b_low
+            ):
                 blocks.append(b)
         elif tag_lower == "aria_decision":
-            if "aria_decision_id:" in b_low or re.search(r"(?im)^\s*aria_decision\b", b_low):
+            if "aria_decision_id:" in b_low or re.search(
+                r"(?im)^\s*aria_decision\b", b_low
+            ):
                 blocks.append(b)
         elif tag_lower == "no_issues_packet":
-            if "packet_id:" in b_low and re.search(r"(?im)^\s*no_issues_packet\b", b_low):
+            if "packet_id:" in b_low and re.search(
+                r"(?im)^\s*no_issues_packet\b", b_low
+            ):
                 blocks.append(b)
 
     # Case 2: markdown heading announces block type followed by fenced payload.
-    heading_pattern = rf"(?is)(?:^|\n)\s*#+\s*{re.escape(tag)}\s*\n+```(?:text|yaml)\s*(.*?)```"
+    heading_pattern = (
+        rf"(?is)(?:^|\n)\s*#+\s*{re.escape(tag)}\s*\n+```(?:text|yaml)\s*(.*?)```"
+    )
     blocks.extend(re.findall(heading_pattern, body, flags=re.DOTALL | re.IGNORECASE))
 
     # De-duplicate while preserving order.
@@ -334,14 +353,22 @@ def _validate_aria_decision(block: str, path: Path, idx: int, result: Result) ->
             result.err(f"{path}: ARIA_DECISION #{idx} missing field {field}")
 
     scope_impact_match = re.search(r"scope_impact:\s*([A-Z]+)", block)
-    if scope_impact_match and scope_impact_match.group(1) not in {"NONE", "MINOR", "MAJOR"}:
+    if scope_impact_match and scope_impact_match.group(1) not in {
+        "NONE",
+        "MINOR",
+        "MAJOR",
+    }:
         result.err(
             f"{path}: ARIA_DECISION #{idx} invalid scope_impact={scope_impact_match.group(1)!r}"
         )
 
-    prd_change_match = re.search(r"prd_scope_change:\s*(true|false)", block, flags=re.IGNORECASE)
+    prd_change_match = re.search(
+        r"prd_scope_change:\s*(true|false)", block, flags=re.IGNORECASE
+    )
     if not prd_change_match:
-        result.err(f"{path}: ARIA_DECISION #{idx} missing/invalid prd_scope_change boolean")
+        result.err(
+            f"{path}: ARIA_DECISION #{idx} missing/invalid prd_scope_change boolean"
+        )
 
 
 def _validate_file(
@@ -393,7 +420,11 @@ def _validate_file(
             result.err(msg)
         else:
             result.warn(msg)
-    if should_require and "Thinking Partner Proof:" not in body and "## Thinking Partner Proof" not in body:
+    if (
+        should_require
+        and "Thinking Partner Proof:" not in body
+        and "## Thinking Partner Proof" not in body
+    ):
         msg = f"{path}: missing Thinking Partner Proof line"
         if strict:
             result.err(msg)
@@ -482,7 +513,9 @@ def main() -> int:
     result = Result()
     if not paths:
         if args.story_id:
-            result.err(f"No eligible iterlog files found in {ITERLOG_DIR}/ for story_id={args.story_id}")
+            result.err(
+                f"No eligible iterlog files found in {ITERLOG_DIR}/ for story_id={args.story_id}"
+            )
         else:
             result.warn(
                 f"No eligible iterlog files found in {ITERLOG_DIR}/ "

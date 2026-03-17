@@ -23,9 +23,9 @@ from typing import Any
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from truth_gate_checks.workflow_status import check_workflow_status
-from truth_gate_checks.test_counts import check_test_counts
 from truth_gate_checks.merge_truth import check_merge_truth
+from truth_gate_checks.test_counts import check_test_counts
+from truth_gate_checks.workflow_status import check_workflow_status
 
 
 def create_parser() -> argparse.ArgumentParser:
