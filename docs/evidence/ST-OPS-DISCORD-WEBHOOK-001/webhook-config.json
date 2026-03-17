@@ -1,21 +1,10 @@
 {
   "webhooks_configured": {
-    "DISCORD_WEBHOOK_URL": "REDACTED",
-    "DISCORD_ALERTS_WEBHOOK": "NOT SET",
-    "DISCORD_CRITICAL_WEBHOOK": "NOT SET"
+    "DISCORD_WEBHOOK_URL": "REDACTED_FOR_SECURITY",
+    "DISCORD_ALERTS_WEBHOOK": "REDACTED_FOR_SECURITY",
+    "DISCORD_CRITICAL_WEBHOOK": "REDACTED_FOR_SECURITY"
   },
-  "validation_results": {
-    "primary": {
-      "success": true,
-      "http_status": 204,
-      "response_time_ms": 193.1
-    },
-    "chise": {
-      "success": true,
-      "http_status": 204,
-      "response_time_ms": 238.0
-    }
-  },
-  "status": "PARTIAL - primary webhooks working, ALERTS/CRITICAL not configured",
-  "timestamp": "2026-03-17T14:03:47Z"
+  "status": "ROTATION_REQUIRED",
+  "note": "Webhooks exposed in git history. New webhooks must be created.",
+  "timestamp": "2026-03-17T00:00:00Z"
 }
