@@ -252,3 +252,10 @@ variable "trading_symbol_eval_interval_seconds" {
   description = "Per-symbol signal evaluation cadence in seconds for paper trading executor."
   default     = 300
 }
+
+variable "discord_bot_token" {
+  type        = string
+  description = "Discord bot token for MCP server authentication"
+  default     = ""
+  sensitive   = true
+}

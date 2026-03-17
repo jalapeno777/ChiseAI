@@ -1,0 +1,14 @@
+woodpecker_gitea_client = "e1df8c79-5252-4cca-9f02-ff9dfb50fb7f"
+woodpecker_gitea_secret = "CHANGE_ME"
+influxdb_token          = "REDACTED_INFLUXDB_TOKEN"
+grafana_admin_password  = "admin123"
+discord_bot_token       = ""
+
+# Secrets extracted from terraform.tfstate for infrastructure recovery
+chise_postgres_password = "change-me"
+influxdb_admin_password = "change-me"
+woodpecker_agent_secret = "change-me"
+woodpecker_db_password  = "REDACTED_WOODPECKER_DB_PASSWORD"
+taiga_secret_key        = "REDACTED_TAIGA_SECRET_KEY"
+taiga_db_password       = "REDACTED_TAIGA_DB_PASSWORD"
+taiga_rabbitmq_password = "change-me"
