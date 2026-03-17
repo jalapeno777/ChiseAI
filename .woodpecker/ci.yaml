@@ -71,6 +71,56 @@ steps:
         echo "$code" > "$${CI_STATUS_DIR}/swarm-context.status"
         exit 0
 
+  tfvars-gate:
+    image: python:3.11
+    environment:
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p "$${CI_STATUS_DIR}"
+        set +e
+        (
+          set -euo pipefail
+          echo "tfvars-gate: Checking for *.tfvars files in PR..."
+
+          # Get changed files from CI_PIPELINE_FILES or fallback to git diff
+          CHANGED_FILES="${CI_PIPELINE_FILES:-}"
+          if [ -z "$CHANGED_FILES" ]; then
+            CHANGED_FILES="$(git diff --name-only origin/main HEAD 2>/dev/null || true)"
+          fi
+
+          # Parse CHANGED_FILES (handle JSON array format from Woodpecker)
+          if [ -n "$CHANGED_FILES" ]; then
+            # Remove JSON array brackets and quotes, split by comma
+            PARSED_FILES="$(printf '%s' "$CHANGED_FILES" | tr -d '[]"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
+          else
+            PARSED_FILES=""
+          fi
+
+          # Check for *.tfvars files (excluding *.tfvars.template)
+          TFVARS_FILES="$(printf '%s\n' "$PARSED_FILES" | grep -E '\.tfvars$' | grep -v '\.tfvars\.template$' || true)"
+
+          if [ -n "$TFVARS_FILES" ]; then
+            echo "tfvars-gate: FAIL - Found *.tfvars files in PR (excluding templates):"
+            printf '%s\n' "$TFVARS_FILES" | while IFS= read -r file; do
+              [ -n "$file" ] && echo "  - $file"
+            done
+            echo "tfvars-gate: *.tfvars files should not be committed to the repository."
+            echo "tfvars-gate: Use *.tfvars.template files instead and add actual values to secrets management."
+            exit 1
+          else
+            echo "tfvars-gate: OK - No *.tfvars files found (excluding *.tfvars.template)"
+            exit 0
+          fi
+        ) > "$${CI_STATUS_DIR}/tfvars-gate.log" 2>&1
+        code=$?
+        cat "$${CI_STATUS_DIR}/tfvars-gate.log"
+        echo "$code" > "$${CI_STATUS_DIR}/tfvars-gate.status"
+        # RATIONALE: Exit 0 ensures pipeline continues to ci-gate.
+        # The ci-gate step reads tfvars-gate.status and fails if non-zero.
+        exit 0
+
   lint:
     image: python:3.11
     environment:
@@ -980,6 +1030,7 @@ steps:
     image: python:3.11
     depends_on:
       - swarm-context
+      - tfvars-gate
       - lint
       - security-scan
       - dependency-audit

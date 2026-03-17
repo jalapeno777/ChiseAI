@@ -167,6 +167,8 @@ terraform {
 
 ## Migration Steps
 
+> **Note**: For the specific TF-SECRETS-002 migration workflow with pre-commit validation and CI gates, see [Migration Guide: TF-SECRETS-002](#migration-guide-tf-secrets-002).
+
 ### Step 1: Set Up Secret Storage
 
 Choose one of the options above and configure your secret storage solution.
@@ -272,3 +274,158 @@ jobs:
 - [Terraform Cloud](https://www.terraform.io/cloud)
 - [AWS Secrets Manager](https://aws.amazon.com/secrets-manager/)
 - [HashiCorp Vault](https://www.vaultproject.io/)
+
+## Migration Guide: TF-SECRETS-002
+
+### What Changed in TF-SECRETS-002
+
+This migration hardens secret management by:
+
+1. **Pre-commit Validation**: Added `scripts/terraform/validate_tfvars.py` to detect and block tfvars files with real secrets from being committed
+2. **CI Gate Enforcement**: Woodpecker CI includes a `tfvars-gate` step that fails PRs containing `*.tfvars` files (except templates)
+3. **Template Maintenance**: `terraform.tfvars.template` is the only tfvars file allowed in version control
+
+### Files to Update
+
+When migrating existing infrastructure to TF-SECRETS-002 standards, ensure the following files are properly configured:
+
+| File | Purpose | Status |
+|------|---------|--------|
+| `.gitignore` | Must exclude `**/*.tfvars`, `**/*.tfstate`, `**/*.tfstate.*` | Required |
+| `terraform.tfvars.template` | Sanitized template with placeholder values | Required |
+| `terraform.tfvars` | Actual values (gitignored, never commit) | Local only |
+| `scripts/terraform/validate_tfvars.py` | Pre-commit and CI validation script | Required |
+| `.pre-commit-config.yaml` | Must include tfvars validation hook | Required |
+
+### Workflow for New Deployments
+
+Follow this workflow when setting up Terraform in a new environment:
+
+```bash
+# 1. Copy the template to create your local tfvars
+cd infrastructure/terraform
+cp terraform.tfvars.template terraform.tfvars
+
+# 2. Fill in actual values in terraform.tfvars
+# Edit the file with your real secrets
+vim terraform.tfvars
+
+# 3. Verify terraform.tfvars is ignored (should not appear in status)
+git status
+
+# 4. Run validation before any commit
+python3 scripts/terraform/validate_tfvars.py
+
+# 5. If validation passes, proceed with Terraform operations
+terraform init
+terraform plan
+terraform apply
+```
+
+### Workflow for Existing Deployments
+
+If you have an existing `terraform.tfvars` with real secrets:
+
+```bash
+# 1. Ensure your secrets are backed up securely
+# (Copy values to a password manager or secure note)
+
+# 2. Verify gitignore is working
+git check-ignore terraform.tfvars
+# Should output: terraform.tfvars
+
+# 3. If tfvars was previously committed, remove from history
+git filter-branch --force --index-filter \
+  'git rm --cached --ignore-unmatch infrastructure/terraform/terraform.tfvars' \
+  --prune-empty --tag-name-filter cat -- --all
+
+# 4. Force push if needed (coordinate with team first)
+# git push origin --force --all
+
+# 5. Rotate all exposed secrets immediately
+```
+
+### Validation Commands
+
+```bash
+# Run pre-commit validation manually
+python3 scripts/terraform/validate_tfvars.py
+
+# Run with auto-fix (removes tfvars from staging)
+python3 scripts/terraform/validate_tfvars.py --fix
+
+# Check what files would be flagged
+python3 scripts/terraform/validate_tfvars.py --dry-run
+```
+
+### Troubleshooting
+
+#### CI Fails with tfvars-gate Error
+
+**Symptom**: Woodpecker CI fails with message about tfvars files detected
+
+**Solution**:
+```bash
+# Remove any tfvars files from your PR (except template)
+git reset HEAD infrastructure/terraform/terraform.tfvars
+git checkout -- .gitignore  # Ensure gitignore is correct
+git commit --amend --no-edit
+```
+
+#### Pre-commit Hook Fails
+
+**Symptom**: Commit blocked by pre-commit hook detecting tfvars
+
+**Solution**:
+```bash
+# Option 1: Run the fix script
+python3 scripts/terraform/validate_tfvars.py --fix
+
+# Option 2: Manually unstage the file
+git reset HEAD infrastructure/terraform/terraform.tfvars
+```
+
+#### Template Out of Sync
+
+**Symptom**: `terraform.tfvars.template` missing new variables
+
+**Solution**:
+```bash
+# Update template with new placeholder
+echo "# New variable added in TF-SECRETS-002" >> terraform.tfvars.template
+echo 'new_variable = "PLACEHOLDER_VALUE"' >> terraform.tfvars.template
+
+# Commit the template update
+git add terraform.tfvars.template
+git commit -m "docs(terraform): update tfvars template for TF-SECRETS-002"
+```
+
+#### Accidentally Committed Secrets
+
+**Symptom**: Real secrets visible in git history
+
+**Solution**:
+1. **Immediately rotate all exposed secrets**
+2. Remove from git history using `git filter-branch` or BFG Repo-Cleaner
+3. Force push (coordinate with team)
+4. Notify security team
+5. Review access logs
+
+### Verification Checklist for TF-SECRETS-002
+
+After completing migration, verify:
+
+- [ ] `terraform.tfvars` exists locally but is not tracked by git
+- [ ] `terraform.tfvars.template` exists and is tracked
+- [ ] `.gitignore` includes `**/*.tfvars` pattern
+- [ ] `scripts/terraform/validate_tfvars.py` runs without errors
+- [ ] Pre-commit hook is installed and functional
+- [ ] CI pipeline `tfvars-gate` step passes
+- [ ] No tfvars files appear in `git status`
+- [ ] All team members have local copies of secrets
+
+### Related Documentation
+
+- Pre-commit hook configuration: `.pre-commit-config.yaml`
+- Validation script: `scripts/terraform/validate_tfvars.py`
+- CI configuration: `.woodpecker/` pipeline files
