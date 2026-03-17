@@ -476,6 +476,30 @@ metadata:
 in_progress:
 
 completed:
+- id: TF-SECRETS-001
+  title: "Terraform Secret Management Migration"
+  status: completed
+  priority: P1
+  owner: senior-dev
+  story_points: 2
+  created_date: '2026-03-17'
+  completed_date: '2026-03-17'
+  merge_commit: TBD
+  description: |
+    Migrated Terraform secret management from hardcoded values to secure variable handling.
+    Updated SECRET_MANAGEMENT.md with best practices, updated README.md with setup instructions,
+    created terraform.tfvars.template for variable templates, and updated variables.tf with proper
+    variable definitions and descriptions.
+  files_changed:
+    - infrastructure/terraform/SECRET_MANAGEMENT.md
+    - infrastructure/terraform/README.md
+    - infrastructure/terraform/terraform.tfvars.template
+    - infrastructure/terraform/variables.tf
+  notes:
+    - "Secret management best practices documented"
+    - "Terraform variables properly defined with descriptions"
+    - "Template file created for easy setup"
+    - "No sensitive data in codebase"
 - id: TG-003
   title: "CI Truth Gate Enforcement for Strong-System Stories"
   status: completed
