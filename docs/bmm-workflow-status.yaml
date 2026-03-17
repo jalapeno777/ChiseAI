@@ -2449,6 +2449,28 @@ backlog:
   notes:
   - "Policy-level checks are already green; this item validates live runtime behavior."
   - "Use one pilot story first, then broaden to additional stories."
+- id: STRONG-007-A
+  title: "A/B Testing Framework Core"
+  description: |
+    Implement A/B testing framework core for the STRONG system's Champion-Challenger governance.
+    Provides experiment registry, traffic splitting, and metric collection for comparing strategy variants.
+  priority: P0
+  epic_id: EP-STRONG-007
+  story_points: 4
+  owner: senior-dev
+  status: planned
+  acceptance_criteria:
+  - A/B testing framework core implemented
+  - Experiment registry with CRUD operations
+  - Traffic splitting mechanism (50/50, 80/20, etc.)
+  - Metric collection for experiment variants
+  - 80%+ test coverage
+  - Evidence file created
+  scope_globs:
+  - "src/strong_system/ab_testing/"
+  - "tests/test_strong_system/test_ab_testing/"
+  dependencies: []
+  created_date: '2026-03-17'
 - id: PROCESS-IMPROVEMENT-001
   title: "Enforce Metacognition and Risk Documentation in Story Templates"
   priority: P1
