@@ -484,7 +484,7 @@ completed:
   story_points: 2
   created_date: '2026-03-17'
   completed_date: '2026-03-17'
-  merge_commit: TBD
+  merge_commit: fd78c828
   description: |
     Migrated Terraform secret management from hardcoded values to secure variable handling.
     Updated SECRET_MANAGEMENT.md with best practices, updated README.md with setup instructions,
@@ -4282,7 +4282,7 @@ launch_stories:
   - Redis key: bmad:chiseai:governance:optimization:recommendations
   - scripts/governance/optimization_feedback_loop.py
   id: ST-GOV-MINI-002
-  merge_commit: TBD
+  merge_commit: fd78c828
   priority: P0-CRITICAL
   pr_number: TBD
   sprint_id: GOV-ACCEL-W2
