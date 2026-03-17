@@ -12,18 +12,22 @@ import yaml
 
 def find_story_in_workflow(story_id: str, workflow_data: dict) -> dict | None:
     """Find a story in the workflow status data."""
-    # Check in_progress
-    for story in workflow_data.get("in_progress", []):
+    # Check in_progress (handle None values)
+    in_progress = workflow_data.get("in_progress") or []
+    for story in in_progress:
         if story.get("id") == story_id:
             return story
 
-    # Check completed
-    for story in workflow_data.get("completed", []):
+    # Check completed (handle None values)
+    completed = workflow_data.get("completed") or []
+    for story in completed:
         if story.get("id") == story_id:
             return story
 
     # Check recent_changes in metadata
-    for change in workflow_data.get("metadata", {}).get("recent_changes", []):
+    metadata = workflow_data.get("metadata") or {}
+    recent_changes = metadata.get("recent_changes") or []
+    for change in recent_changes:
         if change.get("story_id") == story_id:
             return change
 
@@ -136,11 +140,13 @@ def check_workflow_status(
             result["errors"].append(f"Story not found: {story_id}")
             return result
     else:
-        # Check all completed and in-progress stories
-        for story in workflow_data.get("in_progress", []):
+        # Check all completed and in-progress stories (handle None values)
+        in_progress = workflow_data.get("in_progress") or []
+        for story in in_progress:
             if "id" in story:
                 stories_to_check.append((story["id"], story))
-        for story in workflow_data.get("completed", []):
+        completed = workflow_data.get("completed") or []
+        for story in completed:
             if "id" in story:
                 stories_to_check.append((story["id"], story))
 
