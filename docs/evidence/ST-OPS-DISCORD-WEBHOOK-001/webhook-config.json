@@ -1,0 +1,64 @@
+{
+  "story_id": "ST-OPS-DISCORD-WEBHOOK-001",
+  "timestamp": "2026-03-17T13:50:25+00:00",
+  "configuration": {
+    "env_example_updated": true,
+    "webhook_variables_documented": [
+      "DISCORD_WEBHOOK_URL",
+      "DISCORD_ALERTS_WEBHOOK",
+      "DISCORD_CRITICAL_WEBHOOK",
+      "DISCORD_STANDUP_WEBHOOK",
+      "DISCORD_DEV_WEBHOOK_URL",
+      "DISCORD_AUTONOMY_WEBHOOK_URL",
+      "DISCORD_TRADING_WEBHOOK_URL",
+      "CHISE_DISCORD_WEBHOOK_URL"
+    ],
+    "active_webhooks": {
+      "DISCORD_WEBHOOK_URL": {
+        "configured": true,
+        "url_redacted": "https://discord.com/api/webhooks/1448414669541736508/[REDACTED]",
+        "tested": true,
+        "last_test_result": "success",
+        "http_status": 204,
+        "response_time_ms": 203.81
+      },
+      "CHISE_DISCORD_WEBHOOK_URL": {
+        "configured": true,
+        "url_redacted": "https://discord.com/api/webhooks/1448414669541736508/[REDACTED]",
+        "tested": true,
+        "last_test_result": "success",
+        "http_status": 204,
+        "response_time_ms": 303.00
+      },
+      "DISCORD_ALERTS_WEBHOOK": {
+        "configured": false,
+        "note": "Not configured in .env - should be added for operational alerts"
+      },
+      "DISCORD_CRITICAL_WEBHOOK": {
+        "configured": false,
+        "note": "Not configured in .env - should be added for critical alerts"
+      }
+    }
+  },
+  "validation": {
+    "script": "scripts/discord/startup_webhook_check.py",
+    "exit_code": 0,
+    "all_passed": true,
+    "total_webhooks_tested": 2,
+    "passed": 2,
+    "failed": 0,
+    "rate_limited": 0
+  },
+  "test_message": {
+    "sent": true,
+    "script": "scripts/discord/test_webhook.py",
+    "message": "ST-OPS-DISCORD-WEBHOOK-001: Webhook configuration test",
+    "result": "success"
+  },
+  "recommendations": [
+    "Configure DISCORD_ALERTS_WEBHOOK for operational alerts (startup checks, monitoring)",
+    "Configure DISCORD_CRITICAL_WEBHOOK for high-priority notifications",
+    "Consider separating webhooks by channel/purpose for better organization",
+    "Document webhook URLs in secure vault (not in .env for production)"
+  ]
+}
