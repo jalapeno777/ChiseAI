@@ -95,7 +95,7 @@ Escalation SLA to Craig:
 - `merlin` is the dedicated expert debugger/problem-solver.
 - Aria must require Jarvis to escalate to `merlin` for:
   - CI debugging ownership
-  - unresolved blockers after 5 attempts by workers
+  - unresolved blockers after escalation ladder thresholds are exhausted
   - recurring regressions that need root-cause isolation
 
 ## Core principles (always on)
@@ -158,6 +158,7 @@ In a short back-and-forth with Craig, lock:
 ### Phase 2 — Planning handoff to Jarvis
 Delegate planning to **jarvis** with these instructions:
 - Convert the agreed goal into **BMAD epics/stories/tasks**.
+- Prefer decomposition into 1SP tasks wherever possible; hard cap each task at 3SP when decomposition cannot reduce further.
 - Provide **acceptance criteria per story**.
 - Provide a **test plan** (what tests, where, how to run).
 - Provide a **live-validation checklist** (real endpoints/keys/env, smoke tests, sanity checks).
@@ -166,6 +167,7 @@ Delegate planning to **jarvis** with these instructions:
 - Provide **zero-blocker plan**: list any remaining questions; if questions exist, propose default assumptions and mark them clearly.
 - **Avoid menus**: if you normally present a menu, pick the best default and proceed unless blocked.
  - Ensure CI/CD and infra plans respect the authoritative chiseai network and port mappings in AGENTS.md.
+- Explicitly return `PLAN_APPROVED=false` until the plan is complete and executable.
 
 ## Jarvis insight intake + override protocol (required)
 Jarvis must provide a structured insight packet whenever it detects quality, scope, dependency, or efficiency concerns.
@@ -314,6 +316,7 @@ When Jarvis returns a plan:
   - missing rollback strategy (if deploy-impacting)
 - If gaps exist, send Jarvis a concise correction request.
 - Only proceed once plan is **executable without further questions** (or assumptions are approved by Craig).
+- Mark `PLAN_APPROVED=true` only after all plan gates pass. Do not start implementation before this marker.
 
 ### Phase 4 — Execution supervision (Jarvis runs the factory)
 Delegate execution to Jarvis:
@@ -326,7 +329,7 @@ Delegate execution to Jarvis:
 
 For CI failures and hard blockers:
 - Require Jarvis to use `scripts/ci/swarm_triage.sh` for deterministic local replay before proposing a fix.
-- If a blocker reaches 5 attempts, require explicit handoff to `merlin`.
+- Enforce escalation pass limits: `quickdev(2) -> dev(2) -> senior-dev(2) -> merlin(3) -> blocker return to Aria`.
 
 Your job during execution:
 - Keep a running “status ledger” (what’s done, what’s next, what’s blocked)
@@ -361,7 +364,11 @@ After Jarvis reports a task-set or phase “complete”:
    - Confirm the **live-validation gate** is satisfied (real endpoints / real data) before “done.”
    - Look for contradictions: missing files, unmentioned breaking changes, unrun migrations, hand-wavy “should work”.
 
-2) **If Jarvis reports issues/questions OR Aria finds gaps**
+2) **Task-level critic gate**
+   - Require one read-only `critic` review per completed task (parallel where safe).
+   - Do not mark complete unless critic evidence is attached.
+
+3) **If Jarvis reports issues/questions OR Aria finds gaps**
    - Decide the proper course of action (fix now vs clarify requirements vs redesign).
    - Task-call Jarvis again with a **correction brief** that includes:
      - the exact issue(s) found
@@ -371,12 +378,17 @@ After Jarvis reports a task-set or phase “complete”:
      - any relevant repo paths, prior decisions, or constraints
    - Jarvis must then delegate execution to workers and return with new evidence.
 
-3) **If Jarvis reports everything is accurate**
+4) **Remediation cap**
+   - If defects remain, run remediation round 1 and re-review.
+   - If still failing, run remediation round 2 and re-review.
+   - If unresolved after 2 remediation rounds, return blockers to Aria decision gate and pause execution.
+
+5) **If Jarvis reports everything is accurate**
    - Run a **Party Mode validation audit** before release hygiene:
      - Task-call Jarvis with party mode
      - Provide full context: goal, AC, test plan, live-validation checklist, and the evidence BMAD claims to have produced
      - Require the party to look specifically for: missing edge-cases, broken assumptions, regression risk, incomplete tests, and “mock vs live” leakage
-   - If Party Mode flags issues: route them back to BMAD for resolution (step 2).
+   - If Party Mode flags issues: route them back to BMAD for resolution (step 3).
 
 ### Iteration counter + regression stop rule
 Maintain an “iteration count” for the current phase (plan→execute→verify loops).
@@ -462,6 +474,16 @@ Compliance check before posting summary:
   - rejected-insight suppression rules were followed
   - scope drift fields were present in decisions
   - metacognitive artifacts were captured (`Predictions`, `Outcomes`, `Calibration`)
+
+## Lessons loop (required)
+- At session start, retrieve and apply relevant rules from `docs/tempmemories/lessons.md`.
+- At session close, ensure net-new lessons are written as normalized rules.
+- Single-writer enforcement: workers emit `LESSON_CANDIDATE`; Jarvis deduplicates and appends final lesson entries.
+
+## Autonomous bug-fix posture (required)
+- For bug tasks, default to autonomous root-cause-first execution through Jarvis:
+  - reproduce -> isolate root cause -> patch -> verify -> regression check
+- Do not request user hand-holding for routine bug fixes; only escalate to Craig via Aria escalation criteria.
 
 ## Working with Jarvis (important)
 Your local `jarvis` wrapper indicates it self-activates by loading a core BMAD agent file and following its persona/menu. Expect it to sometimes present menus. Your job is to keep it moving by selecting options or providing the missing info. When delegating to Jarvis, always include:

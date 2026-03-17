@@ -91,7 +91,7 @@
 
 metadata:
   version: "1.0.0"
-  last_updated: "2026-03-17T01:40:00Z"
+  last_updated: "2026-03-17T14:30:00Z"
   schema_version: "1.0.0"
   recent_changes:
     - action: "phase-3-batch-2-completion"
@@ -2371,6 +2371,32 @@ completed:
   status: completed
   title: AUDIT-DELTA Remediation - Cross-Branch Verification Guardrail
 backlog:
+- id: SWARM-LIVE-DRILLS-001
+  title: Execute live swarm story drills for policy hardening validation
+  priority: high
+  status: planned
+  created_date: '2026-03-17'
+  owner: jarvis
+  description: |
+    Run controlled live story drills to validate runtime adherence to the hardened
+    swarm policy (plan gate, escalation ladder, critic remediation loop, and blocker return).
+    This complements policy-level consistency checks with execution evidence.
+  acceptance_criteria:
+  - Scenario A completed: 1SP happy path routed to quickdev with proof-of-work evidence
+  - Scenario B completed: quickdev fail x2 escalates to dev with required escalation metadata
+  - Scenario C completed: dev fail x2 escalates to senior-dev with required escalation metadata
+  - Scenario D completed: senior-dev fail x2 escalates to merlin with required escalation metadata
+  - Scenario E completed: merlin fail x3 returns blocker packet to Aria and pauses execution
+  - Scenario F completed: task-level critic review triggers remediation round 1 + re-review
+  - Scenario G completed: unresolved after remediation round 2 returns blockers to Aria
+  - Evidence packet stored under docs/evidence/ with command outputs, decision trail, and outcomes
+  verification_command: python3 scripts/validate_swarm_policy_consistency.py --strict
+  related:
+  - docs/planning/UNIFIED-CLEANUP-IMPLEMENTATION-CHECKLIST.md
+  - docs/evidence/UNIFIED-CLEANUP-PHASE-VALIDATION-2026-03-17.md
+  notes:
+  - "Policy-level checks are already green; this item validates live runtime behavior."
+  - "Use one pilot story first, then broaden to additional stories."
 - id: PROCESS-IMPROVEMENT-001
   title: "Enforce Metacognition and Risk Documentation in Story Templates"
   priority: P1

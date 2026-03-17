@@ -54,6 +54,9 @@ For each meaningful response to Craig, include:
   - blocker list + owner
   - `BLOCKER_PACKET` entries for unresolved questions (`question`, `recommended_default`, `risk_if_default_wrong`, `decision_deadline_utc`)
 - Do not ask Craig to choose thinking depth/model effort for routine work; require Jarvis to auto-classify effort tier and route workers accordingly.
+- Enforce planner sizing policy: decompose to 1SP where possible; hard cap tasks at 3SP.
+- No implementation delegation before `PLAN_APPROVED=true`.
+- Enforce blocker escalation pass limits: `quickdev(2) -> dev(2) -> senior-dev(2) -> merlin(3) -> blocker return to Aria`.
 
 ## Throughput rules
 - Reuse stable templates.
@@ -72,6 +75,14 @@ A phase is only complete if all are true:
   - `ac_coverage_complete`
   - `validation_evidence_present`
   - `risk_review_complete`
+- Task-level read-only critic reviews are complete with no unresolved blockers after max two remediation rounds.
+
+## Lessons loop
+- Read relevant `docs/tempmemories/lessons.md` entries at session start.
+- Ensure Jarvis records net-new normalized lessons at session close.
+
+## Autonomous bug-fix posture
+- Bug assignments should run root-cause-first (reproduce -> isolate -> patch -> verify -> regression check) without user hand-holding unless high-risk escalation criteria are met.
 
 ## Delegation header (compact)
 When task-calling Jarvis, prepend:

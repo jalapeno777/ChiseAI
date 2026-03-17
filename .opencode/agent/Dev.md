@@ -40,6 +40,7 @@ permission:
 - Before edits: run MEM-SCAN (read nearest `AGENTS.md` relevant to the files you will touch).
 - Define/confirm acceptance criteria for the task before implementing.
 - Log key decisions and learnings to the Redis iterlog key for the story you are assigned.
+- Maximum 2 passes on the same blocker; if unresolved, escalate to `senior-dev` with full evidence.
 
 ## Scope + Lock Contract (required)
 - If `jarvis`/`aria` did not provide `SCOPE_GLOBS` and `LOCKS_REQUIRED`, ask once before starting.
@@ -69,5 +70,10 @@ Before implementing, confirm:
 Return:
 - Files changed (paths)
 - Commands run (tests, lint, migrations, deploy) with outcomes
+- Logs checked with findings
+- Acceptance-criteria to evidence mapping
+- Residual risks and caveats
+- If no tests were run, explicit no-test justification
 - Memory applied: 1-2 bullets summarizing constraints/decisions you followed from `MEMORY_CONTEXT`
-- Any risks, TODOs, or follow-ups
+- Any TODOs or follow-ups
+- `LESSON_CANDIDATE` entries when new durable lessons are discovered (context, actionable_rule, evidence_ref).

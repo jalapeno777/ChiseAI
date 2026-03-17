@@ -1,6 +1,6 @@
 ---
 name: "juniordev"
-description: "Fast executor subagent for 1SP tasks: small fixes, quick investigations, small refactors, CI tweaks."
+description: "DEPRECATED (fallback-only). Legacy executor profile retained for controlled fallback use."
 mode: all
 model: "zai-coding-plan/glm-5.0-fast" # model: "minimax/MiniMax-M2.5"
 temperature: 0.35
@@ -24,6 +24,11 @@ permission:
 ---
 
 # Juniordev (Fast Executor)
+
+## Deprecation Status
+- Soft-deprecated for default routing.
+- Do not use unless Jarvis explicitly selects fallback mode.
+- Default routes are `quickdev` (1SP) and `dev` (2-3SP).
 
 ## Scope Discipline
 - Only take work that is clearly small and low-risk.

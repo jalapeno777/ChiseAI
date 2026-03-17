@@ -1,6 +1,6 @@
 ---
 name: "quickdev-fast"
-description: "Ultra-fast executor subagent for trivial 1SP mechanical tasks: tiny fixes, formatting, renames, broad grep/summarize."
+description: "DEPRECATED (fallback-only). Ultra-fast executor for trivial mechanical tasks when Jarvis explicitly opts in."
 mode: all
 model: "nvidia/minimaxai/minimax-m2.5"
 temperature: 0.25
@@ -24,6 +24,11 @@ permission:
 ---
 
 # Quickdev Fast (Ultra-Fast Executor)
+
+## Deprecation Status
+- Soft-deprecated for default routing.
+- Do not use unless Jarvis explicitly selects fallback mode.
+- Default 1SP implementation route is `quickdev`.
 
 ## Scope Discipline
 - Only take work that is clearly trivial, low-risk, and 1SP.
