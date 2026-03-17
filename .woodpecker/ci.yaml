@@ -915,6 +915,66 @@ steps:
         echo "$code" > "$${CI_STATUS_DIR}/performance-gate.status"
         exit 0
 
+  # TG-003: Truth Gate validation for strong-system stories
+  # This step enforces truth gate validation for STRONG-*, TG-*, ST-* stories
+  truth-gate:
+    image: python:3.11
+    environment:
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
+      CI_COMMIT_MESSAGE: "${CI_COMMIT_MESSAGE}"
+      CI_COMMIT_BRANCH: "${CI_COMMIT_BRANCH}"
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p "$${CI_STATUS_DIR}"
+        set +e
+        (
+          set -euo pipefail
+          echo "truth-gate: Starting truth gate validation for strong-system stories"
+          
+          # Extract story ID from PR title or branch name
+          STORY_ID=$(python3 scripts/validation/extract_story_id_from_pr.py --from-env)
+          
+          if [ -z "$STORY_ID" ]; then
+            echo "truth-gate: No story ID found in PR title or branch name"
+            echo "truth-gate: Skipping truth gate validation (not a story PR)"
+            echo '{"passed": true, "skipped": true, "reason": "No story ID found"}' > "$${CI_STATUS_DIR}/truth-gate.json"
+            exit 0
+          fi
+          
+          echo "truth-gate: Found story ID: $STORY_ID"
+          
+          # Check if this is a strong-system story
+          if ! python3 scripts/validation/extract_story_id_from_pr.py --check-strong-system "$STORY_ID" > /dev/null 2>&1; then
+            echo "truth-gate: Story $STORY_ID is not a strong-system story"
+            echo "truth-gate: Skipping truth gate validation"
+            echo "{\"passed\": true, \"skipped\": true, \"reason\": \"Not a strong-system story\", \"story_id\": \"$STORY_ID\"}" > "$${CI_STATUS_DIR}/truth-gate.json"
+            exit 0
+          fi
+          
+          echo "truth-gate: Story $STORY_ID is a strong-system story, running validation..."
+          
+          # Run truth gate validation
+          python3 scripts/validation/truth_gate.py --check all --story-id "$STORY_ID" --output json > "$${CI_STATUS_DIR}/truth-gate.json"
+          TRUTH_GATE_EXIT=$?
+          
+          # Output results
+          cat "$${CI_STATUS_DIR}/truth-gate.json"
+          
+          if [ $TRUTH_GATE_EXIT -eq 0 ]; then
+            echo "truth-gate: Validation PASSED for $STORY_ID"
+            exit 0
+          else
+            echo "truth-gate: Validation FAILED for $STORY_ID"
+            echo "truth-gate: Pipeline will fail at ci-gate step"
+            exit 1
+          fi
+        ) > "$${CI_STATUS_DIR}/truth-gate.log" 2>&1
+        code=$?
+        cat "$${CI_STATUS_DIR}/truth-gate.log"
+        echo "$code" > "$${CI_STATUS_DIR}/truth-gate.status"
+        exit 0
+
   ci-gate:
     image: python:3.11
     depends_on:
@@ -945,6 +1005,7 @@ steps:
       - governance-drift-check
       - changed-lines-coverage
       - performance-gate
+      - truth-gate
     environment:
       GITEA_TOKEN:
         from_secret: gitea_token
