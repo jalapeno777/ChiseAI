@@ -94,16 +94,6 @@ metadata:
   last_updated: "2026-03-17T14:30:00Z"
   schema_version: "1.0.0"
   recent_changes:
-    - action: "operational-risk-closure-batch-1"
-      actor: "jarvis"
-      description: "Closed 2 medium operational risks: governance bucket creation and Discord webhook wiring"
-      timestamp: "2026-03-17T00:00:00Z"
-      status: "completed"
-      stories_completed:
-        - ST-OPS-GOV-BUCKET-001
-        - ST-OPS-DISCORD-WEBHOOK-001
-      total_story_points: 4
-
     - action: "phase-3-batch-2-completion"
       actor: "senior-dev"
       description: "BATCH-2 Phase 3 Integration: Truth gate validation and merge coordination for TG-003, STRONG-005-A, and STRONG-006-A. All three stories merged to main with truth verification. Workflow status updated with completion evidence. Total: 383 tests, ~11,140 lines added."
@@ -1010,7 +1000,7 @@ completed:
     - "Grafana health: HEALTHY (version 10.4.2)"
     - "Data source configured: ChiseAI InfluxDB"
     - "1 dashboard configured with 13 panels"
-    - "Issue RESOLVED: governance bucket created (ST-OPS-GOV-BUCKET-001)"
+    - "Issue: governance bucket needs creation"
 
 - id: STABILIZE-005
   title: "Verify Alerts Configuration"
@@ -1030,7 +1020,7 @@ completed:
     - "3 alert configuration files configured"
     - "6 routing rules defined for Discord channels"
     - "9 data source alerts + 4 tempmemory alerts configured"
-    - "Issue RESOLVED: Discord webhooks configured (ST-OPS-DISCORD-WEBHOOK-001)"
+    - "Issue: Discord webhooks need environment variables"
 
 - id: STABILIZE-006
   title: "Verify InfluxDB Configuration"
@@ -1050,7 +1040,7 @@ completed:
     - "InfluxDB health: HEALTHY (version v2.8.0)"
     - "3 buckets configured: chiseai, _monitoring, _tasks"
     - "Retention policies active and running"
-    - "Issue RESOLVED: governance bucket created (ST-OPS-GOV-BUCKET-001)"
+    - "Issue: governance bucket needs creation"
 
 - id: STABILIZE-007
   title: "Redis Verification and Optimization"
@@ -2380,48 +2370,6 @@ completed:
   - 410
   status: completed
   title: AUDIT-DELTA Remediation - Cross-Branch Verification Guardrail
-- id: ST-OPS-GOV-BUCKET-001
-  title: "Governance Bucket Creation - Operational Risk Closure"
-  status: completed
-  priority: P2
-  owner: dev
-  story_points: 2
-  created_date: '2026-03-17'
-  completed_date: '2026-03-17'
-  description: |
-    Created governance bucket in InfluxDB to resolve Grafana "No Data" errors.
-    Bucket already existed with correct 7-day retention policy. Verified bucket
-    accessibility and documented operational risk closure.
-  evidence_files:
-    - docs/evidence/ST-OPS-GOV-BUCKET-001/bucket-exists.json
-    - docs/evidence/ST-OPS-GOV-BUCKET-001/live-validation.log
-  notes:
-    - "Bucket verified to exist with 168h (7 day) retention"
-    - "Operational risk from STABILIZE-004/006 now closed"
-    - "Grafana can now query governance bucket"
-
-- id: ST-OPS-DISCORD-WEBHOOK-001
-  title: "Discord Webhook Environment Wiring - Operational Risk Closure"
-  status: completed
-  priority: P2
-  owner: dev
-  story_points: 2
-  created_date: '2026-03-17'
-  completed_date: '2026-03-17'
-  description: |
-    Configured Discord webhook environment variables to enable alert delivery.
-    Primary webhook (DISCORD_WEBHOOK_URL) validated and tested successfully.
-    Additional webhook variables documented in .env.example for tiered alerting.
-  evidence_files:
-    - docs/evidence/ST-OPS-DISCORD-WEBHOOK-001/webhook-config.json
-    - docs/evidence/ST-OPS-DISCORD-WEBHOOK-001/validation-script.log
-    - docs/evidence/ST-OPS-DISCORD-WEBHOOK-001/test-message-result.json
-  notes:
-    - "Primary webhook validated with HTTP 204 response"
-    - "Test message delivered successfully to Discord"
-    - "Operational risk from STABILIZE-005 now closed"
-    - "Tiered alerting webhooks documented but optional"
-
 backlog:
 - id: SWARM-LIVE-DRILLS-001
   title: Execute live swarm story drills for policy hardening validation
@@ -2449,28 +2397,6 @@ backlog:
   notes:
   - "Policy-level checks are already green; this item validates live runtime behavior."
   - "Use one pilot story first, then broaden to additional stories."
-- id: STRONG-007-A
-  title: "A/B Testing Framework Core"
-  description: |
-    Implement A/B testing framework core for the STRONG system's Champion-Challenger governance.
-    Provides experiment registry, traffic splitting, and metric collection for comparing strategy variants.
-  priority: P0
-  epic_id: EP-STRONG-007
-  story_points: 4
-  owner: senior-dev
-  status: planned
-  acceptance_criteria:
-  - A/B testing framework core implemented
-  - Experiment registry with CRUD operations
-  - Traffic splitting mechanism (50/50, 80/20, etc.)
-  - Metric collection for experiment variants
-  - 80%+ test coverage
-  - Evidence file created
-  scope_globs:
-  - "src/strong_system/ab_testing/"
-  - "tests/test_strong_system/test_ab_testing/"
-  dependencies: []
-  created_date: '2026-03-17'
 - id: PROCESS-IMPROVEMENT-001
   title: "Enforce Metacognition and Risk Documentation in Story Templates"
   priority: P1

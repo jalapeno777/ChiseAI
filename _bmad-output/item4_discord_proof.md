@@ -18,7 +18,7 @@ This document provides evidence for the successful test dispatch to Discord #sum
 ### config/scheduler.yaml (Line 31)
 ```yaml
 # Webhook URL for #test channel (testing)
-test_webhook_url: "https://discord.com/api/webhooks/1448414669541736508/REDACTED_WEBHOOK_TOKEN_3"
+test_webhook_url: "https://discord.com/api/webhooks/1448414669541736508/UeaEhvFppTSCw19FICgS8XEtZPDBSJ2hGyk9BZ1fjfToQDruw0YDIg4uLWVL3wr3kxmw"
 ```
 
 ### Channel IDs (Lines 35-36)

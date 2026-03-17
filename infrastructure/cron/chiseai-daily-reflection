@@ -7,7 +7,7 @@
 # Environment setup
 REDIS_HOST=chiseai-redis
 REDIS_PORT=6380
-DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/1448414669541736508/REDACTED_WEBHOOK_TOKEN_3
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/1448414669541736508/UeaEhvFppTSCw19FICgS8XEtZPDBSJ2hGyk9BZ1fjfToQDruw0YDIg4uLWVL3wr3kxmw
 DISCORD_DEVELOPMENT_CHANNEL_ID=1444447985378398459
 PYTHONPATH=/home/tacopants/projects/ChiseAI
 LOG_DIR=/home/tacopants/projects/ChiseAI/logs/daily-reflection
