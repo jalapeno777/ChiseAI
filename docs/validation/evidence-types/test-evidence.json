@@ -1,0 +1,141 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://chiseai.io/schemas/evidence-types/test-evidence.json",
+  "title": "Test Evidence Schema",
+  "description": "Schema for test results evidence extending base evidence schema",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "../evidence-schema.json"
+    }
+  ],
+  "required": [
+    "story_id",
+    "timestamp",
+    "evidence_type",
+    "summary",
+    "test_results",
+    "coverage",
+    "pass_rate"
+  ],
+  "properties": {
+    "evidence_type": {
+      "type": "string",
+      "const": "test_results"
+    },
+    "test_results": {
+      "type": "array",
+      "description": "Array of individual test results",
+      "items": {
+        "type": "object",
+        "required": ["test_name", "status"],
+        "properties": {
+          "test_name": {
+            "type": "string",
+            "description": "Name of the test"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["passed", "failed", "skipped", "error"],
+            "description": "Status of the test execution"
+          },
+          "duration_ms": {
+            "type": "number",
+            "description": "Test execution duration in milliseconds",
+            "minimum": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "Test output message or error details"
+          },
+          "file_path": {
+            "type": "string",
+            "description": "Path to the test file"
+          },
+          "line_number": {
+            "type": "integer",
+            "description": "Line number in the test file"
+          }
+        }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "description": "Code coverage metrics",
+      "required": ["overall"],
+      "properties": {
+        "overall": {
+          "type": "number",
+          "description": "Overall coverage percentage",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "by_module": {
+          "type": "object",
+          "description": "Coverage breakdown by module",
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "lines_covered": {
+          "type": "integer",
+          "description": "Number of lines covered",
+          "minimum": 0
+        },
+        "lines_total": {
+          "type": "integer",
+          "description": "Total number of lines",
+          "minimum": 0
+        },
+        "branches_covered": {
+          "type": "integer",
+          "description": "Number of branches covered",
+          "minimum": 0
+        },
+        "branches_total": {
+          "type": "integer",
+          "description": "Total number of branches",
+          "minimum": 0
+        }
+      }
+    },
+    "pass_rate": {
+      "type": "number",
+      "description": "Percentage of tests that passed",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "test_summary": {
+      "type": "object",
+      "description": "Summary statistics of test execution",
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "skipped": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "errors": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "duration_ms": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

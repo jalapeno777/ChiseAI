@@ -1,0 +1,50 @@
+{
+  "story_id": "TECH-002-B",
+  "story_title": "Evidence Validation CI Integration",
+  "status": "completed",
+  "evidence_type": "ci_integration",
+  "implementation_date": "2026-03-16",
+  "evidence_files": [
+    ".woodpecker/ci.yaml",
+    "scripts/ci/evidence_gate_runner.py"
+  ],
+  "validation_results": {
+    "evidence_gate_added": true,
+    "blocking_gate": true,
+    "runs_after_test_stage": true,
+    "pr_scoped_checking": true,
+    "error_message_includes_path": true
+  },
+  "ci_changes": {
+    "new_stage": "evidence-gate",
+    "depends_on": ["local-ci"],
+    "added_to_ci_gate_dependencies": true,
+    "added_to_fast_required": true,
+    "execution_command": "python3 scripts/ci/evidence_gate_runner.py --verbose"
+  },
+  "scripts_created": {
+    "evidence_gate_runner.py": {
+      "purpose": "PR-scoped evidence validation runner",
+      "features": [
+        "Auto-detects story ID from CI environment",
+        "Supports --story-id for specific validation",
+        "Supports --all for full validation",
+        "Integrates with validate_story_evidence.py",
+        "Provides clear error messages with expected paths"
+      ]
+    }
+  },
+  "test_results": {
+    "yaml_syntax_valid": true,
+    "evidence_gate_execution": "PASSED",
+    "story_detection": "WORKING",
+    "error_message_format": "CORRECT"
+  },
+  "acceptance_criteria": {
+    "evidence_validation_integrated_as_blocking_gate": true,
+    "gate_runs_before_merge": true,
+    "fails_if_story_lacks_evidence_file": true,
+    "error_message_includes_expected_path": true,
+    "ci_pipeline_includes_evidence_gate": true
+  }
+}

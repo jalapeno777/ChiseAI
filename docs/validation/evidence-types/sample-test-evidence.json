@@ -1,0 +1,58 @@
+{
+  "story_id": "GOV-002-B",
+  "timestamp": "2026-03-17T10:00:00Z",
+  "evidence_type": "test_results",
+  "summary": "Test evidence schema validation with sample test results",
+  "status": "SUCCESS",
+  "test_results": [
+    {
+      "test_name": "test_schema_validation",
+      "status": "passed",
+      "duration_ms": 45.2,
+      "message": "Schema validates correctly",
+      "file_path": "tests/unit/validation/test_schemas.py",
+      "line_number": 42
+    },
+    {
+      "test_name": "test_required_fields",
+      "status": "passed",
+      "duration_ms": 32.1,
+      "message": "All required fields present",
+      "file_path": "tests/unit/validation/test_schemas.py",
+      "line_number": 58
+    },
+    {
+      "test_name": "test_coverage_calculation",
+      "status": "passed",
+      "duration_ms": 28.5,
+      "file_path": "tests/unit/validation/test_coverage.py"
+    }
+  ],
+  "coverage": {
+    "overall": 87.5,
+    "by_module": {
+      "validation": 92.0,
+      "evidence": 85.5,
+      "schemas": 90.0
+    },
+    "lines_covered": 420,
+    "lines_total": 480,
+    "branches_covered": 85,
+    "branches_total": 100
+  },
+  "pass_rate": 100.0,
+  "test_summary": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 0,
+    "duration_ms": 105.8
+  },
+  "metadata": {
+    "collector": "GOV-002-B-test",
+    "source": "pytest",
+    "version": "1.0.0",
+    "tags": ["validation", "schema", "test"]
+  }
+}

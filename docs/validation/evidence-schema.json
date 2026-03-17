@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://chiseai.io/schemas/evidence-schema.json",
+  "title": "Base Evidence Schema",
+  "description": "Base schema for all ChiseAI evidence files",
+  "type": "object",
+  "required": [
+    "story_id",
+    "timestamp",
+    "evidence_type",
+    "summary"
+  ],
+  "properties": {
+    "story_id": {
+      "type": "string",
+      "description": "The story identifier (e.g., ST-XXX, GOV-002-B)",
+      "pattern": "^[A-Z]+-[A-Z0-9-]+$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when evidence was collected"
+    },
+    "evidence_type": {
+      "type": "string",
+      "description": "Type of evidence being provided",
+      "enum": [
+        "test_results",
+        "merge_verification",
+        "performance_benchmark",
+        "architecture_design",
+        "security_audit",
+        "code_review",
+        "validation_report",
+        "incident_response",
+        "manual_verification"
+      ]
+    },
+    "summary": {
+      "type": "string",
+      "description": "Brief description of what this evidence demonstrates",
+      "minLength": 10,
+      "maxLength": 500
+    },
+    "status": {
+      "type": "string",
+      "description": "Overall status of the evidence",
+      "enum": ["SUCCESS", "FAILURE", "PARTIAL", "PENDING", "SKIPPED"]
+    },
+    "data": {
+      "type": "object",
+      "description": "Evidence-specific data container"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata about the evidence",
+      "properties": {
+        "collector": {
+          "type": "string",
+          "description": "Name/ID of the agent or system that collected the evidence"
+        },
+        "source": {
+          "type": "string",
+          "description": "Source system or component"
+        },
+        "version": {
+          "type": "string",
+          "description": "Schema or evidence format version"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Tags for categorization"
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "description": "Validation results for this evidence",
+      "properties": {
+        "validated_by": {
+          "type": "string"
+        },
+        "validated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "result": {
+          "type": "string",
+          "enum": ["PASS", "FAIL", "WARNING"]
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}
