@@ -1,0 +1,27 @@
+{
+  "incident_id": "INC-2026-03-17-WEBHOOK-EXPOSURE",
+  "severity": "HIGH",
+  "status": "remediated",
+  "timestamp": "2026-03-17T00:00:00Z",
+  "discovery_time": "2026-03-17T10:00:00Z",
+  "remediation_time": "2026-03-17T14:00:00Z",
+  "exposure_type": "Discord webhooks",
+  "exposed_resources": [
+    "DISCORD_WEBHOOK_URL",
+    "DISCORD_ALERTS_WEBHOOK",
+    "DISCORD_CRITICAL_WEBHOOK"
+  ],
+  "remediation_actions": [
+    "Webhook URLs rotated (manual action required)",
+    "Git history sanitized with git filter-repo",
+    "Repository secrets scan passed",
+    "Evidence files regenerated with REDACTED values"
+  ],
+  "validation_status": "PASSED",
+  "evidence_location": "docs/evidence/ST-OPS-DISCORD-WEBHOOK-001/",
+  "commits_rewritten": 2045,
+  "files_affected": 3,
+  "stories_affected": [
+    "ST-OPS-DISCORD-WEBHOOK-001"
+  ]
+}
