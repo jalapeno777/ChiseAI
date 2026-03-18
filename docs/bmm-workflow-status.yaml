@@ -3,6 +3,17 @@ metadata:
   last_updated: '2026-03-18T20:00:00Z'
   schema_version: 1.0.0
   recent_changes:
+  - action: story-truth-audit-remediation
+    actor: merlin
+    description: |
+      Corrected ML-TRAIN-001 backlog file semantics to fix evidence-integrity regression.
+      Changed id: to story_id:, status: backlog -> completed, owner: TBD -> senior-dev.
+      Added completed_date and merge_commit fields. Verified with git branch --contains.
+      Commit: abc0066d
+    timestamp: '2026-03-18T22:00:00Z'
+    status: completed
+    story_id: ML-TRAIN-001
+    remediation_commit: abc0066d
   - action: story-merge-completion
     actor: senior-dev
     description: Merged STRONG-001-C to main - Gradient-Based Learning Loop with gradient
