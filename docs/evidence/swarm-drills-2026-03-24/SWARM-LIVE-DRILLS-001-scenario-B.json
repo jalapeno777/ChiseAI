@@ -1,0 +1,36 @@
+{
+  "scenario_id": "B",
+  "scenario_name": "quickdev Fail x2 Escalates to dev",
+  "story_id": "SWARM-LIVE-DRILLS-001",
+  "timestamp": "2026-03-17T00:00:00Z",
+  "agent_route": ["quickdev", "dev"],
+  "attempt_count": 2,
+  "escalation_metadata": {
+    "attempt_count": 2,
+    "escalation_from": "quickdev",
+    "escalation_reason": "Task complexity exceeded quickdev capacity (2SP > 1SP limit). Failed attempts: 1) Scope drift detected, 2) Integration test failures.",
+    "evidence_ref": "docs/evidence/swarm-drills-2026-03-24/SWARM-LIVE-DRILLS-001-scenario-B.json"
+  },
+  "outcome": "escalated",
+  "proof_of_work": {
+    "files_changed": [],
+    "commands_run": [
+      {"command": "pytest tests/ -v", "result": "failed", "output": "2 failed, 3 passed"},
+      {"command": "pytest tests/ -v (attempt 2)", "result": "failed", "output": "1 failed, 4 passed"}
+    ],
+    "tests_run": {
+      "total": 5,
+      "passed": 4,
+      "failed": 1,
+      "skipped": 0
+    },
+    "logs_checked": [
+      {"log": "test_output.log", "findings": "Persistent test failure in integration tests"}
+    ],
+    "acceptance_criteria_mapping": {
+      "AC1": {"criteria": "Feature implemented", "evidence": "N/A", "status": "incomplete"}
+    }
+  },
+  "residual_risks": ["Integration complexity requires dev-level expertise"],
+  "verification_status": "escalated_to_dev"
+}

@@ -1,0 +1,38 @@
+{
+  "scenario_id": "C",
+  "scenario_name": "dev Fail x2 Escalates to senior-dev",
+  "story_id": "SWARM-LIVE-DRILLS-001",
+  "timestamp": "2026-03-17T00:00:00Z",
+  "agent_route": ["dev", "senior-dev"],
+  "attempt_count": 2,
+  "escalation_metadata": {
+    "attempt_count": 2,
+    "escalation_from": "dev",
+    "escalation_reason": "Cross-cutting refactor complexity exceeded dev capacity (4SP > 3SP limit). Failed attempts: 1) Global-lock area conflict, 2) CI regression across multiple modules.",
+    "evidence_ref": "docs/evidence/swarm-drills-2026-03-24/SWARM-LIVE-DRILLS-001-scenario-C.json"
+  },
+  "outcome": "escalated",
+  "proof_of_work": {
+    "files_changed": [
+      {"path": "src/module_a.py", "lines_added": 30, "lines_removed": 10}
+    ],
+    "commands_run": [
+      {"command": "pytest tests/ -v", "result": "failed", "output": "CI regression in unrelated module"},
+      {"command": "git merge main", "result": "failed", "output": "Merge conflict in .woodpecker.yml"}
+    ],
+    "tests_run": {
+      "total": 100,
+      "passed": 95,
+      "failed": 5,
+      "skipped": 0
+    },
+    "logs_checked": [
+      {"log": "ci.log", "findings": "Regression detected in downstream modules"}
+    ],
+    "acceptance_criteria_mapping": {
+      "AC1": {"criteria": "Cross-module refactor", "evidence": "Partial", "status": "blocked"}
+    }
+  },
+  "residual_risks": ["Cross-module dependencies require senior-dev expertise", "Global-lock area touched"],
+  "verification_status": "escalated_to_senior_dev"
+}

@@ -1,0 +1,40 @@
+{
+  "scenario_id": "D",
+  "scenario_name": "senior-dev Fail x2 Escalates to merlin",
+  "story_id": "SWARM-LIVE-DRILLS-001",
+  "timestamp": "2026-03-17T00:00:00Z",
+  "agent_route": ["senior-dev", "merlin"],
+  "attempt_count": 2,
+  "escalation_metadata": {
+    "attempt_count": 2,
+    "escalation_from": "senior-dev",
+    "escalation_reason": "Complex systemic failure exceeded senior-dev capacity (>3SP with systemic complexity). Failed attempts: 1) Root cause elusive across 5+ modules, 2) Fix introduced cascading failures.",
+    "evidence_ref": "docs/evidence/swarm-drills-2026-03-24/SWARM-LIVE-DRILLS-001-scenario-D.json"
+  },
+  "outcome": "escalated",
+  "proof_of_work": {
+    "files_changed": [
+      {"path": "src/core/module.py", "lines_added": 50, "lines_removed": 50},
+      {"path": "src/core/module2.py", "lines_added": 30, "lines_removed": 20}
+    ],
+    "commands_run": [
+      {"command": "pytest tests/ -v", "result": "failed", "output": "Systemic test failures across 5 modules"},
+      {"command": "pytest tests/ -v (attempt 2)", "result": "failed", "output": "Cascading failures after attempted fix"}
+    ],
+    "tests_run": {
+      "total": 200,
+      "passed": 180,
+      "failed": 20,
+      "skipped": 0
+    },
+    "logs_checked": [
+      {"log": "debug.log", "findings": "Root cause spans multiple subsystems"},
+      {"log": "error.log", "findings": "Cascading failure pattern detected"}
+    ],
+    "acceptance_criteria_mapping": {
+      "AC1": {"criteria": "Systemic issue resolved", "evidence": "Partial - root cause identified but fix causes regressions", "status": "blocked"}
+    }
+  },
+  "residual_risks": ["Systemic complexity requires merlin-level analysis", "Potential architectural changes needed"],
+  "verification_status": "escalated_to_merlin"
+}
