@@ -1,13 +1,45 @@
 """Autonomous cognition assessment components."""
 
+from .action_executor import (
+    Action,
+    ActionExecutor,
+    ActionOutcome,
+    ActionPriority,
+    ActionStatus,
+)
 from .artifacts import SelfAssessmentArtifact
 from .contracts import CycleResult
 from .controller import AutonomousCognitionController
+from .rollback import (
+    ActionSnapshot,
+    RollbackManager,
+    RollbackResult,
+)
 from .runtime_integration import NeuroSymbolicRuntimeIntegrator
+from .validation import (
+    ActionValidator,
+    BudgetConfig,
+    RateLimitConfig,
+    SafetyConstraint,
+    ValidationResult,
+)
 
 __all__ = [
+    "Action",
+    "ActionExecutor",
+    "ActionOutcome",
+    "ActionPriority",
+    "ActionSnapshot",
+    "ActionStatus",
+    "ActionValidator",
     "AutonomousCognitionController",
-    "SelfAssessmentArtifact",
+    "BudgetConfig",
     "CycleResult",
     "NeuroSymbolicRuntimeIntegrator",
+    "RateLimitConfig",
+    "RollbackManager",
+    "RollbackResult",
+    "SafetyConstraint",
+    "SelfAssessmentArtifact",
+    "ValidationResult",
 ]
