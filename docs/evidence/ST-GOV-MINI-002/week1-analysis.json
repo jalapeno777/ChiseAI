@@ -1,0 +1,64 @@
+{
+  "timestamp": "2026-03-17T20:07:22.803392",
+  "story_id": "ST-GOV-MINI-002",
+  "analysis_version": "2.0.0",
+  "metrics_summary": {
+    "retrieval_latency": {
+      "p95_ms": 25.0,
+      "mean_ms": 25.0,
+      "status": "good"
+    },
+    "memory_hit_rate": {
+      "value": 75.0,
+      "status": "needs_improvement"
+    },
+    "deduplication_ratio": {
+      "value": 0.7,
+      "status": "needs_improvement"
+    },
+    "relevance": {
+      "mean_score": 0.784,
+      "status": "needs_improvement"
+    },
+    "worker_efficiency": {
+      "active_locks": 20,
+      "parallel_workers": 3,
+      "locks_per_worker": 6.666666666666667
+    },
+    "retrieval_quality": {
+      "mrr": 1.0,
+      "coverage": 1.0,
+      "status": "excellent"
+    }
+  },
+  "bottlenecks": [
+    {
+      "category": "retrieval",
+      "metric": "relevance_mean_score",
+      "current_value": 0.784,
+      "threshold": 0.8,
+      "severity": "high",
+      "description": "Mean relevance score (0.784) below optimal threshold (0.8)"
+    }
+  ],
+  "improvement_opportunities": [
+    {
+      "category": "deduplication",
+      "metric": "deduplication_ratio",
+      "current": 0.7,
+      "target": 0.85,
+      "potential_improvement": "21.4%",
+      "effort": "medium"
+    }
+  ],
+  "performance_gaps": [
+    {
+      "category": "memory",
+      "metric": "memory_hit_rate",
+      "current": 75.0,
+      "target": 85,
+      "gap": 10.0,
+      "impact": "High - affects agent response time"
+    }
+  ]
+}
