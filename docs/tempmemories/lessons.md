@@ -144,3 +144,61 @@ LESSON
 - evidence_ref: ML-TRAIN-001-closeout.md, tests/test_api/test_experiments_api.py
 - added_utc: 2026-03-18T17:00:00Z
 ```
+
+```text
+LESSON
+- id: LESSON-20260318-metadata-data-consistency
+- context: ML-TRAIN-001 truth audit revealed recent_changes metadata was updated but actual completed entry was never corrected
+- trigger: Updating metadata changelog without verifying actual data entries match
+- actionable_rule: Always verify that BOTH recent_changes metadata AND actual data entries are updated and consistent with evidence files
+- applies_to:
+  - jarvis
+  - senior-dev
+  - merlin
+- expected_outcome: No documentation drift between metadata and actual data entries
+- evidence_ref: ML-TRAIN-001 forensic audit, C-001, C-002, H-001 critic findings
+- added_utc: 2026-03-18T23:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260318-phantom-file-detection
+- context: ML-TRAIN-001 workflow status listed 16 files, 15 of which did not exist
+- trigger: Adding files to workflow status without verifying they exist on disk
+- actionable_rule: Always verify file existence with `ls` or `test -f` before adding to workflow status files_changed lists
+- applies_to:
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: Zero phantom files in workflow status; all listed files exist
+- evidence_ref: ML-TRAIN-001 forensic audit, C-001 critic finding
+- added_utc: 2026-03-18T23:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260318-batch-b-verification
+- context: ML-TRAIN-001 Batch B claimed corrections complete but critic found them incomplete
+- trigger: Accepting worker completion reports without independent verification
+- actionable_rule: Always run critic review after claimed corrections; verify actual file content not just worker reports
+- applies_to:
+  - jarvis
+  - aria
+- expected_outcome: No incomplete batches marked complete; critic gate enforced
+- evidence_ref: ML-TRAIN-001 Batch C critic review findings
+- added_utc: 2026-03-18T23:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260318-escalation-authority
+- context: ML-TRAIN-001 required 3 remediation passes before merlin authority succeeded
+- trigger: Complex documentation drift requiring senior-level forensic and merge authority
+- actionable_rule: Escalate to merlin after 2 failed remediation attempts; document each pass outcome
+- applies_to:
+  - jarvis
+  - aria
+- expected_outcome: Efficient escalation; merlin authority used appropriately for complex fixes
+- evidence_ref: ML-TRAIN-001 remediation passes 1-3, merlin final merge
+- added_utc: 2026-03-18T23:00:00Z
+```
