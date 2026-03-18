@@ -127,9 +127,9 @@ class RollbackManager:
         self._compensation_handlers: dict[
             str, CompensationHandler | AsyncCompensationHandler
         ] = {}
-        self._rollback_chains: dict[str, list[str]] = (
-            {}
-        )  # action_id -> list of snapshot_ids
+        self._rollback_chains: dict[
+            str, list[str]
+        ] = {}  # action_id -> list of snapshot_ids
 
     async def create_snapshot(
         self,
