@@ -283,6 +283,39 @@ steps:
         echo "$code" > "$${CI_STATUS_DIR}/secret-scan.status"
         exit 0
 
+  secret-detection:
+    image: python:3.11
+    environment:
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p "$${CI_STATUS_DIR}"
+        set +e
+        (
+          set -euo pipefail
+          # Run secret detection on changed files
+          CHANGED_FILES="$(printf '%s' "${CI_PIPELINE_FILES:-[]}" | tr -d '[]"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -E '\.(tf|tfvars|tfvars\.template|yaml|yml|json|env)$' | tr '\n' ' ' || true)"
+          if [ -n "$(printf '%s' "$CHANGED_FILES" | tr -d '[:space:]')" ]; then
+            echo "secret-detection: scanning changed files: ${CHANGED_FILES}"
+            python3 scripts/validation/detect_secrets.py --min-severity ERROR --format json ${CHANGED_FILES} > "$${CI_STATUS_DIR}/secret-detection.json" 2>&1
+            DETECT_EXIT=$?
+            if [ $DETECT_EXIT -ne 0 ]; then
+              echo "secret-detection: ERROR-level secrets detected"
+              cat "$${CI_STATUS_DIR}/secret-detection.json"
+              exit 1
+            else
+              echo "secret-detection: No ERROR-level secrets detected"
+            fi
+          else
+            echo "secret-detection: no Terraform/config files changed; skipping"
+          fi
+        ) > "$${CI_STATUS_DIR}/secret-detection.log" 2>&1
+        code=$?
+        cat "$${CI_STATUS_DIR}/secret-detection.log"
+        echo "$code" > "$${CI_STATUS_DIR}/secret-detection.status"
+        exit 0
+
   risk-invariants:
     image: python:3.11
     environment:
@@ -1035,6 +1068,7 @@ steps:
       - security-scan
       - dependency-audit
       - secret-scan
+      - secret-detection
       - risk-invariants
       - brain-regression
       - docs-pairing
