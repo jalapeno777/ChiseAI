@@ -1,0 +1,220 @@
+{
+  "metadata": {
+    "generated_at": "2026-03-17T20:07:33.685666",
+    "story_id": "ST-GOV-MINI-002",
+    "version": "2.0.0",
+    "recommendation_count": 5
+  },
+  "recommendations": [
+    {
+      "id": "REC-001",
+      "title": "Implement Cache Warming and TTL Optimization",
+      "problem_statement": "Memory hit rate is at 75.0%, which is below the optimal threshold of 85%. This leads to increased retrieval latency and reduced agent responsiveness.",
+      "root_cause_analysis": "Cache misses occur because: 1) Frequently accessed patterns are not pre-loaded, 2) Cache TTL of 5 days causes premature eviction of useful data, 3) No cache warming strategy exists for new agent sessions.",
+      "proposed_solution": "Implement a multi-tier cache strategy: 1) Increase Redis cache TTL from 5 days to 7 days, 2) Add cache warming for top 20 most frequent query patterns, 3) Implement predictive pre-fetching based on agent workflow patterns.",
+      "expected_impact": {
+        "metric": "memory_hit_rate",
+        "current_value": 75.0,
+        "target_value": 88.0,
+        "improvement_percent": 17.3,
+        "confidence": "high"
+      },
+      "implementation_effort": {
+        "story_points": 2,
+        "duration_days": 3,
+        "complexity": "medium",
+        "risk_level": "low"
+      },
+      "implementation_steps": [
+        "Update Redis TTL configuration from 432000s (5d) to 604800s (7d)",
+        "Create cache_warmer.py module with top pattern identification",
+        "Implement predictive pre-fetching in memory retrieval layer",
+        "Add cache hit/miss metrics to monitoring dashboard",
+        "Write unit tests for cache warming logic"
+      ],
+      "validation_criteria": [
+        "Memory hit rate increases to 85%+",
+        "P95 retrieval latency remains under 50ms",
+        "Cache warming completes within 30 seconds of agent startup"
+      ],
+      "priority": "high",
+      "category": "performance",
+      "dependencies": []
+    },
+    {
+      "id": "REC-002",
+      "title": "Optimize Qdrant Query Patterns and Index Configuration",
+      "problem_statement": "P95 retrieval latency is 25.0ms, which while acceptable could be improved to provide faster agent responses and better user experience.",
+      "root_cause_analysis": "Latency sources: 1) Unoptimized vector queries without proper filtering, 2) Missing HNSW index tuning for governance queries, 3) Sequential query execution instead of parallel batching.",
+      "proposed_solution": "Optimize retrieval pipeline: 1) Tune HNSW index parameters (m=32, ef_construct=200), 2) Implement query result caching for identical requests, 3) Add parallel batch query execution for multiple retrievals.",
+      "expected_impact": {
+        "metric": "retrieval_p95_ms",
+        "current_value": 25.0,
+        "target_value": 15.0,
+        "improvement_percent": 40.0,
+        "confidence": "medium"
+      },
+      "implementation_effort": {
+        "story_points": 3,
+        "duration_days": 5,
+        "complexity": "high",
+        "risk_level": "medium"
+      },
+      "implementation_steps": [
+        "Analyze current Qdrant index configuration",
+        "Implement HNSW parameter tuning script",
+        "Add query result caching layer",
+        "Implement parallel batch query execution",
+        "Benchmark before/after performance"
+      ],
+      "validation_criteria": [
+        "P95 retrieval latency drops below 20ms",
+        "Mean retrieval latency drops below 12ms",
+        "No regression in retrieval accuracy (MRR >= 0.95)"
+      ],
+      "priority": "medium",
+      "category": "performance",
+      "dependencies": []
+    },
+    {
+      "id": "REC-003",
+      "title": "Enhance Retrieval Relevance with Hybrid Search",
+      "problem_statement": "Mean relevance score is 0.784, below the optimal threshold of 0.85. This leads to suboptimal decision-making and reduced agent effectiveness.",
+      "root_cause_analysis": "Low relevance due to: 1) Pure vector similarity doesn't capture semantic nuances, 2) Missing metadata filtering in retrieval queries, 3) No re-ranking of initial results based on context.",
+      "proposed_solution": "Implement hybrid search strategy: 1) Combine vector similarity with keyword matching, 2) Add metadata pre-filtering for scope and type, 3) Implement cross-encoder re-ranking for top-k results.",
+      "expected_impact": {
+        "metric": "relevance_mean_score",
+        "current_value": 0.784,
+        "target_value": 0.88,
+        "improvement_percent": 12.2,
+        "confidence": "high"
+      },
+      "implementation_effort": {
+        "story_points": 3,
+        "duration_days": 4,
+        "complexity": "medium",
+        "risk_level": "low"
+      },
+      "implementation_steps": [
+        "Implement hybrid search combining vector + keyword",
+        "Add metadata filtering to retrieval queries",
+        "Integrate cross-encoder re-ranking model",
+        "Update relevance evaluation metrics",
+        "A/B test against current retrieval method"
+      ],
+      "validation_criteria": [
+        "Mean relevance score increases to 0.85+",
+        "Precision@5 remains above 0.95",
+        "Recall@10 remains above 0.90"
+      ],
+      "priority": "high",
+      "category": "accuracy",
+      "dependencies": []
+    },
+    {
+      "id": "REC-004",
+      "title": "Implement Dynamic Worker Pool and Lock Management",
+      "problem_statement": "Current configuration shows 20 active locks across 3 workers (6.7 locks/worker). Lock distribution and worker scheduling can be optimized for better throughput.",
+      "root_cause_analysis": "Inefficiency sources: 1) Static worker pool doesn't adapt to workload, 2) No automatic lock timeout leads to stale locks, 3) Worker scheduling doesn't consider scope conflicts.",
+      "proposed_solution": "Implement intelligent worker management: 1) Dynamic worker pool scaling based on queue depth, 2) Automatic lock expiration with heartbeat renewal, 3) Conflict-aware task scheduling to maximize parallelization.",
+      "expected_impact": {
+        "metric": "worker_efficiency",
+        "current_value": 6.666666666666667,
+        "target_value": 10.0,
+        "improvement_percent": 50.0,
+        "confidence": "medium"
+      },
+      "implementation_effort": {
+        "story_points": 5,
+        "duration_days": 7,
+        "complexity": "high",
+        "risk_level": "medium"
+      },
+      "implementation_steps": [
+        "Design dynamic worker pool architecture",
+        "Implement queue depth monitoring and scaling logic",
+        "Add lock heartbeat and automatic expiration",
+        "Create conflict-aware scheduler",
+        "Add worker efficiency metrics dashboard"
+      ],
+      "validation_criteria": [
+        "Worker pool scales automatically based on queue depth",
+        "Stale locks automatically released within 5 minutes",
+        "Throughput improves by 15%+"
+      ],
+      "priority": "medium",
+      "category": "throughput",
+      "dependencies": []
+    },
+    {
+      "id": "REC-005",
+      "title": "Improve Deduplication with Semantic Hashing",
+      "problem_statement": "Deduplication ratio is 0.7, below the target of 0.85. This leads to redundant processing and wasted resources.",
+      "root_cause_analysis": "Low deduplication due to: 1) Exact hash matching misses near-duplicates, 2) No semantic similarity detection, 3) Deduplication only applied at ingestion time.",
+      "proposed_solution": "Enhance deduplication with semantic hashing: 1) Implement SimHash for near-duplicate detection, 2) Add real-time deduplication during retrieval, 3) Create deduplication feedback loop for continuous improvement.",
+      "expected_impact": {
+        "metric": "deduplication_ratio",
+        "current_value": 0.7,
+        "target_value": 0.88,
+        "improvement_percent": 25.7,
+        "confidence": "medium"
+      },
+      "implementation_effort": {
+        "story_points": 3,
+        "duration_days": 5,
+        "complexity": "medium",
+        "risk_level": "low"
+      },
+      "implementation_steps": [
+        "Implement SimHash algorithm for semantic deduplication",
+        "Add near-duplicate detection to deduplication engine",
+        "Create real-time deduplication during retrieval",
+        "Add deduplication metrics to monitoring",
+        "Write tests for semantic deduplication"
+      ],
+      "validation_criteria": [
+        "Deduplication ratio increases to 0.85+",
+        "False positive rate stays below 2%",
+        "Processing time overhead under 10%"
+      ],
+      "priority": "low",
+      "category": "efficiency",
+      "dependencies": []
+    }
+  ],
+  "highest_impact": {
+    "id": "REC-001",
+    "title": "Implement Cache Warming and TTL Optimization",
+    "problem_statement": "Memory hit rate is at 75.0%, which is below the optimal threshold of 85%. This leads to increased retrieval latency and reduced agent responsiveness.",
+    "root_cause_analysis": "Cache misses occur because: 1) Frequently accessed patterns are not pre-loaded, 2) Cache TTL of 5 days causes premature eviction of useful data, 3) No cache warming strategy exists for new agent sessions.",
+    "proposed_solution": "Implement a multi-tier cache strategy: 1) Increase Redis cache TTL from 5 days to 7 days, 2) Add cache warming for top 20 most frequent query patterns, 3) Implement predictive pre-fetching based on agent workflow patterns.",
+    "expected_impact": {
+      "metric": "memory_hit_rate",
+      "current_value": 75.0,
+      "target_value": 88.0,
+      "improvement_percent": 17.3,
+      "confidence": "high"
+    },
+    "implementation_effort": {
+      "story_points": 2,
+      "duration_days": 3,
+      "complexity": "medium",
+      "risk_level": "low"
+    },
+    "implementation_steps": [
+      "Update Redis TTL configuration from 432000s (5d) to 604800s (7d)",
+      "Create cache_warmer.py module with top pattern identification",
+      "Implement predictive pre-fetching in memory retrieval layer",
+      "Add cache hit/miss metrics to monitoring dashboard",
+      "Write unit tests for cache warming logic"
+    ],
+    "validation_criteria": [
+      "Memory hit rate increases to 85%+",
+      "P95 retrieval latency remains under 50ms",
+      "Cache warming completes within 30 seconds of agent startup"
+    ],
+    "priority": "high",
+    "category": "performance",
+    "dependencies": []
+  }
+}
