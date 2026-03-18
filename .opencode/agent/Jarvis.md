@@ -2,7 +2,7 @@
 name: "jarvis"
 description: "Orchestrator agent. Runs BMAD planning/assessment loops and delegates executable work to Dev/Quickdev/SeniorDev/Merlin."
 mode: all
-model: "kimi-for-coding/kimi-k2-thinking"     # "zai-coding-plan/glm-5"
+model: "nvidia/moonshotai/kimi-k2-thinking"     # "zai-coding-plan/glm-5"
 temperature: 0.2
 tools:
   task: true
