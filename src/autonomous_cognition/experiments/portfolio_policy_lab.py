@@ -50,4 +50,3 @@ class PortfolioPolicyLab:
             ece=round(ece, 3),
             passed=passed,
         )
-

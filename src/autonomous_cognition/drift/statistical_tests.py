@@ -5,12 +5,10 @@ Provides statistical functions for detecting anomalies and trends
 in performance metrics.
 """
 
-from typing import List, Optional
 import math
-from datetime import datetime
 
 
-def z_score_test(values: List[float], baseline: List[float]) -> float:
+def z_score_test(values: list[float], baseline: list[float]) -> float:
     """
     Calculate the z-score of the most recent value against a baseline.
 
@@ -46,7 +44,7 @@ def z_score_test(values: List[float], baseline: List[float]) -> float:
     return z_score
 
 
-def moving_average(values: List[float], window: int) -> List[float]:
+def moving_average(values: list[float], window: int) -> list[float]:
     """
     Calculate the moving average of a list of values.
 
@@ -75,7 +73,7 @@ def moving_average(values: List[float], window: int) -> List[float]:
     return result
 
 
-def standard_deviation(values: List[float]) -> float:
+def standard_deviation(values: list[float]) -> float:
     """
     Calculate the standard deviation of a list of values.
 
@@ -133,7 +131,7 @@ def detect_anomaly(
     return z_score > threshold_std
 
 
-def trend_direction(values: List[float]) -> str:
+def trend_direction(values: list[float]) -> str:
     """
     Determine the trend direction of a series of values.
 
@@ -159,7 +157,9 @@ def trend_direction(values: List[float]) -> str:
     mean_y = sum(values) / n
 
     # Calculate slope
-    numerator = sum((x - mean_x) * (y - mean_y) for x, y in zip(x_values, values))
+    numerator = sum(
+        (x - mean_x) * (y - mean_y) for x, y in zip(x_values, values, strict=False)
+    )
     denominator = sum((x - mean_x) ** 2 for x in x_values)
 
     if denominator == 0:
@@ -181,7 +181,7 @@ def trend_direction(values: List[float]) -> str:
         return "degrading"
 
 
-def calculate_percentile(values: List[float], percentile: float) -> float:
+def calculate_percentile(values: list[float], percentile: float) -> float:
     """
     Calculate the given percentile of a list of values.
 
@@ -216,8 +216,8 @@ def calculate_percentile(values: List[float], percentile: float) -> float:
 
 
 def detect_sequential_anomaly(
-    values: List[float], window_size: int = 5, threshold_std: float = 2.0
-) -> List[bool]:
+    values: list[float], window_size: int = 5, threshold_std: float = 2.0
+) -> list[bool]:
     """
     Detect anomalies in a time series using a rolling window approach.
 
@@ -250,7 +250,7 @@ def detect_sequential_anomaly(
     return results
 
 
-def calculate_brier_score(predictions: List[float], outcomes: List[bool]) -> float:
+def calculate_brier_score(predictions: list[float], outcomes: list[bool]) -> float:
     """
     Calculate the Brier score for probabilistic predictions.
 
@@ -277,7 +277,9 @@ def calculate_brier_score(predictions: List[float], outcomes: List[bool]) -> flo
     outcome_values = [1.0 if o else 0.0 for o in outcomes]
 
     # Calculate mean squared error
-    squared_errors = [(p - o) ** 2 for p, o in zip(predictions, outcome_values)]
+    squared_errors = [
+        (p - o) ** 2 for p, o in zip(predictions, outcome_values, strict=False)
+    ]
     brier_score = sum(squared_errors) / len(squared_errors)
 
     return brier_score

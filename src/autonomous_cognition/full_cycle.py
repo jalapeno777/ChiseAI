@@ -224,9 +224,9 @@ class AutonomousCognitionFullCycle:
                             summary=explain_conflict(conflicts[0]),
                             impact="Belief graph contradiction requires revision or review.",
                             top_metrics={"conflicts": len(conflicts)},
-                            artifact_path=str(assessment_path)
-                            if assessment_path
-                            else None,
+                            artifact_path=(
+                                str(assessment_path) if assessment_path else None
+                            ),
                             run_id=run_id,
                             title="Belief Conflict Detected",
                             issue=(
@@ -366,9 +366,9 @@ class AutonomousCognitionFullCycle:
                                     self._revision_engine.last_blocked_revisions
                                 )
                             },
-                            artifact_path=str(assessment_path)
-                            if assessment_path
-                            else None,
+                            artifact_path=(
+                                str(assessment_path) if assessment_path else None
+                            ),
                             run_id=run_id,
                             title="Belief Revision Blocked",
                             issue=(
@@ -557,9 +557,11 @@ class AutonomousCognitionFullCycle:
                                         "decision deferred."
                                     ),
                                     top_metrics=exp.to_metrics(),
-                                    artifact_path=str(assessment_path)
-                                    if assessment_path
-                                    else None,
+                                    artifact_path=(
+                                        str(assessment_path)
+                                        if assessment_path
+                                        else None
+                                    ),
                                     run_id=run_id,
                                     title="Improvement Candidate Rejected",
                                     issue=(
@@ -603,9 +605,11 @@ class AutonomousCognitionFullCycle:
                                     summary=f"Promoted {hypothesis.hypothesis_id}",
                                     impact="Candidate passed promotion gates.",
                                     top_metrics=exp.to_metrics(),
-                                    artifact_path=str(assessment_path)
-                                    if assessment_path
-                                    else None,
+                                    artifact_path=(
+                                        str(assessment_path)
+                                        if assessment_path
+                                        else None
+                                    ),
                                     run_id=run_id,
                                     title="Improvement Candidate Promoted",
                                     issue=(
@@ -645,9 +649,11 @@ class AutonomousCognitionFullCycle:
                                     summary=f"Rejected {hypothesis.hypothesis_id}",
                                     impact=outcome.reason,
                                     top_metrics=exp.to_metrics(),
-                                    artifact_path=str(assessment_path)
-                                    if assessment_path
-                                    else None,
+                                    artifact_path=(
+                                        str(assessment_path)
+                                        if assessment_path
+                                        else None
+                                    ),
                                     run_id=run_id,
                                     title="Improvement Candidate Rejected",
                                     issue=(
@@ -719,9 +725,9 @@ class AutonomousCognitionFullCycle:
                             ),
                             impact=tuning.reason,
                             top_metrics={"ece": 0.05 if promotions > 0 else 0.12},
-                            artifact_path=str(assessment_path)
-                            if assessment_path
-                            else None,
+                            artifact_path=(
+                                str(assessment_path) if assessment_path else None
+                            ),
                             run_id=run_id,
                             title="Autonomy Level Updated",
                             issue=(
@@ -759,15 +765,15 @@ class AutonomousCognitionFullCycle:
                     notify_loop.run_until_complete(
                         notifier.notify_autocog_event(
                             event_type="constitution_violation_detected",
-                            severity="critical"
-                            if audit_result.critical_count
-                            else "high",
+                            severity=(
+                                "critical" if audit_result.critical_count else "high"
+                            ),
                             summary=f"Constitution violation: {top.rule_id}",
                             impact=top.description,
                             top_metrics={"violations": len(audit_result.violations)},
-                            artifact_path=str(assessment_path)
-                            if assessment_path
-                            else None,
+                            artifact_path=(
+                                str(assessment_path) if assessment_path else None
+                            ),
                             run_id=run_id,
                             title="Constitution Violation Detected",
                             issue=(
@@ -908,9 +914,9 @@ class AutonomousCognitionFullCycle:
                             "Sustains continuous learning, calibration, and governance "
                             "visibility."
                         ),
-                        outcome_status="success"
-                        if result.status == "completed"
-                        else "failed",
+                        outcome_status=(
+                            "success" if result.status == "completed" else "failed"
+                        ),
                         evidence_reasoning=[
                             f"mode={mode}",
                             f"status={result.status}",
@@ -1332,14 +1338,16 @@ class AutonomousCognitionFullCycle:
         """Fingerprint candidate context to detect novel vs repeated retries."""
         findings = getattr(assessment, "findings", []) if assessment is not None else []
         raw = {
-            "assessment_status": getattr(assessment, "status", "unknown")
-            if assessment is not None
-            else "unknown",
-            "assessment_score": round(
-                float(getattr(assessment, "overall_score", 0.0)), 3
-            )
-            if assessment is not None
-            else 0.0,
+            "assessment_status": (
+                getattr(assessment, "status", "unknown")
+                if assessment is not None
+                else "unknown"
+            ),
+            "assessment_score": (
+                round(float(getattr(assessment, "overall_score", 0.0)), 3)
+                if assessment is not None
+                else 0.0
+            ),
             "findings": findings[:3],
             "conflicts_count": conflicts_count,
         }
@@ -1742,12 +1750,12 @@ class AutonomousCognitionFullCycle:
             "revision_id": revision.revision_id,
             "old_belief_id": revision.old_belief_id,
             "new_belief_id": revision.new_belief_id,
-            "old_belief_statement": old_belief.statement
-            if old_belief is not None
-            else None,
-            "new_belief_statement": new_belief.statement
-            if new_belief is not None
-            else None,
+            "old_belief_statement": (
+                old_belief.statement if old_belief is not None else None
+            ),
+            "new_belief_statement": (
+                new_belief.statement if new_belief is not None else None
+            ),
             "old_belief_domain": old_belief.domain if old_belief is not None else None,
             "new_belief_domain": new_belief.domain if new_belief is not None else None,
             "confidence_before": revision.confidence_before,
@@ -1828,7 +1836,7 @@ class AutonomousCognitionFullCycle:
         if index_path.exists():
             try:
                 index_data = json.loads(index_path.read_text(encoding="utf-8"))
-            except (json.JSONDecodeError, IOError):
+            except (OSError, json.JSONDecodeError):
                 index_data = {"schema_version": "1.0", "entries": []}
         else:
             index_data = {"schema_version": "1.0", "entries": []}

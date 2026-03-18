@@ -20,4 +20,3 @@ def explain_revision(revision: BeliefRevision) -> str:
         f"with {revision.new_belief_id}; confidence "
         f"{revision.confidence_before:.2f}->{revision.confidence_after:.2f}"
     )
-

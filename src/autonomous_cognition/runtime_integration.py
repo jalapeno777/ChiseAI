@@ -58,4 +58,3 @@ class NeuroSymbolicRuntimeIntegrator:
                 passed_non_regression=False,
                 details={"error": str(e), "fallback": "legacy_signal_pipeline"},
             )
-

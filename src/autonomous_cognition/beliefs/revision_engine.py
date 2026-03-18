@@ -191,7 +191,10 @@ class BeliefRevisionEngine:
                 )
                 continue
 
-            if winner_source_summary["avg_causal_strength"] < self._min_avg_causal_strength:
+            if (
+                winner_source_summary["avg_causal_strength"]
+                < self._min_avg_causal_strength
+            ):
                 self.last_blocked_revisions.append(
                     self._build_blocked_revision(
                         conflict=conflict,
@@ -213,7 +216,10 @@ class BeliefRevisionEngine:
                 support_delta=support_delta,
                 winner_evidence_count=winner_score.evidence_count,
             )
-            if uncertainty > 0.5 or support_delta < self._min_support_delta_for_certainty:
+            if (
+                uncertainty > 0.5
+                or support_delta < self._min_support_delta_for_certainty
+            ):
                 self.last_blocked_revisions.append(
                     self._build_blocked_revision(
                         conflict=conflict,
@@ -300,7 +306,9 @@ class BeliefRevisionEngine:
             records.extend(evidence_index.get(ref, []))
         evidence_count = len(records)
         avg_reliability = (
-            sum(r.reliability for r in records) / evidence_count if evidence_count else 0.0
+            sum(r.reliability for r in records) / evidence_count
+            if evidence_count
+            else 0.0
         )
         evidence_factor = min(1.0, evidence_count / 3)
         avg_freshness = (
@@ -422,6 +430,8 @@ class BeliefRevisionEngine:
                 observed = observed.replace(tzinfo=UTC)
         except Exception:
             return 0.5
-        age_days = max(0.0, (datetime.now(UTC) - observed.astimezone(UTC)).total_seconds() / 86400)
+        age_days = max(
+            0.0, (datetime.now(UTC) - observed.astimezone(UTC)).total_seconds() / 86400
+        )
         half_life_days = 7.0
         return round(0.5 ** (age_days / half_life_days), 3)

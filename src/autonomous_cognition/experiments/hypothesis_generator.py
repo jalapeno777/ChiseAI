@@ -59,4 +59,3 @@ class HypothesisGenerator:
                 )
             )
         return hypotheses
-

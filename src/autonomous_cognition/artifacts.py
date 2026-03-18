@@ -67,4 +67,3 @@ class SelfAssessmentArtifact:
             assessment_date=day.isoformat(),
             created_at=datetime.now(UTC).isoformat(),
         )
-

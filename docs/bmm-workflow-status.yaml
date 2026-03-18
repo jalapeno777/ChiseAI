@@ -3,6 +3,12 @@ metadata:
   last_updated: '2026-03-17T16:00:00Z'
   schema_version: 1.0.0
   recent_changes:
+  - action: story-status-update
+    actor: senior-dev
+    description: Updated AUTOCOG-TIER2-001 status from backlog to in_progress after precommit gate fixes
+    timestamp: '2026-03-18T00:00:00Z'
+    status: completed
+    story_id: AUTOCOG-TIER2-001
   - action: backlog-creation-training-stories
     actor: dev
     description: Created 10 training infrastructure backlog stories (AUTOCOG-TIER2-*, STRONG-001-C, ML-TRAIN-001, etc.) and dependency map for SPRINT-2026-03-31. Total 25 story points.
@@ -445,7 +451,7 @@ in_progress:
   - story_id: AUTOCOG-TIER2-001
     title: "Autonomous Action Execution Framework"
     story_points: 3
-    status: backlog
+    status: in_progress
     priority: P0
     epic: AUTOCOG-TIER2
   - story_id: STRONG-001-C

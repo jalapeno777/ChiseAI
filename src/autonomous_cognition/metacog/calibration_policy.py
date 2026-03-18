@@ -29,4 +29,3 @@ class CalibrationPolicy:
         if ece <= 0.20:
             return -0.07
         return -0.12
-

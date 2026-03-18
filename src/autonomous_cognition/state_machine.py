@@ -42,4 +42,3 @@ class AutonomousCycleStateMachine:
         if new_state not in self._allowed[self.state]:
             raise ValueError(f"Invalid transition: {self.state} -> {new_state}")
         self.state = new_state
-
