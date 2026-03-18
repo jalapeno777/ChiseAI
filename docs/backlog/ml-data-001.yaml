@@ -1,0 +1,41 @@
+id: ML-DATA-001
+title: Training Data Versioning System
+status: backlog
+priority: P1
+owner: TBD
+story_points: 2
+created_date: '2026-03-18'
+description: |
+  Implement data versioning system for ML training pipelines.
+  Provides reproducibility by tracking dataset versions, transformations,
+  and lineage from raw data to training inputs.
+acceptance_criteria:
+  - Dataset versioning with immutable snapshots
+  - Transformation pipeline tracking
+  - Data lineage visualization
+  - Integration with ML-TRAIN-001
+  - Rollback to previous dataset versions
+  - Storage optimization for versioned data
+risk_mitigation:
+  overfitting_to_self_eval: |
+    Mitigation: Versioned datasets prevent training/evaluation overlap.
+    Clear separation between training and validation data versions.
+  unsafe_autonomous_change: |
+    Mitigation: Data version changes require explicit approval.
+    Audit trail for all dataset modifications.
+  data_quality_drift: |
+    Mitigation: Data quality metrics versioned with datasets.
+    Automated comparison between dataset versions.
+  ci_operational_fragility: |
+    Mitigation: Redundant storage for critical dataset versions.
+    Health monitoring for data versioning service.
+  model_degradation_on_deploy: |
+    Mitigation: Dataset version impact analysis tools.
+    Correlation tracking between data changes and model performance.
+dependencies:
+  - ML-TRAIN-001
+  - AUTOCOG-QDRANT-001
+dependent_stories:
+  - ML-EVAL-001
+epic: ML-DATA
+sprint: SPRINT-2026-03-31

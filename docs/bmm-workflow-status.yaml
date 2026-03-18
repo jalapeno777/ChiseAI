@@ -5,33 +5,33 @@ metadata:
   recent_changes:
   - action: backlog-creation-training-stories
     actor: dev
-    description: Created 10 training infrastructure backlog stories (AUTOCOG-TRAIN-*, STRONG-TRAIN-*, ML-TRAIN-*) and dependency map for SPRINT-2026-03-31. Total 25 story points.
+    description: Created 10 training infrastructure backlog stories (AUTOCOG-TIER2-*, STRONG-001-C, ML-TRAIN-001, etc.) and dependency map for SPRINT-2026-03-31. Total 25 story points.
     timestamp: '2026-03-18T00:00:00Z'
     status: completed
     story_id: REPO-001
     backlog_items_created:
-    - AUTOCOG-TRAIN-001
-    - AUTOCOG-TRAIN-002
-    - AUTOCOG-TRAIN-003
-    - STRONG-TRAIN-001
-    - STRONG-TRAIN-002
-    - STRONG-TRAIN-003
-    - STRONG-TRAIN-004
+    - AUTOCOG-TIER2-001
+    - STRONG-001-C
     - ML-TRAIN-001
-    - ML-TRAIN-002
-    - ML-TRAIN-003
+    - AUTOCOG-TIER2-002
+    - STRONG-007-A
+    - ML-DATA-001
+    - AUTOCOG-INTEGRATION-001
+    - STRONG-003-B
+    - ML-EVAL-001
+    - AUTOCOG-TIER3-001
     files_changed:
-    - docs/backlog/AUTOCOG-TRAIN-001.yaml
-    - docs/backlog/AUTOCOG-TRAIN-002.yaml
-    - docs/backlog/AUTOCOG-TRAIN-003.yaml
-    - docs/backlog/STRONG-TRAIN-001.yaml
-    - docs/backlog/STRONG-TRAIN-002.yaml
-    - docs/backlog/STRONG-TRAIN-003.yaml
-    - docs/backlog/STRONG-TRAIN-004.yaml
-    - docs/backlog/ML-TRAIN-001.yaml
-    - docs/backlog/ML-TRAIN-002.yaml
-    - docs/backlog/ML-TRAIN-003.yaml
-    - docs/backlog/training-backlog-dependencies.yaml
+    - docs/backlog/autocog-tier2-001.yaml
+    - docs/backlog/strong-001-c.yaml
+    - docs/backlog/ml-train-001.yaml
+    - docs/backlog/autocog-tier2-002.yaml
+    - docs/backlog/strong-007-a.yaml
+    - docs/backlog/ml-data-001.yaml
+    - docs/backlog/autocog-integration-001.yaml
+    - docs/backlog/strong-003-b.yaml
+    - docs/backlog/ml-eval-001.yaml
+    - docs/backlog/autocog-tier3-001.yaml
+    - docs/backlog/autocog-ml-roadmap-dependencies.yaml
   - action: sprint-closeout-SPRINT-2026-03-24
     actor: jarvis
     description: SPRINT-2026-03-24 closeout - All 6 stories (17 SP) completed and merged to main
@@ -435,7 +435,73 @@ metadata:
     - feature/ST-MODEL-REG-001-core-implementation
     - feature/ST-MODEL-REG-002-api-cli-interface
     - feature/ST-MODEL-REG-003-monitoring-alerting
-in_progress: null
+in_progress:
+  sprint_id: SPRINT-2026-03-31
+  name: Sprint 2026-03-31
+  start_date: '2026-03-18'
+  total_stories: 10
+  total_story_points: 25
+  stories:
+  - id: AUTOCOG-TIER2-001
+    title: Tier 2 Autonomous Evaluation Backend
+    story_points: 3
+    status: backlog
+    priority: P1
+    epic: AUTOCOG-TIER2
+  - id: STRONG-001-C
+    title: Neural Belief Revision Training Pipeline
+    story_points: 3
+    status: backlog
+    priority: P1
+    epic: STRONG-001
+  - id: ML-TRAIN-001
+    title: Model Registry Training Artifacts
+    story_points: 3
+    status: backlog
+    priority: P1
+    epic: ML-TRAINING
+  - id: AUTOCOG-TIER2-002
+    title: Tier 2 Evaluation Metrics Dashboard
+    story_points: 2
+    status: backlog
+    priority: P1
+    epic: AUTOCOG-TIER2
+  - id: STRONG-007-A
+    title: Causal Inference Engine Training
+    story_points: 3
+    status: backlog
+    priority: P1
+    epic: STRONG-007
+  - id: ML-DATA-001
+    title: Training Data Versioning System
+    story_points: 2
+    status: backlog
+    priority: P1
+    epic: ML-DATA
+  - id: AUTOCOG-INTEGRATION-001
+    title: AUTOCOG-STRONG Integration Layer
+    story_points: 2
+    status: backlog
+    priority: P1
+    epic: AUTOCOG-INTEGRATION
+  - id: STRONG-003-B
+    title: Hypothesis Generation Training Data Pipeline
+    story_points: 3
+    status: backlog
+    priority: P1
+    epic: STRONG-003
+  - id: ML-EVAL-001
+    title: Model Evaluation Automation
+    story_points: 2
+    status: backlog
+    priority: P1
+    epic: ML-EVAL
+  - id: AUTOCOG-TIER3-001
+    title: Tier 3 Full Autonomy Controller
+    story_points: 3
+    status: backlog
+    priority: P1
+    epic: AUTOCOG-TIER3
 completed:
 - id: TF-SECRETS-001
   title: "Terraform Secret Management Migration"

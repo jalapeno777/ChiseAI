@@ -1,0 +1,41 @@
+id: AUTOCOG-TIER2-002
+title: Tier 2 Evaluation Metrics Dashboard
+status: backlog
+priority: P1
+owner: TBD
+story_points: 2
+created_date: '2026-03-18'
+description: |
+  Create Grafana dashboard for Tier 2 evaluation metrics.
+  Provides visibility into autonomous cognition performance,
+  confidence distributions, and quality trends over time.
+acceptance_criteria:
+  - Grafana dashboard with evaluation metrics
+  - Confidence score distribution visualization
+  - Quality trend charts over time
+  - Alerting for quality degradation
+  - Drill-down capability to individual evaluations
+  - Integration with existing Grafana instance
+risk_mitigation:
+  overfitting_to_self_eval: |
+    Mitigation: Dashboard includes human vs autonomous comparison metrics.
+    Visual indicators when self-evaluation dominates.
+  unsafe_autonomous_change: |
+    Mitigation: Dashboard tracks autonomous change frequency and impact.
+    Alerts on unusual change patterns.
+  data_quality_drift: |
+    Mitigation: Data quality metrics displayed alongside evaluation metrics.
+    Automated anomaly detection visualization.
+  ci_operational_fragility: |
+    Mitigation: Dashboard provisioning as code with version control.
+    Automated dashboard validation in CI.
+  model_degradation_on_deploy: |
+    Mitigation: Deployment markers on time-series charts.
+    Before/after comparison views for deployments.
+dependencies:
+  - AUTOCOG-TIER2-001
+  - AUTOCOG-OBS-001
+dependent_stories:
+  - AUTOCOG-TIER3-001
+epic: AUTOCOG-TIER2
+sprint: SPRINT-2026-03-31

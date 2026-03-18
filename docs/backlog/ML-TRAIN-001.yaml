@@ -3,7 +3,7 @@ title: Model Registry Training Artifacts
 status: backlog
 priority: P1
 owner: TBD
-story_points: 2
+story_points: 3
 created_date: '2026-03-18'
 description: |
   Extend model registry to track training artifacts, hyperparameters, and experiment lineage.
@@ -16,9 +16,27 @@ acceptance_criteria:
   - Rollback support to previous model versions
   - Integration with existing model registry
   - API for querying experiment history
-notes:
-  - Build on ST-MODEL-REG-* stories
-  - Consider MLflow-style experiment tracking
-  - Ensure artifact storage is efficient
+risk_mitigation:
+  overfitting_to_self_eval: |
+    Mitigation: Artifact versioning prevents training contamination.
+    Separate artifact stores for training vs evaluation.
+  unsafe_autonomous_change: |
+    Mitigation: Model promotion requires explicit approval workflow.
+    Audit trail for all model state changes.
+  data_quality_drift: |
+    Mitigation: Training data artifacts hashed and verified.
+    Data drift detection integrated with artifact tracking.
+  ci_operational_fragility: |
+    Mitigation: Artifact storage with redundancy and backup.
+    Health checks for artifact retrieval operations.
+  model_degradation_on_deploy: |
+    Mitigation: Model comparison tools for before/after analysis.
+    Automated rollback triggers based on performance metrics.
+dependencies:
+  - ST-MODEL-REG-001
+  - ST-MODEL-REG-002
+dependent_stories:
+  - ML-DATA-001
+  - ML-EVAL-001
 epic: ML-TRAINING
 sprint: SPRINT-2026-03-31

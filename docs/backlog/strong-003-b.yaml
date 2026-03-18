@@ -1,0 +1,40 @@
+id: STRONG-003-B
+title: Hypothesis Generation Training Data Pipeline
+status: backlog
+priority: P1
+owner: TBD
+story_points: 3
+created_date: '2026-03-18'
+description: |
+  Build training data pipeline for hypothesis generation system.
+  Curates and processes scientific literature, experimental data,
+  and domain knowledge for training hypothesis generation models.
+acceptance_criteria:
+  - Data ingestion from multiple sources
+  - Text preprocessing and normalization
+  - Entity and relationship extraction
+  - Training dataset curation
+  - Integration with STRONG-003-A
+  - Data quality validation
+risk_mitigation:
+  overfitting_to_self_eval: |
+    Mitigation: Diverse data sources prevent domain overfitting.
+    Regular evaluation on held-out test sets from different domains.
+  unsafe_autonomous_change: |
+    Mitigation: Training data changes require review.
+    Version control for all training datasets.
+  data_quality_drift: |
+    Mitigation: Automated data quality scoring.
+    Source reliability tracking and weighting.
+  ci_operational_fragility: |
+    Mitigation: Pipeline monitoring with alerting.
+    Checkpoint and resume for long-running ingestion.
+  model_degradation_on_deploy: |
+    Mitigation: Data freshness metrics tracked.
+    Automated retraining triggers based on data staleness.
+dependencies:
+  - STRONG-003-A
+  - ML-DATA-001
+dependent_stories: []
+epic: STRONG-003
+sprint: SPRINT-2026-03-31

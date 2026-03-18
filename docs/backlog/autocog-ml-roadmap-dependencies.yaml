@@ -1,0 +1,297 @@
+# AUTOCOG-STRONG-ML Roadmap Dependencies
+# Generated: 2026-03-18
+# Sprint: SPRINT-2026-03-31
+
+metadata:
+  sprint_id: SPRINT-2026-03-31
+  total_stories: 10
+  total_story_points: 25
+  generated_date: '2026-03-18'
+  generated_by: REPO-001
+  risk_categories:
+    - overfitting_to_self_eval
+    - unsafe_autonomous_change
+    - data_quality_drift
+    - ci_operational_fragility
+    - model_degradation_on_deploy
+
+stories:
+  AUTOCOG-TIER2-001:
+    id: AUTOCOG-TIER2-001
+    title: Tier 2 Autonomous Evaluation Backend
+    story_points: 3
+    priority: P1
+    dependencies:
+      - AUTOCOG-QDRANT-001
+      - AUTOCOG-QDRANT-002
+    dependent_stories:
+      - AUTOCOG-TIER2-002
+      - AUTOCOG-INTEGRATION-001
+    epic: AUTOCOG-TIER2
+    risk_mitigation_focus:
+      - overfitting_to_self_eval
+      - unsafe_autonomous_change
+
+  STRONG-001-C:
+    id: STRONG-001-C
+    title: Neural Belief Revision Training Pipeline
+    story_points: 3
+    priority: P1
+    dependencies:
+      - STRONG-001-A-S3
+      - STRONG-001-B
+    dependent_stories:
+      - AUTOCOG-INTEGRATION-001
+    epic: STRONG-001
+    risk_mitigation_focus:
+      - model_degradation_on_deploy
+      - unsafe_autonomous_change
+
+  ML-TRAIN-001:
+    id: ML-TRAIN-001
+    title: Model Registry Training Artifacts
+    story_points: 3
+    priority: P1
+    dependencies:
+      - ST-MODEL-REG-001
+      - ST-MODEL-REG-002
+    dependent_stories:
+      - ML-DATA-001
+      - ML-EVAL-001
+    epic: ML-TRAINING
+    risk_mitigation_focus:
+      - data_quality_drift
+      - ci_operational_fragility
+
+  AUTOCOG-TIER2-002:
+    id: AUTOCOG-TIER2-002
+    title: Tier 2 Evaluation Metrics Dashboard
+    story_points: 2
+    priority: P1
+    dependencies:
+      - AUTOCOG-TIER2-001
+      - AUTOCOG-OBS-001
+    dependent_stories:
+      - AUTOCOG-TIER3-001
+    epic: AUTOCOG-TIER2
+    risk_mitigation_focus:
+      - overfitting_to_self_eval
+
+  STRONG-007-A:
+    id: STRONG-007-A
+    title: Causal Inference Engine Training
+    story_points: 3
+    priority: P1
+    dependencies:
+      - STRONG-005-A
+      - STRONG-006-A
+    dependent_stories:
+      - AUTOCOG-INTEGRATION-001
+    epic: STRONG-007
+    risk_mitigation_focus:
+      - unsafe_autonomous_change
+      - model_degradation_on_deploy
+
+  ML-DATA-001:
+    id: ML-DATA-001
+    title: Training Data Versioning System
+    story_points: 2
+    priority: P1
+    dependencies:
+      - ML-TRAIN-001
+      - AUTOCOG-QDRANT-001
+    dependent_stories:
+      - ML-EVAL-001
+    epic: ML-DATA
+    risk_mitigation_focus:
+      - data_quality_drift
+      - ci_operational_fragility
+
+  AUTOCOG-INTEGRATION-001:
+    id: AUTOCOG-INTEGRATION-001
+    title: AUTOCOG-STRONG Integration Layer
+    story_points: 2
+    priority: P1
+    dependencies:
+      - AUTOCOG-TIER2-001
+      - STRONG-001-C
+      - STRONG-007-A
+    dependent_stories:
+      - AUTOCOG-TIER3-001
+    epic: AUTOCOG-INTEGRATION
+    risk_mitigation_focus:
+      - unsafe_autonomous_change
+      - ci_operational_fragility
+
+  STRONG-003-B:
+    id: STRONG-003-B
+    title: Hypothesis Generation Training Data Pipeline
+    story_points: 3
+    priority: P1
+    dependencies:
+      - STRONG-003-A
+      - ML-DATA-001
+    dependent_stories: []
+    epic: STRONG-003
+    risk_mitigation_focus:
+      - data_quality_drift
+      - overfitting_to_self_eval
+
+  ML-EVAL-001:
+    id: ML-EVAL-001
+    title: Model Evaluation Automation
+    story_points: 2
+    priority: P1
+    dependencies:
+      - ML-TRAIN-001
+      - ML-DATA-001
+    dependent_stories: []
+    epic: ML-EVAL
+    risk_mitigation_focus:
+      - overfitting_to_self_eval
+      - model_degradation_on_deploy
+
+  AUTOCOG-TIER3-001:
+    id: AUTOCOG-TIER3-001
+    title: Tier 3 Full Autonomy Controller
+    story_points: 3
+    priority: P1
+    dependencies:
+      - AUTOCOG-TIER2-002
+      - AUTOCOG-INTEGRATION-001
+    dependent_stories: []
+    epic: AUTOCOG-TIER3
+    risk_mitigation_focus:
+      - unsafe_autonomous_change
+      - model_degradation_on_deploy
+
+execution_batches:
+  batch_1:
+    name: Foundation Layer
+    description: Initial stories that can start in parallel
+    stories:
+      - AUTOCOG-TIER2-001
+      - STRONG-001-C
+      - ML-TRAIN-001
+    story_points: 9
+    start_criteria: Dependencies from previous sprints complete
+    global_locks: []
+
+  batch_2:
+    name: Build Layer
+    description: Stories depending on Foundation Layer
+    stories:
+      - AUTOCOG-TIER2-002
+      - STRONG-007-A
+      - ML-DATA-001
+    story_points: 7
+    start_criteria: Foundation Layer stories complete
+    global_locks:
+      - model_registry
+
+  batch_3:
+    name: Integration Layer
+    description: Integration and cross-system stories
+    stories:
+      - AUTOCOG-INTEGRATION-001
+      - STRONG-003-B
+      - ML-EVAL-001
+    story_points: 7
+    start_criteria: Build Layer stories complete
+    global_locks:
+      - model_registry
+      - discord_notifications
+
+  batch_4:
+    name: Autonomy Layer
+    description: Full autonomy implementation
+    stories:
+      - AUTOCOG-TIER3-001
+    story_points: 3
+    start_criteria: Integration Layer stories complete
+    global_locks:
+      - model_registry
+      - discord_notifications
+      - qdrant_writes
+
+critical_path:
+  description: Longest dependency chain determining minimum sprint duration
+  path:
+    - id: ML-TRAIN-001
+      story_points: 3
+    - id: ML-DATA-001
+      story_points: 2
+    - id: AUTOCOG-INTEGRATION-001
+      story_points: 2
+    - id: AUTOCOG-TIER3-001
+      story_points: 3
+  total_points: 10
+  risk_factors:
+    - ML-TRAIN-001 dependency on model registry stability
+    - AUTOCOG-INTEGRATION-001 cross-system complexity
+    - AUTOCOG-TIER3-001 autonomy safety requirements
+
+epic_summary:
+  AUTOCOG-TIER2:
+    name: Tier 2 Autonomous Evaluation
+    stories:
+      - AUTOCOG-TIER2-001
+      - AUTOCOG-TIER2-002
+    total_points: 5
+    focus_area: Backend evaluation and metrics dashboard
+
+  STRONG-001:
+    name: Neural Belief Revision
+    stories:
+      - STRONG-001-C
+    total_points: 3
+    focus_area: Training pipeline for belief revision
+
+  STRONG-003:
+    name: Hypothesis Generation
+    stories:
+      - STRONG-003-B
+    total_points: 3
+    focus_area: Training data pipeline
+
+  STRONG-007:
+    name: Causal Inference
+    stories:
+      - STRONG-007-A
+    total_points: 3
+    focus_area: Causal inference training
+
+  ML-TRAINING:
+    name: ML Training Infrastructure
+    stories:
+      - ML-TRAIN-001
+    total_points: 3
+    focus_area: Model registry training artifacts
+
+  ML-DATA:
+    name: ML Data Management
+    stories:
+      - ML-DATA-001
+    total_points: 2
+    focus_area: Training data versioning
+
+  ML-EVAL:
+    name: ML Evaluation
+    stories:
+      - ML-EVAL-001
+    total_points: 2
+    focus_area: Model evaluation automation
+
+  AUTOCOG-INTEGRATION:
+    name: AUTOCOG-STRONG Integration
+    stories:
+      - AUTOCOG-INTEGRATION-001
+    total_points: 2
+    focus_area: Cross-system integration layer
+
+  AUTOCOG-TIER3:
+    name: Tier 3 Full Autonomy
+    stories:
+      - AUTOCOG-TIER3-001
+    total_points: 3
+    focus_area: Full autonomy controller
