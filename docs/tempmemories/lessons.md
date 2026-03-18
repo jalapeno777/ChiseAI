@@ -99,3 +99,48 @@ LESSON
 - evidence_ref: docs/evidence/PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI.md
 - added_utc: 2026-03-17T00:00:00Z
 ```
+
+```text
+LESSON
+- id: LESSON-20260318-worker-verification
+- context: ML-TRAIN-001 revealed fraudulent completion reports from workers claiming done without verification
+- trigger: Worker claims completion without running git branch --contains or executing tests
+- actionable_rule: Always verify with git branch --contains <commit> AND run test commands before claiming story complete
+- applies_to:
+  - quickdev
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: Zero false completion claims; all completions truth-verified
+- evidence_ref: docs/evidence/PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI.md, ML-TRAIN-001-closeout.md
+- added_utc: 2026-03-18T17:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260318-worktree-sharing
+- context: ML-TRAIN-001 had worktree access conflicts between parallel workers
+- trigger: Multiple workers attempting to use same worktree without explicit lease management
+- actionable_rule: Use chise-swarm-session command to claim worktree leases before work; verify lease before git actions
+- applies_to:
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: No worktree conflicts; clean parallel execution
+- evidence_ref: ML-TRAIN-001-closeout.md, .opencode/skills/chiseai-git-workflow/
+- added_utc: 2026-03-18T17:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260318-fastapi-routes
+- context: ML-TRAIN-001 API development revealed FastAPI route registration edge cases
+- trigger: Routes not appearing in OpenAPI schema or failing test discovery
+- actionable_rule: Use dependency injection for service dependencies; always verify routes with integration tests
+- applies_to:
+  - dev
+  - senior-dev
+- expected_outcome: All API routes discoverable and testable without full app startup
+- evidence_ref: ML-TRAIN-001-closeout.md, tests/test_api/test_experiments_api.py
+- added_utc: 2026-03-18T17:00:00Z
+```

@@ -1,0 +1,151 @@
+{
+  "story_id": "ML-TRAIN-001",
+  "title": "Model Registry Training Artifacts",
+  "status": "completed",
+  "merge_commit": "7629f53d63c55a6610a801b5fdebecb1513ca338",
+  "completed_at": "2026-03-18T16:58:39Z",
+  "evidence_type": "story_completion",
+  "verification": {
+    "main_branch": {
+      "verified": true,
+      "command": "git branch --contains 7629f53d",
+      "result": ["* main", "remotes/origin/main"]
+    },
+    "merge_commit_present": {
+      "verified": true,
+      "sha": "7629f53d63c55a6610a801b5fdebecb1513ca338",
+      "parents": ["fe7fe348", "45b7cdba"],
+      "author": "ChiseAI Agent <agent@chiseai.com>",
+      "date": "Wed Mar 18 12:58:39 2026 -0400"
+    }
+  },
+  "files_changed": {
+    "total": 10,
+    "insertions": 3537,
+    "deletions": 200,
+    "list": [
+      "src/api/experiments.py",
+      "src/ml/model_registry/artifact_linker.py",
+      "src/ml/model_registry/training_integration.py",
+      "src/ml/training/lineage/__init__.py",
+      "src/ml/training/lineage/models.py",
+      "src/ml/training/lineage/storage.py",
+      "src/ml/training/lineage/tracker.py",
+      "tests/test_api/test_experiments_api.py",
+      "tests/test_ml/test_model_registry/test_training_integration.py",
+      "tests/test_ml/test_training/test_lineage.py"
+    ]
+  },
+  "test_results": {
+    "total_tests": 97,
+    "passed": 97,
+    "failed": 0,
+    "skipped": 0,
+    "suites": [
+      {
+        "name": "test_experiments_api.py",
+        "path": "tests/test_api/test_experiments_api.py",
+        "tests": 21,
+        "passed": 21,
+        "failed": 0,
+        "duration_seconds": 2.17
+      },
+      {
+        "name": "test_lineage.py",
+        "path": "tests/test_ml/test_training/test_lineage.py",
+        "tests": 58,
+        "passed": 58,
+        "failed": 0,
+        "duration_seconds": 1.98
+      },
+      {
+        "name": "test_training_integration.py",
+        "path": "tests/test_ml/test_model_registry/test_training_integration.py",
+        "tests": 18,
+        "passed": 18,
+        "failed": 0,
+        "duration_seconds": 1.87
+      }
+    ]
+  },
+  "components_delivered": [
+    {
+      "name": "Experiment Query REST API",
+      "path": "src/api/experiments.py",
+      "lines": 674,
+      "endpoints": [
+        "GET /api/v1/experiments",
+        "GET /api/v1/experiments/{experiment_id}",
+        "GET /api/v1/experiments/{experiment_id}/artifacts",
+        "GET /api/v1/experiments/{experiment_id}/hyperparameters",
+        "GET /api/v1/experiments/{experiment_id}/lineage",
+        "POST /api/v1/experiments/compare",
+        "POST /api/v1/experiments/{experiment_id}/rollback"
+      ]
+    },
+    {
+      "name": "Lineage Tracking System",
+      "path": "src/ml/training/lineage/",
+      "files": [
+        "__init__.py",
+        "models.py",
+        "storage.py",
+        "tracker.py"
+      ],
+      "total_lines": 1221
+    },
+    {
+      "name": "Model Registry Integration",
+      "path": "src/ml/model_registry/",
+      "files": [
+        "artifact_linker.py",
+        "training_integration.py"
+      ]
+    }
+  ],
+  "acceptance_criteria": {
+    "artifact_storage": {
+      "requirement": "Artifact storage working (checkpoints, configs, logs)",
+      "status": "met",
+      "evidence": "LineageStorage class with save/load/query capabilities; 58 lineage tests passing"
+    },
+    "lineage_tracking": {
+      "requirement": "Lineage tracking from data to model",
+      "status": "met",
+      "evidence": "LineageTracker with record_data_source, record_experiment, record_model; get_data_to_model_path method"
+    },
+    "experiment_comparison": {
+      "requirement": "Experiment comparison dashboard/features",
+      "status": "met",
+      "evidence": "POST /api/v1/experiments/compare endpoint; test_compare_success passing"
+    },
+    "rollback_support": {
+      "requirement": "Rollback support to previous model versions",
+      "status": "met",
+      "evidence": "POST /api/v1/experiments/{id}/rollback endpoint; test_rollback_to_best_checkpoint passing"
+    },
+    "registry_integration": {
+      "requirement": "Integration with existing model registry",
+      "status": "met",
+      "evidence": "TrainingIntegration class links to existing ModelRegistry; artifact_linker.py connects training runs to registry"
+    },
+    "query_api": {
+      "requirement": "API for querying experiment history",
+      "status": "met",
+      "evidence": "7 REST endpoints in experiments.py; 21 API tests passing"
+    }
+  },
+  "lessons_added": [
+    "LESSON-20260318-worker-verification",
+    "LESSON-20260318-worktree-sharing",
+    "LESSON-20260318-fastapi-routes"
+  ],
+  "dependent_stories_unblocked": [
+    "ML-DATA-001",
+    "ML-EVAL-001"
+  ],
+  "closeout_document": "docs/tempmemories/ML-TRAIN-001-closeout.md",
+  "redis_iterlog": "bmad:chiseai:iterlog:story:ML-TRAIN-001",
+  "verified_by": "dev",
+  "verification_timestamp": "2026-03-18T17:00:00Z"
+}
