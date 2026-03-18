@@ -21,6 +21,7 @@ from config.bootstrap import bootstrap
 CI_DIR = Path(os.environ.get("CI_STATUS_DIR", "_bmad-output/ci"))
 FAST_REQUIRED = [
     "swarm-context.status",
+    "tfvars-gate.status",
     "lint.status",
     "security-scan.status",
     "dependency-audit.status",
