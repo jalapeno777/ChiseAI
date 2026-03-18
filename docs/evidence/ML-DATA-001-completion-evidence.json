@@ -1,16 +1,32 @@
 {
   "story_id": "ML-DATA-001",
+  "title": "Training Data Quality Gates",
   "status": "completed",
-  "completed_date": "2026-03-18",
-  "merge_commit": "f20cdba6",
+  "merge_commit": "43a34cfe1d2700070068da52dfb1a401acaf5d3a",
+  "merge_verification": {
+    "command": "git branch --contains 43a34cfe1d2700070068da52dfb1a401acaf5d3a",
+    "result": "* main"
+  },
   "test_results": {
-    "total": 37,
+    "test_file": "tests/test_ml/test_data/test_validation.py",
+    "total_tests": 37,
     "passed": 37,
     "failed": 0,
-    "pass_rate": "100%"
+    "pass_rate": "100%",
+    "execution_time": "2.08s"
   },
+  "workflow_status_updated": true,
   "files_changed": [
+    "src/ml/data/__init__.py",
+    "src/ml/data/anomaly_detection.py",
+    "src/ml/data/quality_gates.py",
     "src/ml/data/validation.py",
+    "tests/test_ml/test_data/__init__.py",
+    "tests/test_ml/test_data/test_anomaly_detection.py",
+    "tests/test_ml/test_data/test_quality_gates.py",
     "tests/test_ml/test_data/test_validation.py"
-  ]
+  ],
+  "description": "Implemented comprehensive training data validation framework with 23 validation rules, anomaly detection, and quality gates",
+  "completed_date": "2026-03-18",
+  "evidence_creation_date": "2026-03-18T21:53:47.040084Z"
 }
