@@ -1,0 +1,14 @@
+{
+  "story_id": "AUTOCOG-TIER2-001",
+  "audit_coverage": "100%",
+  "audit_points": [
+    "Action validation attempts",
+    "Action execution start/completion",
+    "Retry attempts",
+    "Rollback operations",
+    "Budget constraint checks",
+    "Rate limit enforcement"
+  ],
+  "log_storage": "deque(maxlen=10000)",
+  "retention_policy": "FIFO eviction at 10000 entries"
+}
