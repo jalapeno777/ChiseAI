@@ -1,10 +1,12 @@
-id: ML-TRAIN-001
+story_id: ML-TRAIN-001
 title: Model Registry Training Artifacts
-status: backlog
+status: completed
 priority: P1
-owner: TBD
+owner: senior-dev
 story_points: 3
 created_date: '2026-03-18'
+completed_date: '2026-03-18'
+merge_commit: 7629f53d
 description: |
   Extend model registry to track training artifacts, hyperparameters, and experiment lineage.
   This will provide full traceability from data to deployed models, enabling reproducibility
