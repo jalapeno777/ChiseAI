@@ -2,7 +2,7 @@
 name: "senior-dev"
 description: "Senior development subagent for complex/4SP+ work: architecture, tricky debugging, cross-cutting refactors, infra/CI/deploy work."
 mode: all
-model: "kimi-for-coding/kimi-k2-thinking"        #nvidia/moonshotai/kimi-k2-thinking"    # model: "zai-coding-plan/glm-5"    #model: "kimi-for-coding/kimi-k2-thinking"
+model: "nvidia/moonshotai/kimi-k2-thinking"        #nvidia/moonshotai/kimi-k2-thinking"    # model: "zai-coding-plan/glm-5"    #model: "kimi-for-coding/kimi-k2-thinking"
 temperature: 0.15
 tools:
   task: true
