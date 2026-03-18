@@ -2787,12 +2787,13 @@ completed:
   story_points: 2
   created_date: '2026-03-18'
   completed_date: '2026-03-18'
-  merge_commit: 6c0bfbd4
+  merge_commit: d11c588f2d9b32032004ad860392949b910acd8f
   description: Implemented AUTOCOG-TIER2-002 Self-Directed Story Proposal Generator
     with opportunity detection and proposal generation capabilities.
   files_changed:
   - src/autonomous_cognition/opportunity_detection.py
   - src/autonomous_cognition/proposal_generator.py
+  - tests/test_autonomous_cognition/test_opportunities.py
   - tests/test_autonomous_cognition/test_proposals.py
   test_results:
     total_tests: 38
