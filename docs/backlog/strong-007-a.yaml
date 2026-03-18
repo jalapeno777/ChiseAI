@@ -1,0 +1,41 @@
+id: STRONG-007-A
+title: Causal Inference Engine Training
+status: backlog
+priority: P1
+owner: TBD
+story_points: 3
+created_date: '2026-03-18'
+description: |
+  Implement training pipeline for causal inference engine.
+  Enables the STRONG system to learn causal relationships from data
+  and perform counterfactual reasoning.
+acceptance_criteria:
+  - Causal model training pipeline
+  - Counterfactual reasoning capability
+  - Causal graph learning from data
+  - Integration with belief system
+  - Performance benchmarks established
+  - Documentation and examples
+risk_mitigation:
+  overfitting_to_self_eval: |
+    Mitigation: Causal validation against known causal relationships.
+    External benchmarks for causal inference accuracy.
+  unsafe_autonomous_change: |
+    Mitigation: Causal models require validation before deployment.
+    Human review for causal claims with high impact.
+  data_quality_drift: |
+    Mitigation: Data quality checks specific to causal inference.
+    Handling of confounding variables monitored.
+  ci_operational_fragility: |
+    Mitigation: Training pipeline with retry logic and timeouts.
+    Resource isolation for computationally intensive training.
+  model_degradation_on_deploy: |
+    Mitigation: Causal model A/B testing framework.
+    Counterfactual accuracy monitoring post-deployment.
+dependencies:
+  - STRONG-005-A
+  - STRONG-006-A
+dependent_stories:
+  - AUTOCOG-INTEGRATION-001
+epic: STRONG-007
+sprint: SPRINT-2026-03-31
