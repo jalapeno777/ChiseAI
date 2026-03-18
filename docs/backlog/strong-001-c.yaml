@@ -1,41 +1,60 @@
-id: STRONG-001-C
-title: Neural Belief Revision Training Pipeline
-status: backlog
-priority: P1
-owner: TBD
+story_id: STRONG-001-C
+title: "Gradient-Based Learning Loop"
+priority: P0
 story_points: 3
-created_date: '2026-03-18'
+status: backlog
+epic: STRONG-001
+created_date: "2026-03-18"
+target_sprint: SPRINT-2026-03-31
 description: |
-  Create training pipeline for neural belief revision system.
-  Enables the STRONG system to learn from feedback and update beliefs
-  based on new evidence while maintaining consistency.
+  Implement gradient-based learning loop for the STRONG system. Enables
+  continuous learning from feedback with backpropagation through the
+  computational graph.
+scope: |
+  - Gradient computation engine
+  - Backpropagation through beliefs
+  - Learning rate scheduling
+  - Gradient accumulation
+  - Checkpoint management
 acceptance_criteria:
-  - Training data pipeline operational
-  - Belief revision model training implemented
-  - Feedback loop integration working
-  - Consistency validation during training
-  - Checkpoint and resume capability
-  - Integration with existing belief system
+  must_conditions:
+    - Gradient computation for all belief operations
+    - Backpropagation through 10+ layer depth
+    - Learning rate scheduling implemented
+    - Gradient checkpointing to manage memory
+  live_validation_requirements:
+    - Train on 1000+ belief updates
+    - Convergence within 100 iterations
+    - <5% gradient explosion rate
+  evidence_file_requirements:
+    - docs/evidence/STRONG-001-C-gradient-computation.json
+    - docs/evidence/STRONG-001-C-training-convergence.json
 risk_mitigation:
   overfitting_to_self_eval: |
-    Mitigation: External validation dataset held out from training.
-    Regular evaluation against human-curated belief update scenarios.
+    Mitigation: Training/validation split for belief updates.
+    Regularization techniques to prevent overfitting.
   unsafe_autonomous_change: |
-    Mitigation: Belief updates logged and auditable.
-    Rate limiting on autonomous belief modifications.
+    Mitigation: Gradient clipping to prevent extreme updates.
+    Human review for learning rate changes.
   data_quality_drift: |
-    Mitigation: Training data versioning and lineage tracking.
-    Automated data validation before training runs.
+    Mitigation: Belief update quality scoring.
+    Outlier detection for anomalous gradients.
   ci_operational_fragility: |
-    Mitigation: Training jobs isolated with resource limits.
-    Automatic cleanup of failed training runs.
+    Mitigation: Training jobs with automatic restart on failure.
+    Resource monitoring to prevent OOM.
   model_degradation_on_deploy: |
-    Mitigation: Model performance regression tests in CI.
-    Gradual rollout with monitoring.
+    Mitigation: A/B testing for learning loop updates.
+    Performance regression detection.
 dependencies:
-  - STRONG-001-A-S3
-  - STRONG-001-B
-dependent_stories:
-  - AUTOCOG-INTEGRATION-001
-epic: STRONG-001
-sprint: SPRINT-2026-03-31
+  required_before:
+    - STRONG-001-A-S3
+    - STRONG-001-B
+  enables:
+    - AUTOCOG-INTEGRATION-001
+files_expected:
+  - src/strong_system/learning/gradient_engine.py
+  - src/strong_system/learning/backprop.py
+  - src/strong_system/learning/checkpoint.py
+  - tests/test_strong_system/test_learning/
+estimated_lines: 900
+estimated_tests: 45

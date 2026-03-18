@@ -1,40 +1,59 @@
-id: AUTOCOG-TIER3-001
-title: Tier 3 Full Autonomy Controller
-status: backlog
-priority: P1
-owner: TBD
+story_id: AUTOCOG-TIER3-001
+title: "Controlled Autonomous Improvement Cycles"
+priority: P2
 story_points: 3
-created_date: '2026-03-18'
+status: backlog
+epic: AUTOCOG-TIER3
+created_date: "2026-03-18"
+target_sprint: SPRINT-2026-03-31
 description: |
-  Implement Tier 3 full autonomy controller.
-  Enables agents to operate with minimal human oversight,
-  making autonomous decisions based on Tier 2 evaluations and STRONG reasoning.
-acceptance_criteria:
-  - Autonomy decision engine
-  - Confidence-based escalation rules
-  - Human-in-the-loop for critical decisions
-  - Decision audit trail
-  - Performance monitoring and alerting
+  Implement controlled autonomous improvement cycles that enable
+  the system to improve itself within defined boundaries and with
+  human oversight.
+scope: |
+  - Improvement cycle orchestration
+  - Boundary enforcement
+  - Human escalation
   - Rollback capability
+  - Progress tracking
+acceptance_criteria:
+  must_conditions:
+    - Automated improvement cycle execution
+    - Boundary constraint enforcement
+    - Human escalation for boundary violations
+    - Rollback to previous state capability
+  live_validation_requirements:
+    - Execute 10+ improvement cycles
+    - Zero boundary violations without escalation
+    - <24h cycle completion time
+  evidence_file_requirements:
+    - docs/evidence/AUTOCOG-TIER3-001-improvement-cycles.json
+    - docs/evidence/AUTOCOG-TIER3-001-boundary-compliance.json
 risk_mitigation:
   overfitting_to_self_eval: |
-    Mitigation: Tier 3 decisions validated against human decisions retrospectively.
-    Regular calibration of autonomy thresholds.
+    Mitigation: Improvements validated against external metrics.
+    Human review for significant changes.
   unsafe_autonomous_change: |
-    Mitigation: Tier 3 scope limited to pre-approved decision types.
-    Emergency stop capability for all autonomous operations.
+    Mitigation: Strict boundaries on autonomous changes.
+    Emergency stop for all autonomous operations.
   data_quality_drift: |
-    Mitigation: Input data validation before autonomous decisions.
-    Graceful degradation when data quality is poor.
+    Mitigation: Input validation before improvement cycles.
+    Graceful degradation on data quality issues.
   ci_operational_fragility: |
-    Mitigation: Controller with circuit breakers and fallback modes.
-    Health checks and automatic recovery.
+    Mitigation: Improvement cycles with checkpoint/resume.
+    Automatic recovery from failures.
   model_degradation_on_deploy: |
-    Mitigation: Shadow mode operation before full autonomy.
-    Gradual increase in autonomy scope based on performance.
+    Mitigation: Shadow mode for improvement validation.
+    Gradual rollout of improvements.
 dependencies:
-  - AUTOCOG-TIER2-002
-  - AUTOCOG-INTEGRATION-001
-dependent_stories: []
-epic: AUTOCOG-TIER3
-sprint: SPRINT-2026-03-31
+  required_before:
+    - AUTOCOG-TIER2-002
+    - AUTOCOG-INTEGRATION-001
+  enables: []
+files_expected:
+  - src/autonomous_cognition/improvement/cycles.py
+  - src/autonomous_cognition/improvement/boundaries.py
+  - src/autonomous_cognition/improvement/escalation.py
+  - tests/test_autonomous_cognition/test_improvement/
+estimated_lines: 650
+estimated_tests: 32

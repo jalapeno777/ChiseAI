@@ -1,41 +1,59 @@
-id: ML-DATA-001
-title: Training Data Versioning System
-status: backlog
+story_id: ML-DATA-001
+title: "Training Data Quality Gates"
 priority: P1
-owner: TBD
 story_points: 2
-created_date: '2026-03-18'
+status: backlog
+epic: ML-DATA
+created_date: "2026-03-18"
+target_sprint: SPRINT-2026-03-31
 description: |
-  Implement data versioning system for ML training pipelines.
-  Provides reproducibility by tracking dataset versions, transformations,
-  and lineage from raw data to training inputs.
+  Implement quality gates for training data to ensure data integrity
+  before it enters the training pipeline.
+scope: |
+  - Data validation rules
+  - Quality scoring
+  - Anomaly detection
+  - Schema enforcement
+  - Quality dashboards
 acceptance_criteria:
-  - Dataset versioning with immutable snapshots
-  - Transformation pipeline tracking
-  - Data lineage visualization
-  - Integration with ML-TRAIN-001
-  - Rollback to previous dataset versions
-  - Storage optimization for versioned data
+  must_conditions:
+    - 20+ validation rules
+    - Quality score computation
+    - Anomaly detection for data drift
+    - Automatic rejection of low-quality data
+  live_validation_requirements:
+    - Validate 1000+ datasets
+    - <2% false positive rate
+    - <1% false negative rate
+  evidence_file_requirements:
+    - docs/evidence/ML-DATA-001-validation-results.json
+    - docs/evidence/ML-DATA-001-quality-metrics.json
 risk_mitigation:
   overfitting_to_self_eval: |
-    Mitigation: Versioned datasets prevent training/evaluation overlap.
-    Clear separation between training and validation data versions.
+    Mitigation: Validation rules based on diverse data sources.
+    Regular review of validation effectiveness.
   unsafe_autonomous_change: |
-    Mitigation: Data version changes require explicit approval.
-    Audit trail for all dataset modifications.
+    Mitigation: Validation rule changes require approval.
+    Audit trail for all rule modifications.
   data_quality_drift: |
-    Mitigation: Data quality metrics versioned with datasets.
-    Automated comparison between dataset versions.
+    Mitigation: Continuous monitoring of data distributions.
+    Automatic alerts on drift detection.
   ci_operational_fragility: |
-    Mitigation: Redundant storage for critical dataset versions.
-    Health monitoring for data versioning service.
+    Mitigation: Validation service with high availability.
+    Graceful degradation on validation failures.
   model_degradation_on_deploy: |
-    Mitigation: Dataset version impact analysis tools.
-    Correlation tracking between data changes and model performance.
+    Mitigation: Correlation tracking between data quality and model performance.
+    Automatic retraining on quality improvements.
 dependencies:
-  - ML-TRAIN-001
-  - AUTOCOG-QDRANT-001
-dependent_stories:
-  - ML-EVAL-001
-epic: ML-DATA
-sprint: SPRINT-2026-03-31
+  required_before:
+    - ML-TRAIN-001
+    - AUTOCOG-QDRANT-001
+  enables:
+    - ML-EVAL-001
+files_expected:
+  - src/ml/data/validation.py
+  - src/ml/data/quality_gates.py
+  - src/ml/data/anomaly_detection.py
+  - tests/test_ml/test_data/
+estimated_lines: 600
+estimated_tests: 30
