@@ -442,65 +442,65 @@ in_progress:
   total_stories: 10
   total_story_points: 25
   stories:
-  - id: AUTOCOG-TIER2-001
-    title: Tier 2 Autonomous Evaluation Backend
+  - story_id: AUTOCOG-TIER2-001
+    title: "Autonomous Action Execution Framework"
     story_points: 3
     status: backlog
-    priority: P1
+    priority: P0
     epic: AUTOCOG-TIER2
-  - id: STRONG-001-C
-    title: Neural Belief Revision Training Pipeline
+  - story_id: STRONG-001-C
+    title: "Gradient-Based Learning Loop"
     story_points: 3
     status: backlog
-    priority: P1
+    priority: P0
     epic: STRONG-001
-  - id: ML-TRAIN-001
-    title: Model Registry Training Artifacts
+  - story_id: ML-TRAIN-001
+    title: "Training Pipeline Activation"
     story_points: 3
     status: backlog
-    priority: P1
+    priority: P0
     epic: ML-TRAINING
-  - id: AUTOCOG-TIER2-002
-    title: Tier 2 Evaluation Metrics Dashboard
+  - story_id: AUTOCOG-TIER2-002
+    title: "Self-Directed Story Proposal Generator"
     story_points: 2
     status: backlog
     priority: P1
     epic: AUTOCOG-TIER2
-  - id: STRONG-007-A
-    title: Causal Inference Engine Training
+  - story_id: STRONG-007-A
+    title: "Champion/Challenger A/B Framework"
     story_points: 3
     status: backlog
     priority: P1
     epic: STRONG-007
-  - id: ML-DATA-001
-    title: Training Data Versioning System
+  - story_id: ML-DATA-001
+    title: "Training Data Quality Gates"
     story_points: 2
     status: backlog
     priority: P1
     epic: ML-DATA
-  - id: AUTOCOG-INTEGRATION-001
-    title: AUTOCOG-STRONG Integration Layer
+  - story_id: AUTOCOG-INTEGRATION-001
+    title: "Cross-System Learning Bridge"
     story_points: 2
     status: backlog
     priority: P1
     epic: AUTOCOG-INTEGRATION
-  - id: STRONG-003-B
-    title: Hypothesis Generation Training Data Pipeline
+  - story_id: STRONG-003-B
+    title: "Constitutional AI Self-Critique Loop"
     story_points: 3
     status: backlog
     priority: P1
     epic: STRONG-003
-  - id: ML-EVAL-001
-    title: Model Evaluation Automation
+  - story_id: ML-EVAL-001
+    title: "BrainEval Integration"
     story_points: 2
     status: backlog
-    priority: P1
+    priority: P2
     epic: ML-EVAL
-  - id: AUTOCOG-TIER3-001
-    title: Tier 3 Full Autonomy Controller
+  - story_id: AUTOCOG-TIER3-001
+    title: "Controlled Autonomous Improvement Cycles"
     story_points: 3
     status: backlog
-    priority: P1
+    priority: P2
     epic: AUTOCOG-TIER3
 completed:
 - id: TF-SECRETS-001

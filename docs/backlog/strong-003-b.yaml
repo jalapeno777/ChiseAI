@@ -1,40 +1,59 @@
-id: STRONG-003-B
-title: Hypothesis Generation Training Data Pipeline
-status: backlog
+story_id: STRONG-003-B
+title: "Constitutional AI Self-Critique Loop"
 priority: P1
-owner: TBD
 story_points: 3
-created_date: '2026-03-18'
+status: backlog
+epic: STRONG-003
+created_date: "2026-03-18"
+target_sprint: SPRINT-2026-03-31
 description: |
-  Build training data pipeline for hypothesis generation system.
-  Curates and processes scientific literature, experimental data,
-  and domain knowledge for training hypothesis generation models.
+  Implement self-critique loop based on constitutional AI principles.
+  Enables the system to evaluate its own outputs against constitutional
+  constraints and improve through self-critique.
+scope: |
+  - Constitutional constraint evaluation
+  - Self-critique generation
+  - Improvement suggestion
+  - Constraint violation detection
+  - Feedback integration
 acceptance_criteria:
-  - Data ingestion from multiple sources
-  - Text preprocessing and normalization
-  - Entity and relationship extraction
-  - Training dataset curation
-  - Integration with STRONG-003-A
-  - Data quality validation
+  must_conditions:
+    - Evaluate outputs against 10+ constitutional constraints
+    - Generate actionable self-critique
+    - Suggest concrete improvements
+    - Track constraint violation trends
+  live_validation_requirements:
+    - Critique 500+ outputs
+    - ">80% critique accuracy"
+    - ">60% improvement adoption rate"
+  evidence_file_requirements:
+    - docs/evidence/STRONG-003-B-critique-accuracy.json
+    - docs/evidence/STRONG-003-B-constraint-violations.json
 risk_mitigation:
   overfitting_to_self_eval: |
-    Mitigation: Diverse data sources prevent domain overfitting.
-    Regular evaluation on held-out test sets from different domains.
+    Mitigation: Critique validated against human evaluations.
+    Regular calibration of critique quality.
   unsafe_autonomous_change: |
-    Mitigation: Training data changes require review.
-    Version control for all training datasets.
+    Mitigation: Constitutional constraints require human approval to modify.
+    Emergency stop for constraint violations.
   data_quality_drift: |
-    Mitigation: Automated data quality scoring.
-    Source reliability tracking and weighting.
+    Mitigation: Constraint evaluation based on stable principles.
+    Drift detection in constraint interpretation.
   ci_operational_fragility: |
-    Mitigation: Pipeline monitoring with alerting.
-    Checkpoint and resume for long-running ingestion.
+    Mitigation: Self-critique as independent service.
+    Graceful degradation on critique generation failures.
   model_degradation_on_deploy: |
-    Mitigation: Data freshness metrics tracked.
-    Automated retraining triggers based on data staleness.
+    Mitigation: A/B testing for critique quality.
+    Gradual rollout of new critique capabilities.
 dependencies:
-  - STRONG-003-A
-  - ML-DATA-001
-dependent_stories: []
-epic: STRONG-003
-sprint: SPRINT-2026-03-31
+  required_before:
+    - STRONG-003-A
+    - ML-DATA-001
+  enables: []
+files_expected:
+  - src/strong_system/constitutional/critique.py
+  - src/strong_system/constitutional/constraints.py
+  - src/strong_system/constitutional/improvement.py
+  - tests/test_strong_system/test_constitutional/
+estimated_lines: 750
+estimated_tests: 38

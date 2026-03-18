@@ -1,41 +1,58 @@
-id: AUTOCOG-TIER2-002
-title: Tier 2 Evaluation Metrics Dashboard
-status: backlog
+story_id: AUTOCOG-TIER2-002
+title: "Self-Directed Story Proposal Generator"
 priority: P1
-owner: TBD
 story_points: 2
-created_date: '2026-03-18'
+status: backlog
+epic: AUTOCOG-TIER2
+created_date: "2026-03-18"
+target_sprint: SPRINT-2026-03-31
 description: |
-  Create Grafana dashboard for Tier 2 evaluation metrics.
-  Provides visibility into autonomous cognition performance,
-  confidence distributions, and quality trends over time.
+  Implement story proposal generator that enables agents to identify
+  improvement opportunities and propose new stories autonomously.
+scope: |
+  - Opportunity detection
+  - Story template generation
+  - Proposal scoring
+  - Human review integration
+  - Proposal tracking
 acceptance_criteria:
-  - Grafana dashboard with evaluation metrics
-  - Confidence score distribution visualization
-  - Quality trend charts over time
-  - Alerting for quality degradation
-  - Drill-down capability to individual evaluations
-  - Integration with existing Grafana instance
+  must_conditions:
+    - Detect 10+ opportunity types
+    - Generate valid story proposals
+    - Proposal scoring algorithm
+    - Integration with backlog system
+  live_validation_requirements:
+    - Propose 20+ stories in staging
+    - ">70% proposal quality score"
+    - <24h from detection to proposal
+  evidence_file_requirements:
+    - docs/evidence/AUTOCOG-TIER2-002-proposals-generated.json
+    - docs/evidence/AUTOCOG-TIER2-002-quality-scores.json
 risk_mitigation:
   overfitting_to_self_eval: |
-    Mitigation: Dashboard includes human vs autonomous comparison metrics.
-    Visual indicators when self-evaluation dominates.
+    Mitigation: Proposals validated against historical high-quality stories.
+    Human feedback loop for proposal quality.
   unsafe_autonomous_change: |
-    Mitigation: Dashboard tracks autonomous change frequency and impact.
-    Alerts on unusual change patterns.
+    Mitigation: All proposals require human approval before backlog entry.
+    Scope limits on autonomous proposal types.
   data_quality_drift: |
-    Mitigation: Data quality metrics displayed alongside evaluation metrics.
-    Automated anomaly detection visualization.
+    Mitigation: Opportunity detection based on stable metrics.
+    Drift detection for opportunity signals.
   ci_operational_fragility: |
-    Mitigation: Dashboard provisioning as code with version control.
-    Automated dashboard validation in CI.
+    Mitigation: Proposal generation idempotent and recoverable.
+    Queue-based proposal processing.
   model_degradation_on_deploy: |
-    Mitigation: Deployment markers on time-series charts.
-    Before/after comparison views for deployments.
+    Mitigation: A/B testing for proposal quality.
+    Gradual rollout of new opportunity types.
 dependencies:
-  - AUTOCOG-TIER2-001
-  - AUTOCOG-OBS-001
-dependent_stories:
-  - AUTOCOG-TIER3-001
-epic: AUTOCOG-TIER2
-sprint: SPRINT-2026-03-31
+  required_before:
+    - AUTOCOG-TIER2-001
+    - AUTOCOG-OBS-001
+  enables:
+    - AUTOCOG-TIER3-001
+files_expected:
+  - src/autonomous_cognition/proposal_generator.py
+  - src/autonomous_cognition/opportunity_detection.py
+  - tests/test_autonomous_cognition/test_proposals.py
+estimated_lines: 500
+estimated_tests: 25
