@@ -323,3 +323,121 @@ class Sum(Operation):
         # Broadcast to input shape
         grad_x = np.broadcast_to(grad_output, x.value.shape)
         return (grad_x,)
+
+
+class Power(Operation):
+    """Power operation.
+
+    Computes: output = base ** exponent
+
+    Shape requirements:
+        - base and exponent must be broadcastable
+    """
+
+    @classmethod
+    def forward(cls, base: Node, exponent: Node) -> Node:
+        """Compute the forward pass.
+
+        Args:
+            base: Base node
+            exponent: Exponent node
+
+        Returns:
+            A new node containing base ** exponent
+        """
+        result_value = np.power(base.value, exponent.value)
+        return Node(
+            value=result_value,
+            operation=cls(),
+            parents=[base, exponent],
+            name=f"power({base.name or 'base'}, {exponent.name or 'exp'})",
+        )
+
+    @classmethod
+    def backward(
+        cls, grad_output: np.ndarray, base: Node, exponent: Node
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Compute the backward pass.
+
+        For power: d(base^exp)/dbase = exp * base^(exp-1)
+                  d(base^exp)/dexp = base^exp * ln(base)
+
+        Args:
+            grad_output: Gradient of the loss with respect to the output
+            base: Base input node
+            exponent: Exponent input node
+
+        Returns:
+            Tuple of (grad_base, grad_exponent)
+        """
+        result = np.power(base.value, exponent.value)
+        # Gradient w.r.t. base: exp * base^(exp-1)
+        grad_base = (
+            grad_output * exponent.value * np.power(base.value, exponent.value - 1)
+        )
+        # Gradient w.r.t. exponent: base^exp * ln(base)
+        # Handle base <= 0 by setting gradient to 0
+        safe_base = np.where(base.value > 0, base.value, 1.0)
+        grad_exponent = grad_output * result * np.log(safe_base)
+        grad_exponent = np.where(base.value > 0, grad_exponent, 0.0)
+
+        return grad_base, grad_exponent
+
+
+class Divide(Operation):
+    """Division operation.
+
+    Computes: output = numerator / denominator
+
+    Shape requirements:
+        - numerator and denominator must be broadcastable
+    """
+
+    @classmethod
+    def forward(cls, numerator: Node, denominator: Node) -> Node:
+        """Compute the forward pass.
+
+        Args:
+            numerator: Numerator node
+            denominator: Denominator node
+
+        Returns:
+            A new node containing numerator / denominator
+        """
+        result_value = numerator.value / denominator.value
+        return Node(
+            value=result_value,
+            operation=cls(),
+            parents=[numerator, denominator],
+            name=f"divide({numerator.name or 'num'}, {denominator.name or 'den'})",
+        )
+
+    @classmethod
+    def backward(
+        cls, grad_output: np.ndarray, numerator: Node, denominator: Node
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Compute the backward pass.
+
+        For division:
+            d(a/b)/da = 1/b
+            d(a/b)/db = -a/b^2
+
+        Args:
+            grad_output: Gradient of the loss with respect to the output
+            numerator: Numerator input node
+            denominator: Denominator input node
+
+        Returns:
+            Tuple of (grad_numerator, grad_denominator)
+        """
+        # Gradient w.r.t. numerator: 1/denominator
+        grad_numerator = grad_output / denominator.value
+
+        # Gradient w.r.t. denominator: -numerator/denominator^2
+        grad_denominator = -grad_output * numerator.value / (denominator.value**2)
+
+        # Reduce if broadcasting occurred
+        grad_numerator = Add._reduce_grad(grad_numerator, numerator.value.shape)
+        grad_denominator = Add._reduce_grad(grad_denominator, denominator.value.shape)
+
+        return grad_numerator, grad_denominator

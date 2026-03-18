@@ -45,8 +45,10 @@ from src.strong_system.computational_graph.memory import (
 from src.strong_system.computational_graph.node import Node, Operation
 from src.strong_system.computational_graph.operations import (
     Add,
+    Divide,
     MatMul,
     Multiply,
+    Power,
     ReLU,
     Sum,
 )
@@ -68,6 +70,8 @@ __all__ = [
     "ReLU",
     "MatMul",
     "Sum",
+    "Power",
+    "Divide",
     "backward",
     "compute_gradients",
     "clear_gradients",
