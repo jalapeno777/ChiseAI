@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import asyncio
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 
 from autonomous_cognition.action_executor import (
     Action,

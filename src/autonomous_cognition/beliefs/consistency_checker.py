@@ -42,7 +42,9 @@ class BeliefConsistencyChecker:
                     continue
 
                 # Fallback heuristic for practical contradiction phrasing.
-                fallback_reason = self._heuristic_conflict_reason(a.statement, b.statement)
+                fallback_reason = self._heuristic_conflict_reason(
+                    a.statement, b.statement
+                )
                 if fallback_reason:
                     conflict_id = hashlib.sha256(
                         f"{a.belief_id}:{b.belief_id}:{fallback_reason}".encode()

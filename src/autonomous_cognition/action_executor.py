@@ -12,15 +12,17 @@ This module provides the ActionExecutor class which executes actions with:
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import time
 import uuid
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Any, Callable, Coroutine, Generic, TypeVar
+from typing import Any, TypeVar
 
+from autonomous_cognition.rollback import ActionSnapshot, RollbackManager
 from autonomous_cognition.validation import ActionValidator, ValidationResult
-from autonomous_cognition.rollback import RollbackManager, ActionSnapshot
 
 logger = logging.getLogger(__name__)
 
@@ -406,7 +408,7 @@ class ActionExecutor:
 
                 return outcome
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 execution_time = (time.time() - execution_start) * 1000
                 last_error = f"Timeout after {action.timeout_seconds}s"
                 logger.warning(
@@ -586,10 +588,8 @@ class ActionExecutor:
 
         if self._worker_task:
             self._worker_task.cancel()
-            try:
+            with contextlib.suppress(TimeoutError, asyncio.CancelledError):
                 await asyncio.wait_for(self._worker_task, timeout=timeout)
-            except (asyncio.CancelledError, asyncio.TimeoutError):
-                pass
 
         logger.info("Action executor shutdown complete")
 

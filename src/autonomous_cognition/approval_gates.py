@@ -92,7 +92,7 @@ class ApprovalRequest:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ApprovalRequest":
+    def from_dict(cls, data: dict[str, Any]) -> ApprovalRequest:
         """Create from dictionary representation."""
         return cls(
             request_id=data["request_id"],
@@ -259,12 +259,12 @@ class ApprovalGates:
             request_id=request_id,
             status=request.status,
             timeout_at=request.timeout_at,
-            approved_by=request.approver
-            if request.status == ApprovalStatus.APPROVED
-            else None,
-            rejected_by=request.approver
-            if request.status == ApprovalStatus.REJECTED
-            else None,
+            approved_by=(
+                request.approver if request.status == ApprovalStatus.APPROVED else None
+            ),
+            rejected_by=(
+                request.approver if request.status == ApprovalStatus.REJECTED else None
+            ),
             notes=request.notes,
         )
 
@@ -712,9 +712,9 @@ class ApprovalGates:
                 loop.run_until_complete(
                     self._discord.notify_autocog_event(
                         event_type="approval_requested",
-                        severity="high"
-                        if request.risk_level == "critical"
-                        else "medium",
+                        severity=(
+                            "high" if request.risk_level == "critical" else "medium"
+                        ),
                         summary=f"Approval required: {request.decision.get('action')}",
                         impact=f"Risk level: {request.risk_level}",
                         top_metrics={

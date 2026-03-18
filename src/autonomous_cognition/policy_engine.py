@@ -95,7 +95,7 @@ class AutonomousPolicyEngine:
         # Load autocog.yaml for safety settings
         if self.AUTOCOG_CONFIG_PATH.exists():
             try:
-                with open(self.AUTOCOG_CONFIG_PATH, "r", encoding="utf-8") as f:
+                with open(self.AUTOCOG_CONFIG_PATH, encoding="utf-8") as f:
                     self._autocog_config = yaml.safe_load(f) or {}
                 logger.info("Loaded autocog config from %s", self.AUTOCOG_CONFIG_PATH)
             except Exception as e:
@@ -108,7 +108,7 @@ class AutonomousPolicyEngine:
         # Load autocog_policies.yaml
         if self._config_path.exists():
             try:
-                with open(self._config_path, "r", encoding="utf-8") as f:
+                with open(self._config_path, encoding="utf-8") as f:
                     self._config = yaml.safe_load(f) or {}
                 logger.info("Loaded policy config from %s", self._config_path)
             except Exception as e:
@@ -360,10 +360,7 @@ class AutonomousPolicyEngine:
             return True
 
         # Directory prefix match
-        if pattern.endswith("/") and file_path.startswith(pattern):
-            return True
-
-        return False
+        return bool(pattern.endswith("/") and file_path.startswith(pattern))
 
     def check_approval_requirements(
         self, decision: dict[str, Any]
@@ -517,7 +514,7 @@ class AutonomousPolicyEngine:
         self._load_configs()
 
     # Legacy method for backward compatibility
-    def evaluate_promotion_gates(self, metrics: dict[str, float]) -> "GateDecision":
+    def evaluate_promotion_gates(self, metrics: dict[str, float]) -> GateDecision:
         """Evaluate core gates for candidate promotion (legacy method).
 
         Args:

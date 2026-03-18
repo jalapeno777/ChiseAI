@@ -13,9 +13,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from autonomous_cognition.policy_engine import (
-    ApprovalRequirement,
     AutonomousPolicyEngine,
-    PolicyResult,
 )
 
 logger = logging.getLogger(__name__)

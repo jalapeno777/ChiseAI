@@ -10,15 +10,10 @@ Tests cover:
 from __future__ import annotations
 
 import json
-import tempfile
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-import pytest
-
 from scripts.audit.query_belief_revisions import (
-    DEFAULT_ARTIFACTS_DIR,
-    DEFAULT_INDEX_PATH,
     RevisionQueryResult,
     filter_by_belief_id,
     filter_by_date_range,

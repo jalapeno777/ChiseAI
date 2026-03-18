@@ -7,8 +7,8 @@ quality through systematic bias detection and calibration adjustment.
 
 from __future__ import annotations
 
+import contextlib
 import json
-import os
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -200,7 +200,7 @@ class LearningLoop:
             return self._redis
 
         try:
-            from tools import redis_state_hset, redis_state_hget, redis_state_get
+            from tools import redis_state_get, redis_state_hget, redis_state_hset
 
             return {
                 "hset": redis_state_hset,
@@ -227,19 +227,17 @@ class LearningLoop:
         # Store in Redis
         redis = self._get_redis()
         if redis:
-            try:
+            with contextlib.suppress(Exception):
                 redis["hset"](
                     f"{self.PREDICTION_PREFIX}:{prediction.prediction_id}",
                     "data",
                     json.dumps(prediction.to_dict()),
                 )
-            except Exception:
-                pass  # Continue even if Redis fails
 
         # Store in Qdrant
         qdrant = self._get_qdrant()
         if qdrant:
-            try:
+            with contextlib.suppress(Exception):
                 qdrant["store"](
                     information=f"Prediction: {prediction.prediction_id}",
                     metadata={
@@ -251,8 +249,6 @@ class LearningLoop:
                         "timestamp": prediction.timestamp.isoformat(),
                     },
                 )
-            except Exception:
-                pass  # Continue even if Qdrant fails
 
         return True
 
@@ -264,19 +260,17 @@ class LearningLoop:
         # Store in Redis
         redis = self._get_redis()
         if redis:
-            try:
+            with contextlib.suppress(Exception):
                 redis["hset"](
                     f"{self.OUTCOME_PREFIX}:{outcome.outcome_id}",
                     "data",
                     json.dumps(outcome.to_dict()),
                 )
-            except Exception:
-                pass
 
         # Store in Qdrant
         qdrant = self._get_qdrant()
         if qdrant:
-            try:
+            with contextlib.suppress(Exception):
                 qdrant["store"](
                     information=f"Outcome: {outcome.outcome_id}",
                     metadata={
@@ -287,8 +281,6 @@ class LearningLoop:
                         "timestamp": outcome.timestamp.isoformat(),
                     },
                 )
-            except Exception:
-                pass
 
         return True
 
@@ -482,14 +474,12 @@ class LearningLoop:
         # Store in Redis
         redis = self._get_redis()
         if redis:
-            try:
+            with contextlib.suppress(Exception):
                 redis["hset"](
                     self.CALIBRATION_PREFIX,
                     prediction_type,
                     json.dumps(record.to_dict()),
                 )
-            except Exception:
-                pass
 
         # Update learning statistics
         self._update_learning_stats()
@@ -502,14 +492,12 @@ class LearningLoop:
 
         redis = self._get_redis()
         if redis:
-            try:
+            with contextlib.suppress(Exception):
                 redis["hset"](
                     self.STATS_KEY,
                     "stats",
                     json.dumps(stats),
                 )
-            except Exception:
-                pass
 
     def identify_systematic_biases(self) -> dict[str, BiasType]:
         """Identify systematic biases in predictions.

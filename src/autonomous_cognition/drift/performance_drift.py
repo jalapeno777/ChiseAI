@@ -5,20 +5,15 @@ Detects performance degradation in key metrics using statistical analysis
 and provides root cause tagging for alerts.
 """
 
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, field
+import json
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-import json
-import os
+from typing import Any
 
 from src.autonomous_cognition.drift.statistical_tests import (
-    z_score_test,
-    moving_average,
     standard_deviation,
-    detect_anomaly,
     trend_direction,
-    calculate_brier_score,
 )
 
 
@@ -46,11 +41,11 @@ class Baseline:
     metric_name: str
     mean: float
     std: float
-    values: List[float]
+    values: list[float]
     window_days: int
     established_at: datetime
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "metric_name": self.metric_name,
@@ -62,7 +57,7 @@ class Baseline:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Baseline":
+    def from_dict(cls, data: dict[str, Any]) -> "Baseline":
         """Create from dictionary."""
         return cls(
             metric_name=data["metric_name"],
@@ -90,7 +85,7 @@ class DriftResult:
     trend: str = "stable"
     threshold: float = 2.0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "metric_name": self.metric_name,
@@ -107,7 +102,7 @@ class DriftResult:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "DriftResult":
+    def from_dict(cls, data: dict[str, Any]) -> "DriftResult":
         """Create from dictionary."""
         return cls(
             metric_name=data["metric_name"],
@@ -169,8 +164,8 @@ class PerformanceDriftDetector:
 
     def __init__(
         self,
-        redis_client: Optional[Any] = None,
-        influxdb_client: Optional[Any] = None,
+        redis_client: Any | None = None,
+        influxdb_client: Any | None = None,
         default_window_days: int = 7,
         drift_threshold_std: float = 2.0,
     ):
@@ -189,8 +184,8 @@ class PerformanceDriftDetector:
         self.drift_threshold_std = drift_threshold_std
 
         # In-memory storage (fallback if Redis unavailable)
-        self._baselines: Dict[str, Baseline] = {}
-        self._drift_history: List[DriftResult] = []
+        self._baselines: dict[str, Baseline] = {}
+        self._drift_history: list[DriftResult] = []
 
         # Root cause indicators
         self._infra_indicators = [
@@ -227,8 +222,8 @@ class PerformanceDriftDetector:
     def establish_baseline(
         self,
         metric_name: str,
-        days: Optional[int] = None,
-        values: Optional[List[float]] = None,
+        days: int | None = None,
+        values: list[float] | None = None,
     ) -> Baseline:
         """
         Establish a baseline for a metric.
@@ -272,7 +267,7 @@ class PerformanceDriftDetector:
         self,
         metric_name: str,
         current_value: float,
-        context: Optional[Dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> DriftResult:
         """
         Detect drift for a metric against its baseline.
@@ -345,7 +340,7 @@ class PerformanceDriftDetector:
 
         return result
 
-    def get_drift_status(self) -> Dict[str, Any]:
+    def get_drift_status(self) -> dict[str, Any]:
         """
         Get current drift status for all monitored metrics.
 
@@ -382,10 +377,10 @@ class PerformanceDriftDetector:
 
     def get_drift_history(
         self,
-        metric_name: Optional[str] = None,
-        since: Optional[datetime] = None,
-        severity: Optional[str] = None,
-    ) -> List[DriftResult]:
+        metric_name: str | None = None,
+        since: datetime | None = None,
+        severity: str | None = None,
+    ) -> list[DriftResult]:
         """
         Get drift detection history.
 
@@ -439,7 +434,7 @@ class PerformanceDriftDetector:
 
         return False
 
-    def _read_metric_values(self, metric_name: str, days: int) -> List[float]:
+    def _read_metric_values(self, metric_name: str, days: int) -> list[float]:
         """
         Read metric values from InfluxDB or generate synthetic data.
 
@@ -453,20 +448,20 @@ class PerformanceDriftDetector:
         if self.influxdb_client:
             try:
                 return self._read_from_influxdb(metric_name, days)
-            except Exception as e:
+            except Exception:
                 # Fall back to synthetic data
                 pass
 
         # Generate synthetic baseline data based on metric config
         return self._generate_synthetic_baseline(metric_name, days)
 
-    def _read_from_influxdb(self, metric_name: str, days: int) -> List[float]:
+    def _read_from_influxdb(self, metric_name: str, days: int) -> list[float]:
         """Read metric values from InfluxDB."""
         # This would query InfluxDB for actual metrics
         # For now, return empty to trigger synthetic generation
         return []
 
-    def _generate_synthetic_baseline(self, metric_name: str, days: int) -> List[float]:
+    def _generate_synthetic_baseline(self, metric_name: str, days: int) -> list[float]:
         """Generate synthetic baseline data for testing."""
         import random
 
@@ -485,8 +480,6 @@ class PerformanceDriftDetector:
         self, z_score: float, higher_is_better: bool
     ) -> DriftSeverity:
         """Determine severity based on z-score magnitude."""
-        abs_z = abs(z_score)
-
         if higher_is_better:
             # For metrics where higher is better, negative z-score is bad
             effective_z = -z_score
@@ -507,7 +500,7 @@ class PerformanceDriftDetector:
         self,
         metric_name: str,
         current_value: float,
-        context: Optional[Dict[str, Any]],
+        context: dict[str, Any] | None,
     ) -> RootCauseTag:
         """Tag the root cause based on context and metric."""
         if not context:
@@ -541,7 +534,7 @@ class PerformanceDriftDetector:
             except Exception:
                 pass  # Fall back to memory storage
 
-    def _get_recent_alerts(self, metric_name: str, hours: int) -> List[DriftResult]:
+    def _get_recent_alerts(self, metric_name: str, hours: int) -> list[DriftResult]:
         """Get recent alerts for a metric."""
         cutoff = datetime.utcnow() - timedelta(hours=hours)
         return [
@@ -580,7 +573,7 @@ class PerformanceDriftDetector:
 
         return baseline
 
-    def get_metric_config(self, metric_name: str) -> Dict[str, Any]:
+    def get_metric_config(self, metric_name: str) -> dict[str, Any]:
         """Get configuration for a metric."""
         return METRIC_CONFIGS.get(
             metric_name,

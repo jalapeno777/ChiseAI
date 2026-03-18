@@ -9,8 +9,9 @@ from __future__ import annotations
 import logging
 import time
 import uuid
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
-from typing import Any, Callable, Coroutine
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -125,9 +126,9 @@ class RollbackManager:
         self._compensation_handlers: dict[
             str, CompensationHandler | AsyncCompensationHandler
         ] = {}
-        self._rollback_chains: dict[
-            str, list[str]
-        ] = {}  # action_id -> list of snapshot_ids
+        self._rollback_chains: dict[str, list[str]] = (
+            {}
+        )  # action_id -> list of snapshot_ids
 
     async def create_snapshot(
         self,
@@ -378,7 +379,7 @@ class RollbackManager:
             snapshot.snapshot_id,
         )
 
-        if hasattr(handler, "__call__"):
+        if callable(handler):
             import asyncio
 
             if asyncio.iscoroutinefunction(handler):

@@ -81,4 +81,3 @@ class BeliefStore:
         except Exception as e:
             logger.debug("Belief listing fallback to memory only: %s", e)
         return [b for b in self._beliefs.values() if b.status == "active"]
-

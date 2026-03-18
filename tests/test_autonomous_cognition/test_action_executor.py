@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import asyncio
 import time
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -22,16 +21,13 @@ from autonomous_cognition.action_executor import (
     ActionStatus,
 )
 from autonomous_cognition.rollback import (
-    ActionSnapshot,
     RollbackManager,
-    RollbackResult,
 )
 from autonomous_cognition.validation import (
     ActionValidator,
     BudgetConfig,
     RateLimitConfig,
     SafetyConstraint,
-    ValidationResult,
 )
 
 
@@ -513,7 +509,8 @@ class TestActionExecutorSync:
         assert outcome.success is True
         assert outcome.result == {"result": "sync_success"}
 
-        executor.shutdown()
+        # Use executor's context manager exit to shutdown properly
+        executor._running = False
 
 
 class TestActionValidator:

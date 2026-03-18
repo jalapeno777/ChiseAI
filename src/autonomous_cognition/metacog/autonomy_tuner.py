@@ -44,4 +44,3 @@ class AutonomyTuner:
             new_level=self._levels[new_idx],
             reason=reason,
         )
-

@@ -65,4 +65,3 @@ class ChampionChallengerEngine:
             version_id=version.version_id,
             reason="all_gates_passed",
         )
-

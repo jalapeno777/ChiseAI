@@ -16,6 +16,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 if str(_SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(_SRC_ROOT))
 
+
 @dataclass
 class ConstitutionAuditResult:
     """Result of constitution audit pass."""
@@ -24,13 +25,7 @@ class ConstitutionAuditResult:
 
     @property
     def critical_count(self) -> int:
-        return len(
-            [
-                v
-                for v in self.violations
-                if v.severity.value in {"P0", "P1"}
-            ]
-        )
+        return len([v for v in self.violations if v.severity.value in {"P0", "P1"}])
 
 
 class ConstitutionAuditEngine:

@@ -118,9 +118,11 @@ class SkipRateMonitor:
                 "timestamp": datetime.now(UTC).isoformat(),
                 "total_candidates": total_candidates,
                 "skipped_candidates": skipped_candidates,
-                "skip_rate": skipped_candidates / total_candidates
-                if total_candidates > 0
-                else 0.0,
+                "skip_rate": (
+                    skipped_candidates / total_candidates
+                    if total_candidates > 0
+                    else 0.0
+                ),
             }
 
             redis_state_lpush(

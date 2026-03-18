@@ -56,4 +56,3 @@ class CycleResult:
             status="running",
             self_assessment_status="unknown",
         )
-

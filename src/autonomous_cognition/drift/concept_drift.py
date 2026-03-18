@@ -167,9 +167,9 @@ class ConceptDriftDetector:
             if isinstance(inputs, list) and inputs:
                 features["input_characteristics"] = {
                     "count": len(inputs),
-                    "avg_length": sum(len(str(i)) for i in inputs) / len(inputs)
-                    if inputs
-                    else 0,
+                    "avg_length": (
+                        sum(len(str(i)) for i in inputs) / len(inputs) if inputs else 0
+                    ),
                 }
 
         # Decision type distribution
@@ -746,7 +746,9 @@ class ConceptDriftDetector:
         mean_x = sum(x) / n
         mean_y = sum(y) / n
 
-        numerator = sum((xi - mean_x) * (yi - mean_y) for xi, yi in zip(x, y))
+        numerator = sum(
+            (xi - mean_x) * (yi - mean_y) for xi, yi in zip(x, y, strict=False)
+        )
         denom_x = sum((xi - mean_x) ** 2 for xi in x)
         denom_y = sum((yi - mean_y) ** 2 for yi in y)
 
