@@ -1,14 +1,15 @@
 ---
-type: closeout
-story_id: ML-TRAIN-001
-title: Model Registry Training Artifacts - Session Closeout
-status: completed
-merge_commit: 7629f53d63c55a6610a801b5fdebecb1513ca338
-completed_at: 2026-03-18T16:58:39Z
+type: summary
+story_id: ST-20260318
+created: 2026-03-18T16:58:39Z
+tags: [closeout, ml-train-001, documentation]
 author: dev
+priority: medium
 ---
 
 # ML-TRAIN-001 Session Closeout
+
+**Note: dev performed the closeout documentation for this senior-dev-assigned story**
 
 ## Story Summary
 

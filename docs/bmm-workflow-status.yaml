@@ -60,7 +60,7 @@ metadata:
     files_changed:
     - docs/backlog/autocog-tier2-001.yaml
     - docs/backlog/strong-001-c.yaml
-    - docs/backlog/ml-train-001.yaml
+    - docs/backlog/ML-TRAIN-001.yaml
     - docs/backlog/autocog-tier2-002.yaml
     - docs/backlog/strong-007-a.yaml
     - docs/backlog/ml-data-001.yaml

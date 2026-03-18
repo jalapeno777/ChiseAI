@@ -6,7 +6,7 @@ owner: senior-dev
 story_points: 3
 created_date: '2026-03-18'
 completed_date: '2026-03-18'
-merge_commit: 7629f53d
+merge_commit: 7629f53d63c55a6610a801b5fdebecb1513ca338
 description: |
   Extend model registry to track training artifacts, hyperparameters, and experiment lineage.
   This will provide full traceability from data to deployed models, enabling reproducibility
