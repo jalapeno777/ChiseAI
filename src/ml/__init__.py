@@ -87,20 +87,20 @@ def __getattr__(name: str):
 
 # Import from absolute paths (requires src/ in sys.path)
 # Note: hyperopt.OptimizationRecord and scheduler.OptimizationRecord are different classes
-from ml.hyperopt import (
-    BaseOptimizer,
-    BayesianOptimizer,
-    GeneticOptimizer,
-    HyperparameterOptimizer,
-    OptimizationMethod,
-    OptimizationResult,
-    OptimizationTrial,
-    ParameterConstraint,
-    ParameterType,
-)
-from ml.hyperopt import (
-    OptimizationConfig as HyperoptConfig,
-)
+# from ml.hyperopt import (
+#     BaseOptimizer,
+#     BayesianOptimizer,
+#     GeneticOptimizer,
+#     HyperparameterOptimizer,
+#     OptimizationMethod,
+#     OptimizationResult,
+# #     OptimizationTrial,
+#     ParameterConstraint,
+#     ParameterType,
+# )
+# from ml.hyperopt import (
+#    OptimizationConfig as HyperoptConfig,
+# )
 from ml.models import (
     EntryReason,
     FilesystemBackend,
@@ -113,17 +113,17 @@ from ml.models import (
     SignalOutcomeStatus,
     StorageBackend,
 )
-from ml.scheduler import (
-    JobStatus,
-    OptimizationScheduler,
-    OptimizationTask,
-    ParameterDelta,
-    ScheduleConfig,
-    ScheduledJob,
-    ScheduleFrequency,
-    VolatilityMonitor,
-    VolatilityRegime,
-)
+# from ml.scheduler import (
+#     JobStatus,
+#     OptimizationScheduler,
+#     OptimizationTask,
+#     ParameterDelta,
+#     ScheduleConfig,
+#     ScheduledJob,
+#     ScheduleFrequency,
+#     VolatilityMonitor,
+#     VolatilityRegime,
+# )
 from ml.training import (
     FEATURE_GROUPS,
     FEATURE_SPECS,
@@ -138,16 +138,16 @@ from ml.training import (
     TrainingSample,
     TrendState,
 )
-from ml.walk_forward import (
-    AggregatedMetrics,
-    LookAheadBiasCheck,
-    TemporalWindow,
-    WalkForwardConfig,
-    WalkForwardEvaluator,
-    WalkForwardResult,
-    WindowMetrics,
-    WindowStatus,
-)
+# from ml.walk_forward import (
+#     AggregatedMetrics,
+#     LookAheadBiasCheck,
+#     TemporalWindow,
+#     WalkForwardConfig,
+#     WalkForwardEvaluator,
+#     WalkForwardResult,
+#     WindowMetrics,
+#     WindowStatus,
+# )
 
 __all__ = [
     # Walk-forward
