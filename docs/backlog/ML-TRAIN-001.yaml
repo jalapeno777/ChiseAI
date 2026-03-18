@@ -1,0 +1,24 @@
+id: ML-TRAIN-001
+title: Model Registry Training Artifacts
+status: backlog
+priority: P1
+owner: TBD
+story_points: 2
+created_date: '2026-03-18'
+description: |
+  Extend model registry to track training artifacts, hyperparameters, and experiment lineage.
+  This will provide full traceability from data to deployed models, enabling reproducibility
+  and experiment comparison.
+acceptance_criteria:
+  - Artifact storage working (checkpoints, configs, logs)
+  - Lineage tracking from data to model
+  - Experiment comparison dashboard/features
+  - Rollback support to previous model versions
+  - Integration with existing model registry
+  - API for querying experiment history
+notes:
+  - Build on ST-MODEL-REG-* stories
+  - Consider MLflow-style experiment tracking
+  - Ensure artifact storage is efficient
+epic: ML-TRAINING
+sprint: SPRINT-2026-03-31

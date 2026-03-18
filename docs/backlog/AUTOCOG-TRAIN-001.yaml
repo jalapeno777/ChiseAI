@@ -1,0 +1,24 @@
+id: AUTOCOG-TRAIN-001
+title: Autonomous Cognition Training Data Pipeline
+status: backlog
+priority: P1
+owner: TBD
+story_points: 3
+created_date: '2026-03-18'
+description: |
+  Build training data pipeline for autonomous cognition models including belief revision examples, 
+  contradiction detection cases, and decision audit trails. This pipeline will serve as the 
+  foundation for training and fine-tuning AUTOCOG models.
+acceptance_criteria:
+  - Data pipeline ingests from Redis/Qdrant sources
+  - Formats training examples correctly
+  - Validates data quality before export
+  - Exports to training format (JSON/Parquet)
+  - Handles incremental updates efficiently
+  - Documentation and usage examples provided
+notes:
+  - Depends on Redis/Qdrant connectivity
+  - May need to coordinate with existing iteration logging system
+  - Consider data retention policies for training datasets
+epic: AUTOCOG-TRAINING
+sprint: SPRINT-2026-03-31

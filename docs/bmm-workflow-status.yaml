@@ -3,6 +3,35 @@ metadata:
   last_updated: '2026-03-17T16:00:00Z'
   schema_version: 1.0.0
   recent_changes:
+  - action: backlog-creation-training-stories
+    actor: dev
+    description: Created 10 training infrastructure backlog stories (AUTOCOG-TRAIN-*, STRONG-TRAIN-*, ML-TRAIN-*) and dependency map for SPRINT-2026-03-31. Total 25 story points.
+    timestamp: '2026-03-18T00:00:00Z'
+    status: completed
+    story_id: REPO-001
+    backlog_items_created:
+    - AUTOCOG-TRAIN-001
+    - AUTOCOG-TRAIN-002
+    - AUTOCOG-TRAIN-003
+    - STRONG-TRAIN-001
+    - STRONG-TRAIN-002
+    - STRONG-TRAIN-003
+    - STRONG-TRAIN-004
+    - ML-TRAIN-001
+    - ML-TRAIN-002
+    - ML-TRAIN-003
+    files_changed:
+    - docs/backlog/AUTOCOG-TRAIN-001.yaml
+    - docs/backlog/AUTOCOG-TRAIN-002.yaml
+    - docs/backlog/AUTOCOG-TRAIN-003.yaml
+    - docs/backlog/STRONG-TRAIN-001.yaml
+    - docs/backlog/STRONG-TRAIN-002.yaml
+    - docs/backlog/STRONG-TRAIN-003.yaml
+    - docs/backlog/STRONG-TRAIN-004.yaml
+    - docs/backlog/ML-TRAIN-001.yaml
+    - docs/backlog/ML-TRAIN-002.yaml
+    - docs/backlog/ML-TRAIN-003.yaml
+    - docs/backlog/training-backlog-dependencies.yaml
   - action: sprint-closeout-SPRINT-2026-03-24
     actor: jarvis
     description: SPRINT-2026-03-24 closeout - All 6 stories (17 SP) completed and merged to main
@@ -5117,6 +5146,24 @@ canary_recommendation:
   - Other LLM provider cleanup deferred to future sprint
   - Next daily operational cycle review required at standup
 sprints:
+- id: SPRINT-2026-03-31
+  name: AUTOCOG/STRONG/ML Training Infrastructure Sprint
+  status: in_progress
+  start_date: '2026-03-18'
+  end_date: '2026-03-31'
+  story_count: 10
+  story_points: 25
+  mapped_stories:
+    - AUTOCOG-TRAIN-001
+    - AUTOCOG-TRAIN-002
+    - AUTOCOG-TRAIN-003
+    - STRONG-TRAIN-001
+    - STRONG-TRAIN-002
+    - STRONG-TRAIN-003
+    - STRONG-TRAIN-004
+    - ML-TRAIN-001
+    - ML-TRAIN-002
+    - ML-TRAIN-003
 - completion_date: '2025-12-30'
   id: q1-1
   name: LLM Foundation - Core Interfaces

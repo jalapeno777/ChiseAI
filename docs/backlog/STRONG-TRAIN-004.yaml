@@ -1,0 +1,24 @@
+id: STRONG-TRAIN-004
+title: Hypothesis Generation Training
+status: backlog
+priority: P1
+owner: TBD
+story_points: 2
+created_date: '2026-03-18'
+description: |
+  Train LLM-based hypothesis generation models with structured output.
+  This will enable the system to automatically generate testable hypotheses
+  from observations and domain knowledge.
+acceptance_criteria:
+  - Fine-tuning pipeline for hypothesis generation
+  - Template learning for structured output
+  - Validation metrics for hypothesis quality
+  - Generation quality evaluation
+  - Integration with STRONG hypothesis generator
+  - Model versioning and deployment
+notes:
+  - Build on STRONG-003-A (LLM Hypothesis Generator)
+  - Consider using smaller, efficient models
+  - Validate hypotheses against ground truth
+epic: STRONG-TRAINING
+sprint: SPRINT-2026-03-31
