@@ -1,17 +1,66 @@
 {
   "story_id": "AUTOCOG-TIER2-002",
-  "status": "completed",
-  "completed_date": "2026-03-18",
-  "merge_commit": "6c0bfbd4",
+  "title": "Self-Directed Story Proposal Generator",
+  "merge_commit": "d11c588f2d9b32032004ad860392949b910acd8f",
+  "merge_date": "2026-03-18T21:53:47Z",
+  "branch_merged": "feature/AUTOCOG-TIER2-002-proposal-generator",
+  "git_branch_contains_verification": {
+    "command": "git branch --contains d11c588f2d9b32032004ad860392949b910acd8f",
+    "output": "* main",
+    "verified": true
+  },
   "test_results": {
-    "total": 38,
+    "test_file": "tests/test_autonomous_cognition/test_proposals.py",
+    "total_tests": 38,
     "passed": 38,
     "failed": 0,
-    "pass_rate": "100%"
+    "pass_rate": "100%",
+    "test_execution_time": "1.19s",
+    "warnings": 71
   },
   "files_changed": [
-    "src/autonomous_cognition/opportunity_detection.py",
-    "src/autonomous_cognition/proposal_generator.py",
-    "tests/test_autonomous_cognition/test_proposals.py"
+    {
+      "file": "src/autonomous_cognition/opportunity_detection.py",
+      "status": "created",
+      "lines_added": 1025
+    },
+    {
+      "file": "src/autonomous_cognition/proposal_generator.py",
+      "status": "created",
+      "lines_added": 685
+    },
+    {
+      "file": "tests/test_autonomous_cognition/test_opportunities.py",
+      "status": "created",
+      "lines_added": 930
+    },
+    {
+      "file": "tests/test_autonomous_cognition/test_proposals.py",
+      "status": "created",
+      "lines_added": 698
+    }
+  ],
+  "total_lines_added": 3338,
+  "workflow_status_updated": {
+    "file": "docs/bmm-workflow-status.yaml",
+    "status": "completed",
+    "merge_commit_updated": "d11c588f2d9b32032004ad860392949b910acd8f",
+    "test_results_added": {
+      "total_tests": 38,
+      "passed": 38,
+      "failed": 0,
+      "pass_rate": "100%"
+    }
+  },
+  "description": "Implemented AUTOCOG-TIER2-002 Self-Directed Story Proposal Generator with opportunity detection and proposal generation capabilities. Includes StoryProposal data model, ProposalScorer for ranking proposals, ProposalGenerator for generating proposals from opportunities, and comprehensive test coverage.",
+  "components": [
+    "StoryProposal - Data model for story proposals with metadata",
+    "ProposalScorer - Scoring engine for ranking proposals by priority",
+    "ProposalGenerator - Generator for creating proposals from opportunities",
+    "Opportunity detection integration",
+    "Comprehensive test suite with 38 tests"
+  ],
+  "evidence_files": [
+    "docs/evidence/AUTOCOG-TIER2-002-completion-evidence.json"
   ]
 }
