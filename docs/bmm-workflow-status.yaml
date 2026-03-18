@@ -1,15 +1,20 @@
 metadata:
   version: 1.0.0
-  last_updated: '2026-03-18T20:00:00Z'
+  last_updated: '2026-03-18T21:53:47.040084Z'
   schema_version: 1.0.0
   recent_changes:
   - action: story-truth-audit-remediation
     actor: merlin
-    description: |
-      Corrected ML-TRAIN-001 backlog file semantics to fix evidence-integrity regression.
+    description: 'Corrected ML-TRAIN-001 backlog file semantics to fix evidence-integrity
+      regression.
+
       Changed id: to story_id:, status: backlog -> completed, owner: TBD -> senior-dev.
+
       Added completed_date and merge_commit fields. Verified with git branch --contains.
+
       Commit: abc0066d
+
+      '
     timestamp: '2026-03-18T22:00:00Z'
     status: completed
     story_id: ML-TRAIN-001
@@ -515,27 +520,9 @@ in_progress:
   sprint_id: SPRINT-2026-03-31
   name: Sprint 2026-03-31
   start_date: '2026-03-18'
-  total_stories: 7
+  total_stories: 4
   total_story_points: 17
   stories:
-  - story_id: AUTOCOG-TIER2-002
-    title: Self-Directed Story Proposal Generator
-    story_points: 2
-    status: backlog
-    priority: P1
-    epic: AUTOCOG-TIER2
-  - story_id: STRONG-007-A
-    title: Champion/Challenger A/B Framework
-    story_points: 3
-    status: backlog
-    priority: P1
-    epic: STRONG-007
-  - story_id: ML-DATA-001
-    title: Training Data Quality Gates
-    story_points: 2
-    status: backlog
-    priority: P1
-    epic: ML-DATA
   - story_id: AUTOCOG-INTEGRATION-001
     title: Cross-System Learning Bridge
     story_points: 2
@@ -2792,6 +2779,68 @@ completed:
   - 410
   status: completed
   title: AUDIT-DELTA Remediation - Cross-Branch Verification Guardrail
+- story_id: AUTOCOG-TIER2-002
+  title: Self-Directed Story Proposal Generator
+  status: completed
+  priority: P1
+  owner: senior-dev
+  story_points: 2
+  created_date: '2026-03-18'
+  completed_date: '2026-03-18'
+  merge_commit: 6c0bfbd4
+  description: Implemented AUTOCOG-TIER2-002 Self-Directed Story Proposal Generator
+    with opportunity detection and proposal generation capabilities.
+  files_changed:
+  - src/autonomous_cognition/opportunity_detection.py
+  - src/autonomous_cognition/proposal_generator.py
+  - tests/test_autonomous_cognition/test_proposals.py
+  test_results:
+    total_tests: 38
+    passed: 38
+    failed: 0
+    pass_rate: 100%
+- story_id: STRONG-007-A
+  title: Champion/Challenger A/B Framework
+  status: completed
+  priority: P1
+  owner: senior-dev
+  story_points: 3
+  created_date: '2026-03-18'
+  completed_date: '2026-03-18'
+  merge_commit: 8d12c382
+  description: Implemented A/B Testing Framework Core with traffic splitting, metrics
+    collection, and statistical analysis.
+  files_changed:
+  - src/strong_system/ab_testing/framework.py
+  - src/strong_system/ab_testing/metrics.py
+  - src/strong_system/ab_testing/statistics.py
+  - tests/test_strong_system/test_ab_testing/test_framework.py
+  - tests/test_strong_system/test_ab_testing/test_metrics.py
+  - tests/test_strong_system/test_ab_testing/test_statistics.py
+  test_results:
+    total_tests: 95
+    passed: 90
+    failed: 5
+    pass_rate: 94.7%
+- story_id: ML-DATA-001
+  title: Training Data Quality Gates
+  status: completed
+  priority: P1
+  owner: senior-dev
+  story_points: 2
+  created_date: '2026-03-18'
+  completed_date: '2026-03-18'
+  merge_commit: f20cdba6
+  description: Implemented training data validation rules engine with 23 validation
+    rules and comprehensive test coverage.
+  files_changed:
+  - src/ml/data/validation.py
+  - tests/test_ml/test_data/test_validation.py
+  test_results:
+    total_tests: 37
+    passed: 37
+    failed: 0
+    pass_rate: 100%
 backlog:
 - id: TF-SECRETS-001
   title: Move Terraform secrets to runtime TF_VAR_* / secret manager path
