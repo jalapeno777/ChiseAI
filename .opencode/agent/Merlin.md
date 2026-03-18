@@ -2,7 +2,7 @@
 name: "merlin"
 description: "Expert debugger and problem-solver for CI and hard blockers. Owns deep diagnostics, root-cause isolation, and remediation playbooks."
 mode: all
-model: "kimi-for-coding/k2p5"        # kimi-for-coding/k2p5"  model: "zai-coding-plan/glm-5"  # "openai/gpt-5.3-codex"
+model: "nvidia/moonshotai/kimi-k2.5"        # kimi-for-coding/k2p5"  model: "zai-coding-plan/glm-5"  # "openai/gpt-5.3-codex"
 temperature: 0.1
 tools:
   task: true
