@@ -1,0 +1,191 @@
+# Training Backlog Dependencies
+# Generated: 2026-03-18
+# Sprint: SPRINT-2026-03-31
+
+metadata:
+  sprint_id: SPRINT-2026-03-31
+  total_stories: 10
+  total_story_points: 25
+  generated_date: '2026-03-18'
+  generated_by: REPO-001
+
+stories:
+  AUTOCOG-TRAIN-001:
+    id: AUTOCOG-TRAIN-001
+    title: Autonomous Cognition Training Data Pipeline
+    story_points: 3
+    priority: P1
+    dependencies:
+      - AUTOCOG-QDRANT-001
+      - AUTOCOG-QDRANT-002
+    dependent_stories:
+      - AUTOCOG-TRAIN-002
+      - AUTOCOG-TRAIN-003
+    epic: AUTOCOG-TRAINING
+
+  AUTOCOG-TRAIN-002:
+    id: AUTOCOG-TRAIN-002
+    title: Meta-Learning Training Loop
+    story_points: 2
+    priority: P1
+    dependencies:
+      - AUTOCOG-TRAIN-001
+      - STRONG-005-A
+    dependent_stories: []
+    epic: AUTOCOG-TRAINING
+
+  AUTOCOG-TRAIN-003:
+    id: AUTOCOG-TRAIN-003
+    title: Constitution Learning Dataset
+    story_points: 3
+    priority: P1
+    dependencies:
+      - AUTOCOG-TRAIN-001
+      - AUTOCOG-POLICY-001
+    dependent_stories: []
+    epic: AUTOCOG-TRAINING
+
+  STRONG-TRAIN-001:
+    id: STRONG-TRAIN-001
+    title: Neural Belief Embedding Training
+    story_points: 3
+    priority: P1
+    dependencies:
+      - STRONG-002-A
+      - STRONG-002-A-S2
+    dependent_stories:
+      - STRONG-TRAIN-002
+    epic: STRONG-TRAINING
+
+  STRONG-TRAIN-002:
+    id: STRONG-TRAIN-002
+    title: Symbolic Rule Learning Pipeline
+    story_points: 2
+    priority: P1
+    dependencies:
+      - STRONG-TRAIN-001
+      - STRONG-004-A
+    dependent_stories: []
+    epic: STRONG-TRAINING
+
+  STRONG-TRAIN-003:
+    id: STRONG-TRAIN-003
+    title: Program Synthesis Training Data
+    story_points: 3
+    priority: P1
+    dependencies:
+      - STRONG-006-A
+    dependent_stories:
+      - STRONG-TRAIN-004
+    epic: STRONG-TRAINING
+
+  STRONG-TRAIN-004:
+    id: STRONG-TRAIN-004
+    title: Hypothesis Generation Training
+    story_points: 2
+    priority: P1
+    dependencies:
+      - STRONG-TRAIN-003
+      - STRONG-003-A
+    dependent_stories: []
+    epic: STRONG-TRAINING
+
+  ML-TRAIN-001:
+    id: ML-TRAIN-001
+    title: Model Registry Training Artifacts
+    story_points: 2
+    priority: P1
+    dependencies:
+      - ST-MODEL-REG-001
+      - ST-MODEL-REG-002
+    dependent_stories:
+      - ML-TRAIN-002
+      - ML-TRAIN-003
+    epic: ML-TRAINING
+
+  ML-TRAIN-002:
+    id: ML-TRAIN-002
+    title: Distributed Training Coordinator
+    story_points: 3
+    priority: P1
+    dependencies:
+      - ML-TRAIN-001
+    dependent_stories: []
+    epic: ML-TRAINING
+
+  ML-TRAIN-003:
+    id: ML-TRAIN-003
+    title: Training Metrics Pipeline
+    story_points: 2
+    priority: P1
+    dependencies:
+      - ML-TRAIN-001
+      - AUTOCOG-OBS-001
+    dependent_stories: []
+    epic: ML-TRAINING
+
+execution_groups:
+  parallel_group_1:
+    name: Foundation Layer
+    description: Initial stories that can start in parallel
+    stories:
+      - AUTOCOG-TRAIN-001
+      - STRONG-TRAIN-001
+      - STRONG-TRAIN-003
+      - ML-TRAIN-001
+    story_points: 11
+    start_criteria: Dependencies from previous sprints complete
+
+  parallel_group_2:
+    name: Build Layer
+    description: Stories that depend on Foundation Layer
+    stories:
+      - AUTOCOG-TRAIN-002
+      - AUTOCOG-TRAIN-003
+      - STRONG-TRAIN-002
+      - STRONG-TRAIN-004
+      - ML-TRAIN-002
+      - ML-TRAIN-003
+    story_points: 14
+    start_criteria: Foundation Layer stories complete
+
+critical_path:
+  description: Longest dependency chain determining minimum sprint duration
+  path:
+    - id: STRONG-TRAIN-003
+      story_points: 3
+    - id: STRONG-TRAIN-004
+      story_points: 2
+  total_points: 5
+  risk_factors:
+    - STRONG-006-A dependency must be stable
+    - Training data quality affects downstream stories
+
+epic_summary:
+  AUTOCOG-TRAINING:
+    name: Autonomous Cognition Training
+    stories:
+      - AUTOCOG-TRAIN-001
+      - AUTOCOG-TRAIN-002
+      - AUTOCOG-TRAIN-003
+    total_points: 8
+    focus_area: Data pipelines and meta-learning for autonomous cognition
+
+  STRONG-TRAINING:
+    name: Strong AI Training
+    stories:
+      - STRONG-TRAIN-001
+      - STRONG-TRAIN-002
+      - STRONG-TRAIN-003
+      - STRONG-TRAIN-004
+    total_points: 10
+    focus_area: Belief embeddings, symbolic rules, program synthesis, and hypothesis generation
+
+  ML-TRAINING:
+    name: ML Infrastructure Training
+    stories:
+      - ML-TRAIN-001
+      - ML-TRAIN-002
+      - ML-TRAIN-003
+    total_points: 7
+    focus_area: Model registry, distributed training, and metrics pipeline

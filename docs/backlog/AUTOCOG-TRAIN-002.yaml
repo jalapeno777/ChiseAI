@@ -1,0 +1,24 @@
+id: AUTOCOG-TRAIN-002
+title: Meta-Learning Training Loop
+status: backlog
+priority: P1
+owner: TBD
+story_points: 2
+created_date: '2026-03-18'
+description: |
+  Implement meta-learning training loop for few-shot adaptation of cognition policies.
+  This will enable the system to quickly adapt to new tasks with minimal examples,
+  improving autonomy and reducing manual configuration.
+acceptance_criteria:
+  - Task sampler working with diverse task distribution
+  - MAML-style updates functional
+  - Learning rate adaptation implemented
+  - Performance tracking metrics
+  - Integration with existing training pipeline
+  - Tests demonstrating few-shot adaptation
+notes:
+  - Build on top of STRONG-005-A (Meta-Learning System)
+  - Consider curriculum learning strategies
+  - Monitor for overfitting on meta-training tasks
+epic: AUTOCOG-TRAINING
+sprint: SPRINT-2026-03-31

@@ -1,0 +1,24 @@
+id: ML-TRAIN-003
+title: Training Metrics Pipeline
+status: backlog
+priority: P1
+owner: TBD
+story_points: 2
+created_date: '2026-03-18'
+description: |
+  Create real-time metrics pipeline for training jobs with Grafana integration.
+  This will provide visibility into training progress, performance, and issues
+  through dashboards and alerting.
+acceptance_criteria:
+  - Metrics collection from training jobs
+  - InfluxDB export with proper schema
+  - Grafana dashboard panels for training metrics
+  - Alerting rules for training anomalies
+  - Integration with existing monitoring stack
+  - Documentation for metric interpretation
+notes:
+  - Leverage existing Grafana/InfluxDB infrastructure
+  - Consider training-specific metrics (loss curves, gradients, etc.)
+  - Alert on training divergence or failures
+epic: ML-TRAINING
+sprint: SPRINT-2026-03-31

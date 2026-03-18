@@ -1,0 +1,24 @@
+id: STRONG-TRAIN-003
+title: Program Synthesis Training Data
+status: backlog
+priority: P1
+owner: TBD
+story_points: 3
+created_date: '2026-03-18'
+description: |
+  Create training data and curriculum for neural program synthesis models.
+  This involves generating diverse DSL examples with varying difficulty levels
+  to train models that can synthesize programs from specifications.
+acceptance_criteria:
+  - DSL examples generated across multiple domains
+  - Difficulty progression defined and validated
+  - Training pairs (specification, program) validated
+  - Coverage metrics for example distribution
+  - Data augmentation pipeline for diversity
+  - Dataset versioning and documentation
+notes:
+  - Build on STRONG-006-A (Program Synthesis System)
+  - Consider hierarchical difficulty levels
+  - Ensure examples cover edge cases
+epic: STRONG-TRAINING
+sprint: SPRINT-2026-03-31
