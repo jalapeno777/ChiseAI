@@ -21,14 +21,6 @@ from autonomous_cognition.validation import (
 
 
 @pytest.fixture
-def event_loop():
-    """Create an instance of the default event loop for each test case."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest.fixture
 def sample_action():
     """Create a sample action for testing."""
     return Action(

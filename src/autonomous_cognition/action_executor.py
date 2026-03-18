@@ -16,6 +16,7 @@ import contextlib
 import logging
 import time
 import uuid
+from collections import deque
 from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
 from enum import Enum, auto
@@ -204,7 +205,7 @@ class ActionExecutor:
         self._semaphore = asyncio.Semaphore(max_concurrent)
         self._running = False
         self._worker_task: asyncio.Task[None] | None = None
-        self._audit_logs: list[dict[str, Any]] = []
+        self._audit_logs: deque[dict[str, Any]] = deque(maxlen=10000)
 
     def register_handler(
         self,
@@ -311,11 +312,33 @@ class ActionExecutor:
                             error=str(result),
                         )
                     )
-                else:
+                elif isinstance(result, ActionOutcome):
                     outcomes.append(result)
+                else:
+                    # Handle unexpected type
+                    outcomes.append(
+                        ActionOutcome(
+                            action_id=str(uuid.uuid4()),
+                            status=ActionStatus.FAILED,
+                            error=f"Unexpected result type: {type(result)}",
+                        )
+                    )
             return outcomes
         else:
-            return await asyncio.gather(*tasks)
+            results = await asyncio.gather(*tasks)
+            # Results should all be ActionOutcome when not continuing on error
+            return [
+                (
+                    r
+                    if isinstance(r, ActionOutcome)
+                    else ActionOutcome(
+                        action_id=str(uuid.uuid4()),
+                        status=ActionStatus.FAILED,
+                        error=f"Unexpected result type: {type(r)}",
+                    )
+                )
+                for r in results
+            ]
 
     def _start_worker(self) -> None:
         """Start the worker task if not running."""
@@ -327,19 +350,36 @@ class ActionExecutor:
     async def _worker_loop(self) -> None:
         """Main worker loop processing actions from queue."""
         while self._running:
+            prioritized = await self._queue.get()
+            outcome: ActionOutcome | None = None
             try:
-                prioritized = await self._queue.get()
                 async with self._semaphore:
                     outcome = await self._execute_single(
                         prioritized.action,
                         prioritized.action_id,
                     )
-                    prioritized.future.set_result(outcome)
             except asyncio.CancelledError:
+                # Create failure outcome for cancelled actions
+                outcome = ActionOutcome(
+                    action_id=prioritized.action_id,
+                    status=ActionStatus.CANCELLED,
+                    error="Action cancelled due to executor shutdown",
+                )
+                prioritized.future.set_result(outcome)
                 break
             except Exception as e:
                 logger.exception("Error in worker loop: %s", e)
+                # Create failure outcome for unexpected errors
+                outcome = ActionOutcome(
+                    action_id=prioritized.action_id,
+                    status=ActionStatus.FAILED,
+                    error=f"Worker loop error: {str(e)}",
+                )
                 await asyncio.sleep(0.1)
+            finally:
+                # Always set the future result if not already set
+                if outcome and not prioritized.future.done():
+                    prioritized.future.set_result(outcome)
 
     async def _execute_single(self, action: Action, action_id: str) -> ActionOutcome:
         """Execute a single action with full lifecycle.
@@ -358,101 +398,107 @@ class ActionExecutor:
 
         logger.info("Starting execution of action %s: %s", action_id, action.name)
 
-        # Phase 1: Validation
-        if action.require_validation:
-            validation_start = time.time()
-            validation_result = await self._validate_action(action, action_id)
-            validation_time = (time.time() - validation_start) * 1000
+        try:
+            # Phase 1: Validation
+            if action.require_validation:
+                validation_start = time.time()
+                validation_result = await self._validate_action(action, action_id)
+                validation_time = (time.time() - validation_start) * 1000
 
-            if not validation_result.valid:
-                outcome = ActionOutcome(
-                    action_id=action_id,
-                    status=ActionStatus.FAILED,
-                    error=f"Validation failed: {validation_result.error}",
-                    validation_time_ms=validation_time,
-                )
-                await self._log_audit(action, action_id, outcome)
-                return outcome
+                if not validation_result.valid:
+                    outcome = ActionOutcome(
+                        action_id=action_id,
+                        status=ActionStatus.FAILED,
+                        error=f"Validation failed: {validation_result.error}",
+                        validation_time_ms=validation_time,
+                    )
+                    await self._log_audit(action, action_id, outcome)
+                    return outcome
 
-        # Phase 2: Create snapshot for rollback
-        snapshot: ActionSnapshot | None = None
-        if action.enable_rollback:
-            snapshot = await self._rollback_manager.create_snapshot(action, action_id)
-
-        # Phase 3: Execute with retries
-        last_error = ""
-        for attempt in range(action.max_retries + 1):
-            execution_start = time.time()
-            try:
-                result = await self._execute_with_timeout(action, action_id)
-                execution_time = (time.time() - execution_start) * 1000
-
-                outcome = ActionOutcome(
-                    action_id=action_id,
-                    status=ActionStatus.SUCCEEDED,
-                    result=result,
-                    execution_time_ms=execution_time,
-                    validation_time_ms=validation_time,
-                )
-                await self._log_audit(action, action_id, outcome)
-
-                total_time = (time.time() - start_time) * 1000
-                logger.info(
-                    "Action %s completed successfully in %.2fms "
-                    "(validation: %.2fms, execution: %.2fms)",
-                    action_id,
-                    total_time,
-                    validation_time,
-                    execution_time,
+            # Phase 2: Create snapshot for rollback
+            snapshot: ActionSnapshot | None = None
+            if action.enable_rollback:
+                snapshot = await self._rollback_manager.create_snapshot(
+                    action, action_id
                 )
 
-                return outcome
+            # Phase 3: Execute with retries
+            last_error = ""
+            for attempt in range(action.max_retries + 1):
+                execution_start = time.time()
+                try:
+                    result = await self._execute_with_timeout(action, action_id)
+                    execution_time = (time.time() - execution_start) * 1000
 
-            except TimeoutError:
-                execution_time = (time.time() - execution_start) * 1000
-                last_error = f"Timeout after {action.timeout_seconds}s"
-                logger.warning(
-                    "Action %s timed out (attempt %d)", action_id, attempt + 1
-                )
+                    outcome = ActionOutcome(
+                        action_id=action_id,
+                        status=ActionStatus.SUCCEEDED,
+                        result=result,
+                        execution_time_ms=execution_time,
+                        validation_time_ms=validation_time,
+                    )
+                    await self._log_audit(action, action_id, outcome)
 
-            except Exception as e:
-                execution_time = (time.time() - execution_start) * 1000
-                last_error = str(e)
-                logger.exception(
-                    "Action %s failed (attempt %d): %s",
-                    action_id,
-                    attempt + 1,
-                    e,
-                )
+                    total_time = (time.time() - start_time) * 1000
+                    logger.info(
+                        "Action %s completed successfully in %.2fms "
+                        "(validation: %.2fms, execution: %.2fms)",
+                        action_id,
+                        total_time,
+                        validation_time,
+                        execution_time,
+                    )
 
-            # Retry delay (except on last attempt)
-            if attempt < action.max_retries:
-                await asyncio.sleep(action.retry_delay_seconds)
+                    return outcome
 
-        # All retries exhausted
-        outcome = ActionOutcome(
-            action_id=action_id,
-            status=ActionStatus.FAILED,
-            error=last_error,
-            execution_time_ms=execution_time,
-            validation_time_ms=validation_time,
-        )
+                except TimeoutError:
+                    execution_time = (time.time() - execution_start) * 1000
+                    last_error = f"Timeout after {action.timeout_seconds}s"
+                    logger.warning(
+                        "Action %s timed out (attempt %d)", action_id, attempt + 1
+                    )
 
-        # Phase 4: Rollback if enabled
-        if action.enable_rollback and snapshot:
-            rollback_start = time.time()
-            rollback_success = await self._rollback_manager.rollback(snapshot)
-            rollback_time = (time.time() - rollback_start) * 1000
+                except Exception as e:
+                    execution_time = (time.time() - execution_start) * 1000
+                    last_error = str(e)
+                    logger.exception(
+                        "Action %s failed (attempt %d): %s",
+                        action_id,
+                        attempt + 1,
+                        e,
+                    )
 
-            if rollback_success:
-                outcome.status = ActionStatus.ROLLED_BACK
-                outcome.rollback_time_ms = rollback_time
-                logger.info("Action %s rolled back successfully", action_id)
-            else:
-                logger.error("Action %s rollback failed", action_id)
+                # Retry delay (except on last attempt)
+                if attempt < action.max_retries:
+                    await asyncio.sleep(action.retry_delay_seconds)
 
-        await self._log_audit(action, action_id, outcome)
-        return outcome
+            # All retries exhausted
+            outcome = ActionOutcome(
+                action_id=action_id,
+                status=ActionStatus.FAILED,
+                error=last_error,
+                execution_time_ms=execution_time,
+                validation_time_ms=validation_time,
+            )
+
+            # Phase 4: Rollback if enabled
+            if action.enable_rollback and snapshot:
+                rollback_start = time.time()
+                rollback_success = await self._rollback_manager.rollback(snapshot)
+                rollback_time = (time.time() - rollback_start) * 1000
+
+                if rollback_success:
+                    outcome.status = ActionStatus.ROLLED_BACK
+                    outcome.rollback_time_ms = rollback_time
+                    logger.info("Action %s rolled back successfully", action_id)
+                else:
+                    logger.error("Action %s rollback failed", action_id)
+
+            await self._log_audit(action, action_id, outcome)
+            return outcome
+        finally:
+            # Always release the concurrent slot
+            self._validator.release_concurrent_slot()
 
     async def _validate_action(
         self,
@@ -548,7 +594,7 @@ class ActionExecutor:
             "error": outcome.error if outcome.failed else None,
         }
 
-        self._audit_logs.append(audit_entry)
+        self._audit_logs.append(audit_entry)  # type: ignore[arg-type]
         logger.debug("Audit log entry created for action %s", action_id)
 
     def get_audit_logs(
@@ -567,7 +613,7 @@ class ActionExecutor:
         Returns:
             List of audit log entries
         """
-        logs = self._audit_logs
+        logs: list[dict[str, Any]] = list(self._audit_logs)
 
         if action_type:
             logs = [log for log in logs if log["action_type"] == action_type]

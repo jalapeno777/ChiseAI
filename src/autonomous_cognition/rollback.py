@@ -6,6 +6,7 @@ snapshotting and rollback execution with compensation action support.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 import uuid
@@ -380,8 +381,6 @@ class RollbackManager:
         )
 
         if callable(handler):
-            import asyncio
-
             if asyncio.iscoroutinefunction(handler):
                 await handler(snapshot.state)
             else:
@@ -450,8 +449,6 @@ class RollbackManager:
         Args:
             seconds: Delay duration
         """
-        import asyncio
-
         await asyncio.sleep(seconds)
 
     def get_snapshot(self, snapshot_id: str) -> ActionSnapshot | None:
