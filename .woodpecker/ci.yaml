@@ -19,6 +19,7 @@
 #   - docs-pairing: Documentation pairing validation
 #   - docker-governance: Docker container governance
 #   - changed-lines-coverage: Coverage on changed lines (>80%)
+#   - deprecation-gate: Deprecation warning validation (TECH-001-B)
 #   - status-write-gate: Workflow status file validation
 #   - performance-gate: Performance threshold validation
 #   - evidence-gate: Per-story evidence file validation (TECH-002-B)
@@ -455,6 +456,33 @@ steps:
         code=$?
         cat "$${CI_STATUS_DIR}/changed-lines-coverage.log"
         echo "$code" > "$${CI_STATUS_DIR}/changed-lines-coverage.status"
+        exit 0
+
+  # TECH-001-B: Deprecation Warning Validation Gate
+  # This stage validates that no new deprecation warnings are introduced.
+  # It runs after tests and before merge, failing the build if new warnings are found.
+  deprecation-gate:
+    image: python:3.11
+    depends_on:
+      - local-ci
+    environment:
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
+      DEPRECATION_BASELINE_PATH: "docs/baselines/deprecation-baseline.json"
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p "$${CI_STATUS_DIR}"
+        set +e
+        (
+          set -euo pipefail
+          echo "deprecation-gate: Running deprecation warning validation"
+          python3 scripts/ci/deprecation_gate_runner.py --verbose
+        ) > "$${CI_STATUS_DIR}/deprecation-gate.log" 2>&1
+        code=$?
+        cat "$${CI_STATUS_DIR}/deprecation-gate.log"
+        echo "$code" > "$${CI_STATUS_DIR}/deprecation-gate.status"
+        # RATIONALE: Exit 0 ensures pipeline continues to ci-gate.
+        # The ci-gate step reads deprecation-gate.status and fails if non-zero.
         exit 0
 
   pipeline-watchdog:
@@ -1029,6 +1057,7 @@ steps:
       - workflow-transition-gate
       - governance-drift-check
       - changed-lines-coverage
+      - deprecation-gate
       - performance-gate
       - truth-gate
       - evidence-gate

@@ -38,6 +38,7 @@ FAST_REQUIRED = [
     "docs-pairing.status",
     "docker-governance.status",
     "changed-lines-coverage.status",
+    "deprecation-gate.status",  # TECH-001-B: Deprecation warning validation
     "status-write-gate.status",
     "performance-gate.status",  # PHASE 3: Performance threshold validation
     "evidence-gate.status",  # TECH-002-B: Per-story evidence validation
