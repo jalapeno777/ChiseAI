@@ -78,6 +78,13 @@ When assigned by Jarvis, perform this exact sequence:
 - Prune both local and remote obsolete non-`main` branches after verification.
 - Never delete a branch with unique, unmerged commits unless an equivalent commit set is confirmed in a merged branch.
 
+5. Post-merge sync + status sweep (required)
+- After each merge attempt (success or failure), run Woodpecker status sweep and classify pending/running/error/failure pipelines.
+- For successful merges, confirm commit containment then sync local `main`:
+  - `git branch --contains <head_sha>`
+  - `git switch main && git fetch origin --prune && git pull --ff-only origin main`
+- Report unresolved/pending PRs back to Jarvis before starting the next batch.
+
 ## Mandatory output contract
 Return all of:
 - `root_cause`: concise technical cause
