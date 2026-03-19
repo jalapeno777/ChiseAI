@@ -262,3 +262,93 @@ LESSON
 - evidence_ref: SPRINT-2026-03-31-batch3-closeout, git verification of commits 2044a655 and ff44c978
 - added_utc: 2026-03-18T21:53:47Z
 ```
+
+```text
+LESSON
+- id: LESSON-20260319-001
+- context: SWARM-HARDEN-001 evidence-validation hardening
+- trigger: Workers claimed test results for nonexistent files (phantom completion claims)
+- actionable_rule: Use evidence_validator.py with machine-checkable proof (git show --name-only, git branch --contains) before accepting any completion claim
+- applies_to:
+  - quickdev
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: Zero phantom completion claims; all claims backed by machine-verifiable evidence
+- evidence_ref: docs/evidence/PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI.md, SWARM-HARDEN-001 iterlog
+- added_utc: 2026-03-19T20:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260319-002
+- context: SWARM-HARDEN-001 CI pipeline naming
+- trigger: CI step named 'evidence-validation' only checked file existence, misleading name
+- actionable_rule: CI step names must match actual intent; rename misleading steps (e.g., 'evidence-validation' -> 'file-existence-check' when only checking file presence)
+- applies_to:
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: CI step names accurately describe what they validate
+- evidence_ref: SWARM-HARDEN-001 CI pipeline changes, .woodpecker/ci.yaml
+- added_utc: 2026-03-19T20:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260319-003
+- context: SWARM-HARDEN-001 lease management
+- trigger: Non-atomic lease renewal allowed concurrent lease holders (TOCTOU race condition)
+- actionable_rule: Use Lua atomic EVAL for lease operations; never check-then-set for distributed locks
+- applies_to:
+  - dev
+  - senior-dev
+  - merlin
+- expected_outcome: No concurrent lease holders; atomic lease operations guaranteed
+- evidence_ref: SWARM-HARDEN-001 lease fix, scripts/swarm/session.py
+- added_utc: 2026-03-19T20:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260319-004
+- context: SWARM-HARDEN-001 session management
+- trigger: Long-running Jarvis sessions accumulate context debt across scope transitions
+- actionable_rule: Start fresh sessions per scope transition; close old session before starting new scope work
+- applies_to:
+  - jarvis
+  - aria
+- expected_outcome: Clean context per scope; no accumulated context debt
+- evidence_ref: SWARM-HARDEN-001 session management changes
+- added_utc: 2026-03-19T20:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260319-005
+- context: SWARM-HARDEN-001 formatter issues
+- trigger: Prettier SyntaxError on complex YAML (bmm-workflow-status.yaml)
+- actionable_rule: Add complex YAML files to .prettierignore; use yamllint instead of prettier for YAML validation
+- applies_to:
+  - quickdev
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: No Prettier crashes on complex YAML; yamllint used for YAML validation
+- evidence_ref: .prettierignore, SWARM-HARDEN-001 formatter guardrail task
+- added_utc: 2026-03-19T20:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260319-006
+- context: SWARM-HARDEN-001 critic review quality
+- trigger: Initial critic reviews found issues in nonexistent files rather than actual changed files
+- actionable_rule: Critic must review actual changed files from the diff, not assumed files; verify file existence before review
+- applies_to:
+  - critic
+  - jarvis
+- expected_outcome: Critic reviews match actual changes; no phantom file reviews
+- evidence_ref: SWARM-HARDEN-001 critic findings, remediation rounds
+- added_utc: 2026-03-19T20:00:00Z
+```
