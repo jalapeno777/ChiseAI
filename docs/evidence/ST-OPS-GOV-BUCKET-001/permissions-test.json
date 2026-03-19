@@ -1,0 +1,25 @@
+{
+  "story_id": "ST-OPS-GOV-BUCKET-001",
+  "bucket_name": "governance",
+  "organization": "chiseai",
+  "permissions_tested": [
+    {
+      "test": "write_access",
+      "token_description": "Grafana Dashboard Token",
+      "command": "influx write -b governance -o chiseai",
+      "result": "PASS",
+      "details": "Successfully wrote test measurement to governance bucket"
+    },
+    {
+      "test": "read_access",
+      "token_description": "Grafana Dashboard Token",
+      "command": "influx query 'from(bucket: \"governance\")'",
+      "result": "PASS",
+      "details": "Successfully queried test measurement from governance bucket"
+    }
+  ],
+  "verified_at": "2026-03-17T13:47:23Z",
+  "status": "verified",
+  "evidence_type": "permissions_test",
+  "result": "PASS"
+}

@@ -1,0 +1,41 @@
+# Live Validation Log - ST-OPS-GOV-BUCKET-001
+# Generated: 2026-03-17T13:47:23Z
+
+## Step 1: List Buckets
+Command: docker exec chiseai-influxdb influx bucket list -o chiseai
+Output:
+ID                      Name            Retention       Shard group duration    Organization ID         Schema Type
+a9f74705901631ea        _monitoring     168h0m0s        24h0m0s                 a05570ccb051076f        implicit
+faca19c4b4d47a1b        _tasks          72h0m0s         24h0m0s                 a05570ccb051076f        implicit
+5363c8bf37453dfb        chiseai         infinite        168h0m0s                a05570ccb051076f        implicit
+df5a0119afbc03db        governance      168h0m0s        24h0m0s                 a05570ccb051076f        implicit
+
+Result: PASS - governance bucket found
+
+## Step 2: Verify Retention Policy
+Expected: 7 days (168 hours)
+Actual: 168h0m0s
+Result: PASS - retention policy matches expected 7 days
+
+## Step 3: Test Write Access
+Command: docker exec chiseai-influxdb influx write -b governance -o chiseai -t <token> "test_measurement,host=test value=1.0"
+Output: (no error)
+Result: PASS - write successful
+
+## Step 4: Test Read Access
+Command: docker exec chiseai-influxdb influx query -o chiseai -t <token> 'from(bucket: "governance") |> range(start: -1h)'
+Output:
+Result: _result
+Table: keys: [_start, _stop, _field, _measurement, host]
+_start:time             _stop:time              _field:string   _measurement:string     host:string     _time:time                      _value:float
+------------------------------ ------------------------------ ---------------------- ---------------------- ---------------------- ------------------------------ ----------------------------
+2026-03-17T12:47:23.548147815Z 2026-03-17T13:47:23.548147815Z value   test_measurement test    2026-03-17T13:47:12.809731785Z  1
+
+Result: PASS - read successful, data retrieved
+
+## Summary
+All validation steps PASSED.
+- Bucket exists: YES
+- Retention policy: 7 days (168h)
+- Write access: VERIFIED
+- Read access: VERIFIED

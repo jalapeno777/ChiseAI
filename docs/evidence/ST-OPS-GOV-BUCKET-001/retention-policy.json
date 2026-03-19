@@ -1,0 +1,15 @@
+{
+  "story_id": "ST-OPS-GOV-BUCKET-001",
+  "bucket_name": "governance",
+  "organization": "chiseai",
+  "retention_policy": {
+    "configured": "7d",
+    "actual": "168h0m0s",
+    "shard_group_duration": "24h0m0s"
+  },
+  "verified_at": "2026-03-17T13:47:23Z",
+  "status": "configured",
+  "evidence_type": "retention_policy",
+  "verification_command": "docker exec chiseai-influxdb influx bucket list -o chiseai",
+  "result": "PASS"
+}
