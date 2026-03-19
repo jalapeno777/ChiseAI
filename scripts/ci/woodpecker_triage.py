@@ -23,9 +23,16 @@ from typing import Any
 from urllib.parse import urlencode, urlparse, urlunparse
 from urllib.request import Request, urlopen
 
-# Add src to path for config imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
-from config.bootstrap import bootstrap
+# Allow direct script execution from any worktree by exposing repo root + src.
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+for _path in (str(_REPO_ROOT), str(_REPO_ROOT / "src")):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
+
+try:
+    from config.bootstrap import bootstrap
+except ModuleNotFoundError:
+    from src.config.bootstrap import bootstrap
 
 DEFAULT_BASE_URL = "http://host.docker.internal:8012"
 DEFAULT_OUT_DIR = Path("_bmad-output/ci/woodpecker")
