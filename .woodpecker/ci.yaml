@@ -1103,28 +1103,3 @@ steps:
         set -euo pipefail
         pip install --no-cache-dir requests
         python scripts/ci/ci_gate.py
-
-  pr-automerge:
-    image: python:3.11
-    depends_on:
-      - ci-gate
-    when:
-      - event: pull_request
-    environment:
-      GITEA_TOKEN:
-        from_secret: gitea_token
-      GITEA_BASE_URL: "http://host.docker.internal:3000"
-      GITEA_OWNER: "craig"
-      GITEA_REPO: "ChiseAI"
-      CHISE_AUTOPR_BASE: "main"
-      CHISE_AUTOPR_SOURCE_BRANCH: "${CI_COMMIT_SOURCE_BRANCH}"
-    commands:
-      - |
-        set -euo pipefail
-        if [ -z "${CHISE_AUTOPR_SOURCE_BRANCH:-}" ]; then
-          echo "pr-automerge: CI_COMMIT_SOURCE_BRANCH is empty; skipping merge attempt"
-          exit 0
-        fi
-        pip install --no-cache-dir requests
-        echo "pr-automerge: checking PR for source branch ${CHISE_AUTOPR_SOURCE_BRANCH}"
-        python3 scripts/pr_lifecycle/auto_pr_merge.py automerge --enable-automerge
