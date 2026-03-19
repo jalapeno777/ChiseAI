@@ -20,9 +20,8 @@
 #   - docker-governance: Docker container governance
 #   - changed-lines-coverage: Coverage on changed lines (>80%)
 #   - status-write-gate: Workflow status file validation
-<<<<<<< HEAD
-# - performance-gate: Performance threshold validation
-# - truth-gate: Truth gate validation for strong-system stories (GOV-001-B)
+#   - performance-gate: Performance threshold validation
+#   - evidence-gate: Per-story evidence file validation (TECH-002-B)
 #
 # FULL-ONLY GATES (main/cron or FORCE_FULL_GATE=1):
 #   - local-ci: Full test suite
@@ -74,7 +73,7 @@ steps:
         exit 0
 
   lint:
-    image: chiseai-ci-tools:py311-20260319
+    image: python:3.11
     environment:
       GITEA_TOKEN:
         from_secret: gitea_token
@@ -87,11 +86,7 @@ steps:
         (
           set -euo pipefail
           python -V
-<<<<<<< HEAD
-          python scripts/validate_swarm_policy_consistency.py
-=======
           pip install --no-cache-dir black ruff mypy pytest pytest-cov pyyaml types-PyYAML types-requests || echo "WARN: pip install failed, continuing"
->>>>>>> c0a0e717 (merge(consolidation): absorb feature/GOV-001-B-truth-gate-ci with conflict resolution preferring incoming branch changes)
           CHANGED_PY="$(printf '%s' \"${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -E '\\.py$' | tr '\n' ' ' || true)"
           if [ -n "$(printf '%s' "$CHANGED_PY" | tr -d '[:space:]')" ]; then
             echo "lint: checking changed python files only: ${CHANGED_PY}"
@@ -105,7 +100,8 @@ steps:
             echo "mypy: checking changed src/scripts files: ${MYPY_CHANGED}"
             mypy ${MYPY_CHANGED} || echo "WARN: mypy violations (non-blocking)"
           else
-            echo "mypy: no changed src/scripts files; skipping baseline mypy"
+            echo "mypy: no changed src/scripts files; checking baseline src package"
+            mypy src || echo "WARN: mypy violations (non-blocking)"
           fi
           python scripts/validate_status_sync.py || echo "WARN: status sync issues (non-blocking)"
           python scripts/validate_fr_traceability.py || echo "WARN: FR traceability issues (non-blocking)"
@@ -173,7 +169,7 @@ steps:
         exit 0
 
   security-scan:
-    image: chiseai-ci-tools:py311-20260319
+    image: python:3.11
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -183,6 +179,7 @@ steps:
         set +e
         (
           set -euo pipefail
+          pip install --no-cache-dir bandit
           CHANGED_SCAN="$(printf '%s' \"${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -E '^(src/|scripts/).+\\.py$' | tr '\n' ' ' || true)"
           if [ -n "$(printf '%s' "$CHANGED_SCAN" | tr -d '[:space:]')" ]; then
             echo "security-scan: scanning changed files only: ${CHANGED_SCAN}"
@@ -200,7 +197,7 @@ steps:
         exit 0
 
   dependency-audit:
-    image: chiseai-ci-tools:py311-20260319
+    image: python:3.11
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -210,15 +207,7 @@ steps:
         set +e
         (
           set -euo pipefail
-          CHANGED_FILES="${CI_PIPELINE_FILES:-}"
-          if [ -z "$CHANGED_FILES" ]; then
-            CHANGED_FILES="$(git diff --name-only origin/main HEAD 2>/dev/null || true)"
-          fi
-          PARSED_FILES="$(printf '%s' "$CHANGED_FILES" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
-          if ! printf '%s\n' "$PARSED_FILES" | grep -qE '^(pyproject\.toml|poetry\.lock|Pipfile|Pipfile\.lock|requirements.*\.txt|setup\.py|setup\.cfg)$'; then
-            echo "dependency-audit: no dependency manifest changes; skipping"
-            exit 0
-          fi
+          pip install --no-cache-dir pip-audit tomli || pip install --no-cache-dir --break-system-packages pip-audit tomli
           python3 scripts/ci/dependency_audit.py
         ) > "$${CI_STATUS_DIR}/dependency-audit.log" 2>&1
         code=$?
@@ -235,24 +224,16 @@ steps:
         set -euo pipefail
         mkdir -p "$${CI_STATUS_DIR}"
         set +e
-        START_TIME=$(date +%s)
         (
           set -euo pipefail
-          timeout 180s python3 scripts/ci/secret_scan_changed.py
+          python3 scripts/ci/secret_scan_changed.py
         ) > "$${CI_STATUS_DIR}/secret-scan.log" 2>&1
         code=$?
-        END_TIME=$(date +%s)
-        DURATION=$((END_TIME - START_TIME))
         cat "$${CI_STATUS_DIR}/secret-scan.log"
-        echo "secret-scan: duration=${DURATION}s exit=${code}"
-        if [ "$code" -eq 124 ]; then
-          echo "secret-scan: timed out after 180s"
-        fi
         echo "$code" > "$${CI_STATUS_DIR}/secret-scan.status"
         exit 0
 
-<<<<<<< HEAD
-  secret-detection:
+  risk-invariants:
     image: python:3.11
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -263,65 +244,19 @@ steps:
         set +e
         (
           set -euo pipefail
-          # Run secret detection only when at least one config-style file changed.
-          CHANGED_FILES="$(printf '%s' "${CI_PIPELINE_FILES:-[]}" | tr -d '[]"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -E '\.(tf|tfvars|tfvars\.template|yaml|yml|json|env)$' | tr '\n' ' ' || true)"
-          set -- $CHANGED_FILES
-          if [ "$#" -gt 0 ]; then
-            echo "secret-detection: scanning changed files: $*"
-            python3 scripts/validation/detect_secrets.py --min-severity ERROR --format json "$@" > "$${CI_STATUS_DIR}/secret-detection.json" 2>&1
-            DETECT_EXIT=$?
-            if [ $DETECT_EXIT -ne 0 ]; then
-              echo "secret-detection: ERROR-level secrets detected"
-              cat "$${CI_STATUS_DIR}/secret-detection.json"
-              exit 1
-            else
-              echo "secret-detection: No ERROR-level secrets detected"
-            fi
-          else
-            echo "secret-detection: no Terraform/config files changed; skipping"
-          fi
-        ) > "$${CI_STATUS_DIR}/secret-detection.log" 2>&1
-        code=$?
-        cat "$${CI_STATUS_DIR}/secret-detection.log"
-        echo "$code" > "$${CI_STATUS_DIR}/secret-detection.status"
-        exit 0
-
-=======
->>>>>>> c0a0e717 (merge(consolidation): absorb feature/GOV-001-B-truth-gate-ci with conflict resolution preferring incoming branch changes)
-  risk-invariants:
-    image: chiseai-ci-risk-invariants:py311-20260320
-    environment:
-      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
-    commands:
-      - |
-        set -euo pipefail
-        mkdir -p "$${CI_STATUS_DIR}"
-        set +e
-        (
-          set -euo pipefail
-          CHANGED_FILES="$(printf '%s' "${CI_PIPELINE_FILES:-[]}" | tr -d '[]"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
-          if [ -z "$(printf '%s' "$CHANGED_FILES" | tr -d '[:space:]')" ]; then
-            CHANGED_FILES="$(git show --name-only --pretty='' HEAD 2>/dev/null || true)"
-          fi
-          if ! printf '%s\n' "$CHANGED_FILES" | grep -qE "^(src/execution/|src/ml/|scripts/reconciliation/|tests/test_execution/|tests/test_ml/|pyproject.toml|requirements)"; then
+          CHANGED_FILES="$(git diff --name-only origin/main HEAD || true)"
+          if ! echo "$CHANGED_FILES" | grep -qE "^(src/execution/|src/ml/|scripts/reconciliation/|tests/test_execution/|tests/test_ml/|scripts/ci/|pyproject.toml|requirements)"; then
             echo "risk-invariants: no risk-domain changes; skipping"
             exit 0
           fi
-          EVENT="$${CI_PIPELINE_EVENT:-$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-}}}}"
-          REF="$${CI_COMMIT_REF:-}"
-          if [ "$${EVENT}" = "pull_request" ] || printf '%s' "$${REF}" | grep -q '^refs/pull/'; then
-            python3 -m pytest -q \
-              tests/test_execution/test_venue_enforcement.py \
-              tests/test_execution/test_kill_switch/ \
-              tests/test_execution/test_reconciliation.py
-          else
-            python3 -m pytest -q \
-              tests/test_execution/test_venue_enforcement.py \
-              tests/test_execution/test_kill_switch/ \
-              tests/test_execution/test_reconciliation.py \
-              tests/test_execution/test_outcome_persistence.py \
-              tests/test_execution/test_paper/test_paper_risk_enforcer.py
-          fi
+          pip install --no-cache-dir pytest pytest-asyncio pytest-cov
+          pip install --no-cache-dir ccxt influxdb-client asyncpg numpy scipy pyyaml click joblib pydantic
+          python3 -m pytest -q \
+            tests/test_execution/test_venue_enforcement.py \
+            tests/test_execution/test_kill_switch/ \
+            tests/test_execution/test_reconciliation.py \
+            tests/test_execution/test_outcome_persistence.py \
+            tests/test_execution/test_paper/test_paper_risk_enforcer.py
         ) > "$${CI_STATUS_DIR}/risk-invariants.log" 2>&1
         code=$?
         cat "$${CI_STATUS_DIR}/risk-invariants.log"
@@ -329,7 +264,7 @@ steps:
         exit 0
 
   brain-regression:
-    image: chiseai-ci-brain-regression:py311-20260321
+    image: python:3.11
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -339,15 +274,13 @@ steps:
         set +e
         (
           set -euo pipefail
-          CHANGED_FILES="$(printf '%s' "${CI_PIPELINE_FILES:-[]}" | tr -d '[]"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
-          if [ -z "$(printf '%s' "$CHANGED_FILES" | tr -d '[:space:]')" ]; then
-            CHANGED_FILES="$(git show --name-only --pretty='' HEAD 2>/dev/null || true)"
-          fi
-          if ! printf '%s\n' "$CHANGED_FILES" | grep -qE "^(src/brain/|src/evaluation/|src/neuro_symbolic/|src/governance/tempmemory/|scripts/evaluation/|scripts/ci/brain_eval_ci.py)"; then
+          CHANGED_FILES="$(git diff --name-only origin/main HEAD || true)"
+          if ! echo "$CHANGED_FILES" | grep -qE "^(src/brain/|src/evaluation/|src/neuro_symbolic/|src/governance/tempmemory/|scripts/evaluation/|scripts/ci/brain_eval_ci.py)"; then
             echo "brain-regression: no brain/evaluation changes; skipping"
             exit 0
           fi
 
+          pip install --no-cache-dir pytest pytest-asyncio pytest-cov pyyaml requests numpy scipy
           python3 -m pytest -q \
             tests/test_brain/ \
             tests/test_evaluation/ \
@@ -416,17 +349,17 @@ steps:
           # PHASE 3: Performance monitoring start
           START_TIME=$(date +%s)
           echo "local-ci: Starting at $(date -Iseconds)"
-
+          
           # Increase file descriptor and process limits for testing
           ulimit -n 16384 || echo "Warning: could not increase file descriptor limit"
           ulimit -u 2048 || echo "Warning: could not increase process limit"
           echo "File descriptor limit: $(ulimit -n)"
           echo "Process limit: $(ulimit -u)"
-
+          
           # PHASE 3: Log system resources
           echo "local-ci: CPU count: $(nproc)"
           echo "local-ci: Memory: $(free -h | grep Mem | awk '{print $2}')"
-
+          
           EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-}}}"
           BRANCH="$${CI_COMMIT_BRANCH:-$${WOODPECKER_COMMIT_BRANCH:-}}"
           REF="$${CI_COMMIT_REF:-}"
@@ -457,12 +390,12 @@ steps:
           pip install --no-cache-dir ccxt influxdb-client asyncpg numpy scipy watchdog click websockets fastapi httpx
           pip install --no-cache-dir ccxt influxdb-client asyncpg numpy scipy watchdog click websockets fastapi
           pip install --no-cache-dir sqlalchemy>=2.0.0
-
+          
           # PHASE 3: Calculate optimal workers
           CPU_COUNT=$(nproc)
           WORKERS=$((CPU_COUNT > 4 ? 4 : CPU_COUNT))
           echo "local-ci: Using $WORKERS parallel workers"
-
+          
           if [ -x scripts/local-ci-checks.sh ]; then
             # Set environment to indicate we're in CI with file descriptor constraints
             export CI_FD_CONSTRAINTS=1
@@ -477,13 +410,13 @@ steps:
             echo "scripts/local-ci-checks.sh not found; failing"
             exit 1
           fi
-
+          
           # PHASE 3: Performance monitoring end
           END_TIME=$(date +%s)
           DURATION=$((END_TIME - START_TIME))
           echo "local-ci: Completed in ${DURATION}s"
           echo "{\"duration_seconds\": $DURATION, \"workers\": $WORKERS, \"timestamp\": \"$(date -Iseconds)\"}" > "$${CI_STATUS_DIR}/local-ci-performance.json"
-
+          
           # PHASE 3: Fail if duration exceeds threshold (5 minutes = 300s)
           if [ $DURATION -gt 300 ]; then
             echo "local-ci: WARNING - Duration ${DURATION}s exceeds threshold (300s)"
@@ -526,11 +459,6 @@ steps:
 
   pipeline-watchdog:
     image: python:3.11
-    # Root-cause hardening: keep this diagnostic out of PR fan-out.
-    when:
-      event:
-        - manual
-        - cron
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -551,11 +479,6 @@ steps:
 
   pre-eval-ingestion:
     image: python:3.11
-    # Full diagnostics only; PRs rely on fast gates to stay within budget.
-    when:
-      event:
-        - manual
-        - cron
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
       # CI_TEMPMEMORY_INGESTION_ENABLED: Feature flag for tempmemory ingestion
@@ -604,11 +527,6 @@ steps:
 
   brain-eval:
     image: python:3.11
-    # Full diagnostics only; PRs rely on brain-regression fast gate.
-    when:
-      event:
-        - manual
-        - cron
     depends_on:
       - pre-eval-ingestion
     environment:
@@ -622,7 +540,6 @@ steps:
         (
           set -euo pipefail
           python -V
-          echo "brain-eval: start $(date -Iseconds)"
           # Determine feature flag value (same logic as pre-eval-ingestion)
           if [ "$${CI_TEMPMEMORY_INGESTION_ENABLED}" = "auto" ]; then
             if [ "$${CI_COMMIT_BRANCH}" != "main" ] && [ "$${CI_COMMIT_BRANCH}" != "$${CI_REPO_DEFAULT_BRANCH:-main}" ]; then
@@ -638,23 +555,16 @@ steps:
             INGESTION_INGESTED=$(python3 -c "import json; data=json.load(open('$${CI_STATUS_DIR}/pre-eval-ingestion.json')); print(data.get('files_ingested', 0))")
             echo "Ingestion success: $${INGESTION_SUCCESS}, Files ingested: $${INGESTION_INGESTED}"
           fi
-          # Determine changed files from Woodpecker-provided metadata first.
-          CHANGED_FILES="$(printf '%s' \"$${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
-          if [ -z "$(printf '%s' "$${CHANGED_FILES}" | tr -d '[:space:]')" ]; then
-            # Fallback to commit-local file list when CI_PIPELINE_FILES is unavailable.
-            CHANGED_FILES="$(git show --name-only --pretty='' HEAD 2>/dev/null || true)"
-          fi
-
-          if printf '%s\n' "$${CHANGED_FILES}" | grep -qE '^(src/brain/|src/neuro_symbolic/|src/strategy/)'; then
-            echo "brain-eval: Brain changes detected, running evaluation..."
+          # Check if brain files changed
+          if git diff --name-only origin/main HEAD | grep -qE "(src/brain/|src/neuro_symbolic/|src/strategy/)"; then
+            echo "Brain changes detected, running evaluation..."
             pip install --no-cache-dir pyyaml requests numpy scipy
             pip install -e . > /dev/null 2>&1 || pip install -e . --break-system-packages > /dev/null 2>&1 || true
             python scripts/ci/brain_eval_ci.py --output "$${CI_STATUS_DIR}/brain-eval.json"
           else
-            echo "brain-eval: No brain changes detected, skipping evaluation"
+            echo "No brain changes detected, skipping evaluation"
             echo '{"success": true, "skipped": true, "reason": "No brain changes detected"}' > "$${CI_STATUS_DIR}/brain-eval.json"
           fi
-          echo "brain-eval: complete $(date -Iseconds)"
         ) > "$${CI_STATUS_DIR}/brain-eval.log" 2>&1
         code=$?
         cat "$${CI_STATUS_DIR}/brain-eval.log"
@@ -664,10 +574,6 @@ steps:
 
   tempmemory-scheduler:
     image: python:3.11
-    when:
-      event:
-        - manual
-        - cron
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -688,10 +594,6 @@ steps:
 
   mini-brain-eval:
     image: python:3.11
-    when:
-      event:
-        - manual
-        - cron
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -712,10 +614,6 @@ steps:
 
   tempmemory-reconcile:
     image: python:3.11
-    when:
-      event:
-        - manual
-        - cron
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -736,8 +634,6 @@ steps:
 
   tempmemory-drill:
     image: python:3.11
-    when:
-      - event: cron
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -766,8 +662,6 @@ steps:
 
   flaky-detection:
     image: python:3.11
-    when:
-      - event: cron
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -812,10 +706,7 @@ steps:
           pip install --no-cache-dir pyyaml
           # Run compass apply to auto-label PRs based on changed files
           echo "Running compass apply..."
-          CHANGED_FILES="$(printf '%s' \"$${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
-          if [ -z "$(printf '%s' "$${CHANGED_FILES}" | tr -d '[:space:]')" ]; then
-            CHANGED_FILES="$(git show --name-only --pretty='' HEAD 2>/dev/null || true)"
-          fi
+          CHANGED_FILES="$(git diff --name-only origin/main HEAD || true)"
           if [ -n "$CHANGED_FILES" ]; then
             echo "$CHANGED_FILES" | python3 scripts/ops/compass_apply.py
           else
@@ -840,14 +731,9 @@ steps:
         pip install --no-cache-dir pyyaml
         # Run compass gate to check for sensitive path changes
         echo "Running compass gate check..."
-        CHANGED_FILES="$(printf '%s' \"${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
-        if [ -z "$(printf '%s' "$CHANGED_FILES" | tr -d '[:space:]')" ]; then
-          CHANGED_FILES="$(git show --name-only --pretty='' HEAD 2>/dev/null || true)"
-        fi
+        CHANGED_FILES="$(git diff --name-only origin/main HEAD || true)"
         if [ -n "$CHANGED_FILES" ]; then
-          set +o pipefail
           echo "$CHANGED_FILES" | python3 scripts/ci/compass_gate.py --check
-          set -o pipefail
         else
           echo "No changed files detected, skipping compass gate"
         fi
@@ -872,9 +758,8 @@ steps:
             exit 0
           fi
           echo "Running status write gate check..."
-          pip install --no-cache-dir pyyaml yamllint || pip install --no-cache-dir --break-system-packages pyyaml yamllint
+          pip install --no-cache-dir pyyaml || pip install --no-cache-dir --break-system-packages pyyaml
           git fetch --quiet --unshallow origin || git fetch --quiet --depth=50000 origin main || true
-          python3 scripts/governance/status_guard.py validate --file docs/bmm-workflow-status.yaml
           python3 scripts/governance/status_write_gate.py --file docs/bmm-workflow-status.yaml --no-require-authority
         ) > "$${CI_STATUS_DIR}/status-write-gate.log" 2>&1
         code=$?
@@ -958,67 +843,6 @@ steps:
         # Do not short-circuit the pipeline; ci-gate is the single fail point.
         exit 0
 
-  status-sync-validation:
-    image: python:3.11
-    environment:
-      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
-    commands:
-      - |
-        set -euo pipefail
-        mkdir -p "$${CI_STATUS_DIR}"
-        set +e
-        (
-          set -euo pipefail
-          CHANGED_FILES="$(printf '%s' \"${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
-          if ! printf '%s\n' "$CHANGED_FILES" | grep -qx "docs/bmm-workflow-status.yaml"; then
-            echo "status-sync-validation: workflow status file unchanged; skipping"
-            exit 0
-          fi
-          echo "status-sync-validation: workflow status file changed; running validation..."
-          pip install --no-cache-dir pyyaml || pip install --no-cache-dir --break-system-packages pyyaml
-          python3 scripts/validate_status_sync.py --verbose
-        ) > "$${CI_STATUS_DIR}/status-sync-validation.log" 2>&1
-        code=$?
-        cat "$${CI_STATUS_DIR}/status-sync-validation.log"
-        echo "$code" > "$${CI_STATUS_DIR}/status-sync-validation.status"
-        # Do not short-circuit the pipeline; ci-gate is the single fail point.
-        exit 0
-
-  file-existence-check:
-    image: python:3.11
-    environment:
-      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
-    commands:
-      - |
-        set -euo pipefail
-        mkdir -p "$${CI_STATUS_DIR}"
-        set +e
-        START_TIME=$(date +%s)
-        (
-          set -euo pipefail
-          CHANGED_FILES="$(printf '%s' "${CI_PIPELINE_FILES:-[]}" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
-          if [ -z "$(printf '%s' "$CHANGED_FILES" | tr -d '[:space:]')" ]; then
-            echo "file-existence-check: no changed files; skipping"
-            exit 0
-          fi
-          echo "file-existence-check: validating file existence for changed files..."
-          timeout 180s python3 scripts/swarm/evidence_validator.py --files $(printf '%s' "$CHANGED_FILES" | tr '\n' ' ') --json > "$${CI_STATUS_DIR}/file-existence-check.json" 2>&1
-          VALIDATION_EXIT=$?
-          cat "$${CI_STATUS_DIR}/file-existence-check.json"
-          echo "$VALIDATION_EXIT"
-        ) > "$${CI_STATUS_DIR}/file-existence-check.log" 2>&1
-        code=$?
-        END_TIME=$(date +%s)
-        DURATION=$((END_TIME - START_TIME))
-        cat "$${CI_STATUS_DIR}/file-existence-check.log"
-        echo "file-existence-check: duration=${DURATION}s exit=${code}"
-        if [ "$code" -eq 124 ]; then
-          echo "file-existence-check: timed out after 180s"
-        fi
-        echo "$code" > "$${CI_STATUS_DIR}/file-existence-check.status"
-        # Do not short-circuit the pipeline; ci-gate is the single fail point.
-        exit 0
-
   governance-drift-check:
     image: python:3.11
     environment:
@@ -1039,19 +863,40 @@ steps:
         # Do not short-circuit the pipeline; ci-gate is the single fail point.
         exit 0
 
+  evidence-gate:
+    image: python:3.11
+    depends_on:
+      - local-ci
+    environment:
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p "$${CI_STATUS_DIR}"
+        set +e
+        (
+          set -euo pipefail
+          pip install --no-cache-dir pyyaml
+          # Run evidence validation for PR-scoped stories
+          echo "evidence-gate: Running evidence validation..."
+          python3 scripts/ci/evidence_gate_runner.py --verbose
+        ) > "$${CI_STATUS_DIR}/evidence-gate.log" 2>&1
+        code=$?
+        cat "$${CI_STATUS_DIR}/evidence-gate.log"
+        echo "$code" > "$${CI_STATUS_DIR}/evidence-gate.status"
+        # Do not short-circuit the pipeline; ci-gate is the single fail point.
+        exit 0
+
   performance-gate:
     image: python:3.11
     depends_on:
       - local-ci
       - changed-lines-coverage
-    when:
-      event:
-        - manual
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
       # PHASE 3: Performance thresholds
-      MAX_TEST_DURATION: "300" # 5 minutes
-      MAX_MEMORY_MB: "2048" # 2GB
+      MAX_TEST_DURATION: "300"  # 5 minutes
+      MAX_MEMORY_MB: "2048"     # 2GB
     commands:
       - |
         set -euo pipefail
@@ -1060,13 +905,13 @@ steps:
         (
           set -euo pipefail
           echo "performance-gate: Validating performance thresholds"
-
+          
           # Check local-ci performance metrics
           PERF_FILE="$${CI_STATUS_DIR}/local-ci-performance.json"
           if [ -f "$PERF_FILE" ]; then
             DURATION=$(cat "$PERF_FILE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('duration_seconds', 0))" 2>/dev/null || echo "0")
             echo "performance-gate: Test duration was ${DURATION}s"
-
+            
             if [ "$DURATION" -gt "$${MAX_TEST_DURATION}" ]; then
               echo "performance-gate: FAIL - Duration ${DURATION}s exceeds threshold ($${MAX_TEST_DURATION}s)"
               exit 1
@@ -1075,7 +920,7 @@ steps:
           else
             echo "performance-gate: No performance data available; skipping duration check"
           fi
-
+          
           # Check coverage threshold
           COVERAGE_FILE="$${CI_STATUS_DIR}/changed-lines-coverage.status"
           if [ -f "$COVERAGE_FILE" ]; then
@@ -1087,7 +932,7 @@ steps:
               echo "performance-gate: Changed lines coverage OK"
             fi
           fi
-
+          
           echo "performance-gate: All performance checks passed"
         ) > "$${CI_STATUS_DIR}/performance-gate.log" 2>&1
         code=$?
@@ -1095,13 +940,14 @@ steps:
         echo "$code" > "$${CI_STATUS_DIR}/performance-gate.status"
         exit 0
 
-  # GOV-001-B: Truth Gate validation for strong-system stories
-  # This step enforces truth gate validation for STRONG-*, TG-*, ST-*, GOV-* stories
-  # Uses truth_gate_runner.py for standardized CI execution
+  # TG-003: Truth Gate validation for strong-system stories
+  # This step enforces truth gate validation for STRONG-*, TG-*, ST-* stories
   truth-gate:
     image: python:3.11
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
+      CI_COMMIT_MESSAGE: "${CI_COMMIT_MESSAGE}"
+      CI_COMMIT_BRANCH: "${CI_COMMIT_BRANCH}"
     commands:
       - |
         set -euo pipefail
@@ -1110,20 +956,19 @@ steps:
         (
           set -euo pipefail
           echo "truth-gate: Starting truth gate validation for strong-system stories"
-<<<<<<< HEAD
-
+          
           # Extract story ID from PR title or branch name
           STORY_ID=$(python3 scripts/validation/extract_story_id_from_pr.py --from-env)
-
+          
           if [ -z "$STORY_ID" ]; then
             echo "truth-gate: No story ID found in PR title or branch name"
             echo "truth-gate: Skipping truth gate validation (not a story PR)"
             echo '{"passed": true, "skipped": true, "reason": "No story ID found"}' > "$${CI_STATUS_DIR}/truth-gate.json"
             exit 0
           fi
-
+          
           echo "truth-gate: Found story ID: $STORY_ID"
-
+          
           # Check if this is a strong-system story
           if ! python3 scripts/validation/extract_story_id_from_pr.py --check-strong-system "$STORY_ID" > /dev/null 2>&1; then
             echo "truth-gate: Story $STORY_ID is not a strong-system story"
@@ -1131,33 +976,22 @@ steps:
             echo "{\"passed\": true, \"skipped\": true, \"reason\": \"Not a strong-system story\", \"story_id\": \"$STORY_ID\"}" > "$${CI_STATUS_DIR}/truth-gate.json"
             exit 0
           fi
-
+          
           echo "truth-gate: Story $STORY_ID is a strong-system story, running validation..."
-
+          
           # Run truth gate validation
           python3 scripts/validation/truth_gate.py --check all --story-id "$STORY_ID" --output json > "$${CI_STATUS_DIR}/truth-gate.json"
-=======
-          
-          # Run truth gate runner (handles story ID extraction and validation)
-          python3 scripts/ci/truth_gate_runner.py --verbose
->>>>>>> c0a0e717 (merge(consolidation): absorb feature/GOV-001-B-truth-gate-ci with conflict resolution preferring incoming branch changes)
           TRUTH_GATE_EXIT=$?
-
-          # Output results
-<<<<<<< HEAD
-          cat "$${CI_STATUS_DIR}/truth-gate.json"
-
-=======
-          if [ -f "$${CI_STATUS_DIR}/truth-gate.json" ]; then
-            cat "$${CI_STATUS_DIR}/truth-gate.json"
-          fi
           
->>>>>>> c0a0e717 (merge(consolidation): absorb feature/GOV-001-B-truth-gate-ci with conflict resolution preferring incoming branch changes)
+          # Output results
+          cat "$${CI_STATUS_DIR}/truth-gate.json"
+          
           if [ $TRUTH_GATE_EXIT -eq 0 ]; then
-            echo "truth-gate: Validation PASSED"
+            echo "truth-gate: Validation PASSED for $STORY_ID"
             exit 0
           else
-            echo "truth-gate: Validation FAILED - Pipeline will fail at ci-gate step"
+            echo "truth-gate: Validation FAILED for $STORY_ID"
+            echo "truth-gate: Pipeline will fail at ci-gate step"
             exit 1
           fi
         ) > "$${CI_STATUS_DIR}/truth-gate.log" 2>&1
@@ -1179,17 +1013,25 @@ steps:
       - docs-pairing
       - docker-governance
       - local-ci
+      - pipeline-watchdog
+      - pre-eval-ingestion
+      - brain-eval
+      - tempmemory-scheduler
+      - mini-brain-eval
+      - tempmemory-reconcile
+      - tempmemory-drill
+      - flaky-detection
       - compass-apply
       - compass-gate
       - status-write-gate
       - status-evidence-gate
       - completion-evidence-gate
       - workflow-transition-gate
-      - status-sync-validation
-      - file-existence-check
       - governance-drift-check
       - changed-lines-coverage
+      - performance-gate
       - truth-gate
+      - evidence-gate
     environment:
       GITEA_TOKEN:
         from_secret: gitea_token

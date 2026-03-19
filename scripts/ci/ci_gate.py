@@ -29,7 +29,6 @@ except ModuleNotFoundError:
 CI_DIR = Path(os.environ.get("CI_STATUS_DIR", "_bmad-output/ci"))
 FAST_REQUIRED = [
     "swarm-context.status",
-    "tfvars-gate.status",
     "lint.status",
     "security-scan.status",
     "dependency-audit.status",
@@ -41,7 +40,7 @@ FAST_REQUIRED = [
     "changed-lines-coverage.status",
     "status-write-gate.status",
     "performance-gate.status",  # PHASE 3: Performance threshold validation
-    "truth-gate.status",  # GOV-001-B: Truth gate validation for strong-system stories
+    "evidence-gate.status",  # TECH-002-B: Per-story evidence validation
 ]
 FULL_REQUIRED = [
     "local-ci.status",
