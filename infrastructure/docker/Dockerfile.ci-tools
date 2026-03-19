@@ -1,0 +1,29 @@
+FROM python:3.11-slim
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       git \
+       jq \
+       ripgrep \
+       curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Preinstall commonly used CI tooling to avoid repeated pip install overhead.
+RUN python -m pip install --upgrade pip \
+    && pip install \
+       black \
+       ruff \
+       mypy \
+       pyyaml \
+       requests \
+       types-PyYAML \
+       types-requests \
+       bandit \
+       pip-audit \
+       tomli \
+       coverage
+
