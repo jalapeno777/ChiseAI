@@ -10,79 +10,79 @@ The ChiseAI Agent Swarm is a multi-agent system where different AI agents collab
 
 ### Core Swarm Agents
 
-| Agent | Role | Authority | Primary Responsibilities |
-|-------|------|-----------|-------------------------|
-| **Aria** | Product Manager | Planning | Story definition, PRD creation, roadmap planning |
-| **AriaRuntime** | Product Manager (Runtime) | Planning | Throughput-optimized orchestration with canonical guardrail parity |
-| **Jarvis** | Orchestrator | Coordination | Story delegation, parallel work coordination, incident management |
-| **JarvisRuntime** | Orchestrator (Runtime) | Coordination | Autonomous fast/normal/deep effort routing with strict evidence gates |
-| **Merlin** | Integration Authority | Merge | CI diagnosis, merge to main, branch cleanup, exceptional PR recovery |
-| **SeniorDev** | Senior Developer | Implementation | Complex feature implementation, architecture decisions |
-| **Dev** | Developer | Implementation | Feature implementation, bug fixes |
-| **Quickdev** | Fast Developer | Implementation | Quick fixes, documentation, simple features |
-| **QuickdevFast** | Ultra-Fast Developer | Implementation | Trivial mechanical 1SP tasks with maximum throughput |
-| **Juniordev** | Junior Developer | Implementation | Learning, simple tasks, test writing |
-| **Critic** | Quality Assurance | Review | Code review, quality gates, validation |
-| **GitReviewBot** | Automated Review | Review | Automated PR review for STANDARD path |
+| Agent             | Role                      | Authority      | Primary Responsibilities                                              |
+| ----------------- | ------------------------- | -------------- | --------------------------------------------------------------------- |
+| **Aria**          | Product Manager           | Planning       | Story definition, PRD creation, roadmap planning                      |
+| **AriaRuntime**   | Product Manager (Runtime) | Planning       | Throughput-optimized orchestration with canonical guardrail parity    |
+| **Jarvis**        | Orchestrator              | Coordination   | Story delegation, parallel work coordination, incident management     |
+| **JarvisRuntime** | Orchestrator (Runtime)    | Coordination   | Autonomous fast/normal/deep effort routing with strict evidence gates |
+| **Merlin**        | Integration Authority     | Merge          | CI diagnosis, merge to main, branch cleanup, exceptional PR recovery  |
+| **SeniorDev**     | Senior Developer          | Implementation | Complex feature implementation, architecture decisions                |
+| **Dev**           | Developer                 | Implementation | Feature implementation, bug fixes                                     |
+| **Quickdev**      | Fast Developer            | Implementation | Quick fixes, documentation, simple features                           |
+| **QuickdevFast**  | Ultra-Fast Developer      | Implementation | Trivial mechanical 1SP tasks with maximum throughput                  |
+| **Juniordev**     | Junior Developer          | Implementation | Learning, simple tasks, test writing                                  |
+| **Critic**        | Quality Assurance         | Review         | Code review, quality gates, validation                                |
+| **GitReviewBot**  | Automated Review          | Review         | Automated PR review for STANDARD path                                 |
 
 ### BMAD Framework Agents
 
-| Agent | Role | Purpose |
-|-------|------|---------|
-| **bmm-pm** | Product Manager | BMAD planning and requirements |
-| **bmm-architect** | Architect | BMAD architecture design |
-| **bmm-dev** | Developer | BMAD implementation |
-| **bmm-qa** | QA Engineer | BMAD testing and validation |
-| **bmm-analyst** | Analyst | BMAD analysis and metrics |
-| **bmm-sm** | Scrum Master | BMAD process facilitation |
-| **bmm-tech-writer** | Technical Writer | BMAD documentation |
-| **bmm-ux-designer** | UX Designer | BMAD user experience |
-| **bmm-quick-flow-solo-dev** | Solo Developer | Quick BMAD flows |
+| Agent                       | Role             | Purpose                        |
+| --------------------------- | ---------------- | ------------------------------ |
+| **bmm-pm**                  | Product Manager  | BMAD planning and requirements |
+| **bmm-architect**           | Architect        | BMAD architecture design       |
+| **bmm-dev**                 | Developer        | BMAD implementation            |
+| **bmm-qa**                  | QA Engineer      | BMAD testing and validation    |
+| **bmm-analyst**             | Analyst          | BMAD analysis and metrics      |
+| **bmm-sm**                  | Scrum Master     | BMAD process facilitation      |
+| **bmm-tech-writer**         | Technical Writer | BMAD documentation             |
+| **bmm-ux-designer**         | UX Designer      | BMAD user experience           |
+| **bmm-quick-flow-solo-dev** | Solo Developer   | Quick BMAD flows               |
 
 ### CIS (Creative Intelligence System) Agents
 
-| Agent | Role | Purpose |
-|-------|------|---------|
-| **cis-brainstorming-coach** | Brainstorming Coach | Facilitate ideation |
-| **cis-creative-problem-solver** | Problem Solver | Creative solutions |
-| **cis-design-thinking-coach** | Design Coach | Design thinking facilitation |
-| **cis-innovation-strategist** | Innovation Strategist | Strategic innovation |
-| **cis-presentation-master** | Presentation Master | Communication and presentations |
-| **cis-storyteller** | Storyteller | Narrative and storytelling |
+| Agent                           | Role                  | Purpose                         |
+| ------------------------------- | --------------------- | ------------------------------- |
+| **cis-brainstorming-coach**     | Brainstorming Coach   | Facilitate ideation             |
+| **cis-creative-problem-solver** | Problem Solver        | Creative solutions              |
+| **cis-design-thinking-coach**   | Design Coach          | Design thinking facilitation    |
+| **cis-innovation-strategist**   | Innovation Strategist | Strategic innovation            |
+| **cis-presentation-master**     | Presentation Master   | Communication and presentations |
+| **cis-storyteller**             | Storyteller           | Narrative and storytelling      |
 
 ### Specialized Agents
 
-| Agent | Role | Purpose |
-|-------|------|---------|
-| **bmad-agent-bmad-master** | BMAD Master | Expert BMAD guidance |
-| **bmad-agent-bmb-agent-builder** | Agent Builder | Build new agents |
-| **bmad-agent-bmb-module-builder** | Module Builder | Build system modules |
-| **bmad-agent-bmb-workflow-builder** | Workflow Builder | Build workflows |
-| **bmad-agent-tea-tea** | TEA Agent | Trading Execution Agent |
-| **Research** | Researcher | Research and analysis |
-| **ResearchFast** | Research Triage | Research | High-throughput first-pass source triage |
-| **WebResearch** | Web Researcher | Web-based research |
+| Agent                               | Role             | Purpose                 |
+| ----------------------------------- | ---------------- | ----------------------- | ---------------------------------------- |
+| **bmad-agent-bmad-master**          | BMAD Master      | Expert BMAD guidance    |
+| **bmad-agent-bmb-agent-builder**    | Agent Builder    | Build new agents        |
+| **bmad-agent-bmb-module-builder**   | Module Builder   | Build system modules    |
+| **bmad-agent-bmb-workflow-builder** | Workflow Builder | Build workflows         |
+| **bmad-agent-tea-tea**              | TEA Agent        | Trading Execution Agent |
+| **Research**                        | Researcher       | Research and analysis   |
+| **ResearchFast**                    | Research Triage  | Research                | High-throughput first-pass source triage |
+| **WebResearch**                     | Web Researcher   | Web-based research      |
 
 ## Agent Selection Matrix
 
 Use this matrix when `jarvis` routes work to fixed-model agents.
 
-| Work Pattern | Preferred Agent | Model |
-|-------------|------------------|-------|
-| Top-level strategy/orchestration | `aria` | `openai/gpt-5.3-codex` |
-| Top-level strategy/orchestration (runtime profile) | `aria-runtime` | `openai/gpt-5.3-codex` |
-| Critical blockers, CI deep debug, escalation terminal tier | `merlin` | `openai/gpt-5.3-codex` |
-| Orchestration planning (non-Codex default) | `jarvis` | `kimi-for-coding/kimi-k2-thinking` |
-| Orchestration planning (runtime profile) | `jarvis-runtime` | `kimi-for-coding/k2p5` |
-| 4SP+ implementation, complex refactors | `senior-dev` | `nvidia/moonshotai/kimi-k2-thinking` |
-| 2-3SP implementation | `dev` | `nvidia/moonshotai/kimi-k2.5` |
-| 1SP implementation (quality-first) | `quickdev` | `zai-coding-plan/glm-5.0-fast` |
-| Trivial 1SP mechanical throughput (fallback-only, deprecated) | `quickdev-fast` | `nvidia/minimaxai/minimax-m2.5` |
-| Adversarial review / risk challenge | `critic` | `zai-coding-plan/glm-5.0-thinking` |
-| Automated PR review decisions | `git-review-bot` | `zai-coding-plan/glm-5.0-thinking` |
-| Deep synthesis research | `research` | `nvidia/moonshotai/kimi-k2.5` |
-| First-pass high-volume source triage | `research-fast` | `nvidia/minimaxai/minimax-m2.5` |
-| Web-citation-heavy external research | `web-research` | `zai-coding-plan/glm-5` |
+| Work Pattern                                                  | Preferred Agent  | Model                              |
+| ------------------------------------------------------------- | ---------------- | ---------------------------------- |
+| Top-level strategy/orchestration                              | `aria`           | `openai/gpt-5.3-codex`             |
+| Top-level strategy/orchestration (runtime profile)            | `aria-runtime`   | `openai/gpt-5.3-codex`             |
+| Critical blockers, CI deep debug, escalation terminal tier    | `merlin`         | `openai/gpt-5.3-codex`             |
+| Orchestration planning (non-Codex default)                    | `jarvis`         | `opencode/mimo-v2-pro-free`        |
+| Orchestration planning (runtime profile)                      | `jarvis-runtime` | `opencode/mimo-v2-pro-free`        |
+| 4SP+ implementation, complex refactors                        | `senior-dev`     | `nvidia/moonshotai/kimi-k2.5`      |
+| 2-3SP implementation                                          | `dev`            | `nvidia/moonshotai/kimi-k2.5`      |
+| 1SP implementation (quality-first)                            | `quickdev`       | `zai-coding-plan/glm-5.0-fast`     |
+| Trivial 1SP mechanical throughput (fallback-only, deprecated) | `quickdev-fast`  | `nvidia/minimaxai/minimax-m2.5`    |
+| Adversarial review / risk challenge                           | `critic`         | `zai-coding-plan/glm-5.0-thinking` |
+| Automated PR review decisions                                 | `git-review-bot` | `zai-coding-plan/glm-5.0-thinking` |
+| Deep synthesis research                                       | `research`       | `nvidia/moonshotai/kimi-k2.5`      |
+| First-pass high-volume source triage                          | `research-fast`  | `opencode/mimo-v2-pro-free`        |
+| Web-citation-heavy external research                          | `web-research`   | `zai-coding-plan/glm-5.0-thinking` |
 
 ### Codex Budget Policy
 
@@ -122,7 +122,7 @@ The ChiseAI Agent Swarm uses a tiered automation pipeline for PR management:
 
 3. **COMPLEX Path** (Human Escalation)
    - Infrastructure, security, CI changes
-   - >15 files or >500 lines
+   - > 15 files or >500 lines
    - Requires human review
 
 ### Documentation
@@ -173,12 +173,14 @@ WORKER_COMPLETION_REPORT:
 ## Merge Authority
 
 ### Merlin (exclusive authority):
+
 - Open/update/close PRs
 - Merge to `main` in the autonomous PR pipeline
 - Handle emergency merge overrides and complex merges
 - Run branch cleanup
 
 ### Jarvis Orchestrates:
+
 - Delegation to workers
 - Handoff to Merlin
 - Conflict resolution
@@ -188,9 +190,11 @@ WORKER_COMPLETION_REPORT:
   - require local `main` sync (`git fetch --prune` + `git pull --ff-only`) before dependent work
 
 ### Senior-dev (conditional authority):
+
 - May run manual/non-autonomous merge attempts only when explicitly delegated by Jarvis/Aria
 
 ### Workers (All Other Agents):
+
 - Push branches
 - Handoff evidence to Jarvis
 - **Do NOT** open PRs or merge to main

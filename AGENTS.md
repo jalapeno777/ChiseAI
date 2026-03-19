@@ -577,7 +577,23 @@ These rules are additive and must be enforced consistently across `AGENTS.md` an
   - log checks performed and findings
   - acceptance criteria mapping to evidence
   - residual risk notes
+- **File existence verification**: For every file claimed as changed, worker must provide:
+  - `git show <commit> --name-only` output OR `ls -la <file_path>` with timestamp proof
+  - `git diff --stat HEAD~N` showing file changes with +/- counts
+- **Cross-branch verification**: Before claiming 'merged to main', worker must provide:
+  - `git branch --contains <commit>` output showing 'main'
 - Exceptions (for no-test tasks such as docs-only changes) require explicit no-test justification.
+
+#### File Existence Verification Requirements
+
+Every completion claim MUST include:
+
+1. **File Change Evidence**: `git diff --stat HEAD~N` showing all modified files
+2. **Commit Content Proof**: `git show <commit-sha> --name-only` proving files exist in commit
+3. **Branch Containment Proof**: `git branch --contains <commit-sha>` showing commit is on claimed branch
+4. **Cross-Branch Verification**: For merged work, `git branch --contains <commit-sha>` must show 'main'
+
+**No file-existence proof = No completion approval**
 
 ### E) Autonomous Bug-Fix Policy (Required)
 
