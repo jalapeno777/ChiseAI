@@ -982,6 +982,34 @@ steps:
         # Do not short-circuit the pipeline; ci-gate is the single fail point.
         exit 0
 
+  evidence-validation:
+    image: python:3.11
+    environment:
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p "$${CI_STATUS_DIR}"
+        set +e
+        (
+          set -euo pipefail
+          CHANGED_FILES="$(printf '%s' "${CI_PIPELINE_FILES:-[]}" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
+          if [ -z "$(printf '%s' "$CHANGED_FILES" | tr -d '[:space:]')" ]; then
+            echo "evidence-validation: no changed files; skipping"
+            exit 0
+          fi
+          echo "evidence-validation: validating evidence for changed files..."
+          python3 scripts/swarm/evidence_validator.py --files $CHANGED_FILES --json > "$${CI_STATUS_DIR}/evidence-validation.json" 2>&1
+          VALIDATION_EXIT=$?
+          cat "$${CI_STATUS_DIR}/evidence-validation.json"
+          echo "$VALIDATION_EXIT"
+        ) > "$${CI_STATUS_DIR}/evidence-validation.log" 2>&1
+        code=$?
+        cat "$${CI_STATUS_DIR}/evidence-validation.log"
+        echo "$code" > "$${CI_STATUS_DIR}/evidence-validation.status"
+        # Do not short-circuit the pipeline; ci-gate is the single fail point.
+        exit 0
+
   governance-drift-check:
     image: python:3.11
     environment:
@@ -1137,6 +1165,7 @@ steps:
       - status-evidence-gate
       - completion-evidence-gate
       - workflow-transition-gate
+      - evidence-validation
       - governance-drift-check
       - changed-lines-coverage
       - truth-gate
