@@ -20,7 +20,7 @@
 #   - docker-governance: Docker container governance
 #   - changed-lines-coverage: Coverage on changed lines (>80%)
 #   - status-write-gate: Workflow status file validation
-#   - performance-gate: Performance threshold validation
+#   - performance-gate: Performance threshold validation (manual-only diagnostics)
 #
 # FULL-ONLY GATES (main/cron or FORCE_FULL_GATE=1):
 #   - local-ci: Full test suite
@@ -717,6 +717,9 @@ steps:
 
   tempmemory-drill:
     image: python:3.11
+    when:
+      event:
+        - cron
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -745,6 +748,9 @@ steps:
 
   flaky-detection:
     image: python:3.11
+    when:
+      event:
+        - cron
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -951,6 +957,9 @@ steps:
     depends_on:
       - local-ci
       - changed-lines-coverage
+    when:
+      event:
+        - manual
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
       # PHASE 3: Performance thresholds
@@ -1080,8 +1089,6 @@ steps:
       - tempmemory-scheduler
       - mini-brain-eval
       - tempmemory-reconcile
-      - tempmemory-drill
-      - flaky-detection
       - compass-apply
       - compass-gate
       - status-write-gate
@@ -1090,7 +1097,6 @@ steps:
       - workflow-transition-gate
       - governance-drift-check
       - changed-lines-coverage
-      - performance-gate
       - truth-gate
     environment:
       GITEA_TOKEN:

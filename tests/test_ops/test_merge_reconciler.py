@@ -5,6 +5,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 MODULE_PATH = (
     Path(__file__).resolve().parents[2] / "scripts" / "ops" / "merge_reconciler.py"
 )
@@ -34,6 +36,10 @@ class FakeStore:
         if end == -1:
             return queue[start:]
         return queue[start : end + 1]
+
+    def get(self, key: str) -> str | None:
+        values = self.data.get(key, [])
+        return values[-1] if values else None
 
     def acquire_lock(
         self, key: str, owner: str, ttl_seconds: int
@@ -202,3 +208,22 @@ def test_reconcile_git_hygiene_detects_main_unsynced(monkeypatch) -> None:
     kinds = [json.loads(row)["kind"] for row in incidents]
     assert "main_unsynced" in kinds
     assert "local_branch_ahead_main" in kinds
+
+
+def test_require_merge_authority_rejects_non_merlin(monkeypatch) -> None:
+    store = FakeStore()
+    store.enqueue(merge_reconciler.MERGE_LOCK_KEY, "ST-1/merlin/2026-01-01T00:00:00Z")
+    monkeypatch.setenv("AGENT_ID", "jarvis")
+    monkeypatch.delenv("CHISE_ALLOW_NON_MERLIN_MERGE", raising=False)
+
+    with pytest.raises(RuntimeError, match="restricted to agent 'merlin'"):
+        merge_reconciler._require_merge_authority_and_lock(store, "jarvis/reconcile")
+
+
+def test_require_merge_authority_requires_lock(monkeypatch) -> None:
+    store = FakeStore()
+    monkeypatch.setenv("AGENT_ID", "merlin")
+    monkeypatch.delenv("CHISE_ALLOW_NON_MERLIN_MERGE", raising=False)
+
+    with pytest.raises(RuntimeError, match="Main merge lock is not held"):
+        merge_reconciler._require_merge_authority_and_lock(store, "merlin/queue")

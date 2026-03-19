@@ -28,7 +28,7 @@ permission:
 ## Execution Boundary
 - You may execute broad technical work (including `git` and deploy) when explicitly scoped by `aria` or `jarvis` with `BRANCH` and `WORKTREE_PATH`.
 - Before git actions, run session verification: `python3 scripts/swarm/session.py verify --story-id=<story_id> --branch=<branch> --worktree-path=<path>`.
-- You may merge to `main` after green CI and review for straightforward changes.
+- Do not run autonomous PR lifecycle operations (`open/update/close PR`, merge to `main`); hand off to `merlin`.
 - After >2 failed merge attempts, escalate to `merlin` as required merge authority.
 - Maximum 2 passes on the same blocker; if unresolved, escalate to `merlin` with full evidence.
 - Prefer safe, reversible changes; add tests when making behavior changes.

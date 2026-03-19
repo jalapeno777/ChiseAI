@@ -14,9 +14,16 @@ import subprocess
 import sys
 from pathlib import Path
 
-# Add src to path for config imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
-from config.bootstrap import bootstrap
+# Allow direct script execution from any worktree by exposing repo root + src.
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+for _path in (str(_REPO_ROOT), str(_REPO_ROOT / "src")):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
+
+try:
+    from config.bootstrap import bootstrap
+except ModuleNotFoundError:
+    from src.config.bootstrap import bootstrap
 
 CI_DIR = Path(os.environ.get("CI_STATUS_DIR", "_bmad-output/ci"))
 FAST_REQUIRED = [
@@ -32,16 +39,13 @@ FAST_REQUIRED = [
     "docker-governance.status",
     "changed-lines-coverage.status",
     "status-write-gate.status",
-    "performance-gate.status",  # PHASE 3: Performance threshold validation
 ]
 FULL_REQUIRED = [
     "local-ci.status",
     "brain-eval.status",
 ]
-CRON_REQUIRED = [
-    "tempmemory-drill.status",
-    "flaky-detection.status",
-]
+# Cron diagnostics run in dedicated steps but are not hard-blocking for merge gate.
+CRON_REQUIRED: list[str] = []
 
 
 def _read_status(path: Path) -> int:

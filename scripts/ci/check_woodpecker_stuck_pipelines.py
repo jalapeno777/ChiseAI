@@ -13,9 +13,16 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-# Add src to path for config imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
-from config.bootstrap import bootstrap
+# Allow direct script execution from any worktree by exposing repo root + src.
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+for _path in (str(_REPO_ROOT), str(_REPO_ROOT / "src")):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
+
+try:
+    from config.bootstrap import bootstrap
+except ModuleNotFoundError:
+    from src.config.bootstrap import bootstrap
 
 
 def _req_json(base_url: str, token: str, path: str) -> object:
