@@ -1,10 +1,10 @@
 ---
 name: "chise-pr-automerge"
-description: "ChiseAI: Merlin-only PR open flow with explicit merge opt-in. Uses scripts/gitea_pr_automerge.py."
+description: "ChiseAI: Merlin-only exceptional PR recovery flow (normal PR creation is push-triggered)."
 disable-model-invocation: true
 ---
 
-Use this command for Merlin-managed PR operations: open/update PR, then explicitly opt into merge to `main` after Woodpecker checks are green.
+Use this command only for exceptional Merlin-managed PR recovery operations (auto-PR outage/manual override/backfill). Normal PR creation must come from push-triggered automation in `.woodpecker/pr-auto-flow.yaml`.
 
 Prereqs:
 - Set `GITEA_TOKEN` (PAT) in env.

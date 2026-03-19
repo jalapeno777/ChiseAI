@@ -45,7 +45,7 @@ permission:
 - For any git action, require explicit `BRANCH` + `WORKTREE_PATH` and run:
   - `python3 scripts/swarm/session.py verify --story-id=<story_id> --branch=<branch> --worktree-path=<path> --check-canonical`
 - PR/merge authority: `merlin` is required after >2 failed merge attempts by senior-dev; `senior-dev` may merge straightforward PRs with green CI.
-- Non-`merlin` agents may push, but must not open/update PRs.
+- Normal PR creation is push-triggered (`.woodpecker/pr-auto-flow.yaml`). Non-`merlin` agents may push, but must not open/update PRs.
 - Treat global-lock files as high risk:
   - `.woodpecker.yml`, `scripts/`, `.opencode/agent/`, `AGENTS.md`
   - make smallest safe change and verify full gate behavior
@@ -56,8 +56,8 @@ When assigned by Jarvis, perform this exact sequence:
 1. Branch sweep and PR discovery
 - Fetch and prune remotes.
 - Identify non-`main` branches with unique commits not merged into `main`.
-- For each candidate branch, open/update PR using `scripts/gitea_pr_automerge.py --story-id ... --head <branch>`.
-  - `--story-id` must satisfy CI title-gate patterns (`ST-*`, `CH-*`, `FT-*`, `REWARD-*`, `REPO-*`, `SAFETY-*`, `BRANCH-*`, `PAPER-*`, `RECON-*`) and include at least one digit.
+- Ensure candidate branches have been pushed so push-triggered auto-PR can create/update PRs.
+- Use direct `scripts/gitea_pr_automerge.py ...` only for exceptional recovery (auto-PR outage/manual override/backfill).
 
 2. CI monitoring and diagnosis
 - Monitor Woodpecker for each PR.

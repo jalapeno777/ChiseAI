@@ -718,8 +718,7 @@ steps:
   tempmemory-drill:
     image: python:3.11
     when:
-      event:
-        - cron
+      - event: cron
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -749,8 +748,7 @@ steps:
   flaky-detection:
     image: python:3.11
     when:
-      event:
-        - cron
+      - event: cron
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:

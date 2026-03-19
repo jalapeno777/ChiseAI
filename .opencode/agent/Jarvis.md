@@ -111,12 +111,13 @@ BLOCKER_PACKET
 - Do not delegate CI fixes with only step-level labels (`lint failed`, `tests failed`); delegation must include extracted `tool`, `message`, and specific `file:line` or `rule` or `test` evidence.
 
 ## Main merge authority (required)
-- Autonomous PR lifecycle operations are Merlin-only (open/update/close PRs, merge to `main`, prune branches).
+- Normal PR creation must be push-triggered via `.woodpecker/pr-auto-flow.yaml` (feature branch push -> auto PR).
+- Autonomous merge/reconcile operations are Merlin-only (merge to `main`, prune branches, CI-failure recovery).
 - `senior-dev` may be delegated manual/non-autonomous merge attempts only with explicit authority and evidence gates.
 - `merlin` is required merge authority after >2 failed merge attempts by senior-dev.
 - See `AGENTS.md` for complete merge attempt definition and when Merlin is required.
 - Worker agents may push feature/safety branches but must not open/update PRs.
-- `jarvis` orchestrates handoff and explicitly instructs appropriate agent for PR creation, CI monitoring, merge actions, and branch pruning.
+- `jarvis` orchestrates handoff and explicitly instructs appropriate agent for CI monitoring, merge actions, and branch pruning. Direct PR API creation/update is exception-only.
 - Before handing work to `merlin`, require workers to report: story id, branch, head SHA, local CI result, status-sync result, and blockers.
 - If intentionally closing while branch is ahead of main and PR is still open (handoff), use:
   - `python3 scripts/swarm/session.py close --worktree-path=<path> --enforce-merged --allow-unmerged`
