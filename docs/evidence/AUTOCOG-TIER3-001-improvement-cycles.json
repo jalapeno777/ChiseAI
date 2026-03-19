@@ -1,0 +1,67 @@
+{
+  "story_id": "AUTOCOG-TIER3-001",
+  "title": "Controlled Autonomous Improvement Cycles",
+  "status": "implemented",
+  "timestamp": "2026-03-19T12:00:00Z",
+  "branch": "feature/AUTOCOG-TIER3-001-improvement-cycles",
+  "modules": {
+    "boundaries": {
+      "file": "src/autonomous_cognition/improvement/boundaries.py",
+      "classes": [
+        "BoundaryEnforcer",
+        "BoundaryConfig",
+        "BoundaryViolation",
+        "RiskLevel"
+      ],
+      "tests": "tests/test_autonomous_cognition/test_improvement/test_boundaries.py",
+      "test_count": 12,
+      "description": "Enforces safety boundaries: file access, scope limits, risk levels, emergency stop"
+    },
+    "escalation": {
+      "file": "src/autonomous_cognition/improvement/escalation.py",
+      "classes": [
+        "EscalationManager",
+        "EscalationEvent",
+        "EscalationType",
+        "EscalationStatus"
+      ],
+      "tests": "tests/test_autonomous_cognition/test_improvement/test_escalation.py",
+      "test_count": 9,
+      "description": "Manages escalation events, integrates with ApprovalGates for human-in-the-loop"
+    },
+    "cycles": {
+      "file": "src/autonomous_cognition/improvement/cycles.py",
+      "classes": [
+        "ImprovementCycleOrchestrator",
+        "ImprovementPhase",
+        "ImprovementProposal",
+        "CycleCheckpoint",
+        "ImprovementCycleResult"
+      ],
+      "tests": "tests/test_autonomous_cognition/test_improvement/test_cycles.py",
+      "test_count": 14,
+      "description": "Phase-based improvement cycle orchestration with checkpoint/rollback support"
+    },
+    "integration": {
+      "tests": "tests/test_autonomous_cognition/test_improvement/test_integration.py",
+      "test_count": 4,
+      "description": "Integration tests verifying components work together"
+    }
+  },
+  "total_tests": 39,
+  "design_decisions": {
+    "phase_transitions": "IDLE→ASSESSING→PROPOSING→VALIDATING→APPLYING→VERIFYING→COMPLETED/FAILED/ROLLED_BACK",
+    "boundary_enforcement": "Checks file access, scope (max files/lines), risk level, emergency stop",
+    "escalation_integration": "Uses existing ApprovalGates for human-in-the-loop on boundary violations",
+    "rollback_support": "Checkpoint at each phase boundary for resume capability",
+    "emergency_stop": "Blocks all proposals immediately when activated"
+  },
+  "acceptance_criteria": {
+    "boundary_enforcer_exists": true,
+    "escalation_manager_exists": true,
+    "cycle_orchestrator_exists": true,
+    "all_tests_passing": true,
+    "exports_wired": true,
+    "integration_tests_exist": true
+  }
+}
