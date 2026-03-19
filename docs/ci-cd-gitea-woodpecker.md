@@ -172,3 +172,5 @@ If `mypy .` fails with “There are no .py[i] files”, add a targeted `files = 
 2. Open PR in Gitea.
 3. Wait for `ci/woodpecker/pr/ci` to pass.
 4. Merge via Gitea UI or API (auto-merge bot recommended).
+
+# webhook-event-test
