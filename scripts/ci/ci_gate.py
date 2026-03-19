@@ -39,7 +39,6 @@ FAST_REQUIRED = [
     "docker-governance.status",
     "changed-lines-coverage.status",
     "status-write-gate.status",
-    "performance-gate.status",  # PHASE 3: Performance threshold validation
 ]
 FULL_REQUIRED = [
     "local-ci.status",

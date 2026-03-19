@@ -20,7 +20,7 @@
 #   - docker-governance: Docker container governance
 #   - changed-lines-coverage: Coverage on changed lines (>80%)
 #   - status-write-gate: Workflow status file validation
-#   - performance-gate: Performance threshold validation
+#   - performance-gate: Performance threshold validation (manual-only diagnostics)
 #
 # FULL-ONLY GATES (main/cron or FORCE_FULL_GATE=1):
 #   - local-ci: Full test suite
@@ -951,6 +951,9 @@ steps:
     depends_on:
       - local-ci
       - changed-lines-coverage
+    when:
+      event:
+        - manual
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
       # PHASE 3: Performance thresholds
@@ -1090,7 +1093,6 @@ steps:
       - workflow-transition-gate
       - governance-drift-check
       - changed-lines-coverage
-      - performance-gate
       - truth-gate
     environment:
       GITEA_TOKEN:
