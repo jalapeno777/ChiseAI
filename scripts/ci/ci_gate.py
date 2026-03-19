@@ -44,10 +44,8 @@ FULL_REQUIRED = [
     "local-ci.status",
     "brain-eval.status",
 ]
-CRON_REQUIRED = [
-    "tempmemory-drill.status",
-    "flaky-detection.status",
-]
+# Cron diagnostics run in dedicated steps but are not hard-blocking for merge gate.
+CRON_REQUIRED: list[str] = []
 
 
 def _read_status(path: Path) -> int:

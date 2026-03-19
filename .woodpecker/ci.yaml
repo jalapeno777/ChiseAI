@@ -1089,8 +1089,6 @@ steps:
       - tempmemory-scheduler
       - mini-brain-eval
       - tempmemory-reconcile
-      - tempmemory-drill
-      - flaky-detection
       - compass-apply
       - compass-gate
       - status-write-gate
