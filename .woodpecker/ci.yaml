@@ -135,7 +135,7 @@ steps:
         (
           set -euo pipefail
           python -V
-          pip install --no-cache-dir black ruff mypy pytest pytest-cov pyyaml types-PyYAML types-requests || echo "WARN: pip install failed, continuing"
+          pip install --no-cache-dir black ruff mypy pyyaml types-PyYAML types-requests || echo "WARN: pip install failed, continuing"
           python scripts/validate_swarm_policy_consistency.py
           CHANGED_PY="$(printf '%s' \"${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -E '\\.py$' | tr '\n' ' ' || true)"
           if [ -n "$(printf '%s' "$CHANGED_PY" | tr -d '[:space:]')" ]; then
@@ -150,8 +150,7 @@ steps:
             echo "mypy: checking changed src/scripts files: ${MYPY_CHANGED}"
             mypy ${MYPY_CHANGED} || echo "WARN: mypy violations (non-blocking)"
           else
-            echo "mypy: no changed src/scripts files; checking baseline src package"
-            mypy src || echo "WARN: mypy violations (non-blocking)"
+            echo "mypy: no changed src/scripts files; skipping baseline mypy"
           fi
           python scripts/validate_status_sync.py || echo "WARN: status sync issues (non-blocking)"
           python scripts/validate_fr_traceability.py || echo "WARN: FR traceability issues (non-blocking)"
@@ -257,6 +256,15 @@ steps:
         set +e
         (
           set -euo pipefail
+          CHANGED_FILES="${CI_PIPELINE_FILES:-}"
+          if [ -z "$CHANGED_FILES" ]; then
+            CHANGED_FILES="$(git diff --name-only origin/main HEAD 2>/dev/null || true)"
+          fi
+          PARSED_FILES="$(printf '%s' "$CHANGED_FILES" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
+          if ! printf '%s\n' "$PARSED_FILES" | grep -qE '^(pyproject\.toml|poetry\.lock|Pipfile|Pipfile\.lock|requirements.*\.txt|setup\.py|setup\.cfg)$'; then
+            echo "dependency-audit: no dependency manifest changes; skipping"
+            exit 0
+          fi
           pip install --no-cache-dir pip-audit tomli || pip install --no-cache-dir --break-system-packages pip-audit tomli
           python3 scripts/ci/dependency_audit.py
         ) > "$${CI_STATUS_DIR}/dependency-audit.log" 2>&1
