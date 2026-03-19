@@ -1012,8 +1012,6 @@ steps:
     image: python:3.11
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
-      CI_COMMIT_MESSAGE: "${CI_COMMIT_MESSAGE}"
-      CI_COMMIT_BRANCH: "${CI_COMMIT_BRANCH}"
     commands:
       - |
         set -euo pipefail
