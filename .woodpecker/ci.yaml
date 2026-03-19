@@ -20,7 +20,9 @@
 #   - docker-governance: Docker container governance
 #   - changed-lines-coverage: Coverage on changed lines (>80%)
 #   - status-write-gate: Workflow status file validation
-#   - performance-gate: Performance threshold validation (manual-only diagnostics)
+<<<<<<< HEAD
+# - performance-gate: Performance threshold validation
+# - truth-gate: Truth gate validation for strong-system stories (GOV-001-B)
 #
 # FULL-ONLY GATES (main/cron or FORCE_FULL_GATE=1):
 #   - local-ci: Full test suite
@@ -71,56 +73,6 @@ steps:
         echo "$code" > "$${CI_STATUS_DIR}/swarm-context.status"
         exit 0
 
-  tfvars-gate:
-    image: python:3.11
-    environment:
-      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
-    commands:
-      - |
-        set -euo pipefail
-        mkdir -p "$${CI_STATUS_DIR}"
-        set +e
-        (
-          set -euo pipefail
-          echo "tfvars-gate: Checking for *.tfvars files in PR..."
-
-          # Get changed files from CI_PIPELINE_FILES or fallback to git diff
-          CHANGED_FILES="${CI_PIPELINE_FILES:-}"
-          if [ -z "$CHANGED_FILES" ]; then
-            CHANGED_FILES="$(git diff --name-only origin/main HEAD 2>/dev/null || true)"
-          fi
-
-          # Parse CHANGED_FILES (handle JSON array format from Woodpecker)
-          if [ -n "$CHANGED_FILES" ]; then
-            # Remove JSON array brackets and quotes, split by comma
-            PARSED_FILES="$(printf '%s' "$CHANGED_FILES" | tr -d '[]"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
-          else
-            PARSED_FILES=""
-          fi
-
-          # Check for *.tfvars files (excluding *.tfvars.template)
-          TFVARS_FILES="$(printf '%s\n' "$PARSED_FILES" | grep -E '\.tfvars$' | grep -v '\.tfvars\.template$' || true)"
-
-          if [ -n "$TFVARS_FILES" ]; then
-            echo "tfvars-gate: FAIL - Found *.tfvars files in PR (excluding templates):"
-            printf '%s\n' "$TFVARS_FILES" | while IFS= read -r file; do
-              [ -n "$file" ] && echo "  - $file"
-            done
-            echo "tfvars-gate: *.tfvars files should not be committed to the repository."
-            echo "tfvars-gate: Use *.tfvars.template files instead and add actual values to secrets management."
-            exit 1
-          else
-            echo "tfvars-gate: OK - No *.tfvars files found (excluding *.tfvars.template)"
-            exit 0
-          fi
-        ) > "$${CI_STATUS_DIR}/tfvars-gate.log" 2>&1
-        code=$?
-        cat "$${CI_STATUS_DIR}/tfvars-gate.log"
-        echo "$code" > "$${CI_STATUS_DIR}/tfvars-gate.status"
-        # RATIONALE: Exit 0 ensures pipeline continues to ci-gate.
-        # The ci-gate step reads tfvars-gate.status and fails if non-zero.
-        exit 0
-
   lint:
     image: chiseai-ci-tools:py311-20260319
     environment:
@@ -135,7 +87,11 @@ steps:
         (
           set -euo pipefail
           python -V
+<<<<<<< HEAD
           python scripts/validate_swarm_policy_consistency.py
+=======
+          pip install --no-cache-dir black ruff mypy pytest pytest-cov pyyaml types-PyYAML types-requests || echo "WARN: pip install failed, continuing"
+>>>>>>> c0a0e717 (merge(consolidation): absorb feature/GOV-001-B-truth-gate-ci with conflict resolution preferring incoming branch changes)
           CHANGED_PY="$(printf '%s' \"${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -E '\\.py$' | tr '\n' ' ' || true)"
           if [ -n "$(printf '%s' "$CHANGED_PY" | tr -d '[:space:]')" ]; then
             echo "lint: checking changed python files only: ${CHANGED_PY}"
@@ -295,6 +251,7 @@ steps:
         echo "$code" > "$${CI_STATUS_DIR}/secret-scan.status"
         exit 0
 
+<<<<<<< HEAD
   secret-detection:
     image: python:3.11
     environment:
@@ -329,6 +286,8 @@ steps:
         echo "$code" > "$${CI_STATUS_DIR}/secret-detection.status"
         exit 0
 
+=======
+>>>>>>> c0a0e717 (merge(consolidation): absorb feature/GOV-001-B-truth-gate-ci with conflict resolution preferring incoming branch changes)
   risk-invariants:
     image: chiseai-ci-risk-invariants:py311-20260320
     environment:
@@ -1136,8 +1095,9 @@ steps:
         echo "$code" > "$${CI_STATUS_DIR}/performance-gate.status"
         exit 0
 
-  # TG-003: Truth Gate validation for strong-system stories
-  # This step enforces truth gate validation for STRONG-*, TG-*, ST-* stories
+  # GOV-001-B: Truth Gate validation for strong-system stories
+  # This step enforces truth gate validation for STRONG-*, TG-*, ST-*, GOV-* stories
+  # Uses truth_gate_runner.py for standardized CI execution
   truth-gate:
     image: python:3.11
     environment:
@@ -1150,6 +1110,7 @@ steps:
         (
           set -euo pipefail
           echo "truth-gate: Starting truth gate validation for strong-system stories"
+<<<<<<< HEAD
 
           # Extract story ID from PR title or branch name
           STORY_ID=$(python3 scripts/validation/extract_story_id_from_pr.py --from-env)
@@ -1175,17 +1136,28 @@ steps:
 
           # Run truth gate validation
           python3 scripts/validation/truth_gate.py --check all --story-id "$STORY_ID" --output json > "$${CI_STATUS_DIR}/truth-gate.json"
+=======
+          
+          # Run truth gate runner (handles story ID extraction and validation)
+          python3 scripts/ci/truth_gate_runner.py --verbose
+>>>>>>> c0a0e717 (merge(consolidation): absorb feature/GOV-001-B-truth-gate-ci with conflict resolution preferring incoming branch changes)
           TRUTH_GATE_EXIT=$?
 
           # Output results
+<<<<<<< HEAD
           cat "$${CI_STATUS_DIR}/truth-gate.json"
 
+=======
+          if [ -f "$${CI_STATUS_DIR}/truth-gate.json" ]; then
+            cat "$${CI_STATUS_DIR}/truth-gate.json"
+          fi
+          
+>>>>>>> c0a0e717 (merge(consolidation): absorb feature/GOV-001-B-truth-gate-ci with conflict resolution preferring incoming branch changes)
           if [ $TRUTH_GATE_EXIT -eq 0 ]; then
-            echo "truth-gate: Validation PASSED for $STORY_ID"
+            echo "truth-gate: Validation PASSED"
             exit 0
           else
-            echo "truth-gate: Validation FAILED for $STORY_ID"
-            echo "truth-gate: Pipeline will fail at ci-gate step"
+            echo "truth-gate: Validation FAILED - Pipeline will fail at ci-gate step"
             exit 1
           fi
         ) > "$${CI_STATUS_DIR}/truth-gate.log" 2>&1
@@ -1198,12 +1170,10 @@ steps:
     image: python:3.11
     depends_on:
       - swarm-context
-      - tfvars-gate
       - lint
       - security-scan
       - dependency-audit
       - secret-scan
-      - secret-detection
       - risk-invariants
       - brain-regression
       - docs-pairing

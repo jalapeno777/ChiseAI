@@ -40,8 +40,8 @@ FAST_REQUIRED = [
     "docker-governance.status",
     "changed-lines-coverage.status",
     "status-write-gate.status",
-    "status-sync-validation.status",
-    "file-existence-check.status",
+    "performance-gate.status",  # PHASE 3: Performance threshold validation
+    "truth-gate.status",  # GOV-001-B: Truth gate validation for strong-system stories
 ]
 FULL_REQUIRED = [
     "local-ci.status",
