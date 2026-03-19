@@ -178,3 +178,4 @@ If `mypy .` fails with “There are no .py[i] files”, add a targeted `files = 
 - webhook-stability-pass
 
 - pr-ci-gated-automerge-test
+- pr-ci-sync-trigger
