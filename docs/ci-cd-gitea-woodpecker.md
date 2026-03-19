@@ -174,3 +174,5 @@ If `mypy .` fails with “There are no .py[i] files”, add a targeted `files = 
 4. Merge via Gitea UI or API (auto-merge bot recommended).
 
 # webhook-event-test
+
+- webhook-stability-pass
