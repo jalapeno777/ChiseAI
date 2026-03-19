@@ -1,98 +1,127 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://chiseai.io/schemas/evidence-schema.json",
-  "title": "Base Evidence Schema",
-  "description": "Base schema for all ChiseAI evidence files",
+  "$id": "https://chise.ai/schemas/evidence-base.json",
+  "title": "ChiseAI Evidence Schema",
+  "description": "Base schema for all evidence files in the ChiseAI validation system. Defines the structure for capturing validation results, test outcomes, and proof artifacts.",
   "type": "object",
   "required": [
     "story_id",
     "timestamp",
-    "evidence_type",
-    "summary"
+    "validation_results",
+    "evidence_type"
   ],
+  "additionalProperties": false,
   "properties": {
     "story_id": {
       "type": "string",
-      "description": "The story identifier (e.g., ST-XXX, GOV-002-B)",
-      "pattern": "^[A-Z]+-[A-Z0-9-]+$"
+      "description": "The story ID this evidence supports. Format: XXX-YYY-N (e.g., GOV-002-A, ST-123)",
+      "pattern": "^[A-Z]+-[0-9A-Z]+-[0-9A-Z]+$|^[A-Z]+-[0-9]+$",
+      "examples": ["GOV-002-A", "ST-123", "CH-456"]
     },
     "timestamp": {
       "type": "string",
       "format": "date-time",
-      "description": "ISO 8601 timestamp when evidence was collected"
+      "description": "ISO 8601 timestamp when the evidence was generated or the event occurred",
+      "examples": ["2026-03-16T12:00:00Z", "2026-03-16T12:00:00+00:00"]
     },
     "evidence_type": {
       "type": "string",
-      "description": "Type of evidence being provided",
+      "description": "Classification of the evidence type",
       "enum": [
-        "test_results",
-        "merge_verification",
-        "performance_benchmark",
-        "architecture_design",
-        "security_audit",
-        "code_review",
-        "validation_report",
-        "incident_response",
-        "manual_verification"
+        "unit_test",
+        "integration_test",
+        "e2e_test",
+        "validation_run",
+        "audit",
+        "review",
+        "manual_verification",
+        "metrics_snapshot",
+        "kpi_report"
       ]
     },
-    "summary": {
-      "type": "string",
-      "description": "Brief description of what this evidence demonstrates",
-      "minLength": 10,
-      "maxLength": 500
-    },
-    "status": {
-      "type": "string",
-      "description": "Overall status of the evidence",
-      "enum": ["SUCCESS", "FAILURE", "PARTIAL", "PENDING", "SKIPPED"]
-    },
-    "data": {
+    "validation_results": {
       "type": "object",
-      "description": "Evidence-specific data container"
+      "description": "Container for all validation checks and their results",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "description": "Individual validation check result",
+        "required": ["passed"],
+        "properties": {
+          "passed": {
+            "type": "boolean",
+            "description": "Whether this validation check passed"
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description of what was validated"
+          },
+          "rationale": {
+            "type": "string",
+            "description": "Explanation of the validation result, especially for failures"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low", "info"],
+            "description": "Severity level of this validation check"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When this specific validation check was executed"
+          },
+          "metadata": {
+            "type": "object",
+            "description": "Additional context specific to this validation check"
+          }
+        }
+      }
+    },
+    "all_passed": {
+      "type": "boolean",
+      "description": "Whether all validation results passed (convenience field for quick checks)"
+    },
+    "agent": {
+      "type": "string",
+      "description": "Name of the agent or system that generated this evidence",
+      "examples": ["dev", "senior-dev", "aria", "jarvis", "test-runner"]
+    },
+    "environment": {
+      "type": "string",
+      "description": "Environment where validation was performed",
+      "enum": ["local", "ci", "staging", "paper", "live"]
+    },
+    "version": {
+      "type": "string",
+      "description": "Schema version for this evidence file",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "default": "1.0.0"
     },
     "metadata": {
       "type": "object",
-      "description": "Additional metadata about the evidence",
+      "description": "Additional metadata for this evidence",
       "properties": {
-        "collector": {
+        "branch": {
           "type": "string",
-          "description": "Name/ID of the agent or system that collected the evidence"
+          "description": "Git branch this evidence was generated from"
         },
-        "source": {
+        "commit": {
           "type": "string",
-          "description": "Source system or component"
+          "description": "Git commit hash"
         },
-        "version": {
-          "type": "string",
-          "description": "Schema or evidence format version"
+        "duration_ms": {
+          "type": "number",
+          "description": "Time taken to generate this evidence in milliseconds",
+          "minimum": 0
         },
         "tags": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "description": "Tags for categorization"
-        }
-      }
-    },
-    "validation": {
-      "type": "object",
-      "description": "Validation results for this evidence",
-      "properties": {
-        "validated_by": {
-          "type": "string"
-        },
-        "validated_at": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "result": {
-          "type": "string",
-          "enum": ["PASS", "FAIL", "WARNING"]
+          "description": "Tags for categorizing and searching evidence"
         }
       }
     }
-  },
-  "additionalProperties": true
+  }
 }
