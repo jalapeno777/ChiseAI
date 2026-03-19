@@ -1,0 +1,20 @@
+{
+  "story_id": "STRONG-003-B",
+  "status": "completed",
+  "merge_commit": "402114c0",
+  "test_results": {
+    "total_tests": 103,
+    "passed": 103,
+    "failed": 0,
+    "pass_rate": "100%"
+  },
+  "files_changed": [
+    "src/strong_system/constitutional/__init__.py",
+    "src/strong_system/constitutional/constraints.py",
+    "src/strong_system/constitutional/critique.py",
+    "tests/test_strong_system/test_constitutional/__init__.py",
+    "tests/test_strong_system/test_constitutional/test_constraints.py",
+    "tests/test_strong_system/test_constitutional/test_critique.py"
+  ],
+  "description": "Constitutional AI self-critique loop implementation"
+}
