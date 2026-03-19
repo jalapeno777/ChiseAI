@@ -340,6 +340,8 @@ steps:
             echo "risk-invariants: no risk-domain changes; skipping"
             exit 0
           fi
+          # Keep a lightweight fallback in case runner cache has an older ci-tools image.
+          python3 -c "import redis" >/dev/null 2>&1 || pip install --no-cache-dir redis
           python3 -m pytest -q \
             tests/test_execution/test_venue_enforcement.py \
             tests/test_execution/test_kill_switch/ \
