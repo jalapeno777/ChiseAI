@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Auto-create PRs from pushed branches and optionally auto-merge conflict-free PRs.
+"""Auto-create PRs from pushed branches and optionally configure server-side merge.
 
 Policy:
 - Auto-create PRs from non-protected branches targeting main when no open PR exists.
-- Auto-merge is disabled by default and requires explicit `--enable-automerge`.
-- Merge conflicts are skipped (never forced).
+- During ensure-prs, optionally enable server-side `merge_when_checks_succeed`.
+- Manual `automerge` subcommand remains explicit opt-in.
 """
 
 from __future__ import annotations
@@ -33,12 +33,16 @@ class Config:
     allowed_authors: set[str]
     max_branch_age_min: int
     source_branch: str
+    enable_server_automerge: bool
     dry_run: bool
 
 
 def _cfg(dry_run: bool) -> Config:
     protected_raw = os.getenv("CHISE_AUTOPR_PROTECTED_BRANCHES", "main,develop")
     authors_raw = os.getenv("CHISE_AUTOMERGE_AUTHORS", "chise-bot,craig")
+    enable_server_automerge = os.getenv(
+        "CHISE_AUTOPR_ENABLE_SERVER_AUTOMERGE", "1"
+    ).strip().lower() in {"1", "true", "yes", "on"}
     return Config(
         base_url=os.getenv("GITEA_BASE_URL", "http://host.docker.internal:3000").rstrip(
             "/"
@@ -51,6 +55,7 @@ def _cfg(dry_run: bool) -> Config:
         allowed_authors={x.strip() for x in authors_raw.split(",") if x.strip()},
         max_branch_age_min=int(os.getenv("CHISE_AUTOPR_MAX_BRANCH_AGE_MIN", "30")),
         source_branch=os.getenv("CHISE_AUTOPR_SOURCE_BRANCH", "").strip(),
+        enable_server_automerge=enable_server_automerge,
         dry_run=dry_run,
     )
 
@@ -124,6 +129,34 @@ def _any_pr_for_head(cfg: Config, head_branch: str) -> dict[str, Any] | None:
     return None
 
 
+def _enable_server_automerge(cfg: Config, pr: dict[str, Any], head_branch: str) -> bool:
+    number = pr.get("number")
+    if not number:
+        return False
+    payload = {
+        "Do": "merge",
+        "merge_when_checks_succeed": True,
+        "delete_branch_after_merge": False,
+        "head_commit_id": ((pr.get("head") or {}).get("sha") or ""),
+    }
+    if cfg.dry_run:
+        print(
+            f"[dry-run] enable merge_when_checks_succeed on PR #{number} ({head_branch})"
+        )
+        return True
+    result = _safe_req_json(
+        cfg, "POST", f"{_repo_path(cfg)}/pulls/{number}/merge", payload
+    )
+    if result is None:
+        print(
+            f"warning: unable to enable merge_when_checks_succeed for PR #{number} ({head_branch})",
+            file=sys.stderr,
+        )
+        return False
+    print(f"enabled merge_when_checks_succeed on PR #{number} ({head_branch})")
+    return True
+
+
 def ensure_prs(cfg: Config) -> int:
     created = 0
     cutoff = datetime.now(UTC) - timedelta(minutes=cfg.max_branch_age_min)
@@ -149,6 +182,11 @@ def ensure_prs(cfg: Config) -> int:
                     continue
             except ValueError:
                 pass
+        open_pr = _open_pr_for_head(cfg, name)
+        if open_pr:
+            if cfg.enable_server_automerge:
+                _enable_server_automerge(cfg, open_pr, name)
+            continue
         if _any_pr_for_head(cfg, name):
             continue
 
@@ -165,6 +203,8 @@ def ensure_prs(cfg: Config) -> int:
         result = _safe_req_json(cfg, "POST", f"{_repo_path(cfg)}/pulls", payload)
         if result and result.get("number"):
             print(f"created PR #{result['number']} for branch {name}")
+            if cfg.enable_server_automerge:
+                _enable_server_automerge(cfg, result, name)
             created += 1
     return created
 

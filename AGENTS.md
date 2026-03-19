@@ -177,7 +177,8 @@ When starting work:
 
 - Never work on `main` without explicit human approval
 - Run `git status -sb` before/after operations
-- Only `merlin` may open/update/close PRs
+- PR creation must be push-triggered via `.woodpecker/pr-auto-flow.yaml` for normal flow
+- Direct PR open/update/close actions by agents are exceptional-only (incident/manual override/recovery)
 - Use `feature/<story-id>-<slug>` branches
 - PR titles must contain a recognized story id token:
   - `ST-*`, `CH-*`, `FT-*`, `REWARD-*`, `REPO-*`, `SAFETY-*`, `BRANCH-*`, `PAPER-*`, `RECON-*` (must include a digit)
@@ -187,7 +188,7 @@ When starting work:
 - **Workers**: Push branches + handoff evidence only; workers do NOT open PRs or merge to main
 - **Jarvis**: Orchestrates handoff to Merlin; coordinates worker completion
 - **senior-dev**: May prepare integration fixes on feature branches; direct main merges require explicit non-autonomous delegation
-- **Merlin**: Autonomous PR lifecycle authority (open/update/close PRs, merge to main, branch pruning). Required merge authority after >2 failed merge attempts (see merge attempt definition below)
+- **Merlin**: Autonomous merge/reconcile authority (CI triage, merge to main, branch pruning, exceptional PR lifecycle recovery). Required merge authority after >2 failed merge attempts (see merge attempt definition below)
 
 ### Question Routing Authority (REQUIRED)
 - **Only Aria may ask Craig direct questions.**
