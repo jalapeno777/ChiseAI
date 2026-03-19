@@ -399,8 +399,8 @@ class LeaseEnforcer:
     ) -> LeaseRenewalResult:
         """Renew a lease by extending its TTL, with ownership validation.
 
-        The renewal is atomic in the sense that it checks ownership before
-        extending.  If the lease value has changed (ownership conflict), the
+        The renewal is atomic using a Lua script that checks ownership before
+        extending. If the lease value has changed (ownership conflict), the
         renewal is rejected.
 
         Args:
@@ -417,16 +417,140 @@ class LeaseEnforcer:
         now = _utc_now()
         host, port, db = self._get_redis_config()
 
-        # 1. Read current lease value
-        get_proc = _redis_cli(host, port, db, "GET", lease_key)
-        if get_proc.returncode != 0:
+        # Lua script for atomic check-and-renew operation
+        # Returns: [previous_ttl, status_code]
+        # status_code: 0=success, 1=missing, 2=conflict, 3=error
+        lua_script = """
+            local key = KEYS[1]
+            local expected_prefix = ARGV[1]
+            local new_ttl = tonumber(ARGV[2])
+
+            -- Get current value
+            local current_val = redis.call('GET', key)
+            if current_val == false then
+                return {-2, 1} -- missing
+            end
+
+            -- Check ownership
+            if string.sub(current_val, 1, string.len(expected_prefix)) ~= expected_prefix then
+                return {-2, 2} -- conflict
+            end
+
+            -- Get current TTL
+            local current_ttl = redis.call('TTL', key)
+
+            -- Set new TTL
+            local expire_ok = redis.call('EXPIRE', key, new_ttl)
+            if expire_ok == 0 then
+                return {current_ttl, 3} -- error setting TTL
+            end
+
+            return {current_ttl, 0} -- success
+        """
+
+        try:
+            # Execute Lua script atomically via redis-cli EVAL
+            eval_proc = _redis_cli(
+                host,
+                port,
+                db,
+                "EVAL",
+                lua_script,
+                "1",  # number of keys
+                lease_key,
+                expected_owner_prefix,
+                str(new_ttl_seconds),
+            )
+
+            if eval_proc.returncode != 0:
+                return LeaseRenewalResult(
+                    key=lease_key,
+                    success=False,
+                    new_ttl_seconds=None,
+                    previous_ttl_seconds=None,
+                    renewed_at=now,
+                    error=f"Redis EVAL failed: {eval_proc.stderr.strip()}",
+                )
+
+            # Parse result: [previous_ttl, status_code]
+            result_str = eval_proc.stdout.strip()
+            try:
+                # Result comes as a Redis array response like "1) \"-2\"\n2) \"1\""
+                # or "1) \"123\"\n2) \"0\""
+                lines = result_str.split("\n")
+                previous_ttl = int(lines[0].replace('1) "', "").replace('"', ""))
+                status_code = int(lines[1].replace('2) "', "").replace('"', ""))
+            except (ValueError, IndexError):
+                return LeaseRenewalResult(
+                    key=lease_key,
+                    success=False,
+                    new_ttl_seconds=None,
+                    previous_ttl_seconds=None,
+                    renewed_at=now,
+                    error=f"Invalid Lua script result: {result_str!r}",
+                )
+
+            if status_code == 1:  # missing
+                return LeaseRenewalResult(
+                    key=lease_key,
+                    success=False,
+                    new_ttl_seconds=None,
+                    previous_ttl_seconds=None,
+                    renewed_at=now,
+                    error="Lease does not exist; cannot renew a missing lease",
+                )
+            elif status_code == 2:  # conflict
+                # Get the actual value for error reporting
+                get_proc = _redis_cli(host, port, db, "GET", lease_key)
+                actual_val = get_proc.stdout.strip() if get_proc.returncode == 0 else ""
+                return LeaseRenewalResult(
+                    key=lease_key,
+                    success=False,
+                    new_ttl_seconds=None,
+                    previous_ttl_seconds=None,
+                    renewed_at=now,
+                    error=(
+                        f"Ownership conflict: lease value {actual_val!r} "
+                        f"does not match expected prefix {expected_owner_prefix!r}"
+                    ),
+                )
+            elif status_code == 3:  # error
+                return LeaseRenewalResult(
+                    key=lease_key,
+                    success=False,
+                    new_ttl_seconds=None,
+                    previous_ttl_seconds=previous_ttl if previous_ttl >= 0 else None,
+                    renewed_at=now,
+                    error="Failed to set new TTL on lease",
+                )
+            elif status_code == 0:  # success
+                return LeaseRenewalResult(
+                    key=lease_key,
+                    success=True,
+                    new_ttl_seconds=new_ttl_seconds,
+                    previous_ttl_seconds=previous_ttl if previous_ttl >= 0 else None,
+                    renewed_at=now,
+                )
+            else:
+                # Unknown status code
+                return LeaseRenewalResult(
+                    key=lease_key,
+                    success=False,
+                    new_ttl_seconds=None,
+                    previous_ttl_seconds=None,
+                    renewed_at=now,
+                    error=f"Unknown status code from Lua script: {status_code}",
+                )
+
+        except Exception as e:
+            logger.error("Redis renewal failed for %s: %s", lease_key, str(e))
             return LeaseRenewalResult(
                 key=lease_key,
                 success=False,
                 new_ttl_seconds=None,
                 previous_ttl_seconds=None,
                 renewed_at=now,
-                error=f"Redis GET failed: {get_proc.stderr.strip()}",
+                error=f"Redis renewal failed: {str(e)}",
             )
 
         current_val = get_proc.stdout.strip()

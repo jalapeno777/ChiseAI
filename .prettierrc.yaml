@@ -1,0 +1,10 @@
+tabWidth: 2
+singleQuote: false
+proseWrap: preserve
+
+overrides:
+  - files:
+      - "*.yaml"
+      - "*.yml"
+    options:
+      tabWidth: 2

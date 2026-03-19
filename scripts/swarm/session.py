@@ -603,6 +603,67 @@ def _validate_canonical_lock(args: argparse.Namespace, session: dict[str, Any]) 
         )
 
 
+def _validate_evidence_requirements(
+    args: argparse.Namespace, session: dict[str, Any]
+) -> None:
+    """Validate evidence requirements for the session."""
+    # Check if evidence validation should be enforced
+    # For now, we only enforce if the session has specific scopes or if files changed
+    worktree_path = Path(session["worktree_path"])
+
+    # Get changed files
+    try:
+        changed = _run("git", "-C", str(worktree_path), "diff", "--name-only", "HEAD")
+        changed_files = {line.strip() for line in changed.splitlines() if line.strip()}
+    except Exception:
+        print(
+            "WARN: Could not get changed files for evidence validation", file=sys.stderr
+        )
+        return
+
+    # Check if any evidence-related files changed
+    evidence_files = {
+        f
+        for f in changed_files
+        if "docs/evidence/" in f or "docs/bmm-workflow-status.yaml" in f
+    }
+
+    if not evidence_files:
+        print("- evidence-validation: No evidence-related files changed; skipping")
+        return
+
+    print(
+        f"- evidence-validation: {len(evidence_files)} evidence-related file(s) changed"
+    )
+
+    # Run evidence validation
+    try:
+        result = subprocess.run(
+            [sys.executable, "scripts/ci/evidence_gate_runner.py", "--verbose"],
+            cwd=worktree_path,
+            capture_output=True,
+            text=True,
+            timeout=300,
+            check=False,
+        )
+
+        if result.returncode == 0:
+            print("- evidence-validation: PASSED")
+        else:
+            print("- evidence-validation: FAILED", file=sys.stderr)
+            if result.stdout:
+                print(result.stdout, file=sys.stderr)
+            if result.stderr:
+                print(result.stderr, file=sys.stderr)
+            raise SessionError("Evidence validation failed")
+    except subprocess.TimeoutExpired:
+        print("WARN: Evidence validation timed out after 300s", file=sys.stderr)
+        raise SessionError("Evidence validation timeout")
+    except Exception as e:
+        print(f"WARN: Evidence validation error: {e}", file=sys.stderr)
+        raise SessionError(f"Evidence validation error: {e}")
+
+
 def cmd_verify(args: argparse.Namespace) -> int:
     requested_worktree_path = _resolve_worktree_path(args.worktree_path)
     worktree_path = requested_worktree_path
@@ -669,6 +730,8 @@ def cmd_verify(args: argparse.Namespace) -> int:
             )
 
     _validate_canonical_lock(args, session)
+
+    _validate_evidence_requirements(args, session)
 
     if args.require_main_merge_authority:
         if str(session.get("agent", "")).strip() != MERGE_AUTHORITY_AGENT:

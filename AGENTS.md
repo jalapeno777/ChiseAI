@@ -627,3 +627,13 @@ These rules are additive and must be enforced consistently across `AGENTS.md` an
 - `quickdev-fast` (and optionally `juniordev`) are soft-deprecated for default routing.
 - Default 1SP route is `quickdev`; fast agents remain fallback-only during transition.
 - Remove fast agents from default routing tables first, then fully retire after verified non-use.
+
+
+## YAML Rules
+- Treat YAML as validation-sensitive, not prose.
+- For `.yaml`, `.yml`, and markdown frontmatter, make the smallest possible change.
+- Preserve indentation, quoting style, comments, and key order unless explicitly told otherwise.
+- After editing `.yaml` or `.yml`, always run Prettier and then yamllint.
+- If a schema modeline exists, respect it and keep the file schema-valid.
+- Do not finish with known YAML parse or lint errors.
+- Prefer using `@yaml-config-editor` for YAML-heavy edits.

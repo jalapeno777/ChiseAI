@@ -40,6 +40,7 @@ FAST_REQUIRED = [
     "docker-governance.status",
     "changed-lines-coverage.status",
     "status-write-gate.status",
+    "evidence-validation.status",
 ]
 FULL_REQUIRED = [
     "local-ci.status",

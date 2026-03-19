@@ -1,5 +1,11 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "formatter": {
+    "prettier": {
+      "command": ["npx", "prettier", "--write", "$FILE"],
+      "extensions": [".yaml", ".yml", ".md", ".json"]
+    }
+  },
   "default_agent": "aria",
   "logLevel": "WARN",
   "autoupdate": true,

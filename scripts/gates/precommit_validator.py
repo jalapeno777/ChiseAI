@@ -16,7 +16,6 @@ import argparse
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Tuple
 
 
 class PrecommitValidator:
@@ -25,8 +24,8 @@ class PrecommitValidator:
     def __init__(self, verbose: bool = False, fix: bool = False):
         self.verbose = verbose
         self.fix = fix
-        self.errors: List[str] = []
-        self.warnings: List[str] = []
+        self.errors: list[str] = []
+        self.warnings: list[str] = []
 
     def log(self, message: str) -> None:
         """Log a message if verbose mode is enabled."""
@@ -34,8 +33,8 @@ class PrecommitValidator:
             print(f"[precommit] {message}")
 
     def run_command(
-        self, cmd: List[str], description: str, allow_failure: bool = False
-    ) -> Tuple[int, str, str]:
+        self, cmd: list[str], description: str, allow_failure: bool = False
+    ) -> tuple[int, str, str]:
         """Run a shell command and return exit code, stdout, stderr."""
         self.log(f"Running: {' '.join(cmd)}")
         try:
@@ -53,7 +52,7 @@ class PrecommitValidator:
             self.errors.append(f"{description} error: {e}")
             return 1, "", str(e)
 
-    def validate_black(self, files: List[str]) -> bool:
+    def validate_black(self, files: list[str]) -> bool:
         """Validate Python code formatting with black."""
         print("→ Validating code formatting (black)...")
         if not files:
@@ -70,12 +69,12 @@ class PrecommitValidator:
             print("  ✓ Black formatting OK")
             return True
         else:
-            print(f"  ✗ Black formatting issues found")
+            print("  ✗ Black formatting issues found")
             if not self.fix:
                 print("    Run with --fix to auto-format")
             return False
 
-    def validate_ruff(self, files: List[str]) -> bool:
+    def validate_ruff(self, files: list[str]) -> bool:
         """Validate Python code with ruff linter."""
         print("→ Validating code with ruff...")
         if not files:
@@ -92,10 +91,10 @@ class PrecommitValidator:
             print("  ✓ Ruff linting OK")
             return True
         else:
-            print(f"  ✗ Ruff linting issues found")
+            print("  ✗ Ruff linting issues found")
             return False
 
-    def validate_mypy(self, files: List[str]) -> bool:
+    def validate_mypy(self, files: list[str]) -> bool:
         """Validate Python type annotations with mypy."""
         print("→ Validating type annotations (mypy)...")
         if not files:
@@ -137,7 +136,7 @@ class PrecommitValidator:
             print("  ✓ Status sync OK")
             return True
         else:
-            print(f"  ⚠ Status sync issues (non-blocking)")
+            print("  ⚠ Status sync issues (non-blocking)")
             self.warnings.append("status-sync: sync issues found")
             return True  # Status sync issues are warnings locally
 
@@ -155,7 +154,7 @@ class PrecommitValidator:
             print("  ✓ FR traceability OK")
             return True
         else:
-            print(f"  ⚠ FR traceability issues (non-blocking)")
+            print("  ⚠ FR traceability issues (non-blocking)")
             self.warnings.append("traceability: issues found")
             return True
 
@@ -206,7 +205,7 @@ class PrecommitValidator:
         print("  ✓ Git sanity OK")
         return True
 
-    def get_changed_files(self) -> List[str]:
+    def get_changed_files(self) -> list[str]:
         """Get list of changed Python files staged for commit."""
         # Get staged files
         exit_code, stdout, _ = self.run_command(
@@ -224,6 +223,87 @@ class PrecommitValidator:
 
         self.log(f"Found {len(py_files)} staged Python files")
         return py_files
+
+    def validate_file_existence(self) -> bool:
+        """Validate that all changed files exist (machine-checkable proof)."""
+        print("→ Validating file existence...")
+
+        # Get changed files
+        exit_code, stdout, _ = self.run_command(
+            ["git", "diff", "--cached", "--name-only", "--diff-filter=ACM"],
+            "Get staged files",
+        )
+
+        if exit_code != 0:
+            self.errors.append("Could not get changed files for existence check")
+            return False
+
+        changed_files = [f.strip() for f in stdout.split("\n") if f.strip()]
+
+        if not changed_files:
+            print(" ✓ No files changed; skipping existence check")
+            return True
+
+        missing_files = []
+        for file_path in changed_files:
+            if not Path(file_path).exists():
+                missing_files.append(file_path)
+
+        if missing_files:
+            print(f" ✗ {len(missing_files)} file(s) do not exist:")
+            for f in missing_files:
+                print(f"   - {f}")
+            self.errors.append(
+                f"file-existence: {len(missing_files)} changed file(s) do not exist"
+            )
+            return False
+
+        print(f" ✓ All {len(changed_files)} changed file(s) exist")
+        return True
+
+    def validate_evidence(self) -> bool:
+        """Validate evidence requirements for changed files."""
+        print("→ Validating evidence requirements...")
+
+        # Get changed files
+        exit_code, stdout, _ = self.run_command(
+            ["git", "diff", "--cached", "--name-only", "--diff-filter=ACM"],
+            "Get staged files",
+        )
+
+        if exit_code != 0:
+            print(" ⚠ Could not get changed files; skipping evidence validation")
+            return True
+
+        changed_files = [f.strip() for f in stdout.split("\n") if f.strip()]
+
+        # Check if any evidence-related files changed
+        evidence_files = [
+            f
+            for f in changed_files
+            if "docs/evidence/" in f or "docs/bmm-workflow-status.yaml" in f
+        ]
+
+        if not evidence_files:
+            print(" ✓ No evidence-related files changed; skipping validation")
+            return True
+
+        print(f"  Evidence-related files changed: {len(evidence_files)}")
+
+        # Run evidence validation
+        exit_code, stdout, stderr = self.run_command(
+            ["python3", "scripts/ci/evidence_gate_runner.py", "--verbose"],
+            "Evidence validation",
+            allow_failure=False,
+        )
+
+        if exit_code == 0:
+            print(" ✓ Evidence validation passed")
+            return True
+        else:
+            print(" ✗ Evidence validation failed")
+            self.errors.append("evidence-validation: evidence requirements not met")
+            return False
 
     def validate(self, skip_git_check: bool = False) -> bool:
         """Run all validations and return overall success."""
@@ -255,14 +335,25 @@ class PrecommitValidator:
             return False
 
         # Status and governance checks
+        # File existence check (machine-checkable proof)
+        file_existence_ok = self.validate_file_existence()
+
+        # Evidence validation
+        evidence_ok = self.validate_evidence()
+
         status_ok = self.validate_status_sync()
         traceability_ok = self.validate_traceability()
         swarm_policy_ok = self.validate_swarm_policy()
 
-        if not all([status_ok, traceability_ok, swarm_policy_ok]):
-            return False
-
-        return True
+        return all(
+            [
+                file_existence_ok,
+                evidence_ok,
+                status_ok,
+                traceability_ok,
+                swarm_policy_ok,
+            ]
+        )
 
     def print_summary(self) -> None:
         """Print validation summary."""
