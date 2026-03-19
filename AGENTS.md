@@ -217,6 +217,20 @@ git branch --contains <commit>
 ```
 This ensures the work is actually on main and prevents false merge claims. See `docs/evidence/PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI.md` for the incident that motivated this rule.
 
+### Post-Branch Reconcile Loop (REQUIRED)
+After each branch handoff/merge cycle, run this loop before starting the next batch:
+1. Check Woodpecker PR/pipeline state and classify all non-green pipelines (`running|pending|failure|error`).
+2. Route failed/error PRs for fixes before additional dependent work proceeds.
+3. Confirm merged branch head is contained in `main` (`git branch --contains <head_sha>`).
+4. Sync local main to origin:
+```bash
+git switch main
+git fetch origin --prune
+git pull --ff-only origin main
+git status -sb
+```
+5. Only continue new dependent development from the refreshed local `main`.
+
 ---
 
 ## Docker & Container Connectivity (CRITICAL)

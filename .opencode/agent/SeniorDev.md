@@ -33,6 +33,8 @@ permission:
 - Maximum 2 passes on the same blocker; if unresolved, escalate to `merlin` with full evidence.
 - Prefer safe, reversible changes; add tests when making behavior changes.
 - If repo workflow requires Redis/Qdrant logging, do it as you go, not at the end.
+- After push, report `branch + head_sha` to Jarvis and wait for reconcile result when follow-on work depends on merge completion.
+- Do not continue dependent implementation on stale local `main`; rebase/sync only after Jarvis confirms merge state and instructs refresh.
 
 ## Scope + Lock Contract (required)
 - Require `SCOPE_GLOBS` and `LOCKS_REQUIRED` in the task prompt; if missing, ask once before starting.

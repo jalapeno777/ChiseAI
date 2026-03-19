@@ -122,6 +122,18 @@ BLOCKER_PACKET
 - If intentionally closing while branch is ahead of main and PR is still open (handoff), use:
   - `python3 scripts/swarm/session.py close --worktree-path=<path> --enforce-merged --allow-unmerged`
 
+## Post-branch reconcile loop (required)
+After each worker branch push/PR handoff and after each merge confirmation:
+1. Run Woodpecker status sweep (pending/running/failed/error):
+   - `python3 scripts/ci/woodpecker_triage.py status --format human`
+2. For every failed/error PR pipeline, run root-cause extraction before delegating fixes:
+   - `.opencode/command/chise-ci-root-cause.md`
+3. Confirm merged commit is on `main`:
+   - `git branch --contains <head_sha>`
+4. Instruct executor to sync local `main` before further dependent work:
+   - `git switch main && git fetch origin --prune && git pull --ff-only origin main`
+5. Do not schedule dependent tasks on stale local `main`.
+
 ### Cross-Branch Verification Guardrail (REQUIRED)
 Before confirming any merge to main, verify the commit is actually on main:
 ```bash

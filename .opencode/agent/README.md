@@ -16,7 +16,7 @@ The ChiseAI Agent Swarm is a multi-agent system where different AI agents collab
 | **AriaRuntime** | Product Manager (Runtime) | Planning | Throughput-optimized orchestration with canonical guardrail parity |
 | **Jarvis** | Orchestrator | Coordination | Story delegation, parallel work coordination, incident management |
 | **JarvisRuntime** | Orchestrator (Runtime) | Coordination | Autonomous fast/normal/deep effort routing with strict evidence gates |
-| **Merlin** | Integration Authority | Merge | PR creation, merge to main, branch cleanup |
+| **Merlin** | Integration Authority | Merge | CI diagnosis, merge to main, branch cleanup, exceptional PR recovery |
 | **SeniorDev** | Senior Developer | Implementation | Complex feature implementation, architecture decisions |
 | **Dev** | Developer | Implementation | Feature implementation, bug fixes |
 | **Quickdev** | Fast Developer | Implementation | Quick fixes, documentation, simple features |
@@ -182,6 +182,10 @@ WORKER_COMPLETION_REPORT:
 - Delegation to workers
 - Handoff to Merlin
 - Conflict resolution
+- Post-branch reconcile loop:
+  - Woodpecker status sweep after each push/merge cycle
+  - route failed/error PRs for remediation
+  - require local `main` sync (`git fetch --prune` + `git pull --ff-only`) before dependent work
 
 ### Senior-dev (conditional authority):
 - May run manual/non-autonomous merge attempts only when explicitly delegated by Jarvis/Aria
