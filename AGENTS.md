@@ -186,8 +186,8 @@ When starting work:
 ### Merge Authority (Explicit Roles)
 - **Workers**: Push branches + handoff evidence only; workers do NOT open PRs or merge to main
 - **Jarvis**: Orchestrates handoff to Merlin; coordinates worker completion
-- **senior-dev**: May merge to main after green CI and review
-- **Merlin**: Required merge authority after >2 failed merge attempts (see merge attempt definition below)
+- **senior-dev**: May prepare integration fixes on feature branches; direct main merges require explicit non-autonomous delegation
+- **Merlin**: Autonomous PR lifecycle authority (open/update/close PRs, merge to main, branch pruning). Required merge authority after >2 failed merge attempts (see merge attempt definition below)
 
 ### Question Routing Authority (REQUIRED)
 - **Only Aria may ask Craig direct questions.**

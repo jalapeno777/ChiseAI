@@ -29,9 +29,11 @@ Command:
 python3 scripts/ops/merge_reconciler.py reconcile-tick \
   --owner "jarvis/reconcile" \
   --max-items 3 \
-  --required-context "ci/woodpecker/pr/ci" \
-  --allow-merge
+  --required-context "ci/woodpecker/pr/ci"
 ```
+
+Merge-enabled queue ticks are Merlin-only and must run through:
+- `.opencode/command/chise-merge-queue-tick.md`
 
 Follow-up:
 1. Check incidents:

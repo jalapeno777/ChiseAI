@@ -38,3 +38,7 @@ python3 scripts/ops/merge_reconciler.py queue-tick \
   --required-context "ci/woodpecker/pr/ci" \
   --allow-merge
 ```
+
+Runtime enforcement:
+- `AGENT_ID` must be `merlin` (unless explicit override env is set).
+- A valid Redis main-merge lock must exist at `bmad:chiseai:merge-lock:main`.

@@ -31,6 +31,7 @@ MERGE_QUEUE_KEY = "bmad:chiseai:merge-queue:main"
 INCIDENTS_KEY = "bmad:chiseai:reconcile:incidents"
 RECONCILE_LOCK_KEY = "bmad:chiseai:reconcile-lock"
 MERGE_LOCK_KEY = "bmad:chiseai:merge-lock:main"
+MERGE_AUTHORITY_AGENT = "merlin"
 
 
 def _utc_now() -> str:
@@ -125,6 +126,8 @@ class QueueStore(Protocol):
 
     def list(self, key: str, start: int = 0, end: int = -1) -> list[str]: ...
 
+    def get(self, key: str) -> str | None: ...
+
     def acquire_lock(self, key: str, owner: str, ttl_seconds: int) -> bool: ...
 
     def release_lock(self, key: str, owner: str) -> None: ...
@@ -170,6 +173,12 @@ class RedisCliStore:
     def list(self, key: str, start: int = 0, end: int = -1) -> list[str]:
         out = self._run("LRANGE", key, str(start), str(end))
         return [line for line in out.splitlines() if line.strip()]
+
+    def get(self, key: str) -> str | None:
+        out = self._run("GET", key)
+        if out == "":
+            return None
+        return out
 
     def acquire_lock(self, key: str, owner: str, ttl_seconds: int) -> bool:
         out = self._run("SET", key, owner, "NX", "EX", str(ttl_seconds))
@@ -490,6 +499,37 @@ def _env(name: str, default: str = "") -> str:
     return os.getenv(name, default).strip()
 
 
+def _require_merge_authority_and_lock(store: QueueStore, owner: str) -> None:
+    agent_id = _env("AGENT_ID", "").lower()
+    allow_non_merlin = _env("CHISE_ALLOW_NON_MERLIN_MERGE", "0") == "1"
+    if agent_id != MERGE_AUTHORITY_AGENT and not allow_non_merlin:
+        raise RuntimeError(
+            "Merge-enabled queue ticks are restricted to agent 'merlin'. "
+            "Set AGENT_ID=merlin (or CHISE_ALLOW_NON_MERLIN_MERGE=1 for explicit override)."
+        )
+
+    lock_owner = store.get(MERGE_LOCK_KEY)
+    if not lock_owner:
+        raise RuntimeError(
+            "Main merge lock is not held. Acquire it first via "
+            "scripts/swarm/session.py verify --require-main-merge-authority "
+            "--acquire-main-merge-lock."
+        )
+
+    owner_parts = lock_owner.split("/")
+    lock_agent = owner_parts[1].strip().lower() if len(owner_parts) > 1 else ""
+    if lock_agent != MERGE_AUTHORITY_AGENT and not allow_non_merlin:
+        raise RuntimeError(
+            f"Invalid main merge lock owner {lock_owner!r}: expected a merlin-owned lock."
+        )
+
+    if owner and not owner.lower().startswith(f"{MERGE_AUTHORITY_AGENT}/") and not allow_non_merlin:
+        raise RuntimeError(
+            f"Invalid queue owner {owner!r} for merge-enabled tick. "
+            f"Use owner prefix '{MERGE_AUTHORITY_AGENT}/...'."
+        )
+
+
 def _build_store_from_env() -> RedisCliStore:
     host = _env("CHISE_REDIS_HOST", _env("REDIS_HOST", "host.docker.internal"))
     port = int(_env("CHISE_REDIS_PORT", _env("REDIS_PORT", "6380")) or "6380")
@@ -544,6 +584,8 @@ def cmd_queue_status(args: argparse.Namespace) -> int:
 def cmd_queue_tick(args: argparse.Namespace) -> int:
     store = _build_store_from_env()
     gitea = _build_gitea_from_env()
+    if args.allow_merge:
+        _require_merge_authority_and_lock(store, args.owner)
     engine = MergeQueueEngine(store, gitea)
     result = engine.queue_tick(
         owner=args.owner,
@@ -560,6 +602,8 @@ def cmd_queue_tick(args: argparse.Namespace) -> int:
 def cmd_reconcile_tick(args: argparse.Namespace) -> int:
     store = _build_store_from_env()
     gitea = _build_gitea_from_env()
+    if args.allow_merge:
+        _require_merge_authority_and_lock(store, args.owner)
     engine = MergeQueueEngine(store, gitea)
     queue_result = engine.queue_tick(
         owner=args.owner,

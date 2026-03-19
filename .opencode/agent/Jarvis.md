@@ -111,7 +111,8 @@ BLOCKER_PACKET
 - Do not delegate CI fixes with only step-level labels (`lint failed`, `tests failed`); delegation must include extracted `tool`, `message`, and specific `file:line` or `rule` or `test` evidence.
 
 ## Main merge authority (required)
-- `senior-dev` may merge to `main` after green CI and review for straightforward changes.
+- Autonomous PR lifecycle operations are Merlin-only (open/update/close PRs, merge to `main`, prune branches).
+- `senior-dev` may be delegated manual/non-autonomous merge attempts only with explicit authority and evidence gates.
 - `merlin` is required merge authority after >2 failed merge attempts by senior-dev.
 - See `AGENTS.md` for complete merge attempt definition and when Merlin is required.
 - Worker agents may push feature/safety branches but must not open/update PRs.

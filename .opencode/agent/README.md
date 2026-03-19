@@ -174,7 +174,7 @@ WORKER_COMPLETION_REPORT:
 
 ### Merlin (exclusive authority):
 - Open/update/close PRs
-- Merge to `main` after >2 failed merge attempts by senior-dev
+- Merge to `main` in the autonomous PR pipeline
 - Handle emergency merge overrides and complex merges
 - Run branch cleanup
 
@@ -184,7 +184,7 @@ WORKER_COMPLETION_REPORT:
 - Conflict resolution
 
 ### Senior-dev (conditional authority):
-- May merge straightforward changes to `main` after green CI and review
+- May run manual/non-autonomous merge attempts only when explicitly delegated by Jarvis/Aria
 
 ### Workers (All Other Agents):
 - Push branches
