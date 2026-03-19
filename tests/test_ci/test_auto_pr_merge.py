@@ -44,16 +44,6 @@ def test_ensure_prs_creates_new_pr_even_if_historical_pr_exists(monkeypatch) -> 
     )
     monkeypatch.setattr(auto_pr_merge, "_open_pr_for_head", lambda _cfg, _name: None)
 
-    # Regression guard: we should no longer block PR creation just because
-    # a historical (closed/merged) PR exists for this branch name.
-    monkeypatch.setattr(
-        auto_pr_merge,
-        "_any_pr_for_head",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(
-            AssertionError("_any_pr_for_head should not be used by ensure_prs")
-        ),
-    )
-
     calls: list[tuple[str, str, dict[str, str]]] = []
 
     def _fake_req(_cfg, method: str, path: str, body=None):

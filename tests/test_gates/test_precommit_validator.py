@@ -281,21 +281,21 @@ class TestValidateMypy:
             cmd = mock.call_args[0][0]
             assert "scripts/foo.py" in cmd
 
-    def test_mypy_failure_still_returns_true_nonblocking(
+    def test_mypy_failure_returns_false_blocking(
         self, validator: PrecommitValidator, capsys: pytest.CaptureFixture
     ) -> None:
-        """Mypy issues are warnings, not blocking - must return True."""
+        """Mypy issues are blocking and must return False."""
         with patch.object(validator, "run_command", return_value=(1, "", "type error")):
-            assert validator.validate_mypy(["src/app.py"]) is True
-        assert "non-blocking" in capsys.readouterr().out
-        assert len(validator.warnings) == 1
-        assert "mypy" in validator.warnings[0]
+            assert validator.validate_mypy(["src/app.py"]) is False
+        assert "issues found" in capsys.readouterr().out
+        assert len(validator.errors) >= 1
+        assert any("mypy" in err for err in validator.errors)
 
     def test_mypy_uses_allow_failure(self, validator: PrecommitValidator) -> None:
         with patch.object(validator, "run_command", return_value=(0, "", "")) as mock:
             validator.validate_mypy(["src/app.py"])
             _, kwargs = mock.call_args
-            assert kwargs.get("allow_failure", False) is True
+            assert kwargs.get("allow_failure", False) is False
 
     def test_mixed_files_filters_correctly(self, validator: PrecommitValidator) -> None:
         with patch.object(validator, "run_command", return_value=(0, "", "")) as mock:
@@ -824,7 +824,8 @@ class TestMain:
 
         from scripts.gates.precommit_validator import main
 
-        main()
+        with patch("sys.argv", ["precommit_validator.py"]):
+            main()
 
         mock_validator_class.assert_called_once_with(verbose=False, fix=False)
         mock_validator.validate.assert_called_once_with(skip_git_check=False)
@@ -922,7 +923,8 @@ class TestMain:
 
         from scripts.gates.precommit_validator import main
 
-        main()
+        with patch("sys.argv", ["precommit_validator.py"]):
+            main()
 
         mock_exit.assert_called_once_with(1)
 
@@ -932,12 +934,10 @@ class TestMain:
         """Test main() --help shows usage information."""
         from scripts.gates.precommit_validator import main
 
-        with pytest.raises(SystemExit) as exc_info:
-            with patch("sys.argv", ["precommit_validator.py", "--help"]):
-                main()
+        with patch("sys.argv", ["precommit_validator.py", "--help"]):
+            main()
 
-        # Should exit with 0 for help
-        assert exc_info.value.code == 0
+        mock_exit.assert_called_with(0)
 
 
 class TestValidateSkipGitCheck:

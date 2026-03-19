@@ -110,18 +110,18 @@ class PrecommitValidator:
 
         cmd = ["mypy"] + src_files
         exit_code, stdout, stderr = self.run_command(
-        cmd,
-        "Mypy type check",
-        allow_failure=False, # mypy failures should block
+            cmd,
+            "Mypy type check",
+            allow_failure=False,  # mypy failures should block
         )
 
         if exit_code == 0:
-            print(" ✓ Type annotations OK")
+            print("  ✓ Type annotations OK")
             return True
         else:
-            print(f" ✗ Type annotation issues found")
+            print("  ✗ Type annotation issues found")
             self.errors.append("mypy: type annotation issues found")
-            return False # mypy issues are blocking errors
+            return False  # mypy issues are blocking errors
 
     def validate_status_sync(self) -> bool:
         """Validate workflow status file sync."""
@@ -235,8 +235,8 @@ class PrecommitValidator:
         if not skip_git_check:
             if not self.validate_git_sanity():
                 return False
-            else:
-                print("→ Skipping git sanity checks (--skip-git-check)")
+        else:
+            print("→ Skipping git sanity checks (--skip-git-check)")
 
         # Get changed files
         changed_files = self.get_changed_files()
@@ -302,7 +302,7 @@ def main():
         "--skip-git-check", action="store_true", help="Skip git sanity checks"
     )
 
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
 
     validator = PrecommitValidator(verbose=args.verbose, fix=args.fix)
 
