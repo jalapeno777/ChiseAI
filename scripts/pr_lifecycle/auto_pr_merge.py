@@ -187,9 +187,6 @@ def ensure_prs(cfg: Config) -> int:
             if cfg.enable_server_automerge:
                 _enable_server_automerge(cfg, open_pr, name)
             continue
-        if _any_pr_for_head(cfg, name):
-            continue
-
         title = f"REPO-AUTO-PR-001 {name}"
         body = (
             "Auto-created PR for pushed agent branch.\n\n"
