@@ -633,7 +633,16 @@ These rules are additive and must be enforced consistently across `AGENTS.md` an
 - Treat YAML as validation-sensitive, not prose.
 - For `.yaml`, `.yml`, and markdown frontmatter, make the smallest possible change.
 - Preserve indentation, quoting style, comments, and key order unless explicitly told otherwise.
-- After editing `.yaml` or `.yml`, always run Prettier and then yamllint.
+- Trigger to load skill: if task touches `.yaml`, `.yml`, or markdown frontmatter, load `yaml-editor` before editing.
+- Prefer `@yaml-config-editor` for YAML-heavy edits (multiple YAML files, schema-sensitive config, or frontmatter batches).
+- After editing `.yaml` or `.yml`, run this exact sequence:
+  1. `npx --prefix . prettier --write <file>`
+  2. `yamllint <file>`
+  3. if lint fails, fix and rerun both commands until clean
+- After editing markdown frontmatter:
+  1. preserve opening and closing `---` boundaries
+  2. run `python3 scripts/validate_frontmatter.py`
+  3. if validation fails, fix frontmatter and rerun until clean
 - If a schema modeline exists, respect it and keep the file schema-valid.
 - Do not finish with known YAML parse or lint errors.
-- Prefer using `@yaml-config-editor` for YAML-heavy edits.
+- Preferred repair command for one target file: `.opencode/commands/yaml-fix.md`.

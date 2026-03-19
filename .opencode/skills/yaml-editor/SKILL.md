@@ -5,16 +5,20 @@ compatibility: opencode
 ---
 
 ## Rules
+
+- Trigger: use this skill when editing any `.yaml`, `.yml`, or markdown frontmatter block.
 - Read the full file before editing.
 - Make the smallest possible change.
 - Preserve key order unless reordering is explicitly requested.
 - Use 2 spaces for indentation.
 - Never use tabs in YAML.
 - After editing any `.yaml` or `.yml` file:
-  1. run the formatter
-  2. run yamllint
-  3. fix any issues before finishing
+  1. run `npx --prefix . prettier --write <file>`
+  2. run `yamllint <file>`
+  3. if lint fails, fix and rerun both commands
 - After editing markdown frontmatter:
   1. preserve the opening and closing `---`
-  2. validate the frontmatter with the frontmatter validator script if available
+  2. run `python3 scripts/validate_frontmatter.py`
+  3. if validation fails, fix and rerun
+- For YAML-heavy edits, route to `@yaml-config-editor`.
 - Do not leave known YAML parse or lint errors behind.

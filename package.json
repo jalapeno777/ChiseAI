@@ -1,0 +1,12 @@
+{
+  "name": "chiseai-tooling",
+  "private": true,
+  "devDependencies": {
+    "prettier": "3.8.1"
+  },
+  "scripts": {
+    "format:yaml": "npx --prefix . prettier --write \"**/*.{yaml,yml}\"",
+    "lint:yaml": "yamllint .prettierrc.yaml .yamllint.yaml",
+    "validate:frontmatter": "python3 scripts/validate_frontmatter.py"
+  }
+}

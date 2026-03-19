@@ -28,6 +28,9 @@ htmlcov/
 *.egg-info/
 src/*.egg-info/
 
+# Node tooling
+node_modules/
+
 # BMM/BPB archived reports
 # Removed: docs/_archive/ (archived reports, should be tracked)
 _bmad-output/

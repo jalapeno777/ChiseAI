@@ -1,6 +1,6 @@
 ---
 name: chiseai-autocog-orchestration
-description: Autonomous cognition orchestration for Aria: run backend evaluations, review severity, auto-implement low/medium items, escalate high/critical recommendations to Craig.
+description: "Autonomous cognition orchestration for Aria: run backend evaluations, review severity, auto-implement low/medium items, escalate high/critical recommendations to Craig."
 metadata:
   version: "1.0"
   opencode_min_version: "1.2.0"
@@ -13,6 +13,7 @@ metadata:
 ## Goal
 
 Operationalize Aria as the autonomous cognition orchestrator on top of backend jobs:
+
 - run/inspect autonomous cognition cycle artifacts and logs,
 - perform secondary Aria-level evaluation and synthesis,
 - auto-implement low/medium priority improvements,
@@ -37,22 +38,27 @@ Operationalize Aria as the autonomous cognition orchestrator on top of backend j
 ## Required Commands
 
 1. Run backend cycle + collect evidence:
+
 - `.opencode/command/chise-autocog-daily-run.md`
 
 2. Aria review/synthesis:
+
 - `.opencode/command/chise-autocog-review.md`
 
 3. Priority action routing:
+
 - `.opencode/command/chise-autocog-action.md`
 
 ## Evidence Inputs
 
 Primary artifacts:
+
 - `_bmad-output/autocog/cycles/*.json`
 - `docs/governance/self_assessments/*.json`
 - `docs/backlog/autocog-phase*.md`
 
 Validation/log inputs:
+
 - latest `pytest` bundle for autonomous cognition modules
 - `scripts/ops/run_autonomous_self_assessment.py` output
 - `scripts/ops/run_autonomous_full_cycle.py` output
@@ -60,6 +66,7 @@ Validation/log inputs:
 ## Output Contract
 
 Aria must produce:
+
 - `AUTOCog_REVIEW_PACKET` with:
   - `run_id`
   - `top_findings[]` (`severity`, `summary`, `evidence`, `recommended_action`)
@@ -68,6 +75,7 @@ Aria must produce:
   - `open_risks[]`
 
 Discord/autocog event summaries must also include plain-language fields:
+
 - `title`
 - `why_this_happened`
 - `intended_resolution`

@@ -1,6 +1,6 @@
 ---
 name: chiseai-brain-cicd
-description: Run Brain CI/CD: version, evaluate, shadow-test, and propose upgrades to the agent brain with human approval gating.
+description: "Run Brain CI/CD: version, evaluate, shadow-test, and propose upgrades to the agent brain with human approval gating."
 metadata:
   version: "1.1"
   opencode_min_version: "1.1.60"
