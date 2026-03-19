@@ -11,6 +11,10 @@ Comprehensive tests covering:
 - Strict mode behavior
 - Story ID pattern validation
 - CLI integration
+- Cross-field consistency validation (completed_at, timestamp ordering)
+- Phase/status compatibility mapping
+- Story title length limits
+- Acceptance criteria items non-empty
 """
 
 from __future__ import annotations
@@ -23,7 +27,9 @@ import pytest
 from scripts.validation.workflow_redis_validator import (
     DEFAULT_TTL_SECONDS,
     ISO_8601_PATTERN,
+    PHASE_STATUS_COMPAT,
     STORY_PREFIX,
+    STORY_TITLE_MAX_LENGTH,
     VALID_PHASES,
     VALID_STATUSES,
     FieldValidation,
@@ -1071,3 +1077,433 @@ class TestCLI:
         _print_report(report, verbose=True)
         output = capsys.readouterr().out
         assert "ST-001" in output
+
+
+# =============================================================================
+# Tests: Cross-Field Consistency Validation (Task 4.2)
+# =============================================================================
+
+
+class TestCrossFieldCompletedAt:
+    """Tests for completed_at required when status=completed."""
+
+    def test_completed_status_without_completed_at_fails(self) -> None:
+        """status=completed without completed_at field should produce an error."""
+        data = _valid_story_hash("ST-001", status="completed")
+        # Remove completed_at since _valid_story_hash doesn't include it by default
+        client = _make_mock_client(
+            story_data={f"{STORY_PREFIX}:ST-001": data},
+            ttls={f"{STORY_PREFIX}:ST-001": DEFAULT_TTL_SECONDS},
+        )
+        validator = WorkflowRedisValidator(redis_client=client)
+        result = validator.validate_story_key(f"{STORY_PREFIX}:ST-001", client=client)
+
+        assert not result.is_valid
+        assert any(
+            "completed_at" in e and "required" in e.lower() for e in result.errors
+        )
+
+    def test_completed_status_with_completed_at_passes(self) -> None:
+        """status=completed with completed_at field should pass."""
+        data = _valid_story_hash(
+            "ST-001",
+            status="completed",
+            overrides={"completed_at": "2026-03-19T14:00:00Z"},
+        )
+        client = _make_mock_client(
+            story_data={f"{STORY_PREFIX}:ST-001": data},
+            ttls={f"{STORY_PREFIX}:ST-001": DEFAULT_TTL_SECONDS},
+        )
+        validator = WorkflowRedisValidator(redis_client=client)
+        result = validator.validate_story_key(f"{STORY_PREFIX}:ST-001", client=client)
+
+        assert result.is_valid
+
+    def test_in_progress_without_completed_at_passes(self) -> None:
+        """status=in_progress without completed_at should be fine."""
+        data = _valid_story_hash("ST-001", status="in_progress")
+        client = _make_mock_client(
+            story_data={f"{STORY_PREFIX}:ST-001": data},
+            ttls={f"{STORY_PREFIX}:ST-001": DEFAULT_TTL_SECONDS},
+        )
+        validator = WorkflowRedisValidator(redis_client=client)
+        result = validator.validate_story_key(f"{STORY_PREFIX}:ST-001", client=client)
+
+        assert result.is_valid
+        assert not any(
+            "completed_at" in e and "required" in e.lower() for e in result.errors
+        )
+
+
+class TestCrossFieldTimestampOrdering:
+    """Tests for timestamp ordering validation."""
+
+    def test_valid_timestamp_order_passes(self) -> None:
+        """started_at before completed_at should pass."""
+        data = _valid_story_hash(
+            "ST-001",
+            status="completed",
+            overrides={
+                "completed_at": "2026-03-19T14:00:00Z",
+                "started_at": "2026-03-19T12:00:00Z",
+            },
+        )
+        client = _make_mock_client(
+            story_data={f"{STORY_PREFIX}:ST-001": data},
+            ttls={f"{STORY_PREFIX}:ST-001": DEFAULT_TTL_SECONDS},
+        )
+        validator = WorkflowRedisValidator(redis_client=client)
+        result = validator.validate_story_key(f"{STORY_PREFIX}:ST-001", client=client)
+
+        assert result.is_valid
+        assert not any("ordering" in e.lower() for e in result.errors)
+
+    def test_reversed_timestamp_order_fails(self) -> None:
+        """started_at after completed_at should produce an error."""
+        data = _valid_story_hash(
+            "ST-001",
+            status="completed",
+            overrides={
+                "completed_at": "2026-03-19T10:00:00Z",
+                "started_at": "2026-03-19T14:00:00Z",
+            },
+        )
+        client = _make_mock_client(
+            story_data={f"{STORY_PREFIX}:ST-001": data},
+            ttls={f"{STORY_PREFIX}:ST-001": DEFAULT_TTL_SECONDS},
+        )
+        validator = WorkflowRedisValidator(redis_client=client)
+        result = validator.validate_story_key(f"{STORY_PREFIX}:ST-001", client=client)
+
+        assert not result.is_valid
+        assert any("ordering" in e.lower() for e in result.errors)
+
+    def test_same_timestamp_passes(self) -> None:
+        """started_at == completed_at should pass (same-second completion)."""
+        ts = "2026-03-19T12:00:00Z"
+        data = _valid_story_hash(
+            "ST-001",
+            status="completed",
+            overrides={
+                "completed_at": ts,
+                "started_at": ts,
+            },
+        )
+        client = _make_mock_client(
+            story_data={f"{STORY_PREFIX}:ST-001": data},
+            ttls={f"{STORY_PREFIX}:ST-001": DEFAULT_TTL_SECONDS},
+        )
+        validator = WorkflowRedisValidator(redis_client=client)
+        result = validator.validate_story_key(f"{STORY_PREFIX}:ST-001", client=client)
+
+        assert result.is_valid
+        assert not any("ordering" in e.lower() for e in result.errors)
+
+    def test_invalid_timestamp_skips_ordering_check(self) -> None:
+        """Non-parseable timestamps should not produce ordering errors."""
+        data = _valid_story_hash(
+            "ST-001",
+            overrides={
+                "completed_at": "not-a-timestamp",
+                "started_at": "also-bad",
+            },
+        )
+        client = _make_mock_client(
+            story_data={f"{STORY_PREFIX}:ST-001": data},
+            ttls={f"{STORY_PREFIX}:ST-001": DEFAULT_TTL_SECONDS},
+        )
+        validator = WorkflowRedisValidator(redis_client=client)
+        result = validator.validate_story_key(f"{STORY_PREFIX}:ST-001", client=client)
+
+        # Should have timestamp format errors but NOT ordering errors
+        assert not any("ordering" in e.lower() for e in result.errors)
+
+
+class TestPhaseStatusCompatibility:
+    """Tests for phase/status compatibility mapping."""
+
+    @pytest.mark.parametrize("phase", sorted(VALID_PHASES))
+    def test_valid_phase_status_combinations(self, phase: str) -> None:
+        """Each phase should have compatible statuses defined."""
+        assert phase in PHASE_STATUS_COMPAT
+        assert len(PHASE_STATUS_COMPAT[phase]) > 0
+
+    @pytest.mark.parametrize(
+        "phase,status",
+        [
+            ("implementation", "in_progress"),
+            ("testing", "in_progress"),
+            ("analysis", "planned"),
+            ("implementation", "completed"),
+        ],
+    )
+    def test_compatible_combinations_pass(self, phase: str, status: str) -> None:
+        """Known valid phase/status combinations should pass."""
+        data = _valid_story_hash("ST-001", phase=phase, status=status)
+        client = _make_mock_client(
+            story_data={f"{STORY_PREFIX}:ST-001": data},
+            ttls={f"{STORY_PREFIX}:ST-001": DEFAULT_TTL_SECONDS},
+        )
+        validator = WorkflowRedisValidator(redis_client=client)
+        result = validator.validate_story_key(f"{STORY_PREFIX}:ST-001", client=client)
+
+        assert not any("incompatibility" in e.lower() for e in result.errors)
+
+    def test_incompatible_phase_status_fails(self) -> None:
+        """Phase/status not in compatibility map should fail."""
+        # "blocked" is a valid status but not in any phase's compat set
+        data = _valid_story_hash("ST-001", phase="implementation", status="blocked")
+        client = _make_mock_client(
+            story_data={f"{STORY_PREFIX}:ST-001": data},
+            ttls={f"{STORY_PREFIX}:ST-001": DEFAULT_TTL_SECONDS},
+        )
+        validator = WorkflowRedisValidator(redis_client=client)
+        result = validator.validate_story_key(f"{STORY_PREFIX}:ST-001", client=client)
+
+        assert not result.is_valid
+        assert any("incompatibility" in e.lower() for e in result.errors)
+
+    def test_missing_phase_or_status_skips_compat_check(self) -> None:
+        """Missing phase or status should skip compatibility check."""
+        data = _valid_story_hash("ST-001")
+        del data["phase"]
+        del data["status"]
+
+        client = _make_mock_client(
+            story_data={f"{STORY_PREFIX}:ST-001": data},
+            ttls={f"{STORY_PREFIX}:ST-001": DEFAULT_TTL_SECONDS},
+        )
+        validator = WorkflowRedisValidator(redis_client=client)
+        result = validator.validate_story_key(f"{STORY_PREFIX}:ST-001", client=client)
+
+        # Should have missing field errors but NOT incompatibility errors
+        assert not any("incompatibility" in e.lower() for e in result.errors)
+
+
+class TestStoryTitleLength:
+    """Tests for story title max length warning."""
+
+    def test_normal_title_passes(self) -> None:
+        """Title under max length should not produce warning."""
+        data = _valid_story_hash("ST-001")
+        client = _make_mock_client(
+            story_data={f"{STORY_PREFIX}:ST-001": data},
+            ttls={f"{STORY_PREFIX}:ST-001": DEFAULT_TTL_SECONDS},
+        )
+        validator = WorkflowRedisValidator(redis_client=client)
+        result = validator.validate_story_key(f"{STORY_PREFIX}:ST-001", client=client)
+
+        assert not any("title length" in w.lower() for w in result.warnings)
+
+    def test_long_title_warns(self) -> None:
+        """Title exceeding max length should produce a warning."""
+        long_title = "A" * (STORY_TITLE_MAX_LENGTH + 1)
+        data = _valid_story_hash("ST-001", overrides={"story_title": long_title})
+        client = _make_mock_client(
+            story_data={f"{STORY_PREFIX}:ST-001": data},
+            ttls={f"{STORY_PREFIX}:ST-001": DEFAULT_TTL_SECONDS},
+        )
+        validator = WorkflowRedisValidator(redis_client=client)
+        result = validator.validate_story_key(f"{STORY_PREFIX}:ST-001", client=client)
+
+        assert any("title length" in w.lower() for w in result.warnings)
+        # Warning only - should still be valid
+        assert result.is_valid
+
+    def test_exact_max_length_passes(self) -> None:
+        """Title at exactly max length should not warn."""
+        exact_title = "A" * STORY_TITLE_MAX_LENGTH
+        data = _valid_story_hash("ST-001", overrides={"story_title": exact_title})
+        client = _make_mock_client(
+            story_data={f"{STORY_PREFIX}:ST-001": data},
+            ttls={f"{STORY_PREFIX}:ST-001": DEFAULT_TTL_SECONDS},
+        )
+        validator = WorkflowRedisValidator(redis_client=client)
+        result = validator.validate_story_key(f"{STORY_PREFIX}:ST-001", client=client)
+
+        assert not any("title length" in w.lower() for w in result.warnings)
+
+    def test_long_title_in_strict_mode_fails(self) -> None:
+        """Long title warning promoted to error in strict mode."""
+        long_title = "A" * (STORY_TITLE_MAX_LENGTH + 1)
+        data = _valid_story_hash("ST-001", overrides={"story_title": long_title})
+        client = _make_mock_client(
+            story_data={f"{STORY_PREFIX}:ST-001": data},
+            ttls={f"{STORY_PREFIX}:ST-001": DEFAULT_TTL_SECONDS},
+        )
+        validator = WorkflowRedisValidator(redis_client=client, strict=True)
+        result = validator.validate_story_key(f"{STORY_PREFIX}:ST-001", client=client)
+
+        assert not result.is_valid
+        assert any("title length" in e.lower() for e in result.errors)
+
+
+class TestAcceptanceCriteriaItemsNonEmpty:
+    """Tests for acceptance criteria items non-empty validation."""
+
+    def test_all_items_nonempty_passes(self) -> None:
+        """AC with all non-empty items should pass."""
+        data = _valid_story_hash(
+            "ST-001",
+            overrides={
+                "acceptance_criteria": json.dumps(["AC1: Works", "AC2: Tested"])
+            },
+        )
+        client = _make_mock_client(
+            story_data={f"{STORY_PREFIX}:ST-001": data},
+            ttls={f"{STORY_PREFIX}:ST-001": DEFAULT_TTL_SECONDS},
+        )
+        validator = WorkflowRedisValidator(redis_client=client)
+        result = validator.validate_story_key(f"{STORY_PREFIX}:ST-001", client=client)
+
+        assert not any("empty item" in w.lower() for w in result.warnings)
+
+    def test_empty_string_items_warn(self) -> None:
+        """AC with empty-string items should produce a warning."""
+        data = _valid_story_hash(
+            "ST-001",
+            overrides={
+                "acceptance_criteria": json.dumps(["AC1: Valid", "", "AC3: OK"])
+            },
+        )
+        client = _make_mock_client(
+            story_data={f"{STORY_PREFIX}:ST-001": data},
+            ttls={f"{STORY_PREFIX}:ST-001": DEFAULT_TTL_SECONDS},
+        )
+        validator = WorkflowRedisValidator(redis_client=client)
+        result = validator.validate_story_key(f"{STORY_PREFIX}:ST-001", client=client)
+
+        assert any("empty item" in w.lower() for w in result.warnings)
+        assert "1" in result.warnings[0]  # index 1
+
+    def test_whitespace_only_items_warn(self) -> None:
+        """AC with whitespace-only items should produce a warning."""
+        data = _valid_story_hash(
+            "ST-001",
+            overrides={"acceptance_criteria": json.dumps(["AC1", "   "])},
+        )
+        client = _make_mock_client(
+            story_data={f"{STORY_PREFIX}:ST-001": data},
+            ttls={f"{STORY_PREFIX}:ST-001": DEFAULT_TTL_SECONDS},
+        )
+        validator = WorkflowRedisValidator(redis_client=client)
+        result = validator.validate_story_key(f"{STORY_PREFIX}:ST-001", client=client)
+
+        assert any("empty item" in w.lower() for w in result.warnings)
+
+    def test_non_string_items_ignored(self) -> None:
+        """Non-string items in AC should not trigger empty-item warnings."""
+        data = _valid_story_hash(
+            "ST-001",
+            overrides={"acceptance_criteria": json.dumps(["AC1", 42, None])},
+        )
+        client = _make_mock_client(
+            story_data={f"{STORY_PREFIX}:ST-001": data},
+            ttls={f"{STORY_PREFIX}:ST-001": DEFAULT_TTL_SECONDS},
+        )
+        validator = WorkflowRedisValidator(redis_client=client)
+        result = validator.validate_story_key(f"{STORY_PREFIX}:ST-001", client=client)
+
+        assert not any("empty item" in w.lower() for w in result.warnings)
+
+    def test_multiple_empty_items_reported(self) -> None:
+        """Multiple empty items should all be reported in the warning."""
+        data = _valid_story_hash(
+            "ST-001",
+            overrides={"acceptance_criteria": json.dumps(["", "", "AC3"])},
+        )
+        client = _make_mock_client(
+            story_data={f"{STORY_PREFIX}:ST-001": data},
+            ttls={f"{STORY_PREFIX}:ST-001": DEFAULT_TTL_SECONDS},
+        )
+        validator = WorkflowRedisValidator(redis_client=client)
+        result = validator.validate_story_key(f"{STORY_PREFIX}:ST-001", client=client)
+
+        assert any("empty item" in w.lower() for w in result.warnings)
+        # Should mention "2" empty items and indices "0, 1"
+        assert "2" in result.warnings[0]
+        assert "0" in result.warnings[0]
+        assert "1" in result.warnings[0]
+
+
+# =============================================================================
+# Tests: _parse_timestamp_safe Utility (Task 4.2)
+# =============================================================================
+
+
+class TestParseTimestampSafe:
+    """Tests for the _parse_timestamp_safe helper."""
+
+    def test_valid_iso_with_z_suffix(self) -> None:
+        """Parse ISO-8601 with Z suffix."""
+        result = WorkflowRedisValidator._parse_timestamp_safe("2026-03-19T12:00:00Z")
+        assert result is not None
+        assert result.year == 2026
+
+    def test_valid_iso_with_offset(self) -> None:
+        """Parse ISO-8601 with timezone offset."""
+        result = WorkflowRedisValidator._parse_timestamp_safe(
+            "2026-03-19T12:00:00+00:00"
+        )
+        assert result is not None
+
+    def test_invalid_timestamp_returns_none(self) -> None:
+        """Non-timestamp string returns None."""
+        assert WorkflowRedisValidator._parse_timestamp_safe("not-a-timestamp") is None
+
+    def test_empty_string_returns_none(self) -> None:
+        """Empty string returns None."""
+        assert WorkflowRedisValidator._parse_timestamp_safe("") is None
+
+    def test_none_input_returns_none(self) -> None:
+        """None input returns None."""
+        assert WorkflowRedisValidator._parse_timestamp_safe(None) is None  # type: ignore[arg-type]
+
+    def test_timestamp_comparison_ordering(self) -> None:
+        """Parsed timestamps should maintain correct ordering."""
+        earlier = WorkflowRedisValidator._parse_timestamp_safe("2026-03-19T10:00:00Z")
+        later = WorkflowRedisValidator._parse_timestamp_safe("2026-03-19T14:00:00Z")
+        assert earlier is not None
+        assert later is not None
+        assert earlier < later
+
+
+# =============================================================================
+# Tests: Cross-Field Validation in Strict Mode (Task 4.2)
+# =============================================================================
+
+
+class TestCrossFieldStrictMode:
+    """Cross-field validation warnings promoted to errors in strict mode."""
+
+    def test_ac_empty_items_strict_mode(self) -> None:
+        """AC empty-item warning becomes error in strict mode."""
+        data = _valid_story_hash(
+            "ST-001",
+            overrides={"acceptance_criteria": json.dumps(["AC1", ""])},
+        )
+        client = _make_mock_client(
+            story_data={f"{STORY_PREFIX}:ST-001": data},
+            ttls={f"{STORY_PREFIX}:ST-001": DEFAULT_TTL_SECONDS},
+        )
+        validator = WorkflowRedisValidator(redis_client=client, strict=True)
+        result = validator.validate_story_key(f"{STORY_PREFIX}:ST-001", client=client)
+
+        assert not result.is_valid
+        assert any("empty item" in e.lower() for e in result.errors)
+        assert len(result.warnings) == 0
+
+    def test_completed_at_missing_strict_mode(self) -> None:
+        """completed_at required error is already an error, strict doesn't change it."""
+        data = _valid_story_hash("ST-001", status="completed")
+        client = _make_mock_client(
+            story_data={f"{STORY_PREFIX}:ST-001": data},
+            ttls={f"{STORY_PREFIX}:ST-001": DEFAULT_TTL_SECONDS},
+        )
+        validator = WorkflowRedisValidator(redis_client=client, strict=True)
+        result = validator.validate_story_key(f"{STORY_PREFIX}:ST-001", client=client)
+
+        assert not result.is_valid
+        assert any(
+            "completed_at" in e and "required" in e.lower() for e in result.errors
+        )

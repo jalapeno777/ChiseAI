@@ -9,6 +9,10 @@ Validates workflow status consistency stored in Redis iterlog keys
 2. Field values conform to allowed enumerations (phase, status)
 3. TTL settings are correctly applied to iterlog keys
 4. Timestamps are valid ISO-8601 format
+5. Cross-field consistency (completed_at with status, timestamp ordering)
+6. Phase/status compatibility mapping
+7. Story title length limits (warning)
+8. Acceptance criteria items non-empty (warning)
 
 Usage:
     python3 scripts/validation/workflow_redis_validator.py
@@ -102,6 +106,18 @@ STORY_ID_PATTERN = re.compile(
 
 # TTL warning threshold: warn if TTL < this many seconds remaining
 TTL_WARNING_THRESHOLD_SECONDS = 86400  # 1 day
+
+# Story title max length (warning if exceeded)
+STORY_TITLE_MAX_LENGTH = 200
+
+# Phase/status compatibility map: phase -> set of valid statuses
+PHASE_STATUS_COMPAT: dict[str, frozenset[str]] = {
+    "analysis": frozenset({"planned", "in_progress", "completed", "deprecated"}),
+    "planning": frozenset({"planned", "in_progress", "completed", "deprecated"}),
+    "solutioning": frozenset({"planned", "in_progress", "completed", "deprecated"}),
+    "implementation": frozenset({"planned", "in_progress", "completed", "deprecated"}),
+    "testing": frozenset({"planned", "in_progress", "completed", "deprecated"}),
+}
 
 
 # =============================================================================
@@ -380,6 +396,9 @@ class WorkflowRedisValidator:
             for uf in sorted(unknown):
                 result.warnings.append(f"Unknown field '{uf}'")
 
+        # Cross-field consistency validation
+        self.validate_cross_fields(fields, result)
+
         # Validate TTL
         self._validate_ttl(key, client, result)
 
@@ -389,6 +408,77 @@ class WorkflowRedisValidator:
             result.warnings.clear()
 
         return result
+
+    def validate_cross_fields(
+        self, fields: dict[str, str], result: StoryValidation
+    ) -> None:
+        """Validate cross-field consistency rules.
+
+        Checks:
+        1. completed_at required when status=completed
+        2. Timestamp ordering: started_at <= completed_at
+        3. Phase/status compatibility
+        4. Story title max length
+        5. Acceptance criteria items non-empty
+        """
+        status = fields.get("status", "")
+        phase = fields.get("phase", "")
+        started_at = fields.get("started_at", "")
+        completed_at = fields.get("completed_at", "")
+        story_title = fields.get("story_title", "")
+        acceptance_criteria_raw = fields.get("acceptance_criteria", "")
+
+        # 1. completed_at required when status is "completed"
+        if status == "completed" and not completed_at:
+            result.errors.append(
+                "Field 'completed_at' is required when status is 'completed'"
+            )
+
+        # 2. Timestamp ordering: started_at <= completed_at
+        if started_at and completed_at:
+            start_ts = self._parse_timestamp_safe(started_at)
+            end_ts = self._parse_timestamp_safe(completed_at)
+            if start_ts is not None and end_ts is not None:
+                if start_ts > end_ts:
+                    result.errors.append(
+                        f"Timestamp ordering violation: started_at ({started_at}) "
+                        f"is after completed_at ({completed_at})"
+                    )
+
+        # 3. Phase/status compatibility
+        if phase and status:
+            valid_statuses = PHASE_STATUS_COMPAT.get(phase)
+            if valid_statuses is not None and status not in valid_statuses:
+                result.errors.append(
+                    f"Phase/status incompatibility: phase '{phase}' with "
+                    f"status '{status}' is not a valid combination"
+                )
+
+        # 4. Story title max length (warning)
+        if story_title and len(story_title) > STORY_TITLE_MAX_LENGTH:
+            result.warnings.append(
+                f"Story title length is {len(story_title)} characters, "
+                f"exceeds recommended max of {STORY_TITLE_MAX_LENGTH}"
+            )
+
+        # 5. Acceptance criteria items non-empty
+        if acceptance_criteria_raw:
+            try:
+                ac_items = json.loads(acceptance_criteria_raw)
+                if isinstance(ac_items, list):
+                    empty_items = [
+                        i
+                        for i, item in enumerate(ac_items)
+                        if isinstance(item, str) and not item.strip()
+                    ]
+                    if empty_items:
+                        result.warnings.append(
+                            f"Acceptance criteria contains {len(empty_items)} "
+                            f"empty item(s) at index(es): "
+                            f"{', '.join(str(i) for i in empty_items)}"
+                        )
+            except json.JSONDecodeError:
+                pass  # Already validated by _validate_json_array_field
 
     def validate_specific_story(self, story_id: str) -> StoryValidation:
         """Validate a specific story by its ID.
@@ -538,6 +628,21 @@ class WorkflowRedisValidator:
                 message=f"Invalid JSON: {e}",
                 severity=severity,
             )
+
+    @staticmethod
+    def _parse_timestamp_safe(value: str) -> datetime | None:
+        """Parse ISO-8601 timestamp string, returning None on failure."""
+        if not value or not ISO_8601_PATTERN.match(value):
+            return None
+        try:
+            # Handle timezone variants: Z, +00:00, +0000, no suffix
+            cleaned = value.replace("Z", "+00:00")
+            if "+" in cleaned and cleaned.index("+") > 16:
+                # Has timezone info after seconds
+                pass
+            return datetime.fromisoformat(cleaned)
+        except (ValueError, IndexError):
+            return None
 
     def _validate_ttl(self, key: str, client: Any, result: StoryValidation) -> None:
         """Validate TTL on a story key."""

@@ -110,18 +110,18 @@ class PrecommitValidator:
 
         cmd = ["mypy"] + src_files
         exit_code, stdout, stderr = self.run_command(
-            cmd,
-            "Mypy type check",
-            allow_failure=True,  # mypy warnings don't block
+        cmd,
+        "Mypy type check",
+        allow_failure=False, # mypy failures should block
         )
 
         if exit_code == 0:
-            print("  ✓ Type annotations OK")
+            print(" ✓ Type annotations OK")
             return True
         else:
-            print(f"  ⚠ Type annotation issues (non-blocking)")
-            self.warnings.append("mypy: type annotation issues found")
-            return True  # mypy issues are warnings, not blocking
+            print(f" ✗ Type annotation issues found")
+            self.errors.append("mypy: type annotation issues found")
+            return False # mypy issues are blocking errors
 
     def validate_status_sync(self) -> bool:
         """Validate workflow status file sync."""
@@ -225,15 +225,18 @@ class PrecommitValidator:
         self.log(f"Found {len(py_files)} staged Python files")
         return py_files
 
-    def validate(self) -> bool:
+    def validate(self, skip_git_check: bool = False) -> bool:
         """Run all validations and return overall success."""
         print("=" * 60)
         print("Pre-commit Validation")
         print("=" * 60)
 
-        # Git sanity first
-        if not self.validate_git_sanity():
-            return False
+        # Git sanity first (unless skipped)
+        if not skip_git_check:
+            if not self.validate_git_sanity():
+                return False
+            else:
+                print("→ Skipping git sanity checks (--skip-git-check)")
 
         # Get changed files
         changed_files = self.get_changed_files()
@@ -243,13 +246,13 @@ class PrecommitValidator:
         else:
             print(f"\nValidating {len(changed_files)} changed Python file(s)...")
 
-            # Code quality checks
-            black_ok = self.validate_black(changed_files)
-            ruff_ok = self.validate_ruff(changed_files)
-            mypy_ok = self.validate_mypy(changed_files)
+        # Code quality checks
+        black_ok = self.validate_black(changed_files)
+        ruff_ok = self.validate_ruff(changed_files)
+        mypy_ok = self.validate_mypy(changed_files)
 
-            if not all([black_ok, ruff_ok, mypy_ok]):
-                return False
+        if not all([black_ok, ruff_ok, mypy_ok]):
+            return False
 
         # Status and governance checks
         status_ok = self.validate_status_sync()
@@ -303,7 +306,7 @@ def main():
 
     validator = PrecommitValidator(verbose=args.verbose, fix=args.fix)
 
-    success = validator.validate()
+    success = validator.validate(skip_git_check=args.skip_git_check)
     validator.print_summary()
 
     sys.exit(0 if success else 1)
