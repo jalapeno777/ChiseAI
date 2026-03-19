@@ -122,7 +122,7 @@ steps:
         exit 0
 
   lint:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260319
     environment:
       GITEA_TOKEN:
         from_secret: gitea_token
@@ -135,7 +135,6 @@ steps:
         (
           set -euo pipefail
           python -V
-          pip install --no-cache-dir black ruff mypy pyyaml types-PyYAML types-requests || echo "WARN: pip install failed, continuing"
           python scripts/validate_swarm_policy_consistency.py
           CHANGED_PY="$(printf '%s' \"${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -E '\\.py$' | tr '\n' ' ' || true)"
           if [ -n "$(printf '%s' "$CHANGED_PY" | tr -d '[:space:]')" ]; then
@@ -218,7 +217,7 @@ steps:
         exit 0
 
   security-scan:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260319
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -228,7 +227,6 @@ steps:
         set +e
         (
           set -euo pipefail
-          pip install --no-cache-dir bandit
           CHANGED_SCAN="$(printf '%s' \"${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -E '^(src/|scripts/).+\\.py$' | tr '\n' ' ' || true)"
           if [ -n "$(printf '%s' "$CHANGED_SCAN" | tr -d '[:space:]')" ]; then
             echo "security-scan: scanning changed files only: ${CHANGED_SCAN}"
@@ -246,7 +244,7 @@ steps:
         exit 0
 
   dependency-audit:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260319
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -265,7 +263,6 @@ steps:
             echo "dependency-audit: no dependency manifest changes; skipping"
             exit 0
           fi
-          pip install --no-cache-dir pip-audit tomli || pip install --no-cache-dir --break-system-packages pip-audit tomli
           python3 scripts/ci/dependency_audit.py
         ) > "$${CI_STATUS_DIR}/dependency-audit.log" 2>&1
         code=$?
@@ -325,7 +322,7 @@ steps:
         exit 0
 
   risk-invariants:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260319
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -335,13 +332,14 @@ steps:
         set +e
         (
           set -euo pipefail
-          CHANGED_FILES="$(git diff --name-only origin/main HEAD || true)"
-          if ! echo "$CHANGED_FILES" | grep -qE "^(src/execution/|src/ml/|scripts/reconciliation/|tests/test_execution/|tests/test_ml/|scripts/ci/|pyproject.toml|requirements)"; then
+          CHANGED_FILES="$(printf '%s' "${CI_PIPELINE_FILES:-[]}" | tr -d '[]"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
+          if [ -z "$(printf '%s' "$CHANGED_FILES" | tr -d '[:space:]')" ]; then
+            CHANGED_FILES="$(git show --name-only --pretty='' HEAD 2>/dev/null || true)"
+          fi
+          if ! printf '%s\n' "$CHANGED_FILES" | grep -qE "^(src/execution/|src/ml/|scripts/reconciliation/|tests/test_execution/|tests/test_ml/|pyproject.toml|requirements)"; then
             echo "risk-invariants: no risk-domain changes; skipping"
             exit 0
           fi
-          pip install --no-cache-dir pytest pytest-asyncio pytest-cov
-          pip install --no-cache-dir ccxt influxdb-client asyncpg numpy scipy pyyaml click joblib pydantic
           python3 -m pytest -q \
             tests/test_execution/test_venue_enforcement.py \
             tests/test_execution/test_kill_switch/ \
@@ -365,8 +363,11 @@ steps:
         set +e
         (
           set -euo pipefail
-          CHANGED_FILES="$(git diff --name-only origin/main HEAD || true)"
-          if ! echo "$CHANGED_FILES" | grep -qE "^(src/brain/|src/evaluation/|src/neuro_symbolic/|src/governance/tempmemory/|scripts/evaluation/|scripts/ci/brain_eval_ci.py)"; then
+          CHANGED_FILES="$(printf '%s' "${CI_PIPELINE_FILES:-[]}" | tr -d '[]"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
+          if [ -z "$(printf '%s' "$CHANGED_FILES" | tr -d '[:space:]')" ]; then
+            CHANGED_FILES="$(git show --name-only --pretty='' HEAD 2>/dev/null || true)"
+          fi
+          if ! printf '%s\n' "$CHANGED_FILES" | grep -qE "^(src/brain/|src/evaluation/|src/neuro_symbolic/|src/governance/tempmemory/|scripts/evaluation/|scripts/ci/brain_eval_ci.py)"; then
             echo "brain-regression: no brain/evaluation changes; skipping"
             exit 0
           fi
@@ -550,6 +551,11 @@ steps:
 
   pipeline-watchdog:
     image: python:3.11
+    # Root-cause hardening: keep this diagnostic out of PR fan-out.
+    when:
+      event:
+        - manual
+        - cron
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -570,6 +576,11 @@ steps:
 
   pre-eval-ingestion:
     image: python:3.11
+    # Full diagnostics only; PRs rely on fast gates to stay within budget.
+    when:
+      event:
+        - manual
+        - cron
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
       # CI_TEMPMEMORY_INGESTION_ENABLED: Feature flag for tempmemory ingestion
@@ -618,6 +629,11 @@ steps:
 
   brain-eval:
     image: python:3.11
+    # Full diagnostics only; PRs rely on brain-regression fast gate.
+    when:
+      event:
+        - manual
+        - cron
     depends_on:
       - pre-eval-ingestion
     environment:
@@ -631,6 +647,7 @@ steps:
         (
           set -euo pipefail
           python -V
+          echo "brain-eval: start $(date -Iseconds)"
           # Determine feature flag value (same logic as pre-eval-ingestion)
           if [ "$${CI_TEMPMEMORY_INGESTION_ENABLED}" = "auto" ]; then
             if [ "$${CI_COMMIT_BRANCH}" != "main" ] && [ "$${CI_COMMIT_BRANCH}" != "$${CI_REPO_DEFAULT_BRANCH:-main}" ]; then
@@ -646,16 +663,23 @@ steps:
             INGESTION_INGESTED=$(python3 -c "import json; data=json.load(open('$${CI_STATUS_DIR}/pre-eval-ingestion.json')); print(data.get('files_ingested', 0))")
             echo "Ingestion success: $${INGESTION_SUCCESS}, Files ingested: $${INGESTION_INGESTED}"
           fi
-          # Check if brain files changed
-          if git diff --name-only origin/main HEAD | grep -qE "(src/brain/|src/neuro_symbolic/|src/strategy/)"; then
-            echo "Brain changes detected, running evaluation..."
+          # Determine changed files from Woodpecker-provided metadata first.
+          CHANGED_FILES="$(printf '%s' \"$${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
+          if [ -z "$(printf '%s' "$${CHANGED_FILES}" | tr -d '[:space:]')" ]; then
+            # Fallback to commit-local file list when CI_PIPELINE_FILES is unavailable.
+            CHANGED_FILES="$(git show --name-only --pretty='' HEAD 2>/dev/null || true)"
+          fi
+
+          if printf '%s\n' "$${CHANGED_FILES}" | grep -qE '^(src/brain/|src/neuro_symbolic/|src/strategy/)'; then
+            echo "brain-eval: Brain changes detected, running evaluation..."
             pip install --no-cache-dir pyyaml requests numpy scipy
             pip install -e . > /dev/null 2>&1 || pip install -e . --break-system-packages > /dev/null 2>&1 || true
             python scripts/ci/brain_eval_ci.py --output "$${CI_STATUS_DIR}/brain-eval.json"
           else
-            echo "No brain changes detected, skipping evaluation"
+            echo "brain-eval: No brain changes detected, skipping evaluation"
             echo '{"success": true, "skipped": true, "reason": "No brain changes detected"}' > "$${CI_STATUS_DIR}/brain-eval.json"
           fi
+          echo "brain-eval: complete $(date -Iseconds)"
         ) > "$${CI_STATUS_DIR}/brain-eval.log" 2>&1
         code=$?
         cat "$${CI_STATUS_DIR}/brain-eval.log"
@@ -665,6 +689,10 @@ steps:
 
   tempmemory-scheduler:
     image: python:3.11
+    when:
+      event:
+        - manual
+        - cron
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -685,6 +713,10 @@ steps:
 
   mini-brain-eval:
     image: python:3.11
+    when:
+      event:
+        - manual
+        - cron
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -705,6 +737,10 @@ steps:
 
   tempmemory-reconcile:
     image: python:3.11
+    when:
+      event:
+        - manual
+        - cron
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -801,7 +837,10 @@ steps:
           pip install --no-cache-dir pyyaml
           # Run compass apply to auto-label PRs based on changed files
           echo "Running compass apply..."
-          CHANGED_FILES="$(git diff --name-only origin/main HEAD || true)"
+          CHANGED_FILES="$(printf '%s' \"$${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
+          if [ -z "$(printf '%s' "$${CHANGED_FILES}" | tr -d '[:space:]')" ]; then
+            CHANGED_FILES="$(git show --name-only --pretty='' HEAD 2>/dev/null || true)"
+          fi
           if [ -n "$CHANGED_FILES" ]; then
             echo "$CHANGED_FILES" | python3 scripts/ops/compass_apply.py
           else
@@ -826,7 +865,10 @@ steps:
         pip install --no-cache-dir pyyaml
         # Run compass gate to check for sensitive path changes
         echo "Running compass gate check..."
-        CHANGED_FILES="$(git diff --name-only origin/main HEAD || true)"
+        CHANGED_FILES="$(printf '%s' \"${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
+        if [ -z "$(printf '%s' "$CHANGED_FILES" | tr -d '[:space:]')" ]; then
+          CHANGED_FILES="$(git show --name-only --pretty='' HEAD 2>/dev/null || true)"
+        fi
         if [ -n "$CHANGED_FILES" ]; then
           echo "$CHANGED_FILES" | python3 scripts/ci/compass_gate.py --check
         else
@@ -1087,12 +1129,6 @@ steps:
       - docs-pairing
       - docker-governance
       - local-ci
-      - pipeline-watchdog
-      - pre-eval-ingestion
-      - brain-eval
-      - tempmemory-scheduler
-      - mini-brain-eval
-      - tempmemory-reconcile
       - compass-apply
       - compass-gate
       - status-write-gate

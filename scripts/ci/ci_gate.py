@@ -12,6 +12,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 # Allow direct script execution from any worktree by exposing repo root + src.
@@ -240,6 +241,42 @@ def main() -> int:
         required_files.extend(CI_DIR / name for name in FULL_REQUIRED)
     if _is_main_cron(env) or env.get("FORCE_CRON_GATE", "").strip() == "1":
         required_files.extend(CI_DIR / name for name in CRON_REQUIRED)
+
+    # Some diagnostics/full gates are no longer hard-wired in ci-gate depends_on.
+    # On full/cron modes, allow time for those status files to be written.
+    wait_seconds = int(env.get("CI_GATE_STATUS_WAIT_SECONDS", "0") or "0")
+    if wait_seconds <= 0 and (
+        _is_main_push(env)
+        or _is_main_cron(env)
+        or env.get("FORCE_FULL_GATE", "").strip() == "1"
+    ):
+        wait_seconds = 900
+    poll_seconds = int(env.get("CI_GATE_STATUS_POLL_SECONDS", "5") or "5")
+    if wait_seconds > 0:
+        deadline = time.time() + wait_seconds
+        while True:
+            pending = []
+            for path in required_files:
+                if path.exists():
+                    continue
+                if _infer_missing_status_from_log(path) is not None:
+                    continue
+                pending.append(path.name)
+            if not pending:
+                break
+            if time.time() >= deadline:
+                print(
+                    "ci-gate: timeout while waiting for required status files: "
+                    + ", ".join(sorted(pending)),
+                    file=sys.stderr,
+                )
+                break
+            print(
+                "ci-gate: waiting for required status files: "
+                + ", ".join(sorted(pending)),
+                file=sys.stderr,
+            )
+            time.sleep(max(poll_seconds, 1))
 
     # Debug: print current directory and list CI_DIR contents
     print(f"ci-gate: Running in {os.getcwd()}")
