@@ -132,6 +132,8 @@ class OrderBookImbalance(BaseIndicator[OrderBookImbalanceResult]):
         cache_ttl: Cache TTL in seconds (default: 60).
     """
 
+    MAX_RATIO = 1e9  # Cap for bid/ask ratio to avoid infinity propagation
+
     def __init__(
         self,
         num_levels: int = 10,
@@ -227,7 +229,8 @@ class OrderBookImbalance(BaseIndicator[OrderBookImbalanceResult]):
         """
         if self._feature_store is None:
             return None
-        return self._feature_store.get(self._cache_key(symbol))
+        cached = self._feature_store.get(self._cache_key(symbol))
+        return cached if isinstance(cached, dict) else None
 
     def _set_cached(self, symbol: str, result: OrderBookImbalanceResult) -> bool:
         """Cache an imbalance result for a symbol.
@@ -253,9 +256,10 @@ class OrderBookImbalance(BaseIndicator[OrderBookImbalanceResult]):
             "level_imbalances": result.level_imbalances,
             "timestamp": result.timestamp.isoformat(),
         }
-        return self._feature_store.set(
+        stored = self._feature_store.set(
             self._cache_key(symbol), cache_data, ttl=self._cache_ttl
         )
+        return bool(stored)
 
     @staticmethod
     def _total_volume(levels: list[PriceLevel]) -> float:
@@ -273,7 +277,7 @@ class OrderBookImbalance(BaseIndicator[OrderBookImbalanceResult]):
     def _bid_ask_ratio(bid_volume: float, ask_volume: float) -> float:
         """Compute the bid/ask volume ratio.
 
-        When ask_volume is zero the ratio is inf (extreme bullish).
+        When ask_volume is zero the ratio is capped at MAX_RATIO (extreme bullish).
         When bid_volume is zero the ratio is 0.0 (extreme bearish).
 
         Args:
@@ -281,10 +285,10 @@ class OrderBookImbalance(BaseIndicator[OrderBookImbalanceResult]):
             ask_volume: Total ask volume.
 
         Returns:
-            bid_volume / ask_volume (may be inf or 0.0).
+            bid_volume / ask_volume (capped at MAX_RATIO).
         """
         if ask_volume <= 0:
-            return float("inf") if bid_volume > 0 else 1.0
+            return OrderBookImbalance.MAX_RATIO if bid_volume > 0 else 1.0
         return bid_volume / ask_volume
 
     @staticmethod

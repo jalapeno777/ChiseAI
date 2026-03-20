@@ -21,14 +21,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import math
 import os
 import random
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Callable, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 if TYPE_CHECKING:
     from data.exchange.bybit_connector import BybitConnector
@@ -571,7 +571,7 @@ class BybitDemoConnector:
         self.provenance = DemoProvenance(
             is_demo=True,
             endpoint=config.base_url,
-            api_key_prefix=config.api_key[:4] if config.api_key else "****",
+            api_key_prefix=(config.api_key[:2] + "****") if config.api_key else "****",
             timestamp=datetime.now(UTC).isoformat(),
         )
 
@@ -720,7 +720,6 @@ class BybitDemoConnector:
             )
             return None
         except Exception as exc:
-            api_err = self._extract_api_error(exc)
             self.provenance_tracker.record(
                 ProvenanceEventType.ERROR,
                 symbol=symbol,

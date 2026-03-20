@@ -260,12 +260,16 @@ class FundingRateAnalyzer(BaseIndicator[FundingRateResult]):
         """Compute funding rate analysis.
 
         Args:
-            data: Not used directly; funding data is fetched from API.
-                  Accepted for BaseIndicator interface compliance.
+            data: List of FundingRatePoint objects, or empty list.
+                  If empty or not FundingRatePoint, data is fetched from API.
 
         Returns:
             FundingRateResult with complete analysis
         """
+        # If data is a list of FundingRatePoint, use it
+        if data and all(isinstance(item, FundingRatePoint) for item in data):
+            return self.analyze(funding_rates=data)
+        # Otherwise fetch from API
         return self.analyze()
 
     def validate(self, data: list) -> bool:

@@ -3,7 +3,7 @@
 import fnmatch
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from tools.redis_state import (
@@ -53,7 +53,7 @@ class FeatureStore:
         """
         # Check local cache first
         if key in self._local_cache:
-            if datetime.utcnow() < self._local_expiry[key]:
+            if datetime.now(UTC) < self._local_expiry[key]:
                 return self._local_cache[key]
             else:
                 del self._local_cache[key]
@@ -86,7 +86,7 @@ class FeatureStore:
 
         # Update local cache
         self._local_cache[key] = value
-        self._local_expiry[key] = datetime.utcnow() + timedelta(seconds=ttl)
+        self._local_expiry[key] = datetime.now(UTC) + timedelta(seconds=ttl)
 
         # Update Redis
         try:
@@ -132,7 +132,7 @@ class FeatureStore:
         """
         # Check local cache
         if key in self._local_cache:
-            if datetime.utcnow() < self._local_expiry[key]:
+            if datetime.now(UTC) < self._local_expiry[key]:
                 return True
 
         # Check Redis

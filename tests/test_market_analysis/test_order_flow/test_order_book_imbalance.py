@@ -386,7 +386,9 @@ class TestStaticMethods:
         assert OrderBookImbalance._bid_ask_ratio(10.0, 10.0) == 1.0
 
     def test_bid_ask_ratio_zero_ask(self) -> None:
-        assert OrderBookImbalance._bid_ask_ratio(10.0, 0.0) == float("inf")
+        assert (
+            OrderBookImbalance._bid_ask_ratio(10.0, 0.0) == OrderBookImbalance.MAX_RATIO
+        )
 
     def test_bid_ask_ratio_zero_both(self) -> None:
         assert OrderBookImbalance._bid_ask_ratio(0.0, 0.0) == 1.0
@@ -679,7 +681,7 @@ class TestAnalyze:
         self, indicator: OrderBookImbalance, empty_ask_snapshot: OrderBookSnapshot
     ) -> None:
         result = indicator.analyze(empty_ask_snapshot)
-        assert result.bid_ask_ratio == float("inf")
+        assert result.bid_ask_ratio == OrderBookImbalance.MAX_RATIO
         assert result.depth_imbalance == pytest.approx(1.0)
         assert result.imbalance_level == ImbalanceLevel.STRONG_BUY
 
