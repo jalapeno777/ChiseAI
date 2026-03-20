@@ -352,3 +352,32 @@ LESSON
 - evidence_ref: SWARM-HARDEN-001 critic findings, remediation rounds
 - added_utc: 2026-03-19T20:00:00Z
 ```
+
+```text
+LESSON
+- id: LESSON-20260320-001
+- context: Critic compliance audit revealed contradictory completion claims
+- trigger: Workers claiming completion without deterministic verification
+- actionable_rule: Always resolve contradictory completion claims with deterministic read-only truth checks (git branch --contains, git show --name-only) before closure
+- applies_to:
+  - jarvis
+  - senior-dev
+  - merlin
+- expected_outcome: Zero contradictory completion claims; all claims truth-verified before acceptance
+- evidence_ref: SESSION-CLOSEOUT-2026-03-20 critic audit
+- added_utc: 2026-03-20T00:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260320-002
+- context: Session close claimed release hygiene complete without verification
+- trigger: Declaring session complete without verifying local main matches origin
+- actionable_rule: Always verify local main equals origin main (git fetch origin --prune && git rev-parse main == git rev-parse origin/main) before declaring release hygiene complete
+- applies_to:
+  - jarvis
+  - senior-dev
+- expected_outcome: Accurate release hygiene status; no false completion claims
+- evidence_ref: SESSION-CLOSEOUT-2026-03-20
+- added_utc: 2026-03-20T00:00:00Z
+```

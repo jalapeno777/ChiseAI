@@ -1,0 +1,66 @@
+story_id: SESSION-CLOSEOUT-2026-03-20
+session_date: "2026-03-20"
+created_by: jarvis
+context: |
+  Session closeout after STRONG-007-A, AUTOCOG-TIER3-001, ML-EVAL-001 completion.
+  Critic audit was PARTIAL with governance gaps.
+governance_gaps:
+  - gap: formal_risk_level_labeling
+    description: Insight and incident packets lack explicit risk level labels
+    severity: medium
+  - gap: aria_decision_persistence
+    description: ARIA_DECISION packets missing required fields (scope_impact, prd_scope_change)
+    severity: medium
+  - gap: metacognitive_artifacts
+    description: Metacognitive artifacts (Predictions/Outcomes/Calibration) not captured at session open/close
+    severity: medium
+follow_up_stories:
+  - story_id: GOV-001
+    title: Enforce Explicit Risk-Level Labeling on Packets
+    description: |
+      Implement validation to ensure all INSIGHT_PACKET and INCIDENT_TEMPLATE submissions
+      include explicit risk_level field with values: low|medium|high|critical
+    story_points: 1
+    priority: P1
+    acceptance_criteria:
+      - All new insight packets have risk_level field
+      - All new incident templates have risk_level field
+      - Validation script rejects packets without risk_level
+    verification_commands:
+      - python3 scripts/validate_packet_risk_levels.py --check-insights
+      - python3 scripts/validate_packet_risk_levels.py --check-incidents
+    status: backlog
+  - story_id: GOV-002
+    title: Enforce ARIA_DECISION Persistence Fields
+    description: |
+      Ensure all ARIA_DECISION packets include required persistence fields:
+      scope_impact, prd_scope_change, decision_rationale, timestamp
+    story_points: 1
+    priority: P1
+    acceptance_criteria:
+      - All ARIA_DECISION packets include scope_impact field
+      - All ARIA_DECISION packets include prd_scope_change field
+      - All ARIA_DECISION packets include decision_rationale field
+      - Validation script checks for required fields
+    verification_commands:
+      - python3 scripts/validate_aria_decisions.py --check-fields
+    status: backlog
+  - story_id: GOV-003
+    title: Enforce Metacognitive Artifact Capture
+    description: |
+      Implement mandatory metacognitive artifact capture at session open/close:
+      - Predictions card at session start
+      - Outcomes card at session close
+      - Calibration delta computed and stored
+    story_points: 2
+    priority: P1
+    acceptance_criteria:
+      - Session open triggers metacog prediction capture
+      - Session close triggers metacog outcome capture
+      - Calibration metrics computed and stored in Redis
+      - Missing metacog artifacts block session close
+    verification_commands:
+      - python3 scripts/validate_metacog_artifacts.py --session-id=<id>
+      - redis-cli hget bmad:chiseai:metacog:<session_id> calibration
+    status: backlog
+status: backlog

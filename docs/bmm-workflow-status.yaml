@@ -1,8 +1,21 @@
 metadata:
   version: 1.0.0
-  last_updated: '2026-03-20T05:26:50.883836Z'
+  last_updated: '2026-03-20T00:00:00Z'
   schema_version: 1.0.0
-  recent_changes:
+recent_changes:
+  - action: session-closeout-followup-backlog
+    actor: jarvis
+    description: |
+      Created session closeout follow-up backlog (SESSION-CLOSEOUT-2026-03-20) with 3 governance stories
+      (GOV-001, GOV-002, GOV-003) addressing critic audit gaps: risk-level labeling, ARIA_DECISION
+      persistence fields, and metacognitive artifact capture. Added 2 lessons to lessons.md.
+    timestamp: '2026-03-20T00:00:00Z'
+    status: completed
+    story_id: SESSION-CLOSEOUT-2026-03-20
+    files_changed:
+      - docs/backlog/session-closeout-followups-2026-03-20.yaml
+      - docs/tempmemories/lessons.md
+      - docs/bmm-workflow-status.yaml
   - action: story-truth-audit-remediation
     actor: merlin
     description: 'Corrected ML-TRAIN-001 backlog file semantics to fix evidence-integrity
