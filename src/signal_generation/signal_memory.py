@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import threading
 from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any
@@ -79,6 +80,26 @@ def _deterministic_embedding(
     return values
 
 
+_sentence_model = None
+_sentence_model_lock = threading.Lock()
+
+
+def _get_sentence_model():
+    """Get or create the SentenceTransformer model singleton."""
+    global _sentence_model
+    if _sentence_model is None:
+        with _sentence_model_lock:
+            if _sentence_model is None:
+                try:
+                    from sentence_transformers import SentenceTransformer
+
+                    _sentence_model = SentenceTransformer("all-MiniLM-L6-v2")
+                except Exception:
+                    # If import fails, set to False to indicate unavailability
+                    _sentence_model = False
+    return _sentence_model if _sentence_model else None
+
+
 def _create_embedding(text: str, dimensions: int = VECTOR_DIMENSIONS) -> list[float]:
     """Create embedding vector, preferring sentence-transformers if available.
 
@@ -92,15 +113,14 @@ def _create_embedding(text: str, dimensions: int = VECTOR_DIMENSIONS) -> list[fl
     Returns:
         List of float values representing the embedding.
     """
-    try:
-        from sentence_transformers import SentenceTransformer  # noqa: F401
-
-        model = SentenceTransformer("all-MiniLM-L6-v2")
-        vector = model.encode(text, convert_to_numpy=True).tolist()
-        if len(vector) == dimensions:
-            return [float(v) for v in vector]
-    except Exception:
-        pass
+    model = _get_sentence_model()
+    if model is not None:
+        try:
+            vector = model.encode(text, convert_to_numpy=True).tolist()
+            if len(vector) == dimensions:
+                return [float(v) for v in vector]
+        except Exception:
+            pass
 
     return _deterministic_embedding(text, dimensions=dimensions)
 
