@@ -15,15 +15,39 @@ and raise SecurityException if production endpoints are detected.
 from __future__ import annotations
 
 from execution.connectors.bybit_demo_connector import (
+    BybitAPIError,
+    BybitAuthenticationError,
+    BybitConnectorError,
     BybitDemoConnector,
     BybitDemoConnectorFactory,
+    BybitNetworkError,
+    BybitOrderError,
+    BybitRateLimitError,
     DemoProvenance,
+    ExponentialBackoffRetry,
+    ProvenanceEvent,
+    ProvenanceEventType,
+    ProvenanceTracker,
+    RetryConfig,
+    classify_bybit_error,
     create_bybit_demo_connector,
 )
 
 __all__ = [
+    "BybitAPIError",
+    "BybitAuthenticationError",
+    "BybitConnectorError",
     "BybitDemoConnector",
     "BybitDemoConnectorFactory",
+    "BybitNetworkError",
+    "BybitOrderError",
+    "BybitRateLimitError",
     "DemoProvenance",
+    "ExponentialBackoffRetry",
+    "ProvenanceEvent",
+    "ProvenanceEventType",
+    "ProvenanceTracker",
+    "RetryConfig",
+    "classify_bybit_error",
     "create_bybit_demo_connector",
 ]

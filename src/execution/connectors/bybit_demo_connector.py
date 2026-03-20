@@ -12,14 +12,23 @@ Key Features:
 - Provenance logging for audit trail
 - Mock/sim leakage prevention
 - Compatible with OrderSimulator interface
+- Comprehensive error handling with typed exceptions
+- Retry logic with exponential backoff and jitter
+- Full order lifecycle provenance tracking
 """
 
 from __future__ import annotations
 
+import asyncio
 import logging
+import math
 import os
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+import random
+import uuid
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from enum import Enum
+from typing import TYPE_CHECKING, Any, Callable, TypeVar
 
 if TYPE_CHECKING:
     from data.exchange.bybit_connector import BybitConnector
@@ -29,6 +38,449 @@ if TYPE_CHECKING:
 from execution.paper.models import OrderState, PaperFill, PaperOrder
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar("T")
+
+
+# ---------------------------------------------------------------------------
+# Exception Hierarchy
+# ---------------------------------------------------------------------------
+
+
+class BybitAPIError(Exception):
+    """Base exception for all Bybit demo connector errors."""
+
+    def __init__(
+        self,
+        message: str,
+        error_code: str | None = None,
+        status_code: int | None = None,
+        operation: str | None = None,
+        retryable: bool = False,
+    ) -> None:
+        self.error_code = error_code
+        self.status_code = status_code
+        self.operation = operation
+        self.retryable = retryable
+        super().__init__(message)
+
+
+class BybitRateLimitError(BybitAPIError):
+    """Raised when Bybit API rate limit is exceeded."""
+
+    def __init__(
+        self,
+        message: str = "Bybit API rate limit exceeded",
+        retry_after: float | None = None,
+        **kwargs: Any,
+    ) -> None:
+        self.retry_after = retry_after
+        super().__init__(
+            message=message,
+            error_code=kwargs.get("error_code", "429"),
+            status_code=429,
+            operation=kwargs.get("operation"),
+            retryable=True,
+        )
+
+
+class BybitAuthenticationError(BybitAPIError):
+    """Raised when API authentication fails."""
+
+    def __init__(
+        self,
+        message: str = "Bybit API authentication failed",
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            message=message,
+            error_code=kwargs.get("error_code", "auth_failed"),
+            status_code=kwargs.get("status_code", 401),
+            operation=kwargs.get("operation"),
+            retryable=False,
+        )
+
+
+class BybitNetworkError(BybitAPIError):
+    """Raised on network connectivity issues."""
+
+    def __init__(
+        self,
+        message: str = "Network error connecting to Bybit API",
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            message=message,
+            error_code=kwargs.get("error_code", "network_error"),
+            operation=kwargs.get("operation"),
+            retryable=True,
+        )
+
+
+class BybitOrderError(BybitAPIError):
+    """Raised on order-specific failures (insufficient margin, invalid params, etc.)."""
+
+    def __init__(
+        self,
+        message: str,
+        order_id: str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        self.order_id = order_id
+        super().__init__(
+            message=message,
+            error_code=kwargs.get("error_code"),
+            status_code=kwargs.get("status_code"),
+            operation=kwargs.get("operation"),
+            retryable=kwargs.get("retryable", False),
+        )
+
+
+class BybitConnectorError(BybitAPIError):
+    """Raised when connector session is unavailable or misconfigured."""
+
+    def __init__(
+        self,
+        message: str = "Bybit connector is unavailable",
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            message=message,
+            error_code=kwargs.get("error_code", "connector_error"),
+            operation=kwargs.get("operation"),
+            retryable=kwargs.get("retryable", True),
+        )
+
+
+# Mapping from Bybit retCode to our typed exceptions.
+_BYBIT_ERROR_MAP: dict[str, type[BybitAPIError]] = {
+    "10001": BybitRateLimitError,  # Rate limit
+    "10002": BybitRateLimitError,  # Rate limit (IP)
+    "10003": BybitRateLimitError,  # Rate limit (UID)
+    "10004": BybitRateLimitError,  # Rate limit (order)
+    "10006": BybitAuthenticationError,  # Invalid API key
+    "10007": BybitAuthenticationError,  # Invalid sign
+    "10008": BybitAuthenticationError,  # IP not whitelisted
+    "10009": BybitAuthenticationError,  # IP restricted
+    "10010": BybitAuthenticationError,  # Permission denied
+    "10013": BybitAuthenticationError,  # Invalid timestamp
+    "10014": BybitAuthenticationError,  # Invalid sign (repeated)
+    "110001": BybitOrderError,  # Order does not exist
+    "110004": BybitOrderError,  # Duplicate order ID
+    "110006": BybitOrderError,  # Insufficient balance
+    "110007": BybitOrderError,  # Position not found
+    "110008": BybitOrderError,  # Reduce-only but no position
+    "110009": BybitOrderError,  # Position crossed auto-deleveraging
+    "110010": BybitOrderError,  # TP/SL order error
+    "110011": BybitOrderError,  # Conditional order error
+    "110012": BybitOrderError,  # Invalid order qty
+    "110016": BybitOrderError,  # Order price out of range
+    "110018": BybitOrderError,  # Leverage not valid
+    "110021": BybitOrderError,  # Qty less than min
+    "110022": BybitOrderError,  # Risk limit exceeded
+    "13001": BybitOrderError,  # Order already triggered
+    "13002": BybitOrderError,  # Order already cancelled
+    "13003": BybitOrderError,  # Order already filled
+    "13004": BybitOrderError,  # Order not found
+    "13005": BybitOrderError,  # Modify order error
+    "13006": BybitOrderError,  # Cancel order error
+    "13010": BybitOrderError,  # TP/SL not valid
+    "13011": BybitOrderError,  # TP/SL price error
+    "13013": BybitOrderError,  # Order status not valid
+    "13014": BybitOrderError,  # Market order not supported
+    "13015": BybitOrderError,  # Quantity exceeds limit
+    "170005": BybitOrderError,  # Max position limit exceeded
+}
+
+
+def classify_bybit_error(
+    ret_code: str | int | None,
+    ret_msg: str = "",
+    operation: str | None = None,
+) -> BybitAPIError:
+    """Classify a Bybit API error response into a typed exception.
+
+    Args:
+        ret_code: The Bybit ``retCode`` field.
+        ret_msg: The Bybit ``retMsg`` field.
+        operation: The operation that triggered the error.
+
+    Returns:
+        A typed :class:`BybitAPIError` subclass instance.
+    """
+    code_str = str(ret_code) if ret_code is not None else "unknown"
+
+    if code_str == "0":
+        return BybitAPIError(
+            "No error (retCode=0)", error_code="0", operation=operation
+        )
+
+    exc_cls = _BYBIT_ERROR_MAP.get(code_str)
+    if exc_cls is not None:
+        return exc_cls(
+            message=ret_msg or f"Bybit API error (code={code_str})",
+            error_code=code_str,
+            operation=operation,
+        )
+
+    # Default: unknown API error (retryable for 5xx-like codes).
+    retryable = code_str.startswith("5") or code_str.startswith("3")
+    return BybitAPIError(
+        message=ret_msg or f"Bybit API error (code={code_str})",
+        error_code=code_str,
+        operation=operation,
+        retryable=retryable,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Retry Configuration & Logic
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class RetryConfig:
+    """Configuration for exponential-backoff retry with jitter.
+
+    Attributes:
+        max_retries: Maximum number of retry attempts (0 = no retry).
+        base_delay: Base delay in seconds before first retry.
+        max_delay: Maximum delay cap in seconds.
+        exponential_base: Multiplier for exponential growth.
+        jitter_range: Tuple (low, high) for uniform jitter factor applied
+            as a fraction of the computed delay.
+    """
+
+    max_retries: int = 3
+    base_delay: float = 0.5
+    max_delay: float = 30.0
+    exponential_base: float = 2.0
+    jitter_range: tuple[float, float] = (0.8, 1.2)
+
+    def get_delay(self, attempt: int) -> float:
+        """Compute delay for a given retry *attempt* (1-based).
+
+        Uses exponential backoff with jitter.
+
+        Args:
+            attempt: Current attempt number (starting at 1).
+
+        Returns:
+            Delay in seconds, capped at ``max_delay``.
+        """
+        delay = self.base_delay * (self.exponential_base ** (attempt - 1))
+        delay = min(delay, self.max_delay)
+        # Apply uniform jitter.
+        jitter_lo, jitter_hi = self.jitter_range
+        jitter_factor = random.uniform(jitter_lo, jitter_hi)
+        delay *= jitter_factor
+        return delay
+
+
+class ExponentialBackoffRetry:
+    """Generic async retry executor with exponential backoff and jitter.
+
+    Args:
+        config: Retry configuration.
+        retryable_predicate: Optional callable to decide if an exception
+            is retryable. Receives the exception, returns bool.
+    """
+
+    def __init__(
+        self,
+        config: RetryConfig | None = None,
+        retryable_predicate: Callable[[Exception], bool] | None = None,
+    ) -> None:
+        self.config = config or RetryConfig()
+        self.retryable_predicate = retryable_predicate
+
+    def _is_retryable(self, exc: Exception) -> bool:
+        """Determine whether *exc* is retryable."""
+        if self.retryable_predicate is not None:
+            return self.retryable_predicate(exc)
+        if isinstance(exc, BybitAPIError):
+            return exc.retryable
+        # Default: retry on network / timeout errors.
+        return isinstance(exc, (OSError, asyncio.TimeoutError, ConnectionError))
+
+    async def execute(
+        self,
+        func: Callable[..., Any],
+        *args: Any,
+        **kwargs: Any,
+    ) -> T:
+        """Execute *func* with retries.
+
+        Args:
+            func: Awaitable callable to execute.
+            *args: Positional arguments forwarded to *func*.
+            **kwargs: Keyword arguments forwarded to *func*.
+
+        Returns:
+            The return value of *func*.
+
+        Raises:
+            The last exception if all retries are exhausted.
+        """
+        last_exc: Exception | None = None
+        for attempt in range(self.config.max_retries + 1):
+            try:
+                return await func(*args, **kwargs)  # type: ignore[misc]
+            except Exception as exc:
+                last_exc = exc
+                if not self._is_retryable(exc) or attempt == self.config.max_retries:
+                    raise
+                delay = self.config.get_delay(attempt)
+                logger.warning(
+                    "Retry attempt %d/%d for %s: %s (waiting %.2fs)",
+                    attempt,
+                    self.config.max_retries,
+                    getattr(func, "__name__", str(func)),
+                    exc,
+                    delay,
+                )
+                await asyncio.sleep(delay)
+        # Should be unreachable, but guard against None.
+        if last_exc is not None:
+            raise last_exc  # type: ignore[misc]
+        raise RuntimeError("Unexpected retry loop exit with no exception")
+
+
+# ---------------------------------------------------------------------------
+# Provenance Tracking
+# ---------------------------------------------------------------------------
+
+
+class ProvenanceEventType(str, Enum):
+    """Types of provenance events for order lifecycle."""
+
+    CONNECTOR_INIT = "connector_init"
+    ORDER_PLACED = "order_placed"
+    ORDER_FILLED = "order_filled"
+    ORDER_PARTIAL = "order_partial"
+    ORDER_REJECTED = "order_rejected"
+    ORDER_CANCELLED = "order_cancelled"
+    ORDER_CANCEL_FAILED = "order_cancel_failed"
+    TP_SL_ATTACHED = "tp_sl_attached"
+    TP_SL_ATTACH_FAILED = "tp_sl_attach_failed"
+    PRICE_FETCHED = "price_fetched"
+    BALANCE_FETCHED = "balance_fetched"
+    HEALTH_CHECK = "health_check"
+    ERROR = "error"
+
+
+@dataclass
+class ProvenanceEvent:
+    """A single provenance event in the order lifecycle.
+
+    Attributes:
+        event_type: The type of event.
+        timestamp: ISO-8601 timestamp.
+        order_id: Associated order ID (if applicable).
+        symbol: Trading symbol (if applicable).
+        details: Arbitrary event details.
+    """
+
+    event_type: ProvenanceEventType
+    timestamp: str
+    order_id: str | None = None
+    symbol: str | None = None
+    details: dict[str, Any] = field(default_factory=dict)
+
+
+class ProvenanceTracker:
+    """Tracks full order lifecycle provenance events.
+
+    Each event is stored with a timestamp and optional metadata,
+    providing a complete audit trail of all connector operations.
+    """
+
+    def __init__(self, max_events: int = 10_000) -> None:
+        self._events: list[ProvenanceEvent] = []
+        self._max_events = max_events
+
+    def record(
+        self,
+        event_type: ProvenanceEventType,
+        order_id: str | None = None,
+        symbol: str | None = None,
+        **details: Any,
+    ) -> ProvenanceEvent:
+        """Record a provenance event.
+
+        Args:
+            event_type: Type of event.
+            order_id: Associated order ID.
+            symbol: Trading symbol.
+            **details: Arbitrary event details.
+
+        Returns:
+            The recorded event.
+        """
+        event = ProvenanceEvent(
+            event_type=event_type,
+            timestamp=datetime.now(UTC).isoformat(),
+            order_id=order_id,
+            symbol=symbol,
+            details=details,
+        )
+        self._events.append(event)
+        # Enforce size limit.
+        if len(self._events) > self._max_events:
+            self._events = self._events[-self._max_events :]
+        return event
+
+    def get_events(
+        self,
+        order_id: str | None = None,
+        event_type: ProvenanceEventType | None = None,
+        limit: int | None = None,
+    ) -> list[ProvenanceEvent]:
+        """Query provenance events with optional filters.
+
+        Args:
+            order_id: Filter by order ID.
+            event_type: Filter by event type.
+            limit: Maximum events to return (most recent first).
+
+        Returns:
+            List of matching provenance events.
+        """
+        events = self._events
+        if order_id is not None:
+            events = [e for e in events if e.order_id == order_id]
+        if event_type is not None:
+            events = [e for e in events if e.event_type == event_type]
+        # Return most recent first.
+        events = list(reversed(events))
+        if limit is not None:
+            events = events[:limit]
+        return events
+
+    def get_order_history(self, order_id: str) -> list[ProvenanceEvent]:
+        """Get complete provenance history for an order.
+
+        Args:
+            order_id: The order ID.
+
+        Returns:
+            List of events for this order in chronological order.
+        """
+        return [e for e in self._events if e.order_id == order_id]
+
+    @property
+    def event_count(self) -> int:
+        """Total number of recorded events."""
+        return len(self._events)
+
+    def clear(self) -> None:
+        """Clear all recorded events."""
+        self._events.clear()
+
+
+# ---------------------------------------------------------------------------
+# Original DemoProvenance (kept for backward compatibility)
+# ---------------------------------------------------------------------------
 
 
 @dataclass
@@ -48,6 +500,11 @@ class DemoProvenance:
     timestamp: str
 
 
+# ---------------------------------------------------------------------------
+# Refactored BybitDemoConnector
+# ---------------------------------------------------------------------------
+
+
 class BybitDemoConnector:
     """Bybit demo connector for authenticated demo trading.
 
@@ -60,6 +517,7 @@ class BybitDemoConnector:
         connector: The underlying BybitConnector instance
         market_data: Market data provider for price lookups
         provenance: Provenance information proving demo execution
+        provenance_tracker: Full lifecycle provenance tracker
         _orders: Cache of orders placed via this connector
     """
 
@@ -67,12 +525,14 @@ class BybitDemoConnector:
         self,
         connector: BybitConnector,
         market_data: MarketDataProvider | None = None,
+        retry_config: RetryConfig | None = None,
     ) -> None:
         """Initialize the Bybit demo connector.
 
         Args:
             connector: Configured BybitConnector instance (must be in demo mode)
             market_data: Optional market data provider for price lookups
+            retry_config: Optional retry configuration (default: 3 retries)
 
         Raises:
             ValueError: If connector is not configured for demo mode
@@ -83,6 +543,9 @@ class BybitDemoConnector:
         self.connector = connector
         self.market_data = market_data
         self._orders: dict[str, PaperOrder] = {}
+        self._retry_config = retry_config or RetryConfig()
+        self._retry = ExponentialBackoffRetry(config=self._retry_config)
+        self.provenance_tracker = ProvenanceTracker()
 
         # Validate demo mode
         config = connector.config
@@ -109,17 +572,24 @@ class BybitDemoConnector:
             is_demo=True,
             endpoint=config.base_url,
             api_key_prefix=config.api_key[:4] if config.api_key else "****",
-            timestamp=__import__("datetime")
-            .datetime.now(__import__("datetime").UTC)
-            .isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
         )
 
-        # Log provenance
+        # Track initialization event
+        self.provenance_tracker.record(
+            ProvenanceEventType.CONNECTOR_INIT,
+            details={
+                "endpoint": self.provenance.endpoint,
+                "api_key_prefix": self.provenance.api_key_prefix,
+            },
+        )
+
         logger.info(
-            f"BybitDemoConnector initialized - DEMO MODE PROVENANCE: "
-            f"endpoint={self.provenance.endpoint}, "
-            f"api_key={self.provenance.api_key_prefix}..., "
-            f"timestamp={self.provenance.timestamp}"
+            "BybitDemoConnector initialized - DEMO MODE PROVENANCE: "
+            "endpoint=%s, api_key=%s..., timestamp=%s",
+            self.provenance.endpoint,
+            self.provenance.api_key_prefix,
+            self.provenance.timestamp,
         )
 
     @classmethod
@@ -127,12 +597,14 @@ class BybitDemoConnector:
         cls,
         load_env: bool = True,
         market_data: MarketDataProvider | None = None,
+        retry_config: RetryConfig | None = None,
     ) -> BybitDemoConnector:
         """Create connector from environment variables.
 
         Args:
             load_env: Whether to load .env file
             market_data: Optional market data provider for cached prices
+            retry_config: Optional retry configuration
 
         Returns:
             Configured BybitDemoConnector instance
@@ -155,7 +627,7 @@ class BybitDemoConnector:
         # Create connector
         connector = BybitConnector(config)
 
-        return cls(connector, market_data=market_data)
+        return cls(connector, market_data=market_data, retry_config=retry_config)
 
     @staticmethod
     def _normalize_bybit_symbol(symbol: str) -> str:
@@ -165,19 +637,61 @@ class BybitDemoConnector:
         normalized = normalized.replace(":USDT", "USDT")
         return normalized
 
-    async def get_market_price(self, symbol: str) -> float | None:
-        """Fetch latest market price from Bybit and update local market_data cache."""
+    async def _ensure_connected(self) -> None:
+        """Ensure the underlying connector session is active.
+
+        Raises:
+            BybitConnectorError: If the connector session cannot be established.
+        """
         try:
             if self.connector._session is None or self.connector._session.closed:
                 await self.connector.connect()
+        except Exception as exc:
+            raise BybitConnectorError(
+                f"Cannot establish Bybit session: {exc}",
+                operation="_ensure_connected",
+            ) from exc
+
+    def _extract_api_error(self, exc: Exception) -> BybitAPIError | None:
+        """Attempt to extract structured error info from an exception.
+
+        Checks for Bybit response dict patterns in exception attributes
+        and messages.
+
+        Args:
+            exc: The caught exception.
+
+        Returns:
+            A classified BybitAPIError if extractable, else None.
+        """
+        # Some connector errors carry a response dict.
+        ret_code = None
+        ret_msg = ""
+        for attr in ("response", "body", "args"):
+            val = getattr(exc, attr, None)
+            if isinstance(val, dict):
+                ret_code = val.get("retCode")
+                ret_msg = val.get("retMsg", str(exc))
+                break
+        if ret_code is not None:
+            return classify_bybit_error(
+                ret_code=ret_code,
+                ret_msg=ret_msg,
+                operation=getattr(exc, "operation", None),
+            )
+        return None
+
+    async def get_market_price(self, symbol: str) -> float | None:
+        """Fetch latest market price from Bybit and update local market_data cache."""
+        try:
+            await self._ensure_connected()
 
             bybit_symbol = self._normalize_bybit_symbol(symbol)
-            ticker = await self.connector.get_ticker(bybit_symbol)
-            price_raw = (
-                ticker.get("result", {})
-                .get("list", [{}])[0]
-                .get("lastPrice")
+            ticker = await self._retry.execute(
+                self.connector.get_ticker,
+                bybit_symbol,
             )
+            price_raw = ticker.get("result", {}).get("list", [{}])[0].get("lastPrice")
             if price_raw is None:
                 return None
             price = float(price_raw)
@@ -185,12 +699,36 @@ class BybitDemoConnector:
                 return None
 
             if self.market_data is not None:
-                # Keep both normalized and source symbol keys warm.
                 self.market_data.set_price(symbol, price)
                 self.market_data.set_price(bybit_symbol, price)
+
+            self.provenance_tracker.record(
+                ProvenanceEventType.PRICE_FETCHED,
+                symbol=symbol,
+                details={"price": price, "bybit_symbol": bybit_symbol},
+            )
             return price
-        except Exception as e:
-            logger.warning("Failed to fetch live Bybit market price for %s: %s", symbol, e)
+
+        except BybitAPIError as exc:
+            self.provenance_tracker.record(
+                ProvenanceEventType.ERROR,
+                symbol=symbol,
+                details={"operation": "get_market_price", "error": str(exc)},
+            )
+            logger.warning(
+                "Failed to fetch live Bybit market price for %s: %s", symbol, exc
+            )
+            return None
+        except Exception as exc:
+            api_err = self._extract_api_error(exc)
+            self.provenance_tracker.record(
+                ProvenanceEventType.ERROR,
+                symbol=symbol,
+                details={"operation": "get_market_price", "error": str(exc)},
+            )
+            logger.warning(
+                "Failed to fetch live Bybit market price for %s: %s", symbol, exc
+            )
             return None
 
     async def place_order(
@@ -221,21 +759,21 @@ class BybitDemoConnector:
         Returns:
             PaperOrder with actual Bybit order details
         """
-        # Log provenance before placing order
         logger.info(
-            f"DEMO EXECUTION: Placing {order_type} {side} order for {quantity} {symbol} "
-            f"via Bybit demo API at {self.provenance.endpoint}"
+            "DEMO EXECUTION: Placing %s %s order for %s %s via Bybit demo API at %s",
+            order_type,
+            side,
+            quantity,
+            symbol,
+            self.provenance.endpoint,
         )
 
         try:
-            # Ensure connector is connected
-            if self.connector._session is None or self.connector._session.closed:
-                await self.connector.connect()
-
+            await self._ensure_connected()
             venue_symbol = self._normalize_bybit_symbol(symbol)
 
-            # Place order via Bybit API
-            result = await self.connector.place_order(
+            result = await self._retry.execute(
+                self.connector.place_order,
                 symbol=venue_symbol,
                 side=side,
                 order_type=order_type,
@@ -244,7 +782,16 @@ class BybitDemoConnector:
                 time_in_force="GTC",
             )
 
-            # Create PaperOrder from Bybit response
+            # Check for API error in response
+            ret_code = result.get("retCode")
+            if ret_code is not None and ret_code != 0:
+                api_err = classify_bybit_error(
+                    ret_code=ret_code,
+                    ret_msg=result.get("retMsg", ""),
+                    operation="place_order",
+                )
+                raise api_err
+
             order = PaperOrder(
                 order_id=result.get("order_id", ""),
                 symbol=symbol.upper(),
@@ -254,12 +801,15 @@ class BybitDemoConnector:
                 price=price if price else 0.0,
             )
 
-            # Record the fill if order is filled
             status = result.get("status", "Created")
             if status in ["Filled", "PartiallyFilled"]:
                 fill_price = result.get("price", 0.0)
+                if isinstance(fill_price, str):
+                    try:
+                        fill_price = float(fill_price)
+                    except (ValueError, TypeError):
+                        fill_price = 0.0
                 if fill_price == 0.0 and self.market_data:
-                    # Fallback to market data price
                     fill_price = (
                         self.market_data.get_price(symbol)
                         or self.market_data.get_price(venue_symbol)
@@ -273,17 +823,39 @@ class BybitDemoConnector:
                     side=side.lower(),
                     price=fill_price,
                     quantity=quantity,
-                    timestamp=__import__("datetime")
-                    .datetime.now(__import__("datetime").UTC)
-                    .isoformat(),
+                    timestamp=datetime.now(UTC),
                 )
                 order.add_fill(fill)
                 order.state = OrderState.FILLED
+
+                self.provenance_tracker.record(
+                    ProvenanceEventType.ORDER_FILLED,
+                    order_id=order.order_id,
+                    symbol=symbol,
+                    details={
+                        "status": status,
+                        "fill_price": fill_price,
+                        "quantity": quantity,
+                    },
+                )
             else:
                 order.state = OrderState.PENDING
 
             # Store order
             self._orders[order.order_id] = order
+
+            self.provenance_tracker.record(
+                ProvenanceEventType.ORDER_PLACED,
+                order_id=order.order_id,
+                symbol=symbol,
+                details={
+                    "side": side,
+                    "order_type": order_type,
+                    "quantity": quantity,
+                    "price": price,
+                    "status": status,
+                },
+            )
 
             # Attach venue-native TP/SL after order acceptance.
             reference_price = float(result.get("price") or order.price or 0.0)
@@ -313,7 +885,7 @@ class BybitDemoConnector:
                 order_id=order.order_id,
                 symbol=symbol,
                 side=side,
-                price=order.price,
+                price=order.price or 0.0,
                 quantity=quantity,
                 order_type=order_type,
                 status=status,
@@ -321,26 +893,58 @@ class BybitDemoConnector:
             )
 
             logger.info(
-                f"DEMO EXECUTION SUCCESS: Order {order.order_id} placed via Bybit demo API. "
-                f"Status: {status}, Fills: {len(order.fills)}"
+                "DEMO EXECUTION SUCCESS: Order %s placed via Bybit demo API. "
+                "Status: %s, Fills: %d",
+                order.order_id,
+                status,
+                len(order.fills),
             )
 
             return order
 
-        except Exception as e:
-            logger.error(f"DEMO EXECUTION FAILED: {e}")
-
-            # Create rejected order
+        except BybitAPIError as exc:
+            logger.error("DEMO EXECUTION FAILED (API error): %s", exc)
             order = PaperOrder(
-                order_id=f"rejected_{__import__('uuid').uuid4().hex[:12]}",
+                order_id=f"rejected_{uuid.uuid4().hex[:12]}",
                 symbol=symbol.upper(),
                 side=side.lower(),
                 order_type=order_type.lower(),
                 quantity=float(quantity) if quantity else 0.001,
             )
-            order.reject(f"Bybit demo API error: {e}")
+            order.reject(f"Bybit demo API error: {exc}")
             self._orders[order.order_id] = order
 
+            self.provenance_tracker.record(
+                ProvenanceEventType.ORDER_REJECTED,
+                order_id=order.order_id,
+                symbol=symbol,
+                details={
+                    "error_code": exc.error_code,
+                    "error": str(exc),
+                    "retryable": exc.retryable,
+                },
+            )
+            return order
+
+        except Exception as exc:
+            logger.error("DEMO EXECUTION FAILED: %s", exc)
+
+            order = PaperOrder(
+                order_id=f"rejected_{uuid.uuid4().hex[:12]}",
+                symbol=symbol.upper(),
+                side=side.lower(),
+                order_type=order_type.lower(),
+                quantity=float(quantity) if quantity else 0.001,
+            )
+            order.reject(f"Bybit demo API error: {exc}")
+            self._orders[order.order_id] = order
+
+            self.provenance_tracker.record(
+                ProvenanceEventType.ORDER_REJECTED,
+                order_id=order.order_id,
+                symbol=symbol,
+                details={"error": str(exc)},
+            )
             return order
 
     def _sanitize_trading_stops(
@@ -363,7 +967,6 @@ class BybitDemoConnector:
 
         side_norm = side.lower().strip()
         if side_norm == "buy":
-            # Cap unrealistic extremes to keep venue-level hard exits practical.
             if tp is not None and tp > reference_price * (1 + max_tp_distance_pct):
                 clipped = reference_price * (1 + max_tp_distance_pct)
                 logger.warning(
@@ -442,14 +1045,14 @@ class BybitDemoConnector:
         order_id: str,
         take_profit: float | None,
         stop_loss: float | None,
-        retries: int = 3,
-        retry_delay_seconds: float = 1.0,
     ) -> None:
-        """Best-effort TP/SL attachment with retries and incident reporting."""
-        import asyncio
+        """Best-effort TP/SL attachment with retries and incident reporting.
 
+        Uses ExponentialBackoffRetry for retry logic with exponential backoff
+        and jitter.
+        """
         last_error: Exception | None = None
-        for attempt in range(1, retries + 1):
+        for attempt in range(1, self._retry_config.max_retries + 1):
             try:
                 await self.connector.set_trading_stop(
                     symbol=symbol,
@@ -464,19 +1067,51 @@ class BybitDemoConnector:
                     take_profit,
                     stop_loss,
                 )
+                self.provenance_tracker.record(
+                    ProvenanceEventType.TP_SL_ATTACHED,
+                    order_id=order_id,
+                    symbol=symbol,
+                    details={
+                        "take_profit": take_profit,
+                        "stop_loss": stop_loss,
+                        "attempt": attempt,
+                    },
+                )
                 return
-            except Exception as e:
-                last_error = e
-                if attempt < retries:
-                    await asyncio.sleep(retry_delay_seconds)
+            except Exception as exc:
+                last_error = exc
+                if attempt < self._retry_config.max_retries:
+                    delay = self._retry_config.get_delay(attempt)
+                    logger.warning(
+                        "TP/SL attach attempt %d/%d failed for %s: %s (retry in %.2fs)",
+                        attempt,
+                        self._retry_config.max_retries,
+                        symbol,
+                        exc,
+                        delay,
+                    )
+                    await asyncio.sleep(delay)
 
         logger.error(
             "Failed to attach Bybit TP/SL for %s (order_id=%s) after %s attempts: %s",
             symbol,
             order_id,
-            retries,
+            self._retry_config.max_retries,
             last_error,
         )
+
+        self.provenance_tracker.record(
+            ProvenanceEventType.TP_SL_ATTACH_FAILED,
+            order_id=order_id,
+            symbol=symbol,
+            details={
+                "take_profit": take_profit,
+                "stop_loss": stop_loss,
+                "error": str(last_error),
+                "attempts": self._retry_config.max_retries,
+            },
+        )
+
         try:
             from execution.incident_reporter import publish_execution_incident
 
@@ -506,20 +1141,18 @@ class BybitDemoConnector:
         """
         order = self._orders.get(order_id)
         if order is None:
-            logger.warning(f"Cancel order failed: Order {order_id} not found")
+            logger.warning("Cancel order failed: Order %s not found", order_id)
             return False
 
         try:
-            # Ensure connector is connected
-            if self.connector._session is None or self.connector._session.closed:
-                await self.connector.connect()
+            await self._ensure_connected()
 
-            await self.connector.cancel_order(
+            await self._retry.execute(
+                self.connector.cancel_order,
                 symbol=self._normalize_bybit_symbol(order.symbol),
                 order_id=order_id,
             )
 
-            # Update order state
             order.cancel()
 
             # Audit log
@@ -529,20 +1162,45 @@ class BybitDemoConnector:
                 order_id=order_id,
                 symbol=order.symbol,
                 side=order.side,
-                price=order.price,
+                price=order.price or 0.0,
                 quantity=order.quantity,
                 order_type=order.order_type,
                 status="Cancelled",
                 operation="cancel_order_demo",
             )
 
+            self.provenance_tracker.record(
+                ProvenanceEventType.ORDER_CANCELLED,
+                order_id=order_id,
+                symbol=order.symbol,
+            )
+
             logger.info(
-                f"DEMO EXECUTION: Order {order_id} cancelled via Bybit demo API"
+                "DEMO EXECUTION: Order %s cancelled via Bybit demo API",
+                order_id,
             )
             return True
 
-        except Exception as e:
-            logger.error(f"DEMO EXECUTION: Cancel order {order_id} failed: {e}")
+        except BybitAPIError as exc:
+            logger.error(
+                "DEMO EXECUTION: Cancel order %s failed (API error): %s", order_id, exc
+            )
+            self.provenance_tracker.record(
+                ProvenanceEventType.ORDER_CANCEL_FAILED,
+                order_id=order_id,
+                symbol=order.symbol,
+                details={"error_code": exc.error_code, "error": str(exc)},
+            )
+            return False
+
+        except Exception as exc:
+            logger.error("DEMO EXECUTION: Cancel order %s failed: %s", order_id, exc)
+            self.provenance_tracker.record(
+                ProvenanceEventType.ORDER_CANCEL_FAILED,
+                order_id=order_id,
+                symbol=order.symbol,
+                details={"error": str(exc)},
+            )
             return False
 
     def get_order(self, order_id: str) -> PaperOrder | None:
@@ -592,8 +1250,6 @@ class BybitDemoConnector:
         Returns:
             Dictionary with position data
         """
-        # For now, calculate from local orders
-        # In future, this could query Bybit API for actual positions
         symbol = symbol.upper()
         position_qty = 0.0
         total_value = 0.0
@@ -644,33 +1300,51 @@ class BybitDemoConnector:
             - coin_balances: List of per-coin balances
             - raw_response: Full API response
         """
-        # Log provenance before balance query
         logger.info(
-            f"DEMO BALANCE QUERY: Fetching wallet balance from Bybit demo API "
-            f"at {self.provenance.endpoint}"
+            "DEMO BALANCE QUERY: Fetching wallet balance from Bybit demo API at %s",
+            self.provenance.endpoint,
         )
 
         try:
-            # Ensure connector is connected
-            if self.connector._session is None or self.connector._session.closed:
-                await self.connector.connect()
+            await self._ensure_connected()
 
-            # Get balance from Bybit API
-            balance = await self.connector.get_wallet_balance(
+            balance = await self._retry.execute(
+                self.connector.get_wallet_balance,
                 account_type=account_type,
                 coin=coin,
             )
 
             logger.info(
-                f"DEMO BALANCE SUCCESS: Total equity=${balance.get('total_equity', 0):.2f}, "
-                f"Available=${balance.get('available_balance', 0):.2f}, "
-                f"Unrealized PnL=${balance.get('unrealized_pnl', 0):.2f}"
+                "DEMO BALANCE SUCCESS: Total equity=$%.2f, Available=$%.2f, "
+                "Unrealized PnL=$%.2f",
+                balance.get("total_equity", 0),
+                balance.get("available_balance", 0),
+                balance.get("unrealized_pnl", 0),
+            )
+
+            self.provenance_tracker.record(
+                ProvenanceEventType.BALANCE_FETCHED,
+                details={
+                    "account_type": account_type,
+                    "coin": coin,
+                    "total_equity": balance.get("total_equity", 0),
+                },
             )
 
             return balance
 
-        except Exception as e:
-            logger.error(f"DEMO BALANCE FAILED: {e}")
+        except BybitAPIError as exc:
+            self.provenance_tracker.record(
+                ProvenanceEventType.ERROR,
+                details={"operation": "get_wallet_balance", "error": str(exc)},
+            )
+            raise
+
+        except Exception as exc:
+            self.provenance_tracker.record(
+                ProvenanceEventType.ERROR,
+                details={"operation": "get_wallet_balance", "error": str(exc)},
+            )
             raise
 
     def get_provenance(self) -> DemoProvenance:
@@ -696,12 +1370,14 @@ class BybitDemoConnector:
             Health status dictionary
         """
         try:
-            # Ensure connector is connected
-            if self.connector._session is None or self.connector._session.closed:
-                await self.connector.connect()
+            await self._ensure_connected()
 
-            # Try a simple API call
-            health = await self.connector.health_check()
+            health = await self._retry.execute(self.connector.health_check)
+
+            self.provenance_tracker.record(
+                ProvenanceEventType.HEALTH_CHECK,
+                details={"healthy": health.get("healthy", False)},
+            )
 
             return {
                 "healthy": health.get("healthy", False),
@@ -715,19 +1391,24 @@ class BybitDemoConnector:
                     "timestamp": self.provenance.timestamp,
                 },
             }
-        except Exception as e:
-            logger.error(f"Health check failed: {e}")
+        except Exception as exc:
+            logger.error("Health check failed: %s", exc)
             return {
                 "healthy": False,
                 "demo_mode": self.provenance.is_demo,
                 "endpoint": self.provenance.endpoint,
-                "error": str(e),
+                "error": str(exc),
             }
 
     async def close(self) -> None:
         """Close the connector and cleanup resources."""
         await self.connector.close()
         logger.info("BybitDemoConnector closed")
+
+
+# ---------------------------------------------------------------------------
+# Factory
+# ---------------------------------------------------------------------------
 
 
 class BybitDemoConnectorFactory:
@@ -742,12 +1423,14 @@ class BybitDemoConnectorFactory:
     def create(
         prefer_demo: bool = True,
         market_data: MarketDataProvider | None = None,
+        retry_config: RetryConfig | None = None,
     ) -> BybitDemoConnector | Any:
         """Create appropriate connector based on available credentials.
 
         Args:
             prefer_demo: Whether to prefer demo connector over simulator
             market_data: Optional market data provider
+            retry_config: Optional retry configuration
 
         Returns:
             BybitDemoConnector if demo credentials available, else OrderSimulator
@@ -756,16 +1439,20 @@ class BybitDemoConnectorFactory:
 
         if prefer_demo:
             try:
-                connector = BybitDemoConnector.from_env()
+                connector = BybitDemoConnector.from_env(
+                    market_data=market_data,
+                    retry_config=retry_config,
+                )
                 logger.info(
                     "BybitDemoConnectorFactory: Created BybitDemoConnector "
                     "with authenticated demo execution"
                 )
                 return connector
-            except (ValueError, Exception) as e:
+            except (ValueError, Exception) as exc:
                 logger.warning(
-                    f"BybitDemoConnectorFactory: Demo credentials not available ({e}). "
-                    "Falling back to OrderSimulator."
+                    "BybitDemoConnectorFactory: Demo credentials not available (%s). "
+                    "Falling back to OrderSimulator.",
+                    exc,
                 )
 
         # Fall back to simulator
@@ -783,8 +1470,6 @@ class BybitDemoConnectorFactory:
         Returns:
             True if BYBIT_DEMO_API_KEY is set
         """
-        import os
-
         return bool(os.environ.get("BYBIT_DEMO_API_KEY"))
 
 
