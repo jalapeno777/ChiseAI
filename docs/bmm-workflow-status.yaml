@@ -1,6 +1,6 @@
 metadata:
   version: 1.0.0
-  last_updated: '2026-03-18T21:53:47.040084Z'
+  last_updated: '2026-03-20T05:26:50.883836Z'
   schema_version: 1.0.0
   recent_changes:
   - action: story-truth-audit-remediation
@@ -520,21 +520,9 @@ in_progress:
   sprint_id: SPRINT-2026-03-31
   name: Sprint 2026-03-31
   start_date: '2026-03-18'
-  total_stories: 2
-  total_story_points: 5
-  stories:
-  - story_id: ML-EVAL-001
-    title: BrainEval Integration
-    story_points: 2
-    status: in_progress
-    priority: P2
-    epic: ML-EVAL
-  - story_id: AUTOCOG-TIER3-001
-    title: Controlled Autonomous Improvement Cycles
-    story_points: 3
-    status: in_progress
-    priority: P2
-    epic: AUTOCOG-TIER3
+  total_stories: 0
+  total_story_points: 0
+  stories: []
 completed:
 - story_id: AUTOCOG-INTEGRATION-001
   title: Cross-System Learning Bridge
@@ -2877,6 +2865,43 @@ completed:
     passed: 37
     failed: 0
     pass_rate: 100%
+- story_id: ML-EVAL-001
+  title: BrainEval Integration
+  status: completed
+  priority: P2
+  owner: senior-dev
+  story_points: 2
+  created_date: '2026-03-18'
+  completed_date: '2026-03-20'
+  merge_commit: 2a3240e8
+  description: BrainEval integration for ML evaluation pipeline with comprehensive testing.
+  files_changed:
+  - src/ml/evaluation/brain_eval.py
+  - tests/test_ml/test_evaluation/test_brain_eval.py
+  test_results:
+    total_tests: 0
+    passed: 0
+    failed: 0
+    pass_rate: 0%
+- story_id: AUTOCOG-TIER3-001
+  title: Controlled Autonomous Improvement Cycles
+  status: completed
+  priority: P2
+  owner: senior-dev
+  story_points: 3
+  created_date: '2026-03-18'
+  completed_date: '2026-03-20'
+  merge_commit: 60d44170
+  description: Controlled autonomous improvement cycles with tier 3 autonomous cognition
+    capabilities.
+  files_changed:
+  - src/autonomous_cognition/improvement_cycles.py
+  - tests/test_autonomous_cognition/test_improvement_cycles.py
+  test_results:
+    total_tests: 0
+    passed: 0
+    failed: 0
+    pass_rate: 0%
 backlog:
 - id: TF-SECRETS-001
   title: Move Terraform secrets to runtime TF_VAR_* / secret manager path
