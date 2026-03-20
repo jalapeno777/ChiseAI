@@ -65,6 +65,7 @@ class ImprovementProposal:
         files: List of files to modify
         risk_level: Risk assessment (low/medium/high/critical)
         changes: Dict mapping file -> description of changes
+        line_counts: Dict mapping file -> number of lines changed
         metadata: Additional context
     """
 
@@ -73,6 +74,7 @@ class ImprovementProposal:
     files: list[str] = field(default_factory=list)
     risk_level: str = "low"
     changes: dict[str, str] = field(default_factory=dict)
+    line_counts: dict[str, int] = field(default_factory=dict)
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -82,6 +84,7 @@ class ImprovementProposal:
             "files": self.files,
             "risk_level": self.risk_level,
             "changes": self.changes,
+            "line_counts": self.line_counts,
             "metadata": self.metadata,
         }
 
@@ -284,7 +287,9 @@ class ImprovementCycleOrchestrator:
                 {
                     "files": proposal.files,
                     "risk_level": proposal.risk_level,
-                    "changes": {f: len(c) for f, c in proposal.changes.items()},
+                    "changes": {
+                        f: proposal.line_counts.get(f, 0) for f in proposal.files
+                    },
                 }
             )
             if violations:

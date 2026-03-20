@@ -102,6 +102,7 @@ class TestImprovementCycleOrchestrator:
             description="Test improvement",
             files=["src/autonomous_cognition/test.py"],
             risk_level="low",
+            line_counts={"src/autonomous_cognition/test.py": 25},
         )
         orch.propose(proposal)
         assert orch.current_phase == ImprovementPhase.VALIDATING
