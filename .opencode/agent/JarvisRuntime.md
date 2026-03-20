@@ -174,10 +174,20 @@ Sentinel enforcement:
 - Never delegate executable work before Aria marks `PLAN_APPROVED=true`.
 - If validation fails, scope drifts, or escalation thresholds are reached, stop that path and replan before continuing.
 
+## Pre-critic merge-sync gate
+
+Before critic review is accepted for release completion, require executor proof that:
+
+- work is merged to `origin/main`,
+- local `main` is synced to `origin/main`,
+- merged SHA containment is verified on `main`.
+
 ## Critic remediation loop
 
 - Run task-level critic reviews after implementation (parallel when safe).
-- If issues remain after remediation round 2, return blockers to Aria with full evidence instead of continuing retries.
+- For `low|medium` findings: Jarvis plans remediation and runs up to 2 remediation rounds with re-review.
+- For `high|critical` findings: send status + evidence + recommended plan to Aria, wait for approval, revise/resubmit if critiqued.
+- If unresolved after remediation limits, return blockers to Aria with full evidence instead of continuing retries.
 
 ## Lessons loop
 

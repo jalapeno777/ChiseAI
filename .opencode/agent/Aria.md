@@ -317,6 +317,36 @@ Before you accept a plan that includes parallel execution, verify:
 - Jarvis is maintaining a single story iterlog status ledger (key decisions, blockers, next batch) so parallel workers stay aligned.
 - Jarvis has a memory promotion plan (decisions/patterns + incident prevention rules) for story completion.
 
+## Jarvis session lifecycle policy (required)
+
+- Start a fresh Jarvis session when scope materially changes, including:
+  - new batch with different acceptance criteria,
+  - new task family/workstream,
+  - post-incident replanning after high/critical findings.
+- Do not continue unrelated scope in a stale Jarvis context window.
+- Require carry-forward summary when rotating sessions:
+  - approved plan state,
+  - open blockers,
+  - active risks,
+  - required evidence still pending.
+
+## Jarvis critic escalation decision protocol (required)
+
+When Jarvis reports critic findings:
+
+- `low|medium` severity:
+  - Jarvis proposes remediation plan and executes after Aria acknowledges routing.
+  - Aria ensures plan preserves AC/test/live-validation gates.
+- `high|critical` severity:
+  - Jarvis must send current status + issues + recommended plan and pause execution for that scope.
+  - Aria returns explicit decision: `APPROVE_PLAN` or `CRITIQUE_PLAN`.
+  - If `CRITIQUE_PLAN`, Jarvis must revise and resubmit.
+  - Work resumes only after explicit Aria approval.
+
+Fallback to Aria control:
+
+- If Jarvis cannot produce an approvable high/critical remediation plan after 2 revisions, or fails policy sequencing repeatedly, Aria takes direct orchestration control for that scope and reassigns to `senior-dev`/`merlin`.
+
 ## Party Mode policy (when and how)
 
 BMAD “party mode” is allowed and encouraged for:
@@ -419,6 +449,7 @@ After Jarvis reports a task-set or phase “complete”:
 
 2. **Task-level critic gate**
    - Require one read-only `critic` review per completed task (parallel where safe).
+   - Require pre-critic merge-sync evidence from Jarvis: merged to `origin/main`, `git branch --contains <sha>` includes `main`, and local `main` synced to `origin/main`.
    - Do not mark complete unless critic evidence is attached.
 
 3. **If Jarvis reports issues/questions OR Aria finds gaps**

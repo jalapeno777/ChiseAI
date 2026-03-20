@@ -231,6 +231,13 @@ git status -sb
 ```
 5. Only continue new dependent development from the refreshed local `main`.
 
+### Pre-Critic Merge Sync Gate (REQUIRED)
+Before Jarvis runs Critic review for release acceptance:
+1. Confirm work is merged to `origin/main` (not only local branch/main).
+2. Confirm merged head containment on `main` (`git branch --contains <head_sha>`).
+3. Confirm local `main` is synced to `origin/main` (`git fetch origin --prune` + `git pull --ff-only origin main`).
+4. If any check fails, Critic review is advisory only and completion is blocked.
+
 ---
 
 ## Docker & Container Connectivity (CRITICAL)
@@ -609,10 +616,10 @@ Every completion claim MUST include:
 
 - After implementation, Jarvis must run read-only critic review per completed task (parallel where safe).
 - If issues are found:
-  - run remediation round 1
-  - re-review
-  - run remediation round 2 (if needed)
-- If unresolved after two remediation rounds, return blockers to Aria with full evidence.
+  - `low|medium`: Jarvis creates remediation plan, executes round 1 -> re-review -> round 2 if needed.
+  - `high|critical`: Jarvis must report status + issues + recommended plan to Aria and pause that scope.
+  - If Aria critiques the plan, Jarvis revises and resubmits until approved.
+- If unresolved after two remediation rounds (or Aria rejects plan path), return blockers to Aria with full evidence.
 
 ### G) Lessons Loop (Required)
 
@@ -643,6 +650,19 @@ Every completion claim MUST include:
 - `quickdev-fast` (and optionally `juniordev`) are soft-deprecated for default routing.
 - Default 1SP route is `quickdev`; fast agents remain fallback-only during transition.
 - Remove fast agents from default routing tables first, then fully retire after verified non-use.
+
+### J) Jarvis Session Rotation (Required)
+
+- Aria must start a fresh Jarvis session when scope changes materially:
+  - new batch with different AC,
+  - new task family/workstream,
+  - high/critical incident replanning.
+- Jarvis session handoff must include current plan state, open blockers, active risks, and pending evidence.
+
+### K) Aria Fallback Control (Required)
+
+- If Jarvis cannot produce an approvable high/critical remediation plan after 2 revisions, Aria takes direct orchestration control for that scope.
+- Aria reassigns execution to `senior-dev` or `merlin` and preserves evidence trail and containment notes.
 
 
 ## YAML Rules

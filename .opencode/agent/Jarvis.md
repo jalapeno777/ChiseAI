@@ -144,6 +144,22 @@ After each worker branch push/PR handoff and after each merge confirmation:
    - `git switch main && git fetch origin --prune && git pull --ff-only origin main`
 5. Do not schedule dependent tasks on stale local `main`.
 
+## Pre-critic merge-sync gate (required)
+
+Before starting critic review for implementation-complete work, require executor evidence that:
+
+1. Work is merged to `origin/main` (not local-only main).
+2. Local `main` is synced to `origin/main`.
+3. Merge containment is proven for the merged head SHA.
+
+Required evidence bundle from executor:
+
+- `git branch --contains <merged_head_sha>` includes `main`
+- `git fetch origin --prune` then `git rev-parse main` equals `git rev-parse origin/main`
+- PR/merge status indicates merged (or equivalent merge API proof)
+
+If this gate is not satisfied, do not start critic review for release acceptance.
+
 ### Cross-Branch Verification Guardrail (REQUIRED)
 
 Before confirming any merge to main, verify the commit is actually on main:
@@ -369,10 +385,31 @@ Before declaring a session complete to Aria, run a lightweight `critic` complian
 ### Critic remediation loop (required)
 
 - After implementation, run task-level read-only critic review (one critic pass per completed task; parallelize when safe).
-- If critic finds issues:
-  - run remediation round 1 and re-review
-  - if still failing, run remediation round 2 and re-review
-- If unresolved after 2 remediation rounds, stop and return blocker packet to Aria with full evidence.
+- If critic finds `low|medium` severity issues:
+  - Jarvis must produce a concrete remediation plan (scope, owner, validation evidence targets).
+  - execute remediation round 1 and re-review.
+  - if still failing, execute remediation round 2 and re-review.
+  - if unresolved after round 2, stop and return blocker packet to Aria with full evidence.
+- If critic finds `high|critical` severity issues:
+  - immediately report task status + issue evidence + recommended remediation plan to Aria.
+  - wait for Aria signoff before resuming execution on that scope.
+  - if Aria critiques the plan, revise and resubmit until approved.
+  - do not continue implementation for that scope until Aria approval is explicit.
+
+Required escalation packet for `high|critical` critic issues:
+
+```text
+CRITIC_ESCALATION_PACKET
+- story_id:
+- task_id:
+- severity: high|critical
+- current_task_status:
+- issues_found:
+- evidence_ref:
+- recommended_plan:
+- rollback_or_containment:
+- approval_required_from: aria
+```
 
 ### Parallel-safe definition
 
