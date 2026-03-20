@@ -41,6 +41,7 @@ from signal_generation.signal_emitter import (
     SignalEmitter,
 )
 from signal_generation.signal_generator import SignalGenerator
+from signal_generation.signal_memory import SignalMemory, SignalOutcome
 
 __all__ = [
     # Signal Generator
@@ -73,4 +74,7 @@ __all__ = [
     "ProcessingMetrics",
     "ProcessingStage",
     "SignalPriority",
+    # Signal Memory (SIG-014)
+    "SignalMemory",
+    "SignalOutcome",
 ]
