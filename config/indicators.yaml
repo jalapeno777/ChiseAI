@@ -1,0 +1,57 @@
+# Indicator plugin configuration
+# This file controls which indicators are enabled and their default parameters
+
+enabled_indicators:
+  - RSI
+  - MACD
+  - BollingerBands
+  - VolumeProfile
+  - ATR
+  - MFI
+  - StochRSI
+  - WilliamsR
+
+# Default parameters for each indicator
+indicator_defaults:
+  RSI:
+    period: 14
+    overbought_threshold: 70.0
+    oversold_threshold: 30.0
+  MACD:
+    fast_period: 12
+    slow_period: 26
+    signal_period: 9
+  BollingerBands:
+    period: 20
+    std_dev: 2.0
+  VolumeProfile:
+    lookback_periods: 24
+    volume_buckets: 12
+    value_area_pct: 0.7
+  ATR:
+    period: 14
+  MFI:
+    period: 14
+    overbought_threshold: 80.0
+    oversold_threshold: 20.0
+  StochRSI:
+    rsi_period: 14
+    stoch_period: 14
+    k_period: 3
+    d_period: 3
+  WilliamsR:
+    period: 14
+    overbought_threshold: -20.0
+    oversold_threshold: -80.0
+
+# FeatureStore configuration
+feature_store:
+  prefix: "indicator"
+  default_ttl_seconds: 300
+  max_local_cache_size: 1000
+
+# Plugin registry configuration
+registry:
+  auto_load_entry_points: true
+  auto_load_modules:
+    - market_analysis.indicators
