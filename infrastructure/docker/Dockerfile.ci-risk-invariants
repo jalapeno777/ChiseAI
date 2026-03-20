@@ -1,0 +1,20 @@
+FROM python:3.11-slim
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Pinned dependencies for the risk-invariants gate to keep CI deterministic.
+RUN python -m pip install --upgrade pip \
+    && pip install \
+       pytest==9.0.2 \
+       pytest-asyncio==1.3.0 \
+       redis==7.3.0 \
+       joblib==1.5.3 \
+       numpy==2.4.3 \
+       ccxt==4.5.44
