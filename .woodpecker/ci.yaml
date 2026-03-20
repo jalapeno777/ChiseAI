@@ -342,6 +342,7 @@ steps:
           fi
           # Keep a lightweight fallback in case runner cache has an older ci-tools image.
           python3 -c "import redis" >/dev/null 2>&1 || pip install --no-cache-dir redis
+          python3 -c "import pytest" >/dev/null 2>&1 || pip install --no-cache-dir pytest
           python3 -m pytest -q \
             tests/test_execution/test_venue_enforcement.py \
             tests/test_execution/test_kill_switch/ \
@@ -443,17 +444,17 @@ steps:
           # PHASE 3: Performance monitoring start
           START_TIME=$(date +%s)
           echo "local-ci: Starting at $(date -Iseconds)"
-          
+
           # Increase file descriptor and process limits for testing
           ulimit -n 16384 || echo "Warning: could not increase file descriptor limit"
           ulimit -u 2048 || echo "Warning: could not increase process limit"
           echo "File descriptor limit: $(ulimit -n)"
           echo "Process limit: $(ulimit -u)"
-          
+
           # PHASE 3: Log system resources
           echo "local-ci: CPU count: $(nproc)"
           echo "local-ci: Memory: $(free -h | grep Mem | awk '{print $2}')"
-          
+
           EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-}}}"
           BRANCH="$${CI_COMMIT_BRANCH:-$${WOODPECKER_COMMIT_BRANCH:-}}"
           REF="$${CI_COMMIT_REF:-}"
@@ -484,12 +485,12 @@ steps:
           pip install --no-cache-dir ccxt influxdb-client asyncpg numpy scipy watchdog click websockets fastapi httpx
           pip install --no-cache-dir ccxt influxdb-client asyncpg numpy scipy watchdog click websockets fastapi
           pip install --no-cache-dir sqlalchemy>=2.0.0
-          
+
           # PHASE 3: Calculate optimal workers
           CPU_COUNT=$(nproc)
           WORKERS=$((CPU_COUNT > 4 ? 4 : CPU_COUNT))
           echo "local-ci: Using $WORKERS parallel workers"
-          
+
           if [ -x scripts/local-ci-checks.sh ]; then
             # Set environment to indicate we're in CI with file descriptor constraints
             export CI_FD_CONSTRAINTS=1
@@ -504,13 +505,13 @@ steps:
             echo "scripts/local-ci-checks.sh not found; failing"
             exit 1
           fi
-          
+
           # PHASE 3: Performance monitoring end
           END_TIME=$(date +%s)
           DURATION=$((END_TIME - START_TIME))
           echo "local-ci: Completed in ${DURATION}s"
           echo "{\"duration_seconds\": $DURATION, \"workers\": $WORKERS, \"timestamp\": \"$(date -Iseconds)\"}" > "$${CI_STATUS_DIR}/local-ci-performance.json"
-          
+
           # PHASE 3: Fail if duration exceeds threshold (5 minutes = 300s)
           if [ $DURATION -gt 300 ]; then
             echo "local-ci: WARNING - Duration ${DURATION}s exceeds threshold (300s)"
@@ -1051,13 +1052,13 @@ steps:
         (
           set -euo pipefail
           echo "performance-gate: Validating performance thresholds"
-          
+
           # Check local-ci performance metrics
           PERF_FILE="$${CI_STATUS_DIR}/local-ci-performance.json"
           if [ -f "$PERF_FILE" ]; then
             DURATION=$(cat "$PERF_FILE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('duration_seconds', 0))" 2>/dev/null || echo "0")
             echo "performance-gate: Test duration was ${DURATION}s"
-            
+
             if [ "$DURATION" -gt "$${MAX_TEST_DURATION}" ]; then
               echo "performance-gate: FAIL - Duration ${DURATION}s exceeds threshold ($${MAX_TEST_DURATION}s)"
               exit 1
@@ -1066,7 +1067,7 @@ steps:
           else
             echo "performance-gate: No performance data available; skipping duration check"
           fi
-          
+
           # Check coverage threshold
           COVERAGE_FILE="$${CI_STATUS_DIR}/changed-lines-coverage.status"
           if [ -f "$COVERAGE_FILE" ]; then
@@ -1078,7 +1079,7 @@ steps:
               echo "performance-gate: Changed lines coverage OK"
             fi
           fi
-          
+
           echo "performance-gate: All performance checks passed"
         ) > "$${CI_STATUS_DIR}/performance-gate.log" 2>&1
         code=$?
@@ -1100,19 +1101,19 @@ steps:
         (
           set -euo pipefail
           echo "truth-gate: Starting truth gate validation for strong-system stories"
-          
+
           # Extract story ID from PR title or branch name
           STORY_ID=$(python3 scripts/validation/extract_story_id_from_pr.py --from-env)
-          
+
           if [ -z "$STORY_ID" ]; then
             echo "truth-gate: No story ID found in PR title or branch name"
             echo "truth-gate: Skipping truth gate validation (not a story PR)"
             echo '{"passed": true, "skipped": true, "reason": "No story ID found"}' > "$${CI_STATUS_DIR}/truth-gate.json"
             exit 0
           fi
-          
+
           echo "truth-gate: Found story ID: $STORY_ID"
-          
+
           # Check if this is a strong-system story
           if ! python3 scripts/validation/extract_story_id_from_pr.py --check-strong-system "$STORY_ID" > /dev/null 2>&1; then
             echo "truth-gate: Story $STORY_ID is not a strong-system story"
@@ -1120,16 +1121,16 @@ steps:
             echo "{\"passed\": true, \"skipped\": true, \"reason\": \"Not a strong-system story\", \"story_id\": \"$STORY_ID\"}" > "$${CI_STATUS_DIR}/truth-gate.json"
             exit 0
           fi
-          
+
           echo "truth-gate: Story $STORY_ID is a strong-system story, running validation..."
-          
+
           # Run truth gate validation
           python3 scripts/validation/truth_gate.py --check all --story-id "$STORY_ID" --output json > "$${CI_STATUS_DIR}/truth-gate.json"
           TRUTH_GATE_EXIT=$?
-          
+
           # Output results
           cat "$${CI_STATUS_DIR}/truth-gate.json"
-          
+
           if [ $TRUTH_GATE_EXIT -eq 0 ]; then
             echo "truth-gate: Validation PASSED for $STORY_ID"
             exit 0
