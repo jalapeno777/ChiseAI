@@ -47,7 +47,9 @@ Ensure all agent swarm operations follow consistent, safe Git practices that mai
 ### Worker Completion Protocol
 1. Run local CI (via `chise-precommit-gates.md`)
 2. Run status sync validation (via command)
-3. Push branch to Gitea
+3. Publish completion candidate branch to `origin` (completion publication gate)
+   - push branch tip to `origin`
+   - verify remote head equals local `HEAD`
 4. Ensure handoff includes canonical `story_id` token for PR title gating:
    - Accepted: `ST-*`, `CH-*`, `FT-*`, `REWARD-*`, `REPO-*`, `SAFETY-*`, `BRANCH-*`, `PAPER-*`, `RECON-*` (must include a digit)
 5. Report handoff to Jarvis (DO NOT open PR)
@@ -74,7 +76,8 @@ Ensure all agent swarm operations follow consistent, safe Git practices that mai
 - Coordinates worker completion
 
 #### senior-dev
-- May merge to `main` after green CI and review for straightforward changes
+- May prepare integration fixes on feature branches
+- Direct merge to `main` is allowed only when explicitly delegated non-autonomously by Aria/Jarvis
 - Does NOT open/update/close PRs (only Merlin may do this)
 
 #### Merlin (Required Authority)
@@ -93,7 +96,7 @@ See `.opencode/command/chise-emergency-merge-override.md` for documented bypass 
 The merge authority rules here are consistent with `AGENTS.md` Git Safety Essentials:
 - **Workers**: Push branches + handoff evidence only; workers do NOT open PRs or merge to main
 - **Jarvis**: Orchestrates handoff to Merlin; coordinates worker completion
-- **senior-dev**: May merge to main after green CI and review
+- **senior-dev**: Direct main merge requires explicit non-autonomous delegation
 - **Merlin**: Required merge authority after >2 failed merge attempts
 
 ### Merge Attempt Definition
@@ -159,9 +162,10 @@ Use `scripts/swarm/session.py` for isolated worktree sessions:
 ## Branch Creation
 ```bash
 # From main
-git checkout main
-git pull origin main
-git checkout -b feature/[ST-XXX]-[slug]
+git switch main
+git fetch origin --prune
+git pull --ff-only origin main
+git switch -c feature/[ST-XXX]-[slug]
 
 # Or from existing feature branch (for sub-feature)
 git checkout -b feature/[ST-XXX]-[subfeature-slug]
@@ -176,6 +180,7 @@ git checkout -b feature/[ST-XXX]-[subfeature-slug]
 ```bash
 python3 scripts/swarm/session.py start \
   --story-id=[ST-XXX] \
+  --agent=[agent] \
   --branch=feature/[ST-XXX]-[slug] \
   --worktree-path=/tmp/worktrees/[ST-XXX]-[agent]
 ```
@@ -327,27 +332,30 @@ Refs: ST-VAL-008
 
 ### 1. Final Verification
 ```bash
-# Check PR status
-gh pr view [PR-NUMBER] --json statusCheckRollup,mergeable
+# Confirm required PR checks are green
+python3 scripts/ci/woodpecker_triage.py status --format human
 
 # Verify status sync
-python3 scripts/validate_status_sync.py --pr [PR-NUMBER]
+python3 scripts/validate_status_sync.py
 ```
 
 ### 2. Merge
 ```bash
-# Squash merge (preferred for feature branches)
-gh pr merge [PR-NUMBER] --squash --delete-branch
-
-# Or regular merge (for release branches)
-gh pr merge [PR-NUMBER] --merge --delete-branch
+# Merlin-managed merge (exceptional/manual recovery path)
+python3 scripts/gitea_pr_automerge.py \
+  --story-id "[ST-XXX]" \
+  --head "[BRANCH]" \
+  --wait \
+  --enable-automerge \
+  --delete-branch
 ```
 
 ### 3. Post-Merge
 ```bash
 # Update local main
-git checkout main
-git pull origin main
+git switch main
+git fetch origin --prune
+git pull --ff-only origin main
 
 # Update story status
 # Edit docs/bmm-workflow-status.yaml: status → "merged"
@@ -484,8 +492,10 @@ $ git push --force-with-lease origin feature/ST-DSL-042-grammar-extensions
 
 ```bash
 # Start new work
-git checkout main && git pull
-git checkout -b feature/[ST-XXX]-[slug]
+git switch main
+git fetch origin --prune
+git pull --ff-only origin main
+git switch -c feature/[ST-XXX]-[slug]
 
 # Daily workflow
 git status -sb                    # Check state

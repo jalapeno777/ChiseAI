@@ -75,7 +75,22 @@ EXIT_CONDITIONS:
    - Edit outside SCOPE_GLOBS
    - Touch a FORBIDDEN_GLOBS path
    - Find an upstream blocker (dependency not ready)
-   - Hit repeated-error circuit breaker (same error_signature appears twice without strategy change)"
+   - Hit repeated-error circuit breaker (same error_signature appears twice without strategy change)
+   - Claim completion without passing the completion publication gate"
+
+### 5c. Completion Publication Gate (Required)
+COMPLETION_PUBLICATION_GATE:
+  applies_when:
+    - worker created executable/code commits
+  required_sequence:
+    - validate local acceptance/tests evidence
+    - push completion candidate branch tip to origin
+    - verify remote head equals local HEAD
+    - report branch + head SHA + proof bundle to Jarvis
+  required_proof:
+    - git_push_outcome
+    - local_head_sha
+    - remote_head_sha_match
 
 ### 5a. Repeated-Error Circuit Breaker (Required)
 REPEATED_ERROR_POLICY:
@@ -110,6 +125,11 @@ EVIDENCE_REQUIRED:
     - attempt_count
     - strategy_delta
     - evidence_ref
+  
+  Completion publication fields (for committed code changes):
+    - push_command_result (`git push origin <branch>`)
+    - local_head_sha (`git rev-parse HEAD`)
+    - remote_head_sha (`git ls-remote --heads origin <branch>`)
 
 ### 7. Incident Template
 INCIDENT_TEMPLATE:
@@ -135,6 +155,7 @@ Before hitting "delegate", verify:
 - [ ] MEMORY_CONTEXT has actual Qdrant findings
 - [ ] EXIT_CONDITIONS are clear
 - [ ] REPEATED_ERROR_POLICY included with error_signature and strategy_delta requirements
+- [ ] COMPLETION_PUBLICATION_GATE included (push + SHA match evidence)
 - [ ] INCIDENT_TEMPLATE is copy-paste ready
 
 ## Templates
@@ -179,6 +200,7 @@ EXIT_CONDITIONS:
   - Encounter FORBIDDEN_GLOBS requirement
   - Find upstream blocker
   - Same error_signature appears twice without strategy_delta
+  - Completion publication gate cannot be satisfied (push failed or SHA mismatch)
 
 EVIDENCE_REQUIRED:
   Files changed: [list with summaries]
@@ -188,6 +210,9 @@ EVIDENCE_REQUIRED:
   attempt_count: [N]
   strategy_delta: [what changed vs previous attempt]
   evidence_ref: [logs/command output references]
+  push_command_result: [git push origin <branch> output]
+  local_head_sha: [git rev-parse HEAD]
+  remote_head_sha: [git ls-remote --heads origin <branch>]
 
 INCIDENT_TEMPLATE:
   Copy from chiseai-incident-response skill

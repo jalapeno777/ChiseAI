@@ -32,12 +32,22 @@ Story: HOTFIX-[date]-[brief]
 
 ### 3. Execute Bypass
 ```bash
-# Switch to main
-git checkout main
-git pull origin main
+# Verify emergency session authority + main merge lock
+python3 scripts/swarm/session.py verify \
+  --story-id "HOTFIX-[date]" \
+  --branch "safety/emergency-[date]-[brief-desc]" \
+  --worktree-path "<WORKTREE_PATH>" \
+  --check-canonical \
+  --require-main-merge-authority \
+  --acquire-main-merge-lock
 
-# Create hotfix branch
-git checkout -b hotfix/emergency-[date]-[brief-desc]
+# Switch to main
+git switch main
+git fetch origin --prune
+git pull --ff-only origin main
+
+# Create emergency safety branch
+git switch -c safety/emergency-[date]-[brief-desc]
 
 # Apply minimal fix
 # ... edits ...
@@ -47,14 +57,13 @@ python3 scripts/validate_status_sync.py
 pytest tests/ -k "critical"  # Critical tests only
 
 # Push
-git push origin hotfix/emergency-[date]-[brief-desc]
+git push -u origin safety/emergency-[date]-[brief-desc]
 
-# Force PR creation
+# Force PR creation (exceptional/manual recovery path)
 python3 scripts/gitea_pr_automerge.py \
     --story-id="HOTFIX-[date]" \
-    --branch="hotfix/emergency-[date]-[brief-desc]" \
-    --emergency-override=true \
-    --approver="[name]"
+    --head="safety/emergency-[date]-[brief-desc]" \
+    --agent-id="merlin"
 ```
 
 ### 4. Document Incident

@@ -28,8 +28,8 @@ Prereqs:
 2. Run local gates
    - Run `.opencode/command/chise-precommit-gates.md`
 
-3. Push branch to Gitea (if needed)
-   - `git push -u gitea "$BRANCH"`
+3. Push branch to origin (if needed)
+   - `git push -u origin "$BRANCH"`
 
 4. Open PR (no merge side effects)
    - `python3 scripts/gitea_pr_automerge.py --story-id "$STORY_ID" --head "$BRANCH"`
@@ -51,8 +51,8 @@ Prereqs:
 
 7. Sync local main and prune
    - `git switch main`
-   - `git pull --ff-only gitea main`
-   - `git fetch -p gitea`
+   - `git fetch origin --prune`
+   - `git pull --ff-only origin main`
    - Delete local feature branch (safe): `git branch -d <branch>`
    - Close swarm session with anti-drift check:
      - `python3 scripts/swarm/session.py close --worktree-path "$WORKTREE_PATH" --enforce-merged`

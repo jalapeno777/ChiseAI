@@ -36,6 +36,10 @@ permission:
 - If repo workflow requires Redis/Qdrant logging, do it as you go, not at the end.
 - After push, report `branch + head_sha` to Jarvis and wait for reconcile result when follow-on work depends on merge completion.
 - Do not continue dependent implementation on stale local `main`; rebase/sync only after Jarvis confirms merge state and instructs refresh.
+- If you created committed executable/code changes and believe the task is complete, completion publication gate is mandatory:
+  - push branch to `origin`,
+  - verify remote head matches local `HEAD`,
+  - include push evidence in handoff.
 
 ## Scope + Lock Contract (required)
 
@@ -78,4 +82,8 @@ Return:
 - If no tests were run, explicit no-test justification
 - Memory applied: 1-2 bullets summarizing constraints/decisions you followed from `MEMORY_CONTEXT`
 - TODOs and rollback notes (when behavior or infra changes)
+- Completion publication evidence (when code commits exist):
+  - `git push origin <branch>` outcome
+  - `git rev-parse HEAD`
+  - `git ls-remote --heads origin <branch>`
 - `LESSON_CANDIDATE` entries when new durable lessons are discovered (context, actionable_rule, evidence_ref).

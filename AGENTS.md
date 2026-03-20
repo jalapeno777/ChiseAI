@@ -332,6 +332,7 @@ These rules are additive and must be enforced consistently across `AGENTS.md` an
   - log checks performed and findings
   - acceptance criteria mapping to evidence
   - residual risk notes
+  - completion publication evidence for executable/code changes
 - **File existence verification**: For every file claimed as changed, worker must provide:
   - `git show <commit> --name-only` output OR `ls -la <file_path>` with timestamp proof
   - `git diff --stat HEAD~N` showing file changes with +/- counts
@@ -347,6 +348,17 @@ Every completion claim MUST include:
 2. **Commit Content Proof**: `git show <commit-sha> --name-only` proving files exist in commit
 3. **Branch Containment Proof**: `git branch --contains <commit-sha>` showing commit is on claimed branch
 4. **Cross-Branch Verification**: For merged work, `git branch --contains <commit-sha>` must show 'main'
+5. **Completion Publication Gate** (for any committed executable/code changes):
+   - Worker must publish the completion candidate branch to `origin` before claiming task completion.
+   - Required sequence:
+     - verify local acceptance/tests evidence first,
+     - push branch tip to `origin`,
+     - confirm remote branch head equals local `HEAD`,
+     - hand off with branch + head SHA.
+   - Required proof:
+     - `git push origin <branch>` outcome
+     - `git rev-parse HEAD` (local head)
+     - `git ls-remote --heads origin <branch>` showing matching head SHA
 
 **No file-existence proof = No completion approval**
 
