@@ -299,11 +299,12 @@ steps:
         set +e
         (
           set -euo pipefail
-          # Run secret detection on changed files
+          # Run secret detection only when at least one config-style file changed.
           CHANGED_FILES="$(printf '%s' "${CI_PIPELINE_FILES:-[]}" | tr -d '[]"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -E '\.(tf|tfvars|tfvars\.template|yaml|yml|json|env)$' | tr '\n' ' ' || true)"
-          if [ -n "$(printf '%s' "$CHANGED_FILES" | tr -d '[:space:]')" ]; then
-            echo "secret-detection: scanning changed files: ${CHANGED_FILES}"
-            python3 scripts/validation/detect_secrets.py --min-severity ERROR --format json ${CHANGED_FILES} > "$${CI_STATUS_DIR}/secret-detection.json" 2>&1
+          set -- $CHANGED_FILES
+          if [ "$#" -gt 0 ]; then
+            echo "secret-detection: scanning changed files: $*"
+            python3 scripts/validation/detect_secrets.py --min-severity ERROR --format json "$@" > "$${CI_STATUS_DIR}/secret-detection.json" 2>&1
             DETECT_EXIT=$?
             if [ $DETECT_EXIT -ne 0 ]; then
               echo "secret-detection: ERROR-level secrets detected"
@@ -343,6 +344,9 @@ steps:
           # Keep a lightweight fallback in case runner cache has an older ci-tools image.
           python3 -c "import redis" >/dev/null 2>&1 || pip install --no-cache-dir redis
           python3 -c "import pytest" >/dev/null 2>&1 || pip install --no-cache-dir pytest
+          python3 -c "import pytest_asyncio" >/dev/null 2>&1 || pip install --no-cache-dir pytest-asyncio
+          python3 -c "import joblib" >/dev/null 2>&1 || pip install --no-cache-dir joblib
+          python3 -c "import ccxt" >/dev/null 2>&1 || pip install --no-cache-dir ccxt
           python3 -m pytest -q \
             tests/test_execution/test_venue_enforcement.py \
             tests/test_execution/test_kill_switch/ \
