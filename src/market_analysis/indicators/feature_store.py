@@ -9,6 +9,7 @@ from tools.redis_state import (
     redis_state_hdel,
     redis_state_hexists,
     redis_state_hget,
+    redis_state_hgetall,
     redis_state_hset,
 )
 
@@ -174,8 +175,31 @@ class FeatureStore:
             Number of keys invalidated
         """
         count = 0
+        # Invalidate from local cache
         keys_to_remove = [k for k in self._local_cache if pattern in k]
+        removed_namespaced = set()
         for key in keys_to_remove:
             self.delete(key)
+            removed_namespaced.add(self._make_key(key))
             count += 1
+
+        # Invalidate from Redis
+        try:
+            all_fields = redis_state_hgetall("feature_store")
+            if all_fields:
+                for field in all_fields:
+                    if pattern in field and field not in removed_namespaced:
+                        # Delete from Redis
+                        redis_state_hdel("feature_store", field)
+                        # Remove from local cache if present (strip prefix)
+                        if field.startswith(self.prefix + ":"):
+                            original_key = field[len(self.prefix) + 1 :]
+                            self._local_cache.pop(original_key, None)
+                            self._local_expiry.pop(original_key, None)
+                        count += 1
+        except Exception as e:
+            logger.warning(
+                f"Redis pattern invalidation failed for pattern '{pattern}': {e}"
+            )
+
         return count
