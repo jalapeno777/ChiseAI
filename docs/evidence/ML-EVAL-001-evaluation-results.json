@@ -1,0 +1,128 @@
+{
+  "story_id": "ML-EVAL-001",
+  "timestamp": "2026-03-19T20:35:00Z",
+  "test_results": {
+    "total_tests": 75,
+    "passed": 75,
+    "failed": 0,
+    "pass_rate": "100%",
+    "integration_tests": {
+      "total": 11,
+      "passed": 11,
+      "test_names": [
+        "test_full_evaluation_pipeline",
+        "test_batch_evaluation_with_comparison",
+        "test_regression_detection_in_pipeline",
+        "test_evaluation_metrics_serialization",
+        "test_benchmark_comparison_serialization",
+        "test_end_to_end_with_registry_simulation",
+        "test_empty_data_handling",
+        "test_single_sample_evaluation",
+        "test_perfect_model_scenario",
+        "test_worst_model_scenario",
+        "test_large_batch_evaluation"
+      ]
+    },
+    "unit_tests": {
+      "total": 64,
+      "passed": 64,
+      "test_files": [
+        "tests/test_ml/test_evaluation/test_metrics.py",
+        "tests/test_ml/test_evaluation/test_brain_eval.py",
+        "tests/test_ml/test_evaluation/test_reporting.py"
+      ]
+    }
+  },
+  "metrics_implemented": 16,
+  "metric_names": [
+    "accuracy",
+    "precision",
+    "recall",
+    "f1",
+    "auc_roc",
+    "log_loss",
+    "calibration_error",
+    "brier_score",
+    "sharpe_ratio",
+    "max_drawdown",
+    "win_rate",
+    "profit_factor",
+    "expectancy",
+    "kelly_fraction",
+    "information_ratio",
+    "sortino_ratio"
+  ],
+  "metric_categories": {
+    "classification": [
+      "accuracy",
+      "precision",
+      "recall",
+      "f1",
+      "auc_roc",
+      "log_loss"
+    ],
+    "calibration": ["calibration_error", "brier_score"],
+    "trading": [
+      "sharpe_ratio",
+      "max_drawdown",
+      "win_rate",
+      "profit_factor",
+      "expectancy",
+      "kelly_fraction"
+    ],
+    "risk_adjusted": ["information_ratio", "sortino_ratio"]
+  },
+  "files_created": [
+    "src/ml/evaluation/metrics.py",
+    "src/ml/evaluation/brain_eval.py",
+    "src/ml/evaluation/reporting.py",
+    "src/ml/evaluation/__init__.py",
+    "tests/test_ml/test_evaluation/test_metrics.py",
+    "tests/test_ml/test_evaluation/test_brain_eval.py",
+    "tests/test_ml/test_evaluation/test_reporting.py",
+    "tests/test_ml/test_evaluation/test_integration.py",
+    "tests/test_ml/test_evaluation/__init__.py"
+  ],
+  "sample_evaluation": {
+    "model_id": "test_model_v1",
+    "accuracy": 0.85,
+    "precision": 0.82,
+    "recall": 0.88,
+    "f1": 0.85,
+    "sharpe_ratio": 1.5,
+    "win_rate": 0.6,
+    "calibration_error": 0.08,
+    "brier_score": 0.12
+  },
+  "components": {
+    "metrics_module": {
+      "evaluation_metrics_class": true,
+      "metric_result_class": true,
+      "metric_config_class": true,
+      "compute_all_metrics_function": true,
+      "individual_metric_functions": 16
+    },
+    "brain_eval_module": {
+      "brain_eval_client": true,
+      "brain_eval_config": true,
+      "eval_result_class": true,
+      "evaluation_orchestrator": true,
+      "synthetic_data_generation": true,
+      "batch_evaluation": true,
+      "model_comparison": true
+    },
+    "reporting_module": {
+      "benchmark_comparison_class": true,
+      "regression_detection": true,
+      "regression_thresholds": true,
+      "comparison_report_generation": true,
+      "version_chain_regression": true
+    }
+  },
+  "validation_status": {
+    "all_tests_passing": true,
+    "serialization_roundtrips": true,
+    "edge_cases_handled": true,
+    "regression_detection_working": true
+  }
+}
