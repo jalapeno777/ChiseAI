@@ -20,6 +20,7 @@ Key Features:
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
 import os
 import random
@@ -483,6 +484,25 @@ class ProvenanceTracker:
 # ---------------------------------------------------------------------------
 
 
+def hash_api_key(api_key: str | None) -> str:
+    """Hash an API key for secure logging.
+
+    Returns the first 4 characters followed by a SHA-256 hash of the
+    remainder, providing identification while protecting the full key.
+
+    Args:
+        api_key: The API key to hash, or None.
+
+    Returns:
+        A string like ``"abcd:a1b2c3..."`` or ``"****"`` if key is None/empty.
+    """
+    if not api_key or len(api_key) < 4:
+        return "****"
+    prefix = api_key[:4]
+    hashed = hashlib.sha256(api_key[4:].encode()).hexdigest()[:12]
+    return f"{prefix}:{hashed}"
+
+
 @dataclass
 class DemoProvenance:
     """Provenance information for demo trading.
@@ -490,7 +510,7 @@ class DemoProvenance:
     Attributes:
         is_demo: Whether demo mode is active
         endpoint: The Bybit demo endpoint used
-        api_key_prefix: First 4 chars of API key for identification
+        api_key_prefix: First 4 chars + hash of API key for identification
         timestamp: When the provenance was recorded
     """
 
@@ -571,7 +591,7 @@ class BybitDemoConnector:
         self.provenance = DemoProvenance(
             is_demo=True,
             endpoint=config.base_url,
-            api_key_prefix=(config.api_key[:2] + "****") if config.api_key else "****",
+            api_key_prefix=hash_api_key(config.api_key),
             timestamp=datetime.now(UTC).isoformat(),
         )
 
