@@ -40,14 +40,14 @@
     "zai-coding-plan": {
       "models": {
         "glm-5.0-fast": {
-          "id": "glm-5",
+          "id": "glm-5-turbo",
           "limit": {
             "context": 120000,
             "output": 16000,
           },
         },
         "glm-5.0-thinking": {
-          "id": "glm-5",
+          "id": "glm-5-turbo",
           "limit": {
             "context": 120000,
             "output": 16000,
