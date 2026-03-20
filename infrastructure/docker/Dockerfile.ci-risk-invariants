@@ -17,4 +17,6 @@ RUN python -m pip install --upgrade pip \
        redis==7.3.0 \
        joblib==1.5.3 \
        numpy==2.4.3 \
+       click==8.3.0 \
+       pydantic==2.11.10 \
        ccxt==4.5.44
