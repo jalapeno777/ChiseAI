@@ -348,9 +348,6 @@ steps:
           python3 -c "import joblib" >/dev/null 2>&1 || pip install --no-cache-dir joblib
           python3 -c "import ccxt" >/dev/null 2>&1 || pip install --no-cache-dir ccxt
           python3 -c "import numpy" >/dev/null 2>&1 || pip install --no-cache-dir numpy
-          python3 -c "import pandas" >/dev/null 2>&1 || pip install --no-cache-dir pandas
-          python3 -c "import scipy" >/dev/null 2>&1 || pip install --no-cache-dir scipy
-          python3 -c "import sklearn" >/dev/null 2>&1 || pip install --no-cache-dir scikit-learn
           python3 -m pytest -q \
             tests/test_execution/test_venue_enforcement.py \
             tests/test_execution/test_kill_switch/ \
