@@ -14,7 +14,7 @@ import logging
 import threading
 import time
 from collections.abc import Callable
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, cast
 
 from autonomous_control_plane.config.settings import settings
@@ -375,7 +375,7 @@ class CircuitBreakerRegistry:
                 state.last_error = None
                 state.half_open_calls = 0
                 state.metrics.record_state_transition()
-                state.updated_at = datetime.utcnow()
+                state.updated_at = datetime.now(UTC)
 
                 self._emit_state_change_event(
                     name,
@@ -414,7 +414,7 @@ class CircuitBreakerRegistry:
                 # Any failure in HALF_OPEN immediately opens circuit
                 state.state = CircuitBreakerState.OPEN
                 state.metrics.record_state_transition()
-                state.updated_at = datetime.utcnow()
+                state.updated_at = datetime.now(UTC)
 
                 self._emit_state_change_event(
                     name,
@@ -432,7 +432,7 @@ class CircuitBreakerRegistry:
             ):
                 state.state = CircuitBreakerState.OPEN
                 state.metrics.record_state_transition()
-                state.updated_at = datetime.utcnow()
+                state.updated_at = datetime.now(UTC)
 
                 self._emit_state_change_event(
                     name,
@@ -491,7 +491,7 @@ class CircuitBreakerRegistry:
                     state.state = CircuitBreakerState.HALF_OPEN
                     state.metrics.record_state_transition()
                     state.half_open_calls = 0
-                    state.updated_at = datetime.utcnow()
+                    state.updated_at = datetime.now(UTC)
 
                     self._emit_state_change_event(
                         name,
@@ -540,7 +540,7 @@ class CircuitBreakerRegistry:
                 previous_state = state.state
                 state.state = CircuitBreakerState.OPEN
                 state.metrics.record_state_transition()
-                state.updated_at = datetime.utcnow()
+                state.updated_at = datetime.now(UTC)
 
                 self._emit_state_change_event(
                     name,
@@ -577,7 +577,7 @@ class CircuitBreakerRegistry:
                 state.last_error = None
                 state.half_open_calls = 0
                 state.metrics.record_state_transition()
-                state.updated_at = datetime.utcnow()
+                state.updated_at = datetime.now(UTC)
 
                 self._emit_state_change_event(
                     name,
@@ -612,7 +612,7 @@ class CircuitBreakerRegistry:
             state.metrics = CircuitBreakerMetrics()
             state.half_open_calls = 0
             state.last_error = None
-            state.updated_at = datetime.utcnow()
+            state.updated_at = datetime.now(UTC)
 
             self._emit_state_change_event(
                 name, previous_state, state.state, StateTransitionReason.MANUAL_RESET
@@ -746,7 +746,7 @@ class CircuitBreakerRegistry:
 
         # Check cooldown
         if metrics.last_adjustment_time is not None:
-            elapsed = (datetime.utcnow() - metrics.last_adjustment_time).total_seconds()
+            elapsed = (datetime.now(UTC) - metrics.last_adjustment_time).total_seconds()
             if elapsed < config.adjustment_cooldown_seconds:
                 return
 
@@ -772,7 +772,7 @@ class CircuitBreakerRegistry:
                 if new_threshold != metrics.current_threshold:
                     old_threshold = metrics.current_threshold
                     metrics.current_threshold = new_threshold
-                    metrics.last_adjustment_time = datetime.utcnow()
+                    metrics.last_adjustment_time = datetime.now(UTC)
                     metrics.adjustment_count += 1
 
                     logger.info(
@@ -929,7 +929,7 @@ class CircuitBreakerRegistry:
 
             alert_data = {
                 "circuit_breaker": name,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "velocity": predictive.failure_velocity,
                 "threshold_approach": predictive.threshold_approach_percent,
                 "velocity_alert": velocity_alert,

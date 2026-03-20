@@ -1,7 +1,7 @@
 """Tests for Approval Workflow module (ST-GOV-003)."""
 
 import json
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
 
 import pytest
@@ -30,7 +30,7 @@ class TestApprovalRequest:
 
     def test_approval_request_creation(self):
         """Test creating an ApprovalRequest."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         request = ApprovalRequest(
             request_id="apr-12345678",
             task_id="ST-001",
@@ -169,8 +169,8 @@ class TestApprovalWorkflow:
             "justification": "Test",
             "requester": "agent-1",
             "status": "pending",
-            "created_at": datetime.utcnow().isoformat(),
-            "expires_at": (datetime.utcnow() + timedelta(hours=24)).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
+            "expires_at": (datetime.now(UTC) + timedelta(hours=24)).isoformat(),
         }
         mock_redis.get.return_value = json.dumps(request_data).encode()
 
@@ -298,7 +298,7 @@ class TestApprovalWorkflow:
             "justification": "Test 1",
             "requester": "agent-1",
             "status": "pending",
-            "expires_at": (datetime.utcnow() + timedelta(hours=24)).isoformat(),
+            "expires_at": (datetime.now(UTC) + timedelta(hours=24)).isoformat(),
         }
         request_data_2 = {
             "request_id": "apr-456",
@@ -307,7 +307,7 @@ class TestApprovalWorkflow:
             "justification": "Test 2",
             "requester": "agent-2",
             "status": "pending",
-            "expires_at": (datetime.utcnow() + timedelta(hours=24)).isoformat(),
+            "expires_at": (datetime.now(UTC) + timedelta(hours=24)).isoformat(),
         }
 
         def mock_get(key):
@@ -339,7 +339,7 @@ class TestApprovalWorkflow:
             "requester": "agent-1",
             "status": "pending",
             "expires_at": (
-                datetime.utcnow() - timedelta(hours=1)
+                datetime.now(UTC) - timedelta(hours=1)
             ).isoformat(),  # Expired
         }
         mock_redis.get.return_value = json.dumps(request_data).encode()
@@ -383,7 +383,7 @@ class TestApprovalWorkflow:
                         "task_id": "ST-001",
                         "status": "pending",
                         "expires_at": (
-                            datetime.utcnow() - timedelta(hours=1)
+                            datetime.now(UTC) - timedelta(hours=1)
                         ).isoformat(),
                     }
                 ).encode()
@@ -394,7 +394,7 @@ class TestApprovalWorkflow:
                         "task_id": "ST-002",
                         "status": "pending",
                         "expires_at": (
-                            datetime.utcnow() + timedelta(hours=24)
+                            datetime.now(UTC) + timedelta(hours=24)
                         ).isoformat(),
                     }
                 ).encode()

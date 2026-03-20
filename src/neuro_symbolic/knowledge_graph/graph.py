@@ -6,7 +6,7 @@ graph database for storing and managing market relationships.
 """
 
 from collections import defaultdict
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from src.neuro_symbolic.knowledge_graph.models import (
@@ -43,8 +43,8 @@ class KnowledgeGraph:
         self._reverse_adjacency: dict[str, set[str]] = defaultdict(set)
         self._node_type_index: dict[NodeType, set[str]] = defaultdict(set)
         self._edge_type_index: dict[EdgeType, set[tuple[str, str]]] = defaultdict(set)
-        self._created_at = datetime.utcnow()
-        self._modified_at = datetime.utcnow()
+        self._created_at = datetime.now(UTC)
+        self._modified_at = datetime.now(UTC)
 
     # =========================================================================
     # Node Operations
@@ -138,7 +138,7 @@ class KnowledgeGraph:
         if confidence is not None:
             node.confidence = confidence
 
-        node.updated_at = datetime.utcnow()
+        node.updated_at = datetime.now(UTC)
         self._touch()
 
         return node
@@ -334,7 +334,7 @@ class KnowledgeGraph:
         if confidence is not None:
             edge.confidence = confidence
 
-        edge.updated_at = datetime.utcnow()
+        edge.updated_at = datetime.now(UTC)
         self._touch()
 
         return edge
@@ -580,7 +580,7 @@ class KnowledgeGraph:
 
     def _touch(self) -> None:
         """Update the modified timestamp."""
-        self._modified_at = datetime.utcnow()
+        self._modified_at = datetime.now(UTC)
 
     # =========================================================================
     # Properties

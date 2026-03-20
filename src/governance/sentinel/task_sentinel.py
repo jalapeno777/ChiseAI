@@ -17,7 +17,7 @@ Phase: Week 1 Batch 1B
 import logging
 import time
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 
 from .conflict_detector import (
     ConflictCheckResult,
@@ -432,7 +432,7 @@ class TaskSentinel:
                     "story_points": task.story_points,
                     "justification": justification,
                     "status": "pending",
-                    "created_at": datetime.utcnow().isoformat(),
+                    "created_at": datetime.now(UTC).isoformat(),
                 }
 
                 # Store with TTL
@@ -481,7 +481,7 @@ class TaskSentinel:
                         {
                             "task_id": task_id,
                             "approver": approver,
-                            "approved_at": datetime.utcnow().isoformat(),
+                            "approved_at": datetime.now(UTC).isoformat(),
                         }
                     ),
                 )

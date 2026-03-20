@@ -3,7 +3,7 @@
 import asyncio
 import json
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from .models import Finding, ReviewResult, Severity
@@ -88,7 +88,7 @@ Guidelines:
         files: list[str],
     ) -> ReviewResult:
         """Perform SeniorDev review of PR."""
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
 
         try:
             # Load prompt
@@ -122,7 +122,7 @@ Guidelines:
             result = self._error_result(str(e))
 
         # Calculate duration
-        duration = (datetime.utcnow() - start_time).total_seconds() * 1000
+        duration = (datetime.now(UTC) - start_time).total_seconds() * 1000
 
         return ReviewResult(
             role="SeniorDev",

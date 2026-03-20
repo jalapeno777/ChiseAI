@@ -1,6 +1,6 @@
 """Tests for GitReviewBot main bot."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -56,8 +56,8 @@ def sample_pr():
         branch="feature/ST-123-test",
         base_branch="main",
         state="open",
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
         files_changed=["src/test.py"],
         labels=[],
     )
@@ -377,7 +377,7 @@ class TestDiffCache:
 
         # Manually expire the cache entry
         cached = bot._diff_cache[bot._hash_diff(diff)]
-        cached.created_at = datetime.utcnow() - timedelta(seconds=2)
+        cached.created_at = datetime.now(UTC) - timedelta(seconds=2)
 
         # Should not return expired entry
         retrieved = bot._check_diff_cache(diff)

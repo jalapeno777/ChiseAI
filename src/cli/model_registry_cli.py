@@ -38,7 +38,7 @@ import logging
 import os
 import pickle
 import sys
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -330,7 +330,7 @@ def register(
         metadata = ModelMetadata(
             model_name=name,
             version=version,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             training_data=training_data,
             hyperparameters=hyperparams_dict,
             metrics=metrics_dict,
@@ -714,7 +714,7 @@ def validate(
         metadata = ModelMetadata(
             model_name=name,
             version="0.0.0",  # Dummy version for validation
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             training_data="validation",
             hyperparameters={},
             metrics={"accuracy": min_accuracy} if min_accuracy else {},
@@ -779,7 +779,7 @@ def health(ctx: click.Context) -> None:
         result = {
             "status": "healthy" if healthy else "unhealthy",
             "registry_initialized": registry is not None,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
         click.echo(format_output(result, output_format))

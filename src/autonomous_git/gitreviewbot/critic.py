@@ -4,7 +4,7 @@ import asyncio
 import json
 import os
 import re
-from datetime import datetime
+from datetime import UTC, datetime
 
 from .models import ReviewResult, Severity, Violation
 
@@ -109,7 +109,7 @@ Guidelines:
         files: list[str],
     ) -> ReviewResult:
         """Perform Critic review of PR."""
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
 
         violations: list[Violation] = []
         blockers: list[str] = []
@@ -158,7 +158,7 @@ Guidelines:
             summary = f"Review error: {str(e)}"
             blockers.append(f"Review failed: {str(e)}")
 
-        duration = (datetime.utcnow() - start_time).total_seconds() * 1000
+        duration = (datetime.now(UTC) - start_time).total_seconds() * 1000
 
         return ReviewResult(
             role="Critic",

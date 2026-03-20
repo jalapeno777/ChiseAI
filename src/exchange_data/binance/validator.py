@@ -1,7 +1,7 @@
 """Data quality validation for exchange data."""
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 
 from exchange_data.binance.config import BinanceConfig
 from exchange_data.binance.orderbook import OrderBookSnapshot, OrderBookTracker
@@ -28,7 +28,7 @@ class QualityCheckResult:
     def __post_init__(self) -> None:
         """Set default timestamp."""
         if self.timestamp is None:
-            self.timestamp = datetime.utcnow()
+            self.timestamp = datetime.now(UTC)
 
 
 @dataclass
@@ -103,7 +103,7 @@ class DataQualityValidator:
         symbol = snapshot.symbol
 
         # Check freshness
-        age_sec = (datetime.utcnow() - snapshot.timestamp).total_seconds()
+        age_sec = (datetime.now(UTC) - snapshot.timestamp).total_seconds()
         freshness_pass = age_sec <= self.config.freshness_threshold_sec
         results.append(
             QualityCheckResult(
@@ -249,7 +249,7 @@ class DataQualityValidator:
             summary = f"PASSED: All {total_count} checks passed."
 
         return DataQualityReport(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             overall_passed=overall_passed,
             checks=all_checks,
             summary=summary,

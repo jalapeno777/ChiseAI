@@ -6,7 +6,7 @@ import asyncio
 import json
 import os
 import tempfile
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -197,7 +197,7 @@ class TestOptimizationRecord:
             "strategy_id": "strategy_1",
             "job_id": "job_1",
             "status": "completed",
-            "started_at": datetime.utcnow().isoformat(),
+            "started_at": datetime.now(UTC).isoformat(),
             "previous_parameters": {"x": 1.0},
             "new_parameters": {"x": 1.5},
             "previous_score": 1.0,
@@ -514,7 +514,7 @@ class TestOptimizationScheduler:
             job_id="job_1",
             strategy_id="strategy_1",
             config=config,
-            next_run_at=datetime.utcnow() + timedelta(hours=1),
+            next_run_at=datetime.now(UTC) + timedelta(hours=1),
         )
 
         summary = scheduler.get_schedule_summary()

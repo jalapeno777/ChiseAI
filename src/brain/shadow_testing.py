@@ -13,7 +13,7 @@ import statistics
 import time
 from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from brain.version import BrainVersion
@@ -214,7 +214,7 @@ class ShadowTester:
                 ),
                 candidate_predictions=[],
                 baseline_predictions=[],
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 error_message="No inputs provided for shadow test",
                 config=self.config,
             )
@@ -269,7 +269,7 @@ class ShadowTester:
                 baseline_latency_ms=baseline_stats,
                 candidate_predictions=candidate_predictions,
                 baseline_predictions=baseline_predictions,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 error_message=error_message,
                 config=self.config,
             )
@@ -300,7 +300,7 @@ class ShadowTester:
                 ),
                 candidate_predictions=[],
                 baseline_predictions=[],
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 error_message=f"Shadow test execution failed: {str(e)}",
                 config=self.config,
             )

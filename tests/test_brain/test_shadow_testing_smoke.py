@@ -6,7 +6,7 @@ Verifies basic functionality and imports for the shadow testing framework.
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 import pytest
@@ -157,7 +157,7 @@ class TestShadowTestResultSmoke:
             baseline_latency_ms=baseline_stats,
             candidate_predictions=[1, 2, 3],
             baseline_predictions=[1, 2, 3],
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
         )
 
         assert result.passed is True
@@ -194,7 +194,7 @@ class TestShadowTestResultSmoke:
             baseline_latency_ms=baseline_stats,
             candidate_predictions=[1, 2],
             baseline_predictions=[1, 2],
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             error_message=None,
         )
 

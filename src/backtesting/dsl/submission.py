@@ -7,7 +7,7 @@ safety checks, and registration.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -105,7 +105,7 @@ class StrategySubmission:
         Returns:
             SubmissionResult with validation results
         """
-        submitted_at = datetime.utcnow()
+        submitted_at = datetime.now(UTC)
         submission_id = str(uuid4())
 
         # Extract metadata
@@ -199,7 +199,7 @@ class StrategySubmission:
                     warnings=[],
                 ),
                 safety_errors=[],
-                submitted_at=datetime.utcnow(),
+                submitted_at=datetime.now(UTC),
                 error_message=f"File not found: {path}",
             )
 
@@ -227,7 +227,7 @@ class StrategySubmission:
                     warnings=[],
                 ),
                 safety_errors=[],
-                submitted_at=datetime.utcnow(),
+                submitted_at=datetime.now(UTC),
                 error_message=f"Invalid YAML: {e}",
             )
 

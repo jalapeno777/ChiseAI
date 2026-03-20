@@ -9,7 +9,7 @@ Story: ST-GOV-001
 import contextlib
 import hashlib
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 
 from src.governance.deduplication.config import DeduplicationConfig
 
@@ -28,7 +28,7 @@ class HashCacheEntry:
         self.content_hash = content_hash
         self.source_id = source_id
         self.collection = collection
-        self.timestamp = timestamp or datetime.utcnow()
+        self.timestamp = timestamp or datetime.now(UTC)
         self.metadata = metadata or {}
 
     def to_dict(self) -> dict:

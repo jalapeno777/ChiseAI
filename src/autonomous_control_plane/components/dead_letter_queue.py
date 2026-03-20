@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 import logging
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -96,10 +96,10 @@ class DeadLetterQueue:
                 Column("payload", String(4000)),
                 Column("error_message", String(1000)),
                 Column("retry_count", Integer, default=0),
-                Column("created_at", DateTime, default=datetime.utcnow),
+                Column("created_at", DateTime, default=lambda: datetime.now(UTC)),
                 Column("status", String(50), default="DLQ"),
                 Column("last_error", String(1000)),
-                Column("updated_at", DateTime, onupdate=datetime.utcnow),
+                Column("updated_at", DateTime, onupdate=lambda: datetime.now(UTC)),
             )
 
             # Create table if it doesn't exist
@@ -355,7 +355,7 @@ class DeadLetterQueue:
                     {
                         "id": item_id,
                         "status": status,
-                        "updated_at": datetime.utcnow(),
+                        "updated_at": datetime.now(UTC),
                     },
                 )
                 conn.commit()

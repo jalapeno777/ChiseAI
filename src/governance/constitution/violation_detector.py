@@ -14,7 +14,7 @@ import re
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, TYPE_CHECKING
 
@@ -67,7 +67,7 @@ class Violation:
     description: str
     pattern_matched: str
     context: dict[str, Any]
-    detected_at: datetime = field(default_factory=datetime.utcnow)
+    detected_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     resolved: bool = False
     resolved_at: datetime | None = None
     resolved_by: str | None = None
@@ -90,7 +90,7 @@ class Violation:
     def resolve(self, resolved_by: str) -> None:
         """Mark the violation as resolved."""
         self.resolved = True
-        self.resolved_at = datetime.utcnow()
+        self.resolved_at = datetime.now(UTC)
         self.resolved_by = resolved_by
 
 
@@ -398,7 +398,7 @@ class ViolationDetector:
             match = rule["pattern"].search(action)
             if match:
                 violation = Violation(
-                    id=f"viol-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{rule_id}",
+                    id=f"viol-{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}-{rule_id}",
                     rule_id=rule_id,
                     severity=rule["severity"],
                     description=rule["description"],
@@ -440,7 +440,7 @@ class ViolationDetector:
 
         if not is_allowed:
             violation = Violation(
-                id=f"viol-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-scope",
+                id=f"viol-{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}-scope",
                 rule_id="VR-001",
                 severity=ViolationSeverity.P1,
                 description="Unauthorized Scope Access",
@@ -481,7 +481,7 @@ class ViolationDetector:
 
         if branch in protected_branches and "commit" in action.lower():
             violation = Violation(
-                id=f"viol-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-branch",
+                id=f"viol-{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}-branch",
                 rule_id="VR-002",
                 severity=ViolationSeverity.P1,
                 description="Branch Safety Violation",

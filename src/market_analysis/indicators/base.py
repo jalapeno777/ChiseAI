@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, Generic, TypeVar
 
@@ -119,6 +119,6 @@ class BaseIndicator(ABC, Generic[T]):
         return Signal(
             direction=SignalDirection.HOLD,
             confidence=0.5,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             metadata={"indicator": self.name},
         )

@@ -15,7 +15,7 @@ For ST-NS-039: Retry Coordinator with Budget Management
 from __future__ import annotations
 
 import contextlib
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 from src.autonomous_control_plane.components.retry_coordinator import (
@@ -109,7 +109,7 @@ class TestRetryCoordinator:
         timestamps = []
 
         async def record_timestamp():
-            timestamps.append(datetime.utcnow())
+            timestamps.append(datetime.now(UTC))
             raise Exception("Fail")
 
         policy = RetryPolicy(
@@ -146,7 +146,7 @@ class TestRetryCoordinator:
         """Test jitter creates randomized delays."""
 
         async def measure_jitter():
-            datetime.utcnow()
+            datetime.now(UTC)
             raise Exception("Fail")
 
         policy = RetryPolicy(
@@ -158,7 +158,7 @@ class TestRetryCoordinator:
 
         # Run fewer iterations to collect jitter samples quickly
         for _ in range(5):  # Reduced from 20 to avoid timeout
-            datetime.utcnow()
+            datetime.now(UTC)
             with contextlib.suppress(MaxRetriesExceededError):
                 await coordinator.execute_with_retry(
                     service_name=f"test_service_{_}",

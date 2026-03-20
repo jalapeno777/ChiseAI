@@ -11,7 +11,7 @@ import json
 import logging
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any
 
@@ -58,7 +58,7 @@ class OverrideRequest:
     approver: str | None = None
     approved_at: datetime | None = None
     actions_taken: list[dict[str, Any]] = field(default_factory=list)
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     revoked_by: str | None = None
     revoked_at: datetime | None = None
     rolled_back_at: datetime | None = None
@@ -123,14 +123,14 @@ class OverrideRequest:
 
     def is_expired(self) -> bool:
         """Check if the override has expired."""
-        return datetime.utcnow() > self.expires_at
+        return datetime.now(UTC) > self.expires_at
 
     def is_rollback_allowed(self) -> bool:
         """Check if rollback is still allowed (within 24-hour window)."""
         if self.approved_at is None:
             return False
         rollback_window = timedelta(hours=24)
-        return datetime.utcnow() < self.approved_at + rollback_window
+        return datetime.now(UTC) < self.approved_at + rollback_window
 
 
 class AuditLogger:
@@ -193,7 +193,7 @@ class AuditLogger:
             risk_assessment=risk_assessment,
             affected_systems=affected_systems,
             rollback_plan=rollback_plan,
-            expires_at=datetime.utcnow() + timedelta(hours=expiration_hours),
+            expires_at=datetime.now(UTC) + timedelta(hours=expiration_hours),
         )
 
         self._pending_requests[request.override_id] = request
@@ -229,7 +229,7 @@ class AuditLogger:
 
         request.status = OverrideStatus.APPROVED
         request.approver = approver
-        request.approved_at = datetime.utcnow()
+        request.approved_at = datetime.now(UTC)
 
         # Move to active overrides
         del self._pending_requests[override_id]
@@ -294,7 +294,7 @@ class AuditLogger:
         action_record = {
             "action": action,
             "result": result,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "details": details or {},
         }
         request.actions_taken.append(action_record)
@@ -325,7 +325,7 @@ class AuditLogger:
 
         request.status = OverrideStatus.REVOKED
         request.revoked_by = revoked_by
-        request.revoked_at = datetime.utcnow()
+        request.revoked_at = datetime.now(UTC)
 
         self._log_revocation(request, reason)
 
@@ -359,7 +359,7 @@ class AuditLogger:
 
         request.status = OverrideStatus.ROLLED_BACK
         request.rolled_back_by = rolled_back_by
-        request.rolled_back_at = datetime.utcnow()
+        request.rolled_back_at = datetime.now(UTC)
 
         self._log_rollback(request)
 
@@ -421,7 +421,7 @@ class AuditLogger:
         """Log override request creation."""
         log_entry = {
             "event": "override_requested",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "request": request.to_dict(),
         }
         self._write_log(log_entry)
@@ -430,7 +430,7 @@ class AuditLogger:
         """Log override approval."""
         log_entry = {
             "event": "override_approved",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "request": request.to_dict(),
         }
         self._write_log(log_entry)
@@ -439,7 +439,7 @@ class AuditLogger:
         """Log override activation."""
         log_entry = {
             "event": "override_activated",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "request": request.to_dict(),
         }
         self._write_log(log_entry)
@@ -448,7 +448,7 @@ class AuditLogger:
         """Log action taken under override."""
         log_entry = {
             "event": "override_action",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "override_id": request.override_id,
             "action": action,
         }
@@ -458,7 +458,7 @@ class AuditLogger:
         """Log override revocation."""
         log_entry = {
             "event": "override_revoked",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "override_id": request.override_id,
             "revoked_by": request.revoked_by,
             "reason": reason,
@@ -469,7 +469,7 @@ class AuditLogger:
         """Log override rollback."""
         log_entry = {
             "event": "override_rolled_back",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "request": request.to_dict(),
         }
         self._write_log(log_entry)
@@ -478,7 +478,7 @@ class AuditLogger:
         """Log override expiration."""
         log_entry = {
             "event": "override_expired",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "override_id": request.override_id,
         }
         self._write_log(log_entry)

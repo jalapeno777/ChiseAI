@@ -3,7 +3,7 @@
 import asyncio
 import logging
 from collections.abc import Callable
-from datetime import datetime
+from datetime import UTC, datetime
 
 from exchange_data.binance.client import BinanceClient
 from exchange_data.binance.config import BinanceConfig
@@ -41,7 +41,7 @@ class IngestionMetrics:
         """
         self.snapshots_ingested += 1
         self.total_latency_ms += latency_ms
-        self.last_ingest_time = datetime.utcnow()
+        self.last_ingest_time = datetime.now(UTC)
 
     def record_failure(self, error: str) -> None:
         """Record failed ingestion.
@@ -261,7 +261,7 @@ class BinanceIngestionService:
 
         return OrderBookSnapshot(
             symbol=symbol,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=data.get("lastUpdateId", 0),
             bids=bids,
             asks=asks,
@@ -284,7 +284,7 @@ class BinanceIngestionService:
 
         return OpenInterestData(
             symbol=symbol,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             open_interest=oi,
             price=price,
             open_interest_usd=oi * price if price > 0 else 0,
@@ -351,7 +351,7 @@ class BinanceIngestionService:
             return False
 
         time_since_last = (
-            datetime.utcnow() - self.metrics.last_ingest_time
+            datetime.now(UTC) - self.metrics.last_ingest_time
         ).total_seconds()
         if time_since_last > self.config.freshness_threshold_sec * 2:
             return False

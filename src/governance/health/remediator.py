@@ -14,7 +14,7 @@ import logging
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 
 from .predictor import AlertSeverity, HealthAlert, PredictionType
@@ -292,14 +292,14 @@ class HealthRemediator:
             success = handler(agent_id, metadata)
 
             duration_ms = (time.time() - start_time) * 1000
-            record.completed_at = datetime.utcnow()
+            record.completed_at = datetime.now(UTC)
             record.duration_ms = duration_ms
             record.status = (
                 RemediationStatus.SUCCESS if success else RemediationStatus.FAILED
             )
 
             if success:
-                self._last_remediation[agent_id] = datetime.utcnow()
+                self._last_remediation[agent_id] = datetime.now(UTC)
                 logger.info(
                     f"Remediation {action.value} succeeded for {agent_id} "
                     f"in {duration_ms:.0f}ms"
@@ -310,7 +310,7 @@ class HealthRemediator:
 
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
-            record.completed_at = datetime.utcnow()
+            record.completed_at = datetime.now(UTC)
             record.duration_ms = duration_ms
             record.status = RemediationStatus.FAILED
             record.error_message = str(e)
@@ -326,7 +326,7 @@ class HealthRemediator:
             return True
 
         cooldown = timedelta(minutes=self.config.cooldown_minutes)
-        return datetime.utcnow() >= last + cooldown
+        return datetime.now(UTC) >= last + cooldown
 
     def _create_record(
         self,
@@ -339,12 +339,12 @@ class HealthRemediator:
         """Create a remediation record."""
         self._record_counter += 1
         return RemediationRecord(
-            record_id=f"rem-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{self._record_counter}",
+            record_id=f"rem-{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}-{self._record_counter}",
             agent_id=agent_id,
             action=action,
             trigger=trigger,
             status=status,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(UTC),
             metadata=metadata or {},
         )
 

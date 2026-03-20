@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable, Coroutine
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 import pytest
@@ -285,7 +285,7 @@ def approved_promotion_packet() -> PromotionPacket:
     packet.signatures.append(
         ApprovalSignature(
             approver="admin",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             status=ApprovalStatus.APPROVED,
             comments="Approved for production",
         )
@@ -410,7 +410,7 @@ def complete_evaluation_data() -> dict[str, Any]:
             "latency_within_bounds": True,
             "memory_within_bounds": True,
         },
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
 

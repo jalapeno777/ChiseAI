@@ -6,7 +6,7 @@ Story: ST-GOV-008
 
 import asyncio
 import contextlib
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 from src.governance.health.scorer import HealthStatus
@@ -83,7 +83,7 @@ class TestHealthSentinel:
         sentinel = HealthSentinel(config=config)
 
         # Add agent with declining health
-        datetime.utcnow()
+        datetime.now(UTC)
         for i in range(5):
             metrics = {
                 "performance": {"task_completion_time": 30 + i * 20},

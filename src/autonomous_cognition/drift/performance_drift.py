@@ -7,7 +7,7 @@ and provides root cause tagging for alerts.
 
 import json
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any
 
@@ -256,7 +256,7 @@ class PerformanceDriftDetector:
             std=std,
             values=values,
             window_days=window_days,
-            established_at=datetime.utcnow(),
+            established_at=datetime.now(UTC),
         )
 
         self._baselines[metric_name] = baseline
@@ -329,7 +329,7 @@ class PerformanceDriftDetector:
             is_drift=is_drift,
             severity=severity.value,
             root_cause_tag=root_cause.value,
-            detected_at=datetime.utcnow(),
+            detected_at=datetime.now(UTC),
             trend=trend,
             threshold=self.drift_threshold_std,
         )
@@ -363,7 +363,7 @@ class PerformanceDriftDetector:
         }
 
         # Get recent drifts (last 24 hours)
-        cutoff = datetime.utcnow() - timedelta(hours=24)
+        cutoff = datetime.now(UTC) - timedelta(hours=24)
         recent_drifts = [
             d for d in self._drift_history if d.detected_at > cutoff and d.is_drift
         ]
@@ -536,7 +536,7 @@ class PerformanceDriftDetector:
 
     def _get_recent_alerts(self, metric_name: str, hours: int) -> list[DriftResult]:
         """Get recent alerts for a metric."""
-        cutoff = datetime.utcnow() - timedelta(hours=hours)
+        cutoff = datetime.now(UTC) - timedelta(hours=hours)
         return [
             r
             for r in self._drift_history
@@ -569,7 +569,7 @@ class PerformanceDriftDetector:
         # Recalculate statistics
         baseline.mean = sum(baseline.values) / len(baseline.values)
         baseline.std = standard_deviation(baseline.values)
-        baseline.established_at = datetime.utcnow()
+        baseline.established_at = datetime.now(UTC)
 
         return baseline
 

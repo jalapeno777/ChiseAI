@@ -343,7 +343,7 @@ class TokenCorrelator(BaseIndicator[RollingCorrelationResult]):
             return Signal(
                 direction=SignalDirection.HOLD,
                 confidence=0.0,
-                timestamp=pd.Timestamp.utcnow().to_pydatetime(),
+                timestamp=pd.Timestamp.now(tz="UTC").to_pydatetime(),
                 metadata={"indicator": self.name, "reason": "no_snapshot"},
             )
 
@@ -356,7 +356,7 @@ class TokenCorrelator(BaseIndicator[RollingCorrelationResult]):
         return Signal(
             direction=SignalDirection.HOLD,
             confidence=min(mean_abs_corr, 1.0),
-            timestamp=pd.Timestamp.utcnow().to_pydatetime(),
+            timestamp=pd.Timestamp.now(tz="UTC").to_pydatetime(),
             metadata={
                 "indicator": self.name,
                 "mean_abs_correlation": round(mean_abs_corr, 4),

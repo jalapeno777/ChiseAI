@@ -5,7 +5,7 @@ Story: ST-GOV-001
 """
 
 import json
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -104,7 +104,7 @@ class TestHashCacheEntry:
 
     def test_to_dict(self):
         """Test serialization."""
-        ts = datetime.utcnow()
+        ts = datetime.now(UTC)
         entry = HashCacheEntry(
             content_hash="abc123",
             source_id="point-1",
@@ -119,7 +119,7 @@ class TestHashCacheEntry:
 
     def test_from_dict(self):
         """Test deserialization."""
-        ts = datetime.utcnow()
+        ts = datetime.now(UTC)
         data = {
             "content_hash": "abc123",
             "source_id": "point-1",
@@ -210,7 +210,7 @@ class TestHashCache:
                 "content_hash": "abc123",
                 "source_id": "point-1",
                 "collection": "ChiseAI",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "metadata": {},
             }
         )
@@ -305,7 +305,7 @@ class TestAuditEntry:
 
     def test_from_dict(self):
         """Test deserialization."""
-        ts = datetime.utcnow()
+        ts = datetime.now(UTC)
         data = {
             "entry_id": "test-id",
             "timestamp": ts.isoformat(),
@@ -356,7 +356,7 @@ class TestAuditTrail:
         mock_client.hget.return_value = json.dumps(
             {
                 "entry_id": "test-id",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "action": "similarity_check",
                 "result": "kept",
                 "source_id": "point-1",
@@ -383,7 +383,7 @@ class TestAuditTrail:
         mock_client.hget.return_value = json.dumps(
             {
                 "entry_id": "id1",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "action": "similarity_check",
                 "result": "kept",
                 "source_id": "point-1",
@@ -634,7 +634,7 @@ class TestMemoryDeduplicationEngine:
             config=DeduplicationConfig(temporal_window_seconds=3600)
         )
 
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         point_a = MagicMock()
         point_a.payload = {
@@ -806,7 +806,7 @@ class TestMemoryDeduplicationEngine:
         mock_client.scan_iter.return_value = ["stats:1", "stats:2"]
         mock_client.hgetall.side_effect = [
             {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "collections_scanned": "1",
                 "entries_scanned": "100",
                 "duplicate_groups": "5",
@@ -820,7 +820,7 @@ class TestMemoryDeduplicationEngine:
                 "errors": "[]",
             },
             {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "collections_scanned": "1",
                 "entries_scanned": "50",
                 "duplicate_groups": "2",

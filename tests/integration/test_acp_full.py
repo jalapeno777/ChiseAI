@@ -1,6 +1,6 @@
 """Full ACP pipeline integration tests."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 from src.autonomous_control_plane.models.healing import LogEntry
@@ -14,7 +14,7 @@ async def test_full_acp_lifecycle(acp_container, mock_redis):
 
     # Create log entry that matches pattern
     log_entry = LogEntry(
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(UTC),
         level="ERROR",
         source="redis_service",
         message="Redis connection timeout after 30s",

@@ -15,7 +15,7 @@ Story: ST-ISSUE-ENFORCE-003
 from __future__ import annotations
 
 import hashlib
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -579,7 +579,7 @@ def test_mini_brain_eval_ingests_structured_issues(valid_with_issues_md: Path):
     # Simulate mini BrainEval output structure
     eval_output = {
         "eval_id": "test-eval-001",
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(UTC).isoformat() + "Z",
         "cadence": "6h",
         "issues": [],
         "mitigations": [],
@@ -636,7 +636,7 @@ def test_mini_brain_eval_empty_issues(valid_empty_issues_md: Path):
     # Mini BrainEval output should still be valid
     eval_output = {
         "eval_id": "test-eval-002",
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(UTC).isoformat() + "Z",
         "cadence": "6h",
         "issues": parsed["issues"],
         "mitigations": [],

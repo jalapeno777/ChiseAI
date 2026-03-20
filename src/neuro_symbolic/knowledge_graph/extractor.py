@@ -7,7 +7,7 @@ and temporal patterns.
 """
 
 import math
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from src.neuro_symbolic.knowledge_graph.models import (
@@ -306,8 +306,8 @@ class RelationshipExtractor:
             for event2 in events[i + 1 :]:
                 time_diff = abs(
                     (
-                        event1.get("timestamp", datetime.utcnow())
-                        - event2.get("timestamp", datetime.utcnow())
+                        event1.get("timestamp", datetime.now(UTC))
+                        - event2.get("timestamp", datetime.now(UTC))
                     ).total_seconds()
                 )
                 if time_diff <= time_window_seconds:
@@ -382,9 +382,9 @@ class RelationshipExtractor:
         # Count how often influencer events are followed by influenced events
         influence_count = 0
         for inf_event in influencer_events:
-            inf_time = inf_event.get("timestamp", datetime.utcnow())
+            inf_time = inf_event.get("timestamp", datetime.now(UTC))
             for infd_event in influenced_events:
-                infd_time = infd_event.get("timestamp", datetime.utcnow())
+                infd_time = infd_event.get("timestamp", datetime.now(UTC))
                 time_diff = (infd_time - inf_time).total_seconds()
                 if 0 < time_diff <= time_window_seconds:
                     influence_count += 1

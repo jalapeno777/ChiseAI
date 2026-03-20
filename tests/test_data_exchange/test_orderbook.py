@@ -1,6 +1,6 @@
 """Tests for order book functionality."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 
@@ -29,7 +29,7 @@ class TestOrderBookSnapshot:
         """Test creating a snapshot."""
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=12345,
             bids=[OrderBookLevel(price=50000.0, quantity=1.0)],
             asks=[OrderBookLevel(price=50001.0, quantity=0.5)],
@@ -44,7 +44,7 @@ class TestOrderBookSnapshot:
         """Test best bid calculation."""
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[
                 OrderBookLevel(price=50000.0, quantity=1.0),
@@ -59,7 +59,7 @@ class TestOrderBookSnapshot:
         """Test best ask calculation."""
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[OrderBookLevel(price=50000.0, quantity=1.0)],
             asks=[
@@ -74,7 +74,7 @@ class TestOrderBookSnapshot:
         """Test mid price calculation."""
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[OrderBookLevel(price=50000.0, quantity=1.0)],
             asks=[OrderBookLevel(price=50002.0, quantity=0.5)],
@@ -86,7 +86,7 @@ class TestOrderBookSnapshot:
         """Test spread calculation."""
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[OrderBookLevel(price=50000.0, quantity=1.0)],
             asks=[OrderBookLevel(price=50002.0, quantity=0.5)],
@@ -98,7 +98,7 @@ class TestOrderBookSnapshot:
         """Test spread percentage calculation."""
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[OrderBookLevel(price=50000.0, quantity=1.0)],
             asks=[OrderBookLevel(price=50100.0, quantity=0.5)],
@@ -110,7 +110,7 @@ class TestOrderBookSnapshot:
         """Test empty order book handling."""
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[],
             asks=[],
@@ -125,7 +125,7 @@ class TestOrderBookSnapshot:
         """Test bid depth calculation."""
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[
                 OrderBookLevel(price=50000.0, quantity=1.0),
@@ -142,7 +142,7 @@ class TestOrderBookSnapshot:
         """Test ask depth calculation."""
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[],
             asks=[
@@ -183,7 +183,7 @@ class TestOrderBookTracker:
         tracker = OrderBookTracker()
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[],
             asks=[],
@@ -199,14 +199,14 @@ class TestOrderBookTracker:
 
         snapshot1 = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[],
             asks=[],
         )
         snapshot2 = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=2,
             bids=[],
             asks=[],
@@ -226,7 +226,7 @@ class TestOrderBookTracker:
         for i in range(5):
             snapshot = OrderBookSnapshot(
                 symbol="BTCUSDT",
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 last_update_id=i,
                 bids=[],
                 asks=[],
@@ -294,14 +294,14 @@ class TestOrderBookTracker:
 
         snapshot1 = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[],
             asks=[],
         )
         snapshot2 = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,  # Duplicate ID
             bids=[],
             asks=[],
@@ -318,14 +318,14 @@ class TestOrderBookTracker:
 
         snapshot1 = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[],
             asks=[],
         )
         snapshot2 = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=2,
             bids=[],
             asks=[],
@@ -343,7 +343,7 @@ class TestOrderBookTracker:
         for i in range(10):
             snapshot = OrderBookSnapshot(
                 symbol="BTCUSDT",
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 last_update_id=i,
                 bids=[],
                 asks=[],

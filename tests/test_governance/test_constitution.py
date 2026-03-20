@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import tempfile
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -309,7 +309,7 @@ class TestConstitutionArtifact:
         artifact = ConstitutionArtifact(
             version=ConstitutionVersion(1, 0, 0),
             status=ConstitutionStatus.ACTIVE,
-            effective_date=datetime.utcnow(),
+            effective_date=datetime.now(UTC),
             safety_invariants={
                 "hard_constraints": [
                     Invariant(

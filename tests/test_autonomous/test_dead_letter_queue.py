@@ -13,7 +13,7 @@ For ST-NS-039: Retry Coordinator with Budget Management - Coverage Improvement
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -369,7 +369,7 @@ class TestDeadLetterQueueWithMockedDB:
         mock_row.payload = '{"key": "value"}'
         mock_row.error_message = "Error"
         mock_row.retry_count = 3
-        mock_row.created_at = datetime.utcnow()
+        mock_row.created_at = datetime.now(UTC)
         mock_row.status = "DLQ"
         mock_row.last_error = None
 
@@ -426,7 +426,7 @@ class TestDeadLetterQueueWithMockedDB:
         mock_row.payload = "{}"
         mock_row.error_message = "Error"
         mock_row.retry_count = 1
-        mock_row.created_at = datetime.utcnow()
+        mock_row.created_at = datetime.now(UTC)
         mock_row.status = "DLQ"
         mock_row.last_error = None
 
@@ -569,7 +569,7 @@ class TestDeadLetterQueueItemConversion:
         mock_row.payload = None
         mock_row.error_message = "Error"
         mock_row.retry_count = 1
-        mock_row.created_at = datetime.utcnow()
+        mock_row.created_at = datetime.now(UTC)
         mock_row.status = "DLQ"
         mock_row.last_error = None
 
@@ -587,7 +587,7 @@ class TestDeadLetterQueueItemConversion:
         mock_row.payload = "{}"
         mock_row.error_message = "Error"
         mock_row.retry_count = 1
-        mock_row.created_at = datetime.utcnow()
+        mock_row.created_at = datetime.now(UTC)
         mock_row.status = None
         mock_row.last_error = None
 

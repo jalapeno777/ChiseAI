@@ -17,7 +17,7 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from .metrics import get_health_metrics
 from .predictor import (
@@ -342,7 +342,7 @@ class HealthSentinel:
             self.process_alerts()
 
         # Update last update time
-        self._last_update = datetime.utcnow()
+        self._last_update = datetime.now(UTC)
 
         # Record latency
         latency_ms = (time.time() - start_time) * 1000
@@ -368,7 +368,7 @@ class HealthSentinel:
             HealthSnapshot with current state
         """
         return HealthSnapshot(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             swarm_health=self._swarm_health
             or SwarmHealthScore(
                 overall_score=0.0,
@@ -379,7 +379,7 @@ class HealthSentinel:
                 unhealthy_count=0,
                 critical_count=0,
                 dimensions={},
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
             ),
             agent_health=dict(self._agent_health),
             active_alerts=list(self._active_alerts),

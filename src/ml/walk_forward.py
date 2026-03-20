@@ -21,7 +21,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Protocol
 
@@ -312,7 +312,7 @@ class WalkForwardResult:
     aggregated: AggregatedMetrics = field(default_factory=AggregatedMetrics)
     look_ahead_check: LookAheadBiasCheck = LookAheadBiasCheck.PASSED
     total_evaluation_time_seconds: float = 0.0
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     completed_at: datetime | None = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -569,14 +569,14 @@ class WalkForwardEvaluator:
 
         if not windows:
             result.look_ahead_check = LookAheadBiasCheck.FAILED_TEMPORAL_ORDER
-            result.completed_at = datetime.utcnow()
+            result.completed_at = datetime.now(UTC)
             result.total_evaluation_time_seconds = time.time() - start_time
             return result
 
         # Validate no look-ahead bias
         result.look_ahead_check = self.validate_no_look_ahead_bias(windows)
         if result.look_ahead_check != LookAheadBiasCheck.PASSED:
-            result.completed_at = datetime.utcnow()
+            result.completed_at = datetime.now(UTC)
             result.total_evaluation_time_seconds = time.time() - start_time
             return result
 
@@ -599,7 +599,7 @@ class WalkForwardEvaluator:
 
         # Calculate aggregated metrics
         result.aggregated = self._aggregate_metrics(result.window_results)
-        result.completed_at = datetime.utcnow()
+        result.completed_at = datetime.now(UTC)
         result.total_evaluation_time_seconds = time.time() - start_time
 
         logger.info(

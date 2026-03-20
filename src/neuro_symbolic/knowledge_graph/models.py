@@ -6,7 +6,7 @@ including nodes, edges, relationship types, and query results.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -100,15 +100,15 @@ class Node:
     id: str
     node_type: NodeType
     properties: dict[str, Any] = field(default_factory=dict)
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    updated_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     confidence: float = 1.0
     source: str | None = None
 
     def update_property(self, key: str, value: Any) -> None:
         """Update a property and touch the timestamp."""
         self.properties[key] = value
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(UTC)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert node to dictionary representation."""
@@ -150,8 +150,8 @@ class Edge:
     properties: dict[str, Any] = field(default_factory=dict)
     weight: float = 1.0
     confidence: float = 1.0
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    updated_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     valid_from: datetime | None = None
     valid_until: datetime | None = None
     evidence: list[str] = field(default_factory=list)
@@ -165,7 +165,7 @@ class Edge:
     def add_evidence(self, evidence: str) -> None:
         """Add evidence supporting this relationship."""
         self.evidence.append(evidence)
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(UTC)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert edge to dictionary representation."""
@@ -257,7 +257,7 @@ class GraphMetrics:
     max_connectivity: int = 0
     density: float = 0.0
     strongly_connected_components: int = 0
-    last_updated: datetime = field(default_factory=datetime.utcnow)
+    last_updated: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
@@ -309,7 +309,7 @@ class UpdateResult:
     edges_removed: int = 0
     conflicts_resolved: int = 0
     errors: list[str] = field(default_factory=list)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     @property
     def total_changes(self) -> int:

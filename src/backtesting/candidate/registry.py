@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any, Protocol
@@ -97,7 +97,7 @@ class StrategyArtifact:
     version_id: str
     artifact_type: str
     data: dict[str, Any]
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -195,7 +195,7 @@ class PromotionResult:
     champion_id: str | None
     passed_criteria: list[str] = field(default_factory=list)
     failed_criteria: list[dict[str, str]] = field(default_factory=list)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 class StrategyRegistry(Protocol):
@@ -315,7 +315,7 @@ class InMemoryStrategyRegistry:
             symbol=symbol,
             timeframe=timeframe,
             status=StrategyStatus.CANDIDATE,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             config_hash=config_hash,
             parent_version=parent_version,
         )
@@ -901,7 +901,7 @@ class InMemoryStrategyRegistry:
                 data=metrics,
                 metadata={
                     "status_update": status,
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                 },
             )
 

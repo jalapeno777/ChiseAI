@@ -7,7 +7,7 @@ windows to prevent look-ahead bias and ensure robust strategy evaluation.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Protocol
 
 from backtesting.candidate.models import (
@@ -215,7 +215,7 @@ class WalkForwardEngine:
             # Calculate metrics from execution result
             candidate_result.metrics = self._calculate_metrics(execution_result)
             candidate_result.status = CandidateStatus.COMPLETED
-            candidate_result.completed_at = datetime.utcnow()
+            candidate_result.completed_at = datetime.now(UTC)
 
         except Exception as e:
             candidate_result.status = CandidateStatus.FAILED

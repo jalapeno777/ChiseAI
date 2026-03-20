@@ -7,7 +7,7 @@ all scores to a consistent -1 (extreme fear) to +1 (extreme greed) range.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -310,7 +310,7 @@ class SentimentAggregator:
         return AggregatedSentiment(
             scores=scores,
             weighted_value=weighted_value,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             sources_count=len(scores),
             metadata={
                 "source_names": [s.source for s in scores],

@@ -18,7 +18,7 @@ import json
 import logging
 import subprocess
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -78,7 +78,7 @@ class QualityScore:
     component_scores: dict[ScoreComponent, ComponentScore]
     passed: bool
     threshold: float
-    calculated_at: datetime = field(default_factory=datetime.utcnow)
+    calculated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     file_count: int = 0
     line_count: int = 0
     pr_number: int | None = None

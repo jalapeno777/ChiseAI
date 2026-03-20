@@ -6,7 +6,7 @@ knowledge graph with new data, including conflict resolution.
 """
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from src.neuro_symbolic.knowledge_graph.graph import KnowledgeGraph
@@ -233,7 +233,7 @@ class GraphUpdater:
             UpdateResult with removal statistics
         """
         result = UpdateResult()
-        cutoff = datetime.utcnow()
+        cutoff = datetime.now(UTC)
 
         edges_to_remove = []
         for edge in self.graph.get_all_edges():
@@ -309,7 +309,7 @@ class GraphUpdater:
                 updated = True
 
         if updated:
-            node.updated_at = datetime.utcnow()
+            node.updated_at = datetime.now(UTC)
             result.nodes_updated += 1
 
         return result
@@ -507,7 +507,7 @@ class GraphUpdater:
             existing.confidence = new.confidence
             existing.source = new.source
 
-        existing.updated_at = datetime.utcnow()
+        existing.updated_at = datetime.now(UTC)
 
     def _resolve_edge_conflict(self, existing: Edge, new: Edge) -> None:
         """Resolve an edge conflict based on the configured strategy."""
@@ -540,7 +540,7 @@ class GraphUpdater:
             existing.confidence = new.confidence
             existing.evidence = new.evidence.copy()
 
-        existing.updated_at = datetime.utcnow()
+        existing.updated_at = datetime.now(UTC)
 
     @property
     def update_count(self) -> int:

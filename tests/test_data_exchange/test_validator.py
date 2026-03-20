@@ -1,6 +1,6 @@
 """Tests for data quality validator."""
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from exchange_data.binance.config import BinanceConfig
 from exchange_data.binance.orderbook import (
@@ -44,7 +44,7 @@ class TestDataQualityReport:
             symbol="BTCUSDT",
         )
         report = DataQualityReport(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             overall_passed=True,
             checks=[check],
             summary="All checks passed",
@@ -82,7 +82,7 @@ class TestDataQualityValidator:
         validator = DataQualityValidator()
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),  # Fresh
+            timestamp=datetime.now(UTC),  # Fresh
             last_update_id=1,
             bids=[OrderBookLevel(price=50000.0, quantity=1.0)],
             asks=[OrderBookLevel(price=50001.0, quantity=1.0)],
@@ -99,7 +99,7 @@ class TestDataQualityValidator:
         validator = DataQualityValidator(config)
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow() - timedelta(seconds=10),  # Stale
+            timestamp=datetime.now(UTC) - timedelta(seconds=10),  # Stale
             last_update_id=1,
             bids=[OrderBookLevel(price=50000.0, quantity=1.0)],
             asks=[OrderBookLevel(price=50001.0, quantity=1.0)],
@@ -115,7 +115,7 @@ class TestDataQualityValidator:
         validator = DataQualityValidator()
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[OrderBookLevel(price=50000.0, quantity=1.0)],
             asks=[OrderBookLevel(price=50001.0, quantity=1.0)],
@@ -131,7 +131,7 @@ class TestDataQualityValidator:
         validator = DataQualityValidator()
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[],
             asks=[],
@@ -148,7 +148,7 @@ class TestDataQualityValidator:
         validator = DataQualityValidator(config)
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[OrderBookLevel(price=50000.0, quantity=1.0)],
             asks=[OrderBookLevel(price=50000.5, quantity=1.0)],
@@ -165,7 +165,7 @@ class TestDataQualityValidator:
         validator = DataQualityValidator(config)
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[OrderBookLevel(price=51000.0, quantity=1.0)],  # 2% off
             asks=[OrderBookLevel(price=51001.0, quantity=1.0)],
@@ -181,7 +181,7 @@ class TestDataQualityValidator:
         validator = DataQualityValidator()
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[OrderBookLevel(price=50000.0, quantity=1.0)],
             asks=[OrderBookLevel(price=50001.0, quantity=1.0)],
@@ -197,7 +197,7 @@ class TestDataQualityValidator:
         validator = DataQualityValidator()
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[],
             asks=[],
@@ -217,7 +217,7 @@ class TestDataQualityValidator:
         for i in range(3):
             snapshot = OrderBookSnapshot(
                 symbol="BTCUSDT",
-                timestamp=datetime.utcnow() - timedelta(seconds=i),
+                timestamp=datetime.now(UTC) - timedelta(seconds=i),
                 last_update_id=i,
                 bids=[OrderBookLevel(price=50000.0, quantity=1.0)],
                 asks=[OrderBookLevel(price=50001.0, quantity=1.0)],
@@ -266,14 +266,14 @@ class TestDataQualityValidator:
 
         snapshot1 = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[],
             asks=[],
         )
         snapshot2 = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=2,
             bids=[],
             asks=[],
@@ -294,14 +294,14 @@ class TestDataQualityValidator:
 
         snapshot1 = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[],
             asks=[],
         )
         snapshot2 = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,  # Duplicate
             bids=[],
             asks=[],
@@ -322,7 +322,7 @@ class TestDataQualityValidator:
 
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[OrderBookLevel(price=50000.0, quantity=1.0)],
             asks=[OrderBookLevel(price=50001.0, quantity=1.0)],
@@ -341,7 +341,7 @@ class TestDataQualityValidator:
 
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow() - timedelta(seconds=100),  # Stale
+            timestamp=datetime.now(UTC) - timedelta(seconds=100),  # Stale
             last_update_id=1,
             bids=[OrderBookLevel(price=50000.0, quantity=1.0)],
             asks=[OrderBookLevel(price=50001.0, quantity=1.0)],
@@ -374,7 +374,7 @@ class TestDataQualityValidator:
         )
 
         report = DataQualityReport(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             overall_passed=False,
             checks=[check1, check2, check3],
             summary="Some checks failed",

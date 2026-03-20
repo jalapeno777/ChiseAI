@@ -184,7 +184,7 @@ class TestSubmissionResult:
 
     def test_create_result(self):
         """Test creating submission result."""
-        from datetime import datetime
+        from datetime import UTC, datetime
 
         from src.backtesting.dsl.validator import ValidationResult as VR
 
@@ -196,7 +196,7 @@ class TestSubmissionResult:
             fingerprint="abc123",
             validation_result=VR(is_valid=True, errors=[], warnings=[]),
             safety_errors=[],
-            submitted_at=datetime.utcnow(),
+            submitted_at=datetime.now(UTC),
         )
 
         assert result.success is True
@@ -205,7 +205,7 @@ class TestSubmissionResult:
 
     def test_result_to_dict(self):
         """Test converting result to dictionary."""
-        from datetime import datetime
+        from datetime import UTC, datetime
 
         from src.backtesting.dsl.validator import ValidationResult as VR
 
@@ -217,7 +217,7 @@ class TestSubmissionResult:
             fingerprint="abc123",
             validation_result=VR(is_valid=True, errors=[], warnings=[]),
             safety_errors=[],
-            submitted_at=datetime.utcnow(),
+            submitted_at=datetime.now(UTC),
         )
 
         data = result.to_dict()
@@ -230,7 +230,7 @@ class TestSubmissionResult:
 
     def test_get_field_errors(self):
         """Test getting errors for specific field."""
-        from datetime import datetime
+        from datetime import UTC, datetime
 
         from src.backtesting.dsl.validator import (
             ValidationError as VE,
@@ -254,7 +254,7 @@ class TestSubmissionResult:
                 warnings=[],
             ),
             safety_errors=[],
-            submitted_at=datetime.utcnow(),
+            submitted_at=datetime.now(UTC),
         )
 
         name_errors = result.get_field_errors("metadata.name")
@@ -264,7 +264,7 @@ class TestSubmissionResult:
 
     def test_has_warnings_property(self):
         """Test has_warnings property."""
-        from datetime import datetime
+        from datetime import UTC, datetime
 
         from src.backtesting.dsl.validator import (
             ValidationResult as VR,
@@ -285,7 +285,7 @@ class TestSubmissionResult:
                 warnings=[VW("test", "Warning", "value", "Suggestion")],
             ),
             safety_errors=[],
-            submitted_at=datetime.utcnow(),
+            submitted_at=datetime.now(UTC),
         )
 
         assert result.has_warnings is True

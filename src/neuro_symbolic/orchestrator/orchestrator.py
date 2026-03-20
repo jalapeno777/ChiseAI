@@ -18,7 +18,7 @@ It provides:
 import logging
 import time
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -108,7 +108,7 @@ class OrchestratorResult:
     processing_time_ms: float = 0.0
     components_used: list[str] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""

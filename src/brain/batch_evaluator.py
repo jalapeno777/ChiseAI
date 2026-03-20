@@ -11,7 +11,7 @@ import asyncio
 import json
 import logging
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -65,7 +65,7 @@ class EvaluationResult:
     max_drawdown: float = 0.0
     duration_seconds: float = 0.0
     error_message: str | None = None
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def __post_init__(self) -> None:
         """Validate evaluation result values."""
@@ -114,7 +114,7 @@ class EvaluationResult:
         if timestamp_str:
             timestamp = datetime.fromisoformat(timestamp_str)
         else:
-            timestamp = datetime.utcnow()
+            timestamp = datetime.now(UTC)
 
         return cls(
             brain_version=data["brain_version"],
@@ -384,7 +384,7 @@ class BatchEvaluator:
             EvaluationResult with real metrics or failure status.
         """
         timeout = timeout_seconds or self.default_timeout_seconds
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
 
         try:
             # Run evaluation in thread pool to make it async-friendly
@@ -407,7 +407,7 @@ class BatchEvaluator:
                 timeout=timeout,
             )
 
-            duration = max(0.0, (datetime.utcnow() - start_time).total_seconds())
+            duration = max(0.0, (datetime.now(UTC) - start_time).total_seconds())
 
             # Map BrainEvaluator result to BatchEvaluator result
             # BrainEvaluator uses PASSED/FAILED, BatchEvaluator uses COMPLETED
@@ -439,7 +439,7 @@ class BatchEvaluator:
             )
 
         except TimeoutError:
-            duration = max(0.0, (datetime.utcnow() - start_time).total_seconds())
+            duration = max(0.0, (datetime.now(UTC) - start_time).total_seconds())
             logger.warning(f"Evaluation timeout for {brain_version}")
             return EvaluationResult(
                 brain_version=brain_version,
@@ -448,7 +448,7 @@ class BatchEvaluator:
                 error_message=f"Evaluation exceeded timeout of {timeout}s",
             )
         except Exception as e:
-            duration = max(0.0, (datetime.utcnow() - start_time).total_seconds())
+            duration = max(0.0, (datetime.now(UTC) - start_time).total_seconds())
             logger.error(f"Evaluation failed for {brain_version}: {e}")
             return EvaluationResult(
                 brain_version=brain_version,
@@ -604,7 +604,7 @@ class EvaluationPersistence:
         filepath.parent.mkdir(parents=True, exist_ok=True)
 
         data = {
-            "saved_at": datetime.utcnow().isoformat(),
+            "saved_at": datetime.now(UTC).isoformat(),
             "count": len(results),
             "results": [r.to_dict() for r in results],
         }

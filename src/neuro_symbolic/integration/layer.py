@@ -11,7 +11,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, TypeVar
 
@@ -53,7 +53,7 @@ class Event:
     event_type: EventType
     source: str
     data: dict[str, Any] = field(default_factory=dict)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -289,7 +289,7 @@ class DataConverter:
             "low": data.get("low", data.get("price", 0.0)),
             "open": data.get("open", data.get("price", 0.0)),
             "close": data.get("close", data.get("price", 0.0)),
-            "timestamp": data.get("timestamp", datetime.utcnow().isoformat()),
+            "timestamp": data.get("timestamp", datetime.now(UTC).isoformat()),
             "symbol": data.get("symbol", "UNKNOWN"),
         }
 
@@ -316,7 +316,7 @@ class DataConverter:
             "confidence": max(0.0, min(1.0, confidence)),
             "features": features or {},
             "metadata": metadata or {},
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     @staticmethod
@@ -342,7 +342,7 @@ class DataConverter:
             "reasoning_chain": reasoning_chain or [],
             "key_factors": key_factors or {},
             "overall_confidence": confidence,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     @staticmethod
@@ -365,7 +365,7 @@ class DataConverter:
             "signals": signals,
             "confidences": confidences or {k: 0.8 for k in signals},
             "context": context or {},
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     @staticmethod
@@ -391,7 +391,7 @@ class DataConverter:
                 "success": outcome.get("success", False),
             },
             "context": context or {},
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
 

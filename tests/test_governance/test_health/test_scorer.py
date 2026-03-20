@@ -4,7 +4,7 @@ Test Health Scorer - Unit tests for health scoring functionality (ST-GOV-008).
 Story: ST-GOV-008
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from src.governance.health.scorer import (
     DEFAULT_DIMENSIONS,
@@ -193,7 +193,7 @@ class TestHealthScorer:
             overall_score=75,
             status=HealthStatus.DEGRADED,
             dimensions={},
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
         )
         assert score.is_healthy() is True  # >= 70
 
@@ -202,7 +202,7 @@ class TestHealthScorer:
             overall_score=65,
             status=HealthStatus.DEGRADED,
             dimensions={},
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
         )
         assert score.is_healthy() is False  # < 70
 
@@ -279,7 +279,7 @@ class TestSwarmHealthScoring:
                 overall_score=score,
                 status=status,
                 dimensions={},
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
             )
 
         agents = [

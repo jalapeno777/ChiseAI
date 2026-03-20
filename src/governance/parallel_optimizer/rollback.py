@@ -11,7 +11,7 @@ import json
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from src.governance.parallel_optimizer.models import (
@@ -41,7 +41,7 @@ class RollbackCheckpoint:
 
     checkpoint_id: str
     batch_id: str
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     task_states: dict[str, str] = field(default_factory=dict)
     git_state: dict[str, str] = field(default_factory=dict)
     file_states: dict[str, str] = field(default_factory=dict)
@@ -359,7 +359,7 @@ class BatchRollbackExecutor:
 
         # Mark batch as running
         batch.status = BatchStatus.RUNNING
-        batch.started_at = datetime.utcnow()
+        batch.started_at = datetime.now(UTC)
 
         failed_tasks: list[OptimizableTask] = []
         completed_task_ids: list[str] = []
@@ -395,7 +395,7 @@ class BatchRollbackExecutor:
 
         # Success
         batch.status = BatchStatus.COMPLETED
-        batch.completed_at = datetime.utcnow()
+        batch.completed_at = datetime.now(UTC)
         self.rollback_manager._cleanup_checkpoint(checkpoint)
 
         return True, None

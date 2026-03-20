@@ -1,6 +1,6 @@
 """Tests for SentimentAggregator, SentimentScore, and AggregatedSentiment."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 
@@ -46,7 +46,7 @@ class StubSource(BaseSentimentSource):
         return SentimentScore(
             source=self.name,
             value=self._value,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             confidence=self._confidence,
             raw_value=self._value,
         )
@@ -68,7 +68,7 @@ class TestSentimentScore:
         score = SentimentScore(
             source="test",
             value=0.5,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
         )
         assert score.source == "test"
         assert score.value == 0.5
@@ -77,7 +77,7 @@ class TestSentimentScore:
 
     def test_creation_with_all_fields(self):
         """Test creating SentimentScore with all fields."""
-        ts = datetime.utcnow()
+        ts = datetime.now(UTC)
         score = SentimentScore(
             source="test",
             value=-0.3,
@@ -93,23 +93,23 @@ class TestSentimentScore:
 
     def test_value_boundary_min(self):
         """Test minimum boundary value -1.0."""
-        score = SentimentScore(source="test", value=-1.0, timestamp=datetime.utcnow())
+        score = SentimentScore(source="test", value=-1.0, timestamp=datetime.now(UTC))
         assert score.value == -1.0
 
     def test_value_boundary_max(self):
         """Test maximum boundary value +1.0."""
-        score = SentimentScore(source="test", value=1.0, timestamp=datetime.utcnow())
+        score = SentimentScore(source="test", value=1.0, timestamp=datetime.now(UTC))
         assert score.value == 1.0
 
     def test_value_below_min_raises(self):
         """Test that value below -1.0 raises ValueError."""
         with pytest.raises(ValueError, match="\\[-1, \\+1\\]"):
-            SentimentScore(source="test", value=-1.1, timestamp=datetime.utcnow())
+            SentimentScore(source="test", value=-1.1, timestamp=datetime.now(UTC))
 
     def test_value_above_max_raises(self):
         """Test that value above +1.0 raises ValueError."""
         with pytest.raises(ValueError, match="\\[-1, \\+1\\]"):
-            SentimentScore(source="test", value=1.1, timestamp=datetime.utcnow())
+            SentimentScore(source="test", value=1.1, timestamp=datetime.now(UTC))
 
     def test_confidence_below_zero_raises(self):
         """Test that negative confidence raises ValueError."""
@@ -117,7 +117,7 @@ class TestSentimentScore:
             SentimentScore(
                 source="test",
                 value=0.0,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 confidence=-0.1,
             )
 
@@ -127,7 +127,7 @@ class TestSentimentScore:
             SentimentScore(
                 source="test",
                 value=0.0,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 confidence=1.1,
             )
 
@@ -150,7 +150,7 @@ class TestSentimentScore:
     )
     def test_direction_mapping(self, value, expected):
         """Test direction mapping for various values."""
-        score = SentimentScore(source="test", value=value, timestamp=datetime.utcnow())
+        score = SentimentScore(source="test", value=value, timestamp=datetime.now(UTC))
         assert score.direction == expected
 
 
@@ -165,13 +165,13 @@ class TestAggregatedSentiment:
     def test_valid_aggregation(self):
         """Test creating a valid AggregatedSentiment."""
         scores = [
-            SentimentScore(source="a", value=0.5, timestamp=datetime.utcnow()),
-            SentimentScore(source="b", value=-0.3, timestamp=datetime.utcnow()),
+            SentimentScore(source="a", value=0.5, timestamp=datetime.now(UTC)),
+            SentimentScore(source="b", value=-0.3, timestamp=datetime.now(UTC)),
         ]
         agg = AggregatedSentiment(
             scores=scores,
             weighted_value=0.1,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             sources_count=2,
         )
         assert agg.sources_count == 2
@@ -181,13 +181,13 @@ class TestAggregatedSentiment:
     def test_weighted_value_out_of_range_raises(self):
         """Test that weighted value outside [-1, +1] raises."""
         scores = [
-            SentimentScore(source="a", value=0.5, timestamp=datetime.utcnow()),
+            SentimentScore(source="a", value=0.5, timestamp=datetime.now(UTC)),
         ]
         with pytest.raises(ValueError, match="\\[-1, \\+1\\]"):
             AggregatedSentiment(
                 scores=scores,
                 weighted_value=1.5,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 sources_count=1,
             )
 
@@ -204,7 +204,7 @@ class TestAggregatedSentiment:
         agg = AggregatedSentiment(
             scores=[],
             weighted_value=value,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             sources_count=0,
         )
         assert agg.direction == expected

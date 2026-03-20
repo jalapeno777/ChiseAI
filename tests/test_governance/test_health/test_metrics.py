@@ -4,7 +4,7 @@ Test Health Metrics - Unit tests for metrics exporter (ST-GOV-008).
 Story: ST-GOV-008
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from src.governance.health.metrics import (
     HealthMetricPoint,
@@ -156,7 +156,7 @@ class TestHealthMetricPoint:
         point = HealthMetricPoint(
             name="test_metric",
             value=42.0,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             labels={"agent_id": "agent-1"},
             help_text="Test metric",
         )
@@ -170,7 +170,7 @@ class TestHealthMetricPoint:
         point = HealthMetricPoint(
             name="test",
             value=1.0,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
         )
 
         assert point.labels == {}

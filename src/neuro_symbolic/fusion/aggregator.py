@@ -1,7 +1,7 @@
 """Signal aggregator for temporal alignment and confidence weighting."""
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from src.neuro_symbolic.multimodal.types import (
@@ -111,7 +111,7 @@ class SignalAggregator:
         Returns:
             AggregatedSignals with aligned and weighted signals.
         """
-        target_time = target_time or datetime.utcnow()
+        target_time = target_time or datetime.now(UTC)
 
         # Filter signals by staleness
         valid_signals = self._filter_by_staleness(signals, target_time)
@@ -164,7 +164,7 @@ class SignalAggregator:
         Returns:
             SignalBatch ready for fusion.
         """
-        target_time = target_time or datetime.utcnow()
+        target_time = target_time or datetime.now(UTC)
         aggregated = self.aggregate(signals, target_time)
 
         # Calculate modality coverage

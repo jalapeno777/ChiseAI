@@ -20,7 +20,7 @@ Example:
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import (
@@ -276,7 +276,7 @@ async def register_model(
         metadata = ModelMetadata(
             model_name=model_name,
             version=version,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             training_data=training_data,
             hyperparameters=hyperparams_dict,
             metrics=metrics_dict,
@@ -745,5 +745,5 @@ async def health_check() -> HealthResponse:
     return HealthResponse(
         status="healthy" if _registry is not None else "unhealthy",
         registry_initialized=_registry is not None,
-        timestamp=datetime.utcnow().isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
     )

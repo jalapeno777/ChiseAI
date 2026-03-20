@@ -11,7 +11,7 @@ import json
 import shutil
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -381,7 +381,7 @@ class FilesystemBackend(StorageBackend):
             json.dump(
                 {
                     "version": version,
-                    "updated_at": datetime.utcnow().isoformat(),
+                    "updated_at": datetime.now(UTC).isoformat(),
                     "model_name": model_name,
                 },
                 f,

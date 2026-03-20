@@ -10,7 +10,7 @@ ST-CHISE-003: Brain Promotion Packet - Evidence + Rollback
 import contextlib
 import json
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -97,7 +97,7 @@ class PromotionPacket:
     rollback_plan: str = ""
     required_approvers: list[str] = field(default_factory=list)
     signatures: list[ApprovalSignature] = field(default_factory=list)
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     status: PacketStatus = PacketStatus.DRAFT
 
     def to_dict(self) -> dict[str, Any]:
@@ -516,7 +516,7 @@ def add_signature(
     """
     signature = ApprovalSignature(
         approver=approver,
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(UTC),
         status=status,
         comments=comments,
     )

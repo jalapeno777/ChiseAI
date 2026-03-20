@@ -1,7 +1,7 @@
 """Open interest data aggregation."""
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 
 @dataclass
@@ -96,7 +96,7 @@ class OpenInterestAggregator:
         self._data[symbol].append(oi_data)
 
         # Clean old data (keep 2x window)
-        cutoff = datetime.utcnow() - timedelta(minutes=self.window_minutes * 2)
+        cutoff = datetime.now(UTC) - timedelta(minutes=self.window_minutes * 2)
         self._data[symbol] = [d for d in self._data[symbol] if d.timestamp > cutoff]
 
     def get_aggregation(
@@ -116,7 +116,7 @@ class OpenInterestAggregator:
             return None
 
         window = window_minutes or self.window_minutes
-        cutoff = datetime.utcnow() - timedelta(minutes=window)
+        cutoff = datetime.now(UTC) - timedelta(minutes=window)
         window_data = [d for d in data if d.timestamp >= cutoff]
 
         if len(window_data) < 2:

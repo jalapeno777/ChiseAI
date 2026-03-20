@@ -13,7 +13,7 @@ import asyncio
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 
@@ -100,7 +100,7 @@ class FailureInjector:
         expected_pattern = self._get_expected_pattern(scenario)
 
         log_entry = LogEntry(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             level="ERROR",
             source=service,
             message=message,
@@ -110,7 +110,7 @@ class FailureInjector:
         injected = InjectedFailure(
             failure_id=failure_id,
             scenario=scenario,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             service=service,
             message=message,
             expected_pattern=expected_pattern,
@@ -196,9 +196,9 @@ class FailureInjector:
         Returns:
             Dict with healing results
         """
-        start = datetime.utcnow()
+        start = datetime.now(UTC)
 
-        while (datetime.utcnow() - start).total_seconds() < timeout_seconds:
+        while (datetime.now(UTC) - start).total_seconds() < timeout_seconds:
             # Check if healing was triggered by looking at engine history
             history = self._healing_engine.get_healing_history(
                 service=failure.service,
@@ -214,7 +214,7 @@ class FailureInjector:
                         "action_type": attempt.action_type,
                         "status": attempt.status.value,
                         "wait_time_seconds": (
-                            datetime.utcnow() - start
+                            datetime.now(UTC) - start
                         ).total_seconds(),
                     }
 

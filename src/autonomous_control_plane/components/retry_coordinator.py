@@ -847,6 +847,6 @@ class RetryCoordinator:
 
 def datetime_now() -> Any:
     """Get current datetime."""
-    from datetime import datetime
+    from datetime import UTC, datetime
 
-    return datetime.utcnow()
+    return datetime.now(UTC)

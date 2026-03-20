@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, TypeVar
 
@@ -243,7 +243,7 @@ class RetryBudget:
 
     service_name: str
     current_count: int = 0
-    window_start: datetime = field(default_factory=datetime.utcnow)
+    window_start: datetime = field(default_factory=lambda: datetime.now(UTC))
     limit: int = 100
     is_exceeded: bool = False
 
@@ -253,7 +253,7 @@ class RetryBudget:
         Returns:
             True if attempt is allowed, False if budget exceeded
         """
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         window_minute = now.replace(second=0, microsecond=0)
 
         # Reset if we're in a new minute window
@@ -305,7 +305,7 @@ class EndpointRetryBudget:
     service_name: str
     endpoint_pattern: str
     current_count: int = 0
-    window_start: datetime = field(default_factory=datetime.utcnow)
+    window_start: datetime = field(default_factory=lambda: datetime.now(UTC))
     limit: int = 100
     is_exceeded: bool = False
     parent_service: str | None = None
@@ -317,7 +317,7 @@ class EndpointRetryBudget:
         Returns:
             True if attempt is allowed, False if budget exceeded
         """
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         window_minute = now.replace(second=0, microsecond=0)
 
         # Reset if we're in a new minute window
@@ -457,7 +457,7 @@ class DeadLetterQueueItem:
     payload: dict[str, Any]
     error_message: str
     retry_count: int
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     status: RetryStatus = RetryStatus.DLQ
     last_error: str | None = None
 
@@ -498,7 +498,7 @@ class RetryOperation:
     operation_name: str
     func: Callable[[], Awaitable[Any]] = field(repr=False)
     policy: RetryPolicy = field(default_factory=RetryPolicy)
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     status: RetryStatus = RetryStatus.PENDING
     attempt_count: int = 0
     last_attempt_at: datetime | None = None

@@ -9,7 +9,7 @@ Tests cover:
 """
 
 import math
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from src.neuro_symbolic.knowledge_graph.extractor import RelationshipExtractor
@@ -176,7 +176,7 @@ class TestEdge:
 
     def test_edge_is_valid_at(self):
         """Test edge validity at timestamps."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         edge = Edge(
             source_id="A",
             target_id="B",
@@ -563,7 +563,7 @@ class TestRelationshipExtractor:
 
     def test_extract_co_occurrence(self, extractor):
         """Test extracting co-occurrence relationships."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         events = [
             {"id": "E1", "type": "alert", "timestamp": now},
             {"id": "E2", "type": "alert", "timestamp": now + timedelta(seconds=10)},
@@ -584,7 +584,7 @@ class TestRelationshipExtractor:
 
     def test_extract_influence(self, extractor):
         """Test extracting influence relationship."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         influencer_events = [
             {"id": "news", "timestamp": now + timedelta(seconds=i * 100)}
             for i in range(10)

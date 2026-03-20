@@ -2,7 +2,7 @@
 
 import time
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from src.neuro_symbolic.fusion.aggregator import (
@@ -212,7 +212,7 @@ class MultiModalFusionEngine:
             signal_count=len(signals),
             alignment_quality=aggregated.alignment_quality,
             processing_time_ms=processing_time,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             metadata={
                 "engine_version": "1.0.0",
                 "fusion_count": self._fusion_count,
@@ -310,7 +310,7 @@ class MultiModalFusionEngine:
     ) -> list[MultiModalSignal]:
         """Convert simple dict to MultiModalSignal list."""
         signals = []
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         modality_mapping = {
             "technical": ModalityType.TECHNICAL,
@@ -352,7 +352,7 @@ class MultiModalFusionEngine:
             signal_count=0,
             alignment_quality=0.0,
             processing_time_ms=processing_time,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             metadata={"reason": "no_signals"},
         )
 

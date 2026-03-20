@@ -1,7 +1,7 @@
 """Fusion strategy selector for adaptive strategy selection."""
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -75,7 +75,7 @@ class StrategyPerformance:
             )
 
         self.sample_count += 1
-        self.last_used = datetime.utcnow()
+        self.last_used = datetime.now(UTC)
 
 
 @dataclass

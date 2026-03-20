@@ -1,6 +1,6 @@
 """Pydantic models for GitReviewBot."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 
 from pydantic import BaseModel, Field
@@ -57,7 +57,7 @@ class ReviewResult(BaseModel):
     summary: str = Field(..., description="Overall assessment summary")
     confidence: float = Field(..., ge=0, le=100, description="Confidence score 0-100")
     blockers: list[str] = Field(default_factory=list, description="Blocking issues")
-    reviewed_at: datetime = Field(default_factory=datetime.utcnow)
+    reviewed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     duration_ms: int | None = Field(None, description="Review duration in milliseconds")
 
 
@@ -80,7 +80,7 @@ class Decision(BaseModel):
     pr_number: int = Field(..., description="PR number")
     pr_title: str = Field(..., description="PR title")
     story_id: str | None = Field(None, description="Extracted story ID")
-    decided_at: datetime = Field(default_factory=datetime.utcnow)
+    decided_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ReviewFeedback(BaseModel):
@@ -91,7 +91,7 @@ class ReviewFeedback(BaseModel):
     feedback_type: str = Field(..., pattern="^(👍|👎|thumbs_up|thumbs_down)$")
     reviewer: str
     comment: str | None = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class PRDetails(BaseModel):
@@ -134,5 +134,5 @@ class CachedDiff(BaseModel):
     pr_number: int
     files: list[str]
     review_result: ReviewResult
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     ttl_seconds: int = Field(default=86400)  # 24 hours

@@ -11,7 +11,7 @@ Story: ST-GOV-003
 """
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import JSONResponse
@@ -257,7 +257,7 @@ async def health_check():
         status="healthy",
         version="1.0.0",
         redis_connected=redis_connected,
-        timestamp=datetime.utcnow().isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
     )
 
 

@@ -1,6 +1,6 @@
 """Decision synthesis engine for combining SeniorDev and Critic reviews."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from .confidence import ConfidenceFactors, ConfidenceScorer
 from .models import Decision, DecisionType, Finding, ReviewResult, Violation
@@ -86,7 +86,7 @@ class DecisionSynthesizer:
             pr_number=pr_number,
             pr_title=pr_title,
             story_id=story_id,
-            decided_at=datetime.utcnow(),
+            decided_at=datetime.now(UTC),
         )
 
     def _combine_blockers(

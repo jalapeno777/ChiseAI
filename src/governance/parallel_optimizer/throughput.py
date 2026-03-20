@@ -9,7 +9,7 @@ Story: ST-GOV-010
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 
 from src.governance.parallel_optimizer.models import (
     ExecutionPlan,
@@ -71,7 +71,7 @@ class ThroughputMeter:
         Args:
             plan: The execution plan being measured
         """
-        self._execution_timing = ExecutionTiming(start_time=datetime.utcnow())
+        self._execution_timing = ExecutionTiming(start_time=datetime.now(UTC))
         self._batch_timings.clear()
         self._task_durations.clear()
 
@@ -80,7 +80,7 @@ class ThroughputMeter:
     def start_batch(self, batch: TaskBatch) -> None:
         """Start timing a batch execution."""
         self._batch_timings[batch.batch_id] = ExecutionTiming(
-            start_time=datetime.utcnow()
+            start_time=datetime.now(UTC)
         )
 
     def end_batch(self, batch: TaskBatch, success: bool = True) -> float:
@@ -96,7 +96,7 @@ class ThroughputMeter:
         """
         timing = self._batch_timings.get(batch.batch_id)
         if timing:
-            timing.end_time = datetime.utcnow()
+            timing.end_time = datetime.now(UTC)
             timing.duration_seconds = (
                 timing.end_time - timing.start_time
             ).total_seconds()
@@ -134,7 +134,7 @@ class ThroughputMeter:
             return ThroughputMetrics()
 
         # End execution timing
-        self._execution_timing.end_time = datetime.utcnow()
+        self._execution_timing.end_time = datetime.now(UTC)
         parallel_duration = (
             self._execution_timing.end_time - self._execution_timing.start_time
         ).total_seconds()

@@ -3,7 +3,7 @@
 import asyncio
 import contextlib
 import hashlib
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from .calibration import CalibrationTracker
@@ -195,7 +195,7 @@ class GitReviewBot:
         if diff_hash in self._diff_cache:
             cached = self._diff_cache[diff_hash]
             # Check TTL
-            age = (datetime.utcnow() - cached.created_at).total_seconds()
+            age = (datetime.now(UTC) - cached.created_at).total_seconds()
             if age < cached.ttl_seconds:
                 return cached
             else:

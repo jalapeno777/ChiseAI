@@ -5,7 +5,7 @@ For ST-GOV-006: Self-Review Quality Gate
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from src.governance.quality_gate.override import (
@@ -285,7 +285,7 @@ class TestOverrideManager:
         manager.activate_override(override.id)
 
         # Simulate expired window
-        override.activated_at = datetime.utcnow() - timedelta(hours=25)
+        override.activated_at = datetime.now(UTC) - timedelta(hours=25)
 
         with pytest.raises(ValueError) as exc_info:
             manager.rollback_override(override.id, "user")
@@ -386,7 +386,7 @@ class TestOverrideManager:
         manager.activate_override(override.id)
 
         # Simulate expiration
-        override.expires_at = datetime.utcnow() - timedelta(hours=1)
+        override.expires_at = datetime.now(UTC) - timedelta(hours=1)
 
         count = manager.cleanup_expired()
 
@@ -405,7 +405,7 @@ class TestOverrideManager:
         )
 
         # Check expiration is about 6 hours from now
-        expected_expiry = datetime.utcnow() + timedelta(hours=6)
+        expected_expiry = datetime.now(UTC) + timedelta(hours=6)
         diff = abs((override.expires_at - expected_expiry).total_seconds())
         assert diff < 60  # Within 1 minute
 
@@ -421,7 +421,7 @@ class TestOverrideManager:
         )
 
         # Should be capped at 24 hours
-        expected_expiry = datetime.utcnow() + timedelta(hours=24)
+        expected_expiry = datetime.now(UTC) + timedelta(hours=24)
         diff = abs((override.expires_at - expected_expiry).total_seconds())
         assert diff < 60
 

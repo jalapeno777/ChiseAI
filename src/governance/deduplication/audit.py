@@ -9,7 +9,7 @@ Story: ST-GOV-001
 import json
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -44,7 +44,7 @@ class AuditEntry:
     entry_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     """Unique identifier for this audit entry"""
 
-    timestamp: datetime = field(default_factory=lambda: datetime.utcnow())
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     """When the action occurred"""
 
     action: DeduplicationAction = DeduplicationAction.SIMILARITY_CHECK

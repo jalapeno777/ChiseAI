@@ -7,7 +7,7 @@ including backtest results, ranking scores, and composite metrics.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -187,7 +187,7 @@ class CandidateResult:
     ranking_scores: list[RankingScore] = field(default_factory=list)
     composite_score: float = 0.0
     rank_position: int = 0
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     completed_at: datetime | None = None
     error_message: str | None = None
 

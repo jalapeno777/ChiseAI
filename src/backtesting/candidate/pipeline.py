@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol, cast
 
 import numpy as np
@@ -140,11 +140,11 @@ class CandidateBacktestPipeline:
         Returns:
             Pipeline results summary
         """
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
 
         # Set default dates
         if end_date is None:
-            end_date = datetime.utcnow()
+            end_date = datetime.now(UTC)
         if start_date is None:
             start_date = end_date - timedelta(days=90)
 
@@ -173,12 +173,12 @@ class CandidateBacktestPipeline:
         self._update_registry(ranked)
 
         # Calculate runtime
-        runtime = datetime.utcnow() - start_time
+        runtime = datetime.now(UTC) - start_time
 
         return {
             "pipeline_id": str(uuid.uuid4()),
             "start_time": start_time.isoformat(),
-            "end_time": datetime.utcnow().isoformat(),
+            "end_time": datetime.now(UTC).isoformat(),
             "runtime_seconds": runtime.total_seconds(),
             "total_candidates": len(candidates),
             "completed": len(
@@ -261,7 +261,7 @@ class CandidateBacktestPipeline:
                         # Test mode only: use mock metrics
                         result.status = CandidateStatus.COMPLETED
                         result.metrics = self._generate_mock_metrics()
-                        result.completed_at = datetime.utcnow()
+                        result.completed_at = datetime.now(UTC)
 
                 results.append(result)
 

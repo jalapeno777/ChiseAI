@@ -1,6 +1,6 @@
 """Tests for Binance ingestion service."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -122,7 +122,7 @@ class TestBinanceIngestionService:
         service.tracker.add_snapshot(
             OrderBookSnapshot(
                 symbol="BTCUSDT",
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 last_update_id=1,
                 bids=[OrderBookLevel(price=50000.0, quantity=1.0)],
                 asks=[OrderBookLevel(price=50001.0, quantity=1.0)],
@@ -145,7 +145,7 @@ class TestBinanceIngestionService:
         service.tracker.add_snapshot(
             OrderBookSnapshot(
                 symbol="BTCUSDT",
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 last_update_id=1,
                 bids=[OrderBookLevel(price=50000.0, quantity=10.0)],
                 asks=[OrderBookLevel(price=50010.0, quantity=10.0)],

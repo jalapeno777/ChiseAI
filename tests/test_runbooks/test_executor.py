@@ -3,7 +3,7 @@ Tests for the runbook executor module.
 """
 
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import patch
 
@@ -55,8 +55,8 @@ class TestExecutionResult:
 
     def test_execution_result_creation(self):
         """Test creating an ExecutionResult."""
-        start = datetime.utcnow()
-        end = datetime.utcnow()
+        start = datetime.now(UTC)
+        end = datetime.now(UTC)
 
         result = ExecutionResult(
             runbook_name="test",
@@ -76,8 +76,8 @@ class TestExecutionResult:
 
     def test_execution_result_to_dict(self):
         """Test converting ExecutionResult to dictionary."""
-        start = datetime.utcnow()
-        end = datetime.utcnow()
+        start = datetime.now(UTC)
+        end = datetime.now(UTC)
 
         result = ExecutionResult(
             runbook_name="test",
@@ -99,8 +99,8 @@ class TestExecutionResult:
 
     def test_execution_result_to_json(self):
         """Test converting ExecutionResult to JSON."""
-        start = datetime.utcnow()
-        end = datetime.utcnow()
+        start = datetime.now(UTC)
+        end = datetime.now(UTC)
 
         result = ExecutionResult(
             runbook_name="test",
@@ -241,8 +241,8 @@ steps:
         log_dir = tmp_path / "logs"
         log_dir.mkdir()
 
-        start = datetime.utcnow()
-        end = datetime.utcnow()
+        start = datetime.now(UTC)
+        end = datetime.now(UTC)
 
         result = ExecutionResult(
             runbook_name="test",

@@ -4,7 +4,7 @@ Test Health Remediator - Unit tests for auto-remediation (ST-GOV-008).
 Story: ST-GOV-008
 """
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from src.governance.health.predictor import (
     AlertSeverity,
@@ -29,13 +29,13 @@ def create_alert(
 ) -> HealthAlert:
     """Helper to create a HealthAlert."""
     return HealthAlert(
-        alert_id=f"alert-{datetime.utcnow().timestamp()}",
+        alert_id=f"alert-{datetime.now(UTC).timestamp()}",
         agent_id=agent_id,
         severity=severity,
         prediction_type=prediction_type,
         current_score=current_score,
         predicted_score=predicted_score,
-        predicted_time=datetime.utcnow() + timedelta(minutes=15),
+        predicted_time=datetime.now(UTC) + timedelta(minutes=15),
         confidence=0.8,
         message="Test alert",
         contributing_factors=["Test factor"],
@@ -164,8 +164,8 @@ class TestHealthRemediator:
             action=RemediationAction.CLEAR_CACHE,
             trigger="Test",
             status=RemediationStatus.SUCCESS,
-            started_at=datetime.utcnow(),
-            completed_at=datetime.utcnow(),
+            started_at=datetime.now(UTC),
+            completed_at=datetime.now(UTC),
             duration_ms=100.0,
         )
 

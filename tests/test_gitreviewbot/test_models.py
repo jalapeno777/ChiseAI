@@ -1,6 +1,6 @@
 """Tests for GitReviewBot models."""
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from autonomous_git.gitreviewbot.models import (
     CalibrationMetrics,
@@ -159,8 +159,8 @@ class TestPRDetails:
             branch="feature/ST-123-test",
             base_branch="main",
             state="open",
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
             files_changed=["src/feature.py", "tests/test_feature.py"],
             labels=["enhancement"],
         )
@@ -175,7 +175,7 @@ class TestCalibrationMetrics:
 
     def test_metrics_creation(self):
         """Test creating calibration metrics."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         metrics = CalibrationMetrics(
             total_reviews=100,
             approved_reviews=60,

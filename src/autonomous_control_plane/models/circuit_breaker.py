@@ -7,7 +7,7 @@ ST-SAFETY-001: Circuit Breaker Enhancement
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -193,17 +193,17 @@ class FailureRateWindow:
     window_seconds: int
     failure_count: int = 0
     success_count: int = 0
-    last_updated: datetime = field(default_factory=datetime.utcnow)
+    last_updated: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def record_failure(self) -> None:
         """Record a failure in this window."""
         self.failure_count += 1
-        self.last_updated = datetime.utcnow()
+        self.last_updated = datetime.now(UTC)
 
     def record_success(self) -> None:
         """Record a success in this window."""
         self.success_count += 1
-        self.last_updated = datetime.utcnow()
+        self.last_updated = datetime.now(UTC)
 
     @property
     def total_calls(self) -> int:
@@ -233,7 +233,7 @@ class FailureRateWindow:
             failure_count=data.get("failure_count", 0),
             success_count=data.get("success_count", 0),
             last_updated=datetime.fromisoformat(
-                data.get("last_updated", datetime.utcnow().isoformat())
+                data.get("last_updated", datetime.now(UTC).isoformat())
             ),
         )
 
@@ -318,7 +318,7 @@ class CanaryRecoveryState:
     current_step_index: int = 0
     current_step_requests: int = 0
     current_step_successes: int = 0
-    step_start_time: datetime = field(default_factory=datetime.utcnow)
+    step_start_time: datetime = field(default_factory=lambda: datetime.now(UTC))
     promotion_history: list[dict[str, Any]] = field(default_factory=list)
 
     @property
@@ -345,13 +345,13 @@ class CanaryRecoveryState:
                 "requests": self.current_step_requests,
                 "successes": self.current_step_successes,
                 "success_rate": self.current_step_success_rate,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
         )
         self.current_step_index += 1
         self.current_step_requests = 0
         self.current_step_successes = 0
-        self.step_start_time = datetime.utcnow()
+        self.step_start_time = datetime.now(UTC)
         return False  # Caller determines if fully recovered
 
     def reset(self) -> None:
@@ -359,7 +359,7 @@ class CanaryRecoveryState:
         self.current_step_index = 0
         self.current_step_requests = 0
         self.current_step_successes = 0
-        self.step_start_time = datetime.utcnow()
+        self.step_start_time = datetime.now(UTC)
         self.promotion_history = []
 
     def to_dict(self) -> dict[str, Any]:
@@ -380,7 +380,7 @@ class CanaryRecoveryState:
             current_step_requests=data.get("current_step_requests", 0),
             current_step_successes=data.get("current_step_successes", 0),
             step_start_time=datetime.fromisoformat(
-                data.get("step_start_time", datetime.utcnow().isoformat())
+                data.get("step_start_time", datetime.now(UTC).isoformat())
             ),
             promotion_history=data.get("promotion_history", []),
         )
@@ -399,7 +399,7 @@ class PredictiveAlertState:
     def record_failure(self, timestamp: float | None = None) -> None:
         """Record a failure timestamp for velocity calculation."""
         if timestamp is None:
-            timestamp = datetime.utcnow().timestamp()
+            timestamp = datetime.now(UTC).timestamp()
         self.failure_timestamps.append(timestamp)
         # Keep only last 60 seconds of timestamps
         cutoff = timestamp - 60
@@ -431,7 +431,7 @@ class PredictiveAlertState:
             return False
 
         if self.last_alert_time is not None:
-            elapsed = (datetime.utcnow() - self.last_alert_time).total_seconds()
+            elapsed = (datetime.now(UTC) - self.last_alert_time).total_seconds()
             if elapsed < cooldown_seconds:
                 return False
 
@@ -439,7 +439,7 @@ class PredictiveAlertState:
 
     def record_alert(self) -> None:
         """Record that an alert was triggered."""
-        self.last_alert_time = datetime.utcnow()
+        self.last_alert_time = datetime.now(UTC)
         self.alert_count += 1
 
     def to_dict(self) -> dict[str, Any]:
@@ -477,7 +477,7 @@ class CircuitBreakerMetrics:
     state_transition_count: int = 0
     last_failure_time: datetime | None = None
     last_success_time: datetime | None = None
-    last_state_change: datetime = field(default_factory=datetime.utcnow)
+    last_state_change: datetime = field(default_factory=lambda: datetime.now(UTC))
     consecutive_successes: int = 0
     consecutive_failures: int = 0
     adaptive: AdaptiveThresholdMetrics = field(default_factory=AdaptiveThresholdMetrics)
@@ -487,7 +487,7 @@ class CircuitBreakerMetrics:
     def record_success(self) -> None:
         """Record a successful call."""
         self.success_count += 1
-        self.last_success_time = datetime.utcnow()
+        self.last_success_time = datetime.now(UTC)
         self.consecutive_successes += 1
         self.consecutive_failures = 0
         self.adaptive.record_success()
@@ -495,7 +495,7 @@ class CircuitBreakerMetrics:
     def record_failure(self) -> None:
         """Record a failed call."""
         self.failure_count += 1
-        self.last_failure_time = datetime.utcnow()
+        self.last_failure_time = datetime.now(UTC)
         self.consecutive_failures += 1
         self.consecutive_successes = 0
         self.adaptive.record_failure()
@@ -508,7 +508,7 @@ class CircuitBreakerMetrics:
     def record_state_transition(self) -> None:
         """Record a state transition."""
         self.state_transition_count += 1
-        self.last_state_change = datetime.utcnow()
+        self.last_state_change = datetime.now(UTC)
         self.consecutive_successes = 0
         self.consecutive_failures = 0
 
@@ -552,7 +552,7 @@ class CircuitBreakerMetrics:
                 else None
             ),
             last_state_change=datetime.fromisoformat(
-                data.get("last_state_change", datetime.utcnow().isoformat())
+                data.get("last_state_change", datetime.now(UTC).isoformat())
             ),
             consecutive_successes=data.get("consecutive_successes", 0),
             consecutive_failures=data.get("consecutive_failures", 0),
@@ -572,8 +572,8 @@ class CircuitBreakerStateModel:
     metrics: CircuitBreakerMetrics
     half_open_calls: int = 0
     last_error: str | None = None
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    updated_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
@@ -605,7 +605,7 @@ class CircuitBreakerStateModel:
                 return datetime.fromisoformat(value)
             elif isinstance(value, (int, float)):
                 return datetime.utcfromtimestamp(value)
-            return datetime.utcnow()
+            return datetime.now(UTC)
 
         return cls(
             name=data["name"],
@@ -627,7 +627,7 @@ class StateChangeEvent:
     previous_state: CircuitBreakerState
     new_state: CircuitBreakerState
     reason: StateTransitionReason
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -679,20 +679,20 @@ class CircuitBreakerGroup:
     member_names: list[str] = field(default_factory=list)
     cascade_open: bool = True
     cascade_close: bool = False
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    updated_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def add_member(self, circuit_breaker_name: str) -> None:
         """Add a circuit breaker to the group."""
         if circuit_breaker_name not in self.member_names:
             self.member_names.append(circuit_breaker_name)
-            self.updated_at = datetime.utcnow()
+            self.updated_at = datetime.now(UTC)
 
     def remove_member(self, circuit_breaker_name: str) -> bool:
         """Remove a circuit breaker from the group."""
         if circuit_breaker_name in self.member_names:
             self.member_names.remove(circuit_breaker_name)
-            self.updated_at = datetime.utcnow()
+            self.updated_at = datetime.now(UTC)
             return True
         return False
 
@@ -716,10 +716,10 @@ class CircuitBreakerGroup:
             cascade_open=data.get("cascade_open", True),
             cascade_close=data.get("cascade_close", False),
             created_at=datetime.fromisoformat(
-                data.get("created_at", datetime.utcnow().isoformat())
+                data.get("created_at", datetime.now(UTC).isoformat())
             ),
             updated_at=datetime.fromisoformat(
-                data.get("updated_at", datetime.utcnow().isoformat())
+                data.get("updated_at", datetime.now(UTC).isoformat())
             ),
         )
 

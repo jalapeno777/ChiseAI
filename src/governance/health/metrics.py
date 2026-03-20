@@ -15,7 +15,7 @@ Story: ST-GOV-008
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +82,7 @@ class HealthMetrics:
             HealthMetricPoint(
                 name=self.METRIC_AGENT_HEALTH,
                 value=score,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 labels=labels,
                 help_text="Per-agent health score (0-100)",
             )
@@ -96,7 +96,7 @@ class HealthMetrics:
                     HealthMetricPoint(
                         name=f"{self.METRIC_AGENT_HEALTH}_dimension",
                         value=dim_score,
-                        timestamp=datetime.utcnow(),
+                        timestamp=datetime.now(UTC),
                         labels=dim_labels,
                         help_text=f"Health dimension score for {dim_name}",
                     )
@@ -122,7 +122,7 @@ class HealthMetrics:
             HealthMetricPoint(
                 name=self.METRIC_SWARM_HEALTH,
                 value=score,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 labels={
                     "agent_count": str(agent_count),
                     "healthy_count": str(healthy_count),
@@ -155,7 +155,7 @@ class HealthMetrics:
             HealthMetricPoint(
                 name=self.METRIC_ALERTS_TOTAL,
                 value=1.0,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 labels=labels,
                 help_text="Total number of health alerts",
             )
@@ -192,7 +192,7 @@ class HealthMetrics:
             HealthMetricPoint(
                 name=self.METRIC_REMEDIATION_TOTAL,
                 value=1.0,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 labels=labels,
                 help_text="Total remediation attempts",
             )
@@ -219,7 +219,7 @@ class HealthMetrics:
             HealthMetricPoint(
                 name=self.METRIC_PREDICTION_ACCURACY,
                 value=accuracy,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 labels={"horizon_minutes": str(prediction_horizon_minutes)},
                 help_text="Health prediction accuracy percentage",
             )

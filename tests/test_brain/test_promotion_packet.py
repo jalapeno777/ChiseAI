@@ -5,7 +5,7 @@ ST-CHISE-003: Brain Promotion Packet - Evidence + Rollback
 """
 
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 
 from src.brain.promotion_packet import (
     ApprovalSignature,
@@ -56,7 +56,7 @@ class TestApprovalSignature:
 
     def test_creation(self):
         """Test basic creation of ApprovalSignature."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         sig = ApprovalSignature(
             approver="test_user",
             timestamp=now,
@@ -71,7 +71,7 @@ class TestApprovalSignature:
         """Test creation with comments."""
         sig = ApprovalSignature(
             approver="test_user",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             status=ApprovalStatus.APPROVED,
             comments="Looks good!",
         )
@@ -108,7 +108,7 @@ class TestApprovalSignature:
 
     def test_round_trip(self):
         """Test round-trip serialization."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         original = ApprovalSignature(
             approver="test_user",
             timestamp=now,
@@ -143,7 +143,7 @@ class TestPromotionPacket:
 
     def test_creation_full(self):
         """Test full creation of PromotionPacket."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         sig = ApprovalSignature(
             approver="admin",
             timestamp=now,
@@ -203,7 +203,7 @@ class TestPromotionPacket:
 
     def test_round_trip(self):
         """Test round-trip serialization."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         original = PromotionPacket(
             candidate_version="v2.0.0",
             baseline_version="v1.0.0",
@@ -491,7 +491,7 @@ class TestExportToJson:
 
     def test_export_round_trip(self, tmp_path):
         """Test that exported JSON can be reimported."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         original = PromotionPacket(
             candidate_version="v2.0.0",
             baseline_version="v1.0.0",
@@ -735,9 +735,9 @@ class TestAddSignature:
             candidate_version="v2.0.0",
             baseline_version="v1.0.0",
         )
-        before = datetime.utcnow()
+        before = datetime.now(UTC)
         add_signature(packet, "admin", ApprovalStatus.APPROVED)
-        after = datetime.utcnow()
+        after = datetime.now(UTC)
         assert before <= packet.signatures[0].timestamp <= after
 
     def test_add_signature_returns_packet(self):
@@ -812,7 +812,7 @@ class TestIsApproved:
         )
         sig = ApprovalSignature(
             approver="admin",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             status=ApprovalStatus.APPROVED,
         )
         packet.signatures.append(sig)
@@ -827,7 +827,7 @@ class TestIsApproved:
         )
         sig = ApprovalSignature(
             approver="admin",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             status=ApprovalStatus.PENDING,
         )
         packet.signatures.append(sig)
@@ -843,14 +843,14 @@ class TestIsApproved:
         packet.signatures.append(
             ApprovalSignature(
                 approver="admin",
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 status=ApprovalStatus.APPROVED,
             )
         )
         packet.signatures.append(
             ApprovalSignature(
                 approver="lead",
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 status=ApprovalStatus.APPROVED,
             )
         )
@@ -866,7 +866,7 @@ class TestIsApproved:
         packet.signatures.append(
             ApprovalSignature(
                 approver="admin",
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 status=ApprovalStatus.APPROVED,
             )
         )
@@ -882,7 +882,7 @@ class TestIsApproved:
         packet.signatures.append(
             ApprovalSignature(
                 approver="other",
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 status=ApprovalStatus.APPROVED,
             )
         )
@@ -898,7 +898,7 @@ class TestIsApproved:
         packet.signatures.append(
             ApprovalSignature(
                 approver="admin",
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 status=ApprovalStatus.REJECTED,
             )
         )
@@ -948,7 +948,7 @@ class TestEdgeCases:
         """Test signature without comments."""
         sig = ApprovalSignature(
             approver="admin",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             status=ApprovalStatus.APPROVED,
             comments=None,
         )

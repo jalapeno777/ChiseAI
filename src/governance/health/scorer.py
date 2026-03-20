@@ -12,7 +12,7 @@ Story: ST-GOV-008
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 
 logger = logging.getLogger(__name__)
@@ -191,7 +191,7 @@ class HealthScorer:
             overall_score=round(overall_score, 2),
             status=self._classify_status(overall_score),
             dimensions=dimension_scores,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             trend=trend,
             previous_score=previous_score,
         )
@@ -202,7 +202,7 @@ class HealthScorer:
         self._score_history[agent_id].append(score)
 
         # Prune old history
-        cutoff = datetime.utcnow() - self.history_window
+        cutoff = datetime.now(UTC) - self.history_window
         self._score_history[agent_id] = [
             s for s in self._score_history[agent_id] if s.timestamp >= cutoff
         ]
@@ -232,7 +232,7 @@ class HealthScorer:
                 unhealthy_count=0,
                 critical_count=0,
                 dimensions={},
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
             )
 
         # Count by status
@@ -265,7 +265,7 @@ class HealthScorer:
             unhealthy_count=unhealthy,
             critical_count=critical,
             dimensions=dimension_avgs,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
         )
 
     def _calculate_dimension_score(

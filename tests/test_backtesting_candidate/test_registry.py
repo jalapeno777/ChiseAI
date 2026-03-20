@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 import tempfile
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -38,7 +38,7 @@ class TestStrategyVersion:
             symbol="BTCUSDT",
             timeframe="1h",
             status=StrategyStatus.CANDIDATE,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             config_hash="abc123",
         )
 
@@ -55,7 +55,7 @@ class TestStrategyVersion:
             symbol="BTCUSDT",
             timeframe="1h",
             status=StrategyStatus.CANDIDATE,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             config_hash="abc123",
         )
 
@@ -87,7 +87,7 @@ class TestStrategyVersion:
                 symbol="BTCUSDT",
                 timeframe="1h",
                 status=StrategyStatus.CANDIDATE,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
                 config_hash="abc123",
             )
 
@@ -100,7 +100,7 @@ class TestStrategyVersion:
             symbol="BTCUSDT",
             timeframe="1h",
             status=StrategyStatus.CHAMPION,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             config_hash="abc123",
         )
 
@@ -111,7 +111,7 @@ class TestStrategyVersion:
             symbol="BTCUSDT",
             timeframe="1h",
             status=StrategyStatus.CANDIDATE,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             config_hash="def456",
             parent_version=parent.version_id,
         )

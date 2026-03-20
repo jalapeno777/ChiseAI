@@ -1,6 +1,6 @@
 """Tests for liquidity metrics."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 
@@ -63,7 +63,7 @@ class TestLiquidityCalculator:
         calculator = LiquidityCalculator()
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[
                 OrderBookLevel(price=50000.0, quantity=10.0),
@@ -89,7 +89,7 @@ class TestLiquidityCalculator:
         calculator = LiquidityCalculator()
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[],
             asks=[],
@@ -104,7 +104,7 @@ class TestLiquidityCalculator:
         calculator = LiquidityCalculator()
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[
                 OrderBookLevel(price=50000.0, quantity=10.0),
@@ -132,7 +132,7 @@ class TestLiquidityCalculator:
         calculator = LiquidityCalculator()
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[
                 OrderBookLevel(price=50000.0, quantity=100.0),
@@ -154,7 +154,7 @@ class TestLiquidityCalculator:
         calculator = LiquidityCalculator()
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[OrderBookLevel(price=50000.0, quantity=1.0)],
             asks=[
@@ -175,7 +175,7 @@ class TestLiquidityCalculator:
         calculator = LiquidityCalculator()
         snapshot = OrderBookSnapshot(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             last_update_id=1,
             bids=[
                 OrderBookLevel(price=50000.0, quantity=100.0),

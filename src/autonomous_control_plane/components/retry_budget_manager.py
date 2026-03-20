@@ -21,7 +21,7 @@ from __future__ import annotations
 import fnmatch
 import logging
 import time
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -289,7 +289,7 @@ class RetryBudgetManager:
             Redis key string
         """
         if dt is None:
-            dt = datetime.utcnow()
+            dt = datetime.now(UTC)
         time_bucket = dt.strftime("%Y-%m-%d-%H-%M")
 
         if endpoint:
@@ -298,7 +298,7 @@ class RetryBudgetManager:
 
     def _get_current_window(self) -> datetime:
         """Get current minute window."""
-        return datetime.utcnow().replace(second=0, microsecond=0)
+        return datetime.now(UTC).replace(second=0, microsecond=0)
 
     def register_endpoint_pattern(
         self,

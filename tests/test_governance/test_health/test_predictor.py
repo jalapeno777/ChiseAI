@@ -4,7 +4,7 @@ Test Health Predictor - Unit tests for predictive alerting (ST-GOV-008).
 Story: ST-GOV-008
 """
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from src.governance.health.predictor import (
     AlertSeverity,
@@ -61,7 +61,7 @@ class TestHealthPredictor:
     def test_predict_insufficient_history(self):
         """Test prediction with insufficient history."""
         predictor = HealthPredictor()
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         # Only 2 data points, need 3
         history = [
@@ -75,7 +75,7 @@ class TestHealthPredictor:
     def test_predict_stable_health(self):
         """Test prediction with stable health scores."""
         predictor = HealthPredictor()
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         # Stable scores around 80
         history = [
@@ -94,7 +94,7 @@ class TestHealthPredictor:
     def test_predict_declining_health(self):
         """Test prediction with declining health trend."""
         predictor = HealthPredictor()
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         # Declining scores
         history = [
@@ -118,7 +118,7 @@ class TestHealthPredictor:
             confidence_threshold=0.5,  # Lower for testing
         )
         predictor = HealthPredictor(config=config)
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         # Steadily declining towards threshold
         history = [
@@ -138,7 +138,7 @@ class TestHealthPredictor:
     def test_alert_creation(self):
         """Test alert object creation and properties."""
         predictor = HealthPredictor()
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         history = [
             create_score("agent-1", 85, now - timedelta(minutes=15)),
@@ -159,7 +159,7 @@ class TestHealthPredictor:
             )
             assert alert.prediction_type in PredictionType
             assert 0 <= alert.confidence <= 1
-            assert alert.predicted_time > datetime.utcnow()
+            assert alert.predicted_time > datetime.now(UTC)
 
     def test_alert_to_dict(self):
         """Test alert serialization to dictionary."""
@@ -170,7 +170,7 @@ class TestHealthPredictor:
             prediction_type=PredictionType.DEGRADATION,
             current_score=70.0,
             predicted_score=50.0,
-            predicted_time=datetime.utcnow() + timedelta(minutes=15),
+            predicted_time=datetime.now(UTC) + timedelta(minutes=15),
             confidence=0.85,
             message="Test alert",
             contributing_factors=["Factor 1"],
@@ -216,7 +216,7 @@ class TestHealthPredictor:
     def test_prediction_storage(self):
         """Test that predictions are stored for accuracy tracking."""
         predictor = HealthPredictor()
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         history = [
             create_score("agent-1", 80, now - timedelta(minutes=15)),
@@ -234,7 +234,7 @@ class TestHealthPredictor:
     def test_clear_history(self):
         """Test clearing prediction history."""
         predictor = HealthPredictor()
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         history = [
             create_score("agent-1", 80, now - timedelta(minutes=15)),
@@ -252,7 +252,7 @@ class TestHealthPredictor:
     def test_calculate_prediction_accuracy(self):
         """Test prediction accuracy calculation."""
         predictor = HealthPredictor()
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         # Create some predictions
         history = [
@@ -282,7 +282,7 @@ class TestTrendAnalysis:
     def test_linear_regression_basic(self):
         """Test basic linear regression for trend analysis."""
         predictor = HealthPredictor()
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         # Linear decline
         history = [
@@ -303,7 +303,7 @@ class TestTrendAnalysis:
     def test_trend_with_noise(self):
         """Test trend analysis with noisy data."""
         predictor = HealthPredictor()
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         # Noisy declining trend
         history = [

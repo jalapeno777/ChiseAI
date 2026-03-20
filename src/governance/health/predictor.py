@@ -12,7 +12,7 @@ Story: ST-GOV-008
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 
 from .scorer import AgentHealthScore
@@ -52,7 +52,7 @@ class HealthAlert:
     message: str
     contributing_factors: list[str] = field(default_factory=list)
     remediation_hint: str | None = None
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def to_dict(self) -> dict:
         """Convert alert to dictionary for serialization."""
@@ -336,9 +336,9 @@ class HealthPredictor:
         """Create a health alert with proper formatting."""
         self._alert_counter += 1
         alert_id = (
-            f"alert-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{self._alert_counter}"
+            f"alert-{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}-{self._alert_counter}"
         )
-        predicted_time = datetime.utcnow() + horizon
+        predicted_time = datetime.now(UTC) + horizon
 
         # Build message
         if dimension:
@@ -409,7 +409,7 @@ class HealthPredictor:
             self._prediction_history[agent_id] = []
 
         prediction = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "predicted_score": predicted_score,
             "confidence": confidence,
             "alert_count": len(alerts),
@@ -419,7 +419,7 @@ class HealthPredictor:
         self._prediction_history[agent_id].append(prediction)
 
         # Prune old predictions
-        cutoff = datetime.utcnow() - self.history_window
+        cutoff = datetime.now(UTC) - self.history_window
         self._prediction_history[agent_id] = [
             p
             for p in self._prediction_history[agent_id]

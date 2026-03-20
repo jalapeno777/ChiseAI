@@ -6,7 +6,7 @@ Provides dynamic component registration, discovery, and version management.
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, TypeVar
 
@@ -49,7 +49,7 @@ class ComponentInfo:
     dependencies: list[str] = field(default_factory=list)
     config: dict[str, Any] = field(default_factory=dict)
     instance: Any | None = None
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     initialized_at: datetime | None = None
     error_message: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -271,7 +271,7 @@ class ComponentRegistry:
                 instance = info.component_class(**merged_config)
 
             info.instance = instance
-            info.initialized_at = datetime.utcnow()
+            info.initialized_at = datetime.now(UTC)
             info.status = ComponentStatus.READY
 
             logger.info("Initialized component '%s'", component_id)

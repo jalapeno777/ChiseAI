@@ -9,7 +9,7 @@ Reference:
 """
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 import numpy as np
@@ -252,7 +252,7 @@ class ATR(BaseIndicator[ATRResult]):
             return Signal(
                 direction=SignalDirection.HOLD,
                 confidence=0.5,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 metadata={"atr": None, "reason": "insufficient_data"},
             )
 
@@ -264,7 +264,7 @@ class ATR(BaseIndicator[ATRResult]):
         return Signal(
             direction=SignalDirection.HOLD,
             confidence=confidence,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             metadata={
                 "atr": round(current_atr, 6),
                 "trailing_stop": (

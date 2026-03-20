@@ -1,6 +1,6 @@
 """Tests for GitReviewBot calibration."""
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -29,7 +29,7 @@ def sample_decision():
         pr_number=123,
         pr_title="ST-123: Test",
         story_id="ST-123",
-        decided_at=datetime.utcnow(),
+        decided_at=datetime.now(UTC),
     )
 
 
@@ -134,7 +134,7 @@ class TestCalculateMetrics:
                 review_id="r1",
                 decision="APPROVE",
                 confidence=95.0,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 human_feedback="👍",
             ),
             ReviewRecord(
@@ -142,7 +142,7 @@ class TestCalculateMetrics:
                 review_id="r2",
                 decision="COMMENT",
                 confidence=80.0,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 human_feedback="👍",
             ),
             ReviewRecord(
@@ -150,7 +150,7 @@ class TestCalculateMetrics:
                 review_id="r3",
                 decision="REQUEST_CHANGES",
                 confidence=60.0,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 human_override="APPROVE",
             ),
         ]
@@ -195,8 +195,8 @@ class TestExportToGrafana:
             avg_confidence=88.0,
             false_positive_rate=3.0,
             false_negative_rate=2.0,
-            period_start=datetime.utcnow() - timedelta(days=7),
-            period_end=datetime.utcnow(),
+            period_start=datetime.now(UTC) - timedelta(days=7),
+            period_end=datetime.now(UTC),
         )
 
         data = await tracker.export_to_grafana(metrics)

@@ -9,7 +9,7 @@ Story: ST-GOV-001
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 import numpy as np
@@ -30,7 +30,7 @@ from src.governance.deduplication.hash_cache import HashCache
 class DeduplicationStats:
     """Statistics from a deduplication run."""
 
-    timestamp: datetime = field(default_factory=lambda: datetime.utcnow())
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     """When the run started"""
 
     collections_scanned: int = 0
@@ -264,7 +264,7 @@ class MemoryDeduplicationEngine:
         Returns:
             DeduplicationStats with results
         """
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
         stats = DeduplicationStats(
             timestamp=start_time,
             was_dry_run=dry_run if dry_run is not None else self.config.dry_run,
@@ -290,7 +290,7 @@ class MemoryDeduplicationEngine:
         except Exception as e:
             stats.errors.append(str(e))
 
-        end_time = datetime.utcnow()
+        end_time = datetime.now(UTC)
         stats.processing_time_seconds = (end_time - start_time).total_seconds()
 
         # Store stats in Redis
@@ -546,7 +546,7 @@ class MemoryDeduplicationEngine:
                 return 0.0
 
             # Parse timestamps
-            from datetime import datetime
+            from datetime import UTC, datetime
 
             if isinstance(ts_a, str):
                 ts_a = datetime.fromisoformat(ts_a)

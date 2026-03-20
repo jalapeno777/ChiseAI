@@ -1,7 +1,7 @@
 """Integration tests for end-to-end healing flow."""
 
 import asyncio
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 from src.autonomous_control_plane.models.healing import LogEntry
@@ -15,7 +15,7 @@ async def test_healing_triggered_by_error_log(acp_container, mock_redis):
 
     # Create an ERROR log entry
     log_entry = LogEntry(
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(UTC),
         level="ERROR",
         source="test_service",
         message="Redis connection failed: Connection refused",
@@ -40,7 +40,7 @@ async def test_healing_rate_limit_enforced(acp_container, mock_redis):
     # Create multiple ERROR logs rapidly
     logs = [
         LogEntry(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             level="ERROR",
             source=f"test_service_{i}",
             message="Redis connection failed",
@@ -89,7 +89,7 @@ async def test_healing_budget_enforced(acp_container, mock_redis):
     mock_redis.get = budget_get
 
     log_entry = LogEntry(
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(UTC),
         level="ERROR",
         source="test_service",
         message="Redis connection failed",
@@ -130,7 +130,7 @@ async def test_kill_switch_blocks_healing(acp_container, mock_redis):
         engine._enabled = False  # Direct disable for testing
 
     log_entry = LogEntry(
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(UTC),
         level="ERROR",
         source="test_service",
         message="Redis connection failed",

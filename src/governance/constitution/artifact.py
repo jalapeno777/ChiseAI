@@ -11,7 +11,7 @@ import json
 import logging
 import re
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -189,7 +189,7 @@ class ConstitutionArtifact:
     override_protocol: dict[str, Any] = field(default_factory=dict)
     compliance_metrics: dict[str, Any] = field(default_factory=dict)
     raw_content: str | None = None
-    loaded_at: datetime = field(default_factory=datetime.utcnow)
+    loaded_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def to_dict(self) -> dict[str, Any]:
         """Convert artifact to dictionary for API responses."""
@@ -711,7 +711,7 @@ class ConstitutionLoader:
             Parsed datetime
         """
         if not date_str:
-            return datetime.utcnow()
+            return datetime.now(UTC)
 
         # Try common formats
         formats = ["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"]
@@ -723,7 +723,7 @@ class ConstitutionLoader:
 
         # Fall back to current date
         logger.warning(f"Could not parse date: {date_str}, using current time")
-        return datetime.utcnow()
+        return datetime.now(UTC)
 
     def _validate_artifact(self, artifact: ConstitutionArtifact) -> None:
         """Validate artifact against JSON schema.

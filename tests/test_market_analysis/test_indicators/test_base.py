@@ -1,6 +1,6 @@
 """Tests for base indicator interface."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 
@@ -41,7 +41,7 @@ class TestSignal:
         signal = Signal(
             direction=SignalDirection.BUY,
             confidence=0.85,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             metadata={"test": "data"},
         )
         assert signal.direction == SignalDirection.BUY
@@ -53,7 +53,7 @@ class TestSignal:
             Signal(
                 direction=SignalDirection.SELL,
                 confidence=1.5,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 metadata={},
             )
 
@@ -63,7 +63,7 @@ class TestSignal:
             Signal(
                 direction=SignalDirection.HOLD,
                 confidence=-0.1,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 metadata={},
             )
 

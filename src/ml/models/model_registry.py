@@ -12,7 +12,7 @@ Example:
         metadata=ModelMetadata(
             model_name="price_predictor",
             version="1.0.0",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             training_data="dataset_v1",
             hyperparameters={"lr": 0.001, "epochs": 100},
             metrics={"accuracy": 0.95, "f1": 0.93},
@@ -31,7 +31,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from ml.models.model_storage import (
@@ -433,7 +433,7 @@ class ModelRegistry:
         metadata = ModelMetadata(
             model_name=model_name,
             version=str(new_version),
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             training_data=training_data,
             hyperparameters=hyperparameters,
             metrics=metrics,

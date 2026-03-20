@@ -4,7 +4,7 @@ ST-CHISE-001.2: Add Shadow Testing Component with Latency Measurement
 """
 
 import asyncio
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 import pytest
@@ -309,7 +309,7 @@ class TestShadowTestResult:
             baseline_latency_ms=baseline_stats,
             candidate_predictions=[{"pred": 1}],
             baseline_predictions=[{"pred": 1}],
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             error_message=None,
             config=default_config,
         )
@@ -349,7 +349,7 @@ class TestShadowTestResult:
             baseline_latency_ms=baseline_stats,
             candidate_predictions=[{"pred": 1}],
             baseline_predictions=[{"pred": 1}],
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             config=default_config,
         )
 
@@ -536,7 +536,7 @@ class TestShadowTester:
         result = await tester.run_shadow_test(test_inputs)
 
         assert isinstance(result.timestamp, datetime)
-        assert result.timestamp <= datetime.utcnow()
+        assert result.timestamp <= datetime.now(UTC)
 
     @pytest.mark.asyncio
     async def test_validate_latency_threshold_method(self, default_config, fast_brain):

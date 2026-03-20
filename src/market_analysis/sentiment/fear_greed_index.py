@@ -7,7 +7,7 @@ The CNN Fear & Greed Index ranges from 0 (Extreme Fear) to 100 (Extreme Greed).
 """
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -170,7 +170,7 @@ class FearGreedIndex(BaseSentimentSource):
         normalized = self.normalize(raw_int)
 
         self._last_value = raw_int
-        self._last_timestamp = datetime.utcnow()
+        self._last_timestamp = datetime.now(UTC)
 
         # Extract label if available
         label = fg_data.get("value", "")

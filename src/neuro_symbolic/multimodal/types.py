@@ -1,7 +1,7 @@
 """Core types for multi-modal signal handling."""
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -36,7 +36,7 @@ class TemporalContext:
 
     @classmethod
     def now(cls, period_ms: int = 60000) -> "TemporalContext":
-        return cls(timestamp=datetime.utcnow(), period_ms=period_ms)
+        return cls(timestamp=datetime.now(UTC), period_ms=period_ms)
 
 
 @dataclass

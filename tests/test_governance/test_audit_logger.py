@@ -7,7 +7,7 @@ For ST-GOV-002: Agent Constitution Artifact
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from src.governance.constitution.audit_logger import (
@@ -31,7 +31,7 @@ class TestOverrideRequest:
             risk_assessment=RiskAssessment.MEDIUM,
             affected_systems=["system-a", "system-b"],
             rollback_plan="Step 1: Revert config. Step 2: Verify systems.",
-            expires_at=datetime.utcnow() + timedelta(hours=24),
+            expires_at=datetime.now(UTC) + timedelta(hours=24),
         )
 
     def test_request_creation(self, sample_request: OverrideRequest) -> None:
@@ -52,14 +52,14 @@ class TestOverrideRequest:
             risk_assessment=RiskAssessment.LOW,
             affected_systems=["system-a"],
             rollback_plan="Rollback plan",
-            expires_at=datetime.utcnow() - timedelta(hours=1),
+            expires_at=datetime.now(UTC) - timedelta(hours=1),
         )
         assert request.is_expired()
 
     def test_is_rollback_allowed_true(self, sample_request: OverrideRequest) -> None:
         """Test rollback allowed within window."""
         sample_request.status = OverrideStatus.APPROVED
-        sample_request.approved_at = datetime.utcnow()
+        sample_request.approved_at = datetime.now(UTC)
 
         assert sample_request.is_rollback_allowed()
 
@@ -72,10 +72,10 @@ class TestOverrideRequest:
             risk_assessment=RiskAssessment.LOW,
             affected_systems=["system-a"],
             rollback_plan="Plan",
-            expires_at=datetime.utcnow() + timedelta(hours=1),
+            expires_at=datetime.now(UTC) + timedelta(hours=1),
         )
         request.status = OverrideStatus.APPROVED
-        request.approved_at = datetime.utcnow() - timedelta(hours=25)
+        request.approved_at = datetime.now(UTC) - timedelta(hours=25)
 
         assert not request.is_rollback_allowed()
 
@@ -146,7 +146,7 @@ class TestAuditLogger:
         )
 
         # Verify expiration is within 24 hours
-        max_expiry = datetime.utcnow() + timedelta(hours=24, seconds=10)
+        max_expiry = datetime.now(UTC) + timedelta(hours=24, seconds=10)
         assert request.expires_at <= max_expiry
 
     def test_approve_request(self, logger: AuditLogger) -> None:
@@ -251,7 +251,7 @@ class TestAuditLogger:
         )
 
         logger.approve_request(request.override_id, "approver")
-        request.approved_at = datetime.utcnow() - timedelta(
+        request.approved_at = datetime.now(UTC) - timedelta(
             hours=25
         )  # Manually set old time
 

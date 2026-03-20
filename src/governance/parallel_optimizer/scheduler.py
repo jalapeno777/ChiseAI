@@ -10,7 +10,7 @@ Story: ST-GOV-010
 import logging
 import uuid
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 
 from src.governance.parallel_optimizer.conflict_analyzer import (
     ConflictMatrix,
@@ -403,8 +403,8 @@ class ExecutionScheduler:
         if batch:
             batch.status = status
             if status == BatchStatus.RUNNING:
-                batch.started_at = datetime.utcnow()
+                batch.started_at = datetime.now(UTC)
             elif status in (BatchStatus.COMPLETED, BatchStatus.FAILED):
-                batch.completed_at = datetime.utcnow()
+                batch.completed_at = datetime.now(UTC)
             return True
         return False

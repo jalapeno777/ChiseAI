@@ -7,7 +7,7 @@ import logging
 import subprocess
 import sys
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -24,7 +24,7 @@ class StepResult:
     stdout: str
     stderr: str
     execution_time_ms: float
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     error_message: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -163,7 +163,7 @@ class RunbookExecutor:
             ExecutionResult with full execution details
         """
         dry_run = dry_run if dry_run is not None else self.dry_run
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
 
         self.logger.info(
             f"{'[DRY-RUN] ' if dry_run else ''}Executing runbook: {runbook_name}"
@@ -179,7 +179,7 @@ class RunbookExecutor:
                 dry_run=dry_run,
                 steps=[],
                 start_time=start_time,
-                end_time=datetime.utcnow(),
+                end_time=datetime.now(UTC),
                 total_steps=0,
                 passed_steps=0,
                 failed_steps=1,
@@ -226,7 +226,7 @@ class RunbookExecutor:
                 self.logger.error("Stopping execution due to step failure")
                 break
 
-        end_time = datetime.utcnow()
+        end_time = datetime.now(UTC)
 
         # Create execution result
         execution_result = ExecutionResult(
@@ -385,7 +385,7 @@ class RunbookExecutor:
         """Save execution result to log file."""
         import time
 
-        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         # Add microseconds to ensure uniqueness for rapid successive executions
         unique_suffix = str(int(time.time() * 1000) % 1000).zfill(3)
         log_file = (

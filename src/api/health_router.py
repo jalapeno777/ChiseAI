@@ -15,7 +15,7 @@ For PAPER-003-001: Unified Health Monitoring System
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
@@ -369,7 +369,7 @@ async def get_acp_health() -> dict[str, Any]:
         components: dict[str, Any] = {}
         status: dict[str, Any] = {
             "success": True,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "components": components,
         }
 
@@ -702,7 +702,7 @@ async def get_acp_components() -> dict[str, Any]:
 
         return {
             "success": True,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "components": components,
         }
 
@@ -733,7 +733,7 @@ async def get_acp_budget() -> dict[str, Any]:
 
         return {
             "success": True,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "budget": budget,
         }
 

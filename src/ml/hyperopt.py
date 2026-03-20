@@ -26,7 +26,7 @@ import random
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Protocol
 
@@ -198,7 +198,7 @@ class OptimizationTrial:
     parameters: dict[str, Any] = field(default_factory=dict)
     score: float = 0.0
     metrics: dict[str, float] = field(default_factory=dict)
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     duration_seconds: float = 0.0
 
     def to_dict(self) -> dict[str, Any]:
@@ -247,7 +247,7 @@ class OptimizationResult:
     variance_across_runs: float = 0.0
     total_iterations: int = 0
     total_time_seconds: float = 0.0
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     completed_at: datetime | None = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -336,7 +336,7 @@ class BaseOptimizer(ABC):
         """
         import time
 
-        trial_id = f"trial_{iteration}_{datetime.utcnow().timestamp()}"
+        trial_id = f"trial_{iteration}_{datetime.now(UTC).timestamp()}"
         start_time = time.time()
 
         try:
@@ -485,7 +485,7 @@ class GeneticOptimizer(BaseOptimizer):
             variance_across_runs=variance,
             total_iterations=len(self._trials),
             total_time_seconds=total_time,
-            completed_at=datetime.utcnow(),
+            completed_at=datetime.now(UTC),
         )
 
         return result
@@ -748,7 +748,7 @@ class BayesianOptimizer(BaseOptimizer):
             variance_across_runs=variance,
             total_iterations=len(self._trials),
             total_time_seconds=total_time,
-            completed_at=datetime.utcnow(),
+            completed_at=datetime.now(UTC),
         )
 
         return result
@@ -805,7 +805,7 @@ class BayesianOptimizer(BaseOptimizer):
             variance_across_runs=0.0,
             total_iterations=len(self._trials),
             total_time_seconds=total_time,
-            completed_at=datetime.utcnow(),
+            completed_at=datetime.now(UTC),
         )
 
 

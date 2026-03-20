@@ -7,7 +7,7 @@ Tests cover:
 - FusionStrategySelector
 """
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from src.neuro_symbolic.fusion.aggregator import (
@@ -196,7 +196,7 @@ class TestTemporalContext:
 
     def test_temporal_context_creation(self):
         """Test creating a temporal context."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         ctx = TemporalContext(timestamp=now, period_ms=60000)
         assert ctx.timestamp == now
         assert ctx.period_ms == 60000
@@ -210,7 +210,7 @@ class TestTemporalContext:
 
     def test_temporal_context_to_dict(self):
         """Test converting temporal context to dict."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         ctx = TemporalContext(timestamp=now, period_ms=30000)
         d = ctx.to_dict()
         assert "timestamp" in d
@@ -439,7 +439,7 @@ class TestSignalAggregator:
 
     def test_temporal_alignment(self, aggregator):
         """Test temporal alignment of signals."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         signals = []
         for i in range(3):
             signal = MultiModalSignal(
@@ -461,7 +461,7 @@ class TestSignalAggregator:
 
     def test_staleness_filtering(self, aggregator):
         """Test that stale signals are filtered out."""
-        old_time = datetime.utcnow() - timedelta(minutes=10)
+        old_time = datetime.now(UTC) - timedelta(minutes=10)
         stale_signal = MultiModalSignal(
             value=0.5,
             modality=ModalityType.TECHNICAL,
@@ -899,7 +899,7 @@ class TestFusionResult:
             signal_count=3,
             alignment_quality=0.9,
             processing_time_ms=10.0,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
         )
         assert result.direction == "bullish"
 
@@ -913,7 +913,7 @@ class TestFusionResult:
             signal_count=3,
             alignment_quality=0.9,
             processing_time_ms=10.0,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
         )
         assert result.direction == "bearish"
 
@@ -927,7 +927,7 @@ class TestFusionResult:
             signal_count=3,
             alignment_quality=0.9,
             processing_time_ms=10.0,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
         )
         assert result.direction == "neutral"
 
@@ -1030,7 +1030,7 @@ class TestEdgeCases:
 
     def test_very_old_signal(self, aggregator):
         """Test handling very old signal."""
-        old_time = datetime.utcnow() - timedelta(hours=1)
+        old_time = datetime.now(UTC) - timedelta(hours=1)
         signal = MultiModalSignal(
             value=0.5,
             modality=ModalityType.TECHNICAL,

@@ -3,7 +3,7 @@
 import hashlib
 import json
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from .models import CalibrationMetrics, Decision, ReviewFeedback
@@ -148,7 +148,7 @@ class CalibrationTracker:
         end_date: datetime | None = None,
     ) -> CalibrationMetrics:
         """Calculate calibration metrics for a period."""
-        end_date = end_date or datetime.utcnow()
+        end_date = end_date or datetime.now(UTC)
         start_date = end_date - timedelta(days=days)
 
         # Get all reviews in period

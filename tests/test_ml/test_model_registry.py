@@ -20,7 +20,7 @@ import json
 import shutil
 import tempfile
 import time
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -179,7 +179,7 @@ class TestFilesystemBackend:
         return ModelMetadata(
             model_name="test_model",
             version="1.0.0",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             training_data="dataset_v1",
             hyperparameters={"lr": 0.001},
             metrics={"accuracy": 0.95},
@@ -217,7 +217,7 @@ class TestFilesystemBackend:
             metadata = ModelMetadata(
                 model_name="test_model",
                 version=version,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
                 training_data="dataset_v1",
                 hyperparameters={},
                 metrics={},
@@ -259,7 +259,7 @@ class TestFilesystemBackend:
             metadata = ModelMetadata(
                 model_name="test_model",
                 version=version,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
                 training_data="dataset_v1",
                 hyperparameters={},
                 metrics={},
@@ -278,7 +278,7 @@ class TestFilesystemBackend:
         metadata = ModelMetadata(
             model_name="test_model",
             version="1.0.0",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             training_data="dataset_v1",
             hyperparameters={},
             metrics={},
@@ -300,7 +300,7 @@ class TestFilesystemBackend:
         metadata = ModelMetadata(
             model_name="test_model",
             version="1.0.0",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             training_data="dataset_v1",
             hyperparameters={},
             metrics={},
@@ -353,7 +353,7 @@ class TestModelRegistry:
         return ModelMetadata(
             model_name="test_model",
             version="1.0.0",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             training_data="dataset_v1",
             hyperparameters={"lr": 0.001, "epochs": 100},
             metrics={"accuracy": 0.95, "precision": 0.93, "recall": 0.94, "f1": 0.935},
@@ -372,7 +372,7 @@ class TestModelRegistry:
         metadata = ModelMetadata(
             model_name="test_model",
             version="invalid",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             training_data="dataset_v1",
             hyperparameters={},
             metrics={},
@@ -407,7 +407,7 @@ class TestModelRegistry:
         metadata1 = ModelMetadata(
             model_name="test_model",
             version="1.0.0",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             training_data="dataset_v1",
             hyperparameters={},
             metrics={},
@@ -419,7 +419,7 @@ class TestModelRegistry:
         metadata2 = ModelMetadata(
             model_name="test_model",
             version="1.0.1",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             training_data="dataset_v1",
             hyperparameters={},
             metrics={},
@@ -452,7 +452,7 @@ class TestModelRegistry:
             metadata = ModelMetadata(
                 model_name="test_model",
                 version=version,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
                 training_data="dataset_v1",
                 hyperparameters={},
                 metrics={},
@@ -483,7 +483,7 @@ class TestModelRegistry:
             metadata = ModelMetadata(
                 model_name="test_model",
                 version=version,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
                 training_data="dataset_v1",
                 hyperparameters={},
                 metrics={},
@@ -516,7 +516,7 @@ class TestModelRegistry:
             metadata = ModelMetadata(
                 model_name="test_model",
                 version=version,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
                 training_data="dataset_v1",
                 hyperparameters={},
                 metrics={},
@@ -538,7 +538,7 @@ class TestModelRegistry:
         metadata = ModelMetadata(
             model_name="test_model",
             version="1.0.0",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             training_data="dataset_v1",
             hyperparameters={},
             metrics={},
@@ -550,7 +550,7 @@ class TestModelRegistry:
         metadata2 = ModelMetadata(
             model_name="test_model",
             version="1.0.1",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             training_data="dataset_v1",
             hyperparameters={},
             metrics={},
@@ -569,7 +569,7 @@ class TestModelRegistry:
         metadata = ModelMetadata(
             model_name="test_model",
             version="1.0.0",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             training_data="dataset_v1",
             hyperparameters={},
             metrics={},
@@ -586,7 +586,7 @@ class TestModelRegistry:
             metadata = ModelMetadata(
                 model_name="test_model",
                 version=version,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
                 training_data="dataset_v1",
                 hyperparameters={},
                 metrics={"accuracy": accuracy},
@@ -606,7 +606,7 @@ class TestModelRegistry:
             metadata = ModelMetadata(
                 model_name="test_model",
                 version=version,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
                 training_data="dataset_v1",
                 hyperparameters={},
                 metrics={"accuracy": accuracy, "f1": accuracy - 0.02},
@@ -713,7 +713,7 @@ class TestModelRegistryFactory:
                 ModelMetadata(
                     model_name="test",
                     version="1.0.0",
-                    created_at=datetime.utcnow(),
+                    created_at=datetime.now(UTC),
                     training_data="dataset",
                     hyperparameters={},
                     metrics={},
@@ -743,7 +743,7 @@ class TestS3BackendInterface:
         metadata = ModelMetadata(
             model_name="test",
             version="1.0.0",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             training_data="dataset",
             hyperparameters={},
             metrics={},
@@ -841,7 +841,7 @@ class TestAcceptanceCriteria:
         metadata = ModelMetadata(
             model_name="test_model",
             version="1.0.0",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             training_data="dataset_v1",
             hyperparameters={
                 "learning_rate": 0.001,
@@ -884,7 +884,7 @@ class TestAcceptanceCriteria:
             metadata = ModelMetadata(
                 model_name="test_model",
                 version=version,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
                 training_data="dataset_v1",
                 hyperparameters={},
                 metrics={},
@@ -916,7 +916,7 @@ class TestAcceptanceCriteria:
             metadata = ModelMetadata(
                 model_name="test_model",
                 version=version,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
                 training_data="dataset_v1",
                 hyperparameters={},
                 metrics={"accuracy": 0.90 + (i * 0.01)},
@@ -966,7 +966,7 @@ class TestAcceptanceCriteria:
         metadata = ModelMetadata(
             model_name="test_model",
             version="1.0.0",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             training_data="dataset_v1",
             hyperparameters={},
             metrics={},

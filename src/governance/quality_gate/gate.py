@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -44,7 +44,7 @@ class QualityGateResult:
     block_reasons: list[BlockReason]
     override_active: bool = False
     override_id: str | None = None
-    evaluated_at: datetime = field(default_factory=datetime.utcnow)
+    evaluated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     review_time_seconds: float = 0.0
     recommendations: list[str] = field(default_factory=list)
 
@@ -126,7 +126,7 @@ class QualityGate:
         Returns:
             QualityGateResult with pass/fail status
         """
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
         self._stats["total_reviews"] += 1
 
         # Calculate quality score
@@ -180,7 +180,7 @@ class QualityGate:
         recommendations = self._generate_recommendations(score, block_reasons)
 
         # Calculate review time
-        review_time = (datetime.utcnow() - start_time).total_seconds()
+        review_time = (datetime.now(UTC) - start_time).total_seconds()
         self._stats["total_review_time"] += review_time
 
         return QualityGateResult(

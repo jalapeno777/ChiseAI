@@ -11,7 +11,7 @@ import json
 import logging
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 
 logger = logging.getLogger(__name__)
@@ -184,7 +184,7 @@ class ApprovalWorkflow:
         redis = self._get_redis()
         timeout = timeout_hours or self.default_timeout_hours
 
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         expires = now + timedelta(hours=timeout)
 
         request_id = f"apr-{uuid.uuid4().hex[:8]}"
@@ -262,7 +262,7 @@ class ApprovalWorkflow:
             )
 
         # Check expiration
-        if request.expires_at and datetime.utcnow() > request.expires_at:
+        if request.expires_at and datetime.now(UTC) > request.expires_at:
             request.status = ApprovalStatus.EXPIRED
             redis.set(key, json.dumps(request.to_dict()))
             return ApprovalResult(
@@ -275,7 +275,7 @@ class ApprovalWorkflow:
         # Approve
         request.status = ApprovalStatus.APPROVED
         request.approved_by = approver
-        request.approved_at = datetime.utcnow()
+        request.approved_at = datetime.now(UTC)
         if notes:
             request.metadata["approval_notes"] = notes
 
@@ -341,7 +341,7 @@ class ApprovalWorkflow:
         # Reject
         request.status = ApprovalStatus.REJECTED
         request.approved_by = rejector
-        request.approved_at = datetime.utcnow()
+        request.approved_at = datetime.now(UTC)
         request.rejection_reason = reason
 
         redis.set(key, json.dumps(request.to_dict()))
@@ -458,7 +458,7 @@ class ApprovalWorkflow:
             request = self.get_request(rid)
             if request and request.status == ApprovalStatus.PENDING:
                 # Check for expiration
-                if request.expires_at and datetime.utcnow() > request.expires_at:
+                if request.expires_at and datetime.now(UTC) > request.expires_at:
                     request.status = ApprovalStatus.EXPIRED
                     key = f"{APPROVAL_PREFIX}{rid}"
                     redis.set(key, json.dumps(request.to_dict()))
@@ -500,7 +500,7 @@ class ApprovalWorkflow:
 
             request = self.get_request(rid)
             if request and request.status == ApprovalStatus.PENDING:
-                if request.expires_at and datetime.utcnow() > request.expires_at:
+                if request.expires_at and datetime.now(UTC) > request.expires_at:
                     request.status = ApprovalStatus.EXPIRED
                     key = f"{APPROVAL_PREFIX}{rid}"
                     redis.set(key, json.dumps(request.to_dict()))

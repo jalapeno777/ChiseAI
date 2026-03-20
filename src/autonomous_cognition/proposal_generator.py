@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum, auto
 from typing import Any
 
@@ -80,7 +80,7 @@ class StoryProposal:
     acceptance_criteria: list[str] = field(default_factory=list)
     source_opportunity: dict[str, Any] = field(default_factory=dict)
     confidence_score: float = 0.5
-    generated_at: datetime = field(default_factory=datetime.utcnow)
+    generated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     status: ProposalStatus = ProposalStatus.DRAFT
     reviewer_notes: str = ""
     score_breakdown: dict[str, float] = field(default_factory=dict)
@@ -488,7 +488,7 @@ class ProposalGenerator:
         filtered = self.filter_by_threshold(ranked)
 
         return {
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "total_proposals": len(proposals),
             "proposals_for_review": len(filtered),
             "proposals": [p.to_backlog_format() for p in filtered],

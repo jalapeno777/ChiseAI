@@ -1,6 +1,6 @@
 """Tests for open interest aggregation."""
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from exchange_data.binance.open_interest import (
     OIAggregation,
@@ -16,7 +16,7 @@ class TestOpenInterestData:
         """Test creating open interest data."""
         oi = OpenInterestData(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             open_interest=1000000.0,
             open_interest_usd=50000000000.0,
             price=50000.0,
@@ -50,8 +50,8 @@ class TestOIAggregation:
         """Test creating aggregation."""
         agg = OIAggregation(
             symbol="BTCUSDT",
-            window_start=datetime.utcnow(),
-            window_end=datetime.utcnow(),
+            window_start=datetime.now(UTC),
+            window_end=datetime.now(UTC),
             avg_oi=1000000.0,
             min_oi=900000.0,
             max_oi=1100000.0,
@@ -92,7 +92,7 @@ class TestOpenInterestAggregator:
         aggregator = OpenInterestAggregator()
         oi = OpenInterestData(
             symbol="BTCUSDT",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             open_interest=1000000.0,
         )
 
@@ -103,7 +103,7 @@ class TestOpenInterestAggregator:
     def test_get_aggregation(self) -> None:
         """Test getting aggregation."""
         aggregator = OpenInterestAggregator(window_minutes=60)
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         # Add data points
         for i in range(5):
@@ -133,7 +133,7 @@ class TestOpenInterestAggregator:
     def test_get_latest(self) -> None:
         """Test getting latest data point."""
         aggregator = OpenInterestAggregator()
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         oi1 = OpenInterestData(
             symbol="BTCUSDT",
@@ -165,7 +165,7 @@ class TestOpenInterestAggregator:
     def test_change_pct_calculation(self) -> None:
         """Test change percentage calculation."""
         aggregator = OpenInterestAggregator(window_minutes=60)
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         oi1 = OpenInterestData(
             symbol="BTCUSDT",
@@ -189,7 +189,7 @@ class TestOpenInterestAggregator:
     def test_multiple_symbols(self) -> None:
         """Test handling multiple symbols."""
         aggregator = OpenInterestAggregator()
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         oi_btc = OpenInterestData(
             symbol="BTCUSDT",
@@ -213,7 +213,7 @@ class TestOpenInterestAggregator:
     def test_data_cleanup(self) -> None:
         """Test old data cleanup."""
         aggregator = OpenInterestAggregator(window_minutes=10)
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         # Add old data
         old_oi = OpenInterestData(

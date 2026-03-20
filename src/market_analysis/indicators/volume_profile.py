@@ -166,7 +166,7 @@ class VolumeProfile(BaseIndicator[VolumeProfileResult]):
         return Signal(
             direction=SignalDirection.HOLD,
             confidence=0.5,
-            timestamp=__import__("datetime").datetime.utcnow(),
+            timestamp=__import__("datetime").datetime.now(__import__("datetime").UTC),
             metadata={"poc": result.poc, "vah": result.vah, "val": result.val},
         )
 

@@ -7,7 +7,7 @@ module tracking, and validation of trading configurations.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum, auto
 from typing import Any
 
@@ -62,7 +62,7 @@ class ModuleStatus:
     loaded: bool = False
     healthy: bool = False
     error_message: str | None = None
-    last_check: datetime = field(default_factory=datetime.utcnow)
+    last_check: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def is_operational(self) -> bool:
         """Check if the module is operational (loaded and healthy).
@@ -76,7 +76,7 @@ class ModuleStatus:
         """Mark the module as healthy and update last check time."""
         self.healthy = True
         self.error_message = None
-        self.last_check = datetime.utcnow()
+        self.last_check = datetime.now(UTC)
 
     def mark_unhealthy(self, error_message: str) -> None:
         """Mark the module as unhealthy with an error message.
@@ -86,7 +86,7 @@ class ModuleStatus:
         """
         self.healthy = False
         self.error_message = error_message
-        self.last_check = datetime.utcnow()
+        self.last_check = datetime.now(UTC)
 
 
 @dataclass

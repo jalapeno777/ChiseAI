@@ -5,7 +5,7 @@ For PAPER-LOOP-001: Paper Trading Risk Enforcer
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -303,7 +303,7 @@ class TestPaperRiskEnforcer:
             direction=SignalDirection.LONG,
             confidence=0.85,
             base_score=85.0,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             status=SignalStatus.ACTIONABLE,
             timeframe="1h",
             stop_loss=48000.0,
@@ -319,7 +319,7 @@ class TestPaperRiskEnforcer:
             direction=SignalDirection.LONG,
             confidence=0.60,
             base_score=60.0,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             status=SignalStatus.LOGGED_ONLY,
             timeframe="1h",
             metadata={},
@@ -461,7 +461,7 @@ class TestPaperRiskEnforcer:
             direction=SignalDirection.LONG,
             confidence=0.85,
             base_score=85.0,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             status=SignalStatus.ACTIONABLE,
             timeframe="1h",
             metadata={"entry_price": 50000.0},
@@ -546,7 +546,7 @@ class TestPaperRiskEnforcer:
             direction=SignalDirection.LONG,
             confidence=0.60,  # Low confidence
             base_score=60.0,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             status=SignalStatus.LOGGED_ONLY,
             timeframe="1h",
             metadata={"leverage": 5.0},  # Excessive leverage
@@ -686,7 +686,7 @@ class TestIntegrationWithKillSwitch:
             direction=SignalDirection.LONG,
             confidence=0.85,
             base_score=85.0,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             status=SignalStatus.ACTIONABLE,
             timeframe="1h",
             metadata={},

@@ -25,7 +25,7 @@ import json
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
@@ -167,7 +167,7 @@ class OptimizationRecord:
     strategy_id: str
     job_id: str
     status: JobStatus = JobStatus.SCHEDULED
-    started_at: datetime = field(default_factory=datetime.utcnow)
+    started_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     completed_at: datetime | None = None
     previous_parameters: dict[str, Any] = field(default_factory=dict)
     new_parameters: dict[str, Any] = field(default_factory=dict)
@@ -259,7 +259,7 @@ class ScheduledJob:
     run_count: int = 0
     success_count: int = 0
     failure_count: int = 0
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     paused_at: datetime | None = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -321,7 +321,7 @@ class ScheduledJob:
             success_count=data.get("success_count", 0),
             failure_count=data.get("failure_count", 0),
             created_at=datetime.fromisoformat(
-                data.get("created_at", datetime.utcnow().isoformat())
+                data.get("created_at", datetime.now(UTC).isoformat())
             ),
             paused_at=(
                 datetime.fromisoformat(data["paused_at"])
@@ -376,7 +376,7 @@ class VolatilityMonitor:
             regime: New volatility regime
         """
         self._current_regime = regime
-        self._last_update = datetime.utcnow()
+        self._last_update = datetime.now(UTC)
         logger.info(f"Volatility regime updated to {regime.value}")
 
     def should_run_optimization(
@@ -515,7 +515,7 @@ class OptimizationScheduler:
             Scheduled job
         """
         async with self._lock:
-            job_id = f"job_{strategy_id}_{datetime.utcnow().timestamp()}"
+            job_id = f"job_{strategy_id}_{datetime.now(UTC).timestamp()}"
             job_config = config or self.config
 
             # Calculate next run time
@@ -584,7 +584,7 @@ class OptimizationScheduler:
                 return False
 
             job.status = JobStatus.PAUSED
-            job.paused_at = datetime.utcnow()
+            job.paused_at = datetime.now(UTC)
 
             logger.info(f"Paused optimization job {job_id}")
             self._save_state()
@@ -702,7 +702,7 @@ class OptimizationScheduler:
 
     async def _check_and_run_jobs(self) -> None:
         """Check for jobs that need to run and execute them."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         async with self._lock:
             for job_id, job in self._jobs.items():
@@ -746,7 +746,7 @@ class OptimizationScheduler:
         Returns:
             Optimization record
         """
-        record_id = f"record_{job.job_id}_{datetime.utcnow().timestamp()}"
+        record_id = f"record_{job.job_id}_{datetime.now(UTC).timestamp()}"
 
         # Get previous parameters if available
         previous_params = {}
@@ -771,7 +771,7 @@ class OptimizationScheduler:
 
         self._records[record_id] = record
         job.status = JobStatus.RUNNING
-        job.last_run_at = datetime.utcnow()
+        job.last_run_at = datetime.now(UTC)
         job.run_count += 1
 
         logger.info(f"Starting optimization job {job.job_id} for {job.strategy_id}")
@@ -796,7 +796,7 @@ class OptimizationScheduler:
             record.status = JobStatus.COMPLETED
             record.new_parameters = new_params
             record.new_score = score
-            record.completed_at = datetime.utcnow()
+            record.completed_at = datetime.now(UTC)
 
             # Calculate improvement
             if previous_score != 0:
@@ -849,7 +849,7 @@ class OptimizationScheduler:
         Returns:
             Next run datetime
         """
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         if config.frequency == ScheduleFrequency.DAILY:
             next_run = now.replace(
@@ -943,7 +943,7 @@ class OptimizationScheduler:
             state = {
                 "jobs": {k: v.to_dict() for k, v in self._jobs.items()},
                 "records": {k: v.to_dict() for k, v in self._records.items()},
-                "saved_at": datetime.utcnow().isoformat(),
+                "saved_at": datetime.now(UTC).isoformat(),
             }
 
             path = Path(self.config.persistence_path)
@@ -987,7 +987,7 @@ class OptimizationScheduler:
         Returns:
             Dictionary with schedule summary
         """
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         return {
             "scheduler_running": self._running,

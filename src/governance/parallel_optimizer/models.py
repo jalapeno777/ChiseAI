@@ -8,7 +8,7 @@ Story: ST-GOV-010
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -141,7 +141,7 @@ class ExecutionPlan:
     total_tasks: int = 0
     max_parallel: int = 10
     estimated_total_duration: float = 0.0
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     conflict_count: int = 0
     optimization_score: float = 0.0
 
@@ -243,7 +243,7 @@ class RollbackResult:
     rolled_back_tasks: list[str] = field(default_factory=list)
     failed_rollbacks: list[str] = field(default_factory=list)
     message: str = ""
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 @dataclass

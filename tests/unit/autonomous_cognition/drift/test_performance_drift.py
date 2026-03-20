@@ -3,7 +3,7 @@ Unit tests for performance_drift.py
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from unittest.mock import Mock, MagicMock
 
 from src.autonomous_cognition.drift.performance_drift import (
@@ -27,7 +27,7 @@ class TestBaseline:
             std=2.0,
             values=[8.0, 10.0, 12.0],
             window_days=7,
-            established_at=datetime.utcnow(),
+            established_at=datetime.now(UTC),
         )
 
         assert baseline.metric_name == "test_metric"
@@ -36,7 +36,7 @@ class TestBaseline:
 
     def test_baseline_to_dict(self):
         """Test baseline serialization."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         baseline = Baseline(
             metric_name="test_metric",
             mean=10.0,
@@ -54,7 +54,7 @@ class TestBaseline:
 
     def test_baseline_from_dict(self):
         """Test baseline deserialization."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         data = {
             "metric_name": "test_metric",
             "mean": 10.0,
@@ -85,7 +85,7 @@ class TestDriftResult:
             is_drift=True,
             severity="warning",
             root_cause_tag="unknown",
-            detected_at=datetime.utcnow(),
+            detected_at=datetime.now(UTC),
         )
 
         assert result.metric_name == "test_metric"
@@ -94,7 +94,7 @@ class TestDriftResult:
 
     def test_drift_result_to_dict(self):
         """Test drift result serialization."""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         result = DriftResult(
             metric_name="test_metric",
             current_value=15.0,
@@ -382,7 +382,7 @@ class TestAlertOnDrift:
             is_drift=False,
             severity="info",
             root_cause_tag="unknown",
-            detected_at=datetime.utcnow(),
+            detected_at=datetime.now(UTC),
         )
 
         assert detector.alert_on_drift(result) is False
@@ -400,7 +400,7 @@ class TestAlertOnDrift:
             is_drift=True,
             severity="critical",
             root_cause_tag="infra",
-            detected_at=datetime.utcnow(),
+            detected_at=datetime.now(UTC),
         )
 
         assert detector.alert_on_drift(result) is True
@@ -418,7 +418,7 @@ class TestAlertOnDrift:
             is_drift=True,
             severity="warning",
             root_cause_tag="code",
-            detected_at=datetime.utcnow(),
+            detected_at=datetime.now(UTC),
         )
 
         assert detector.alert_on_drift(result) is True
@@ -436,7 +436,7 @@ class TestAlertOnDrift:
             is_drift=True,
             severity="info",
             root_cause_tag="unknown",
-            detected_at=datetime.utcnow(),
+            detected_at=datetime.now(UTC),
             trend="degrading",
         )
 

@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any
 
@@ -59,7 +59,7 @@ class HumanOverride:
     revoke_reason: str | None = None
     rolled_back_at: datetime | None = None
     rolled_back_by: str | None = None
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     audit_trail: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -95,7 +95,7 @@ class HumanOverride:
     ) -> None:
         """Add an entry to the audit trail."""
         entry = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "event": event,
             "actor": actor,
             "details": details or {},
@@ -178,7 +178,7 @@ class OverrideManager:
             risk_assessment=risk,
             rollback_plan=rollback_plan,
             affected_systems=affected_systems or [],
-            expires_at=datetime.utcnow() + timedelta(hours=expiration_hours),
+            expires_at=datetime.now(UTC) + timedelta(hours=expiration_hours),
         )
 
         override.add_audit_entry(
@@ -220,7 +220,7 @@ class OverrideManager:
 
         override.status = OverrideStatus.APPROVED
         override.approver = approver
-        override.approved_at = datetime.utcnow()
+        override.approved_at = datetime.now(UTC)
 
         override.add_audit_entry(
             event="approved",
@@ -252,7 +252,7 @@ class OverrideManager:
             )
 
         override.status = OverrideStatus.ACTIVE
-        override.activated_at = datetime.utcnow()
+        override.activated_at = datetime.now(UTC)
 
         override.add_audit_entry(
             event="activated",
@@ -292,7 +292,7 @@ class OverrideManager:
             )
 
         override.status = OverrideStatus.REVOKED
-        override.revoked_at = datetime.utcnow()
+        override.revoked_at = datetime.now(UTC)
         override.revoked_by = revoked_by
         override.revoke_reason = reason
 
@@ -334,12 +334,12 @@ class OverrideManager:
 
         # Check 24-hour window
         if override.activated_at:
-            window = datetime.utcnow() - override.activated_at
+            window = datetime.now(UTC) - override.activated_at
             if window > timedelta(hours=24):
                 raise ValueError("Rollback window (24 hours) has expired")
 
         override.status = OverrideStatus.ROLLED_BACK
-        override.rolled_back_at = datetime.utcnow()
+        override.rolled_back_at = datetime.now(UTC)
         override.rolled_back_by = rolled_back_by
 
         override.add_audit_entry(
@@ -373,7 +373,7 @@ class OverrideManager:
             return None
 
         # Check if expired
-        if override.expires_at and datetime.utcnow() > override.expires_at:
+        if override.expires_at and datetime.now(UTC) > override.expires_at:
             override.status = OverrideStatus.EXPIRED
             return None
 
@@ -459,7 +459,7 @@ class OverrideManager:
             Number of overrides cleaned up
         """
         count = 0
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         for override in list(self._overrides.values()):
             if override.expires_at and now > override.expires_at:
