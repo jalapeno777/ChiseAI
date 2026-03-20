@@ -880,7 +880,9 @@ steps:
           CHANGED_FILES="$(git show --name-only --pretty='' HEAD 2>/dev/null || true)"
         fi
         if [ -n "$CHANGED_FILES" ]; then
+          set +o pipefail
           echo "$CHANGED_FILES" | python3 scripts/ci/compass_gate.py --check
+          set -o pipefail
         else
           echo "No changed files detected, skipping compass gate"
         fi
