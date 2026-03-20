@@ -1,5 +1,6 @@
 """Redis-backed feature store for indicator caching."""
 
+import fnmatch
 import json
 import logging
 from datetime import datetime, timedelta
@@ -166,17 +167,17 @@ class FeatureStore:
         return {key: self.set(key, value, ttl) for key, value in mapping.items()}
 
     def invalidate_pattern(self, pattern: str) -> int:
-        """Invalidate all keys matching pattern.
+        """Invalidate all keys matching pattern (glob matching).
 
         Args:
-            pattern: Key pattern to match (simple substring match)
+            pattern: Key pattern to match (glob pattern, e.g., "key*" or "query:*")
 
         Returns:
             Number of keys invalidated
         """
         count = 0
         # Invalidate from local cache
-        keys_to_remove = [k for k in self._local_cache if pattern in k]
+        keys_to_remove = [k for k in self._local_cache if fnmatch.fnmatch(k, pattern)]
         removed_namespaced = set()
         for key in keys_to_remove:
             self.delete(key)
@@ -188,14 +189,20 @@ class FeatureStore:
             all_fields = redis_state_hgetall("feature_store")
             if all_fields:
                 for field in all_fields:
-                    if pattern in field and field not in removed_namespaced:
+                    # Strip prefix to get original key for matching
+                    if field.startswith(self.prefix + ":"):
+                        original_key = field[len(self.prefix) + 1 :]
+                    else:
+                        original_key = field
+                    if (
+                        fnmatch.fnmatch(original_key, pattern)
+                        and field not in removed_namespaced
+                    ):
                         # Delete from Redis
                         redis_state_hdel("feature_store", field)
-                        # Remove from local cache if present (strip prefix)
-                        if field.startswith(self.prefix + ":"):
-                            original_key = field[len(self.prefix) + 1 :]
-                            self._local_cache.pop(original_key, None)
-                            self._local_expiry.pop(original_key, None)
+                        # Remove from local cache if present
+                        self._local_cache.pop(original_key, None)
+                        self._local_expiry.pop(original_key, None)
                         count += 1
         except Exception as e:
             logger.warning(

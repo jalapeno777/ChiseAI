@@ -14,7 +14,7 @@ class TestInvalidatePattern:
         return FeatureStore(prefix="test", default_ttl=60)
 
     def test_invalidate_pattern_local_and_redis(self, store):
-        """Test that invalidate_pattern removes keys from both local cache and Redis."""
+        """Test that invalidate_pattern with glob pattern removes keys from both local cache and Redis."""
         # Set some keys
         store.set("key1", "value1")
         store.set("key2", "value2")
@@ -25,8 +25,8 @@ class TestInvalidatePattern:
         assert "key2" in store._local_cache
         assert "other" in store._local_cache
 
-        # Invalidate pattern "key"
-        count = store.invalidate_pattern("key")
+        # Invalidate pattern "key*"
+        count = store.invalidate_pattern("key*")
 
         # Should have invalidated 2 keys
         assert count == 2
@@ -54,7 +54,7 @@ class TestInvalidatePattern:
         store.delete("other")
 
     def test_invalidate_pattern_redis_only(self, store):
-        """Test invalidation of keys that exist only in Redis (not in local cache)."""
+        """Test invalidation of keys that exist only in Redis (not in local cache) using glob pattern."""
         # Manually set a key in Redis (bypass local cache)
         from tools.redis_state import redis_state_hset
 
@@ -65,8 +65,8 @@ class TestInvalidatePattern:
         # Ensure not in local cache
         assert "redis_only" not in store._local_cache
 
-        # Invalidate pattern "redis"
-        count = store.invalidate_pattern("redis")
+        # Invalidate pattern "redis*"
+        count = store.invalidate_pattern("redis*")
         assert count == 1
 
         # Verify Redis key is gone
