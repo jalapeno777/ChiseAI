@@ -162,6 +162,19 @@ When starting work:
 - **Commands Directory**: `.opencode/command/`
 - **Post-Mortems**: `docs/postmortems/`
 
+## Skill-First Context Compression (Required)
+
+- Keep `AGENTS.md` focused on authority, gates, and escalation.
+- Load operational detail only when needed via skills.
+- Mandatory skill loading for feature domains:
+  - Docker/network changes -> `chiseai-docker-governance`
+  - CI diagnosis and quality gates -> `chiseai-validation`
+  - Incident handling/post-mortems -> `chiseai-incident-response`
+  - Branch lifecycle cleanup -> `chiseai-branch-hygiene`
+  - Iterlog/Redis/Qdrant/memory promotion -> `chiseai-memory-ops` + `chiseai-metacognition-ops`
+  - Worker delegation contracts -> `chiseai-worker-contracts`
+- If a required skill is not loaded for the domain, stop and load it before executing.
+
 ---
 
 ## CRITICAL WORKFLOW SUMMARY
@@ -240,292 +253,27 @@ Before Jarvis runs Critic review for release acceptance:
 
 ---
 
-## Docker & Container Connectivity (CRITICAL)
+## Docker & Network Governance (CRITICAL SUMMARY)
 
-⚠️ **⚠️⚠️ CRITICAL REMINDER - READ THIS FIRST ⚠️⚠️⚠️**
+Skill-first rule:
+- For any Docker/container/network action, load `chiseai-docker-governance`.
+- Treat AGENTS as policy summary; treat the skill as the operational runbook.
 
-**WHEN TESTING DOCKER CONTAINERS FROM THIS ENVIRONMENT:**
+Non-negotiable guardrails:
+- Authoritative Docker network is `chiseai`.
+- From agent/container context, prefer `host.docker.internal` for host services; do not use `localhost` from inside containers.
+- Required container label for ChiseAI services: `project=chiseai`.
+- Protected containers require explicit Captain Craig approval before modification:
+  - `tradedev`
+  - `intelligent_ride`
+  - `aisetup-mcp-discord-1`
+  - `duckduckgo-mcp-server`
+- Pre-commit governance check (`scripts/validate_docker_connectivity.py`) is blocking.
 
-1. **If you are in a Docker container** (like this agent environment):
-   - Use `curl http://host.docker.internal:8502` to test dashboard
-   - DO NOT use `localhost` - it refers to your container, not the host
-
-2. **If you are on the host machine** (laptop/desktop):
-   - Use `curl http://localhost:8502` to test dashboard
-
-3. **When container needs to reach other services:**
-   - Use `host.docker.internal` for PostgreSQL, Redis, etc. when connecting to host services
-   - Example: `postgresql://user:pass@host.docker.internal:5434/db`
-
-**THIS IS NOT OPTIONAL. VIOLATIONS WILL CAUSE FAILURES.**
-
----
-
-### Docker Connectivity Guidance
-
-**Inter-container communication (chiseai network):**
-- Containers on the `chiseai` network communicate using service names: `chiseai-redis`, `chiseai-postgres`, `chiseai-qdrant`, etc.
-- Use `host.docker.internal` only when a container must reach services running on the host machine.
-
-**Why This Matters**
-- Docker containers run in an isolated network namespace
-- `localhost` inside a container refers to the container itself, not the host machine
-- Using `localhost` will fail to connect to host services (PostgreSQL, Redis, etc.)
-
-**Correct Usage Examples**
-```yaml
-# Inter-container on chiseai network (preferred for container-to-container)
-database:
-  host: "chiseai-postgres"  # Service name on chiseai network
-  port: 5434
-
-# Container to host service (when needed)
-redis:
-  host: "host.docker.internal"  # For host-local Redis
-  port: 6380
-```
-
-### Platform Notes
-| Platform | Connection String |
-|----------|-------------------|
-| Linux Docker | `host.docker.internal` (requires `--add-host` flag) |
-| Docker Desktop (Mac/Windows) | `host.docker.internal` (built-in) |
-| CI/CD runners | `host.docker.internal` or service name |
-
-### Docker Run Command
-For Linux, add the host mapping:
-```bash
-docker run --add-host=host.docker.internal:host-gateway [image]
-```
-
-### Docker Compose
-```yaml
-services:
-  app:
-    image: chiseai-app
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-```
-
-### Testing Inside Containers
-When running tests inside a Docker container:
-```python
-# Get database host from environment or use default
-DATABASE_HOST = os.getenv("DB_HOST", "host.docker.internal")
-```
-
-### **CRITICAL: Testing Dashboard/Container Endpoints**
-
-**From this agent environment (which runs in a Docker container):**
-- ✅ CORRECT: `curl http://host.docker.internal:8502/_stcore/health`
-- ❌ WRONG: `curl http://localhost:8502/_stcore/health` (will fail - you're in a container!)
-
-**From the host machine (laptop/desktop terminal):**
-- ✅ CORRECT: `curl http://localhost:8502/_stcore/health`
-- ❌ WRONG: `curl http://host.docker.internal:8502/_stcore/health` (host.docker.internal doesn't exist on host)
-
-**Quick Reference:**
-| Context | Test Dashboard Health |
-|---------|----------------------|
-| Agent environment (in Docker) | `curl http://host.docker.internal:8502/_stcore/health` |
-| Host terminal | `curl http://localhost:8502/_stcore/health` |
-
-**If neither works:**
-1. Check if container is running: `docker ps --filter name=chise-dashboard`
-2. Check container logs: `docker logs <container_name>`
-3. Verify port mapping: `docker port <container_name>`
-4. The error "File does not exist" means the Dockerfile or volume mount is wrong
-
----
-
-## Docker Network Governance (MANDATORY)
-
-### Authoritative Networks
-**`chiseai`** is the authoritative Docker network for all ChiseAI services deployed via Terraform.
-
-> **Note:** This change from chiseai2 to chiseai as the authoritative network was made per user override on 2026-01-21.
-
-**Network Configuration (chiseai):**
-- **Subnet:** `172.27.0.0/16`
-- **Gateway:** `172.27.0.1`
-- **State Source:** `infrastructure/terraform/terraform.tfstate` (authoritative)
-- **Deployment Method:** Terraform IaC (see `infrastructure/terraform/`)
-
-**Local Infra Stack (Terraform):**
-- Definition path: `infrastructure/terraform/`
-- Apply with: `terraform init` then `terraform apply`
-- Services include Redis, Postgres, InfluxDB, Qdrant, Grafana, Gitea, Woodpecker, Taiga
-
-**Pre-commit Hook Enforcement:**
-- A pre-commit hook at `.git/hooks/pre-commit` runs `scripts/validate_docker_connectivity.py`
-- **Blocks commits** if containers are created outside of `chiseai` network
-- Exceptions must be explicitly approved by Captain Craig
-
-### Protected Containers (NO TOUCH)
-The following containers require **explicit permission from Captain Craig** before any modification:
-
-| Container | Protection Level |
-|-----------|-----------------|
-| `tradedev` | **CRITICAL** - No modifications without explicit approval |
-| `intelligent_ride` (MCP server) | Protected |
-| `aisetup-mcp-discord-1` (MCP server) | Protected |
-| `duckduckgo-mcp-server` (MCP server) | Protected |
-
-### Authoritative Containers (Terraform-Deployed)
-All ChiseAI services must be on `chiseai` network:
-
-| Container Name | Network | Host Port | Container Port | Deployment |
-|----------------|---------|-----------|----------------|-------------|
-| `chiseai-redis` | chiseai | 6380 | 6380 | Terraform |
-| `chiseai-postgres` | chiseai | 5434 | 5434 | Terraform |
-| `chiseai-influxdb` | chiseai | 18087 | 18087 | Terraform |
-| `chiseai-api-final` | chiseai | 8001 | 8001 | Terraform |
-| `chiseai-qdrant` | chiseai | 6334 | 6334 | Terraform |
-| `chise-dashboard` | chiseai | 8502 | 8502 | Terraform |
-| `chiseai-grafana` | chiseai | 3001 | 3001 | Terraform |
-| `gitea` | chiseai | 3000 | 3000 | Terraform |
-| `woodpecker-server` | chiseai | 8012 | 8000 | Terraform |
-| `woodpecker-agent` | chiseai | - | - | Terraform |
-| `taiga-front` | chiseai | 9001 | 80 | Terraform |
-| `taiga-back` | chiseai | 9002 | 8000 | Terraform |
-| `taiga-events` | chiseai | 9003 | 8888 | Terraform |
-| `taiga-postgres` | chiseai | - | 5432 | Terraform |
-| `taiga-redis` | chiseai | - | 6379 | Terraform |
-| `taiga-rabbitmq` | chiseai | - | 5672 | Terraform |
-
-### Port Mapping Conventions
-```yaml
-# Standard port mappings for ChiseAI services
-port_mapping:
-  redis_server: '6380:6380'
-  chiseai_postgres: '5434:5434'
-  chiseai_influxdb: '18087:18087'
-  chise_qdrant: '6334:6334'
-  chiseai_api: '8001:8001'
-  chise_dashboard: '8502:8502'
-  chiseai_grafana: '3001:3001'
-  gitea: '3000:3000'
-  gitea_ssh: '2222:22'
-  woodpecker: '8012:8000'
-  taiga_front: '9001:80'
-  taiga_back: '9002:8000'
-  taiga_events: '9003:8888'
-```
-
-### Connectivity Exceptions
-Limited exceptions to the `host.docker.internal` rule:
-
-| Exception Context | Allowed Host | Reason | Scope |
-|------------------|--------------|--------|-------|
-| `dashboard_staging` | `localhost` | Testing new dashboard changes safely | `chise-dashboard` container only |
-
-**All other services MUST use `host.docker.internal` for host service connections.**
-
-### Creating Containers on chiseai Network
-```bash
-# CORRECT - Create on chiseai network
-docker run --network chiseai --name my-service [image]
-
-# CORRECT - Or add to existing network
-docker network connect chiseai my-service
-
-# ❌ WRONG - Will be blocked by pre-commit hook
-docker run --network bridge --name my-service [image]
-```
-
-### Docker Compose with chiseai Network
-```yaml
-version: '3.8'
-services:
-  chiseai-api:
-    image: chiseai-api
-    networks:
-      - chiseai
-
-  chiseai-postgres:
-    image: postgres:15
-    networks:
-      - chiseai
-
-networks:
-  chiseai:
-    external: true
-```
-
-### Pre-commit Hook Validation
-Before any commit:
-```bash
-# Automatically run via .git/hooks/pre-commit
-python3 scripts/validate_docker_connectivity.py
-```
-
-**What the hook validates:**
-- All running Docker containers are on the `chiseai` network
-- Protected containers are not being modified without approval
-- Exceptions are properly documented in the allowed list
-
-**If validation fails:**
-- Commit is blocked
-- Review the output for which containers violate governance
-- Fix by connecting containers to `chiseai` network or getting explicit approval
-
-### Docker Label Standard
-
-All ChiseAI containers MUST have the following label for identification and governance:
-
-```yaml
-labels:
-  - "project=chiseai"
-```
-
-**Purpose:**
-- Enables easy identification of ChiseAI containers across the infrastructure
-- Supports automated governance and compliance checks
-- Facilitates container inventory and management
-- Enables filtering and querying of ChiseAI resources
-
-**Implementation Requirements:**
-- All containers deployed as part of ChiseAI services MUST include `project=chiseai` label
-- Docker Compose services MUST define the label in their service configuration
-- Terraform-deployed containers MUST set the label via container definitions
-- Manual `docker run` commands MUST include `--label "project=chiseai"`
-
-**Docker Compose Example:**
-```yaml
-version: '3.8'
-services:
-  chiseai-api:
-    image: chiseai-api
-    labels:
-      - "project=chiseai"
-    networks:
-      - chiseai
-
-  chiseai-postgres:
-    image: postgres:15
-    labels:
-      - "project=chiseai"
-    networks:
-      - chiseai
-
-networks:
-  chiseai:
-    external: true
-```
-
-**Docker Run Example:**
-```bash
-# CORRECT - Includes required label
-docker run --network chiseai --label "project=chiseai" --name my-service [image]
-
-# ❌ WRONG - Missing required label
-docker run --network chiseai --name my-service [image]
-```
-
-**Validation:**
-- The pre-commit hook `scripts/validate_docker_connectivity.py` verifies containers have the required label
-- Containers without the `project=chiseai` label will fail validation
-- Protected containers (tradedev, intelligent_ride, etc.) are exempt from this requirement
+Authoritative detail sources (load on demand):
+- `.opencode/skills/chiseai-docker-governance/SKILL.md`
+- `infrastructure/terraform/` (network/container declarations)
+- `scripts/validate_docker_connectivity.py` (enforced checks)
 
 ---
 
@@ -663,6 +411,25 @@ Every completion claim MUST include:
 
 - If Jarvis cannot produce an approvable high/critical remediation plan after 2 revisions, Aria takes direct orchestration control for that scope.
 - Aria reassigns execution to `senior-dev` or `merlin` and preserves evidence trail and containment notes.
+
+### L) Repeated-Error Circuit Breaker (Required)
+
+- Define `error_signature` as:
+  - `tool + normalized_error_message + primary file:line|test + task_scope`
+- If the same `error_signature` appears 2 times in the same scope without a material strategy change, stop retries and switch to RCA mode.
+- RCA mode must include:
+  - failing evidence reference
+  - root-cause hypothesis
+  - at least 2 materially different fix options
+  - selected option and rationale
+- A retry is allowed only when `strategy_delta` is explicit (different code path, dependency strategy, validation method, or execution order).
+- Re-running the same command/patch pattern without `strategy_delta` is non-compliant.
+- On 3rd recurrence of the same `error_signature` across escalation tiers, log an incident and escalate blocker packet to Aria.
+- Completion evidence must include:
+  - `error_signature`
+  - `attempt_count`
+  - `strategy_delta`
+  - `evidence_ref`
 
 
 ## YAML Rules

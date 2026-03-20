@@ -75,7 +75,22 @@ EXIT_CONDITIONS:
    - Edit outside SCOPE_GLOBS
    - Touch a FORBIDDEN_GLOBS path
    - Find an upstream blocker (dependency not ready)
-   - Encounter 3+ failed attempts on same issue"
+   - Hit repeated-error circuit breaker (same error_signature appears twice without strategy change)"
+
+### 5a. Repeated-Error Circuit Breaker (Required)
+REPEATED_ERROR_POLICY:
+  error_signature:
+    - tool
+    - normalized_error_message
+    - primary_file_line_or_test
+    - task_scope
+  breaker_rule:
+    - If same error_signature appears 2 times and strategy is unchanged: STOP retries.
+    - Switch to RCA mode and report options back to Jarvis.
+  retry_requirements:
+    - strategy_delta must be explicit and material before retry.
+  escalation_rule:
+    - On 3rd recurrence across tiers, log incident and escalate to Aria via Jarvis.
 
 ### 6. Evidence Requirements
 EVIDENCE_REQUIRED:
@@ -89,6 +104,12 @@ EVIDENCE_REQUIRED:
   Verification:
     - How to verify the work is correct
     - Example: "Run: python3 -c 'from src.neuro_symbolic import Evolution; e = Evolution(); assert e.validate()'"
+  
+  Loop-breaker fields:
+    - error_signature
+    - attempt_count
+    - strategy_delta
+    - evidence_ref
 
 ### 7. Incident Template
 INCIDENT_TEMPLATE:
@@ -113,6 +134,7 @@ Before hitting "delegate", verify:
 - [ ] WORKTREE_PATH is isolated
 - [ ] MEMORY_CONTEXT has actual Qdrant findings
 - [ ] EXIT_CONDITIONS are clear
+- [ ] REPEATED_ERROR_POLICY included with error_signature and strategy_delta requirements
 - [ ] INCIDENT_TEMPLATE is copy-paste ready
 
 ## Templates
@@ -156,12 +178,16 @@ EXIT_CONDITIONS:
   - Need to edit outside SCOPE_GLOBS
   - Encounter FORBIDDEN_GLOBS requirement
   - Find upstream blocker
-  - 3+ failed attempts on same issue
+  - Same error_signature appears twice without strategy_delta
 
 EVIDENCE_REQUIRED:
   Files changed: [list with summaries]
   Commands run: [with actual output]
   Verification: [how to verify correctness]
+  error_signature: [tool + normalized error + file:line/test + scope]
+  attempt_count: [N]
+  strategy_delta: [what changed vs previous attempt]
+  evidence_ref: [logs/command output references]
 
 INCIDENT_TEMPLATE:
   Copy from chiseai-incident-response skill
