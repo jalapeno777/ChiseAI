@@ -1,0 +1,94 @@
+{
+  "story_id": "ML-EVAL-001",
+  "timestamp": "2026-03-19T20:35:00Z",
+  "comparisons": [
+    {
+      "model_id": "model_a",
+      "baseline_accuracy": 0.8,
+      "current_accuracy": 0.85,
+      "improvement": "+6.25%",
+      "regression_detected": false,
+      "metric_deltas": {
+        "accuracy": 0.05,
+        "precision": 0.03,
+        "recall": 0.02,
+        "f1": 0.04
+      }
+    },
+    {
+      "model_id": "model_b",
+      "baseline_accuracy": 0.85,
+      "current_accuracy": 0.75,
+      "regression": "-11.76%",
+      "regression_detected": true,
+      "severity": "HIGH",
+      "metric_deltas": {
+        "accuracy": -0.1,
+        "precision": -0.08,
+        "recall": -0.05,
+        "f1": -0.09
+      }
+    },
+    {
+      "model_id": "model_c",
+      "baseline_accuracy": 0.9,
+      "current_accuracy": 0.89,
+      "regression": "-1.11%",
+      "regression_detected": true,
+      "severity": "LOW",
+      "metric_deltas": {
+        "accuracy": -0.01,
+        "precision": -0.005,
+        "recall": 0.02,
+        "f1": 0.005
+      }
+    }
+  ],
+  "regression_thresholds": {
+    "low": 0.02,
+    "medium": 0.05,
+    "high": 0.1,
+    "critical": 0.2
+  },
+  "severity_levels": ["none", "low", "medium", "high", "critical"],
+  "metrics_with_lower_is_better": [
+    "log_loss",
+    "calibration_error",
+    "brier_score",
+    "max_drawdown"
+  ],
+  "sample_comparison_report": {
+    "model_id": "model_b",
+    "overall_severity": "HIGH",
+    "regressions_detected": 3,
+    "regression_details": [
+      {
+        "metric": "accuracy",
+        "baseline": 0.85,
+        "current": 0.75,
+        "delta_pct": -0.1176,
+        "severity": "high"
+      },
+      {
+        "metric": "precision",
+        "baseline": 0.82,
+        "current": 0.74,
+        "delta_pct": -0.0976,
+        "severity": "high"
+      },
+      {
+        "metric": "f1",
+        "baseline": 0.8,
+        "current": 0.71,
+        "delta_pct": -0.1125,
+        "severity": "high"
+      }
+    ]
+  },
+  "test_coverage": {
+    "regression_detection_tests": 5,
+    "comparison_tests": 4,
+    "serialization_tests": 2,
+    "edge_case_tests": 5
+  }
+}
