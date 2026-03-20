@@ -2,7 +2,7 @@
 name: "jarvis"
 description: "Orchestrator agent. Runs BMAD planning/assessment loops and delegates executable work to Dev/Quickdev/SeniorDev/Merlin."
 mode: all
-model: "opencode/mimo-v2-pro-free" # fallback: "nvidia/moonshotai/kimi-k2.5"
+model: "nvidia/moonshotai/kimi-k2.5" # fallback: "nvidia/moonshotai/kimi-k2.5"
 temperature: 0.2
 tools:
   task: true

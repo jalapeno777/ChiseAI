@@ -2,7 +2,7 @@
 name: "critic"
 description: "Independent reviewer. Performs adversarial code/workflow review, identifies risks/gaps, and challenges plans with concrete recommendations."
 mode: all
-model: "opencode/mimo-v2-pro-free" # fallback: "nvidia/moonshotai/kimi-k2.5"
+model: "nvidia/moonshotai/kimi-k2.5" # fallback: "nvidia/moonshotai/kimi-k2.5"
 temperature: 0.15
 tools:
   task: true
