@@ -31,6 +31,21 @@ from .rollback import (
     RollbackResult,
 )
 from .runtime_integration import NeuroSymbolicRuntimeIntegrator
+from .improvement import (
+    BoundaryConfig,
+    BoundaryEnforcer,
+    BoundaryViolation,
+    CycleCheckpoint,
+    EscalationEvent,
+    EscalationManager,
+    EscalationStatus,
+    EscalationType,
+    ImprovementCycleOrchestrator,
+    ImprovementCycleResult,
+    ImprovementPhase,
+    ImprovementProposal,
+    RiskLevel,
+)
 from .validation import (
     ActionValidator,
     BudgetConfig,
