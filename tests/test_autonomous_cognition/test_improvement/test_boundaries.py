@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-import pytest
-
 from autonomous_cognition.improvement.boundaries import (
     BoundaryConfig,
     BoundaryEnforcer,
-    BoundaryViolation,
     RiskLevel,
 )
 
