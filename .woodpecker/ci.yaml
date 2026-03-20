@@ -346,14 +346,23 @@ steps:
           python3 -c "import pytest" >/dev/null 2>&1 || pip install --no-cache-dir pytest
           python3 -c "import pytest_asyncio" >/dev/null 2>&1 || pip install --no-cache-dir pytest-asyncio
           python3 -c "import joblib" >/dev/null 2>&1 || pip install --no-cache-dir joblib
-          python3 -c "import ccxt" >/dev/null 2>&1 || pip install --no-cache-dir ccxt
           python3 -c "import numpy" >/dev/null 2>&1 || pip install --no-cache-dir numpy
-          python3 -m pytest -q \
-            tests/test_execution/test_venue_enforcement.py \
-            tests/test_execution/test_kill_switch/ \
-            tests/test_execution/test_reconciliation.py \
-            tests/test_execution/test_outcome_persistence.py \
-            tests/test_execution/test_paper/test_paper_risk_enforcer.py
+          EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-}}}"
+          if [ "$${EVENT}" = "pull_request" ]; then
+            python3 -m pytest -q \
+              tests/test_execution/test_venue_enforcement.py \
+              tests/test_execution/test_kill_switch/ \
+              tests/test_execution/test_reconciliation.py \
+              tests/test_execution/test_outcome_persistence.py
+          else
+            python3 -c "import ccxt" >/dev/null 2>&1 || pip install --no-cache-dir ccxt
+            python3 -m pytest -q \
+              tests/test_execution/test_venue_enforcement.py \
+              tests/test_execution/test_kill_switch/ \
+              tests/test_execution/test_reconciliation.py \
+              tests/test_execution/test_outcome_persistence.py \
+              tests/test_execution/test_paper/test_paper_risk_enforcer.py
+          fi
         ) > "$${CI_STATUS_DIR}/risk-invariants.log" 2>&1
         code=$?
         cat "$${CI_STATUS_DIR}/risk-invariants.log"
