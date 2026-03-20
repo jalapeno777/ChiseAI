@@ -1,12 +1,12 @@
 ---
 # Validation Registry - Paired with docs/bmm-workflow-status.yaml
 # CI guard: edits must be paired with workflow status updates
-# Pairing sync: TEMPO-2026-001 Phase 7 merge correction
+# Pairing sync: PR-531 SIG backlog workflow status update
 
 metadata:
   project_name: ChiseAI
   version: "2.2.0"
-  last_updated: "2026-03-14"
+  last_updated: "2026-03-20"
 
 # Validation entries
 validations:
@@ -633,9 +633,9 @@ validations:
     test_method: manual
     owner: ops-team
 
-# ============================================================
-# PHASE 2+ VALIDATIONS (27 validations)
-# ============================================================
+  # ============================================================
+  # PHASE 2+ VALIDATIONS (27 validations)
+  # ============================================================
   # PHASE 2+ EPICS (17 validations for neuro-symbolic system)
   # ============================================================
 
@@ -1672,7 +1672,7 @@ validations:
   - id: V-NS-LIVE-001
     title: Phase 1 - Continuous Backtesting Validation
     epic_id: EP-NS-001
-    story_id: null  # Cross-cutting gate: validates system-wide backtesting readiness
+    story_id: null # Cross-cutting gate: validates system-wide backtesting readiness
     status: validated
     description: Continuous backtesting + walk-forward validation built from exchange APIs (always-on)
     acceptance_criteria:
@@ -1686,7 +1686,7 @@ validations:
   - id: V-NS-LIVE-002
     title: Phase 2 - Bybit Demo Paper Trading Validation
     epic_id: EP-NS-002
-    story_id: null  # Cross-cutting gate: validates system-wide paper trading readiness
+    story_id: null # Cross-cutting gate: validates system-wide paper trading readiness
     status: planned
     description: Bybit demo paper trading (perps-first) with shadow backtests continuing
     acceptance_criteria:
@@ -1700,7 +1700,7 @@ validations:
   - id: V-NS-LIVE-003
     title: Phase 3 - Bitget Live Trading Validation (Gated)
     epic_id: EP-NS-003
-    story_id: null  # Cross-cutting gate: validates system-wide live trading readiness
+    story_id: null # Cross-cutting gate: validates system-wide live trading readiness
     status: planned
     description: Bitget live trading with strict caps; paper + backtest remain active
     acceptance_criteria:
@@ -1714,7 +1714,7 @@ validations:
   - id: V-NS-LIVE-004
     title: Phase 4 - Scaling Validation
     epic_id: EP-NS-007
-    story_id: null  # Cross-cutting gate: validates system-wide scaling readiness
+    story_id: null # Cross-cutting gate: validates system-wide scaling readiness
     status: planned
     description: Scaling up tokens/strategies once evidence supports stable profitability and minimal drawdown
     acceptance_criteria:
@@ -1724,10 +1724,10 @@ validations:
     test_method: manual
     owner: validation-team
 
-# Global validation thresholds
+  # Global validation thresholds
 
-# EP-NS-008 VALIDATIONS: Autonomous Control Plane
-# ============================================================
+  # EP-NS-008 VALIDATIONS: Autonomous Control Plane
+  # ============================================================
 
   - id: V-NS-038
     title: Circuit Breaker Registry & Telemetry Validation
@@ -1946,10 +1946,10 @@ validations:
     test_method: automated
     owner: security-team
 
-# ============================================================
-# LAUNCH VALIDATIONS (17 validations for 17 stories)
-# Paper Trading with ML Optimization - Target: March 7, 2026
-# ============================================================
+  # ============================================================
+  # LAUNCH VALIDATIONS (17 validations for 17 stories)
+  # Paper Trading with ML Optimization - Target: March 7, 2026
+  # ============================================================
 
   # EP-LAUNCH-001: Bybit Safety & Infrastructure (5 validations)
   - id: V-LAUNCH-001

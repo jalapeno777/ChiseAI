@@ -8909,6 +8909,745 @@ stories:
     passed: 82
     failed: 0
     pass_rate: 100%
+- id: SIG-001
+  title: Feature Store + Plugin Interface
+  status: backlog
+  priority: P0
+  owner: senior-dev
+  story_points: 5
+  created_date: '2026-03-20'
+  description: 'Refactor existing indicator architecture into modular plugin system with FeatureStore for Redis-backed caching. Create BaseIndicator abstract class, plugin registry with dynamic loading, and configuration-driven indicator enablement. Backward compatible with existing RSI/MACD/BB indicators.'
+  acceptance_criteria:
+  - FeatureStore class with Redis-backed caching and TTL support
+  - Plugin registry with dynamic indicator loading via entry points
+  - BaseIndicator abstract class with standardized interface (compute, validate, get_metadata)
+  - Configuration-driven indicator enablement via config/indicators.yaml
+  - Backward compatibility with existing RSI/MACD/BB indicators
+  - 90%+ test coverage for FeatureStore and registry
+  dependencies: []
+  notes:
+  - Foundational architecture - all other SIG stories depend on this
+  - Modifies global indicator base, requires careful integration testing
+- id: SIG-002
+  title: Volume Profile Indicator
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 3
+  created_date: '2026-03-20'
+  description: 'Add Volume Profile indicator with POC (Point of Control), VAH (Value Area High), and VAL (Value Area Low) calculations. Support configurable lookback periods and volume bucket granularity. Integrate with FeatureStore for caching.'
+  acceptance_criteria:
+  - VolumeProfile class implementing VP with POC/VAH/VAL calculations
+  - Support for configurable lookback periods and volume bucket granularity
+  - Integration with FeatureStore for caching
+  - 95%+ test coverage with synthetic and real market data fixtures
+  dependencies:
+  - SIG-001
+- id: SIG-003
+  title: ATR and Volatility Indicators
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 3
+  created_date: '2026-03-20'
+  description: 'Add ATR (Average True Range) with configurable period and ATR-based volatility bands (trailing stops). Integrate with existing ConfluenceScorer for signal adjustment.'
+  acceptance_criteria:
+  - ATR implementation with configurable period
+  - ATR-based volatility bands (trailing stops)
+  - Integration with existing ConfluenceScorer
+  - 95%+ test coverage
+  dependencies:
+  - SIG-001
+- id: SIG-004
+  title: MFI StochRSI and Williams R Indicators
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 3
+  created_date: '2026-03-20'
+  description: 'Add MFI (Money Flow Index), StochRSI (Stochastic RSI), and Williams %R indicators. All follow BaseIndicator interface from SIG-001.'
+  acceptance_criteria:
+  - MFI implementation with overbought/oversold detection
+  - StochRSI implementation with divergence detection
+  - Williams %R implementation
+  - All indicators follow BaseIndicator interface
+  - 95%+ test coverage
+  dependencies:
+  - SIG-001
+- id: SIG-005a
+  title: Multi-timeframe Data Fetching Pipeline
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Build async multi-timeframe data fetcher supporting 1m/5m/15m/1h/4h/1d with timeframe alignment and data merging. Parallel fetching for performance.'
+  acceptance_criteria:
+  - Async multi-timeframe fetcher for 6 timeframes
+  - Timeframe alignment logic for synchronized data
+  - Data merging and synchronization
+  - Fetch latency <500ms for all 6 timeframes
+  - 85%+ test coverage
+  dependencies:
+  - SIG-001
+- id: SIG-005b
+  title: Confluence Scoring Algorithm
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Build confluence scoring engine that aggregates signals across multiple timeframes with configurable weights. Higher timeframes get higher weights. Require 3+ timeframe alignment for high confidence signals.'
+  acceptance_criteria:
+  - Confluence scoring engine with configurable timeframe weights
+  - Weighted signal aggregation across timeframes
+  - Confidence calculation based on timeframe agreement
+  - Requires 3+ timeframe alignment for high confidence
+  - 85%+ test coverage
+  dependencies:
+  - SIG-005a
+- id: SIG-005c
+  title: SignalAggregator Integration
+  status: backlog
+  priority: P1
+  owner: quickdev
+  story_points: 1
+  created_date: '2026-03-20'
+  description: 'Integrate confluence scoring with existing SignalAggregator. Add multi-source signal collection and deduplication logic.'
+  acceptance_criteria:
+  - Aggregator class collects signals from multiple sources
+  - Multi-source signal collection with deduplication
+  - Integration with existing signal_generation pipeline
+  - 90%+ test coverage
+  dependencies:
+  - SIG-005b
+- id: SIG-006a
+  title: BybitDemoConnector Refactor with Error Handling
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Refactor existing BybitDemoConnector with proper error handling, retry logic with exponential backoff, and clean separation of concerns. Enhance provenance tracking.'
+  acceptance_criteria:
+  - Refactored connector class with clean separation
+  - Comprehensive error handling for all API error codes
+  - Retry logic with exponential backoff and jitter
+  - Enhanced provenance tracking for all orders
+  - 85%+ test coverage
+  dependencies:
+  - SIG-001
+- id: SIG-006b
+  title: BybitLiveConnector Creation
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Create BybitLiveConnector with feature parity to demo connector. Unified connector interface supporting demo/live mode switching. Secure API key management.'
+  acceptance_criteria:
+  - Live connector implementation with feature parity to demo
+  - Unified connector interface for demo/live switching
+  - Secure API key management via environment variables
+  - Rate limiting hooks integrated
+  - 85%+ test coverage
+  dependencies:
+  - SIG-006a
+- id: SIG-006c
+  title: Rate Limiting and Circuit Breaker
+  status: backlog
+  priority: P1
+  owner: quickdev
+  story_points: 1
+  created_date: '2026-03-20'
+  description: 'Add token bucket rate limiter and circuit breaker pattern to Bybit connectors. Automatic recovery after cooldown period.'
+  acceptance_criteria:
+  - Token bucket rate limiter implementation
+  - Circuit breaker pattern with state machine (closed/open/half-open)
+  - Automatic recovery after configurable cooldown
+  - 90%+ test coverage
+  dependencies:
+  - SIG-006b
+- id: SIG-007a
+  title: Dead Letter Queue and Retry Handler
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Add dead letter queue for failed signal deliveries and exponential backoff retry handler with max retry limits. Enhance existing signal_delivery pipeline.'
+  acceptance_criteria:
+  - DLQ implementation for failed signal deliveries
+  - Exponential backoff retry mechanism with jitter
+  - Max retry limits with final failure handling
+  - Integration with existing async_pipeline
+  - 85%+ test coverage
+  dependencies:
+  - SIG-006c
+- id: SIG-007b
+  title: Latency Metrics and Discord Fallback
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Add latency histogram metrics (p50/p95/p99) for signal delivery and Discord webhook fallback mechanism. Enhance existing latency_monitor.'
+  acceptance_criteria:
+  - Latency histogram metrics collection (p50/p95/p99)
+  - Discord webhook fallback for critical alerts
+  - Configurable alert thresholds
+  - Integration with existing latency_monitor
+  - 85%+ test coverage
+  dependencies:
+  - SIG-007a
+- id: SIG-008
+  title: Order Book Imbalance Analysis
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 3
+  created_date: '2026-03-20'
+  description: 'Add order book imbalance analysis computing bid/ask ratio and depth imbalance. Support multiple depth levels (L2 data). Configurable imbalance thresholds for signal generation.'
+  acceptance_criteria:
+  - OrderBookImbalance class computing bid/ask ratio and depth imbalance
+  - Support for multiple depth levels (L2 data)
+  - Configurable imbalance thresholds for signal generation
+  - Integration with FeatureStore for real-time caching
+  - 95%+ test coverage
+  dependencies:
+  - SIG-001
+- id: SIG-009
+  title: Funding Rate Integration
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 3
+  created_date: '2026-03-20'
+  description: 'Add FundingRateAnalyzer fetching funding rates from Bybit API. Calculate funding rate trends (8h/24h/7d) and detect extreme funding with percentile-based thresholds.'
+  acceptance_criteria:
+  - FundingRateAnalyzer class fetching funding rates from Bybit API
+  - Funding rate trend calculation (8h/24h/7d)
+  - Extreme funding detection with percentile-based thresholds
+  - Integration with ConfluenceScorer for signal adjustment
+  - 95%+ test coverage
+  dependencies:
+  - SIG-001
+- id: SIG-010a
+  title: Rolling Correlation Matrix
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Build TokenCorrelator computing rolling correlation matrices across token universe (BTC/ETH/SOL/LINK/TAO/XRP/BNB/SUI/ONDO/KAS). Support multiple timeframe windows.'
+  acceptance_criteria:
+  - TokenCorrelator class computing rolling correlation matrices
+  - Support for configurable rolling window sizes
+  - Efficient numpy/pandas computation
+  - Real-time updates as new data arrives
+  - 85%+ test coverage
+  dependencies:
+  - SIG-001
+- id: SIG-010b
+  title: Leader-Follower Detection
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Build leader-follower detection algorithm for BTC-to-altcoin signal propagation. Implement Granger causality test and confidence scoring for relationships.'
+  acceptance_criteria:
+  - Lead-lag detection algorithm for cross-token signals
+  - Granger causality test implementation
+  - Confidence scoring for leader-follower relationships
+  - Integration with SignalGenerator for correlation-adjusted signals
+  - 85%+ test coverage
+  dependencies:
+  - SIG-010a
+- id: SIG-011
+  title: Adaptive Confidence Thresholds
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 3
+  created_date: '2026-03-20'
+  description: 'Enhance existing confidence_filter.py with adaptive thresholds that adjust based on market regime. Volatility-adjusted thresholds and performance feedback loop. Non-ML statistical approach using percentile-based rolling windows.'
+  acceptance_criteria:
+  - AdaptiveThresholdManager adjusting thresholds based on market regime
+  - Volatility-adjusted confidence thresholds (lower in high vol, higher in low vol)
+  - Performance feedback loop based on recent signal accuracy
+  - Non-ML statistical approach (percentile-based, rolling windows)
+  - 95%+ test coverage
+  dependencies:
+  - SIG-005b
+  - SIG-010a
+- id: SIG-012
+  title: Sentiment Analysis Integration
+  status: backlog
+  priority: P1
+  owner: quickdev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Add SentimentAggregator interface for multiple sentiment sources. Integrate Fear and Greed Index. Extensible architecture for social sentiment. Score normalization to -1/+1 range.'
+  acceptance_criteria:
+  - SentimentAggregator interface for multiple sentiment sources
+  - Fear and Greed Index integration
+  - Social sentiment placeholder (extensible architecture)
+  - Sentiment score normalization (-1 to +1)
+  - 90%+ test coverage
+  dependencies:
+  - SIG-001
+- id: SIG-013a
+  title: Volatility Regime Detection
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Build volatility-based regime detection using ATR and historical volatility. Classify market into low/medium/high volatility regimes.'
+  acceptance_criteria:
+  - ATR-based volatility regime detection
+  - Historical volatility calculation
+  - Regime classification (low/medium/high)
+  - Integration with SignalGenerator for regime-aware filtering
+  - 85%+ test coverage
+  dependencies:
+  - SIG-003
+  - SIG-005a
+- id: SIG-013b
+  title: Multi-Factor Regime Scoring
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Build multi-factor regime scoring combining trend strength (ADX), volatility, and volume regimes into composite regime score.'
+  acceptance_criteria:
+  - Multi-factor regime model (trend/volatility/momentum/volume)
+  - Factor weighting system with configurable weights
+  - Composite regime scoring
+  - Integration with AdaptiveThresholds (SIG-011)
+  - 85%+ test coverage
+  dependencies:
+  - SIG-013a
+- id: SIG-014
+  title: Signal Memory Persistence to Qdrant
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 3
+  created_date: '2026-03-20'
+  description: 'Add SignalMemory class persisting generated signals to Qdrant with vector embeddings for similarity search. Signal outcome tracking (predicted vs actual). TTL-based cleanup.'
+  acceptance_criteria:
+  - SignalMemory class persisting signals to Qdrant
+  - Vector embedding of signal features for similarity search
+  - Signal outcome tracking (predicted vs actual price movement)
+  - Retrieval API for historical signal analysis
+  - TTL-based cleanup for old signals
+  - 90%+ test coverage
+  dependencies:
+  - SIG-001
+- id: SIG-015
+  title: Autocog Trade Analysis Support
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 3
+  created_date: '2026-03-20'
+  description: 'Enhance existing autocog system with TradeAnalyzer for periodic trade performance analysis. Integrate with Autocog scheduler (hourly/daily/weekly). Add win rate, Sharpe, drawdown calculations and Discord report generation.'
+  acceptance_criteria:
+  - TradeAnalyzer class for periodic trade performance analysis
+  - Integration with existing Autocog scheduler (hourly/daily/weekly)
+  - Win rate, Sharpe ratio, max drawdown calculations
+  - Signal quality metrics (confidence vs outcome correlation)
+  - Discord report generation for trade analysis
+  - 90%+ test coverage
+  dependencies:
+  - SIG-001
+  - SIG-014
+- id: SIG-016a
+  title: ForwardTestingOrchestrator
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Build ForwardTestingOrchestrator for paper trading new signals via existing BybitDemoConnector. Result collection and storage for analysis.'
+  acceptance_criteria:
+  - ForwardTestingOrchestrator for paper trading new signals
+  - Integration with existing BybitDemoConnector
+  - Result collection and storage
+  - Minimum sample size enforcement (100 trades)
+  - 85%+ test coverage
+  dependencies:
+  - SIG-014
+- id: SIG-016b
+  title: A/B Testing Framework and Statistical Tests
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Build A/B testing framework for signal variant comparison. Statistical significance testing (t-test) and confidence interval calculation.'
+  acceptance_criteria:
+  - A/B test framework for signal variant comparison
+  - Statistical significance tests (t-test for win rate differences)
+  - Confidence interval calculation
+  - Minimum sample size enforcement
+  - 85%+ test coverage
+  dependencies:
+  - SIG-016a
+- id: SIG-017a
+  title: Backend API and Data Formatting for Timeline
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Build REST API endpoints for signal timeline data. Signal serialization with filtering by token/timeframe/confidence. Pagination for large result sets.'
+  acceptance_criteria:
+  - REST API endpoints for signal timeline data
+  - Signal serialization with filtering support
+  - Pagination for large result sets
+  - Integration with SignalMemory (SIG-014)
+  - 85%+ test coverage
+  dependencies:
+  - SIG-014
+- id: SIG-017b
+  title: Frontend Timeline Component
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Build React timeline component for signal visualization with chronological display, filtering by token/timeframe/confidence, and signal outcome overlay (win/loss markers).'
+  acceptance_criteria:
+  - React timeline component for chronological signal display
+  - Filtering by token, timeframe, confidence level
+  - Signal outcome overlay (win/loss markers)
+  - Export to CSV/JSON
+  - 80%+ test coverage (component tests)
+  dependencies:
+  - SIG-017a
+- id: SIG-017c
+  title: Real-time WebSocket Updates
+  status: backlog
+  priority: P1
+  owner: quickdev
+  story_points: 1
+  created_date: '2026-03-20'
+  description: 'Add WebSocket endpoint for real-time signal streaming to dashboard. Reconnection handling for dropped connections.'
+  acceptance_criteria:
+  - WebSocket endpoint for real-time signals
+  - Real-time signal streaming to dashboard clients
+  - Reconnection handling for dropped connections
+  - 90%+ test coverage
+  dependencies:
+  - SIG-017b
+- id: SIG-018a
+  title: Backend Metrics API for Confidence Panel
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Build metrics API endpoints for confidence distribution, confidence vs outcome correlation, and indicator contribution breakdown.'
+  acceptance_criteria:
+  - Metrics API endpoints for confidence data
+  - Confidence distribution histogram data
+  - Confidence vs outcome correlation data
+  - Indicator contribution breakdown data
+  - 85%+ test coverage
+  dependencies:
+  - SIG-017a
+- id: SIG-018b
+  title: Frontend Confidence Panel
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Build confidence panel UI component with distribution visualization, confidence vs outcome chart, indicator contribution breakdown, and real-time confidence score.'
+  acceptance_criteria:
+  - Confidence distribution visualization (histogram)
+  - Confidence vs outcome correlation chart
+  - Indicator contribution breakdown display
+  - Real-time confidence score for active signals
+  - 80%+ test coverage
+  dependencies:
+  - SIG-018a
+- id: SIG-019
+  title: Enhanced Discord Notifications
+  status: backlog
+  priority: P1
+  owner: quickdev
+  story_points: 3
+  created_date: '2026-03-20'
+  description: 'Enhance existing discord_formatter.py with rich embed formatting, confidence score visualization (color-coded), confluence breakdown, and daily/weekly summary reports.'
+  acceptance_criteria:
+  - Rich embed formatting for signal notifications
+  - Confidence score visualization (color-coded by level)
+  - Confluence breakdown showing which indicators agree
+  - Daily and weekly summary reports
+  - 90%+ test coverage
+  dependencies:
+  - SIG-007b
+- id: SIG-020a
+  title: Enhanced Circuit Breaker Triggers
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Enhance existing circuit breaker with signal-specific triggers: drawdown-based (pause on >5% daily loss), volatility-based (pause on extreme volatility), and latency-based triggers.'
+  acceptance_criteria:
+  - Drawdown-based circuit breaker (pause on >5% daily loss)
+  - Volatility-based circuit breaker (pause on extreme volatility)
+  - Latency-based circuit breaker triggers
+  - Configurable thresholds per trigger type
+  - 85%+ test coverage
+  dependencies:
+  - SIG-006c
+  - SIG-011
+- id: SIG-020b
+  title: Manual Override and Audit Logging
+  status: backlog
+  priority: P1
+  owner: dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Add manual override API for circuit breaker with permission checks and comprehensive audit logging for all circuit breaker actions.'
+  acceptance_criteria:
+  - Manual override API for circuit breaker
+  - Permission checks for override operations
+  - Audit log persistence for all circuit breaker actions
+  - Discord alert on circuit breaker activation
+  - 85%+ test coverage
+  dependencies:
+  - SIG-020a
+- id: SIG-021
+  title: Signal Quality Alerts
+  status: backlog
+  priority: P1
+  owner: quickdev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Add alert rules for signal quality degradation: confidence drift detection, win rate drop alerts (<40% over 50-trade window), and Grafana alert integration.'
+  acceptance_criteria:
+  - Alert rules for signal quality degradation
+  - Confidence drift detection (current vs historical)
+  - Win rate drop alerts (<40% over 50-trade window)
+  - Grafana alert integration
+  - Discord notification on alert trigger
+  - 90%+ test coverage
+  dependencies:
+  - SIG-014
+  - SIG-015
+- id: SIG-022
+  title: Backtesting Integration
+  status: backlog
+  priority: P1
+  owner: quickdev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Build SignalValidator class for historical signal backtesting using InfluxDB data replay. Performance metrics (PnL, win rate, Sharpe) and comparison against buy-and-hold benchmark.'
+  acceptance_criteria:
+  - SignalValidator class for historical signal backtesting
+  - Historical data replay from InfluxDB
+  - Signal performance metrics (PnL, win rate, Sharpe)
+  - Comparison against buy-and-hold benchmark
+  - Export results to JSON/CSV
+  - 90%+ test coverage
+  dependencies:
+  - SIG-016a
+- id: SIG-TEST-001
+  title: Indicator Test Fixtures
+  status: backlog
+  priority: P2
+  owner: dev
+  story_points: 3
+  created_date: '2026-03-20'
+  description: 'Create synthetic OHLCV data generators (trending/ranging/volatile regimes), real market data snapshots (BTC/ETH 1m/5m/1h), and expected indicator output fixtures for validation.'
+  acceptance_criteria:
+  - Synthetic OHLCV data generators for 3 market regimes
+  - Real market data snapshots (BTC/ETH at 1m/5m/1h)
+  - Expected indicator output fixtures for validation
+  - Fixture loading utilities with caching
+  - 100% fixture availability for all indicator tests
+  dependencies:
+  - SIG-001
+- id: SIG-TEST-002a
+  title: Signal Flow Integration Tests
+  status: backlog
+  priority: P2
+  owner: dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Build end-to-end signal generation flow tests covering market data ingestion through signal delivery. Component integration validation with mocked services.'
+  acceptance_criteria:
+  - End-to-end signal generation flow tests
+  - Component integration validation
+  - Data flow verification from ingestion to delivery
+  - Mocked Discord/dashboard services
+  - 85%+ test coverage
+  dependencies:
+  - SIG-005c
+  - SIG-014
+- id: SIG-TEST-002b
+  title: Execution Flow Integration Tests
+  status: backlog
+  priority: P2
+  owner: dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Build order execution flow tests covering signal-to-order pipeline. Error handling path validation and state machine verification for order lifecycle.'
+  acceptance_criteria:
+  - Order execution flow tests
+  - Error handling path validation
+  - State machine verification for order lifecycle
+  - Integration with paper trading orchestrator
+  - 85%+ test coverage
+  dependencies:
+  - SIG-006c
+  - SIG-TEST-002a
+- id: SIG-TEST-002c
+  title: Docker Compose Test Environment
+  status: backlog
+  priority: P2
+  owner: quickdev
+  story_points: 1
+  created_date: '2026-03-20'
+  description: 'Create Docker Compose setup for integration tests with Redis, Qdrant, and InfluxDB containers. CI pipeline integration.'
+  acceptance_criteria:
+  - Docker Compose setup for integration tests
+  - Redis, Qdrant, InfluxDB test containers
+  - Isolated test environment
+  - CI pipeline integration
+  dependencies:
+  - SIG-TEST-002b
+- id: SIG-TEST-003a
+  title: Latency Tests
+  status: backlog
+  priority: P2
+  owner: dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Build signal generation latency tests targeting p95 <100ms and end-to-end latency <500ms. Percentile measurements (p50/p95/p99) with benchmark baselines.'
+  acceptance_criteria:
+  - Signal generation latency p95 <100ms
+  - End-to-end latency p95 <500ms
+  - Percentile measurements (p50/p95/p99)
+  - Benchmark baselines established
+  dependencies:
+  - SIG-007b
+- id: SIG-TEST-003b
+  title: Throughput and Load Tests
+  status: backlog
+  priority: P2
+  owner: dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Build throughput tests targeting 1000 signals/sec sustained. Load testing to 10x normal capacity with resource usage monitoring and degradation curves.'
+  acceptance_criteria:
+  - 1000 signals/sec throughput sustained
+  - Load testing to 10x normal capacity
+  - Resource usage monitoring (CPU/memory)
+  - Degradation curves documented
+  dependencies:
+  - SIG-TEST-003a
+- id: SIG-TEST-004a
+  title: Bybit Connectivity and Signal Generation Live Tests
+  status: backlog
+  priority: P4
+  owner: senior-dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Build live Bybit API connectivity tests (read-only) and real signal generation with paper trading validation. Safety limits enforced.'
+  acceptance_criteria:
+  - Live Bybit API connectivity verified (read-only)
+  - Real signal generation working with paper trading
+  - Safety limits enforced during live tests
+  - 80%+ pass rate
+  dependencies:
+  - SIG-006b
+  - SIG-005c
+- id: SIG-TEST-004b
+  title: Discord and Dashboard Live Tests
+  status: backlog
+  priority: P4
+  owner: dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Build live Discord notification tests (test channel) and dashboard real-time update verification. WebSocket stability confirmation.'
+  acceptance_criteria:
+  - Live Discord notifications working (test channel)
+  - Dashboard real-time updates verified
+  - WebSocket stability confirmed
+  - 80%+ pass rate
+  dependencies:
+  - SIG-017c
+  - SIG-019
+- id: SIG-TEST-004c
+  title: Circuit Breaker Live Tests
+  status: backlog
+  priority: P4
+  owner: quickdev
+  story_points: 1
+  created_date: '2026-03-20'
+  description: 'Build controlled fault injection tests for circuit breaker triggers. Verify automatic recovery and manual override functionality.'
+  acceptance_criteria:
+  - Live circuit breaker triggers verified
+  - Automatic recovery working
+  - Manual override functional
+  - 90%+ pass rate
+  dependencies:
+  - SIG-020b
+- id: SIG-TEST-005a
+  title: Core Workflow E2E Tests
+  status: backlog
+  priority: P5
+  owner: senior-dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Build full signal-to-order flow E2E tests covering happy path and error handling. Full stack deployment required.'
+  acceptance_criteria:
+  - Full signal-to-order flow tested
+  - Happy path validation
+  - Error handling verified
+  - 90%+ pass rate
+  dependencies:
+  - SIG-TEST-002c
+- id: SIG-TEST-005b
+  title: Advanced Workflow E2E Tests
+  status: backlog
+  priority: P5
+  owner: senior-dev
+  story_points: 2
+  created_date: '2026-03-20'
+  description: 'Build complex scenario E2E tests including multi-timeframe signal generation, confluence validation, and regime-aware filtering.'
+  acceptance_criteria:
+  - Complex scenario tests (multi-timeframe, confluence)
+  - Multi-timeframe signal generation validated
+  - Confluence validation tests
+  - 85%+ pass rate
+  dependencies:
+  - SIG-TEST-005a
+- id: SIG-TEST-005c
+  title: Playwright Dashboard Automation
+  status: backlog
+  priority: P5
+  owner: quickdev
+  story_points: 1
+  created_date: '2026-03-20'
+  description: 'Build Playwright browser automation tests for dashboard UI: signal timeline interaction, metrics panel validation, and visual regression.'
+  acceptance_criteria:
+  - Dashboard UI automation tests
+  - Signal timeline interaction tests
+  - Metrics panel validation
+  - 80%+ pass rate
+  dependencies:
+  - SIG-017b
+
 summary:
   epics_by_status:
     completed: 13
