@@ -21,12 +21,15 @@ from market_analysis.indicators.feature_store import FeatureStore
 from market_analysis.indicators.macd import MACD, MACDResult
 from market_analysis.indicators.registry import PluginRegistry, get_registry
 from market_analysis.indicators.rsi import RSI, RSIResult
+from market_analysis.indicators.volume_profile import VolumeProfile, VolumeProfileResult
 
 __all__ = [
     # Plugin system (new)
     "BaseIndicator",
     "FeatureStore",
     "PluginRegistry",
+    "VolumeProfile",
+    "VolumeProfileResult",
     "get_registry",
     "Signal",
     "SignalDirection",
