@@ -85,15 +85,24 @@ repos:
         pass_filenames: false
         stages: [commit-msg]
 
-      # Traceability validation (aligns with CI lint step)
-      - id: fr-traceability-check
-        name: FR Traceability Validation
-        entry: python3 scripts/validate_fr_traceability.py
-        language: system
-        pass_filenames: false
-        stages: [commit-msg]
+  # Traceability validation (aligns with CI lint step)
+  - id: fr-traceability-check
+    name: FR Traceability Validation
+    entry: python3 scripts/validate_fr_traceability.py
+    language: system
+    pass_filenames: false
+    stages: [commit-msg]
 
-# Configure stages
+  # Tempmemory frontmatter validation (ST-MEMORY-INGEST-004)
+  - id: tempmemory-frontmatter-check
+    name: Tempmemory Frontmatter Validation
+    entry: python3 .pre-commit-hooks/validate-tempmemory-frontmatter.py
+    language: system
+    pass_filenames: true
+    files: docs/tempmemories/.*\.md$
+    stages: [pre-commit]
+
+  # Configure stages
 default_stages: [pre-commit]
 
 # Skip files matching these patterns
