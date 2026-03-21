@@ -402,9 +402,79 @@ class ConstitutionLoader:
                 cells = [c.strip() for c in line.split("|") if c.strip()]
                 # Skip header separator rows
                 if cells and not all(set(c) <= {"-", ":"} for c in cells):
-                    rows.append(cells)
+                    # Skip header rows (common column names)
+                    header_keywords = {"trigger", "severity", "category", "action"}
+                    if cells[0].lower() not in header_keywords:
+                        rows.append(cells)
 
         return rows
+
+    def _parse_principles(self, content: str) -> dict[str, Any]:
+        """Parse principles from markdown content.
+
+        Args:
+            content: Raw markdown content
+
+        Returns:
+            Dictionary with core_values list
+        """
+        principles: dict[str, Any] = {"core_values": []}
+
+        # Parse Safety First section
+        safety_pattern = r"### 2\.1 Safety First\n((?:- [^\n]+\n)+)"
+        safety_match = re.search(safety_pattern, content)
+        if safety_match:
+            rules = [
+                line[2:].strip()
+                for line in safety_match.group(1).strip().split("\n")
+                if line.startswith("- ")
+            ]
+            if rules:
+                principles["core_values"].append(
+                    {
+                        "name": "Safety First",
+                        "description": "Safety is the highest priority",
+                        "rules": rules,
+                    }
+                )
+
+        # Parse Transparency section
+        transparency_pattern = r"### 2\.2 Transparency\n((?:- [^\n]+\n)+)"
+        transparency_match = re.search(transparency_pattern, content)
+        if transparency_match:
+            rules = [
+                line[2:].strip()
+                for line in transparency_match.group(1).strip().split("\n")
+                if line.startswith("- ")
+            ]
+            if rules:
+                principles["core_values"].append(
+                    {
+                        "name": "Transparency",
+                        "description": "All actions must be visible",
+                        "rules": rules,
+                    }
+                )
+
+        # Parse Accountability section
+        accountability_pattern = r"### 2\.3 Accountability\n((?:- [^\n]+\n)+)"
+        accountability_match = re.search(accountability_pattern, content)
+        if accountability_match:
+            rules = [
+                line[2:].strip()
+                for line in accountability_match.group(1).strip().split("\n")
+                if line.startswith("- ")
+            ]
+            if rules:
+                principles["core_values"].append(
+                    {
+                        "name": "Accountability",
+                        "description": "Every action must be traceable",
+                        "rules": rules,
+                    }
+                )
+
+        return principles
 
     def _parse_safety_invariants(self, content: str) -> dict[str, list[Invariant]]:
         """Parse safety invariants from markdown content.
@@ -475,15 +545,22 @@ class ConstitutionLoader:
             "detection_rules": [],
         }
 
-        # Parse severity levels from table
-        rows = self._extract_table_rows(content, "Severity Levels")
-        for row in rows:
-            if len(row) >= 2:
+        # Parse severity levels from YAML blocks
+        yaml_pattern = r"```yaml\nseverity_levels:(.*?)```"
+        matches = re.findall(yaml_pattern, content, re.DOTALL)
+
+        for match in matches:
+            level_pattern = r"-\s+level:\s*(\S+)\s+name:\s*([^\n]+)\s+description:\s*([^\n]+)\s+detection_sla_seconds:\s*(\d+)\s+response_sla_minutes:\s*(\d+)\s+requires_human_intervention:\s*(\w+)"
+            for level_match in re.finditer(level_pattern, match):
                 categories["severity_levels"].append(
                     {
-                        "level": row[0] if len(row) > 0 else "",
-                        "name": row[1] if len(row) > 1 else "",
-                        "description": row[2] if len(row) > 2 else "",
+                        "level": level_match.group(1),
+                        "name": level_match.group(2).strip(),
+                        "description": level_match.group(3).strip(),
+                        "detection_sla_seconds": int(level_match.group(4)),
+                        "response_sla_minutes": int(level_match.group(5)),
+                        "requires_human_intervention": level_match.group(6).lower()
+                        == "true",
                     }
                 )
 
@@ -684,7 +761,7 @@ class ConstitutionLoader:
         )
 
         # Parse components
-        artifact.principles = {"core_values": []}  # Simplified for now
+        artifact.principles = self._parse_principles(content)
         artifact.decision_boundaries = self._parse_decision_boundaries(content)
         artifact.safety_invariants = self._parse_safety_invariants(content)
         artifact.violation_categories = self._parse_violation_categories(content)
@@ -736,8 +813,10 @@ class ConstitutionLoader:
         """
         schema = self._load_schema()
 
-        # Convert artifact to dict for validation
+        # Convert artifact to dict for validation (exclude runtime fields)
         artifact_dict = artifact.to_dict()
+        # Remove runtime fields not in schema
+        artifact_dict.pop("loaded_at", None)
 
         try:
             jsonschema.validate(instance=artifact_dict, schema=schema)
