@@ -291,29 +291,22 @@ backlog:
   - Type distribution visualization (decision vs pattern vs summary vs anti-pattern)
   - Last successful/failed run timestamps
   - Average ingestion duration per run
-  - "Alert rules configured for: consecutive failures, latency > threshold, backlog > 100 files"
-  branch: feature/ST-MEMORY-INGEST-002-grafana-dashboard
-  commit_sha: TBD
-  completed_date: '2026-03-21'
+  - Alert rules configured for: consecutive failures, latency > threshold, backlog
+      > 100 files
   created_date: '2026-03-03'
   description: Create dedicated Grafana dashboard for monitoring tempmemory ingestion
     health, metrics, and trends. Currently metrics exist in Redis but no visual dashboard.
   estimated_points: 5
   id: ST-MEMORY-INGEST-002
-  merged_date: '2026-03-21'
   notes:
   - Completion report (line 474-477) identified this as immediate Week 1 priority
   - 'Metrics available in Redis: chise:governance:consolidation:metrics:ingestion'
   - 'Status key available: bmad:chiseai:tempmemory:ingestion:status'
   - Should integrate with existing data quality monitoring infrastructure
-  - 'Dashboard JSON copied to infrastructure/grafana/provisioning/dashboards/tempmemory-ingestion.json'
-  - 'Terraform resource grafana_dashboard.tempmemory_ingestion added to dashboards.tf'
-  - 'Dashboard UID added to output.dashboard_uids'
-  owner: senior-dev
-  pr_number: TBD
+  owner: TBD
   priority: P1
   related_story: ST-MEMORY-INGEST-001
-  status: completed
+  status: planned
   title: Grafana Dashboard for Tempmemory Ingestion Monitoring
 - acceptance_criteria:
   - Configurable auto-archive modes: immediate, daily, or after N days
