@@ -384,6 +384,8 @@ backlog:
     of creating new instances per call.
   owner: dev
   implementation_notes: Singleton pattern with double-checked locking in src/signal_generation/signal_memory.py:87-100
+  pr_number: 556
+  merge_commit: aa84345146df02cc0b7df9e3fded65c3c688bbff
 - id: SIG-REM-002
   title: feature_store invalidate_pattern Redis consistency
   priority: P0
@@ -395,6 +397,8 @@ backlog:
     across distributed instances.
   owner: dev
   implementation_notes: invalidate_pattern() with local cache and Redis invalidation in src/market_analysis/indicators/feature_store.py:169-211
+  pr_number: 556
+  merge_commit: aa84345146df02cc0b7df9e3fded65c3c688bbff
 - id: SIG-REM-003
   title: order_book_imbalance infinity handling
   priority: P0
@@ -406,6 +410,8 @@ backlog:
     to prevent downstream errors.
   owner: dev
   implementation_notes: MAX_RATIO = 1e9 cap to avoid infinity propagation in src/market_analysis/order_flow/order_book_imbalance.py:135
+  pr_number: 556
+  merge_commit: aa84345146df02cc0b7df9e3fded65c3c688bbff
 - id: SIG-REM-004
   title: funding_rate compute(data) contract compliance
   priority: P0
@@ -417,6 +423,8 @@ backlog:
     comply with the signal contract.
   owner: dev
   implementation_notes: compute(self, data: list) -> FundingRateResult signature in src/market_analysis/fundamentals/funding_rate.py:259
+  pr_number: 556
+  merge_commit: aa84345146df02cc0b7df9e3fded65c3c688bbff
 - id: SIG-REM-005
   title: bybit_demo_connector API key prefix hashing
   priority: P0
@@ -428,6 +436,8 @@ backlog:
     logging and debugging.
   owner: dev
   implementation_notes: hash_api_key() with prefix hashing in src/execution/connectors/bybit_demo_connector.py:494-513
+  pr_number: 556
+  merge_commit: aa84345146df02cc0b7df9e3fded65c3c688bbff
 - id: SIG-REM-006
   title: Replace datetime.utcnow() with datetime.now(UTC)
   priority: P0
@@ -439,6 +449,8 @@ backlog:
     datetime.now(UTC) across codebase.
   owner: dev
   implementation_notes: 3,903+ occurrences of datetime.now(UTC) verified across codebase; no deprecated utcnow() found
+  pr_number: 556
+  merge_commit: aa84345146df02cc0b7df9e3fded65c3c688bbff
 - id: SIG-REM-007
   title: Post-remediation full test run on main
   priority: P0
@@ -456,6 +468,8 @@ backlog:
     errors: 43
     skipped: 505
     notes: Import errors resolved. Remaining failures are pre-existing issues unrelated to SIG-REM fixes.
+  pr_number: 556
+  merge_commit: aa84345146df02cc0b7df9e3fded65c3c688bbff
 - id: SIG-REM-008
   title: Critic rerun on main after fixes
   priority: P0
@@ -472,6 +486,8 @@ backlog:
     medium: 2
     low: 3
     notes: 'HIGH: datetime.utcnow() still present in scripts/ (54 matches) - SIG-REM-006 only fixed src/ files. No critical security or performance issues found.'
+  pr_number: 556
+  merge_commit: aa84345146df02cc0b7df9e3fded65c3c688bbff
 - id: SIG-REM-009
   title: Batch 2 kickoff gate
   priority: P1
@@ -488,6 +504,8 @@ backlog:
     sig_rem_008: completed
     all_green: true
     notes: All SIG-REM stories completed. Batch 2 is cleared for kickoff.
+  pr_number: 556
+  merge_commit: aa84345146df02cc0b7df9e3fded65c3c688bbff
 current_phase:
   note: 'ACTIVATED on 2026-02-22. Paper trading now fully autonomous. All launch flags
     enabled. Target launch date: March 14, 2026.'
