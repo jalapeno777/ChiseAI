@@ -566,8 +566,9 @@ epics:
 - description: Position sizing, stop-loss recommendations, portfolio exposure monitoring, and correlation analysis
   id: EP-NS-003
   name: Portfolio Risk Management
+  notes: Status corrected from completed to in_progress due to planned child stories
   sprint_id: q2-2
-  status: completed
+  status: in_progress
   story_count: 10
   story_ids:
   - ST-NS-012A
@@ -831,6 +832,7 @@ epics:
   id: EP-LAUNCH-003
   name: Training Integration & Model Ops
   notes:
+  - Status corrected from completed to in_progress - 3 of 4 stories still planned
   - All 4 stories completed (ST-LAUNCH-011, ST-LAUNCH-012, ST-LAUNCH-013, ST-LAUNCH-014)
   - ST-LAUNCH-011: Model Retraining Trigger merged via PR
   - ST-LAUNCH-012, ST-LAUNCH-013, ST-LAUNCH-014: Completed
@@ -840,7 +842,7 @@ epics:
   - A/B testing framework for model comparison
   - Depends on EP-LAUNCH-002 for training data (completed)
   sprint_id: LAUNCH-SPRINT-2
-  status: completed
+  status: in_progress
   stories_completed: 4
   story_count: 4
   story_ids:
@@ -869,6 +871,7 @@ epics:
   id: EP-LAUNCH-004
   name: Launch Readiness & Validation
   notes:
+  - Status corrected from completed to planned - all 3 child stories still planned
   - All 3 stories completed (ST-LAUNCH-015, 016, 017)
   - Final validation: GO decision obtained
   - Launch readiness checklist: 11/11 items pass
@@ -876,7 +879,7 @@ epics:
   - Extended timeline per Option A decision (Mar 14, 2026)
   - Epic completed on 2026-02-22 by Merlin (FINAL BATCH integration)
   sprint_id: LAUNCH-SPRINT-3
-  status: completed
+  status: planned
   stories_completed: 3
   story_count: 3
   story_ids:
@@ -899,6 +902,7 @@ epics:
   id: EP-LAUNCH-005
   name: Missing Components Implementation
   notes:
+  - Status corrected from completed to in_progress - 3 of 4 stories still planned
   - All 4 stories completed (ST-LAUNCH-018, 019, 020, 021)
   - ADDED per Option A decision (extended timeline to Mar 14)
   - Outcome capture service operational (194 tests passing)
@@ -907,7 +911,7 @@ epics:
   - Runbooks created and validated (3 operational runbooks)
   - Epic completed on 2026-02-22 by Merlin (FINAL BATCH integration)
   sprint_id: LAUNCH-SPRINT-1-2
-  status: completed
+  status: in_progress
   stories_completed: 4
   story_count: 4
   story_ids:
