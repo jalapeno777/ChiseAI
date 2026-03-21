@@ -140,6 +140,40 @@ class PrecommitValidator:
             self.warnings.append("status-sync: sync issues found")
             return True  # Status sync issues are warnings locally
 
+    def validate_workflow_status_guard(self) -> bool:
+        """Run hardened workflow status guard when status file is staged."""
+        exit_code, stdout, _ = self.run_command(
+            ["git", "diff", "--cached", "--name-only", "--diff-filter=ACM"],
+            "Get staged files",
+        )
+        if exit_code != 0:
+            self.errors.append("status-guard: could not inspect staged files")
+            return False
+
+        changed_files = {f.strip() for f in stdout.split("\n") if f.strip()}
+        if "docs/bmm-workflow-status.yaml" not in changed_files:
+            print("→ Workflow status guard: skipped (status file unchanged)")
+            return True
+
+        print("→ Workflow status guard (status_guard.py validate)...")
+        exit_code, _, _ = self.run_command(
+            [
+                "python3",
+                "scripts/governance/status_guard.py",
+                "validate",
+                "--file",
+                "docs/bmm-workflow-status.yaml",
+            ],
+            "Workflow status guard",
+        )
+        if exit_code == 0:
+            print("  ✓ Workflow status guard passed")
+            return True
+
+        print("  ✗ Workflow status guard failed")
+        self.errors.append("status-guard: docs/bmm-workflow-status.yaml failed guard")
+        return False
+
     def validate_traceability(self) -> bool:
         """Validate FR traceability."""
         print("→ Validating FR traceability...")
@@ -340,6 +374,7 @@ class PrecommitValidator:
 
         # Evidence validation
         evidence_ok = self.validate_evidence()
+        status_guard_ok = self.validate_workflow_status_guard()
 
         status_ok = self.validate_status_sync()
         traceability_ok = self.validate_traceability()
@@ -349,6 +384,7 @@ class PrecommitValidator:
             [
                 file_existence_ok,
                 evidence_ok,
+                status_guard_ok,
                 status_ok,
                 traceability_ok,
                 swarm_policy_ok,

@@ -44,6 +44,7 @@ screenshots/
 *.log
 *.local
 .DS_Store
+.tmp/status_guard_attempts.json
 
 # IDE
 .vscode/

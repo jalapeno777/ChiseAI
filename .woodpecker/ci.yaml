@@ -906,8 +906,9 @@ steps:
             exit 0
           fi
           echo "Running status write gate check..."
-          pip install --no-cache-dir pyyaml || pip install --no-cache-dir --break-system-packages pyyaml
+          pip install --no-cache-dir pyyaml yamllint || pip install --no-cache-dir --break-system-packages pyyaml yamllint
           git fetch --quiet --unshallow origin || git fetch --quiet --depth=50000 origin main || true
+          python3 scripts/governance/status_guard.py validate --file docs/bmm-workflow-status.yaml
           python3 scripts/governance/status_write_gate.py --file docs/bmm-workflow-status.yaml --no-require-authority
         ) > "$${CI_STATUS_DIR}/status-write-gate.log" 2>&1
         code=$?

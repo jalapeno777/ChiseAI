@@ -7,6 +7,11 @@ compatibility: opencode
 ## Rules
 
 - Trigger: use this skill when editing any `.yaml`, `.yml`, or markdown frontmatter block.
+- Special-case: when editing `docs/bmm-workflow-status.yaml`, run
+  `python3 scripts/governance/status_guard.py validate --file docs/bmm-workflow-status.yaml`
+  before and after edits.
+- For `docs/bmm-workflow-status.yaml`, if two manual fix attempts fail, run mandatory repair:
+  `python3 scripts/governance/status_guard.py repair --file docs/bmm-workflow-status.yaml --enforce-repair-after 2`
 - Read the full file before editing.
 - Make the smallest possible change.
 - Preserve key order unless reordering is explicitly requested.
