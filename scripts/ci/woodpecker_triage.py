@@ -86,6 +86,7 @@ class WoodpeckerClient:
     def __init__(self, base_url: str, token: str | None):
         self.base_url = base_url.rstrip("/")
         self.token = (token or "").strip()
+        self._preferred_auth_mode: str | None = None
 
     def _headers(self, mode: str) -> dict[str, str]:
         headers = {"Accept": "application/json"}
@@ -101,12 +102,19 @@ class WoodpeckerClient:
     def _request(self, path: str) -> tuple[dict[str, str], str]:
         url = f"{self.base_url}{path}"
         errors: list[str] = []
+        modes: list[str] = []
+        if self._preferred_auth_mode in {"bearer", "token", "x-token"}:
+            modes.append(self._preferred_auth_mode)
         for mode in ("bearer", "token", "x-token"):
+            if mode not in modes:
+                modes.append(mode)
+        for mode in modes:
             req = Request(url=url, method="GET", headers=self._headers(mode))
             try:
                 with urlopen(req, timeout=20) as resp:  # nosec B310  # noqa: S310
                     headers = {k.lower(): v for k, v in dict(resp.headers).items()}
                     body = resp.read().decode("utf-8", errors="replace")
+                    self._preferred_auth_mode = mode
                     return headers, body
             except Exception as exc:  # noqa: BLE001
                 errors.append(f"{mode}:{exc}")
@@ -317,7 +325,30 @@ def _fetch_step_log_from_api(
         if "None" in path:
             continue
         try:
-            # Try JSON log surfaces first.
+            # Do a single request first; many log endpoints return text/plain.
+            text = client.get_text(path)
+            if text and not _looks_like_html(text):
+                stripped = text.strip()
+                # Some APIs return JSON-encoded logs even on text endpoint.
+                if stripped.startswith("{") or stripped.startswith("["):
+                    try:
+                        data = json.loads(stripped)
+                        if isinstance(data, str):
+                            return data
+                        if isinstance(data, list):
+                            return "\n".join(str(x) for x in data)
+                        if isinstance(data, dict):
+                            for key in ("logs", "log", "output", "stdout"):
+                                value = data.get(key)
+                                if isinstance(value, str):
+                                    return value
+                    except Exception:
+                        pass
+                return text
+        except Exception:
+            pass
+        try:
+            # Fallback to strict JSON surface for endpoints that reject text mode.
             data = client.get_json(path)
             if isinstance(data, str):
                 return data
@@ -328,12 +359,6 @@ def _fetch_step_log_from_api(
                     value = data.get(key)
                     if isinstance(value, str):
                         return value
-        except Exception:
-            pass
-        try:
-            text = client.get_text(path)
-            if text and not _looks_like_html(text):
-                return text
         except Exception:  # nosec B112
             continue
     return ""
