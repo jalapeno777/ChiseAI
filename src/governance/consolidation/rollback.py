@@ -441,3 +441,259 @@ class RollbackManager:
             "operations_succeeded": self._last_stats.operations_succeeded,
             "operations_failed": self._last_stats.operations_failed,
         }
+
+    # ==========================================================================
+    # Tempmemory Rollback Methods (ST-MEMORY-INGEST-003)
+    # ==========================================================================
+
+    def can_rollback_tempmemory(self, archived_path: Path) -> bool:
+        """
+        Check if an archived tempmemory can be rolled back.
+
+        Args:
+            archived_path: Path to archived tempmemory file
+
+        Returns:
+            True if rollback is possible
+        """
+        if not archived_path.exists():
+            logger.debug(f"Archived file not found: {archived_path}")
+            return False
+
+        # Check if within rollback window
+        try:
+            stat = archived_path.stat()
+            archived_at = datetime.fromtimestamp(stat.st_mtime, UTC)
+            window_end = archived_at + timedelta(
+                days=self._config.rollback_retention_days
+            )
+
+            if datetime.now(UTC) > window_end:
+                logger.info(
+                    f"Rollback window expired for {archived_path} "
+                    f"(archived: {archived_at}, window_end: {window_end})"
+                )
+                return False
+
+            return True
+        except Exception as e:
+            logger.error(f"Error checking tempmemory rollback eligibility: {e}")
+            return False
+
+    def rollback_tempmemory(
+        self,
+        archived_path: Path,
+        restore_path: Path | None = None,
+        dry_run: bool = False,
+    ) -> RollbackStats:
+        """
+        Roll back an archived tempmemory to its original location.
+
+        Args:
+            archived_path: Path to archived tempmemory file
+            restore_path: Optional override for restore location
+            dry_run: If True, simulate rollback without actual changes
+
+        Returns:
+            RollbackStats with operation results
+        """
+        start_time = datetime.now(UTC)
+        stats = RollbackStats()
+        stats.operations_requested = 1
+
+        try:
+            # Check if rollback is possible
+            if not self.can_rollback_tempmemory(archived_path):
+                stats.errors.append(
+                    f"Cannot rollback {archived_path}: outside rollback window or file missing"
+                )
+                stats.operations_failed = 1
+                return stats
+
+            # Read archived file
+            content = archived_path.read_text(encoding="utf-8")
+
+            # Determine restore path
+            if restore_path is None:
+                # Try to extract original path from metadata
+                restore_path = self._extract_original_path(content, archived_path)
+
+            if restore_path is None:
+                stats.errors.append(
+                    f"Could not determine restore path for {archived_path}"
+                )
+                stats.operations_failed = 1
+                return stats
+
+            if not dry_run:
+                # Ensure parent directory exists
+                restore_path.parent.mkdir(parents=True, exist_ok=True)
+
+                # Restore file
+                restore_path.write_text(content, encoding="utf-8")
+
+                # Remove from archive
+                archived_path.unlink()
+
+                # Clean up Redis tracking
+                self._cleanup_tempmemory_rollback_data(archived_path)
+
+                stats.operations_succeeded = 1
+                stats.operations.append(
+                    RollbackOperation(
+                        memory_id=str(archived_path),
+                        restored_at=datetime.now(UTC),
+                        restored_from=str(archived_path),
+                        target_collection="tempmemories",
+                        success=True,
+                    )
+                )
+
+                logger.info(f"Rolled back {archived_path} to {restore_path}")
+            else:
+                stats.operations_succeeded = 1
+                stats.operations.append(
+                    RollbackOperation(
+                        memory_id=str(archived_path),
+                        restored_at=datetime.now(UTC),
+                        restored_from=str(archived_path),
+                        target_collection="tempmemories",
+                        success=True,
+                    )
+                )
+
+        except Exception as e:
+            stats.errors.append(str(e))
+            stats.operations_failed = 1
+            logger.exception(f"Tempmemory rollback failed for {archived_path}")
+
+        finally:
+            stats.rollback_time_seconds = (
+                datetime.now(UTC) - start_time
+            ).total_seconds()
+            self._last_stats = stats
+
+        return stats
+
+    def rollback_tempmemory_batch(
+        self,
+        archived_paths: list[Path],
+        dry_run: bool = False,
+    ) -> RollbackStats:
+        """
+        Roll back multiple archived tempmemories in batch.
+
+        Args:
+            archived_paths: List of paths to archived tempmemory files
+            dry_run: If True, simulate rollback without actual changes
+
+        Returns:
+            RollbackStats with combined operation results
+        """
+        start_time = datetime.now(UTC)
+        stats = RollbackStats()
+        stats.operations_requested = len(archived_paths)
+
+        for archived_path in archived_paths:
+            single_stats = self.rollback_tempmemory(archived_path, dry_run=dry_run)
+
+            if single_stats.operations_succeeded > 0:
+                stats.operations_succeeded += 1
+            else:
+                stats.operations_failed += 1
+
+            stats.operations.extend(single_stats.operations)
+            stats.errors.extend(single_stats.errors)
+
+        stats.rollback_time_seconds = (datetime.now(UTC) - start_time).total_seconds()
+        self._last_stats = stats
+
+        return stats
+
+    def get_tempmemory_rollback_window(self, archive_dir: Path) -> RollbackWindow:
+        """
+        Get information about available tempmemory rollback window.
+
+        Args:
+            archive_dir: Directory containing archived tempmemories
+
+        Returns:
+            RollbackWindow with available files and date range
+        """
+        end_date = datetime.now(UTC)
+        start_date = end_date - timedelta(days=self._config.rollback_retention_days)
+
+        available_files = []
+        total_size = 0
+
+        if archive_dir.exists():
+            for file_path in archive_dir.glob("*.md"):
+                try:
+                    stat = file_path.stat()
+                    archived_at = datetime.fromtimestamp(stat.st_mtime, UTC)
+
+                    if start_date <= archived_at <= end_date:
+                        available_files.append(str(file_path))
+                        total_size += stat.st_size
+                except Exception as e:
+                    logger.debug(f"Could not stat {file_path}: {e}")
+
+        return RollbackWindow(
+            start_date=start_date,
+            end_date=end_date,
+            available_memories=len(available_files),
+            archive_files=available_files,
+        )
+
+    def _extract_original_path(self, content: str, archived_path: Path) -> Path | None:
+        """Extract original path from archived tempmemory metadata."""
+        # Try to extract from frontmatter
+        if content.startswith("---"):
+            try:
+                end_idx = content.find("\n---", 3)
+                if end_idx != -1:
+                    frontmatter = content[3:end_idx].strip()
+                    for line in frontmatter.split("\n"):
+                        if line.strip().startswith("original_path:"):
+                            path_str = line.split(":", 1)[1].strip()
+                            return Path(path_str)
+            except Exception as e:
+                logger.debug(f"Could not parse frontmatter: {e}")
+
+        # Fallback: try Redis lookup
+        if self._redis_client is not None:
+            try:
+                import hashlib
+
+                archived_hash = hashlib.sha256(str(archived_path).encode()).hexdigest()
+                detail_key = (
+                    f"{CONSOLIDATION_PREFIX}:archived_tempmemory:{archived_hash}"
+                )
+                data = self._redis_client.hgetall(detail_key)
+                if data and "original_path" in data:
+                    return Path(data["original_path"])
+            except Exception as e:
+                logger.debug(f"Could not lookup in Redis: {e}")
+
+        return None
+
+    def _cleanup_tempmemory_rollback_data(self, archived_path: Path) -> None:
+        """Remove tempmemory rollback tracking data from Redis."""
+        if self._redis_client is None:
+            return
+
+        try:
+            import hashlib
+
+            # Remove from archived set
+            key = f"{CONSOLIDATION_PREFIX}:archived_tempmemories"
+            archived_hash = hashlib.sha256(str(archived_path).encode()).hexdigest()
+            self._redis_client.srem(key, archived_hash)
+
+            # Remove detailed metadata
+            detail_key = f"{CONSOLIDATION_PREFIX}:archived_tempmemory:{archived_hash}"
+            self._redis_client.delete(detail_key)
+
+            logger.debug(f"Cleaned up rollback data for {archived_path}")
+        except Exception as e:
+            logger.warning(f"Could not cleanup tempmemory rollback data: {e}")

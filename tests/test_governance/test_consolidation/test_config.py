@@ -216,3 +216,161 @@ class TestConsolidationConfig:
         config = ConsolidationConfig()
 
         assert config.max_concurrent_operations == 10
+
+
+class TestAutoArchiveMode:
+    """Tests for AutoArchiveMode enum."""
+
+    def test_all_modes_exist(self):
+        """Verify all expected auto-archive modes are defined."""
+        from src.governance.consolidation.config import AutoArchiveMode
+
+        expected = ["immediate", "daily", "after_n_days"]
+        actual = [m.value for m in AutoArchiveMode]
+        assert set(actual) == set(expected)
+
+    def test_mode_values(self):
+        """Verify auto-archive mode values."""
+        from src.governance.consolidation.config import AutoArchiveMode
+
+        assert AutoArchiveMode.IMMEDIATE.value == "immediate"
+        assert AutoArchiveMode.DAILY.value == "daily"
+        assert AutoArchiveMode.AFTER_N_DAYS.value == "after_n_days"
+
+
+class TestTempmemoryArchiveConfig:
+    """Tests for TempmemoryArchiveConfig."""
+
+    def test_default_values(self):
+        """Test default tempmemory archive config values."""
+        from src.governance.consolidation.config import TempmemoryArchiveConfig
+
+        config = TempmemoryArchiveConfig()
+
+        assert config.enabled is True
+        assert config.mode.value == "after_n_days"
+        assert config.archive_location == "docs/tempmemories/archive/"
+        assert config.delay_days == 7
+        assert config.preserve_original_path is True
+        assert config.generate_reports is True
+        assert config.report_format == "json"
+        assert config.skip_already_archived is True
+
+    def test_custom_values(self):
+        """Test custom tempmemory archive config values."""
+        from src.governance.consolidation.config import (
+            AutoArchiveMode,
+            TempmemoryArchiveConfig,
+        )
+
+        config = TempmemoryArchiveConfig(
+            enabled=False,
+            mode=AutoArchiveMode.IMMEDIATE,
+            archive_location="custom/archive/path/",
+            delay_days=14,
+            preserve_original_path=False,
+            generate_reports=False,
+            report_format="markdown",
+            skip_already_archived=False,
+        )
+
+        assert config.enabled is False
+        assert config.mode == AutoArchiveMode.IMMEDIATE
+        assert config.archive_location == "custom/archive/path/"
+        assert config.delay_days == 14
+        assert config.preserve_original_path is False
+        assert config.generate_reports is False
+        assert config.report_format == "markdown"
+        assert config.skip_already_archived is False
+
+    def test_to_dict(self):
+        """Test TempmemoryArchiveConfig serialization."""
+        from src.governance.consolidation.config import TempmemoryArchiveConfig
+
+        config = TempmemoryArchiveConfig()
+        data = config.to_dict()
+
+        assert "enabled" in data
+        assert "mode" in data
+        assert "archive_location" in data
+        assert "delay_days" in data
+        assert data["mode"] == "after_n_days"
+
+    def test_from_dict(self):
+        """Test TempmemoryArchiveConfig deserialization."""
+        from src.governance.consolidation.config import (
+            AutoArchiveMode,
+            TempmemoryArchiveConfig,
+        )
+
+        data = {
+            "enabled": False,
+            "mode": "immediate",
+            "archive_location": "custom/path/",
+            "delay_days": 3,
+        }
+
+        config = TempmemoryArchiveConfig.from_dict(data)
+
+        assert config.enabled is False
+        assert config.mode == AutoArchiveMode.IMMEDIATE
+        assert config.archive_location == "custom/path/"
+        assert config.delay_days == 3
+
+    def test_serialization_roundtrip(self):
+        """Test TempmemoryArchiveConfig roundtrip serialization."""
+        from src.governance.consolidation.config import (
+            AutoArchiveMode,
+            TempmemoryArchiveConfig,
+        )
+
+        original = TempmemoryArchiveConfig(
+            mode=AutoArchiveMode.DAILY,
+            delay_days=14,
+        )
+
+        data = original.to_dict()
+        restored = TempmemoryArchiveConfig.from_dict(data)
+
+        assert restored.mode == original.mode
+        assert restored.delay_days == original.delay_days
+
+
+class TestConsolidationConfigTempmemoryArchive:
+    """Tests for ConsolidationConfig tempmemory archive integration."""
+
+    def test_tempmemory_archive_config_present(self):
+        """Test that tempmemory archive config is present in ConsolidationConfig."""
+        config = ConsolidationConfig()
+
+        assert hasattr(config, "tempmemory_archive")
+        assert config.tempmemory_archive is not None
+
+    def test_tempmemory_archive_in_to_dict(self):
+        """Test that tempmemory archive config is included in to_dict."""
+        config = ConsolidationConfig()
+        data = config.to_dict()
+
+        assert "tempmemory_archive" in data
+        assert data["tempmemory_archive"]["enabled"] is True
+
+    def test_tempmemory_archive_in_from_dict(self):
+        """Test that tempmemory archive config is restored from dict."""
+        from src.governance.consolidation.config import (
+            AutoArchiveMode,
+            TempmemoryArchiveConfig,
+        )
+
+        data = {
+            "tempmemory_archive": {
+                "enabled": False,
+                "mode": "immediate",
+                "archive_location": "custom/path/",
+            }
+        }
+
+        config = ConsolidationConfig.from_dict(data)
+
+        assert config.tempmemory_archive.enabled is False
+        assert config.tempmemory_archive.mode == AutoArchiveMode.IMMEDIATE
+        assert config.tempmemory_archive.archive_location == "custom/path/"
