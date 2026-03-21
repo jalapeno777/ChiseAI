@@ -1199,6 +1199,7 @@ steps:
       - status-evidence-gate
       - completion-evidence-gate
       - workflow-transition-gate
+      - status-sync-validation
       - file-existence-check
       - governance-drift-check
       - changed-lines-coverage

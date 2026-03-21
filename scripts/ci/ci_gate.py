@@ -40,6 +40,7 @@ FAST_REQUIRED = [
     "docker-governance.status",
     "changed-lines-coverage.status",
     "status-write-gate.status",
+    "status-sync-validation.status",
     "file-existence-check.status",
 ]
 FULL_REQUIRED = [
