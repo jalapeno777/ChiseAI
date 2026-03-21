@@ -66,6 +66,18 @@ resource "grafana_dashboard" "tempo_slo_alerts" {
   ]
 }
 
+# ST-MEMORY-INGEST-002: Tempmemory Ingestion Dashboard
+resource "grafana_dashboard" "tempmemory_ingestion" {
+  config_json = file("${local.dashboards_path}/tempmemory-ingestion.json")
+  folder      = grafana_folder.chiseai.id
+  overwrite   = true
+
+  depends_on = [
+    grafana_folder.chiseai,
+    grafana_data_source.influxdb,
+  ]
+}
+
 # ChiseAI folder for organizing dashboards
 resource "grafana_folder" "chiseai" {
   title = "ChiseAI"
@@ -102,6 +114,7 @@ output "dashboard_uids" {
     autonomous_control_plane = grafana_dashboard.autonomous_control_plane.uid
     tempo_trace_exploration  = grafana_dashboard.tempo_trace_exploration.uid
     tempo_slo_alerts         = grafana_dashboard.tempo_slo_alerts.uid
+    tempmemory_ingestion     = grafana_dashboard.tempmemory_ingestion.uid
   }
 }
 
