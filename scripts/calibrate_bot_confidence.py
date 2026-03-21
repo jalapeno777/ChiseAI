@@ -55,7 +55,7 @@ async def calibrate(
 
     # Save report
     report = {
-        "calibrated_at": datetime.utcnow().isoformat(),
+        "calibrated_at": datetime.now(timezone.utc).isoformat(),
         "period_days": days,
         "metrics": metrics.model_dump(),
         "recommended_thresholds": recommended,
@@ -97,6 +97,6 @@ def main():
 
 
 if __name__ == "__main__":
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     main()

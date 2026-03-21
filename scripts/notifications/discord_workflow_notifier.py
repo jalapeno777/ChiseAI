@@ -27,7 +27,7 @@ import os
 import sys
 import urllib.error
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
@@ -99,7 +99,7 @@ def send_discord_webhook(
         "title": f"{level.emoji} {title}",
         "description": message,
         "color": level.color,
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
     }
 
     if fields:

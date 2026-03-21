@@ -13,7 +13,7 @@ import argparse
 import asyncio
 import json
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -46,7 +46,7 @@ async def mock_brain_prediction(input_data: dict[str, Any]) -> dict[str, Any]:
         "action": random.choice(["BUY", "SELL", "HOLD"]),
         "confidence": confidence,
         "symbol": input_data.get("symbol", "BTC/USDT"),
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "metadata": {
             "model_version": "shadow",
             "processing_time_ms": random.uniform(10, 50),
@@ -86,7 +86,8 @@ async def run_shadow_mode(
                 "volume": random.uniform(1000000, 50000000),
                 "volatility": random.uniform(0.01, 0.10),
                 "timestamp": (
-                    datetime.utcnow() - timedelta(days=random.randint(0, duration_days))
+                    datetime.now(timezone.utc)
+                    - timedelta(days=random.randint(0, duration_days))
                 ).isoformat(),
             }
         )
@@ -120,7 +121,9 @@ async def run_shadow_mode(
                     "action": pred.get("action", "HOLD"),
                     "confidence": pred.get("confidence", 0.0),
                     "symbol": pred.get("symbol", "UNKNOWN"),
-                    "timestamp": pred.get("timestamp", datetime.utcnow().isoformat()),
+                    "timestamp": pred.get(
+                        "timestamp", datetime.now(timezone.utc).isoformat()
+                    ),
                 }
             )
 
@@ -149,7 +152,7 @@ async def run_shadow_mode(
     shadow_result = {
         "version": str(version),
         "mode": mode,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "config": {
             "sample_size": sample_size,
             "duration_days": duration_days,

@@ -22,7 +22,7 @@ Story: ST-LAUNCH-017
 import argparse
 import json
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -159,7 +159,7 @@ class GoNoGoChecklist:
         print("  CHISEAI LAUNCH READINESS: GO/NO-GO CHECKLIST")
         print("=" * 80)
         print("Story: ST-LAUNCH-017")
-        print(f"Timestamp: {datetime.utcnow().isoformat()}Z")
+        print(f"Timestamp: {datetime.now(timezone.utc).isoformat()}Z")
         print()
 
         # Load status from various sources
@@ -186,7 +186,7 @@ class GoNoGoChecklist:
         self.results = {
             "gate_name": "go_no_go_checklist",
             "story_id": "ST-LAUNCH-017",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             "decision": decision["verdict"],
             "rationale": decision["rationale"],
             "checklist": {

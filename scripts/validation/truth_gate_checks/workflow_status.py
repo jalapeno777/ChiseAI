@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -99,7 +99,7 @@ def check_workflow_status(
 
     result: dict[str, Any] = {
         "check_type": "workflow-status",
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
         "story_id": story_id,
         "passed": True,
         "checks": [],

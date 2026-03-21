@@ -24,7 +24,7 @@ import json
 import os
 import subprocess
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -70,7 +70,7 @@ class HealthReport:
     """Aggregates all health metrics and status."""
 
     def __init__(self):
-        self.timestamp = datetime.utcnow().isoformat() + "Z"
+        self.timestamp = datetime.now(timezone.utc).isoformat() + "Z"
         self.version = HEALTH_REPORT_VERSION
         self.metrics: list[HealthMetric] = []
         self.issues: list[dict] = []
@@ -99,7 +99,7 @@ class HealthReport:
                 "category": category,
                 "description": description,
                 "details": details or {},
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             }
         )
 
@@ -238,7 +238,9 @@ def check_orphaned_archives(workflow_data: dict) -> tuple[int, list[dict]]:
                 archive_date = datetime.fromisoformat(
                     archived_at.replace("Z", "+00:00")
                 )
-                age_days = (datetime.utcnow() - archive_date.replace(tzinfo=None)).days
+                age_days = (
+                    datetime.now(timezone.utc) - archive_date.replace(tzinfo=None)
+                ).days
 
                 if age_days > ORPHAN_AGE_DAYS:
                     orphans.append(

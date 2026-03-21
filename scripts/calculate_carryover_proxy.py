@@ -11,7 +11,7 @@ Usage:
 
 import argparse
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -75,7 +75,7 @@ def calculate_carryover_proxy(shadow_results: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "version": version,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "methodology": {
             "description": "Proxy calculation based on backtest-paper correlation, FP rate, and confidence calibration",
             "formula": "estimated_carryover = correlation * (1 - fp_rate * 0.5) * (0.8 + high_conf_ratio * 0.2) * 0.85",

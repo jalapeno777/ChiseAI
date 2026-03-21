@@ -136,7 +136,7 @@ def run_all_checks(
     output_format: str,
 ) -> dict[str, Any]:
     """Run all checks and combine results."""
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     all_results = []
     errors = []
@@ -173,7 +173,7 @@ def run_all_checks(
     # Combine results
     combined = {
         "check_type": "all",
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
         "story_id": story_id,
         "passed": all(r.get("passed", False) for r in all_results),
         "checks": all_results,
@@ -218,7 +218,8 @@ def main() -> int:
     except Exception as e:
         result = {
             "check_type": args.check,
-            "timestamp": __import__("datetime").datetime.utcnow().isoformat() + "Z",
+            "timestamp": __import__("datetime").datetime.now(timezone.utc).isoformat()
+            + "Z",
             "story_id": args.story_id,
             "passed": False,
             "errors": [str(e)],

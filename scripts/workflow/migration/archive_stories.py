@@ -24,7 +24,7 @@ import json
 import os
 import re
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, Optional
 
@@ -135,7 +135,7 @@ COMPLETION_EVIDENCE_FIELDS = [
 
 def generate_archive_ref(story_id: str) -> str:
     """Generate unique archive reference."""
-    timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     return f"ARCH-{timestamp}-{story_id}"
 
 
@@ -273,7 +273,7 @@ def create_archive_entry(
         "schema_version": ARCHIVE_SCHEMA_VERSION,
         "archive_ref": archive_ref,
         "original_story_id": story.get("id", "unknown"),
-        "archived_at": datetime.utcnow().isoformat() + "Z",
+        "archived_at": datetime.now(timezone.utc).isoformat() + "Z",
         "archive_reason": archive_reason,
         "archive_reason_detail": archive_reason_detail,
         "migration": {
@@ -296,7 +296,7 @@ def create_archive_entry(
     # Compute archived checksum
     archive_entry["integrity"]["archived_checksum"] = compute_checksum(archive_entry)
     archive_entry["integrity"]["verification_date"] = (
-        datetime.utcnow().isoformat() + "Z"
+        datetime.now(timezone.utc).isoformat() + "Z"
     )
     archive_entry["migration"]["verification_status"] = "verified"
 
@@ -470,7 +470,7 @@ def main():
     workflow_data = load_workflow_status()
 
     # Find stories to archive
-    current_date = datetime.utcnow()
+    current_date = datetime.now(timezone.utc)
     stories_to_archive = find_stories_to_archive(
         workflow_data, current_date, args.story_id
     )
