@@ -403,14 +403,198 @@ class FilesystemBackend(StorageBackend):
         return self._get_model_dir(model_name, version) / "model.pkl"
 
 
+class NullMetricsCollector:
+    """No-op metrics collector for model operations.
+
+    Provides a no-op implementation of metrics collection that can be used
+    when metrics are not needed or when a placeholder is required.
+    """
+
+    def record_save(self, model_name: str, version: str, duration_ms: float) -> None:
+        """Record a model save operation (no-op)."""
+        pass
+
+    def record_load(self, model_name: str, version: str, duration_ms: float) -> None:
+        """Record a model load operation (no-op)."""
+        pass
+
+    def record_cache_hit(self, model_name: str, version: str) -> None:
+        """Record a cache hit (no-op)."""
+        pass
+
+    def record_cache_miss(self, model_name: str, version: str) -> None:
+        """Record a cache miss (no-op)."""
+        pass
+
+
+@dataclass
+class ModelCacheEntry:
+    """Entry in the model cache.
+
+    Attributes:
+        model: The cached model object
+        metadata: Model metadata
+        loaded_at: UTC timestamp when the model was loaded
+        last_accessed: UTC timestamp of last access
+        access_count: Number of times the model has been accessed
+    """
+
+    model: Any
+    metadata: ModelMetadata
+    loaded_at: datetime
+    last_accessed: datetime
+    access_count: int = 0
+
+    def touch(self) -> None:
+        """Update access statistics."""
+        self.last_accessed = datetime.now(UTC)
+        self.access_count += 1
+
+
+class ModelCache:
+    """In-memory cache for loaded models with TTL and LRU eviction.
+
+    Provides a thread-safe cache for model objects with support for:
+    - TTL-based expiration
+    - LRU eviction when cache is full
+    - Statistics tracking
+    """
+
+    def __init__(self, max_size: int = 10, ttl_seconds: float | None = None) -> None:
+        """Initialize the model cache.
+
+        Args:
+            max_size: Maximum number of models to cache
+            ttl_seconds: Time-to-live for cache entries in seconds.
+                        None means no expiration.
+        """
+        self._cache: dict[tuple[str, str], ModelCacheEntry] = {}
+        self._max_size = max_size
+        self._ttl_seconds = ttl_seconds
+        self._lock = threading.RLock()
+
+    def get(self, model_name: str, version: str) -> tuple[Any, ModelMetadata] | None:
+        """Get a model from the cache.
+
+        Args:
+            model_name: Name of the model
+            version: Version of the model
+
+        Returns:
+            Tuple of (model, metadata) if found and not expired, None otherwise
+        """
+        with self._lock:
+            key = (model_name, version)
+            entry = self._cache.get(key)
+
+            if entry is None:
+                return None
+
+            # Check TTL expiration
+            if self._ttl_seconds is not None:
+                age = (datetime.now(UTC) - entry.loaded_at).total_seconds()
+                if age > self._ttl_seconds:
+                    del self._cache[key]
+                    return None
+
+            # Update access statistics
+            entry.touch()
+            return entry.model, entry.metadata
+
+    def put(
+        self,
+        model_name: str,
+        version: str,
+        model: Any,
+        metadata: ModelMetadata,
+    ) -> None:
+        """Put a model into the cache.
+
+        Args:
+            model_name: Name of the model
+            version: Version of the model
+            model: The model object to cache
+            metadata: Model metadata
+        """
+        with self._lock:
+            key = (model_name, version)
+
+            # Evict if cache is full and this key is not already in cache
+            if key not in self._cache and len(self._cache) >= self._max_size:
+                self._evict_lru()
+
+            now = datetime.now(UTC)
+            self._cache[key] = ModelCacheEntry(
+                model=model,
+                metadata=metadata,
+                loaded_at=now,
+                last_accessed=now,
+                access_count=0,
+            )
+
+    def _evict_lru(self) -> None:
+        """Evict the least recently used entry."""
+        if not self._cache:
+            return
+        # Find entry with oldest last_accessed
+        lru_key = min(self._cache.keys(), key=lambda k: self._cache[k].last_accessed)
+        del self._cache[lru_key]
+
+    def invalidate(self, model_name: str, version: str) -> bool:
+        """Invalidate a cache entry.
+
+        Args:
+            model_name: Name of the model
+            version: Version of the model
+
+        Returns:
+            True if entry was removed, False if not found
+        """
+        with self._lock:
+            key = (model_name, version)
+            if key in self._cache:
+                del self._cache[key]
+                return True
+            return False
+
+    def clear(self) -> None:
+        """Clear all entries from the cache."""
+        with self._lock:
+            self._cache.clear()
+
+    def get_stats(self) -> dict[str, Any]:
+        """Get cache statistics.
+
+        Returns:
+            Dict with cache statistics including size, max_size, and entry details
+        """
+        with self._lock:
+            entries = []
+            for (model_name, version), entry in self._cache.items():
+                entries.append(
+                    {
+                        "model_name": model_name,
+                        "version": version,
+                        "loaded_at": entry.loaded_at.isoformat(),
+                        "last_accessed": entry.last_accessed.isoformat(),
+                        "access_count": entry.access_count,
+                    }
+                )
+            return {
+                "size": len(self._cache),
+                "max_size": self._max_size,
+                "entries": entries,
+            }
+
+
 class S3Backend(StorageBackend):
     """AWS S3-based model storage backend (interface for future implementation).
 
     Storage structure:
-        s3://{bucket}/{prefix}/{model_name}/{version}/
-            model.pkl       - Serialized model
-            metadata.json   - Model metadata
-        s3://{bucket}/{prefix}/{model_name}/latest.json - Points to latest version
+    s3://{bucket}/{prefix}/{model_name}/{version}/
+    model.pkl - Serialized model
+    metadata.json - Model metadata
+    s3://{bucket}/{prefix}/{model_name}/latest.json - Points to latest version
     """
 
     def __init__(

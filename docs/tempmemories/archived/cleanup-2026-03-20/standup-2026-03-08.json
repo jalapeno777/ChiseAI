@@ -1,0 +1,268 @@
+{
+  "date": "2026-03-08",
+  "generated_at": "2026-03-08T15:03:10.203998",
+  "phase": {
+    "note": "ACTIVATED on 2026-02-22. Paper trading now fully autonomous. All launch flags enabled. Target launch date: March 14, 2026.",
+    "phase": "phase_2_plus",
+    "status": "active"
+  },
+  "summary": {
+    "active_stories": 11,
+    "in_progress": 1,
+    "blocked": 1,
+    "completed_24h": 1,
+    "incidents_24h": 0
+  },
+  "thinking_partner": {
+    "mode": "OFF",
+    "tp_sessions_24h": 0,
+    "insight_packets_24h": 2,
+    "aria_decisions_24h": 2,
+    "open_risk_items": 2,
+    "decision_debt_open": 0,
+    "last_proof_chain": "IP:IP-CH-TP-E2E-001-20260308-001 -> AD:AD-CH-TP-E2E-001-20260308-001",
+    "proof_coverage_percent": 1.2
+  },
+  "yesterday": {
+    "completed": [
+      {
+        "acceptance_criteria": [
+          "Cross-branch verification guardrail implemented in AGENTS.md and agent files",
+          "AUDIT-DELTA evidence files created and committed",
+          "All three remediation PRs merged (#407,",
+          "Workflow status updated with audit-delta disposition"
+        ],
+        "branch": "feature/GOV-BATCH-003-workflow-update",
+        "commit_sha": "2513cc6",
+        "created_date": "2026-03-07",
+        "description": "Remediation of PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI findings including cross-branch verification guardrail, merge authority updates, and memory deduplication",
+        "evidence_commit": "b238ebb645c761eb8ddd4e242628ca8e5645dfbc",
+        "evidence_files": [
+          "docs/tempmemories/AUDIT-DELTA-REMEDIATION-EVIDENCE-INDEX.md",
+          "docs/tempmemories/AUDIT-DELTA-REMEDIATION-INSIGHTS.md"
+        ],
+        "id": "AUDIT-DELTA-FIX-001",
+        "merge_commits": [
+          "48725e8068161d60222eaaf154a499781e00a268",
+          "56fb76ee36cd9d900a5aec4870d47280334efe95",
+          "0ce77cf31d9fde4ae207fd755992ad67b5cb16e9"
+        ],
+        "notes": [
+          "Root cause: False merge claims in BrainEval CI audit",
+          "Remediation: git branch --contains guardrail added to all agent docs",
+          "Related audit: docs/evidence/PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI.md",
+          "Evidence index: 574 lines documenting all remediation work"
+        ],
+        "owner": "senior-dev",
+        "priority": "P0-CRITICAL",
+        "related_audit": "PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI",
+        "remediation_pr_numbers": [
+          407,
+          408,
+          410
+        ],
+        "status": "completed",
+        "title": "AUDIT-DELTA Remediation - Cross-Branch Verification Guardrail"
+      }
+    ]
+  },
+  "today": {
+    "planned": {
+      "P0": [],
+      "P1": [
+        {
+          "created_date": "2026-03-02",
+          "current_completion": "8%",
+          "description": "Complete remaining governance features to reach 100% epic completion",
+          "id": "BL-GOV-COMPLETION",
+          "owner": "TBD",
+          "priority": "P1",
+          "remaining_stories": [
+            {
+              "id": "ST-GOV-001",
+              "points": 5,
+              "status": "completed",
+              "title": "Memory Deduplication Engine"
+            },
+            {
+              "id": "ST-GOV-002",
+              "points": 8,
+              "status": "implementation_complete_pending_merge",
+              "title": "Agent Constitution Artifact"
+            },
+            {
+              "id": "ST-GOV-MINI-001",
+              "points": 2,
+              "status": "needs_verification",
+              "title": "Week 1 Audit Snapshot + Retrieval Baseline"
+            },
+            {
+              "id": "ST-GOV-MINI-002",
+              "points": 3,
+              "status": "planned",
+              "title": "Week 2 Optimization Feedback Loop"
+            }
+          ],
+          "status": "in_progress",
+          "target_completion": "100%",
+          "target_date": "2026-03-31",
+          "title": "Governance Epic Completion (EP-GOV-001)",
+          "total_remaining_points": 16
+        },
+        {
+          "acceptance_criteria": [
+            "Grafana dashboard panel for ingestion health metrics created",
+            {
+              "Real-time display of": "files processed, files ingested, files failed, skipped files"
+            },
+            "Ingestion rate trend over time (files/hour)",
+            "Type distribution visualization (decision vs pattern vs summary vs anti-pattern)",
+            "Last successful/failed run timestamps",
+            "Average ingestion duration per run",
+            {
+              "Alert rules configured for": "consecutive failures, latency > threshold, backlog > 100 files"
+            }
+          ],
+          "created_date": "2026-03-03",
+          "description": "Create dedicated Grafana dashboard for monitoring tempmemory ingestion health, metrics, and trends. Currently metrics exist in Redis but no visual dashboard.",
+          "estimated_points": 5,
+          "id": "ST-MEMORY-INGEST-002",
+          "notes": [
+            "Completion report (line 474-477) identified this as immediate Week 1 priority",
+            "Metrics available in Redis: chise:governance:consolidation:metrics:ingestion",
+            "Status key available: bmad:chiseai:tempmemory:ingestion:status",
+            "Should integrate with existing data quality monitoring infrastructure"
+          ],
+          "owner": "TBD",
+          "priority": "P1",
+          "related_story": "ST-MEMORY-INGEST-001",
+          "status": "planned",
+          "title": "Grafana Dashboard for Tempmemory Ingestion Monitoring"
+        }
+      ],
+      "P2": [
+        {
+          "acceptance_criteria": "TBD",
+          "created_date": "2026-03-02",
+          "depends_on": [
+            "ST-CI-001"
+          ],
+          "description": "Advanced CI enhancements beyond Phase 2 hardening",
+          "id": "BL-CI-PHASE3",
+          "notes": [
+            "Phase 1 (Assessment) completed: 31 issues identified (P0:2, P1:6, P2:7)",
+            "Phase 2 (Pipeline Hardening) completed: Epic status sync fixed, CI documentation updated",
+            "Phase 3 scope to be defined based on Phase 2 outcomes"
+          ],
+          "owner": "ST-CI-001 continuation",
+          "priority": "P2",
+          "status": "planned",
+          "title": "CI Phase 3 Enhancements"
+        },
+        {
+          "acceptance_criteria": [
+            {
+              "Configurable auto-archive modes": "immediate, daily, or after N days"
+            },
+            {
+              "Archive location configurable (default": "docs/tempmemories/archive/)"
+            },
+            "Preserve ingestion history (store original path in metadata)",
+            "Prevent re-ingestion of archived files (automatic skip)",
+            "Rollback capability to restore from archive if needed",
+            "Archive report generation (files moved, dates, sizes)"
+          ],
+          "created_date": "2026-03-03",
+          "description": "Implement automatic archival of successfully ingested tempmemory files to prevent manual error and reduce operational burden. Currently requires manual mv commands.",
+          "estimated_points": 4,
+          "id": "ST-MEMORY-INGEST-003",
+          "notes": [
+            "Completion report (line 486-489) identified this as Month 1 short-term priority",
+            "Current manual process error-prone and time-consuming",
+            "Should integrate with existing MemoryArchiver in consolidation system"
+          ],
+          "owner": "TBD",
+          "priority": "P2",
+          "related_story": "ST-MEMORY-INGEST-001",
+          "status": "planned",
+          "title": "Auto-Archival Feature for Ingested Tempmemories"
+        },
+        {
+          "acceptance_criteria": [
+            "Pre-commit hook validates YAML frontmatter structure",
+            {
+              "Required fields checked": "type, story_id, created"
+            },
+            {
+              "Valid type values enforced": "decision, pattern, summary, anti-pattern"
+            },
+            {
+              "Optional fields validated with type checking": "tags, author, priority"
+            },
+            "Clear error messages for validation failures",
+            "Hook skippable with --no-verify flag",
+            "CLI tool available for standalone validation"
+          ],
+          "created_date": "2026-03-03",
+          "description": "Create Git pre-commit hook to validate tempmemory frontmatter schema before commit. Catches errors early and prevents invalid files from reaching ingestion.",
+          "estimated_points": 3,
+          "id": "ST-MEMORY-INGEST-004",
+          "notes": [
+            "Completion report (line 496-498) identified this as Month 1 short-term priority",
+            "Reduces ingestion failures due to malformed frontmatter",
+            "Consistent frontmatter quality improves semantic search quality"
+          ],
+          "owner": "TBD",
+          "priority": "P2",
+          "related_story": "ST-MEMORY-INGEST-001",
+          "status": "planned",
+          "title": "Frontmatter Validation Pre-Commit Hook"
+        },
+        {
+          "acceptance_criteria": [
+            "CI pipeline runs ingestion before BrainEval evaluation",
+            "Ingestion step fails CI if critical errors occur",
+            "CI logs ingestion results (files processed, ingested, failed)",
+            "Cache ingested memories across CI steps",
+            {
+              "Validation": "CI tests pass with fresh ingested memories"
+            },
+            {
+              "Backward compatibility": "CI still works if ingestion disabled"
+            }
+          ],
+          "created_date": "2026-03-03",
+          "description": "Add tempmemory ingestion as pre-evaluation step in BrainEval CI pipeline to ensure tempmemories are ingested before evaluation runs.",
+          "estimated_points": 4,
+          "id": "ST-MEMORY-INGEST-005",
+          "notes": [
+            "Completion report (line 469-472) identified this as immediate Week 1 priority",
+            "Ensures BrainEval evaluations use most recent memory artifacts",
+            "Prevents stale memories from affecting evaluation quality"
+          ],
+          "owner": "TBD",
+          "priority": "P2",
+          "related_story": "ST-MEMORY-INGEST-001",
+          "status": "planned",
+          "title": "CI Pipeline Integration for Tempmemory Ingestion"
+        }
+      ],
+      "P3": []
+    }
+  },
+  "blockers": {
+    "technical": [],
+    "dependencies": [
+      {
+        "id": "BL-CI-PHASE3",
+        "title": "CI Phase 3 Enhancements",
+        "depends_on": [
+          "ST-CI-001"
+        ],
+        "owner": "ST-CI-001 continuation"
+      }
+    ],
+    "resources": []
+  },
+  "risks": []
+}

@@ -1,0 +1,70 @@
+{
+  "study_id": "PAPER-LLM-TIMEOUT-001-20260306-184133",
+  "story_id": "PAPER-LLM-TIMEOUT-001",
+  "n_attempts": 3,
+  "timeout_ceiling_ms": 300000,
+  "start_time": "2026-03-06T18:41:33.519000+00:00",
+  "end_time": "2026-03-06T18:49:16.645000+00:00",
+  "attempts": [
+    {
+      "attempt_number": 1,
+      "start_ts": "2026-03-06T18:41:34.081000+00:00",
+      "end_ts": "2026-03-06T18:45:24.294000+00:00",
+      "duration_ms": 230213.14,
+      "provider_tried": "none",
+      "success": false,
+      "fallback_used": true,
+      "error_category": "ALL_PROVIDERS_FAILED",
+      "error_details": "kimi: SCOPE; zai: RATE_LIMIT; zhipu: NETWORK"
+    },
+    {
+      "attempt_number": 2,
+      "start_ts": "2026-03-06T18:45:26.296000+00:00",
+      "end_ts": "2026-03-06T18:49:16.645000+00:00",
+      "duration_ms": 230348.63,
+      "provider_tried": "none",
+      "success": false,
+      "fallback_used": true,
+      "error_category": "ALL_PROVIDERS_FAILED",
+      "error_details": "kimi: SCOPE; zai: RATE_LIMIT; zhipu: NETWORK"
+    },
+    {
+      "attempt_number": 3,
+      "start_ts": "2026-03-06T18:49:17.817000+00:00",
+      "end_ts": "2026-03-06T18:52:42.313000+00:00",
+      "duration_ms": 224495.5,
+      "provider_tried": "none",
+      "success": false,
+      "fallback_used": true,
+      "error_category": "ALL_PROVIDERS_FAILED",
+      "error_details": "kimi: SCOPE; zai: RATE_LIMIT; zhipu: NETWORK"
+    }
+  ],
+  "statistics": {
+    "count": 3,
+    "success_count": 0,
+    "failure_count": 3,
+    "success_rate": 0.0,
+    "avg_ms": 228352.42,
+    "p50_ms": 230213.14,
+    "p90_ms": 230348.63,
+    "p95_ms": 230348.63,
+    "p99_ms": 230348.63,
+    "min_ms": 224495.5,
+    "max_ms": 230348.63,
+    "std_dev_ms": 3226.57,
+    "provider_breakdown": {
+      "none": 3
+    },
+    "error_breakdown": {
+      "ALL_PROVIDERS_FAILED": 3
+    }
+  },
+  "errors": [],
+  "observations": {
+    "provider_chain_behavior": "All providers failing - Kimi returns SCOPE error, Zai rate limited, Zhipu network error",
+    "fallback_behavior": "100% fallback rate - all attempts use fallback decision",
+    "timeout_behavior": "Current 120s timeout allows full provider chain traversal (~230s actual)",
+    "recommendation": "Reduce timeout to 30000ms (30s) to fail faster and use fallback sooner"
+  }
+}

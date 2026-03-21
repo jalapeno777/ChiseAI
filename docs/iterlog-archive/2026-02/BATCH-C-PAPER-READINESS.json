@@ -1,0 +1,14 @@
+{
+  "story_id": "BATCH-C-PAPER-READINESS",
+  "archived_at": "2026-03-20T00:00:00Z",
+  "source_keys": ["bmad:chiseai:iterlog:story:BATCH-C-PAPER-READINESS"],
+  "hash_data": {
+    "story_id": "BATCH-C-PAPER-READINESS",
+    "story_title": "Batch C - ST-SIG-002 and ST-BT-002 Verification",
+    "phase": "implementation",
+    "status": "completed",
+    "started_at": "2026-02-12T00:00:00Z",
+    "completed_at": "2026-02-12T12:00:00Z"
+  },
+  "lists": {}
+}

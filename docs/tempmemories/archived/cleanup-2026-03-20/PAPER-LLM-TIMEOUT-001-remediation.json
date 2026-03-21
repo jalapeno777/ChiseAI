@@ -1,0 +1,44 @@
+{
+  "remediation_id": "PAPER-LLM-TIMEOUT-001-20260306-184002",
+  "story_id": "PAPER-LLM-TIMEOUT-001",
+  "timestamp_start": "2026-03-06T18:40:02.715322+00:00",
+  "before_snapshot": {
+    "position_count": 1,
+    "positions": [
+      {
+        "symbol": "BTCUSDT",
+        "side": "Buy",
+        "size": "0.006",
+        "entry_price": "68576.96666667",
+        "unrealised_pnl": "-1.2604",
+        "leverage": "10",
+        "position_value": "411.4618"
+      }
+    ],
+    "wallet": {
+      "total_equity": 170373.138367,
+      "available_balance": 99953.16982052,
+      "unrealized_pnl": -1.24547516
+    },
+    "timestamp": "2026-03-06T18:40:03.600246+00:00"
+  },
+  "actions_taken": [
+    {
+      "action": "close_position",
+      "symbol": "BTCUSDT",
+      "original_side": "Buy",
+      "close_side": "Sell",
+      "size": 0.006,
+      "order_id": "0ff8c7f9-3fc5-4aa7-97ee-72f8822f437c",
+      "timestamp": "2026-03-06T18:40:03.860972+00:00",
+      "status": "success"
+    }
+  ],
+  "after_snapshot": {
+    "position_count": 0,
+    "positions": [],
+    "timestamp": "2026-03-06T18:40:05.113924+00:00"
+  },
+  "errors": [],
+  "timestamp_end": "2026-03-06T18:40:05.114642+00:00"
+}

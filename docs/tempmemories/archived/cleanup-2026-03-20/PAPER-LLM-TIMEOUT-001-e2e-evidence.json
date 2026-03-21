@@ -1,0 +1,104 @@
+{
+  "test_id": "PAPER-LLM-TIMEOUT-001-E2E-ac5473c0",
+  "story_id": "PAPER-LLM-TIMEOUT-001",
+  "timestamp_start": "2026-03-06T19:03:10.506713+00:00",
+  "configuration": {
+    "use_llm_trade_decisions": true,
+    "llm_timeout_ms": 30000,
+    "bybit_mode": "demo",
+    "test_symbol": "BTCUSDT",
+    "test_quantity": 0.001
+  },
+  "signal": {
+    "symbol": "BTCUSDT",
+    "direction": "long",
+    "confidence": 0.75,
+    "base_score": 0.8,
+    "factors": [
+      {
+        "name": "momentum",
+        "score": 0.85
+      },
+      {
+        "name": "volume",
+        "score": 0.7
+      }
+    ],
+    "timestamp": "2026-03-06T19:03:10.752971+00:00"
+  },
+  "llm_analysis": {
+    "go_no_go": true,
+    "confidence": 50.0,
+    "rationale": "LLM enhancement timed out after 30000ms. Proceeding with BASE SIGNAL: long BTCUSDT (confidence: 75.0%, score: 0.8). Signal basis: momentum(0.85), volume(0.7). Trade executed per base signal policy.",
+    "provider": "timeout",
+    "fallback_used": true,
+    "latency_ms": 29129.278421401978,
+    "start_time": "2026-03-06T19:03:10.753048+00:00",
+    "end_time": "2026-03-06T19:03:39.882380+00:00"
+  },
+  "risk_checks": {
+    "passed": true,
+    "violations": [],
+    "position_value": 8.5,
+    "max_position_value": 10.0,
+    "timestamp": "2026-03-06T19:03:39.882475+00:00"
+  },
+  "execution": {
+    "open": {
+      "symbol": "BTCUSDT",
+      "side": "Buy",
+      "quantity": 0.001,
+      "order_id": "f9b5399f-eeca-40f0-aed5-06dca3ade89b",
+      "client_order_id": "1772823819882_BTCUSDT_adcpxbn2",
+      "status": "Created",
+      "timestamp": "2026-03-06T19:03:40.474560+00:00",
+      "success": true
+    },
+    "close": {
+      "symbol": "BTCUSDT",
+      "side": "Sell",
+      "quantity": 0.001,
+      "order_id": "fde27300-6d15-4d37-a8ab-f0f0d674dfbe",
+      "client_order_id": "1772823820474_BTCUSDT_9bec9jxc",
+      "status": "Created",
+      "timestamp": "2026-03-06T19:03:41.160432+00:00",
+      "success": true
+    }
+  },
+  "journal": {
+    "entry_type": "trade_open",
+    "test_id": "PAPER-LLM-TIMEOUT-001-E2E-ac5473c0",
+    "symbol": "BTCUSDT",
+    "side": "Buy",
+    "quantity": 0.001,
+    "order_id": "f9b5399f-eeca-40f0-aed5-06dca3ade89b",
+    "llm_provider": "timeout",
+    "llm_fallback_used": true,
+    "llm_latency_ms": 29129.278421401978,
+    "timestamp": "2026-03-06T19:03:40.474718+00:00"
+  },
+  "discord": {
+    "open_notification": {
+      "message_id": "discord-open-d062b1b7",
+      "channel": "trades",
+      "content_preview": "\ud83d\udfe2 OPEN: BTCUSDT Buy @ 0.001",
+      "timestamp": "2026-03-06T19:03:40.474781+00:00",
+      "sent": true
+    },
+    "close_notification": {
+      "message_id": "discord-close-119d9d33",
+      "channel": "trades",
+      "content_preview": "\ud83d\udd34 CLOSE: BTCUSDT Sell @ 0.001",
+      "timestamp": "2026-03-06T19:03:41.160472+00:00",
+      "sent": true
+    }
+  },
+  "cleanup": {
+    "position_count": 0,
+    "positions": [],
+    "is_flat": true,
+    "timestamp": "2026-03-06T19:03:41.405209+00:00"
+  },
+  "errors": [],
+  "timestamp_end": "2026-03-06T19:03:41.405967+00:00"
+}

@@ -754,6 +754,57 @@ def cmd_verify(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_validate_evidence(args: argparse.Namespace) -> int:
+    """Validate worker completion evidence using the evidence validator.
+
+    Args:
+        args: argparse.Namespace with attributes:
+            - evidence_file: path to evidence file
+            - strict: optional boolean flag
+
+    Returns:
+        Exit code: 0 for pass, 1 for fail
+    """
+    evidence_file = args.evidence_file
+
+    if not evidence_file:
+        print("ERROR: --evidence-file is required", file=sys.stderr)
+        return 1
+
+    # Build the command to run evidence_validator.py
+    script_dir = Path(__file__).parent
+    validator_script = script_dir / "evidence_validator.py"
+
+    if not validator_script.exists():
+        print(
+            f"ERROR: evidence_validator.py not found at {validator_script}",
+            file=sys.stderr,
+        )
+        return 1
+
+    # Build command arguments
+    cmd = [sys.executable, str(validator_script), "--evidence-file", evidence_file]
+
+    # Add --strict flag if provided
+    if getattr(args, "strict", False):
+        cmd.append("--strict")
+
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+        return result.returncode
+    except subprocess.TimeoutExpired:
+        print("ERROR: Evidence validation timed out after 300s", file=sys.stderr)
+        return 1
+    except Exception as e:
+        print(f"ERROR: Evidence validation error: {e}", file=sys.stderr)
+        return 1
+
+
 def cmd_close(args: argparse.Namespace) -> int:
     worktree_path = _resolve_worktree_path(args.worktree_path)
     session = _read_session(worktree_path)
@@ -872,6 +923,17 @@ def build_parser() -> argparse.ArgumentParser:
     verify.add_argument("--acquire-main-merge-lock", action="store_true")
     verify.add_argument("--merge-lock-ttl-seconds", type=int, default=1800)
     verify.set_defaults(func=cmd_verify)
+
+    validate_evidence = sub.add_parser(
+        "validate-evidence", help="Validate worker completion evidence"
+    )
+    validate_evidence.add_argument(
+        "--evidence-file", required=True, help="Path to evidence file"
+    )
+    validate_evidence.add_argument(
+        "--strict", action="store_true", help="Enable strict validation mode"
+    )
+    validate_evidence.set_defaults(func=cmd_validate_evidence)
 
     close = sub.add_parser("close", help="Release leases and close worktree session")
     close.add_argument("--worktree-path")

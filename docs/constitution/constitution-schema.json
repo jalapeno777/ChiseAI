@@ -1,0 +1,575 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://chiseai.io/schemas/constitution.json",
+  "title": "ChiseAI Agent Constitution",
+  "description": "JSON Schema for programmatic validation of the ChiseAI Agent Constitution",
+  "type": "object",
+  "required": [
+    "version",
+    "effective_date",
+    "status",
+    "governed_by",
+    "principles",
+    "decision_boundaries",
+    "safety_invariants",
+    "escalation_criteria",
+    "violation_categories",
+    "override_protocol",
+    "compliance_metrics",
+    "version_history"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version of the constitution (e.g., 1.0.0)"
+    },
+    "effective_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 datetime when this version becomes effective"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "active", "deprecated", "retired"],
+      "description": "Current status of this constitution version"
+    },
+    "governed_by": {
+      "type": "string",
+      "description": "Story ID or reference that governs this constitution (e.g., ST-GOV-002)"
+    },
+    "principles": {
+      "type": "object",
+      "required": ["core_values"],
+      "properties": {
+        "core_values": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "description", "rules"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Name of the core principle"
+              },
+              "description": {
+                "type": "string",
+                "description": "Detailed description of the principle"
+              },
+              "rules": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Specific rules derived from this principle"
+              }
+            }
+          }
+        }
+      }
+    },
+    "decision_boundaries": {
+      "type": "object",
+      "required": ["autonomous", "conditional", "restricted"],
+      "properties": {
+        "autonomous": {
+          "type": "array",
+          "description": "Actions agents can take without human approval",
+          "items": {
+            "$ref": "#/definitions/DecisionBoundary"
+          }
+        },
+        "conditional": {
+          "type": "array",
+          "description": "Actions requiring confirmation or validation",
+          "items": {
+            "$ref": "#/definitions/DecisionBoundary"
+          }
+        },
+        "restricted": {
+          "type": "array",
+          "description": "Actions requiring explicit human approval",
+          "items": {
+            "$ref": "#/definitions/DecisionBoundary"
+          }
+        }
+      }
+    },
+    "safety_invariants": {
+      "type": "object",
+      "required": ["hard_constraints", "conditional"],
+      "properties": {
+        "hard_constraints": {
+          "type": "array",
+          "description": "Never-violate constraints that block execution",
+          "items": {
+            "$ref": "#/definitions/Invariant"
+          }
+        },
+        "conditional": {
+          "type": "array",
+          "description": "Context-dependent invariants",
+          "items": {
+            "$ref": "#/definitions/ConditionalInvariant"
+          }
+        }
+      }
+    },
+    "escalation_criteria": {
+      "type": "object",
+      "required": ["triggers", "paths"],
+      "properties": {
+        "triggers": {
+          "type": "array",
+          "description": "Automatic escalation triggers",
+          "items": {
+            "$ref": "#/definitions/EscalationTrigger"
+          }
+        },
+        "paths": {
+          "type": "array",
+          "description": "Escalation paths for different scenarios",
+          "items": {
+            "$ref": "#/definitions/EscalationPath"
+          }
+        }
+      }
+    },
+    "violation_categories": {
+      "type": "object",
+      "required": ["severity_levels", "detection_rules"],
+      "properties": {
+        "severity_levels": {
+          "type": "array",
+          "description": "Defined severity levels for violations",
+          "items": {
+            "$ref": "#/definitions/SeverityLevel"
+          }
+        },
+        "detection_rules": {
+          "type": "array",
+          "description": "Rules for detecting violations",
+          "items": {
+            "$ref": "#/definitions/ViolationRule"
+          }
+        }
+      }
+    },
+    "override_protocol": {
+      "type": "object",
+      "required": ["requirements", "approval_flow", "rollback"],
+      "properties": {
+        "requirements": {
+          "type": "object",
+          "required": ["required_fields"],
+          "properties": {
+            "required_fields": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Fields required for override requests"
+            }
+          }
+        },
+        "approval_flow": {
+          "type": "array",
+          "description": "Steps in the approval process",
+          "items": {
+            "$ref": "#/definitions/ApprovalStep"
+          }
+        },
+        "rollback": {
+          "type": "object",
+          "required": [
+            "window_hours",
+            "automatic_rollback",
+            "requires_confirmation"
+          ],
+          "properties": {
+            "window_hours": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 168,
+              "description": "Hours within which rollback is allowed"
+            },
+            "automatic_rollback": {
+              "type": "boolean",
+              "description": "Whether rollback happens automatically"
+            },
+            "requires_confirmation": {
+              "type": "boolean",
+              "description": "Whether rollback requires confirmation"
+            }
+          }
+        }
+      }
+    },
+    "compliance_metrics": {
+      "type": "object",
+      "required": ["kpis", "reporting"],
+      "properties": {
+        "kpis": {
+          "type": "array",
+          "description": "Key performance indicators",
+          "items": {
+            "$ref": "#/definitions/KPI"
+          }
+        },
+        "reporting": {
+          "type": "array",
+          "description": "Reporting configuration",
+          "items": {
+            "$ref": "#/definitions/ReportConfig"
+          }
+        }
+      }
+    },
+    "version_history": {
+      "type": "array",
+      "description": "History of constitution versions",
+      "items": {
+        "$ref": "#/definitions/VersionEntry"
+      }
+    }
+  },
+  "definitions": {
+    "DecisionBoundary": {
+      "type": "object",
+      "required": ["category", "action", "constraints"],
+      "properties": {
+        "category": {
+          "type": "string",
+          "description": "Category of the action"
+        },
+        "action": {
+          "type": "string",
+          "description": "Description of the action"
+        },
+        "constraints": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Constraints on the action"
+        },
+        "approval_required": {
+          "type": "string",
+          "description": "Level of approval required (if any)"
+        }
+      }
+    },
+    "Invariant": {
+      "type": "object",
+      "required": ["id", "name", "description", "enforcement"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^INV-\\d+$",
+          "description": "Unique invariant identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description"
+        },
+        "enforcement": {
+          "type": "string",
+          "enum": ["BLOCK", "ALERT", "LOG", "COORDINATE", "VALIDATE"],
+          "description": "Enforcement action"
+        },
+        "exception": {
+          "type": ["string", "null"],
+          "description": "Exception condition (if any)"
+        }
+      }
+    },
+    "ConditionalInvariant": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "description",
+        "trigger",
+        "enforcement",
+        "resolution"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^CINV-\\d+$",
+          "description": "Unique conditional invariant identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description"
+        },
+        "trigger": {
+          "type": "string",
+          "description": "Condition that triggers this invariant"
+        },
+        "enforcement": {
+          "type": "string",
+          "enum": ["BLOCK", "ALERT", "LOG", "COORDINATE", "VALIDATE"],
+          "description": "Enforcement action"
+        },
+        "resolution": {
+          "type": "string",
+          "description": "How to resolve when triggered"
+        }
+      }
+    },
+    "EscalationTrigger": {
+      "type": "object",
+      "required": ["trigger", "severity", "escalation_path", "response_sla"],
+      "properties": {
+        "trigger": {
+          "type": "string",
+          "description": "Description of the trigger condition"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["P0", "P1", "P2", "P3"],
+          "description": "Severity level"
+        },
+        "escalation_path": {
+          "type": "string",
+          "description": "Path to use for escalation"
+        },
+        "response_sla": {
+          "type": "string",
+          "description": "Response time SLA (e.g., '5 minutes', 'immediate')"
+        }
+      }
+    },
+    "EscalationPath": {
+      "type": "object",
+      "required": ["path", "steps"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Name of the escalation path"
+        },
+        "steps": {
+          "type": "array",
+          "description": "Steps in the escalation path",
+          "items": {
+            "$ref": "#/definitions/EscalationStep"
+          }
+        }
+      }
+    },
+    "EscalationStep": {
+      "type": "object",
+      "required": ["level", "target", "channel"],
+      "properties": {
+        "level": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Escalation level"
+        },
+        "target": {
+          "type": "string",
+          "description": "Target recipient (channel, team, or person)"
+        },
+        "channel": {
+          "type": "string",
+          "enum": ["discord", "pagerduty", "direct", "email", "slack"],
+          "description": "Communication channel"
+        },
+        "auto": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this step is automatic"
+        },
+        "delay_minutes": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Delay before this step (in minutes)"
+        },
+        "delay_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Delay before this step (in seconds, overrides delay_minutes)"
+        }
+      }
+    },
+    "SeverityLevel": {
+      "type": "object",
+      "required": [
+        "level",
+        "name",
+        "description",
+        "detection_sla_seconds",
+        "response_sla_minutes",
+        "requires_human_intervention"
+      ],
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["P0", "P1", "P2", "P3"],
+          "description": "Severity level code"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description"
+        },
+        "detection_sla_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "SLA for detection in seconds"
+        },
+        "response_sla_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "SLA for response in minutes"
+        },
+        "requires_human_intervention": {
+          "type": "boolean",
+          "description": "Whether human intervention is required"
+        }
+      }
+    },
+    "ViolationRule": {
+      "type": "object",
+      "required": ["id", "name", "pattern", "severity", "auto_detect"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^VR-\\d+$",
+          "description": "Unique rule identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name"
+        },
+        "pattern": {
+          "type": "string",
+          "description": "Regex pattern or description to match"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["P0", "P1", "P2", "P3"],
+          "description": "Severity level"
+        },
+        "auto_detect": {
+          "type": "boolean",
+          "description": "Whether to auto-detect this violation"
+        }
+      }
+    },
+    "ApprovalStep": {
+      "type": "object",
+      "required": ["step", "action"],
+      "properties": {
+        "step": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Step number"
+        },
+        "action": {
+          "type": "string",
+          "description": "Action to take"
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "API endpoint (if applicable)"
+        },
+        "validation": {
+          "type": "string",
+          "description": "Validation to perform"
+        },
+        "logging": {
+          "type": "string",
+          "description": "Logging requirements"
+        },
+        "default": {
+          "type": "string",
+          "description": "Default behavior"
+        }
+      }
+    },
+    "KPI": {
+      "type": "object",
+      "required": ["metric", "target", "measurement"],
+      "properties": {
+        "metric": {
+          "type": "string",
+          "description": "Name of the metric"
+        },
+        "target": {
+          "type": "string",
+          "description": "Target value"
+        },
+        "measurement": {
+          "type": "string",
+          "description": "How the metric is measured"
+        }
+      }
+    },
+    "ReportConfig": {
+      "type": "object",
+      "required": ["report", "frequency", "recipients"],
+      "properties": {
+        "report": {
+          "type": "string",
+          "description": "Report name"
+        },
+        "frequency": {
+          "type": "string",
+          "enum": ["hourly", "daily", "weekly", "monthly", "quarterly"],
+          "description": "Report frequency"
+        },
+        "recipients": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Report recipients"
+        },
+        "include_metrics": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Metrics to include"
+        }
+      }
+    },
+    "VersionEntry": {
+      "type": "object",
+      "required": ["version", "date", "changes", "author"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "Version number"
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "Release date"
+        },
+        "changes": {
+          "type": "string",
+          "description": "Summary of changes"
+        },
+        "author": {
+          "type": "string",
+          "description": "Author or story reference"
+        }
+      }
+    }
+  }
+}

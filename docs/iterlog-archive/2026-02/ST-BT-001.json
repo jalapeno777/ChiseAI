@@ -1,0 +1,26 @@
+{
+  "story_id": "ST-BT-001",
+  "archived_at": "2026-03-20T00:00:00Z",
+  "source_keys": [
+    "bmad:chiseai:iterlog:story:ST-BT-001",
+    "bmad:chiseai:iterlog:story:ST-BT-001:decisions",
+    "bmad:chiseai:iterlog:story:ST-BT-001:learnings"
+  ],
+  "hash_data": {
+    "story_id": "ST-BT-001",
+    "story_title": "Candidate Backtesting & Ranking",
+    "phase": "implementation",
+    "status": "completed",
+    "started_at": "2026-02-11T00:00:00Z",
+    "completed_at": "2026-02-11T00:00:00Z"
+  },
+  "lists": {
+    "decisions": [
+      "Decision: Create candidate backtesting module in src/backtesting/candidate/ | Rationale: Need to implement walk-forward backtesting with 30d train/7d test windows and ranking pipeline"
+    ],
+    "learnings": [
+      "Learning: Walk-forward backtesting prevents look-ahead bias by strictly separating train/test periods | Impact: High | Category: architecture",
+      "Learning: Transparent ranking with visible criteria weights builds trust in candidate selection | Impact: Medium | Category: process"
+    ]
+  }
+}
