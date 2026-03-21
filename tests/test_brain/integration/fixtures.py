@@ -43,7 +43,7 @@ def fast_brain() -> Callable[[Any], Coroutine[Any, Any, Any]]:
     """Mock brain function with fast latency (< 10ms)."""
 
     async def _brain(input_data: Any) -> dict[str, Any]:
-        await asyncio.sleep(0.001)  # 1ms simulated latency
+        await asyncio.sleep(0.005)  # 5ms simulated latency (more stable in CI)
         return {
             "prediction": "buy",
             "confidence": 0.85,

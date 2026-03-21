@@ -50,10 +50,10 @@ def default_config(candidate_version, baseline_version):
 
 @pytest.fixture
 def fast_brain():
-    """Fixture for a fast brain function (simulates < 100ms latency)."""
+    """Fixture for a fast brain function (simulates low single-digit ms latency)."""
 
     async def _brain(input_data: Any) -> Any:
-        await asyncio.sleep(0.001)  # 1ms simulated latency
+        await asyncio.sleep(0.005)  # 5ms simulated latency (more stable in CI)
         return {"prediction": "buy", "confidence": 0.85, "input": input_data}
 
     return _brain
