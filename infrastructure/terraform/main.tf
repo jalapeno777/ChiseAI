@@ -315,6 +315,9 @@ resource "docker_container" "woodpecker_server" {
     "WOODPECKER_GITEA_SECRET=${var.woodpecker_gitea_secret}",
     "WOODPECKER_AGENT_SECRET=${var.woodpecker_agent_secret}",
     "WOODPECKER_PLUGINS_TRUSTED_CLONE=docker.io/woodpeckerci/plugin-git:2.5.1,docker.io/woodpeckerci/plugin-git",
+    # Increase forge config fetch resilience for push/PR webhook events.
+    "WOODPECKER_FORGE_TIMEOUT=15s",
+    "WOODPECKER_FORGE_RETRY=5",
     "WOODPECKER_GRPC_ADDR=:9000",
     # Use Postgres to avoid sqlite locking under concurrency.
     "WOODPECKER_DATABASE_DRIVER=postgres",
