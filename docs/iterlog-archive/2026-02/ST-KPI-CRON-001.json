@@ -1,0 +1,10 @@
+{
+  "story_id": "ST-KPI-CRON-001",
+  "archived_at": "2026-03-20T00:00:00Z",
+  "source_keys": ["bmad:chiseai:iterlog:story:ST-KPI-CRON-001"],
+  "hash_data": {
+    "cron_setup_completed": "2026-03-02T20:38:00Z",
+    "cron_jobs_configured": "3"
+  },
+  "lists": {}
+}

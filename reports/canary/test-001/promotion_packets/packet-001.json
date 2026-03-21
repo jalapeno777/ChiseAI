@@ -5,7 +5,7 @@
   "champion_strategy_id": null,
   "status": "pending",
   "evidence": {
-    "canary_duration_days": -20514.65,
+    "canary_duration_days": -20525.6,
     "total_trades": 10,
     "win_rate_pct": 60.0,
     "max_drawdown_pct": 3.0,
@@ -20,7 +20,7 @@
           "actual_value": 3.0,
           "threshold_value": 5.0,
           "message": "PASS: Drawdown 3.00% within threshold 5.00%",
-          "timestamp": 1773156815
+          "timestamp": 1774102719
         },
         {
           "gate_name": "min_win_rate",
@@ -28,7 +28,7 @@
           "actual_value": 60.0,
           "threshold_value": 55.0,
           "message": "PASS: Win rate 60.00% meets threshold 55.00%",
-          "timestamp": 1773156815
+          "timestamp": 1774102719
         },
         {
           "gate_name": "duration",
@@ -36,7 +36,7 @@
           "actual_value": 8.0,
           "threshold_value": 7.0,
           "message": "PASS: Duration 8.00 days meets required 7 days",
-          "timestamp": 1773156815
+          "timestamp": 1774102719
         }
       ],
       "final_status": "passed"
@@ -69,7 +69,7 @@
       "- Verify portfolio state consistency"
     ]
   },
-  "generated_at": 1773156815,
+  "generated_at": 1774102719,
   "approved_at": null,
   "approved_by": null,
   "metadata": {
@@ -78,7 +78,7 @@
       "canary_id": "test-001",
       "strategy_id": "strategy-001",
       "status": "PASS",
-      "timestamp": 1773156815,
+      "timestamp": 1774102719,
       "gate_summary": {
         "pass": 3,
         "fail": 0,

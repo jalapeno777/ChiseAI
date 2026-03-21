@@ -1,0 +1,12 @@
+{
+  "story_id": "ST-NS-017",
+  "archived_at": "2026-03-20T00:00:00Z",
+  "source_keys": ["bmad:chiseai:iterlog:story:ST-NS-017"],
+  "hash_data": {
+    "story_title": "Prediction Accuracy Tracker",
+    "phase": "implementation",
+    "status": "completed",
+    "completed_at": "2026-02-15T00:00:00Z"
+  },
+  "lists": {}
+}

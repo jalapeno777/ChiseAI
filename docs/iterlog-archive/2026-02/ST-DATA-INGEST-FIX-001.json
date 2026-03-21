@@ -1,0 +1,21 @@
+{
+  "story_id": "ST-DATA-INGEST-FIX-001",
+  "archived_at": "2026-03-20T00:00:00Z",
+  "source_keys": [
+    "bmad:chiseai:iterlog:story:ST-DATA-INGEST-FIX-001",
+    "bmad:chiseai:iterlog:story:ST-DATA-INGEST-FIX-001:learnings"
+  ],
+  "hash_data": {
+    "story_id": "ST-DATA-INGEST-FIX-001",
+    "story_title": "Create OHLCV Ingestion Runner Script",
+    "phase": "implementation",
+    "status": "completed",
+    "completed_at": "2026-02-14T03:00:00Z",
+    "evidence_path": "_bmad-output/evidence/ST-DATA-INGEST-FIX-001_EVIDENCE.md"
+  },
+  "lists": {
+    "learnings": [
+      "InfluxDB health_check() returns True even with invalid token, but write operations fail with 401"
+    ]
+  }
+}

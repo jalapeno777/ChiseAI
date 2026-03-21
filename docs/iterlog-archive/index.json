@@ -1,0 +1,80 @@
+{
+  "archive_version": "1.0",
+  "created_at": "2026-03-20T00:00:00Z",
+  "total_stories": 9,
+  "total_keys_archived": 13,
+  "date_ranges": {
+    "2026-02": {
+      "count": 9,
+      "oldest": "2026-02-11",
+      "newest": "2026-02-17",
+      "files": [
+        {
+          "story_id": "ST-BT-001",
+          "file": "2026-02/ST-BT-001.json",
+          "title": "Candidate Backtesting & Ranking",
+          "oldest_timestamp": "2026-02-11",
+          "keys_archived": 3
+        },
+        {
+          "story_id": "ST-DATA-001",
+          "file": "2026-02/ST-DATA-001.json",
+          "title": "Exchange Market Data Ingestion - Binance Reference",
+          "oldest_timestamp": "2026-02-11",
+          "keys_archived": 1
+        },
+        {
+          "story_id": "BATCH-C-PAPER-READINESS",
+          "file": "2026-02/BATCH-C-PAPER-READINESS.json",
+          "title": "Batch C - ST-SIG-002 and ST-BT-002 Verification",
+          "oldest_timestamp": "2026-02-12",
+          "keys_archived": 1
+        },
+        {
+          "story_id": "ST-KPI-CRON-001",
+          "file": "2026-02/ST-KPI-CRON-001.json",
+          "title": "KPI Cron Setup",
+          "oldest_timestamp": "2026-02-13",
+          "keys_archived": 1
+        },
+        {
+          "story_id": "ST-DATA-INGEST-FIX-001",
+          "file": "2026-02/ST-DATA-INGEST-FIX-001.json",
+          "title": "Create OHLCV Ingestion Runner Script",
+          "oldest_timestamp": "2026-02-14",
+          "keys_archived": 2
+        },
+        {
+          "story_id": "CH-BT-KPI-001",
+          "file": "2026-02/CH-BT-KPI-001.json",
+          "title": "Populate backtest_kpis Measurement for Grafana",
+          "oldest_timestamp": "2026-02-14",
+          "keys_archived": 2
+        },
+        {
+          "story_id": "ST-NS-017",
+          "file": "2026-02/ST-NS-017.json",
+          "title": "Prediction Accuracy Tracker",
+          "oldest_timestamp": "2026-02-15",
+          "keys_archived": 1
+        },
+        {
+          "story_id": "BATCH3-INTEGRATION-005",
+          "file": "2026-02/BATCH3-INTEGRATION-005.json",
+          "title": "Batch 3 Integration",
+          "oldest_timestamp": "2026-02-15",
+          "keys_archived": 1
+        },
+        {
+          "story_id": "PAPER-002",
+          "file": "2026-02/PAPER-002.json",
+          "title": "EP-PAPER-002: Paper Trading Production Readiness Sprint",
+          "oldest_timestamp": "2026-02-17",
+          "keys_archived": 1
+        }
+      ]
+    }
+  },
+  "searchable_fields": ["story_id", "title", "oldest_timestamp"],
+  "redis_space_saved_estimate": "~5-10KB"
+}

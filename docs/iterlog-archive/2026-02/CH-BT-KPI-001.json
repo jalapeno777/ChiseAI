@@ -1,0 +1,22 @@
+{
+  "story_id": "CH-BT-KPI-001",
+  "archived_at": "2026-03-20T00:00:00Z",
+  "source_keys": [
+    "bmad:chiseai:iterlog:story:CH-BT-KPI-001",
+    "bmad:chiseai:iterlog:story:CH-BT-KPI-001:evidence"
+  ],
+  "hash_data": {
+    "story_id": "CH-BT-KPI-001",
+    "story_title": "Populate backtest_kpis Measurement for Grafana",
+    "phase": "implementation",
+    "status": "completed",
+    "completed_at": "2026-02-14T13:40:00Z"
+  },
+  "lists": {
+    "evidence": [
+      "Created src/backtesting/kpi_writer.py with BacktestKPIWriter class",
+      "Created scripts/populate_backtest_kpis.py CLI tool",
+      "Updated src/operations/backtest_runner.py with Grafana-compatible field names"
+    ]
+  }
+}

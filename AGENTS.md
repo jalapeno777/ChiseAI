@@ -83,6 +83,11 @@ skill(name="chiseai-git-workflow")          # Load git workflow skill
 **Load:** `python-quality`
 **Why:** Ensures code passes repo-configured quality checks (black, ruff, pytest)
 
+### "I need to edit docs/bmm-workflow-status.yaml..."
+**Load:** `chiseai-workflow-status-guard` + `yaml-editor`
+**Then run:** `chise-status-yaml-guard` (`attempt`; mandatory `repair` after 2 failed attempts)
+**Why:** Enforces parse/lint/integrity checks with backup + atomic repair path
+
 ### "I need to merge in an emergency..."
 **Load:** `chiseai-git-workflow` (for context)
 **Then run:** `chise-emergency-merge-override` command
@@ -134,6 +139,7 @@ skill(name="chiseai-git-workflow")          # Load git workflow skill
 | `chiseai-metacognition-ops` | Decision quality calibration and reflection loops | `chise-metacog-start`, `chise-metacog-close`, `chise-metacog-weekly` |
 | `chiseai-skill-autonomy` | Autonomous skill routing/coverage/effectiveness with non-blocking fallback | `chise-skill-autonomy-tick`, `chise-skill-backlog-ingest`, `chise-skill-promote`, `chise-skill-rollback` |
 | `chiseai-autocog-orchestration` | Autonomous cognition oversight, Aria review, and severity-based auto-action | `chise-autocog-daily-run`, `chise-autocog-review`, `chise-autocog-action` |
+| `chiseai-workflow-status-guard` | Hardening and recovery for workflow status YAML | `chise-status-yaml-guard` |
 | `python-quality` | Python code quality | N/A |
 
 ## 🔧 Skill Loading Pattern
@@ -169,6 +175,7 @@ When starting work:
 - Mandatory skill loading for feature domains:
   - Docker/network changes -> `chiseai-docker-governance`
   - CI diagnosis and quality gates -> `chiseai-validation`
+  - `docs/bmm-workflow-status.yaml` edits or failures -> `chiseai-workflow-status-guard` + `yaml-editor`
   - Incident handling/post-mortems -> `chiseai-incident-response`
   - Branch lifecycle cleanup -> `chiseai-branch-hygiene`
   - Iterlog/Redis/Qdrant/memory promotion -> `chiseai-memory-ops` + `chiseai-metacognition-ops`

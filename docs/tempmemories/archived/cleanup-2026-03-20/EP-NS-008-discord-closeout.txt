@@ -1,0 +1,30 @@
+🎯 EP-NS-008 Canary-Close Complete
+
+## DECISION
+GO-WITH-CONDITIONS (MEDIUM-HIGH confidence)
+
+## SUMMARY
+- **Epic**: Autonomous Control Plane (6 stories, 42 points)
+- **All stories**: ST-NS-038 through ST-NS-043 ✅
+- **Tests**: 235 passing, 0 failed
+- **Batch 2 truth-sync**: Verified ✅
+
+## CONDITIONS REMAINING
+- ⏳ Complete canary period (ends 2026-02-28)
+- 📝 Create rollback runbook (due 2026-03-04)
+
+## ARTIFACTS
+- Promotion packet: `docs/promotion/EP-NS-008-canary-close-packet.md`
+- Critic audit: `docs/validation/EP-NS-008-critic-audit.md`
+- Party reconciliation: `docs/promotion/EP-NS-008-party-reconciliation.md`
+
+## NS STREAM STATUS
+🏁 **CLOSING**
+- EP-NS-001 through EP-NS-008: ALL COMPLETE
+- **Total**: 49 stories, 329 points delivered
+- **Paper trading**: OPERATIONAL
+
+## FOLLOW-UPS
+- Monitor canary through 2026-02-28
+- Create rollback runbook
+- Archive NS stream documentation

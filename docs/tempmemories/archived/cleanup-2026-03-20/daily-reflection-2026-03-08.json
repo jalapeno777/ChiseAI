@@ -1,0 +1,40 @@
+{
+  "metadata": {
+    "report_type": "daily_reflection_quality",
+    "date": "2026-03-08",
+    "timestamp": "2026-03-08T18:25:54.109503",
+    "day": "1/7",
+    "cadence": "7-day-stabilization"
+  },
+  "kpi_snapshot": {
+    "reflection_completion_rate": 0.0,
+    "metacog_calibration_score": 0.0,
+    "active_stories": 505,
+    "completed_iterations": 0,
+    "avg_iteration_duration_hours": 0.0,
+    "tp_sessions_24h": 0,
+    "insight_packets_24h": 2,
+    "aria_decisions_24h": 2,
+    "tp_proof_coverage_percent": 1.2
+  },
+  "trend_deltas": {
+    "reflection_rate_delta": 0.0,
+    "calibration_improvement": 0.0,
+    "velocity_trend": "stable",
+    "blocker_trend": "stable"
+  },
+  "incidents": [],
+  "blockers": [],
+  "git_activity": {
+    "commits_today": 23,
+    "merges_today": 7,
+    "active_branches": 0
+  },
+  "summary": {
+    "health_status": "critical",
+    "recommendations": [
+      "\ud83d\udcc8 Focus on completing reflection cycles before starting new iterations",
+      "\ud83c\udfaf Review metacognitive predictions and improve confidence calibration"
+    ]
+  }
+}

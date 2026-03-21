@@ -1,0 +1,11 @@
+{
+  "story_id": "BATCH3-INTEGRATION-005",
+  "archived_at": "2026-03-20T00:00:00Z",
+  "source_keys": ["bmad:chiseai:iterlog:story:BATCH3-INTEGRATION-005"],
+  "hash_data": {
+    "status": "complete",
+    "completed_at": "2026-03-15T02:51:00Z",
+    "head_sha": "fc5f78fa"
+  },
+  "lists": {}
+}

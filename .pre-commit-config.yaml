@@ -1,0 +1,116 @@
+# Pre-commit configuration for ChiseAI
+# Aligns with .woodpecker/ci.yaml validation steps
+#
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # Python code formatting
+  - repo: https://github.com/psf/black
+    rev: 24.3.0
+    hooks:
+      - id: black
+        language_version: python3.11
+        files: \.(py)$
+
+  # Python linting with ruff
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.0
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: \.(py)$
+
+  # Type checking with mypy (optional, can be slow)
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        files: \.(py)$
+        args: [--ignore-missing-imports, --no-error-summary]
+        pass_filenames: false
+        additional_dependencies:
+          - types-requests
+          - types-PyYAML
+
+  # Security scanning with bandit
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.6
+    hooks:
+      - id: bandit
+        args: [-q, -ll]
+        files: \.(py)$
+
+  # YAML validation
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-yaml
+        args: [--unsafe, --allow-multiple-documents]
+        files: \.(yaml|yml)$
+
+  # JSON validation
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-json
+      - id: check-merge-conflict
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+
+  # Shell script validation
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.9.0.6
+    hooks:
+      - id: shellcheck
+        types: [shell]
+        files: \.(sh|bash)$
+
+  # Local validation scripts (align with CI gates)
+  - repo: local
+    hooks:
+      # Status sync validation (aligns with CI lint step)
+      - id: status-sync-check
+        name: Status Sync Validation
+        entry: python3 scripts/validate_status_sync.py
+        language: system
+        pass_filenames: false
+        stages: [commit-msg]
+
+      # PR title validation (aligns with CI lint step)
+      - id: pr-title-check
+        name: PR Title Validation
+        entry: python3 scripts/validate_pr_title.py
+        language: system
+        pass_filenames: false
+        stages: [commit-msg]
+
+      # Traceability validation (aligns with CI lint step)
+      - id: fr-traceability-check
+        name: FR Traceability Validation
+        entry: python3 scripts/validate_fr_traceability.py
+        language: system
+        pass_filenames: false
+        stages: [commit-msg]
+
+# Configure stages
+default_stages: [pre-commit]
+
+# Skip files matching these patterns
+exclude: |
+  (?x)(
+    ^\.git/ |
+    ^_bmad-output/ |
+    ^\.venv/ |
+    ^venv/ |
+    ^build/ |
+    ^dist/ |
+    \.egg-info/ |
+    ^docs/tempmemories/
+  )
+
+# Fail fast on first error
+fail_fast: false
+
+# Verbose output
+verbose: true
