@@ -21,7 +21,7 @@ import json
 import sys
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any, TypedDict, cast
 
@@ -57,7 +57,7 @@ class SLAResult:
     actual_value: float
     unit: str
     passed: bool
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     details: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -105,7 +105,7 @@ class ScenarioResult:
 class ValidationReport:
     """Complete validation report for all runbooks."""
 
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     sla_results: list[SLAResult] = field(default_factory=list)
     scenario_results: list[ScenarioResult] = field(default_factory=list)
     summary: dict[str, Any] = field(default_factory=dict)
@@ -172,7 +172,7 @@ class RunbookValidator:
         print("RUNBOOK VALIDATION - ST-LAUNCH-016")
         print("=" * 70)
         print(f"Mode: {'DRY-RUN' if self.dry_run else 'LIVE'}")
-        print(f"Timestamp: {datetime.now(timezone.utc).isoformat()}")
+        print(f"Timestamp: {datetime.now(UTC).isoformat()}")
         print()
 
         # Validate SLA requirements
