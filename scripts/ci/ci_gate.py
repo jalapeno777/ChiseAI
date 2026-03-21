@@ -42,6 +42,7 @@ FAST_REQUIRED = [
     "status-write-gate.status",
     "status-sync-validation.status",
     "file-existence-check.status",
+    "pre-eval-ingestion.status",
 ]
 FULL_REQUIRED = [
     "local-ci.status",
