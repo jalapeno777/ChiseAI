@@ -279,12 +279,19 @@ steps:
         set -euo pipefail
         mkdir -p "$${CI_STATUS_DIR}"
         set +e
+        START_TIME=$(date +%s)
         (
           set -euo pipefail
-          python3 scripts/ci/secret_scan_changed.py
+          timeout 180s python3 scripts/ci/secret_scan_changed.py
         ) > "$${CI_STATUS_DIR}/secret-scan.log" 2>&1
         code=$?
+        END_TIME=$(date +%s)
+        DURATION=$((END_TIME - START_TIME))
         cat "$${CI_STATUS_DIR}/secret-scan.log"
+        echo "secret-scan: duration=${DURATION}s exit=${code}"
+        if [ "$code" -eq 124 ]; then
+          echo "secret-scan: timed out after 180s"
+        fi
         echo "$code" > "$${CI_STATUS_DIR}/secret-scan.status"
         exit 0
 
@@ -1027,6 +1034,7 @@ steps:
         set -euo pipefail
         mkdir -p "$${CI_STATUS_DIR}"
         set +e
+        START_TIME=$(date +%s)
         (
           set -euo pipefail
           CHANGED_FILES="$(printf '%s' "${CI_PIPELINE_FILES:-[]}" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
@@ -1035,13 +1043,19 @@ steps:
             exit 0
           fi
           echo "file-existence-check: validating file existence for changed files..."
-          python3 scripts/swarm/evidence_validator.py --files $(printf '%s' "$CHANGED_FILES" | tr '\n' ' ') --json > "$${CI_STATUS_DIR}/file-existence-check.json" 2>&1
+          timeout 180s python3 scripts/swarm/evidence_validator.py --files $(printf '%s' "$CHANGED_FILES" | tr '\n' ' ') --json > "$${CI_STATUS_DIR}/file-existence-check.json" 2>&1
           VALIDATION_EXIT=$?
           cat "$${CI_STATUS_DIR}/file-existence-check.json"
           echo "$VALIDATION_EXIT"
         ) > "$${CI_STATUS_DIR}/file-existence-check.log" 2>&1
         code=$?
+        END_TIME=$(date +%s)
+        DURATION=$((END_TIME - START_TIME))
         cat "$${CI_STATUS_DIR}/file-existence-check.log"
+        echo "file-existence-check: duration=${DURATION}s exit=${code}"
+        if [ "$code" -eq 124 ]; then
+          echo "file-existence-check: timed out after 180s"
+        fi
         echo "$code" > "$${CI_STATUS_DIR}/file-existence-check.status"
         # Do not short-circuit the pipeline; ci-gate is the single fail point.
         exit 0
