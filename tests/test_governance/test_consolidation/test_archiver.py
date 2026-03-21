@@ -345,3 +345,292 @@ class TestArchiverWithMockClients:
         archiver._update_metrics(stats)
 
         mock_redis.hset.assert_called_once()
+
+
+class TestTempmemoryArchiveEntry:
+    """Tests for TempmemoryArchiveEntry dataclass."""
+
+    def test_to_dict(self):
+        """Test tempmemory archive entry serialization."""
+        from src.governance.consolidation.archiver import TempmemoryArchiveEntry
+
+        entry = TempmemoryArchiveEntry(
+            original_path=Path("docs/tempmemories/test.md"),
+            archived_path=Path("docs/tempmemories/archive/test_20240315.md"),
+            archived_at=datetime(2024, 3, 15, 10, 30, 0, tzinfo=UTC),
+            file_size=1024,
+            file_hash="abc123def456",
+            original_content="test content",
+            metadata={"type": "decision"},
+        )
+
+        data = entry.to_dict()
+
+        assert data["original_path"] == "docs/tempmemories/test.md"
+        assert data["archived_path"] == "docs/tempmemories/archive/test_20240315.md"
+        assert data["file_size"] == 1024
+        assert data["file_hash"] == "abc123def456"
+        assert data["metadata"]["type"] == "decision"
+
+    def test_from_dict(self):
+        """Test tempmemory archive entry deserialization."""
+        from src.governance.consolidation.archiver import TempmemoryArchiveEntry
+
+        data = {
+            "original_path": "docs/tempmemories/test.md",
+            "archived_path": "docs/tempmemories/archive/test.md",
+            "archived_at": "2024-03-15T10:30:00+00:00",
+            "file_size": 2048,
+            "file_hash": "xyz789",
+            "metadata": {"type": "pattern"},
+        }
+
+        entry = TempmemoryArchiveEntry.from_dict(data)
+
+        assert entry.original_path == Path("docs/tempmemories/test.md")
+        assert entry.file_size == 2048
+        assert entry.file_hash == "xyz789"
+
+
+class TestTempmemoryArchiveReport:
+    """Tests for TempmemoryArchiveReport."""
+
+    def test_default_values(self):
+        """Test default report values."""
+        from src.governance.consolidation.archiver import TempmemoryArchiveReport
+
+        report = TempmemoryArchiveReport()
+
+        assert report.files_archived == []
+        assert report.files_skipped == []
+        assert report.errors == []
+        assert report.total_size_bytes == 0
+        assert report.was_dry_run is True
+
+    def test_to_dict(self):
+        """Test report serialization."""
+        from src.governance.consolidation.archiver import (
+            TempmemoryArchiveEntry,
+            TempmemoryArchiveReport,
+        )
+
+        entry = TempmemoryArchiveEntry(
+            original_path=Path("test.md"),
+            archived_path=Path("archive/test.md"),
+            archived_at=datetime.now(UTC),
+            file_size=100,
+            file_hash="hash123",
+            original_content="content",
+        )
+
+        report = TempmemoryArchiveReport(
+            files_archived=[entry],
+            files_skipped=["skipped.md"],
+            total_size_bytes=100,
+            was_dry_run=False,
+        )
+
+        data = report.to_dict()
+
+        assert len(data["files_archived"]) == 1
+        assert data["files_skipped"] == ["skipped.md"]
+        assert data["total_size_bytes"] == 100
+        assert data["was_dry_run"] is False
+
+    def test_to_markdown(self):
+        """Test markdown report generation."""
+        from src.governance.consolidation.archiver import TempmemoryArchiveReport
+
+        report = TempmemoryArchiveReport(
+            files_archived=[],
+            files_skipped=["skipped.md"],
+            was_dry_run=True,
+        )
+
+        markdown = report.to_markdown()
+
+        assert "# Tempmemory Archive Report" in markdown
+        assert "Dry Run" in markdown
+        assert "skipped.md" in markdown
+
+
+class TestTempmemoryAutoArchive:
+    """Tests for tempmemory auto-archive functionality."""
+
+    @pytest.fixture
+    def temp_archive_config(self):
+        """Create tempmemory archive config."""
+        from src.governance.consolidation.config import (
+            AutoArchiveMode,
+            TempmemoryArchiveConfig,
+        )
+
+        return TempmemoryArchiveConfig(
+            enabled=True,
+            mode=AutoArchiveMode.IMMEDIATE,
+            archive_location="docs/tempmemories/archive/",
+            generate_reports=False,
+        )
+
+    @pytest.fixture
+    def archiver_with_tempmemory_config(self, tmp_path, temp_archive_config):
+        """Create archiver with tempmemory config."""
+        from src.governance.consolidation.config import ConsolidationConfig
+
+        temp_storage = str(tmp_path / "cold_storage")
+        config = ConsolidationConfig(
+            dry_run=True,
+            cold_storage_path=temp_storage,
+        )
+        config.tempmemory_archive = temp_archive_config
+        return MemoryArchiver(config)
+
+    def test_should_archive_immediate_mode(self, archiver_with_tempmemory_config):
+        """Test immediate archive mode always returns True."""
+        from src.governance.consolidation.config import AutoArchiveMode
+
+        temp_path = Path("docs/tempmemories/test.md")
+        config = archiver_with_tempmemory_config._config.tempmemory_archive
+        config.mode = AutoArchiveMode.IMMEDIATE
+
+        assert (
+            archiver_with_tempmemory_config.should_archive_tempmemory(temp_path) is True
+        )
+
+    def test_should_archive_after_n_days_mode(
+        self, archiver_with_tempmemory_config, tmp_path
+    ):
+        """Test after_n_days mode checks file age."""
+        from src.governance.consolidation.config import AutoArchiveMode
+
+        # Create a temp file
+        temp_file = tmp_path / "test.md"
+        temp_file.write_text("test content")
+
+        config = archiver_with_tempmemory_config._config.tempmemory_archive
+        config.mode = AutoArchiveMode.AFTER_N_DAYS
+        config.delay_days = 7
+
+        # File is new, should not archive
+        assert (
+            archiver_with_tempmemory_config.should_archive_tempmemory(temp_file)
+            is False
+        )
+
+    def test_archive_tempmemory_dry_run(
+        self, archiver_with_tempmemory_config, tmp_path
+    ):
+        """Test tempmemory archive in dry run mode."""
+        # Create a temp file
+        temp_file = tmp_path / "test.md"
+        temp_file.write_text("---\ntype: decision\n---\nTest content")
+
+        report = archiver_with_tempmemory_config.archive_tempmemories(
+            [temp_file],
+            dry_run=True,
+        )
+
+        assert report.was_dry_run is True
+        assert len(report.files_archived) == 1
+        assert report.files_archived[0].original_path == temp_file
+
+    def test_archive_tempmemory_disabled(self, archiver_with_tempmemory_config):
+        """Test archiving is skipped when disabled."""
+        archiver_with_tempmemory_config._config.tempmemory_archive.enabled = False
+
+        report = archiver_with_tempmemory_config.archive_tempmemories([])
+
+        assert len(report.files_archived) == 0
+
+    def test_extract_tempmemory_metadata(self, archiver_with_tempmemory_config):
+        """Test metadata extraction from frontmatter."""
+        content = "---\ntype: decision\nstory_id: ST-001\n---\nContent here"
+
+        metadata = archiver_with_tempmemory_config._extract_tempmemory_metadata(content)
+
+        assert metadata.get("type") == "decision"
+        assert metadata.get("story_id") == "ST-001"
+
+    def test_get_tempmemory_archive_path(self, archiver_with_tempmemory_config):
+        """Test archive path generation."""
+        from src.governance.consolidation.config import TempmemoryArchiveConfig
+
+        original_path = Path("docs/tempmemories/test.md")
+        archive_dir = Path("docs/tempmemories/archive/")
+        config = TempmemoryArchiveConfig()
+
+        archive_path = archiver_with_tempmemory_config._get_tempmemory_archive_path(
+            original_path, archive_dir, config
+        )
+
+        assert archive_path.parent == archive_dir
+        assert archive_path.name.startswith("test_")
+        assert archive_path.suffix == ".md"
+
+
+class TestTempmemoryAutoArchiveWithMockRedis:
+    """Tests for tempmemory auto-archive with mocked Redis."""
+
+    @pytest.fixture
+    def mock_redis(self):
+        """Create a mock Redis client."""
+        return MagicMock()
+
+    @pytest.fixture
+    def archiver_with_redis(self, mock_redis):
+        """Create archiver with mock Redis."""
+        from src.governance.consolidation.config import (
+            ConsolidationConfig,
+            TempmemoryArchiveConfig,
+        )
+
+        config = ConsolidationConfig(dry_run=False)
+        config.tempmemory_archive = TempmemoryArchiveConfig(
+            enabled=True,
+            skip_already_archived=True,
+        )
+        return MemoryArchiver(config, redis_client=mock_redis)
+
+    def test_is_tempmemory_archived_check(self, archiver_with_redis, mock_redis):
+        """Test checking if tempmemory is already archived."""
+        temp_path = Path("docs/tempmemories/test.md")
+
+        # Mock sismember to return True (already archived)
+        mock_redis.sismember.return_value = True
+
+        is_archived = archiver_with_redis._is_tempmemory_archived(temp_path)
+
+        assert is_archived is True
+        mock_redis.sismember.assert_called_once()
+
+    def test_track_archived_tempmemory(self, archiver_with_redis, mock_redis):
+        """Test tracking archived tempmemory in Redis."""
+        from src.governance.consolidation.archiver import TempmemoryArchiveEntry
+
+        temp_path = Path("docs/tempmemories/test.md")
+        entry = TempmemoryArchiveEntry(
+            original_path=temp_path,
+            archived_path=Path("archive/test.md"),
+            archived_at=datetime.now(UTC),
+            file_size=100,
+            file_hash="hash123",
+            original_content="content",
+        )
+
+        archiver_with_redis._track_archived_tempmemory(temp_path, entry)
+
+        mock_redis.sadd.assert_called_once()
+        mock_redis.expire.assert_called()
+
+    def test_skip_already_archived(self, archiver_with_redis, mock_redis, tmp_path):
+        """Test that already archived files are skipped."""
+        temp_file = tmp_path / "test.md"
+        temp_file.write_text("content")
+
+        # Mock sismember to return True (already archived)
+        mock_redis.sismember.return_value = True
+
+        report = archiver_with_redis.archive_tempmemories([temp_file])
+
+        assert len(report.files_skipped) == 1
+        assert str(temp_file) in report.files_skipped

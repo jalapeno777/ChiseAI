@@ -15,15 +15,20 @@ from src.governance.consolidation.archiver import (
     ArchivedMemory,
     ArchiveStats,
     MemoryArchiver,
+    TempmemoryArchiveConfig,
+    TempmemoryArchiveEntry,
+    TempmemoryArchiveReport,
 )
 from src.governance.consolidation.config import (
     CONSOLIDATION_PREFIX,
     LAST_RUN_KEY,
     ROLLBACK_PREFIX,
+    AutoArchiveMode,
     ConsolidationConfig,
     MemoryPriority,
     MemoryType,
     RetentionPolicy,
+    TempmemoryArchiveConfig,
 )
 from src.governance.consolidation.promoter import (
     GoldenMemoryPromoter,
@@ -50,10 +55,14 @@ __all__ = [
     "MemoryType",
     "MemoryPriority",
     "RetentionPolicy",
+    "AutoArchiveMode",
+    "TempmemoryArchiveConfig",
     # Archiver
     "MemoryArchiver",
     "ArchivedMemory",
     "ArchiveStats",
+    "TempmemoryArchiveEntry",
+    "TempmemoryArchiveReport",
     # Promoter
     "GoldenMemoryPromoter",
     "PromotionCandidate",
