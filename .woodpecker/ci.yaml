@@ -363,7 +363,7 @@ steps:
         exit 0
 
   brain-regression:
-    image: python:3.11
+    image: chiseai-ci-brain-regression:py311-20260321
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -382,7 +382,6 @@ steps:
             exit 0
           fi
 
-          pip install --no-cache-dir pytest pytest-asyncio pytest-cov pyyaml requests numpy scipy
           python3 -m pytest -q \
             tests/test_brain/ \
             tests/test_evaluation/ \
