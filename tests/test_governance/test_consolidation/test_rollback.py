@@ -49,6 +49,7 @@ class TestRollbackOperation:
         )
 
         assert op.success is False
+        assert op.error is not None
         assert "not found" in op.error
 
 
@@ -328,3 +329,140 @@ class TestRollbackPerformance:
 
         assert validation["valid"] is False
         assert validation["rollback_time_seconds"] >= 300
+
+
+class TestTempmemoryRollback:
+    """Tests for tempmemory rollback functionality (ST-MEMORY-INGEST-003)."""
+
+    @pytest.fixture
+    def config(self):
+        """Create a test configuration."""
+        return ConsolidationConfig(
+            dry_run=True,
+            rollback_retention_days=7,
+        )
+
+    @pytest.fixture
+    def mock_redis(self):
+        """Create a mock Redis client."""
+        return MagicMock()
+
+    def test_can_rollback_tempmemory(self, config, tmp_path):
+        """Test checking if tempmemory can be rolled back."""
+        manager = RollbackManager(config)
+
+        # Create an archived file
+        archive_dir = tmp_path / "archive"
+        archive_dir.mkdir()
+        archived_file = archive_dir / "test.md"
+        archived_file.write_text("content")
+
+        # Should be able to rollback
+        assert manager.can_rollback_tempmemory(archived_file) is True
+
+    def test_cannot_rollback_missing_file(self, config, tmp_path):
+        """Test cannot rollback if file doesn't exist."""
+        manager = RollbackManager(config)
+
+        missing_file = tmp_path / "missing.md"
+
+        assert manager.can_rollback_tempmemory(missing_file) is False
+
+    def test_rollback_tempmemory_dry_run(self, config, tmp_path):
+        """Test tempmemory rollback in dry run mode."""
+        manager = RollbackManager(config)
+
+        # Create an archived file
+        archive_dir = tmp_path / "archive"
+        archive_dir.mkdir()
+        archived_file = archive_dir / "test.md"
+        archived_file.write_text("""---
+type: decision
+original_path: docs/tempmemories/test.md
+---
+Test content
+""")
+
+        # Rollback in dry run mode
+        stats = manager.rollback_tempmemory(archived_file, dry_run=True)
+
+        assert stats.operations_succeeded == 1
+        # File should still exist in dry run
+        assert archived_file.exists()
+
+    def test_rollback_tempmemory_batch(self, config, tmp_path):
+        """Test rolling back multiple archived tempmemories."""
+        manager = RollbackManager(config)
+
+        # Create archived files
+        archive_dir = tmp_path / "archive"
+        archive_dir.mkdir()
+
+        files = []
+        for i in range(3):
+            archived_file = archive_dir / f"test_{i}.md"
+            archived_file.write_text(f"""---
+type: decision
+original_path: docs/tempmemories/test_{i}.md
+---
+Test content {i}
+""")
+            files.append(archived_file)
+
+        # Rollback batch
+        stats = manager.rollback_tempmemory_batch(files, dry_run=True)
+
+        assert stats.operations_requested == 3
+        assert stats.operations_succeeded == 3
+
+    def test_get_tempmemory_rollback_window(self, config, tmp_path):
+        """Test getting tempmemory rollback window."""
+        manager = RollbackManager(config)
+
+        # Create archive directory with files
+        archive_dir = tmp_path / "archive"
+        archive_dir.mkdir()
+
+        archived_file = archive_dir / "test.md"
+        archived_file.write_text("content")
+
+        window = manager.get_tempmemory_rollback_window(archive_dir)
+
+        assert window.available_memories == 1
+        assert len(window.archive_files) == 1
+
+    def test_extract_original_path_from_frontmatter(self, config):
+        """Test extracting original path from frontmatter."""
+        manager = RollbackManager(config)
+
+        content = """---
+type: decision
+original_path: docs/tempmemories/original.md
+---
+Content here
+"""
+
+        original_path = manager._extract_original_path(content, Path("archive/test.md"))
+
+        assert original_path == Path("docs/tempmemories/original.md")
+
+    def test_extract_original_path_no_frontmatter(self, config):
+        """Test extracting original path when no frontmatter."""
+        manager = RollbackManager(config)
+
+        content = "Just content, no frontmatter"
+
+        original_path = manager._extract_original_path(content, Path("archive/test.md"))
+
+        assert original_path is None
+
+    def test_cleanup_tempmemory_rollback_data(self, config, tmp_path, mock_redis):
+        """Test cleaning up tempmemory rollback data."""
+        manager = RollbackManager(config, redis_client=mock_redis)
+
+        archived_path = tmp_path / "test.md"
+
+        manager._cleanup_tempmemory_rollback_data(archived_path)
+
+        mock_redis.srem.assert_called_once()
+        mock_redis.delete.assert_called_once()

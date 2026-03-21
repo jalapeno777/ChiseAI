@@ -25,6 +25,14 @@ class MemoryType(Enum):
     CONTEXT = "context"
 
 
+class AutoArchiveMode(Enum):
+    """Auto-archive modes for tempmemory ingestion."""
+
+    IMMEDIATE = "immediate"  # Archive immediately after ingestion
+    DAILY = "daily"  # Archive daily at scheduled time
+    AFTER_N_DAYS = "after_n_days"  # Archive after N days delay
+
+
 class MemoryPriority(Enum):
     """Priority levels for memory promotion."""
 
@@ -57,6 +65,82 @@ class RetentionPolicy:
 
     preserve_if_tagged: list[str] = field(default_factory=list)
     """Tags that prevent archival if present"""
+
+
+@dataclass
+class TempmemoryArchiveConfig:
+    """
+    Configuration for tempmemory auto-archival.
+
+    Controls when and how ingested tempmemories are archived.
+    """
+
+    enabled: bool = True
+    """Whether auto-archival is enabled"""
+
+    mode: AutoArchiveMode = AutoArchiveMode.AFTER_N_DAYS
+    """Auto-archive mode: immediate, daily, or after_n_days"""
+
+    archive_location: str = "docs/tempmemories/archive/"
+    """Path to archive directory (relative to repo root)"""
+
+    delay_days: int = 7
+    """Days to wait before archiving (for AFTER_N_DAYS mode)"""
+
+    daily_schedule_time: time = field(default_factory=lambda: time(2, 0))
+    """Time of day to run daily archival (UTC)"""
+
+    preserve_original_path: bool = True
+    """Whether to store original file path in metadata"""
+
+    generate_reports: bool = True
+    """Whether to generate archive reports"""
+
+    report_format: str = "json"
+    """Report format: json or markdown"""
+
+    skip_already_archived: bool = True
+    """Whether to skip re-ingestion of archived files"""
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert config to dictionary for serialization."""
+        return {
+            "enabled": self.enabled,
+            "mode": self.mode.value,
+            "archive_location": self.archive_location,
+            "delay_days": self.delay_days,
+            "daily_schedule_time": self.daily_schedule_time.isoformat(),
+            "preserve_original_path": self.preserve_original_path,
+            "generate_reports": self.generate_reports,
+            "report_format": self.report_format,
+            "skip_already_archived": self.skip_already_archived,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "TempmemoryArchiveConfig":
+        """Create config from dictionary."""
+        config = cls()
+
+        if "enabled" in data:
+            config.enabled = data["enabled"]
+        if "mode" in data:
+            config.mode = AutoArchiveMode(data["mode"])
+        if "archive_location" in data:
+            config.archive_location = data["archive_location"]
+        if "delay_days" in data:
+            config.delay_days = data["delay_days"]
+        if "daily_schedule_time" in data:
+            config.daily_schedule_time = time.fromisoformat(data["daily_schedule_time"])
+        if "preserve_original_path" in data:
+            config.preserve_original_path = data["preserve_original_path"]
+        if "generate_reports" in data:
+            config.generate_reports = data["generate_reports"]
+        if "report_format" in data:
+            config.report_format = data["report_format"]
+        if "skip_already_archived" in data:
+            config.skip_already_archived = data["skip_already_archived"]
+
+        return config
 
 
 @dataclass
@@ -178,6 +262,12 @@ class ConsolidationConfig:
     tempmemory_ingestion_cadence: str = "daily"
     """Cadence for tempmemory ingestion: 'daily', 'always', or 'manual'"""
 
+    # Tempmemory auto-archive settings
+    tempmemory_archive: TempmemoryArchiveConfig = field(
+        default_factory=TempmemoryArchiveConfig
+    )
+    """Configuration for tempmemory auto-archival"""
+
     def get_policy(self, memory_type: MemoryType) -> RetentionPolicy:
         """
         Get retention policy for a memory type.
@@ -213,6 +303,7 @@ class ConsolidationConfig:
             "tempmemory_ingestion_dry_run": self.tempmemory_ingestion_dry_run,
             "tempmemory_ingestion_filter_types": self.tempmemory_ingestion_filter_types,
             "tempmemory_ingestion_cadence": self.tempmemory_ingestion_cadence,
+            "tempmemory_archive": self.tempmemory_archive.to_dict(),
         }
 
     @classmethod
@@ -254,6 +345,10 @@ class ConsolidationConfig:
             ]
         if "tempmemory_ingestion_cadence" in data:
             config.tempmemory_ingestion_cadence = data["tempmemory_ingestion_cadence"]
+        if "tempmemory_archive" in data:
+            config.tempmemory_archive = TempmemoryArchiveConfig.from_dict(
+                data["tempmemory_archive"]
+            )
 
         return config
 
