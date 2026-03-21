@@ -2544,7 +2544,7 @@ validations:
     epic_id: EP-CI-001
     story_id: ST-CI-001
     status: validated
-    description: Validate docs-pairing CI gate passes by ensuring workflow status and validation registry changes are paired
+    description: Validate docs-pairing CI gate passes by ensuring workflow status and validation registry changes are paired for workflow-status refresh PRs
     acceptance_criteria:
       - docs/bmm-workflow-status.yaml changes are paired with docs/validation/validation-registry.yaml changes
       - validate_docs_pairing.py returns exit code 0
