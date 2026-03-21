@@ -2419,6 +2419,19 @@ validations:
     test_method: automated
     owner: governance-team
 
+  - id: V-MEMORY-INGEST-005
+    title: CI Pipeline Integration for Tempmemory Ingestion Validation
+    epic_id: EP-MEMORY-INGEST-001
+    story_id: ST-MEMORY-INGEST-005
+    status: planned
+    description: Validate CI pipeline integration for pre-evaluation tempmemory ingestion and gating behavior.
+    acceptance_criteria:
+      - pre-eval-ingestion writes status/json artifacts when full diagnostics run
+      - ci-gate enforces pre-eval-ingestion status only when full diagnostics are required
+      - CI remains backward compatible when ingestion is disabled
+    test_method: automated
+    owner: platform-team
+
   - id: V-GOV-009
     title: Governance Story ST-GOV-009 Validation
     epic_id: EP-GOV-001

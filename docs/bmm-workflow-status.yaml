@@ -368,10 +368,10 @@ backlog:
   - Completion report (line 469-472) identified this as immediate Week 1 priority
   - Ensures BrainEval evaluations use most recent memory artifacts
   - Prevents stale memories from affecting evaluation quality
-  owner: TBD
+  owner: senior-dev
   priority: P2
   related_story: ST-MEMORY-INGEST-001
-  status: planned
+  status: in_progress
   title: CI Pipeline Integration for Tempmemory Ingestion
 - id: SIG-REM-001
   title: SentenceTransformer singleton reuse in signal_memory.py
