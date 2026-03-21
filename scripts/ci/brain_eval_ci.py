@@ -26,9 +26,14 @@ import time
 from pathlib import Path
 from typing import Any
 
-# Add src to path for config imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
-from config.bootstrap import bootstrap
+# Add repo and src roots to path for robust imports in CI and local runs.
+REPO_ROOT = Path(__file__).resolve().parents[2]
+SRC_ROOT = REPO_ROOT / "src"
+for path_entry in (str(REPO_ROOT), str(SRC_ROOT)):
+    if path_entry not in sys.path:
+        sys.path.insert(0, path_entry)
+
+from src.config.bootstrap import bootstrap
 
 # Configure logging
 logging.basicConfig(
@@ -96,30 +101,50 @@ def detect_brain_changes(base_ref: str = "origin/main") -> bool:
     Returns:
         True if brain files were modified, False otherwise
     """
+    changed_files: list[str] = []
+
+    # Preferred path: diff against base ref.
     try:
-        # Get list of changed files
         result = subprocess.run(  # nosec B607
             ["git", "diff", "--name-only", base_ref, "HEAD"],
             capture_output=True,
             text=True,
             check=True,
         )
-        changed_files = result.stdout.strip().split("\n")
-
-        # Check if any brain paths are in changed files
-        for file_path in changed_files:
-            for brain_path in BRAIN_PATHS:
-                if brain_path in file_path:
-                    logger.info(f"Brain change detected: {file_path}")
-                    return True
-
-        logger.info("No brain changes detected")
-        return False
-
+        changed_files = [f.strip() for f in result.stdout.splitlines() if f.strip()]
     except subprocess.CalledProcessError as e:
-        logger.error(f"Failed to detect changes: {e}")
-        # Fail safe: assume changes if we can't detect
-        return True
+        logger.warning(f"Failed to detect changes from {base_ref}: {e}")
+
+    # CI fallback: use Woodpecker-provided changed file list.
+    if not changed_files:
+        raw = os.getenv("CI_PIPELINE_FILES", "")
+        if raw:
+            for item in raw.replace("[", "").replace("]", "").replace('"', "").split(","):
+                item = item.strip()
+                if item:
+                    changed_files.append(item)
+
+    # Local fallback: inspect HEAD commit changed files.
+    if not changed_files:
+        try:
+            result = subprocess.run(  # nosec B607
+                ["git", "show", "--name-only", "--pretty=", "HEAD"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            changed_files = [f.strip() for f in result.stdout.splitlines() if f.strip()]
+        except subprocess.CalledProcessError as e:
+            logger.warning(f"Failed to read changed files from HEAD: {e}")
+
+    for file_path in changed_files:
+        for brain_path in BRAIN_PATHS:
+            if brain_path in file_path:
+                logger.info(f"Brain change detected: {file_path}")
+                return True
+
+    logger.info("No brain changes detected")
+    return False
 
 
 def run_memory_ingestion(

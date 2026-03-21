@@ -12,11 +12,21 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
-import ccxt
+try:
+    import ccxt  # type: ignore[import-not-found]
+except ModuleNotFoundError:
+    ccxt = None  # type: ignore[assignment]
 
 from data_ingestion.timeframe_config import TIMEFRAME_CONFIG, Timeframe
 
 logger = logging.getLogger(__name__)
+
+if ccxt is not None:
+    CCXTNetworkError = ccxt.NetworkError
+    CCXTExchangeError = ccxt.ExchangeError
+else:
+    CCXTNetworkError = Exception
+    CCXTExchangeError = Exception
 
 
 @dataclass
@@ -169,6 +179,11 @@ class CCXTAdapter(ExchangeAdapter):
             api_secret: API secret for authenticated requests (optional)
             sandbox: Use sandbox/testnet environment
         """
+        if ccxt is None:
+            raise RuntimeError(
+                "ccxt is required for CCXTAdapter. Install dependency 'ccxt'."
+            )
+
         self.exchange_id = exchange_id
         exchange_class = getattr(ccxt, exchange_id)
         config: dict[str, Any] = {"enableRateLimit": True}
@@ -249,12 +264,12 @@ class CCXTAdapter(ExchangeAdapter):
 
             return result
 
-        except ccxt.NetworkError as e:
+        except CCXTNetworkError as e:
             await self.circuit_breaker.record_failure()
             logger.warning(f"Network error fetching OHLCV from {self.exchange_id}: {e}")
             raise ExchangeError(f"Network error: {e}") from e
 
-        except ccxt.ExchangeError as e:
+        except CCXTExchangeError as e:
             await self.circuit_breaker.record_failure()
             logger.error(f"Exchange error from {self.exchange_id}: {e}")
             raise ExchangeError(f"Exchange error: {e}") from e
