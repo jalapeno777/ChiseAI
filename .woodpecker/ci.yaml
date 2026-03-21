@@ -991,6 +991,31 @@ steps:
         # Do not short-circuit the pipeline; ci-gate is the single fail point.
         exit 0
 
+  status-sync-validation:
+    image: python:3.11
+    environment:
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p "$${CI_STATUS_DIR}"
+        set +e
+        (
+          set -euo pipefail
+          CHANGED_FILES="$(printf '%s' \"${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
+          if ! printf '%s\n' "$CHANGED_FILES" | grep -qx "docs/bmm-workflow-status.yaml"; then
+            echo "status-sync-validation: workflow status file unchanged; skipping"
+            exit 0
+          fi
+          echo "status-sync-validation: workflow status file changed; running validation..."
+          python3 scripts/validate_status_sync.py --verbose
+        ) > "$${CI_STATUS_DIR}/status-sync-validation.log" 2>&1
+        code=$?
+        cat "$${CI_STATUS_DIR}/status-sync-validation.log"
+        echo "$code" > "$${CI_STATUS_DIR}/status-sync-validation.status"
+        # Do not short-circuit the pipeline; ci-gate is the single fail point.
+        exit 0
+
   file-existence-check:
     image: python:3.11
     environment:
