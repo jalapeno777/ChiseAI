@@ -272,7 +272,7 @@ class TestValidateConstitutionEndpoint:
     def test_validate_constitution_success(self, mock_constitution):
         """Test successful constitution validation."""
         with patch(
-            "src.governance.constitution.api.Constitution.load",
+            "src.governance.constitution.api.ConstitutionLoader.load",
             return_value=mock_constitution,
         ):
             try:
@@ -451,7 +451,7 @@ class TestListVersionsEndpoint:
     def test_list_versions_success(self):
         """Test successful version listing."""
         with patch(
-            "src.governance.constitution.api.Constitution.list_versions",
+            "src.governance.constitution.api.ConstitutionLoader.list_versions",
             return_value=[
                 MagicMock(__str__=MagicMock(return_value="2.0.0")),
                 MagicMock(__str__=MagicMock(return_value="1.0.0")),
@@ -490,9 +490,11 @@ class TestGetInvariantsEndpoint:
 
     def test_get_invariants_success(self, mock_constitution):
         """Test successful invariants retrieval."""
+        mock_loader = MagicMock()
+        mock_loader.load.return_value = mock_constitution
         with patch(
-            "src.governance.constitution.api.get_constitution",
-            return_value=mock_constitution,
+            "src.governance.constitution.api.get_loader",
+            return_value=mock_loader,
         ):
             try:
                 from src.governance.constitution.api import get_invariants
