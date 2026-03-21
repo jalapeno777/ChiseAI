@@ -214,6 +214,7 @@ python3 scripts/swarm/session.py start \
 
 ### Status Sync
 - [x] `docs/bmm-workflow-status.yaml` updated
+- [x] `docs/validation/validation-registry.yaml` impact reviewed; co-updated if status semantics/evidence mapping changed
 - [x] `python3 scripts/validate_status_sync.py`: PASS
 
 ## Testing Evidence

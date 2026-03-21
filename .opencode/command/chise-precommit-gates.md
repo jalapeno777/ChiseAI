@@ -22,6 +22,7 @@ Run these gates before PR/merge. If a referenced script is missing, explicitly n
 
 3. Status sync (if present)
    - If `scripts/validate_status_sync.py` exists, run: `python3 scripts/validate_status_sync.py`
+   - If this change edits `docs/bmm-workflow-status.yaml`, require explicit `docs/validation/validation-registry.yaml` impact review and co-update when status semantics/validation requirements/evidence mappings changed.
 
 4. Iterloop compliance (if present)
    - If `scripts/validate_iterloop_compliance.py` exists, run:

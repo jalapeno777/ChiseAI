@@ -27,7 +27,13 @@ Use this command whenever `docs/bmm-workflow-status.yaml` is edited, or when YAM
 5. Restore from explicit backup:
    - `python3 scripts/governance/status_guard.py restore --file docs/bmm-workflow-status.yaml --backup <backup_path>`
 
+6. Paired status/registry sync check (required):
+   - Review whether the status edit changed semantics, validation requirements, or evidence references.
+   - If yes, update `docs/validation/validation-registry.yaml` in the same change.
+   - Run: `python3 scripts/validate_status_sync.py`
+
 ## Required policy
 
 - After any two failed `attempt` runs, do not continue ad-hoc edits.
 - Run `repair` and revalidate before proceeding with any other workflow tasks.
+- Do not treat a status-file edit as complete until paired `validation-registry` impact review is recorded and required co-updates are applied.

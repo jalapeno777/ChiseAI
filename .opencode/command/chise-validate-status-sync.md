@@ -25,7 +25,7 @@ python3 scripts/validate_status_sync.py
 
 If validation fails:
 1. Review output for mismatched stories
-2. Update docs/bmm-workflow-status.yaml
+2. Update `docs/bmm-workflow-status.yaml` and, when status semantics/evidence mappings changed, co-update `docs/validation/validation-registry.yaml`
 3. Re-run this command
 4. Only then proceed with commit/PR
 

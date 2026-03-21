@@ -183,7 +183,16 @@ In a short back-and-forth with Craig, lock:
 Delegate planning to **jarvis** with these instructions:
 
 - Convert the agreed goal into **BMAD epics/stories/tasks**.
-- Prefer decomposition into 1SP tasks wherever possible; hard cap each task at 3SP when decomposition cannot reduce further.
+- Apply sizing governance during planning:
+  - target `1SP` tasks wherever safe/feasible,
+  - use `2-3SP` when `1SP` is not safe/feasible,
+  - allow `4-5SP` only when further split is unsafe.
+- Treat `>5SP` as blocked-by-policy until Craig explicitly approves.
+- For any `>5SP` candidate, require Jarvis to return:
+  - original plan,
+  - simplification recommendations,
+  - alternative decomposition options that preserve function,
+  - recommended option with rationale.
 - Provide **acceptance criteria per story**.
 - Provide a **test plan** (what tests, where, how to run).
 - Provide a **live-validation checklist** (real endpoints/keys/env, smoke tests, sanity checks).
@@ -288,6 +297,7 @@ OUTPUT FORMAT:
 - Include a **parallelization plan**:
   - group tasks into sequential "batches"
   - for each task: `scope_globs`, `locks_required`, and `depends_on`
+- Include `task_size_sp` per task and a size-justification note for any `4-5SP` task.
 - For each executable git task, require explicit `BRANCH`, `WORKTREE_PATH`, and `SESSION_VERIFY` (`python3 scripts/swarm/session.py verify ...`).
 - Use Jarvis's batch-table template (see `.opencode/agent/Jarvis.md` "Parallelization plan template").
 - Identify which worker agents you will spawn for each executable step.
@@ -295,17 +305,14 @@ OUTPUT FORMAT:
 - For unresolved questions, append:
   - `BLOCKER_PACKET` with `question`, `recommended_default`, `risk_if_default_wrong`, `decision_deadline_utc`.
 
-## Parallel Delegation Policy (Aria -> Jarvis)
+## Jarvis Invocation Concurrency Policy (Aria -> Jarvis)
 
-You may run multiple Jarvis calls in parallel only if ALL are true:
+Aria must maintain exactly one active Jarvis/JarvisRuntime session at a time.
 
-- Each Jarvis call has disjoint `scope_globs` (no shared directories and no shared "global-lock" files).
-- None of the calls touches global-lock areas (CI/infra/shared invariants) or requires coordinated integration.
-- There are no upstream dependencies between the calls (ordering constraints).
-
-Default safe behavior:
-
-- If scope/locks are unclear: run **one** Jarvis call, ask for a parallelization plan, then parallelize at the worker level.
+- Do not task-call multiple Jarvis sessions in parallel.
+- Do not interleave unrelated scopes into a single active Jarvis run; rotate session when scope changes materially.
+- Keep Aria orchestration sequential; delegate allowed parallelism only at Jarvis worker-batch level.
+- If scope/locks are unclear: run one Jarvis call, require a parallelization plan, and let Jarvis parallelize only disjoint worker scopes.
 
 ## Parallelization Plan Review Checklist (Aria gate)
 
@@ -316,6 +323,7 @@ Before you accept a plan that includes parallel execution, verify:
 - Integration steps are explicitly sequential (ordering + verification between merges).
 - Jarvis is maintaining a single story iterlog status ledger (key decisions, blockers, next batch) so parallel workers stay aligned.
 - Jarvis has a memory promotion plan (decisions/patterns + incident prevention rules) for story completion.
+- If any work item touches `docs/bmm-workflow-status.yaml`, the plan explicitly includes `docs/validation/validation-registry.yaml` impact review and co-update when status semantics/evidence mappings changed.
 
 ## Jarvis session lifecycle policy (required)
 
@@ -390,6 +398,7 @@ When Jarvis returns a plan:
   - no live-validation step
   - unclear ordering / dependency conflicts
   - missing rollback strategy (if deploy-impacting)
+  - task-size policy violations (`>5SP` without explicit Craig approval)
 - If gaps exist, send Jarvis a concise correction request.
 - Only proceed once plan is **executable without further questions** (or assumptions are approved by Craig).
 - Mark `PLAN_APPROVED=true` only after all plan gates pass. Do not start implementation before this marker.
@@ -507,6 +516,7 @@ Ask Craig only when:
 - Required secrets/credentials are missing and cannot be stubbed safely (paper/live connectors).
 - Any security/compliance concern is identified and remediation changes are required.
 - Any PRD scope change is being considered (must get Craig assessment/approval first).
+- Any planned task remains `>5SP` after simplification options are prepared (explicit Craig approval required before execution).
 
 Otherwise: proceed, log the assumption in the Redis iterlog for the story, and keep moving.
 

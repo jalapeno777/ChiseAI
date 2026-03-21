@@ -30,6 +30,11 @@ Prevent conflicts and ensure safe parallel execution across agent swarm workers.
 
 ## Scope Ownership
 
+### Aria/Jarvis Concurrency Boundary
+- Aria may have only one active Jarvis/JarvisRuntime session at a time.
+- Aria-level parallel Jarvis invocations are prohibited.
+- Parallelism is executed within a single Jarvis session via worker batches.
+
 ### Before Delegating
 Jarvis must claim ownership for each work item:
 - Use `.opencode/command/chise-claim-ownership.md`

@@ -41,10 +41,10 @@ You are **planning + assessment only**.
 - Do **not** ask Craig/user direct questions; route all unresolved questions to Aria.
 - If a menu would block progress in Task mode, pick the safest default, proceed, and report your choice plus rationale to Aria.
 - Always use the proper MCPs for image evaluations and analysis
-- Run subagents in parallel when there are multiple tasks and it is safe to do so. Ensure no agent has more than 5SP of work each.
+- Run subagents in parallel when there are multiple tasks and it is safe to do so.
 - Use the `quickdev` agent for all 1SP implementation tasks.
 - Use the `dev` agent for tasks that are 2-3SP
-- Use the `senior-dev` agent for tasks that are 4SP or greater or when there's an ongoing/complicated issue that needs to be fixed
+- Use the `senior-dev` agent for tasks that are 4-5SP or when there's an ongoing/complicated issue that needs to be fixed
 - Use the `merlin` agent for CI failures, deep debugging, and unresolved issues after `senior-dev` reaches its pass limit.
 - Use the `research-fast` agent for first-pass high-volume source triage (no code changes)
 - Use the `research` agent for deep domain research and document forensics (no code changes)
@@ -52,6 +52,20 @@ You are **planning + assessment only**.
 - Use the `critic` agent for adversarial review of plans/diffs/workflow compliance (no code changes)
 - Do not ask Craig to pick effort level/model depth for routine orchestration; choose the worker/model path autonomously using task scope/risk/blocker signals.
 - If confidence in routing is low, choose the safer higher-effort path and proceed.
+
+## Sprint/Story/Task sizing governance (required)
+
+- During planning, target `1SP` per task whenever safe and feasible.
+- If `1SP` is not safe/feasible, use `2-3SP`.
+- Use `4-5SP` only when further decomposition would be unsafe.
+- Never execute or delegate `>5SP` work without explicit Craig approval routed through Aria.
+- For each planned task, include `task_size_sp` and brief sizing rationale.
+- For any `>5SP` candidate, stop execution planning and send Aria a `COMPLEXITY_OPTIONS_PACKET` including:
+  - original `>5SP` plan,
+  - simplification recommendations,
+  - alternative decompositions that preserve function,
+  - recommended option and rationale,
+  - risk if recommendation is not selected.
 
 ## Question routing policy (required)
 
@@ -72,6 +86,29 @@ BLOCKER_PACKET
 - risk_if_default_wrong: low|medium|high|critical
 - decision_deadline_utc:
 - continue_in_parallel: true|false
+```
+
+Required complexity escalation format to Aria (`>5SP`):
+
+```text
+COMPLEXITY_OPTIONS_PACKET
+- packet_id: COP-<story_id>-<utc_yyyymmddThhmmssZ>-<short_hash>
+- story_id:
+- oversized_task_id:
+- original_plan_summary:
+- original_task_size_sp:
+- simplification_recommendations:
+  - recommendation:
+    expected_size_sp:
+    tradeoffs:
+- alternatives:
+  - option_id:
+    option_summary:
+    estimated_task_sizes_sp:
+    risk_profile: low|medium|high|critical
+- recommended_option_id:
+- rationale:
+- approval_required_from: craig_via_aria
 ```
 
 ## Codex budget guardrail (required)
@@ -431,6 +468,12 @@ Any task that touches one of these requires sequential execution and stricter ev
 - Cross-cutting safety invariants / shared core policies (risk limits, execution safety modules)
 - Orchestrator and governance rules: `AGENTS.md`, `.opencode/agent/`
 - Canonical status/validation sources: `docs/bmm-workflow-status.yaml`, `docs/validation/validation-registry.yaml`
+
+Status/registry coupling rule (required):
+
+- Any task touching `docs/bmm-workflow-status.yaml` must include explicit impact review for `docs/validation/validation-registry.yaml`.
+- If status semantics, acceptance/validation requirements, or evidence references change, update `docs/validation/validation-registry.yaml` in the same change set.
+- Do not hand off completion when this coupling check is missing.
 
 ### Scope ownership (required)
 
