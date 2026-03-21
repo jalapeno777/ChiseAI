@@ -86,7 +86,7 @@ skill(name="chiseai-git-workflow")          # Load git workflow skill
 ### "I need to edit docs/bmm-workflow-status.yaml..."
 **Load:** `chiseai-workflow-status-guard` + `yaml-editor`
 **Then run:** `chise-status-yaml-guard` (`attempt`; mandatory `repair` after 2 failed attempts)
-**Why:** Enforces parse/lint/integrity checks with backup + atomic repair path
+**Why:** Enforces parse/lint/integrity checks with backup + atomic repair path, and requires `docs/validation/validation-registry.yaml` co-updates when status semantics/evidence links change
 
 ### "I need to merge in an emergency..."
 **Load:** `chiseai-git-workflow` (for context)
@@ -303,9 +303,22 @@ These rules are additive and must be enforced consistently across `AGENTS.md` an
 ### A) Canonical Routing and Escalation State Machine (Required)
 
 - Task sizing policy:
-  - `quickdev`: all 1SP tasks
-  - `dev`: all tasks >1SP up to 3SP
-  - `senior-dev`: tasks >3SP, cross-cutting refactors, complex/systemic failures
+  - Planning target for sprint/story/task decomposition: prefer `1SP` whenever safe and feasible.
+  - Fallback size: `2-3SP` when `1SP` decomposition is not safe/feasible.
+  - Maximum normal executable task size: `5SP` (only when smaller split would be unsafe).
+  - Routing:
+    - `quickdev`: `1SP`
+    - `dev`: `2-3SP`
+    - `senior-dev`: `4-5SP` (and complex/systemic work within this size band)
+  - `>5SP` policy (hard gate):
+    - Jarvis must not execute or delegate a `>5SP` task.
+    - Jarvis must escalate to Aria with alternatives that preserve function while reducing complexity.
+    - Aria must present Craig with:
+      - original `>5SP` plan
+      - simplification recommendations
+      - alternative decomposition options
+      - recommended option with rationale
+    - A `>5SP` task requires explicit Craig approval before execution.
 - Escalation pass limits (strict):
   - `quickdev`: max 2 passes on the same blocker, then escalate to `dev`
   - `dev`: max 2 passes on the same blocker, then escalate to `senior-dev`
@@ -317,6 +330,8 @@ These rules are additive and must be enforced consistently across `AGENTS.md` an
 
 - Rule: plan first, execute second.
 - No executor delegation until Aria marks `PLAN_APPROVED=true`.
+- `PLAN_APPROVED=true` requires task-size compliance with Section A.
+- If any task remains `>5SP`, execution is blocked until explicit Craig approval is captured by Aria.
 - If any of the following happen, stop that execution path and replan before continuing:
   - failed validation gate
   - scope drift or hidden dependency discovery
@@ -420,6 +435,9 @@ Every completion claim MUST include:
 
 ### J) Jarvis Session Rotation (Required)
 
+- Aria may run only one active Jarvis/JarvisRuntime session at a time.
+- Aria must not task-call multiple Jarvis sessions in parallel for the same turn/scope.
+- Aria-level parallelism is prohibited; parallel execution is delegated to Jarvis worker batches only.
 - Aria must start a fresh Jarvis session when scope changes materially:
   - new batch with different AC,
   - new task family/workstream,
@@ -456,6 +474,7 @@ Every completion claim MUST include:
 - For `.yaml`, `.yml`, and markdown frontmatter, make the smallest possible change.
 - Preserve indentation, quoting style, comments, and key order unless explicitly told otherwise.
 - Trigger to load skill: if task touches `.yaml`, `.yml`, or markdown frontmatter, load `yaml-editor` before editing.
+- Special pair rule: if editing `docs/bmm-workflow-status.yaml`, evaluate and update `docs/validation/validation-registry.yaml` in the same change whenever status semantics, validation requirements, acceptance criteria coverage, or evidence references change.
 - Prefer `@yaml-config-editor` for YAML-heavy edits (multiple YAML files, schema-sensitive config, or frontmatter batches).
 - After editing `.yaml` or `.yml`, run this exact sequence:
   1. `npx --prefix . prettier --write <file>`

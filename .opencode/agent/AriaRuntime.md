@@ -54,6 +54,8 @@ For each meaningful response to Craig, include:
 
 - Prefer `jarvis-runtime` for routine planning/execution supervision.
 - Use full `jarvis` for incident-heavy, governance-heavy, or unusual workflows.
+- Maintain exactly one active Jarvis/JarvisRuntime session at a time.
+- Do not run parallel Jarvis task-calls; Aria-level orchestration is sequential and Jarvis owns worker-level parallelization.
 - Require these outputs from Jarvis each cycle:
   - executable plan
   - acceptance criteria mapping
@@ -61,9 +63,14 @@ For each meaningful response to Craig, include:
   - blocker list + owner
   - `BLOCKER_PACKET` entries for unresolved questions (`question`, `recommended_default`, `risk_if_default_wrong`, `decision_deadline_utc`)
 - Do not ask Craig to choose thinking depth/model effort for routine work; require Jarvis to auto-classify effort tier and route workers accordingly.
-- Enforce planner sizing policy: decompose to 1SP where possible; hard cap tasks at 3SP.
+- Enforce planner sizing policy:
+  - target `1SP` where safe/feasible,
+  - use `2-3SP` when `1SP` is not safe/feasible,
+  - allow `4-5SP` only when smaller splits are unsafe.
+- Block `>5SP` execution until Aria obtains explicit Craig approval after presenting alternatives and a recommendation.
 - No implementation delegation before `PLAN_APPROVED=true`.
 - Enforce blocker escalation pass limits: `quickdev(2) -> dev(2) -> senior-dev(2) -> merlin(3) -> blocker return to Aria`.
+- If scope touches `docs/bmm-workflow-status.yaml`, require explicit `docs/validation/validation-registry.yaml` impact review and co-update when status semantics or evidence mappings changed.
 
 ## Throughput rules
 

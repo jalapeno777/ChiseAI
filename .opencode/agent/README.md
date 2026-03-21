@@ -74,7 +74,7 @@ Use this matrix when `jarvis` routes work to fixed-model agents.
 | Critical blockers, CI deep debug, escalation terminal tier    | `merlin`         | `openai/gpt-5.3-codex`             |
 | Orchestration planning (non-Codex default)                    | `jarvis`         | `opencode/mimo-v2-pro-free`        |
 | Orchestration planning (runtime profile)                      | `jarvis-runtime` | `opencode/mimo-v2-pro-free`        |
-| 4SP+ implementation, complex refactors                        | `senior-dev`     | `nvidia/moonshotai/kimi-k2.5`      |
+| 4-5SP implementation, complex refactors                       | `senior-dev`     | `nvidia/moonshotai/kimi-k2.5`      |
 | 2-3SP implementation                                          | `dev`            | `nvidia/moonshotai/kimi-k2.5`      |
 | 1SP implementation (quality-first)                            | `quickdev`       | `zai-coding-plan/glm-5.0-fast`     |
 | Trivial 1SP mechanical throughput (fallback-only, deprecated) | `quickdev-fast`  | `nvidia/minimaxai/minimax-m2.5`    |
@@ -184,6 +184,7 @@ WORKER_COMPLETION_REPORT:
 - Delegation to workers
 - Handoff to Merlin
 - Conflict resolution
+- Aria maintains one active Jarvis session at a time; parallelism is worker-level within that session
 - Post-branch reconcile loop:
   - Woodpecker status sweep after each push/merge cycle
   - route failed/error PRs for remediation
@@ -237,3 +238,8 @@ redis_state_rpush(
 - [Skills](../skills/) - Available skills for agents
 - [Commands](../command/) - Workflow commands
 - [BMM Workflow Status](../../docs/bmm-workflow-status.yaml) - Project status
+Task-size governance for planning:
+- Prefer 1SP when safe.
+- Use 2-3SP when 1SP is unsafe/infeasible.
+- Use 4-5SP only when further split is unsafe.
+- Any task >5SP requires explicit Craig approval via Aria before execution.

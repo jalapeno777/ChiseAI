@@ -10,6 +10,9 @@ compatibility: opencode
 - Special-case: when editing `docs/bmm-workflow-status.yaml`, run
   `python3 scripts/governance/status_guard.py validate --file docs/bmm-workflow-status.yaml`
   before and after edits.
+- Special-case coupling: when editing `docs/bmm-workflow-status.yaml`, assess impact on
+  `docs/validation/validation-registry.yaml`; if status semantics, validation requirements, or
+  evidence references changed, update `validation-registry.yaml` in the same change set.
 - For `docs/bmm-workflow-status.yaml`, if two manual fix attempts fail, run mandatory repair:
   `python3 scripts/governance/status_guard.py repair --file docs/bmm-workflow-status.yaml --enforce-repair-after 2`
 - Read the full file before editing.

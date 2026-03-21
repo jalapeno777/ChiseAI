@@ -37,7 +37,12 @@ Load this skill when:
 4. If repair cannot complete:
    - `python3 scripts/governance/status_guard.py restore --file docs/bmm-workflow-status.yaml`
 
-5. Post-edit validation:
+5. Paired status/registry sync check:
+   - Assess whether the status edit changed semantics, acceptance/validation requirements, or evidence mappings.
+   - If yes, co-update `docs/validation/validation-registry.yaml` in the same change set.
+   - `python3 scripts/validate_status_sync.py`
+
+6. Post-edit validation:
    - `python3 scripts/governance/status_guard.py validate --file docs/bmm-workflow-status.yaml`
 
 ## Non-negotiables
@@ -45,3 +50,4 @@ Load this skill when:
 - Do not proceed with unrelated story work while this file is invalid.
 - Do not bypass mandatory repair after two failed attempts.
 - Preserve backups produced by `status_guard.py` for recovery and audit.
+- Do not complete a status-file task without explicit `validation-registry` impact review; apply co-updates whenever status semantics/evidence contracts changed.

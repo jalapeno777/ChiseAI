@@ -33,6 +33,13 @@ Inconsistent delegation leads to:
 Every delegation MUST include:
 
 ### 1. Scope Definition
+TASK_SIZE_SP:
+  - Estimated task size in story points
+  - Target: `1SP` when safe/feasible
+  - Fallback: `2-3SP`
+  - Maximum normal executable size: `5SP`
+  - If `>5SP`: do not execute/delegate until explicit Craig approval via Aria
+
 SCOPE_GLOBS:
   - List repo-relative paths the worker may edit
   - Example: ["src/neuro_symbolic/evolution/", "tests/test_evolution/"]
@@ -75,6 +82,7 @@ EXIT_CONDITIONS:
    - Edit outside SCOPE_GLOBS
    - Touch a FORBIDDEN_GLOBS path
    - Find an upstream blocker (dependency not ready)
+   - Execute a task estimated at >5SP without explicit Craig approval via Aria
    - Hit repeated-error circuit breaker (same error_signature appears twice without strategy change)
    - Claim completion without passing the completion publication gate"
 

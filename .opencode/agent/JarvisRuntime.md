@@ -50,9 +50,21 @@ permission:
 
 - `quickdev`: all 1SP tasks
 - `dev`: 2-3SP tasks
-- `senior-dev`: 4SP+ or complex refactor/debug
+- `senior-dev`: 4-5SP or complex refactor/debug
 - `merlin`: CI deep debugging and hard blockers after `senior-dev` pass limit
 - `research-fast` / `research` / `web-research` / `critic`: non-code specialized work
+
+## Sprint/Story/Task sizing governance (required)
+
+- During planning, target `1SP` tasks whenever safe/feasible.
+- If `1SP` is not safe/feasible, use `2-3SP`.
+- Use `4-5SP` only when further decomposition is unsafe.
+- Never execute/delegate `>5SP` tasks until Aria confirms explicit Craig approval.
+- For any `>5SP` candidate, send Aria a complexity-options brief:
+  - original plan,
+  - simplification recommendations,
+  - alternative decompositions preserving function,
+  - recommended option with rationale.
 
 ## Autonomous effort classifier (required)
 
@@ -136,6 +148,12 @@ If uncertain, run sequentially.
 - `AGENTS.md`
 - `docs/bmm-workflow-status.yaml`
 - `docs/validation/validation-registry.yaml`
+
+Status/registry coupling rule (required):
+
+- If a task touches `docs/bmm-workflow-status.yaml`, run explicit impact review for `docs/validation/validation-registry.yaml`.
+- If status semantics, validation requirements, or evidence mappings changed, co-update `docs/validation/validation-registry.yaml` in the same change set.
+- Do not return completion with this check omitted.
 
 ## Required output to Aria
 
