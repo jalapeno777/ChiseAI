@@ -2534,6 +2534,20 @@ validations:
     test_method: automated
     owner: qa-team
 
+  - id: V-CI-P3-003
+    title: Workflow Status Guard Parse and Repair Gate
+    epic_id: EP-CI-001
+    story_id: REPO-STATUS-GUARD-001
+    status: validated
+    description: Validate workflow status guard catches YAML corruption and supports mandatory repair escalation.
+    acceptance_criteria:
+      - scripts/governance/status_guard.py validate returns non-zero on malformed workflow YAML
+      - scripts/governance/status_guard.py attempt escalates to repair_required after configured threshold
+      - scripts/governance/status_guard.py repair produces parseable YAML and passes yamllint + status_write_gate
+      - CI status-write-gate runs status_guard validation when workflow status file changes
+    test_method: automated
+    owner: qa-team
+
 # ============================================================
 # Global validation thresholds
 # ============================================================

@@ -24,8 +24,15 @@ from typing import Any
 import yaml
 
 # Bootstrap environment first (must be before any env access)
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-from config.bootstrap import bootstrap
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+for _path in (str(_REPO_ROOT), str(_REPO_ROOT / "src")):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
+
+try:
+    from config.bootstrap import bootstrap
+except ModuleNotFoundError:
+    from src.config.bootstrap import bootstrap
 
 bootstrap(load_env=True)
 
