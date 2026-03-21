@@ -486,8 +486,8 @@ class TestCIIntegrationEndToEnd:
 class TestCIGateIntegration:
     """Test integration with ci_gate.py."""
 
-    def test_pre_eval_ingestion_in_fast_required(self):
-        """Verify pre-eval-ingestion.status is in ci_gate.FAST_REQUIRED."""
+    def test_pre_eval_ingestion_in_full_required(self):
+        """Verify pre-eval-ingestion.status is only required for full/cron gates."""
         import importlib.util
 
         spec = importlib.util.spec_from_file_location(
@@ -498,7 +498,8 @@ class TestCIGateIntegration:
         ci_gate = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(ci_gate)
 
-        assert "pre-eval-ingestion.status" in ci_gate.FAST_REQUIRED
+        assert "pre-eval-ingestion.status" not in ci_gate.FAST_REQUIRED
+        assert "pre-eval-ingestion.status" in ci_gate.FULL_REQUIRED
 
     def test_ci_gate_fails_when_pre_eval_ingestion_fails(self, tmp_path, monkeypatch):
         """Test that ci_gate fails when pre-eval-ingestion.status is non-zero."""
@@ -516,12 +517,16 @@ class TestCIGateIntegration:
         ci_dir = tmp_path / "ci"
         ci_dir.mkdir(parents=True)
 
-        # Create all required status files with success (0) except pre-eval-ingestion
+        # Create all required status files with success (0) except pre-eval-ingestion.
+        # Force full-gate mode to include FULL_REQUIRED statuses.
+        monkeypatch.setenv("FORCE_FULL_GATE", "1")
         for status_file in ci_gate.FAST_REQUIRED:
+            (ci_dir / status_file).write_text("0", encoding="utf-8")
+        for status_file in ci_gate.FULL_REQUIRED:
             if status_file == "pre-eval-ingestion.status":
-                (ci_dir / status_file).write_text("1", encoding="utf-8")  # Failed
+                (ci_dir / status_file).write_text("1", encoding="utf-8")
             else:
-                (ci_dir / status_file).write_text("0", encoding="utf-8")  # Success
+                (ci_dir / status_file).write_text("0", encoding="utf-8")
 
         # Monkeypatch CI_DIR to use our temp directory
         monkeypatch.setattr(ci_gate, "CI_DIR", ci_dir)
@@ -556,8 +561,11 @@ class TestCIGateIntegration:
         ci_dir = tmp_path / "ci"
         ci_dir.mkdir(parents=True)
 
-        # Create all required status files with success (0)
+        # Create all required status files with success (0) in full-gate mode.
+        monkeypatch.setenv("FORCE_FULL_GATE", "1")
         for status_file in ci_gate.FAST_REQUIRED:
+            (ci_dir / status_file).write_text("0", encoding="utf-8")
+        for status_file in ci_gate.FULL_REQUIRED:
             (ci_dir / status_file).write_text("0", encoding="utf-8")
 
         # Monkeypatch CI_DIR to use our temp directory

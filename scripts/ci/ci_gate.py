@@ -42,11 +42,11 @@ FAST_REQUIRED = [
     "status-write-gate.status",
     "status-sync-validation.status",
     "file-existence-check.status",
-    "pre-eval-ingestion.status",
 ]
 FULL_REQUIRED = [
     "local-ci.status",
     "brain-eval.status",
+    "pre-eval-ingestion.status",
 ]
 # Cron diagnostics run in dedicated steps but are not hard-blocking for merge gate.
 CRON_REQUIRED: list[str] = []
