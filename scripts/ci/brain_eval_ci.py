@@ -26,9 +26,14 @@ import time
 from pathlib import Path
 from typing import Any
 
-# Add src to path for config imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
-from config.bootstrap import bootstrap
+# Add repo and src roots to path for robust imports in CI and local runs.
+REPO_ROOT = Path(__file__).resolve().parents[2]
+SRC_ROOT = REPO_ROOT / "src"
+for path_entry in (str(REPO_ROOT), str(SRC_ROOT)):
+    if path_entry not in sys.path:
+        sys.path.insert(0, path_entry)
+
+from src.config.bootstrap import bootstrap
 
 # Configure logging
 logging.basicConfig(
