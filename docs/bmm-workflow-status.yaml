@@ -422,7 +422,7 @@ backlog:
   description: Ensure funding_rate compute(data) function signature and return type
     comply with the signal contract.
   owner: dev
-  implementation_notes: compute(self, data: list) -> FundingRateResult signature in src/market_analysis/fundamentals/funding_rate.py:259
+  implementation_notes: "compute(self, data: list) -> FundingRateResult signature in src/market_analysis/fundamentals/funding_rate.py:259"
   pr_number: 556
   merge_commit: aa84345146df02cc0b7df9e3fded65c3c688bbff
 - id: SIG-REM-005
