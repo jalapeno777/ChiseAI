@@ -21,7 +21,7 @@ import logging
 import sys
 import time
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -400,7 +400,7 @@ class DashboardPerformanceTester:
         """
         dashboards_dir = Path(dashboards_dir)
         report = PerformanceReport(
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             grafana_url=self.grafana_url,
         )
 

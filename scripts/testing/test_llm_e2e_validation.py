@@ -16,7 +16,7 @@ import sys
 import json
 import time
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
@@ -33,7 +33,7 @@ def create_test_signal():
         "symbol": "BTCUSDT",
         "action": "BUY",
         "confidence": 0.75,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "price": 45000.00,
         "indicators": {
             "rsi": 30.5,
@@ -78,9 +78,9 @@ def test_llm_disabled():
     # When disabled, should return safe GO
     assert enhancer.enabled == False, "Enhancer should be disabled by default"
     assert result.get("decision") == "GO", "Disabled enhancer should return safe GO"
-    assert result.get("llm_latency_ms") is None, (
-        "Disabled enhancer should not have LLM latency"
-    )
+    assert (
+        result.get("llm_latency_ms") is None
+    ), "Disabled enhancer should not have LLM latency"
 
     print("✅ TEST 1 PASSED: LLM is disabled by default and returns safe GO")
     return True
@@ -299,7 +299,7 @@ def main():
     print("PAPER-LLM-DIAG-001: E2E Validation with LLM Enabled")
     print("=" * 60)
 
-    results = {"timestamp": datetime.utcnow().isoformat(), "tests": {}}
+    results = {"timestamp": datetime.now(timezone.utc).isoformat(), "tests": {}}
 
     tests = [
         ("llm_disabled_default", test_llm_disabled),

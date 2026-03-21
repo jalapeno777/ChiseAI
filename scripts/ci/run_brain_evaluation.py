@@ -103,9 +103,9 @@ def detect_changed_brain_versions(
         return [f"brain-{commit_sha}"]
     except subprocess.CalledProcessError:
         # Fallback to timestamp-based version
-        from datetime import datetime
+        from datetime import datetime, timezone
 
-        timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
         return [f"brain-{timestamp}"]
 
 

@@ -31,7 +31,7 @@ import os
 import shutil
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -55,7 +55,7 @@ class ExecutionReport:
     """Report of automated archival execution."""
 
     def __init__(self):
-        self.timestamp = datetime.utcnow().isoformat() + "Z"
+        self.timestamp = datetime.now(timezone.utc).isoformat() + "Z"
         self.version = AUTOMATION_VERSION
         self.live_mode = False
         self.dry_run_mode = True
@@ -223,7 +223,7 @@ def acquire_lock() -> tuple[bool, str]:
 
     try:
         # Use SET NX (set if not exists) with expiration
-        lock_value = f"archival-{datetime.utcnow().isoformat()}"
+        lock_value = f"archival-{datetime.now(timezone.utc).isoformat()}"
         acquired = client.set(
             REDIS_LOCK_KEY,
             lock_value,
@@ -274,7 +274,7 @@ def create_backup() -> tuple[bool, Optional[Path]]:
         BACKUP_DIR.mkdir(parents=True, exist_ok=True)
 
         # Generate timestamped backup filename
-        timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
         backup_filename = f"workflow-status-{timestamp}.yaml"
         backup_path = BACKUP_DIR / backup_filename
 
@@ -546,7 +546,7 @@ def main():
 
     args = parser.parse_args()
 
-    start_time = datetime.utcnow()
+    start_time = datetime.now(timezone.utc)
     report = ExecutionReport()
 
     # Determine live mode from args or environment
@@ -737,7 +737,7 @@ def main():
         print()
 
     # Calculate duration
-    end_time = datetime.utcnow()
+    end_time = datetime.now(timezone.utc)
     report.duration_seconds = (end_time - start_time).total_seconds()
 
     # Send notification if requested

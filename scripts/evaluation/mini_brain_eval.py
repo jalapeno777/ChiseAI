@@ -18,7 +18,7 @@ import os
 import re
 import uuid
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -478,7 +478,7 @@ class IssueDetector:
         # Get decision text and metadata
         decision_text = decision.get("decision", "")
         rationale = decision.get("rationale", "")
-        timestamp = decision.get("timestamp", datetime.utcnow().isoformat())
+        timestamp = decision.get("timestamp", datetime.now(timezone.utc).isoformat())
 
         # Check for issue patterns in decision text
         text_to_check = f"{decision_text} {rationale}".lower()
@@ -537,7 +537,9 @@ class IssueDetector:
                 if re.search(pattern, text_to_check, re.IGNORECASE):
                     # Extract metadata from payload
                     metadata = payload.get("metadata", {})
-                    timestamp = metadata.get("timestamp", datetime.utcnow().isoformat())
+                    timestamp = metadata.get(
+                        "timestamp", datetime.now(timezone.utc).isoformat()
+                    )
 
                     issue = Issue(
                         issue_type=issue_type,
@@ -838,7 +840,7 @@ def run_evaluation(
 
     result = MiniEvalResult(
         eval_id=str(uuid.uuid4()),
-        timestamp=datetime.utcnow().isoformat() + "Z",
+        timestamp=datetime.now(timezone.utc).isoformat() + "Z",
         cadence=cadence,
         issues_found=[asdict(issue) for issue in issues],
         mitigations=mitigations,
@@ -852,7 +854,7 @@ def run_evaluation(
     output_path = Path(output_dir) / cadence
     output_path.mkdir(parents=True, exist_ok=True)
 
-    timestamp_str = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+    timestamp_str = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     output_file = output_path / f"{timestamp_str}.json"
 
     with open(output_file, "w") as f:

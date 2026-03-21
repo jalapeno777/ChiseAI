@@ -5,7 +5,7 @@ from __future__ import annotations
 import os.path
 import re
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -210,7 +210,7 @@ def check_test_counts(
 
     result: dict[str, Any] = {
         "check_type": "test-counts",
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
         "story_id": story_id,
         "path": path,
         "passed": True,

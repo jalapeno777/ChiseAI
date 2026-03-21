@@ -21,7 +21,7 @@ import json
 import sys
 import time
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, TypedDict, cast
 
@@ -172,7 +172,7 @@ class RunbookValidator:
         print("RUNBOOK VALIDATION - ST-LAUNCH-016")
         print("=" * 70)
         print(f"Mode: {'DRY-RUN' if self.dry_run else 'LIVE'}")
-        print(f"Timestamp: {datetime.utcnow().isoformat()}")
+        print(f"Timestamp: {datetime.now(timezone.utc).isoformat()}")
         print()
 
         # Validate SLA requirements

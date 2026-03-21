@@ -18,7 +18,7 @@ Exit codes:
 import argparse
 import json
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -57,7 +57,7 @@ class RunbookValidationGate:
         print("=" * 70)
         print("RUNBOOK VALIDATION GATE")
         print("=" * 70)
-        print(f"Timestamp: {datetime.utcnow().isoformat()}")
+        print(f"Timestamp: {datetime.now(timezone.utc).isoformat()}")
         print()
 
         # Run all validation checks
@@ -106,7 +106,7 @@ class RunbookValidationGate:
 
         self.results = {
             "gate_name": "runbook_validation",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "story_id": "ST-LAUNCH-016",
             "verdict": verdict,
             "rationale": rationale,
