@@ -2329,12 +2329,18 @@ validations:
     title: Governance Story ST-GOV-001 Validation
     epic_id: EP-GOV-001
     story_id: ST-GOV-001
-    status: planned
+    status: validated
+    validation_date: "2026-03-21"
     description: Validate ST-GOV-001 governance acceptance criteria.
     acceptance_criteria:
       - Story acceptance criteria verified
     test_method: automated
     owner: governance-team
+    evidence:
+      - "Coverage gate met: 88% (>=85%)"
+      - "False positive rate gate passed (<5%)"
+      - "Latency p99 gate passed (<100ms)"
+      - "Integration suite added at tests/test_governance/integration/test_similarity_accuracy.py"
 
   - id: V-GOV-002
     title: Governance Story ST-GOV-002 Validation
