@@ -1009,6 +1009,7 @@ steps:
             exit 0
           fi
           echo "status-sync-validation: workflow status file changed; running validation..."
+          pip install --no-cache-dir pyyaml || pip install --no-cache-dir --break-system-packages pyyaml
           python3 scripts/validate_status_sync.py --verbose
         ) > "$${CI_STATUS_DIR}/status-sync-validation.log" 2>&1
         code=$?
