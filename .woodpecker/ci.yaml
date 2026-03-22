@@ -74,7 +74,7 @@ steps:
         exit 0
 
   lint:
-    image: python:3.11
+    image: chiseai-ci-lint:py311-20260322
     environment:
       GITEA_TOKEN:
         from_secret: gitea_token
@@ -87,7 +87,6 @@ steps:
         (
           set -euo pipefail
           python -V
-          pip install --no-cache-dir black ruff mypy pytest pytest-cov pyyaml types-PyYAML types-requests || echo "WARN: pip install failed, continuing"
           CHANGED_PY="$(printf '%s' \"${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -E '\\.py$' | tr '\n' ' ' || true)"
           if [ -n "$(printf '%s' "$CHANGED_PY" | tr -d '[:space:]')" ]; then
             echo "lint: checking changed python files only: ${CHANGED_PY}"
