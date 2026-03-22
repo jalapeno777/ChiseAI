@@ -2,7 +2,7 @@
 name: "research-fast"
 description: "High-throughput first-pass research subagent for source triage and quick evidence gathering. No code changes."
 mode: all
-model: "opencode/minimax-m2.5-free" # fallback: "minimax-coding-plan/MiniMax-M2.7"
+model: "opencode/minimax-m2.5-free"
 temperature: 0.3
 tools:
   task: true
