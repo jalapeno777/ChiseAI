@@ -2285,6 +2285,7 @@ validations:
     story_id: EP-GOV-001
     status: validated
     description: Validate governance epic-level completion and acceptance evidence.
+    notes: Paired with the 2026-03-22 workflow-status refresh for EP-GOV-001 status alignment.
     acceptance_criteria:
       - Epic story set is defined and tracked
       - Completed governance stories have evidence references
