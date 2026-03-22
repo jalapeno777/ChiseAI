@@ -1,0 +1,78 @@
+{
+  "metadata": {
+    "story_id": "ST-GOV-MINI-002",
+    "week": 1,
+    "execution_time": "2026-03-22T21:41:23.210321+00:00",
+    "agent_version": "1.0.0"
+  },
+  "week1_baseline": {
+    "retrieval_latency_ms": 25.0,
+    "memory_hit_rate": 75.0,
+    "deduplication_ratio": 0.7,
+    "active_ownership_locks": 79,
+    "parallel_workers": 6,
+    "retrieval_p95_ms": 25.0,
+    "retrieval_mean_ms": 25.0,
+    "relevance_mean_score": 0.784,
+    "precision_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "mrr": 1.0,
+    "coverage_ratio": 1.0
+  },
+  "week1_metrics": {
+    "retrieval_latency_ms": 25.0,
+    "memory_hit_rate": 75.0,
+    "deduplication_ratio": 0.7,
+    "coverage_ratio": 1.0,
+    "mrr": 1.0
+  },
+  "recommendations": [
+    {
+      "category": "memory",
+      "metric": "memory_hit_rate",
+      "current_value": 75.0,
+      "target_value": 85.0,
+      "priority": "medium",
+      "action": "Increase Redis cache TTL and implement cache warming",
+      "rationale": "Current hit rate (75.0%) below optimal threshold (80%+)",
+      "estimated_impact": "Improve hit rate by 10.0 percentage points",
+      "implementation_steps": [
+        "Increase Redis cache TTL from 5 days to 7 days",
+        "Implement cache warming for frequently accessed patterns",
+        "Add cache hit/miss metrics to monitoring dashboard",
+        "Review and optimize cache key patterns for better locality"
+      ]
+    },
+    {
+      "category": "skills",
+      "metric": "skill_coverage",
+      "current_value": 100.0,
+      "target_value": 98.0,
+      "priority": "medium",
+      "action": "Improve skill documentation and cross-referencing",
+      "rationale": "Query coverage (100.0%) and relevance (0.78) indicate skill gaps",
+      "estimated_impact": "Improve agent effectiveness by 10-15% through better skill coverage",
+      "implementation_steps": [
+        "Audit Qdrant for uncovered query patterns",
+        "Create missing skills for high-frequency uncovered queries",
+        "Improve skill cross-referencing in metadata",
+        "Add skill effectiveness metrics to weekly reports"
+      ]
+    }
+  ],
+  "kpi_improvements": {
+    "memory_hit_rate": {
+      "before": 75.0,
+      "after": 85.0,
+      "improvement_percent": 13.333333333333334,
+      "priority": "medium"
+    },
+    "skill_coverage": {
+      "before": 100.0,
+      "after": 98.0,
+      "improvement_percent": -2.0,
+      "priority": "medium"
+    }
+  },
+  "execution_time_seconds": 0.0011553170625120401
+}
