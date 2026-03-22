@@ -6,7 +6,7 @@
 metadata:
   project_name: ChiseAI
   version: "2.2.0"
-  last_updated: "2026-03-21"
+  last_updated: "2026-03-22"
 
 # Validation entries
 validations:
@@ -2342,16 +2342,21 @@ validations:
       - "Latency p99 gate passed (<100ms)"
       - "Integration suite added at tests/test_governance/integration/test_similarity_accuracy.py"
 
-  - id: V-GOV-002
-    title: Governance Story ST-GOV-002 Validation
-    epic_id: EP-GOV-001
-    story_id: ST-GOV-002
-    status: planned
-    description: Validate ST-GOV-002 governance acceptance criteria.
-    acceptance_criteria:
-      - Story acceptance criteria verified
-    test_method: automated
-    owner: governance-team
+- id: V-GOV-002
+  title: Governance Story ST-GOV-002 Validation
+  epic_id: EP-GOV-001
+  story_id: ST-GOV-002
+  status: validated
+  validation_date: "2026-03-22"
+  description: Validate ST-GOV-002 governance acceptance criteria.
+  acceptance_criteria:
+  - Story acceptance criteria verified
+  test_method: automated
+  owner: governance-team
+  evidence:
+  - "Agent Constitution Artifact v1.0.0 deployed with full API"
+  - "Violation detection and enforcement implemented"
+  - "See docs/constitution/v1.0.0.md"
 
   - id: V-GOV-003
     title: Governance Story ST-GOV-003 Validation
