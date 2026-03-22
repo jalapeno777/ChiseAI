@@ -108,3 +108,99 @@ def test_ci_gate_passes_when_all_statuses_zero(tmp_path: Path, monkeypatch) -> N
 
     # Should return zero (success) because all statuses are 0
     assert result == 0, "ci_gate should pass when all statuses are 0"
+
+
+# --- CI context hardening tests ---
+
+
+class TestIsCiContext:
+    """Unit tests for _is_ci_context()."""
+
+    def test_detects_ci_pipeline_number(self) -> None:
+        assert ci_gate._is_ci_context({"CI_PIPELINE_NUMBER": "42"})
+
+    def test_detects_woodpecker_build_event(self) -> None:
+        assert ci_gate._is_ci_context({"WOODPECKER_BUILD_EVENT": "push"})
+
+    def test_detects_ci_commit_branch(self) -> None:
+        assert ci_gate._is_ci_context({"CI_COMMIT_BRANCH": "main"})
+
+    def test_false_when_no_ci_vars(self) -> None:
+        assert not ci_gate._is_ci_context({})
+
+    def test_false_when_ci_vars_empty(self) -> None:
+        assert not ci_gate._is_ci_context(
+            {"CI_PIPELINE_NUMBER": "  ", "CI_COMMIT_BRANCH": ""}
+        )
+
+
+class TestIsRepoLocalPath:
+    """Unit tests for _is_repo_local_path()."""
+
+    def test_detects_subdirectory_under_repo(self) -> None:
+        repo_root = Path("/repo")
+        assert ci_gate._is_repo_local_path(Path("/repo/_bmad-output/ci"), repo_root)
+
+    def test_false_for_absolute_path_outside_repo(self, tmp_path: Path) -> None:
+        assert not ci_gate._is_repo_local_path(
+            Path("/woodpecker/ci-status/123"), tmp_path
+        )
+
+    def test_detects_relative_path_under_repo_cwd(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        monkeypatch.chdir(tmp_path)
+        assert ci_gate._is_repo_local_path(Path("subdir"), tmp_path)
+
+
+def test_ac1_ci_gate_fails_fast_when_ci_status_dir_unset_in_ci(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """AC1: In CI context, if CI_STATUS_DIR is missing or empty, fail fast."""
+    monkeypatch.setattr(ci_gate, "bootstrap", lambda load_env=True: None)
+    monkeypatch.setenv("CI_PIPELINE_NUMBER", "123")
+    monkeypatch.delenv("CI_STATUS_DIR", raising=False)
+
+    result = ci_gate.main()
+
+    assert result == 1
+
+
+def test_ac2_ci_gate_fails_fast_when_ci_status_dir_is_repo_local_in_ci(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """AC2: In CI context, if CI_STATUS_DIR resolves to repo-local fallback, fail fast."""
+    monkeypatch.setattr(ci_gate, "bootstrap", lambda load_env=True: None)
+    monkeypatch.setenv("CI_PIPELINE_NUMBER", "123")
+    monkeypatch.setenv("CI_STATUS_DIR", "_bmad-output/ci")
+
+    result = ci_gate.main()
+
+    assert result == 1
+
+
+def test_ac3_ci_gate_allows_fallback_when_not_in_ci(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """AC3: In non-CI local usage, fallback behavior remains allowed."""
+    monkeypatch.setattr(ci_gate, "bootstrap", lambda load_env=True: None)
+    for var in [
+        "CI_PIPELINE_NUMBER",
+        "CI_COMMIT_BRANCH",
+        "WOODPECKER_BUILD_EVENT",
+        "CI_BUILD_EVENT",
+        "WOODPECKER_EVENT",
+        "CI_PIPELINE_EVENT",
+    ]:
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.delenv("CI_STATUS_DIR", raising=False)
+
+    ci_dir = tmp_path / "ci"
+    ci_dir.mkdir(parents=True)
+    for status_file in ci_gate.FAST_REQUIRED:
+        (ci_dir / status_file).write_text("0", encoding="utf-8")
+    monkeypatch.setattr(ci_gate, "CI_DIR", ci_dir)
+
+    result = ci_gate.main()
+
+    assert result == 0
