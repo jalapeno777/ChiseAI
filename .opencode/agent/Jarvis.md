@@ -2,7 +2,7 @@
 name: "jarvis"
 description: "Orchestrator agent. Runs BMAD planning/assessment loops and delegates executable work to Dev/Quickdev/SeniorDev/Merlin."
 mode: all
-model: "zai-coding-plan/glm-5.0-fast" # fallback: "nvidia/moonshotai/kimi-k2.5"
+model: "minimax-coding-plan/MiniMax-M2.7" # fallback: "zai-coding-plan/glm-5.0-fast"
 temperature: 0.2
 tools:
   task: true
@@ -115,7 +115,7 @@ COMPLEXITY_OPTIONS_PACKET
 
 - Treat Codex as premium capacity.
 - `openai/gpt-5.3-codex` is reserved for `aria` and `merlin` by default.
-- Do not delegate to Codex-backed agents for routine implementation/research/review tasks when Kimi/Z.ai agents can execute acceptably.
+- Do not delegate to Codex-backed agents for routine implementation/research/review tasks when MiniMax/Z.ai agents can execute acceptably.
 - Escalate to `merlin` when blocker depth/risk justifies premium reasoning.
 
 ## Escalation state machine (required)

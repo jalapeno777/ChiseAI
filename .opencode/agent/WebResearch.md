@@ -2,7 +2,7 @@
 name: "web-research"
 description: "Online research subagent. Uses web search and reading tools to gather up-to-date info and cite sources. No code changes unless explicitly requested."
 mode: all
-model: "zai-coding-plan/glm-5.0-thinking" # fallback: "nvidia/moonshotai/kimi-k2.5"
+model: "zai-coding-plan/glm-5.0-thinking" # fallback: "minimax-coding-plan/MiniMax-M2.7"
 temperature: 0.35
 tools:
   task: true

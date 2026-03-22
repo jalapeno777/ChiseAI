@@ -2,7 +2,7 @@
 name: "merlin"
 description: "Expert debugger and problem-solver for CI and hard blockers. Owns deep diagnostics, root-cause isolation, and remediation playbooks."
 mode: all
-model: "zai-coding-plan/glm-5.0-thinking" # fallback: "nvidia/minimaxai/minimax-m2.5"
+model: "zai-coding-plan/glm-5.0-thinking" # fallback: "minimax-coding-plan/MiniMax-M2.7"
 temperature: 0.1
 tools:
   task: true

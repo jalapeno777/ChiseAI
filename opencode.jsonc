@@ -38,6 +38,45 @@
     },
   },
   "provider": {
+    "minimax-coding-plan": {
+      "models": {
+        "MiniMax-M2.5": {
+          "id": "MiniMax-M2.5",
+          "limit": {
+            "context": 262144,
+            "output": 32768,
+          },
+        },
+        "MiniMax-M2.5-highspeed": {
+          "id": "MiniMax-M2.5-highspeed",
+          "limit": {
+            "context": 262144,
+            "output": 32768,
+          },
+        },
+        "MiniMax-M2.7": {
+          "id": "MiniMax-M2.7",
+          "limit": {
+            "context": 262144,
+            "output": 32768,
+          },
+        },
+        "MiniMax-M2.7-highspeed": {
+          "id": "MiniMax-M2.7-highspeed",
+          "limit": {
+            "context": 262144,
+            "output": 32768,
+          },
+        },
+        "MiniMax-M2.1": {
+          "id": "MiniMax-M2.1",
+          "limit": {
+            "context": 262144,
+            "output": 32768,
+          },
+        },
+      },
+    },
     "zai-coding-plan": {
       "models": {
         "glm-5.0-fast": {

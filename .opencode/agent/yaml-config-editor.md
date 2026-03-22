@@ -2,7 +2,7 @@
 name: "yaml-config-editor"
 description: "Specialist subagent for YAML and markdown frontmatter edits with strict format/lint/validation sequencing."
 mode: all
-model: "nvidia/moonshotai/kimi-k2.5" # fallback: "zai-coding-plan/glm-5.0-fast"
+model: "minimax-coding-plan/MiniMax-M2.7" # fallback: "zai-coding-plan/glm-5.0-fast"
 temperature: 0.1
 tools:
   read: true
