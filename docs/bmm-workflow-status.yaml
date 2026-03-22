@@ -476,10 +476,10 @@ backlog:
     implementation_notes: hash_api_key() with prefix hashing in src/execution/connectors/bybit_demo_connector.py:494-513
     pr_number: 556
     merge_commit: aa84345146df02cc0b7df9e3fded65c3c688bbff
-  - id: SIG-REM-006
-    title: Replace datetime.utcnow() with datetime.now(UTC)
-    priority: P0
-    status: completed
+- id: SIG-REM-006
+  title: Replace datetime.utcnow() with datetime.now(UTC)
+  priority: P0
+  status: merged
     story_points: 1
     created_date: "2026-03-20"
     completed_date: "2026-03-21"
