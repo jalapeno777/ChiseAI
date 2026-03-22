@@ -128,6 +128,32 @@ def _is_main_cron(env: dict[str, str]) -> bool:
     return event == "cron" and branch == "main"
 
 
+def _is_ci_context(env: dict[str, str]) -> bool:
+    """Detect if running in CI environment via reliable CI env vars."""
+    # CI_PIPELINE_NUMBER is reliably set in all Woodpecker builds.
+    if env.get("CI_PIPELINE_NUMBER", "").strip():
+        return True
+    # Also check for other CI indicators.
+    ci_indicators = [
+        env.get("CI_COMMIT_BRANCH", "").strip(),
+        env.get("WOODPECKER_BUILD_EVENT", "").strip(),
+        env.get("CI_BUILD_EVENT", "").strip(),
+        env.get("WOODPECKER_EVENT", "").strip(),
+        env.get("CI_PIPELINE_EVENT", "").strip(),
+    ]
+    return bool(any(ci_indicators))
+
+
+def _is_repo_local_path(path: Path, repo_root: Path) -> bool:
+    """Check if path resolves to a location under repo root (local artifact cache)."""
+    try:
+        resolved = path.resolve()
+        repo_resolved = repo_root.resolve()
+        return resolved.is_relative_to(repo_resolved)
+    except (ValueError, OSError):
+        return False
+
+
 def _run_root_cause_bundle(ci_dir: Path, env: dict[str, str]) -> Path | None:
     triage_script = Path("scripts/ci/woodpecker_triage.py")
     if not triage_script.exists():
@@ -234,6 +260,30 @@ def main() -> int:
     # Bootstrap environment first
     bootstrap(load_env=True)
     env = dict(os.environ)
+
+    # --- CI context hardening: fail fast on stale/missing CI_STATUS_DIR ---
+    if _is_ci_context(env):
+        ci_status_dir_raw = env.get("CI_STATUS_DIR", "")
+        if not ci_status_dir_raw.strip():
+            print(
+                "ci-gate: CI_STATUS_DIR is not set or empty in CI context. "
+                "Set CI_STATUS_DIR to a pipeline-specific path like "
+                "'/woodpecker/ci-status/${CI_PIPELINE_NUMBER}'.",
+                file=sys.stderr,
+            )
+            return 1
+        ci_status_path = Path(ci_status_dir_raw)
+        if _is_repo_local_path(ci_status_path, _REPO_ROOT):
+            print(
+                f"ci-gate: CI_STATUS_DIR resolves to repo-local fallback "
+                f"'{ci_status_dir_raw}'. In CI context, set CI_STATUS_DIR to a "
+                f"pipeline-specific path like "
+                f"'/woodpecker/ci-status/${'{CI_PIPELINE_NUMBER}'}'.",
+                file=sys.stderr,
+            )
+            return 1
+    # --- End CI context hardening ---
+
     CI_DIR.mkdir(parents=True, exist_ok=True)
     required_files = [CI_DIR / name for name in FAST_REQUIRED]
     if (
