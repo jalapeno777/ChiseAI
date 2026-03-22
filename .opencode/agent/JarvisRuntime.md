@@ -2,7 +2,7 @@
 name: "jarvis-runtime"
 description: "Orchestrator runtime profile optimized for throughput with strict guardrail parity and evidence-first delegation."
 mode: all
-model: "opencode/mimo-v2-pro-free" # fallback: "nvidia/minimaxai/minimax-m2.5"
+model: "nvidia/minimaxai/minimax-m2.5" # fallback: "nvidia/minimaxai/minimax-m2.5"
 temperature: 0.15
 tools:
   task: true
