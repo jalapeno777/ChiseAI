@@ -92,6 +92,27 @@ def create_redis_client() -> Any | None:
         return None
 
 
+def resolve_base_ref(preferred: str = "origin/main") -> str | None:
+    """Resolve a git base ref that exists in the current checkout."""
+    candidates = [
+        preferred,
+        "refs/remotes/origin/main",
+        "origin/main",
+        "main",
+        "HEAD~1",
+    ]
+    for candidate in candidates:
+        result = subprocess.run(  # nosec B607
+            ["git", "rev-parse", "--verify", candidate],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode == 0:
+            return candidate
+    return None
+
+
 def detect_brain_changes(base_ref: str = "origin/main") -> bool:
     """Detect if brain-related files have changed.
 
@@ -105,8 +126,11 @@ def detect_brain_changes(base_ref: str = "origin/main") -> bool:
 
     # Preferred path: diff against base ref.
     try:
+        resolved_base = resolve_base_ref(base_ref)
+        if resolved_base is None:
+            raise subprocess.CalledProcessError(1, ["git", "rev-parse", "--verify"])
         result = subprocess.run(  # nosec B607
-            ["git", "diff", "--name-only", base_ref, "HEAD"],
+            ["git", "diff", "--name-only", resolved_base, "HEAD"],
             capture_output=True,
             text=True,
             check=True,
@@ -119,7 +143,9 @@ def detect_brain_changes(base_ref: str = "origin/main") -> bool:
     if not changed_files:
         raw = os.getenv("CI_PIPELINE_FILES", "")
         if raw:
-            for item in raw.replace("[", "").replace("]", "").replace('"', "").split(","):
+            for item in (
+                raw.replace("[", "").replace("]", "").replace('"', "").split(",")
+            ):
                 item = item.strip()
                 if item:
                     changed_files.append(item)

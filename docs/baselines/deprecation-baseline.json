@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "generated_at": "2026-03-16T00:00:00Z",
+  "count": 0,
+  "findings": [],
+  "metadata": {
+    "tool_version": "1.0.0",
+    "description": "Initial baseline for deprecation warnings - TECH-001-B"
+  }
+}

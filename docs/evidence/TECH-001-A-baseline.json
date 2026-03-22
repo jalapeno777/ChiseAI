@@ -1,0 +1,136 @@
+{
+  "version": "1.0",
+  "warning_count": 21,
+  "warnings": [
+    {
+      "file_path": "/tmp/worktrees/TECH-001-A-senior-dev/tests/e2e/test_autocog_full_cycle.py",
+      "line_number": 331,
+      "message": "Unknown pytest.mark.discord - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html",
+      "warning_type": "PytestUnknownMarkWarning"
+    },
+    {
+      "file_path": "/tmp/worktrees/TECH-001-A-senior-dev/tests/e2e/test_autocog_reliability.py",
+      "line_number": 146,
+      "message": "Unknown pytest.mark.reliability - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html",
+      "warning_type": "PytestUnknownMarkWarning"
+    },
+    {
+      "file_path": "/tmp/worktrees/TECH-001-A-senior-dev/tests/e2e/test_autocog_reliability.py",
+      "line_number": 150,
+      "message": "Unknown pytest.mark.slow - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html",
+      "warning_type": "PytestUnknownMarkWarning"
+    },
+    {
+      "file_path": "/tmp/worktrees/TECH-001-A-senior-dev/tests/e2e/test_autocog_reliability.py",
+      "line_number": 178,
+      "message": "Unknown pytest.mark.slow - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html",
+      "warning_type": "PytestUnknownMarkWarning"
+    },
+    {
+      "file_path": "/tmp/worktrees/TECH-001-A-senior-dev/tests/e2e/test_autocog_reliability.py",
+      "line_number": 198,
+      "message": "Unknown pytest.mark.slow - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html",
+      "warning_type": "PytestUnknownMarkWarning"
+    },
+    {
+      "file_path": "/tmp/worktrees/TECH-001-A-senior-dev/tests/e2e/test_autocog_reliability.py",
+      "line_number": 230,
+      "message": "Unknown pytest.mark.reliability - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html",
+      "warning_type": "PytestUnknownMarkWarning"
+    },
+    {
+      "file_path": "/tmp/worktrees/TECH-001-A-senior-dev/tests/e2e/test_autocog_reliability.py",
+      "line_number": 299,
+      "message": "Unknown pytest.mark.reliability - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html",
+      "warning_type": "PytestUnknownMarkWarning"
+    },
+    {
+      "file_path": "/tmp/worktrees/TECH-001-A-senior-dev/tests/e2e/test_autocog_reliability.py",
+      "line_number": 387,
+      "message": "Unknown pytest.mark.reliability - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html",
+      "warning_type": "PytestUnknownMarkWarning"
+    },
+    {
+      "file_path": "/tmp/worktrees/TECH-001-A-senior-dev/tests/e2e/test_autocog_reliability.py",
+      "line_number": 445,
+      "message": "Unknown pytest.mark.reliability - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html",
+      "warning_type": "PytestUnknownMarkWarning"
+    },
+    {
+      "file_path": "/tmp/worktrees/TECH-001-A-senior-dev/tests/e2e/test_autocog_reliability.py",
+      "line_number": 479,
+      "message": "Unknown pytest.mark.reliability - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html",
+      "warning_type": "PytestUnknownMarkWarning"
+    },
+    {
+      "file_path": "/tmp/worktrees/TECH-001-A-senior-dev/tests/e2e/test_autocog_reliability.py",
+      "line_number": 528,
+      "message": "Unknown pytest.mark.reliability - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html",
+      "warning_type": "PytestUnknownMarkWarning"
+    },
+    {
+      "file_path": "/tmp/worktrees/TECH-001-A-senior-dev/tests/e2e/test_autocog_reliability.py",
+      "line_number": 633,
+      "message": "Unknown pytest.mark.reliability - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html",
+      "warning_type": "PytestUnknownMarkWarning"
+    },
+    {
+      "file_path": "/home/tacopants/projects/ChiseAI/src/autonomous_control_plane/dashboard/client.py",
+      "line_number": 20,
+      "message": "websockets.client.WebSocketClientProtocol is deprecated",
+      "warning_type": "DeprecationWarning"
+    },
+    {
+      "file_path": "/home/tacopants/.local/lib/python3.13/site-packages/websockets/legacy/__init__.py",
+      "line_number": 6,
+      "message": "websockets.legacy is deprecated; see https://websockets.readthedocs.io/en/stable/howto/upgrade.html for upgrade instructions",
+      "warning_type": "DeprecationWarning"
+    },
+    {
+      "file_path": "/home/tacopants/projects/ChiseAI/src/autonomous_control_plane/telemetry/dashboard_sync.py",
+      "line_number": 23,
+      "message": "websockets.server.WebSocketServerProtocol is deprecated",
+      "warning_type": "DeprecationWarning"
+    },
+    {
+      "file_path": "/tmp/worktrees/TECH-001-A-senior-dev/scripts/ci/pipeline.py",
+      "line_number": 162,
+      "message": "cannot collect test class 'TestStage' because it has a __init__ constructor (from: tests/test_ci/test_pipeline.py)",
+      "warning_type": "PytestCollectionWarning"
+    },
+    {
+      "file_path": "/home/tacopants/projects/ChiseAI/src/data/exchange/bybit_websocket.py",
+      "line_number": 27,
+      "message": "websockets.exceptions.InvalidStatusCode is deprecated",
+      "warning_type": "DeprecationWarning"
+    },
+    {
+      "file_path": "/tmp/worktrees/TECH-001-A-senior-dev/tests/test_governance/test_metrics/test_registry.py",
+      "line_number": 15,
+      "message": "cannot collect test class 'TestExporter' because it has a __init__ constructor (from: tests/test_governance/test_metrics/test_registry.py)",
+      "warning_type": "PytestCollectionWarning"
+    },
+    {
+      "file_path": "/tmp/worktrees/TECH-001-A-senior-dev/tests/test_governance/test_task_sentinel.py",
+      "line_number": 375,
+      "message": "Unknown pytest.mark.governance - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html",
+      "warning_type": "PytestUnknownMarkWarning"
+    },
+    {
+      "file_path": "/tmp/worktrees/TECH-001-A-senior-dev/tests/test_strong_system/test_computational_graph/test_optimizer.py",
+      "line_number": 994,
+      "message": "Unknown pytest.mark.computational_graph - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html",
+      "warning_type": "PytestUnknownMarkWarning"
+    },
+    {
+      "file_path": "/home/tacopants/.local/lib/python3.13/site-packages/gevent/os.py",
+      "line_number": 558,
+      "message": "This process (pid=<PID>) is multi-threaded, use of fork() may lead to deadlocks in the child.",
+      "warning_type": "DeprecationWarning"
+    }
+  ],
+  "metadata": {
+    "command": "pytest tests/ -W always --tb=no -q",
+    "warning_count": 21
+  }
+}

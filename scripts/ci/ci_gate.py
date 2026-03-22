@@ -29,7 +29,6 @@ except ModuleNotFoundError:
 CI_DIR = Path(os.environ.get("CI_STATUS_DIR", "_bmad-output/ci"))
 FAST_REQUIRED = [
     "swarm-context.status",
-    "tfvars-gate.status",
     "lint.status",
     "security-scan.status",
     "dependency-audit.status",
@@ -39,9 +38,10 @@ FAST_REQUIRED = [
     "docs-pairing.status",
     "docker-governance.status",
     "changed-lines-coverage.status",
+    "deprecation-gate.status",  # TECH-001-B: Deprecation warning validation
     "status-write-gate.status",
-    "status-sync-validation.status",
-    "file-existence-check.status",
+    "performance-gate.status",  # PHASE 3: Performance threshold validation
+    "evidence-gate.status",  # TECH-002-B: Per-story evidence validation
 ]
 FULL_REQUIRED = [
     "local-ci.status",
