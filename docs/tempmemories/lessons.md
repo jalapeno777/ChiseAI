@@ -381,3 +381,19 @@ LESSON
 - evidence_ref: SESSION-CLOSEOUT-2026-03-20
 - added_utc: 2026-03-20T00:00:00Z
 ```
+
+```text
+LESSON
+- id: LESSON-20260322-001
+- context: SAFETY-CI-gate-hardening-2 session close - prior agent left mid-rebase state on feature branch
+- trigger: Feature branch showed "currently editing a commit while rebasing" state when new agent tried to work on it
+- actionable_rule: Agents must always run `git rebase --quit` to complete or abort any in-progress rebases before ending sessions or handing off work
+- applies_to:
+  - quickdev
+  - dev
+  - senior-dev
+  - merlin
+- expected_outcome: No mid-rebase branch states; clean handoffs between agents
+- evidence_ref: SAFETY-CI-gate-hardening-2 merge session, feature/SAFETY-CI-gate-hardening-2 had rebase in progress
+- added_utc: 2026-03-22T00:00:00Z
+```
