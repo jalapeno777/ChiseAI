@@ -1024,8 +1024,8 @@ epics:
       - A/B testing framework for model comparison
       - Depends on EP-LAUNCH-002 for training data (completed)
     sprint_id: LAUNCH-SPRINT-2
-    status: completed
-    stories_completed: 4
+    status: in_progress
+    stories_completed: 1
     story_count: 4
     story_ids:
       - ST-LAUNCH-011
@@ -1033,8 +1033,8 @@ epics:
       - ST-LAUNCH-013
       - ST-LAUNCH-014
     story_points: 15
-    story_points_completed: 15
-    timeline: 4 days (Mar 2-6, 2026) - COMPLETED
+    story_points_completed: 5
+    timeline: 4 days (Mar 2-6, 2026) - IN PROGRESS
   - completion_date: "2026-02-22"
     deployment:
       canary_period: 21 days (extended per Craig's decision - Option A)
@@ -1056,22 +1056,20 @@ epics:
     id: EP-LAUNCH-004
     name: Launch Readiness & Validation
     notes:
-      - All 3 stories completed (ST-LAUNCH-015, 016, 017)
-      - Final validation: GO decision obtained
-      - Launch readiness checklist: 11/11 items pass
-      - Success criteria: 6/6 met
+      - 0 of 3 stories completed (ST-LAUNCH-015, 016, 017 pending)
+      - Final validation: Pending execution
       - Extended timeline per Option A decision (Mar 14, 2026)
-      - Epic completed on 2026-02-22 by Merlin (FINAL BATCH integration)
+      - Epic pending - all child stories planned
     sprint_id: LAUNCH-SPRINT-3
-    status: completed
-    stories_completed: 3
+    status: planned
+    stories_completed: 0
     story_count: 3
     story_ids:
       - ST-LAUNCH-015
       - ST-LAUNCH-016
       - ST-LAUNCH-017
     story_points: 7
-    timeline: 3 days (Mar 12-14, 2026) - COMPLETED
+    timeline: 3 days (Mar 12-14, 2026) - PENDING
   - completion_date: "2026-02-22"
     completion_percentage: 100
     deployment:
@@ -1088,16 +1086,16 @@ epics:
     id: EP-LAUNCH-005
     name: Missing Components Implementation
     notes:
-      - All 4 stories completed (ST-LAUNCH-018, 019, 020, 021)
+      - 1 of 4 stories completed (ST-LAUNCH-018 done, 019-021 pending)
       - ADDED per Option A decision (extended timeline to Mar 14)
       - Outcome capture service operational (194 tests passing)
       - Model registry functional with versioning and rollback
       - Load test infrastructure validated (36 tests, 83% coverage)
       - Runbooks created and validated (3 operational runbooks)
-      - Epic completed on 2026-02-22 by Merlin (FINAL BATCH integration)
+      - Epic in progress - remaining stories pending
     sprint_id: LAUNCH-SPRINT-1-2
-    status: completed
-    stories_completed: 4
+    status: in_progress
+    stories_completed: 1
     story_count: 4
     story_ids:
       - ST-LAUNCH-018
@@ -1105,8 +1103,8 @@ epics:
       - ST-LAUNCH-020
       - ST-LAUNCH-021
     story_points: 26
-    story_points_completed: 26
-    timeline: 7 days (Feb 21 - Mar 1, 2026) - COMPLETED
+    story_points_completed: 8
+    timeline: 7 days (Feb 21 - Mar 1, 2026) - IN PROGRESS
   - accelerated_roadmap: docs/roadmaps/governance-autonomy-accelerated.md
     completed_stories:
       - completion_date: "2026-02-23"
@@ -1157,13 +1155,13 @@ epics:
       - "Phase 3 Complete (2026-02-23): All Phase 2 and Phase 3 stories validated and
         passing"
       - "Truth-sync completed 2026-02-23: ST-GOV-009 and ST-GOV-010 completed per recent_changes"
-      - "Epic completed. ST-GOV-001 and ST-GOV-002 verified as merged to main with full implementation."
+      - "Epic mostly completed. ST-GOV-MINI-002 (Week 2 Optimization) still pending."
     points_completed: 68
     completion_date: "2026-03-22"
-    completion_notes: "Epic completed. ST-GOV-001 and ST-GOV-002 verified as merged to main with full implementation. Remaining mini-stories ST-GOV-MINI-001 and ST-GOV-MINI-002 tracked separately."
+    completion_notes: "Epic mostly completed. ST-GOV-MINI-001 (Week 1 Audit) completed, ST-GOV-MINI-002 (Week 2 Optimization) pending."
     roadmap_document: docs/architecture/governance-rollout-roadmap.md
-    status: completed
-    stories_completed: 10
+    status: in_progress
+    stories_completed: 11
     story_count: 12
     story_ids:
       - ST-GOV-001
@@ -2151,110 +2149,6 @@ launch_stories:
       walkthrough: docs/runbooks/launch_runbook.md
     title: Runbook Creation & Validation
     validation_status: planned
-  - accelerated_roadmap: docs/roadmaps/governance-autonomy-accelerated.md
-    description:
-      10 additive governance features for safe autonomous operation including
-      memory deduplication, constitution artifact, task decomposition, quality gates,
-      health monitoring, and audit trails. Plus 2 mini-stories for Week 1-2 quick wins.
-    id: EP-GOV-001
-    integration_with:
-      - epic: EP-AUTO-GIT-001
-        notes: Constitution enforcement, self-review, health monitoring, parallel optimization
-        stories:
-          - ST-AUTO-004
-          - ST-AUTO-005
-          - ST-AUTO-006
-          - ST-AUTO-007
-      - components:
-          - circuit_breaker_registry
-          - incident_manager
-          - self_healing
-        epic: EP-NS-008
-        notes: Swarm Health Sentinel integrates with ACP telemetry
-    name: Agent Swarm Governance Enhancement
-    notes:
-      - ⚠️  DEPRECATED DUPLICATE - See canonical epic section at line ~579 for current
-        status
-      - "Truth-sync completed 2026-02-23: All 8 stories (003-010) completed, 52/68 points
-        (76%)"
-      - Party Mode synthesis outcome - Merlin rollout strategy defined 2026-02-22
-      - All features are additive and can be disabled via feature flags
-      - Accelerated roadmap with weekly cycles through day 30, then biweekly (supersedes
-        30/60/90-day plan)
-      - Full integration with EP-AUTO-GIT-001 and EP-NS-008
-    progress:
-      completed_points: 52
-      completed_stories:
-        - ST-GOV-003
-        - ST-GOV-004
-        - ST-GOV-005
-        - ST-GOV-006
-        - ST-GOV-007
-        - ST-GOV-008
-        - ST-GOV-009
-        - ST-GOV-010
-      completion_percentage: 76
-      last_updated: "2026-02-23"
-      total_points: 68
-    roadmap_document: docs/architecture/governance-rollout-roadmap.md
-    rollout:
-      phase_1:
-        end_date: "2026-03-24"
-        features:
-          - GF-001
-          - GF-002
-          - GF-003
-          - GF-004
-        name: Foundation (Days 1-30)
-        start_date: "2026-02-22"
-        stories:
-          - ST-GOV-001
-          - ST-GOV-002
-          - ST-GOV-003
-          - ST-GOV-004
-        story_points: 26
-      phase_2:
-        end_date: "2026-04-23"
-        features:
-          - GF-005
-          - GF-006
-          - GF-007
-          - GF-008
-        name: Control Systems (Days 31-60)
-        start_date: "2026-03-25"
-        stories:
-          - ST-GOV-005
-          - ST-GOV-006
-          - ST-GOV-007
-          - ST-GOV-008
-        story_points: 24
-      phase_3:
-        end_date: "2026-05-23"
-        features:
-          - GF-009
-          - GF-010
-        name: Full Autonomy (Days 61-90)
-        start_date: "2026-04-24"
-        stories:
-          - ST-GOV-009
-          - ST-GOV-010
-        story_points: 13
-    status: completed
-    story_count: 12
-    story_ids:
-      - ST-GOV-001
-      - ST-GOV-002
-      - ST-GOV-003
-      - ST-GOV-004
-      - ST-GOV-005
-      - ST-GOV-006
-      - ST-GOV-007
-      - ST-GOV-008
-      - ST-GOV-009
-      - ST-GOV-010
-      - ST-GOV-MINI-001
-      - ST-GOV-MINI-002
-    story_points: 68
   - acceptance_criteria:
       - Detects semantic duplicates with ≥95% accuracy using Qdrant similarity
       - Deduplication runs automatically before memory writes
