@@ -1155,13 +1155,13 @@ epics:
       - "Phase 3 Complete (2026-02-23): All Phase 2 and Phase 3 stories validated and
         passing"
       - "Truth-sync completed 2026-02-23: ST-GOV-009 and ST-GOV-010 completed per recent_changes"
-      - "Epic mostly completed. ST-GOV-MINI-002 (Week 2 Optimization) still pending."
-    points_completed: 68
+      - "Epic 100% complete 2026-03-22: ST-GOV-MINI-002 (Week 2 Optimization Feedback Loop) is the final story."
+    points_completed: 71
     completion_date: "2026-03-22"
-    completion_notes: "Epic mostly completed. ST-GOV-MINI-001 (Week 1 Audit) completed, ST-GOV-MINI-002 (Week 2 Optimization) pending."
+    completion_notes: "Epic completed 2026-03-22. ST-GOV-MINI-002 (Week 2 Optimization Feedback Loop) is the final story completing EP-GOV-001."
     roadmap_document: docs/architecture/governance-rollout-roadmap.md
-    status: in_progress
-    stories_completed: 11
+    status: completed
+    stories_completed: 12
     story_count: 12
     story_ids:
       - ST-GOV-001
@@ -6537,8 +6537,8 @@ stories:
     validation_status: validated
 summary:
   epics_by_status:
-    completed: 13
-    in_progress: 1
+    completed: 14
+    in_progress: 0
     planned: 9
   governance:
     accelerated_roadmap: docs/roadmaps/governance-autonomy-accelerated.md
@@ -6551,7 +6551,7 @@ summary:
       - ST-GOV-008
       - ST-GOV-009
       - ST-GOV-010
-    completion_percentage: 76
+    completion_percentage: 100
     epic: EP-GOV-001
     mini_stories:
       - id: ST-GOV-MINI-001
@@ -6580,8 +6580,8 @@ summary:
     points_completed: 52
     roadmap: docs/architecture/governance-rollout-roadmap.md
     stories: 12
-    stories_completed: 8
-    story_points: 68
+    stories_completed: 12
+    story_points: 71
   launch_phase:
     canary_duration_days: 21
     completed_stories: 18
