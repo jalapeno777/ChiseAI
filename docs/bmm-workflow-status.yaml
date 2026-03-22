@@ -271,7 +271,7 @@ backlog:
         title: Week 1 Audit Snapshot + Retrieval Baseline
       - id: ST-GOV-MINI-002
         points: 3
-        status: planned
+        status: completed
         title: Week 2 Optimization Feedback Loop
     status: completed
     target_completion: 100%
