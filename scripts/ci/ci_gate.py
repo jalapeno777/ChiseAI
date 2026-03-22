@@ -278,7 +278,7 @@ def main() -> int:
                 f"ci-gate: CI_STATUS_DIR resolves to repo-local fallback "
                 f"'{ci_status_dir_raw}'. In CI context, set CI_STATUS_DIR to a "
                 f"pipeline-specific path like "
-                f"'/woodpecker/ci-status/${'{CI_PIPELINE_NUMBER}'}'.",
+                f"'/woodpecker/ci-status/${{CI_PIPELINE_NUMBER}}'.",
                 file=sys.stderr,
             )
             return 1
