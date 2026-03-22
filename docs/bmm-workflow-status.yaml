@@ -1,14 +1,17 @@
 metadata:
   project_name: ChiseAI
   version: 2.2.0
-  last_updated: "2026-03-21"
+  last_updated: "2026-03-22"
   managed_by: merlin
+  status_notes:
+    - "LLM Providers: OPERATIONAL (verified 2026-03-09 via LLM-PROVIDER-FIX-003 - 313/324 tests passing)"
+    - "MiniMax: DISABLED per PAPER-LLM-DIAG-001 (initialization delays)"
 completed:
   - acceptance_criteria:
       - Phase A: Kimi adapter infrastructure verified (kimi_model default updated to kimi-k2.5)
       - Phase B:
-          Smoke matrix completed with all 4 providers tested (0/4 functional -
-          credential issues)
+          Smoke matrix completed (0/4 at test time 2026-03-06), resolved via
+          LLM-PROVIDER-FIX-003 (2026-03-09) with 313/324 tests passing
       - Phase C: Runbooks created (llm-provider-configuration.md, llm-provider-smoke-tests.md)
       - Phase C: Preflight script created (llm_provider_check.sh) for pre-deployment validation
       - Phase D: Latency study framework ready (30s timeout recommended per PAPER-LLM-TIMEOUT-001)
@@ -30,7 +33,7 @@ completed:
     id: LLM-PROVIDER-FIX-001
     notes:
       - "Phase A: Adapter infrastructure verified, kimi_model default updated to kimi-k2.5"
-      - "Phase B: Smoke matrix 0/4 providers working (all credential-related failures)"
+      - "Phase B: Smoke matrix 0/4 at test time (2026-03-06), resolved via LLM-PROVIDER-FIX-003 (2026-03-09) - 313/324 tests passing (98.77%)"
       - "Phase C: Runbooks and preflight script created for reproducible deployments"
       - "Phase D: Latency study framework ready, 30s timeout recommended"
       - "Phase E: E2E script ready, dry-run passed with full validation checklist"
