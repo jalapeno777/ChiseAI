@@ -2,7 +2,7 @@
 name: "juniordev"
 description: "DEPRECATED (fallback-only). Legacy executor profile retained for controlled fallback use."
 mode: all
-model: "zai-coding-plan/glm-5.0-fast" # fallback: "opencode/nemotron-3-super-free"
+model: "minimax-coding-plan/MiniMax-M2.7" # fallback: "opencode/nemotron-3-super-free"
 temperature: 0.35
 tools:
   task: true

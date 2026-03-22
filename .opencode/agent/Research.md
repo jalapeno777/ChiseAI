@@ -2,7 +2,7 @@
 name: "research"
 description: "Research subagent. Investigates PRD/docs, market/technical research, and produces structured notes. No code changes unless explicitly requested."
 mode: all
-model: "nvidia/minimaxai/minimax-m2.5" # fallback: "opencode/mimo-v2-pro-free"
+model: "minimax-coding-plan/MiniMax-M2.7" # fallback: "opencode/minimax-m2.5-free"
 temperature: 0.3
 tools:
   task: true

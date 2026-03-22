@@ -2,7 +2,7 @@
 name: "quickdev-fast"
 description: "DEPRECATED (fallback-only). Ultra-fast executor for trivial mechanical tasks when Jarvis explicitly opts in."
 mode: all
-model: "opencode/minimax-m2.5-free" # fallback: "nvidia/minimaxai/minimax-m2.5"
+model: "opencode/minimax-m2.5-free" # fallback: "minimax-coding-plan/MiniMax-M2.7"
 temperature: 0.25
 tools:
   task: true
