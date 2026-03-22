@@ -277,7 +277,7 @@ backlog:
     target_completion: 100%
     target_date: "2026-03-31"
     title: Governance Epic Completion (EP-GOV-001)
-    total_remaining_points: 16
+    total_remaining_points: 0
   - acceptance_criteria:
       - Discord channel
       - Signal format matches specification (token, direction, confidence, key levels,
@@ -2274,10 +2274,10 @@ launch_stories:
     id: ST-GOV-MINI-002
     priority: P0-CRITICAL
     sprint_id: GOV-ACCEL-W2
-    status: planned
+    status: completed
     story_points: 3
     title: Week 2 Optimization Feedback Loop
-    validation_status: planned
+    validation_status: validated
   - acceptance_criteria:
       - Validates task decomposition against constitution bounds
       - Detects overly broad tasks (>5 story points requires approval)

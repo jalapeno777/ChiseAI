@@ -2475,7 +2475,7 @@ validations:
     title: Governance Story ST-GOV-MINI-002 Validation
     epic_id: EP-GOV-001
     story_id: ST-GOV-MINI-002
-    status: planned
+    status: validated
     description: Validate ST-GOV-MINI-002 governance acceptance criteria.
     acceptance_criteria:
       - Story acceptance criteria verified
