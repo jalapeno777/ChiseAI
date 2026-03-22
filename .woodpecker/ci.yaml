@@ -198,7 +198,7 @@ steps:
         exit 0
 
   dependency-audit:
-    image: python:3.11
+    image: chiseai-ci-dependency-audit:py311-20260322
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -208,7 +208,6 @@ steps:
         set +e
         (
           set -euo pipefail
-          pip install --no-cache-dir pip-audit tomli || pip install --no-cache-dir --break-system-packages pip-audit tomli
           python3 scripts/ci/dependency_audit.py
         ) > "$${CI_STATUS_DIR}/dependency-audit.log" 2>&1
         code=$?
