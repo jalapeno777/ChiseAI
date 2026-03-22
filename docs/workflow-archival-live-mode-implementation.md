@@ -1,6 +1,7 @@
 # Workflow Archival Live Mode Implementation
 
 ## Tasks Completed
+
 - Task 3.1: Review current dry-run behavior
 - Task 3.2: Implement controlled live mode with safety checks
 - Task 3.3: Add lock + rollback safety mechanisms
@@ -10,9 +11,11 @@
 ## 1. Current Behavior Documentation (BEFORE)
 
 ### scripts/workflow/automated_archive.py (v1.0.0)
+
 **Mode:** Always LIVE execution (always passed `--execute` to archive script)
 
 **Behavior:**
+
 - No dry-run mode available
 - Always executed `archive_stories.py --execute`
 - No explicit safety confirmations required
@@ -21,13 +24,16 @@
 - Basic notifications without mode indication
 
 **Flow:**
+
 1. Run preflight checks
 2. Execute archival with `--execute` flag (always live)
 3. Run post-archival verification
 4. Send notification
 
 ### .woodpecker/workflow-archive.yaml (v1.0.0)
+
 **Behavior:**
+
 - Weekly archival every Sunday at 02:00 UTC
 - Always ran in live mode
 - No mechanism to disable live execution
@@ -40,18 +46,21 @@
 ### A. Live/Dry-Run Mode Control
 
 #### New Arguments in automated_archive.py:
+
 ```bash
 --live                           # Enable live mode (default: False = dry-run)
 --i-understand-live-mode         # Required confirmation for live mode
 ```
 
 #### Environment Variables:
+
 ```bash
 WORKFLOW_ARCHIVE_LIVE=1          # Alternative to --live flag
 WORKFLOW_ARCHIVE_LIVE_CONFIRM=1  # Alternative to --i-understand-live-mode flag
 ```
 
 #### Usage Examples:
+
 ```bash
 # Dry-run (default) - no changes made
 python3 scripts/workflow/automated_archive.py
@@ -66,11 +75,12 @@ WORKFLOW_ARCHIVE_LIVE=1 WORKFLOW_ARCHIVE_LIVE_CONFIRM=1 python3 scripts/workflow
 ### B. Safety Check for Live Mode
 
 **Implementation:**
+
 ```python
 if report.live_mode:
     env_confirmed = os.environ.get("WORKFLOW_ARCHIVE_LIVE_CONFIRM", "").lower() in ("1", "true", "yes", "on")
     flag_confirmed = args.i_understand_live_mode
-    
+
     if not (env_confirmed or flag_confirmed):
         print("🚫 SAFETY CHECK FAILED")
         print("Live mode requires explicit confirmation...")
@@ -82,15 +92,17 @@ if report.live_mode:
 ### C. Redis Lock Mechanism
 
 **Lock Details:**
+
 - **Key:** `bmad:chiseai:workflow:archival:lock`
 - **TTL:** 3600 seconds (1 hour)
 - **Behavior:** Advisory lock - script continues if lock unavailable but logs warning
 
 **Implementation:**
+
 ```python
 def acquire_lock() -> tuple[bool, str]:
     client = _get_redis_client()
-    lock_value = f"archival-{datetime.utcnow().isoformat()}"
+    lock_value = f"archival-{datetime.now(UTC).isoformat()}"
     acquired = client.set(
         REDIS_LOCK_KEY,
         lock_value,
@@ -103,17 +115,19 @@ def acquire_lock() -> tuple[bool, str]:
 ### D. Backup Before Archival
 
 **Backup Details:**
+
 - **Location:** `.backup/workflow-status-YYYYMMDD-HHMMSS.yaml`
 - **Verification:** SHA-256 checksum comparison
 - **Behavior:** Exit code 6 if backup fails in live mode
 
 **Implementation:**
+
 ```python
 def create_backup() -> tuple[bool, Optional[Path]]:
-    timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     backup_path = BACKUP_DIR / f"workflow-status-{timestamp}.yaml"
     shutil.copy2(WORKFLOW_STATUS_PATH, backup_path)
-    
+
     # Verify with checksum
     original_hash = hashlib.sha256(WORKFLOW_STATUS_PATH.read_bytes()).hexdigest()
     backup_hash = hashlib.sha256(backup_path.read_bytes()).hexdigest()
@@ -123,11 +137,13 @@ def create_backup() -> tuple[bool, Optional[Path]]:
 ### E. Enhanced Notifications
 
 **Live Mode Notifications:**
+
 - **Level:** CRITICAL for failures, SUCCESS for completion
 - **Message:** Includes mode indicator, backup path reference
 - **Example:** "✓ Workflow Archival Complete - 🚨 LIVE MODE"
 
 **Dry-Run Notifications:**
+
 - **Level:** WARNING for failures, INFO for success
 - **Message:** Clarifies no changes were made
 - **Example:** "✓ Workflow Archival Dry-Run Complete"
@@ -135,6 +151,7 @@ def create_backup() -> tuple[bool, Optional[Path]]:
 ### F. Enhanced Reporting
 
 **ExecutionReport New Fields:**
+
 ```python
 live_mode: bool                    # Whether running in live mode
 dry_run_mode: bool                 # Whether running in dry-run mode
@@ -144,6 +161,7 @@ backup_path: Optional[str]         # Path to backup file
 ```
 
 **Report Output:**
+
 ```
 ================================================================================
 WORKFLOW STATUS AUTOMATED ARCHIVE EXECUTION REPORT
@@ -163,6 +181,7 @@ PREFLIGHT CHECKS:
 ### G. Updated Workflow Steps
 
 **New 4-Step Process:**
+
 1. **Step 0:** Acquire lock + create backup (live mode only)
 2. **Step 1:** Preflight checks
 3. **Step 2:** Archival execution (with --execute or --dry-run)
@@ -176,12 +195,14 @@ PREFLIGHT CHECKS:
 ### .woodpecker/workflow-archive.yaml (v2.0.0)
 
 **Changes:**
+
 - Added environment variables for live mode control
 - Added mode detection logic in shell script
 - Added `redis` package installation
 - Default: DRY-RUN mode
 
 **Configuration:**
+
 ```yaml
 environment:
   WORKFLOW_ARCHIVE_LIVE:
@@ -193,6 +214,7 @@ environment:
 ```
 
 **Mode Selection Logic:**
+
 ```bash
 if [ "${WORKFLOW_ARCHIVE_LIVE:-0}" = "1" ] && [ "${WORKFLOW_ARCHIVE_LIVE_CONFIRM:-0}" = "1" ]; then
   echo "🚨 LIVE MODE ENABLED - Changes will be made"
@@ -207,15 +229,15 @@ fi
 
 ## 4. Exit Codes
 
-| Code | Meaning |
-|------|---------|
-| 0 | Success |
-| 1 | Preflight checks failed |
-| 2 | Archival execution failed |
-| 3 | Post-archival verification failed |
-| 4 | Safety check failed (live mode without confirmation) |
-| 5 | Lock acquisition failed (not used - advisory) |
-| 6 | Backup failed in live mode |
+| Code | Meaning                                              |
+| ---- | ---------------------------------------------------- |
+| 0    | Success                                              |
+| 1    | Preflight checks failed                              |
+| 2    | Archival execution failed                            |
+| 3    | Post-archival verification failed                    |
+| 4    | Safety check failed (live mode without confirmation) |
+| 5    | Lock acquisition failed (not used - advisory)        |
+| 6    | Backup failed in live mode                           |
 
 ---
 
@@ -241,6 +263,7 @@ python3 scripts/workflow/preflight_archive.py --verbose
 ```
 
 ### Automatic Safety:
+
 - Backup is created BEFORE any changes in live mode
 - If backup fails, archival is aborted (exit code 6)
 - Lock expires automatically after 1 hour (TTL)
@@ -271,6 +294,7 @@ python3 scripts/workflow/preflight_archive.py --verbose
 ## 7. Test Results
 
 ### Help Output:
+
 ```bash
 $ python3 scripts/workflow/automated_archive.py --help
 usage: automated_archive.py [-h] [--batch-size BATCH_SIZE] [--verbose]
@@ -282,6 +306,7 @@ Automated workflow status archival with preflight checks and safety controls
 ```
 
 ### Dry-Run Mode:
+
 ```
 🛡️  RUNNING IN DRY-RUN MODE - NO CHANGES WILL BE MADE
 ...
@@ -290,6 +315,7 @@ Automated workflow status archival with preflight checks and safety controls
 ```
 
 ### Live Mode Safety Check:
+
 ```
 🚨 RUNNING IN LIVE MODE - CHANGES WILL BE MADE
 🚫 SAFETY CHECK FAILED

@@ -57,17 +57,18 @@ This enhanced runbook provides comprehensive operational procedures for the pape
 
 ### Key Enhancements
 
-| Feature | Standard Runbook | Enhanced Runbook |
-|---------|-----------------|------------------|
-| Governance Checkpoints | Manual verification | Automated G1-G8 gate validation |
-| Monitoring | Basic health checks | Integrated Grafana, Redis, InfluxDB analytics |
-| Risk Management | Static limits | Dynamic budgeter with real-time enforcement |
-| Rollback Procedures | Manual intervention | Automated checkpoint-based recovery |
-| Compliance | Basic logging | Comprehensive audit trails and sign-offs |
+| Feature                | Standard Runbook    | Enhanced Runbook                              |
+| ---------------------- | ------------------- | --------------------------------------------- |
+| Governance Checkpoints | Manual verification | Automated G1-G8 gate validation               |
+| Monitoring             | Basic health checks | Integrated Grafana, Redis, InfluxDB analytics |
+| Risk Management        | Static limits       | Dynamic budgeter with real-time enforcement   |
+| Rollback Procedures    | Manual intervention | Automated checkpoint-based recovery           |
+| Compliance             | Basic logging       | Comprehensive audit trails and sign-offs      |
 
 ### Purpose and Scope
 
 This runbook covers:
+
 - Pre-flight checklist with automated governance validation
 - Real-time monitoring of G1-G8 gates during trading sessions
 - Enhanced risk management with trade budgeter integration
@@ -484,17 +485,17 @@ curl -s -G "http://localhost:18087/query" \
 
 All items must be verified and signed off before trading begins:
 
-| Item | Status | Sign-off |
-|------|--------|----------|
-| G1 - Environment Gate | ☐ PASSED ☐ FAILED | ___________ |
-| G2 - Strategy Gate | ☐ PASSED ☐ FAILED | ___________ |
-| G3 - Data Gate | ☐ PASSED ☐ FAILED | ___________ |
-| G4 - Risk Gate | ☐ PASSED ☐ FAILED | ___________ |
-| G5 - Budget Gate | ☐ PASSED ☐ FAILED | ___________ |
-| G6 - Execution Gate | ☐ PASSED ☐ FAILED | ___________ |
-| G7 - Monitoring Gate | ☐ PASSED ☐ FAILED | ___________ |
-| Kill-Switch Status | ☐ ARMED | ___________ |
-| Emergency Contacts | ☐ VERIFIED | ___________ |
+| Item                  | Status            | Sign-off           |
+| --------------------- | ----------------- | ------------------ |
+| G1 - Environment Gate | ☐ PASSED ☐ FAILED | \***\*\_\_\_\*\*** |
+| G2 - Strategy Gate    | ☐ PASSED ☐ FAILED | \***\*\_\_\_\*\*** |
+| G3 - Data Gate        | ☐ PASSED ☐ FAILED | \***\*\_\_\_\*\*** |
+| G4 - Risk Gate        | ☐ PASSED ☐ FAILED | \***\*\_\_\_\*\*** |
+| G5 - Budget Gate      | ☐ PASSED ☐ FAILED | \***\*\_\_\_\*\*** |
+| G6 - Execution Gate   | ☐ PASSED ☐ FAILED | \***\*\_\_\_\*\*** |
+| G7 - Monitoring Gate  | ☐ PASSED ☐ FAILED | \***\*\_\_\_\*\*** |
+| Kill-Switch Status    | ☐ ARMED           | \***\*\_\_\_\*\*** |
+| Emergency Contacts    | ☐ VERIFIED        | \***\*\_\_\_\*\*** |
 
 **8.2 Authorization Command**
 
@@ -566,6 +567,7 @@ cpm.save_checkpoint(checkpoint)
 **Purpose:** Validate infrastructure and environment readiness
 
 **Validation Checks:**
+
 - Container health and status
 - Network connectivity between services
 - Resource utilization (CPU, memory, disk)
@@ -573,18 +575,21 @@ cpm.save_checkpoint(checkpoint)
 - Service dependency verification
 
 **Pass Criteria:**
+
 - All required containers running and healthy
 - Network latency < 100ms between critical services
 - Resource utilization < 80% for all metrics
 - Paper trading mode explicitly confirmed
 
 **Failure Actions:**
+
 - Halt trading initialization
 - Alert operations team
 - Log detailed failure diagnostics
 - Provide specific remediation steps
 
 **Checkpoint Integration:**
+
 ```bash
 # Checkpoint state storage
 redis-cli -p 6380 HSET "checkpoint:G1:$(date +%s)" \
@@ -600,6 +605,7 @@ redis-cli -p 6380 HSET "checkpoint:G1:$(date +%s)" \
 **Purpose:** Validate strategy configurations and parameters
 
 **Validation Checks:**
+
 - Trading mode verification (paper only)
 - Strategy configuration against approved baseline
 - API credential validity and permissions
@@ -607,18 +613,21 @@ redis-cli -p 6380 HSET "checkpoint:G1:$(date +%s)" \
 - Version compatibility
 
 **Pass Criteria:**
+
 - Paper trading mode explicitly set
 - All strategies match approved configurations
 - All exchange APIs connected and responding
 - No unauthorized parameter changes detected
 
 **Failure Actions:**
+
 - Block strategy deployment
 - Quarantine modified strategies
 - Require explicit re-approval for changes
 - Audit trail for configuration drift
 
 **Configuration Audit Trail:**
+
 ```bash
 # Generate configuration diff
 ./scripts/ops/config_audit.sh --mode=paper --generate-diff > \
@@ -635,6 +644,7 @@ curl -X POST http://localhost:8001/api/v1/checkpoint/config \
 **Purpose:** Validate data sources and market data quality
 
 **Validation Checks:**
+
 - Market data freshness (< 60 seconds)
 - Order book depth and quality
 - Trade feed continuity
@@ -642,18 +652,21 @@ curl -X POST http://localhost:8001/api/v1/checkpoint/config \
 - Data source connectivity
 
 **Pass Criteria:**
+
 - All data sources reporting within freshness thresholds
 - No gaps in trade feed for last hour
 - Minimum 30 days historical data available
 - All exchange feeds responsive
 
 **Failure Actions:**
+
 - Degrade trading to reduced symbol set
 - Alert data engineering team
 - Implement fallback data sources
 - Log data quality issues
 
 **Data Quality Metrics:**
+
 ```bash
 # Automated data quality report
 curl -s http://localhost:8001/api/v1/data/quality-report | jq '.'
@@ -670,6 +683,7 @@ curl -s http://localhost:8001/api/v1/data/quality-report | jq '.'
 **Purpose:** Validate risk management systems and limits
 
 **Validation Checks:**
+
 - Position limit configurations
 - Risk engine operational status
 - Circuit breaker thresholds
@@ -677,6 +691,7 @@ curl -s http://localhost:8001/api/v1/data/quality-report | jq '.'
 - Exposure limit validation
 
 **Pass Criteria:**
+
 - All position limits configured and active
 - Risk engine status: "active"
 - Circuit breakers armed with valid thresholds
@@ -684,12 +699,14 @@ curl -s http://localhost:8001/api/v1/data/quality-report | jq '.'
 - No pending risk alerts
 
 **Failure Actions:**
+
 - Do not proceed with trading
 - Escalate to risk management team
 - Require manual risk system verification
 - Document risk system anomalies
 
 **Risk System Health Dashboard:**
+
 ```bash
 # Comprehensive risk health check
 curl -s http://localhost:8001/api/v1/risk/health | jq '.'
@@ -706,6 +723,7 @@ curl -s http://localhost:8001/api/v1/risk/health | jq '.'
 **Purpose:** Validate trade budgeter and turnover constraints
 
 **Validation Checks:**
+
 - Daily token allocation (20 tokens)
 - Budgeter enforcement status
 - Turnover metrics baseline
@@ -713,6 +731,7 @@ curl -s http://localhost:8001/api/v1/risk/health | jq '.'
 - Token consumption rate
 
 **Pass Criteria:**
+
 - 20 daily tokens allocated
 - Budgeter enforcement enabled
 - Turnover metrics within ceilings:
@@ -721,12 +740,14 @@ curl -s http://localhost:8001/api/v1/risk/health | jq '.'
   - max ≤ 45 trades/day
 
 **Failure Actions:**
+
 - If budget exhausted: Block new entries, allow exits
 - If turnover exceeding: Alert and review strategy
 - Document budget consumption patterns
 - Adjust token allocation if needed (requires approval)
 
 **Trade Budgeter Monitoring:**
+
 ```bash
 # Real-time budgeter status
 curl -s http://localhost:8001/api/v1/risk/budgeter/status | jq '.'
@@ -747,6 +768,7 @@ curl -s http://localhost:8001/api/v1/risk/budgeter/status | jq '.'
 **Purpose:** Validate order management and execution readiness
 
 **Validation Checks:**
+
 - OMS operational status
 - Pending order clearance
 - Execution engine configuration
@@ -754,6 +776,7 @@ curl -s http://localhost:8001/api/v1/risk/budgeter/status | jq '.'
 - Fill processing capability
 
 **Pass Criteria:**
+
 - OMS status: "operational"
 - No stale pending orders
 - Execution config validated
@@ -761,12 +784,14 @@ curl -s http://localhost:8001/api/v1/risk/budgeter/status | jq '.'
 - Fill processing enabled
 
 **Failure Actions:**
+
 - Clear stale orders before proceeding
 - Restart OMS if degraded
 - Validate execution parameters
 - Test order submission/cancellation
 
 **Execution System Validation:**
+
 ```bash
 # Test order lifecycle
 curl -X POST http://localhost:8001/api/v1/paper/orders/test \
@@ -788,6 +813,7 @@ curl -s http://localhost:8001/api/v1/paper/orders/test-status | jq '.'
 **Purpose:** Validate monitoring, alerting, and observability systems
 
 **Validation Checks:**
+
 - Grafana dashboard accessibility
 - Alert manager configuration
 - InfluxDB metrics pipeline
@@ -795,6 +821,7 @@ curl -s http://localhost:8001/api/v1/paper/orders/test-status | jq '.'
 - Log aggregation status
 
 **Pass Criteria:**
+
 - Grafana responding (HTTP 200)
 - All alert channels configured
 - InfluxDB receiving metrics
@@ -802,12 +829,14 @@ curl -s http://localhost:8001/api/v1/paper/orders/test-status | jq '.'
 - Log aggregation active
 
 **Failure Actions:**
+
 - Fix monitoring gaps before trading
 - Verify alert routing
 - Test notification channels
 - Document monitoring limitations
 
 **Monitoring System Check:**
+
 ```bash
 # Comprehensive monitoring validation
 ./scripts/ops/monitoring_check.sh --verbose
@@ -825,6 +854,7 @@ curl -s http://localhost:8001/api/v1/paper/orders/test-status | jq '.'
 **Purpose:** Final authorization and sign-off before trading commences
 
 **Validation Checks:**
+
 - All G1-G7 gates passed
 - Operator sign-off recorded
 - Emergency contacts verified
@@ -832,18 +862,21 @@ curl -s http://localhost:8001/api/v1/paper/orders/test-status | jq '.'
 - Audit trail initiated
 
 **Pass Criteria:**
+
 - G1-G7: All PASSED
 - Operator identity verified
 - Sign-off timestamp recorded
 - Emergency procedures acknowledged
 
 **Failure Actions:**
+
 - Do not enable trading
 - Require re-validation of failed gates
 - Escalate to senior operations
 - Document authorization denial
 
 **Authorization Recording:**
+
 ```bash
 # Record authorization in checkpoint system
 redis-cli -p 6380 HSET "checkpoint:authorization:$(date +%Y%m%d)" \
@@ -916,6 +949,7 @@ The enhanced monitoring system provides real-time visibility through integrated 
    - Kill-switch status indicator
 
 **Dashboard Configuration:**
+
 ```json
 {
   "dashboard": {
@@ -957,13 +991,13 @@ redis-cli -p 6380 INFO clients | grep -E "connected_clients|blocked_clients|trac
 
 #### Critical Redis Alerts
 
-| Metric | Warning | Critical | Action |
-|--------|---------|----------|--------|
-| Memory Usage | > 70% | > 85% | Scale or restart |
-| Fragmentation Ratio | > 1.3 | > 1.5 | Memory compaction |
-| Connected Clients | > 80 | > 100 | Connection pool review |
-| Key Evictions | > 100/min | > 500/min | Memory pressure |
-| Command Latency | > 10ms | > 50ms | Performance investigation |
+| Metric              | Warning   | Critical  | Action                    |
+| ------------------- | --------- | --------- | ------------------------- |
+| Memory Usage        | > 70%     | > 85%     | Scale or restart          |
+| Fragmentation Ratio | > 1.3     | > 1.5     | Memory compaction         |
+| Connected Clients   | > 80      | > 100     | Connection pool review    |
+| Key Evictions       | > 100/min | > 500/min | Memory pressure           |
+| Command Latency     | > 10ms    | > 50ms    | Performance investigation |
 
 #### Redis Checkpoint Monitoring
 
@@ -1062,12 +1096,12 @@ Enhanced alerting with severity-based routing and automated response actions.
 
 #### Alert Severity Levels
 
-| Level | Response Time | Routing | Auto-Action |
-|-------|---------------|---------|-------------|
-| P0 - Critical | Immediate | PagerDuty + Slack + SMS | Kill-switch trigger |
-| P1 - High | 15 minutes | PagerDuty + Slack | Trading pause |
-| P2 - Medium | 1 hour | Slack + Email | Alert only |
-| P3 - Low | 4 hours | Email digest | Log only |
+| Level         | Response Time | Routing                 | Auto-Action         |
+| ------------- | ------------- | ----------------------- | ------------------- |
+| P0 - Critical | Immediate     | PagerDuty + Slack + SMS | Kill-switch trigger |
+| P1 - High     | 15 minutes    | PagerDuty + Slack       | Trading pause       |
+| P2 - Medium   | 1 hour        | Slack + Email           | Alert only          |
+| P3 - Low      | 4 hours       | Email digest            | Log only            |
 
 #### Governance-Specific Alerts
 
@@ -1112,16 +1146,16 @@ The G1-G8 gates are executed automatically through a scheduled validation system
 
 #### Automation Schedule
 
-| Gate | Frequency | Execution Mode | Failure Action |
-|------|-----------|----------------|----------------|
-| G1 | Every 5 minutes | Automated | Alert + Log |
-| G2 | Every 15 minutes | Automated | Alert + Log |
-| G3 | Every 1 minute | Automated | Alert + Degrade |
-| G4 | Every 5 minutes | Automated | Alert + Log |
-| G5 | Every 1 minute | Automated | Alert + Block Entries |
-| G6 | On order submission | Real-time | Reject Order |
-| G7 | Every 5 minutes | Automated | Alert + Log |
-| G8 | Pre-trading only | Manual | Block Trading |
+| Gate | Frequency           | Execution Mode | Failure Action        |
+| ---- | ------------------- | -------------- | --------------------- |
+| G1   | Every 5 minutes     | Automated      | Alert + Log           |
+| G2   | Every 15 minutes    | Automated      | Alert + Log           |
+| G3   | Every 1 minute      | Automated      | Alert + Degrade       |
+| G4   | Every 5 minutes     | Automated      | Alert + Log           |
+| G5   | Every 1 minute      | Automated      | Alert + Block Entries |
+| G6   | On order submission | Real-time      | Reject Order          |
+| G7   | Every 5 minutes     | Automated      | Alert + Log           |
+| G8   | Pre-trading only    | Manual         | Block Trading         |
 
 #### Automated Gate Execution Script
 
@@ -1213,15 +1247,15 @@ class GateValidationResponse(BaseModel):
 async def validate_gate(request: GateValidationRequest) -> GateValidationResponse:
     validator = GateValidator(request.gate_id)
     result = await validator.execute()
-    
+
     # Persist to checkpoint
     checkpoint.record(result)
-    
+
     return GateValidationResponse(
         gate_id=request.gate_id,
         status=result.status,
         checks=result.checks,
-        timestamp=datetime.utcnow().isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
         operator=request.operator_id
     )
 ```
@@ -1241,6 +1275,7 @@ G1 (Environment) ←→ G2 (Strategy) ←→ G3 (Data)
 ```
 
 **Dependency Rules:**
+
 - G8 requires all G1-G7 to pass
 - G4 depends on G1, G2, G3 (infrastructure must be ready)
 - G5 and G6 can run in parallel after G4
@@ -1251,6 +1286,7 @@ G1 (Environment) ←→ G2 (Strategy) ←→ G3 (Data)
 #### Recovery Procedures by Gate
 
 **G1 Failure (Infrastructure):**
+
 ```bash
 # Automated recovery sequence
 1. Restart failed containers: docker restart <container>
@@ -1261,6 +1297,7 @@ G1 (Environment) ←→ G2 (Strategy) ←→ G3 (Data)
 ```
 
 **G2 Failure (Strategy):**
+
 ```bash
 # Manual recovery required
 1. Review configuration drift report
@@ -1271,6 +1308,7 @@ G1 (Environment) ←→ G2 (Strategy) ←→ G3 (Data)
 ```
 
 **G3 Failure (Data):**
+
 ```bash
 # Semi-automated recovery
 1. Switch to backup data sources
@@ -1281,6 +1319,7 @@ G1 (Environment) ←→ G2 (Strategy) ←→ G3 (Data)
 ```
 
 **G4 Failure (Risk):**
+
 ```bash
 # Immediate halt required
 1. Halt all trading immediately
@@ -1291,6 +1330,7 @@ G1 (Environment) ←→ G2 (Strategy) ←→ G3 (Data)
 ```
 
 **G5 Failure (Budget):**
+
 ```bash
 # Automated response
 1. Block new entry orders
@@ -1301,6 +1341,7 @@ G1 (Environment) ←→ G2 (Strategy) ←→ G3 (Data)
 ```
 
 **G6 Failure (Execution):**
+
 ```bash
 # Service restart
 1. Clear pending orders
@@ -1311,6 +1352,7 @@ G1 (Environment) ←→ G2 (Strategy) ←→ G3 (Data)
 ```
 
 **G7 Failure (Monitoring):**
+
 ```bash
 # Continue with caution
 1. Trading can continue
@@ -1321,6 +1363,7 @@ G1 (Environment) ←→ G2 (Strategy) ←→ G3 (Data)
 ```
 
 **G8 Failure (Authorization):**
+
 ```bash
 # Block trading
 1. Do not enable trading
@@ -1384,26 +1427,28 @@ class RiskValidator:
             self.check_market_conditions(order),
             self.check_concentration_risk(order)
         ]
-        
+
         failed_checks = [c for c in checks if not c.passed]
-        
+
         if failed_checks:
             return ValidationResult(
                 approved=False,
                 rejections=failed_checks,
                 checkpoint_id=self.record_checkpoint(order, checks)
             )
-        
+
         return ValidationResult(approved=True)
 ```
 
 **Position Limit Checks:**
+
 - Maximum position size per symbol
 - Maximum total exposure across all symbols
 - Maximum leverage per position
 - Maximum number of open orders per symbol
 
 **Trade Budgeter Checks:**
+
 - Verify tokens remaining > 0
 - Check if order would exceed turnover ceilings
 - Calculate projected token consumption
@@ -1440,19 +1485,20 @@ curl -s http://localhost:8001/api/v1/risk/metrics/stream | jq '.'
 
 **Risk Alert Thresholds:**
 
-| Metric | Warning | Critical | Kill-Switch |
-|--------|---------|----------|-------------|
-| Exposure % | > 50% | > 70% | > 85% |
-| Margin Utilization | > 40% | > 60% | > 80% |
-| Concentration (top 3) | > 30% | > 50% | > 70% |
-| Daily Loss | > 3% | > 5% | > 8% |
-| Drawdown | > 7% | > 10% | > 15% |
+| Metric                | Warning | Critical | Kill-Switch |
+| --------------------- | ------- | -------- | ----------- |
+| Exposure %            | > 50%   | > 70%    | > 85%       |
+| Margin Utilization    | > 40%   | > 60%    | > 80%       |
+| Concentration (top 3) | > 30%   | > 50%    | > 70%       |
+| Daily Loss            | > 3%    | > 5%     | > 8%        |
+| Drawdown              | > 7%    | > 10%    | > 15%       |
 
 #### Circuit Breaker Procedures
 
 Circuit breakers automatically halt trading when thresholds are breached:
 
 **Daily Loss Circuit Breaker:**
+
 ```python
 # Circuit breaker logic
 if daily_loss_pct > CIRCUIT_BREAKER_THRESHOLD:
@@ -1461,7 +1507,7 @@ if daily_loss_pct > CIRCUIT_BREAKER_THRESHOLD:
         severity="critical",
         action="halt_new_positions"
     )
-    
+
     # Actions:
     # 1. Block new entry orders
     # 2. Allow exit orders for 5 minutes
@@ -1471,6 +1517,7 @@ if daily_loss_pct > CIRCUIT_BREAKER_THRESHOLD:
 ```
 
 **Volatility Spike Circuit Breaker:**
+
 ```python
 # Volatility-based circuit breaker
 current_volatility = calculate_realized_volatility(window="1h")
@@ -1486,6 +1533,7 @@ if current_volatility > avg_volatility * VOLATILITY_MULTIPLIER:
 ```
 
 **Manual Circuit Breaker Reset:**
+
 ```bash
 # Check circuit breaker status
 curl -s http://localhost:8001/api/v1/risk/circuit-breakers | jq '.'
@@ -1506,11 +1554,13 @@ curl -X POST http://localhost:8001/api/v1/risk/circuit-breakers/reset \
 The kill switch provides immediate emergency halt capability:
 
 **Kill-Switch States:**
+
 - **ARMED** (green): System ready, monitoring active
 - **TRIGGERED** (red): Trading halted, positions closing
 - **DISABLED** (gray): Kill switch manually disabled
 
 **Automatic Kill-Switch Triggers:**
+
 - Drawdown exceeds 15%
 - Daily loss exceeds 8%
 - Critical system failures (G1, G4)
@@ -1518,6 +1568,7 @@ The kill switch provides immediate emergency halt capability:
 - Regulatory halt signal
 
 **Kill-Switch Activation:**
+
 ```bash
 # Automatic activation (system triggered)
 # No manual intervention required
@@ -1536,6 +1587,7 @@ curl -s http://localhost:8001/api/v1/execution/kill-switch/status | jq '.'
 ```
 
 **Kill-Switch Recovery:**
+
 ```bash
 # Only after root cause identified and resolved
 
@@ -1582,6 +1634,7 @@ curl -s http://localhost:8001/api/v1/risk/budgeter/by-strategy | jq '.'
 #### Budget Exhaustion Response
 
 When tokens are exhausted:
+
 1. **Immediate**: Block new entry orders
 2. **Continued**: Allow exit orders (don't consume tokens)
 3. **Alert**: Notify strategy team
@@ -1594,21 +1647,21 @@ class BudgetExhaustionHandler:
     def handle_exhaustion(self):
         # Block new entries
         order_gateway.block_entries(reason="budget_exhausted")
-        
+
         # Allow exits to continue
         order_gateway.allow_exits()
-        
+
         # Send alert
         alert_manager.send(
             level="P1",
             message="Trade budget exhausted. New entries blocked.",
             channels=["slack", "pagerduty"]
         )
-        
+
         # Record checkpoint
         checkpoint.record_event(
             type="budget_exhaustion",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             tokens_consumed=20
         )
 ```
@@ -1617,18 +1670,19 @@ class BudgetExhaustionHandler:
 
 ### Incident Classification
 
-| Severity | Criteria | Response Time | Escalation |
-|----------|----------|---------------|------------|
-| SEV-1 | Trading halt, data loss, security breach | Immediate | On-call + Leadership |
-| SEV-2 | Degraded service, partial outage | 15 minutes | On-call + Manager |
-| SEV-3 | Minor issues, non-critical alerts | 1 hour | On-call |
-| SEV-4 | Cosmetic issues, documentation | 4 hours | Ticket queue |
+| Severity | Criteria                                 | Response Time | Escalation           |
+| -------- | ---------------------------------------- | ------------- | -------------------- |
+| SEV-1    | Trading halt, data loss, security breach | Immediate     | On-call + Leadership |
+| SEV-2    | Degraded service, partial outage         | 15 minutes    | On-call + Manager    |
+| SEV-3    | Minor issues, non-critical alerts        | 1 hour        | On-call              |
+| SEV-4    | Cosmetic issues, documentation           | 4 hours       | Ticket queue         |
 
 ### Incident Response Procedures
 
 #### SEV-1: Trading Halt Incident
 
 **Immediate Actions (0-5 minutes):**
+
 ```bash
 # 1. Verify kill-switch status
 curl -s http://localhost:8001/api/v1/execution/kill-switch/status | jq '.state'
@@ -1651,6 +1705,7 @@ redis-cli -p 6380 HSET "incident:$(date +%s)" \
 ```
 
 **Assessment Phase (5-15 minutes):**
+
 ```bash
 # 1. Run diagnostic suite
 ./scripts/ops/diagnostic_suite.sh --output=incident_$(date +%s).json
@@ -1663,12 +1718,14 @@ curl -s http://localhost:8001/api/v1/system/state > incident_state_$(date +%s).j
 ```
 
 **Resolution Phase (ongoing):**
+
 - Apply fixes based on diagnostic results
 - Re-validate all gates before resuming
 - Document all actions in incident log
 - Update runbook if new issues discovered
 
 **Post-Incident:**
+
 ```bash
 # Record resolution
 redis-cli -p 6380 HSET "incident:$(date +%s)" \
@@ -1683,6 +1740,7 @@ redis-cli -p 6380 HSET "incident:$(date +%s)" \
 #### SEV-2: Degraded Service Incident
 
 **Response Steps:**
+
 1. Identify degraded components via G1-G7 gates
 2. Implement degraded service mode if needed
 3. Reduce trading scope (fewer symbols)
@@ -1702,6 +1760,7 @@ curl -X POST http://localhost:8001/api/v1/execution/mode/degraded \
 #### SEV-3: Minor Issues
 
 **Response:**
+
 - Log issue in ticket system
 - Monitor for escalation
 - Apply fix during next maintenance window
@@ -1712,11 +1771,13 @@ curl -X POST http://localhost:8001/api/v1/execution/mode/degraded \
 #### Internal Communication
 
 **Slack Channels:**
+
 - `#incidents-sev1`: SEV-1 incidents only
 - `#incidents-general`: All other incidents
 - `#trading-ops`: Trading team updates
 
 **PagerDuty:**
+
 - SEV-1: Immediate page + phone call
 - SEV-2: Page within 5 minutes
 - SEV-3: Page within 15 minutes
@@ -1724,6 +1785,7 @@ curl -X POST http://localhost:8001/api/v1/execution/mode/degraded \
 #### External Communication
 
 For incidents with potential external impact:
+
 1. Notify stakeholders per communication plan
 2. Prepare status page update if applicable
 3. Coordinate with communications team
@@ -1785,6 +1847,7 @@ curl -X POST http://localhost:8001/api/v1/checkpoint/create \
 #### Rollback Scenarios
 
 **Scenario 1: Rollback to Start of Day**
+
 ```bash
 # 1. Identify morning checkpoint
 checkpoint_id=$(redis-cli -p 6380 KEYS "checkpoint:authorization:$(date +%Y%m%d)*" | head -1)
@@ -1800,6 +1863,7 @@ curl -s http://localhost:8001/api/v1/checkpoint/verify | jq '.'
 ```
 
 **Scenario 2: Rollback After Bad Trade**
+
 ```bash
 # 1. Find checkpoint before bad trade
 curl -s "http://localhost:8001/api/v1/checkpoint/before?time=2026-03-11T10:30:00Z" | jq '.checkpoint_id'
@@ -1814,6 +1878,7 @@ curl -X POST http://localhost:8001/api/v1/checkpoint/rollback \
 ```
 
 **Scenario 3: Complete State Reset**
+
 ```bash
 # Nuclear option: reset to baseline
 # WARNING: Destroys all current state
@@ -2010,13 +2075,13 @@ done
 
 ### Emergency Contacts
 
-| Role | Contact | Method |
-|------|---------|--------|
-| Operations Lead | ops-lead@chiseai.com | Slack: @ops-lead |
-| Risk Manager | risk@chiseai.com | PagerDuty |
-| On-Call Engineer | See PagerDuty rotation | PagerDuty + SMS |
-| Trading Team | #trading-ops | Slack |
-| Infrastructure | #infra-alerts | Slack + PagerDuty |
+| Role             | Contact                | Method            |
+| ---------------- | ---------------------- | ----------------- |
+| Operations Lead  | ops-lead@chiseai.com   | Slack: @ops-lead  |
+| Risk Manager     | risk@chiseai.com       | PagerDuty         |
+| On-Call Engineer | See PagerDuty rotation | PagerDuty + SMS   |
+| Trading Team     | #trading-ops           | Slack             |
+| Infrastructure   | #infra-alerts          | Slack + PagerDuty |
 
 ### Document References
 
@@ -2029,6 +2094,6 @@ done
 
 ---
 
-*This runbook is maintained by the Operations Team. Last updated: 2026-03-11*
-*Story ID: PAPER-GOVERNANCE-001*
-*For updates or issues, contact ops-team@chiseai.com*
+_This runbook is maintained by the Operations Team. Last updated: 2026-03-11_
+_Story ID: PAPER-GOVERNANCE-001_
+_For updates or issues, contact ops-team@chiseai.com_
