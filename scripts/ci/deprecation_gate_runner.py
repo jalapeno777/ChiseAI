@@ -123,6 +123,11 @@ Examples:
 
     args = parser.parse_args()
 
+    if not args.changed_files_only and os.environ.get("CI", "").lower() == "true":
+        # Keep CI runtime bounded by default. The validator now resolves changed
+        # files defensively, so changed-files mode is safe in Woodpecker.
+        args.changed_files_only = True
+
     # Run the check
     exit_code = run_deprecation_check(
         baseline_path=args.baseline_path,

@@ -22,7 +22,6 @@ import json
 import os
 import subprocess
 import sys
-import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -43,6 +42,8 @@ DEPRECATION_CATEGORIES = [
     "PendingDeprecationWarning",
     "FutureWarning",
 ]
+
+CHANGE_SCOPE_HELPER = Path("scripts/ci/ci_change_scope.py")
 
 
 @dataclass
@@ -65,7 +66,7 @@ class DeprecationFinding:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "DeprecationFinding":
+    def from_dict(cls, data: dict[str, Any]) -> DeprecationFinding:
         return cls(
             file=data.get("file", ""),
             line=data.get("line", 0),
@@ -162,7 +163,7 @@ def load_baseline(baseline_path: Path) -> set[DeprecationFinding]:
         return set()
 
     try:
-        with open(baseline_path, "r", encoding="utf-8") as f:
+        with open(baseline_path, encoding="utf-8") as f:
             data = json.load(f)
 
         findings = set()
@@ -210,7 +211,7 @@ def collect_deprecation_warnings(
     changed_files_only: bool = False,
 ) -> list[DeprecationFinding]:
     """Collect deprecation warnings by running Python with warnings enabled."""
-    findings = []
+    findings: list[DeprecationFinding] = []
 
     if directories is None:
         directories = SCAN_DIRECTORIES
@@ -223,7 +224,7 @@ def collect_deprecation_warnings(
         return findings
 
     # Collect Python files to check
-    python_files = []
+    python_files: list[Path] = []
     for directory in existing_dirs:
         dir_path = Path(directory)
         for pattern in INCLUDE_PATTERNS:
@@ -245,7 +246,7 @@ def collect_deprecation_warnings(
 
         # Check for deprecation patterns in source
         try:
-            with open(pyfile, "r", encoding="utf-8") as f:
+            with open(pyfile, encoding="utf-8") as f:
                 content = f.read()
                 lines = content.split("\n")
 
@@ -279,22 +280,86 @@ def collect_deprecation_warnings(
                         )
                     )
 
-        except (IOError, UnicodeDecodeError) as e:
+        except (OSError, UnicodeDecodeError) as e:
             print(f"Warning: Could not read {pyfile}: {e}", file=sys.stderr)
 
     return findings
 
 
+def _resolve_base_ref() -> str | None:
+    """Resolve a usable base ref for git diffs."""
+    candidates = [
+        "refs/remotes/origin/main",
+        "origin/main",
+        "main",
+        "HEAD~1",
+    ]
+    for candidate in candidates:
+        proc = subprocess.run(
+            ["git", "rev-parse", "--verify", candidate],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if proc.returncode == 0:
+            return candidate
+    return None
+
+
 def get_changed_files() -> list[str]:
-    """Get list of changed files from git."""
+    """Get list of changed files from git or CI metadata."""
+    env_files = os.environ.get("CI_PIPELINE_FILES", "").strip()
+    if env_files:
+        try:
+            payload = json.loads(env_files)
+        except json.JSONDecodeError:
+            payload = None
+        if isinstance(payload, list):
+            files = [str(item).strip() for item in payload if str(item).strip()]
+            if files:
+                return files
+
+    if CHANGE_SCOPE_HELPER.exists():
+        helper_base_ref = _resolve_base_ref() or "HEAD~1"
+        try:
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(CHANGE_SCOPE_HELPER),
+                    "--base-ref",
+                    helper_base_ref,
+                    "--mode",
+                    "summary",
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            payload = json.loads(result.stdout)
+            changed = payload.get("changed_files", [])
+            if isinstance(changed, list):
+                files = [str(item).strip() for item in changed if str(item).strip()]
+                if files:
+                    return files
+        except (subprocess.CalledProcessError, json.JSONDecodeError, OSError):
+            pass
+
     try:
+        resolved_base_ref: str | None = _resolve_base_ref()
+        if resolved_base_ref is None:
+            return []
+        diff_args = ["git", "diff", "--name-only"]
+        if resolved_base_ref == "HEAD~1":
+            diff_args.append(f"{resolved_base_ref}..HEAD")
+        else:
+            diff_args.extend([resolved_base_ref, "HEAD"])
         result = subprocess.run(
-            ["git", "diff", "--name-only", "origin/main", "HEAD"],
+            diff_args,
             capture_output=True,
             text=True,
             check=True,
         )
-        return result.stdout.strip().split("\n")
+        return [line for line in result.stdout.strip().split("\n") if line]
     except subprocess.CalledProcessError:
         return []
 
