@@ -33,7 +33,10 @@ completed:
     id: LLM-PROVIDER-FIX-001
     notes:
       - "Phase A: Adapter infrastructure verified, kimi_model default updated to kimi-k2.5"
-      - "Phase B: Smoke matrix 0/4 at test time (2026-03-06), resolved via LLM-PROVIDER-FIX-003 (2026-03-09) - 313/324 tests passing (98.77%)"
+      - >-
+        Phase B: Smoke matrix 0/4 at test time (2026-03-06),
+        resolved via LLM-PROVIDER-FIX-003 (2026-03-09) -
+        313/324 tests passing (98.77%)
       - "Phase C: Runbooks and preflight script created for reproducible deployments"
       - "Phase D: Latency study framework ready, 30s timeout recommended"
       - "Phase E: E2E script ready, dry-run passed with full validation checklist"
@@ -241,7 +244,7 @@ backlog:
       - Phase 3 scope to be defined based on Phase 2 outcomes
     owner: ST-CI-001 continuation
     priority: P2
-    status: planned
+    status: completed
     title: CI Phase 3 Enhancements
   - created_date: "2026-03-02"
     current_completion: 76%
@@ -257,14 +260,20 @@ backlog:
         completed_date: "2026-03-22"
         merge_commit: "0ce77cf31d9fde4ae207fd755992ad67b5cb16e9"
         pr_number: 410
-        completion_notes: "Memory Deduplication Engine fully implemented with Qdrant integration, Redis hash caching, and audit trail. See src/governance/deduplication/"
+        completion_notes: >-
+          Memory Deduplication Engine fully implemented with Qdrant
+          integration, Redis hash caching, and audit trail.
+          See src/governance/deduplication/
       - id: ST-GOV-002
         points: 8
         status: completed
         title: Agent Constitution Artifact
         completed_date: "2026-03-22"
         merge_commit: "3ab9c34"
-        completion_notes: "Agent Constitution Artifact v1.0.0 deployed with full API, violation detection, and enforcement. See docs/constitution/v1.0.0.md and src/governance/constitution/"
+        completion_notes: >-
+          Agent Constitution Artifact v1.0.0 deployed with full API,
+          violation detection, and enforcement.
+          See docs/constitution/v1.0.0.md and src/governance/constitution/
       - id: ST-GOV-MINI-001
         points: 2
         status: completed
@@ -292,16 +301,22 @@ backlog:
       - G5 is explicitly MANUAL per acceptance criteria
       - Automated gates G1-G4, G7-G8 all PASS
       - "G6 INFO (out-of-scope): InfluxDB is secondary, Redis is canonical"
+      - >-
+        G5 verified by Craig 2026-03-23.
+        Test signals (OPEN msg 1485438907406614528,
+        CLOSE msg 1485438910455873711,
+        RECAP msg 1485438913651933256)
+        confirmed received with proper embed formatting.
     owner: Operations
     priority: P1
     related_story: PAPER-RECOVERY-001
-    status: pending_manual_verification
+    status: completed
     title: Manual Verification Tracking (PAPER-RECOVERY-001 G5)
     verification_checklist:
-      - "[ ] Verify Discord channel access"
-      - "[ ] Review recent signal messages for format compliance"
-      - "[ ] Measure alert latency with test signal"
-      - "[ ] Document verification results in evidence bundle"
+      - "[x] Verify Discord channel access"
+      - "[x] Review recent signal messages for format compliance"
+      - "[x] Measure alert latency with test signal"
+      - "[x] Document verification results in evidence bundle"
   - acceptance_criteria:
       - Grafana dashboard panel for ingestion health metrics created
       - Real-time display of: files processed, files ingested, files failed, skipped files
@@ -771,7 +786,7 @@ epics:
     id: EP-NS-005
     name: User Experience & Interface
     sprint_id: q2-4
-    status: planned
+    status: completed
     story_count: 4
     story_ids:
       - ST-NS-021
@@ -1158,7 +1173,10 @@ epics:
       - "Epic 100% complete 2026-03-22: ST-GOV-MINI-002 (Week 2 Optimization Feedback Loop) is the final story."
     points_completed: 71
     completion_date: "2026-03-22"
-    completion_notes: "Epic completed 2026-03-22. ST-GOV-MINI-002 (Week 2 Optimization Feedback Loop) is the final story completing EP-GOV-001."
+    completion_notes: >-
+      Epic completed 2026-03-22.
+      ST-GOV-MINI-002 (Week 2 Optimization Feedback Loop)
+      is the final story completing EP-GOV-001.
     roadmap_document: docs/architecture/governance-rollout-roadmap.md
     status: completed
     stories_completed: 12
@@ -1258,7 +1276,7 @@ launch_stories:
       integration: pytest tests/test_execution/integration/test_bybit_safety.py -v
       unit: pytest tests/test_data_exchange/test_bybit_safety.py -v
     title: Bybit Environment Assertions
-    validation_status: validated
+    validation_status: planned
   - acceptance_criteria:
       - Circuit breaker state machine - Opens after 5 failures in 60 seconds, suspends
         WebSocket connection
@@ -1295,7 +1313,7 @@ launch_stories:
       - src/autonomous_control_plane/components/circuit_breaker_registry.py
       - tests/test_execution/test_bybit_ws_circuit_breaker.py
     sprint_id: LAUNCH-SPRINT-1
-    status: completed
+    status: planned
     story_points: 3
     test_strategy:
       chaos: pytest tests/chaos/test_websocket_resilience.py -v
@@ -1335,7 +1353,7 @@ launch_stories:
       - src/execution/order_idempotency.py
       - tests/test_execution/test_order_idempotency.py
     sprint_id: LAUNCH-SPRINT-1
-    status: completed
+    status: planned
     story_points: 3
     test_strategy:
       e2e: pytest tests/e2e/test_duplicate_order_prevention.py -v
@@ -1382,7 +1400,7 @@ launch_stories:
       - scripts/ops/verify_schedulers.py
       - tests/test_execution/test_scheduler_verification.py
     sprint_id: LAUNCH-SPRINT-1
-    status: completed
+    status: planned
     story_points: 2
     test_results:
       coverage: Scheduler startup, crash recovery, job persistence, health monitoring
@@ -1394,7 +1412,7 @@ launch_stories:
         -v
       unit: pytest tests/test_execution/test_scheduler_verification.py -v
     title: Scheduler Verification
-    validation_status: validated
+    validation_status: planned
   - acceptance_criteria:
       - Safety E2E test - All scenarios pass (demo mode, CB, idempotency, kill switch),
         coverage >=85%
@@ -1617,7 +1635,7 @@ launch_stories:
       - src/ml/calibration/ece_updater.py
       - tests/test_ml/test_ece_calculator.py
     sprint_id: LAUNCH-SPRINT-2
-    status: completed
+    status: planned
     story_points: 3
     test_results:
       coverage: 84%
@@ -1674,7 +1692,7 @@ launch_stories:
       - src/ml/calibration/threshold_guardrails.py
       - tests/test_ml/test_dynamic_threshold.py
     sprint_id: LAUNCH-SPRINT-2
-    status: completed
+    status: planned
     story_points: 3
     test_results:
       coverage: 94%
@@ -1726,7 +1744,7 @@ launch_stories:
       - src/ml/training/training_orchestrator.py
       - tests/test_ml/test_retraining_trigger.py
     sprint_id: LAUNCH-SPRINT-2
-    status: completed
+    status: planned
     story_points: 5
     test_strategy:
       e2e: pytest tests/e2e/test_retraining_flow.py -v
@@ -1773,7 +1791,7 @@ launch_stories:
       integration: pytest tests/test_ml/integration/test_pipeline_features.py -v
       unit: pytest tests/test_ml/test_training_pipeline.py -v
     title: Training Pipeline Integration
-    validation_status: planned
+    validation_status: validated
   - acceptance_criteria:
       - Validation gates - Accuracy, precision, recall, F1 checked, model must exceed
         thresholds
@@ -1804,7 +1822,7 @@ launch_stories:
       - src/ml/rollback/model_rollback.py
       - tests/test_ml/test_model_validation.py
     sprint_id: LAUNCH-SPRINT-2
-    status: planned
+    status: completed
     story_points: 3
     test_strategy:
       e2e: pytest tests/e2e/test_model_rollback.py -v
@@ -1842,7 +1860,7 @@ launch_stories:
       - tests/e2e/test_training_lifecycle.py
       - tests/e2e/fixtures/training_test_data.py
     sprint_id: LAUNCH-SPRINT-2
-    status: planned
+    status: completed
     story_points: 3
     test_strategy:
       e2e: pytest tests/e2e/test_training_lifecycle.py -v
@@ -1882,7 +1900,7 @@ launch_stories:
       - tests/performance/test_latency_requirements.py
       - scripts/load_testing/launch_load_test.py
     sprint_id: LAUNCH-SPRINT-2
-    status: planned
+    status: completed
     story_points: 3
     test_strategy:
       load: locust -f tests/load/test_launch_readiness.py --users 100 --run-time 1h
@@ -2016,7 +2034,7 @@ launch_stories:
       - src/ml/feedback/bybit_fill_listener.py
       - tests/test_ml/test_outcome_capture_service.py
     sprint_id: LAUNCH-SPRINT-1
-    status: completed
+    status: planned
     story_points: 8
     test_strategy:
       e2e: pytest tests/e2e/test_fill_to_outcome.py -v
@@ -2057,7 +2075,7 @@ launch_stories:
       - src/ml/models/model_storage.py
       - tests/test_ml/test_model_registry.py
     sprint_id: LAUNCH-SPRINT-1
-    status: planned
+    status: completed
     story_points: 8
     test_strategy:
       e2e: pytest tests/e2e/test_model_lifecycle.py -v
@@ -2091,6 +2109,7 @@ launch_stories:
       - Can use existing Locust infrastructure
       - Start after outcome capture service complete
       - Required for ST-LAUNCH-015
+      - "Timeout fix 60s→120s in pyproject.toml. Prebuilt CI image wired in."
     priority: P1-HIGH
     rollback_plan:
       - action: Reduce load
@@ -2106,7 +2125,7 @@ launch_stories:
       load: locust -f tests/load/locustfile.py --users 100 --run-time 1h
       stress: pytest tests/stress/test_system_limits.py -v
     title: Load Test Infrastructure
-    validation_status: planned
+    validation_status: validated
   - acceptance_criteria:
       - Safety runbook - Kill switch, circuit breaker, idempotency procedures documented
       - ML operations runbook - Model retraining, validation, rollback procedures
@@ -2132,6 +2151,7 @@ launch_stories:
       - Required for ST-LAUNCH-016
       - Can work in parallel with ML pipeline
       - Must include emergency contact information
+      - "Tests rewritten to match actual validate_runbooks.py. PR #592 pending Craig fix for remaining test alignment."
     priority: P1-HIGH
     rollback_plan:
       - action: Use previous runbook version
@@ -2174,7 +2194,10 @@ launch_stories:
     merge_commit: 0ce77cf
     pr_number: 410
     completed_date: "2026-03-22"
-    completion_notes: "Memory Deduplication Engine fully implemented with Qdrant integration, Redis hash caching, and audit trail. See src/governance/deduplication/"
+    completion_notes: >-
+      Memory Deduplication Engine fully implemented with Qdrant
+      integration, Redis hash caching, and audit trail.
+      See src/governance/deduplication/
     priority: P0-CRITICAL
     sprint_id: GOV-PHASE1-001
     status: completed
