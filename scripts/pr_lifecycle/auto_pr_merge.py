@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Auto-create PRs from pushed branches and optionally configure server-side merge.
+"""Auto-create PRs from pushed branches and configure server-side merge checks.
 
 Policy:
 - Auto-create PRs from non-protected branches targeting main when no open PR exists.
-- During ensure-prs, optionally enable server-side `merge_when_checks_succeed`.
-- Manual `automerge` subcommand remains explicit opt-in.
+- During ensure-prs, optionally enable server-side ``merge_when_checks_succeed``.
+- chise-bot NEVER performs a direct merge; merge authority is reserved for Merlin.
+- Manual ``automerge`` subcommand enables merge checks on eligible open PRs.
 """
 
 from __future__ import annotations
@@ -117,14 +118,20 @@ def _open_pr_for_head(cfg: Config, head_branch: str) -> dict[str, Any] | None:
     return None
 
 
-def _enable_server_automerge(cfg: Config, pr: dict[str, Any], head_branch: str) -> bool:
+def _enable_merge_check(cfg: Config, pr: dict[str, Any], head_branch: str) -> bool:
+    """Enable server-side merge_when_checks_succeed on a PR.
+
+    This does NOT execute a direct merge. It only configures the PR so that
+    the Gitea server will merge automatically once all required checks pass.
+    Only `merge_when_checks_succeed` is set -- no ``"Do": "merge"`` payload
+    is sent, which prevents chise-bot from performing a direct merge action.
+    Merge authority is reserved for Merlin (sole merge authority per AGENTS.md).
+    """
     number = pr.get("number")
     if not number:
         return False
     payload = {
-        "Do": "merge",
         "merge_when_checks_succeed": True,
-        "delete_branch_after_merge": False,
         "head_commit_id": ((pr.get("head") or {}).get("sha") or ""),
     }
     if cfg.dry_run:
@@ -173,7 +180,7 @@ def ensure_prs(cfg: Config) -> int:
         open_pr = _open_pr_for_head(cfg, name)
         if open_pr:
             if cfg.enable_server_automerge:
-                _enable_server_automerge(cfg, open_pr, name)
+                _enable_merge_check(cfg, open_pr, name)
             continue
         title = f"REPO-AUTO-PR-001 {name}"
         body = (
@@ -189,7 +196,7 @@ def ensure_prs(cfg: Config) -> int:
         if result and result.get("number"):
             print(f"created PR #{result['number']} for branch {name}")
             if cfg.enable_server_automerge:
-                _enable_server_automerge(cfg, result, name)
+                _enable_merge_check(cfg, result, name)
             created += 1
     return created
 
@@ -225,7 +232,13 @@ def _wait_until_mergeable(
 
 
 def auto_merge(cfg: Config) -> int:
-    merged = 0
+    """Enable merge_when_checks_succeed on eligible open PRs.
+
+    chise-bot does NOT perform direct merges.  Merge authority is reserved
+    for Merlin per AGENTS.md.  This function only enables the server-side
+    merge check so Gitea will auto-merge once CI passes.
+    """
+    enabled = 0
     prs = list_open_prs(cfg, base=cfg.default_base)
     if cfg.source_branch:
         full_head = f"{cfg.owner}:{cfg.source_branch}"
@@ -251,33 +264,14 @@ def auto_merge(cfg: Config) -> int:
             )
             continue
 
-        if cfg.dry_run:
-            print(f"[dry-run] merge PR #{number}")
-            merged += 1
-            continue
-
-        payload = {
-            "Do": "merge",
-            "delete_branch_after_merge": False,
-            "merge_commit_id": "",
-            "merge_message_field": f"Auto-merged PR #{number} (conflict-free)",
-        }
-        for attempt in range(4):
-            result = _safe_req_json(
-                cfg, "POST", f"{_repo_path(cfg)}/pulls/{number}/merge", payload
-            )
-            if result is not None:
-                print(f"merged PR #{number}")
-                merged += 1
-                break
-            # Gitea can briefly return 405 "Please try again later" while mergeability updates.
-            time.sleep(2 + attempt)
-    return merged
+        if _enable_merge_check(cfg, pr, str(number)):
+            enabled += 1
+    return enabled
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Auto PR creation and conflict-only merge"
+        description="Auto PR creation and merge-check configuration"
     )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
@@ -286,12 +280,14 @@ def main() -> int:
     )
     p_ensure.add_argument("--dry-run", action="store_true")
 
-    p_merge = sub.add_parser("automerge", help="Merge open conflict-free PRs")
+    p_merge = sub.add_parser(
+        "automerge", help="Enable merge_when_checks_succeed on open PRs"
+    )
     p_merge.add_argument("--dry-run", action="store_true")
     p_merge.add_argument(
         "--enable-automerge",
         action="store_true",
-        help="Explicitly enable merge actions",
+        help="Explicitly enable merge-check actions (no direct merge performed)",
     )
 
     args = parser.parse_args()
@@ -306,10 +302,12 @@ def main() -> int:
         return 0
     if args.cmd == "automerge":
         if not args.enable_automerge:
-            print("automerge skipped: pass --enable-automerge to allow merging")
+            print(
+                "automerge skipped: pass --enable-automerge to allow merge-check actions"
+            )
             return 0
         merged = auto_merge(cfg)
-        print(f"automerge complete: merged={merged}")
+        print(f"automerge complete: merge-checks-enabled={merged}")
         return 0
     return 1
 
