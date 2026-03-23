@@ -32,11 +32,13 @@ Ensure all agent swarm operations follow consistent, safe Git practices that mai
 ## Branch Strategy
 
 ### Standard Branches
+
 - `main` - Stable, protected, human-approved merges only
 - `feature/<story-id>-<slug>` - Story implementation
 - `safety/<reason>-<date>` - Emergency work when tree is dirty
 
 ### Pre-Edit Checklist
+
 - [ ] Run `git status -sb`
 - [ ] Run `git branch --show-current`
 - [ ] If on `main`, create feature branch immediately
@@ -45,6 +47,7 @@ Ensure all agent swarm operations follow consistent, safe Git practices that mai
 ## PR Workflow
 
 ### Worker Completion Protocol
+
 1. Run local CI (via `chise-precommit-gates.md`)
 2. Run status sync validation (via command)
 3. Publish completion candidate branch to `origin` (completion publication gate)
@@ -56,6 +59,7 @@ Ensure all agent swarm operations follow consistent, safe Git practices that mai
 6. Jarvis delegates merlin for PR sweep
 
 ### Required Handoff Information
+
 - story_id
 - branch name
 - head SHA
@@ -68,20 +72,25 @@ Ensure all agent swarm operations follow consistent, safe Git practices that mai
 ### Merge Authority by Role
 
 #### Workers
+
 - Push branches + handoff evidence only
 - Workers do NOT open PRs or merge to main
 
 #### Jarvis
+
 - Orchestrates handoff to Merlin
 - Coordinates worker completion
 
 #### senior-dev
+
 - May prepare integration fixes on feature branches
 - Direct merge to `main` is allowed only when explicitly delegated non-autonomously by Aria/Jarvis
 - Does NOT open/update/close PRs (only Merlin may do this)
 
 #### Merlin (Required Authority)
+
 `merlin` is the ONLY agent who may:
+
 - Open/update/close PRs (exclusive authority)
 - Merge to `main` after >2 failed merge attempts by senior-dev
 - Handle complex merges with conflicts across >3 files
@@ -90,19 +99,24 @@ Ensure all agent swarm operations follow consistent, safe Git practices that mai
 - Perform emergency merge overrides
 
 ### Emergency Override
+
 See `.opencode/command/chise-emergency-merge-override.md` for documented bypass procedure.
 
 ### Merge Authority Consistency (AGENTS.md Reference)
+
 The merge authority rules here are consistent with `AGENTS.md` Git Safety Essentials:
+
 - **Workers**: Push branches + handoff evidence only; workers do NOT open PRs or merge to main
 - **Jarvis**: Orchestrates handoff to Merlin; coordinates worker completion
 - **senior-dev**: Direct main merge requires explicit non-autonomous delegation
 - **Merlin**: Required merge authority after >2 failed merge attempts
 
 ### Merge Attempt Definition
+
 One merge attempt = sync/rebase OR conflict resolution + required checks rerun + merge attempt
 
 ### When Merlin is Required
+
 - After 2+ failed merge attempts by senior-dev with attempted fixes
 - Emergency merges requiring override
 - Complex merges with conflicts across >3 files
@@ -111,17 +125,19 @@ One merge attempt = sync/rebase OR conflict resolution + required checks rerun +
 ## Command Selection Guide
 
 ### Reconcile Commands - Which to Use?
-| Command | Purpose | When to Run |
-|---------|---------|-------------|
-| `chise-reconcile-tick` | Periodic drift detection | Every 15-30 mins via cron/loop |
-| `chise-merge-queue-tick` | Process merge queue items | When PRs are ready to merge |
-| `chise-reconcile-intake` | Triage new work items | On new story/bug intake |
+
+| Command                  | Purpose                   | When to Run                    |
+| ------------------------ | ------------------------- | ------------------------------ |
+| `chise-reconcile-tick`   | Periodic drift detection  | Every 15-30 mins via cron/loop |
+| `chise-merge-queue-tick` | Process merge queue items | When PRs are ready to merge    |
+| `chise-reconcile-intake` | Triage new work items     | On new story/bug intake        |
 
 **Key Distinction**: `chise-reconcile-tick` is for **detection and hygiene**, not for **actual merging or intake processing**. Use the specific commands for those operations.
 
 ## Session Isolation
 
 Use `scripts/swarm/session.py` for isolated worktree sessions:
+
 - `start` before any git work
 - `verify` before git actions (use explicit `--worktree-path`)
 - `close` when done
@@ -150,16 +166,18 @@ Use `scripts/swarm/session.py` for isolated worktree sessions:
 
 ### Template 1: Branch Creation Checklist
 
-```markdown
+````markdown
 # Branch Creation Checklist
 
 ## Pre-Creation
+
 - [ ] `git status -sb` shows clean working tree
 - [ ] `git branch --show-current` confirms current location
 - [ ] Story ID confirmed: [ST-XXX]
 - [ ] Branch name planned: feature/[ST-XXX]-[slug]
 
 ## Branch Creation
+
 ```bash
 # From main
 git switch main
@@ -170,13 +188,16 @@ git switch -c feature/[ST-XXX]-[slug]
 # Or from existing feature branch (for sub-feature)
 git checkout -b feature/[ST-XXX]-[subfeature-slug]
 ```
+````
 
 ## Post-Creation
+
 - [ ] `git branch --show-current` shows new branch
 - [ ] Branch pushed to origin: `git push -u origin [branch-name]`
 - [ ] Ownership claimed in Redis
 
 ## Session Start
+
 ```bash
 python3 scripts/swarm/session.py start \
   --story-id=[ST-XXX] \
@@ -184,7 +205,8 @@ python3 scripts/swarm/session.py start \
   --branch=feature/[ST-XXX]-[slug] \
   --worktree-path=/tmp/worktrees/[ST-XXX]-[agent]
 ```
-```
+
+````
 
 ### Template 2: PR Handoff Document
 
@@ -205,6 +227,33 @@ python3 scripts/swarm/session.py start \
 |------|-------------|---------------|
 | [path] | [added/modified/deleted] | [+N/-M] |
 
+## Completion Evidence Schema
+
+### Required Fields
+- **story_id**: [ST-XXX]
+- **branch**: feature/[ST-XXX]-[slug]
+- **head_sha**: [commit-sha]
+- **test_summary**:
+  - command: `pytest tests/unit/test_[module].py -v`
+  - result: passed/failed
+  - counts: "N passed, M failed, X skipped"
+  - duration: "2.34s"
+- **status_sync_proof**: Output from `python3 scripts/validate_status_sync.py`
+- **blockers**: [List of blocking issues or "None"]
+
+### Loop-Breaker Fields (if applicable)
+- **error_signature**: tool + normalized_error_message + primary file:line|test + task_scope
+- **attempt_count**: Number of attempts on this blocker
+- **strategy_delta**: What changed vs previous attempt
+
+### Completion Publication Fields
+- **push_command_result**: `git push origin <branch>` output
+- **local_head_sha**: `git rev-parse HEAD` output
+- **remote_head_sha**: `git ls-remote --heads origin <branch>` showing matching head
+
+### Evidence Schema Authority
+Reference: chiseai-worker-contracts/SKILL.md
+
 ## Validation Results
 
 ### Local CI
@@ -218,10 +267,12 @@ python3 scripts/swarm/session.py start \
 - [x] `python3 scripts/validate_status_sync.py`: PASS
 
 ## Testing Evidence
-```
-$ pytest tests/unit/test_[module].py -v
+````
+
+$ pytest tests/unit/test\_[module].py -v
 ==================== 15 passed in 2.34s ====================
-```
+
+````
 
 ## Documentation
 - [ ] Docstrings added/updated
@@ -249,8 +300,9 @@ $ pytest tests/unit/test_[module].py -v
 - [ ] [test step 2]
 
 Closes #[issue-number] (if applicable)
-```
-```
+````
+
+````
 
 ### Template 3: Commit Message Format
 
@@ -258,12 +310,14 @@ Closes #[issue-number] (if applicable)
 # Commit Message Format
 
 ## Standard Format
-```
+````
+
 <type>(<scope>): <short summary> (<story-id>)
 
 [optional body]
 
 [optional footer]
+
 ```
 
 ## Types
@@ -286,6 +340,7 @@ Closes #[issue-number] (if applicable)
 
 ### Feature Commit
 ```
+
 feat(dsl): add trailing_stop syntax support (ST-DSL-042)
 
 - Add trailing_stop keyword to grammar
@@ -293,10 +348,12 @@ feat(dsl): add trailing_stop syntax support (ST-DSL-042)
 - Add unit tests for new syntax
 
 Refs: ST-DSL-042
+
 ```
 
 ### Fix Commit
 ```
+
 fix(evolution): correct fitness calculation edge case (ST-EV-015)
 
 The fitness calculation was incorrectly handling zero-volatility
@@ -304,25 +361,30 @@ periods, causing division by zero. Added guard clause.
 
 Fixes: #123
 Refs: ST-EV-015
+
 ```
 
 ### Refactor Commit
 ```
+
 refactor(validation): extract common validation logic (ST-VAL-008)
 
 Move shared validation patterns into base class for reuse
 across multiple validators. No behavior change.
 
 Refs: ST-VAL-008
+
 ```
+
 ```
 
 ### Template 4: Merge Procedure
 
-```markdown
+````markdown
 # Merge Procedure (Merlin Only)
 
 ## Pre-Merge Checklist
+
 - [ ] CI status: GREEN (all checks passed)
 - [ ] PR review: APPROVED (if required)
 - [ ] Status sync: VALIDATED
@@ -332,6 +394,7 @@ Refs: ST-VAL-008
 ## Merge Steps
 
 ### 1. Final Verification
+
 ```bash
 # Confirm required PR checks are green
 python3 scripts/ci/woodpecker_triage.py status --format human
@@ -339,8 +402,10 @@ python3 scripts/ci/woodpecker_triage.py status --format human
 # Verify status sync
 python3 scripts/validate_status_sync.py
 ```
+````
 
 ### 2. Merge
+
 ```bash
 # Merlin-managed merge (exceptional/manual recovery path)
 python3 scripts/gitea_pr_automerge.py \
@@ -352,6 +417,7 @@ python3 scripts/gitea_pr_automerge.py \
 ```
 
 ### 3. Post-Merge
+
 ```bash
 # Update local main
 git switch main
@@ -370,11 +436,13 @@ redis_state_hset(
 ```
 
 ## Post-Merge Actions
+
 - [ ] Branch deleted
 - [ ] Story status updated
 - [ ] Stakeholders notified
 - [ ] Iterloop closed
-```
+
+````
 
 ## Examples
 
@@ -399,7 +467,7 @@ feature/ST-DSL-042-grammar-extensions
 
 # Push to origin
 $ git push -u origin feature/ST-DSL-042-grammar-extensions
-```
+````
 
 **Ownership Claim**:
 
@@ -446,6 +514,7 @@ Branch: feature/ST-DSL-042-grammar-extensions
 Head SHA: abc123def456
 
 Files Changed:
+
 - src/strategy/dsl/grammar.py (modified, +15/-3)
 - src/strategy/dsl/trailing_stop.py (new, +120)
 - tests/unit/strategy/test_trailing_stop.py (new, +80)
@@ -519,24 +588,24 @@ git push origin --delete [branch] # Delete remote
 
 ### Branch Naming Conventions
 
-| Type | Pattern | Example |
-|------|---------|---------|
+| Type    | Pattern                   | Example                                 |
+| ------- | ------------------------- | --------------------------------------- |
 | Feature | `feature/[ST-XXX]-[slug]` | `feature/ST-DSL-042-grammar-extensions` |
-| Safety | `safety/[reason]-[date]` | `safety/hotfix-2026-02-23` |
+| Safety  | `safety/[reason]-[date]`  | `safety/hotfix-2026-02-23`              |
 
 ### PR Title Tokens (Required)
 
-| Prefix | Meaning |
-|--------|---------|
-| `ST-*` | Story implementation |
-| `CH-*` | Chore/maintenance |
-| `FT-*` | Feature |
-| `REWARD-*` | Reward system |
-| `REPO-*` | Repository work |
-| `SAFETY-*` | Safety-critical |
-| `BRANCH-*` | Branch management |
-| `PAPER-*` | Paper trading |
-| `RECON-*` | Reconnaissance |
+| Prefix     | Meaning              |
+| ---------- | -------------------- |
+| `ST-*`     | Story implementation |
+| `CH-*`     | Chore/maintenance    |
+| `FT-*`     | Feature              |
+| `REWARD-*` | Reward system        |
+| `REPO-*`   | Repository work      |
+| `SAFETY-*` | Safety-critical      |
+| `BRANCH-*` | Branch management    |
+| `PAPER-*`  | Paper trading        |
+| `RECON-*`  | Reconnaissance       |
 
 ## Related Commands
 
