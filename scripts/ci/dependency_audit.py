@@ -41,8 +41,8 @@ def main() -> int:
         req_path,
         "--progress-spinner",
         "off",
-        "--descenders",
-        "false",
+        "--desc",
+        "off",
     ]
     proc = subprocess.run(cmd, check=False, timeout=60)
     if proc.returncode == 0:
