@@ -233,7 +233,7 @@ steps:
         exit 0
 
   risk-invariants:
-    image: python:3.11
+    image: chiseai-ci-risk-invariants:py311-20260322
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -248,8 +248,6 @@ steps:
             echo "risk-invariants: no risk-domain changes; skipping"
             exit 0
           fi
-          pip install --no-cache-dir pytest pytest-asyncio pytest-cov
-          pip install --no-cache-dir ccxt influxdb-client asyncpg numpy scipy pyyaml click joblib pydantic
           python3 -m pytest -q \
             tests/test_execution/test_venue_enforcement.py \
             tests/test_execution/test_kill_switch/ \
@@ -263,7 +261,7 @@ steps:
         exit 0
 
   brain-regression:
-    image: python:3.11
+    image: chiseai-ci-brain-regression:py311-20260322
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -279,7 +277,6 @@ steps:
             exit 0
           fi
 
-          pip install --no-cache-dir pytest pytest-asyncio pytest-cov pyyaml requests numpy scipy
           python3 -m pytest -q \
             tests/test_brain/ \
             tests/test_evaluation/ \

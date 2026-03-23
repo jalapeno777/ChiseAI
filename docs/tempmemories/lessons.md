@@ -397,3 +397,48 @@ LESSON
 - evidence_ref: SAFETY-CI-gate-hardening-2 merge session, feature/SAFETY-CI-gate-hardening-2 had rebase in progress
 - added_utc: 2026-03-22T00:00:00Z
 ```
+
+```text
+LESSON
+- id: LESSON-20260323-001
+- context: LAUNCH-TRAINING-001 CI optimization - prebuilt Docker images existed but were never wired into ci.yaml
+- trigger: CI steps using raw python:3.11 with pip install when Dockerfile.ci-risk-invariants and Dockerfile.ci-brain-regression already existed
+- actionable_rule: When auditing CI slowness, always cross-reference ci.yaml image references against available Dockerfiles in infrastructure/docker/. Missing wiring is a common cause of slow CI.
+- applies_to:
+  - jarvis
+  - senior-dev
+  - merlin
+- expected_outcome: All CI steps use prebuilt images where available; no redundant pip installs in CI
+- evidence_ref: LAUNCH-TRAINING-001, infrastructure/docker/Dockerfile.ci-risk-invariants, .woodpecker/ci.yaml
+- added_utc: 2026-03-23T01:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260323-002
+- context: LAUNCH-TRAINING-001 test rewrite for ST-LAUNCH-021 - tests written against spec/documentation rather than actual implementation
+- trigger: Worker rewrote 26 tests claiming to match actual script but still referenced wrong method names (validate_safety vs _validate_sla_requirements)
+- actionable_rule: Always read the actual source file before writing tests. Never rely on documentation/spec for method names. Verify each assertion against the actual implementation.
+- applies_to:
+  - quickdev
+  - dev
+  - senior-dev
+- expected_outcome: Tests match actual implementation; zero phantom method assertions
+- evidence_ref: LAUNCH-TRAINING-001 ST-LAUNCH-021, PR #592 CI failure
+- added_utc: 2026-03-23T01:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260323-003
+- context: LAUNCH-TRAINING-001 brain-eval CI failure due to missing src/__init__.py
+- trigger: pip install -e . silently failed (swallowed by || true) causing ModuleNotFoundError
+- actionable_rule: Never use || true to swallow pip install failures in CI. If pip install -e . is needed, it must succeed or the step must fail visibly.
+- applies_to:
+  - dev
+  - senior-dev
+  - jarvis
+- expected_outcome: All pip install failures surface immediately; no silent dependency resolution failures
+- evidence_ref: LAUNCH-TRAINING-001 PR #592, src/__init__.py creation
+- added_utc: 2026-03-23T01:00:00Z
+```

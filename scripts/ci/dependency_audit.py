@@ -41,8 +41,10 @@ def main() -> int:
         req_path,
         "--progress-spinner",
         "off",
+        "--desc",
+        "off",
     ]
-    proc = subprocess.run(cmd, check=False)
+    proc = subprocess.run(cmd, check=False, timeout=300)
     if proc.returncode == 0:
         print("dependency-audit: OK")
     return proc.returncode

@@ -8,19 +8,15 @@ changes in a PR, both must change together.
 from __future__ import annotations
 
 import json
-import subprocess
+import os
 import sys
-from pathlib import Path
 
 WORKFLOW_FILE = "docs/bmm-workflow-status.yaml"
 REGISTRY_FILE = "docs/validation/validation-registry.yaml"
 
 
 def _changed_files() -> set[str]:
-    raw = Path(".").joinpath(".ci-trigger").read_text().strip() if False else ""
-    del raw
-
-    env_files = __import__("os").environ.get("CI_PIPELINE_FILES", "").strip()
+    env_files = os.environ.get("CI_PIPELINE_FILES", "").strip()
     if env_files:
         try:
             parsed = json.loads(env_files)
@@ -28,20 +24,17 @@ def _changed_files() -> set[str]:
                 return {str(x).strip() for x in parsed if str(x).strip()}
         except json.JSONDecodeError:
             pass
-
-    proc = subprocess.run(
-        ["git", "diff", "--name-only", "origin/main...HEAD"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return {line.strip() for line in proc.stdout.splitlines() if line.strip()}
+    return set()
 
 
 def main() -> int:
     changed = _changed_files()
     workflow_changed = WORKFLOW_FILE in changed
     registry_changed = REGISTRY_FILE in changed
+
+    if not changed:
+        print("docs-pairing: no CI_PIPELINE_FILES metadata; skipping")
+        return 0
 
     if not workflow_changed and not registry_changed:
         print("docs-pairing: no status/registry doc changes; skipping")

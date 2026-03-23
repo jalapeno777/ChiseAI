@@ -1084,7 +1084,7 @@ validations:
     title: Mobile Responsiveness
     epic_id: EP-NS-005
     story_id: ST-NS-021
-    status: planned
+    status: validated
     description: Validate dashboard is fully functional on mobile devices
     acceptance_criteria:
       - All features work on screens down to 375px width
@@ -1141,7 +1141,7 @@ validations:
     title: Test Coverage Compliance
     epic_id: EP-NS-006
     story_id: ST-NS-029
-    status: validated
+    status: planned
     description: Validate codebase maintains >=80% test coverage
     acceptance_criteria:
       - Overall coverage is >=80%
