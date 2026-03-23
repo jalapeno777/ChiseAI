@@ -57,7 +57,7 @@ clone:
 
 steps:
   swarm-context:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -78,7 +78,7 @@ steps:
   # Verifies that merge-to-main commits are actually on main before proceeding.
   # Runs in all pipelines but only enforces the check on push-to-main events.
   cross-branch-verify:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -372,7 +372,7 @@ steps:
         exit 0
 
   docker-live-check:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260323
     when:
       branch:
         - main
@@ -1027,7 +1027,7 @@ steps:
   # TG-003: Truth Gate validation for strong-system stories
   # This step enforces truth gate validation for STRONG-*, TG-*, ST-* stories
   truth-gate:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
