@@ -73,6 +73,47 @@ steps:
         echo "$code" > "$${CI_STATUS_DIR}/swarm-context.status"
         exit 0
 
+  # ST-GIT-REMEDIATION-001: Cross-branch verification gate
+  # Verifies that merge-to-main commits are actually on main before proceeding.
+  # Only runs on merge-to-main events; skips on feature branch pushes.
+  cross-branch-verify:
+    image: python:3.11
+    environment:
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p "$${CI_STATUS_DIR}"
+        set +e
+        (
+          set -euo pipefail
+          EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-}}}"
+          BRANCH="$${CI_COMMIT_BRANCH:-$${WOODPECKER_COMMIT_BRANCH:-}}"
+          echo "cross-branch-verify: event=$${EVENT}, branch=$${BRANCH}, sha=$${CI_COMMIT_SHA:-$${WOODPECKER_COMMIT_SHA:-unknown}}"
+
+          # Only run on merge-to-main events
+          if [ "$${EVENT}" != "pull_request" ] || [ "$${BRANCH}" != "main" ]; then
+            echo "cross-branch-verify: not a merge-to-main event (event=$${EVENT}, branch=$${BRANCH}); skipping"
+            exit 0
+          fi
+
+          echo "cross-branch-verify: merge-to-main event detected; verifying commit is on main"
+          git fetch origin main --tags --depth=50
+          if git branch --contains "$${CI_COMMIT_SHA:-$${WOODPECKER_COMMIT_SHA}}" | grep -q "^\\* main$"; then
+            echo "cross-branch-verify: commit is on main"
+            exit 0
+          else
+            echo "cross-branch-verify: FAIL - commit is not on main"
+            git branch --contains "$${CI_COMMIT_SHA:-$${WOODPECKER_COMMIT_SHA}}"
+            exit 1
+          fi
+        ) > "$${CI_STATUS_DIR}/cross-branch-verify.log" 2>&1
+        code=$?
+        cat "$${CI_STATUS_DIR}/cross-branch-verify.log"
+        echo "$code" > "$${CI_STATUS_DIR}/cross-branch-verify.status"
+        # This step is a blocking gate; exit code determines pipeline failure.
+        exit $code
+
   lint:
     image: chiseai-ci-lint:py311-20260322
     environment:
@@ -1038,6 +1079,7 @@ steps:
     image: python:3.11
     depends_on:
       - swarm-context
+      - cross-branch-verify
       - lint
       - security-scan
       - dependency-audit
