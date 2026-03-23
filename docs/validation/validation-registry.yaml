@@ -2545,6 +2545,22 @@ validations:
     test_method: automated
     owner: qa-team
 
+  # ST-GIT-010: Canonical Status Lock Hardening
+  - id: V-ST-GIT-010
+    title: Canonical Status Lock Enforcement - WARN to BLOCKING
+    epic_id: EP-CI-001
+    story_id: ST-GIT-010
+    status: validated
+    description: Validate _validate_canonical_lock() in scripts/swarm/session.py is changed from advisory WARN to hard BLOCK for story completion claims. Adds --force-unlock with mandatory --justification override.
+    acceptance_criteria:
+      - _validate_canonical_lock raises SessionError when CANONICAL_STATUS_LOCK!=1 and canonical files are touched
+      - Error message explains why lock is blocked and how to resolve
+      - --force-unlock flag requires --justification to be non-empty
+      - With --force-unlock --justification, operation proceeds with warning
+      - With CANONICAL_STATUS_LOCK=1, operation proceeds normally
+    test_method: automated
+    owner: qa-team
+
   - id: V-CI-P3-002
     title: Docs Pairing Governance - Workflow Status and Validation Registry
     epic_id: EP-CI-001

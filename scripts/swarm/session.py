@@ -595,11 +595,31 @@ def _validate_canonical_lock(args: argparse.Namespace, session: dict[str, Any]) 
 
     lock = os.getenv("CANONICAL_STATUS_LOCK", "").strip()
     if lock != "1":
-        # Keep the advisory for operators, but do not hard-fail CI/automation.
-        print(
-            "WARN: Canonical files touched without CANONICAL_STATUS_LOCK=1; "
-            "continuing (advisory only).",
-            file=sys.stderr,
+        # Check for force-unlock override with mandatory justification.
+        if getattr(args, "force_unlock", False):
+            justification = getattr(args, "justification", "").strip()
+            if not justification:
+                raise SessionError(
+                    "--force-unlock requires --justification '<reason>' to proceed. "
+                    "Provide a reason for overriding the canonical status lock."
+                )
+            print(
+                f"WARN: Canonical lock overridden with --force-unlock. "
+                f"Justification: {justification}",
+                file=sys.stderr,
+            )
+            return
+
+        canonical_list = ", ".join(sorted(CANONICAL_FILES))
+        raise SessionError(
+            "Canonical status lock is enforced for story completion claims.\n"
+            f"Canonical files ({canonical_list}) require CANONICAL_STATUS_LOCK=1 "
+            "environment variable to be set.\n"
+            "This prevents accidental status file modifications that could break "
+            "CI validation.\n"
+            "To override this safeguard, re-run with --force-unlock "
+            '--justification "<reason>".\n'
+            f"Current CANONICAL_STATUS_LOCK value: {os.getenv('CANONICAL_STATUS_LOCK', '<unset>')}"
         )
 
 
@@ -930,6 +950,16 @@ def build_parser() -> argparse.ArgumentParser:
     verify.add_argument("--story-id")
     verify.add_argument("--branch")
     verify.add_argument("--check-canonical", action="store_true")
+    verify.add_argument(
+        "--force-unlock",
+        action="store_true",
+        help="Override canonical status lock; requires --justification.",
+    )
+    verify.add_argument(
+        "--justification",
+        default="",
+        help="Reason for --force-unlock override (required with --force-unlock).",
+    )
     verify.add_argument("--require-main-merge-authority", action="store_true")
     verify.add_argument("--acquire-main-merge-lock", action="store_true")
     verify.add_argument("--merge-lock-ttl-seconds", type=int, default=1800)
