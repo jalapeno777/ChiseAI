@@ -31,8 +31,8 @@ import os
 import subprocess
 import sys
 import urllib.error
-import urllib.request
 import urllib.parse
+import urllib.request
 from pathlib import Path
 from typing import Any
 
@@ -95,10 +95,11 @@ class GiteaAPI:
 
     def get_pr(self, pr_number: int) -> dict | None:
         """Get PR details including mergeable status."""
-        return self._req_json(
+        result = self._req_json(
             "GET",
             f"/api/v1/repos/{self.owner}/{self.repo}/pulls/{pr_number}",
         )
+        return result if isinstance(result, dict) else None
 
     def get_pr_files(self, pr_number: int) -> list[dict] | None:
         """Get list of files changed in a PR."""
@@ -314,7 +315,7 @@ Exit codes:
         print(f"  Conflict Status: {result.get('conflict_status', 'unknown')}")
 
         if result.get("conflict_files"):
-            print(f"  Conflict Files:")
+            print("  Conflict Files:")
             for f in result["conflict_files"]:
                 print(f"    - {f}")
 

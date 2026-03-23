@@ -31,7 +31,7 @@ import os
 import sys
 import urllib.error
 import urllib.request
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -126,7 +126,7 @@ def build_discord_embed(
             },
         ],
         "footer": {
-            "text": f"Merge Conflict Detector | {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC"
+            "text": f"Merge Conflict Detector | {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S')} UTC"
         },
     }
     return embed
@@ -165,7 +165,7 @@ def send_notification(
         "branch": branch,
         "title": title,
         "conflict_files": conflict_files,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "recommended_action": "resolve_conflicts",
     }
 
@@ -265,7 +265,7 @@ Exit codes:
         redis_channel=args.redis_channel,
     )
 
-    print(f"Notification sent:")
+    print("Notification sent:")
     print(f"  Discord: {'✓' if discord_success else '✗'}")
     print(f"  Redis: {'✓' if redis_success else '✗'}")
 
