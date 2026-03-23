@@ -1,14 +1,7 @@
-FROM python:3.11-slim
-
-ENV DEBIAN_FRONTEND=noninteractive \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PIP_NO_CACHE_DIR=1
+FROM chiseai-ci-tools:py311-20260323
 
 # Prebuilt dependency set for the brain-eval CI gate.
 # This avoids repeated scientific-package installs when brain changes are evaluated.
-RUN python -m pip install --upgrade pip \
-    && pip install \
-       pyyaml==6.0.3 \
-       requests==2.32.5 \
+RUN pip install \
        numpy==2.3.4 \
        scipy==1.16.2
