@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-IMAGE_TAG="${1:-py311-20260322}"
+IMAGE_TAG="${1:-py311-20260323}"
 IMAGE_NAME="chiseai-ci-dependency-audit:${IMAGE_TAG}"
 
 echo "Building ${IMAGE_NAME}..."
