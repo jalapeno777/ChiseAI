@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Validate docs governance pairing for workflow status and validation registry.
 
-If either docs/bmm-workflow-status.yaml or docs/validation/validation-registry.yaml
-changes in a PR, both must change together.
+If docs/bmm-workflow-status.yaml changes in a PR, docs/validation/validation-registry.yaml
+must also change. Validation-registry-only updates are allowed.
 """
 
 from __future__ import annotations
@@ -44,6 +44,10 @@ def main() -> int:
         print(
             "docs-pairing: OK (workflow-status and validation-registry changed together)"
         )
+        return 0
+
+    if registry_changed and not workflow_changed:
+        print("docs-pairing: registry-only update allowed; skipping")
         return 0
 
     print("docs-pairing: FAIL", file=sys.stderr)

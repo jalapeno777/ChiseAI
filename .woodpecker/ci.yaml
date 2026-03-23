@@ -132,7 +132,26 @@ steps:
             echo "0" > "$${CI_STATUS_DIR}/lint.status"
             exit 0
           fi
-          CHANGED_PY="$(printf '%s' \"${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -E '\\.py$' | tr '\n' ' ' || true)"
+          CHANGED_PY="$(python - <<'PY'
+          import json
+          import os
+
+          raw = os.environ.get("CI_PIPELINE_FILES", "[]")
+          try:
+              payload = json.loads(raw)
+          except json.JSONDecodeError:
+              payload = []
+
+          if isinstance(payload, list):
+              files = [
+                  str(item).strip() for item in payload if str(item).strip().endswith(".py")
+              ]
+          else:
+              files = []
+
+          print(" ".join(files))
+          PY
+          )"
           if [ -n "$(printf '%s' "$CHANGED_PY" | tr -d '[:space:]')" ]; then
             echo "lint: checking changed python files only: ${CHANGED_PY}"
             black --check ${CHANGED_PY}
@@ -140,7 +159,7 @@ steps:
           else
             echo "lint: no changed python files; skipping black/ruff file checks"
           fi
-          MYPY_CHANGED="$(printf '%s' \"$CHANGED_PY\" | tr ' ' '\n' | grep -E '^(src/|scripts/).+\\.py$' | tr '\n' ' ' || true)"
+          MYPY_CHANGED="$(printf '%s' "$CHANGED_PY" | tr ' ' '\n' | grep -E '^(src/|scripts/).+\\.py$' | tr '\n' ' ' || true)"
           if [ -n "$(printf '%s' "$MYPY_CHANGED" | tr -d '[:space:]')" ]; then
             echo "mypy: checking changed src/scripts files: ${MYPY_CHANGED}"
             mypy ${MYPY_CHANGED} || echo "WARN: mypy violations (non-blocking)"
