@@ -1,0 +1,64 @@
+# Pre-PR Validation Pipeline (ST-GIT-005)
+# Lightweight gate that runs on feature-branch pushes BEFORE PR creation.
+# This ensures only properly formatted/linted code gets a PR created.
+#
+# Flow: push.yaml (this) -> pr-auto-flow.yaml -> ci.yaml (full CI on PR)
+#
+# Checks: Black formatting, Ruff linting, secret scan
+# Target runtime: <2 minutes
+# NOT a duplicate of ci.yaml — this is a minimal pre-PR gate only.
+
+clone:
+  git:
+    image: woodpeckerci/plugin-git
+    settings:
+      remote:
+        from_secret: gitea_clone_url
+
+when:
+  - event: push
+    branch: [feature/**]
+
+steps:
+  format-check:
+    image: python:3.11-slim
+    commands:
+      - |
+        set -euo pipefail
+        echo "push-gate: Installing formatters..."
+        pip install --no-cache-dir black ruff
+        echo "push-gate: Checking changed Python files..."
+        CHANGED_PY="$(git diff --name-only origin/main HEAD 2>/dev/null | grep -E '\.py$' | tr '\n' ' ' || true)"
+        if [ -z "$(printf '%s' "$CHANGED_PY" | tr -d '[:space:]')" ]; then
+          echo "push-gate: No changed Python files; skipping format check"
+          exit 0
+        fi
+        echo "push-gate: Checking: ${CHANGED_PY}"
+        black --check ${CHANGED_PY}
+        echo "push-gate: Black formatting OK"
+
+  lint-check:
+    image: python:3.11-slim
+    commands:
+      - |
+        set -euo pipefail
+        echo "push-gate: Installing linter..."
+        pip install --no-cache-dir ruff
+        echo "push-gate: Linting changed Python files..."
+        CHANGED_PY="$(git diff --name-only origin/main HEAD 2>/dev/null | grep -E '\.py$' | tr '\n' ' ' || true)"
+        if [ -z "$(printf '%s' "$CHANGED_PY" | tr -d '[:space:]')" ]; then
+          echo "push-gate: No changed Python files; skipping lint check"
+          exit 0
+        fi
+        echo "push-gate: Linting: ${CHANGED_PY}"
+        ruff check ${CHANGED_PY}
+        echo "push-gate: Ruff linting OK"
+
+  secret-scan:
+    image: python:3.11-slim
+    commands:
+      - |
+        set -euo pipefail
+        echo "push-gate: Running secret scan..."
+        python3 scripts/ci/secret_scan_changed.py
+        echo "push-gate: Secret scan OK"
