@@ -21,12 +21,10 @@ when:
 
 steps:
   format-check:
-    image: python:3.11-slim
+    image: chiseai-ci-lint:py311-20260323
     commands:
       - |
         set -euo pipefail
-        echo "push-gate: Installing formatters..."
-        pip install --no-cache-dir black ruff
         echo "push-gate: Checking changed Python files..."
         CHANGED_PY="$(git diff --name-only origin/main HEAD 2>/dev/null | grep -E '\.py$' | tr '\n' ' ' || true)"
         if [ -z "$(printf '%s' "$CHANGED_PY" | tr -d '[:space:]')" ]; then
@@ -38,12 +36,10 @@ steps:
         echo "push-gate: Black formatting OK"
 
   lint-check:
-    image: python:3.11-slim
+    image: chiseai-ci-lint:py311-20260323
     commands:
       - |
         set -euo pipefail
-        echo "push-gate: Installing linter..."
-        pip install --no-cache-dir ruff
         echo "push-gate: Linting changed Python files..."
         CHANGED_PY="$(git diff --name-only origin/main HEAD 2>/dev/null | grep -E '\.py$' | tr '\n' ' ' || true)"
         if [ -z "$(printf '%s' "$CHANGED_PY" | tr -d '[:space:]')" ]; then

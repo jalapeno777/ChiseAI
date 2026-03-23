@@ -10,3 +10,59 @@ RUN python -m pip install --upgrade pip \
     && pip install \
        pip-audit==2.9.0 \
        tomli==2.3.0
+
+# Freeze the project dependency set once at image build time so the CI gate can
+# audit the locked snapshot with --no-deps instead of resolving on every run.
+RUN python -m pip install \
+       ccxt>=4.0.0 \
+       fastapi>=0.100.0 \
+       influxdb-client>=1.40.0 \
+       asyncpg>=0.29.0 \
+       numpy>=1.24.0 \
+       pytest-asyncio>=0.21.0 \
+       scipy>=1.10.0 \
+       python-dotenv>=1.0.0 \
+       sqlalchemy>=2.0.0 \
+       opentelemetry-api>=1.20.0 \
+       opentelemetry-sdk>=1.20.0 \
+       opentelemetry-exporter-otlp>=1.20.0 \
+       opentelemetry-instrumentation-fastapi>=0.41b0 \
+       opentelemetry-instrumentation-sqlalchemy>=0.41b0 \
+       opentelemetry-instrumentation-redis>=0.41b0 \
+       opentelemetry-instrumentation-requests>=0.41b0 \
+    && python - <<'PY'
+from pathlib import Path
+import subprocess
+
+proc = subprocess.run(
+    ["python", "-m", "pip", "freeze", "--all"],
+    check=True,
+    capture_output=True,
+    text=True,
+)
+wanted = {
+    "asyncpg",
+    "ccxt",
+    "fastapi",
+    "influxdb-client",
+    "numpy",
+    "opentelemetry-api",
+    "opentelemetry-exporter-otlp",
+    "opentelemetry-instrumentation-fastapi",
+    "opentelemetry-instrumentation-redis",
+    "opentelemetry-instrumentation-requests",
+    "opentelemetry-instrumentation-sqlalchemy",
+    "opentelemetry-sdk",
+    "pytest-asyncio",
+    "python-dotenv",
+    "scipy",
+    "sqlalchemy",
+}
+lines = []
+for line in proc.stdout.splitlines():
+    name = line.split("==", 1)[0].lower()
+    if name in wanted:
+        lines.append(line)
+Path("/opt/chiseai").mkdir(parents=True, exist_ok=True)
+Path("/opt/chiseai/dependency-audit-requirements.txt").write_text("\n".join(sorted(lines)) + "\n")
+PY

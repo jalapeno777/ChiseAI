@@ -15,23 +15,29 @@ except ModuleNotFoundError:
 
 
 def main() -> int:
-    pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
-    deps = pyproject.get("project", {}).get("dependencies", [])
-    if not isinstance(deps, list) or not deps:
-        print("dependency-audit: no dependencies found; skipping")
-        return 0
+    baked_req = Path("/opt/chiseai/dependency-audit-requirements.txt")
+    if baked_req.exists():
+        req_path = str(baked_req)
+        no_deps = ["--no-deps"]
+    else:
+        pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+        deps = pyproject.get("project", {}).get("dependencies", [])
+        if not isinstance(deps, list) or not deps:
+            print("dependency-audit: no dependencies found; skipping")
+            return 0
 
-    cleaned: list[str] = []
-    for dep in deps:
-        d = str(dep).strip()
-        if not d or d.startswith("-e "):
-            continue
-        cleaned.append(d)
+        cleaned: list[str] = []
+        for dep in deps:
+            d = str(dep).strip()
+            if not d or d.startswith("-e "):
+                continue
+            cleaned.append(d)
 
-    with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False) as tmp:
-        for dep in cleaned:
-            tmp.write(dep + "\n")
-        req_path = tmp.name
+        with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False) as tmp:
+            for dep in cleaned:
+                tmp.write(dep + "\n")
+            req_path = tmp.name
+        no_deps = []
 
     cmd = [
         sys.executable,
@@ -39,6 +45,7 @@ def main() -> int:
         "pip_audit",
         "-r",
         req_path,
+        *no_deps,
         "--progress-spinner",
         "off",
         "--desc",
