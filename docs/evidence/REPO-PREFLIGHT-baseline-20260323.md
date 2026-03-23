@@ -119,4 +119,4 @@ docs/validation/validation-registry.yaml
 - [x] Feature branch created from clean main
 - [x] All baseline commands executed
 - [x] Evidence file created in docs/evidence/
-- [ ] Evidence committed to branch (pending)
+- [x] Evidence committed to branch
