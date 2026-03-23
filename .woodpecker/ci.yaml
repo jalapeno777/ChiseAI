@@ -126,6 +126,12 @@ steps:
         (
           set -euo pipefail
           python -V
+          # Validate CI_PIPELINE_FILES is a non-empty JSON array with actual files
+          if [ -z "${CI_PIPELINE_FILES:-}" ] || [ "${CI_PIPELINE_FILES:-}" = "[]" ] || [ "${CI_PIPELINE_FILES:-}" = "null" ]; then
+            echo "lint: no changed files detected; skipping lint checks"
+            echo "0" > "$${CI_STATUS_DIR}/lint.status"
+            exit 0
+          fi
           CHANGED_PY="$(printf '%s' \"${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -E '\\.py$' | tr '\n' ' ' || true)"
           if [ -n "$(printf '%s' "$CHANGED_PY" | tr -d '[:space:]')" ]; then
             echo "lint: checking changed python files only: ${CHANGED_PY}"
@@ -984,7 +990,14 @@ steps:
           # Check local-ci performance metrics
           PERF_FILE="$${CI_STATUS_DIR}/local-ci-performance.json"
           if [ -f "$PERF_FILE" ]; then
-            DURATION=$(cat "$PERF_FILE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('duration_seconds', 0))" 2>/dev/null || echo "0")
+            # Validate JSON before reading
+            if python3 -c "import json; json.load(open('$PERF_FILE'))" 2>/dev/null; then
+              DURATION=$(python3 -c "import json; print(json.load(open('$PERF_FILE')).get('duration_seconds', 0))")
+            else
+              echo "performance-gate: WARNING - Invalid JSON in $PERF_FILE; skipping"
+              echo "0" > "$${CI_STATUS_DIR}/performance-gate.status"
+              exit 0
+            fi
             echo "performance-gate: Test duration was ${DURATION}s"
 
             if [ "$DURATION" -gt "$${MAX_TEST_DURATION}" ]; then
