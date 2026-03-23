@@ -24,6 +24,7 @@ skill(name="chiseai-git-workflow")          # Load git workflow skill
 → chise-precommit-gates                     # Validate before PR
 → chise-metacog-close                       # Capture outcome + calibration
 → chise-swarm-session (close)               # Close session and release leases
+→ chise-post-branch-reconcile               # Post-branch reconcile loop (5-step check)
 → chise-iterloop-close                      # Close and promote learnings
 ```
 
