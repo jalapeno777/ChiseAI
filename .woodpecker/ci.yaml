@@ -914,11 +914,25 @@ steps:
         # Do not short-circuit the pipeline; ci-gate is the single fail point.
         exit 0
 
+  performance-gate-image:
+    image: docker:27-cli
+    depends_on:
+      - local-ci
+      - changed-lines-coverage
+    commands:
+      - |
+        set -euo pipefail
+        docker build \
+          -f infrastructure/docker/Dockerfile.ci-performance-gate \
+          -t chiseai-ci-performance-gate:py311-20260322 \
+          .
+
   performance-gate:
     image: chiseai-ci-performance-gate:py311-20260322
     depends_on:
       - local-ci
       - changed-lines-coverage
+      - performance-gate-image
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
       # PHASE 3: Performance thresholds
