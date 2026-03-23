@@ -221,15 +221,6 @@ When starting work:
 - Orchestrators are responsible for answering all subagent questions, choosing defaults when safe, and only escalating to Craig under Aria's strict escalation criteria.
 - In orchestrated task mode, menu-driven "wait for user input" behavior is forbidden unless the session is explicitly marked interactive by Aria.
 
-### Merge Attempt Definition
-One merge attempt = sync/rebase OR conflict resolution + required checks rerun + merge attempt
-
-### When Merlin is Required
-- After 2+ failed merge attempts by senior-dev with attempted fixes
-- Emergency merges requiring override
-- Complex merges with conflicts across >3 files
-- Infrastructure changes (CI, Terraform, core workflow)
-
 ### Cross-Branch Verification Guardrail (REQUIRED)
 Before claiming "merged to main", verify with:
 ```bash
