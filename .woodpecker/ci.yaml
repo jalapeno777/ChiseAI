@@ -509,6 +509,11 @@ steps:
         set +e
         (
           set -euo pipefail
+          CHANGED_PY="$(python3 scripts/ci/ci_change_scope.py --base-ref origin/main --mode changed-python || true)"
+          if [ -z "$(printf '%s' "$${CHANGED_PY}" | tr -d '[:space:]')" ]; then
+            echo "changed-lines-coverage: no changed src/*.py files; skipping"
+            exit 0
+          fi
           if ! python3 -m coverage json -o "$${CI_STATUS_DIR}/coverage.json"; then
             echo "changed-lines-coverage: no coverage data available; skipping"
             exit 0

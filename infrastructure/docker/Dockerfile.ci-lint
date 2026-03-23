@@ -6,6 +6,11 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 # Prebuilt dependency set for the lint CI gate.
 # This avoids per-run pip installs in Woodpecker and reduces cold-start time.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       git \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN python -m pip install --upgrade pip \
     && pip install \
        black==25.1.0 \
