@@ -44,6 +44,7 @@
 when:
   event:
     - pull_request
+    - push
     - manual
     - cron
 
@@ -75,9 +76,14 @@ steps:
 
   # ST-GIT-REMEDIATION-001: Cross-branch verification gate
   # Verifies that merge-to-main commits are actually on main before proceeding.
-  # Only runs on merge-to-main events; skips on feature branch pushes.
+  # Only runs on push-to-main events via step-level when condition.
   cross-branch-verify:
     image: python:3.11
+    when:
+      branch:
+        - main
+      event:
+        - push
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -87,21 +93,8 @@ steps:
         set +e
         (
           set -euo pipefail
-          EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-}}}"
           BRANCH="$${CI_COMMIT_BRANCH:-$${WOODPECKER_COMMIT_BRANCH:-}}"
-          echo "cross-branch-verify: event=$${EVENT}, branch=$${BRANCH}, sha=$${CI_COMMIT_SHA:-$${WOODPECKER_COMMIT_SHA:-unknown}}"
-
-          # Only run on push-to-main events (post-merge verification).
-          # Skip on pull_request builds because the commit is not yet on main.
-          if [ "$${EVENT}" = "pull_request" ]; then
-            echo "cross-branch-verify: PR build (event=$${EVENT}, branch=$${BRANCH}); skipping - verification only meaningful post-merge"
-            exit 0
-          fi
-          if [ "$${EVENT}" != "push" ] || [ "$${BRANCH}" != "main" ]; then
-            echo "cross-branch-verify: not a push-to-main event (event=$${EVENT}, branch=$${BRANCH}); skipping"
-            exit 0
-          fi
-
+          echo "cross-branch-verify: branch=$${BRANCH}, sha=$${CI_COMMIT_SHA:-$${WOODPECKER_COMMIT_SHA:-unknown}}"
           echo "cross-branch-verify: merge-to-main event detected; verifying commit is on main"
           git fetch origin main --tags --depth=50
           if git branch --contains "$${CI_COMMIT_SHA:-$${WOODPECKER_COMMIT_SHA}}" | grep -q "^\\* main$"; then
