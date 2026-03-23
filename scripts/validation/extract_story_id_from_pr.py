@@ -28,14 +28,14 @@ import sys
 STRONG_SYSTEM_PATTERNS = [
     r"(STRONG-\d+)",  # STRONG-001 (base only, -A, -A-S3 are validation suffixes)
     r"(TG-\d+)",  # TG-003
-    r"(ST-\d+)",  # ST-042
+    r"(ST-(?!CI-)\d+)",  # ST-042 (exclude CI remediation branches like ST-CI-001)
 ]
 
 # Extended patterns for matching IDs with validation suffixes (for --check-strong-system)
 EXTENDED_PATTERNS = [
     r"(STRONG-\d+(?:-[A-Z]\d?(?:-S\d+)?)?)",  # STRONG-001, STRONG-001-A, STRONG-001-A-S3
     r"(TG-\d+)",  # TG-003
-    r"(ST-\d+(?:-[A-Z]+)?)",  # ST-001, ST-001-CI
+    r"(ST-(?!CI-)\d+(?:-[A-Z]+)?)",  # ST-001, ST-001-CI (exclude ST-CI-001)
 ]
 
 # Compile regex patterns

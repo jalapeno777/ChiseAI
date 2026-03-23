@@ -457,3 +457,78 @@ LESSON
 - evidence_ref: PR 592 performance-gate pull failure, docker images output, scripts/ci/build_ci_performance_gate_image.sh
 - added_utc: 2026-03-23T00:00:00Z
 ```
+
+```text
+LESSON
+- id: LESSON-20260323-005
+- context: Pipeline 2236 failure - CI_PIPELINE_FILES env var empty/null on push-to-main
+- trigger: Lint step called black --check without source files because CI_PIPELINE_FILES was [] or null
+- actionable_rule: Always validate CI-provided env vars (especially JSON arrays) at step entry with explicit empty/null/[] checks before passing to tools that expect non-empty input
+- applies_to:
+  - jarvis
+  - dev
+  - senior-dev
+  - merlin
+- expected_outcome: No CI step fails due to unset or empty environment variables
+- evidence_ref: Pipeline 2236, ST-GIT-REMEDIATION-004 ci.yaml fix
+- added_utc: 2026-03-23T20:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260323-006
+- context: PR #598 merged despite CI failure - merge_when_checks_succeed bypassed merge authority
+- trigger: auto_pr_merge.py included Do:merge in payload, allowing chise-bot to directly merge via Gitea API
+- actionable_rule: Never include Do:merge in automerge payloads. Only set merge_when_checks_succeed flag. chise-bot must NEVER execute a direct merge API call.
+- applies_to:
+  - jarvis
+  - senior-dev
+  - merlin
+- expected_outcome: No PR can bypass merge authority through server-side automerge mechanisms
+- evidence_ref: PR #598 incident, ST-GIT-004 auto_pr_merge.py fix
+- added_utc: 2026-03-23T20:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260323-007
+- context: cross-branch-verify step skipped on PR builds via exit 0 - chicken-and-egg problem
+- trigger: Step verified commit was on main, but PR builds haven't merged yet
+- actionable_rule: Use step-level when conditions (branch: main) not runtime exit 0 skips for post-merge verification steps
+- applies_to:
+  - jarvis
+  - dev
+  - senior-dev
+- expected_outcome: Post-merge verification steps only run on actual post-merge events
+- evidence_ref: ST-GIT-008 ci.yaml fix
+- added_utc: 2026-03-23T20:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260323-008
+- context: Workers using opencode question tool to prompt Craig directly, hanging orchestration
+- trigger: Jarvis delegated to workers without explicit no-questions-to-Craig instruction
+- actionable_rule: Every TASK-MODE OVERRIDES must include explicit instruction that agents must NOT ask Craig questions. When blocked, agents return completed work + BLOCKER_PACKET + close session. Orchestrators terminate workers that hang waiting for human input.
+- applies_to:
+  - jarvis
+  - all workers
+- expected_outcome: No worker ever prompts Craig directly; all blockers route through Aria
+- evidence_ref: ST-GIT-009 AGENTS.md governance hardening
+- added_utc: 2026-03-23T20:00:00Z
+```
+
+```text
+LESSON
+- id: LESSON-20260323-009
+- context: When adding --force-* override flags, no audit trail for why override was used
+- trigger: --allow-dirty and --force-unlock flags could be used without justification
+- actionable_rule: When adding --force-* override flags, always require --justification as mandatory companion argument. Log justification to Redis iterlog for audit trail.
+- applies_to:
+  - jarvis
+  - dev
+  - senior-dev
+- expected_outcome: All override usage is auditable with explicit justification
+- evidence_ref: ST-GIT-009 session.py, ST-GIT-010 session.py
+- added_utc: 2026-03-23T20:00:00Z
+```
