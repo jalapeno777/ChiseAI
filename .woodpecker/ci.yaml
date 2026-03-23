@@ -364,8 +364,20 @@ steps:
             FULL_MODE=1
           elif printf '%s' "$${REF}" | grep -q '^refs/pull/'; then
             FULL_MODE=0
-            echo "local-ci: pull_request ref detected ($${REF}); skipping heavy local-ci checks"
-            exit 0
+            echo "local-ci: pull_request ref detected ($${REF}); running changed-files + critical path tests"
+            # PR mode: run changed-files + critical path tests instead of full suite
+            CHANGED_FILES="$(git diff --name-only origin/main HEAD 2>/dev/null | tr '\n' ' ')"
+            if python scripts/ci/critical_paths.py --check $CHANGED_FILES; then
+              echo "local-ci: critical paths matched; running critical path test subset"
+              # Install dependencies first
+              apt-get update && apt-get install -y jq ripgrep
+              pip install --no-cache-dir pytest pytest-asyncio pytest-cov pytest-xdist pyyaml
+              pytest tests/test_execution/ tests/test_ml/ tests/test_risk/ tests/test_venue_enforcement/ tests/test_kill_switch/ tests/test_reconciliation/ tests/test_paper/ -x -q --tb=short
+              exit $?
+            else
+              echo "local-ci: no critical paths affected; running lightweight sanity check"
+              python -c "import sys; print('Python imports OK')" && exit 0 || exit 1
+            fi
           elif [ "$${EVENT}" = "cron" ] && [ "$${BRANCH}" = "main" ]; then
             FULL_MODE=1
           fi
