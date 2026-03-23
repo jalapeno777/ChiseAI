@@ -1744,7 +1744,7 @@ launch_stories:
       - src/ml/training/training_orchestrator.py
       - tests/test_ml/test_retraining_trigger.py
     sprint_id: LAUNCH-SPRINT-2
-    status: planned
+    status: completed
     story_points: 5
     test_strategy:
       e2e: pytest tests/e2e/test_retraining_flow.py -v
