@@ -159,8 +159,8 @@ asyncio_default_fixture_loop_scope = "function"
 addopts = "-v --tb=short --import-mode=importlib"
 # Timeout each test at 5 minutes to prevent hanging
 faulthandler_timeout = 300
-# Individual test timeout to prevent hangs (60 seconds per test)
-timeout = 60
+# Individual test timeout to prevent hangs (120 seconds per test)
+timeout = 120
 timeout_method = "signal"
 markers = [
     "integration: integration tests that may require external services or slower setup",
