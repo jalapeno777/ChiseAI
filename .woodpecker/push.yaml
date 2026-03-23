@@ -26,7 +26,24 @@ steps:
       - |
         set -euo pipefail
         echo "push-gate: Checking changed Python files..."
-        CHANGED_PY="$(git diff --name-only origin/main HEAD 2>/dev/null | grep -E '\.py$' | tr '\n' ' ' || true)"
+        CHANGED_PY="$(python3 - <<'PY'
+        import json
+        import os
+
+        raw = os.environ.get("CI_PIPELINE_FILES", "[]")
+        try:
+            payload = json.loads(raw)
+        except json.JSONDecodeError:
+            payload = []
+
+        if isinstance(payload, list):
+            files = [str(item).strip() for item in payload if str(item).strip().endswith(".py")]
+        else:
+            files = []
+
+        print(" ".join(files))
+        PY
+        )"
         if [ -z "$(printf '%s' "$CHANGED_PY" | tr -d '[:space:]')" ]; then
           echo "push-gate: No changed Python files; skipping format check"
           exit 0
@@ -41,7 +58,24 @@ steps:
       - |
         set -euo pipefail
         echo "push-gate: Linting changed Python files..."
-        CHANGED_PY="$(git diff --name-only origin/main HEAD 2>/dev/null | grep -E '\.py$' | tr '\n' ' ' || true)"
+        CHANGED_PY="$(python3 - <<'PY'
+        import json
+        import os
+
+        raw = os.environ.get("CI_PIPELINE_FILES", "[]")
+        try:
+            payload = json.loads(raw)
+        except json.JSONDecodeError:
+            payload = []
+
+        if isinstance(payload, list):
+            files = [str(item).strip() for item in payload if str(item).strip().endswith(".py")]
+        else:
+            files = []
+
+        print(" ".join(files))
+        PY
+        )"
         if [ -z "$(printf '%s' "$CHANGED_PY" | tr -d '[:space:]')" ]; then
           echo "push-gate: No changed Python files; skipping lint check"
           exit 0
