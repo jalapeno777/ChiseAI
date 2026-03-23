@@ -17,8 +17,17 @@ except ModuleNotFoundError:
 def main() -> int:
     baked_req = Path("/opt/chiseai/dependency-audit-requirements.txt")
     if baked_req.exists():
-        req_path = str(baked_req)
-        no_deps = ["--no-deps"]
+        cmd = [
+            sys.executable,
+            "-m",
+            "pip_audit",
+            "-l",
+            "--disable-pip",
+            "--progress-spinner",
+            "off",
+            "--desc",
+            "off",
+        ]
     else:
         pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
         deps = pyproject.get("project", {}).get("dependencies", [])
@@ -37,20 +46,17 @@ def main() -> int:
             for dep in cleaned:
                 tmp.write(dep + "\n")
             req_path = tmp.name
-        no_deps = []
-
-    cmd = [
-        sys.executable,
-        "-m",
-        "pip_audit",
-        "-r",
-        req_path,
-        *no_deps,
-        "--progress-spinner",
-        "off",
-        "--desc",
-        "off",
-    ]
+        cmd = [
+            sys.executable,
+            "-m",
+            "pip_audit",
+            "-r",
+            req_path,
+            "--progress-spinner",
+            "off",
+            "--desc",
+            "off",
+        ]
     proc = subprocess.run(cmd, check=False, timeout=300)
     if proc.returncode == 0:
         print("dependency-audit: OK")
