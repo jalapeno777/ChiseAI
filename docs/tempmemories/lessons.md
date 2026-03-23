@@ -397,3 +397,18 @@ LESSON
 - evidence_ref: SAFETY-CI-gate-hardening-2 merge session, feature/SAFETY-CI-gate-hardening-2 had rebase in progress
 - added_utc: 2026-03-22T00:00:00Z
 ```
+
+```text
+LESSON
+- id: LESSON-20260323-003
+- context: PR 592 CI recovery - performance-gate image existed only after a manual host-side build
+- trigger: chiseai-ci-performance-gate:py311-20260322 pull denied in Woodpecker because the tag was not present in the active Docker daemon
+- actionable_rule: For any new prebuilt CI image, verify the exact image tag exists in the runner daemon before re-running dependent gates. If absent, run the matching host-side build script or document the prebuild hook that loads it on the CI host.
+- applies_to:
+  - jarvis
+  - senior-dev
+  - merlin
+- expected_outcome: New CI image tags are present on the runner host before dependent gates execute
+- evidence_ref: PR 592 performance-gate pull failure, docker images output, scripts/ci/build_ci_performance_gate_image.sh
+- added_utc: 2026-03-23T00:00:00Z
+```
