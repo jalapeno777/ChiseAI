@@ -76,14 +76,9 @@ steps:
 
   # ST-GIT-REMEDIATION-001: Cross-branch verification gate
   # Verifies that merge-to-main commits are actually on main before proceeding.
-  # Only runs on push-to-main events via step-level when condition.
+  # Runs in all pipelines but only enforces the check on push-to-main events.
   cross-branch-verify:
     image: python:3.11
-    when:
-      branch:
-        - main
-      event:
-        - push
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -94,6 +89,11 @@ steps:
         (
           set -euo pipefail
           BRANCH="$${CI_COMMIT_BRANCH:-$${WOODPECKER_COMMIT_BRANCH:-}}"
+          EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-$${CI_PIPELINE_EVENT:-}}}}"
+          if [ "$${EVENT}" != "push" ] || [ "$${BRANCH}" != "main" ]; then
+            echo "cross-branch-verify: skipping (event=$${EVENT:-unknown}, branch=$${BRANCH:-unknown})"
+            exit 0
+          fi
           echo "cross-branch-verify: branch=$${BRANCH}, sha=$${CI_COMMIT_SHA:-$${WOODPECKER_COMMIT_SHA:-unknown}}"
           echo "cross-branch-verify: merge-to-main event detected; verifying commit is on main"
           git fetch origin main --tags --depth=50
