@@ -73,6 +73,52 @@ steps:
         echo "$code" > "$${CI_STATUS_DIR}/swarm-context.status"
         exit 0
 
+  # ST-GIT-REMEDIATION-001: Cross-branch verification gate
+  # Verifies that merge-to-main commits are actually on main before proceeding.
+  # Only runs on merge-to-main events; skips on feature branch pushes.
+  cross-branch-verify:
+    image: python:3.11
+    environment:
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p "$${CI_STATUS_DIR}"
+        set +e
+        (
+          set -euo pipefail
+          EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-}}}"
+          BRANCH="$${CI_COMMIT_BRANCH:-$${WOODPECKER_COMMIT_BRANCH:-}}"
+          echo "cross-branch-verify: event=$${EVENT}, branch=$${BRANCH}, sha=$${CI_COMMIT_SHA:-$${WOODPECKER_COMMIT_SHA:-unknown}}"
+
+          # Only run on push-to-main events (post-merge verification).
+          # Skip on pull_request builds because the commit is not yet on main.
+          if [ "$${EVENT}" = "pull_request" ]; then
+            echo "cross-branch-verify: PR build (event=$${EVENT}, branch=$${BRANCH}); skipping - verification only meaningful post-merge"
+            exit 0
+          fi
+          if [ "$${EVENT}" != "push" ] || [ "$${BRANCH}" != "main" ]; then
+            echo "cross-branch-verify: not a push-to-main event (event=$${EVENT}, branch=$${BRANCH}); skipping"
+            exit 0
+          fi
+
+          echo "cross-branch-verify: merge-to-main event detected; verifying commit is on main"
+          git fetch origin main --tags --depth=50
+          if git branch --contains "$${CI_COMMIT_SHA:-$${WOODPECKER_COMMIT_SHA}}" | grep -q "^\\* main$"; then
+            echo "cross-branch-verify: commit is on main"
+            exit 0
+          else
+            echo "cross-branch-verify: FAIL - commit is not on main"
+            git branch --contains "$${CI_COMMIT_SHA:-$${WOODPECKER_COMMIT_SHA}}"
+            exit 1
+          fi
+        ) > "$${CI_STATUS_DIR}/cross-branch-verify.log" 2>&1
+        code=$?
+        cat "$${CI_STATUS_DIR}/cross-branch-verify.log"
+        echo "$code" > "$${CI_STATUS_DIR}/cross-branch-verify.status"
+        # This step is a blocking gate; exit code determines pipeline failure.
+        exit $code
+
   lint:
     image: chiseai-ci-lint:py311-20260322
     environment:
@@ -90,8 +136,8 @@ steps:
           CHANGED_PY="$(printf '%s' \"${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -E '\\.py$' | tr '\n' ' ' || true)"
           if [ -n "$(printf '%s' "$CHANGED_PY" | tr -d '[:space:]')" ]; then
             echo "lint: checking changed python files only: ${CHANGED_PY}"
-            black --check ${CHANGED_PY} || echo "WARN: black violations (non-blocking)"
-            ruff check ${CHANGED_PY} || echo "WARN: ruff violations (non-blocking)"
+            black --check ${CHANGED_PY}
+            ruff check ${CHANGED_PY}
           else
             echo "lint: no changed python files; skipping black/ruff file checks"
           fi
@@ -364,8 +410,20 @@ steps:
             FULL_MODE=1
           elif printf '%s' "$${REF}" | grep -q '^refs/pull/'; then
             FULL_MODE=0
-            echo "local-ci: pull_request ref detected ($${REF}); skipping heavy local-ci checks"
-            exit 0
+            echo "local-ci: pull_request ref detected ($${REF}); running changed-files + critical path tests"
+            # PR mode: run changed-files + critical path tests instead of full suite
+            CHANGED_FILES="$(git diff --name-only origin/main HEAD 2>/dev/null | tr '\n' ' ')"
+            if python scripts/ci/critical_paths.py --check $CHANGED_FILES; then
+              echo "local-ci: critical paths matched; running critical path test subset"
+              # Install dependencies first
+              apt-get update && apt-get install -y jq ripgrep
+              pip install --no-cache-dir pytest pytest-asyncio pytest-cov pytest-xdist pyyaml
+              pytest tests/test_execution/ tests/test_ml/ tests/test_risk/ tests/test_venue_enforcement/ tests/test_kill_switch/ tests/test_reconciliation/ tests/test_paper/ -x -q --tb=short
+              exit $?
+            else
+              echo "local-ci: no critical paths affected; running lightweight sanity check"
+              python -c "import sys; print('Python imports OK')" && exit 0 || exit 1
+            fi
           elif [ "$${EVENT}" = "cron" ] && [ "$${BRANCH}" = "main" ]; then
             FULL_MODE=1
           fi
@@ -1026,6 +1084,7 @@ steps:
     image: python:3.11
     depends_on:
       - swarm-context
+      - cross-branch-verify
       - lint
       - security-scan
       - dependency-audit

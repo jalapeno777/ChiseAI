@@ -828,10 +828,21 @@ def cmd_close(args: argparse.Namespace) -> int:
                     "Worktree still dirty after auto-stash; resolve manually and retry close."
                 )
         elif args.allow_dirty:
+            if not args.justification:
+                raise SessionError(
+                    'Using --allow-dirty requires --justification "<reason>". '
+                    "Please provide a reason for closing with dirty worktree."
+                )
             print(
                 "WARN: Closing session with dirty worktree due to --allow-dirty.",
                 file=sys.stderr,
             )
+            # Log justification to iterlog
+            ok, cfg = _redis_ping()
+            if ok and cfg is not None:
+                host, port, db = cfg
+                key = f"bmad:chiseai:iterlog:story:{story_id}:close_justification"
+                _redis_cli(host, port, db, "SET", key, args.justification)
         else:
             sample = "\n".join(f"  - {line}" for line in dirty_entries[:20])
             more = ""
@@ -941,6 +952,12 @@ def build_parser() -> argparse.ArgumentParser:
     close.add_argument("--auto-stash-dirty", action="store_true")
     close.add_argument("--confirm-stash-last-resort", action="store_true")
     close.add_argument("--allow-dirty", action="store_true")
+    close.add_argument(
+        "--justification",
+        required=False,
+        default="",
+        help="Required when --allow-dirty is used. Reason for closing with dirty worktree.",
+    )
     close.add_argument("--enforce-merged", action="store_true")
     close.add_argument("--allow-unmerged", action="store_true")
     close.add_argument("--base-ref", default="main")
