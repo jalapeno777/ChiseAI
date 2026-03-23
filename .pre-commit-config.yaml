@@ -111,6 +111,15 @@ repos:
         pass_filenames: false
         always_run: false
 
+      # Evidence validator for docs/evidence files (ST-GIT-REMEDIATION-001)
+      - id: evidence-validator
+        name: Evidence Validator
+        entry: python3 scripts/swarm/evidence_validator.py
+        language: system
+        pass_filenames: true
+        files: ^docs/evidence/.*\.md$
+        args: ["--files"]
+
   # Configure stages
 default_stages: [pre-commit]
 
