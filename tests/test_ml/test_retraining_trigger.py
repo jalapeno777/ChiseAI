@@ -19,11 +19,14 @@ from __future__ import annotations
 import asyncio
 import sys
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-sys.path.insert(0, "/tmp/worktrees/ST-LAUNCH-011-seniordev/src")
+# Add project src to path for imports, works regardless of checkout location
+_project_root = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(_project_root / "src"))
 
 from config.feature_flags import (
     FeatureFlags,
