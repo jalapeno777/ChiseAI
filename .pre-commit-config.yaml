@@ -102,6 +102,15 @@ repos:
         files: docs/tempmemories/.*\.md$
         stages: [pre-commit]
 
+      # Quick pytest for staged files (ST-GIT-REMEDIATION-001)
+      - id: quick-pytest-staged
+        name: Quick pytest (staged files)
+        entry: python3 scripts/ci/quick_pytest_staged.py
+        language: system
+        types: [python]
+        pass_filenames: false
+        always_run: false
+
   # Configure stages
 default_stages: [pre-commit]
 
