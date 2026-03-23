@@ -1,0 +1,13 @@
+FROM python:3.11-slim
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1
+
+# Prebuilt dependency set for the pre-eval ingestion gate.
+# This avoids per-run dependency bootstrapping when ingestion is enabled.
+RUN python -m pip install --upgrade pip \
+    && pip install \
+       pyyaml==6.0.3 \
+       redis==6.4.0 \
+       qdrant-client==1.15.1

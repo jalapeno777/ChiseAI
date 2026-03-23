@@ -214,7 +214,7 @@ steps:
         exit 0
 
   security-scan:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -224,7 +224,6 @@ steps:
         set +e
         (
           set -euo pipefail
-          pip install --no-cache-dir bandit
           CHANGED_SCAN="$(printf '%s' \"${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -E '^(src/|scripts/).+\\.py$' | tr '\n' ' ' || true)"
           if [ -n "$(printf '%s' "$CHANGED_SCAN" | tr -d '[:space:]')" ]; then
             echo "security-scan: scanning changed files only: ${CHANGED_SCAN}"
@@ -260,7 +259,7 @@ steps:
         exit 0
 
   secret-scan:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -337,7 +336,7 @@ steps:
         exit 0
 
   docs-pairing:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -355,7 +354,7 @@ steps:
         exit 0
 
   docker-governance:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -365,7 +364,6 @@ steps:
         set +e
         (
           set -euo pipefail
-          pip install --no-cache-dir pyyaml
           python3 scripts/ci/validate_docker_governance.py
         ) > "$${CI_STATUS_DIR}/docker-governance.log" 2>&1
         code=$?
@@ -398,7 +396,7 @@ steps:
         exit 0
 
   local-ci:
-    image: python:3.11
+    image: chiseai-ci-local-ci:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
       # PHASE 3: Enable parallel test execution
@@ -438,9 +436,6 @@ steps:
             CHANGED_FILES="$(git diff --name-only origin/main HEAD 2>/dev/null | tr '\n' ' ')"
             if python scripts/ci/critical_paths.py --check $CHANGED_FILES; then
               echo "local-ci: critical paths matched; running critical path test subset"
-              # Install dependencies first
-              apt-get update && apt-get install -y jq ripgrep
-              pip install --no-cache-dir pytest pytest-asyncio pytest-cov pytest-xdist pyyaml
               pytest tests/test_execution/ tests/test_ml/ tests/test_risk/ tests/test_venue_enforcement/ tests/test_kill_switch/ tests/test_reconciliation/ tests/test_paper/ -x -q --tb=short
               exit $?
             else
@@ -459,14 +454,6 @@ steps:
           else
             echo "local-ci: full-suite mode enabled (event=$${EVENT}, branch=$${BRANCH}, ref=$${REF}, CI_FORCE_FULL=$${CI_FORCE_FULL:-0})"
           fi
-
-          # Install system dependencies required by tests
-          apt-get update && apt-get install -y jq ripgrep
-          # PHASE 3: Add pytest-xdist for parallel test execution
-          pip install --no-cache-dir pytest pytest-asyncio pytest-cov pytest-forked pytest-xdist pyyaml requests
-          pip install --no-cache-dir ccxt influxdb-client asyncpg numpy scipy watchdog click websockets fastapi httpx
-          pip install --no-cache-dir ccxt influxdb-client asyncpg numpy scipy watchdog click websockets fastapi
-          pip install --no-cache-dir sqlalchemy>=2.0.0
 
           # PHASE 3: Calculate optimal workers
           CPU_COUNT=$(nproc)
@@ -510,7 +497,7 @@ steps:
         exit 0
 
   changed-lines-coverage:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260323
     depends_on:
       - local-ci
     environment:
@@ -522,7 +509,6 @@ steps:
         set +e
         (
           set -euo pipefail
-          pip install --no-cache-dir coverage
           if ! python3 -m coverage json -o "$${CI_STATUS_DIR}/coverage.json"; then
             echo "changed-lines-coverage: no coverage data available; skipping"
             exit 0
@@ -538,7 +524,7 @@ steps:
   # This stage validates that no new deprecation warnings are introduced.
   # It runs after tests and before merge, failing the build if new warnings are found.
   deprecation-gate:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260323
     depends_on:
       - local-ci
     environment:
@@ -562,7 +548,7 @@ steps:
         exit 0
 
   pipeline-watchdog:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -572,7 +558,6 @@ steps:
         set +e
         (
           set -euo pipefail
-          pip install --no-cache-dir requests
           python scripts/ci/check_woodpecker_stuck_pipelines.py --max-running-seconds 1800
         ) > "$${CI_STATUS_DIR}/pipeline-watchdog.log" 2>&1
         code=$?
@@ -582,7 +567,7 @@ steps:
         exit 0
 
   pre-eval-ingestion:
-    image: python:3.11
+    image: chiseai-ci-pre-eval-ingestion:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
       # CI_TEMPMEMORY_INGESTION_ENABLED: Feature flag for tempmemory ingestion
@@ -618,8 +603,6 @@ steps:
             printf '%s\n' '{"success": true, "skipped": true, "reason": "Feature flag disabled", "files_processed": 0, "files_ingested": 0, "files_failed": 0, "files_skipped": 0, "duration_seconds": 0, "errors": [], "ingested_memory_ids": []}' > "$${CI_STATUS_DIR}/pre-eval-ingestion.json"
             exit 0
           fi
-          # Install only dependencies needed for enabled ingestion mode.
-          pip install --no-cache-dir pyyaml redis qdrant-client || true
           # Run pre-eval ingestion
           python scripts/ci/pre_eval_ingestion.py --output "$${CI_STATUS_DIR}/pre-eval-ingestion.json"
         ) > "$${CI_STATUS_DIR}/pre-eval-ingestion.log" 2>&1
@@ -630,7 +613,7 @@ steps:
         exit 0
 
   brain-eval:
-    image: python:3.11
+    image: chiseai-ci-brain-eval:py311-20260323
     depends_on:
       - pre-eval-ingestion
     environment:
@@ -663,7 +646,6 @@ steps:
           CHANGED_BRAIN_FILES="$(python3 scripts/ci/ci_change_scope.py --base-ref origin/main --mode changed-python | grep -E '^(src/brain/|src/neuro_symbolic/|src/strategy/)' || true)"
           if [ -n "$(printf '%s' "$${CHANGED_BRAIN_FILES}" | tr -d '[:space:]')" ]; then
             echo "Brain changes detected, running evaluation..."
-            pip install --no-cache-dir pyyaml requests numpy scipy
             pip install -e . || pip install -e . --break-system-packages
             python scripts/ci/brain_eval_ci.py --output "$${CI_STATUS_DIR}/brain-eval.json"
           else
@@ -678,7 +660,7 @@ steps:
         exit 0
 
   tempmemory-scheduler:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -688,7 +670,6 @@ steps:
         set +e
         (
           set -euo pipefail
-          pip install --no-cache-dir pyyaml
           # Run tempmemory migration
           python3 scripts/ops/tempmemory_migration.py --dry-run
         ) > "$${CI_STATUS_DIR}/tempmemory-scheduler.log" 2>&1
@@ -698,7 +679,7 @@ steps:
         exit 0
 
   mini-brain-eval:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -708,7 +689,6 @@ steps:
         set +e
         (
           set -euo pipefail
-          pip install --no-cache-dir pyyaml
           # Run mini BrainEval with all sources
           python3 scripts/evaluation/mini_brain_eval.py --cadence daily --use-all --provenance --output-dir "$${CI_STATUS_DIR}/mini-brain-eval"
         ) > "$${CI_STATUS_DIR}/mini-brain-eval.log" 2>&1
@@ -718,7 +698,7 @@ steps:
         exit 0
 
   tempmemory-reconcile:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -728,7 +708,6 @@ steps:
         set +e
         (
           set -euo pipefail
-          pip install --no-cache-dir pyyaml
           # Run reconciliation and archive
           python3 scripts/ops/tempmemory_scheduler.py --once --dry-run
         ) > "$${CI_STATUS_DIR}/tempmemory-reconcile.log" 2>&1
@@ -738,7 +717,7 @@ steps:
         exit 0
 
   tempmemory-drill:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -755,7 +734,6 @@ steps:
             exit 0
           fi
 
-          pip install --no-cache-dir pyyaml
           python3 scripts/ops/tempmemory_migration.py --dry-run
           python3 scripts/ops/tempmemory_scheduler.py --once --dry-run
           python3 scripts/reconciliation/trade_reconciliation.py --dry-run --output "$${CI_STATUS_DIR}/tempmemory-drill-reconciliation.json"
@@ -766,7 +744,7 @@ steps:
         exit 0
 
   flaky-detection:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -783,7 +761,6 @@ steps:
             exit 0
           fi
 
-          pip install --no-cache-dir pytest pytest-asyncio pytest-cov pyyaml
           TARGETS=\"tests/test_execution/test_venue_enforcement.py tests/test_execution/test_kill_switch/test_executor.py tests/test_execution/test_reconciliation.py tests/test_evaluation/test_mini_brain_eval.py\"
 
           for i in 1 2 3; do
@@ -797,7 +774,7 @@ steps:
         exit 0
 
   compass-apply:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260323
     environment:
       CI_PR_LABELS: "${CI_COMMIT_PULL_REQUEST_LABELS:-}"
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -808,7 +785,6 @@ steps:
         set +e
         (
           set -euo pipefail
-          pip install --no-cache-dir pyyaml
           # Run compass apply to auto-label PRs based on changed files
           echo "Running compass apply..."
           CHANGED_FILES="$(git diff --name-only origin/main HEAD || true)"
@@ -825,7 +801,7 @@ steps:
         exit 0
 
   compass-gate:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260323
     environment:
       GITEA_TOKEN:
         from_secret: gitea_token
@@ -833,7 +809,6 @@ steps:
     commands:
       - |
         set -euo pipefail
-        pip install --no-cache-dir pyyaml
         # Run compass gate to check for sensitive path changes
         echo "Running compass gate check..."
         CHANGED_FILES="$(git diff --name-only origin/main HEAD || true)"
@@ -844,7 +819,7 @@ steps:
         fi
 
   status-write-gate:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -863,7 +838,6 @@ steps:
             exit 0
           fi
           echo "Running status write gate check..."
-          pip install --no-cache-dir pyyaml || pip install --no-cache-dir --break-system-packages pyyaml
           git fetch --quiet --unshallow origin || git fetch --quiet --depth=50000 origin main || true
           python3 scripts/governance/status_write_gate.py --file docs/bmm-workflow-status.yaml --no-require-authority
         ) > "$${CI_STATUS_DIR}/status-write-gate.log" 2>&1
@@ -874,7 +848,7 @@ steps:
         exit 0
 
   status-evidence-gate:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -899,7 +873,7 @@ steps:
         exit 0
 
   completion-evidence-gate:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -924,7 +898,7 @@ steps:
         exit 0
 
   workflow-transition-gate:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -949,7 +923,7 @@ steps:
         exit 0
 
   governance-drift-check:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -959,7 +933,6 @@ steps:
         set +e
         (
           set -euo pipefail
-          pip install --no-cache-dir pyyaml
           python3 scripts/validation/governance_drift_guard.py --verbose
         ) > "$${CI_STATUS_DIR}/governance-drift-check.log" 2>&1
         code=$?
@@ -969,7 +942,7 @@ steps:
         exit 0
 
   evidence-gate:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260323
     depends_on:
       - local-ci
     environment:
@@ -981,7 +954,6 @@ steps:
         set +e
         (
           set -euo pipefail
-          pip install --no-cache-dir pyyaml
           # Run evidence validation for PR-scoped stories
           echo "evidence-gate: Running evidence validation..."
           python3 scripts/ci/evidence_gate_runner.py --verbose
@@ -1111,7 +1083,7 @@ steps:
         exit 0
 
   ci-gate:
-    image: python:3.11
+    image: chiseai-ci-tools:py311-20260323
     depends_on:
       - swarm-context
       - cross-branch-verify
@@ -1151,5 +1123,4 @@ steps:
     commands:
       - |
         set -euo pipefail
-        pip install --no-cache-dir requests
         python scripts/ci/ci_gate.py
