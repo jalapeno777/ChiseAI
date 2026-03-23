@@ -6,7 +6,6 @@ disable-model-invocation: true
 
 Run these gates before PR/merge. If a referenced script is missing, explicitly note it and run the closest available equivalent.
 
-**Bypass option:** Add `--no-verify` flag to skip non-critical gates (NOT recommended for P0/P1 stories).
 
 1. Repo sanity
    - `git status -sb`
@@ -48,7 +47,7 @@ Run these gates before PR/merge. If a referenced script is missing, explicitly n
        - Missing prediction card (`bmad:chiseai:metacog:prediction:story:<story_id>`)
        - Missing outcome card (`bmad:chiseai:metacog:outcome:story:<story_id>`)
        - Missing calibration section in iterlog
-     - **Cannot bypass with --no-verify for P0/P1 stories**
+     - **Metacog compliance is always blocking for P0/P1 stories**
    
    - **For P2+ stories (NON-BLOCKING with warning):**
      - If `scripts/validation/validate_metacog_compliance.py` exists and `<story_id>` is known:
@@ -56,8 +55,6 @@ Run these gates before PR/merge. If a referenced script is missing, explicitly n
        python3 scripts/validation/validate_metacog_compliance.py --story-id=<story_id> --strict
        ```
      - Warn if artifacts missing but allow proceed
-     - Can bypass with `--no-verify` flag
-   
    - **If `<story_id>` is not known:**
      - Run non-blocking scan:
        ```bash
@@ -115,12 +112,11 @@ Run these gates before PR/merge. If a referenced script is missing, explicitly n
 
 ## Priority-Based Gate Summary
 
-| Gate | P0/P1 | P2+ | --no-verify |
-|------|-------|-----|-------------|
-| Metacog compliance | BLOCKING | Warning only | Ignored for P0/P1 |
-| Insight governance | BLOCKING | BLOCKING | Allowed |
-| Iterloop compliance | BLOCKING | BLOCKING | Allowed |
-| Skills autonomy KPI | Warning only | Warning only | Allowed |
-| Local CI checks | BLOCKING | BLOCKING | Allowed |
+| Gate                | P0/P1        | P2+          |
+| ------------------- | ------------ | ------------ |
+| Metacog compliance  | BLOCKING     | Warning only |
+| Insight governance  | BLOCKING     | BLOCKING     |
+| Iterloop compliance | BLOCKING     | BLOCKING     |
+| Skills autonomy KPI | Warning only | Warning only |
+| Local CI checks     | BLOCKING     | BLOCKING     |
 
-**Note:** P0/P1 stories cannot bypass metacog compliance with `--no-verify`. This is a safety constraint.
