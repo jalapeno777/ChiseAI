@@ -586,7 +586,7 @@ steps:
           if [ -n "$(printf '%s' "$${CHANGED_BRAIN_FILES}" | tr -d '[:space:]')" ]; then
             echo "Brain changes detected, running evaluation..."
             pip install --no-cache-dir pyyaml requests numpy scipy
-            pip install -e . > /dev/null 2>&1 || pip install -e . --break-system-packages > /dev/null 2>&1 || true
+            pip install -e . || pip install -e . --break-system-packages
             python scripts/ci/brain_eval_ci.py --output "$${CI_STATUS_DIR}/brain-eval.json"
           else
             echo "No brain changes detected, skipping evaluation"
