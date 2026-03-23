@@ -207,17 +207,19 @@ When starting work:
 ### Merge Authority (Explicit Roles)
 - **Workers**: Push branches + handoff evidence only; workers do NOT open PRs or merge to main
 - **Jarvis**: Orchestrates handoff to Merlin; coordinates worker completion
-- **senior-dev**: May prepare integration fixes on feature branches; direct main merges require explicit non-autonomous delegation
-- **Merlin**: Autonomous merge/reconcile authority (CI triage, merge to main, branch pruning, exceptional PR lifecycle recovery). Required merge authority after >2 failed merge attempts (see merge attempt definition below)
+- **senior-dev**: May prepare integration fixes on feature branches; direct main merges require explicit non-autonomous delegation from Aria
+- **Merlin**: SOLE MERGE AUTHORITY for all PRs. Subagents push branches and create PR handoffs, but ONLY Merlin may merge to main. If Merlin cannot resolve a merge issue, it escalates to Aria via BLOCKER_PACKET
 
 ### Question Routing Authority (REQUIRED)
-- **Only Aria may ask Craig direct questions.**
+- **Only Aria may ask Craig direct questions.** No other agent (including Jarvis, senior-dev, merlin, or any worker) may call the opencode `question` tool targeting Craig.
 - **Jarvis and all other subagents/workers must never ask Craig/user direct questions.**
 - If a subagent needs clarification, it must escalate upward to the orchestrator (Jarvis -> Aria) using a structured blocker packet with:
   - `question`
   - `recommended_default`
   - `risk_if_default_wrong`
   - `decision_deadline_utc`
+- When blocked, agents must return completed work + BLOCKER_PACKET + close session. Agents that pause for human input instead of returning a BLOCKER_PACKET are in violation of swarm policy.
+- **Orchestrator enforcement**: If a worker hangs waiting for human input instead of returning a BLOCKER_PACKET, the orchestrator (Aria/Jarvis) must terminate that worker session and re-delegate with stricter instructions. Workers that violate this rule are not eligible for retry.
 - Orchestrators are responsible for answering all subagent questions, choosing defaults when safe, and only escalating to Craig under Aria's strict escalation criteria.
 - In orchestrated task mode, menu-driven "wait for user input" behavior is forbidden unless the session is explicitly marked interactive by Aria.
 
