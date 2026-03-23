@@ -91,9 +91,14 @@ steps:
           BRANCH="$${CI_COMMIT_BRANCH:-$${WOODPECKER_COMMIT_BRANCH:-}}"
           echo "cross-branch-verify: event=$${EVENT}, branch=$${BRANCH}, sha=$${CI_COMMIT_SHA:-$${WOODPECKER_COMMIT_SHA:-unknown}}"
 
-          # Only run on merge-to-main events
-          if [ "$${EVENT}" != "pull_request" ] || [ "$${BRANCH}" != "main" ]; then
-            echo "cross-branch-verify: not a merge-to-main event (event=$${EVENT}, branch=$${BRANCH}); skipping"
+          # Only run on push-to-main events (post-merge verification).
+          # Skip on pull_request builds because the commit is not yet on main.
+          if [ "$${EVENT}" = "pull_request" ]; then
+            echo "cross-branch-verify: PR build (event=$${EVENT}, branch=$${BRANCH}); skipping - verification only meaningful post-merge"
+            exit 0
+          fi
+          if [ "$${EVENT}" != "push" ] || [ "$${BRANCH}" != "main" ]; then
+            echo "cross-branch-verify: not a push-to-main event (event=$${EVENT}, branch=$${BRANCH}); skipping"
             exit 0
           fi
 
