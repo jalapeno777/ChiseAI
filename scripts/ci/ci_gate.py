@@ -70,7 +70,15 @@ def _infer_missing_status_from_log(status_path: Path) -> int | None:
         return None
 
     low = text.lower()
-    if "skipping" not in low:
+    success_markers = (
+        "skipping",
+        "all checks passed",
+        "all validation passed",
+        "validation passed",
+        "ok (",
+        "completed successfully",
+    )
+    if not any(marker in low for marker in success_markers):
         return None
 
     # Keep this conservative: only treat as success when no obvious hard-failure markers exist.

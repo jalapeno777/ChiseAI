@@ -912,7 +912,7 @@ steps:
         exit 0
 
   performance-gate:
-    image: python:3.11
+    image: chiseai-ci-performance-gate:py311-20260322
     depends_on:
       - local-ci
       - changed-lines-coverage

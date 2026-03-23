@@ -1784,7 +1784,7 @@ launch_stories:
       - src/ml/models/model_registry.py
       - tests/test_ml/test_training_pipeline.py
     sprint_id: LAUNCH-SPRINT-2
-    status: planned
+    status: completed
     story_points: 4
     test_strategy:
       e2e: pytest tests/e2e/test_training_workflow.py -v
@@ -2119,7 +2119,7 @@ launch_stories:
       - tests/load/locustfile.py
       - scripts/load_testing/launch_load_test.py
     sprint_id: LAUNCH-SPRINT-2
-    status: planned
+    status: completed
     story_points: 5
     test_strategy:
       load: locust -f tests/load/locustfile.py --users 100 --run-time 1h
@@ -2162,7 +2162,7 @@ launch_stories:
       - docs/runbooks/incident_response.md
       - scripts/ops/validate_runbooks.py
     sprint_id: LAUNCH-SPRINT-2
-    status: planned
+    status: completed
     story_points: 5
     test_strategy:
       validation: python scripts/ops/validate_runbooks.py --scenario all
