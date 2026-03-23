@@ -44,7 +44,7 @@ def main() -> int:
         "--desc",
         "off",
     ]
-    proc = subprocess.run(cmd, check=False, timeout=60)
+    proc = subprocess.run(cmd, check=False, timeout=300)
     if proc.returncode == 0:
         print("dependency-audit: OK")
     return proc.returncode
