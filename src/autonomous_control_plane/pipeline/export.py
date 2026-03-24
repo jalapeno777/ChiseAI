@@ -21,6 +21,7 @@ from autonomous_control_plane.config.pipeline_settings import (
     DeadLetterQueueConfig,
     ExportDestinationConfig,
     ExportDestinationType,
+    PipelineSettings,
     pipeline_settings,
 )
 from autonomous_control_plane.config.settings import settings
