@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   grafana-watchdog:
@@ -22,6 +22,18 @@ services:
     restart: unless-stopped
     depends_on:
       - grafana
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import requests; requests.get('http://chiseai-grafana:3001/api/health', timeout=5)",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
   grafana:
     image: grafana/grafana:10.4.0
@@ -43,6 +55,12 @@ services:
     labels:
       - "project=chiseai"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 networks:
   chiseai:
