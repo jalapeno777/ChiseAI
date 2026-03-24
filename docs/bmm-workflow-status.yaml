@@ -1222,6 +1222,134 @@ epics:
       - ST-CI-001
       - ST-EVAL-SCHEDULER-001
     story_points: TBD
+  - description:
+      Bug fixes and data foundation for ICT/SMC integration including DISCORD_BYPASS
+      fix, rate-limited signal status, order_book_imbalance wiring, and CVD data assessment
+    id: EP-ICT-001
+    name: ICT Bug Fixes & Data Foundation
+    notes:
+      - Phase 0A: 4 stories, 3.5 SP
+      - Sprint ICT-S1 (Weeks 1-2)
+      - Pre-existing bugs must be fixed before ICT components begin
+    sprint_id: ICT-S1
+    status: planned
+    story_count: 4
+    story_ids:
+      - ST-ICT-001
+      - ST-ICT-002
+      - ST-ICT-003
+      - ST-ICT-004
+    story_points: 3.5
+  - description:
+      Infrastructure prerequisites including unified MarketRegimeClassifier, zone persistence
+      architecture, repainting guard framework, and two-layer pipeline design document
+    id: EP-ICT-002
+    name: ICT Infrastructure Prerequisites
+    notes:
+      - Phase 0B: 4 stories, 8 SP
+      - Sprint ICT-S2 (Weeks 3-4) + Sprint ICT-S3 (Weeks 5-6)
+      - All ICT components depend on this infrastructure
+    sprint_id: ICT-S2
+    status: planned
+    story_count: 4
+    story_ids:
+      - ST-ICT-005
+      - ST-ICT-006
+      - ST-ICT-007
+      - ST-ICT-008
+    story_points: 8
+  - description:
+      Core ICT signal components including Market Structure Detector (BOS/CHoCH),
+      Cumulative Volume Delta (CVD), Fair Value Gap Detector, and Order Block Detector
+    id: EP-ICT-003
+    name: ICT Core Signal Components
+    notes:
+      - Phase 1: 4 stories, 12 SP
+      - Sprint ICT-S4 (Weeks 7-8) + Sprint ICT-S5 (Weeks 9-10)
+      - All signals must pass non-repainting validation
+    sprint_id: ICT-S4
+    status: planned
+    story_count: 4
+    story_ids:
+      - ST-ICT-009
+      - ST-ICT-010
+      - ST-ICT-011
+      - ST-ICT-012
+    story_points: 12
+  - description:
+      Component validation framework for shadow testing all 4 ICT signals with directional
+      accuracy thresholds before Phase 2 integration
+    id: EP-ICT-004
+    name: ICT Component Validation
+    notes:
+      - Phase 1.5: 1 story, 1 SP
+      - Sprint ICT-S6 (Week 11)
+      - Go/No-Go gate for Phase 2
+    sprint_id: ICT-S6
+    status: planned
+    story_count: 1
+    story_ids:
+      - ST-ICT-013
+    story_points: 1
+  - description:
+      Confluence v2 integration including two-layer scorer implementation, ICT signal
+      registration, emission integration, ML feedback analyzer wiring, and feature flag
+    id: EP-ICT-005
+    name: ICT Confluence v2 Integration
+    notes:
+      - Phase 2: 5 stories, 10 SP
+      - Sprint ICT-S6 (Week 12) + Sprint ICT-S7 (Weeks 13-14)
+      - Full backward compatibility required
+    sprint_id: ICT-S6
+    status: planned
+    story_count: 5
+    story_ids:
+      - ST-ICT-014
+      - ST-ICT-015
+      - ST-ICT-016
+      - ST-ICT-017
+      - ST-ICT-018
+    story_points: 10
+  - description:
+      Statistical validation including hypothesis design, paper trading data collection,
+      significance testing, and rollback procedures for final Go/No-Go decision
+    id: EP-ICT-006
+    name: ICT Statistical Validation
+    notes:
+      - Phase 3+4: 4 stories, 5.5 SP
+      - Sprint ICT-S8 (Weeks 15-18)
+      - Final decision on ICT/SMC expansion
+    sprint_id: ICT-S8
+    status: planned
+    story_count: 4
+    story_ids:
+      - ST-ICT-019
+      - ST-ICT-020
+      - ST-ICT-021
+      - ST-ICT-022
+    story_points: 5.5
+  - description:
+      Post-validation expansion work including dynamic weight adjustment, zone-to-signal
+      mapping, cross-timeframe awareness, liquidity sweeps, premium/discount zones,
+      ML pipeline integration, StrongSystem hypothesis, and neuro-symbolic explainability
+    id: EP-ICT-007
+    name: ICT Post-Validation Expansion
+    notes:
+      - Phase 5: 8 stories, 24 SP (DEFERRED)
+      - Only proceeds if Phase 3 confirms ICT adds alpha (p<0.05, effect size >2%)
+    sprint_id: ICT-S9
+    status: planned
+    story_count: 8
+    story_ids:
+      - ST-ICT-023
+      - ST-ICT-024
+      - ST-ICT-025
+      - ST-ICT-026
+      - ST-ICT-027
+      - ST-ICT-028
+      - ST-ICT-029
+      - ST-ICT-030
+    story_points: 24
 launch_stories:
   - acceptance_criteria:
       - Demo mode enforcement - Only demo/testnet endpoints are allowed, production endpoint
@@ -6568,6 +6696,280 @@ stories:
         status: passed
         type: security
     validation_status: validated
+  - acceptance_criteria:
+      - Remove or guard bypass in signal_emitter.py:136, add audit logging, feature
+        flag controls bypass
+    description: Fix DISCORD_BYPASS_CONFIDENCE_FILTER env var risk
+    epic_id: EP-ICT-001
+    id: ST-ICT-001
+    sprint_id: ICT-S1
+    status: planned
+    story_points: 1
+    title: Fix DISCORD_BYPASS_CONFIDENCE_FILTER env var risk
+  - acceptance_criteria:
+      - Add RATE_LIMITED status to SignalStatus enum, signal_generator.py:486-488
+        sets RATE_LIMITED not ACTIONABLE, tests verify
+    description: Fix rate-limited signals marked ACTIONABLE
+    epic_id: EP-ICT-001
+    id: ST-ICT-002
+    sprint_id: ICT-S1
+    status: planned
+    story_points: 1
+    title: Fix rate-limited signals marked ACTIONABLE
+  - acceptance_criteria:
+      - Add "order_flow" entry to indicator_weights defaults, validate integration
+        with confluence scorer
+    description: Add explicit order_book_imbalance weight + validate wiring
+    epic_id: EP-ICT-001
+    id: ST-ICT-003
+    sprint_id: ICT-S1
+    status: planned
+    story_points: 1
+    title: Add explicit order_book_imbalance weight + validate wiring
+  - acceptance_criteria:
+      - Check Bybit demo + Bitget live trade history API, document findings,
+        recommend proxy or defer
+      - Binance fapi /fapi/v1/trades endpoint verified accessible without API key
+      - Trade data includes isBuyerMaker field for side detection
+      - Bybit /v5/market/recent-trade identified as backup source
+      - trades_url property added to BinanceConfig class
+    description: CVD Data Availability Assessment - Binance fapi as primary CVD data source
+    epic_id: EP-ICT-001
+    id: ST-ICT-004
+    sprint_id: ICT-S1
+    status: planned
+    story_points: 0.5
+    title: CVD Data Availability Assessment
+  - acceptance_criteria:
+      - Unified classifier outputting TRENDING/RANGING/VOLATILE/UNKNOWN, integrates
+        Markov+VolatilityRegime+ADX, unit tests
+    description: MarketRegimeClassifier consolidation
+    epic_id: EP-ICT-002
+    id: ST-ICT-005
+    sprint_id: ICT-S2
+    status: planned
+    story_points: 2
+    title: MarketRegimeClassifier consolidation
+  - acceptance_criteria:
+      - Zone data model defined, Redis sorted sets + hashes storage, lifecycle
+        ACTIVE→TESTED→MITIGATED→INVALIDATED, ~600KB capacity
+    description: Zone Persistence Architecture
+    epic_id: EP-ICT-002
+    id: ST-ICT-006
+    sprint_id: ICT-S2
+    status: planned
+    story_points: 2
+    title: Zone Persistence Architecture
+  - acceptance_criteria:
+      - lookahead_guard decorator validates no future data, repainting_detector test
+        suite with 0% tolerance, applied to all existing indicators
+    description: Repainting/Lookahead Guard Framework
+    epic_id: EP-ICT-002
+    id: ST-ICT-007
+    sprint_id: ICT-S3
+    status: planned
+    story_points: 2
+    title: Repainting/Lookahead Guard Framework
+  - acceptance_criteria:
+      - Layer 1 (Structural Context) and Layer 2 (Signal Confirmation) documented,
+        confluence modification rules specified, backward compatibility plan
+    description: Two-Layer Pipeline Design Document
+    epic_id: EP-ICT-002
+    id: ST-ICT-008
+    sprint_id: ICT-S3
+    status: planned
+    story_points: 2
+    title: Two-Layer Pipeline Design Document
+  - acceptance_criteria:
+      - Swing pivot detection, BOS/CHoCH classification, regime-gated (TRENDING
+        only), non-repainting confirmed bars, unit tests
+    description: Market Structure Detector (BOS/CHoCH)
+    epic_id: EP-ICT-003
+    id: ST-ICT-009
+    sprint_id: ICT-S4
+    status: planned
+    story_points: 3
+    title: Market Structure Detector (BOS/CHoCH)
+  - acceptance_criteria:
+      - Tick-level volume delta calculation, CVD divergence detection, trade history
+        API or order book proxy, unit tests
+      - get_recent_trades() method added to BinanceClient class
+      - trades_url property added to BinanceConfig pointing to /fapi/v1/trades
+    description: Cumulative Volume Delta (CVD) - Binance client for trade data fetching
+    epic_id: EP-ICT-003
+    id: ST-ICT-010
+    sprint_id: ICT-S4
+    status: planned
+    story_points: 3
+    title: Cumulative Volume Delta (CVD)
+  - acceptance_criteria:
+      - 3-candle FVG detection, 50% CE tracking, wick/close mitigation modes,
+        regime-gated, zone lifecycle integration, unit tests
+    description: Fair Value Gap Detector
+    epic_id: EP-ICT-003
+    id: ST-ICT-011
+    sprint_id: ICT-S5
+    status: planned
+    story_points: 2.5
+    title: Fair Value Gap Detector
+  - acceptance_criteria:
+      - Bullish/bearish OB detection, smart mitigation on close beyond, volume
+        confirmation optional, regime-gated, zone lifecycle integration, unit tests
+    description: Order Block Detector
+    epic_id: EP-ICT-003
+    id: ST-ICT-012
+    sprint_id: ICT-S5
+    status: planned
+    story_points: 2.5
+    title: Order Block Detector
+  - acceptance_criteria:
+      - Per-component paper shadow (50+ signals, 1 week), >52% directional
+        accuracy threshold, pass/fail gate, automated reporting
+    description: Component Validation Framework
+    epic_id: EP-ICT-004
+    id: ST-ICT-013
+    sprint_id: ICT-S6
+    status: planned
+    story_points: 1
+    title: Component Validation Framework
+  - acceptance_criteria:
+      - Implements two-layer architecture from 0B.4 design, Layer 1 modifiers on
+        Layer 2 weights, backward compatible (Layer 2 alone = current scorer), unit
+        tests
+    description: Two-Layer Confluence Scorer
+    epic_id: EP-ICT-005
+    id: ST-ICT-014
+    sprint_id: ICT-S6
+    status: planned
+    story_points: 3
+    title: Two-Layer Confluence Scorer
+  - acceptance_criteria:
+      - BOS/CHoCH, CVD, FVG, OB registered in indicator registry, indicator_weights
+        entries defined, wired through signal_aggregator.py
+    description: ICT Signal Registration
+    epic_id: EP-ICT-005
+    id: ST-ICT-015
+    sprint_id: ICT-S7
+    status: planned
+    story_points: 2
+    title: ICT Signal Registration
+  - acceptance_criteria:
+      - ICT context in Discord messages, ICT context in dashboard payloads,
+        backward compatible message format
+    description: ICT Signal Emission Integration
+    epic_id: EP-ICT-005
+    id: ST-ICT-016
+    sprint_id: ICT-S7
+    status: planned
+    story_points: 2
+    title: ICT Signal Emission Integration
+  - acceptance_criteria:
+      - ICT zone events route to ml/feedback/analyzer.py, win rate tracking per
+        zone type per regime per token, ICT-specific ECE calibration buckets
+    description: ML Feedback Analyzer Integration
+    epic_id: EP-ICT-005
+    id: ST-ICT-017
+    sprint_id: ICT-S7
+    status: planned
+    story_points: 2
+    title: ML Feedback Analyzer Integration
+  - acceptance_criteria:
+      - ICT_CONFLUENCE_ENABLED config flag, when false reverts to Layer 2 only,
+        tested before Phase 2 deployment
+    description: Feature Flag Implementation
+    epic_id: EP-ICT-005
+    id: ST-ICT-018
+    sprint_id: ICT-S7
+    status: planned
+    story_points: 1
+    title: Feature Flag Implementation
+  - acceptance_criteria:
+      - Null hypothesis defined, control/treatment groups specified, power analysis
+        (min 100 signals), early stopping rules (p>0.3 after 50 signals)
+    description: Hypothesis Design & Test Framework
+    epic_id: EP-ICT-006
+    id: ST-ICT-019
+    sprint_id: ICT-S8
+    status: planned
+    story_points: 1.5
+    title: Hypothesis Design & Test Framework
+  - acceptance_criteria:
+      - 4+ weeks paper trading, automated data collection pipeline, both control
+        and treatment groups running, early stopping enforced
+    description: Paper Trading Data Collection
+    epic_id: EP-ICT-006
+    id: ST-ICT-020
+    sprint_id: ICT-S8
+    status: planned
+    story_points: 2
+    title: Paper Trading Data Collection
+  - acceptance_criteria:
+      - Two-proportion z-test or Fisher exact test, Bonferroni correction, MDE 2%, decision output: "Confirm/Partial/Null"
+    description: Statistical Analysis & Significance Testing
+    epic_id: EP-ICT-006
+    id: ST-ICT-021
+    sprint_id: ICT-S8
+    status: planned
+    story_points: 1.5
+    title: Statistical Analysis & Significance Testing
+  - acceptance_criteria:
+      - ICT_CONFLUENCE_ENABLED=false tested, rollback documented per scenario,
+        learnings captured to docs/tempmemories/lessons.md
+    description: Rollback Procedures
+    epic_id: EP-ICT-006
+    id: ST-ICT-022
+    sprint_id: ICT-S8
+    status: planned
+    story_points: 0.5
+    title: Rollback Procedures
+  - description: Dynamic Weight Adjustment
+    epic_id: EP-ICT-007
+    id: ST-ICT-023
+    status: planned
+    story_points: 3
+    title: Dynamic Weight Adjustment
+  - description: Zone-to-Signal Mapping
+    epic_id: EP-ICT-007
+    id: ST-ICT-024
+    status: planned
+    story_points: 3
+    title: Zone-to-Signal Mapping
+  - description: Cross-Timeframe Zone Awareness
+    epic_id: EP-ICT-007
+    id: ST-ICT-025
+    status: planned
+    story_points: 2
+    title: Cross-Timeframe Zone Awareness
+  - description: Liquidity Sweeps
+    epic_id: EP-ICT-007
+    id: ST-ICT-026
+    status: planned
+    story_points: 2
+    title: Liquidity Sweeps
+  - description: Premium/Discount Zones
+    epic_id: EP-ICT-007
+    id: ST-ICT-027
+    status: planned
+    story_points: 2
+    title: Premium/Discount Zones
+  - description: Full ML Pipeline Integration
+    epic_id: EP-ICT-007
+    id: ST-ICT-028
+    status: planned
+    story_points: 8
+    title: Full ML Pipeline Integration
+  - description: StrongSystem Hypothesis Integration
+    epic_id: EP-ICT-007
+    id: ST-ICT-029
+    status: planned
+    story_points: 2
+    title: StrongSystem Hypothesis Integration
+  - description: Neuro-Symbolic Explainability for ICT
+    epic_id: EP-ICT-007
+    id: ST-ICT-030
+    status: planned
+    story_points: 2
+    title: Neuro-Symbolic Explainability for ICT
 summary:
   epics_by_status:
     completed: 16
