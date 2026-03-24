@@ -2123,7 +2123,7 @@ validations:
     title: Training Pipeline Integration Validation
     epic_id: EP-LAUNCH-003
     story_id: ST-LAUNCH-012
-    status: planned
+    status: validated
     description: Validate training pipeline with feature integration and model registry
     acceptance_criteria:
       - Features integrated with 70/15/15 train/val/test split
@@ -2138,7 +2138,7 @@ validations:
     title: Model Validation & Rollback Validation
     epic_id: EP-LAUNCH-003
     story_id: ST-LAUNCH-013
-    status: planned
+    status: validated
     description: Validate model validation gates and automatic rollback
     acceptance_criteria:
       - Validation gates check accuracy, precision, recall, F1
@@ -2153,7 +2153,7 @@ validations:
     title: Training Lifecycle E2E Validation
     epic_id: EP-LAUNCH-003
     story_id: ST-LAUNCH-014
-    status: planned
+    status: validated
     description: Validate complete training lifecycle from trigger to deployment
     acceptance_criteria:
       - Full training flow completes successfully
@@ -2169,7 +2169,7 @@ validations:
     title: Load Testing & Performance Validation
     epic_id: EP-LAUNCH-004
     story_id: ST-LAUNCH-015
-    status: planned
+    status: validated
     description: Validate system performance under load
     acceptance_criteria:
       - 1000 signals/hour sustained with <1s latency
@@ -2234,7 +2234,7 @@ validations:
     title: Model Registry Validation
     epic_id: EP-LAUNCH-005
     story_id: ST-LAUNCH-019
-    status: planned
+    status: validated
     description: Validate model registry stores, versions, and retrieves ML models
     acceptance_criteria:
       - Semantic versioning implemented correctly
@@ -2249,7 +2249,7 @@ validations:
     title: Load Test Infrastructure Validation
     epic_id: EP-LAUNCH-005
     story_id: ST-LAUNCH-020
-    status: planned
+    status: validated
     description: Validate load testing infrastructure can simulate production load
     acceptance_criteria:
       - 1000 signals/hour sustained with <1s latency
@@ -2264,7 +2264,7 @@ validations:
     title: Runbook Completeness Validation
     epic_id: EP-LAUNCH-005
     story_id: ST-LAUNCH-021
-    status: planned
+    status: validated
     description: Validate all operational runbooks are complete and tested
     acceptance_criteria:
       - Safety runbook covers all emergency scenarios
