@@ -3,7 +3,7 @@
 
 when:
   - event: cron
-    cron: "*/5 * * * *"  # Every 5 minutes
+    cron: "*/5 * * * *" # Every 5 minutes
 
 labels:
   project: chiseai
@@ -49,6 +49,32 @@ steps:
       GITEA_REPO: ChiseAI
     when:
       - event: cron
+
+  - name: auto-rebase-stale-prs
+    image: python:3.11-slim
+    commands:
+      - apt-get update && apt-get install -y redis-tools git
+      - pip install -e . 2>/dev/null || true
+      - cd scripts/pr_lifecycle
+      - python3 auto_rebase.py detect-and-rebase
+    environment:
+      CHISE_REDIS_HOST: host.docker.internal
+      CHISE_REDIS_PORT: "6380"
+      CHISE_REDIS_DB: "0"
+      GITEA_BASE_URL: http://host.docker.internal:3000
+      GITEA_TOKEN:
+        from_secret: gitea_token
+      GITEA_OWNER: craig
+      GITEA_REPO: ChiseAI
+      CHISE_PR_MAX_REBASES_PER_WINDOW: "3"
+      CHISE_PR_REBASE_WINDOW_SEC: "300"
+      CHISE_PR_REBASE_COOLDOWN_MIN: "10"
+      DISCORD_WEBHOOK_URL:
+        from_secret: discord_pr_alerts_webhook
+    when:
+      - event: cron
+    depends_on:
+      - health-scan
 
   - name: notify-on-issues
     image: alpine/curl
