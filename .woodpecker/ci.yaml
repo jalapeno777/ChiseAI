@@ -396,6 +396,11 @@ steps:
         exit 0
 
   local-ci:
+    when:
+      event:
+        - pull_request
+        - manual
+        - cron
     image: chiseai-ci-local-ci:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -572,6 +577,11 @@ steps:
         exit 0
 
   pre-eval-ingestion:
+    when:
+      event:
+        - pull_request
+        - manual
+        - cron
     image: chiseai-ci-pre-eval-ingestion:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -618,6 +628,11 @@ steps:
         exit 0
 
   brain-eval:
+    when:
+      event:
+        - pull_request
+        - manual
+        - cron
     image: chiseai-ci-brain-eval:py311-20260323
     depends_on:
       - pre-eval-ingestion
@@ -667,6 +682,9 @@ steps:
         exit 0
 
   tempmemory-scheduler:
+    when:
+      event:
+        - cron
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -686,6 +704,9 @@ steps:
         exit 0
 
   mini-brain-eval:
+    when:
+      event:
+        - cron
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -705,6 +726,9 @@ steps:
         exit 0
 
   tempmemory-reconcile:
+    when:
+      event:
+        - cron
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -724,6 +748,9 @@ steps:
         exit 0
 
   tempmemory-drill:
+    when:
+      event:
+        - cron
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -751,6 +778,9 @@ steps:
         exit 0
 
   flaky-detection:
+    when:
+      event:
+        - cron
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
