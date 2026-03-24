@@ -303,9 +303,7 @@ def main() -> int:
     # On full/cron modes, allow time for those status files to be written.
     wait_seconds = int(env.get("CI_GATE_STATUS_WAIT_SECONDS", "0") or "0")
     if wait_seconds <= 0 and (
-        _is_main_push(env)
-        or _is_main_cron(env)
-        or env.get("FORCE_FULL_GATE", "").strip() == "1"
+        _is_main_cron(env) or env.get("FORCE_FULL_GATE", "").strip() == "1"
     ):
         wait_seconds = 900
     poll_seconds = int(env.get("CI_GATE_STATUS_POLL_SECONDS", "5") or "5")

@@ -409,6 +409,12 @@ steps:
         set +e
         (
           set -euo pipefail
+          # Skip expensive steps on push-to-main (PR is authoritative)
+          if [ "$${CI_EVENT}" = "push" ] && [ "$${CI_COMMIT_BRANCH}" = "main" ]; then
+            echo "local-ci: SKIPPED (push-to-main, PR is authoritative)"
+            echo "0" > "$${CI_STATUS_DIR}/local-ci.status"
+            exit 0
+          fi
           # PHASE 3: Performance monitoring start
           START_TIME=$(date +%s)
           echo "local-ci: Starting at $(date -Iseconds)"
@@ -587,6 +593,13 @@ steps:
         set +e
         (
           set -euo pipefail
+          # Skip expensive ingestion on push-to-main (PR is authoritative)
+          if [ "$${CI_EVENT}" = "push" ] && [ "$${CI_COMMIT_BRANCH}" = "main" ]; then
+            echo "pre-eval-ingestion: SKIPPED (push-to-main, PR is authoritative)"
+            printf '%s\n' '{"success": true, "skipped": true, "reason": "push-to-main", "files_processed": 0, "files_ingested": 0, "files_failed": 0, "files_skipped": 0, "duration_seconds": 0, "errors": [], "ingested_memory_ids": []}' > "$${CI_STATUS_DIR}/pre-eval-ingestion.json"
+            echo "0" > "$${CI_STATUS_DIR}/pre-eval-ingestion.status"
+            exit 0
+          fi
           python -V
           echo "Running pre-evaluation tempmemory ingestion..."
           # Determine feature flag value
@@ -631,6 +644,13 @@ steps:
         set +e
         (
           set -euo pipefail
+          # Skip expensive brain-eval on push-to-main (PR is authoritative)
+          if [ "$${CI_EVENT}" = "push" ] && [ "$${CI_COMMIT_BRANCH}" = "main" ]; then
+            echo "brain-eval: SKIPPED (push-to-main, PR is authoritative)"
+            echo '{"success": true, "skipped": true, "reason": "push-to-main"}' > "$${CI_STATUS_DIR}/brain-eval.json"
+            echo "0" > "$${CI_STATUS_DIR}/brain-eval.status"
+            exit 0
+          fi
           python -V
           # Determine feature flag value (same logic as pre-eval-ingestion)
           if [ "$${CI_TEMPMEMORY_INGESTION_ENABLED}" = "auto" ]; then
@@ -677,6 +697,11 @@ steps:
         set +e
         (
           set -euo pipefail
+          if [ "$${CI_EVENT}" != "cron" ]; then
+            echo "tempmemory-scheduler: SKIPPED (cron-only)"
+            echo "0" > "$${CI_STATUS_DIR}/tempmemory-scheduler.status"
+            exit 0
+          fi
           # Run tempmemory migration
           python3 scripts/ops/tempmemory_migration.py --dry-run
         ) > "$${CI_STATUS_DIR}/tempmemory-scheduler.log" 2>&1
@@ -696,6 +721,11 @@ steps:
         set +e
         (
           set -euo pipefail
+          if [ "$${CI_EVENT}" != "cron" ]; then
+            echo "mini-brain-eval: SKIPPED (cron-only)"
+            echo "0" > "$${CI_STATUS_DIR}/mini-brain-eval.status"
+            exit 0
+          fi
           # Run mini BrainEval with all sources
           python3 scripts/evaluation/mini_brain_eval.py --cadence daily --use-all --provenance --output-dir "$${CI_STATUS_DIR}/mini-brain-eval"
         ) > "$${CI_STATUS_DIR}/mini-brain-eval.log" 2>&1
@@ -715,6 +745,11 @@ steps:
         set +e
         (
           set -euo pipefail
+          if [ "$${CI_EVENT}" != "cron" ]; then
+            echo "tempmemory-reconcile: SKIPPED (cron-only)"
+            echo "0" > "$${CI_STATUS_DIR}/tempmemory-reconcile.status"
+            exit 0
+          fi
           # Run reconciliation and archive
           python3 scripts/ops/tempmemory_scheduler.py --once --dry-run
         ) > "$${CI_STATUS_DIR}/tempmemory-reconcile.log" 2>&1
@@ -734,9 +769,14 @@ steps:
         set +e
         (
           set -euo pipefail
-          EVENT="${CI_BUILD_EVENT:-${WOODPECKER_BUILD_EVENT:-${WOODPECKER_EVENT:-}}}"
-          BRANCH="${CI_COMMIT_BRANCH:-${WOODPECKER_COMMIT_BRANCH:-}}"
-          if [ "${EVENT}" != "cron" ] || [ "${BRANCH}" != "main" ]; then
+          if [ "$${CI_EVENT}" != "cron" ]; then
+            echo "tempmemory-drill: SKIPPED (cron-only)"
+            echo "0" > "$${CI_STATUS_DIR}/tempmemory-drill.status"
+            exit 0
+          fi
+          EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-$${CI_PIPELINE_EVENT:-}}}}"
+          BRANCH="$${CI_COMMIT_BRANCH:-$${WOODPECKER_COMMIT_BRANCH:-}}"
+          if [ "$${EVENT}" != "cron" ] || [ "$${BRANCH}" != "main" ]; then
             echo "tempmemory-drill: not cron/main; skipping"
             exit 0
           fi
@@ -761,9 +801,14 @@ steps:
         set +e
         (
           set -euo pipefail
-          EVENT="${CI_BUILD_EVENT:-${WOODPECKER_BUILD_EVENT:-${WOODPECKER_EVENT:-}}}"
-          BRANCH="${CI_COMMIT_BRANCH:-${WOODPECKER_COMMIT_BRANCH:-}}"
-          if [ "${EVENT}" != "cron" ] || [ "${BRANCH}" != "main" ]; then
+          if [ "$${CI_EVENT}" != "cron" ]; then
+            echo "flaky-detection: SKIPPED (cron-only)"
+            echo "0" > "$${CI_STATUS_DIR}/flaky-detection.status"
+            exit 0
+          fi
+          EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-$${CI_PIPELINE_EVENT:-}}}}"
+          BRANCH="$${CI_COMMIT_BRANCH:-$${WOODPECKER_COMMIT_BRANCH:-}}"
+          if [ "$${EVENT}" != "cron" ] || [ "$${BRANCH}" != "main" ]; then
             echo "flaky-detection: not cron/main; skipping"
             exit 0
           fi
