@@ -206,6 +206,13 @@ When starting work:
   - `ST-*`, `CH-*`, `FT-*`, `REWARD-*`, `REPO-*`, `SAFETY-*`, `BRANCH-*`, `PAPER-*`, `RECON-*` (must include a digit)
 - Before switching branches, working tree must be clean
 
+### Gitea MCP Owner (REQUIRED)
+- When using the Gitea MCP tools, the `owner` parameter MUST be `craig` (not `tacopants` or any other value).
+- The Gitea server authenticates as user `craig` (id: 1). The repo is `craig/ChiseAI`.
+- The filesystem username (`tacopants`) is NOT the Gitea username. These are separate systems.
+- All Gitea MCP calls (list_commits, list_pull_requests, get_file_contents, etc.) must use `owner: "craig"`.
+- Scripts that use `GITEA_OWNER` env var should default to `craig` if not set.
+
 ### Merge Authority (Explicit Roles)
 - **Workers**: Push branches + handoff evidence only; workers do NOT open PRs or merge to main
 - **Jarvis**: Orchestrates handoff to Merlin; coordinates worker completion

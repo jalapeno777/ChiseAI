@@ -7,9 +7,10 @@ disable-model-invocation: true
 Use this command only for exceptional Merlin-managed PR recovery operations (auto-PR outage/manual override/backfill). Normal PR creation must come from push-triggered automation in `.woodpecker/pr-auto-flow.yaml`.
 
 Prereqs:
+
 - Set `GITEA_TOKEN` (PAT) in env.
 - For autonomous review-required merges: set `GITEA_REVIEW_TOKEN` (PAT for a separate bot user that can submit PR reviews).
-- Optional: `GITEA_BASE_URL` (defaults to `http://host.docker.internal:3000`), `GITEA_OWNER`, `GITEA_REPO`.
+- Optional: `GITEA_BASE_URL` (defaults to http://host.docker.internal:3000), `GITEA_OWNER` (defaults to `craig`), `GITEA_REPO` (defaults to `ChiseAI`).
 - Set `STORY_ID` (required). Example: `export STORY_ID=ST-NS-001`
   - Accepted patterns include: `ST-*`, `CH-*`, `FT-*`, `REWARD-*`, `REPO-*`, `SAFETY-*`, `BRANCH-*`, `PAPER-*`, `RECON-*` (must contain a digit).
 - Set `BRANCH` (required). Example: `export BRANCH=feature/ST-NS-001-my-change`
@@ -17,8 +18,8 @@ Prereqs:
 - Set `WORKTREE_PATH` (required). Example: `export WORKTREE_PATH=/tmp/worktrees/ST-NS-001-merlin`
 - Ensure a swarm session exists for this branch:
   - `python3 scripts/swarm/session.py verify --story-id "$STORY_ID" --branch "$BRANCH" --worktree-path "$WORKTREE_PATH" --check-canonical`
- - Optional helper to derive `STORY_ID` from branch when omitted:
-   - `export STORY_ID="$(python3 -c 'import re,os; b=os.environ.get(\"BRANCH\",\"\").upper(); m=re.search(r\"(?:ST|CH|FT|REWARD|REPO|SAFETY|BRANCH|PAPER|RECON)(?:-[A-Z0-9]+){1,}\", b); print(m.group(0) if m else \"\")')"`
+- Optional helper to derive `STORY_ID` from branch when omitted:
+  - `export STORY_ID="$(python3 -c 'import re,os; b=os.environ.get(\"BRANCH\",\"\").upper(); m=re.search(r\"(?:ST|CH|FT|REWARD|REPO|SAFETY|BRANCH|PAPER|RECON)(?:-[A-Z0-9]+){1,}\", b); print(m.group(0) if m else \"\")')"`
 
 1. Safety gates (must not be on main)
    - `git status -sb`

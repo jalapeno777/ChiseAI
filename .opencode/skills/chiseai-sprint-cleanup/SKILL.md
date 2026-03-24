@@ -24,10 +24,12 @@ Ensure repository hygiene before starting new sprint work through automated clea
 ## Prerequisites
 
 Required environment variables:
+
 ```bash
 # Git/Gitea
 export GITEA_TOKEN="your-gitea-token"
 export GITEA_BASE_URL="http://host.docker.internal:3000"
+export GITEA_OWNER="craig"  # defaults to "craig"
 
 # Redis (optional but recommended)
 export CHISE_REDIS_HOST="host.docker.internal"
@@ -37,16 +39,19 @@ export CHISE_REDIS_PORT="6380"
 ## Quick Start
 
 ### 1. Check Without Making Changes (Dry Run)
+
 ```bash
 python3 scripts/ops/sprint_cleanup.py --check-all
 ```
 
 ### 2. Execute Safe Auto-Fixes
+
 ```bash
 python3 scripts/ops/sprint_cleanup.py --execute --auto-fix-safe
 ```
 
 ### 3. Mark Sprint Boundary
+
 ```bash
 python3 scripts/ops/sprint_cleanup.py \
   --execute --auto-fix-safe \
@@ -55,22 +60,24 @@ python3 scripts/ops/sprint_cleanup.py \
 
 ## What Gets Checked
 
-| Category | Checks | Severity |
-|----------|--------|----------|
-| Working Trees | Uncommitted changes, untracked files, stale sessions | Critical/Warning |
-| Branches | Merged, behind-main, stale (>30d), invalid naming | Info/Warning |
-| Main Sync | Local == Remote, no diverged commits | Critical |
-| PR Status | Stuck PRs, merge conflicts | Warning |
-| Canonical Files | Status files exist and valid | Critical |
+| Category        | Checks                                               | Severity         |
+| --------------- | ---------------------------------------------------- | ---------------- |
+| Working Trees   | Uncommitted changes, untracked files, stale sessions | Critical/Warning |
+| Branches        | Merged, behind-main, stale (>30d), invalid naming    | Info/Warning     |
+| Main Sync       | Local == Remote, no diverged commits                 | Critical         |
+| PR Status       | Stuck PRs, merge conflicts                           | Warning          |
+| Canonical Files | Status files exist and valid                         | Critical         |
 
 ## Auto-Fix Criteria
 
 **Safe to auto-fix:**
+
 - Merged branches (no unique commits)
 - Behind-main branches with no local commits
 - Main branch behind remote
 
 **Require manual intervention:**
+
 - Uncommitted changes
 - Stale sessions (>3 days old)
 - Stale branches (>30 days)
@@ -80,12 +87,12 @@ python3 scripts/ops/sprint_cleanup.py \
 
 ## Exit Codes
 
-| Code | Meaning | Action |
-|------|---------|--------|
-| 0 | Ready (clean) | Proceed with sprint |
-| 1 | Ready with warnings | Review then proceed |
-| 2 | Blocked (critical) | **Must resolve before sprint** |
-| 3 | Infrastructure error | Check Redis/Gitea |
+| Code | Meaning              | Action                         |
+| ---- | -------------------- | ------------------------------ |
+| 0    | Ready (clean)        | Proceed with sprint            |
+| 1    | Ready with warnings  | Review then proceed            |
+| 2    | Blocked (critical)   | **Must resolve before sprint** |
+| 3    | Infrastructure error | Check Redis/Gitea              |
 
 ## Redis Schema
 
@@ -128,12 +135,14 @@ python3 scripts/ops/cleanup_history.py --export history.json --days 90
 ## Automated Execution
 
 ### Weekly Cron Job
+
 ```bash
 # Add to crontab
 0 6 * * 1 /home/tacopants/projects/ChiseAI/scripts/cron/weekly_cleanup.sh
 ```
 
 The weekly cleanup:
+
 1. Runs every Monday at 6 AM
 2. Executes safe auto-fixes
 3. Generates JSON and text reports
@@ -164,6 +173,7 @@ The weekly cleanup:
 ### Agent Workflow Integration
 
 **Before starting new story work:**
+
 ```bash
 # Verify repository state
 python3 scripts/ops/sprint_cleanup.py --check-all
@@ -172,6 +182,7 @@ python3 scripts/ops/sprint_cleanup.py --check-all
 ```
 
 **Jarvis (Orchestrator) responsibilities:**
+
 1. Schedule cleanup before sprint planning
 2. Review cleanup reports
 3. Assign agents to resolve blocked issues
@@ -180,18 +191,22 @@ python3 scripts/ops/sprint_cleanup.py --check-all
 ## Reporting Output
 
 ### Console Report
+
 Detailed text report with:
+
 - Summary statistics
 - Categorized issues (critical/warning/info)
 - Actions taken/blocked
 - Sprint readiness status
 
 ### JSON Output
+
 ```bash
 python3 scripts/ops/sprint_cleanup.py --check-all --json
 ```
 
 Structure:
+
 ```json
 {
   "timestamp": "2026-02-20T10:00:00Z",
@@ -206,7 +221,9 @@ Structure:
 ```
 
 ### Discord Summary
+
 Copy-paste friendly format:
+
 ```
 🟡 **Pre-Sprint Cleanup Report**
 
@@ -222,6 +239,7 @@ Copy-paste friendly format:
 ## Troubleshooting
 
 ### Redis Unavailable
+
 ```bash
 # Check connection
 redis-cli -h host.docker.internal -p 6380 ping
@@ -231,14 +249,17 @@ redis-cli -h host.docker.internal -p 6380 ping
 ```
 
 ### Gitea Token Issues
+
 ```bash
 # Verify token is set
 export GITEA_TOKEN="your-token"
+export GITEA_OWNER="craig"  # defaults to "craig"
 
 # PR checks will be skipped without token
 ```
 
 ### Permission Denied
+
 ```bash
 # Ensure scripts are executable
 chmod +x scripts/ops/sprint_cleanup.py
@@ -257,11 +278,13 @@ chmod +x scripts/ops/cleanup_history.py
 If cleanup causes issues:
 
 1. **Check what was done:**
+
    ```bash
    python3 scripts/ops/cleanup_history.py --last 20
    ```
 
 2. **Restore deleted branch:**
+
    ```bash
    git reflog | grep "feature/DELETED-BRANCH"
    git checkout -b feature/RESTORED <commit-sha>
@@ -275,25 +298,28 @@ If cleanup causes issues:
 
 ## File Locations
 
-| Component | Path |
-|-----------|------|
-| Main script | `scripts/ops/sprint_cleanup.py` |
-| History query | `scripts/ops/cleanup_history.py` |
-| Cron automation | `scripts/cron/weekly_cleanup.sh` |
-| Command docs | `.opencode/command/chise-sprint-cleanup.md` |
-| Full docs | `docs/operations/pre-sprint-cleanup.md` |
+| Component       | Path                                        |
+| --------------- | ------------------------------------------- |
+| Main script     | `scripts/ops/sprint_cleanup.py`             |
+| History query   | `scripts/ops/cleanup_history.py`            |
+| Cron automation | `scripts/cron/weekly_cleanup.sh`            |
+| Command docs    | `.opencode/command/chise-sprint-cleanup.md` |
+| Full docs       | `docs/operations/pre-sprint-cleanup.md`     |
 
 ## Maintenance
 
 **Weekly:**
+
 - Review automated cleanup logs
 - Verify Discord notifications sent
 
 **Monthly:**
+
 - Analyze trends via `cleanup_history.py --trend 30`
 - Adjust thresholds if needed
 
 **Quarterly:**
+
 - Full history export
 - Archive old logs
 - Review safety criteria

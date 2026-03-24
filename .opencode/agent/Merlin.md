@@ -63,6 +63,7 @@ When assigned by Jarvis, perform this exact sequence:
 - Identify non-`main` branches with unique commits not merged into `main`.
 - Ensure candidate branches have been pushed so push-triggered auto-PR can create/update PRs.
 - Use direct `scripts/gitea_pr_automerge.py ...` only for exceptional recovery (auto-PR outage/manual override/backfill).
+- All Gitea API calls must use owner=craig (Gitea username, not filesystem username tacopants).
 
 2. CI monitoring and diagnosis
 

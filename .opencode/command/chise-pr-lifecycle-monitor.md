@@ -7,6 +7,7 @@ disable-model-invocation: true
 Use this command to monitor PR lifecycle status and manage autonomous PR handling.
 
 ## Prerequisites
+
 - Redis available at host.docker.internal:6380
 - GITEA_TOKEN set in environment
 - PR registered in lifecycle system
@@ -82,6 +83,7 @@ python3 scripts/pr_lifecycle/health_monitor.py recovery
 ## 8. Handle specific failure types
 
 ### CI Failure
+
 ```bash
 python3 scripts/pr_lifecycle/recovery_handlers.py ci-failure \
   --pr-number "${PR_NUMBER}" \
@@ -89,12 +91,14 @@ python3 scripts/pr_lifecycle/recovery_handlers.py ci-failure \
 ```
 
 ### Merge Conflict
+
 ```bash
 python3 scripts/pr_lifecycle/recovery_handlers.py merge-conflict \
   --pr-number "${PR_NUMBER}"
 ```
 
 ### Missing Approval
+
 ```bash
 python3 scripts/pr_lifecycle/recovery_handlers.py missing-approval \
   --pr-number "${PR_NUMBER}"
@@ -130,10 +134,12 @@ python3 scripts/pr_lifecycle/pr_state_manager.py list-state --state "ci_failed"
 - `CHISE_PR_MAX_RETRIES`: Max recovery retries (default: 5)
 - `GITEA_TOKEN`: Gitea API token
 - `GITEA_REVIEW_TOKEN`: Separate token for approvals (optional)
+- `GITEA_OWNER`: Gitea owner (defaults to `craig`)
 
 ## Redis Schema
 
 PR states stored in:
+
 - `bmad:chiseai:pr:<pr_number>` - PR state hash
 - `bmad:chiseai:pr:active` - Set of active PR numbers
 - `bmad:chiseai:pr:state:<state_name>` - Sets of PRs by state

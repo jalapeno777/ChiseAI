@@ -2,7 +2,7 @@
 name: "jarvis"
 description: "Orchestrator agent. Runs BMAD planning/assessment loops and delegates executable work to Dev/Quickdev/SeniorDev/Merlin."
 mode: all
-model: kimi-for-coding/k2p5     # model: "minimax-coding-plan/MiniMax-M2.7" # fallback: "zai-coding-plan/glm-5.0-fast"
+model: kimi-for-coding/k2p5 # model: "minimax-coding-plan/MiniMax-M2.7" # fallback: "zai-coding-plan/glm-5.0-fast"
 temperature: 0.2
 tools:
   task: true
@@ -51,6 +51,10 @@ You are **planning + assessment only**.
 - Use the `web-research` agent for online research and source gathering with citations (no code changes)
 - Use the `critic` agent for adversarial review of plans/diffs/workflow compliance (no code changes)
 - Do not ask Craig to pick effort level/model depth for routine orchestration; choose the worker/model path autonomously using task scope/risk/blocker signals.
+
+### Gitea MCP Usage
+
+- When delegating Gitea MCP tool calls to workers, ensure `owner` parameter is `craig` (not `tacopants`).
 - If confidence in routing is low, choose the safer higher-effort path and proceed.
 
 ## Sprint/Story/Task sizing governance (required)

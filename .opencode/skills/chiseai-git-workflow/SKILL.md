@@ -416,6 +416,8 @@ python3 scripts/gitea_pr_automerge.py \
   --delete-branch
 ```
 
+NOTE: GITEA_OWNER defaults to "craig" (Gitea username, not filesystem username tacopants).
+
 ### 3. Post-Merge
 
 ```bash

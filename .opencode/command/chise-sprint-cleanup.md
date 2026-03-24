@@ -20,56 +20,65 @@ The pre-sprint cleanup routine verifies and fixes:
 ## Usage
 
 ### Dry Run (Check Only)
+
 ```bash
 python3 scripts/ops/sprint_cleanup.py --check-all
 ```
 
 ### Execute with Safe Auto-Fixes
+
 ```bash
 python3 scripts/ops/sprint_cleanup.py --execute --auto-fix-safe
 ```
 
 ### Mark Sprint Boundary (After Cleanup)
+
 ```bash
 python3 scripts/ops/sprint_cleanup.py --execute --auto-fix-safe --mark-sprint SPRINT-2026-Q1-01
 ```
 
 ### JSON Output (For Automation)
+
 ```bash
 python3 scripts/ops/sprint_cleanup.py --execute --auto-fix-safe --json
 ```
 
 ## Exit Codes
 
-| Code | Meaning | Action |
-|------|---------|--------|
-| 0 | Repository ready for sprint | Proceed with sprint planning |
-| 1 | Warnings present | Review warnings, then proceed |
-| 2 | Critical issues | **BLOCKED** - Resolve before sprint start |
-| 3 | Infrastructure unavailable | Check Redis/Gitea connectivity |
+| Code | Meaning                     | Action                                    |
+| ---- | --------------------------- | ----------------------------------------- |
+| 0    | Repository ready for sprint | Proceed with sprint planning              |
+| 1    | Warnings present            | Review warnings, then proceed             |
+| 2    | Critical issues             | **BLOCKED** - Resolve before sprint start |
+| 3    | Infrastructure unavailable  | Check Redis/Gitea connectivity            |
 
 ## What Gets Checked
 
 ### Working Trees
+
 - ✅ Uncommitted changes (CRITICAL)
 - ✅ Untracked files (WARNING)
 - ✅ Stale sessions (>3 days old) (WARNING)
 
 ### Branches
+
 - ✅ Already merged to main (INFO → auto-delete)
 - ✅ Behind main >7 commits (WARNING → auto-rebase if clean)
 - ✅ No activity >30 days (WARNING → review)
 - ✅ Invalid naming (WARNING → rename or delete)
 
 ### Main Branch
+
 - ✅ Local == Remote (CRITICAL if diverged)
 - ✅ Clean fast-forward possible
 
 ### Pull Requests
+
 - ✅ Open PRs with merge conflicts (WARNING)
 - ✅ Stuck PRs without mergeable status (WARNING)
 
 ### Canonical Files
+
 - ✅ `docs/bmm-workflow-status.yaml` exists and valid
 - ✅ `docs/validation/validation-registry.yaml` exists and valid
 
@@ -94,6 +103,7 @@ The following **require manual intervention**:
 The cleanup routine stores data in Redis for tracking and audit:
 
 ### State Tracking
+
 ```
 Key: bmad:chiseai:sprint_cleanup:state
 Type: Hash
@@ -102,6 +112,7 @@ Fields:
 ```
 
 ### Audit Log
+
 ```
 Key: bmad:chiseai:sprint_cleanup:log
 Type: List
@@ -110,6 +121,7 @@ Entries:
 ```
 
 ### Daily Summaries
+
 ```
 Key: bmad:chiseai:sprint_cleanup:summary:YYYY-MM-DD
 Type: Hash
@@ -118,6 +130,7 @@ Fields:
 ```
 
 ### Sprint Boundaries
+
 ```
 Key: bmad:chiseai:sprint:boundary
 Type: List
@@ -136,7 +149,7 @@ pre_sprint_cleanup:
   artifacts:
     reports:
       json: cleanup_report.json
-  allow_failure: true  # Don't block CI, just report
+  allow_failure: true # Don't block CI, just report
 ```
 
 ## Discord Integration
@@ -150,12 +163,12 @@ python3 scripts/ops/sprint_cleanup.py --check-all | \
 
 ## When To Run
 
-| Scenario | Command | Frequency |
-|----------|---------|-----------|
-| Before sprint planning | `--check-all` | At sprint boundaries |
-| Weekly maintenance | `--execute --auto-fix-safe` | Weekly (e.g., Monday morning) |
-| After major releases | `--execute --auto-fix-safe` | Post-release |
-| Emergency cleanup | `--execute` | On-demand |
+| Scenario               | Command                     | Frequency                     |
+| ---------------------- | --------------------------- | ----------------------------- |
+| Before sprint planning | `--check-all`               | At sprint boundaries          |
+| Weekly maintenance     | `--execute --auto-fix-safe` | Weekly (e.g., Monday morning) |
+| After major releases   | `--execute --auto-fix-safe` | Post-release                  |
+| Emergency cleanup      | `--execute`                 | On-demand                     |
 
 ## Safety Mechanisms
 
@@ -193,18 +206,23 @@ python3 scripts/ops/sprint_cleanup.py --execute --auto-fix-safe --mark-sprint SP
 ## Troubleshooting
 
 ### "Redis unavailable"
+
 - Check Redis connection: `redis-cli -h host.docker.internal -p 6380 ping`
 - Cleanup continues without Redis logging
 
 ### "Gitea token not set"
+
 - Set `GITEA_TOKEN` environment variable
+- `GITEA_OWNER` defaults to `craig` (Gitea username, not filesystem username)
 - PR checks will be skipped without token
 
 ### "Git command failed"
+
 - Ensure you're in a git repository
 - Check git configuration
 
 ### Exit code 2 (Critical issues)
+
 - Review the report for critical issues
 - Resolve manually
 - Re-run cleanup

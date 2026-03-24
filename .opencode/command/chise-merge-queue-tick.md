@@ -8,8 +8,10 @@ Use this command for a non-destructive reconciliation tick (no merge) or merge t
 Merge-enabled ticks require Merlin authority because main-merge lock acquisition is Merlin-only.
 
 Prereqs:
+
 - `GITEA_TOKEN` must be set.
 - In containerized agent environments, use `GITEA_BASE_URL=http://host.docker.internal:3000`.
+- `GITEA_OWNER` defaults to `craig` if not set.
 - Run from a clean control worktree.
 
 Dry-run style tick (requeue/pending/fail classification only):
@@ -40,5 +42,6 @@ python3 scripts/ops/merge_reconciler.py queue-tick \
 ```
 
 Runtime enforcement:
+
 - `AGENT_ID` must be `merlin` (unless explicit override env is set).
 - A valid Redis main-merge lock must exist at `bmad:chiseai:merge-lock:main`.

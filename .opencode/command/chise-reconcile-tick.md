@@ -5,12 +5,14 @@ disable-model-invocation: true
 ---
 
 ## When to Use
+
 - **Periodic maintenance**: Run on a timer/cadence (Jarvis cleanup loop) every 15-30 minutes
 - **Early drift detection**: Prevent local-only branch drift and main divergence before it accumulates
 - **Pre-batch cleanup**: Before starting parallel batch work, ensure clean state
 - **Post-incident recovery**: After resolving conflicts, run to verify no lingering issues
 
 ## Do Not Use
+
 - **As a merge queue**: Use `chise-merge-queue-tick` for actual merge queue operations
 - **For intake triage**: Use `chise-reconcile-intake` for processing incoming work items
 - **For PR creation**: This is not for creating PRs; use Gitea CLI or web interface
@@ -19,8 +21,10 @@ disable-model-invocation: true
 Use this command on a timer/cadence (Jarvis cleanup loop) to prevent local-only branch drift and main divergence.
 
 Prereqs:
+
 - `GITEA_TOKEN` must be set.
 - In containerized agent environments, use `GITEA_BASE_URL=http://host.docker.internal:3000`.
+- `GITEA_OWNER` defaults to `craig` if not set.
 - Run in an isolated control worktree.
 
 Command:
@@ -33,9 +37,11 @@ python3 scripts/ops/merge_reconciler.py reconcile-tick \
 ```
 
 Merge-enabled queue ticks are Merlin-only and must run through:
+
 - `.opencode/command/chise-merge-queue-tick.md`
 
 Follow-up:
+
 1. Check incidents:
    - `python3 scripts/ops/merge_reconciler.py intake-incidents --limit 100`
 2. Route incidents:
