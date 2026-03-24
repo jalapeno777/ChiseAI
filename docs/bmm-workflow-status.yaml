@@ -2730,10 +2730,14 @@ launch_stories:
       and create prioritized remediation plan
     epic_id: EP-INFRA-CLEANUP-001
     id: ST-CI-001
+    merge_commit_sha: 029b36c3
     notes:
       Phase 2 (Pipeline Hardening) completed 2026-03-03. Assessment, consolidation,
       blocking gates configured. Phase 3 (Remediation Execution) pending merlin review.
     owner_role: dev
+    pr_number: >-
+      LEGACY (PR #25 orphaned by history rewrite; work re-landed via
+      REPO-000..REPO-011)
     priority: P1-HIGH
     sprint_id: INFRA-CLEANUP-001
     status: completed
@@ -4616,6 +4620,10 @@ stories:
     fr_coverage:
       - FR-DEV-001
     id: ST-CI-001
+    merge_commit_sha: 029b36c3
+    pr_number: >-
+      LEGACY (PR #25 orphaned by history rewrite; work re-landed via
+      REPO-000..REPO-011)
     priority: P0-CRITICAL
     sprint_id: p0-1
     status: completed
