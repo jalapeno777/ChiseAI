@@ -38,6 +38,7 @@ target-version = ["py311"]
 target-version = "py311"
 line-length = 88
 src = ["src"]
+extend-exclude = ["config/"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]

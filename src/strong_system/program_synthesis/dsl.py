@@ -803,9 +803,11 @@ class ProgramDeserializer:
             initializer = data.get("initializer")
             return VariableDecl(
                 name=data.get("name", ""),
-                initializer=ProgramDeserializer._ast_from_dict(initializer)
-                if initializer
-                else None,
+                initializer=(
+                    ProgramDeserializer._ast_from_dict(initializer)
+                    if initializer
+                    else None
+                ),
                 mutable=data.get("mutable", True),
                 location=location,
             )

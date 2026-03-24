@@ -1,6 +1,5 @@
 """Tests for core symbolic rules functionality."""
 
-
 from src.strong_system.symbolic_rules import (
     RuleEngine,
     RuleSet,

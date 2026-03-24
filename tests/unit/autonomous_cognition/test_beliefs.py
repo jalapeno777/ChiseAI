@@ -122,7 +122,9 @@ def test_belief_revision_blocked_without_sufficient_evidence() -> None:
     )
     assert revisions == []
     assert len(engine.last_blocked_revisions) >= 1
-    assert engine.last_blocked_revisions[0]["reason"].startswith("insufficient_evidence")
+    assert engine.last_blocked_revisions[0]["reason"].startswith(
+        "insufficient_evidence"
+    )
 
 
 def test_belief_revision_blocked_when_source_diversity_is_low() -> None:

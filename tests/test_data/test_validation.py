@@ -962,7 +962,11 @@ class TestIntegration:
                 validator = validator_class(fields=["test"])
             elif validator_class == CurrencyValidator:
                 validator = validator_class(field="test")
-            elif validator_class in (UUIDValidator, IPAddressValidator, PercentageValidator):
+            elif validator_class in (
+                UUIDValidator,
+                IPAddressValidator,
+                PercentageValidator,
+            ):
                 validator = validator_class(fields=["test"])
             elif validator_class == BusinessRuleValidator:
                 validator = validator_class(rules=[])

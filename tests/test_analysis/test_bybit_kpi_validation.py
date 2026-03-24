@@ -511,7 +511,7 @@ class TestActualImplementationImports:
     def test_bybit_kpi_module_imports(self):
         """Test that calculate_bybit_kpis module can be imported."""
         try:
-            from scripts.analysis.calculate_bybit_kpis import (
+            from scripts.analysis.calculate_bybit_kpis import (  # noqa: F401
                 BybitAPIExtractor,
                 BybitKPICalculator,
                 BybitTradingKPIs,
@@ -524,7 +524,7 @@ class TestActualImplementationImports:
     def test_paper_kpi_module_imports(self):
         """Test that calculate_paper_kpis module can be imported."""
         try:
-            from scripts.analysis.calculate_paper_kpis import (
+            from scripts.analysis.calculate_paper_kpis import (  # noqa: F401
                 PaperKPICalculator,
                 PaperTradingKPIs,
             )

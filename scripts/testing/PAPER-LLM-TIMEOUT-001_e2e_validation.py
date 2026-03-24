@@ -484,29 +484,29 @@ async def main() -> int:
         print("E2E VALIDATION SUMMARY")
         print("=" * 60)
         print(f"Test ID: {evidence['test_id']}")
-        print(f"\nConfiguration:")
+        print("\nConfiguration:")
         print(f"  LLM Timeout: {evidence['configuration'].get('llm_timeout_ms')}ms")
         print(f"  Bybit Mode: {evidence['configuration'].get('bybit_mode')}")
 
-        print(f"\nLLM Analysis:")
+        print("\nLLM Analysis:")
         print(f"  Provider: {evidence['llm_analysis'].get('provider')}")
         print(f"  Fallback Used: {evidence['llm_analysis'].get('fallback_used')}")
         print(f"  Latency: {evidence['llm_analysis'].get('latency_ms'):.2f}ms")
         print(f"  Go/No-Go: {evidence['llm_analysis'].get('go_no_go')}")
 
-        print(f"\nExecution:")
+        print("\nExecution:")
         open_order = evidence["execution"].get("open", {})
         close_order = evidence["execution"].get("close", {})
         print(f"  Open: {open_order.get('order_id')} ({open_order.get('status')})")
         print(f"  Close: {close_order.get('order_id')} ({close_order.get('status')})")
 
-        print(f"\nDiscord:")
+        print("\nDiscord:")
         discord_open = evidence["discord"].get("open_notification", {})
         discord_close = evidence["discord"].get("close_notification", {})
         print(f"  Open Msg ID: {discord_open.get('message_id')}")
         print(f"  Close Msg ID: {discord_close.get('message_id')}")
 
-        print(f"\nCleanup:")
+        print("\nCleanup:")
         print(f"  Positions Remaining: {evidence['cleanup'].get('position_count', 0)}")
         print(f"  Is Flat: {evidence['cleanup'].get('is_flat', False)}")
 
@@ -516,7 +516,7 @@ async def main() -> int:
                 print(f"  - {err.get('error')}")
 
         print(
-            f"\nEvidence saved to: docs/tempmemories/PAPER-LLM-TIMEOUT-001-e2e-evidence.json"
+            "\nEvidence saved to: docs/tempmemories/PAPER-LLM-TIMEOUT-001-e2e-evidence.json"
         )
         print("=" * 60)
 

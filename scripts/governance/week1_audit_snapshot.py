@@ -34,8 +34,8 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from src.governance.audit.baseline import AuditSnapshot, RetrievalBaseline
-from src.governance.retrieval.evaluator import RetrievalEvaluator
 from src.governance.memory.deduplication import MemoryDeduplicationEngine
+from src.governance.retrieval.evaluator import RetrievalEvaluator
 
 logger = logging.getLogger(__name__)
 

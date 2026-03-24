@@ -44,7 +44,7 @@ async def main():
     print("Snapshots: T0, T5, T10, T15, T20, T25, T30")
     print("=" * 70)
 
-    harness = IntegratedForensicHarness(duration_minutes=30)
+    harness = IntegratedForensicHarness(duration_minutes=30)  # noqa: E402
 
     try:
         result = await harness.run_integrated_proof_loop()

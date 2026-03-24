@@ -286,16 +286,21 @@ class LLMLatencyStudy:
             "p50_ms": round(percentile(50), 2),
             "p90_ms": round(percentile(90), 2),
             "p95_ms": round(percentile(95), 2),
-            "p99_ms": round(percentile(99), 2)
-            if n >= 100
-            else round(sorted_durations[-1] if sorted_durations else 0, 2),
+            "p99_ms": (
+                round(percentile(99), 2)
+                if n >= 100
+                else round(sorted_durations[-1] if sorted_durations else 0, 2)
+            ),
             "min_ms": round(min(durations), 2) if durations else 0,
             "max_ms": round(max(durations), 2) if durations else 0,
-            "std_dev_ms": round(
-                (sum((d - sum(durations) / n) ** 2 for d in durations) / n) ** 0.5, 2
-            )
-            if n > 0
-            else 0,
+            "std_dev_ms": (
+                round(
+                    (sum((d - sum(durations) / n) ** 2 for d in durations) / n) ** 0.5,
+                    2,
+                )
+                if n > 0
+                else 0
+            ),
         }
 
         # Provider breakdown
@@ -375,7 +380,7 @@ async def main() -> int:
         print(f"Study ID: {result.study_id}")
         print(f"Attempts: {result.n_attempts}")
         print(f"Timeout Ceiling: {result.timeout_ceiling_ms}ms")
-        print(f"\nStatistics:")
+        print("\nStatistics:")
         print(f"  Count: {result.statistics.get('count')}")
         print(f"  Success Rate: {result.statistics.get('success_rate')}%")
         print(f"  Avg: {result.statistics.get('avg_ms')}ms")
@@ -385,17 +390,17 @@ async def main() -> int:
         print(f"  Max: {result.statistics.get('max_ms')}ms")
 
         if result.statistics.get("provider_breakdown"):
-            print(f"\nProvider Breakdown:")
+            print("\nProvider Breakdown:")
             for provider, count in result.statistics["provider_breakdown"].items():
                 print(f"  {provider}: {count}")
 
         if result.statistics.get("error_breakdown"):
-            print(f"\nError Breakdown:")
+            print("\nError Breakdown:")
             for error, count in result.statistics["error_breakdown"].items():
                 print(f"  {error}: {count}")
 
         print(
-            f"\nEvidence saved to: docs/tempmemories/PAPER-LLM-TIMEOUT-001-latency-study.json"
+            "\nEvidence saved to: docs/tempmemories/PAPER-LLM-TIMEOUT-001-latency-study.json"
         )
         print("=" * 60)
 

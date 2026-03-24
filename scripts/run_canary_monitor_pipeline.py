@@ -22,7 +22,7 @@ import json
 import logging
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from typing import Any
 
 # Configure logging
@@ -133,7 +133,7 @@ async def run_canary_pipeline(
 ) -> tuple[dict[str, Any], str | None]:
     """Run the canary monitoring pipeline and capture telemetry."""
 
-    execution_timestamp = datetime.now(timezone.utc).isoformat() + "Z"
+    execution_timestamp = datetime.now(UTC).isoformat() + "Z"
     logger.info("=== Starting Canary Monitoring Pipeline ===")
     logger.info(f"Canary ID: {canary_id}")
     logger.info(f"Strategy ID: {strategy_id}")

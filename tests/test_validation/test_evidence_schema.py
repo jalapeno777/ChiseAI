@@ -285,9 +285,9 @@ class TestStoryIdFormat:
         """Common story ID patterns should not produce warnings."""
         for sid in ("CH-001", "FT-042", "REPO-7", "SAFETY-10", "REWARD-003"):
             result = EvidenceSchemaValidator().validate(_valid_evidence(story_id=sid))
-            assert not any("story_id" in w for w in result.warnings), (
-                f"Unexpected warning for {sid}: {result.warnings}"
-            )
+            assert not any(
+                "story_id" in w for w in result.warnings
+            ), f"Unexpected warning for {sid}: {result.warnings}"
 
 
 # ---------------------------------------------------------------------------

@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+
 try:
     import fcntl
 except Exception:  # pragma: no cover
@@ -111,10 +112,8 @@ def acquire_lock(lock_file: str):
     except BlockingIOError:
         yield False
     finally:
-        try:
+        with contextlib.suppress(Exception):
             fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
-        except Exception:
-            pass
         fh.close()
 
 
@@ -174,7 +173,9 @@ def derive_aggregate_id(item: dict[str, Any]) -> tuple[str, str, str, str]:
         sid = f"BL-SKILL-AUTO-SKILL-{slugify(skill)}"
         title = f"Add/Import Skill: {skill}"
         desc = f"Repeated missing-skill KPI indicates '{skill}' should be added or imported."
-        action = str(item.get("recommended_action") or f"Create or import skill '{skill}'.")
+        action = str(
+            item.get("recommended_action") or f"Create or import skill '{skill}'."
+        )
         return sid, title, desc, action
 
     task_class = str(item.get("task_class") or "unclassified").strip()
@@ -184,7 +185,10 @@ def derive_aggregate_id(item: dict[str, Any]) -> tuple[str, str, str, str]:
         "Missing-skill rate for task class "
         f"'{task_class}' crossed threshold and needs skill coverage planning."
     )
-    action = str(item.get("recommended_action") or f"Define/add missing skills for '{task_class}'.")
+    action = str(
+        item.get("recommended_action")
+        or f"Define/add missing skills for '{task_class}'."
+    )
     return sid, title, desc, action
 
 
@@ -202,7 +206,9 @@ def insert_backlog_entries(status_text: str, entries: list[str]) -> str:
     return status_text[:idx] + block + status_text[idx:]
 
 
-def aggregate_candidates(raw_items: list[str]) -> tuple[dict[str, CandidateAggregate], int]:
+def aggregate_candidates(
+    raw_items: list[str],
+) -> tuple[dict[str, CandidateAggregate], int]:
     aggs: dict[str, CandidateAggregate] = {}
     parse_errors = 0
 
@@ -245,7 +251,9 @@ def aggregate_candidates(raw_items: list[str]) -> tuple[dict[str, CandidateAggre
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Ingest skill backlog candidates into workflow status")
+    ap = argparse.ArgumentParser(
+        description="Ingest skill backlog candidates into workflow status"
+    )
     ap.add_argument("--queue-key", default=QUEUE_KEY_DEFAULT)
     ap.add_argument("--status-file", default=str(STATUS_FILE_DEFAULT))
     ap.add_argument("--max-items", type=int, default=100)
@@ -281,7 +289,12 @@ def main() -> int:
         raw_items = client.lrange(args.queue_key, 0, max(args.max_items - 1, 0))
         if not raw_items:
             print("SKILL_BACKLOG_INGEST_RESULT")
-            print(yaml.safe_dump({"ingested": 0, "skipped": 0, "queue_items_read": 0}, sort_keys=False).strip())
+            print(
+                yaml.safe_dump(
+                    {"ingested": 0, "skipped": 0, "queue_items_read": 0},
+                    sort_keys=False,
+                ).strip()
+            )
             return 0
 
         aggs, parse_errors = aggregate_candidates(raw_items)

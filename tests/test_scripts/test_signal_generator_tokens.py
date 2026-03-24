@@ -63,16 +63,17 @@ class TestSignalGeneratorTokens:
         entry_pattern = r'\("([^"]+)",\s*([\d.]+),\s*"(up|down)"\)'
         entries = re.findall(entry_pattern, symbols_block)
 
-        assert len(entries) >= 5, (
-            f"Expected at least 5 symbol entries, found {len(entries)}"
-        )
+        assert (
+            len(entries) >= 5
+        ), f"Expected at least 5 symbol entries, found {len(entries)}"
 
         for symbol, price, trend in entries:
             assert symbol.endswith("/USDT"), f"Symbol {symbol} should end with /USDT"
             assert float(price) > 0, f"Price for {symbol} should be positive"
-            assert trend in ["up", "down"], (
-                f"Trend for {symbol} should be 'up' or 'down'"
-            )
+            assert trend in [
+                "up",
+                "down",
+            ], f"Trend for {symbol} should be 'up' or 'down'"
 
     def test_btc_eth_sol_link_bnb_all_present(self, signal_generator_content):
         """Explicitly verify each required token is present."""
@@ -86,18 +87,18 @@ class TestSignalGeneratorTokens:
         required_pairs = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "LINK/USDT", "BNB/USDT"]
 
         for pair in required_pairs:
-            assert pair in symbols_block, (
-                f"Required token pair {pair} not found in symbols list"
-            )
+            assert (
+                pair in symbols_block
+            ), f"Required token pair {pair} not found in symbols list"
 
     def test_symbols_list_structure(self, signal_generator_content):
         """Verify the symbols list has proper Python list structure."""
         import re
 
         # Check for proper list syntax
-        assert "symbols = [" in signal_generator_content, (
-            "Missing symbols list definition"
-        )
+        assert (
+            "symbols = [" in signal_generator_content
+        ), "Missing symbols list definition"
 
         # Find the list
         pattern = r"symbols\s*=\s*\[(.*?)\]"
@@ -108,9 +109,9 @@ class TestSignalGeneratorTokens:
 
         # Count commas to estimate number of entries (n entries = n-1 commas between items)
         comma_count = symbols_block.count("),")
-        assert comma_count >= 4, (
-            f"Expected at least 5 symbol entries (4+ commas), found {comma_count + 1}"
-        )
+        assert (
+            comma_count >= 4
+        ), f"Expected at least 5 symbol entries (4+ commas), found {comma_count + 1}"
 
         # Verify the matched text ends with closing bracket (regex includes it)
         assert match.group(0).endswith("]"), "List should close with ]"
@@ -154,9 +155,9 @@ class TestSignalGeneratorIntegration:
         }
 
         # They should match
-        assert sg_tokens == bybit_tokens, (
-            f"Signal generator tokens {sg_tokens} don't match bybit config tokens {bybit_tokens}"
-        )
+        assert (
+            sg_tokens == bybit_tokens
+        ), f"Signal generator tokens {sg_tokens} don't match bybit config tokens {bybit_tokens}"
 
     def test_all_tokens_have_valid_price_data(self):
         """Verify each token has a reasonable base price configured."""
@@ -191,6 +192,6 @@ class TestSignalGeneratorIntegration:
             price = float(price_str)
             if token in expected_price_ranges:
                 min_price, max_price = expected_price_ranges[token]
-                assert min_price <= price <= max_price, (
-                    f"{token} price {price} outside expected range ({min_price}-{max_price})"
-                )
+                assert (
+                    min_price <= price <= max_price
+                ), f"{token} price {price} outside expected range ({min_price}-{max_price})"

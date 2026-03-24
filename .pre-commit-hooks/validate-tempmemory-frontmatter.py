@@ -150,7 +150,7 @@ def validate_file(path: Path) -> list[str]:
         return []
 
     # Only process .md files
-    if not path.suffix == ".md":
+    if path.suffix != ".md":
         return []
 
     # Extract and validate frontmatter

@@ -157,7 +157,7 @@ class TestRiskLevelValidation:
                 }
             }
             autocog_path.write_text(yaml.dump(autocog_data))
-            
+
             config_path = Path(tmpdir) / "policies.yaml"
             config_data = {
                 "policies": {
@@ -184,7 +184,7 @@ class TestRiskLevelValidation:
                 }
             }
             config_path.write_text(yaml.dump(config_data))
-            
+
             engine = AutonomousPolicyEngine(config_path=config_path)
             engine.AUTOCOG_CONFIG_PATH = autocog_path
             engine._load_configs()
@@ -281,7 +281,7 @@ class TestProtectedFiles:
                 }
             }
             autocog_path.write_text(yaml.dump(autocog_data))
-            
+
             config_path = Path(tmpdir) / "policies.yaml"
             config_data = {
                 "policies": {
@@ -304,7 +304,7 @@ class TestProtectedFiles:
                 }
             }
             config_path.write_text(yaml.dump(config_data))
-            
+
             engine = AutonomousPolicyEngine(config_path=config_path)
             engine.AUTOCOG_CONFIG_PATH = autocog_path
             engine._load_configs()

@@ -945,9 +945,11 @@ class CoordinatedRollbackExecutor:
                     # Create checkpoint
                     if len(checkpoints) % config.checkpoint_interval == 0:
                         checkpoint = RollbackCheckpoint(
-                            operation_id=list(results.values())[0].operation_id
-                            if results
-                            else "",
+                            operation_id=(
+                                list(results.values())[0].operation_id
+                                if results
+                                else ""
+                            ),
                             services_completed=list(results.keys()),
                             services_remaining=[
                                 s for s in config.service_order if s not in results

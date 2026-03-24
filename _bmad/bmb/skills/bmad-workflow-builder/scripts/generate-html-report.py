@@ -29,65 +29,77 @@ import json
 import platform
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-
 
 # =============================================================================
 # Normalization — diverse scanner JSONs → unified item model
 # =============================================================================
 
 SEVERITY_RANK = {
-    'critical': 0, 'high': 1, 'medium': 2, 'low': 3,
-    'high-opportunity': 1, 'medium-opportunity': 2, 'low-opportunity': 3,
-    'note': 4, 'strength': 5, 'suggestion': 4, 'info': 5,
+    "critical": 0,
+    "high": 1,
+    "medium": 2,
+    "low": 3,
+    "high-opportunity": 1,
+    "medium-opportunity": 2,
+    "low-opportunity": 3,
+    "note": 4,
+    "strength": 5,
+    "suggestion": 4,
+    "info": 5,
 }
 
 # Map scanner names to report sections
 SCANNER_SECTIONS = {
-    'workflow-integrity': 'structural',
-    'structure': 'structure-capabilities',
-    'prompt-craft': 'prompt-craft',
-    'execution-efficiency': 'efficiency',
-    'skill-cohesion': 'cohesion',
-    'agent-cohesion': 'cohesion',
-    'path-standards': 'quality',
-    'scripts': 'scripts',
-    'script-opportunities': 'script-opportunities',
-    'enhancement-opportunities': 'creative',
+    "workflow-integrity": "structural",
+    "structure": "structure-capabilities",
+    "prompt-craft": "prompt-craft",
+    "execution-efficiency": "efficiency",
+    "skill-cohesion": "cohesion",
+    "agent-cohesion": "cohesion",
+    "path-standards": "quality",
+    "scripts": "scripts",
+    "script-opportunities": "script-opportunities",
+    "enhancement-opportunities": "creative",
 }
 
 SECTION_LABELS = {
-    'structural': 'Structural',
-    'structure-capabilities': 'Structure & Capabilities',
-    'prompt-craft': 'Prompt Craft',
-    'efficiency': 'Efficiency',
-    'cohesion': 'Cohesion',
-    'quality': 'Path & Script Standards',
-    'scripts': 'Scripts',
-    'script-opportunities': 'Script Opportunities',
-    'creative': 'Creative & Enhancements',
+    "structural": "Structural",
+    "structure-capabilities": "Structure & Capabilities",
+    "prompt-craft": "Prompt Craft",
+    "efficiency": "Efficiency",
+    "cohesion": "Cohesion",
+    "quality": "Path & Script Standards",
+    "scripts": "Scripts",
+    "script-opportunities": "Script Opportunities",
+    "creative": "Creative & Enhancements",
 }
 
 
 def _coalesce(*values) -> str:
     """Return the first truthy string value, or empty string."""
     for v in values:
-        if v and isinstance(v, str) and v.strip() and v.strip() not in ('N/A', 'n/a', 'None'):
+        if (
+            v
+            and isinstance(v, str)
+            and v.strip()
+            and v.strip() not in ("N/A", "n/a", "None")
+        ):
             return v.strip()
-    return ''
+    return ""
 
 
 def _norm_severity(sev: str) -> str:
     """Normalize severity to lowercase, handle variants."""
     if not sev:
-        return 'low'
+        return "low"
     s = sev.strip().lower()
     # Map common variants
     return {
-        'high-opportunity': 'high-opportunity',
-        'medium-opportunity': 'medium-opportunity',
-        'low-opportunity': 'low-opportunity',
+        "high-opportunity": "high-opportunity",
+        "medium-opportunity": "medium-opportunity",
+        "low-opportunity": "low-opportunity",
     }.get(s, s)
 
 
@@ -106,136 +118,154 @@ def normalize_finding(f: dict, scanner: str, idx: int) -> dict:
       Cat:    category | dimension
       Impact: user_impact | impact | estimated_savings | estimated_token_savings
     """
-    sev = _norm_severity(f.get('severity', 'low'))
-    section = SCANNER_SECTIONS.get(scanner, 'other')
+    sev = _norm_severity(f.get("severity", "low"))
+    section = SCANNER_SECTIONS.get(scanner, "other")
 
     # Determine item type from severity
-    if sev in ('strength', 'note') or f.get('category') == 'strength':
-        item_type = 'strength'
-        action_type = 'none'
+    if sev in ("strength", "note") or f.get("category") == "strength":
+        item_type = "strength"
+        action_type = "none"
         selectable = False
-    elif sev.endswith('-opportunity'):
-        item_type = 'enhancement'
-        action_type = 'enhance'
+    elif sev.endswith("-opportunity"):
+        item_type = "enhancement"
+        action_type = "enhance"
         selectable = True
-    elif f.get('category') == 'suggestion' or sev == 'suggestion':
-        item_type = 'suggestion'
-        action_type = 'refactor'
+    elif f.get("category") == "suggestion" or sev == "suggestion":
+        item_type = "suggestion"
+        action_type = "refactor"
         selectable = True
     else:
-        item_type = 'issue'
-        action_type = 'fix'
+        item_type = "issue"
+        action_type = "fix"
         selectable = True
 
     # --- Title: prefer 'title', fall back to old field names ---
     title = _coalesce(
-        f.get('title'),
-        f.get('issue'),
-        _truncate(f.get('scenario', ''), 150),
-        _truncate(f.get('current_behavior', ''), 150),
-        _truncate(f.get('description', ''), 150),
-        f.get('observation', ''),
+        f.get("title"),
+        f.get("issue"),
+        _truncate(f.get("scenario", ""), 150),
+        _truncate(f.get("current_behavior", ""), 150),
+        _truncate(f.get("description", ""), 150),
+        f.get("observation", ""),
     )
     if not title:
-        title = f.get('id', 'Finding')
+        title = f.get("id", "Finding")
 
     # --- Detail/description: prefer 'detail', fall back to old field names ---
-    description = _coalesce(f.get('detail'))
+    description = _coalesce(f.get("detail"))
     if not description:
         # Backward compat: coalesce old field names
         desc_candidates = []
-        for key in ('description', 'rationale', 'observation', 'insight', 'scenario',
-                    'current_behavior', 'current_pattern', 'context', 'nuance',
-                    'assessment'):
+        for key in (
+            "description",
+            "rationale",
+            "observation",
+            "insight",
+            "scenario",
+            "current_behavior",
+            "current_pattern",
+            "context",
+            "nuance",
+            "assessment",
+        ):
             v = f.get(key)
             if v and isinstance(v, str) and v.strip() and v != title:
                 desc_candidates.append(v.strip())
-        description = ' '.join(desc_candidates) if desc_candidates else ''
+        description = " ".join(desc_candidates) if desc_candidates else ""
 
     # --- Action: prefer 'action', fall back to old field names ---
     action = _coalesce(
-        f.get('action'),
-        f.get('fix'),
-        f.get('recommendation'),
-        f.get('suggestion'),
-        f.get('suggested_approach'),
-        f.get('efficient_alternative'),
-        f.get('script_alternative'),
+        f.get("action"),
+        f.get("fix"),
+        f.get("recommendation"),
+        f.get("suggestion"),
+        f.get("suggested_approach"),
+        f.get("efficient_alternative"),
+        f.get("script_alternative"),
     )
 
     # --- File reference ---
     file_ref = _coalesce(
-        f.get('file'),
-        f.get('location'),
-        f.get('current_location'),
+        f.get("file"),
+        f.get("location"),
+        f.get("current_location"),
     )
 
     # --- Line reference ---
-    line = f.get('line')
+    line = f.get("line")
     if line is None:
-        lines_str = f.get('lines')
+        lines_str = f.get("lines")
         if lines_str:
             line = str(lines_str)
 
     # --- Category ---
     category = _coalesce(
-        f.get('category'),
-        f.get('dimension'),
+        f.get("category"),
+        f.get("dimension"),
     )
 
     # --- Impact (backward compat only - new schema folds into detail) ---
     impact = _coalesce(
-        f.get('user_impact'),
-        f.get('impact'),
-        f.get('estimated_savings'),
-        str(f.get('estimated_token_savings', '')) if f.get('estimated_token_savings') else '',
+        f.get("user_impact"),
+        f.get("impact"),
+        f.get("estimated_savings"),
+        (
+            str(f.get("estimated_token_savings", ""))
+            if f.get("estimated_token_savings")
+            else ""
+        ),
     )
 
     # --- Extra fields for specific scanners ---
     extra = {}
-    if scanner == 'script-opportunities':
-        action_type = 'create-script'
-        for k in ('determinism_confidence', 'implementation_complexity',
-                   'language', 'could_be_prepass', 'reusable_across_skills'):
+    if scanner == "script-opportunities":
+        action_type = "create-script"
+        for k in (
+            "determinism_confidence",
+            "implementation_complexity",
+            "language",
+            "could_be_prepass",
+            "reusable_across_skills",
+        ):
             if k in f:
                 extra[k] = f[k]
 
     # Use scanner-provided id if available
-    item_id = f.get('id', f'{scanner}-{idx:03d}')
+    item_id = f.get("id", f"{scanner}-{idx:03d}")
 
     return {
-        'id': item_id,
-        'scanner': scanner,
-        'section': section,
-        'type': item_type,
-        'severity': sev,
-        'rank': SEVERITY_RANK.get(sev, 3),
-        'category': category,
-        'file': file_ref,
-        'line': line,
-        'title': title,
-        'description': description,
-        'action': action,
-        'impact': impact,
-        'extra': extra,
-        'selectable': selectable,
-        'action_type': action_type,
+        "id": item_id,
+        "scanner": scanner,
+        "section": section,
+        "type": item_type,
+        "severity": sev,
+        "rank": SEVERITY_RANK.get(sev, 3),
+        "category": category,
+        "file": file_ref,
+        "line": line,
+        "title": title,
+        "description": description,
+        "action": action,
+        "impact": impact,
+        "extra": extra,
+        "selectable": selectable,
+        "action_type": action_type,
     }
 
 
 def _truncate(text: str, max_len: int) -> str:
     """Truncate text to max_len, breaking at sentence boundary if possible."""
     if not text:
-        return ''
+        return ""
     text = text.strip()
     if len(text) <= max_len:
         return text
     # Try to break at sentence boundary
-    for end in ('. ', '.\n', ' — ', '; '):
+    for end in (". ", ".\n", " — ", "; "):
         pos = text.find(end)
         if 0 < pos < max_len:
-            return text[:pos + 1].strip()
-    return text[:max_len].strip() + '...'
+            return text[: pos + 1].strip()
+    return text[:max_len].strip() + "..."
 
 
 def normalize_scanner(data: dict) -> tuple[list[dict], dict]:
@@ -244,81 +274,120 @@ def normalize_scanner(data: dict) -> tuple[list[dict], dict]:
     Returns list of normalized items + dict of meta/assessment data.
     Handles all known scanner output variants.
     """
-    scanner = data.get('scanner', 'unknown')
+    scanner = data.get("scanner", "unknown")
     items = []
     meta = {}
 
     # New schema: findings[]. Backward compat: issues[] or findings[]
-    findings = data.get('findings') or data.get('issues') or []
+    findings = data.get("findings") or data.get("issues") or []
     for idx, f in enumerate(findings):
         items.append(normalize_finding(f, scanner, idx))
 
     # Backward compat: opportunities[] (execution-efficiency had separate array)
-    for idx, opp in enumerate(data.get('opportunities', []), start=len(findings)):
+    for idx, opp in enumerate(data.get("opportunities", []), start=len(findings)):
         opp_item = normalize_finding(opp, scanner, idx)
-        opp_item['type'] = 'enhancement'
-        opp_item['action_type'] = 'enhance'
-        opp_item['selectable'] = True
+        opp_item["type"] = "enhancement"
+        opp_item["action_type"] = "enhance"
+        opp_item["selectable"] = True
         items.append(opp_item)
 
     # Backward compat: strengths[] (old cohesion scanners — plain strings)
-    for idx, s in enumerate(data.get('strengths', [])):
-        text = s if isinstance(s, str) else (s.get('title', '') if isinstance(s, dict) else str(s))
-        desc = '' if isinstance(s, str) else (s.get('description', s.get('detail', '')) if isinstance(s, dict) else '')
-        items.append({
-            'id': f'{scanner}-str-{idx:03d}',
-            'scanner': scanner,
-            'section': SCANNER_SECTIONS.get(scanner, 'cohesion'),
-            'type': 'strength',
-            'severity': 'strength',
-            'rank': 5,
-            'category': 'strength',
-            'file': '',
-            'line': None,
-            'title': text,
-            'description': desc,
-            'action': '',
-            'impact': '',
-            'extra': {},
-            'selectable': False,
-            'action_type': 'none',
-        })
+    for idx, s in enumerate(data.get("strengths", [])):
+        text = (
+            s
+            if isinstance(s, str)
+            else (s.get("title", "") if isinstance(s, dict) else str(s))
+        )
+        desc = (
+            ""
+            if isinstance(s, str)
+            else (
+                s.get("description", s.get("detail", "")) if isinstance(s, dict) else ""
+            )
+        )
+        items.append(
+            {
+                "id": f"{scanner}-str-{idx:03d}",
+                "scanner": scanner,
+                "section": SCANNER_SECTIONS.get(scanner, "cohesion"),
+                "type": "strength",
+                "severity": "strength",
+                "rank": 5,
+                "category": "strength",
+                "file": "",
+                "line": None,
+                "title": text,
+                "description": desc,
+                "action": "",
+                "impact": "",
+                "extra": {},
+                "selectable": False,
+                "action_type": "none",
+            }
+        )
 
     # Backward compat: creative_suggestions[] (old cohesion scanners)
-    for idx, cs in enumerate(data.get('creative_suggestions', [])):
+    for idx, cs in enumerate(data.get("creative_suggestions", [])):
         if isinstance(cs, str):
-            cs_title, cs_desc = cs, ''
+            cs_title, cs_desc = cs, ""
         else:
-            cs_title = _coalesce(cs.get('title'), cs.get('idea'), '')
-            cs_desc = _coalesce(cs.get('description'), cs.get('detail'), cs.get('rationale'), '')
-        items.append({
-            'id': cs.get('id', f'{scanner}-cs-{idx:03d}') if isinstance(cs, dict) else f'{scanner}-cs-{idx:03d}',
-            'scanner': scanner,
-            'section': SCANNER_SECTIONS.get(scanner, 'cohesion'),
-            'type': 'suggestion',
-            'severity': 'suggestion',
-            'rank': 4,
-            'category': cs.get('type', 'suggestion') if isinstance(cs, dict) else 'suggestion',
-            'file': '',
-            'line': None,
-            'title': cs_title,
-            'description': cs_desc,
-            'action': cs_title,
-            'impact': cs.get('estimated_impact', '') if isinstance(cs, dict) else '',
-            'extra': {},
-            'selectable': True,
-            'action_type': 'refactor',
-        })
+            cs_title = _coalesce(cs.get("title"), cs.get("idea"), "")
+            cs_desc = _coalesce(
+                cs.get("description"), cs.get("detail"), cs.get("rationale"), ""
+            )
+        items.append(
+            {
+                "id": (
+                    cs.get("id", f"{scanner}-cs-{idx:03d}")
+                    if isinstance(cs, dict)
+                    else f"{scanner}-cs-{idx:03d}"
+                ),
+                "scanner": scanner,
+                "section": SCANNER_SECTIONS.get(scanner, "cohesion"),
+                "type": "suggestion",
+                "severity": "suggestion",
+                "rank": 4,
+                "category": (
+                    cs.get("type", "suggestion")
+                    if isinstance(cs, dict)
+                    else "suggestion"
+                ),
+                "file": "",
+                "line": None,
+                "title": cs_title,
+                "description": cs_desc,
+                "action": cs_title,
+                "impact": (
+                    cs.get("estimated_impact", "") if isinstance(cs, dict) else ""
+                ),
+                "extra": {},
+                "selectable": True,
+                "action_type": "refactor",
+            }
+        )
 
     # New schema: assessments{} contains all structured analysis
     # Backward compat: also collect from top-level keys
-    if 'assessments' in data:
-        meta.update(data['assessments'])
+    if "assessments" in data:
+        meta.update(data["assessments"])
 
     # Backward compat: collect meta from top-level keys
-    skip_keys = {'scanner', 'script', 'version', 'skill_path', 'agent_path',
-                 'timestamp', 'scan_date', 'status', 'issues', 'findings',
-                 'strengths', 'creative_suggestions', 'opportunities', 'assessments'}
+    skip_keys = {
+        "scanner",
+        "script",
+        "version",
+        "skill_path",
+        "agent_path",
+        "timestamp",
+        "scan_date",
+        "status",
+        "issues",
+        "findings",
+        "strengths",
+        "creative_suggestions",
+        "opportunities",
+        "assessments",
+    }
     for key, val in data.items():
         if key not in skip_keys and key not in meta:
             meta[key] = val
@@ -333,7 +402,7 @@ def build_journeys(data: dict) -> list[dict]:
       - Array of objects: [{archetype, journey_summary, friction_points, bright_spots}]
       - Object keyed by persona: {first_timer: {entry_friction, mid_flow_resilience, exit_satisfaction}}
     """
-    journeys_raw = data.get('user_journeys')
+    journeys_raw = data.get("user_journeys")
     if not journeys_raw:
         return []
 
@@ -342,12 +411,16 @@ def build_journeys(data: dict) -> list[dict]:
         normalized = []
         for j in journeys_raw:
             if isinstance(j, dict):
-                normalized.append({
-                    'archetype': j.get('archetype', 'unknown'),
-                    'journey_summary': j.get('summary', j.get('journey_summary', '')),
-                    'friction_points': j.get('friction_points', []),
-                    'bright_spots': j.get('bright_spots', []),
-                })
+                normalized.append(
+                    {
+                        "archetype": j.get("archetype", "unknown"),
+                        "journey_summary": j.get(
+                            "summary", j.get("journey_summary", "")
+                        ),
+                        "friction_points": j.get("friction_points", []),
+                        "bright_spots": j.get("bright_spots", []),
+                    }
+                )
             else:
                 normalized.append(j)
         return normalized
@@ -359,44 +432,54 @@ def build_journeys(data: dict) -> list[dict]:
             if isinstance(details, dict):
                 # Convert the dict-based format to the expected format
                 journey = {
-                    'archetype': persona.replace('_', ' ').title(),
-                    'journey_summary': '',
-                    'friction_points': [],
-                    'bright_spots': [],
+                    "archetype": persona.replace("_", " ").title(),
+                    "journey_summary": "",
+                    "friction_points": [],
+                    "bright_spots": [],
                 }
                 # Map known sub-keys to friction/bright spots
                 for key, val in details.items():
                     if isinstance(val, str):
                         # Heuristic: negative-sounding keys → friction, positive → bright
-                        if any(neg in key.lower() for neg in ('friction', 'issue', 'problem', 'gap', 'pain')):
-                            journey['friction_points'].append(val)
-                        elif any(pos in key.lower() for pos in ('bright', 'strength', 'satisfaction', 'delight')):
-                            journey['bright_spots'].append(val)
+                        if any(
+                            neg in key.lower()
+                            for neg in ("friction", "issue", "problem", "gap", "pain")
+                        ):
+                            journey["friction_points"].append(val)
+                        elif any(
+                            pos in key.lower()
+                            for pos in ("bright", "strength", "satisfaction", "delight")
+                        ):
+                            journey["bright_spots"].append(val)
                         else:
                             # Neutral keys — include as summary parts
-                            if journey['journey_summary']:
-                                journey['journey_summary'] += f' | {key}: {val}'
+                            if journey["journey_summary"]:
+                                journey["journey_summary"] += f" | {key}: {val}"
                             else:
-                                journey['journey_summary'] = f'{key}: {val}'
+                                journey["journey_summary"] = f"{key}: {val}"
                     elif isinstance(val, list):
                         for item in val:
                             if isinstance(item, str):
-                                journey['friction_points'].append(item)
+                                journey["friction_points"].append(item)
                 # Build summary from all fields if not yet set
-                if not journey['journey_summary']:
+                if not journey["journey_summary"]:
                     parts = []
                     for k, v in details.items():
                         if isinstance(v, str):
                             parts.append(f'**{k.replace("_", " ").title()}:** {v}')
-                    journey['journey_summary'] = ' | '.join(parts) if parts else str(details)
+                    journey["journey_summary"] = (
+                        " | ".join(parts) if parts else str(details)
+                    )
                 result.append(journey)
             elif isinstance(details, str):
-                result.append({
-                    'archetype': persona.replace('_', ' ').title(),
-                    'journey_summary': details,
-                    'friction_points': [],
-                    'bright_spots': [],
-                })
+                result.append(
+                    {
+                        "archetype": persona.replace("_", " ").title(),
+                        "journey_summary": details,
+                        "friction_points": [],
+                        "bright_spots": [],
+                    }
+                )
         return result
 
     return []
@@ -406,6 +489,7 @@ def build_journeys(data: dict) -> list[dict]:
 # Report Data Assembly
 # =============================================================================
 
+
 def load_report_data(report_dir: Path, skill_path: str | None) -> dict:
     """Load all temp/prepass JSONs and assemble normalized report data."""
     all_items = []
@@ -414,96 +498,108 @@ def load_report_data(report_dir: Path, skill_path: str | None) -> dict:
     detected_skill_path = skill_path
 
     # Read all JSON files
-    json_files = sorted(report_dir.glob('*.json'))
+    json_files = sorted(report_dir.glob("*.json"))
     for jf in json_files:
         try:
-            data = json.loads(jf.read_text(encoding='utf-8'))
+            data = json.loads(jf.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             continue
 
         if not isinstance(data, dict):
             continue
 
-        scanner = data.get('scanner', jf.stem.replace('-temp', '').replace('-prepass', ''))
+        scanner = data.get(
+            "scanner", jf.stem.replace("-temp", "").replace("-prepass", "")
+        )
 
         # Detect skill path from scanner data
         if not detected_skill_path:
-            detected_skill_path = data.get('skill_path') or data.get('agent_path')
+            detected_skill_path = data.get("skill_path") or data.get("agent_path")
 
         # Only normalize temp files (not prepass)
-        if '-temp' in jf.name or jf.name in ('path-standards-temp.json', 'scripts-temp.json'):
+        if "-temp" in jf.name or jf.name in (
+            "path-standards-temp.json",
+            "scripts-temp.json",
+        ):
             items, meta = normalize_scanner(data)
             all_items.extend(items)
             all_meta[scanner] = meta
 
-            if scanner == 'enhancement-opportunities':
+            if scanner == "enhancement-opportunities":
                 journeys = build_journeys(data)
-        elif '-prepass' in jf.name:
-            all_meta[f'prepass-{scanner}'] = data
+        elif "-prepass" in jf.name:
+            all_meta[f"prepass-{scanner}"] = data
 
     # Sort items: severity rank first, then section
-    all_items.sort(key=lambda x: (x['rank'], x['section']))
+    all_items.sort(key=lambda x: (x["rank"], x["section"]))
 
     # Build severity counts
-    counts = {'critical': 0, 'high': 0, 'medium': 0, 'low': 0}
+    counts = {"critical": 0, "high": 0, "medium": 0, "low": 0}
     for item in all_items:
-        if item['type'] == 'issue' and item['severity'] in counts:
-            counts[item['severity']] += 1
+        if item["type"] == "issue" and item["severity"] in counts:
+            counts[item["severity"]] += 1
 
-    enhancement_count = sum(1 for i in all_items if i['type'] == 'enhancement')
-    strength_count = sum(1 for i in all_items if i['type'] == 'strength')
+    enhancement_count = sum(1 for i in all_items if i["type"] == "enhancement")
+    strength_count = sum(1 for i in all_items if i["type"] == "strength")
     total_issues = sum(counts.values())
 
     # Quality grade
-    if counts['critical'] > 0:
-        grade = 'Poor'
-    elif counts['high'] > 2:
-        grade = 'Fair'
-    elif counts['high'] > 0 or counts['medium'] > 5:
-        grade = 'Good'
+    if counts["critical"] > 0:
+        grade = "Poor"
+    elif counts["high"] > 2:
+        grade = "Fair"
+    elif counts["high"] > 0 or counts["medium"] > 5:
+        grade = "Good"
     else:
-        grade = 'Excellent'
+        grade = "Excellent"
 
     # Extract assessments for display
     assessments = {}
-    for scanner_key, meta in all_meta.items():
-        for akey in ('cohesion_analysis', 'autonomous_assessment', 'skill_understanding',
-                      'agent_identity', 'skill_identity', 'prompt_health',
-                      'skillmd_assessment', 'top_insights'):
+    for _scanner_key, meta in all_meta.items():
+        for akey in (
+            "cohesion_analysis",
+            "autonomous_assessment",
+            "skill_understanding",
+            "agent_identity",
+            "skill_identity",
+            "prompt_health",
+            "skillmd_assessment",
+            "top_insights",
+        ):
             if akey in meta:
                 assessments[akey] = meta[akey]
-        if 'summary' in meta:
-            s = meta['summary']
-            if 'craft_assessment' in s:
-                assessments['craft_assessment'] = s['craft_assessment']
-            if 'overall_cohesion' in s:
-                assessments['overall_cohesion'] = s['overall_cohesion']
+        if "summary" in meta:
+            s = meta["summary"]
+            if "craft_assessment" in s:
+                assessments["craft_assessment"] = s["craft_assessment"]
+            if "overall_cohesion" in s:
+                assessments["overall_cohesion"] = s["overall_cohesion"]
 
     # Skill name from path
     sp = detected_skill_path or str(report_dir)
     skill_name = Path(sp).name
 
     return {
-        'meta': {
-            'skill_name': skill_name,
-            'skill_path': detected_skill_path or '',
-            'timestamp': datetime.now(timezone.utc).isoformat(),
-            'scanner_count': len([f for f in json_files if '-temp' in f.name]),
-            'report_dir': str(report_dir),
+        "meta": {
+            "skill_name": skill_name,
+            "skill_path": detected_skill_path or "",
+            "timestamp": datetime.now(UTC).isoformat(),
+            "scanner_count": len([f for f in json_files if "-temp" in f.name]),
+            "report_dir": str(report_dir),
         },
-        'executive_summary': {
-            'total_issues': total_issues,
-            'counts': counts,
-            'enhancement_count': enhancement_count,
-            'strength_count': strength_count,
-            'grade': grade,
-            'craft_assessment': assessments.get('craft_assessment', ''),
-            'overall_cohesion': assessments.get('overall_cohesion', ''),
+        "executive_summary": {
+            "total_issues": total_issues,
+            "counts": counts,
+            "enhancement_count": enhancement_count,
+            "strength_count": strength_count,
+            "grade": grade,
+            "craft_assessment": assessments.get("craft_assessment", ""),
+            "overall_cohesion": assessments.get("overall_cohesion", ""),
         },
-        'items': all_items,
-        'journeys': journeys,
-        'assessments': assessments,
-        'section_labels': SECTION_LABELS,
+        "items": all_items,
+        "journeys": journeys,
+        "assessments": assessments,
+        "section_labels": SECTION_LABELS,
     }
 
 
@@ -932,8 +1028,10 @@ def generate_html(report_data: dict) -> str:
     # Embed the JSON as a script tag before the main script
     data_tag = f'<script id="report-data" type="application/json">{data_json}</script>'
     # Insert before the main <script> tag
-    html = HTML_TEMPLATE.replace('<script>\nconst DATA', f'{data_tag}\n<script>\nconst DATA')
-    html = html.replace('SKILL_NAME_PLACEHOLDER', report_data['meta']['skill_name'])
+    html = HTML_TEMPLATE.replace(
+        "<script>\nconst DATA", f"{data_tag}\n<script>\nconst DATA"
+    )
+    html = html.replace("SKILL_NAME_PLACEHOLDER", report_data["meta"]["skill_name"])
     return html
 
 
@@ -941,62 +1039,68 @@ def generate_html(report_data: dict) -> str:
 # CLI
 # =============================================================================
 
+
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description='Generate interactive HTML quality report from scanner JSON files',
+        description="Generate interactive HTML quality report from scanner JSON files",
     )
     parser.add_argument(
-        'report_dir',
+        "report_dir",
         type=Path,
-        help='Directory containing *-temp.json and *-prepass.json files',
+        help="Directory containing *-temp.json and *-prepass.json files",
     )
     parser.add_argument(
-        '--skill-path',
-        help='Path to the skill being scanned (auto-detected from JSON if omitted)',
+        "--skill-path",
+        help="Path to the skill being scanned (auto-detected from JSON if omitted)",
     )
     parser.add_argument(
-        '--open',
-        action='store_true',
-        help='Open the HTML report in the default browser',
+        "--open",
+        action="store_true",
+        help="Open the HTML report in the default browser",
     )
     parser.add_argument(
-        '--output', '-o',
+        "--output",
+        "-o",
         type=Path,
-        help='Output HTML file path (default: {report_dir}/quality-report.html)',
+        help="Output HTML file path (default: {report_dir}/quality-report.html)",
     )
     args = parser.parse_args()
 
     if not args.report_dir.is_dir():
-        print(f'Error: {args.report_dir} is not a directory', file=sys.stderr)
+        print(f"Error: {args.report_dir} is not a directory", file=sys.stderr)
         return 2
 
     report_data = load_report_data(args.report_dir, args.skill_path)
 
-    if not report_data['items']:
-        print('Warning: No scanner data found in directory', file=sys.stderr)
+    if not report_data["items"]:
+        print("Warning: No scanner data found in directory", file=sys.stderr)
 
     html = generate_html(report_data)
 
-    output_path = args.output or (args.report_dir / 'quality-report.html')
-    output_path.write_text(html, encoding='utf-8')
-    print(json.dumps({
-        'html_report': str(output_path),
-        'items': len(report_data['items']),
-        'issues': report_data['executive_summary']['total_issues'],
-        'grade': report_data['executive_summary']['grade'],
-    }))
+    output_path = args.output or (args.report_dir / "quality-report.html")
+    output_path.write_text(html, encoding="utf-8")
+    print(
+        json.dumps(
+            {
+                "html_report": str(output_path),
+                "items": len(report_data["items"]),
+                "issues": report_data["executive_summary"]["total_issues"],
+                "grade": report_data["executive_summary"]["grade"],
+            }
+        )
+    )
 
     if args.open:
         system = platform.system()
-        if system == 'Darwin':
-            subprocess.run(['open', str(output_path)])
-        elif system == 'Linux':
-            subprocess.run(['xdg-open', str(output_path)])
-        elif system == 'Windows':
-            subprocess.run(['start', str(output_path)], shell=True)
+        if system == "Darwin":
+            subprocess.run(["open", str(output_path)])
+        elif system == "Linux":
+            subprocess.run(["xdg-open", str(output_path)])
+        elif system == "Windows":
+            subprocess.run(["start", str(output_path)], shell=True)
 
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

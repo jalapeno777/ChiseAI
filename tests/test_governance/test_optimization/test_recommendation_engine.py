@@ -57,9 +57,9 @@ class TestMetricAnalysis:
             or "retrieval_p95" in r.get("expected_impact", {}).get("metric", "")
         ]
         if p95 > 20:
-            assert len(latency_recs) >= 1, (
-                f"Expected at least 1 latency recommendation for p95={p95}ms"
-            )
+            assert (
+                len(latency_recs) >= 1
+            ), f"Expected at least 1 latency recommendation for p95={p95}ms"
 
     def test_analyze_memory_hit_rate(self):
         """Engine should generate memory-related recommendations when hit rate < 85%."""
@@ -80,9 +80,9 @@ class TestMetricAnalysis:
             or "cache" in r.get("title", "").lower()
         ]
         if hit_rate < 85:
-            assert len(memory_recs) >= 1, (
-                f"Expected at least 1 memory recommendation for hit_rate={hit_rate}%"
-            )
+            assert (
+                len(memory_recs) >= 1
+            ), f"Expected at least 1 memory recommendation for hit_rate={hit_rate}%"
 
 
 class TestPriorityOrdering:
@@ -116,9 +116,9 @@ class TestPriorityOrdering:
         # or produced a valid non-decreasing sequence
         priorities = [priority_rank.get(r.get("priority", ""), 99) for r in sorted_recs]
         for i in range(1, len(priorities)):
-            assert priorities[i] >= priorities[i - 1], (
-                f"Sorted recommendations not in priority order at index {i}"
-            )
+            assert (
+                priorities[i] >= priorities[i - 1]
+            ), f"Sorted recommendations not in priority order at index {i}"
 
         # Verify highest impact recommendation is high priority
         highest = engine.get_highest_impact_recommendation()

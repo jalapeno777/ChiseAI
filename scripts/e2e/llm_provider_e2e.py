@@ -595,9 +595,9 @@ class LLMProviderE2ETest:
                     "confidence": decision.confidence,
                     "provider": decision.provider,
                     "fallback_used": decision.fallback_used,
-                    "rationale": decision.rationale[:200]
-                    if decision.rationale
-                    else None,
+                    "rationale": (
+                        decision.rationale[:200] if decision.rationale else None
+                    ),
                     "latency_ms": round(latency_ms, 2),
                     "timestamp": datetime.now(UTC).isoformat(),
                 }
@@ -697,7 +697,7 @@ class LLMProviderE2ETest:
         logger.info("✓ Risk checks passed")
         logger.info(f"  Max position value: ${self.MAX_POSITION_VALUE_USD}")
         logger.info(f"  Test quantity: {self.TEST_QUANTITY}")
-        logger.info(f"  Kill switch: NOT ACTIVE")
+        logger.info("  Kill switch: NOT ACTIVE")
         logger.info("")
 
         self.evidence.add_check(name="risk_checks", passed=True, details=risk_checks)

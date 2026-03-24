@@ -302,7 +302,9 @@ def cmd_archive_rejected_insight(args: argparse.Namespace) -> int:
         if r2.returncode != 0:
             print(r2.stderr.strip(), file=sys.stderr)
             return 1
-        _run_redis_cli(host, port, db, "EXPIRE", REJECTED_GLOBAL_KEY, str(args.ttl_seconds))
+        _run_redis_cli(
+            host, port, db, "EXPIRE", REJECTED_GLOBAL_KEY, str(args.ttl_seconds)
+        )
 
     print(f"Archived rejected insight to Redis ({story_key}) and markdown {md}")
     return 0

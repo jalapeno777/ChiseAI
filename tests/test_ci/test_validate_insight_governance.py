@@ -10,7 +10,9 @@ MODULE_PATH = (
     / "validation"
     / "validate_insight_governance.py"
 )
-SPEC = importlib.util.spec_from_file_location("validate_insight_governance", MODULE_PATH)
+SPEC = importlib.util.spec_from_file_location(
+    "validate_insight_governance", MODULE_PATH
+)
 assert SPEC and SPEC.loader
 validate_insight_governance = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = validate_insight_governance

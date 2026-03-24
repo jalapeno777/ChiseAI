@@ -54,9 +54,11 @@ class TestTelemetryPipelineE2E:
         # Mock the entire influxdb_client module
         mock_influxdb_module = MagicMock()
         mock_influxdb_module.InfluxDBClient.return_value = mock_influxdb
-        
+
         with patch.dict("sys.modules", {"influxdb_client": mock_influxdb_module}):
-            with patch.dict("sys.modules", {"influxdb_client.client.write_api": MagicMock()}):
+            with patch.dict(
+                "sys.modules", {"influxdb_client.client.write_api": MagicMock()}
+            ):
                 pipeline = TelemetryPipeline()
                 yield pipeline
                 if pipeline.state != PipelineState.STOPPED:
@@ -616,9 +618,11 @@ class TestCrossStoryIntegration:
         # Mock the entire influxdb_client module
         mock_influxdb_module = MagicMock()
         mock_influxdb_module.InfluxDBClient.return_value = mock_influxdb
-        
+
         with patch.dict("sys.modules", {"influxdb_client": mock_influxdb_module}):
-            with patch.dict("sys.modules", {"influxdb_client.client.write_api": MagicMock()}):
+            with patch.dict(
+                "sys.modules", {"influxdb_client.client.write_api": MagicMock()}
+            ):
                 pipeline = TelemetryPipeline()
 
         controller = AutomationController(
@@ -835,9 +839,11 @@ class TestE2EPerformanceBenchmarks:
         # Mock the entire influxdb_client module
         mock_influxdb_module = MagicMock()
         mock_influxdb_module.InfluxDBClient.return_value = mock_influxdb
-        
+
         with patch.dict("sys.modules", {"influxdb_client": mock_influxdb_module}):
-            with patch.dict("sys.modules", {"influxdb_client.client.write_api": MagicMock()}):
+            with patch.dict(
+                "sys.modules", {"influxdb_client.client.write_api": MagicMock()}
+            ):
                 pipeline = TelemetryPipeline()
 
         pipeline.start()

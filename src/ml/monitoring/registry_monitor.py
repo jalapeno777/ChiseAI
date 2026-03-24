@@ -180,9 +180,9 @@ class ShadowModeRecord:
             "sample_count": self.sample_count,
             "duration_hours": self.duration_hours,
             "started_at": self.started_at.isoformat(),
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
         }
 
 
@@ -896,9 +896,9 @@ class ModelRegistryMonitor:
             summary[model_name] = {
                 "total_versions": total_versions,
                 "latest_version": latest_version.version if latest_version else None,
-                "latest_created_at": latest_version.created_at.isoformat()
-                if latest_version
-                else None,
+                "latest_created_at": (
+                    latest_version.created_at.isoformat() if latest_version else None
+                ),
                 "status_counts": status_counts,
                 "degradation_events": degradation_count,
                 "validation_pass_rate": (

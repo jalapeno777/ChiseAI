@@ -31,23 +31,23 @@ def compute_checksum(data: dict) -> str:
     return hashlib.sha256(content.encode()).hexdigest()
 
 
-def load_archive_entry(archive_ref: str) -> Optional[dict]:
+def load_archive_entry(archive_ref: str) -> dict | None:
     """Load archive entry by reference."""
     filepath = ARCHIVE_ENTRIES_DIR / f"{archive_ref}.yaml"
     if not filepath.exists():
         return None
 
-    with open(filepath, "r") as f:
+    with open(filepath) as f:
         return yaml.safe_load(f)
 
 
 def load_workflow_status() -> dict:
     """Load workflow-status.yaml."""
-    with open(WORKFLOW_STATUS_PATH, "r") as f:
+    with open(WORKFLOW_STATUS_PATH) as f:
         return yaml.safe_load(f)
 
 
-def find_story_in_workflow(workflow_data: dict, story_id: str) -> Optional[dict]:
+def find_story_in_workflow(workflow_data: dict, story_id: str) -> dict | None:
     """Find story in workflow status."""
     sections = ["completed", "backlog", "launch_stories"]
 
@@ -209,7 +209,7 @@ def verify_no_data_loss(archive_entry: dict, workflow_data: dict) -> dict:
     archived_fields = archive_entry.get("archived_fields", {})
     fields_still_present = []
 
-    for field in archived_fields.keys():
+    for field in archived_fields:
         if field in current_story:
             fields_still_present.append(field)
 
@@ -239,7 +239,7 @@ def verify_all_archives() -> dict:
     workflow_data = load_workflow_status()
 
     for archive_file in ARCHIVE_ENTRIES_DIR.glob("ARCH-*.yaml"):
-        with open(archive_file, "r") as f:
+        with open(archive_file) as f:
             archive_entry = yaml.safe_load(f)
 
         results["total"] += 1
@@ -353,7 +353,7 @@ def main():
             return 1
 
         for archive_file in ARCHIVE_ENTRIES_DIR.glob("ARCH-*.yaml"):
-            with open(archive_file, "r") as f:
+            with open(archive_file) as f:
                 archive_entry = yaml.safe_load(f)
 
             if archive_entry.get("original_story_id") == args.story_id:
@@ -406,9 +406,9 @@ def main():
 
                 if not entry["overall_passed"]:
                     if not entry["integrity_passed"]:
-                        print(f"  - Integrity check failed")
+                        print("  - Integrity check failed")
                     if not entry["no_data_loss_passed"]:
-                        print(f"  - Data loss check failed")
+                        print("  - Data loss check failed")
 
         return 0 if results["failed"] == 0 else 1
 

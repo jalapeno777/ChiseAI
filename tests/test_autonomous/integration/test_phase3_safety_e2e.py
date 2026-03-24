@@ -48,9 +48,10 @@ class TestCircuitBreakerLifecycle:
                 "half_open_max_calls": 2,
             },
         )
-        assert response.status_code in [200, 201], (
-            f"Failed to create CB: {response.status_code} - {response.text}"
-        )
+        assert response.status_code in [
+            200,
+            201,
+        ], f"Failed to create CB: {response.status_code} - {response.text}"
         data = response.json()
         assert data["name"] == cb_name
         print(f"✓ Created circuit breaker: {cb_name}")
@@ -71,9 +72,9 @@ class TestCircuitBreakerLifecycle:
         response = requests.get(f"{BASE_URL}/circuit-breakers/{cb_name}")
         assert response.status_code == 200
         data = response.json()
-        assert data["state"].upper() == "CLOSED", (
-            f"Expected CLOSED, got {data['state']}"
-        )
+        assert (
+            data["state"].upper() == "CLOSED"
+        ), f"Expected CLOSED, got {data['state']}"
         print(f"✓ Circuit breaker state: {data['state']}")
 
     def test_circuit_breaker_opens_after_force_open(self, cb_name):
@@ -99,9 +100,9 @@ class TestCircuitBreakerLifecycle:
         # Check circuit is OPEN
         response = requests.get(f"{BASE_URL}/circuit-breakers/{cb_name}")
         data = response.json()
-        assert data["state"].upper() == "OPEN", (
-            f"Expected OPEN after force-open, got {data['state']}"
-        )
+        assert (
+            data["state"].upper() == "OPEN"
+        ), f"Expected OPEN after force-open, got {data['state']}"
         print(f"✓ Circuit breaker opened: {data['state']}")
 
     def test_circuit_breaker_lifecycle_closed_to_open_to_closed(self, cb_name):
@@ -186,9 +187,9 @@ class TestRetryBudgetOperations:
     def test_get_all_budgets(self):
         """Test getting all retry budgets."""
         response = requests.get(f"{BASE_URL}/retry/budgets")
-        assert response.status_code == 200, (
-            f"Failed to get budgets: {response.status_code} - {response.text}"
-        )
+        assert (
+            response.status_code == 200
+        ), f"Failed to get budgets: {response.status_code} - {response.text}"
         data = response.json()
         # Response format: {"success": true, "data": {"budgets": [], "count": 0}}
         assert "success" in data or "budgets" in data or "data" in data
@@ -198,9 +199,9 @@ class TestRetryBudgetOperations:
         """Test getting retry budget for a specific service."""
         service_name = "e2e-test-service"
         response = requests.get(f"{BASE_URL}/retry/budgets/{service_name}")
-        assert response.status_code == 200, (
-            f"Failed to get budget: {response.status_code} - {response.text}"
-        )
+        assert (
+            response.status_code == 200
+        ), f"Failed to get budget: {response.status_code} - {response.text}"
         data = response.json()
         print(f"✓ Got retry budget for {service_name}: {data}")
 

@@ -11,9 +11,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-VALIDATOR = PROJECT_ROOT / "scripts" / "validation" / "validate_scheduler_docker_config.py"
+VALIDATOR = (
+    PROJECT_ROOT / "scripts" / "validation" / "validate_scheduler_docker_config.py"
+)
 
 
 def main() -> int:

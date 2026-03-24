@@ -284,12 +284,12 @@ async def main() -> int:
         print("POSITION REMEDIATION SUMMARY")
         print("=" * 60)
         print(f"Remediation ID: {evidence['remediation_id']}")
-        print(f"\nBEFORE:")
+        print("\nBEFORE:")
         print(
             f"  Open positions: {evidence['before_snapshot'].get('position_count', 0)}"
         )
         print(f"  Open orders: {evidence['before_snapshot'].get('order_count', 0)}")
-        print(f"\nAFTER:")
+        print("\nAFTER:")
         print(
             f"  Open positions: {evidence['after_snapshot'].get('position_count', 0)}"
         )
@@ -309,7 +309,7 @@ async def main() -> int:
                 )
 
         print(
-            f"\nEvidence saved to: docs/tempmemories/PAPER-LLM-TIMEOUT-001-remediation.json"
+            "\nEvidence saved to: docs/tempmemories/PAPER-LLM-TIMEOUT-001-remediation.json"
         )
         print("=" * 60)
 

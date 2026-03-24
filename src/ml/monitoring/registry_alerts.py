@@ -86,9 +86,9 @@ class Alert:
             "timestamp": self.timestamp.isoformat(),
             "metadata": self.metadata,
             "acknowledged": self.acknowledged,
-            "acknowledged_at": self.acknowledged_at.isoformat()
-            if self.acknowledged_at
-            else None,
+            "acknowledged_at": (
+                self.acknowledged_at.isoformat() if self.acknowledged_at else None
+            ),
             "acknowledged_by": self.acknowledged_by,
         }
 
@@ -157,9 +157,7 @@ class AlertRule:
 
         # Check cooldown
         if self._last_triggered:
-            elapsed = (
-                datetime.now(UTC) - self._last_triggered
-            ).total_seconds()
+            elapsed = (datetime.now(UTC) - self._last_triggered).total_seconds()
             if elapsed < self.cooldown_seconds:
                 logger.debug(
                     f"Alert {self.name} in cooldown ({elapsed:.0f}s < {self.cooldown_seconds}s)"

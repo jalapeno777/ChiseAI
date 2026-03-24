@@ -87,7 +87,7 @@ class SignalGeneratorSupervisor:
                 socket_connect_timeout=5,
             )
             self.redis_client.ping()
-            logger.info(f"Redis connection established for supervisor state tracking")
+            logger.info("Redis connection established for supervisor state tracking")
         except Exception as e:
             logger.warning(f"Redis not available for supervisor state tracking: {e}")
             self.redis_client = None

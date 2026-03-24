@@ -7,10 +7,10 @@ Execution ID will be generated and all evidence will be captured.
 """
 
 import asyncio
-import sys
-import os
-from datetime import datetime, timezone
 import json
+import os
+import sys
+from datetime import UTC, datetime
 
 # Add paths for imports
 sys.path.insert(0, "/home/tacopants/projects/ChiseAI/src")
@@ -22,9 +22,9 @@ required_env = ["DISCORD_BOT_TOKEN", "INFLUXDB_TOKEN", "INFLUXDB_ORG", "INFLUXDB
 print("=" * 70)
 print("PARTY-MODE FORENSIC PROOF LOOP EXECUTION")
 print("=" * 70)
-print(f"Start Time (UTC): {datetime.now(timezone.utc).isoformat()}")
-print(f"Executor: Merlin")
-print(f"Story ID: PARTY-FORENSIC-009")
+print(f"Start Time (UTC): {datetime.now(UTC).isoformat()}")
+print("Executor: Merlin")
+print("Story ID: PARTY-FORENSIC-009")
 print("")
 
 # Check environment
@@ -44,7 +44,7 @@ print("\n✅ Environment validated")
 print("🔄 Initializing forensic harness...")
 
 # Import the harness
-from scripts.validation.forensic_harness import IntegratedForensicHarness
+from scripts.validation.forensic_harness import IntegratedForensicHarness  # noqa: E402
 
 
 async def main():
@@ -54,9 +54,9 @@ async def main():
         harness = IntegratedForensicHarness(duration_minutes=30)
 
         print("✅ Harness initialized")
-        print(f"⏱️  Duration: 30 minutes")
-        print(f"📸 Snapshots: Every 5 minutes (T0, T5, T10, T15, T20, T25, T30)")
-        print(f"🎯 Gates: G1-G8")
+        print("⏱️  Duration: 30 minutes")
+        print("📸 Snapshots: Every 5 minutes (T0, T5, T10, T15, T20, T25, T30)")
+        print("🎯 Gates: G1-G8")
         print("")
         print("=" * 70)
         print("BEGINNING PROOF LOOP - DO NOT INTERRUPT")
@@ -74,7 +74,7 @@ async def main():
         print(f"\nExecution ID: {result.proof_id}")
         print(f"Start Time: {result.start_time}")
         print(f"End Time: {result.end_time}")
-        print(f"Duration: 30 minutes")
+        print("Duration: 30 minutes")
         print(f"Snapshots: {len(result.snapshots)}")
         print("")
         print("-" * 70)
@@ -115,13 +115,13 @@ async def main():
         report_path = f"{output_dir}/forensic-report-{result.proof_id}.md"
 
         with open(report_path, "w") as f:
-            f.write(f"# PARTY-MODE FORENSIC EVIDENCE BUNDLE\n\n")
+            f.write("# PARTY-MODE FORENSIC EVIDENCE BUNDLE\n\n")
             f.write(f"**Execution ID**: {result.proof_id}\n")
             f.write(f"**Start Time**: {result.start_time}\n")
             f.write(f"**End Time**: {result.end_time}\n")
-            f.write(f"**Duration**: 30 minutes\n")
-            f.write(f"**Executor**: Merlin\n")
-            f.write(f"**Story ID**: PARTY-FORENSIC-009\n\n")
+            f.write("**Duration**: 30 minutes\n")
+            f.write("**Executor**: Merlin\n")
+            f.write("**Story ID**: PARTY-FORENSIC-009\n\n")
 
             f.write("## G1-G8 PASS/FAIL Summary\n\n")
             f.write("| Gate | Status | Evidence |\n")

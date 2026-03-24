@@ -31,7 +31,7 @@ import os
 import shutil
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -55,7 +55,7 @@ class ExecutionReport:
     """Report of automated archival execution."""
 
     def __init__(self):
-        self.timestamp = datetime.now(timezone.utc).isoformat() + "Z"
+        self.timestamp = datetime.now(UTC).isoformat() + "Z"
         self.version = AUTOMATION_VERSION
         self.live_mode = False
         self.dry_run_mode = True
@@ -63,7 +63,7 @@ class ExecutionReport:
         self.preflight_exit_code = 0
         self.lock_acquired = False
         self.backup_created = False
-        self.backup_path: Optional[str] = None
+        self.backup_path: str | None = None
         self.archival_executed = False
         self.archival_exit_code = 0
         self.archival_output = ""
@@ -223,7 +223,7 @@ def acquire_lock() -> tuple[bool, str]:
 
     try:
         # Use SET NX (set if not exists) with expiration
-        lock_value = f"archival-{datetime.now(timezone.utc).isoformat()}"
+        lock_value = f"archival-{datetime.now(UTC).isoformat()}"
         acquired = client.set(
             REDIS_LOCK_KEY,
             lock_value,
@@ -259,7 +259,7 @@ def release_lock() -> bool:
         return False
 
 
-def create_backup() -> tuple[bool, Optional[Path]]:
+def create_backup() -> tuple[bool, Path | None]:
     """
     Create timestamped backup of workflow-status.yaml.
 
@@ -274,7 +274,7 @@ def create_backup() -> tuple[bool, Optional[Path]]:
         BACKUP_DIR.mkdir(parents=True, exist_ok=True)
 
         # Generate timestamped backup filename
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
         backup_filename = f"workflow-status-{timestamp}.yaml"
         backup_path = BACKUP_DIR / backup_filename
 
@@ -424,9 +424,11 @@ def send_notification(report: ExecutionReport, webhook_url: str | None = None) -
 
     # Determine notification level based on mode and results
     if report.live_mode:
-        if not report.preflight_passed or not report.archival_executed:
-            level = "CRITICAL"
-        elif not report.post_verification_passed:
+        if (
+            not report.preflight_passed
+            or not report.archival_executed
+            or not report.post_verification_passed
+        ):
             level = "CRITICAL"
         else:
             level = "SUCCESS"
@@ -453,7 +455,7 @@ def send_notification(report: ExecutionReport, webhook_url: str | None = None) -
                 f"Backup: {report.backup_path or 'N/A'}. All verifications passed."
             )
         else:
-            title = f"✓ Workflow Archival Dry-Run Complete"
+            title = "✓ Workflow Archival Dry-Run Complete"
             message = f"Dry-run completed. {report.stories_archived} stories would be archived. No changes made."
     elif not report.preflight_passed:
         title = f"✗ Workflow Archival Blocked - {mode_indicator}"
@@ -546,7 +548,7 @@ def main():
 
     args = parser.parse_args()
 
-    start_time = datetime.now(timezone.utc)
+    start_time = datetime.now(UTC)
     report = ExecutionReport()
 
     # Determine live mode from args or environment
@@ -737,7 +739,7 @@ def main():
         print()
 
     # Calculate duration
-    end_time = datetime.now(timezone.utc)
+    end_time = datetime.now(UTC)
     report.duration_seconds = (end_time - start_time).total_seconds()
 
     # Send notification if requested

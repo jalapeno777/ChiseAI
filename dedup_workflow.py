@@ -4,16 +4,17 @@ Workflow status deduplication script.
 Identifies duplicate story entries and keeps the most recent version.
 """
 
-import yaml
-import sys
+import builtins
+import contextlib
 from collections import defaultdict
 from datetime import datetime
-from copy import deepcopy
+
+import yaml
 
 
 def parse_yaml_file(filepath):
     """Parse YAML file and return data."""
-    with open(filepath, "r") as f:
+    with open(filepath) as f:
         return yaml.safe_load(f)
 
 
@@ -23,41 +24,33 @@ def get_timestamp_from_entry(entry):
 
     # Check various date fields
     if "created_date" in entry:
-        try:
+        with contextlib.suppress(builtins.BaseException):
             timestamps.append(
                 datetime.fromisoformat(entry["created_date"].replace("Z", "+00:00"))
             )
-        except:
-            pass
 
     if "completion_date" in entry:
-        try:
+        with contextlib.suppress(builtins.BaseException):
             timestamps.append(
                 datetime.fromisoformat(entry["completion_date"].replace("Z", "+00:00"))
             )
-        except:
-            pass
 
     if "merged_date" in entry:
-        try:
+        with contextlib.suppress(builtins.BaseException):
             timestamps.append(
                 datetime.fromisoformat(entry["merged_date"].replace("Z", "+00:00"))
             )
-        except:
-            pass
 
     # Check recent_changes for timestamps
     if "recent_changes" in entry:
         for change in entry["recent_changes"]:
             if isinstance(change, dict) and "timestamp" in change:
-                try:
+                with contextlib.suppress(builtins.BaseException):
                     timestamps.append(
                         datetime.fromisoformat(
                             change["timestamp"].replace("Z", "+00:00")
                         )
                     )
-                except:
-                    pass
 
     # Check notes for timestamps
     if "notes" in entry:
@@ -68,7 +61,7 @@ def get_timestamp_from_entry(entry):
                     try:
                         date_str = note[:10]
                         timestamps.append(datetime.strptime(date_str, "%Y-%m-%d"))
-                    except:
+                    except ValueError:
                         pass
 
     if timestamps:
@@ -194,7 +187,7 @@ def main():
         )
 
     print("Done!")
-    print(f"\nSummary:")
+    print("\nSummary:")
     print(f"  - Duplicates found: {total_duplicates}")
     print(f"  - Duplicates removed: {total_removed}")
     print(f"  - Output file: {output_file}")

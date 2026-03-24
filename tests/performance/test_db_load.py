@@ -356,9 +356,9 @@ class TestDatabaseInsertThroughput:
             # Verify batch operations complete successfully
             # Note: In this mock, larger batches take longer due to sequential processing
             # In production, true batch operations would be more efficient
-            assert len(results) == len(batch_sizes), (
-                "All batch sizes should complete successfully"
-            )
+            assert len(results) == len(
+                batch_sizes
+            ), "All batch sizes should complete successfully"
 
         finally:
             await pool.close_all()
@@ -537,12 +537,12 @@ class TestDatabaseQueryThroughput:
             ops_per_second = total_ops / elapsed_seconds if elapsed_seconds > 0 else 0
 
             # Assertions
-            assert insert_avg < MAX_DB_INSERT_LATENCY_MS * 1.5, (
-                f"Mixed load insert latency {insert_avg:.1f}ms exceeds threshold"
-            )
-            assert query_avg < MAX_DB_QUERY_LATENCY_MS * 1.5, (
-                f"Mixed load query latency {query_avg:.1f}ms exceeds threshold"
-            )
+            assert (
+                insert_avg < MAX_DB_INSERT_LATENCY_MS * 1.5
+            ), f"Mixed load insert latency {insert_avg:.1f}ms exceeds threshold"
+            assert (
+                query_avg < MAX_DB_QUERY_LATENCY_MS * 1.5
+            ), f"Mixed load query latency {query_avg:.1f}ms exceeds threshold"
 
             print("\nMixed Read/Write Load:")
             print(f"  Total Operations: {total_ops}")
@@ -698,9 +698,9 @@ class TestDatabaseStress:
             recovery_elapsed_ms = (time.perf_counter() - recovery_start) * 1000
 
             # Assertions
-            assert success_count == burst_size, (
-                f"Only {success_count}/{burst_size} burst inserts succeeded"
-            )
+            assert (
+                success_count == burst_size
+            ), f"Only {success_count}/{burst_size} burst inserts succeeded"
             assert recovery_elapsed_ms < 1000, "Recovery time exceeds 1 second"
 
             avg_latency = sum(insert_times) / len(insert_times) if insert_times else 0

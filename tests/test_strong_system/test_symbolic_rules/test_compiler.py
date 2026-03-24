@@ -1,6 +1,5 @@
 """Tests for rule compiler functionality."""
 
-
 from src.strong_system.computational_graph import Node, backward
 from src.strong_system.symbolic_rules import RuleCompiler, SymbolicRule
 from src.strong_system.symbolic_rules.differentiable import soft_predicate

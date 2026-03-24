@@ -122,18 +122,18 @@ class TestNoDirectProviderImports:
                 if isinstance(node, ast.ImportFrom):
                     module = node.module or ""
                     # Check for direct provider imports
-                    assert not ("kimi_client" in module and "llm" not in module), (
-                        f"Direct kimi_client import found in {py_file}"
-                    )
-                    assert not ("zai_client" in module and "llm" not in module), (
-                        f"Direct zai_client import found in {py_file}"
-                    )
-                    assert not ("zhipu_client" in module and "llm" not in module), (
-                        f"Direct zhipu_client import found in {py_file}"
-                    )
-                    assert not ("minimax_client" in module and "llm" not in module), (
-                        f"Direct minimax_client import found in {py_file}"
-                    )
+                    assert not (
+                        "kimi_client" in module and "llm" not in module
+                    ), f"Direct kimi_client import found in {py_file}"
+                    assert not (
+                        "zai_client" in module and "llm" not in module
+                    ), f"Direct zai_client import found in {py_file}"
+                    assert not (
+                        "zhipu_client" in module and "llm" not in module
+                    ), f"Direct zhipu_client import found in {py_file}"
+                    assert not (
+                        "minimax_client" in module and "llm" not in module
+                    ), f"Direct minimax_client import found in {py_file}"
 
     def test_only_provider_chain_import_pattern(self):
         """Test that reflection only imports from src.llm properly."""
@@ -141,7 +141,7 @@ class TestNoDirectProviderImports:
 
         # The integration should only use LLMProviderChain from src.llm
         source = llm_integration.__file__
-        content = open(source).read()
+        content = open(source).read()  # noqa: SIM115
 
         # Should not have direct provider imports
         assert "from llm.kimi_client" not in content

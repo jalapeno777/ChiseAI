@@ -218,9 +218,7 @@ class MetaModel(ABC):
             )
 
             # Compute loss on query set with adapted parameters
-            self.compute_loss(
-                adapted_params, episode.query_data, episode.query_labels
-            )
+            self.compute_loss(adapted_params, episode.query_data, episode.query_labels)
 
             # Compute gradients w.r.t. adapted parameters
             param_grads = self._compute_parameter_gradients(

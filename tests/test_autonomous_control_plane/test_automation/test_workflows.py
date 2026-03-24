@@ -305,6 +305,6 @@ class TestRemediationWorkflows:
                 and "wait" not in step_name_lower
             )
             if is_restart_action and is_action_step:
-                assert step.timeout_seconds >= 30, (
-                    f"Step '{step.name}' should have timeout >= 30s"
-                )
+                assert (
+                    step.timeout_seconds >= 30
+                ), f"Step '{step.name}' should have timeout >= 30s"

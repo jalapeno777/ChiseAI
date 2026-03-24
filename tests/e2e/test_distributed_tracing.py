@@ -168,9 +168,11 @@ class TestTraceContextPropagation:
                             "span_id": format(
                                 db_span.get_span_context().span_id, "016x"
                             ),
-                            "parent_id": format(db_span.parent.span_id, "016x")
-                            if db_span.parent
-                            else None,
+                            "parent_id": (
+                                format(db_span.parent.span_id, "016x")
+                                if db_span.parent
+                                else None
+                            ),
                         }
                     )
 
@@ -183,9 +185,11 @@ class TestTraceContextPropagation:
                         "span_id": format(
                             strategy_span.get_span_context().span_id, "016x"
                         ),
-                        "parent_id": format(strategy_span.parent.span_id, "016x")
-                        if strategy_span.parent
-                        else None,
+                        "parent_id": (
+                            format(strategy_span.parent.span_id, "016x")
+                            if strategy_span.parent
+                            else None
+                        ),
                     }
                 )
 
@@ -277,9 +281,10 @@ class TestTempoTraceStorage:
         """Test Tempo endpoint is accessible."""
         try:
             response = requests.get(f"{TEMPO_ENDPOINT}/ready", timeout=5)
-            assert response.status_code in [200, 204], (
-                f"Tempo not ready: {response.status_code}"
-            )
+            assert response.status_code in [
+                200,
+                204,
+            ], f"Tempo not ready: {response.status_code}"
         except requests.RequestException as e:
             pytest.skip(f"Tempo not accessible: {e}")
 
@@ -329,9 +334,9 @@ class TestTempoTraceStorage:
                 pass
             await asyncio.sleep(POLL_INTERVAL)
 
-        assert found, (
-            f"Trace {trace_id_hex} not found in Tempo after {MAX_WAIT_SECONDS}s"
-        )
+        assert (
+            found
+        ), f"Trace {trace_id_hex} not found in Tempo after {MAX_WAIT_SECONDS}s"
 
 
 class TestServiceTraceCoverage:
@@ -370,9 +375,9 @@ class TestServiceTraceCoverage:
             "api.handler",
             "api.db.query",
         }
-        assert expected_spans.issubset(span_names), (
-            f"Missing spans: {expected_spans - span_names}"
-        )
+        assert expected_spans.issubset(
+            span_names
+        ), f"Missing spans: {expected_spans - span_names}"
 
     def test_strategy_service_tracing(self):
         """Test Strategy service generates traces."""
@@ -405,9 +410,9 @@ class TestServiceTraceCoverage:
             "strategy.validate",
             "strategy.risk.check",
         }
-        assert expected_spans.issubset(span_names), (
-            f"Missing spans: {expected_spans - span_names}"
-        )
+        assert expected_spans.issubset(
+            span_names
+        ), f"Missing spans: {expected_spans - span_names}"
 
     def test_ingestion_service_tracing(self):
         """Test Ingestion service generates traces."""
@@ -443,9 +448,9 @@ class TestServiceTraceCoverage:
             "ingestion.transform",
             "ingestion.store",
         }
-        assert expected_spans.issubset(span_names), (
-            f"Missing spans: {expected_spans - span_names}"
-        )
+        assert expected_spans.issubset(
+            span_names
+        ), f"Missing spans: {expected_spans - span_names}"
 
 
 class TestDistributedTraceIntegration:

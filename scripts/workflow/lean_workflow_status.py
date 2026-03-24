@@ -64,7 +64,7 @@ REMOVABLE_FIELDS = [
 
 def load_yaml(path: Path) -> dict:
     """Load YAML file."""
-    with open(path, "r") as f:
+    with open(path) as f:
         return yaml.safe_load(f) or {}
 
 

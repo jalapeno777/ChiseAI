@@ -311,12 +311,12 @@ class TestWebSocketHighConcurrency:
         )
 
         # Assertions
-        assert success_rate >= 0.99, (
-            f"Message success rate {success_rate:.2%} below 99%"
-        )
-        assert all(conn.connected for conn in connections), (
-            "Some connections disconnected unexpectedly"
-        )
+        assert (
+            success_rate >= 0.99
+        ), f"Message success rate {success_rate:.2%} below 99%"
+        assert all(
+            conn.connected for conn in connections
+        ), "Some connections disconnected unexpectedly"
 
         print("\nConnection Stability Under Load:")
         print(f"  Test Duration: {elapsed:.1f}s")
@@ -394,12 +394,12 @@ class TestWebSocketMessageThroughput:
         p95_latency = sorted(latencies)[int(len(latencies) * 0.95)] if latencies else 0
 
         # Assertions
-        assert messages_per_second >= 100, (
-            f"Message throughput {messages_per_second:.1f}/s below 100/s threshold"
-        )
-        assert avg_latency < MAX_WEBSOCKET_MESSAGE_LATENCY_MS, (
-            f"Average latency {avg_latency:.1f}ms exceeds {MAX_WEBSOCKET_MESSAGE_LATENCY_MS}ms"
-        )
+        assert (
+            messages_per_second >= 100
+        ), f"Message throughput {messages_per_second:.1f}/s below 100/s threshold"
+        assert (
+            avg_latency < MAX_WEBSOCKET_MESSAGE_LATENCY_MS
+        ), f"Average latency {avg_latency:.1f}ms exceeds {MAX_WEBSOCKET_MESSAGE_LATENCY_MS}ms"
         assert failed_messages == 0, f"Had {failed_messages} failed messages"
 
         print("\nHigh Volume Message Throughput:")
@@ -461,13 +461,13 @@ class TestWebSocketMessageThroughput:
         recovery_elapsed_ms = (time.perf_counter() - recovery_start) * 1000
 
         # Assertions
-        assert len(latencies) == burst_size, (
-            f"Only {len(latencies)}/{burst_size} messages in burst succeeded"
-        )
+        assert (
+            len(latencies) == burst_size
+        ), f"Only {len(latencies)}/{burst_size} messages in burst succeeded"
         assert failed == 0, f"Had {failed} failed messages in burst"
-        assert recovery_elapsed_ms < 1000, (
-            f"Recovery time {recovery_elapsed_ms:.1f}ms exceeds 1 second"
-        )
+        assert (
+            recovery_elapsed_ms < 1000
+        ), f"Recovery time {recovery_elapsed_ms:.1f}ms exceeds 1 second"
 
         print("\nBurst Message Handling:")
         print(f"  Burst Size: {burst_size}")
@@ -514,9 +514,9 @@ class TestWebSocketCircuitBreaker:
             except ConnectionError:
                 pass
 
-        assert circuit.state == "open", (
-            f"Circuit should be open after {WEBSOCKET_CIRCUIT_BREAKER_THRESHOLD} failures"
-        )
+        assert (
+            circuit.state == "open"
+        ), f"Circuit should be open after {WEBSOCKET_CIRCUIT_BREAKER_THRESHOLD} failures"
 
         # Verify circuit blocks requests
         blocked = 0

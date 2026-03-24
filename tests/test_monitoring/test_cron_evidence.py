@@ -858,9 +858,9 @@ class TestBybitTruthCollectorCronJobs:
 
         # Collector runs more frequently internally than cron triggers
         # Cron is the orchestrator, collector handles internal pacing
-        assert cron_interval >= 1800, (
-            "Cron interval should be at least 30 minutes to avoid overlap"
-        )
+        assert (
+            cron_interval >= 1800
+        ), "Cron interval should be at least 30 minutes to avoid overlap"
 
     def test_bybit_truth_collector_missed_runs_detection(self):
         """Verify missed runs are detected for bybit-truth-collector."""

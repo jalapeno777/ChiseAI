@@ -23,19 +23,19 @@ ARCHIVE_ENTRIES_DIR = Path("docs/archives/workflow-status/entries")
 WORKFLOW_STATUS_PATH = Path("docs/bmm-workflow-status.yaml")
 
 
-def load_archive_entry(archive_ref: str) -> Optional[dict]:
+def load_archive_entry(archive_ref: str) -> dict | None:
     """Load archive entry by reference."""
     filepath = ARCHIVE_ENTRIES_DIR / f"{archive_ref}.yaml"
     if not filepath.exists():
         return None
 
-    with open(filepath, "r") as f:
+    with open(filepath) as f:
         return yaml.safe_load(f)
 
 
 def load_workflow_status() -> dict:
     """Load workflow-status.yaml."""
-    with open(WORKFLOW_STATUS_PATH, "r") as f:
+    with open(WORKFLOW_STATUS_PATH) as f:
         return yaml.safe_load(f)
 
 
@@ -46,13 +46,13 @@ def save_workflow_status(data: dict, dry_run: bool = False):
             yaml.dump(data, f, default_flow_style=False, sort_keys=False)
 
 
-def find_archive_by_story_id(story_id: str) -> Optional[dict]:
+def find_archive_by_story_id(story_id: str) -> dict | None:
     """Find archive entry by story ID."""
     if not ARCHIVE_ENTRIES_DIR.exists():
         return None
 
     for archive_file in ARCHIVE_ENTRIES_DIR.glob("ARCH-*.yaml"):
-        with open(archive_file, "r") as f:
+        with open(archive_file) as f:
             archive_entry = yaml.safe_load(f)
 
         if archive_entry.get("original_story_id") == story_id:
@@ -121,7 +121,7 @@ def rollback_story(
         # Add new entry
         if not dry_run:
             workflow_data["completed"].append(original_story)
-        print(f"  Added new entry to completed section")
+        print("  Added new entry to completed section")
 
     return True
 

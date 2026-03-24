@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import uuid
@@ -12,9 +13,7 @@ from typing import Any
 
 
 def now_iso() -> str:
-    return (
-        datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-    )
+    return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def redis_client():
@@ -91,8 +90,8 @@ def publish_event(
     client = redis_client()
     if client is None:
         return
-    try:
+    with contextlib.suppress(Exception):
         # Keep JSON payload as stream field for simple consumption.
-        client.xadd(redis_stream, {"event": json.dumps(event, sort_keys=True)}, maxlen=5000)
-    except Exception:
-        pass
+        client.xadd(
+            redis_stream, {"event": json.dumps(event, sort_keys=True)}, maxlen=5000
+        )

@@ -199,9 +199,9 @@ def verify_live_data_sources() -> dict[str, Any]:
             log_error(f"InfluxDB health check failed: {health.message}")
     except ImportError:
         results["influxdb"]["status"] = "skip"
-        results["influxdb"]["details"]["reason"] = (
-            "influxdb-client package not installed"
-        )
+        results["influxdb"]["details"][
+            "reason"
+        ] = "influxdb-client package not installed"
         log_warning("InfluxDB client package not installed")
     except Exception as e:
         results["influxdb"]["status"] = "fail"
@@ -286,17 +286,21 @@ def generate_evidence(
                 "from": "Redis",
                 "to": "Telemetry Pipeline",
                 "mechanism": "Metrics ingestion",
-                "status": "verified"
-                if live_data_results.get("redis", {}).get("status") == "pass"
-                else "not_tested",
+                "status": (
+                    "verified"
+                    if live_data_results.get("redis", {}).get("status") == "pass"
+                    else "not_tested"
+                ),
             },
             {
                 "from": "Telemetry Pipeline",
                 "to": "InfluxDB",
                 "mechanism": "Time-series data export",
-                "status": "verified"
-                if live_data_results.get("influxdb", {}).get("status") == "pass"
-                else "not_tested",
+                "status": (
+                    "verified"
+                    if live_data_results.get("influxdb", {}).get("status") == "pass"
+                    else "not_tested"
+                ),
             },
             {
                 "from": "Automation Controller",
@@ -308,9 +312,11 @@ def generate_evidence(
                 "from": "Dashboard",
                 "to": "InfluxDB",
                 "mechanism": "Historical data queries",
-                "status": "verified"
-                if live_data_results.get("influxdb", {}).get("status") == "pass"
-                else "not_tested",
+                "status": (
+                    "verified"
+                    if live_data_results.get("influxdb", {}).get("status") == "pass"
+                    else "not_tested"
+                ),
             },
         ],
         "performance_targets": {
@@ -327,16 +333,22 @@ def generate_evidence(
             "all_tests_pass": {
                 "target": "100%",
                 "actual": test_results.get("passed", 0),
-                "status": "pass"
-                if test_results.get("failed", 0) == 0
-                and test_results.get("errors", 0) == 0
-                else "fail",
+                "status": (
+                    "pass"
+                    if test_results.get("failed", 0) == 0
+                    and test_results.get("errors", 0) == 0
+                    else "fail"
+                ),
             },
             "live_data_verified": {
                 "target": "All sources",
-                "status": "pass"
-                if all(r.get("status") == "pass" for r in live_data_results.values())
-                else "partial",
+                "status": (
+                    "pass"
+                    if all(
+                        r.get("status") == "pass" for r in live_data_results.values()
+                    )
+                    else "partial"
+                ),
             },
         },
     }

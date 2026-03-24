@@ -89,7 +89,9 @@ def _resolve_recommended_skills(
         base_recommended = list(task_classes[task_class].get("recommended_skills", []))
         base_stack_names = list(task_classes[task_class].get("recommended_stacks", []))
 
-    stack_names_from_registry = list(stack_map.get("task_class_stacks", {}).get(task_class, []))
+    stack_names_from_registry = list(
+        stack_map.get("task_class_stacks", {}).get(task_class, [])
+    )
     stack_names = _unique_ordered(base_stack_names + stack_names_from_registry)
 
     stack_definitions = stack_map.get("stacks", {})
@@ -153,7 +155,9 @@ def _redis_client():
         return None
 
 
-def _persist_redis(payload: dict[str, Any], missing: list[str], task_class: str) -> tuple[bool, str | None]:
+def _persist_redis(
+    payload: dict[str, Any], missing: list[str], task_class: str
+) -> tuple[bool, str | None]:
     client = _redis_client()
     if client is None:
         return False, "redis_unavailable"
@@ -209,7 +213,9 @@ def _persist_redis(payload: dict[str, Any], missing: list[str], task_class: str)
             scaled = int(round(float(payload["quality_score"]) * 1000))
             client.hincrby(key_eff, "quality_score_milli_sum", scaled)
         if payload.get("cycle_time_minutes") is not None:
-            client.hincrby(key_eff, "cycle_time_minutes_sum", int(payload["cycle_time_minutes"]))
+            client.hincrby(
+                key_eff, "cycle_time_minutes_sum", int(payload["cycle_time_minutes"])
+            )
         if payload.get("rework_flag"):
             client.hincrby(key_eff, "rework_events", 1)
         if payload.get("regression_flag"):
@@ -328,7 +334,9 @@ def evaluate(args: argparse.Namespace) -> Outcome:
 
 
 def parse_args() -> argparse.Namespace:
-    ap = argparse.ArgumentParser(description="Evaluate autonomous skill coverage/effectiveness")
+    ap = argparse.ArgumentParser(
+        description="Evaluate autonomous skill coverage/effectiveness"
+    )
     ap.add_argument("--story-id", required=True, help="Story identifier")
     ap.add_argument("--task-class", default="", help="Task class from task map")
     ap.add_argument(
@@ -337,12 +345,28 @@ def parse_args() -> argparse.Namespace:
         choices=["none", "low", "medium", "high"],
         help="Estimated impact from missing skills",
     )
-    ap.add_argument("--quality-score", type=float, default=None, help="Optional 0.0-1.0 quality score")
-    ap.add_argument("--cycle-time-minutes", type=int, default=None, help="Optional cycle time in minutes")
-    ap.add_argument("--skill-name", default="", help="Optional active skill name for effectiveness attribution")
+    ap.add_argument(
+        "--quality-score",
+        type=float,
+        default=None,
+        help="Optional 0.0-1.0 quality score",
+    )
+    ap.add_argument(
+        "--cycle-time-minutes",
+        type=int,
+        default=None,
+        help="Optional cycle time in minutes",
+    )
+    ap.add_argument(
+        "--skill-name",
+        default="",
+        help="Optional active skill name for effectiveness attribution",
+    )
     ap.add_argument("--skill-version", default="", help="Optional active skill version")
     ap.add_argument("--rework-flag", action="store_true", help="Mark event as rework")
-    ap.add_argument("--regression-flag", action="store_true", help="Mark event as regression")
+    ap.add_argument(
+        "--regression-flag", action="store_true", help="Mark event as regression"
+    )
     ap.add_argument("--task-map-path", default=str(TASK_MAP_PATH))
     ap.add_argument("--stack-map-path", default=str(STACK_MAP_PATH))
     ap.add_argument("--skills-dir", default=str(SKILLS_DIR))
@@ -366,7 +390,9 @@ def main() -> int:
 
     # Non-blocking default: missing recommended skills do not fail execution.
     if args.strict and not out.payload.get("recommended_skills"):
-        print("ERROR: strict mode enabled and task class has no recommended skills configured")
+        print(
+            "ERROR: strict mode enabled and task class has no recommended skills configured"
+        )
         return 1
 
     if args.quality_score is not None and not (0.0 <= args.quality_score <= 1.0):

@@ -447,9 +447,9 @@ class DashboardAPI:
                         alerts.append(
                             {
                                 "type": "incident",
-                                "severity": "critical"
-                                if inc.severity.value == "P0"
-                                else "high",
+                                "severity": (
+                                    "critical" if inc.severity.value == "P0" else "high"
+                                ),
                                 "message": f"{inc.severity.value} incident: {inc.title}",
                                 "source": inc.source,
                                 "timestamp": inc.created_at.isoformat(),

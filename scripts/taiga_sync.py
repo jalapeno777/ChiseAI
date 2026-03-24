@@ -21,7 +21,9 @@ def has_taiga_config() -> bool:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Taiga sync compatibility shim")
     parser.add_argument("--validate", action="store_true", help="Validate Taiga config")
-    parser.add_argument("--apply", action="store_true", help="Apply sync (legacy no-op)")
+    parser.add_argument(
+        "--apply", action="store_true", help="Apply sync (legacy no-op)"
+    )
     parser.add_argument("--force", action="store_true", help="Legacy flag (no-op)")
     args = parser.parse_args()
 
@@ -45,7 +47,8 @@ def main() -> int:
     if args.apply:
         if not has_taiga_config():
             print(
-                "Taiga sync apply: skipped (missing Taiga credentials, legacy-exempt mode)")
+                "Taiga sync apply: skipped (missing Taiga credentials, legacy-exempt mode)"
+            )
             return 0
         print("Taiga sync apply: no-op compatibility mode (legacy-exempt)")
         return 0

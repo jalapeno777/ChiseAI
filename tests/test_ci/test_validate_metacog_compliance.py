@@ -10,7 +10,9 @@ MODULE_PATH = (
     / "validation"
     / "validate_metacog_compliance.py"
 )
-SPEC = importlib.util.spec_from_file_location("validate_metacog_compliance", MODULE_PATH)
+SPEC = importlib.util.spec_from_file_location(
+    "validate_metacog_compliance", MODULE_PATH
+)
 assert SPEC and SPEC.loader
 validate_metacog_compliance = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = validate_metacog_compliance
@@ -103,9 +105,7 @@ confidence_adjustment_recommendation: no_change
     assert validate_metacog_compliance.main() == 0
 
 
-def test_required_key_value_fields_are_enforced(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_required_key_value_fields_are_enforced(tmp_path: Path, monkeypatch) -> None:
     iterlog_dir = tmp_path / "docs" / "tempmemories"
     iterlog_dir.mkdir(parents=True)
 
@@ -145,9 +145,7 @@ confidence_adjustment_recommendation: lower_confidence
     assert validate_metacog_compliance.main() == 1
 
 
-def test_invalid_story_id_fails_in_strict_mode(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_invalid_story_id_fails_in_strict_mode(tmp_path: Path, monkeypatch) -> None:
     iterlog_dir = tmp_path / "docs" / "tempmemories"
     iterlog_dir.mkdir(parents=True)
     body = """
@@ -187,9 +185,7 @@ confidence_adjustment_recommendation: no_change
     assert validate_metacog_compliance.main() == 1
 
 
-def test_semantic_bounds_are_enforced(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_semantic_bounds_are_enforced(tmp_path: Path, monkeypatch) -> None:
     iterlog_dir = tmp_path / "docs" / "tempmemories"
     iterlog_dir.mkdir(parents=True)
     body = """
@@ -335,9 +331,7 @@ confidence_adjustment_recommendation: no_change
     assert validate_metacog_compliance.main() == 0
 
 
-def test_markdown_bold_key_fields_are_accepted(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_markdown_bold_key_fields_are_accepted(tmp_path: Path, monkeypatch) -> None:
     iterlog_dir = tmp_path / "docs" / "tempmemories"
     iterlog_dir.mkdir(parents=True)
     body = """
@@ -439,9 +433,7 @@ confidence_adjustment_recommendation: no_change
     assert validate_metacog_compliance.main() == 0
 
 
-def test_observed_result_aliases_are_accepted(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_observed_result_aliases_are_accepted(tmp_path: Path, monkeypatch) -> None:
     iterlog_dir = tmp_path / "docs" / "tempmemories"
     iterlog_dir.mkdir(parents=True)
     body = """

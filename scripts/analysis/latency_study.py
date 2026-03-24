@@ -433,11 +433,14 @@ class LLMLatencyStudy:
             "success_count": len(successful),
             "failure_count": len(failed),
             "success_rate": round(len(successful) / n * 100, 2) if n > 0 else 0,
-            "fallback_rate": round(
-                len([a for a in self.study.attempts if a.fallback_used]) / n * 100, 2
-            )
-            if n > 0
-            else 0,
+            "fallback_rate": (
+                round(
+                    len([a for a in self.study.attempts if a.fallback_used]) / n * 100,
+                    2,
+                )
+                if n > 0
+                else 0
+            ),
             "avg_ms": round(sum(durations) / n, 2) if n > 0 else 0,
             "p50_ms": round(percentile(50), 2),
             "p90_ms": round(percentile(90), 2),
@@ -445,11 +448,14 @@ class LLMLatencyStudy:
             "p99_ms": round(percentile(99), 2),
             "min_ms": round(min(durations), 2) if durations else 0,
             "max_ms": round(max(durations), 2) if durations else 0,
-            "std_dev_ms": round(
-                (sum((d - sum(durations) / n) ** 2 for d in durations) / n) ** 0.5, 2
-            )
-            if n > 0
-            else 0,
+            "std_dev_ms": (
+                round(
+                    (sum((d - sum(durations) / n) ** 2 for d in durations) / n) ** 0.5,
+                    2,
+                )
+                if n > 0
+                else 0
+            ),
         }
 
         # Provider breakdown
@@ -525,7 +531,7 @@ def print_summary(result: LatencyStudy) -> None:
     print(f"Study ID: {result.study_id}")
     print(f"Attempts: {result.n_attempts}")
     print(f"Timeout Ceiling: {result.timeout_ceiling_ms}ms")
-    print(f"\nStatistics:")
+    print("\nStatistics:")
     print(f"  Count: {result.statistics.get('count', 0)}")
     print(f"  Success Rate: {result.statistics.get('success_rate', 0)}%")
     print(f"  Fallback Rate: {result.statistics.get('fallback_rate', 0)}%")
@@ -537,12 +543,12 @@ def print_summary(result: LatencyStudy) -> None:
     print(f"  Max: {result.statistics.get('max_ms', 0)}ms")
 
     if result.statistics.get("provider_breakdown"):
-        print(f"\nProvider Breakdown:")
+        print("\nProvider Breakdown:")
         for provider, count in result.statistics["provider_breakdown"].items():
             print(f"  {provider}: {count}")
 
     if result.statistics.get("error_breakdown"):
-        print(f"\nError Breakdown:")
+        print("\nError Breakdown:")
         for error, count in result.statistics["error_breakdown"].items():
             print(f"  {error}: {count}")
 

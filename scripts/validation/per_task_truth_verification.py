@@ -36,7 +36,6 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
-
 # ── Required Evidence Fields ──────────────────────────────────────────────────
 
 REQUIRED_FIELDS: list[str] = [
@@ -193,9 +192,7 @@ class PerTaskEvidenceValidator:
                 FieldValidation(
                     field_name="_root",
                     passed=False,
-                    message="Evidence must be a dictionary, got {t}".format(
-                        t=type(evidence).__name__
-                    ),
+                    message=f"Evidence must be a dictionary, got {type(evidence).__name__}",
                 )
             )
             return result

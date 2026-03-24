@@ -72,14 +72,14 @@ async def test_kimi_coding_api():
                         .get("message", {})
                         .get("content", "")
                     )
-                    print(f"✅ SUCCESS! API returned 200")
+                    print("✅ SUCCESS! API returned 200")
                     print(f"   Content: {content}")
                     return True
                 elif response.status == 403:
                     error_msg = response_data.get("error", {}).get(
                         "message", "Unknown error"
                     )
-                    print(f"❌ FAILED! Got 403 Forbidden")
+                    print("❌ FAILED! Got 403 Forbidden")
                     print(f"   Error: {error_msg}")
                     if "coding agent" in error_msg.lower():
                         print(
@@ -87,7 +87,7 @@ async def test_kimi_coding_api():
                         )
                     return False
                 elif response.status == 401:
-                    print(f"❌ FAILED! Got 401 Unauthorized - Check API key")
+                    print("❌ FAILED! Got 401 Unauthorized - Check API key")
                     return False
                 else:
                     print(f"❌ FAILED! Got HTTP {response.status}")

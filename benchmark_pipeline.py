@@ -8,7 +8,6 @@ compared to single-belief processing.
 import time
 
 import numpy as np
-
 from src.strong_system.belief_embeddings import (
     BeliefPipeline,
     BeliefSearchIndex,
@@ -37,7 +36,7 @@ def benchmark_throughput():
         BeliefVector(vector=np.random.randn(vector_dim)) for _ in range(num_beliefs)
     ]
 
-    print(f"Configuration:")
+    print("Configuration:")
     print(f"  - Number of beliefs: {num_beliefs}")
     print(f"  - Vector dimension: {vector_dim}")
     print(f"  - Batch size: {config.batch_size}")
@@ -143,7 +142,7 @@ def benchmark_cache_performance():
     # First query (cache miss)
     pipeline.reset_metrics()
     start = time.perf_counter()
-    results1 = pipeline.search(query, k=5)
+    pipeline.search(query, k=5)
     elapsed_first = time.perf_counter() - start
 
     # Subsequent queries (cache hits)

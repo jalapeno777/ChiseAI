@@ -316,12 +316,12 @@ class TestValidatePreventionRule:
         ]
         for placeholder in placeholders:
             result = validate_prevention_rule(placeholder, source="test")
-            assert result.is_valid is False, (
-                f"Should detect placeholder: '{placeholder}'"
-            )
-            assert any("placeholder" in e.lower() for e in result.errors), (
-                f"Should flag placeholder: '{placeholder}'"
-            )
+            assert (
+                result.is_valid is False
+            ), f"Should detect placeholder: '{placeholder}'"
+            assert any(
+                "placeholder" in e.lower() for e in result.errors
+            ), f"Should flag placeholder: '{placeholder}'"
 
 
 # ===================================================================

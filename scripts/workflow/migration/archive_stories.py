@@ -24,7 +24,7 @@ import json
 import os
 import re
 import sys
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -135,7 +135,7 @@ COMPLETION_EVIDENCE_FIELDS = [
 
 def generate_archive_ref(story_id: str) -> str:
     """Generate unique archive reference."""
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     return f"ARCH-{timestamp}-{story_id}"
 
 
@@ -145,7 +145,7 @@ def compute_checksum(data: dict) -> str:
     return hashlib.sha256(content.encode()).hexdigest()
 
 
-def parse_date(date_str: str) -> Optional[datetime]:
+def parse_date(date_str: str) -> datetime | None:
     """Parse date string to datetime."""
     if not date_str:
         return None
@@ -165,7 +165,7 @@ def should_archive(story: dict, current_date: datetime) -> tuple[bool, str, str]
     Returns:
         (should_archive, reason, reason_detail)
     """
-    story_id = story.get("id", "unknown")
+    story.get("id", "unknown")
     status = story.get("status", "").lower()
 
     # Skip if already archived (has archive_ref)
@@ -243,7 +243,7 @@ def create_lean_status(story: dict, archive_ref: str) -> dict:
     return lean
 
 
-def create_completion_evidence(story: dict) -> Optional[dict]:
+def create_completion_evidence(story: dict) -> dict | None:
     """Extract completion evidence from story."""
     evidence = {}
 
@@ -273,7 +273,7 @@ def create_archive_entry(
         "schema_version": ARCHIVE_SCHEMA_VERSION,
         "archive_ref": archive_ref,
         "original_story_id": story.get("id", "unknown"),
-        "archived_at": datetime.now(timezone.utc).isoformat() + "Z",
+        "archived_at": datetime.now(UTC).isoformat() + "Z",
         "archive_reason": archive_reason,
         "archive_reason_detail": archive_reason_detail,
         "migration": {
@@ -296,7 +296,7 @@ def create_archive_entry(
     # Compute archived checksum
     archive_entry["integrity"]["archived_checksum"] = compute_checksum(archive_entry)
     archive_entry["integrity"]["verification_date"] = (
-        datetime.now(timezone.utc).isoformat() + "Z"
+        datetime.now(UTC).isoformat() + "Z"
     )
     archive_entry["migration"]["verification_status"] = "verified"
 
@@ -349,7 +349,7 @@ def update_workflow_status(
 
 def load_workflow_status() -> dict:
     """Load workflow-status.yaml."""
-    with open(WORKFLOW_STATUS_PATH, "r") as f:
+    with open(WORKFLOW_STATUS_PATH) as f:
         return yaml.safe_load(f)
 
 
@@ -361,7 +361,7 @@ def save_workflow_status(data: dict, dry_run: bool = False):
 
 
 def find_stories_to_archive(
-    workflow_data: dict, current_date: datetime, story_id_filter: Optional[str] = None
+    workflow_data: dict, current_date: datetime, story_id_filter: str | None = None
 ) -> list[tuple[dict, str, str]]:
     """Find stories eligible for archival."""
     stories_to_archive = []
@@ -470,7 +470,7 @@ def main():
     workflow_data = load_workflow_status()
 
     # Find stories to archive
-    current_date = datetime.now(timezone.utc)
+    current_date = datetime.now(UTC)
     stories_to_archive = find_stories_to_archive(
         workflow_data, current_date, args.story_id
     )
@@ -506,7 +506,7 @@ def main():
 
             # Verify integrity
             if not verify_archive_integrity(archive_entry, story):
-                print(f"  ERROR: Integrity check failed")
+                print("  ERROR: Integrity check failed")
                 failed_count += 1
                 continue
 
@@ -531,7 +531,7 @@ def main():
 
     # Save updated workflow status
     if not dry_run and archived_count > 0:
-        print(f"Saving updated workflow status...")
+        print("Saving updated workflow status...")
         save_workflow_status(workflow_data, dry_run)
         print("Done.")
 

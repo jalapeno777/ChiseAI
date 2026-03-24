@@ -31,7 +31,10 @@ from typing import Any
 try:
     from jsonschema import Draft7Validator
 except ImportError:
-    print("Error: jsonschema required. Run with: uv run scripts/manifest.py (PEP 723 handles deps)", file=sys.stderr)
+    print(
+        "Error: jsonschema required. Run with: uv run scripts/manifest.py (PEP 723 handles deps)",
+        file=sys.stderr,
+    )
     sys.exit(2)
 
 MANIFEST_FILENAME = "bmad-manifest.json"
@@ -91,10 +94,12 @@ def validate(data: dict[str, Any]) -> list[dict[str, Any]]:
     validator = Draft7Validator(schema)
     errors = []
     for error in validator.iter_errors(data):
-        errors.append({
-            "path": ".".join(str(p) for p in error.path) if error.path else "root",
-            "message": error.message,
-        })
+        errors.append(
+            {
+                "path": ".".join(str(p) for p in error.path) if error.path else "root",
+                "message": error.message,
+            }
+        )
     return errors
 
 
@@ -114,24 +119,32 @@ def validate_extras(data: dict[str, Any]) -> list[str]:
         # Duplicate menu-code check
         mc = cap.get("menu-code", "")
         if mc and mc in menu_codes:
-            warnings.append(f"Duplicate menu-code '{mc}' in '{menu_codes[mc]}' and '{name}'")
+            warnings.append(
+                f"Duplicate menu-code '{mc}' in '{menu_codes[mc]}' and '{name}'"
+            )
         elif mc:
             menu_codes[mc] = name
 
         # Both prompt and skill-name
         if "prompt" in cap and "skill-name" in cap:
-            warnings.append(f"Capability '{name}' has both 'prompt' and 'skill-name' — pick one")
+            warnings.append(
+                f"Capability '{name}' has both 'prompt' and 'skill-name' — pick one"
+            )
 
     return warnings
 
 
 # --- Commands ---
 
+
 def cmd_create(args: argparse.Namespace) -> int:
     skill_path = Path(args.skill_path).resolve()
     existing = load_manifest(skill_path)
     if existing:
-        print(f"Error: Manifest already exists at {get_manifest_path(skill_path)}", file=sys.stderr)
+        print(
+            f"Error: Manifest already exists at {get_manifest_path(skill_path)}",
+            file=sys.stderr,
+        )
         print("Use 'update' to modify or delete the file first.", file=sys.stderr)
         return 1
 
@@ -166,7 +179,10 @@ def cmd_add_capability(args: argparse.Namespace) -> int:
     # Check for duplicate name
     for cap in capabilities:
         if cap.get("name") == args.name:
-            print(f"Error: Capability '{args.name}' already exists. Use 'update' to modify.", file=sys.stderr)
+            print(
+                f"Error: Capability '{args.name}' already exists. Use 'update' to modify.",
+                file=sys.stderr,
+            )
             return 1
 
     cap: dict[str, Any] = {
@@ -210,7 +226,9 @@ def cmd_update(args: argparse.Namespace) -> int:
     # Parse --set key=value pairs
     for pair in args.set:
         if "=" not in pair:
-            print(f"Error: Invalid --set format '{pair}'. Use key=value.", file=sys.stderr)
+            print(
+                f"Error: Invalid --set format '{pair}'. Use key=value.", file=sys.stderr
+            )
             return 1
         key, value = pair.split("=", 1)
 
@@ -224,7 +242,10 @@ def cmd_update(args: argparse.Namespace) -> int:
         if key.startswith("capability."):
             parts = key.split(".", 2)
             if len(parts) != 3:
-                print("Error: Capability update format: capability.<name>.<field>=<value>", file=sys.stderr)
+                print(
+                    "Error: Capability update format: capability.<name>.<field>=<value>",
+                    file=sys.stderr,
+                )
                 return 1
             cap_name, field = parts[1], parts[2]
             found = False
@@ -285,7 +306,9 @@ def cmd_read(args: argparse.Namespace) -> int:
             for cap in caps:
                 prompt_or_skill = cap.get("prompt", cap.get("skill-name", "(SKILL.md)"))
                 auto = " [autonomous]" if cap.get("supports-headless") else ""
-                print(f"  [{cap.get('menu-code', '??')}] {cap['name']} — {cap.get('description', '')}{auto}")
+                print(
+                    f"  [{cap.get('menu-code', '??')}] {cap['name']} — {cap.get('description', '')}{auto}"
+                )
                 print(f"       → {prompt_or_skill}")
         return 0
 
@@ -314,7 +337,9 @@ def cmd_read(args: argparse.Namespace) -> int:
         for cap in caps:
             prompt_or_skill = cap.get("prompt", cap.get("skill-name", "(SKILL.md)"))
             auto = " [autonomous]" if cap.get("supports-headless") else ""
-            print(f"  [{cap.get('menu-code', '??')}] {cap['name']}{auto} → {prompt_or_skill}")
+            print(
+                f"  [{cap.get('menu-code', '??')}] {cap['name']}{auto} → {prompt_or_skill}"
+            )
     return 0
 
 
@@ -329,11 +354,16 @@ def cmd_validate(args: argparse.Namespace) -> int:
     warnings = validate_extras(data)
 
     if args.json:
-        print(json.dumps({
-            "valid": len(errors) == 0,
-            "errors": errors,
-            "warnings": warnings,
-        }, indent=2))
+        print(
+            json.dumps(
+                {
+                    "valid": len(errors) == 0,
+                    "errors": errors,
+                    "warnings": warnings,
+                },
+                indent=2,
+            )
+        )
     else:
         if not errors:
             print("✓ Manifest is valid")
@@ -375,7 +405,9 @@ def main() -> int:
     p_add.add_argument("--prompt", type=str, help="Relative path to prompt file")
     p_add.add_argument("--skill-name", type=str, help="External skill name")
     p_add.add_argument("--phase-name", type=str)
-    p_add.add_argument("--after", nargs="*", help="Skill names that should run before this")
+    p_add.add_argument(
+        "--after", nargs="*", help="Skill names that should run before this"
+    )
     p_add.add_argument("--before", nargs="*", help="Skill names this should run before")
     p_add.add_argument("--is-required", action="store_true")
     p_add.add_argument("--output-location", type=str)
@@ -393,7 +425,9 @@ def main() -> int:
     # read
     p_read = sub.add_parser("read", help="Read manifest")
     p_read.add_argument("skill_path", type=str, help="Path to skill directory")
-    p_read.add_argument("--capabilities", action="store_true", help="List capabilities only")
+    p_read.add_argument(
+        "--capabilities", action="store_true", help="List capabilities only"
+    )
     p_read.add_argument("--capability", type=str, help="Show specific capability")
     p_read.add_argument("--json", action="store_true", help="JSON output")
 

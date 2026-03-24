@@ -88,9 +88,9 @@ class TempoClient:
         try:
             response = self.session.get(f"{self.endpoint}/ready", timeout=10)
             return {
-                "status": "ready"
-                if response.status_code in [200, 204]
-                else "not_ready",
+                "status": (
+                    "ready" if response.status_code in [200, 204] else "not_ready"
+                ),
                 "code": response.status_code,
             }
         except requests.RequestException as e:

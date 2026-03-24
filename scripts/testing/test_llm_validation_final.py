@@ -19,8 +19,8 @@ sys.path.insert(
 )
 
 from src.execution.llm.trade_decision_enhancer import (
-    TradeDecisionEnhancer,
     TradeDecision,
+    TradeDecisionEnhancer,
 )
 
 
@@ -68,7 +68,7 @@ async def run_validation():
 
     # Check health
     health = enhancer.get_health()
-    print(f"Enhancer Health:")
+    print("Enhancer Health:")
     print(f"  enabled: {health['enabled']}")
     print(f"  chain_initialized: {health['chain_initialized']}")
     print(f"  provider_chain_available: {health['provider_chain_available']}")
@@ -103,9 +103,9 @@ async def run_validation():
             timeout=15.0,  # Slightly longer than internal timeout
         )
 
-        print(f"✓ Received response from enhancer")
+        print("✓ Received response from enhancer")
         print()
-        print(f"Result:")
+        print("Result:")
         print(f"  go_no_go: {result.go_no_go}")
         print(f"  confidence: {result.confidence}")
         print(f"  provider: {result.provider}")
@@ -176,7 +176,7 @@ async def run_validation():
 
         return True
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         print("❌ FAIL: Test timed out after 15 seconds")
         print("   This indicates LLM providers are not responding")
         return False

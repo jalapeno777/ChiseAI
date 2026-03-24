@@ -43,8 +43,12 @@ def main() -> int:
     weekly_cutoff = utc_now() - timedelta(days=args.weekly_retention_days)
     backlog_cutoff = utc_now() - timedelta(days=args.backlog_retention_days)
 
-    weekly_files = collect_old_files(Path(args.weekly_dir), args.weekly_pattern, weekly_cutoff)
-    backlog_files = collect_old_files(Path(args.backlog_dir), args.backlog_pattern, backlog_cutoff)
+    weekly_files = collect_old_files(
+        Path(args.weekly_dir), args.weekly_pattern, weekly_cutoff
+    )
+    backlog_files = collect_old_files(
+        Path(args.backlog_dir), args.backlog_pattern, backlog_cutoff
+    )
 
     removed = []
     if not args.dry_run:
@@ -57,7 +61,9 @@ def main() -> int:
     print(f"weekly_candidates: {len(weekly_files)}")
     print(f"backlog_candidates: {len(backlog_files)}")
     print(f"removed: {len(removed)}")
-    for p in (removed if not args.dry_run else [str(x) for x in weekly_files + backlog_files]):
+    for p in (
+        removed if not args.dry_run else [str(x) for x in weekly_files + backlog_files]
+    ):
         print(f"- {p}")
 
     return 0

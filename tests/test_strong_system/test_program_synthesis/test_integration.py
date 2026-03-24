@@ -1,6 +1,5 @@
 """Integration tests for program synthesis module."""
 
-
 from src.strong_system.program_synthesis import (
     DSLBuilder,
     ProgramDSL,
@@ -66,9 +65,9 @@ class TestEndToEndProgramGeneration:
             )
             if prog is not None:
                 result = validate_program(prog)
-                assert result.valid is True, (
-                    f"Strategy {strategy.name} produced invalid program"
-                )
+                assert (
+                    result.valid is True
+                ), f"Strategy {strategy.name} produced invalid program"
 
     def test_full_dsl_to_validation_pipeline(self):
         """Test full pipeline from DSL construction to validation."""

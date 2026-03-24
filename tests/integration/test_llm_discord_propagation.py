@@ -98,9 +98,9 @@ class TestLLMToDiscordPropagation:
             mock_components["order_simulator"].place_order = AsyncMock(
                 return_value=mock_order
             )
-            mock_components[
-                "order_simulator"
-            ].market_data.get_price.return_value = 50000.0
+            mock_components["order_simulator"].market_data.get_price.return_value = (
+                50000.0
+            )
 
             # Mock kill switch
             mock_components["kill_switch"].state.value = "armed"
@@ -195,9 +195,9 @@ class TestLLMToDiscordPropagation:
             mock_components["order_simulator"].place_order = AsyncMock(
                 return_value=mock_order
             )
-            mock_components[
-                "order_simulator"
-            ].market_data.get_price.return_value = 50000.0
+            mock_components["order_simulator"].market_data.get_price.return_value = (
+                50000.0
+            )
             mock_components["kill_switch"].state.value = "armed"
 
             # Create orchestrator
@@ -333,9 +333,9 @@ class TestLLMToDiscordPropagation:
             mock_components["order_simulator"].place_order = AsyncMock(
                 return_value=mock_order
             )
-            mock_components[
-                "order_simulator"
-            ].market_data.get_price.return_value = 50000.0
+            mock_components["order_simulator"].market_data.get_price.return_value = (
+                50000.0
+            )
             mock_components["kill_switch"].state.value = "armed"
 
             # Create orchestrator

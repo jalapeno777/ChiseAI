@@ -36,7 +36,7 @@ class PipelineAlertManager:
     STALE_THRESHOLD_MINUTES = 5
     BACKLOG_THRESHOLD = 10
 
-    def __init__(self, redis_client: Optional[redis.Redis] = None):
+    def __init__(self, redis_client: redis.Redis | None = None):
         self.redis = redis_client or self._connect_redis()
         self.discord_webhook = os.getenv("DISCORD_WEBHOOK_URL")
         self.last_alert_time = None

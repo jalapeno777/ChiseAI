@@ -272,7 +272,13 @@ class SignalOutcome:
             return True
 
         # Check execution source
-        return bool(self.execution_source and ("test" in self.execution_source.lower() or "e2e" in self.execution_source.lower()))
+        return bool(
+            self.execution_source
+            and (
+                "test" in self.execution_source.lower()
+                or "e2e" in self.execution_source.lower()
+            )
+        )
 
     def validate_test_labeling(self) -> tuple[bool, str | None]:
         """Validate that test trades are properly labeled.

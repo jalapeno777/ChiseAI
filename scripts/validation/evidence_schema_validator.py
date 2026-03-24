@@ -48,7 +48,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -148,9 +147,9 @@ class EvidenceSchemaValidator:
             if expected is int or (isinstance(expected, tuple) and int in expected):
                 return False
             # If the expected type IS bool, let it through
-            if expected is bool or (isinstance(expected, tuple) and bool in expected):
-                return True
-            return False
+            return bool(
+                expected is bool or isinstance(expected, tuple) and bool in expected
+            )
 
         if isinstance(expected, tuple):
             return isinstance(value, expected)
@@ -254,7 +253,7 @@ class EvidenceSchemaValidator:
         total = test_summary.get("total")
         passed = test_summary.get("passed")
         failed = test_summary.get("failed")
-        skipped = test_summary.get("skipped", 0)
+        test_summary.get("skipped", 0)
 
         if (
             isinstance(total, int)

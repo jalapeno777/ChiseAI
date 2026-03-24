@@ -572,7 +572,9 @@ class TestStateManagerDetermineStatus:
         manager = StateManager()
         now = datetime.now(UTC)
         summary = GateSummary(
-            results=[GateResult(gate="G1", status="⚠️ CHECK", detail="", timestamp=now)],
+            results=[
+                GateResult(gate="G1", status="⚠️ CHECK", detail="", timestamp=now)
+            ],
             pass_count=0,
             fail_count=0,
             check_count=1,

@@ -3,7 +3,6 @@
 For ST-CONTROL-002: Self-Healing Automation
 """
 
-
 import pytest
 
 from autonomous_control_plane.healing_actions.cache_flush import CacheFlushAction

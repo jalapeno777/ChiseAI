@@ -76,9 +76,9 @@ class TestSkillEvaluationSuites:
         total_should_trigger = sum(1 for e in evals if e.get("should_trigger"))
         if total_should_trigger > 0:
             quality_rate = high_quality_count / total_should_trigger
-            assert quality_rate >= 0.8, (
-                f"{skill_name} quality rate {quality_rate:.0%} below 80%"
-            )
+            assert (
+                quality_rate >= 0.8
+            ), f"{skill_name} quality rate {quality_rate:.0%} below 80%"
 
     @pytest.mark.parametrize("skill_name", TARGET_SKILLS)
     def test_has_negative_examples(self, skill_name: str):
@@ -88,9 +88,9 @@ class TestSkillEvaluationSuites:
             evals = json.load(f)
 
         negative_count = sum(1 for e in evals if not e.get("should_trigger", True))
-        assert negative_count >= 2, (
-            f"{skill_name} should have at least 2 negative examples"
-        )
+        assert (
+            negative_count >= 2
+        ), f"{skill_name} should have at least 2 negative examples"
 
     @pytest.mark.parametrize("skill_name", TARGET_SKILLS)
     def test_pass_rate_threshold(self, skill_name: str):
@@ -114,9 +114,9 @@ class TestSkillEvaluationSuites:
                 passed += 1
 
         pass_rate = (passed / len(evals)) * 100 if evals else 0
-        assert pass_rate >= 80, (
-            f"{skill_name} pass rate {pass_rate:.0f}% below 80% threshold"
-        )
+        assert (
+            pass_rate >= 80
+        ), f"{skill_name} pass rate {pass_rate:.0f}% below 80% threshold"
 
 
 class TestBenchmarkScript:

@@ -109,7 +109,9 @@ class LearningBridge:
 
         # Callbacks
         self._on_transfer_complete: Callable[[TransferEvent], None] | None = None
-        self._on_transfer_failure: Callable[[TransferEvent, Exception], None] | None = None
+        self._on_transfer_failure: Callable[[TransferEvent, Exception], None] | None = (
+            None
+        )
         self._on_validation_failure: Callable[[TransferEvent], None] | None = None
 
     async def initialize(self) -> bool:

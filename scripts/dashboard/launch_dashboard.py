@@ -59,14 +59,14 @@ async def start_dashboard(
         logger.info("Starting dashboard with ACP components")
         # Import ACP components
         try:
+            from autonomous_control_plane.automation.controller import (
+                AutomationController,
+            )
             from autonomous_control_plane.components.circuit_breaker_registry import (
                 CircuitBreakerRegistry,
             )
             from autonomous_control_plane.components.incident_manager import (
                 IncidentManager,
-            )
-            from autonomous_control_plane.automation.controller import (
-                AutomationController,
             )
 
             # Initialize components

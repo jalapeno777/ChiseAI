@@ -27,7 +27,7 @@ import os
 import subprocess
 import sys
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from typing import Any
 
 
@@ -48,9 +48,7 @@ class ValidationReport:
 
     story_id: str = "ST-KIMI-ADAPTER-001"
     batch: int = 4
-    timestamp: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     results: list[ValidationResult] = field(default_factory=list)
     summary: dict[str, Any] = field(default_factory=dict)
 

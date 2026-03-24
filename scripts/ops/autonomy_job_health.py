@@ -15,7 +15,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-
 DEFAULT_OUTPUT_DIR = Path("_bmad-output") / "autonomy-cadence"
 STATE_PATH = DEFAULT_OUTPUT_DIR / "state.json"
 RUNS_PATH = DEFAULT_OUTPUT_DIR / "runs.jsonl"
@@ -190,10 +189,7 @@ def needs_attention(job_state: dict[str, Any]) -> bool:
 
     # Check if we have a recent success
     last_success = parse_iso(job_state.get("last_success_at"))
-    if not last_success:
-        return True
-
-    return False
+    return bool(not last_success)
 
 
 def display_table(jobs_data: list[dict[str, Any]]) -> None:
@@ -405,7 +401,7 @@ def main() -> int:
 
                 if args.job_id and len(jobs_data) == 1:
                     # Detailed view for single job
-                    state = load_state(state_path)
+                    load_state(state_path)
                     runs = load_runs(runs_path, args.job_id, limit=args.trend_limit)
                     display_job_details(jobs_data[0], runs)
                 elif args.format == "table":

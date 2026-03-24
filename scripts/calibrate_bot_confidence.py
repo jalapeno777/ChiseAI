@@ -10,6 +10,8 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from datetime import UTC
+
 from autonomous_git.gitreviewbot import CalibrationTracker
 
 
@@ -55,7 +57,7 @@ async def calibrate(
 
     # Save report
     report = {
-        "calibrated_at": datetime.now(timezone.utc).isoformat(),
+        "calibrated_at": datetime.now(UTC).isoformat(),
         "period_days": days,
         "metrics": metrics.model_dump(),
         "recommended_thresholds": recommended,

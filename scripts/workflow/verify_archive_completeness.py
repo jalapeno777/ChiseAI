@@ -43,7 +43,7 @@ def load_yaml(path: Path) -> dict:
     """Load YAML file."""
     if not path.exists():
         return {}
-    with open(path, "r") as f:
+    with open(path) as f:
         return yaml.safe_load(f) or {}
 
 
@@ -66,7 +66,7 @@ def verify_archive_integrity(story_id: str, original_story: dict) -> tuple[bool,
     matches = list(STORY_DETAILS_DIR.glob(archive_pattern))
 
     if not matches:
-        return False, f"Archive file not found"
+        return False, "Archive file not found"
 
     archive_path = matches[0]
     archive_data = load_yaml(archive_path)
@@ -102,7 +102,7 @@ def verify_index_entry(story_id: str) -> tuple[bool, str]:
 
     for entry in entries:
         if entry.get("story_id") == story_id:
-            return True, f"Index entry found"
+            return True, "Index entry found"
 
     return False, "No index entry found"
 

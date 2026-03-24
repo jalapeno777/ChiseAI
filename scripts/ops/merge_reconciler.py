@@ -530,7 +530,11 @@ def _require_merge_authority_and_lock(store: QueueStore, owner: str) -> None:
             f"Invalid main merge lock owner {lock_owner!r}: expected a merlin-owned lock."
         )
 
-    if owner and not owner.lower().startswith(f"{MERGE_AUTHORITY_AGENT}/") and not allow_non_merlin:
+    if (
+        owner
+        and not owner.lower().startswith(f"{MERGE_AUTHORITY_AGENT}/")
+        and not allow_non_merlin
+    ):
         raise RuntimeError(
             f"Invalid queue owner {owner!r} for merge-enabled tick. "
             f"Use owner prefix '{MERGE_AUTHORITY_AGENT}/...'."

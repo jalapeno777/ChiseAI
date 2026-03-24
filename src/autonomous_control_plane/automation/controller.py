@@ -127,9 +127,9 @@ class RemediationWorkflow:
             "status": self.status.value,
             "created_at": self.created_at.isoformat(),
             "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
             "steps": [s.to_dict() for s in self.steps],
             "current_step": self.current_step,
             "escalation_level": self.escalation_level.value,
@@ -180,9 +180,9 @@ class RemediationStep:
             "action_type": self.action_type,
             "status": self.status.value,
             "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
             "result": self.result,
             "retry_count": self.retry_count,
             "max_retries": self.max_retries,

@@ -35,7 +35,10 @@ def main() -> int:
         rationale = "Reliability/alert profile outside risk tolerance."
 
     packet = {
-        "generated_at_utc": datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+        "generated_at_utc": datetime.now(UTC)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z"),
         "decision": decision,
         "rationale": rationale,
         "inputs": {

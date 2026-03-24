@@ -77,9 +77,9 @@ class TestCmdValidateEvidenceReturnsExitCode:
                 ]
             )
             exit_code = cmd_validate_evidence(args)
-            assert exit_code == 1, (
-                "Invalid evidence (missing file proof) should return exit code 1"
-            )
+            assert (
+                exit_code == 1
+            ), "Invalid evidence (missing file proof) should return exit code 1"
         finally:
             temp_path.unlink()
 
@@ -112,9 +112,9 @@ class TestCmdValidateEvidenceReturnsExitCode:
                 ]
             )
             exit_code = cmd_validate_evidence(args)
-            assert exit_code == 1, (
-                "Evidence missing all required sections should return exit code 1"
-            )
+            assert (
+                exit_code == 1
+            ), "Evidence missing all required sections should return exit code 1"
         finally:
             temp_path.unlink()
 
@@ -151,9 +151,9 @@ class TestStrictFlagHandling:
                 cmd_validate_evidence(args)
 
             assert len(captured_cmd) == 1, "subprocess.run should be called once"
-            assert "--strict" in captured_cmd[0], (
-                "--strict flag must be forwarded to the validator subprocess"
-            )
+            assert (
+                "--strict" in captured_cmd[0]
+            ), "--strict flag must be forwarded to the validator subprocess"
         finally:
             temp_path.unlink()
 
@@ -184,9 +184,9 @@ class TestStrictFlagHandling:
                 cmd_validate_evidence(args)
 
             assert len(captured_cmd) == 1, "subprocess.run should be called once"
-            assert "--strict" not in captured_cmd[0], (
-                "--strict flag must NOT be in command when not requested"
-            )
+            assert (
+                "--strict" not in captured_cmd[0]
+            ), "--strict flag must NOT be in command when not requested"
         finally:
             temp_path.unlink()
 
@@ -224,12 +224,12 @@ class TestStrictFlagHandling:
             )
             exit_strict = cmd_validate_evidence(args_strict)
 
-            assert exit_no_strict == 1, (
-                "Invalid evidence must block (exit 1) even without --strict flag"
-            )
-            assert exit_strict == 1, (
-                "Invalid evidence must block (exit 1) with --strict flag"
-            )
+            assert (
+                exit_no_strict == 1
+            ), "Invalid evidence must block (exit 1) even without --strict flag"
+            assert (
+                exit_strict == 1
+            ), "Invalid evidence must block (exit 1) with --strict flag"
         finally:
             temp_path.unlink()
 
@@ -239,9 +239,7 @@ class TestBlockingBehaviorIntegration:
 
     def test_valid_evidence_with_completion_report_passes(self):
         """Complete evidence with worker completion report must pass."""
-        full_evidence = (
-            VALID_EVIDENCE
-            + """\
+        full_evidence = VALID_EVIDENCE + """\
 WORKER_COMPLETION_REPORT:
 story_id: ST-123
 branch: feature/ST-123-test
@@ -249,7 +247,6 @@ head_sha: abc123def
 test_summary: 30 passed in 2.06s
 status_sync_proof: Validated
 """
-        )
         with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
             f.write(full_evidence)
             temp_path = Path(f.name)
@@ -265,9 +262,9 @@ status_sync_proof: Validated
                 ]
             )
             exit_code = cmd_validate_evidence(args)
-            assert exit_code == 0, (
-                "Complete valid evidence with completion report should pass"
-            )
+            assert (
+                exit_code == 0
+            ), "Complete valid evidence with completion report should pass"
         finally:
             temp_path.unlink()
 
@@ -295,22 +292,19 @@ Verification:
                 ]
             )
             exit_code = cmd_validate_evidence(args)
-            assert exit_code == 1, (
-                "Evidence without file existence proof must block (exit 1)"
-            )
+            assert (
+                exit_code == 1
+            ), "Evidence without file existence proof must block (exit 1)"
         finally:
             temp_path.unlink()
 
     def test_evidence_with_partial_completion_report_blocks(self):
         """Evidence with incomplete worker completion report must block."""
-        partial_report = (
-            VALID_EVIDENCE
-            + """\
+        partial_report = VALID_EVIDENCE + """\
 WORKER_COMPLETION_REPORT:
 story_id: ST-456
 branch: feature/ST-456-test
 """
-        )
         with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
             f.write(partial_report)
             temp_path = Path(f.name)
@@ -326,8 +320,8 @@ branch: feature/ST-456-test
                 ]
             )
             exit_code = cmd_validate_evidence(args)
-            assert exit_code == 1, (
-                "Evidence with incomplete completion report must block (exit 1)"
-            )
+            assert (
+                exit_code == 1
+            ), "Evidence with incomplete completion report must block (exit 1)"
         finally:
             temp_path.unlink()

@@ -141,9 +141,9 @@ class TestTraceIDPropagation:
                 results = [f.result() for f in futures]
 
         for result_trace_id in results:
-            assert result_trace_id == main_trace_id, (
-                "Trace ID should propagate to threads"
-            )
+            assert (
+                result_trace_id == main_trace_id
+            ), "Trace ID should propagate to threads"
 
 
 class TestSpanParentChildRelationships:
@@ -161,9 +161,9 @@ class TestSpanParentChildRelationships:
             with tracer.start_as_current_span("child") as child:
                 child_parent_id = child.parent.span_id if child.parent else None
 
-        assert child_parent_id == parent_span_id, (
-            "Child should reference parent span ID"
-        )
+        assert (
+            child_parent_id == parent_span_id
+        ), "Child should reference parent span ID"
 
     def test_nested_spans(self, set_provider):
         """Test deeply nested span relationships."""
@@ -214,9 +214,9 @@ class TestSpanParentChildRelationships:
             ) as child:
                 child_parent_id = child.parent.span_id if child.parent else None
 
-        assert child_parent_id == parent_span_id, (
-            "Cross-service child should reference parent"
-        )
+        assert (
+            child_parent_id == parent_span_id
+        ), "Cross-service child should reference parent"
 
     def test_multiple_children(self, set_provider):
         """Test multiple children of the same parent."""

@@ -86,13 +86,23 @@ def main() -> int:
         return 1
 
     # 2) Full pilot phase runner dry-run and live run.
-    p = run(["python3", "scripts/ops/full_pilot_phase_runner.py", "--phase", "all", "--dry-run"])
+    p = run(
+        [
+            "python3",
+            "scripts/ops/full_pilot_phase_runner.py",
+            "--phase",
+            "all",
+            "--dry-run",
+        ]
+    )
     record("pilot_all_dry", p)
     if p.returncode != 0:
         return 1
 
     if args.skip_live_ops:
-        p = run(["python3", "scripts/ops/full_pilot_phase_runner.py", "--phase", "phase4"])
+        p = run(
+            ["python3", "scripts/ops/full_pilot_phase_runner.py", "--phase", "phase4"]
+        )
         record("pilot_phase4_live", p)
     else:
         p = run(["python3", "scripts/ops/full_pilot_phase_runner.py", "--phase", "all"])
@@ -114,12 +124,16 @@ def main() -> int:
     assert_exists(PROJECT_ROOT / "_bmad-output" / "full-pilot" / "scorecard.md")
     assert_exists(PROJECT_ROOT / "_bmad-output" / "full-pilot" / "go-no-go-packet.json")
 
-    scorecard = load_json(PROJECT_ROOT / "_bmad-output" / "full-pilot" / "scorecard.json")
+    scorecard = load_json(
+        PROJECT_ROOT / "_bmad-output" / "full-pilot" / "scorecard.json"
+    )
     if "cadence" not in scorecard or "events" not in scorecard:
         raise RuntimeError("Scorecard schema missing required sections")
 
     # 4) Verify command docs exist for operational usage.
-    assert_exists(PROJECT_ROOT / ".opencode" / "command" / "chise-autonomy-cadence-tick.md")
+    assert_exists(
+        PROJECT_ROOT / ".opencode" / "command" / "chise-autonomy-cadence-tick.md"
+    )
     assert_exists(PROJECT_ROOT / ".opencode" / "command" / "chise-full-pilot-run.md")
     assert_exists(PROJECT_ROOT / ".opencode" / "command" / "chise-full-pilot-e2e.md")
 

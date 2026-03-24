@@ -11,9 +11,12 @@ import urllib.request
 
 
 def get_webhook_url(explicit: str | None) -> str | None:
-    return explicit or os.getenv("DISCORD_STANDUP_WEBHOOK") or os.getenv(
-        "DISCORD_WEBHOOK_URL"
-    ) or os.getenv("CHISE_DISCORD_WEBHOOK_URL")
+    return (
+        explicit
+        or os.getenv("DISCORD_STANDUP_WEBHOOK")
+        or os.getenv("DISCORD_WEBHOOK_URL")
+        or os.getenv("CHISE_DISCORD_WEBHOOK_URL")
+    )
 
 
 def main() -> int:

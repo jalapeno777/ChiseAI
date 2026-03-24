@@ -36,7 +36,7 @@ def run_quick_diagnostic():
     print(
         f"Environment: USE_LLM_TRADE_DECISIONS={os.getenv('USE_LLM_TRADE_DECISIONS', 'not set')}"
     )
-    print(f"Result:")
+    print("Result:")
     print(f"  enabled: {health1['enabled']}")
     print(f"  chain_initialized: {health1['chain_initialized']}")
 
@@ -61,7 +61,7 @@ def run_quick_diagnostic():
     print(
         f"Environment: USE_LLM_TRADE_DECISIONS={os.getenv('USE_LLM_TRADE_DECISIONS')}"
     )
-    print(f"Result:")
+    print("Result:")
     print(f"  enabled: {health2['enabled']}")
     print(f"  chain_initialized: {health2['chain_initialized']}")
     print(f"  provider_chain_available: {health2['provider_chain_available']}")

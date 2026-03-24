@@ -112,9 +112,9 @@ class RunbookStep:
             "condition": self.condition,
             "status": self.status.value,
             "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
             "result": self.result,
             "approved_by": self.approved_by,
             "approved_at": self.approved_at.isoformat() if self.approved_at else None,
@@ -214,9 +214,9 @@ class RunbookExecution:
             "status": self.status.value,
             "context": self.context,
             "started_at": self.started_at.isoformat(),
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
             "current_step_index": self.current_step_index,
             "step_results": self.step_results,
             "triggered_by": self.triggered_by,
@@ -892,9 +892,11 @@ class RunbookEngine:
                                 "runbook_name": execution.runbook_name,
                                 "step_id": step.step_id,
                                 "step_name": step.name,
-                                "started_at": step.started_at.isoformat()
-                                if step.started_at
-                                else None,
+                                "started_at": (
+                                    step.started_at.isoformat()
+                                    if step.started_at
+                                    else None
+                                ),
                             }
                         )
 

@@ -128,9 +128,9 @@ class Alert:
             "timestamp": self.timestamp.isoformat(),
             "metadata": self.metadata,
             "acknowledged": self.acknowledged,
-            "acknowledged_at": self.acknowledged_at.isoformat()
-            if self.acknowledged_at
-            else None,
+            "acknowledged_at": (
+                self.acknowledged_at.isoformat() if self.acknowledged_at else None
+            ),
             "acknowledged_by": self.acknowledged_by,
             "resolved": self.resolved,
             "resolved_at": self.resolved_at.isoformat() if self.resolved_at else None,

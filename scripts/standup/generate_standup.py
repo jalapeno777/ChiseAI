@@ -21,7 +21,7 @@ import subprocess
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import yaml
 
@@ -42,7 +42,7 @@ class StandupGenerator:
 
     def __init__(
         self,
-        date: Optional[str] = None,
+        date: str | None = None,
         redis_host: str = "localhost",
         redis_port: int = 6380,
         redis_db: int = 0,
@@ -69,7 +69,7 @@ class StandupGenerator:
         # Load workflow status
         self.workflow_status = self._load_workflow_status()
 
-    def _load_workflow_status(self) -> Dict[str, Any]:
+    def _load_workflow_status(self) -> dict[str, Any]:
         """Load workflow status from YAML file."""
         workflow_path = Path("docs/bmm-workflow-status.yaml")
 
@@ -79,10 +79,10 @@ class StandupGenerator:
                 "Please run this script from the ChiseAI repository root."
             )
 
-        with open(workflow_path, "r") as f:
+        with open(workflow_path) as f:
             return yaml.safe_load(f)
 
-    def _get_active_stories_from_redis(self) -> List[Dict[str, Any]]:
+    def _get_active_stories_from_redis(self) -> list[dict[str, Any]]:
         """Query Redis for active story iterlogs."""
         if not self.redis_client:
             return []
@@ -114,10 +114,10 @@ class StandupGenerator:
 
         return active_stories
 
-    def _get_completed_yesterday(self) -> List[Dict[str, Any]]:
+    def _get_completed_yesterday(self) -> list[dict[str, Any]]:
         """Get stories completed in the last 24-48 hours."""
         completed = []
-        yesterday = datetime.now() - timedelta(days=1)
+        datetime.now() - timedelta(days=1)
         day_before = datetime.now() - timedelta(days=2)
 
         # From workflow status
@@ -137,7 +137,7 @@ class StandupGenerator:
 
         return completed
 
-    def _get_planned_today(self) -> Dict[str, List[Dict[str, Any]]]:
+    def _get_planned_today(self) -> dict[str, list[dict[str, Any]]]:
         """Get planned work for today, grouped by priority."""
         planned = {"P0": [], "P1": [], "P2": [], "P3": []}
 
@@ -170,7 +170,7 @@ class StandupGenerator:
 
         return planned
 
-    def _get_blockers(self) -> Dict[str, List[Dict[str, Any]]]:
+    def _get_blockers(self) -> dict[str, list[dict[str, Any]]]:
         """Identify current blockers."""
         blockers = {"technical": [], "dependencies": [], "resources": []}
 
@@ -229,7 +229,7 @@ class StandupGenerator:
 
         return blockers
 
-    def _get_risks(self) -> List[Dict[str, Any]]:
+    def _get_risks(self) -> list[dict[str, Any]]:
         """Identify schedule and quality risks."""
         risks = []
         today = datetime.now()
@@ -281,13 +281,13 @@ class StandupGenerator:
 
         return risks
 
-    def _get_metrics(self) -> Dict[str, int]:
+    def _get_metrics(self) -> dict[str, int]:
         """Calculate summary metrics."""
         completed = self._get_completed_yesterday()
         planned = self._get_planned_today()
         blockers = self._get_blockers()
 
-        total_planned = sum(len(stories) for stories in planned.values())
+        sum(len(stories) for stories in planned.values())
         total_blockers = sum(len(items) for items in blockers.values())
 
         return {
@@ -304,7 +304,7 @@ class StandupGenerator:
             "incidents_24h": len(blockers.get("technical", [])),
         }
 
-    def _get_thinking_partner_status(self) -> Dict[str, Any]:
+    def _get_thinking_partner_status(self) -> dict[str, Any]:
         """Build Thinking Partner visibility snapshot from Redis + iterlogs."""
         status = {
             "mode": "OFF",
@@ -353,7 +353,9 @@ class StandupGenerator:
                 if "Thinking Partner Proof:" in body:
                     with_proof += 1
 
-                ip_matches = re.findall(r"insight_packet_id:\s*([A-Za-z0-9._:-]+)", body)
+                ip_matches = re.findall(
+                    r"insight_packet_id:\s*([A-Za-z0-9._:-]+)", body
+                )
                 ad_matches = re.findall(r"aria_decision_id:\s*([A-Za-z0-9._:-]+)", body)
                 if ip_matches:
                     latest_ip = ip_matches[-1]
@@ -364,7 +366,9 @@ class StandupGenerator:
 
                 # Lightweight debt/risk signal from documented fields.
                 status["open_risk_items"] += len(
-                    re.findall(r"urgency:\s*(medium|high|critical)", body, flags=re.IGNORECASE)
+                    re.findall(
+                        r"urgency:\s*(medium|high|critical)", body, flags=re.IGNORECASE
+                    )
                 )
                 status["decision_debt_open"] += len(re.findall(r"\bdebt_id:\b", body))
                 for session_id in re.findall(
@@ -393,7 +397,9 @@ class StandupGenerator:
 
             status["last_proof_chain"] = f"IP:{latest_ip} -> AD:{latest_ad}"
             if total > 0:
-                status["proof_coverage_percent"] = round((with_proof / total) * 100.0, 1)
+                status["proof_coverage_percent"] = round(
+                    (with_proof / total) * 100.0, 1
+                )
         except Exception:
             pass
 
@@ -559,7 +565,7 @@ class StandupGenerator:
 
         return report
 
-    def generate_json_report(self) -> Dict[str, Any]:
+    def generate_json_report(self) -> dict[str, Any]:
         """Generate JSON format report for automation."""
         return {
             "date": self.date,
@@ -584,7 +590,7 @@ class StandupGenerator:
         return labels.get(priority, "Unknown")
 
     def save_report(
-        self, report: str, output_path: Optional[str] = None, format: str = "markdown"
+        self, report: str, output_path: str | None = None, format: str = "markdown"
     ) -> Path:
         """Save report to file."""
         if output_path:
@@ -606,7 +612,7 @@ class StandupGenerator:
 
         return report_path
 
-    def log_to_redis(self, metrics: Dict[str, int]):
+    def log_to_redis(self, metrics: dict[str, int]):
         """Log standup metadata to Redis."""
         if not self.redis_client:
             return
@@ -637,7 +643,7 @@ class StandupGenerator:
                 print(f"⚠ Failed to log to Redis: {e}")
 
     def post_to_discord(
-        self, channel_id: str, report_path: Path, metrics: Dict[str, int]
+        self, channel_id: str, report_path: Path, metrics: dict[str, int]
     ) -> bool:
         """Post summary to Discord."""
         try:

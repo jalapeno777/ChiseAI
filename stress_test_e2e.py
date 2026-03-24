@@ -12,7 +12,6 @@ from __future__ import annotations
 import argparse
 import sys
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -121,7 +120,7 @@ def run_stress_test(duration_seconds: int, target_eps: int) -> StressTestResult:
             batch_start = time.time()
 
             # Send batch of events
-            for i in range(batch_size):
+            for _i in range(batch_size):
                 result.total_events_sent += 1
                 ingest_result = pipeline.ingest_log(
                     {

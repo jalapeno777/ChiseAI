@@ -30,8 +30,14 @@ class TestAutocogEventFormatter:
 
         assert "**Title:** Improvement Candidate Promoted" in content
         assert "**Why This Happened (Plain English):**" in content
-        assert "**Intended Resolution:** Promote candidate into active policy set." in content
-        assert "**How This Should Improve Things:** Higher risk-adjusted returns." in content
+        assert (
+            "**Intended Resolution:** Promote candidate into active policy set."
+            in content
+        )
+        assert (
+            "**How This Should Improve Things:** Higher risk-adjusted returns."
+            in content
+        )
         assert "**Result:** Succeeded" in content
         assert "**Evidence / Reasoning:**" in content
         assert "Sharpe improved vs champion." in content
@@ -50,7 +56,10 @@ class TestAutocogEventFormatter:
         )
 
         assert "**Title:** Belief Conflict Detected" in content
-        assert "**Why This Happened (Plain English):** Contradiction on memory reliability" in content
+        assert (
+            "**Why This Happened (Plain English):** Contradiction on memory reliability"
+            in content
+        )
         assert (
             "**Intended Resolution:** Belief graph contradiction requires revision or review."
             in content
@@ -98,8 +107,15 @@ class TestAutocogEventFormatter:
 
         assert "**Revision Decision Packet:**" in content
         assert "Contradiction: Heuristic contradiction phrase detected" in content
-        assert "Previous Belief: belief-memory-outdated | Memory is outdated." in content
-        assert "Replacement Belief: belief-memory-health | Memory is healthy." in content
+        assert (
+            "Previous Belief: belief-memory-outdated | Memory is outdated." in content
+        )
+        assert (
+            "Replacement Belief: belief-memory-health | Memory is healthy." in content
+        )
         assert "Why This Won: Winner had stronger evidence support." in content
         assert "Source Diversity: distinct=3 non_llm=2" in content
-        assert "Rollback Hint: Restore belief-memory-outdated if regressions occur." in content
+        assert (
+            "Rollback Hint: Restore belief-memory-outdated if regressions occur."
+            in content
+        )

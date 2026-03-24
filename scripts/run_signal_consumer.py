@@ -140,7 +140,7 @@ class SignalConsumerRunner:
         logger.info("Initializing trading components...")
 
         # Create configuration
-        config = TradingModeConfig.create_paper_config(
+        TradingModeConfig.create_paper_config(
             portfolio_value=self.portfolio_value,
             signal_threshold=self.confidence_threshold,
         )

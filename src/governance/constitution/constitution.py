@@ -745,9 +745,11 @@ class Constitution:
     def get_health_status(self) -> dict[str, Any]:
         """Get health status of the constitution."""
         return {
-            "status": "healthy"
-            if self.status == ConstitutionStatus.ACTIVE
-            else self.status.value,
+            "status": (
+                "healthy"
+                if self.status == ConstitutionStatus.ACTIVE
+                else self.status.value
+            ),
             "version": str(self.version),
             "loaded_at": self.loaded_at.isoformat(),
             "invariant_count": len(self.safety_invariants.get("hard_constraints", [])),

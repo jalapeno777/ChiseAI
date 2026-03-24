@@ -409,12 +409,10 @@ def is_test_trade(entry: dict) -> bool:
 
     # Check signal_strategy
     signal_strategy = entry.get("signal_strategy", "")
-    if signal_strategy and (
-        "test" in signal_strategy.lower() or "e2e" in signal_strategy.lower()
-    ):
-        return True
-
-    return False
+    return bool(
+        signal_strategy
+        and ("test" in signal_strategy.lower() or "e2e" in signal_strategy.lower())
+    )
 
 
 def filter_test_trades(entries: list[dict]) -> tuple[list[dict], int]:
@@ -477,7 +475,7 @@ def assess_targets(kpis: PaperTradingKPIs) -> dict[str, Any]:
     assessments["overall"] = {
         "status": "PASS" if all_passed else "FAIL",
         "passed_count": passed_count,
-        "total_count": len([k for k in assessments.keys() if k != "overall"]),
+        "total_count": len([k for k in assessments if k != "overall"]),
     }
 
     return assessments
@@ -595,7 +593,7 @@ class RedisPaperKPIExtractor:
         if not self.client:
             raise RuntimeError("Not connected to Redis")
 
-        cutoff_time = datetime.now(UTC) - timedelta(days=lookback_days)
+        datetime.now(UTC) - timedelta(days=lookback_days)
 
         # Look for risk check results in journal entries
         # For now, we'll infer from trade status
@@ -644,7 +642,7 @@ class PaperKPICalculator:
 
         # Fetch data
         entries = self.extractor.fetch_journal_entries(lookback_days)
-        total_raw_entries = len(entries)
+        len(entries)
 
         # Filter out test trades if needed
         test_trades_excluded = 0
@@ -1096,16 +1094,16 @@ def print_summary(kpis: PaperTradingKPIs) -> None:
     print("=" * 60)
     print(f"\nCalculation ID: {kpis.calculation_id}")
     print(f"Data Range: {kpis.data_start_time} to {kpis.data_end_time}")
-    print(f"\nTrade Summary:")
+    print("\nTrade Summary:")
     print(f"  Total Trades: {kpis.total_trades}")
     print(f"  Winning: {kpis.winning_trades}")
     print(f"  Losing: {kpis.losing_trades}")
     print(f"  Open: {kpis.open_trades}")
-    print(f"\nTest Trade Segregation:")
+    print("\nTest Trade Segregation:")
     print(f"  Test Trades Included: {'Yes' if kpis.include_test_trades else 'No'}")
     print(f"  Test Trades Excluded: {kpis.test_trades_excluded_count}")
     print(f"  Production Trades: {kpis.production_trades_count}")
-    print(f"\nKey Metrics:")
+    print("\nKey Metrics:")
     print(f"  Win Rate: {kpis.win_rate:.2f}%")
     print(f"  Gross PnL: {kpis.total_gross_pnl:.4f}")
     print(f"  Total Fees: {kpis.total_fees:.4f}")
@@ -1116,12 +1114,12 @@ def print_summary(kpis: PaperTradingKPIs) -> None:
     print(f"  Risk Adherence: {kpis.risk_gate_adherence:.2f}%")
 
     if kpis.latency_ms:
-        print(f"\nLatency (ms):")
+        print("\nLatency (ms):")
         print(f"  P50: {kpis.latency_ms.p50_ms:.2f}")
         print(f"  P95: {kpis.latency_ms.p95_ms:.2f}")
         print(f"  P99: {kpis.latency_ms.p99_ms:.2f}")
 
-    print(f"\nData Quality:")
+    print("\nData Quality:")
     print(f"  Freshness: {kpis.data_freshness_hours:.2f} hours")
     print(f"  Is Fresh: {kpis.is_data_fresh}")
     print(

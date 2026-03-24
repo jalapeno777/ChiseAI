@@ -974,7 +974,7 @@ def main():
                     price = btc_price if symbol == "BTCUSDT" else eth_price
                     pnl = random.uniform(-30, 50)
                     confidence = random.uniform(0.70, 0.95)
-                    current_ts = time.time()
+                    time.time()
 
                     success = emit_trade(symbol, side, 0.1, price, pnl, confidence)
                     if success:
@@ -991,7 +991,7 @@ def main():
                     #     write_signal_index(redis_client, current_ts, symbol, side)
 
                     # Emit order for Order/Fill tracking
-                    order_id = str(uuid.uuid4())[:8]
+                    str(uuid.uuid4())[:8]
                     success = emit_order(symbol, side, price, 0.1)
                     if success:
                         success_count += 1
@@ -1003,7 +1003,7 @@ def main():
                     #     write_order_index(redis_client, order_id, current_ts)
 
                     # Emit fill for Order/Fill tracking
-                    fill_id = str(uuid.uuid4())[:8]
+                    str(uuid.uuid4())[:8]
                     success = emit_fill(symbol, side, price, 0.1)
                     if success:
                         success_count += 1

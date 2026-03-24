@@ -6,7 +6,10 @@ from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
 _MODULE_PATH = (
-    Path(__file__).resolve().parents[2] / "scripts" / "pr_lifecycle" / "auto_pr_merge.py"
+    Path(__file__).resolve().parents[2]
+    / "scripts"
+    / "pr_lifecycle"
+    / "auto_pr_merge.py"
 )
 _SPEC = spec_from_file_location("auto_pr_merge", _MODULE_PATH)
 assert _SPEC and _SPEC.loader

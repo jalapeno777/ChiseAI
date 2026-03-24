@@ -17,9 +17,9 @@ sys.path.insert(
 
 # Import providers directly
 from llm.kimi_client import KimiClient
+from llm.minimax_client import MiniMaxClient
 from llm.zai_client import ZaiClient
 from llm.zhipu_client import ZhipuClient
-from llm.minimax_client import MiniMaxClient
 
 
 async def test_providers_directly():
@@ -32,27 +32,27 @@ async def test_providers_directly():
         # Test KIMI
         print("Creating KimiClient...")
         kimi = KimiClient()
-        result = await kimi.chat("Hello, this is a test 1.")
+        await kimi.chat("Hello, this is a test 1.")
 
         # Test ZAI
         print("Creating ZaiClient...")
         zai = ZaiClient()
-        result = await zai.chat("Hello, this is test 2.")
+        await zai.chat("Hello, this is test 2.")
 
         # Test zhipu
         print("Creating ZhipuClient...")
         zhipu = ZhipuClient()
-        result = await zhipu.chat("Hello, this is test 3.")
+        await zhipu.chat("Hello, this is test 3.")
 
         # Test MiniMax
         print("Creating MiniMaxClient...")
         minimax = MiniMaxClient()
-        result = await minimax.chat("Hello, this is test 4.")
+        await minimax.chat("Hello, this is test 4.")
 
         print("✅ All providers tested successfully")
         return True
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         print("❌ Test timed out after 15 seconds")
         return False
 

@@ -17,7 +17,7 @@ import json
 import os
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -66,7 +66,7 @@ def _get_redis_connection() -> tuple[str, int, int]:
 def _log_action(action: str, reason: str, user: str | None = None) -> None:
     """Log an action to the audit log in Redis."""
     host, port, db = _get_redis_connection()
-    timestamp = datetime.now(timezone.utc).isoformat()
+    timestamp = datetime.now(UTC).isoformat()
     user = user or os.environ.get("USER", "unknown")
 
     log_entry = {
@@ -97,7 +97,7 @@ def disable_gates(reason: str, user: str | None = None) -> int:
         Exit code (0 for success, 1 for failure)
     """
     host, port, db = _get_redis_connection()
-    timestamp = datetime.now(timezone.utc).isoformat()
+    timestamp = datetime.now(UTC).isoformat()
     user = user or os.environ.get("USER", "unknown")
 
     # Set the disable key with metadata
@@ -119,7 +119,7 @@ def disable_gates(reason: str, user: str | None = None) -> int:
     print(f"  Reason: {reason}")
     print(f"  Disabled by: {user}")
     print(f"  Key: {GATE_DISABLE_KEY}")
-    print(f"  Auto-expires: 7 days")
+    print("  Auto-expires: 7 days")
 
     _log_action("disable", reason, user)
     return 0
@@ -152,10 +152,10 @@ def restore_gates(reason: str, user: str | None = None) -> int:
     try:
         prev_data = json.loads(get_proc.stdout.strip() or "{}")
         disabled_at = prev_data.get("disabled_at", "unknown")
-        disabled_by = prev_data.get("disabled_by", "unknown")
+        prev_data.get("disabled_by", "unknown")
         disabled_reason = prev_data.get("reason", "unknown")
     except Exception:
-        disabled_at = disabled_by = disabled_reason = "unknown"
+        disabled_at = disabled_reason = "unknown"
 
     # Delete the disable key
     del_proc = _redis_cli(host, port, db, "DEL", GATE_DISABLE_KEY)
@@ -163,7 +163,7 @@ def restore_gates(reason: str, user: str | None = None) -> int:
         print(f"ERROR: Failed to restore gates: {del_proc.stderr}", file=sys.stderr)
         return 1
 
-    timestamp = datetime.now(timezone.utc).isoformat()
+    timestamp = datetime.now(UTC).isoformat()
 
     print(f"SUCCESS: All blocking gates RESTORED at {timestamp}")
     print(f"  Reason: {reason}")

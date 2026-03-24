@@ -719,7 +719,13 @@ class TradeJournal:
             return True
 
         # Check signal_strategy
-        return bool(entry.signal_strategy and ("test" in entry.signal_strategy.lower() or "e2e" in entry.signal_strategy.lower()))
+        return bool(
+            entry.signal_strategy
+            and (
+                "test" in entry.signal_strategy.lower()
+                or "e2e" in entry.signal_strategy.lower()
+            )
+        )
 
     def get_stats(self) -> dict[str, Any]:
         """Get journal statistics.

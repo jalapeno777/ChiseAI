@@ -203,7 +203,8 @@ def main() -> int:
     state["active"] = [
         x
         for x in state["active"]
-        if isinstance(x, str) and state["tasks"].get(x, {}).get("status") in {"queued", "dispatched"}
+        if isinstance(x, str)
+        and state["tasks"].get(x, {}).get("status") in {"queued", "dispatched"}
     ][: settings.max_concurrent]
 
     alerts = read_alerts()[-500:]

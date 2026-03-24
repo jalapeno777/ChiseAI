@@ -658,9 +658,9 @@ class TestCheckDiscordConnectivity:
                             ):
                                 result = probe.check_discord_connectivity()
 
-        assert result.status == "PASS", (
-            f"Expected PASS but got {result.status}: {result.message}"
-        )
+        assert (
+            result.status == "PASS"
+        ), f"Expected PASS but got {result.status}: {result.message}"
         assert result.details.get("test_method") == "bot_api"
 
     def test_continuity_from_redis(self, probe, mock_redis):

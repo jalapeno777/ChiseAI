@@ -392,9 +392,9 @@ class BeliefCache:
             return {
                 "size": len(self._cache),
                 "max_size": self.max_size,
-                "utilization": len(self._cache) / self.max_size
-                if self.max_size > 0
-                else 0,
+                "utilization": (
+                    len(self._cache) / self.max_size if self.max_size > 0 else 0
+                ),
                 "default_ttl": self.default_ttl,
                 "metrics": self.metrics.to_dict(),
                 "total_access_count": total_accesses,

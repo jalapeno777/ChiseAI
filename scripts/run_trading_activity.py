@@ -239,9 +239,7 @@ class TradingModeLoader:
                 try:
                     market_data = MarketDataProvider()
                     try:
-                        connector = BybitDemoConnector.from_env(
-                            market_data=market_data
-                        )
+                        connector = BybitDemoConnector.from_env(market_data=market_data)
                     except TypeError:
                         connector = BybitDemoConnector.from_env()
                     if getattr(connector, "market_data", None) is None:
@@ -726,7 +724,9 @@ async def _execute_trading_cycle(
 
             # Step 4: Only process actionable signals
             if signal.status != SignalStatus.ACTIONABLE:
-                logger.debug(f"Signal not actionable for {symbol}: {signal.status.value}")
+                logger.debug(
+                    f"Signal not actionable for {symbol}: {signal.status.value}"
+                )
                 continue
 
             if signal.confidence < loader.config.signal_confidence_threshold:
@@ -786,7 +786,9 @@ async def _execute_trading_cycle(
                         f"confidence={signal.confidence:.2%}"
                     )
                 elif result.status.value == "rejected":
-                    logger.debug(f"Signal rejected by risk gate: {result.reject_reason}")
+                    logger.debug(
+                        f"Signal rejected by risk gate: {result.reject_reason}"
+                    )
 
                 if orchestrator.position_tracker:
                     try:

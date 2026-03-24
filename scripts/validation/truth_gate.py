@@ -23,6 +23,8 @@ from typing import Any
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from datetime import UTC, timezone
+
 from truth_gate_checks.merge_truth import check_merge_truth
 from truth_gate_checks.test_counts import check_test_counts
 from truth_gate_checks.workflow_status import check_workflow_status
@@ -136,7 +138,7 @@ def run_all_checks(
     output_format: str,
 ) -> dict[str, Any]:
     """Run all checks and combine results."""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     all_results = []
     errors = []
@@ -173,7 +175,7 @@ def run_all_checks(
     # Combine results
     combined = {
         "check_type": "all",
-        "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
+        "timestamp": datetime.now(UTC).isoformat() + "Z",
         "story_id": story_id,
         "passed": all(r.get("passed", False) for r in all_results),
         "checks": all_results,
@@ -218,8 +220,7 @@ def main() -> int:
     except Exception as e:
         result = {
             "check_type": args.check,
-            "timestamp": __import__("datetime").datetime.now(timezone.utc).isoformat()
-            + "Z",
+            "timestamp": __import__("datetime").datetime.now(UTC).isoformat() + "Z",
             "story_id": args.story_id,
             "passed": False,
             "errors": [str(e)],

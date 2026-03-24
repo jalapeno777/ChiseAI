@@ -107,9 +107,10 @@ def _is_legacy_exempt(path: Path, fm: dict[str, Any], include_archived: bool) ->
         return True
     if str(fm.get("compliance_mode", "")).strip().lower() == "legacy_exempt":
         return True
-    if include_archived and "docs/tempmemories/archived/" in str(path).replace("\\", "/"):
-        return True
-    return False
+    return bool(
+        include_archived
+        and "docs/tempmemories/archived/" in str(path).replace("\\", "/")
+    )
 
 
 def _load_legacy_exemptions() -> set[str]:

@@ -869,9 +869,11 @@ class FeedbackAnalyzer:
         return {
             "component": "FeedbackAnalyzer",
             "is_active": is_active,
-            "last_analysis_time": self._last_analysis_time.isoformat()
-            if self._last_analysis_time
-            else None,
+            "last_analysis_time": (
+                self._last_analysis_time.isoformat()
+                if self._last_analysis_time
+                else None
+            ),
             "total_analyses": self._total_analyses,
             "is_healthy": is_healthy,
             "reason": "; ".join(reason_parts),

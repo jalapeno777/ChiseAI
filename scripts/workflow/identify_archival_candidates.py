@@ -12,7 +12,7 @@ Usage:
 import argparse
 import logging
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -27,7 +27,7 @@ DEFAULT_AGE_DAYS = 7
 DEFAULT_STATUSES = ["completed", "merged"]
 
 
-def parse_date(date_str: Optional[str]) -> Optional[datetime]:
+def parse_date(date_str: str | None) -> datetime | None:
     """Parse ISO 8601 date string."""
     if not date_str:
         return None
@@ -35,23 +35,23 @@ def parse_date(date_str: Optional[str]) -> Optional[datetime]:
         if "T" in date_str:
             return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
         else:
-            return datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            return datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=UTC)
     except (ValueError, TypeError):
         return None
 
 
-def calculate_age_days(date_str: Optional[str]) -> Optional[int]:
+def calculate_age_days(date_str: str | None) -> int | None:
     """Calculate age in days from date string."""
     date = parse_date(date_str)
     if not date:
         return None
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return (now - date).days
 
 
 def is_candidate(story: dict, age_days: int, statuses: list[str]) -> tuple[bool, str]:
     """Check if story is an archival candidate."""
-    story_id = story.get("id", "UNKNOWN")
+    story.get("id", "UNKNOWN")
     status = story.get("status", "").lower()
 
     # Check status
@@ -150,7 +150,7 @@ def main():
         logger.error(f"Workflow file not found: {args.workflow}")
         sys.exit(1)
 
-    with open(args.workflow, "r") as f:
+    with open(args.workflow) as f:
         workflow_data = yaml.safe_load(f) or {}
 
     # Identify candidates
@@ -168,7 +168,7 @@ def main():
     # Save to file if requested
     if args.output:
         output_data = {
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "criteria": {"age_days": args.age_days, "statuses": statuses},
             "total_candidates": len(candidates),
             "candidates": candidates,

@@ -317,9 +317,9 @@ async def run_ece_update(
             updater = MockECEUpdater(store, history_tracker, dry_run=True)
         else:
             # Import actual implementations
-            from ml.calibration.ece_updater import ECEUpdateService, UpdateConfig
-            from ml.calibration.ece_calculator import InMemoryOutcomeDataStore
             from confidence.ece_tracker import ECEHistoryTracker
+            from ml.calibration.ece_calculator import InMemoryOutcomeDataStore
+            from ml.calibration.ece_updater import ECEUpdateService, UpdateConfig
 
             # Create configuration
             config = UpdateConfig(

@@ -97,9 +97,9 @@ class RollbackTrigger:
             "template_id": self.template_id,
             "require_confirmation": self.require_confirmation,
             "created_at": self.created_at.isoformat(),
-            "last_triggered": self.last_triggered.isoformat()
-            if self.last_triggered
-            else None,
+            "last_triggered": (
+                self.last_triggered.isoformat() if self.last_triggered else None
+            ),
             "trigger_count": self.trigger_count,
         }
 
@@ -227,12 +227,16 @@ class RollbackTemplate:
             steps=[RollbackTemplateStep.from_dict(s) for s in data.get("steps", [])],
             parameters=data.get("parameters", {}),
             template_id=data.get("template_id", str(uuid.uuid4())),
-            created_at=datetime.fromisoformat(data["created_at"])
-            if "created_at" in data
-            else datetime.now(UTC),
-            updated_at=datetime.fromisoformat(data["updated_at"])
-            if "updated_at" in data
-            else datetime.now(UTC),
+            created_at=(
+                datetime.fromisoformat(data["created_at"])
+                if "created_at" in data
+                else datetime.now(UTC)
+            ),
+            updated_at=(
+                datetime.fromisoformat(data["updated_at"])
+                if "updated_at" in data
+                else datetime.now(UTC)
+            ),
             usage_count=data.get("usage_count", 0),
         )
         return template
@@ -391,9 +395,9 @@ class PostRollbackValidationResult:
             "circuit_breaker_states_verified": self.circuit_breaker_states_verified,
             "retry_budgets_reset": self.retry_budgets_reset,
             "validation_report": self.validation_report,
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
             "all_passed": self.all_passed(),
         }
 

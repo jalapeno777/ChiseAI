@@ -274,7 +274,9 @@ class TestDiscordClient:
         assert health["guild_restricted"] is False
 
     @pytest.mark.asyncio
-    async def test_restore_queued_messages_accepts_dict_items(self, webhook_config) -> None:
+    async def test_restore_queued_messages_accepts_dict_items(
+        self, webhook_config
+    ) -> None:
         """Restore should support dict payloads (already deserialized by redis_state)."""
         client = DiscordClient(webhook_config)
         item = {

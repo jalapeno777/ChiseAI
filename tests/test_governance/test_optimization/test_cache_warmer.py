@@ -33,9 +33,9 @@ class TestWarmCacheReturn:
         assert isinstance(result["keys_warmed"], int)
         assert isinstance(result["duration_ms"], (int, float))
 
-        assert result["patterns_warmed"] == len(CacheWarmer.TOP_PATTERNS), (
-            "patterns_warmed should equal the number of TOP_PATTERNS"
-        )
+        assert result["patterns_warmed"] == len(
+            CacheWarmer.TOP_PATTERNS
+        ), "patterns_warmed should equal the number of TOP_PATTERNS"
 
 
 class TestWarmCacheIncrementsKeysWarmed:
@@ -50,12 +50,12 @@ class TestWarmCacheIncrementsKeysWarmed:
         result = warmer.warm_cache()
 
         # After warming, warmed_keys list should have grown
-        assert len(warmer.warmed_keys) > 0, (
-            "warmed_keys should be non-empty after warm_cache()"
-        )
-        assert result["keys_warmed"] == len(warmer.warmed_keys), (
-            "Result keys_warmed should match len(warmer.warmed_keys)"
-        )
+        assert (
+            len(warmer.warmed_keys) > 0
+        ), "warmed_keys should be non-empty after warm_cache()"
+        assert result["keys_warmed"] == len(
+            warmer.warmed_keys
+        ), "Result keys_warmed should match len(warmer.warmed_keys)"
 
     def test_warm_cache_idempotent_accumulates(self):
         """Calling warm_cache() twice should accumulate keys in warmed_keys list."""
@@ -66,6 +66,6 @@ class TestWarmCacheIncrementsKeysWarmed:
         warmer.warm_cache()
         second_count = len(warmer.warmed_keys)
 
-        assert second_count > first_count, (
-            "warmed_keys list should grow with each warm_cache() call"
-        )
+        assert (
+            second_count > first_count
+        ), "warmed_keys list should grow with each warm_cache() call"
