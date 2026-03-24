@@ -396,11 +396,6 @@ steps:
         exit 0
 
   local-ci:
-    when:
-      event:
-        - pull_request
-        - manual
-        - cron
     image: chiseai-ci-local-ci:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -583,11 +578,6 @@ steps:
         exit 0
 
   pre-eval-ingestion:
-    when:
-      event:
-        - pull_request
-        - manual
-        - cron
     image: chiseai-ci-pre-eval-ingestion:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -641,11 +631,6 @@ steps:
         exit 0
 
   brain-eval:
-    when:
-      event:
-        - pull_request
-        - manual
-        - cron
     image: chiseai-ci-brain-eval:py311-20260323
     depends_on:
       - pre-eval-ingestion
@@ -702,9 +687,6 @@ steps:
         exit 0
 
   tempmemory-scheduler:
-    when:
-      event:
-        - cron
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -715,6 +697,11 @@ steps:
         set +e
         (
           set -euo pipefail
+          if [ "$${CI_EVENT}" != "cron" ]; then
+            echo "tempmemory-scheduler: SKIPPED (cron-only)"
+            echo "0" > "$${CI_STATUS_DIR}/tempmemory-scheduler.status"
+            exit 0
+          fi
           # Run tempmemory migration
           python3 scripts/ops/tempmemory_migration.py --dry-run
         ) > "$${CI_STATUS_DIR}/tempmemory-scheduler.log" 2>&1
@@ -724,9 +711,6 @@ steps:
         exit 0
 
   mini-brain-eval:
-    when:
-      event:
-        - cron
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -737,6 +721,11 @@ steps:
         set +e
         (
           set -euo pipefail
+          if [ "$${CI_EVENT}" != "cron" ]; then
+            echo "mini-brain-eval: SKIPPED (cron-only)"
+            echo "0" > "$${CI_STATUS_DIR}/mini-brain-eval.status"
+            exit 0
+          fi
           # Run mini BrainEval with all sources
           python3 scripts/evaluation/mini_brain_eval.py --cadence daily --use-all --provenance --output-dir "$${CI_STATUS_DIR}/mini-brain-eval"
         ) > "$${CI_STATUS_DIR}/mini-brain-eval.log" 2>&1
@@ -746,9 +735,6 @@ steps:
         exit 0
 
   tempmemory-reconcile:
-    when:
-      event:
-        - cron
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -759,6 +745,11 @@ steps:
         set +e
         (
           set -euo pipefail
+          if [ "$${CI_EVENT}" != "cron" ]; then
+            echo "tempmemory-reconcile: SKIPPED (cron-only)"
+            echo "0" > "$${CI_STATUS_DIR}/tempmemory-reconcile.status"
+            exit 0
+          fi
           # Run reconciliation and archive
           python3 scripts/ops/tempmemory_scheduler.py --once --dry-run
         ) > "$${CI_STATUS_DIR}/tempmemory-reconcile.log" 2>&1
@@ -768,9 +759,6 @@ steps:
         exit 0
 
   tempmemory-drill:
-    when:
-      event:
-        - cron
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -781,9 +769,14 @@ steps:
         set +e
         (
           set -euo pipefail
-          EVENT="${CI_BUILD_EVENT:-${WOODPECKER_BUILD_EVENT:-${WOODPECKER_EVENT:-}}}"
-          BRANCH="${CI_COMMIT_BRANCH:-${WOODPECKER_COMMIT_BRANCH:-}}"
-          if [ "${EVENT}" != "cron" ] || [ "${BRANCH}" != "main" ]; then
+          if [ "$${CI_EVENT}" != "cron" ]; then
+            echo "tempmemory-drill: SKIPPED (cron-only)"
+            echo "0" > "$${CI_STATUS_DIR}/tempmemory-drill.status"
+            exit 0
+          fi
+          EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-$${CI_PIPELINE_EVENT:-}}}}"
+          BRANCH="$${CI_COMMIT_BRANCH:-$${WOODPECKER_COMMIT_BRANCH:-}}"
+          if [ "$${EVENT}" != "cron" ] || [ "$${BRANCH}" != "main" ]; then
             echo "tempmemory-drill: not cron/main; skipping"
             exit 0
           fi
@@ -798,9 +791,6 @@ steps:
         exit 0
 
   flaky-detection:
-    when:
-      event:
-        - cron
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -811,9 +801,14 @@ steps:
         set +e
         (
           set -euo pipefail
-          EVENT="${CI_BUILD_EVENT:-${WOODPECKER_BUILD_EVENT:-${WOODPECKER_EVENT:-}}}"
-          BRANCH="${CI_COMMIT_BRANCH:-${WOODPECKER_COMMIT_BRANCH:-}}"
-          if [ "${EVENT}" != "cron" ] || [ "${BRANCH}" != "main" ]; then
+          if [ "$${CI_EVENT}" != "cron" ]; then
+            echo "flaky-detection: SKIPPED (cron-only)"
+            echo "0" > "$${CI_STATUS_DIR}/flaky-detection.status"
+            exit 0
+          fi
+          EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-$${CI_PIPELINE_EVENT:-}}}}"
+          BRANCH="$${CI_COMMIT_BRANCH:-$${WOODPECKER_COMMIT_BRANCH:-}}"
+          if [ "$${EVENT}" != "cron" ] || [ "$${BRANCH}" != "main" ]; then
             echo "flaky-detection: not cron/main; skipping"
             exit 0
           fi
