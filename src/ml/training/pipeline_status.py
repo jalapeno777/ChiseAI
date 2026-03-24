@@ -10,6 +10,7 @@ For ST-LAUNCH-012: Training Pipeline Integration
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 from datetime import UTC, datetime
@@ -59,20 +60,20 @@ def _get_redis_helpers():
     """
     try:
         from redis_state import (
-            redis_state_hset,
+            redis_state_hdel,
             redis_state_hget,
             redis_state_hgetall,
-            redis_state_hdel,
+            redis_state_hset,
         )
 
         return redis_state_hset, redis_state_hget, redis_state_hgetall, redis_state_hdel
     except ImportError:
         try:
             from tools.redis_state import (
-                redis_state_hset,
+                redis_state_hdel,
                 redis_state_hget,
                 redis_state_hgetall,
-                redis_state_hdel,
+                redis_state_hset,
             )
 
             return (
@@ -161,10 +162,8 @@ def get_pipeline_status(pipeline_id: str) -> dict[str, Any] | None:
         # Parse metadata if present
         result = dict(data)
         if "metadata" in result:
-            try:
+            with contextlib.suppress(json.JSONDecodeError):
                 result["metadata"] = json.loads(result["metadata"])
-            except json.JSONDecodeError:
-                pass  # Keep as string if not valid JSON
 
         return result
     except Exception as e:

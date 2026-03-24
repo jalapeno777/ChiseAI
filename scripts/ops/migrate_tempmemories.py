@@ -29,7 +29,7 @@ import os
 import re
 import sys
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -163,10 +163,7 @@ Safety Note:
 
 def is_skipped_file(rel_path: str) -> bool:
     """Check if file should be skipped based on patterns."""
-    for pattern in SKIP_PATTERNS:
-        if re.search(pattern, rel_path):
-            return True
-    return False
+    return any(re.search(pattern, rel_path) for pattern in SKIP_PATTERNS)
 
 
 def parse_frontmatter(content: str) -> tuple[dict[str, Any], str]:
@@ -207,9 +204,12 @@ def parse_frontmatter(content: str) -> tuple[dict[str, Any], str]:
             value = value.strip()
 
             # Remove quotes if present
-            if value.startswith('"') and value.endswith('"'):
-                value = value[1:-1]
-            elif value.startswith("'") and value.endswith("'"):
+            if (
+                value.startswith('"')
+                and value.endswith('"')
+                or value.startswith("'")
+                and value.endswith("'")
+            ):
                 value = value[1:-1]
 
             # Handle arrays [item1, item2]
@@ -265,11 +265,7 @@ def is_iterlog_file(frontmatter: dict) -> bool:
         return True
 
     story_id = frontmatter.get("story_id", "")
-    for pattern in STORY_ID_PATTERNS:
-        if re.search(pattern, str(story_id)):
-            return True
-
-    return False
+    return any(re.search(pattern, str(story_id)) for pattern in STORY_ID_PATTERNS)
 
 
 def generate_signature(story_id: str, content: str, source_path: str) -> str:
@@ -342,7 +338,7 @@ def check_signature_exists(signature: str) -> bool:
     # If Redis unavailable, check local cache
     cache_file = Path(".migration_signatures.json")
     if cache_file.exists():
-        with open(cache_file, "r") as f:
+        with open(cache_file) as f:
             cache = json.load(f)
             return signature in cache
     return False
@@ -363,7 +359,7 @@ def store_signature(signature: str, metadata: dict) -> bool:
     cache_file = Path(".migration_signatures.json")
     cache: dict[str, Any] = {}
     if cache_file.exists():
-        with open(cache_file, "r") as f:
+        with open(cache_file) as f:
             cache = json.load(f)
     cache[signature] = metadata
     with open(cache_file, "w") as f:
@@ -406,7 +402,7 @@ def migrate_to_redis(
         "tags": json.dumps(frontmatter.get("tags", [])),
         "date": frontmatter.get("date", ""),
         "priority": classify_file("", frontmatter),
-        "migrated_at": datetime.now(timezone.utc).isoformat(),
+        "migrated_at": datetime.now(UTC).isoformat(),
         "migration_signature": signature,
     }
 
@@ -471,7 +467,7 @@ def migrate_to_qdrant(
         "tags": frontmatter.get("tags", []),
         "timeframe": frontmatter.get("timeframe", ""),
         "date": frontmatter.get("date", ""),
-        "migrated_at": datetime.now(timezone.utc).isoformat(),
+        "migrated_at": datetime.now(UTC).isoformat(),
         "source_file": rel_path,
         "migration_signature": signature,
         "priority": classify_file(rel_path, frontmatter),
@@ -529,7 +525,7 @@ def archive_file(
     Returns:
         Tuple of (success, message, archive_path)
     """
-    today = datetime.now(timezone.utc)
+    today = datetime.now(UTC)
     archive_subdir = ARCHIVE_DIR / today.strftime("%Y-%m")
 
     # Preserve subdirectory structure
@@ -587,7 +583,7 @@ def update_source_file_remove_flag(
         return False, f"Failed to update source file: {str(e)}"
 
 
-def scan_tempmemories(story_filter: Optional[str] = None) -> list[dict]:
+def scan_tempmemories(story_filter: str | None = None) -> list[dict]:
     """
     Scan docs/tempmemories/ for files to migrate.
 
@@ -620,7 +616,7 @@ def scan_tempmemories(story_filter: Optional[str] = None) -> list[dict]:
 
             # Read and parse file
             try:
-                with open(full_path, "r", encoding="utf-8") as f:
+                with open(full_path, encoding="utf-8") as f:
                     content = f.read()
             except Exception as e:
                 files.append(
@@ -706,7 +702,7 @@ def main() -> int:
     # Determine mode
     dry_run = not args.execute
     mode = "execute" if args.execute else "dry-run"
-    timestamp = datetime.now(timezone.utc).isoformat()
+    timestamp = datetime.now(UTC).isoformat()
 
     if dry_run and not args.cleanup:
         print("=" * 70, file=sys.stderr)
@@ -909,7 +905,7 @@ def main() -> int:
                 {
                     "story_id": story_id,
                     "source": rel_path,
-                    "migrated_at": datetime.now(timezone.utc).isoformat(),
+                    "migrated_at": datetime.now(UTC).isoformat(),
                     "qdrant_id": qdrant_id,
                 },
             )
@@ -968,7 +964,7 @@ def main() -> int:
     if args.cleanup and results["archived_files"]:
         print(file=sys.stderr)
         print(
-            f"Archive location: {ARCHIVE_DIR / datetime.now(timezone.utc).strftime('%Y-%m')}",
+            f"Archive location: {ARCHIVE_DIR / datetime.now(UTC).strftime('%Y-%m')}",
             file=sys.stderr,
         )
 

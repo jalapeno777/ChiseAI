@@ -1,12 +1,8 @@
 """Tests for autonomy cadence controller and job health diagnostics."""
 
 import json
-import tempfile
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
-from unittest.mock import Mock, patch
-
-import pytest
+from unittest.mock import patch
 
 from scripts.evaluation.autonomy_cadence_controller import (
     cadence_seconds,

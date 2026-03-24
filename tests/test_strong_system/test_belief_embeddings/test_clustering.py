@@ -6,13 +6,12 @@ import json
 
 import numpy as np
 import pytest
-
 from src.strong_system.belief_embeddings import (
     BeliefClusteringEngine,
     BeliefVector,
     ClusterAssignment,
-    ClusterMetrics,
     ClusteringError,
+    ClusterMetrics,
     ValidationError,
 )
 
@@ -362,7 +361,7 @@ class TestBeliefClusteringEngineDBSCAN:
         cluster_id = engine.predict(new_belief)
 
         # Should assign to one of the found clusters
-        assert cluster_id in engine.get_centroids().keys()
+        assert cluster_id in engine.get_centroids()
 
 
 class TestBeliefClusteringEngineMiniBatch:

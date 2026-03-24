@@ -15,15 +15,12 @@ Task: 4.6 - Distributed Trace Flow Verification
 from __future__ import annotations
 
 import asyncio
-import json
 import os
 import sys
-import time
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock
 
 import pytest
 import requests
@@ -85,10 +82,10 @@ class TestTraceContextPropagation:
     def test_traceparent_header_generation(self):
         """Test that traceparent headers are correctly generated."""
         from opentelemetry import trace
+        from opentelemetry.sdk.trace import TracerProvider
         from opentelemetry.trace.propagation.tracecontext import (
             TraceContextTextMapPropagator,
         )
-        from opentelemetry.sdk.trace import TracerProvider
 
         # Initialize tracer
         provider = TracerProvider()
@@ -113,14 +110,14 @@ class TestTraceContextPropagation:
     def test_trace_context_propagation_chain(self, mock_services):
         """Test trace context propagates through API → Strategy → DB chain."""
         from opentelemetry import trace
-        from opentelemetry.trace.propagation.tracecontext import (
-            TraceContextTextMapPropagator,
-        )
         from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
         from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
             InMemorySpanExporter,
         )
-        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+        from opentelemetry.trace.propagation.tracecontext import (
+            TraceContextTextMapPropagator,
+        )
 
         # Set up in-memory span exporter for testing
         provider = TracerProvider()
@@ -171,9 +168,11 @@ class TestTraceContextPropagation:
                             "span_id": format(
                                 db_span.get_span_context().span_id, "016x"
                             ),
-                            "parent_id": format(db_span.parent.span_id, "016x")
-                            if db_span.parent
-                            else None,
+                            "parent_id": (
+                                format(db_span.parent.span_id, "016x")
+                                if db_span.parent
+                                else None
+                            ),
                         }
                     )
 
@@ -186,9 +185,11 @@ class TestTraceContextPropagation:
                         "span_id": format(
                             strategy_span.get_span_context().span_id, "016x"
                         ),
-                        "parent_id": format(strategy_span.parent.span_id, "016x")
-                        if strategy_span.parent
-                        else None,
+                        "parent_id": (
+                            format(strategy_span.parent.span_id, "016x")
+                            if strategy_span.parent
+                            else None
+                        ),
                     }
                 )
 
@@ -219,10 +220,10 @@ class TestTraceContextPropagation:
         """Test that services add correct attributes to spans."""
         from opentelemetry import trace
         from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
         from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
             InMemorySpanExporter,
         )
-        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
         provider = TracerProvider()
         exporter = InMemorySpanExporter()
@@ -280,9 +281,10 @@ class TestTempoTraceStorage:
         """Test Tempo endpoint is accessible."""
         try:
             response = requests.get(f"{TEMPO_ENDPOINT}/ready", timeout=5)
-            assert response.status_code in [200, 204], (
-                f"Tempo not ready: {response.status_code}"
-            )
+            assert response.status_code in [
+                200,
+                204,
+            ], f"Tempo not ready: {response.status_code}"
         except requests.RequestException as e:
             pytest.skip(f"Tempo not accessible: {e}")
 
@@ -332,9 +334,9 @@ class TestTempoTraceStorage:
                 pass
             await asyncio.sleep(POLL_INTERVAL)
 
-        assert found, (
-            f"Trace {trace_id_hex} not found in Tempo after {MAX_WAIT_SECONDS}s"
-        )
+        assert (
+            found
+        ), f"Trace {trace_id_hex} not found in Tempo after {MAX_WAIT_SECONDS}s"
 
 
 class TestServiceTraceCoverage:
@@ -344,10 +346,10 @@ class TestServiceTraceCoverage:
         """Test API service generates traces."""
         from opentelemetry import trace
         from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
         from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
             InMemorySpanExporter,
         )
-        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
         provider = TracerProvider()
         exporter = InMemorySpanExporter()
@@ -373,18 +375,18 @@ class TestServiceTraceCoverage:
             "api.handler",
             "api.db.query",
         }
-        assert expected_spans.issubset(span_names), (
-            f"Missing spans: {expected_spans - span_names}"
-        )
+        assert expected_spans.issubset(
+            span_names
+        ), f"Missing spans: {expected_spans - span_names}"
 
     def test_strategy_service_tracing(self):
         """Test Strategy service generates traces."""
         from opentelemetry import trace
         from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
         from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
             InMemorySpanExporter,
         )
-        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
         provider = TracerProvider()
         exporter = InMemorySpanExporter()
@@ -408,18 +410,18 @@ class TestServiceTraceCoverage:
             "strategy.validate",
             "strategy.risk.check",
         }
-        assert expected_spans.issubset(span_names), (
-            f"Missing spans: {expected_spans - span_names}"
-        )
+        assert expected_spans.issubset(
+            span_names
+        ), f"Missing spans: {expected_spans - span_names}"
 
     def test_ingestion_service_tracing(self):
         """Test Ingestion service generates traces."""
         from opentelemetry import trace
         from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
         from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
             InMemorySpanExporter,
         )
-        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
         provider = TracerProvider()
         exporter = InMemorySpanExporter()
@@ -446,9 +448,9 @@ class TestServiceTraceCoverage:
             "ingestion.transform",
             "ingestion.store",
         }
-        assert expected_spans.issubset(span_names), (
-            f"Missing spans: {expected_spans - span_names}"
-        )
+        assert expected_spans.issubset(
+            span_names
+        ), f"Missing spans: {expected_spans - span_names}"
 
 
 class TestDistributedTraceIntegration:
@@ -458,14 +460,14 @@ class TestDistributedTraceIntegration:
     async def test_full_request_flow_tracing(self):
         """Test that a single request generates traces across all services."""
         from opentelemetry import trace
-        from opentelemetry.trace.propagation.tracecontext import (
-            TraceContextTextMapPropagator,
-        )
         from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
         from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
             InMemorySpanExporter,
         )
-        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+        from opentelemetry.trace.propagation.tracecontext import (
+            TraceContextTextMapPropagator,
+        )
 
         provider = TracerProvider()
         exporter = InMemorySpanExporter()
@@ -547,10 +549,10 @@ class TestTraceErrorHandling:
         """Test that error spans have correct attributes."""
         from opentelemetry import trace
         from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
         from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
             InMemorySpanExporter,
         )
-        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
         from opentelemetry.trace.status import StatusCode
 
         provider = TracerProvider()
@@ -576,10 +578,10 @@ class TestTraceErrorHandling:
         """Test that tracing continues even after individual span errors."""
         from opentelemetry import trace
         from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
         from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
             InMemorySpanExporter,
         )
-        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
         provider = TracerProvider()
         exporter = InMemorySpanExporter()

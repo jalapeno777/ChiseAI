@@ -31,7 +31,7 @@ STORY_DETAILS_DIR = ARCHIVE_DIR / "story-details"
 
 def load_yaml(path: Path) -> dict:
     """Load YAML file."""
-    with open(path, "r") as f:
+    with open(path) as f:
         return yaml.safe_load(f) or {}
 
 
@@ -166,9 +166,9 @@ def main():
         results = {
             "restored": 1 if success else 0,
             "failed": 0 if success else 1,
-            "errors": []
-            if success
-            else [{"story_id": args.story_id, "error": message}],
+            "errors": (
+                [] if success else [{"story_id": args.story_id, "error": message}]
+            ),
         }
         print(message)
     else:
@@ -177,7 +177,7 @@ def main():
     # Save workflow if not dry run
     if not args.dry_run and results["restored"] > 0:
         save_yaml(workflow_data, WORKFLOW_FILE)
-        logger.info(f"Saved workflow status")
+        logger.info("Saved workflow status")
 
     # Summary
     print("\n" + "=" * 70)

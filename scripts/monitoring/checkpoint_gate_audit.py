@@ -507,6 +507,7 @@ def check_g11_provenance() -> dict[str, Any]:
             # Fallback to asyncpg if psycopg2 not available
             try:
                 import asyncio
+
                 import asyncpg
 
                 async def query():

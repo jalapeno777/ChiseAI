@@ -5,9 +5,6 @@ For ST-CONTROL-003: Control Plane Dashboard
 
 from __future__ import annotations
 
-import pytest
-from datetime import datetime
-
 from autonomous_control_plane.dashboard.models import (
     ChartData,
     CircuitBreakerPanelData,

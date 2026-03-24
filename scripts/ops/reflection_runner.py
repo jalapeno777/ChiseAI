@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
 import types
 from pathlib import Path
@@ -52,13 +53,19 @@ from governance.reflection.artifacts import (
     ReflectionValidator,
     RootCause,
 )
-from governance.reflection.loops import ReflectionLoops
 from governance.reflection.feature_flags import (
     get_flag_status as shared_get_flag_status,
+)
+from governance.reflection.feature_flags import (
     get_redis_client as shared_get_redis_client,
+)
+from governance.reflection.feature_flags import (
     is_flag_enabled as shared_is_flag_enabled,
+)
+from governance.reflection.feature_flags import (
     set_flag_enabled as shared_set_flag_enabled,
 )
+from governance.reflection.loops import ReflectionLoops
 
 # Configure logging
 logging.basicConfig(

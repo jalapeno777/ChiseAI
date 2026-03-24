@@ -125,7 +125,7 @@ class E2EPaperTradingTest:
         """
         logger.info(f"=== Starting Full E2E Paper Trading Test: {self.test_id} ===")
         logger.info(
-            f"Environment: USE_LLM_TRADE_DECISIONS=true, LLM_DECISION_TIMEOUT_MS=30000"
+            "Environment: USE_LLM_TRADE_DECISIONS=true, LLM_DECISION_TIMEOUT_MS=30000"
         )
 
         try:
@@ -568,7 +568,7 @@ class E2EPaperTradingTest:
 
             return position
 
-        except Exception as e:
+        except Exception:
             await connector.close()
             raise
 
@@ -779,7 +779,7 @@ class E2EPaperTradingTest:
         """Verify trade journal persistence."""
         logger.info("Step 9: Journal entry creation...")
 
-        from execution.paper.trade_journal import TradeJournal, ExitReason
+        from execution.paper.trade_journal import ExitReason, TradeJournal
         from execution.paper.trade_journal_service import TradeJournalService
         from signal_generation.models import Signal, SignalDirection, SignalStatus
 

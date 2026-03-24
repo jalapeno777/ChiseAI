@@ -1,16 +1,18 @@
 """Cross-system learning bridge between AUTOCOG and STRONG systems."""
 
 import asyncio
-import time
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Any, Dict, List, Optional, Callable
+import contextlib
 import logging
+import time
+from collections.abc import Callable
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from enum import Enum
+from typing import Any
 
-from .protocols import KnowledgeTransferProtocol, TransferEvent, TransferStatus
+from .adapters import AutocogAdapter, DualAdapter, StrongAdapter
 from .converters import BidirectionalConverter
-from .adapters import DualAdapter, AutocogAdapter, StrongAdapter
+from .protocols import KnowledgeTransferProtocol, TransferEvent, TransferStatus
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +36,7 @@ class BridgeMetrics:
     successful_transfers: int = 0
     failed_transfers: int = 0
     total_latency_ms: float = 0.0
-    last_transfer_time: Optional[datetime] = None
+    last_transfer_time: datetime | None = None
     autocog_items_transferred: int = 0
     strong_items_transferred: int = 0
     validation_failures: int = 0
@@ -82,8 +84,8 @@ class LearningBridge:
 
     def __init__(
         self,
-        autocog_adapter: Optional[AutocogAdapter] = None,
-        strong_adapter: Optional[StrongAdapter] = None,
+        autocog_adapter: AutocogAdapter | None = None,
+        strong_adapter: StrongAdapter | None = None,
         enable_auto_sync: bool = True,
         sync_interval: float = 30.0,
         max_concurrent_transfers: int = 10,
@@ -102,15 +104,15 @@ class LearningBridge:
         self._status = BridgeStatus.INITIALIZING
         self._metrics = BridgeMetrics()
         self._running = False
-        self._sync_task: Optional[asyncio.Task] = None
+        self._sync_task: asyncio.Task | None = None
         self._transfer_semaphore = asyncio.Semaphore(max_concurrent_transfers)
 
         # Callbacks
-        self._on_transfer_complete: Optional[Callable[[TransferEvent], None]] = None
-        self._on_transfer_failure: Optional[
-            Callable[[TransferEvent, Exception], None]
-        ] = None
-        self._on_validation_failure: Optional[Callable[[TransferEvent], None]] = None
+        self._on_transfer_complete: Callable[[TransferEvent], None] | None = None
+        self._on_transfer_failure: Callable[[TransferEvent, Exception], None] | None = (
+            None
+        )
+        self._on_validation_failure: Callable[[TransferEvent], None] | None = None
 
     async def initialize(self) -> bool:
         """Initialize the learning bridge."""
@@ -156,10 +158,8 @@ class LearningBridge:
 
         if self._sync_task:
             self._sync_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._sync_task
-            except asyncio.CancelledError:
-                pass
 
         await self.dual_adapter.disconnect_both()
         self._status = BridgeStatus.DISCONNECTED
@@ -169,7 +169,7 @@ class LearningBridge:
         self,
         knowledge_item_id: str,
         knowledge_type: str,
-        payload: Dict[str, Any],
+        payload: dict[str, Any],
         priority: str = "medium",
     ) -> TransferEvent:
         """
@@ -197,7 +197,7 @@ class LearningBridge:
         self,
         knowledge_item_id: str,
         knowledge_type: str,
-        payload: Dict[str, Any],
+        payload: dict[str, Any],
         priority: str = "medium",
     ) -> TransferEvent:
         """
@@ -221,7 +221,7 @@ class LearningBridge:
             priority=priority,
         )
 
-    async def sync_all(self) -> List[TransferEvent]:
+    async def sync_all(self) -> list[TransferEvent]:
         """
         Sync all knowledge items between systems.
 
@@ -295,7 +295,7 @@ class LearningBridge:
         target_system: str,
         knowledge_item_id: str,
         knowledge_type: str,
-        payload: Dict[str, Any],
+        payload: dict[str, Any],
         priority: str = "medium",
     ) -> TransferEvent:
         """Internal transfer method."""
@@ -414,7 +414,7 @@ class LearningBridge:
             # Update metrics
             latency_ms = (time.time() - start_time) * 1000
             self._metrics.total_latency_ms += latency_ms
-            self._metrics.last_transfer_time = datetime.now(timezone.utc)
+            self._metrics.last_transfer_time = datetime.now(UTC)
 
             # Reset status if no longer syncing
             if self._status == BridgeStatus.SYNCING:
@@ -436,22 +436,22 @@ class LearningBridge:
                 logger.error(f"Error in auto-sync loop: {e}")
                 self._status = BridgeStatus.ERROR
 
-    def get_transfer_history(self, transfer_id: str) -> Optional[TransferEvent]:
+    def get_transfer_history(self, transfer_id: str) -> TransferEvent | None:
         """Get transfer event from history."""
         return self.transfer_protocol.get_transfer_history(transfer_id)
 
-    def get_transfers_by_status(self, status: TransferStatus) -> List[TransferEvent]:
+    def get_transfers_by_status(self, status: TransferStatus) -> list[TransferEvent]:
         """Get all transfers with specific status."""
         return self.transfer_protocol.get_transfers_by_status(status)
 
-    def get_transfers_by_system(self, system_id: str) -> List[TransferEvent]:
+    def get_transfers_by_system(self, system_id: str) -> list[TransferEvent]:
         """Get all transfers involving a system."""
         return self.transfer_protocol.get_transfers_by_system(system_id)
 
 
 async def create_learning_bridge(
-    autocog_adapter: Optional[AutocogAdapter] = None,
-    strong_adapter: Optional[StrongAdapter] = None,
+    autocog_adapter: AutocogAdapter | None = None,
+    strong_adapter: StrongAdapter | None = None,
     enable_auto_sync: bool = True,
 ) -> LearningBridge:
     """Factory function to create and initialize a learning bridge."""

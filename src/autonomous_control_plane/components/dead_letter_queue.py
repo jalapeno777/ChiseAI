@@ -208,9 +208,9 @@ class DeadLetterQueue:
 
     def _get_from_db(self, item_id: str) -> DeadLetterQueueItem | None:
         """Get item from database."""
-        assert self._engine is not None, (
-            "_get_from_db should only be called when engine is set"
-        )
+        assert (
+            self._engine is not None
+        ), "_get_from_db should only be called when engine is set"
         try:
             from sqlalchemy import text
 
@@ -276,9 +276,9 @@ class DeadLetterQueue:
         offset: int,
     ) -> list[DeadLetterQueueItem]:
         """List items from database."""
-        assert self._engine is not None, (
-            "_list_from_db should only be called when engine is set"
-        )
+        assert (
+            self._engine is not None
+        ), "_list_from_db should only be called when engine is set"
         try:
             from sqlalchemy import text
 
@@ -337,9 +337,9 @@ class DeadLetterQueue:
 
     def _mark_retried_db(self, item_id: str, success: bool) -> bool:
         """Mark item as retried in database."""
-        assert self._engine is not None, (
-            "_mark_retried_db should only be called when engine is set"
-        )
+        assert (
+            self._engine is not None
+        ), "_mark_retried_db should only be called when engine is set"
         try:
             from sqlalchemy import text
 
@@ -384,9 +384,9 @@ class DeadLetterQueue:
 
     def _delete_from_db(self, item_id: str) -> bool:
         """Delete item from database."""
-        assert self._engine is not None, (
-            "_delete_from_db should only be called when engine is set"
-        )
+        assert (
+            self._engine is not None
+        ), "_delete_from_db should only be called when engine is set"
         try:
             from sqlalchemy import text
 
@@ -424,9 +424,9 @@ class DeadLetterQueue:
 
     def _get_stats_from_db(self) -> dict[str, Any]:
         """Get stats from database."""
-        assert self._engine is not None, (
-            "_get_stats_from_db should only be called when engine is set"
-        )
+        assert (
+            self._engine is not None
+        ), "_get_stats_from_db should only be called when engine is set"
         try:
             from sqlalchemy import text
 
@@ -438,22 +438,18 @@ class DeadLetterQueue:
                 total_count = total_result.scalar()
 
                 # By service
-                service_result = conn.execute(
-                    text(f"""
+                service_result = conn.execute(text(f"""
                         SELECT service_name, COUNT(*) as count
                         FROM {self._table_name}
                         GROUP BY service_name
-                    """)
-                )
+                    """))
                 by_service = {row.service_name: row.count for row in service_result}
 
                 # Pending count
-                pending_result = conn.execute(
-                    text(f"""
+                pending_result = conn.execute(text(f"""
                         SELECT COUNT(*) FROM {self._table_name}
                         WHERE status = 'DLQ'
-                    """)
-                )
+                    """))
                 pending_count = pending_result.scalar()
 
                 return {

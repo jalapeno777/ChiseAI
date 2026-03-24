@@ -11,17 +11,15 @@ For PAPER-FORENSIC-001: NO-GO Fix - Batch 4
 """
 
 import json
-from datetime import UTC, datetime
 from decimal import Decimal
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock
 from uuid import uuid4
 
 import pytest
-
 from src.execution.outcome_capture.integration import OutcomeCaptureIntegration
 from src.execution.paper.orchestrator import PaperTradingOrchestrator
 from src.execution.persistence.outcome_persistence import OutcomePersistence
-from src.ml.models.signal_outcome import SignalOutcome, SignalOutcomeStatus
+from src.ml.models.signal_outcome import SignalOutcome
 
 
 class TestProvenanceFieldsPopulation:
@@ -171,9 +169,11 @@ class TestConnectorSelection:
 
     def test_orchestrator_extracts_order_simulator_provenance(self):
         """Test that orchestrator extracts provenance from OrderSimulator."""
+
         # Create a simple class that mimics OrderSimulator
         class OrderSimulator:
             """Mock OrderSimulator class."""
+
             pass
 
         mock_connector = OrderSimulator()
@@ -196,9 +196,11 @@ class TestConnectorSelection:
 
     def test_orchestrator_handles_unknown_connector(self):
         """Test that orchestrator handles unknown connector types gracefully."""
+
         # Create a simple unknown class
         class UnknownConnector:
             """Mock unknown connector."""
+
             pass
 
         mock_connector = UnknownConnector()
@@ -221,9 +223,11 @@ class TestConnectorSelection:
 
     def test_orchestrator_handles_bybit_demo_without_get_provenance(self):
         """Test orchestrator handles BybitDemoConnector without get_provenance."""
+
         # Create a simple BybitDemoConnector class without get_provenance
         class BybitDemoConnector:
             """Mock BybitDemoConnector without get_provenance."""
+
             pass
 
         mock_connector = BybitDemoConnector()
@@ -240,7 +244,7 @@ class TestConnectorSelection:
 
         # Verify fallback provenance is used (checks __name__ == "BybitDemoConnector")
         provenance = orchestrator.get_connector_provenance()
-        # Since BybitDemoConnector doesn't have get_provenance, it falls through to the 
+        # Since BybitDemoConnector doesn't have get_provenance, it falls through to the
         # type check which should recognize it as BybitDemoConnector
         # But the current implementation checks type().__name__ == "OrderSimulator" first
         # So it will actually return "unknown" for a plain BybitDemoConnector without get_provenance
@@ -332,13 +336,16 @@ class TestProvenanceEndToEnd:
 
     def test_full_provenance_flow_bybit_demo(self):
         """Test full provenance flow with BybitDemoConnector."""
+
         # 1. Create mock BybitDemoConnector with get_provenance
         class BybitDemoConnector:
             """Mock BybitDemoConnector with get_provenance."""
+
             def get_provenance(self):
                 class Provenance:
                     endpoint = "https://api-demo.bybit.com"
                     api_key_prefix = "TEST"
+
                 return Provenance()
 
         mock_connector = BybitDemoConnector()
@@ -387,9 +394,11 @@ class TestProvenanceEndToEnd:
 
     def test_full_provenance_flow_order_simulator(self):
         """Test full provenance flow with OrderSimulator."""
+
         # 1. Create mock OrderSimulator
         class OrderSimulator:
             """Mock OrderSimulator class."""
+
             pass
 
         mock_connector = OrderSimulator()

@@ -397,9 +397,7 @@ class SecretDetector:
             return True
         if file_path.name.endswith(".tfvars.template"):
             return True
-        if file_path.name.startswith(".") and "env" in file_path.name.lower():
-            return True
-        return False
+        return bool(file_path.name.startswith(".") and "env" in file_path.name.lower())
 
     def _is_placeholder(self, text: str) -> bool:
         """Check if text is a placeholder/example value."""
@@ -429,11 +427,7 @@ class SecretDetector:
             "sample",
             "mock",
         ]
-        for indicator in placeholder_indicators:
-            if indicator in text_lower:
-                return True
-
-        return False
+        return any(indicator in text_lower for indicator in placeholder_indicators)
 
     def scan_file(self, file_path: Path) -> list[Finding]:
         """Scan a single file for secrets."""
@@ -482,9 +476,11 @@ class SecretDetector:
                         column=match.start() + 1,
                         pattern_name=pattern["name"],
                         severity=pattern["severity"],
-                        matched_text=matched_text[:50] + "..."
-                        if len(matched_text) > 50
-                        else matched_text,
+                        matched_text=(
+                            matched_text[:50] + "..."
+                            if len(matched_text) > 50
+                            else matched_text
+                        ),
                         line_content=line,
                         description=pattern["description"],
                     )

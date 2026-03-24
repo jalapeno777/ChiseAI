@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import pytest
-from datetime import UTC, datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from autonomous_cognition.action_guards import (
     ActionGuards,
@@ -13,7 +11,6 @@ from autonomous_cognition.action_guards import (
 )
 from autonomous_cognition.policy_engine import (
     AutonomousPolicyEngine,
-    PolicyResult,
 )
 
 

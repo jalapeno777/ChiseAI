@@ -29,7 +29,9 @@ class FakeRedis:
 
 def _load_module():
     path = Path("scripts/ops/ingest_skill_backlog_candidates.py")
-    spec = importlib.util.spec_from_file_location("ingest_skill_backlog_candidates", path)
+    spec = importlib.util.spec_from_file_location(
+        "ingest_skill_backlog_candidates", path
+    )
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
@@ -53,8 +55,7 @@ backlog:
 current_phase:
   phase: active
   status: active
-""".strip()
-        + "\n",
+""".strip() + "\n",
         encoding="utf-8",
     )
 

@@ -18,7 +18,6 @@ from market_analysis.indicators.momentum_extended import (
     _calculate_sma,
 )
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -978,9 +977,10 @@ class TestBaseIndicatorCompliance:
         if request.param == "mfi":
             return MFI(period=14), oscillating_data
         elif request.param == "stoch_rsi":
-            return StochRSI(
-                rsi_period=14, stoch_period=14, k_period=3, d_period=3
-            ), oscillating_data
+            return (
+                StochRSI(rsi_period=14, stoch_period=14, k_period=3, d_period=3),
+                oscillating_data,
+            )
         else:
             return WilliamsR(period=14), oscillating_data
 

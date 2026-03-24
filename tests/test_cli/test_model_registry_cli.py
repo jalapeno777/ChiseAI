@@ -19,10 +19,8 @@ import pickle
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock, patch
 
-import click
 import pytest
 from click.testing import CliRunner
 
@@ -30,32 +28,18 @@ from click.testing import CliRunner
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from cli.model_registry_cli import (
-    EXIT_CONNECTION_ERROR,
-    EXIT_ERROR,
     EXIT_NOT_FOUND,
     EXIT_SUCCESS,
     EXIT_VALIDATION_ERROR,
     EXIT_VERSION_CONFLICT,
     cli,
-    compare,
-    config_set,
-    config_show,
-    get,
-    get_config_path,
-    health,
-    history,
-    list_versions,
     load_config,
-    register,
-    rollback,
     save_config,
-    validate,
 )
 from ml.models.model_registry import ModelRegistry
 from ml.models.model_storage import (
     ModelMetadata,
     ModelNotFoundError,
-    ModelRegistryError,
     ModelValidationError,
     ModelVersion,
     ModelVersionExistsError,

@@ -3,16 +3,15 @@ Unit tests for statistical_tests.py
 """
 
 import pytest
-import math
 from src.autonomous_cognition.drift.statistical_tests import (
-    z_score_test,
-    moving_average,
-    standard_deviation,
-    detect_anomaly,
-    trend_direction,
     calculate_brier_score,
     calculate_percentile,
+    detect_anomaly,
     detect_sequential_anomaly,
+    moving_average,
+    standard_deviation,
+    trend_direction,
+    z_score_test,
 )
 
 

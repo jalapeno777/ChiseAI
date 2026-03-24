@@ -527,23 +527,24 @@ class TestPipelineStatusPanels:
     def panel_manager(self):
         """Create a GrafanaPanelManager instance."""
         from monitoring.grafana.panel_manager import GrafanaPanelManager
+
         return GrafanaPanelManager()
 
     def test_pipeline_status_panel_structure(self, panel_manager):
         """Test that pipeline_status panel has correct structure."""
         panels = panel_manager.get_dashboard_panels("paper_pipeline_status")
-        
+
         assert "pipeline_status" in panels, "pipeline_status panel not found"
-        
+
         panel = panels["pipeline_status"]
         assert panel["type"] == "stat"
         assert panel["redis_key"] == "chise:paper:status:pipeline"
         assert panel["redis_command"] == "GET"
-        
+
         # Check mappings exist
         field_config = panel.get("field_config", {})
         assert "mappings" in field_config, "Status mappings required"
-        
+
         mapping_values = [m["value"] for m in field_config["mappings"]]
         assert "running" in mapping_values
         assert "paused" in mapping_values
@@ -553,9 +554,9 @@ class TestPipelineStatusPanels:
     def test_signals_15m_panel_structure(self, panel_manager):
         """Test that signals_15m panel has correct structure."""
         panels = panel_manager.get_dashboard_panels("paper_pipeline_status")
-        
+
         assert "signals_15m" in panels, "signals_15m panel not found"
-        
+
         panel = panels["signals_15m"]
         assert panel["type"] == "timeseries"
         assert panel["redis_key"] == "chise:paper:metrics:signals:count"
@@ -565,9 +566,11 @@ class TestPipelineStatusPanels:
     def test_stale_recovery_panel_structure(self, panel_manager):
         """Test that stale_recovery_transitions panel has correct structure."""
         panels = panel_manager.get_dashboard_panels("paper_pipeline_status")
-        
-        assert "stale_recovery_transitions" in panels, "stale_recovery_transitions panel not found"
-        
+
+        assert (
+            "stale_recovery_transitions" in panels
+        ), "stale_recovery_transitions panel not found"
+
         panel = panels["stale_recovery_transitions"]
         assert panel["type"] == "table"
         assert panel["redis_key"] == "chise:paper:events:recovery"
@@ -578,9 +581,11 @@ class TestPipelineStatusPanels:
     def test_panel_validation_passes(self, panel_manager):
         """Test that all Phase 3 panels pass validation."""
         results = panel_manager.validate_all_panels("paper_pipeline_status")
-        
+
         for result in results:
-            assert result.is_valid, f"Panel {result.panel_id} validation failed: {result.errors}"
+            assert (
+                result.is_valid
+            ), f"Panel {result.panel_id} validation failed: {result.errors}"
 
     def test_generate_pipeline_status_panel_json(self, panel_manager):
         """Test generating Grafana JSON for pipeline_status panel."""
@@ -588,12 +593,12 @@ class TestPipelineStatusPanels:
         panel_json = panel_manager.generate_panel_json(
             "pipeline_status", panels["pipeline_status"]
         )
-        
+
         assert panel_json["type"] == "stat"
         assert panel_json["title"] == "Pipeline Status"
         assert "fieldConfig" in panel_json
         assert "options" in panel_json
-        
+
         # Check targets
         targets = panel_json["targets"]
         assert len(targets) > 0
@@ -606,10 +611,10 @@ class TestPipelineStatusPanels:
         panel_json = panel_manager.generate_panel_json(
             "signals_15m", panels["signals_15m"]
         )
-        
+
         assert panel_json["type"] == "timeseries"
         assert "Signals 15M" in panel_json["title"]  # Title case conversion
-        
+
         # Check custom field config
         custom = panel_json["fieldConfig"]["defaults"].get("custom", {})
         assert "drawStyle" in custom
@@ -620,10 +625,10 @@ class TestPipelineStatusPanels:
         panel_json = panel_manager.generate_panel_json(
             "stale_recovery_transitions", panels["stale_recovery_transitions"]
         )
-        
+
         assert panel_json["type"] == "table"
         assert panel_json["title"] == "Stale Recovery Transitions"
-        
+
         # Check LRANGE range
         targets = panel_json["targets"]
         assert targets[0].get("start") == "0"
@@ -634,16 +639,16 @@ class TestPipelineStatusPanels:
         dashboard_json = panel_manager.generate_dashboard_json(
             "paper_pipeline_status",
             title="Paper Pipeline Status",
-            uid="paper_pipeline_status"
+            uid="paper_pipeline_status",
         )
-        
+
         assert dashboard_json["title"] == "Paper Pipeline Status"
         assert dashboard_json["uid"] == "paper_pipeline_status"
         assert len(dashboard_json["panels"]) == 3
-        
+
         # Check refresh rate
         assert dashboard_json["refresh"] == "5s"
-        
+
         # Check tags
         assert "paper-trading" in dashboard_json["tags"]
         assert "pipeline" in dashboard_json["tags"]
@@ -651,7 +656,7 @@ class TestPipelineStatusPanels:
     def test_panel_definitions_json_exists(self):
         """Test that standalone panel definitions JSON file exists."""
         import os
-        
+
         panel_defs_path = os.path.join(
             os.path.dirname(__file__),
             "..",
@@ -660,17 +665,19 @@ class TestPipelineStatusPanels:
             "src",
             "monitoring",
             "grafana",
-            "panel_definitions.json"
+            "panel_definitions.json",
         )
-        
-        assert os.path.exists(panel_defs_path), f"Panel definitions not found at {panel_defs_path}"
-        
+
+        assert os.path.exists(
+            panel_defs_path
+        ), f"Panel definitions not found at {panel_defs_path}"
+
         with open(panel_defs_path) as f:
             definitions = json.load(f)
-        
+
         assert "panels" in definitions
         assert len(definitions["panels"]) >= 3
-        
+
         panel_ids = [p["id"] for p in definitions["panels"]]
         assert "pipeline_status" in panel_ids
         assert "signals_15m" in panel_ids
@@ -680,7 +687,7 @@ class TestPipelineStatusPanels:
         """Test validation summary generation."""
         results = panel_manager.validate_all_panels("paper_pipeline_status")
         summary = panel_manager.get_validation_summary(results)
-        
+
         assert summary["total_panels"] == 3
         assert summary["valid_panels"] == 3
         assert summary["invalid_panels"] == 0

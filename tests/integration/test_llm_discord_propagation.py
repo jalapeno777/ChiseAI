@@ -8,18 +8,19 @@ For PAPER-EXEC-001 Party Mode audit must-fix.
 """
 
 import os
-import pytest
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
+
+import pytest
 
 # Import required components
 pytest.importorskip("execution.paper.orchestrator")
 pytest.importorskip("execution.alerts.integration")
 
-from execution.paper.orchestrator import PaperTradingOrchestrator
 from execution.alerts.integration import ExecutionAlertIntegration
-from execution.paper.models import OrderState, OrderSide
+from execution.paper.models import OrderSide, OrderState
+from execution.paper.orchestrator import PaperTradingOrchestrator
 from ml.models.signal_outcome import SignalOutcome, SignalOutcomeStatus
 
 
@@ -97,9 +98,9 @@ class TestLLMToDiscordPropagation:
             mock_components["order_simulator"].place_order = AsyncMock(
                 return_value=mock_order
             )
-            mock_components[
-                "order_simulator"
-            ].market_data.get_price.return_value = 50000.0
+            mock_components["order_simulator"].market_data.get_price.return_value = (
+                50000.0
+            )
 
             # Mock kill switch
             mock_components["kill_switch"].state.value = "armed"
@@ -194,9 +195,9 @@ class TestLLMToDiscordPropagation:
             mock_components["order_simulator"].place_order = AsyncMock(
                 return_value=mock_order
             )
-            mock_components[
-                "order_simulator"
-            ].market_data.get_price.return_value = 50000.0
+            mock_components["order_simulator"].market_data.get_price.return_value = (
+                50000.0
+            )
             mock_components["kill_switch"].state.value = "armed"
 
             # Create orchestrator
@@ -332,9 +333,9 @@ class TestLLMToDiscordPropagation:
             mock_components["order_simulator"].place_order = AsyncMock(
                 return_value=mock_order
             )
-            mock_components[
-                "order_simulator"
-            ].market_data.get_price.return_value = 50000.0
+            mock_components["order_simulator"].market_data.get_price.return_value = (
+                50000.0
+            )
             mock_components["kill_switch"].state.value = "armed"
 
             # Create orchestrator
@@ -424,7 +425,7 @@ class TestLLMToDiscordPropagation:
             assert discord_llm_decision["take_profit"] == 54000.0
 
             print(
-                f"✅ Full E2E flow verified: LLM details propagated to Discord payload"
+                "✅ Full E2E flow verified: LLM details propagated to Discord payload"
             )
             print(f"   - Decision: {discord_llm_decision['decision']}")
             print(f"   - Confidence: {discord_llm_decision['confidence']}%")

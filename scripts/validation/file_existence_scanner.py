@@ -37,10 +37,9 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Sequence
-
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -107,8 +106,7 @@ _FILENAME_PATTERN = re.compile(
 
 # Full filename pattern (including the digit requirement).
 _FULL_FILENAME_PATTERN = re.compile(
-    r"^[A-Z][A-Z0-9]*(?:[-_][A-Za-z0-9]+)*"
-    r"\.(?P<ext>json|md|yaml|yml)$",
+    r"^[A-Z][A-Z0-9]*(?:[-_][A-Za-z0-9]+)*" r"\.(?P<ext>json|md|yaml|yml)$",
 )
 
 # Check if a filename has at least one digit in the name portion (before ext)

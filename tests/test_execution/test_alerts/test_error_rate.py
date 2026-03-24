@@ -5,13 +5,10 @@ For ST-PARTY-E2E-REMEDIATION-001: Error Rate Monitor & Alert Integration
 
 from __future__ import annotations
 
-import json
-import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from src.execution.alerts.error_rate_integration import (
     AlertSeverity,
     ErrorCategory,
@@ -890,9 +887,8 @@ class TestErrorRateIntegrationHighCoverage:
 
     def test_error_rate_snapshot_with_timestamp(self):
         """Test snapshot with explicit timestamp."""
-        from datetime import datetime, timezone
 
-        ts = datetime.now(timezone.utc)
+        ts = datetime.now(UTC)
         snapshot = ErrorRateSnapshot(
             category=ErrorCategory.API,
             total_operations=100,
@@ -1034,9 +1030,8 @@ class TestErrorRateIntegrationHighCoverage:
         # Mock Redis client after recording operations
         mock_redis = MagicMock()
         # First call returns None (no previous alert), second returns a recent timestamp
-        from datetime import datetime, timezone
 
-        recent_time = datetime.now(timezone.utc).isoformat()
+        recent_time = datetime.now(UTC).isoformat()
         mock_redis.get.side_effect = [None, recent_time]
         tracker._redis = mock_redis
 

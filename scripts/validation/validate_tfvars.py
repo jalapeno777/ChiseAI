@@ -11,8 +11,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import List, Tuple, Optional
-
+from typing import Optional
 
 # Placeholder patterns that are considered safe
 PLACEHOLDER_PATTERNS = [
@@ -67,7 +66,7 @@ def is_placeholder(value: str) -> bool:
     return False
 
 
-def looks_like_secret(value: str) -> Tuple[bool, str]:
+def looks_like_secret(value: str) -> tuple[bool, str]:
     """
     Check if a value looks like a potential secret.
 
@@ -134,7 +133,7 @@ def looks_like_secret(value: str) -> Tuple[bool, str]:
     return False, "no secret pattern detected"
 
 
-def parse_tfvars_line(line: str) -> Optional[Tuple[str, str]]:
+def parse_tfvars_line(line: str) -> tuple[str, str] | None:
     """
     Parse a tfvars line to extract variable name and value.
 
@@ -157,7 +156,7 @@ def parse_tfvars_line(line: str) -> Optional[Tuple[str, str]]:
     return None
 
 
-def check_file(filepath: Path) -> List[Tuple[int, str, str, str]]:
+def check_file(filepath: Path) -> list[tuple[int, str, str, str]]:
     """
     Check a single tfvars file for potential secrets.
 
@@ -167,7 +166,7 @@ def check_file(filepath: Path) -> List[Tuple[int, str, str, str]]:
     findings = []
 
     try:
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             lines = f.readlines()
     except Exception as e:
         print(f"Error reading {filepath}: {e}", file=sys.stderr)
@@ -187,7 +186,7 @@ def check_file(filepath: Path) -> List[Tuple[int, str, str, str]]:
     return findings
 
 
-def fix_file(filepath: Path, findings: List[Tuple[int, str, str, str]]) -> int:
+def fix_file(filepath: Path, findings: list[tuple[int, str, str, str]]) -> int:
     """
     Replace detected secrets with CHANGE_ME in the file.
 
@@ -195,7 +194,7 @@ def fix_file(filepath: Path, findings: List[Tuple[int, str, str, str]]) -> int:
         Number of replacements made
     """
     try:
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             content = f.read()
     except Exception as e:
         print(f"Error reading {filepath} for fix: {e}", file=sys.stderr)
@@ -240,7 +239,7 @@ def fix_file(filepath: Path, findings: List[Tuple[int, str, str, str]]) -> int:
         return 0
 
 
-def find_tfvars_templates(directory: Path) -> List[Path]:
+def find_tfvars_templates(directory: Path) -> list[Path]:
     """Find all .tfvars.template files in the given directory."""
     templates = []
     if directory.exists():

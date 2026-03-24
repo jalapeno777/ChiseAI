@@ -15,7 +15,6 @@ from autonomous_control_plane.components.circuit_breaker_registry import (
 )
 from autonomous_control_plane.models.circuit_breaker import (
     CircuitBreakerConfig,
-    CircuitBreakerGroup,
 )
 
 router = APIRouter(prefix="/circuit-breakers", tags=["circuit-breakers"])

@@ -6,10 +6,8 @@ Tests MetaTrainingLoop, EpisodeTrainer, TrainingConfig, and TrainingMetrics.
 from __future__ import annotations
 
 import numpy as np
-import pytest
-
 from src.strong_system.meta_learning.controller import Episode
-from src.strong_system.meta_learning.models import LinearModel, MAML, Reptile
+from src.strong_system.meta_learning.models import MAML, LinearModel, Reptile
 from src.strong_system.meta_learning.training import (
     EpisodeTrainer,
     MetaTrainingLoop,

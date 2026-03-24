@@ -23,8 +23,9 @@ from enum import Enum
 from typing import Any
 
 import websockets
-from src.ml.models.signal_outcome import BybitFillEvent, SignalOutcome
 from websockets.exceptions import ConnectionClosed, InvalidStatus
+
+from src.ml.models.signal_outcome import BybitFillEvent, SignalOutcome
 
 logger = logging.getLogger(__name__)
 
@@ -332,9 +333,9 @@ class BybitFillListener:
         Returns:
             True if authentication succeeded
         """
-        assert self._ws is not None, (
-            "_authenticate should only be called when connected"
-        )
+        assert (
+            self._ws is not None
+        ), "_authenticate should only be called when connected"
         if not self.config.api_key or not self.config.api_secret:
             logger.error("API key and secret required for authentication")
             return False
@@ -374,9 +375,9 @@ class BybitFillListener:
 
     async def _subscribe_execution(self) -> None:
         """Subscribe to execution channel."""
-        assert self._ws is not None, (
-            "_subscribe_execution should only be called when connected"
-        )
+        assert (
+            self._ws is not None
+        ), "_subscribe_execution should only be called when connected"
         subscribe_msg = {
             "op": "subscribe",
             "args": [{"channel": "execution"}],

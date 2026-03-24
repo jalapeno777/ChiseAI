@@ -15,11 +15,10 @@ import argparse
 import json
 import os
 import sys
-from pathlib import Path
-from typing import Any, Dict, List, Optional
-import urllib.request
 import urllib.error
-
+import urllib.request
+from pathlib import Path
+from typing import Any, Optional
 
 # Configuration
 DEFAULT_DASHBOARDS_DIR = Path(
@@ -33,7 +32,7 @@ REQUIRED_FIELDS = ["title", "uid", "panels", "schemaVersion"]
 REQUIRED_PANEL_FIELDS = ["title", "type"]
 
 
-def get_dashboard_files(directory: Path) -> List[Path]:
+def get_dashboard_files(directory: Path) -> list[Path]:
     """Get all JSON dashboard files from directory."""
     if not directory.exists():
         print(f"Error: Directory not found: {directory}")
@@ -41,7 +40,7 @@ def get_dashboard_files(directory: Path) -> List[Path]:
     return sorted([f for f in directory.glob("*.json") if f.is_file()])
 
 
-def validate_dashboard_json(file_path: Path) -> Dict[str, Any]:
+def validate_dashboard_json(file_path: Path) -> dict[str, Any]:
     """Validate a single dashboard JSON file."""
     result = {
         "file": str(file_path),
@@ -52,7 +51,7 @@ def validate_dashboard_json(file_path: Path) -> Dict[str, Any]:
     }
 
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             content = f.read()
     except Exception as e:
         result["errors"].append(f"Cannot read file: {e}")
@@ -162,12 +161,12 @@ def validate_all_dashboards(directory: Path) -> bool:
         print(f"  Datasources: {', '.join(result['info'].get('datasources', []))}")
 
         if result["errors"]:
-            print(f"  Errors:")
+            print("  Errors:")
             for error in result["errors"]:
                 print(f"    ✗ {error}")
 
         if result["warnings"]:
-            print(f"  Warnings:")
+            print("  Warnings:")
             for warning in result["warnings"]:
                 print(f"    ⚠ {warning}")
 
@@ -178,7 +177,7 @@ def validate_all_dashboards(directory: Path) -> bool:
     if all_valid:
         print(f"\n✓ All {len(files)} dashboard(s) validated successfully!")
     else:
-        print(f"\n✗ Validation failed for some dashboards")
+        print("\n✗ Validation failed for some dashboards")
 
     return all_valid
 
@@ -197,7 +196,7 @@ def list_dashboards(directory: Path) -> None:
 
     for file_path in files:
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 dashboard = json.load(f)
 
             title = dashboard.get("title", "N/A")[:34]
@@ -216,7 +215,7 @@ def import_dashboard(file_path: Path, grafana_url: str, api_key: str) -> bool:
         return False
 
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             dashboard = json.load(f)
     except Exception as e:
         print(f"Error reading dashboard file: {e}")
@@ -226,7 +225,7 @@ def import_dashboard(file_path: Path, grafana_url: str, api_key: str) -> bool:
     payload = {
         "dashboard": dashboard,
         "overwrite": True,
-        "message": f"Imported via grafana_dashboard_manager.py",
+        "message": "Imported via grafana_dashboard_manager.py",
     }
 
     url = f"{grafana_url}/api/dashboards/db"
@@ -244,7 +243,7 @@ def import_dashboard(file_path: Path, grafana_url: str, api_key: str) -> bool:
             result = json.loads(response.read().decode("utf-8"))
 
             if result.get("status") == "success":
-                print(f"✓ Dashboard imported successfully")
+                print("✓ Dashboard imported successfully")
                 print(f"  UID: {result.get('uid')}")
                 print(f"  URL: {result.get('url')}")
                 print(f"  Version: {result.get('version')}")

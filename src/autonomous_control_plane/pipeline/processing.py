@@ -8,12 +8,14 @@ ST-CONTROL-001: Telemetry Pipeline
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import statistics
 import time
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 from autonomous_control_plane.config.pipeline_settings import (
     AggregationWindow,
@@ -160,10 +162,8 @@ class MetricAggregator:
         # Extract value from event
         value = event.data.get("value")
         if value is not None:
-            try:
+            with contextlib.suppress(TypeError, ValueError):
                 bucket.add_value(float(value))
-            except (TypeError, ValueError):
-                pass
 
         # Increment counters
         counter_name = event.data.get("counter_name")
@@ -335,7 +335,7 @@ class MetricDeriver:
             self._previous_values.clear()
         else:
             keys_to_remove = [
-                k for k in self._previous_values.keys() if k.startswith(metric_name)
+                k for k in self._previous_values if k.startswith(metric_name)
             ]
             for key in keys_to_remove:
                 del self._previous_values[key]
@@ -445,10 +445,7 @@ class DataFilter:
         Returns:
             True if event passes all filters
         """
-        for rule in self.config.filter_rules:
-            if not self._apply_rule(event, rule):
-                return False
-        return True
+        return all(self._apply_rule(event, rule) for rule in self.config.filter_rules)
 
     def _apply_rule(self, event: TelemetryEvent, rule: dict[str, Any]) -> bool:
         """Apply a single filter rule.
@@ -628,7 +625,7 @@ class TelemetryProcessingLayer:
             "processed_count": self._processed_count,
             "filtered_count": self._filtered_count,
             "enriched_count": self._enriched_count,
-            "aggregation_windows": [w.value for w in self._aggregators.keys()],
+            "aggregation_windows": [w.value for w in self._aggregators],
             "pending_buckets": sum(
                 len(agg._buckets) for agg in self._aggregators.values()
             ),

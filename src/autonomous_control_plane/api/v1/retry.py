@@ -28,14 +28,13 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Path, Query, Body
+from fastapi import APIRouter, Body, HTTPException, Path, Query
 from pydantic import BaseModel, Field
 
 from autonomous_control_plane.components.retry_budget_manager import RetryBudgetManager
 from autonomous_control_plane.components.retry_coordinator import RetryCoordinator
 from autonomous_control_plane.models.retry_policy import (
     BudgetExhaustionStrategy,
-    BudgetBurstConfig,
 )
 
 logger = logging.getLogger(__name__)
@@ -296,7 +295,7 @@ async def get_endpoint_budget(
 
 @router.post("/endpoint-patterns", response_model=dict[str, Any])
 async def register_endpoint_pattern(
-    request: EndpointPatternRequest = Body(...),
+    request: EndpointPatternRequest = Body(...),  # noqa: B008
 ) -> dict[str, Any]:
     """Register an endpoint pattern for budget tracking.
 
@@ -333,7 +332,7 @@ async def register_endpoint_pattern(
         raise HTTPException(
             status_code=400,
             detail=f"Invalid exhaustion strategy: {request.exhaustion_strategy}",
-        )
+        ) from None
     except Exception as e:
         logger.error(f"Failed to register endpoint pattern: {e}")
         raise HTTPException(
@@ -413,7 +412,7 @@ async def get_budget_pool(
 
 @router.post("/pools", response_model=dict[str, Any])
 async def create_budget_pool(
-    request: BudgetPoolRequest = Body(...),
+    request: BudgetPoolRequest = Body(...),  # noqa: B008
 ) -> dict[str, Any]:
     """Create a budget pool.
 

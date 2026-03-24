@@ -1,6 +1,6 @@
 """Hyperparameter comparison utilities."""
 
-from typing import Any, Dict, List
+from typing import Any
 
 from .models import HyperparameterSet
 
@@ -9,7 +9,7 @@ class HyperparameterComparator:
     """Utility class for comparing hyperparameter sets."""
 
     @staticmethod
-    def compare(exp1: HyperparameterSet, exp2: HyperparameterSet) -> Dict[str, Any]:
+    def compare(exp1: HyperparameterSet, exp2: HyperparameterSet) -> dict[str, Any]:
         """Compare two hyperparameter sets and return differences.
 
         Args:
@@ -48,7 +48,7 @@ class HyperparameterComparator:
         return diff
 
     @staticmethod
-    def diff_to_string(diff_dict: Dict[str, Any]) -> str:
+    def diff_to_string(diff_dict: dict[str, Any]) -> str:
         """Convert difference dictionary to human-readable string.
 
         Args:
@@ -87,7 +87,7 @@ class HyperparameterComparator:
     @staticmethod
     def get_changed_params(
         exp1: HyperparameterSet, exp2: HyperparameterSet
-    ) -> List[str]:
+    ) -> list[str]:
         """Get list of parameter names that changed between two hyperparameter sets.
 
         Args:
@@ -103,7 +103,7 @@ class HyperparameterComparator:
     @staticmethod
     def get_unchanged_params(
         exp1: HyperparameterSet, exp2: HyperparameterSet
-    ) -> List[str]:
+    ) -> list[str]:
         """Get list of parameter names that remained unchanged between two hyperparameter sets.
 
         Args:

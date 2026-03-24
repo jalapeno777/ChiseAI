@@ -29,6 +29,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 import redis
+
 from src.governance.checkpoint.alerts import ActionableZeroAlert
 from src.governance.checkpoint.integrity import MetricIntegrityChecker
 
@@ -682,6 +683,7 @@ class GateChecker:
                 # Fallback to asyncpg if psycopg2 not available
                 try:
                     import asyncio
+
                     import asyncpg
 
                     async def query():
@@ -1084,140 +1086,4 @@ class GateChecker:
                 gate="AZ",
                 status=self.STATUS_FAIL,
                 detail=f"Exception: {str(e)[:100]}",
-            )
-
-    def check_g11_provenance(self) -> GateResult:
-        """G11: Provenance - Check signal_outcomes table for missing provenance fields.
-
-        Validates that execution_venue, execution_mode, and execution_source fields
-        are populated for all records in the last 60 minutes.
-
-        Returns:
-            GateResult with status:
-            - PASS: No data in window OR all records have all provenance fields
-            - FAIL: Any records missing provenance fields
-            - CHECK: Connection error or query failure
-        """
-        import os
-
-        # Database connection parameters
-        db_host = os.getenv("DB_HOST", "host.docker.internal")
-        db_port = os.getenv("DB_PORT", "5434")
-        db_name = os.getenv("DB_NAME", "chiseai")
-        db_user = os.getenv("DB_USER", "chiseai")
-        db_password = os.getenv("DB_PASSWORD", "chiseai")
-
-        try:
-            # Try psycopg2 first, fallback to asyncpg if available
-            try:
-                import psycopg2
-
-                conn = psycopg2.connect(
-                    host=db_host,
-                    port=db_port,
-                    database=db_name,
-                    user=db_user,
-                    password=db_password,
-                    connect_timeout=5,
-                )
-                cursor = conn.cursor()
-                cursor.execute("""
-                    SELECT
-                        COUNT(*) as total,
-                        COUNT(execution_venue) as with_venue,
-                        COUNT(execution_mode) as with_mode,
-                        COUNT(execution_source) as with_source
-                    FROM signal_outcomes
-                    WHERE created_at >= NOW() - INTERVAL '60 minutes'
-                """)
-                row = cursor.fetchone()
-                cursor.close()
-                conn.close()
-
-                total, with_venue, with_mode, with_source = row
-
-            except ImportError:
-                # Fallback to asyncpg if psycopg2 not available
-                try:
-                    import asyncio
-                    import asyncpg
-
-                    async def query():
-                        conn = await asyncpg.connect(
-                            host=db_host,
-                            port=db_port,
-                            database=db_name,
-                            user=db_user,
-                            password=db_password,
-                            timeout=5,
-                        )
-                        row = await conn.fetchrow("""
-                            SELECT
-                                COUNT(*) as total,
-                                COUNT(execution_venue) as with_venue,
-                                COUNT(execution_mode) as with_mode,
-                                COUNT(execution_source) as with_source
-                            FROM signal_outcomes
-                            WHERE created_at >= NOW() - INTERVAL '60 minutes'
-                        """)
-                        await conn.close()
-                        return row
-
-                    row = asyncio.run(query())
-                    total = row["total"]
-                    with_venue = row["with_venue"]
-                    with_mode = row["with_mode"]
-                    with_source = row["with_source"]
-
-                except ImportError:
-                    return GateResult(
-                        gate="G11",
-                        status=self.STATUS_CHECK,
-                        detail="No PostgreSQL driver available (psycopg2 or asyncpg required)",
-                    )
-
-            # Calculate missing counts
-            missing_venue = total - with_venue
-            missing_mode = total - with_mode
-            missing_source = total - with_source
-
-            # Build detail string
-            detail = f"total={total} venue={with_venue} mode={with_mode} source={with_source} missing_venue={missing_venue} missing_mode={missing_mode} missing_source={missing_source}"
-
-            # Determine status
-            if total == 0:
-                # No data in window - PASS (no provenance to check)
-                return GateResult(
-                    gate="G11",
-                    status=self.STATUS_PASS,
-                    detail=f"{detail} | No data in 60m window",
-                )
-            elif missing_venue == 0 and missing_mode == 0 and missing_source == 0:
-                # All records have all provenance fields
-                return GateResult(
-                    gate="G11",
-                    status=self.STATUS_PASS,
-                    detail=f"{detail} | All records have provenance",
-                )
-            else:
-                # Some records missing provenance fields
-                missing_fields = []
-                if missing_venue > 0:
-                    missing_fields.append(f"venue({missing_venue})")
-                if missing_mode > 0:
-                    missing_fields.append(f"mode({missing_mode})")
-                if missing_source > 0:
-                    missing_fields.append(f"source({missing_source})")
-                return GateResult(
-                    gate="G11",
-                    status=self.STATUS_FAIL,
-                    detail=f"{detail} | Missing: {', '.join(missing_fields)}",
-                )
-
-        except Exception as e:
-            logger.error(f"Error checking G11: {e}")
-            return GateResult(
-                gate="G11",
-                status=self.STATUS_CHECK,
-                detail=f"Connection/query error: {str(e)[:100]}",
             )

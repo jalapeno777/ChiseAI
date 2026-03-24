@@ -57,7 +57,7 @@ import argparse
 import json
 import sys
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -154,7 +154,7 @@ class CriticReview:
         try:
             return datetime.fromisoformat(ts)
         except (ValueError, TypeError):
-            return datetime.min.replace(tzinfo=timezone.utc)
+            return datetime.min.replace(tzinfo=UTC)
 
 
 @dataclass
@@ -186,7 +186,7 @@ class RemediationRound:
         try:
             return datetime.fromisoformat(ts)
         except (ValueError, TypeError):
-            return datetime.min.replace(tzinfo=timezone.utc)
+            return datetime.min.replace(tzinfo=UTC)
 
 
 @dataclass
@@ -278,7 +278,7 @@ class CriticValidationResult:
             if not check.passed or verbose:
                 print(f"      {check.details}")
 
-        print(f"\nSummary:")
+        print("\nSummary:")
         print(f"  Remediation rounds: {self.total_remediation_rounds}")
         print(f"  Critic reviews:    {self.total_critic_reviews}")
         print(f"  Total findings:    {self.total_findings}")
@@ -477,9 +477,9 @@ def check_critic_findings_addressed(
                         f"was deferred instead of addressed",
                         f"Finding: {finding.description}\n"
                         f"Resolution: {finding.resolution or '(none provided)'}",
-                        severity="HIGH"
-                        if severity == Severity.CRITICAL.value
-                        else "MEDIUM",
+                        severity=(
+                            "HIGH" if severity == Severity.CRITICAL.value else "MEDIUM"
+                        ),
                     )
             elif status == FindingStatus.WONT_FIX.value:
                 findings_deferred += 1
@@ -491,9 +491,9 @@ def check_critic_findings_addressed(
                         f"marked as won't fix",
                         f"Finding: {finding.description}\n"
                         f"Resolution: {finding.resolution or '(none provided)'}",
-                        severity="HIGH"
-                        if severity == Severity.CRITICAL.value
-                        else "MEDIUM",
+                        severity=(
+                            "HIGH" if severity == Severity.CRITICAL.value else "MEDIUM"
+                        ),
                     )
             else:
                 # status is 'open' or unknown
@@ -504,9 +504,11 @@ def check_critic_findings_addressed(
                         f"Actionable finding {finding.finding_id} ({severity}) "
                         f"is still open/unresolved",
                         f"Finding: {finding.description}\nStatus: {finding.status}",
-                        severity="CRITICAL"
-                        if severity == Severity.CRITICAL.value
-                        else "HIGH",
+                        severity=(
+                            "CRITICAL"
+                            if severity == Severity.CRITICAL.value
+                            else "HIGH"
+                        ),
                     )
 
     result.total_findings = total_findings

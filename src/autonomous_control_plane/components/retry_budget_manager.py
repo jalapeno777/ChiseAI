@@ -21,7 +21,7 @@ from __future__ import annotations
 import fnmatch
 import logging
 import time
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -162,7 +162,7 @@ class BudgetAnalytics:
         metrics = self._local_metrics[budget_key]
         total = metrics["total_retries"]
         successes = metrics["success_count"]
-        failures = metrics["failure_count"]
+        metrics["failure_count"]
 
         return {
             "retries_per_success": total / max(successes, 1),
@@ -526,9 +526,9 @@ class RetryBudgetManager:
         burst_config: BudgetBurstConfig | None = None,
     ) -> tuple[bool, int]:
         """Check and consume budget using Redis atomic operations."""
-        assert self._redis is not None, (
-            "_check_and_consume_redis should only be called when redis is set"
-        )
+        assert (
+            self._redis is not None
+        ), "_check_and_consume_redis should only be called when redis is set"
 
         key = self._get_budget_key(budget_key)
 
@@ -865,9 +865,9 @@ class RetryBudgetManager:
         is_endpoint: bool = False,
     ) -> dict[str, Any]:
         """Get budget status from Redis."""
-        assert self._redis is not None, (
-            "_get_budget_status_redis should only be called when redis is set"
-        )
+        assert (
+            self._redis is not None
+        ), "_get_budget_status_redis should only be called when redis is set"
         key = self._get_budget_key(budget_key)
 
         try:

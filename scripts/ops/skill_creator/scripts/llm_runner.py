@@ -5,6 +5,7 @@ Provides a unified interface for calling LLM backends via subprocess,
 with proper error handling, timeout management, and cleanup.
 """
 
+import contextlib
 import os
 import subprocess
 import tempfile
@@ -94,10 +95,8 @@ def _call_opencode(prompt: str, timeout: int = 300) -> str:
     finally:
         # Clean up temp file
         if prompt_file:
-            try:
+            with contextlib.suppress(OSError):
                 os.unlink(prompt_file)
-            except OSError:
-                pass
 
 
 def call_llm(

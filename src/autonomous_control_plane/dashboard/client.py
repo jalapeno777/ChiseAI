@@ -8,6 +8,7 @@ For ST-CONTROL-003: Control Plane Dashboard
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 from typing import Any
@@ -79,7 +80,7 @@ class DashboardClient:
                 message = await asyncio.wait_for(self._websocket.recv(), timeout=5.0)
                 initial_state = json.loads(message)
                 logger.debug(f"Received initial state: {initial_state}")
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.warning("Timeout waiting for initial state")
 
             return True
@@ -96,10 +97,8 @@ class DashboardClient:
 
         if self._poll_task:
             self._poll_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._poll_task
-            except asyncio.CancelledError:
-                pass
             self._poll_task = None
 
         if self._websocket:

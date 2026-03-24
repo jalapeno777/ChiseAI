@@ -12,7 +12,7 @@ import hashlib
 import json
 import logging
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -617,7 +617,6 @@ class MemoryArchiver:
     ) -> Path:
         """Generate archive path for a tempmemory file."""
         # Preserve directory structure under archive
-        relative_path = original_path.name
         timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         archive_name = f"{original_path.stem}_{timestamp}{original_path.suffix}"
         return archive_dir / archive_name

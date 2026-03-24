@@ -65,7 +65,10 @@ def generate_scorecard(
     event_types = Counter(str(e.get("event_type", "unknown")) for e in pilot_events)
 
     return {
-        "generated_at_utc": datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+        "generated_at_utc": datetime.now(UTC)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z"),
         "cadence": {
             "total_runs": total_runs,
             "success_runs": success,
@@ -155,15 +158,17 @@ def main() -> int:
     )
     scorecard["lookback_days"] = max(args.lookback_days, 1)
 
-    output_json = Path(args.output_json) if args.output_json else (output_dir / "scorecard.json")
-    output_md = Path(args.output_md) if args.output_md else (output_dir / "scorecard.md")
+    output_json = (
+        Path(args.output_json) if args.output_json else (output_dir / "scorecard.json")
+    )
+    output_md = (
+        Path(args.output_md) if args.output_md else (output_dir / "scorecard.md")
+    )
 
     output_json.parent.mkdir(parents=True, exist_ok=True)
     output_md.parent.mkdir(parents=True, exist_ok=True)
 
-    output_json.write_text(
-        json.dumps(scorecard, indent=2) + "\n", encoding="utf-8"
-    )
+    output_json.write_text(json.dumps(scorecard, indent=2) + "\n", encoding="utf-8")
     write_markdown(scorecard, output_md)
     print(f"Scorecard generated: {output_json}")
     return 0

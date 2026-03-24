@@ -57,7 +57,10 @@ def pending_approvals() -> list[dict[str, Any]]:
         if not isinstance(js, dict):
             continue
         err = str(js.get("last_error") or "")
-        if "missing approval:" in err or str(js.get("last_status")) == "awaiting_approval":
+        if (
+            "missing approval:" in err
+            or str(js.get("last_status")) == "awaiting_approval"
+        ):
             out.append(
                 {
                     "job_id": job_id,
@@ -69,7 +72,9 @@ def pending_approvals() -> list[dict[str, Any]]:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Manage approval gates for autonomy cadence")
+    ap = argparse.ArgumentParser(
+        description="Manage approval gates for autonomy cadence"
+    )
     ap.add_argument("--list-pending", action="store_true")
     ap.add_argument("--approve", help="Approval key (e.g., strategy-autopilot)")
     ap.add_argument("--revoke", help="Approval key (e.g., strategy-autopilot)")

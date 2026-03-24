@@ -224,7 +224,9 @@ class AutocogEventFormatter:
         display_title = title or event_type.replace("_", " ").title()
         layman_issue = issue or summary
         layman_resolution = intended_resolution or impact
-        layman_improvement = expected_improvement or "No explicit improvement target provided."
+        layman_improvement = (
+            expected_improvement or "No explicit improvement target provided."
+        )
         normalized_outcome = (outcome_status or "unknown").strip().lower()
         outcome_display = {
             "success": "Succeeded",

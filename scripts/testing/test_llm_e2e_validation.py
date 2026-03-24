@@ -11,12 +11,12 @@ This script validates:
 6. Latency measurement
 """
 
+import json
 import os
 import sys
-import json
 import time
+from datetime import UTC, datetime, timezone
 from pathlib import Path
-from datetime import datetime, timezone
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
@@ -33,7 +33,7 @@ def create_test_signal():
         "symbol": "BTCUSDT",
         "action": "BUY",
         "confidence": 0.75,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "price": 45000.00,
         "indicators": {
             "rsi": 30.5,
@@ -76,7 +76,7 @@ def test_llm_disabled():
     print(f"✓ LLM latency: {result.get('llm_latency_ms', 'N/A')}")
 
     # When disabled, should return safe GO
-    assert enhancer.enabled == False, "Enhancer should be disabled by default"
+    assert not enhancer.enabled, "Enhancer should be disabled by default"
     assert result.get("decision") == "GO", "Disabled enhancer should return safe GO"
     assert (
         result.get("llm_latency_ms") is None
@@ -192,7 +192,7 @@ def test_provider_fallback():
 
     # Check provider status
     status = enhancer._chain.get_provider_status()
-    print(f"✓ Provider status:")
+    print("✓ Provider status:")
     for provider, available in status.items():
         print(f"  - {provider}: {'✅ Available' if available else '❌ Unavailable'}")
 
@@ -232,7 +232,6 @@ def test_latency_measurement():
     enhancer = TradeDecisionEnhancer()
 
     from unittest.mock import MagicMock
-    import time
 
     mock_chain = MagicMock()
 
@@ -299,7 +298,7 @@ def main():
     print("PAPER-LLM-DIAG-001: E2E Validation with LLM Enabled")
     print("=" * 60)
 
-    results = {"timestamp": datetime.now(timezone.utc).isoformat(), "tests": {}}
+    results = {"timestamp": datetime.now(UTC).isoformat(), "tests": {}}
 
     tests = [
         ("llm_disabled_default", test_llm_disabled),

@@ -3,8 +3,9 @@
 Basic tests to verify the VenueEnforcementGate functionality.
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from execution.safety.venue_enforcement import (
     ValidationResult,

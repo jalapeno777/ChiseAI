@@ -1,16 +1,16 @@
 """Tests for the learning bridge."""
 
-import pytest
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from src.autocog_integration.adapters import AutocogAdapter, StrongAdapter
 from src.autocog_integration.bridge import (
-    LearningBridge,
-    BridgeStatus,
     BridgeMetrics,
+    BridgeStatus,
+    LearningBridge,
     create_learning_bridge,
 )
 from src.autocog_integration.protocols import TransferStatus
-from src.autocog_integration.adapters import AutocogAdapter, StrongAdapter
 
 
 class TestBridgeMetrics:

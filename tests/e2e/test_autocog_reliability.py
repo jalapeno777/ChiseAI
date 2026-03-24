@@ -16,21 +16,17 @@ Test Coverage:
 from __future__ import annotations
 
 import asyncio
-import json
-import random
 import tempfile
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from autonomous_cognition.full_cycle import AutonomousCognitionFullCycle
 from autonomous_cognition.contracts import CycleResult
+from autonomous_cognition.full_cycle import AutonomousCognitionFullCycle
 
 
 @pytest.fixture
@@ -326,9 +322,9 @@ class TestAutocogConcurrentCycles:
 
         # Verify results
         completed = [r for r in results if r.status == "completed"]
-        assert len(completed) >= 4, (
-            f"Only {len(completed)}/5 cycles completed. Errors: {errors}"
-        )
+        assert (
+            len(completed) >= 4
+        ), f"Only {len(completed)}/5 cycles completed. Errors: {errors}"
 
     def test_concurrent_cycles_artifact_isolation(
         self, autocog_runner, temp_output_dir
@@ -378,9 +374,9 @@ class TestAutocogConcurrentCycles:
         ]
         exceptions = [r for r in results if isinstance(r, Exception)]
 
-        assert len(completed) >= 2, (
-            f"Only {len(completed)}/3 cycles completed. Exceptions: {exceptions}"
-        )
+        assert (
+            len(completed) >= 2
+        ), f"Only {len(completed)}/3 cycles completed. Exceptions: {exceptions}"
 
 
 @pytest.mark.e2e
@@ -607,9 +603,9 @@ class TestAutocogPerformanceBenchmarks:
                 max_time = max(notification_times)
 
                 # Should be under 5 seconds
-                assert max_time < 5.0, (
-                    f"Discord notification took {max_time:.2f}s, expected <5s"
-                )
+                assert (
+                    max_time < 5.0
+                ), f"Discord notification took {max_time:.2f}s, expected <5s"
 
     def test_memory_usage_stable(self, autocog_runner):
         """Test memory usage remains stable across cycles."""

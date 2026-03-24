@@ -7,14 +7,13 @@ Usage: python3 test_stale_alert_simulation.py [--webhook-url URL]
 
 import os
 import sys
-import time
 from datetime import UTC, datetime
 from unittest.mock import Mock, patch
 
 # Add project root to path
 sys.path.insert(0, "/home/tacopants/projects/ChiseAI")
 
-from scripts.monitoring.pipeline_alerts import PipelineAlertManager, AlertSeverity
+from scripts.monitoring.pipeline_alerts import AlertSeverity, PipelineAlertManager
 
 
 def simulate_stale_pipeline():

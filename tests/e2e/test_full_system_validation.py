@@ -11,15 +11,13 @@ Story: ST-VALIDATION-001
 
 from __future__ import annotations
 
-import asyncio
 import json
 import os
 import sys
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -78,7 +76,6 @@ class TestEndToEndDataFlow:
 
     def test_redis_to_telemetry_to_influxdb_flow(self, pipeline, mock_redis):
         """Test Redis → Telemetry Pipeline → InfluxDB data flow."""
-        from autonomous_control_plane.pipeline.orchestrator import PipelineState
 
         pipeline.start()
         time.sleep(0.1)
@@ -107,7 +104,6 @@ class TestEndToEndDataFlow:
             AutomationController,
         )
         from autonomous_control_plane.models.healing import FailurePatternType
-        from autonomous_control_plane.pipeline.orchestrator import PipelineState
 
         pipeline.start()
         controller = AutomationController(
@@ -144,7 +140,6 @@ class TestEndToEndDataFlow:
     def test_dashboard_queries_historical_data(self, pipeline, mock_redis):
         """Test Dashboard queries → Historical data."""
         from autonomous_control_plane.dashboard.api import DashboardAPI
-        from autonomous_control_plane.pipeline.orchestrator import PipelineState
 
         pipeline.start()
         time.sleep(0.1)
@@ -171,7 +166,6 @@ class TestEndToEndDataFlow:
 
     def test_alert_propagation_path(self, pipeline, mock_redis):
         """Test alert propagation path through the system."""
-        from autonomous_control_plane.pipeline.orchestrator import PipelineState
 
         pipeline.start()
         time.sleep(0.1)
@@ -641,9 +635,9 @@ class TestPerformanceValidation:
         await controller.stop()
 
         assert len(workflows) == 20
-        assert creation_time < 2.0, (
-            f"Concurrent workflow creation: {creation_time:.2f}s"
-        )
+        assert (
+            creation_time < 2.0
+        ), f"Concurrent workflow creation: {creation_time:.2f}s"
 
     @pytest.mark.asyncio
     async def test_dashboard_api_response_times(self):
@@ -715,9 +709,9 @@ class TestLiveDataVerification:
 
             # Test health
             health = client.health()
-            assert health.status == "pass", (
-                f"InfluxDB health check failed: {health.message}"
-            )
+            assert (
+                health.status == "pass"
+            ), f"InfluxDB health check failed: {health.message}"
 
             # Test write
             write_api = client.write_api(write_options=SYNCHRONOUS)
@@ -738,12 +732,12 @@ class TestLiveDataVerification:
 
             # Test query
             query_api = client.query_api()
-            query = f'''
+            query = f"""
                 from(bucket: "{os.getenv("INFLUXDB_BUCKET", "chiseai")}")
                     |> range(start: -1h)
                     |> filter(fn: (r) => r._measurement == "e2e_test")
                     |> limit(n: 1)
-            '''
+            """
             result = query_api.query(query)
 
             assert result is not None, "InfluxDB query failed"
@@ -764,9 +758,9 @@ class TestLiveDataVerification:
 
             # Test health endpoint
             response = requests.get(f"{dashboard_url}/_stcore/health", timeout=10)
-            assert response.status_code == 200, (
-                f"Dashboard health check failed: {response.status_code}"
-            )
+            assert (
+                response.status_code == 200
+            ), f"Dashboard health check failed: {response.status_code}"
 
         except ImportError:
             pytest.skip("Requests package not installed")
@@ -827,12 +821,12 @@ class TestLiveDataVerification:
 
             # Verify data in InfluxDB
             query_api = influx_client.query_api()
-            query = f'''
+            query = f"""
                 from(bucket: "{os.getenv("INFLUXDB_BUCKET", "chiseai")}")
                     |> range(start: -5m)
                     |> filter(fn: (r) => r._measurement == "live_flow_test")
                     |> limit(n: 1)
-            '''
+            """
             result = query_api.query(query)
 
             assert len(result) > 0, "No data found in InfluxDB"
@@ -968,7 +962,6 @@ class TestFullSystemIntegration:
 
     def test_error_handling_graceful_degradation(self, integrated_system):
         """Test graceful degradation under errors."""
-        from autonomous_control_plane.pipeline.orchestrator import PipelineState
 
         pipeline = integrated_system["pipeline"]
         dashboard = integrated_system["dashboard"]

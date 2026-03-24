@@ -11,9 +11,10 @@ Shows how to:
 
 import random
 from datetime import datetime, timedelta
+
 from src.autonomous_cognition.drift import (
-    PerformanceDriftDetector,
     DriftSeverity,
+    PerformanceDriftDetector,
     RootCauseTag,
 )
 
@@ -195,19 +196,19 @@ def demo_statistical_tests():
     print("=" * 60)
 
     from src.autonomous_cognition.drift.statistical_tests import (
-        z_score_test,
+        calculate_brier_score,
+        detect_anomaly,
         moving_average,
         standard_deviation,
-        detect_anomaly,
         trend_direction,
-        calculate_brier_score,
+        z_score_test,
     )
 
     # Z-score test
     baseline = [10.0, 12.0, 11.0, 13.0, 12.0]
     current = [15.0]
     z_score = z_score_test(current, baseline)
-    print(f"\nZ-Score Test:")
+    print("\nZ-Score Test:")
     print(f"  Baseline: {baseline}")
     print(f"  Current: {current[0]}")
     print(f"  Z-Score: {z_score:.2f}")
@@ -215,33 +216,33 @@ def demo_statistical_tests():
     # Moving average
     values = [1.0, 2.0, 3.0, 4.0, 5.0]
     ma = moving_average(values, 3)
-    print(f"\nMoving Average (window=3):")
+    print("\nMoving Average (window=3):")
     print(f"  Input: {values}")
     print(f"  Result: {ma}")
 
     # Standard deviation
     std = standard_deviation([2.0, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0])
-    print(f"\nStandard Deviation:")
-    print(f"  Input: [2, 4, 4, 4, 5, 5, 7, 9]")
+    print("\nStandard Deviation:")
+    print("  Input: [2, 4, 4, 4, 5, 5, 7, 9]")
     print(f"  Std: {std:.2f}")
 
     # Anomaly detection
     is_anomaly = detect_anomaly(15.0, 10.0, 2.0, 2.0)
-    print(f"\nAnomaly Detection:")
-    print(f"  Value: 15.0, Mean: 10.0, Std: 2.0, Threshold: 2.0")
+    print("\nAnomaly Detection:")
+    print("  Value: 15.0, Mean: 10.0, Std: 2.0, Threshold: 2.0")
     print(f"  Is Anomaly: {is_anomaly}")
 
     # Trend direction
     trend = trend_direction([1.0, 2.0, 3.0, 4.0, 5.0])
-    print(f"\nTrend Direction:")
-    print(f"  Input: [1, 2, 3, 4, 5]")
+    print("\nTrend Direction:")
+    print("  Input: [1, 2, 3, 4, 5]")
     print(f"  Trend: {trend}")
 
     # Brier score
     brier = calculate_brier_score([0.8, 0.3, 0.9], [True, False, True])
-    print(f"\nBrier Score:")
-    print(f"  Predictions: [0.8, 0.3, 0.9]")
-    print(f"  Outcomes: [True, False, True]")
+    print("\nBrier Score:")
+    print("  Predictions: [0.8, 0.3, 0.9]")
+    print("  Outcomes: [True, False, True]")
     print(f"  Brier Score: {brier:.4f}")
 
 

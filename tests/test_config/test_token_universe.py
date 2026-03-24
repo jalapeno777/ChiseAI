@@ -174,7 +174,7 @@ class TestTokenUniverseCompleteness:
         with open(realism_path) as f:
             realism_config = yaml.safe_load(f)
         realism_tokens = {
-            sym.replace("/USDT", "") for sym in realism_config.get("symbols", {}).keys()
+            sym.replace("/USDT", "") for sym in realism_config.get("symbols", {})
         }
 
         # Load ingestion defaults

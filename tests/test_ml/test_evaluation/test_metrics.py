@@ -6,16 +6,15 @@ import sys
 from datetime import UTC, datetime
 
 import numpy as np
-import pytest
 
 sys.path.insert(0, "src")
 
 from ml.evaluation.metrics import (
+    METRIC_CONFIGS,
     EvaluationMetrics,
     MetricCategory,
     MetricConfig,
     MetricResult,
-    METRIC_CONFIGS,
     compute_accuracy,
     compute_all_metrics,
     compute_auc_roc,

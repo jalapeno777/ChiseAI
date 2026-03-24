@@ -27,13 +27,13 @@ SCORECARD_7D_PATH = FULL_PILOT_DIR / "scorecard-7d.json"
 GO_NO_GO_PATH = FULL_PILOT_DIR / "go-no-go-packet.json"
 CADENCE_STATE_PATH = PROJECT_ROOT / "_bmad-output" / "autonomy-cadence" / "state.json"
 CADENCE_RUNS_PATH = PROJECT_ROOT / "_bmad-output" / "autonomy-cadence" / "runs.jsonl"
-AUTODISPATCH_TASKS_PATH = PROJECT_ROOT / "_bmad-output" / "autonomy-dispatch" / "tasks.jsonl"
+AUTODISPATCH_TASKS_PATH = (
+    PROJECT_ROOT / "_bmad-output" / "autonomy-dispatch" / "tasks.jsonl"
+)
 
 
 def now_iso() -> str:
-    return (
-        datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-    )
+    return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def webhook_url() -> str | None:
@@ -60,7 +60,9 @@ def run_cmd(cmd: list[str]) -> int:
 def ensure_artifacts() -> None:
     FULL_PILOT_DIR.mkdir(parents=True, exist_ok=True)
     if not SCORECARD_PATH.exists():
-        rc = run_cmd(["python3", "scripts/ops/autonomy_scorecard.py", "--lookback-days", "30"])
+        rc = run_cmd(
+            ["python3", "scripts/ops/autonomy_scorecard.py", "--lookback-days", "30"]
+        )
         if rc != 0:
             raise RuntimeError("Failed generating scorecard")
     if not SCORECARD_7D_PATH.exists():
@@ -113,13 +115,20 @@ def pending_approvals_from_state() -> list[dict[str, Any]]:
     return pending
 
 
-def operational_score_7d(scorecard_7d: dict[str, Any], pending_approvals: list[dict[str, Any]]) -> int:
+def operational_score_7d(
+    scorecard_7d: dict[str, Any], pending_approvals: list[dict[str, Any]]
+) -> int:
     cadence = scorecard_7d.get("cadence", {})
     alerts = scorecard_7d.get("alerts", {})
     success_rate = float(cadence.get("success_rate_percent", 0.0))
     total_alerts = int(alerts.get("total_alerts", 0))
     failed_runs = int(cadence.get("failed_runs", 0))
-    score = success_rate - (failed_runs * 5) - (total_alerts * 2) - (len(pending_approvals) * 3)
+    score = (
+        success_rate
+        - (failed_runs * 5)
+        - (total_alerts * 2)
+        - (len(pending_approvals) * 3)
+    )
     return max(0, min(100, int(round(score))))
 
 
@@ -203,7 +212,9 @@ def autodispatch_snapshot() -> dict[str, int]:
             continue
         try:
             item = json.loads(line)
-            dt = datetime.fromisoformat(str(item.get("timestamp_utc", "")).replace("Z", "+00:00")).astimezone(UTC)
+            dt = datetime.fromisoformat(
+                str(item.get("timestamp_utc", "")).replace("Z", "+00:00")
+            ).astimezone(UTC)
         except Exception:
             continue
         if dt.timestamp() < cutoff:
@@ -301,30 +312,49 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Post daily full-pilot executive summary")
     ap.add_argument("--dry-run", action="store_true", help="Do not post to Discord")
     ap.add_argument(
-        "--regenerate", action="store_true", help="Regenerate scorecard and go/no-go first"
+        "--regenerate",
+        action="store_true",
+        help="Regenerate scorecard and go/no-go first",
     )
     args = ap.parse_args()
 
-    enabled_raw = os.getenv("CHISE_FULL_PILOT_DAILY_SUMMARY_ENABLED", "true").strip().lower()
+    enabled_raw = (
+        os.getenv("CHISE_FULL_PILOT_DAILY_SUMMARY_ENABLED", "true").strip().lower()
+    )
     if enabled_raw not in {"1", "true", "yes", "on"}:
-        print("Daily full-pilot summary is disabled by CHISE_FULL_PILOT_DAILY_SUMMARY_ENABLED")
+        print(
+            "Daily full-pilot summary is disabled by CHISE_FULL_PILOT_DAILY_SUMMARY_ENABLED"
+        )
         return 0
 
     if args.regenerate:
-        if run_cmd(["python3", "scripts/ops/autonomy_scorecard.py", "--lookback-days", "30"]) != 0:
+        if (
+            run_cmd(
+                [
+                    "python3",
+                    "scripts/ops/autonomy_scorecard.py",
+                    "--lookback-days",
+                    "30",
+                ]
+            )
+            != 0
+        ):
             return 1
-        if run_cmd(
-            [
-                "python3",
-                "scripts/ops/autonomy_scorecard.py",
-                "--lookback-days",
-                "7",
-                "--output-json",
-                str(SCORECARD_7D_PATH),
-                "--output-md",
-                str(FULL_PILOT_DIR / "scorecard-7d.md"),
-            ]
-        ) != 0:
+        if (
+            run_cmd(
+                [
+                    "python3",
+                    "scripts/ops/autonomy_scorecard.py",
+                    "--lookback-days",
+                    "7",
+                    "--output-json",
+                    str(SCORECARD_7D_PATH),
+                    "--output-md",
+                    str(FULL_PILOT_DIR / "scorecard-7d.md"),
+                ]
+            )
+            != 0
+        ):
             return 1
         if run_cmd(["python3", "scripts/ops/generate_go_no_go_packet.py"]) != 0:
             return 1

@@ -6,12 +6,12 @@ and identifying untested critical paths.
 
 # Use relative imports to avoid circular dependency with root coverage package
 from .improvement.analyzer import (
+    CRITICAL_MODULES,
     CoverageAnalyzer,
     CoverageGap,
     CoverageReport,
     ModuleCoverage,
     Priority,
-    CRITICAL_MODULES,
 )
 from .improvement.reporter import (
     CoverageReporter,

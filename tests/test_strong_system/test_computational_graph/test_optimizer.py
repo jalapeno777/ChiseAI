@@ -12,12 +12,10 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-
 from src.strong_system.computational_graph import (
     Add,
     Graph,
     MatMul,
-    Multiply,
     Node,
     ReLU,
     backward,
@@ -35,7 +33,6 @@ from src.strong_system.computational_graph.optimizer import (
     FusedAddReLU,
     FusedLinearReLU,
     FusedMulAdd,
-    FusedOperation,
     GraphOptimizer,
     OptimizationConfig,
     OptimizationResult,

@@ -12,7 +12,7 @@ Example:
 from __future__ import annotations
 
 import random
-from typing import Any, Callable
+from typing import Any
 
 import numpy as np
 
@@ -296,7 +296,7 @@ def compute_precision_recall_f1(
             "f1": float(np.mean(f1s)),
         }
     elif average == "weighted":
-        total = sum(supports)
+        sum(supports)
         return {
             "precision": float(np.average(precisions, weights=supports)),
             "recall": float(np.average(recalls, weights=supports)),

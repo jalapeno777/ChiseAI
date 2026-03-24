@@ -5,11 +5,9 @@ TEMPO-2026-001: Database span wrapper tests.
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
-from opentelemetry import trace
-
 from src.db.tracing import (
     extract_sql_type,
     extract_table_name,

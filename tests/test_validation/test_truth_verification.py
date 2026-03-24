@@ -19,15 +19,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts" / "valida
 
 from per_task_truth_verification import (
     DICT_FIELDS,
-    EvidenceValidationError,
     LIST_FIELDS,
     REQUIRED_FIELDS,
+    EvidenceValidationError,
     FieldValidation,
     PerTaskEvidenceValidator,
     PerTaskValidationResult,
     validate_per_task_evidence,
 )
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -706,6 +705,6 @@ class TestIntegrationFullEvidence:
         result = validate_per_task_evidence(evidence)
         assert not result.valid
         for field_name in REQUIRED_FIELDS:
-            assert any(field_name in e for e in result.errors), (
-                f"Missing error for field: {field_name}"
-            )
+            assert any(
+                field_name in e for e in result.errors
+            ), f"Missing error for field: {field_name}"

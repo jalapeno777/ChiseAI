@@ -1,16 +1,14 @@
 """Tests for Constitution core class (ST-GOV-002)."""
 
-from datetime import UTC, datetime
 from pathlib import Path
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import patch
 
 import pytest
-
 from src.governance.constitution.constitution import (
+    ConditionalInvariant,
     Constitution,
     ConstitutionStatus,
     ConstitutionVersion,
-    ConditionalInvariant,
     DecisionBoundary,
     EnforcementAction,
     EscalationPath,

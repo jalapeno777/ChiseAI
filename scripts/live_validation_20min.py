@@ -23,7 +23,7 @@ def run_validation(duration_minutes=20):
 
     while time.time() - start_time < validation_duration:
         elapsed = int(time.time() - start_time)
-        remaining = validation_duration - elapsed
+        validation_duration - elapsed
 
         # Check signal generator heartbeat
         heartbeat = r.hgetall("bmad:chiseai:scheduler:heartbeat")

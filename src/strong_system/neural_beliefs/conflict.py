@@ -13,6 +13,7 @@ from enum import Enum, auto
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
+
 from src.strong_system.belief_embeddings import ValidationError
 
 if TYPE_CHECKING:

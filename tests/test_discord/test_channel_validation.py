@@ -5,7 +5,6 @@ Tests for ST-DISCORD-VALIDATION-001: Discord channel configuration validation ha
 
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
 from unittest import mock
 
 import pytest

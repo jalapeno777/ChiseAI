@@ -1,14 +1,10 @@
 """Integration tests for program synthesis module."""
 
-import pytest
-
 from src.strong_system.program_synthesis import (
     DSLBuilder,
     ProgramDSL,
-    ProgramGenerator,
     ProgramValidator,
     TypeChecker,
-    ValidationResult,
     validate_program,
 )
 from src.strong_system.program_synthesis.dsl import (
@@ -21,7 +17,6 @@ from src.strong_system.program_synthesis.generator import (
     GenerationConstraints,
     GenerationContext,
     GenerationStrategy,
-    GrammarBasedGenerator,
     HybridGenerator,
     SearchBasedGenerator,
     TemplateBasedGenerator,
@@ -29,18 +24,11 @@ from src.strong_system.program_synthesis.generator import (
     generate_program,
 )
 from src.strong_system.program_synthesis.types import (
-    ASTNodeType,
-    BinaryOp,
-    BinaryOperator,
-    FunctionDef,
     NumberLiteral,
-    ParameterRef,
     Program,
-    ProgramSchema,
     ProgramType,
     Sequence,
     TypeAnnotation,
-    VariableDecl,
     VariableRef,
 )
 from src.strong_system.program_synthesis.validator import (
@@ -77,9 +65,9 @@ class TestEndToEndProgramGeneration:
             )
             if prog is not None:
                 result = validate_program(prog)
-                assert result.valid is True, (
-                    f"Strategy {strategy.name} produced invalid program"
-                )
+                assert (
+                    result.valid is True
+                ), f"Strategy {strategy.name} produced invalid program"
 
     def test_full_dsl_to_validation_pipeline(self):
         """Test full pipeline from DSL construction to validation."""

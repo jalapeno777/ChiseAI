@@ -13,20 +13,20 @@ Acceptance Criteria:
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
+from ml.models.model_registry import ModelRegistry
 from ml.monitoring.registry_monitor import (
     DegradationEvent,
     ModelRegistryMonitor,
     ModelVersionInfo,
     ShadowModeRecord,
+    ShadowModeResult,
     ValidationGateRecord,
     ValidationGateStatus,
-    ShadowModeResult,
 )
-from ml.models.model_registry import ModelRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ class TestModelVersionInfo:
         info = ModelVersionInfo(
             model_name="signal_predictor",
             version="1.0.0",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             metrics={"accuracy": 0.65},
             tags=["production"],
             status="champion",
@@ -53,7 +53,7 @@ class TestModelVersionInfo:
 
     def test_version_info_to_dict(self):
         """Test converting version info to dictionary."""
-        created = datetime.now(timezone.utc)
+        created = datetime.now(UTC)
         info = ModelVersionInfo(
             model_name="signal_predictor",
             version="1.0.0",

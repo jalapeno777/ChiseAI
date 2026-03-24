@@ -5,14 +5,11 @@ ST-CONTROL-001: Telemetry Pipeline
 
 import time
 
-import pytest
-
 from autonomous_control_plane.pipeline.ingestion import IngestionStatus
 from autonomous_control_plane.pipeline.orchestrator import (
     PipelineMetrics,
-    PipelineStage,
-    PipelineState,
     PipelineStageCoordinator,
+    PipelineState,
     TelemetryPipeline,
 )
 

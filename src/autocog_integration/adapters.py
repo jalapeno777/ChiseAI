@@ -1,9 +1,9 @@
 """API adapters for AUTOCOG and STRONG systems."""
 
-import asyncio
-from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Callable
 import logging
+from abc import ABC, abstractmethod
+from collections.abc import Callable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,7 @@ class SystemAdapter(ABC):
     def __init__(self, system_id: str):
         self.system_id = system_id
         self._is_connected = False
-        self._event_handlers: Dict[str, Callable] = {}
+        self._event_handlers: dict[str, Callable] = {}
 
     @abstractmethod
     async def connect(self) -> bool:
@@ -27,17 +27,17 @@ class SystemAdapter(ABC):
         pass
 
     @abstractmethod
-    async def get_knowledge_item(self, item_id: str) -> Optional[Dict[str, Any]]:
+    async def get_knowledge_item(self, item_id: str) -> dict[str, Any] | None:
         """Get a knowledge item by ID."""
         pass
 
     @abstractmethod
-    async def store_knowledge_item(self, item_id: str, data: Dict[str, Any]) -> bool:
+    async def store_knowledge_item(self, item_id: str, data: dict[str, Any]) -> bool:
         """Store a knowledge item."""
         pass
 
     @abstractmethod
-    async def update_knowledge_item(self, item_id: str, data: Dict[str, Any]) -> bool:
+    async def update_knowledge_item(self, item_id: str, data: dict[str, Any]) -> bool:
         """Update a knowledge item."""
         pass
 
@@ -48,8 +48,8 @@ class SystemAdapter(ABC):
 
     @abstractmethod
     async def list_knowledge_items(
-        self, knowledge_type: Optional[str] = None
-    ) -> List[str]:
+        self, knowledge_type: str | None = None
+    ) -> list[str]:
         """List knowledge item IDs."""
         pass
 
@@ -57,7 +57,7 @@ class SystemAdapter(ABC):
         """Register an event handler."""
         self._event_handlers[event_type] = handler
 
-    async def trigger_event(self, event_type: str, data: Dict[str, Any]) -> None:
+    async def trigger_event(self, event_type: str, data: dict[str, Any]) -> None:
         """Trigger an event."""
         handler = self._event_handlers.get(event_type)
         if handler:
@@ -75,7 +75,7 @@ class AutocogAdapter(SystemAdapter):
     def __init__(self, redis_client=None):
         super().__init__("autocog")
         self.redis_client = redis_client
-        self._knowledge_store: Dict[str, Dict[str, Any]] = {}
+        self._knowledge_store: dict[str, dict[str, Any]] = {}
         self._action_executor = None
         self._controller = None
 
@@ -83,10 +83,10 @@ class AutocogAdapter(SystemAdapter):
         """Connect to AUTOCOG system."""
         try:
             # Initialize AUTOCOG components
+            from src.autonomous_cognition.action_executor import ActionExecutor
             from src.autonomous_cognition.controller import (
                 AutonomousCognitionController,
             )
-            from src.autonomous_cognition.action_executor import ActionExecutor
 
             self._controller = AutonomousCognitionController()
             self._action_executor = ActionExecutor()
@@ -113,7 +113,7 @@ class AutocogAdapter(SystemAdapter):
             logger.error(f"Error disconnecting from AUTOCOG: {e}")
             return False
 
-    async def get_knowledge_item(self, item_id: str) -> Optional[Dict[str, Any]]:
+    async def get_knowledge_item(self, item_id: str) -> dict[str, Any] | None:
         """Get a knowledge item from AUTOCOG."""
         if not self._is_connected:
             logger.warning("Not connected to AUTOCOG")
@@ -136,7 +136,7 @@ class AutocogAdapter(SystemAdapter):
 
         return None
 
-    async def store_knowledge_item(self, item_id: str, data: Dict[str, Any]) -> bool:
+    async def store_knowledge_item(self, item_id: str, data: dict[str, Any]) -> bool:
         """Store a knowledge item in AUTOCOG."""
         if not self._is_connected:
             logger.warning("Not connected to AUTOCOG")
@@ -159,7 +159,7 @@ class AutocogAdapter(SystemAdapter):
             logger.error(f"Error storing knowledge item: {e}")
             return False
 
-    async def update_knowledge_item(self, item_id: str, data: Dict[str, Any]) -> bool:
+    async def update_knowledge_item(self, item_id: str, data: dict[str, Any]) -> bool:
         """Update a knowledge item in AUTOCOG."""
         if not self._is_connected:
             logger.warning("Not connected to AUTOCOG")
@@ -204,8 +204,8 @@ class AutocogAdapter(SystemAdapter):
             return False
 
     async def list_knowledge_items(
-        self, knowledge_type: Optional[str] = None
-    ) -> List[str]:
+        self, knowledge_type: str | None = None
+    ) -> list[str]:
         """List knowledge item IDs from AUTOCOG."""
         if not self._is_connected:
             logger.warning("Not connected to AUTOCOG")
@@ -230,7 +230,7 @@ class AutocogAdapter(SystemAdapter):
             logger.error(f"Error listing knowledge items: {e}")
             return []
 
-    async def execute_action(self, action_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute_action(self, action_data: dict[str, Any]) -> dict[str, Any]:
         """Execute an action in AUTOCOG."""
         if not self._is_connected or not self._action_executor:
             logger.warning("Not connected to AUTOCOG or action executor not available")
@@ -265,7 +265,7 @@ class StrongAdapter(SystemAdapter):
     def __init__(self, qdrant_client=None):
         super().__init__("strong")
         self.qdrant_client = qdrant_client
-        self._knowledge_store: Dict[str, Dict[str, Any]] = {}
+        self._knowledge_store: dict[str, dict[str, Any]] = {}
         self._belief_engine = None
         self._learning_engine = None
 
@@ -307,7 +307,7 @@ class StrongAdapter(SystemAdapter):
             logger.error(f"Error disconnecting from STRONG: {e}")
             return False
 
-    async def get_knowledge_item(self, item_id: str) -> Optional[Dict[str, Any]]:
+    async def get_knowledge_item(self, item_id: str) -> dict[str, Any] | None:
         """Get a knowledge item from STRONG."""
         if not self._is_connected:
             logger.warning("Not connected to STRONG")
@@ -330,7 +330,7 @@ class StrongAdapter(SystemAdapter):
 
         return None
 
-    async def store_knowledge_item(self, item_id: str, data: Dict[str, Any]) -> bool:
+    async def store_knowledge_item(self, item_id: str, data: dict[str, Any]) -> bool:
         """Store a knowledge item in STRONG."""
         if not self._is_connected:
             logger.warning("Not connected to STRONG")
@@ -357,7 +357,7 @@ class StrongAdapter(SystemAdapter):
             logger.error(f"Error storing knowledge item: {e}")
             return False
 
-    async def update_knowledge_item(self, item_id: str, data: Dict[str, Any]) -> bool:
+    async def update_knowledge_item(self, item_id: str, data: dict[str, Any]) -> bool:
         """Update a knowledge item in STRONG."""
         if not self._is_connected:
             logger.warning("Not connected to STRONG")
@@ -405,8 +405,8 @@ class StrongAdapter(SystemAdapter):
             return False
 
     async def list_knowledge_items(
-        self, knowledge_type: Optional[str] = None
-    ) -> List[str]:
+        self, knowledge_type: str | None = None
+    ) -> list[str]:
         """List knowledge item IDs from STRONG."""
         if not self._is_connected:
             logger.warning("Not connected to STRONG")
@@ -432,8 +432,8 @@ class StrongAdapter(SystemAdapter):
             return []
 
     async def process_learning_update(
-        self, update_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, update_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Process a learning update in STRONG."""
         if not self._is_connected or not self._learning_engine:
             logger.warning("Not connected to STRONG or learning engine not available")
@@ -448,7 +448,7 @@ class StrongAdapter(SystemAdapter):
             logger.error(f"Error processing learning update: {e}")
             return {"status": "failed", "error": str(e)}
 
-    async def vectorize_belief(self, belief_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def vectorize_belief(self, belief_data: dict[str, Any]) -> dict[str, Any]:
         """Vectorize a belief in STRONG."""
         if not self._is_connected or not self._belief_engine:
             logger.warning("Not connected to STRONG or belief engine not available")

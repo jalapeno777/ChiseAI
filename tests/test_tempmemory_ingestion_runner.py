@@ -15,21 +15,18 @@ from __future__ import annotations
 
 import json
 import tempfile
-from datetime import UTC, datetime
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
 from governance.tempmemory.ingestion_runner import (
-    FileIngestionResult,
-    IngestionStatus,
-    TempmemoryIngestionRunner,
     LOCK_TIMEOUT_SECONDS,
     REDIS_HASH_KEY,
     REDIS_LOCK_KEY,
-    REDIS_STATUS_KEY,
     VALID_INGESTION_TYPES,
+    IngestionStatus,
+    TempmemoryIngestionRunner,
 )
 from governance.tempmemory.migration import MigrationStatus
 

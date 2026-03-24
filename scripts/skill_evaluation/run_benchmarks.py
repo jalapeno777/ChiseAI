@@ -7,11 +7,11 @@ Part of ST-SKILL-EVAL-002-P0: P0 Skill Evaluation Suites
 """
 
 import json
-import sys
 import os
-from pathlib import Path
-from typing import Dict, List, Any
+import sys
 from datetime import datetime
+from pathlib import Path
+from typing import Any
 
 # Target skills for evaluation
 TARGET_SKILLS = [
@@ -25,7 +25,7 @@ TARGET_SKILLS = [
 SKILLS_BASE_PATH = Path(".opencode/skills")
 
 
-def load_evals(skill_name: str) -> List[Dict[str, Any]]:
+def load_evals(skill_name: str) -> list[dict[str, Any]]:
     """Load evals.json for a skill."""
     eval_path = SKILLS_BASE_PATH / skill_name / "evals" / "evals.json"
 
@@ -34,7 +34,7 @@ def load_evals(skill_name: str) -> List[Dict[str, Any]]:
         return []
 
     try:
-        with open(eval_path, "r") as f:
+        with open(eval_path) as f:
             return json.load(f)
     except json.JSONDecodeError as e:
         print(f"  ❌ JSON error in {skill_name}/evals.json: {e}")
@@ -44,7 +44,7 @@ def load_evals(skill_name: str) -> List[Dict[str, Any]]:
         return []
 
 
-def evaluate_skill(skill_name: str) -> Dict[str, Any]:
+def evaluate_skill(skill_name: str) -> dict[str, Any]:
     """
     Evaluate a skill by running its eval suite.
 
@@ -128,7 +128,7 @@ def evaluate_skill(skill_name: str) -> Dict[str, Any]:
     }
 
 
-def run_ab_benchmark(skill_name: str) -> Dict[str, Any]:
+def run_ab_benchmark(skill_name: str) -> dict[str, Any]:
     """
     Run A/B benchmark comparing baseline vs optimized.
 
@@ -177,13 +177,13 @@ def run_ab_benchmark(skill_name: str) -> Dict[str, Any]:
     }
 
 
-def print_results(results: List[Dict[str, Any]], ab_results: List[Dict[str, Any]]):
+def print_results(results: list[dict[str, Any]], ab_results: list[dict[str, Any]]):
     """Print evaluation results in a formatted way."""
     print("\n" + "=" * 80)
     print("SKILL EVALUATION BENCHMARK RESULTS")
     print("=" * 80)
     print(f"Timestamp: {datetime.now().isoformat()}")
-    print(f"Story: ST-SKILL-EVAL-002-P0")
+    print("Story: ST-SKILL-EVAL-002-P0")
     print("=" * 80)
 
     # Print detailed results
@@ -256,16 +256,16 @@ def print_results(results: List[Dict[str, Any]], ab_results: List[Dict[str, Any]
     print(f"  Skills Meeting 80% Pass Rate: {passed_threshold}")
 
     if all_meet_target and evaluated == len(TARGET_SKILLS):
-        print(f"\n  ✅ ALL TARGETS MET - Ready for promotion")
+        print("\n  ✅ ALL TARGETS MET - Ready for promotion")
     else:
-        print(f"\n  ⚠️  Some targets not met - Review needed")
+        print("\n  ⚠️  Some targets not met - Review needed")
 
     print("=" * 80 + "\n")
 
 
 def save_results(
-    results: List[Dict[str, Any]],
-    ab_results: List[Dict[str, Any]],
+    results: list[dict[str, Any]],
+    ab_results: list[dict[str, Any]],
     output_dir: str = "docs/evidence",
 ):
     """Save results to JSON files."""
@@ -315,7 +315,7 @@ def main():
 
     # Print and save results
     print_results(results, ab_results)
-    results_file = save_results(results, ab_results)
+    save_results(results, ab_results)
 
     # Exit with appropriate code
     all_passed = all(

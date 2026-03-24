@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import numpy as np
+
 from src.neuro_symbolic.pattern_recognition.engine import (
     PatternRecognitionEngine,
     PatternType,

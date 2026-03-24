@@ -1,12 +1,10 @@
 """Tests for knowledge transfer protocols."""
 
-import pytest
-from datetime import datetime
 from src.autocog_integration.protocols import (
     KnowledgeTransferProtocol,
     TransferEvent,
-    TransferStatus,
     TransferPriority,
+    TransferStatus,
     ValidationResult,
 )
 

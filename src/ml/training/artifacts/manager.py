@@ -237,7 +237,13 @@ class ArtifactManager:
             value = ckpt.metrics_snapshot.get(metric_key)
             if value is None:
                 continue
-            if best_value is None or minimize and value < best_value or not minimize and value > best_value:
+            if (
+                best_value is None
+                or minimize
+                and value < best_value
+                or not minimize
+                and value > best_value
+            ):
                 best, best_value = ckpt, value
 
         return best

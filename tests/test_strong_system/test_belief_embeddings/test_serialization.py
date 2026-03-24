@@ -8,7 +8,6 @@ import tempfile
 
 import numpy as np
 import pytest
-
 from src.strong_system.belief_embeddings import (
     BeliefMetadata,
     BeliefSchema,

@@ -15,7 +15,6 @@ import shlex
 import subprocess
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
 
 
@@ -47,7 +46,9 @@ def main() -> int:
 
     skill_path = args.skill_path.strip() or f".opencode/skills/{args.skill_name}"
     eval_set = args.eval_set.strip() or f"{skill_path}/evals/evals.json"
-    workspace = args.workspace.strip() or f"_bmad-output/skill-benchmarks/{args.skill_name}"
+    workspace = (
+        args.workspace.strip() or f"_bmad-output/skill-benchmarks/{args.skill_name}"
+    )
 
     scripts_dir = PROJECT_ROOT / "scripts" / "ops" / "skill_creator" / "scripts"
 
@@ -86,7 +87,9 @@ def main() -> int:
             f"--executor-cmd-template {shlex.quote(args.executor_cmd_template)} "
         )
         if args.grader_cmd_template:
-            bench_cmd += f"--grader-cmd-template {shlex.quote(args.grader_cmd_template)} "
+            bench_cmd += (
+                f"--grader-cmd-template {shlex.quote(args.grader_cmd_template)} "
+            )
         if args.dry_run:
             bench_cmd += "--dry-run "
         if run(bench_cmd, PROJECT_ROOT) != 0:
@@ -100,7 +103,9 @@ def main() -> int:
         if run(agg_cmd, PROJECT_ROOT / "scripts" / "ops" / "skill_creator") != 0:
             return 1
 
-    bench_json = PROJECT_ROOT / workspace / f"iteration-{args.iteration}" / "benchmark.json"
+    bench_json = (
+        PROJECT_ROOT / workspace / f"iteration-{args.iteration}" / "benchmark.json"
+    )
 
     if args.promote_candidate_version:
         promote_cmd = (

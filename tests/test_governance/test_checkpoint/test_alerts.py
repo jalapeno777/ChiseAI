@@ -7,12 +7,10 @@ Story: BATCH3-ACTIONABLE-ZERO-002
 
 import json
 from datetime import UTC, datetime, timedelta
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import patch
 
 from src.governance.checkpoint.alerts import ActionableZeroAlert, AlertResult
-from src.governance.checkpoint.gates import GateChecker, GateResult
+from src.governance.checkpoint.gates import GateChecker
 
 
 class TestAlertResult:

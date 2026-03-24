@@ -56,7 +56,7 @@ class ProgramDSL:
         self.statements: list[ASTNode] = []
         self.metadata: dict[str, Any] = {}
 
-    def with_description(self, description: str) -> "ProgramDSL":
+    def with_description(self, description: str) -> ProgramDSL:
         """Set program description.
 
         Args:
@@ -68,7 +68,7 @@ class ProgramDSL:
         self.description = description
         return self
 
-    def with_import(self, module: str) -> "ProgramDSL":
+    def with_import(self, module: str) -> ProgramDSL:
         """Add an import.
 
         Args:
@@ -81,7 +81,7 @@ class ProgramDSL:
             self.imports.append(module)
         return self
 
-    def with_metadata(self, key: str, value: Any) -> "ProgramDSL":
+    def with_metadata(self, key: str, value: Any) -> ProgramDSL:
         """Add metadata.
 
         Args:
@@ -94,7 +94,7 @@ class ProgramDSL:
         self.metadata[key] = value
         return self
 
-    def add_statement(self, statement: ASTNode) -> "ProgramDSL":
+    def add_statement(self, statement: ASTNode) -> ProgramDSL:
         """Add a statement to the program.
 
         Args:
@@ -621,11 +621,7 @@ class ProgramSerializer:
             }
 
         # Add type-specific fields
-        if isinstance(node, NumberLiteral):
-            result["value"] = node.value
-        elif isinstance(node, StringLiteral):
-            result["value"] = node.value
-        elif isinstance(node, BooleanLiteral):
+        if isinstance(node, (NumberLiteral, StringLiteral, BooleanLiteral)):
             result["value"] = node.value
         elif isinstance(node, VectorLiteral):
             result["values"] = node.values
@@ -807,9 +803,11 @@ class ProgramDeserializer:
             initializer = data.get("initializer")
             return VariableDecl(
                 name=data.get("name", ""),
-                initializer=ProgramDeserializer._ast_from_dict(initializer)
-                if initializer
-                else None,
+                initializer=(
+                    ProgramDeserializer._ast_from_dict(initializer)
+                    if initializer
+                    else None
+                ),
                 mutable=data.get("mutable", True),
                 location=location,
             )

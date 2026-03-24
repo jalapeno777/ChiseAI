@@ -7,11 +7,8 @@ Story: PAPER-GOVERNANCE-001
 
 import json
 from datetime import UTC, datetime
-from unittest.mock import MagicMock, patch
 
-import pytest
-
-from src.governance.checkpoint.gates import GateChecker, GateResult, GateSummary
+from src.governance.checkpoint.gates import GateResult, GateSummary
 from src.governance.checkpoint.state import (
     CheckpointRecord,
     CheckpointState,
@@ -575,7 +572,9 @@ class TestStateManagerDetermineStatus:
         manager = StateManager()
         now = datetime.now(UTC)
         summary = GateSummary(
-            results=[GateResult(gate="G1", status="⚠️ CHECK", detail="", timestamp=now)],
+            results=[
+                GateResult(gate="G1", status="⚠️ CHECK", detail="", timestamp=now)
+            ],
             pass_count=0,
             fail_count=0,
             check_count=1,

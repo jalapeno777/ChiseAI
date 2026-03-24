@@ -9,8 +9,9 @@ from __future__ import annotations
 import threading
 import time
 from collections import OrderedDict
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 import numpy as np
 
@@ -391,9 +392,9 @@ class BeliefCache:
             return {
                 "size": len(self._cache),
                 "max_size": self.max_size,
-                "utilization": len(self._cache) / self.max_size
-                if self.max_size > 0
-                else 0,
+                "utilization": (
+                    len(self._cache) / self.max_size if self.max_size > 0 else 0
+                ),
                 "default_ttl": self.default_ttl,
                 "metrics": self.metrics.to_dict(),
                 "total_access_count": total_accesses,

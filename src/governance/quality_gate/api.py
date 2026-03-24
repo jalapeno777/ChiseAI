@@ -12,6 +12,7 @@ import logging
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
+
 from src.governance.quality_gate.gate import (
     QualityGate,
 )

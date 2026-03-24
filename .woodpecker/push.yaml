@@ -49,7 +49,7 @@ steps:
           exit 0
         fi
         echo "push-gate: Checking: ${CHANGED_PY}"
-        black --check ${CHANGED_PY}
+        printf '%s\n' "$CHANGED_PY" | tr -s '[:space:]' '\n' | grep -v '^$' | xargs black --check
         echo "push-gate: Black formatting OK"
 
   lint-check:
@@ -81,7 +81,7 @@ steps:
           exit 0
         fi
         echo "push-gate: Linting: ${CHANGED_PY}"
-        ruff check ${CHANGED_PY}
+        printf '%s\n' "$CHANGED_PY" | tr -s '[:space:]' '\n' | grep -v '^$' | xargs ruff check
         echo "push-gate: Ruff linting OK"
 
   secret-scan:

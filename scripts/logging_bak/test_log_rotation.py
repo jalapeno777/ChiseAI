@@ -145,11 +145,6 @@ class LogRotationTest:
             self.log(f"✗ {test_name} failed: {e}")
             return False
 
-        except Exception as e:
-            self.errors.append(f"{test_name}: {e}")
-            self.log(f"✗ {test_name} failed: {e}")
-            return False
-
     def test_compression(self) -> bool:
         """Test that rotated files are compressed."""
         self.tests_run += 1

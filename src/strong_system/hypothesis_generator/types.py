@@ -11,10 +11,6 @@ from datetime import UTC, datetime
 from enum import Enum, auto
 from typing import Any, Self
 
-import numpy as np
-
-from src.strong_system.belief_embeddings import BeliefVector
-
 
 class HypothesisType(Enum):
     """Types of market hypotheses that can be generated."""

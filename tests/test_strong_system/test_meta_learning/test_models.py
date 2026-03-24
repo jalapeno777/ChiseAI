@@ -6,12 +6,10 @@ Tests ParameterStore, LinearModel, MAML, and Reptile classes.
 from __future__ import annotations
 
 import numpy as np
-import pytest
-
 from src.strong_system.meta_learning.controller import Episode
 from src.strong_system.meta_learning.models import (
-    LinearModel,
     MAML,
+    LinearModel,
     ParameterStore,
     Reptile,
 )
@@ -233,7 +231,7 @@ class TestMAML:
 
         assert maml.inner_lr == 0.01
         assert maml.n_inner_steps == 5
-        assert maml.first_order == False
+        assert not maml.first_order
 
     def test_maml_meta_parameters(self):
         """Test accessing meta-parameters."""

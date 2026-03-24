@@ -22,7 +22,6 @@ import sys
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -55,9 +54,11 @@ class TestTelemetryPipelineE2E:
         # Mock the entire influxdb_client module
         mock_influxdb_module = MagicMock()
         mock_influxdb_module.InfluxDBClient.return_value = mock_influxdb
-        
+
         with patch.dict("sys.modules", {"influxdb_client": mock_influxdb_module}):
-            with patch.dict("sys.modules", {"influxdb_client.client.write_api": MagicMock()}):
+            with patch.dict(
+                "sys.modules", {"influxdb_client.client.write_api": MagicMock()}
+            ):
                 pipeline = TelemetryPipeline()
                 yield pipeline
                 if pipeline.state != PipelineState.STOPPED:
@@ -91,7 +92,6 @@ class TestTelemetryPipelineE2E:
 
     def test_end_to_end_data_flow(self, pipeline):
         """Test end-to-end data flow: ingestion → processing → export."""
-        from autonomous_control_plane.pipeline.orchestrator import PipelineState
 
         pipeline.start()
         time.sleep(0.1)  # Allow pipeline to start
@@ -118,7 +118,6 @@ class TestTelemetryPipelineE2E:
 
     def test_backpressure_handling(self, pipeline):
         """Test backpressure and recovery scenarios."""
-        from autonomous_control_plane.pipeline.orchestrator import PipelineState
 
         pipeline.start()
         time.sleep(0.1)
@@ -162,7 +161,6 @@ class TestTelemetryPipelineE2E:
 
     def test_live_ingestion_test(self, pipeline):
         """Test live ingestion verification."""
-        from autonomous_control_plane.pipeline.orchestrator import PipelineState
 
         pipeline.start()
         time.sleep(0.1)
@@ -182,7 +180,6 @@ class TestTelemetryPipelineE2E:
 
     def test_performance_under_load(self, pipeline):
         """Test pipeline performance under load."""
-        from autonomous_control_plane.pipeline.orchestrator import PipelineState
 
         pipeline.start()
         time.sleep(0.1)
@@ -230,7 +227,6 @@ class TestSelfHealingAutomationE2E:
         from autonomous_control_plane.automation.controller import (
             AutomationController,
         )
-        from autonomous_control_plane.models.healing import FailurePatternType
 
         controller = AutomationController(
             trading_mode="paper",
@@ -244,7 +240,6 @@ class TestSelfHealingAutomationE2E:
     @pytest.mark.asyncio
     async def test_remediation_workflow_lifecycle(self, controller):
         """Test complete remediation cycle: detection → decision → action → verification."""
-        from autonomous_control_plane.automation.controller import RemediationStatus
         from autonomous_control_plane.models.healing import FailurePatternType
 
         # Start remediation
@@ -623,9 +618,11 @@ class TestCrossStoryIntegration:
         # Mock the entire influxdb_client module
         mock_influxdb_module = MagicMock()
         mock_influxdb_module.InfluxDBClient.return_value = mock_influxdb
-        
+
         with patch.dict("sys.modules", {"influxdb_client": mock_influxdb_module}):
-            with patch.dict("sys.modules", {"influxdb_client.client.write_api": MagicMock()}):
+            with patch.dict(
+                "sys.modules", {"influxdb_client.client.write_api": MagicMock()}
+            ):
                 pipeline = TelemetryPipeline()
 
         controller = AutomationController(
@@ -651,7 +648,6 @@ class TestCrossStoryIntegration:
     async def test_telemetry_triggers_automation(self, integrated_system):
         """Test telemetry → automation: Metrics trigger healing workflows."""
         from autonomous_control_plane.models.healing import FailurePatternType
-        from autonomous_control_plane.pipeline.orchestrator import PipelineState
 
         pipeline = integrated_system["pipeline"]
         controller = integrated_system["controller"]
@@ -713,7 +709,6 @@ class TestCrossStoryIntegration:
     @pytest.mark.asyncio
     async def test_dashboard_queries_telemetry(self, integrated_system):
         """Test dashboard → telemetry: Query historical data."""
-        from autonomous_control_plane.pipeline.orchestrator import PipelineState
 
         pipeline = integrated_system["pipeline"]
         dashboard = integrated_system["dashboard"]
@@ -745,7 +740,6 @@ class TestCrossStoryIntegration:
     async def test_end_to_end_latency(self, integrated_system):
         """Test end-to-end latency (<5s target)."""
         from autonomous_control_plane.models.healing import FailurePatternType
-        from autonomous_control_plane.pipeline.orchestrator import PipelineState
 
         pipeline = integrated_system["pipeline"]
         controller = integrated_system["controller"]
@@ -782,7 +776,6 @@ class TestCrossStoryIntegration:
     @pytest.mark.asyncio
     async def test_error_scenarios_handled(self, integrated_system):
         """Test error scenarios are handled gracefully."""
-        from autonomous_control_plane.pipeline.orchestrator import PipelineState
 
         pipeline = integrated_system["pipeline"]
         dashboard = integrated_system["dashboard"]
@@ -846,9 +839,11 @@ class TestE2EPerformanceBenchmarks:
         # Mock the entire influxdb_client module
         mock_influxdb_module = MagicMock()
         mock_influxdb_module.InfluxDBClient.return_value = mock_influxdb
-        
+
         with patch.dict("sys.modules", {"influxdb_client": mock_influxdb_module}):
-            with patch.dict("sys.modules", {"influxdb_client.client.write_api": MagicMock()}):
+            with patch.dict(
+                "sys.modules", {"influxdb_client.client.write_api": MagicMock()}
+            ):
                 pipeline = TelemetryPipeline()
 
         pipeline.start()

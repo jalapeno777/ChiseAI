@@ -8,9 +8,10 @@ from __future__ import annotations
 
 import random
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Any, Callable
+from typing import Any
 
 from src.strong_system.program_synthesis.dsl import (
     DSLBuilder,
@@ -22,20 +23,10 @@ from src.strong_system.program_synthesis.types import (
     ASTNodeType,
     BinaryOp,
     BinaryOperator,
-    CallExpression,
-    FunctionDef,
-    NumberLiteral,
-    ParameterRef,
     Program,
     ProgramSchema,
     ProgramType,
-    Sequence,
-    StringLiteral,
     TypeAnnotation,
-    UnaryOp,
-    UnaryOperator,
-    VariableDecl,
-    VariableRef,
 )
 from src.strong_system.program_synthesis.validator import (
     ValidationResult,
@@ -474,7 +465,7 @@ class SearchBasedGenerator(ProgramGenerator):
         self.reset_node_count()
 
         # Skeleton: try random generation up to max_attempts
-        for attempt in range(self._max_attempts):
+        for _attempt in range(self._max_attempts):
             program = self._try_generate(context)
             if program is not None:
                 result = self.validate_generation(program)

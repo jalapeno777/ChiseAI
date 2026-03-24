@@ -10,12 +10,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 from typing import Any
 
 from autonomous_control_plane.dashboard.api import DashboardAPI
-from autonomous_control_plane.dashboard.models import DashboardState
 from autonomous_control_plane.telemetry.dashboard_sync import (
     DashboardSyncServer,
 )
@@ -26,7 +25,6 @@ logger = logging.getLogger(__name__)
 try:
     from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
     from fastapi.middleware.cors import CORSMiddleware
-    from fastapi.responses import JSONResponse
     from fastapi.staticfiles import StaticFiles
 
     HAS_FASTAPI = True
@@ -378,10 +376,8 @@ class DashboardServer:
 
         if self._server_task:
             self._server_task.cancel()
-            try:
+            with suppress(asyncio.CancelledError):
                 await self._server_task
-            except asyncio.CancelledError:
-                pass
 
         # WebSocket server is stopped by lifespan
 

@@ -13,10 +13,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-
 from src.governance.optimization.analyze_baseline import BaselineAnalyzer
 from src.governance.optimization.generate_recommendations import RecommendationEngine
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -54,9 +52,9 @@ class TestLoadWeek1Baseline:
         data = analyzer.load_baseline()
 
         assert isinstance(data, dict), "Baseline data should be a dict"
-        assert "week1_baseline" in data, (
-            "Baseline data must contain 'week1_baseline' key"
-        )
+        assert (
+            "week1_baseline" in data
+        ), "Baseline data must contain 'week1_baseline' key"
 
         week1 = data["week1_baseline"]
         # Core metrics must exist with numeric values
@@ -67,9 +65,9 @@ class TestLoadWeek1Baseline:
             "relevance_mean_score",
         ):
             assert key in week1, f"week1_baseline missing required key: {key}"
-            assert isinstance(week1[key], (int, float)), (
-                f"week1_baseline.{key} should be numeric, got {type(week1[key])}"
-            )
+            assert isinstance(
+                week1[key], (int, float)
+            ), f"week1_baseline.{key} should be numeric, got {type(week1[key])}"
 
 
 class TestGenerateRecommendations:
@@ -132,9 +130,9 @@ class TestGenerateRecommendations:
         required_keys = {"id", "title", "priority", "category", "expected_impact"}
         for rec in recs:
             missing = required_keys - set(rec.keys())
-            assert not missing, (
-                f"Recommendation {rec.get('id', '?')} missing keys: {missing}"
-            )
+            assert (
+                not missing
+            ), f"Recommendation {rec.get('id', '?')} missing keys: {missing}"
 
 
 class TestPipelineExecutionTime:

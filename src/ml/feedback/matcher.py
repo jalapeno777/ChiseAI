@@ -1128,9 +1128,11 @@ class PredictionOutcomeMatcher:
         return {
             "component": "PredictionOutcomeMatcher",
             "is_active": is_active,
-            "last_match_time": self._last_match_timestamp.isoformat()
-            if self._last_match_timestamp
-            else None,
+            "last_match_time": (
+                self._last_match_timestamp.isoformat()
+                if self._last_match_timestamp
+                else None
+            ),
             "total_matches": self._total_matches_processed,
             "match_rate": round(match_rate, 4),
             "is_healthy": is_healthy,

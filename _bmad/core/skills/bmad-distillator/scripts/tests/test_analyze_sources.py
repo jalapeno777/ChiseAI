@@ -2,23 +2,21 @@
 
 import json
 import os
-import tempfile
-from pathlib import Path
-from unittest.mock import patch
-
-import pytest
 
 # Add parent dir to path so we can import the script
 import sys
+import tempfile
+from pathlib import Path
+
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from analyze_sources import (
-    resolve_inputs,
-    detect_doc_type,
-    suggest_groups,
     analyze,
-    INCLUDE_EXTENSIONS,
-    SKIP_DIRS,
+    detect_doc_type,
+    resolve_inputs,
+    suggest_groups,
 )
 
 
@@ -28,7 +26,9 @@ def temp_dir():
     with tempfile.TemporaryDirectory() as d:
         # Create sample files
         (Path(d) / "product-brief-foo.md").write_text("# Product Brief\nContent here")
-        (Path(d) / "product-brief-foo-discovery-notes.md").write_text("# Discovery\nNotes")
+        (Path(d) / "product-brief-foo-discovery-notes.md").write_text(
+            "# Discovery\nNotes"
+        )
         (Path(d) / "architecture-doc.md").write_text("# Architecture\nDesign here")
         (Path(d) / "research-report.md").write_text("# Research\nFindings")
         (Path(d) / "random.txt").write_text("Some text content")
@@ -95,24 +95,27 @@ class TestResolveInputs:
 
 
 class TestDetectDocType:
-    @pytest.mark.parametrize("filename,expected", [
-        ("product-brief-foo.md", "product-brief"),
-        ("product_brief_bar.md", "product-brief"),
-        ("foo-discovery-notes.md", "discovery-notes"),
-        ("foo-discovery_notes.md", "discovery-notes"),
-        ("architecture-overview.md", "architecture-doc"),
-        ("my-prd.md", "prd"),
-        ("research-report-q4.md", "research-report"),
-        ("foo-distillate.md", "distillate"),
-        ("changelog.md", "changelog"),
-        ("readme.md", "readme"),
-        ("api-spec.md", "specification"),
-        ("design-doc-v2.md", "design-doc"),
-        ("meeting-notes-2026.md", "meeting-notes"),
-        ("brainstorm-session.md", "brainstorming"),
-        ("user-interview-notes.md", "interview-notes"),
-        ("random-file.md", "unknown"),
-    ])
+    @pytest.mark.parametrize(
+        "filename,expected",
+        [
+            ("product-brief-foo.md", "product-brief"),
+            ("product_brief_bar.md", "product-brief"),
+            ("foo-discovery-notes.md", "discovery-notes"),
+            ("foo-discovery_notes.md", "discovery-notes"),
+            ("architecture-overview.md", "architecture-doc"),
+            ("my-prd.md", "prd"),
+            ("research-report-q4.md", "research-report"),
+            ("foo-distillate.md", "distillate"),
+            ("changelog.md", "changelog"),
+            ("readme.md", "readme"),
+            ("api-spec.md", "specification"),
+            ("design-doc-v2.md", "design-doc"),
+            ("meeting-notes-2026.md", "meeting-notes"),
+            ("brainstorm-session.md", "brainstorming"),
+            ("user-interview-notes.md", "interview-notes"),
+            ("random-file.md", "unknown"),
+        ],
+    )
     def test_detection(self, filename, expected):
         assert detect_doc_type(filename) == expected
 

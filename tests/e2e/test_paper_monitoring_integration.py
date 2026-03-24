@@ -17,10 +17,8 @@ from __future__ import annotations
 import asyncio
 import json
 import sys
-import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -227,8 +225,8 @@ class TestThroughputMonitor:
     def test_throughput_tracker_metrics_calculation(self, mock_redis):
         """Test throughput metrics calculation."""
         from execution.signal_delivery.throughput_tracker import (
-            ThroughputTracker,
             SignalRecord,
+            ThroughputTracker,
         )
 
         tracker = ThroughputTracker(redis_client=None)  # Use in-memory only
@@ -568,8 +566,9 @@ class TestComponentIntegration:
 
     def test_full_monitoring_pipeline(self, mock_redis):
         """Test full monitoring pipeline integration."""
-        from execution.signal_delivery.throughput_tracker import ThroughputTracker
         from scripts.monitoring.paper_e2e_health_probe import PaperE2EHealthProbe
+
+        from execution.signal_delivery.throughput_tracker import ThroughputTracker
 
         # 1. Start throughput tracking
         tracker = ThroughputTracker(redis_client=mock_redis)
@@ -638,8 +637,9 @@ class TestComponentIntegration:
 
     def test_end_to_end_signal_flow(self, mock_redis):
         """Test complete signal flow end-to-end."""
-        from execution.signal_delivery.throughput_tracker import ThroughputTracker
         from scripts.monitoring.paper_e2e_health_probe import PaperE2EHealthProbe
+
+        from execution.signal_delivery.throughput_tracker import ThroughputTracker
 
         # Step 1: Generate signals
         tracker = ThroughputTracker(redis_client=mock_redis)

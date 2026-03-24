@@ -7,12 +7,10 @@ Scope: All public methods, main branch blocking, timeout/exception handling
 from __future__ import annotations
 
 import subprocess
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
-
 from scripts.gates.precommit_validator import PrecommitValidator
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -816,7 +814,7 @@ class TestMain:
     @patch("scripts.gates.precommit_validator.sys.exit")
     def test_main_no_args_success(
         self, mock_exit, mock_validator_class, capsys: pytest.CaptureFixture
-        ) -> None:
+    ) -> None:
         """Test main() with no arguments - success path."""
         mock_validator = MagicMock()
         mock_validator.validate.return_value = True
@@ -836,7 +834,7 @@ class TestMain:
     @patch("scripts.gates.precommit_validator.sys.exit")
     def test_main_verbose_flag(
         self, mock_exit, mock_validator_class, capsys: pytest.CaptureFixture
-        ) -> None:
+    ) -> None:
         """Test main() with --verbose flag."""
         mock_validator = MagicMock()
         mock_validator.validate.return_value = True
@@ -855,7 +853,7 @@ class TestMain:
     @patch("scripts.gates.precommit_validator.sys.exit")
     def test_main_fix_flag(
         self, mock_exit, mock_validator_class, capsys: pytest.CaptureFixture
-        ) -> None:
+    ) -> None:
         """Test main() with --fix flag."""
         mock_validator = MagicMock()
         mock_validator.validate.return_value = True
@@ -874,7 +872,7 @@ class TestMain:
     @patch("scripts.gates.precommit_validator.sys.exit")
     def test_main_skip_git_check_flag(
         self, mock_exit, mock_validator_class, capsys: pytest.CaptureFixture
-        ) -> None:
+    ) -> None:
         """Test main() with --skip-git-check flag (C1 fix)."""
         mock_validator = MagicMock()
         mock_validator.validate.return_value = True
@@ -894,7 +892,7 @@ class TestMain:
     @patch("scripts.gates.precommit_validator.sys.exit")
     def test_main_multiple_flags(
         self, mock_exit, mock_validator_class, capsys: pytest.CaptureFixture
-        ) -> None:
+    ) -> None:
         """Test main() with multiple flags combined."""
         mock_validator = MagicMock()
         mock_validator.validate.return_value = True
@@ -903,7 +901,8 @@ class TestMain:
         from scripts.gates.precommit_validator import main
 
         with patch(
-        "sys.argv", ["precommit_validator.py", "--verbose", "--fix", "--skip-git-check"]
+            "sys.argv",
+            ["precommit_validator.py", "--verbose", "--fix", "--skip-git-check"],
         ):
             main()
 
@@ -915,7 +914,7 @@ class TestMain:
     @patch("scripts.gates.precommit_validator.sys.exit")
     def test_main_failure_exits_with_1(
         self, mock_exit, mock_validator_class, capsys: pytest.CaptureFixture
-        ) -> None:
+    ) -> None:
         """Test main() exits with code 1 on validation failure."""
         mock_validator = MagicMock()
         mock_validator.validate.return_value = False
@@ -945,13 +944,17 @@ class TestValidateSkipGitCheck:
 
     def test_skip_git_check_true_skips_git_sanity(
         self, validator: PrecommitValidator, capsys: pytest.CaptureFixture
-        ) -> None:
+    ) -> None:
         """When skip_git_check=True, validate_git_sanity should not be called."""
         with patch.object(validator, "validate_git_sanity") as mock_git:
             with patch.object(validator, "get_changed_files", return_value=[]):
                 with patch.object(validator, "validate_status_sync", return_value=True):
-                    with patch.object(validator, "validate_traceability", return_value=True):
-                        with patch.object(validator, "validate_swarm_policy", return_value=True):
+                    with patch.object(
+                        validator, "validate_traceability", return_value=True
+                    ):
+                        with patch.object(
+                            validator, "validate_swarm_policy", return_value=True
+                        ):
                             validator.validate(skip_git_check=True)
 
         mock_git.assert_not_called()
@@ -959,27 +962,37 @@ class TestValidateSkipGitCheck:
 
     def test_skip_git_check_false_calls_git_sanity(
         self, validator: PrecommitValidator
-        ) -> None:
+    ) -> None:
         """When skip_git_check=False (default), validate_git_sanity should be called."""
-        with patch.object(validator, "validate_git_sanity", return_value=True) as mock_git:
+        with patch.object(
+            validator, "validate_git_sanity", return_value=True
+        ) as mock_git:
             with patch.object(validator, "get_changed_files", return_value=[]):
                 with patch.object(validator, "validate_status_sync", return_value=True):
-                    with patch.object(validator, "validate_traceability", return_value=True):
-                        with patch.object(validator, "validate_swarm_policy", return_value=True):
+                    with patch.object(
+                        validator, "validate_traceability", return_value=True
+                    ):
+                        with patch.object(
+                            validator, "validate_swarm_policy", return_value=True
+                        ):
                             validator.validate(skip_git_check=False)
 
         mock_git.assert_called_once()
 
-    def test_skip_git_check_default_false(
-        self, validator: PrecommitValidator
-        ) -> None:
+    def test_skip_git_check_default_false(self, validator: PrecommitValidator) -> None:
         """validate() default behavior should check git sanity."""
-        with patch.object(validator, "validate_git_sanity", return_value=True) as mock_git:
+        with patch.object(
+            validator, "validate_git_sanity", return_value=True
+        ) as mock_git:
             with patch.object(validator, "get_changed_files", return_value=[]):
                 with patch.object(validator, "validate_status_sync", return_value=True):
-                    with patch.object(validator, "validate_traceability", return_value=True):
-                        with patch.object(validator, "validate_swarm_policy", return_value=True):
-                            validator.validate() # No skip_git_check parameter
+                    with patch.object(
+                        validator, "validate_traceability", return_value=True
+                    ):
+                        with patch.object(
+                            validator, "validate_swarm_policy", return_value=True
+                        ):
+                            validator.validate()  # No skip_git_check parameter
 
         mock_git.assert_called_once()
 
@@ -1002,16 +1015,32 @@ class TestValidateMypyBlocking:
         assert result is True
         assert len(validator.errors) == 0
 
-    def test_mypy_failure_blocks_validation(self, validator: PrecommitValidator) -> None:
+    def test_mypy_failure_blocks_validation(
+        self, validator: PrecommitValidator
+    ) -> None:
         """Mypy failure should block overall validation (C2 fix)."""
         with patch.object(validator, "validate_git_sanity", return_value=True):
-            with patch.object(validator, "get_changed_files", return_value=["src/app.py"]):
+            with patch.object(
+                validator, "get_changed_files", return_value=["src/app.py"]
+            ):
                 with patch.object(validator, "validate_black", return_value=True):
                     with patch.object(validator, "validate_ruff", return_value=True):
-                        with patch.object(validator, "validate_mypy", return_value=False):  # Mypy fails
-                            with patch.object(validator, "validate_status_sync", return_value=True):
-                                with patch.object(validator, "validate_traceability", return_value=True):
-                                    with patch.object(validator, "validate_swarm_policy", return_value=True):
+                        with patch.object(
+                            validator, "validate_mypy", return_value=False
+                        ):  # Mypy fails
+                            with patch.object(
+                                validator, "validate_status_sync", return_value=True
+                            ):
+                                with patch.object(
+                                    validator,
+                                    "validate_traceability",
+                                    return_value=True,
+                                ):
+                                    with patch.object(
+                                        validator,
+                                        "validate_swarm_policy",
+                                        return_value=True,
+                                    ):
                                         result = validator.validate()
         assert result is False  # Should be blocked by mypy failure
 

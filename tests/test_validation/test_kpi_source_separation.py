@@ -14,10 +14,9 @@ from __future__ import annotations
 import json
 import sys
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -609,8 +608,8 @@ class TestBybitSourceValidation:
     def test_bybit_source_validation_fails_not_canonical(self):
         """Verify Bybit source validation fails when not canonical_for_go."""
         from scripts.analysis.calculate_bybit_kpis import (
-            BybitSourceValidationError,
             CANONICAL_SOURCE,
+            BybitSourceValidationError,
             validate_bybit_source,
         )
 
@@ -659,7 +658,6 @@ class TestGoGateEnforcement:
     def test_exit_code_5_for_non_canonical_in_demo(self):
         """Verify exit code 5 is returned for non-canonical source in demo mode."""
         from scripts.analysis.run_kpi_evaluation import (
-            EXIT_NON_CANONICAL_SOURCE,
             validate_go_gate_eligibility,
         )
 

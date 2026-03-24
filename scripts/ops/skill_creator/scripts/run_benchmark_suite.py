@@ -59,7 +59,9 @@ def main() -> int:
     ap.add_argument("--skill-name", required=True)
     ap.add_argument("--skill-path", required=True)
     ap.add_argument("--eval-set", required=True)
-    ap.add_argument("--workspace", required=True, help="Workspace root for benchmark artifacts")
+    ap.add_argument(
+        "--workspace", required=True, help="Workspace root for benchmark artifacts"
+    )
     ap.add_argument("--iteration", type=int, required=True)
     ap.add_argument("--runs-per-configuration", type=int, default=1)
     ap.add_argument(
@@ -143,17 +145,30 @@ def main() -> int:
                 timing = {
                     "started_at_utc": iso_now(),
                     "executor_cmd": render(args.executor_cmd_template, mapping),
-                    "grader_cmd": render(args.grader_cmd_template, mapping) if args.grader_cmd_template else "",
+                    "grader_cmd": (
+                        render(args.grader_cmd_template, mapping)
+                        if args.grader_cmd_template
+                        else ""
+                    ),
                 }
 
                 if args.dry_run:
                     timing["dry_run"] = True
                     write_json(run_dir / "timing.json", timing)
-                    run_log.append({"eval": eval_name, "config": config, "run": run_num, "status": "dry_run"})
+                    run_log.append(
+                        {
+                            "eval": eval_name,
+                            "config": config,
+                            "run": run_num,
+                            "status": "dry_run",
+                        }
+                    )
                     continue
 
                 t0 = time.monotonic()
-                exec_proc = run_shell(timing["executor_cmd"], cwd=Path.cwd(), timeout=args.timeout_seconds)
+                exec_proc = run_shell(
+                    timing["executor_cmd"], cwd=Path.cwd(), timeout=args.timeout_seconds
+                )
                 elapsed = time.monotonic() - t0
                 timing.update(
                     {
@@ -180,13 +195,17 @@ def main() -> int:
 
                 if args.grader_cmd_template:
                     grader_cmd = render(args.grader_cmd_template, mapping)
-                    grade_proc = run_shell(grader_cmd, cwd=Path.cwd(), timeout=args.timeout_seconds)
+                    grade_proc = run_shell(
+                        grader_cmd, cwd=Path.cwd(), timeout=args.timeout_seconds
+                    )
                     run_log.append(
                         {
                             "eval": eval_name,
                             "config": config,
                             "run": run_num,
-                            "status": "ok" if grade_proc.returncode == 0 else "grader_failed",
+                            "status": (
+                                "ok" if grade_proc.returncode == 0 else "grader_failed"
+                            ),
                             "grader_returncode": grade_proc.returncode,
                         }
                     )
@@ -226,12 +245,17 @@ def main() -> int:
     missing_grading = [r for r in run_log if r.get("status") == "missing_grading_json"]
     failed = [r for r in run_log if "failed" in str(r.get("status", ""))]
 
-    print(json.dumps({
-        "iteration_dir": str(iteration_dir),
-        "runs_total": len(run_log),
-        "failed": len(failed),
-        "missing_grading": len(missing_grading),
-    }, indent=2))
+    print(
+        json.dumps(
+            {
+                "iteration_dir": str(iteration_dir),
+                "runs_total": len(run_log),
+                "failed": len(failed),
+                "missing_grading": len(missing_grading),
+            },
+            indent=2,
+        )
+    )
 
     if failed:
         return 1

@@ -137,7 +137,7 @@ def calculate_job_health_score(
 
     # Factor 2: Cadence adherence (if we have interval and last success)
     if interval and last_success:
-        age = (now_utc() - last_success).total_seconds()
+        (now_utc() - last_success).total_seconds()
         expected_next = last_success.timestamp() + interval
         time_until_next = expected_next - now_utc().timestamp()
 

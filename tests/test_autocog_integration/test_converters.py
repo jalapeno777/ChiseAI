@@ -3,8 +3,8 @@
 import pytest
 from src.autocog_integration.converters import (
     AutocogToStrongConverter,
-    StrongToAutocogConverter,
     BidirectionalConverter,
+    StrongToAutocogConverter,
 )
 
 

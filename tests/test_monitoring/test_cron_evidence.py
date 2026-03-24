@@ -1,9 +1,8 @@
 """Tests for cron evidence tracking utilities."""
 
-import time
 import uuid
 from datetime import UTC, datetime
-from unittest.mock import Mock, call, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -41,7 +40,7 @@ class TestCronEvidenceAtomicWrites:
 
     def test_pipeline_writes_all_expected_keys(self):
         """Test that pipeline writes all required evidence keys."""
-        from scripts.monitoring.cron_evidence import write_cron_evidence, KEY_PREFIX
+        from scripts.monitoring.cron_evidence import write_cron_evidence
 
         mock_redis = Mock()
         mock_pipeline = Mock()
@@ -167,7 +166,7 @@ class TestCronEvidenceInvocationId:
 
     def test_invocation_id_written_to_redis(self):
         """Test that invocation_id is stored in Redis."""
-        from scripts.monitoring.cron_evidence import write_cron_evidence, KEY_PREFIX
+        from scripts.monitoring.cron_evidence import KEY_PREFIX, write_cron_evidence
 
         mock_redis = Mock()
         mock_pipeline = Mock()
@@ -193,7 +192,7 @@ class TestCronEvidenceInvocationId:
 
     def test_check_cadence_returns_invocation_id(self):
         """Test that check_cron_cadence includes invocation_id in results."""
-        from scripts.monitoring.cron_evidence import check_cron_cadence, KEY_PREFIX
+        from scripts.monitoring.cron_evidence import KEY_PREFIX, check_cron_cadence
 
         mock_redis = Mock()
         mock_redis.get.side_effect = lambda key: {
@@ -217,7 +216,6 @@ class TestCronEvidenceRetryLogic:
         """Test that write is retried when pipeline fails."""
         from scripts.monitoring.cron_evidence import (
             write_cron_evidence,
-            MAX_RETRY_ATTEMPTS,
         )
 
         mock_redis = Mock()
@@ -252,8 +250,8 @@ class TestCronEvidenceRetryLogic:
     def test_retry_exhaustion_returns_failure(self):
         """Test that all retries exhausted results in failure."""
         from scripts.monitoring.cron_evidence import (
-            write_cron_evidence,
             MAX_RETRY_ATTEMPTS,
+            write_cron_evidence,
         )
 
         mock_redis = Mock()
@@ -277,8 +275,8 @@ class TestCronEvidenceRetryLogic:
     def test_retry_with_exponential_backoff(self):
         """Test that retry delays increase with exponential backoff."""
         from scripts.monitoring.cron_evidence import (
-            write_cron_evidence,
             RETRY_DELAY_SECONDS,
+            write_cron_evidence,
         )
 
         mock_redis = Mock()
@@ -321,7 +319,7 @@ class TestCronEvidenceWriteMode:
 
     def test_write_mode_wrapper(self):
         """Test write_mode is set to 'wrapper' when called from cron_wrapper."""
-        from scripts.monitoring.cron_evidence import write_cron_evidence, KEY_PREFIX
+        from scripts.monitoring.cron_evidence import KEY_PREFIX, write_cron_evidence
 
         mock_redis = Mock()
         mock_pipeline = Mock()
@@ -346,7 +344,7 @@ class TestCronEvidenceWriteMode:
 
     def test_write_mode_direct(self):
         """Test write_mode defaults to 'direct'."""
-        from scripts.monitoring.cron_evidence import write_cron_evidence, KEY_PREFIX
+        from scripts.monitoring.cron_evidence import KEY_PREFIX, write_cron_evidence
 
         mock_redis = Mock()
         mock_pipeline = Mock()
@@ -369,7 +367,7 @@ class TestCronEvidenceWriteMode:
 
     def test_check_cadence_returns_write_mode(self):
         """Test that check_cron_cadence includes write_mode in results."""
-        from scripts.monitoring.cron_evidence import check_cron_cadence, KEY_PREFIX
+        from scripts.monitoring.cron_evidence import KEY_PREFIX, check_cron_cadence
 
         mock_redis = Mock()
         mock_redis.get.side_effect = lambda key: {
@@ -390,7 +388,7 @@ class TestCronEvidenceNoFalseStale:
 
     def test_no_false_stale_with_direct_invocation(self):
         """Test that direct invocation doesn't create false stale alerts."""
-        from scripts.monitoring.cron_evidence import check_cron_cadence, KEY_PREFIX
+        from scripts.monitoring.cron_evidence import KEY_PREFIX, check_cron_cadence
 
         # Simulate a recent successful run with direct mode (10 seconds ago)
         # This ensures the elapsed time is well within the grace period
@@ -439,7 +437,7 @@ class TestCronEvidenceNoFalseStale:
 
     def test_no_false_stale_with_wrapper_invocation(self):
         """Test that wrapper invocation is properly tracked."""
-        from scripts.monitoring.cron_evidence import check_cron_cadence, KEY_PREFIX
+        from scripts.monitoring.cron_evidence import KEY_PREFIX, check_cron_cadence
 
         now = datetime.now(UTC)
         recent_run = now.isoformat()
@@ -459,7 +457,7 @@ class TestCronEvidenceNoFalseStale:
 
     def test_invocation_id_prevents_timestamp_comparison_issues(self):
         """Test that unique invocation_id prevents race condition false positives."""
-        from scripts.monitoring.cron_evidence import write_cron_evidence, KEY_PREFIX
+        from scripts.monitoring.cron_evidence import write_cron_evidence
 
         mock_redis = Mock()
         mock_pipeline = Mock()
@@ -531,7 +529,7 @@ class TestCronEvidenceErrorHandling:
 
     def test_error_message_written_to_redis(self):
         """Test that error messages are stored in Redis."""
-        from scripts.monitoring.cron_evidence import write_cron_evidence, KEY_PREFIX
+        from scripts.monitoring.cron_evidence import KEY_PREFIX, write_cron_evidence
 
         mock_redis = Mock()
         mock_pipeline = Mock()
@@ -561,7 +559,7 @@ class TestCronEvidenceErrorHandling:
 
     def test_success_clears_error(self):
         """Test that successful write clears previous error."""
-        from scripts.monitoring.cron_evidence import write_cron_evidence, KEY_PREFIX
+        from scripts.monitoring.cron_evidence import KEY_PREFIX, write_cron_evidence
 
         mock_redis = Mock()
         mock_pipeline = Mock()
@@ -600,7 +598,7 @@ class TestCronWrapperIntegration:
 
     def test_wrapper_passes_write_mode_wrapper(self):
         """Test that cron_wrapper passes write_mode='wrapper'."""
-        from scripts.monitoring.cron_evidence import write_cron_evidence, KEY_PREFIX
+        from scripts.monitoring.cron_evidence import KEY_PREFIX, write_cron_evidence
 
         mock_redis = Mock()
         mock_pipeline = Mock()
@@ -778,10 +776,12 @@ class TestBybitTruthCollectorCronJobs:
         """Verify check_cron_cadence returns bybit-truth-collector status."""
         from datetime import UTC, datetime
 
-        from scripts.monitoring.cron_evidence import check_cron_cadence, KEY_PREFIX
-
         # Skip if not in CRON_JOBS yet
-        from scripts.monitoring.cron_evidence import CRON_JOBS
+        from scripts.monitoring.cron_evidence import (
+            CRON_JOBS,
+            KEY_PREFIX,
+            check_cron_cadence,
+        )
 
         if "bybit-truth-collector" not in CRON_JOBS:
             pytest.skip("bybit-truth-collector not yet in CRON_JOBS")
@@ -805,7 +805,6 @@ class TestBybitTruthCollectorCronJobs:
 
     def test_bybit_truth_collector_evidence_write(self):
         """Verify evidence can be written for bybit-truth-collector."""
-        from datetime import UTC, datetime
 
         from scripts.monitoring.cron_evidence import (
             CRON_JOBS,
@@ -859,18 +858,20 @@ class TestBybitTruthCollectorCronJobs:
 
         # Collector runs more frequently internally than cron triggers
         # Cron is the orchestrator, collector handles internal pacing
-        assert cron_interval >= 1800, (
-            "Cron interval should be at least 30 minutes to avoid overlap"
-        )
+        assert (
+            cron_interval >= 1800
+        ), "Cron interval should be at least 30 minutes to avoid overlap"
 
     def test_bybit_truth_collector_missed_runs_detection(self):
         """Verify missed runs are detected for bybit-truth-collector."""
         from datetime import UTC, datetime, timedelta
 
-        from scripts.monitoring.cron_evidence import check_cron_cadence, KEY_PREFIX
-
         # Skip if not in CRON_JOBS yet
-        from scripts.monitoring.cron_evidence import CRON_JOBS
+        from scripts.monitoring.cron_evidence import (
+            CRON_JOBS,
+            KEY_PREFIX,
+            check_cron_cadence,
+        )
 
         if "bybit-truth-collector" not in CRON_JOBS:
             pytest.skip("bybit-truth-collector not yet in CRON_JOBS")

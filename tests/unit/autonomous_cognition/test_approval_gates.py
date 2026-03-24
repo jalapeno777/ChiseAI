@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import pytest
 from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock, patch
-import json
 
 from autonomous_cognition.approval_gates import (
     ApprovalGates,

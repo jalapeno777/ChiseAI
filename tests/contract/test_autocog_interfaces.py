@@ -13,13 +13,10 @@ All tests use live services to validate actual contracts.
 
 from __future__ import annotations
 
-import asyncio
 import json
 import os
 import re
 from datetime import UTC, datetime
-from typing import Any
-from unittest.mock import Mock, patch
 
 import pytest
 
@@ -42,7 +39,6 @@ class TestDiscordInterfaceContract:
         - JSON serialization format
         """
         # Import and test actual notifier formatting
-        from governance.notifications.discord_notifier import DiscordNotifier
 
         # Verify webhook URL pattern
         valid_webhook = (
@@ -51,9 +47,9 @@ class TestDiscordInterfaceContract:
         webhook_pattern = re.compile(
             r"^https://discord\.com/api/webhooks/\d{17,20}/[A-Za-z0-9_-]+$"
         )
-        assert webhook_pattern.match(valid_webhook), (
-            "Webhook URL should match expected pattern"
-        )
+        assert webhook_pattern.match(
+            valid_webhook
+        ), "Webhook URL should match expected pattern"
 
         # Test invalid webhooks
         invalid_webhooks = [
@@ -116,9 +112,10 @@ class TestDiscordInterfaceContract:
             "run_id",
         ]
         for field in required_fields:
-            assert field in test_event or field in ["title", "issue"], (
-                f"Field {field} should be valid"
-            )
+            assert field in test_event or field in [
+                "title",
+                "issue",
+            ], f"Field {field} should be valid"
 
     def test_discord_error_response(self) -> None:
         """Verify error handling contract.
@@ -175,15 +172,15 @@ class TestQdrantInterfaceContract:
                 # Vector size should be 384
                 if hasattr(collection_info, "config"):
                     vector_size = collection_info.config.params.vectors.size
-                    assert vector_size == 384, (
-                        f"Expected vector size 384, got {vector_size}"
-                    )
+                    assert (
+                        vector_size == 384
+                    ), f"Expected vector size 384, got {vector_size}"
 
                     # Distance should be cosine
                     distance = collection_info.config.params.vectors.distance
-                    assert distance == "Cosine", (
-                        f"Expected Cosine distance, got {distance}"
-                    )
+                    assert (
+                        distance == "Cosine"
+                    ), f"Expected Cosine distance, got {distance}"
             else:
                 pytest.skip(
                     "ChiseAI collection not found - Qdrant may not be fully configured"
@@ -216,9 +213,9 @@ class TestQdrantInterfaceContract:
         # Verify point structure
         assert isinstance(valid_point["id"], str), "Point ID must be string"
         assert len(valid_point["vector"]) == 384, "Vector must be 384-dimensional"
-        assert all(isinstance(v, float) for v in valid_point["vector"]), (
-            "Vector values must be floats"
-        )
+        assert all(
+            isinstance(v, float) for v in valid_point["vector"]
+        ), "Vector values must be floats"
         assert isinstance(valid_point["payload"], dict), "Payload must be dict"
 
     def test_qdrant_search_response(self) -> None:
@@ -253,9 +250,9 @@ class TestQdrantInterfaceContract:
 
         # Verify ordering
         scores = [r["score"] for r in mock_results]
-        assert scores == sorted(scores, reverse=True), (
-            "Results should be ordered by score descending"
-        )
+        assert scores == sorted(
+            scores, reverse=True
+        ), "Results should be ordered by score descending"
 
     def test_qdrant_error_codes(self) -> None:
         """Verify error code handling contract.
@@ -281,12 +278,15 @@ class TestQdrantInterfaceContract:
             # Try to get non-existent collection
             try:
                 client.get_collection("non_existent_collection_xyz")
-                assert False, "Should have raised error for non-existent collection"
+                raise AssertionError(
+                    "Should have raised error for non-existent collection"
+                )
             except UnexpectedResponse as e:
                 # Should get 404 or similar error
-                assert e.status_code in [404, 400], (
-                    f"Expected 404 or 400, got {e.status_code}"
-                )
+                assert e.status_code in [
+                    404,
+                    400,
+                ], f"Expected 404 or 400, got {e.status_code}"
 
         except ImportError:
             pytest.skip("Qdrant client not installed")
@@ -343,9 +343,9 @@ class TestRedisInterfaceContract:
         datetime_pattern = re.compile(
             r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?$"
         )
-        assert datetime_pattern.match(parsed["created_at"]), (
-            "Created_at should be ISO format"
-        )
+        assert datetime_pattern.match(
+            parsed["created_at"]
+        ), "Created_at should be ISO format"
 
     def test_redis_ttl_handling(self) -> None:
         """Verify expiration behavior contract.
@@ -461,9 +461,9 @@ class TestInfluxDBInterfaceContract:
         }
 
         for key, value in valid_fields.items():
-            assert isinstance(value, (int, float, bool)), (
-                f"Field {key} should be numeric or bool"
-            )
+            assert isinstance(
+                value, (int, float, bool)
+            ), f"Field {key} should be numeric or bool"
 
 
 class TestCycleArtifactContract:
@@ -535,17 +535,17 @@ class TestCycleArtifactContract:
 
         # schema_version should be valid semver
         semver_pattern = re.compile(r"^\d+\.\d+\.\d+$")
-        assert semver_pattern.match(data["schema_version"]), (
-            "schema_version should be semver"
-        )
+        assert semver_pattern.match(
+            data["schema_version"]
+        ), "schema_version should be semver"
 
         # created_at should be ISO datetime
         datetime_pattern = re.compile(
             r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?$"
         )
-        assert datetime_pattern.match(data["created_at"]), (
-            "created_at should be ISO datetime"
-        )
+        assert datetime_pattern.match(
+            data["created_at"]
+        ), "created_at should be ISO datetime"
 
     def test_artifact_backward_compatibility(self) -> None:
         """Verify schema evolution contract.
@@ -633,9 +633,9 @@ class TestAPIResponseContracts:
         assert isinstance(result.approved, bool), "approved must be bool"
         assert isinstance(result.reason, str), "reason must be string"
         assert result.risk_level in ["low", "medium", "high", "critical", "unknown"]
-        assert isinstance(result.requires_approval, bool), (
-            "requires_approval must be bool"
-        )
+        assert isinstance(
+            result.requires_approval, bool
+        ), "requires_approval must be bool"
 
         # Test ApprovalRequirement
         req = ApprovalRequirement(required=True, roles=["admin"], timeout_seconds=3600)
@@ -704,9 +704,9 @@ class TestAPIResponseContracts:
                 r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?$"
             )
             if data.get("last_run"):
-                assert datetime_pattern.match(data["last_run"]), (
-                    "last_run should be ISO datetime"
-                )
+                assert datetime_pattern.match(
+                    data["last_run"]
+                ), "last_run should be ISO datetime"
 
 
 class TestExternalServiceConnectivity:

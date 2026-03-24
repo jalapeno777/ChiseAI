@@ -27,4 +27,3 @@ def test_constitution_audit_detects_violations() -> None:
     audit = ConstitutionAuditEngine()
     result = audit.run(actions=["Direct commit to main branch without review"])
     assert len(result.violations) >= 1
-

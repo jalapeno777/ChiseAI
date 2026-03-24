@@ -29,10 +29,11 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum
-from typing import Any, Callable, Protocol
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -127,9 +128,9 @@ class Alert:
             "timestamp": self.timestamp.isoformat(),
             "metadata": self.metadata,
             "acknowledged": self.acknowledged,
-            "acknowledged_at": self.acknowledged_at.isoformat()
-            if self.acknowledged_at
-            else None,
+            "acknowledged_at": (
+                self.acknowledged_at.isoformat() if self.acknowledged_at else None
+            ),
             "acknowledged_by": self.acknowledged_by,
             "resolved": self.resolved,
             "resolved_at": self.resolved_at.isoformat() if self.resolved_at else None,
@@ -694,7 +695,7 @@ class TrainingAlerter:
         """
         triggered = []
 
-        for rule_name, rule in self._rules.items():
+        for _rule_name, rule in self._rules.items():
             if rule.should_fire(metrics):
                 alert = rule.create_alert(source=source, metadata=metrics)
                 self._trigger_alert(alert)

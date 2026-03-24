@@ -83,15 +83,19 @@ def redis_client():
 
 
 def choose_configs(run_summary: dict[str, Any]) -> tuple[str, str]:
-    configs = [k for k in run_summary.keys() if k != "delta"]
+    configs = [k for k in run_summary if k != "delta"]
     if len(configs) < 2:
-        raise ValueError("benchmark run_summary must include at least two configurations")
+        raise ValueError(
+            "benchmark run_summary must include at least two configurations"
+        )
 
     preferred_primary = ["with_skill", "new_skill", "candidate", "vnext", "primary"]
     preferred_baseline = ["without_skill", "old_skill", "baseline", "incumbent"]
 
     primary = next((c for c in preferred_primary if c in configs), configs[0])
-    baseline = next((c for c in preferred_baseline if c in configs and c != primary), None)
+    baseline = next(
+        (c for c in preferred_baseline if c in configs and c != primary), None
+    )
 
     if not baseline:
         for c in configs:
@@ -185,12 +189,16 @@ def update_skill_registry(
     registry["updated_at_utc"] = generated_at_utc
 
     registry_path.parent.mkdir(parents=True, exist_ok=True)
-    registry_path.write_text(yaml.safe_dump(registry, sort_keys=False), encoding="utf-8")
+    registry_path.write_text(
+        yaml.safe_dump(registry, sort_keys=False), encoding="utf-8"
+    )
     return entry
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Evaluate promotion from benchmark evidence")
+    ap = argparse.ArgumentParser(
+        description="Evaluate promotion from benchmark evidence"
+    )
     ap.add_argument("--skill-name", required=True)
     ap.add_argument("--candidate-version", required=True)
     ap.add_argument("--incumbent-version", default="")
@@ -222,7 +230,12 @@ def main() -> int:
 
     cfg = parse_yaml_file(
         Path(args.config_path),
-        {"thresholds": {"promote_quality_gain_min": 0.10, "max_cycle_time_degradation": 0.10}},
+        {
+            "thresholds": {
+                "promote_quality_gain_min": 0.10,
+                "max_cycle_time_degradation": 0.10,
+            }
+        },
     )
     thresholds_cfg = cfg.get("thresholds", {}) if isinstance(cfg, dict) else {}
     promote_quality_gain_min = (

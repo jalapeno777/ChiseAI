@@ -14,18 +14,18 @@ Acceptance Criteria:
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
 from ml.monitoring.alerter import (
-    TrainingAlerter,
     Alert,
     AlertRule,
     AlertSeverity,
     AlertType,
-    LoggingNotificationChannel,
     DiscordNotificationChannel,
+    LoggingNotificationChannel,
+    TrainingAlerter,
 )
 
 logger = logging.getLogger(__name__)
@@ -473,12 +473,12 @@ class TestTrainingAlerter:
         alerter.resolve_alert(alert.alert_id)
 
         # Get history from 1 hour ago
-        since = datetime.now(timezone.utc) - timedelta(hours=1)
+        since = datetime.now(UTC) - timedelta(hours=1)
         history = alerter.get_alert_history(since=since)
         assert len(history) == 1
 
         # Get history from 1 hour in the future
-        since = datetime.now(timezone.utc) + timedelta(hours=1)
+        since = datetime.now(UTC) + timedelta(hours=1)
         history = alerter.get_alert_history(since=since)
         assert len(history) == 0
 

@@ -1,7 +1,7 @@
 """Extended momentum indicators: MFI, StochRSI, Williams %R."""
 
-from datetime import UTC, datetime
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 import numpy as np
 

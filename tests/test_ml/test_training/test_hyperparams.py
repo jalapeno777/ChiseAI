@@ -4,13 +4,11 @@ import json
 import sys
 from datetime import datetime
 
-import pytest
-
 sys.path.insert(0, "src")
 from ml.training.hyperparams import (
-    HyperparameterSet,
     HyperparameterCapture,
     HyperparameterComparator,
+    HyperparameterSet,
 )
 
 

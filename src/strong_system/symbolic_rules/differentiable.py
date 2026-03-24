@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from src.strong_system.computational_graph.node import Node
+    pass
 
 
 def sigmoid(x: np.ndarray | float, steepness: float = 1.0) -> np.ndarray:

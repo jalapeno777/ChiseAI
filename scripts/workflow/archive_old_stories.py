@@ -20,7 +20,7 @@ import json
 import os
 import re
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -35,7 +35,7 @@ ARCHIVE_INDEX_FILE = ARCHIVE_BASE / "workflow-status" / "archive-index.yaml"
 RETENTION_DAYS = 7
 
 
-def parse_date(date_str: Optional[str]) -> Optional[datetime]:
+def parse_date(date_str: str | None) -> datetime | None:
     """Parse ISO 8601 date string to datetime."""
     if not date_str:
         return None
@@ -44,17 +44,17 @@ def parse_date(date_str: Optional[str]) -> Optional[datetime]:
         if "T" in date_str:
             return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
         else:
-            return datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            return datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=UTC)
     except (ValueError, TypeError):
         return None
 
 
-def calculate_age_days(date_str: Optional[str]) -> Optional[int]:
+def calculate_age_days(date_str: str | None) -> int | None:
     """Calculate age in days from a date string."""
     date = parse_date(date_str)
     if not date:
         return None
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return (now - date).days
 
 
@@ -103,9 +103,9 @@ def create_story_archive(story: dict) -> dict:
     """
     story_id = story.get("id", "UNKNOWN")
     title = story.get("title", "Unknown Title")
-    slug = generate_story_slug(title)
+    generate_story_slug(title)
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     retention_until = now + timedelta(days=7 * 365)  # 7 years
 
     archive_doc = {
@@ -205,9 +205,9 @@ def create_story_archive(story: dict) -> dict:
     if priority in ["P0", "P0-CRITICAL", "P1", "P1-HIGH"] or story_points >= 5:
         archive_doc["qdrant_promotion"]["promoted"] = True
         archive_doc["qdrant_promotion"]["promotion_date"] = now.isoformat()
-        archive_doc["qdrant_promotion"]["promotion_reason"] = (
-            f"Priority {priority} story with {story_points} points"
-        )
+        archive_doc["qdrant_promotion"][
+            "promotion_reason"
+        ] = f"Priority {priority} story with {story_points} points"
 
     return archive_doc
 
@@ -215,14 +215,14 @@ def create_story_archive(story: dict) -> dict:
 def create_workflow_entry(story: dict) -> dict:
     """Create minimal workflow entry for archived story."""
     return {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "actor": "archive_old_stories.py",
         "action": "story_archived",
         "description": f"Story {story.get('id')} archived to story-details",
         "story_id": story.get("id"),
         "epic_id": story.get("epic_id"),
         "archived_to": f"story-details/{story.get('id')}-{generate_story_slug(story.get('title', ''))}-details.yaml",
-        "archived_date": datetime.now(timezone.utc).isoformat(),
+        "archived_date": datetime.now(UTC).isoformat(),
     }
 
 
@@ -232,7 +232,7 @@ def load_workflow_data() -> dict:
         print(f"ERROR: Workflow file not found: {WORKFLOW_FILE}")
         sys.exit(1)
 
-    with open(WORKFLOW_FILE, "r") as f:
+    with open(WORKFLOW_FILE) as f:
         return yaml.safe_load(f) or {}
 
 
@@ -245,9 +245,7 @@ def save_yaml(data: dict, path: Path) -> None:
         )
 
 
-def archive_stories(
-    story_ids: Optional[list[str]] = None, dry_run: bool = True
-) -> dict:
+def archive_stories(story_ids: list[str] | None = None, dry_run: bool = True) -> dict:
     """
     Main archival function.
 
@@ -306,7 +304,7 @@ def archive_stories(
         print(f"    Reason: {item['reason']}")
 
         if dry_run:
-            print(f"    [DRY RUN] Would archive to story-details/")
+            print("    [DRY RUN] Would archive to story-details/")
             results["archived"] += 1
             results["stories"].append(story_id)
             continue
@@ -343,7 +341,7 @@ def update_archive_index(entry: dict) -> None:
     index_data = {"archive_index": {"version": "1.0", "entries": []}}
 
     if ARCHIVE_INDEX_FILE.exists():
-        with open(ARCHIVE_INDEX_FILE, "r") as f:
+        with open(ARCHIVE_INDEX_FILE) as f:
             existing = yaml.safe_load(f) or {}
             if "archive_index" in existing:
                 index_data = existing
@@ -395,7 +393,7 @@ Examples:
     print("=" * 70)
     print("ChiseAI Workflow Archival Tool")
     print("=" * 70)
-    print(f"Policy: docs/policy/data_retention_policy.yaml")
+    print("Policy: docs/policy/data_retention_policy.yaml")
     print(f"Retention: {RETENTION_DAYS} days after completion")
     print(f"Mode: {'DRY RUN' if dry_run else 'EXECUTE'}")
     print("=" * 70)

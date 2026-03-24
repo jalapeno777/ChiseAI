@@ -6,9 +6,8 @@ For ST-JOURNAL-QUERY-001: Trade Journal Query/Reporting Surface
 from datetime import UTC, datetime, timedelta
 
 import pytest
-
 from src.execution.paper.reason_codes import RejectReason
-from src.execution.paper.trade_journal import ExitReason, FillRecord, TradeJournalEntry
+from src.execution.paper.trade_journal import ExitReason, TradeJournalEntry
 from src.execution.paper.trade_journal_query import (
     JournalQueryFilters,
     JournalSummaryStats,
@@ -929,11 +928,11 @@ class TestTradeJournalQueryReasonDistribution:
         summary = query.get_reason_summary()
 
         # Exit reasons should be serialized as string values
-        for reason_value in summary["exit_reasons"].keys():
+        for reason_value in summary["exit_reasons"]:
             assert isinstance(reason_value, str)
 
         # Reject reasons should be serialized as string values
-        for reason_value in summary["reject_reasons"].keys():
+        for reason_value in summary["reject_reasons"]:
             assert isinstance(reason_value, str)
 
     def test_get_reason_summary_counts_match(

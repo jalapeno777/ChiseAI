@@ -33,9 +33,9 @@ except ImportError:
     sys.exit(1)
 
 from governance.tempmemory.ingestion_runner import (
-    TempmemoryIngestionRunner,
-    IngestionStatus,
     VALID_INGESTION_TYPES,
+    IngestionStatus,
+    TempmemoryIngestionRunner,
 )
 
 # Configure logging

@@ -21,7 +21,7 @@ import argparse
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, List, Tuple, Any
+from typing import Any
 
 import yaml
 
@@ -32,7 +32,7 @@ class EvidenceValidationError(Exception):
     pass
 
 
-def run_git_command(args: List[str], cwd: Path = None) -> Tuple[int, str, str]:
+def run_git_command(args: list[str], cwd: Path = None) -> tuple[int, str, str]:
     """Run a git command and return (returncode, stdout, stderr)."""
     try:
         result = subprocess.run(
@@ -44,8 +44,8 @@ def run_git_command(args: List[str], cwd: Path = None) -> Tuple[int, str, str]:
 
 
 def validate_completion_evidence(
-    story: Dict[str, Any], story_id: str = None
-) -> Tuple[bool, str]:
+    story: dict[str, Any], story_id: str = None
+) -> tuple[bool, str]:
     """
     Validate that a story marked as completed/merged has proper evidence.
 
@@ -120,7 +120,7 @@ def validate_completion_evidence(
     return True, "Valid completion evidence"
 
 
-def validate_status_file(status_file: Path) -> Dict[str, Any]:
+def validate_status_file(status_file: Path) -> dict[str, Any]:
     """
     Validate all stories in the workflow status file.
 
@@ -133,7 +133,7 @@ def validate_status_file(status_file: Path) -> Dict[str, Any]:
     if not status_file.exists():
         raise EvidenceValidationError(f"Status file not found: {status_file}")
 
-    with open(status_file, "r") as f:
+    with open(status_file) as f:
         data = yaml.safe_load(f)
 
     results = {
@@ -190,7 +190,7 @@ def validate_status_file(status_file: Path) -> Dict[str, Any]:
     return results
 
 
-def print_validation_report(results: Dict[str, Any], verbose: bool = False):
+def print_validation_report(results: dict[str, Any], verbose: bool = False):
     """Print a formatted validation report."""
     print("\n" + "=" * 80)
     print("COMPLETION EVIDENCE VALIDATION REPORT")
@@ -256,7 +256,7 @@ def main():
     try:
         # Validate specific story if requested
         if args.story_id:
-            with open(args.status_file, "r") as f:
+            with open(args.status_file) as f:
                 data = yaml.safe_load(f)
 
             story = None

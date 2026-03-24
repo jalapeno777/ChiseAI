@@ -26,6 +26,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
+
 from src.strong_system.computational_graph import Node, backward
 from src.strong_system.computational_graph.autodiff import clear_gradients
 from src.strong_system.computational_graph.graph import Graph

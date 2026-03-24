@@ -5,13 +5,12 @@ Provides comprehensive validators for ML data quality assurance.
 Part of ML-DATA-001-A.
 """
 
+import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum, auto
-from typing import Dict, List, Optional, Any, Callable, Protocol, Tuple, Union, Set
-import math
-import re
+from typing import Any
 
 
 class ValidationSeverity(Enum):
@@ -38,7 +37,7 @@ class ValidationIssue:
     validator_name: str
     message: str
     severity: ValidationSeverity
-    field: Optional[str] = None
+    field: str | None = None
     value: Any = None
     expected: Any = None
     suggestion: str = ""
@@ -50,8 +49,8 @@ class ValidationResult:
 
     validator_name: str
     status: ValidationStatus
-    issues: List[ValidationIssue] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    issues: list[ValidationIssue] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
     execution_time_ms: float = 0.0
 
     @property
@@ -77,7 +76,7 @@ class DataQualityReport:
     total_records: int
     valid_records: int
     invalid_records: int
-    validation_results: List[ValidationResult] = field(default_factory=list)
+    validation_results: list[ValidationResult] = field(default_factory=list)
     timestamp: datetime = field(default_factory=datetime.now)
 
     @property
@@ -98,15 +97,15 @@ class DataQualityReport:
 class DataValidator(ABC):
     """Abstract base class for all data validators."""
 
-    def __init__(self, name: str, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, name: str, config: dict[str, Any] | None = None):
         self.name = name
         self.config = config or {}
         self._execution_count = 0
-        self._last_execution_time: Optional[datetime] = None
+        self._last_execution_time: datetime | None = None
 
     @abstractmethod
     def validate(
-        self, data: Any, context: Optional[Dict[str, Any]] = None
+        self, data: Any, context: dict[str, Any] | None = None
     ) -> ValidationResult:
         """Validate data and return result."""
         pass
@@ -114,8 +113,8 @@ class DataValidator(ABC):
     def _create_result(
         self,
         status: ValidationStatus,
-        issues: Optional[List[ValidationIssue]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        issues: list[ValidationIssue] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> ValidationResult:
         """Helper to create validation result."""
         self._execution_count += 1
@@ -131,7 +130,7 @@ class DataValidator(ABC):
         self,
         message: str,
         severity: ValidationSeverity = ValidationSeverity.ERROR,
-        field: Optional[str] = None,
+        field: str | None = None,
         value: Any = None,
         expected: Any = None,
         suggestion: str = "",
@@ -156,7 +155,7 @@ class DataValidator(ABC):
 class NullValidator(DataValidator):
     """Validates that fields are not null/None."""
 
-    def __init__(self, fields: Optional[List[str]] = None, allow_empty: bool = False):
+    def __init__(self, fields: list[str] | None = None, allow_empty: bool = False):
         super().__init__(
             "NullValidator", {"fields": fields, "allow_empty": allow_empty}
         )
@@ -164,7 +163,7 @@ class NullValidator(DataValidator):
         self.allow_empty = allow_empty
 
     def validate(
-        self, data: Dict[str, Any], context: Optional[Dict[str, Any]] = None
+        self, data: dict[str, Any], context: dict[str, Any] | None = None
     ) -> ValidationResult:
         issues = []
 
@@ -180,7 +179,7 @@ class NullValidator(DataValidator):
 
         fields_to_check = self.fields if self.fields else data.keys()
 
-        for field in fields_to_check:
+        for _field in fields_to_check:
             if field not in data:
                 issues.append(
                     self._create_issue(
@@ -220,17 +219,17 @@ class NullValidator(DataValidator):
 class TypeValidator(DataValidator):
     """Validates that fields have correct types."""
 
-    def __init__(self, type_map: Dict[str, type], strict: bool = True):
+    def __init__(self, type_map: dict[str, type], strict: bool = True):
         super().__init__("TypeValidator", {"type_map": type_map, "strict": strict})
         self.type_map = type_map
         self.strict = strict
 
     def validate(
-        self, data: Dict[str, Any], context: Optional[Dict[str, Any]] = None
+        self, data: dict[str, Any], context: dict[str, Any] | None = None
     ) -> ValidationResult:
         issues = []
 
-        for field, expected_type in self.type_map.items():
+        for _field_name, expected_type in self.type_map.items():
             if field not in data:
                 continue
 
@@ -262,7 +261,7 @@ class TypeValidator(DataValidator):
 class RangeValidator(DataValidator):
     """Validates that numeric fields are within specified ranges."""
 
-    def __init__(self, ranges: Dict[str, Dict[str, float]]):
+    def __init__(self, ranges: dict[str, dict[str, float]]):
         """
         ranges: {"field": {"min": 0, "max": 100, "inclusive": True}}
         """
@@ -270,11 +269,11 @@ class RangeValidator(DataValidator):
         self.ranges = ranges
 
     def validate(
-        self, data: Dict[str, Any], context: Optional[Dict[str, Any]] = None
+        self, data: dict[str, Any], context: dict[str, Any] | None = None
     ) -> ValidationResult:
         issues = []
 
-        for field, range_spec in self.ranges.items():
+        for _field_name, range_spec in self.ranges.items():
             if field not in data or data[field] is None:
                 continue
 
@@ -352,17 +351,17 @@ class RangeValidator(DataValidator):
 class PatternValidator(DataValidator):
     """Validates string fields against regex patterns."""
 
-    def __init__(self, patterns: Dict[str, str]):
+    def __init__(self, patterns: dict[str, str]):
         """patterns: {"field": "regex_pattern"}"""
         super().__init__("PatternValidator", {"patterns": patterns})
         self.patterns = {k: re.compile(v) for k, v in patterns.items()}
 
     def validate(
-        self, data: Dict[str, Any], context: Optional[Dict[str, Any]] = None
+        self, data: dict[str, Any], context: dict[str, Any] | None = None
     ) -> ValidationResult:
         issues = []
 
-        for field, pattern in self.patterns.items():
+        for _field_name, pattern in self.patterns.items():
             if field not in data or data[field] is None:
                 continue
 
@@ -391,17 +390,17 @@ class PatternValidator(DataValidator):
 class LengthValidator(DataValidator):
     """Validates length of string, list, or dict fields."""
 
-    def __init__(self, length_specs: Dict[str, Dict[str, int]]):
+    def __init__(self, length_specs: dict[str, dict[str, int]]):
         """length_specs: {"field": {"min": 1, "max": 100}}"""
         super().__init__("LengthValidator", {"length_specs": length_specs})
         self.length_specs = length_specs
 
     def validate(
-        self, data: Dict[str, Any], context: Optional[Dict[str, Any]] = None
+        self, data: dict[str, Any], context: dict[str, Any] | None = None
     ) -> ValidationResult:
         issues = []
 
-        for field, specs in self.length_specs.items():
+        for _field_name, specs in self.length_specs.items():
             if field not in data or data[field] is None:
                 continue
 
@@ -450,19 +449,19 @@ class LengthValidator(DataValidator):
 class UniquenessValidator(DataValidator):
     """Validates uniqueness of values across records."""
 
-    def __init__(self, fields: List[str], case_sensitive: bool = True):
+    def __init__(self, fields: list[str], case_sensitive: bool = True):
         super().__init__(
             "UniquenessValidator", {"fields": fields, "case_sensitive": case_sensitive}
         )
         self.fields = fields
         self.case_sensitive = case_sensitive
-        self._seen_values: Set[Tuple] = set()
+        self._seen_values: set[tuple] = set()
 
     def validate(
-        self, data: List[Dict[str, Any]], context: Optional[Dict[str, Any]] = None
+        self, data: list[dict[str, Any]], context: dict[str, Any] | None = None
     ) -> ValidationResult:
         issues = []
-        seen_in_batch: Set[Tuple] = set()
+        seen_in_batch: set[tuple] = set()
 
         if not isinstance(data, list):
             return self._create_result(
@@ -480,7 +479,7 @@ class UniquenessValidator(DataValidator):
 
             # Create key from specified fields
             key_parts = []
-            for field in self.fields:
+            for _field in self.fields:
                 value = record.get(field)
                 if value is None:
                     key_parts.append(None)
@@ -523,10 +522,10 @@ class DateTimeValidator(DataValidator):
 
     def __init__(
         self,
-        fields: List[str],
-        format_str: Optional[str] = None,
-        min_date: Optional[datetime] = None,
-        max_date: Optional[datetime] = None,
+        fields: list[str],
+        format_str: str | None = None,
+        min_date: datetime | None = None,
+        max_date: datetime | None = None,
         allow_future: bool = True,
         allow_past: bool = True,
     ):
@@ -549,13 +548,13 @@ class DateTimeValidator(DataValidator):
         self.allow_past = allow_past
 
     def validate(
-        self, data: Dict[str, Any], context: Optional[Dict[str, Any]] = None
+        self, data: dict[str, Any], context: dict[str, Any] | None = None
     ) -> ValidationResult:
         issues = []
         now = datetime.now()
 
-        for field in self.fields:
-            if field not in data or data[field] is None:
+        for _field in self.fields:
+            if _field not in data or data[_field] is None:
                 continue
 
             value = data[field]
@@ -642,7 +641,7 @@ class EnumValidator(DataValidator):
     """Validates that fields have values from a predefined set."""
 
     def __init__(
-        self, allowed_values: Dict[str, List[Any]], case_sensitive: bool = True
+        self, allowed_values: dict[str, list[Any]], case_sensitive: bool = True
     ):
         super().__init__(
             "EnumValidator",
@@ -652,11 +651,11 @@ class EnumValidator(DataValidator):
         self.case_sensitive = case_sensitive
 
     def validate(
-        self, data: Dict[str, Any], context: Optional[Dict[str, Any]] = None
+        self, data: dict[str, Any], context: dict[str, Any] | None = None
     ) -> ValidationResult:
         issues = []
 
-        for field, allowed in self.allowed_values.items():
+        for _field_name, allowed in self.allowed_values.items():
             if field not in data or data[field] is None:
                 continue
 
@@ -693,8 +692,8 @@ class SchemaValidator(DataValidator):
 
     def __init__(
         self,
-        required_fields: List[str],
-        optional_fields: Optional[List[str]] = None,
+        required_fields: list[str],
+        optional_fields: list[str] | None = None,
         allow_extra: bool = False,
     ):
         super().__init__(
@@ -710,7 +709,7 @@ class SchemaValidator(DataValidator):
         self.allow_extra = allow_extra
 
     def validate(
-        self, data: Dict[str, Any], context: Optional[Dict[str, Any]] = None
+        self, data: dict[str, Any], context: dict[str, Any] | None = None
     ) -> ValidationResult:
         issues = []
 
@@ -725,13 +724,13 @@ class SchemaValidator(DataValidator):
             )
 
         # Check required fields
-        for field in self.required_fields:
-            if field not in data:
+        for _field in self.required_fields:
+            if _field not in data:
                 issues.append(
                     self._create_issue(
-                        f"Required field '{field}' is missing",
+                        f"Required field '{_field}' is missing",
                         ValidationSeverity.ERROR,
-                        field=field,
+                        field=_field,
                     )
                 )
 
@@ -761,7 +760,7 @@ class SchemaValidator(DataValidator):
 class CrossFieldValidator(DataValidator):
     """Validates relationships between multiple fields."""
 
-    def __init__(self, validations: List[Dict[str, Any]]):
+    def __init__(self, validations: list[dict[str, Any]]):
         """
         validations: [
             {"field1": "start_date", "field2": "end_date", "operator": "<="}
@@ -771,7 +770,7 @@ class CrossFieldValidator(DataValidator):
         self.validations = validations
 
     def validate(
-        self, data: Dict[str, Any], context: Optional[Dict[str, Any]] = None
+        self, data: dict[str, Any], context: dict[str, Any] | None = None
     ) -> ValidationResult:
         issues = []
 
@@ -840,7 +839,7 @@ class CrossFieldValidator(DataValidator):
 class StatisticalValidator(DataValidator):
     """Validates statistical properties of numeric data."""
 
-    def __init__(self, field: str, checks: Dict[str, Any]):
+    def __init__(self, field: str, checks: dict[str, Any]):
         """
         checks: {
             "mean_range": [min, max],
@@ -853,7 +852,7 @@ class StatisticalValidator(DataValidator):
         self.checks = checks
 
     def validate(
-        self, data: List[Dict[str, Any]], context: Optional[Dict[str, Any]] = None
+        self, data: list[dict[str, Any]], context: dict[str, Any] | None = None
     ) -> ValidationResult:
         issues = []
 
@@ -958,147 +957,21 @@ class StatisticalValidator(DataValidator):
 class JSONValidator(DataValidator):
     """Validates that fields contain valid JSON."""
 
-    def __init__(self, fields: List[str], schema: Optional[Dict[str, Any]] = None):
+    def __init__(self, fields: list[str], schema: dict[str, Any] | None = None):
         super().__init__("JSONValidator", {"fields": fields, "schema": schema})
         self.fields = fields
         self.schema = schema
 
     def validate(
-        self, data: Dict[str, Any], context: Optional[Dict[str, Any]] = None
-    ) -> ValidationResult:
-        import json
-
-        issues = []
-
-        for field in self.fields:
-            if field not in data or data[field] is None:
-                continue
-
-            value = data[field]
-
-            # If already a dict/list, it's valid JSON
-            if isinstance(value, (dict, list)):
-                continue
-
-            # Try to parse as JSON string
-            if isinstance(value, str):
-                try:
-                    parsed = json.loads(value)
-                    # Could add schema validation here
-                except json.JSONDecodeError as e:
-                    issues.append(
-                        self._create_issue(
-                            f"Field '{field}' contains invalid JSON",
-                            ValidationSeverity.ERROR,
-                            field=field,
-                            value=value[:100] + "..."
-                            if len(str(value)) > 100
-                            else value,
-                            expected="Valid JSON",
-                            suggestion=f"JSON parse error: {str(e)}",
-                        )
-                    )
-            else:
-                issues.append(
-                    self._create_issue(
-                        f"Field '{field}' is not JSON-serializable",
-                        ValidationSeverity.ERROR,
-                        field=field,
-                        value=type(value).__name__,
-                        expected="JSON string or object",
-                    )
-                )
-
-        status = ValidationStatus.FAILED if issues else ValidationStatus.PASSED
-        return self._create_result(status, issues)
-
-
-# =============================================================================
-# VALIDATOR 13: EmailValidator
-# =============================================================================
-
-
-class EmailValidator(DataValidator):
-    """Validates email addresses."""
-
-    EMAIL_PATTERN = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
-
-    def __init__(self, fields: List[str], allow_multiple: bool = False):
-        super().__init__(
-            "EmailValidator", {"fields": fields, "allow_multiple": allow_multiple}
-        )
-        self.fields = fields
-        self.allow_multiple = allow_multiple
-
-    def validate(
-        self, data: Dict[str, Any], context: Optional[Dict[str, Any]] = None
+        self, data: dict[str, Any], context: dict[str, Any] | None = None
     ) -> ValidationResult:
         issues = []
 
-        for field in self.fields:
-            if field not in data or data[field] is None:
+        for _field in self.fields:
+            if _field not in data or data[_field] is None:
                 continue
 
-            value = data[field]
-            emails = (
-                value.split(",")
-                if self.allow_multiple and isinstance(value, str)
-                else [value]
-            )
-
-            for email in emails:
-                email = str(email).strip()
-                if not self.EMAIL_PATTERN.match(email):
-                    issues.append(
-                        self._create_issue(
-                            f"Field '{field}' contains invalid email address",
-                            ValidationSeverity.ERROR,
-                            field=field,
-                            value=email,
-                            expected="Valid email format",
-                            suggestion="Email should be in format: user@domain.com",
-                        )
-                    )
-
-        status = ValidationStatus.FAILED if issues else ValidationStatus.PASSED
-        return self._create_result(status, issues)
-
-
-# =============================================================================
-# VALIDATOR 14: URLValidator
-# =============================================================================
-
-
-class URLValidator(DataValidator):
-    """Validates URL format."""
-
-    URL_PATTERN = re.compile(
-        r"^https?://"  # http:// or https://
-        r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|"  # domain
-        r"localhost|"  # localhost
-        r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"  # or IP
-        r"(?::\d+)?"  # optional port
-        r"(?:/?|[/?]\S+)$",
-        re.IGNORECASE,
-    )
-
-    def __init__(self, fields: List[str], allowed_schemes: Optional[List[str]] = None):
-        super().__init__(
-            "URLValidator", {"fields": fields, "allowed_schemes": allowed_schemes}
-        )
-        self.fields = fields
-        self.allowed_schemes = allowed_schemes or ["http", "https"]
-
-    def validate(
-        self, data: Dict[str, Any], context: Optional[Dict[str, Any]] = None
-    ) -> ValidationResult:
-        issues = []
-
-        for field in self.fields:
-            if field not in data or data[field] is None:
-                continue
-
-            value = str(data[field])
+            value = str(data[_field])
 
             if not self.URL_PATTERN.match(value):
                 issues.append(
@@ -1132,7 +1005,7 @@ class CoordinateValidator(DataValidator):
         self.lon_field = lon_field
 
     def validate(
-        self, data: Dict[str, Any], context: Optional[Dict[str, Any]] = None
+        self, data: dict[str, Any], context: dict[str, Any] | None = None
     ) -> ValidationResult:
         issues = []
 
@@ -1195,7 +1068,7 @@ class CoordinateValidator(DataValidator):
 class CreditCardValidator(DataValidator):
     """Validates credit card numbers using Luhn algorithm."""
 
-    def __init__(self, field: str, allowed_types: Optional[List[str]] = None):
+    def __init__(self, field: str, allowed_types: list[str] | None = None):
         super().__init__(
             "CreditCardValidator", {"field": field, "allowed_types": allowed_types}
         )
@@ -1228,7 +1101,7 @@ class CreditCardValidator(DataValidator):
         return "unknown"
 
     def validate(
-        self, data: Dict[str, Any], context: Optional[Dict[str, Any]] = None
+        self, data: dict[str, Any], context: dict[str, Any] | None = None
     ) -> ValidationResult:
         issues = []
 
@@ -1282,9 +1155,9 @@ class FilePathValidator(DataValidator):
 
     def __init__(
         self,
-        fields: List[str],
+        fields: list[str],
         must_exist: bool = False,
-        allowed_extensions: Optional[List[str]] = None,
+        allowed_extensions: list[str] | None = None,
         max_length: int = 4096,
     ):
         super().__init__(
@@ -1302,17 +1175,17 @@ class FilePathValidator(DataValidator):
         self.max_length = max_length
 
     def validate(
-        self, data: Dict[str, Any], context: Optional[Dict[str, Any]] = None
+        self, data: dict[str, Any], context: dict[str, Any] | None = None
     ) -> ValidationResult:
         import os
 
         issues = []
 
-        for field in self.fields:
-            if field not in data or data[field] is None:
+        for _field in self.fields:
+            if _field not in data or data[_field] is None:
                 continue
 
-            value = str(data[field])
+            value = str(data[_field])
 
             # Check length
             if len(value) > self.max_length:
@@ -1365,9 +1238,9 @@ class PhoneValidator(DataValidator):
 
     def __init__(
         self,
-        fields: List[str],
-        country_code: Optional[str] = None,
-        formats: Optional[List[str]] = None,
+        fields: list[str],
+        country_code: str | None = None,
+        formats: list[str] | None = None,
     ):
         super().__init__(
             "PhoneValidator",
@@ -1378,14 +1251,14 @@ class PhoneValidator(DataValidator):
         self.formats = formats
 
     def validate(
-        self, data: Dict[str, Any], context: Optional[Dict[str, Any]] = None
+        self, data: dict[str, Any], context: dict[str, Any] | None = None
     ) -> ValidationResult:
         issues = []
 
         # Simple phone number pattern (digits, spaces, dashes, parentheses, +)
         phone_pattern = re.compile(r"^[\d\s\-\(\)\+]+$")
 
-        for field in self.fields:
+        for _field in self.fields:
             if field not in data or data[field] is None:
                 continue
 
@@ -1435,10 +1308,10 @@ class CurrencyValidator(DataValidator):
     def __init__(
         self,
         field: str,
-        currency_field: Optional[str] = None,
-        min_amount: Optional[float] = None,
-        max_amount: Optional[float] = None,
-        allowed_currencies: Optional[List[str]] = None,
+        currency_field: str | None = None,
+        min_amount: float | None = None,
+        max_amount: float | None = None,
+        allowed_currencies: list[str] | None = None,
     ):
         super().__init__(
             "CurrencyValidator",
@@ -1457,7 +1330,7 @@ class CurrencyValidator(DataValidator):
         self.allowed_currencies = allowed_currencies
 
     def validate(
-        self, data: Dict[str, Any], context: Optional[Dict[str, Any]] = None
+        self, data: dict[str, Any], context: dict[str, Any] | None = None
     ) -> ValidationResult:
         issues = []
 
@@ -1531,17 +1404,17 @@ class UUIDValidator(DataValidator):
         r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.IGNORECASE
     )
 
-    def __init__(self, fields: List[str], version: Optional[int] = None):
+    def __init__(self, fields: list[str], version: int | None = None):
         super().__init__("UUIDValidator", {"fields": fields, "version": version})
         self.fields = fields
         self.version = version
 
     def validate(
-        self, data: Dict[str, Any], context: Optional[Dict[str, Any]] = None
+        self, data: dict[str, Any], context: dict[str, Any] | None = None
     ) -> ValidationResult:
         issues = []
 
-        for field in self.fields:
+        for _field in self.fields:
             if field not in data or data[field] is None:
                 continue
 
@@ -1585,7 +1458,7 @@ class UUIDValidator(DataValidator):
 class IPAddressValidator(DataValidator):
     """Validates IP addresses (IPv4 and IPv6)."""
 
-    def __init__(self, fields: List[str], allow_v4: bool = True, allow_v6: bool = True):
+    def __init__(self, fields: list[str], allow_v4: bool = True, allow_v6: bool = True):
         super().__init__(
             "IPAddressValidator",
             {"fields": fields, "allow_v4": allow_v4, "allow_v6": allow_v6},
@@ -1631,11 +1504,11 @@ class IPAddressValidator(DataValidator):
         return True
 
     def validate(
-        self, data: Dict[str, Any], context: Optional[Dict[str, Any]] = None
+        self, data: dict[str, Any], context: dict[str, Any] | None = None
     ) -> ValidationResult:
         issues = []
 
-        for field in self.fields:
+        for _field in self.fields:
             if field not in data or data[field] is None:
                 continue
 
@@ -1689,7 +1562,7 @@ class PercentageValidator(DataValidator):
 
     def __init__(
         self,
-        fields: List[str],
+        fields: list[str],
         allow_decimal: bool = True,
         min_val: float = 0.0,
         max_val: float = 100.0,
@@ -1709,11 +1582,11 @@ class PercentageValidator(DataValidator):
         self.max_val = max_val
 
     def validate(
-        self, data: Dict[str, Any], context: Optional[Dict[str, Any]] = None
+        self, data: dict[str, Any], context: dict[str, Any] | None = None
     ) -> ValidationResult:
         issues = []
 
-        for field in self.fields:
+        for _field in self.fields:
             if field not in data or data[field] is None:
                 continue
 
@@ -1779,7 +1652,7 @@ class PercentageValidator(DataValidator):
 class BusinessRuleValidator(DataValidator):
     """Validates data against custom business rules."""
 
-    def __init__(self, rules: List[Dict[str, Any]]):
+    def __init__(self, rules: list[dict[str, Any]]):
         """
         rules: [
             {
@@ -1794,7 +1667,7 @@ class BusinessRuleValidator(DataValidator):
         self.rules = rules
 
     def validate(
-        self, data: Dict[str, Any], context: Optional[Dict[str, Any]] = None
+        self, data: dict[str, Any], context: dict[str, Any] | None = None
     ) -> ValidationResult:
         issues = []
 
@@ -1853,10 +1726,10 @@ class ValidationOrchestrator:
     """Orchestrates multiple validators for comprehensive data validation."""
 
     def __init__(self, stop_on_error: bool = False, stop_on_critical: bool = True):
-        self.validators: List[DataValidator] = []
+        self.validators: list[DataValidator] = []
         self.stop_on_error = stop_on_error
         self.stop_on_critical = stop_on_critical
-        self._validation_history: List[ValidationResult] = []
+        self._validation_history: list[ValidationResult] = []
 
     def register(self, validator: DataValidator) -> None:
         """Register a validator."""
@@ -1867,7 +1740,7 @@ class ValidationOrchestrator:
         self.validators = [v for v in self.validators if v.name != validator_name]
 
     def validate(
-        self, data: Any, context: Optional[Dict[str, Any]] = None
+        self, data: Any, context: dict[str, Any] | None = None
     ) -> DataQualityReport:
         """Run all validators and return comprehensive report."""
         results = []
@@ -1911,9 +1784,7 @@ class ValidationOrchestrator:
         )
         has_error = any(r.has_errors for r in results)
 
-        if has_critical_error:
-            invalid_records = 1
-        elif has_error:
+        if has_critical_error or has_error:
             invalid_records = 1
         else:
             valid_records = 1
@@ -1926,7 +1797,7 @@ class ValidationOrchestrator:
         )
 
     def validate_batch(
-        self, records: List[Any], context: Optional[Dict[str, Any]] = None
+        self, records: list[Any], context: dict[str, Any] | None = None
     ) -> DataQualityReport:
         """Validate a batch of records."""
         all_results = []
@@ -1946,7 +1817,7 @@ class ValidationOrchestrator:
             validation_results=all_results,
         )
 
-    def get_validator_stats(self) -> Dict[str, Dict[str, Any]]:
+    def get_validator_stats(self) -> dict[str, dict[str, Any]]:
         """Get statistics for all validators."""
         return {
             validator.name: {

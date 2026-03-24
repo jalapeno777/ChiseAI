@@ -358,7 +358,6 @@ class TestConsolidationConfigTempmemoryArchive:
         """Test that tempmemory archive config is restored from dict."""
         from src.governance.consolidation.config import (
             AutoArchiveMode,
-            TempmemoryArchiveConfig,
         )
 
         data = {

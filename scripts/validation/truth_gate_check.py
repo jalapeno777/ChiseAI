@@ -26,10 +26,9 @@ import argparse
 import re
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any
-
 
 # Story ID patterns (must include a digit)
 # Based on AGENTS.md PR title requirements
@@ -147,9 +146,9 @@ def verify_commit_exists(commit: str, repo_root: Path | None = None) -> dict[str
                 "check": "commit-exists",
                 "message": f"Commit {commit[:8]} does not exist in repository",
                 "commit": commit,
-                "error": result.stderr.strip()
-                if result.stderr
-                else "Not a valid commit",
+                "error": (
+                    result.stderr.strip() if result.stderr else "Not a valid commit"
+                ),
             }
 
     except Exception as e:
@@ -326,7 +325,7 @@ def run_truth_gate_checks(
 
     result: dict[str, Any] = {
         "passed": True,
-        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "timestamp": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         "checks": [],
         "total_checks": 0,
         "passed_checks": 0,

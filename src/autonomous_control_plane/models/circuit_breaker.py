@@ -304,9 +304,9 @@ class AdaptiveThresholdMetrics:
             current_threshold=data.get("current_threshold", 5),
             baseline_failure_rate=data.get("baseline_failure_rate", 0.0),
             windows=windows,
-            last_adjustment_time=datetime.fromisoformat(last_adjustment)
-            if last_adjustment
-            else None,
+            last_adjustment_time=(
+                datetime.fromisoformat(last_adjustment) if last_adjustment else None
+            ),
             adjustment_count=data.get("adjustment_count", 0),
         )
 

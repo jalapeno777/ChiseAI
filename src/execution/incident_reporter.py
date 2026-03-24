@@ -32,9 +32,10 @@ def _incident_stream_name() -> str:
 
 
 def _discord_webhook_url() -> str:
-    return os.getenv("DISCORD_TRADING_WEBHOOK_URL", "").strip() or os.getenv(
-        "DISCORD_WEBHOOK_URL", ""
-    ).strip()
+    return (
+        os.getenv("DISCORD_TRADING_WEBHOOK_URL", "").strip()
+        or os.getenv("DISCORD_WEBHOOK_URL", "").strip()
+    )
 
 
 def _publish_to_redis_sync(payload: dict[str, object]) -> None:

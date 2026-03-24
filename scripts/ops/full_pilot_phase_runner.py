@@ -61,10 +61,30 @@ def run_step(name: str, command: list[str], *, dry_run: bool) -> StepResult:
 
 def phase2(*, dry_run: bool) -> list[StepResult]:
     steps = [
-        ("reflection_daily", ["python3", "scripts/standup/generate_daily_reflection_report.py"]),
-        ("metacog_weekly_check", ["python3", "scripts/validation/validate_metacog_compliance.py", "--require-for-completed-only"]),
-        ("skills_weekly_tick", ["python3", "scripts/ops/skill_autonomy_tick.py", "--mode=weekly"]),
-        ("skills_backlog_ingest", ["python3", "scripts/ops/ingest_skill_backlog_candidates.py", "--max-items=25"]),
+        (
+            "reflection_daily",
+            ["python3", "scripts/standup/generate_daily_reflection_report.py"],
+        ),
+        (
+            "metacog_weekly_check",
+            [
+                "python3",
+                "scripts/validation/validate_metacog_compliance.py",
+                "--require-for-completed-only",
+            ],
+        ),
+        (
+            "skills_weekly_tick",
+            ["python3", "scripts/ops/skill_autonomy_tick.py", "--mode=weekly"],
+        ),
+        (
+            "skills_backlog_ingest",
+            [
+                "python3",
+                "scripts/ops/ingest_skill_backlog_candidates.py",
+                "--max-items=25",
+            ],
+        ),
     ]
     results = [run_step(name, cmd, dry_run=dry_run) for name, cmd in steps]
     all_ok = all(r.exit_code == 0 for r in results)
@@ -95,22 +115,27 @@ def phase2(*, dry_run: bool) -> list[StepResult]:
 
 
 def phase3(*, dry_run: bool) -> list[StepResult]:
-    autopilot_enabled = (
-        os.getenv("CHISE_STRATEGY_AUTOPILOT_ENABLED", "false").strip().lower()
-        in {"1", "true", "yes", "on"}
-    )
-    autopromote_enabled = (
-        os.getenv("CHISE_AUTOPROMOTE_LOW_RISK", "false").strip().lower()
-        in {"1", "true", "yes", "on"}
-    )
+    autopilot_enabled = os.getenv(
+        "CHISE_STRATEGY_AUTOPILOT_ENABLED", "false"
+    ).strip().lower() in {"1", "true", "yes", "on"}
+    autopromote_enabled = os.getenv(
+        "CHISE_AUTOPROMOTE_LOW_RISK", "false"
+    ).strip().lower() in {"1", "true", "yes", "on"}
 
     steps: list[tuple[str, list[str]]] = [
         ("canary_status", ["python3", "scripts/canary_auto_eval.py", "status"]),
     ]
     if autopilot_enabled:
-        steps.append(("canary_eval_run", ["python3", "scripts/canary_auto_eval.py", "run"]))
+        steps.append(
+            ("canary_eval_run", ["python3", "scripts/canary_auto_eval.py", "run"])
+        )
     if autopromote_enabled:
-        steps.append(("promotion_candidate_triage", ["python3", "scripts/canary_auto_eval.py", "run"]))
+        steps.append(
+            (
+                "promotion_candidate_triage",
+                ["python3", "scripts/canary_auto_eval.py", "run"],
+            )
+        )
 
     results = [run_step(name, cmd, dry_run=dry_run) for name, cmd in steps]
     all_ok = all(r.exit_code == 0 for r in results)
@@ -145,7 +170,10 @@ def phase3(*, dry_run: bool) -> list[StepResult]:
 
 def phase4(*, dry_run: bool) -> list[StepResult]:
     steps = [
-        ("autonomy_scorecard", ["python3", "scripts/ops/autonomy_scorecard.py", "--lookback-days", "30"]),
+        (
+            "autonomy_scorecard",
+            ["python3", "scripts/ops/autonomy_scorecard.py", "--lookback-days", "30"],
+        ),
         ("go_no_go_packet", ["python3", "scripts/ops/generate_go_no_go_packet.py"]),
     ]
     results = [run_step(name, cmd, dry_run=dry_run) for name, cmd in steps]

@@ -17,6 +17,8 @@ from typing import Any
 
 # Add src to path for config imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
+from datetime import UTC
+
 from config.bootstrap import bootstrap
 
 # Configure logging for CI output
@@ -105,7 +107,7 @@ def detect_changed_brain_versions(
         # Fallback to timestamp-based version
         from datetime import datetime, timezone
 
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
         return [f"brain-{timestamp}"]
 
 

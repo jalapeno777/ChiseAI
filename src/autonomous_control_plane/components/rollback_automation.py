@@ -13,9 +13,10 @@ For ST-SAFETY-003: Rollback Automation
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 from collections.abc import Callable
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 from autonomous_control_plane.models.rollback import (
@@ -26,7 +27,6 @@ from autonomous_control_plane.models.rollback import (
     RollbackOperation,
     RollbackRiskLevel,
     RollbackStatus,
-    RollbackStep,
     RollbackTemplate,
     RollbackTemplateStep,
     RollbackTemplateType,
@@ -479,10 +479,8 @@ class RollbackTriggerManager:
         self._monitoring = False
         if self._monitor_task:
             self._monitor_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._monitor_task
-            except asyncio.CancelledError:
-                pass
             self._monitor_task = None
         logger.info("Stopped trigger monitoring")
 
@@ -947,9 +945,11 @@ class CoordinatedRollbackExecutor:
                     # Create checkpoint
                     if len(checkpoints) % config.checkpoint_interval == 0:
                         checkpoint = RollbackCheckpoint(
-                            operation_id=list(results.values())[0].operation_id
-                            if results
-                            else "",
+                            operation_id=(
+                                list(results.values())[0].operation_id
+                                if results
+                                else ""
+                            ),
                             services_completed=list(results.keys()),
                             services_remaining=[
                                 s for s in config.service_order if s not in results
@@ -1002,7 +1002,7 @@ class CoordinatedRollbackExecutor:
         operations = await asyncio.gather(*tasks, return_exceptions=True)
 
         results = {}
-        for service, operation in zip(services, operations):
+        for service, operation in zip(services, operations, strict=False):
             if isinstance(operation, Exception):
                 logger.error(f"Rollback failed for {service}: {operation}")
                 # Create failed operation placeholder

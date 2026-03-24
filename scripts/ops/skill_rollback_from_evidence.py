@@ -78,15 +78,19 @@ def redis_client():
 
 
 def choose_configs(run_summary: dict[str, Any]) -> tuple[str, str]:
-    configs = [k for k in run_summary.keys() if k != "delta"]
+    configs = [k for k in run_summary if k != "delta"]
     if len(configs) < 2:
-        raise ValueError("benchmark run_summary must include at least two configurations")
+        raise ValueError(
+            "benchmark run_summary must include at least two configurations"
+        )
 
     preferred_degraded = ["with_skill", "new_skill", "candidate", "vnext", "primary"]
     preferred_baseline = ["without_skill", "old_skill", "baseline", "incumbent"]
 
     degraded_cfg = next((c for c in preferred_degraded if c in configs), configs[0])
-    baseline_cfg = next((c for c in preferred_baseline if c in configs and c != degraded_cfg), None)
+    baseline_cfg = next(
+        (c for c in preferred_baseline if c in configs and c != degraded_cfg), None
+    )
     if not baseline_cfg:
         for c in configs:
             if c != degraded_cfg:
@@ -154,7 +158,9 @@ def update_registry_for_rollback(
     entry["degraded_versions"] = degraded_versions
 
     if decision == "ROLLBACK":
-        entry["previous_preferred_version"] = str(entry.get("preferred_version", "")).strip()
+        entry["previous_preferred_version"] = str(
+            entry.get("preferred_version", "")
+        ).strip()
         if fallback_version:
             entry["preferred_version"] = fallback_version
         entry["status"] = "active"
@@ -165,7 +171,9 @@ def update_registry_for_rollback(
     skills[skill_name] = entry
     registry["updated_at_utc"] = generated_at_utc
     registry_path.parent.mkdir(parents=True, exist_ok=True)
-    registry_path.write_text(yaml.safe_dump(registry, sort_keys=False), encoding="utf-8")
+    registry_path.write_text(
+        yaml.safe_dump(registry, sort_keys=False), encoding="utf-8"
+    )
     return entry
 
 
@@ -309,7 +317,14 @@ def main() -> int:
             "rollback_regression_rate_max": rollback_regression_rate_max,
         },
         "benchmark_json": benchmark_ref,
-        "evidence_refs": [x for x in [benchmark_ref, benchmark_ref[:-5] + ".md" if benchmark_ref else ""] if x],
+        "evidence_refs": [
+            x
+            for x in [
+                benchmark_ref,
+                benchmark_ref[:-5] + ".md" if benchmark_ref else "",
+            ]
+            if x
+        ],
         "generated_at_utc": iso(),
     }
 

@@ -5,12 +5,10 @@ Tests the CheckpointManager, CheckpointConfig, and CheckpointReport classes.
 Story: PAPER-GOVERNANCE-001
 """
 
-import asyncio
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from src.governance.checkpoint.checkpoint import (
     CheckpointConfig,
     CheckpointManager,
@@ -729,12 +727,12 @@ class TestCheckpointManagerScheduled:
         """Test scheduled checkpoint that passes."""
         manager = CheckpointManager()
 
+        from src.governance.checkpoint.evidence import CheckpointEvidence
         from src.governance.checkpoint.state import (
             CheckpointRecord,
             CheckpointState,
             CheckpointStatus,
         )
-        from src.governance.checkpoint.evidence import CheckpointEvidence
 
         mock_record = CheckpointRecord(
             checkpoint_id="checkpoint-001",
@@ -774,12 +772,12 @@ class TestCheckpointManagerScheduled:
         """Test scheduled checkpoint that fails."""
         manager = CheckpointManager()
 
+        from src.governance.checkpoint.evidence import CheckpointEvidence
         from src.governance.checkpoint.state import (
             CheckpointRecord,
             CheckpointState,
             CheckpointStatus,
         )
-        from src.governance.checkpoint.evidence import CheckpointEvidence
 
         mock_record = CheckpointRecord(
             checkpoint_id="checkpoint-001",

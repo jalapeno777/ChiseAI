@@ -2,20 +2,16 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any
-
 import numpy as np
 import pytest
 
 from data_ingestion.ohlcv_fetcher import OHLCVData
 from market_analysis.correlation.token_correlator import (
+    DEFAULT_TOKENS,
     CorrelationSnapshot,
     RollingCorrelationResult,
     TokenCorrelator,
-    DEFAULT_TOKENS,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -28,7 +24,7 @@ def _make_ohlcv(
 ) -> list[OHLCVData]:
     """Build a list of OHLCVData from timestamps and close prices."""
     bars: list[OHLCVData] = []
-    for ts, c in zip(timestamps, closes):
+    for ts, c in zip(timestamps, closes, strict=False):
         bars.append(
             OHLCVData(
                 timestamp=ts,

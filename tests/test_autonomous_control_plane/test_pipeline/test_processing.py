@@ -5,8 +5,6 @@ ST-CONTROL-001: Telemetry Pipeline
 
 import time
 
-import pytest
-
 from autonomous_control_plane.config.pipeline_settings import (
     AggregationWindow,
     ProcessingConfig,

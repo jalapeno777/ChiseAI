@@ -11,7 +11,6 @@ import json
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -25,7 +24,6 @@ from scripts.validation.reconcile_bybit_journal import (
     BybitJournalReconciler,
     JournalEntry,
     ReconciliationReport,
-    TradeMismatch,
     main,
     print_report,
 )

@@ -5,13 +5,12 @@ TEMPO-2026-001: OTLP exporter configuration for Tempo
 """
 
 import os
-from typing import Optional
 
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.trace.export import ConsoleSpanExporter
 
 
-def get_tempo_exporter(endpoint: Optional[str] = None) -> OTLPSpanExporter:
+def get_tempo_exporter(endpoint: str | None = None) -> OTLPSpanExporter:
     """
     Get OTLP exporter for Grafana Tempo.
 

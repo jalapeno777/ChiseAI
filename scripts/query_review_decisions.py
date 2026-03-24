@@ -5,7 +5,7 @@ import argparse
 import asyncio
 import json
 import sys
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 
 # Add src to path
@@ -55,7 +55,7 @@ async def list_recent_reviews(days: int = 7) -> None:
     """List recent reviews."""
     tracker = CalibrationTracker()
 
-    end = datetime.now(timezone.utc)
+    end = datetime.now(UTC)
     start = end - timedelta(days=days)
 
     reviews = await tracker._get_reviews_in_period(start, end)

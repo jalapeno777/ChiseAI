@@ -24,7 +24,7 @@ import subprocess
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import yaml
 
@@ -53,7 +53,7 @@ class DailyReflectionReportGenerator:
 
     def __init__(
         self,
-        day: Optional[int] = None,
+        day: int | None = None,
         total_days: int = 7,
         redis_host: str = "localhost",
         redis_port: int = 6380,
@@ -107,7 +107,7 @@ class DailyReflectionReportGenerator:
         # Default to day 1 if no start date found
         return 1
 
-    def _get_kpi_snapshot(self) -> Dict[str, Any]:
+    def _get_kpi_snapshot(self) -> dict[str, Any]:
         """Get current KPI snapshot from Redis."""
         kpis = {
             "reflection_completion_rate": 0.0,
@@ -190,8 +190,12 @@ class DailyReflectionReportGenerator:
                 body = path.read_text(encoding="utf-8", errors="replace")
                 if "Thinking Partner Proof:" in body:
                     with_proof += 1
-                insights += len(re.findall(r"insight_packet_id:\s*", body, flags=re.IGNORECASE))
-                decisions += len(re.findall(r"aria_decision_id:\s*", body, flags=re.IGNORECASE))
+                insights += len(
+                    re.findall(r"insight_packet_id:\s*", body, flags=re.IGNORECASE)
+                )
+                decisions += len(
+                    re.findall(r"aria_decision_id:\s*", body, flags=re.IGNORECASE)
+                )
                 for session_id in re.findall(
                     r"(?im)^\s*(?:[-*]\s*)?(?:\*\*|`)?tp_session_id(?:\*\*|`)?\s*:\s*([A-Za-z0-9._:-]+)\s*$",
                     body,
@@ -219,13 +223,15 @@ class DailyReflectionReportGenerator:
                 kpis["tp_sessions_expected_24h"] - kpis["tp_sessions_found_24h"], 0
             )
             if total > 0:
-                kpis["tp_proof_coverage_percent"] = round((with_proof / total) * 100.0, 1)
+                kpis["tp_proof_coverage_percent"] = round(
+                    (with_proof / total) * 100.0, 1
+                )
         except Exception:
             pass
 
         return kpis
 
-    def _get_trend_deltas(self) -> Dict[str, Any]:
+    def _get_trend_deltas(self) -> dict[str, Any]:
         """Calculate 7-day trend deltas."""
         trends = {
             "reflection_rate_delta": 0.0,
@@ -282,7 +288,7 @@ class DailyReflectionReportGenerator:
 
         return trends
 
-    def _get_incidents(self) -> List[Dict[str, Any]]:
+    def _get_incidents(self) -> list[dict[str, Any]]:
         """Get active incidents from Redis."""
         incidents = []
 
@@ -331,7 +337,7 @@ class DailyReflectionReportGenerator:
 
         return incidents
 
-    def _get_blockers(self) -> List[Dict[str, Any]]:
+    def _get_blockers(self) -> list[dict[str, Any]]:
         """Get active blockers from workflow status and Redis."""
         blockers = []
 
@@ -339,7 +345,7 @@ class DailyReflectionReportGenerator:
         workflow_path = Path("docs/bmm-workflow-status.yaml")
         if workflow_path.exists():
             try:
-                with open(workflow_path, "r") as f:
+                with open(workflow_path) as f:
                     workflow_status = yaml.safe_load(f)
 
                 # Check in_progress stories for blockers
@@ -407,7 +413,7 @@ class DailyReflectionReportGenerator:
 
         return blockers
 
-    def _get_git_activity(self) -> Dict[str, Any]:
+    def _get_git_activity(self) -> dict[str, Any]:
         """Get recent git activity."""
         activity = {
             "commits_today": 0,
@@ -425,7 +431,7 @@ class DailyReflectionReportGenerator:
                 cwd="/home/tacopants/projects/ChiseAI",
             )
             activity["commits_today"] = len(
-                [l for l in result.stdout.strip().split("\n") if l]
+                [line for line in result.stdout.strip().split("\n") if line]
             )
 
             # Count merges today
@@ -436,7 +442,7 @@ class DailyReflectionReportGenerator:
                 cwd="/home/tacopants/projects/ChiseAI",
             )
             activity["merges_today"] = len(
-                [l for l in result.stdout.strip().split("\n") if l]
+                [line for line in result.stdout.strip().split("\n") if line]
             )
 
             # Count active branches
@@ -447,7 +453,7 @@ class DailyReflectionReportGenerator:
                 cwd="/home/tacopants/projects/ChiseAI",
             )
             activity["active_branches"] = len(
-                [l for l in result.stdout.strip().split("\n") if l]
+                [line for line in result.stdout.strip().split("\n") if line]
             )
 
         except Exception as e:
@@ -456,7 +462,7 @@ class DailyReflectionReportGenerator:
 
         return activity
 
-    def generate_report(self) -> Dict[str, Any]:
+    def generate_report(self) -> dict[str, Any]:
         """Generate the daily reflection report."""
         if self.verbose:
             print(
@@ -508,7 +514,7 @@ class DailyReflectionReportGenerator:
 
         return "stable"
 
-    def _generate_recommendations(self) -> List[str]:
+    def _generate_recommendations(self) -> list[str]:
         """Generate actionable recommendations."""
         recommendations = []
         kpis = self._get_kpi_snapshot()
@@ -548,7 +554,7 @@ class DailyReflectionReportGenerator:
 
         return recommendations
 
-    def format_report_markdown(self, report: Dict[str, Any]) -> str:
+    def format_report_markdown(self, report: dict[str, Any]) -> str:
         """Format report as markdown for Discord."""
         lines = []
 
@@ -586,8 +592,12 @@ class DailyReflectionReportGenerator:
         lines.append("")
         lines.append("## 🤝 Thinking Partner")
         lines.append(f"- **TP Sessions (24h):** {kpis['tp_sessions_24h']}")
-        lines.append(f"- **TP Sessions Expected (Iterlogs):** {kpis['tp_sessions_expected_24h']}")
-        lines.append(f"- **TP Sessions Found (Redis):** {kpis['tp_sessions_found_24h']}")
+        lines.append(
+            f"- **TP Sessions Expected (Iterlogs):** {kpis['tp_sessions_expected_24h']}"
+        )
+        lines.append(
+            f"- **TP Sessions Found (Redis):** {kpis['tp_sessions_found_24h']}"
+        )
         lines.append(f"- **TP Session Gap:** {kpis['tp_session_gap_count']}")
         lines.append(f"- **Insight Packets (24h):** {kpis['insight_packets_24h']}")
         lines.append(f"- **Aria Decisions (24h):** {kpis['aria_decisions_24h']}")
@@ -657,12 +667,12 @@ class DailyReflectionReportGenerator:
 
         # Footer
         lines.append("---")
-        lines.append(f"🤖 Generated by ChiseAI Daily Reflection Reporter")
+        lines.append("🤖 Generated by ChiseAI Daily Reflection Reporter")
         lines.append(f"📅 {report['metadata']['timestamp']}")
 
         return "\n".join(lines)
 
-    def post_to_discord(self, report: Dict[str, Any]) -> bool:
+    def post_to_discord(self, report: dict[str, Any]) -> bool:
         """Post report to Discord channel."""
         if not REQUESTS_AVAILABLE:
             print("❌ Cannot post to Discord: requests package not available")
@@ -723,7 +733,7 @@ class DailyReflectionReportGenerator:
 
         return False
 
-    def save_report_to_redis(self, report: Dict[str, Any]) -> bool:
+    def save_report_to_redis(self, report: dict[str, Any]) -> bool:
         """Save report to Redis for historical tracking."""
         if not self.redis_client:
             return False

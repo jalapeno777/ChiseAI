@@ -7,19 +7,18 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-
 from src.strong_system.meta_learning import (
-    MetaLearningController,
-    LinearModel,
     MAML,
-    Reptile,
-    MetaTrainingLoop,
     EpisodeTrainer,
-    TrainingConfig,
+    LinearModel,
+    MetaLearningController,
+    MetaTrainingLoop,
+    Reptile,
     TaskSampler,
+    TrainingConfig,
     compute_meta_metrics,
-    create_sinusoid_task,
     create_classification_task,
+    create_sinusoid_task,
 )
 
 

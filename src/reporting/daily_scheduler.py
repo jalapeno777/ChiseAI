@@ -17,6 +17,7 @@ from typing import Any
 
 import aiohttp
 import yaml
+
 from src.reporting.daily_generator import DailyReportGenerator
 from src.reporting.models import DailyReport
 

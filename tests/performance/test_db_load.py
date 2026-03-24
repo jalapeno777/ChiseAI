@@ -281,7 +281,7 @@ class TestDatabaseInsertThroughput:
             )
             assert failed_inserts == 0, f"Had {failed_inserts} failed inserts"
 
-            print(f"\nSustained Insert Rate:")
+            print("\nSustained Insert Rate:")
             print(f"  Test Duration: {elapsed_seconds:.1f}s")
             print(f"  Total Inserts: {actual_inserts}")
             print(f"  Inserts/Hour: {inserts_per_hour:.0f}")
@@ -356,9 +356,9 @@ class TestDatabaseInsertThroughput:
             # Verify batch operations complete successfully
             # Note: In this mock, larger batches take longer due to sequential processing
             # In production, true batch operations would be more efficient
-            assert len(results) == len(batch_sizes), (
-                "All batch sizes should complete successfully"
-            )
+            assert len(results) == len(
+                batch_sizes
+            ), "All batch sizes should complete successfully"
 
         finally:
             await pool.close_all()
@@ -452,7 +452,7 @@ class TestDatabaseQueryThroughput:
             )
             assert failed_queries == 0, f"Had {failed_queries} failed queries"
 
-            print(f"\nQuery Latency Under Load:")
+            print("\nQuery Latency Under Load:")
             print(f"  Total Queries: {len(query_times)}")
             print(f"  Queries/Second: {queries_per_second:.1f}")
             print(f"  Avg Latency: {avg_latency:.1f}ms")
@@ -537,14 +537,14 @@ class TestDatabaseQueryThroughput:
             ops_per_second = total_ops / elapsed_seconds if elapsed_seconds > 0 else 0
 
             # Assertions
-            assert insert_avg < MAX_DB_INSERT_LATENCY_MS * 1.5, (
-                f"Mixed load insert latency {insert_avg:.1f}ms exceeds threshold"
-            )
-            assert query_avg < MAX_DB_QUERY_LATENCY_MS * 1.5, (
-                f"Mixed load query latency {query_avg:.1f}ms exceeds threshold"
-            )
+            assert (
+                insert_avg < MAX_DB_INSERT_LATENCY_MS * 1.5
+            ), f"Mixed load insert latency {insert_avg:.1f}ms exceeds threshold"
+            assert (
+                query_avg < MAX_DB_QUERY_LATENCY_MS * 1.5
+            ), f"Mixed load query latency {query_avg:.1f}ms exceeds threshold"
 
-            print(f"\nMixed Read/Write Load:")
+            print("\nMixed Read/Write Load:")
             print(f"  Total Operations: {total_ops}")
             print(f"  Ops/Second: {ops_per_second:.1f}")
             print(f"  Insert Avg: {insert_avg:.1f}ms")
@@ -588,7 +588,7 @@ class TestConnectionPoolPerformance:
             assert len(pool.in_use) == 0
             assert len(pool.available) == 20
 
-            print(f"\nConnection Pool Scaling:")
+            print("\nConnection Pool Scaling:")
             print(f"  Max Connections: {pool.max_connections}")
             print(f"  Peak Concurrent: {pool.metrics['peak_concurrent']}")
             print(f"  Total Acquired: {pool.metrics['total_acquired']}")
@@ -630,7 +630,7 @@ class TestConnectionPoolPerformance:
             new_conn = await pool.acquire(timeout_ms=100)
             assert new_conn is not None, "Should acquire after release"
 
-            print(f"\nConnection Pool Timeout Handling:")
+            print("\nConnection Pool Timeout Handling:")
             print(f"  Wait Timeouts: {pool.metrics['wait_timeouts']}")
             print(f"  Active Connections: {len(pool.in_use)}")
             print(f"  Available Connections: {len(pool.available)}")
@@ -698,14 +698,14 @@ class TestDatabaseStress:
             recovery_elapsed_ms = (time.perf_counter() - recovery_start) * 1000
 
             # Assertions
-            assert success_count == burst_size, (
-                f"Only {success_count}/{burst_size} burst inserts succeeded"
-            )
+            assert (
+                success_count == burst_size
+            ), f"Only {success_count}/{burst_size} burst inserts succeeded"
             assert recovery_elapsed_ms < 1000, "Recovery time exceeds 1 second"
 
             avg_latency = sum(insert_times) / len(insert_times) if insert_times else 0
 
-            print(f"\nBurst Insert Capacity:")
+            print("\nBurst Insert Capacity:")
             print(f"  Burst Size: {burst_size}")
             print(f"  Successful: {success_count}")
             print(f"  Burst Duration: {burst_elapsed_ms:.1f}ms")
@@ -772,7 +772,7 @@ class TestDatabaseStress:
             avg_latency = sum(latencies) / len(latencies) if latencies else 0
             ops_per_second = operations / elapsed if elapsed > 0 else 0
 
-            print(f"\nLong-Running Stability:")
+            print("\nLong-Running Stability:")
             print(f"  Test Duration: {elapsed:.1f}s")
             print(f"  Total Operations: {operations}")
             print(f"  Ops/Second: {ops_per_second:.1f}")

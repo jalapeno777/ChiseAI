@@ -411,9 +411,11 @@ def record_heartbeat(
                     "signals_15m": str(liveness["analysis_attempts_last_15m"]),
                     "actionable_15m": str(liveness["actionable_signals_last_15m"]),
                     "consumer_backlog": str(liveness["consumer_backlog"]),
-                    "latest_signal_age_m": f"{liveness['latest_signal_age_minutes']:.1f}"
-                    if liveness["latest_signal_age_minutes"] is not None
-                    else "N/A",
+                    "latest_signal_age_m": (
+                        f"{liveness['latest_signal_age_minutes']:.1f}"
+                        if liveness["latest_signal_age_minutes"] is not None
+                        else "N/A"
+                    ),
                 }
             )
 

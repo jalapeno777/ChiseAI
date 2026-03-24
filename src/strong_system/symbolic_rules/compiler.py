@@ -8,14 +8,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import numpy as np
-
 from src.strong_system.computational_graph.node import Node
 from src.strong_system.symbolic_rules.differentiable import (
     DifferentiablePredicate,
-    fuzzy_and,
-    fuzzy_not,
-    fuzzy_or,
     soft_predicate,
 )
 from src.strong_system.symbolic_rules.types import CompiledRule, Rule

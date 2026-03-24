@@ -130,7 +130,6 @@ class FusedLinearReLU(FusedOperation):
         Returns:
             A new node containing ReLU(A @ x + b)
         """
-        from src.strong_system.computational_graph.operations import Add, MatMul
 
         A, x, b = inputs[0], inputs[1], inputs[2]
 

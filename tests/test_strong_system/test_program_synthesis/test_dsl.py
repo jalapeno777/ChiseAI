@@ -2,12 +2,10 @@
 
 import json
 
-import pytest
-
 from src.strong_system.program_synthesis.dsl import (
     DSLBuilder,
-    ProgramDSL,
     ProgramDeserializer,
+    ProgramDSL,
     ProgramSerializer,
     SchemaRegistry,
     create_default_schema,
@@ -20,7 +18,6 @@ from src.strong_system.program_synthesis.types import (
     BinaryOp,
     BinaryOperator,
     CallExpression,
-    Conditional,
     FunctionDef,
     NumberLiteral,
     Program,

@@ -12,7 +12,7 @@ import logging
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
-from autonomous_control_plane.dashboard.models import ChartData, TimeRange
+from autonomous_control_plane.dashboard.models import ChartData
 
 if TYPE_CHECKING:
     from autonomous_control_plane.automation.controller import AutomationController
@@ -251,14 +251,14 @@ class DashboardVisualization:
             # Generate day buckets
             end_time = datetime.now(UTC)
             start_time = end_time - timedelta(days=days)
-            buckets = self._generate_daily_buckets(start_time, end_time)
+            self._generate_daily_buckets(start_time, end_time)
 
             # For now, use aggregated data
             # In production, this would query time-series data
             status = self._automation_controller.get_status()
             stats = status.get("stats", {})
 
-            total = stats.get("total_healing_attempts", 0)
+            stats.get("total_healing_attempts", 0)
             successful = stats.get("successful_healings", 0)
             failed = stats.get("workflows_failed", 0) + stats.get(
                 "workflows_escalated", 0

@@ -13,6 +13,7 @@ import time
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
+
 from src.governance.constitution.artifact import (
     ConstitutionLoader,
 )

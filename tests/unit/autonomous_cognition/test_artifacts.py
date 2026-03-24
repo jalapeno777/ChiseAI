@@ -26,4 +26,3 @@ def test_self_assessment_artifact_round_trip() -> None:
     assert parsed.overall_score == artifact.overall_score
     assert parsed.dimensions["memory_health"] == 1.0
     assert parsed.findings == ["No issues"]
-

@@ -310,7 +310,7 @@ class ThroughputMonitorCLI:
             Prometheus format string
         """
         lines = []
-        timestamp = data.get("timestamp", datetime.now(UTC).isoformat())
+        data.get("timestamp", datetime.now(UTC).isoformat())
 
         # Throughput metrics
         if "throughput" in data:
@@ -318,7 +318,7 @@ class ThroughputMonitorCLI:
                 lines.append(
                     f"# HELP chise_signal_throughput Signals per minute ({window})"
                 )
-                lines.append(f"# TYPE chise_signal_throughput gauge")
+                lines.append("# TYPE chise_signal_throughput gauge")
                 lines.append(
                     f'chise_signal_throughput{{window="{window}"}} {metrics["signals_per_minute"]}'
                 )
@@ -332,7 +332,7 @@ class ThroughputMonitorCLI:
                 lines.append(
                     f"# HELP chise_signal_latency_ms Signal latency in ms ({window})"
                 )
-                lines.append(f"# TYPE chise_signal_latency_ms summary")
+                lines.append("# TYPE chise_signal_latency_ms summary")
                 lines.append(
                     f'chise_signal_latency_ms{{window="{window}",quantile="0.5"}} {latencies["p50_ms"]}'
                 )
@@ -381,9 +381,11 @@ class ThroughputMonitorCLI:
             alerts.append(
                 {
                     "type": "latency_high",
-                    "severity": "warning"
-                    if latency_check["actual_p95_ms"] < max_p95_ms * 2
-                    else "critical",
+                    "severity": (
+                        "warning"
+                        if latency_check["actual_p95_ms"] < max_p95_ms * 2
+                        else "critical"
+                    ),
                     "message": latency_check["message"],
                 }
             )

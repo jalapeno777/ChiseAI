@@ -11,7 +11,7 @@ Usage:
 
 import argparse
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -119,7 +119,7 @@ def generate_comparison_report(
     # Generate report
     report = f"""# Candidate Quality Comparison Report
 
-**Generated:** {datetime.now(timezone.utc).isoformat()}  
+**Generated:** {datetime.now(UTC).isoformat()}  
 **Baseline Version:** {v1_name}  
 **Candidate Version:** {v2_name}
 

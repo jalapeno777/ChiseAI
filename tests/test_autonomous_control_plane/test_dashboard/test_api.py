@@ -5,9 +5,10 @@ For ST-CONTROL-003: Control Plane Dashboard
 
 from __future__ import annotations
 
-import pytest
 from datetime import datetime
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from autonomous_control_plane.dashboard.api import DashboardAPI
 from autonomous_control_plane.dashboard.models import (

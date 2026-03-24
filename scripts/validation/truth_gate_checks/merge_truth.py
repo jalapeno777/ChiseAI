@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import subprocess
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -117,7 +117,7 @@ def check_merge_truth(
 
     result: dict[str, Any] = {
         "check_type": "merge-truth",
-        "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
+        "timestamp": datetime.now(UTC).isoformat() + "Z",
         "commits": commits,
         "passed": True,
         "checks": [],

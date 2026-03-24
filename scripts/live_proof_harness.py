@@ -31,7 +31,7 @@ import os
 import sys
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 
 import aiohttp
@@ -102,8 +102,8 @@ class BybitProofHarness:
         self.recv_window = self.config.get("settings", {}).get("recv_window_ms", 5000)
         self.results: list[TestResult] = []
         self.evidence = Evidence(
-            test_run_id=f"bybit-proof-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}",
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            test_run_id=f"bybit-proof-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}",
+            timestamp=datetime.now(UTC).isoformat(),
             mode_tested="",
         )
 
@@ -198,7 +198,7 @@ class BybitProofHarness:
                         endpoint=url,
                         success=success,
                         latency_ms=latency_ms,
-                        timestamp=datetime.now(timezone.utc).isoformat(),
+                        timestamp=datetime.now(UTC).isoformat(),
                         error_message=(
                             "" if success else data.get("retMsg", "Unknown error")
                         ),
@@ -225,7 +225,7 @@ class BybitProofHarness:
                 endpoint=url,
                 success=False,
                 latency_ms=latency_ms,
-                timestamp=datetime.now(timezone.utc).isoformat(),
+                timestamp=datetime.now(UTC).isoformat(),
                 error_message=str(e),
                 request_details={"method": "GET", "url": url},
                 response_details={},
@@ -252,7 +252,7 @@ class BybitProofHarness:
                 test_name=f"auth_{mode}",
                 endpoint=url,
                 success=False,
-                timestamp=datetime.now(timezone.utc).isoformat(),
+                timestamp=datetime.now(UTC).isoformat(),
                 error_message="No API credentials provided (BYBIT_API_KEY/BYBIT_API_SECRET)",
             )
 
@@ -283,7 +283,7 @@ class BybitProofHarness:
                         endpoint=url,
                         success=success,
                         latency_ms=latency_ms,
-                        timestamp=datetime.now(timezone.utc).isoformat(),
+                        timestamp=datetime.now(UTC).isoformat(),
                         error_message=data.get("retMsg", "") if not success else "",
                         request_details={
                             "method": "GET",
@@ -316,7 +316,7 @@ class BybitProofHarness:
                 endpoint=url,
                 success=False,
                 latency_ms=latency_ms,
-                timestamp=datetime.now(timezone.utc).isoformat(),
+                timestamp=datetime.now(UTC).isoformat(),
                 error_message=str(e),
                 request_details={"method": "GET", "url": url},
                 response_details={},
@@ -359,7 +359,7 @@ class BybitProofHarness:
                         endpoint=url,
                         success=success,
                         latency_ms=latency_ms,
-                        timestamp=datetime.now(timezone.utc).isoformat(),
+                        timestamp=datetime.now(UTC).isoformat(),
                         error_message=data.get("retMsg", "") if not success else "",
                         request_details={
                             "method": "GET",
@@ -409,7 +409,7 @@ class BybitProofHarness:
                 endpoint=url,
                 success=False,
                 latency_ms=latency_ms,
-                timestamp=datetime.now(timezone.utc).isoformat(),
+                timestamp=datetime.now(UTC).isoformat(),
                 error_message=str(e),
                 request_details={
                     "method": "GET",

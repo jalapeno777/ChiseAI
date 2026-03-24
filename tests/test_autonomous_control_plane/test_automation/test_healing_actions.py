@@ -4,7 +4,6 @@ For ST-CONTROL-002: Self-Healing Automation
 """
 
 import pytest
-from datetime import datetime
 
 from autonomous_control_plane.healing_actions.cache_flush import CacheFlushAction
 from autonomous_control_plane.healing_actions.config_reload import ConfigReloadAction

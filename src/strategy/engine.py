@@ -3,7 +3,8 @@
 TEMPO-2026-001: Strategy execution with distributed tracing
 """
 
-from typing import Dict, Any, Optional
+from typing import Any
+
 from opentelemetry import trace
 
 from .tracing import trace_strategy_execution
@@ -24,7 +25,7 @@ class StrategyEngine:
     @trace_strategy_execution
     def execute(
         self, strategy_id: str, mode: str = "backtest", **kwargs
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute a strategy with tracing.
 
         Args:

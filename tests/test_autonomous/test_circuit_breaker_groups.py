@@ -5,8 +5,6 @@ ST-SAFETY-001: Circuit Breaker Groups Enhancement
 
 from __future__ import annotations
 
-import pytest
-
 from autonomous_control_plane.models.circuit_breaker import (
     CircuitBreakerGroup,
     CircuitBreakerGroupMetrics,

@@ -425,7 +425,7 @@ def extract_severity(data: dict) -> IncidentSeverity:
     return normalization.get(raw, IncidentSeverity.UNKNOWN)
 
 
-def extract_story_id(data: dict) -> Optional[str]:
+def extract_story_id(data: dict) -> str | None:
     """Extract story_id from an incident data dict.
 
     Looks for 'story_id', 'story-id', 'storyId', or 'id' keys.
@@ -562,7 +562,7 @@ def parse_from_yaml_string(yaml_str: str, source: str = "yaml_string") -> ParseR
 
 
 def parse_from_yaml_file(
-    file_path: Path, source: Optional[str] = None, strict: bool = True
+    file_path: Path, source: str | None = None, strict: bool = True
 ) -> ParseResult:
     """Parse prevention_rule from a YAML or markdown-with-YAML-frontmatter file.
 

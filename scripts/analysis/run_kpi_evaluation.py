@@ -255,7 +255,7 @@ def generate_comparison_report(
     """
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    date_str = datetime.now(UTC).strftime("%Y%m%d")
+    datetime.now(UTC).strftime("%Y%m%d")
 
     report = f"""# Unified KPI Evaluation Report
 
@@ -309,7 +309,7 @@ of trading performance.
 
         report += "\n"
 
-    report += f"""## GO Gate Decision Guidance
+    report += """## GO Gate Decision Guidance
 
 Based on the trading mode, use the following source for GO gate decisions:
 
@@ -344,7 +344,7 @@ No successful canonical source was found. Please check:
 
 """
 
-    report += f"""## All Generated Files
+    report += """## All Generated Files
 
 | File | Description |
 |------|-------------|
@@ -358,7 +358,7 @@ No successful canonical source was found. Please check:
             source = result.get("source", "unknown")
             report += f"| `{result['md_file']}` | {source} report |\n"
 
-    report += f"""
+    report += """
 
 ---
 
@@ -397,7 +397,7 @@ def validate_go_gate_eligibility(
         SystemExit: If enforce_canonical=True and source is non-canonical
     """
     source = result.get("source", "unknown")
-    canonical = result.get("canonical_for_go", False)
+    result.get("canonical_for_go", False)
 
     # Import validation function
     try:
@@ -559,7 +559,7 @@ def main() -> int:
     print("=" * 60)
     print(f"\nTrading Mode: {trading_mode}")
     print(f"Story ID: {args.story_id}")
-    print(f"\nResults:")
+    print("\nResults:")
 
     for result in results:
         source = result.get("source", "unknown")

@@ -9,7 +9,6 @@ import os
 from contextlib import asynccontextmanager
 from unittest.mock import MagicMock, patch
 
-import aiohttp
 import pytest
 
 from llm.zai_client import (

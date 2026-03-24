@@ -9,7 +9,7 @@ from __future__ import annotations
 import asyncio
 import uuid
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -156,7 +156,9 @@ class TestSignalToOrderPath:
         result = await orchestrator.process_signal(sample_signal)
 
         # Verify order simulator was called (order creation path reached)
-        assert mock_dependencies["order_simulator"].place_order.called, (
+        assert mock_dependencies[
+            "order_simulator"
+        ].place_order.called, (
             "Order simulator place_order() was NOT called - order creation path broken!"
         )
 
@@ -185,7 +187,9 @@ class TestSignalToOrderPath:
         result = await orchestrator.process_signal(sample_signal)
 
         # Verify order simulator was NOT called
-        assert not mock_dependencies["order_simulator"].place_order.called, (
+        assert not mock_dependencies[
+            "order_simulator"
+        ].place_order.called, (
             "Order simulator should NOT be called when kill switch is triggered"
         )
 
@@ -217,7 +221,9 @@ class TestSignalToOrderPath:
         result = await orchestrator.process_signal(sample_signal)
 
         # Verify order simulator was NOT called
-        assert not mock_dependencies["order_simulator"].place_order.called, (
+        assert not mock_dependencies[
+            "order_simulator"
+        ].place_order.called, (
             "Order simulator should NOT be called when no market price"
         )
 
@@ -251,7 +257,9 @@ class TestSignalToOrderPath:
         result = await orchestrator.process_signal(sample_signal)
 
         # Verify order simulator was NOT called
-        assert not mock_dependencies["order_simulator"].place_order.called, (
+        assert not mock_dependencies[
+            "order_simulator"
+        ].place_order.called, (
             "Order simulator should NOT be called when risk enforcer rejects"
         )
 
@@ -318,7 +326,9 @@ class TestSignalToOrderPath:
             await asyncio.sleep(0.1)
 
             # Verify order was placed
-            assert mock_dependencies["order_simulator"].place_order.called, (
+            assert mock_dependencies[
+                "order_simulator"
+            ].place_order.called, (
                 "Order simulator place_order() was NOT called in full flow!"
             )
 
@@ -351,9 +361,9 @@ class TestOrderCreationPathBlockers:
         assert hasattr(orchestrator, "submit_signal"), "Missing submit_signal method"
         assert hasattr(orchestrator, "process_signal"), "Missing process_signal method"
         assert hasattr(orchestrator, "_create_order"), "Missing _create_order method"
-        assert hasattr(orchestrator, "_processing_loop"), (
-            "Missing _processing_loop method"
-        )
+        assert hasattr(
+            orchestrator, "_processing_loop"
+        ), "Missing _processing_loop method"
 
         # Verify all dependencies are set
         assert orchestrator.order_simulator is not None, "order_simulator not set"

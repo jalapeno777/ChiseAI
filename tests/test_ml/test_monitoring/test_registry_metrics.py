@@ -12,13 +12,10 @@ Acceptance Criteria:
 from __future__ import annotations
 
 import logging
-import time
-from datetime import datetime, timezone
 
 import pytest
 
 from ml.monitoring.registry_metrics import (
-    MetricsCollector,
     NullMetricsCollector,
     PrometheusMetricsCollector,
     RegistryMetrics,

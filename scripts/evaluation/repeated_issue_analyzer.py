@@ -14,7 +14,7 @@ import hashlib
 import json
 import re
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -240,7 +240,7 @@ class RepeatedIssueAnalyzer:
         if not evaluations:
             return {
                 "report_id": "empty",
-                "generated_at": datetime.now(timezone.utc).isoformat() + "Z",
+                "generated_at": datetime.now(UTC).isoformat() + "Z",
                 "total_evaluations": 0,
                 "total_clusters": 0,
                 "clusters": [],
@@ -254,8 +254,8 @@ class RepeatedIssueAnalyzer:
 
         # Build report
         report = {
-            "report_id": f"rir-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}",
-            "generated_at": datetime.now(timezone.utc).isoformat() + "Z",
+            "report_id": f"rir-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}",
+            "generated_at": datetime.now(UTC).isoformat() + "Z",
             "total_evaluations": len(evaluations),
             "total_clusters": len(clusters),
             "total_issues": sum(c.count for c in clusters.values()),

@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -19,14 +18,14 @@ project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from scripts.governance.week1_audit_snapshot import (
-    Week1Snapshot,
-    StoryInfo,
-    MemoryStats,
     GovernanceMetrics,
+    MemoryStats,
+    StoryInfo,
+    Week1Snapshot,
     capture_active_stories,
-    capture_memory_stats,
-    capture_governance_metrics,
     capture_agent_activity,
+    capture_governance_metrics,
+    capture_memory_stats,
     create_week1_snapshot,
     save_snapshot,
 )

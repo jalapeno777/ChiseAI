@@ -7,10 +7,7 @@ of the consolidation workflow.
 Story: ST-MEMORY-INGEST-001
 """
 
-from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 from src.governance.consolidation.config import ConsolidationConfig
 from src.governance.consolidation.scheduler import (

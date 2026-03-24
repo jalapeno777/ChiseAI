@@ -11,26 +11,23 @@ Part of PAPER-DIAG-001: Implement robust pipeline health checks.
 
 from __future__ import annotations
 
-import json
-from datetime import UTC, datetime, timedelta
-from unittest.mock import MagicMock, patch
-
-import pytest
+import os
 
 # Add project root to path
 import sys
-import os
+from datetime import UTC, datetime, timedelta
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 
 from scripts.monitoring.scheduler_heartbeat import (
+    HEARTBEAT_TTL_SECONDS,
+    LIVENESS_KEY,
     check_pipeline_liveness,
     record_enhanced_heartbeat,
     run_liveness_check,
-    LIVENESS_KEY,
-    HEARTBEAT_TTL_SECONDS,
 )
 
 

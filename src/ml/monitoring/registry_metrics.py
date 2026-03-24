@@ -20,8 +20,8 @@ import time
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -318,7 +318,12 @@ class PrometheusMetricsCollector(MetricsCollector):
         # Try to import prometheus_client
         self._prometheus_available = False
         try:
-            from prometheus_client import Counter, Gauge, Histogram, CollectorRegistry
+            from prometheus_client import (  # noqa: F401
+                CollectorRegistry,
+                Counter,
+                Gauge,
+                Histogram,
+            )
 
             self._prometheus_available = True
             self._setup_prometheus_metrics()
@@ -331,7 +336,7 @@ class PrometheusMetricsCollector(MetricsCollector):
 
     def _setup_prometheus_metrics(self) -> None:
         """Set up Prometheus metric objects."""
-        from prometheus_client import Counter, Gauge, Histogram, CollectorRegistry
+        from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram
 
         # Create a unique registry for this collector instance to avoid
         # "Duplicated timeseries in CollectorRegistry" errors in tests
@@ -407,9 +412,7 @@ class PrometheusMetricsCollector(MetricsCollector):
 
     def record_model_registered(self, model_name: str, version: str) -> None:
         """Record model registration."""
-        self._metrics.models_registered_total[
-            datetime.now(timezone.utc).date().isoformat()
-        ] += 1
+        self._metrics.models_registered_total[datetime.now(UTC).date().isoformat()] += 1
 
         if self._prometheus_available:
             self._models_registered.labels(model_name=model_name).inc()

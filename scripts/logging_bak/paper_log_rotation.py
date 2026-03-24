@@ -393,7 +393,7 @@ if __name__ == "__main__":
     print("Running log rotation simulation...")
     results = simulate_log_rotation(num_files=3, file_size_mb=1)
 
-    print(f"\nSimulation Results:")
+    print("\nSimulation Results:")
     print(f"  Test directory: {results['test_dir']}")
     print(f"  Files created: {len(results['files_created'])}")
     print(f"  Files rotated: {len(results['files_rotated'])}")

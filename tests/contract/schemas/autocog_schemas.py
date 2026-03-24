@@ -416,7 +416,7 @@ def validate_with_schema(data: dict, schema_name: str) -> tuple[bool, list[str]]
         Tuple of (is_valid, error_messages)
     """
     try:
-        from jsonschema import validate, ValidationError
+        from jsonschema import ValidationError, validate
 
         schema = get_schema(schema_name)
         if isinstance(schema, str):

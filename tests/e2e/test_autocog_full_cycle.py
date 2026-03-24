@@ -14,21 +14,17 @@ Test Coverage:
 
 from __future__ import annotations
 
-import asyncio
 import json
-import os
 import tempfile
 import time
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 # Import AUTOCOG components
 from autonomous_cognition.full_cycle import AutonomousCognitionFullCycle
-from autonomous_cognition.contracts import CycleResult
 
 
 @pytest.fixture

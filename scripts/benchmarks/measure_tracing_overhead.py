@@ -23,10 +23,11 @@ import os
 import statistics
 import sys
 import time
+from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional
+from datetime import UTC, datetime, timezone
+from typing import Any, Optional
 
 # Ensure src is in path for importing our tracing code
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -34,7 +35,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
-from opentelemetry.sdk.trace.sampling import TraceIdRatioBased, Sampler
+from opentelemetry.sdk.trace.sampling import Sampler, TraceIdRatioBased
 
 
 @dataclass
@@ -52,7 +53,7 @@ class BenchmarkResult:
     p95_time_ms: float
     p99_time_ms: float
     overhead_pct: float = 0.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -61,8 +62,8 @@ class BenchmarkSuite:
 
     timestamp: str
     total_duration_seconds: float
-    results: List[BenchmarkResult] = field(default_factory=list)
-    summary: Dict[str, Any] = field(default_factory=dict)
+    results: list[BenchmarkResult] = field(default_factory=list)
+    summary: dict[str, Any] = field(default_factory=dict)
 
 
 class NoOpSampler(Sampler):
@@ -115,12 +116,24 @@ def measure_baseline(iterations: int = 1000) -> BenchmarkResult:
         # Simulate realistic work: data processing pipeline (expanded for realistic overhead measurement)
         total_result = 0
         for batch in range(10):  # Multiple batches to increase workload
-            data = [{"id": i + batch * 100, "value": (i + batch) * 1.5, "name": f"item_{i}_{batch}"} for i in range(100)]
+            data = [
+                {
+                    "id": i + batch * 100,
+                    "value": (i + batch) * 1.5,
+                    "name": f"item_{i}_{batch}",
+                }
+                for i in range(100)
+            ]
             filtered = [d for d in data if d["value"] > 25]
-            transformed = [{**d, "processed": d["value"] * 2, "metadata": {"batch": batch}} for d in filtered]
+            transformed = [
+                {**d, "processed": d["value"] * 2, "metadata": {"batch": batch}}
+                for d in filtered
+            ]
             total = sum(d["processed"] for d in transformed)
             avg = total / len(transformed) if transformed else 0
-            result = f"Processed {len(transformed)} items, total={total:.2f}, avg={avg:.2f}"
+            result = (
+                f"Processed {len(transformed)} items, total={total:.2f}, avg={avg:.2f}"
+            )
             total_result += len(result)
         end = time.perf_counter()
         times.append((end - start) * 1000)  # Convert to milliseconds
@@ -164,9 +177,19 @@ def measure_span_creation_overhead(iterations: int = 1000) -> BenchmarkResult:
             # Simulate realistic work: data processing pipeline
             total_result = 0
             for batch in range(10):
-                data = [{"id": i + batch * 100, "value": (i + batch) * 1.5, "name": f"item_{i}_{batch}"} for i in range(100)]
+                data = [
+                    {
+                        "id": i + batch * 100,
+                        "value": (i + batch) * 1.5,
+                        "name": f"item_{i}_{batch}",
+                    }
+                    for i in range(100)
+                ]
                 filtered = [d for d in data if d["value"] > 25]
-                transformed = [{**d, "processed": d["value"] * 2, "metadata": {"batch": batch}} for d in filtered]
+                transformed = [
+                    {**d, "processed": d["value"] * 2, "metadata": {"batch": batch}}
+                    for d in filtered
+                ]
                 total = sum(d["processed"] for d in transformed)
                 avg = total / len(transformed) if transformed else 0
                 result = f"Processed {len(transformed)} items, total={total:.2f}, avg={avg:.2f}"
@@ -217,9 +240,19 @@ def measure_span_creation_zero_sampling(iterations: int = 1000) -> BenchmarkResu
             # Simulate realistic work: data processing pipeline
             total_result = 0
             for batch in range(10):
-                data = [{"id": i + batch * 100, "value": (i + batch) * 1.5, "name": f"item_{i}_{batch}"} for i in range(100)]
+                data = [
+                    {
+                        "id": i + batch * 100,
+                        "value": (i + batch) * 1.5,
+                        "name": f"item_{i}_{batch}",
+                    }
+                    for i in range(100)
+                ]
                 filtered = [d for d in data if d["value"] > 25]
-                transformed = [{**d, "processed": d["value"] * 2, "metadata": {"batch": batch}} for d in filtered]
+                transformed = [
+                    {**d, "processed": d["value"] * 2, "metadata": {"batch": batch}}
+                    for d in filtered
+                ]
                 total = sum(d["processed"] for d in transformed)
                 avg = total / len(transformed) if transformed else 0
                 result = f"Processed {len(transformed)} items, total={total:.2f}, avg={avg:.2f}"
@@ -270,9 +303,19 @@ def measure_span_creation_10pct_sampling(iterations: int = 1000) -> BenchmarkRes
             # Simulate realistic work: data processing pipeline
             total_result = 0
             for batch in range(10):
-                data = [{"id": i + batch * 100, "value": (i + batch) * 1.5, "name": f"item_{i}_{batch}"} for i in range(100)]
+                data = [
+                    {
+                        "id": i + batch * 100,
+                        "value": (i + batch) * 1.5,
+                        "name": f"item_{i}_{batch}",
+                    }
+                    for i in range(100)
+                ]
                 filtered = [d for d in data if d["value"] > 25]
-                transformed = [{**d, "processed": d["value"] * 2, "metadata": {"batch": batch}} for d in filtered]
+                transformed = [
+                    {**d, "processed": d["value"] * 2, "metadata": {"batch": batch}}
+                    for d in filtered
+                ]
                 total = sum(d["processed"] for d in transformed)
                 avg = total / len(transformed) if transformed else 0
                 result = f"Processed {len(transformed)} items, total={total:.2f}, avg={avg:.2f}"
@@ -378,9 +421,19 @@ def measure_nested_spans(iterations: int = 1000, depth: int = 5) -> BenchmarkRes
             # Simulate realistic work at leaf level (expanded for realistic overhead)
             total_result = 0
             for batch in range(10):
-                data = [{"id": i + batch * 100, "value": (i + batch) * 1.5, "name": f"item_{i}_{batch}"} for i in range(100)]
+                data = [
+                    {
+                        "id": i + batch * 100,
+                        "value": (i + batch) * 1.5,
+                        "name": f"item_{i}_{batch}",
+                    }
+                    for i in range(100)
+                ]
                 filtered = [d for d in data if d["value"] > 25]
-                transformed = [{**d, "processed": d["value"] * 2, "metadata": {"batch": batch}} for d in filtered]
+                transformed = [
+                    {**d, "processed": d["value"] * 2, "metadata": {"batch": batch}}
+                    for d in filtered
+                ]
                 total = sum(d["processed"] for d in transformed)
                 total_result += total
             return total_result
@@ -413,7 +466,7 @@ def measure_nested_spans(iterations: int = 1000, depth: int = 5) -> BenchmarkRes
     )
 
 
-def percentile(data: List[float], percent: float) -> float:
+def percentile(data: list[float], percent: float) -> float:
     """Calculate percentile of a dataset."""
     sorted_data = sorted(data)
     index = (percent / 100) * (len(sorted_data) - 1)
@@ -528,13 +581,15 @@ def run_all_benchmarks(iterations: int = 1000) -> BenchmarkSuite:
         "pass_threshold_pct": 5.0,
         "passed": max_overhead < 5.0,
         "baseline_mean_ms": baseline.mean_time_ms,
-        "worst_case_scenario": "nested_spans_depth_5"
-        if nested.overhead_pct == max_overhead
-        else "span_creation_100pct",
+        "worst_case_scenario": (
+            "nested_spans_depth_5"
+            if nested.overhead_pct == max_overhead
+            else "span_creation_100pct"
+        ),
     }
 
     return BenchmarkSuite(
-        timestamp=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        timestamp=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         total_duration_seconds=end_time - start_time,
         results=results,
         summary=summary,
@@ -587,7 +642,7 @@ def format_results(suite: BenchmarkSuite) -> str:
     return "\n".join(lines)
 
 
-def save_json_results(suite: BenchmarkSuite, output_path: Optional[str] = None) -> str:
+def save_json_results(suite: BenchmarkSuite, output_path: str | None = None) -> str:
     """
     Save benchmark results to JSON file.
 

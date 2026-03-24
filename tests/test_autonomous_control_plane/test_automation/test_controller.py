@@ -3,10 +3,9 @@
 For ST-CONTROL-002: Self-Healing Automation
 """
 
-import asyncio
-import pytest
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from autonomous_control_plane.automation.controller import (
     AutomationController,
@@ -17,7 +16,6 @@ from autonomous_control_plane.automation.controller import (
 )
 from autonomous_control_plane.models.healing import (
     FailurePatternType,
-    HealingStatus,
     LogEntry,
 )
 

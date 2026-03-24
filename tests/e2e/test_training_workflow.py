@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import asyncio
 import sys
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 sys.path.insert(0, "/home/tacopants/projects/ChiseAI/src")
@@ -27,15 +27,12 @@ import pytest
 
 from config.feature_flags import (
     FeatureFlags,
-    get_feature_flags,
     reset_feature_flags,
     set_feature_flags,
 )
 from ml.models.model_registry import ModelRegistry
 from ml.training.pipeline_integration import (
-    Hyperparameters,
     TrainingData,
-    TrainingJob,
     TrainingJobStatus,
     TrainingPipelineIntegration,
 )
@@ -54,7 +51,6 @@ from ml.training.training_pipeline import (
     TrainingMode,
     TrainingPipeline,
 )
-
 
 # =============================================================================
 # Fixtures
@@ -653,7 +649,7 @@ class TestErrorHandling:
         if task:
             try:
                 await asyncio.wait_for(task, timeout=5.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pass  # Task may still be running
 
         await asyncio.sleep(0.5)

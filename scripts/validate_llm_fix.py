@@ -55,7 +55,7 @@ enhancer_disabled = TradeDecisionEnhancer(enabled=False)
 
 print(f"✓ Enhancer enabled: {enhancer_disabled.enabled}")
 print(f"✓ Chain initialized: {enhancer_disabled._chain is not None}")
-print(f"✓ Returns safe default when disabled")
+print("✓ Returns safe default when disabled")
 
 print("\n" + "=" * 80)
 print("ALL VALIDATIONS PASSED")

@@ -5,11 +5,12 @@ notifications when available, and that notifications remain backward compatible
 when LLM details are not available.
 """
 
-import pytest
 from datetime import UTC, datetime
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
+
+import pytest
 
 from discord_alerts.trade_notifier import TradeNotifier
 from ml.models.signal_outcome import SignalOutcome, SignalOutcomeStatus
@@ -361,7 +362,7 @@ class TestPayloadFormatValidation:
 
             # Validate PnL is highlighted
             fields = {f["name"]: f["value"] for f in embed["fields"]}
-            assert any("Realized PnL" in name for name in fields.keys())
+            assert any("Realized PnL" in name for name in fields)
 
     @pytest.mark.asyncio
     async def test_rationale_truncation(self, trade_notifier, sample_outcome_open):

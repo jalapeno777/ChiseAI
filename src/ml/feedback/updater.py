@@ -833,9 +833,9 @@ class ModelUpdater:
         return {
             "component": "ModelUpdater",
             "is_active": is_active,
-            "last_update_time": self._last_update_time.isoformat()
-            if self._last_update_time
-            else None,
+            "last_update_time": (
+                self._last_update_time.isoformat() if self._last_update_time else None
+            ),
             "total_updates": self._total_updates,
             "successful_updates": self._successful_updates,
             "failed_updates": self._failed_updates,

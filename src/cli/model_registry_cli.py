@@ -49,7 +49,6 @@ from ml.models.model_registry import ModelRegistry, ModelRegistryFactory
 from ml.models.model_storage import (
     ModelMetadata,
     ModelNotFoundError,
-    ModelRegistryError,
     ModelValidationError,
     ModelVersionExistsError,
 )
@@ -172,7 +171,7 @@ def format_output(
 
     elif isinstance(data, dict):
         # Dictionary
-        max_key_len = max(len(str(k)) for k in data.keys()) if data else 0
+        max_key_len = max(len(str(k)) for k in data) if data else 0
         lines = []
         for key, value in data.items():
             lines.append(f"{str(key):{max_key_len}} : {value}")
@@ -492,10 +491,10 @@ def get(ctx: click.Context, name: str, version: str) -> None:
             click.echo(f"Training Data: {metadata.training_data}")
             if metadata.checksum:
                 click.echo(f"Checksum: {metadata.checksum[:32]}...")
-            click.echo(f"\nHyperparameters:")
+            click.echo("\nHyperparameters:")
             for key, value in metadata.hyperparameters.items():
                 click.echo(f"  {key}: {value}")
-            click.echo(f"\nMetrics:")
+            click.echo("\nMetrics:")
             for key, value in metadata.metrics.items():
                 click.echo(f"  {key}: {value}")
             if metadata.tags:
@@ -664,7 +663,7 @@ def compare(ctx: click.Context, name: str, version1: str, version2: str) -> None
             click.echo()
 
     except ModelNotFoundError:
-        click.echo(f"Error: Model or version not found", err=True)
+        click.echo("Error: Model or version not found", err=True)
         sys.exit(EXIT_NOT_FOUND)
     except Exception as e:
         click.echo(f"Error: Failed to compare versions: {e}", err=True)
@@ -711,7 +710,7 @@ def validate(
             sys.exit(EXIT_VALIDATION_ERROR)
 
         # Create temporary metadata for validation
-        metadata = ModelMetadata(
+        ModelMetadata(
             model_name=name,
             version="0.0.0",  # Dummy version for validation
             created_at=datetime.now(UTC),

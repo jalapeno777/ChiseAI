@@ -4,8 +4,8 @@
 This script starts the SignalConsumer with minimal dependencies.
 """
 
-import sys
 import os
+import sys
 
 # Set up paths BEFORE any imports
 # Add src to path so imports work without 'src.' prefix
@@ -49,7 +49,7 @@ async def main():
     logger.info("Initializing components...")
 
     # Create configuration
-    config = TradingModeConfig.create_paper_config(
+    TradingModeConfig.create_paper_config(
         portfolio_value=10000.0,
         signal_threshold=0.75,
     )

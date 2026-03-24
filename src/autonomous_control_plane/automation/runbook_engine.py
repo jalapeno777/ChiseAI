@@ -13,21 +13,14 @@ For ST-CONTROL-002: Self-Healing Automation
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any, Callable
-
-from autonomous_control_plane.models.healing import (
-    HealingContext,
-    HealingResult,
-    HealingStatus,
-    ResourceLimits,
-)
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -119,9 +112,9 @@ class RunbookStep:
             "condition": self.condition,
             "status": self.status.value,
             "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
             "result": self.result,
             "approved_by": self.approved_by,
             "approved_at": self.approved_at.isoformat() if self.approved_at else None,
@@ -221,9 +214,9 @@ class RunbookExecution:
             "status": self.status.value,
             "context": self.context,
             "started_at": self.started_at.isoformat(),
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
             "current_step_index": self.current_step_index,
             "step_results": self.step_results,
             "triggered_by": self.triggered_by,
@@ -561,7 +554,7 @@ class RunbookEngine:
                 step.status = RunbookStepStatus.FAILED
                 return False
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             step.status = RunbookStepStatus.FAILED
             step.result = {"error": f"Step timed out after {step.timeout_seconds}s"}
             return False
@@ -732,7 +725,6 @@ class RunbookEngine:
         Returns:
             Execution result
         """
-        import subprocess
 
         command = step.action
 
@@ -759,7 +751,7 @@ class RunbookEngine:
                 "stderr": stderr.decode("utf-8", errors="replace"),
             }
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             proc.kill()
             return {"success": False, "error": "Command timed out"}
 
@@ -900,9 +892,11 @@ class RunbookEngine:
                                 "runbook_name": execution.runbook_name,
                                 "step_id": step.step_id,
                                 "step_name": step.name,
-                                "started_at": step.started_at.isoformat()
-                                if step.started_at
-                                else None,
+                                "started_at": (
+                                    step.started_at.isoformat()
+                                    if step.started_at
+                                    else None
+                                ),
                             }
                         )
 

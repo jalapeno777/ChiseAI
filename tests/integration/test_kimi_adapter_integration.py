@@ -13,7 +13,6 @@ For ST-KIMI-ADAPTER-001: Batch 4 - Integration Testing
 
 from __future__ import annotations
 
-import json
 import os
 import sys
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -30,7 +29,6 @@ from src.llm.provider_chain import (
     LLMResponse,
     ProviderError,
 )
-
 
 # =============================================================================
 # Fixtures
@@ -187,7 +185,7 @@ class TestAdapterHealth:
         assert request.messages[1].role == "user"
 
         # Test response model
-        from src.adapter.kimi.main import Choice, Usage, ChatMessage
+        from src.adapter.kimi.main import ChatMessage, Choice, Usage
 
         response = ChatCompletionResponse(
             id="chatcmpl-test",
@@ -524,9 +522,9 @@ class TestOpenAICompatibility:
         """Verify responses match OpenAI format."""
         from src.adapter.kimi.main import (
             ChatCompletionResponse,
+            ChatMessage,
             Choice,
             Usage,
-            ChatMessage,
         )
 
         response = ChatCompletionResponse(
@@ -584,7 +582,6 @@ class TestTradeDecisionEnhancerIntegration:
     async def test_enhancer_uses_provider_chain(self):
         """Verify enhancer uses provider chain for decisions."""
         from src.execution.llm.trade_decision_enhancer import TradeDecisionEnhancer
-        from src.llm.provider_chain import LLMProviderChain
 
         with patch.dict(
             os.environ,

@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """20-minute live validation of signal generator supervision."""
 
-import time
 import json
-import redis
-from datetime import datetime
 import os
+import time
+from datetime import datetime
+
+import redis
 
 r = redis.Redis(host="host.docker.internal", port=6380, decode_responses=True)
 
@@ -20,7 +21,7 @@ check_interval = 60  # Check every minute
 results = []
 initial_signals = len(list(r.scan_iter(match="paper:signal:20260311*")))
 print(f"Initial signal count: {initial_signals}")
-print(f"Validation will run for 20 minutes...")
+print("Validation will run for 20 minutes...")
 print("-" * 70)
 
 try:
@@ -33,7 +34,7 @@ try:
 
         # Get signal generator PID
         try:
-            with open("/tmp/signal_generator.pid", "r") as f:
+            with open("/tmp/signal_generator.pid") as f:
                 signal_pid = f.read().strip()
         except:
             signal_pid = "N/A"
@@ -62,7 +63,7 @@ try:
 
         # Verify health
         if result["pipeline_status"] == "running":
-            print(f"  ✓ Healthy - signals being generated")
+            print("  ✓ Healthy - signals being generated")
         else:
             print(f"  ⚠ Pipeline status: {result['pipeline_status']}")
 
@@ -82,9 +83,9 @@ with open(output_file, "w") as f:
             "validation_end": datetime.now().isoformat(),
             "duration_minutes": 20,
             "initial_signals": initial_signals,
-            "final_signals": results[-1]["total_signals"]
-            if results
-            else initial_signals,
+            "final_signals": (
+                results[-1]["total_signals"] if results else initial_signals
+            ),
             "checks": results,
         },
         f,

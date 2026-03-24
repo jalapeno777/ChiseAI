@@ -159,7 +159,7 @@ def validate_file(path: Path) -> list[str]:
         List of error messages (empty if valid).
     """
     # Only process .md files
-    if not path.suffix == ".md":
+    if path.suffix != ".md":
         return []
 
     # Extract and validate frontmatter

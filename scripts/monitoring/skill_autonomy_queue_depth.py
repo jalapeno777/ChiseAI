@@ -66,7 +66,9 @@ def send_discord(webhook: str, message: str) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    ap = argparse.ArgumentParser(description="Monitor skill autonomy backlog queue depth")
+    ap = argparse.ArgumentParser(
+        description="Monitor skill autonomy backlog queue depth"
+    )
     ap.add_argument(
         "--queue-key",
         default="bmad:chiseai:skills:backlog:candidates",
@@ -123,7 +125,9 @@ def main() -> int:
         if last:
             try:
                 last_dt = datetime.fromisoformat(last.replace("Z", "+00:00"))
-                if utc_now() - last_dt < timedelta(minutes=args.min_alert_interval_minutes):
+                if utc_now() - last_dt < timedelta(
+                    minutes=args.min_alert_interval_minutes
+                ):
                     should_alert = False
             except Exception:
                 should_alert = True

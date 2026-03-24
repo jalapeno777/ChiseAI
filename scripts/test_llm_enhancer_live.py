@@ -12,7 +12,7 @@ import asyncio
 import logging
 import os
 import sys
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 
 # Add project root to path
 sys.path.insert(0, "/home/tacopants/projects/ChiseAI")

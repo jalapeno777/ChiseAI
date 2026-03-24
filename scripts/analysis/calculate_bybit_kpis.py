@@ -23,11 +23,11 @@ import json
 import logging
 import os
 import sys
-from urllib.parse import urlencode
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlencode
 
 # Configure logging
 logging.basicConfig(
@@ -333,10 +333,7 @@ def is_test_trade_bybit(exec_data: dict) -> bool:
 
     # Check symbol for test symbols
     symbol = exec_data.get("symbol", "")
-    if symbol and "TEST" in symbol.upper():
-        return True
-
-    return False
+    return bool(symbol and "TEST" in symbol.upper())
 
 
 def filter_test_trades_bybit(executions: list[dict]) -> tuple[list[dict], int]:
@@ -399,7 +396,7 @@ def assess_targets(kpis: BybitTradingKPIs) -> dict[str, Any]:
     assessments["overall"] = {
         "status": "PASS" if all_passed else "FAIL",
         "passed_count": passed_count,
-        "total_count": len([k for k in assessments.keys() if k != "overall"]),
+        "total_count": len([k for k in assessments if k != "overall"]),
     }
 
     return assessments
@@ -1135,15 +1132,15 @@ def print_summary(kpis: BybitTradingKPIs) -> None:
     print(f"Canonical for GO: {'✅ Yes' if kpis.canonical_for_go else '❌ No'}")
     print(f"\nCalculation ID: {kpis.calculation_id}")
     print(f"Data Range: {kpis.data_start_time} to {kpis.data_end_time}")
-    print(f"\nTrade Summary:")
+    print("\nTrade Summary:")
     print(f"  Total Trades: {kpis.total_trades}")
     print(f"  Winning: {kpis.winning_trades}")
     print(f"  Losing: {kpis.losing_trades}")
-    print(f"\nTest Trade Segregation:")
+    print("\nTest Trade Segregation:")
     print(f"  Test Trades Included: {'Yes' if kpis.include_test_trades else 'No'}")
     print(f"  Test Trades Excluded: {kpis.test_trades_excluded_count}")
     print(f"  Production Trades: {kpis.production_trades_count}")
-    print(f"\nKey Metrics:")
+    print("\nKey Metrics:")
     print(f"  Win Rate: {kpis.win_rate:.2f}%")
     print(f"  Gross PnL: {kpis.total_gross_pnl:.4f}")
     print(f"  Total Fees: {kpis.total_fees:.4f}")
@@ -1152,7 +1149,7 @@ def print_summary(kpis: BybitTradingKPIs) -> None:
     print(f"  Max Drawdown: {kpis.max_drawdown:.2f}%")
     print(f"  Turnover (avg): {kpis.turnover['avg_trades_per_day']:.2f} trades/day")
     print(f"  Risk Adherence: {kpis.risk_gate_adherence:.2f}%")
-    print(f"\nData Quality:")
+    print("\nData Quality:")
     print(f"  Freshness: {kpis.data_freshness_hours:.2f} hours")
     print(f"  Is Fresh: {kpis.is_data_fresh}")
     if kpis.data_quality_flags:

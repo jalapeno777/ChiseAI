@@ -6,20 +6,17 @@ Story: ST-MEMORY-INGEST-005 - CI Pipeline Integration for Tempmemory Ingestion
 from __future__ import annotations
 
 import json
-import os
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts" / "ci"))
 
 from governance.tempmemory.ci_integration import (
-    CIIngestionReport,
     FEATURE_FLAG_ENV,
+    CIIngestionReport,
     cache_ingested_memories,
     cache_ingestion_report,
     create_redis_client,
@@ -441,7 +438,6 @@ class TestCIIntegrationEndToEnd:
         """Test full workflow when ingestion is disabled."""
         monkeypatch.delenv(FEATURE_FLAG_ENV, raising=False)
         # When disabled, should return success=True with skip message
-        from governance.tempmemory.ci_integration import run_pre_eval_ingestion
 
         with patch.object(
             sys.modules["governance.tempmemory.ci_integration"],

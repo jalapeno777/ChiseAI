@@ -20,21 +20,17 @@ from autonomous_control_plane.config.pipeline_settings import (
     pipeline_settings,
 )
 from autonomous_control_plane.pipeline.export import (
-    ExportResult,
     ExportStatus,
-    TelemetryExportLayer,
     get_export_layer,
 )
 from autonomous_control_plane.pipeline.ingestion import (
     IngestionResult,
     IngestionStatus,
     TelemetryEvent,
-    TelemetryIngestionLayer,
     get_ingestion_layer,
 )
 from autonomous_control_plane.pipeline.processing import (
     ProcessedMetric,
-    TelemetryProcessingLayer,
     get_processing_layer,
 )
 
@@ -428,7 +424,7 @@ class TelemetryPipeline:
         # Process remaining events
         events = self._coordinator.get_processing_batch(max_size=10000)
         if events:
-            processed = self._processing.process_batch(events)
+            self._processing.process_batch(events)
             metrics = self._processing.flush()
             self._coordinator.submit_to_export(metrics)
 

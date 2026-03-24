@@ -2,7 +2,6 @@
 
 import numpy as np
 import pytest
-
 from src.strong_system.symbolic_rules.differentiable import (
     DifferentiableAction,
     DifferentiablePredicate,

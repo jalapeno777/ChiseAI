@@ -10,7 +10,6 @@ Tests that:
 
 from __future__ import annotations
 
-import json
 import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -123,18 +122,18 @@ class TestNoDirectProviderImports:
                 if isinstance(node, ast.ImportFrom):
                     module = node.module or ""
                     # Check for direct provider imports
-                    assert not ("kimi_client" in module and "llm" not in module), (
-                        f"Direct kimi_client import found in {py_file}"
-                    )
-                    assert not ("zai_client" in module and "llm" not in module), (
-                        f"Direct zai_client import found in {py_file}"
-                    )
-                    assert not ("zhipu_client" in module and "llm" not in module), (
-                        f"Direct zhipu_client import found in {py_file}"
-                    )
-                    assert not ("minimax_client" in module and "llm" not in module), (
-                        f"Direct minimax_client import found in {py_file}"
-                    )
+                    assert not (
+                        "kimi_client" in module and "llm" not in module
+                    ), f"Direct kimi_client import found in {py_file}"
+                    assert not (
+                        "zai_client" in module and "llm" not in module
+                    ), f"Direct zai_client import found in {py_file}"
+                    assert not (
+                        "zhipu_client" in module and "llm" not in module
+                    ), f"Direct zhipu_client import found in {py_file}"
+                    assert not (
+                        "minimax_client" in module and "llm" not in module
+                    ), f"Direct minimax_client import found in {py_file}"
 
     def test_only_provider_chain_import_pattern(self):
         """Test that reflection only imports from src.llm properly."""
@@ -142,7 +141,7 @@ class TestNoDirectProviderImports:
 
         # The integration should only use LLMProviderChain from src.llm
         source = llm_integration.__file__
-        content = open(source).read()
+        content = open(source).read()  # noqa: SIM115
 
         # Should not have direct provider imports
         assert "from llm.kimi_client" not in content
@@ -318,9 +317,9 @@ class TestBottleneckReflectionLLMIntegration:
 
     def test_bottleneck_reflection_has_llm_insights_field(self):
         """Test that DailyReflectionArtifact has llm_insights field."""
-        from src.governance.reflection import DailyReflectionArtifact
-
         import inspect
+
+        from src.governance.reflection import DailyReflectionArtifact
 
         sig = inspect.signature(DailyReflectionArtifact)
         assert "llm_insights" in sig.parameters
@@ -338,9 +337,9 @@ class TestBottleneckReflectionLLMIntegration:
 
     def test_weekly_reflection_has_llm_fields(self):
         """Test that WeeklyReflectionArtifact has LLM-related fields."""
-        from src.governance.reflection import WeeklyReflectionArtifact
-
         import inspect
+
+        from src.governance.reflection import WeeklyReflectionArtifact
 
         sig = inspect.signature(WeeklyReflectionArtifact)
         assert "llm_executive_summary" in sig.parameters

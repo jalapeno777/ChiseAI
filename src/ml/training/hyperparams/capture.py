@@ -1,6 +1,6 @@
 """Hyperparameter capture utilities."""
 
-from typing import Any, Dict
+from typing import Any
 
 from .models import HyperparameterSet
 
@@ -9,7 +9,7 @@ class HyperparameterCapture:
     """Utility class for capturing hyperparameters from various sources."""
 
     @staticmethod
-    def capture_from_config(config_dict: Dict[str, Any]) -> HyperparameterSet:
+    def capture_from_config(config_dict: dict[str, Any]) -> HyperparameterSet:
         """Capture hyperparameters from a configuration dictionary.
 
         Args:
@@ -112,9 +112,6 @@ class HyperparameterCapture:
                 return False
             if not isinstance(hyperparams.regularization, dict):
                 return False
-            if not isinstance(hyperparams.custom_params, dict):
-                return False
-
-            return True
+            return isinstance(hyperparams.custom_params, dict)
         except (AttributeError, TypeError):
             return False

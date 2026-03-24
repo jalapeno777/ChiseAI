@@ -47,14 +47,14 @@ REQUIRED_LEAN_FIELDS = ["id", "status", "title"]
 
 def load_workflow(path: Path) -> dict:
     """Load and parse workflow YAML."""
-    with open(path, "r") as f:
+    with open(path) as f:
         return yaml.safe_load(f) or {}
 
 
 def check_yaml_syntax(path: Path) -> tuple[bool, str]:
     """Verify YAML syntax is valid."""
     try:
-        with open(path, "r") as f:
+        with open(path) as f:
             yaml.safe_load(f)
         return True, "YAML syntax valid"
     except yaml.YAMLError as e:

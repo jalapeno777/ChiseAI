@@ -5,8 +5,6 @@ Tests for AUTOCOG-004: Discord routing config validator
 
 from __future__ import annotations
 
-import pytest
-
 from src.governance.notifications.discord_notifier import (
     CHANNEL_ID_PATTERN,
     WEBHOOK_URL_PATTERN,

@@ -10,7 +10,6 @@ import argparse
 import re
 from pathlib import Path
 
-
 REQUIRED_SECTIONS = [
     "## Goal",
     "## When To Use",
@@ -40,7 +39,9 @@ def validate_skill(path: Path) -> list[str]:
             frontmatter = parts[0]
             for required_field in ["name:", "description:", "metadata:"]:
                 if required_field not in frontmatter:
-                    errors.append(f"Frontmatter missing required field: {required_field}")
+                    errors.append(
+                        f"Frontmatter missing required field: {required_field}"
+                    )
 
     # Required sections
     for section in REQUIRED_SECTIONS:

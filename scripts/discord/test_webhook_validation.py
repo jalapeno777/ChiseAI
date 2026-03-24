@@ -22,11 +22,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from scripts.discord.startup_webhook_check import (
-    WebhookValidator,
     WebhookValidationResult,
-    get_configured_webhooks,
-    format_results_text,
+    WebhookValidator,
     format_results_json,
+    format_results_text,
+    get_configured_webhooks,
 )
 
 

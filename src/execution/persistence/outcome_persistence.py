@@ -219,9 +219,11 @@ class OutcomePersistence:
                     outcome.execution_venue if outcome.execution_venue else None,
                     outcome.execution_mode if outcome.execution_mode else None,
                     outcome.execution_source if outcome.execution_source else None,
-                    json.dumps(outcome.venue_metadata)
-                    if outcome.venue_metadata
-                    else None,
+                    (
+                        json.dumps(outcome.venue_metadata)
+                        if outcome.venue_metadata
+                        else None
+                    ),
                 )
 
             logger.debug(f"Synced outcome {outcome.outcome_id} to PostgreSQL")

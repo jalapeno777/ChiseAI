@@ -1,7 +1,6 @@
 """Tests for program synthesis generator module."""
 
 import pytest
-
 from src.strong_system.program_synthesis.generator import (
     GenerationConfig,
     GenerationConstraints,

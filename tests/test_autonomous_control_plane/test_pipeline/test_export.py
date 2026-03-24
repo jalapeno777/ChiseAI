@@ -3,16 +3,11 @@
 ST-CONTROL-001: Telemetry Pipeline
 """
 
-import os
 import time
-from unittest.mock import MagicMock, patch
-
-import pytest
 
 from autonomous_control_plane.config.pipeline_settings import (
+    AggregationWindow,
     DeadLetterQueueConfig,
-    ExportDestinationConfig,
-    ExportDestinationType,
 )
 from autonomous_control_plane.pipeline.export import (
     DeadLetterQueue,
@@ -23,7 +18,6 @@ from autonomous_control_plane.pipeline.export import (
     TelemetryExportLayer,
 )
 from autonomous_control_plane.pipeline.processing import ProcessedMetric
-from autonomous_control_plane.config.pipeline_settings import AggregationWindow
 
 
 class TestDeadLetterQueue:
@@ -308,4 +302,4 @@ class TestExportRequirements:
 
         # Check that retry_dlq method exists
         assert hasattr(layer, "retry_dlq")
-        assert callable(getattr(layer, "retry_dlq"))
+        assert callable(layer.retry_dlq)

@@ -164,12 +164,11 @@ def run_single_query_claude(
                                 continue
                             tool_name = content_item.get("name", "")
                             tool_input = content_item.get("input", {})
-                            if tool_name == "Skill" and clean_name in tool_input.get(
-                                "skill", ""
-                            ):
-                                triggered = True
-                            elif tool_name == "Read" and clean_name in tool_input.get(
-                                "file_path", ""
+                            if (
+                                tool_name == "Skill"
+                                and clean_name in tool_input.get("skill", "")
+                                or tool_name == "Read"
+                                and clean_name in tool_input.get("file_path", "")
                             ):
                                 triggered = True
                             return triggered
@@ -518,7 +517,7 @@ Do not include any other text, explanation, or formatting."""
         stdout = result.stdout.strip()
         stderr_output = result.stderr.strip()
         if not stdout:
-            print(f"Warning: opencode returned empty stdout", file=sys.stderr)
+            print("Warning: opencode returned empty stdout", file=sys.stderr)
             if stderr_output:
                 print(f"  stderr: {stderr_output[:500]}", file=sys.stderr)
             return False
@@ -526,7 +525,7 @@ Do not include any other text, explanation, or formatting."""
         # Parse the response with debug enabled on failure
         response_json = _parse_opencode_ndjson(stdout, debug=False)
         if response_json is None:
-            print(f"Warning: Failed to parse opencode output as JSON", file=sys.stderr)
+            print("Warning: Failed to parse opencode output as JSON", file=sys.stderr)
             print(f"  stdout preview: {stdout[:500]}", file=sys.stderr)
             if stderr_output:
                 print(f"  stderr: {stderr_output[:500]}", file=sys.stderr)

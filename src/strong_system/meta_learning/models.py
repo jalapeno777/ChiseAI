@@ -23,8 +23,7 @@ Example:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from copy import deepcopy
-from typing import Any, Callable, Generic, TypeVar
+from typing import TypeVar
 
 import numpy as np
 
@@ -219,9 +218,7 @@ class MetaModel(ABC):
             )
 
             # Compute loss on query set with adapted parameters
-            query_loss = self.compute_loss(
-                adapted_params, episode.query_data, episode.query_labels
-            )
+            self.compute_loss(adapted_params, episode.query_data, episode.query_labels)
 
             # Compute gradients w.r.t. adapted parameters
             param_grads = self._compute_parameter_gradients(
@@ -515,7 +512,7 @@ class MAML:
             )
 
             # Gradient descent update
-            for key in adapted_params.keys():
+            for key in adapted_params:
                 if key in grads:
                     adapted_params[key] = adapted_params[key] - lr * grads[key]
 
@@ -625,7 +622,7 @@ class MAML:
             meta_gradient: Meta-gradient dictionary
             meta_lr: Meta learning rate (outer loop)
         """
-        for key in self.base_model.parameters.keys():
+        for key in self.base_model.parameters:
             if key in meta_gradient:
                 self.base_model.parameters[key] = (
                     self.base_model.parameters[key] - meta_lr * meta_gradient[key]
@@ -765,7 +762,7 @@ class Reptile:
                 adapted_params, support_data, support_labels, loss_type=self.loss_type
             )
 
-            for key in adapted_params.keys():
+            for key in adapted_params:
                 if key in grads:
                     adapted_params[key] = adapted_params[key] - lr * grads[key]
 
@@ -795,7 +792,7 @@ class Reptile:
             adapted_params: Adapted parameters from task
             meta_lr: Meta learning rate (interpolation factor)
         """
-        for key in self.base_model.parameters.keys():
+        for key in self.base_model.parameters:
             if key in adapted_params:
                 diff = adapted_params[key] - self.base_model.parameters[key]
                 self.base_model.parameters[key] = (
@@ -813,13 +810,13 @@ class Reptile:
         """
         # Average the adapted parameters
         avg_adapted = {}
-        for key in self.base_model.parameters.keys():
+        for key in self.base_model.parameters:
             avg_adapted[key] = np.mean(
                 [params[key] for params in adapted_params_list], axis=0
             )
 
         # Update meta-parameters towards average
-        for key in self.base_model.parameters.keys():
+        for key in self.base_model.parameters:
             diff = avg_adapted[key] - self.base_model.parameters[key]
             self.base_model.parameters[key] = (
                 self.base_model.parameters[key] + meta_lr * diff

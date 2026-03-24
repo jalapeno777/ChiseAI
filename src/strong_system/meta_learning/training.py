@@ -23,8 +23,9 @@ Example:
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 import numpy as np
 
@@ -221,7 +222,7 @@ class MetaTrainingLoop:
                 self.meta_model.meta_update(meta_gradient, self.config.meta_lr)
             else:
                 # Manual update if meta_update not available
-                for key in self.meta_model.meta_parameters.keys():
+                for key in self.meta_model.meta_parameters:
                     if key in meta_gradient:
                         self.meta_model.meta_parameters[key] = (
                             self.meta_model.meta_parameters[key]
@@ -435,7 +436,7 @@ class EpisodeTrainer:
             labels = np.concatenate([episode.support_labels, episode.query_labels])
 
         # Training loop
-        for step in range(self.n_steps):
+        for _step in range(self.n_steps):
             # Compute loss
             loss = self.model.compute_loss(self.model.meta_parameters, data, labels)
             loss_history.append(loss)
@@ -446,7 +447,7 @@ class EpisodeTrainer:
                     self.model.meta_parameters, data, labels
                 )
 
-                for key in self.model.meta_parameters.keys():
+                for key in self.model.meta_parameters:
                     if key in grads:
                         self.model.meta_parameters[key] = (
                             self.model.meta_parameters[key] - self.lr * grads[key]

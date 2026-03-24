@@ -1,13 +1,13 @@
 """Cross-system learning bridge between AUTOCOG and STRONG systems."""
 
-from .bridge import LearningBridge, BridgeMetrics, BridgeStatus
-from .protocols import KnowledgeTransferProtocol, TransferEvent, TransferStatus
+from .adapters import AutocogAdapter, StrongAdapter
+from .bridge import BridgeMetrics, BridgeStatus, LearningBridge
 from .converters import (
-    DataFormatConverter,
     AutocogToStrongConverter,
+    DataFormatConverter,
     StrongToAutocogConverter,
 )
-from .adapters import AutocogAdapter, StrongAdapter
+from .protocols import KnowledgeTransferProtocol, TransferEvent, TransferStatus
 
 __all__ = [
     "LearningBridge",

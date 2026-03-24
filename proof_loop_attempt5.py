@@ -4,8 +4,7 @@
 import asyncio
 import subprocess
 import sys
-import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, "src")
@@ -16,18 +15,18 @@ async def main():
     output_dir = Path("_bmad-output/forensic-evidence")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
 
     print("╔════════════════════════════════════════════════════════════════════╗")
     print("║  PROOF LOOP ATTEMPT 5 - FINAL - CONCURRENT EXECUTION              ║")
-    print(
-        f"║  Start: {datetime.now(timezone.utc).isoformat()}                              ║"
-    )
+    print(f"║  Start: {datetime.now(UTC).isoformat()}                              ║")
     print("╚════════════════════════════════════════════════════════════════════╝")
 
     # Step 1: Start continuous signal generation (60 minutes to ensure overlap)
     print("\n[1/4] Starting 60-minute continuous signal generation...")
-    signal_log = open(output_dir / f"signal_gen_attempt5_{timestamp}.log", "w")
+    signal_log = open(  # noqa: SIM115
+        output_dir / f"signal_gen_attempt5_{timestamp}.log", "w"
+    )
     signal_proc = subprocess.Popen(
         [
             "python3",
@@ -90,7 +89,7 @@ async def main():
     signal_proc.terminate()
     try:
         signal_proc.wait(timeout=10)
-    except:
+    except Exception:
         signal_proc.kill()
     signal_log.close()
 
@@ -108,7 +107,7 @@ async def main():
                 "artifacts_missing": result.gate_results[gate].artifacts_missing,
                 "validation_errors": result.gate_results[gate].validation_errors,
             }
-            for gate in result.gate_results.keys()
+            for gate in result.gate_results
         ],
         "all_passed": result.overall_status.value == "PASS",
         "overall_status": result.overall_status.value,
@@ -137,7 +136,7 @@ async def main():
 
     pass_count = sum(
         1
-        for gate in result.gate_results.keys()
+        for gate in result.gate_results
         if result.gate_results[gate].status.value == "PASS"
     )
     total_gates = len(result.gate_results)

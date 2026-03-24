@@ -2,20 +2,16 @@
 Tests for A/B testing framework module.
 """
 
-import warnings
-import pytest
 import random
-import time
-import json
-from unittest.mock import MagicMock, patch
+
+import pytest
 from src.strong_system.ab_testing.framework import (
-    ABTestFramework,
     ABTestConfig,
+    ABTestFramework,
     ABTestResult,
     ABTestStatus,
     WinnerSelectionStrategy,
 )
-from src.strong_system.ab_testing.statistics import StatisticalResult
 
 
 class TestABTestConfig:

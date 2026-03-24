@@ -12,3 +12,4 @@ rules:
     indent-sequences: consistent
 
   truthy: disable
+  comments: disable

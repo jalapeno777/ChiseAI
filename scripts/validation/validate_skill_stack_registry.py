@@ -86,7 +86,9 @@ def main() -> int:
         for stack_name in refs:
             sname = str(stack_name).strip()
             if not sname:
-                errors.append(f"task_class_stacks['{task_class}'] includes empty stack name")
+                errors.append(
+                    f"task_class_stacks['{task_class}'] includes empty stack name"
+                )
                 continue
             if sname not in stacks:
                 errors.append(

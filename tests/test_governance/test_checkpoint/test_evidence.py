@@ -6,15 +6,11 @@ Story: PAPER-GOVERNANCE-001
 """
 
 import json
-import os
 from datetime import UTC, datetime
 from pathlib import Path
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import patch
 
 from src.governance.checkpoint.evidence import CheckpointEvidence, EvidenceCollector
-from src.governance.checkpoint.gates import GateChecker, GateResult, GateSummary
 
 
 class TestCheckpointEvidence:
@@ -242,7 +238,7 @@ class TestEvidenceCollectorArchive:
 
         path = collector.archive_to_file(evidence)
 
-        with open(path, "r") as f:  # type: ignore
+        with open(path) as f:  # type: ignore
             data = json.load(f)
 
         assert data["checkpoint_id"] == evidence.checkpoint_id

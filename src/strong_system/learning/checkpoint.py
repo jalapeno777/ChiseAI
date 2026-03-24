@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
+
 from src.strong_system.computational_graph.node import Node
 from src.strong_system.computational_graph.optimizer import (
     CheckpointStrategy,

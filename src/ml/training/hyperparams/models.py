@@ -2,9 +2,9 @@
 
 import hashlib
 import json
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any
 
 
 @dataclass
@@ -16,12 +16,12 @@ class HyperparameterSet:
     epochs: int
     optimizer: str
     loss_function: str
-    model_architecture: Dict[str, Any]
-    regularization: Dict[str, Any]
-    custom_params: Dict[str, Any]
+    model_architecture: dict[str, Any]
+    regularization: dict[str, Any]
+    custom_params: dict[str, Any]
     captured_at: datetime
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert hyperparameter set to dictionary."""
         result = asdict(self)
         # Convert datetime to ISO format string for JSON serialization
@@ -29,7 +29,7 @@ class HyperparameterSet:
         return result
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "HyperparameterSet":
+    def from_dict(cls, data: dict[str, Any]) -> "HyperparameterSet":
         """Create HyperparameterSet from dictionary."""
         # Convert ISO format string back to datetime
         if "captured_at" in data and isinstance(data["captured_at"], str):

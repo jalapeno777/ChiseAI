@@ -18,7 +18,7 @@ import argparse
 import json
 import logging
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 
 import yaml
@@ -38,7 +38,7 @@ def parse_date(date_str: str) -> datetime:
         if "T" in date_str:
             return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
         else:
-            return datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            return datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=UTC)
     except (ValueError, TypeError):
         return None
 
@@ -47,7 +47,7 @@ def get_archive_age(archive_path: Path) -> int:
     """Get age of archive in days."""
     # Try to get date from archive metadata
     try:
-        with open(archive_path, "r") as f:
+        with open(archive_path) as f:
             data = yaml.safe_load(f)
 
         # Try archived_at first
@@ -58,13 +58,13 @@ def get_archive_age(archive_path: Path) -> int:
         if archived_date:
             archived_dt = parse_date(archived_date)
             if archived_dt:
-                return (datetime.now(timezone.utc) - archived_dt).days
+                return (datetime.now(UTC) - archived_dt).days
     except Exception:
         pass
 
     # Fall back to file modification time
-    mtime = datetime.fromtimestamp(archive_path.stat().st_mtime, tz=timezone.utc)
-    return (datetime.now(timezone.utc) - mtime).days
+    mtime = datetime.fromtimestamp(archive_path.stat().st_mtime, tz=UTC)
+    return (datetime.now(UTC) - mtime).days
 
 
 def verify_qdrant_sync(story_id: str) -> bool:

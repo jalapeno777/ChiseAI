@@ -28,7 +28,6 @@ from fastapi import (
     File,
     Form,
     HTTPException,
-    Path,
     Query,
     UploadFile,
     status,
@@ -209,7 +208,9 @@ class ErrorResponse(BaseModel):
     },
 )
 async def register_model(
-    model_file: UploadFile = File(..., description="Model file to upload"),
+    model_file: UploadFile = File(  # noqa: B008
+        ..., description="Model file to upload"
+    ),
     model_name: str = Form(..., min_length=1, description="Name of the model"),
     version: str = Form(
         ..., pattern=r"^\d+\.\d+\.\d+$", description="Semantic version"

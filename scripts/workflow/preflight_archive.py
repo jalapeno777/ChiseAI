@@ -23,7 +23,7 @@ import json
 import os
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -69,7 +69,7 @@ class PreflightReport:
 
     def __init__(self):
         self.checks: list[PreflightCheck] = []
-        self.timestamp = datetime.now(timezone.utc).isoformat() + "Z"
+        self.timestamp = datetime.now(UTC).isoformat() + "Z"
         self.version = PREFLIGHT_VERSION
 
     def add_check(self, check: PreflightCheck):

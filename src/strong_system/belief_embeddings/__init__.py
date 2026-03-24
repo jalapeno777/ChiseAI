@@ -10,8 +10,8 @@ from .cache import BeliefCache, CacheEntry, CacheMetrics
 from .clustering import (
     BeliefClusteringEngine,
     ClusterAssignment,
-    ClusterMetrics,
     ClusteringError,
+    ClusterMetrics,
 )
 from .index import (
     BeliefIndex,

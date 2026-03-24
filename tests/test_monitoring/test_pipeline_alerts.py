@@ -1,10 +1,10 @@
 """Tests for pipeline alerting system."""
 
-import pytest
 from datetime import datetime, timedelta
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
-from scripts.monitoring.pipeline_alerts import PipelineAlertManager, AlertSeverity
+import pytest
+from scripts.monitoring.pipeline_alerts import AlertSeverity, PipelineAlertManager
 
 
 class TestPipelineAlertManager:

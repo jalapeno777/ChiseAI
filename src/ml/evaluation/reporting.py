@@ -276,14 +276,14 @@ def generate_comparison_report(comparison: BenchmarkComparison) -> str:
         Human-readable report string
     """
     lines = [
-        f"Benchmark Comparison Report",
-        f"=" * 50,
+        "Benchmark Comparison Report",
+        "=" * 50,
         f"Model: {comparison.model_id}",
         f"Timestamp: {comparison.timestamp.isoformat()}",
         f"Overall Severity: {comparison.overall_severity.value.upper()}",
-        f"",
+        "",
         f"Regressions Detected: {len([r for r in comparison.regressions if r.is_regression])}",
-        f"",
+        "",
     ]
 
     # Add regression details

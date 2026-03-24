@@ -8,9 +8,8 @@ These tests ensure all components work together correctly.
 
 from __future__ import annotations
 
-import json
 from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -59,7 +58,6 @@ class TestFullFreshnessPipeline:
         # === Step 1: Simulate collector running ===
         from scripts.validation.bybit_truth_collector import (
             BybitTruthCollector,
-            CollectionResult,
         )
 
         collector = BybitTruthCollector(dry_run=True)
@@ -174,7 +172,6 @@ class TestCollectorRedisIntegration:
         from scripts.validation.bybit_truth_collector import (
             REDIS_KEYS,
             BybitTruthCollector,
-            CollectionResult,
         )
 
         storage = {}

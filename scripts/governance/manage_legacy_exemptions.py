@@ -96,9 +96,9 @@ def _collect_iterlogs() -> list[IterlogRecord]:
                 story_id=story_id,
                 started_at=_parse_dt(fm.get("started_at")),
                 legacy_exempt_flag=_to_bool(fm.get("legacy_exempt")),
-                compliance_mode_legacy_exempt=str(
-                    fm.get("compliance_mode", "")
-                ).strip().lower()
+                compliance_mode_legacy_exempt=str(fm.get("compliance_mode", ""))
+                .strip()
+                .lower()
                 == "legacy_exempt",
                 is_archived="/archived/" in rel,
             )

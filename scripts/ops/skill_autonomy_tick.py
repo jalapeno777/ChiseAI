@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+
 try:
     import fcntl
 except Exception:  # pragma: no cover
@@ -66,6 +67,7 @@ def parse_yaml_file(path: Path, default: dict[str, Any]) -> dict[str, Any]:
 def redis_client():
     try:
         import os
+
         import redis
 
         port = int(
@@ -148,7 +150,9 @@ def collect_decision_summary(
     cutoff: datetime,
     max_scan: int,
 ) -> dict[str, Any]:
-    files = sorted(TEMPMEM_DIR.glob(file_glob), key=lambda p: p.stat().st_mtime, reverse=True)[:max_scan]
+    files = sorted(
+        TEMPMEM_DIR.glob(file_glob), key=lambda p: p.stat().st_mtime, reverse=True
+    )[:max_scan]
     counts: Counter[str] = Counter()
     latest_by_skill: dict[str, dict[str, Any]] = {}
 
@@ -159,8 +163,12 @@ def collect_decision_summary(
         fm, body = read_frontmatter_and_body(path)
         payload = read_section_yaml(body, marker)
         skill = str(fm.get("skill_name") or payload.get("skill_name") or "").strip()
-        decision = str(fm.get("decision") or payload.get("decision") or "").strip().upper()
-        generated = str(fm.get("generated_at_utc") or payload.get("generated_at_utc") or iso(mtime))
+        decision = (
+            str(fm.get("decision") or payload.get("decision") or "").strip().upper()
+        )
+        generated = str(
+            fm.get("generated_at_utc") or payload.get("generated_at_utc") or iso(mtime)
+        )
         if not decision:
             continue
         counts[decision] += 1
@@ -270,8 +278,14 @@ def run_weekly_tick(
 ) -> TickResult:
     now = utc_now()
     cutoff = now - timedelta(days=lookback_days)
-    files = sorted(TEMPMEM_DIR.glob("skill-autonomy-*.md"), key=lambda p: p.stat().st_mtime, reverse=True)
-    files = [p for p in files if "skill-autonomy-weekly-" not in p.name][:max_artifacts_scan]
+    files = sorted(
+        TEMPMEM_DIR.glob("skill-autonomy-*.md"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    files = [p for p in files if "skill-autonomy-weekly-" not in p.name][
+        :max_artifacts_scan
+    ]
     stack_map = parse_yaml_file(STACK_MAP_PATH, {"stacks": {}})
     stack_defs = stack_map.get("stacks", {}) if isinstance(stack_map, dict) else {}
     if not isinstance(stack_defs, dict):
@@ -299,8 +313,12 @@ def run_weekly_tick(
         fm, body = read_frontmatter_and_body(path)
         payload = read_kpi_body_yaml(body)
 
-        task_class = str(fm.get("task_class", payload.get("task_class", "unclassified")))
-        coverage = str(fm.get("coverage_status", payload.get("coverage_status", "none")))
+        task_class = str(
+            fm.get("task_class", payload.get("task_class", "unclassified"))
+        )
+        coverage = str(
+            fm.get("coverage_status", payload.get("coverage_status", "none"))
+        )
         missing = payload.get("missing_skills", []) or []
         missing_set = {str(x) for x in missing}
         recommended_stacks = payload.get("recommended_stacks", []) or []
@@ -339,7 +357,9 @@ def run_weekly_tick(
 
     missing_rate_by_class: dict[str, float] = {}
     for tclass, cnt in task_class_total.items():
-        missing_rate_by_class[tclass] = (task_class_missing[tclass] / cnt) if cnt else 0.0
+        missing_rate_by_class[tclass] = (
+            (task_class_missing[tclass] / cnt) if cnt else 0.0
+        )
 
     effectiveness_summary: dict[str, Any] = {}
     for skill, n in skill_events.items():
@@ -373,7 +393,11 @@ def run_weekly_tick(
         max_scan=max_artifacts_scan,
     )
     versions_registry = parse_yaml_file(VERSION_REGISTRY_PATH, {"skills": {}})
-    tracked_skills = versions_registry.get("skills", {}) if isinstance(versions_registry, dict) else {}
+    tracked_skills = (
+        versions_registry.get("skills", {})
+        if isinstance(versions_registry, dict)
+        else {}
+    )
     if not isinstance(tracked_skills, dict):
         tracked_skills = {}
     version_snapshot = {
@@ -381,7 +405,8 @@ def run_weekly_tick(
         "preferred_versions": {
             skill: str(entry.get("preferred_version", ""))
             for skill, entry in tracked_skills.items()
-            if isinstance(entry, dict) and str(entry.get("preferred_version", "")).strip()
+            if isinstance(entry, dict)
+            and str(entry.get("preferred_version", "")).strip()
         },
     }
 
@@ -406,16 +431,28 @@ def run_weekly_tick(
     }
 
     if total == 0:
-        report["recommended_actions"].append("No skill autonomy artifacts in lookback window; keep instrumentation enabled.")
+        report["recommended_actions"].append(
+            "No skill autonomy artifacts in lookback window; keep instrumentation enabled."
+        )
     else:
-        report["recommended_actions"].append("Prioritize hardening skills with highest rework/regression rates.")
-        report["recommended_actions"].append("Only add new skills when missing-skill patterns are repeated over time.")
+        report["recommended_actions"].append(
+            "Prioritize hardening skills with highest rework/regression rates."
+        )
+        report["recommended_actions"].append(
+            "Only add new skills when missing-skill patterns are repeated over time."
+        )
         if stack_coverage_summary:
-            report["recommended_actions"].append("Improve low-coverage skill stacks before adding new stack definitions.")
+            report["recommended_actions"].append(
+                "Improve low-coverage skill stacks before adding new stack definitions."
+            )
         if promotion_summary.get("counts", {}).get("PROMOTE", 0) > 0:
-            report["recommended_actions"].append("Monitor newly promoted skill versions for regression canaries.")
+            report["recommended_actions"].append(
+                "Monitor newly promoted skill versions for regression canaries."
+            )
         if rollback_summary.get("counts", {}).get("ROLLBACK", 0) > 0:
-            report["recommended_actions"].append("Open hardening cycles for rolled-back skill versions.")
+            report["recommended_actions"].append(
+                "Open hardening cycles for rolled-back skill versions."
+            )
 
     candidates: list[dict[str, Any]] = []
     candidate_id = 1
@@ -429,13 +466,17 @@ def run_weekly_tick(
             "trigger": "repeated_missing_skill_count",
             "count": count,
             "threshold": repeated_missing_skill_story_count,
-            "priority": "high" if count >= repeated_missing_skill_story_count * 2 else "medium",
+            "priority": (
+                "high" if count >= repeated_missing_skill_story_count * 2 else "medium"
+            ),
             "recommended_action": f"Create or import skill '{skill}' and add evaluation cases.",
         }
         candidates.append(candidate)
         candidate_id += 1
 
-    for task_class, rate in sorted(missing_rate_by_class.items(), key=lambda kv: kv[1], reverse=True):
+    for task_class, rate in sorted(
+        missing_rate_by_class.items(), key=lambda kv: kv[1], reverse=True
+    ):
         if rate < missing_skill_rate_escalation:
             continue
         candidate = {
@@ -460,7 +501,10 @@ def run_weekly_tick(
         return TickResult(ok=True, mode="weekly", details=report, warnings=[])
 
     TEMPMEM_DIR.mkdir(parents=True, exist_ok=True)
-    out = TEMPMEM_DIR / f"skill-autonomy-weekly-{week_id(now)}-{now.strftime('%Y%m%dT%H%M%SZ')}.md"
+    out = (
+        TEMPMEM_DIR
+        / f"skill-autonomy-weekly-{week_id(now)}-{now.strftime('%Y%m%dT%H%M%SZ')}.md"
+    )
     content = "---\n"
     content += yaml.safe_dump(
         {
@@ -481,7 +525,9 @@ def run_weekly_tick(
     backlog_path = None
     if backlog_enabled and candidates:
         backlog_output_dir.mkdir(parents=True, exist_ok=True)
-        backlog_path = backlog_output_dir / f"skills-autonomy-candidates-{week_id(now)}.md"
+        backlog_path = (
+            backlog_output_dir / f"skills-autonomy-candidates-{week_id(now)}.md"
+        )
         lines = [
             "# Skills Autonomy Backlog Candidates",
             "",
@@ -519,7 +565,9 @@ def run_weekly_tick(
                     "week_id": week_id(now),
                     **c,
                 }
-                client.rpush(backlog_redis_queue_key, json.dumps(payload, sort_keys=True))
+                client.rpush(
+                    backlog_redis_queue_key, json.dumps(payload, sort_keys=True)
+                )
             client.expire(backlog_redis_queue_key, 60 * 60 * 24 * 90)
             report["backlog_redis_queue_key"] = backlog_redis_queue_key
         else:
@@ -540,10 +588,14 @@ def should_sample(sample_rate: float, force: bool) -> bool:
 
 def parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description="Run skill autonomy tick")
-    ap.add_argument("--mode", choices=["start", "close", "weekly", "all"], default="all")
+    ap.add_argument(
+        "--mode", choices=["start", "close", "weekly", "all"], default="all"
+    )
     ap.add_argument("--story-id", default="")
     ap.add_argument("--task-class", default="unclassified")
-    ap.add_argument("--impact-estimate", choices=["none", "low", "medium", "high"], default="low")
+    ap.add_argument(
+        "--impact-estimate", choices=["none", "low", "medium", "high"], default="low"
+    )
     ap.add_argument("--quality-score", type=float, default=None)
     ap.add_argument("--cycle-time-minutes", type=int, default=None)
     ap.add_argument("--rework-flag", action="store_true")
@@ -551,7 +603,9 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--skill-name", default="")
     ap.add_argument("--skill-version", default="")
     ap.add_argument("--config", default=str(DEFAULT_CONFIG))
-    ap.add_argument("--force", action="store_true", help="ignore sampling and run eval tick")
+    ap.add_argument(
+        "--force", action="store_true", help="ignore sampling and run eval tick"
+    )
     ap.add_argument("--dry-run", action="store_true")
     return ap.parse_args()
 
@@ -573,10 +627,8 @@ def acquire_lock(lock_file: str):
     except BlockingIOError:
         yield False
     finally:
-        try:
+        with contextlib.suppress(Exception):
             fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
-        except Exception:
-            pass
         fh.close()
 
 
@@ -616,9 +668,13 @@ def main() -> int:
         cfg.get("thresholds", {}).get("repeated_missing_skill_story_count", 5)
     )
     backlog_enabled = bool(cfg.get("backlog", {}).get("enabled", True))
-    backlog_output_dir = PROJECT_ROOT / str(cfg.get("backlog", {}).get("output_dir", "docs/backlog"))
+    backlog_output_dir = PROJECT_ROOT / str(
+        cfg.get("backlog", {}).get("output_dir", "docs/backlog")
+    )
     backlog_redis_queue_key = str(
-        cfg.get("backlog", {}).get("redis_queue_key", "bmad:chiseai:skills:backlog:candidates")
+        cfg.get("backlog", {}).get(
+            "redis_queue_key", "bmad:chiseai:skills:backlog:candidates"
+        )
     )
 
     if not enabled:
@@ -696,7 +752,12 @@ def main() -> int:
             "elapsed_seconds": round(elapsed, 3),
             "max_runtime_seconds": max_runtime,
             "results": [
-                {"mode": r.mode, "ok": r.ok, "details": r.details, "warnings": r.warnings}
+                {
+                    "mode": r.mode,
+                    "ok": r.ok,
+                    "details": r.details,
+                    "warnings": r.warnings,
+                }
                 for r in results
             ],
             "warnings": warnings,

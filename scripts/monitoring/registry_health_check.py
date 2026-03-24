@@ -29,7 +29,7 @@ import os
 import sys
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from typing import Any, Optional
 
 # Add src to path for imports
@@ -37,12 +37,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from src.ml.model_registry.registry import (
     ModelRegistry,
 )
-from src.ml.monitoring.registry_metrics import (
-    MetricsCollector,
-    PrometheusMetricsCollector,
-    get_metrics_collector,
-    set_metrics_collector,
-)
+from src.ml.models.model_storage import FilesystemBackend
 from src.ml.monitoring.registry_alerts import (
     AlertManager,
     AlertRule,
@@ -50,8 +45,12 @@ from src.ml.monitoring.registry_alerts import (
     DefaultAlertManager,
     create_default_alert_rules,
 )
-
-from src.ml.models.model_storage import FilesystemBackend
+from src.ml.monitoring.registry_metrics import (
+    MetricsCollector,
+    PrometheusMetricsCollector,
+    get_metrics_collector,
+    set_metrics_collector,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -92,8 +91,8 @@ class HealthCheck:
 
     def __init__(
         self,
-        registry: Optional[ModelRegistry] = None,
-        storage_backend: Optional[FilesystemBackend] = None,
+        registry: ModelRegistry | None = None,
+        storage_backend: FilesystemBackend | None = None,
         max_latency_seconds: float = 1.0,
         max_storage_percent: float = 80.0,
         max_failed_ops: int = 5,
@@ -126,7 +125,7 @@ class HealthCheck:
     def _connectivity_check(self) -> dict[str, Any]:
         """Run connectivity check."""
         return {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "status": HealthStatus.DEGRADED.value,
             "message": "Registry not connected",
             "details": {},
@@ -145,7 +144,7 @@ class HealthCheck:
     def _storage_backend_check(self, error_msg: str) -> dict[str, Any]:
         """Run storage backend check with error."""
         return {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "status": HealthStatus.DEGRADED.value,
             "message": f"Storage backend error: {error_msg}",
             "details": {},
@@ -167,7 +166,7 @@ class HealthCheck:
     def run_check(self) -> dict[str, Any]:
         """Run all health checks and return results."""
         results: dict[str, Any] = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "status": HealthStatus.HEALTHY.value,
             "message": "All checks passed",
             "details": {},
@@ -215,8 +214,8 @@ class HealthCheck:
                 if isinstance(metrics_collector, PrometheusMetricsCollector):
                     metrics = metrics_collector.get_metrics()
                     storage_bytes = getattr(metrics, "storage_usage_bytes", 0)
-                    model_count = getattr(metrics, "models_count", 0)
-                    cache_hit_rate = self._calculate_cache_hit_rate(metrics)
+                    getattr(metrics, "models_count", 0)
+                    self._calculate_cache_hit_rate(metrics)
 
                     # Check storage percent
                     storage_capacity = 10 * 1024 * 1024 * 1024  # 10GB default
@@ -251,7 +250,7 @@ class HealthCheck:
             except Exception as e:
                 results["checks"]["storage_usage"] = {
                     "status": HealthStatus.UNAVAILABLE.value,
-                    "message": f"Storage backend not configured",
+                    "message": "Storage backend not configured",
                     "details": {"error": str(e)},
                 }
                 results["total_issues"] += 1
@@ -432,9 +431,7 @@ class HealthCheck:
 
         return results
 
-    def to_json(
-        self, results: dict[str, Any], output_file: Optional[str] = None
-    ) -> str:
+    def to_json(self, results: dict[str, Any], output_file: str | None = None) -> str:
         """Convert results to JSON."""
         json_str = json.dumps(results, indent=2) + "\n"
 
@@ -614,9 +611,10 @@ def main():
 
     # Exit with appropriate code
     if args.exit_on_error:
-        if results["status"] == HealthStatus.UNAVAILABLE:
-            sys.exit(1)
-        elif results["status"] == HealthStatus.DEGRADED:
+        if (
+            results["status"] == HealthStatus.UNAVAILABLE
+            or results["status"] == HealthStatus.DEGRADED
+        ):
             sys.exit(1)
         else:
             sys.exit(0)
