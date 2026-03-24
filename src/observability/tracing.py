@@ -91,7 +91,7 @@ def get_sampler():
         except ValueError:
             raise ValueError(
                 f"TEMPO_SAMPLE_RATE must be a valid float, got: {env_rate!r}"
-            )
+            ) from None
     else:
         sample_rate = sampling_rates.get(environment, 0.1)
 

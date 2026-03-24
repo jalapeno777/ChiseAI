@@ -26,6 +26,7 @@ Usage:
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import threading
@@ -488,13 +489,11 @@ class QdrantHealthMonitor:
             latency_ms = (time.time() - start_time) * 1000
 
             # Clean up test point
-            try:
+            with contextlib.suppress(Exception):
                 client.delete(
                     collection_name=self.collection,
                     points_selector=[point_id],
                 )
-            except Exception:
-                pass  # Ignore cleanup errors
 
             with self._lock:
                 self._metrics.record_write_latency(latency_ms)

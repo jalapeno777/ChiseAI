@@ -28,7 +28,6 @@ from src.governance.consolidation.config import (
     MemoryPriority,
     MemoryType,
     RetentionPolicy,
-    TempmemoryArchiveConfig,
 )
 from src.governance.consolidation.promoter import (
     GoldenMemoryPromoter,

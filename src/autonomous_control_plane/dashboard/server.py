@@ -25,7 +25,6 @@ logger = logging.getLogger(__name__)
 try:
     from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
     from fastapi.middleware.cors import CORSMiddleware
-    from fastapi.responses import JSONResponse
     from fastapi.staticfiles import StaticFiles
 
     HAS_FASTAPI = True

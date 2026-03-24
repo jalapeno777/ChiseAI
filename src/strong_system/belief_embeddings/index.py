@@ -670,7 +670,9 @@ class BeliefIndex:
 
         # Restore levels
         levels_data = data.get("levels", [])
-        index._levels = [HierarchicalLevel.from_dict(l) for l in levels_data]
+        index._levels = [
+            HierarchicalLevel.from_dict(level_data) for level_data in levels_data
+        ]
 
         # Restore metrics
         metrics_data = data.get("metrics")

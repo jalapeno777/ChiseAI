@@ -295,7 +295,7 @@ async def get_endpoint_budget(
 
 @router.post("/endpoint-patterns", response_model=dict[str, Any])
 async def register_endpoint_pattern(
-    request: EndpointPatternRequest = Body(...),
+    request: EndpointPatternRequest = Body(...),  # noqa: B008
 ) -> dict[str, Any]:
     """Register an endpoint pattern for budget tracking.
 
@@ -332,7 +332,7 @@ async def register_endpoint_pattern(
         raise HTTPException(
             status_code=400,
             detail=f"Invalid exhaustion strategy: {request.exhaustion_strategy}",
-        )
+        ) from None
     except Exception as e:
         logger.error(f"Failed to register endpoint pattern: {e}")
         raise HTTPException(
@@ -412,7 +412,7 @@ async def get_budget_pool(
 
 @router.post("/pools", response_model=dict[str, Any])
 async def create_budget_pool(
-    request: BudgetPoolRequest = Body(...),
+    request: BudgetPoolRequest = Body(...),  # noqa: B008
 ) -> dict[str, Any]:
     """Create a budget pool.
 

@@ -358,8 +358,8 @@ class ThroughputTracker:
                 for window, m in self.get_all_windows_metrics().items()
             },
             "latency": {
-                window: l.to_dict()
-                for window, l in self.get_all_windows_latencies().items()
+                window: lat.to_dict()
+                for window, lat in self.get_all_windows_latencies().items()
             },
         }
 
@@ -410,7 +410,7 @@ class ThroughputTracker:
             "timestamp": datetime.now(UTC).isoformat(),
             "total_signals_recorded": len(self._signals),
             "throughput": {window: m.to_dict() for window, m in throughput.items()},
-            "latency": {window: l.to_dict() for window, l in latency.items()},
+            "latency": {window: lat.to_dict() for window, lat in latency.items()},
         }
 
     def clear(self) -> None:

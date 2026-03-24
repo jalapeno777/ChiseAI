@@ -108,9 +108,9 @@ class TrainingRunMetrics:
             "training_mode": self.training_mode.value,
             "status": self.status.value,
             "started_at": self.started_at.isoformat(),
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
             "duration_seconds": self.duration_seconds,
             "data_quality_score": self.data_quality_score,
             "sample_count": self.sample_count,
@@ -615,7 +615,7 @@ class TrainingMetricsCollector:
             else:
                 by_mode[mode]["failed"] += 1
 
-        for mode, stats in by_mode.items():
+        for _mode, stats in by_mode.items():
             stats["success_rate"] = (
                 stats["successful"] / stats["total"] * 100
                 if stats["total"] > 0

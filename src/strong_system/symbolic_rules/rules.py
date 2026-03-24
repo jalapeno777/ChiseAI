@@ -25,8 +25,8 @@ from src.strong_system.symbolic_rules.types import (
 )
 
 # Type aliases for predicate and action
-type Predicate = Any
-type Action = Any
+Predicate = Any  # type: ignore[assignment]
+Action = Any  # type: ignore[assignment]
 
 
 class SymbolicRule:
@@ -127,7 +127,9 @@ class SymbolicRule:
             RuleEvaluation containing activation probability and confidence
         """
         # Evaluate predicate
-        if isinstance(self.predicate, DifferentiablePredicate) or hasattr(self.predicate, "evaluate"):
+        if isinstance(self.predicate, DifferentiablePredicate) or hasattr(
+            self.predicate, "evaluate"
+        ):
             predicate_value = self.predicate.evaluate(inputs)
         else:
             # Assume it's a callable
@@ -172,7 +174,9 @@ class SymbolicRule:
         }
 
         # Evaluate predicate
-        if isinstance(self.predicate, DifferentiablePredicate) or hasattr(self.predicate, "evaluate"):
+        if isinstance(self.predicate, DifferentiablePredicate) or hasattr(
+            self.predicate, "evaluate"
+        ):
             predicate_value = self.predicate.evaluate(input_values)
         else:
             predicate_value = self.predicate(input_values)

@@ -179,7 +179,7 @@ class NullValidator(DataValidator):
 
         fields_to_check = self.fields if self.fields else data.keys()
 
-        for field in fields_to_check:
+        for _field in fields_to_check:
             if field not in data:
                 issues.append(
                     self._create_issue(
@@ -229,7 +229,7 @@ class TypeValidator(DataValidator):
     ) -> ValidationResult:
         issues = []
 
-        for field, expected_type in self.type_map.items():
+        for _field_name, expected_type in self.type_map.items():
             if field not in data:
                 continue
 
@@ -273,7 +273,7 @@ class RangeValidator(DataValidator):
     ) -> ValidationResult:
         issues = []
 
-        for field, range_spec in self.ranges.items():
+        for _field_name, range_spec in self.ranges.items():
             if field not in data or data[field] is None:
                 continue
 
@@ -361,7 +361,7 @@ class PatternValidator(DataValidator):
     ) -> ValidationResult:
         issues = []
 
-        for field, pattern in self.patterns.items():
+        for _field_name, pattern in self.patterns.items():
             if field not in data or data[field] is None:
                 continue
 
@@ -400,7 +400,7 @@ class LengthValidator(DataValidator):
     ) -> ValidationResult:
         issues = []
 
-        for field, specs in self.length_specs.items():
+        for _field_name, specs in self.length_specs.items():
             if field not in data or data[field] is None:
                 continue
 
@@ -479,7 +479,7 @@ class UniquenessValidator(DataValidator):
 
             # Create key from specified fields
             key_parts = []
-            for field in self.fields:
+            for _field in self.fields:
                 value = record.get(field)
                 if value is None:
                     key_parts.append(None)
@@ -553,8 +553,8 @@ class DateTimeValidator(DataValidator):
         issues = []
         now = datetime.now()
 
-        for field in self.fields:
-            if field not in data or data[field] is None:
+        for _field in self.fields:
+            if _field not in data or data[_field] is None:
                 continue
 
             value = data[field]
@@ -655,7 +655,7 @@ class EnumValidator(DataValidator):
     ) -> ValidationResult:
         issues = []
 
-        for field, allowed in self.allowed_values.items():
+        for _field_name, allowed in self.allowed_values.items():
             if field not in data or data[field] is None:
                 continue
 
@@ -724,13 +724,13 @@ class SchemaValidator(DataValidator):
             )
 
         # Check required fields
-        for field in self.required_fields:
-            if field not in data:
+        for _field in self.required_fields:
+            if _field not in data:
                 issues.append(
                     self._create_issue(
-                        f"Required field '{field}' is missing",
+                        f"Required field '{_field}' is missing",
                         ValidationSeverity.ERROR,
-                        field=field,
+                        field=_field,
                     )
                 )
 
@@ -965,139 +965,13 @@ class JSONValidator(DataValidator):
     def validate(
         self, data: dict[str, Any], context: dict[str, Any] | None = None
     ) -> ValidationResult:
-        import json
-
         issues = []
 
-        for field in self.fields:
-            if field not in data or data[field] is None:
+        for _field in self.fields:
+            if _field not in data or data[_field] is None:
                 continue
 
-            value = data[field]
-
-            # If already a dict/list, it's valid JSON
-            if isinstance(value, (dict, list)):
-                continue
-
-            # Try to parse as JSON string
-            if isinstance(value, str):
-                try:
-                    json.loads(value)
-                    # Could add schema validation here
-                except json.JSONDecodeError as e:
-                    issues.append(
-                        self._create_issue(
-                            f"Field '{field}' contains invalid JSON",
-                            ValidationSeverity.ERROR,
-                            field=field,
-                            value=value[:100] + "..."
-                            if len(str(value)) > 100
-                            else value,
-                            expected="Valid JSON",
-                            suggestion=f"JSON parse error: {str(e)}",
-                        )
-                    )
-            else:
-                issues.append(
-                    self._create_issue(
-                        f"Field '{field}' is not JSON-serializable",
-                        ValidationSeverity.ERROR,
-                        field=field,
-                        value=type(value).__name__,
-                        expected="JSON string or object",
-                    )
-                )
-
-        status = ValidationStatus.FAILED if issues else ValidationStatus.PASSED
-        return self._create_result(status, issues)
-
-
-# =============================================================================
-# VALIDATOR 13: EmailValidator
-# =============================================================================
-
-
-class EmailValidator(DataValidator):
-    """Validates email addresses."""
-
-    EMAIL_PATTERN = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
-
-    def __init__(self, fields: list[str], allow_multiple: bool = False):
-        super().__init__(
-            "EmailValidator", {"fields": fields, "allow_multiple": allow_multiple}
-        )
-        self.fields = fields
-        self.allow_multiple = allow_multiple
-
-    def validate(
-        self, data: dict[str, Any], context: dict[str, Any] | None = None
-    ) -> ValidationResult:
-        issues = []
-
-        for field in self.fields:
-            if field not in data or data[field] is None:
-                continue
-
-            value = data[field]
-            emails = (
-                value.split(",")
-                if self.allow_multiple and isinstance(value, str)
-                else [value]
-            )
-
-            for email in emails:
-                email = str(email).strip()
-                if not self.EMAIL_PATTERN.match(email):
-                    issues.append(
-                        self._create_issue(
-                            f"Field '{field}' contains invalid email address",
-                            ValidationSeverity.ERROR,
-                            field=field,
-                            value=email,
-                            expected="Valid email format",
-                            suggestion="Email should be in format: user@domain.com",
-                        )
-                    )
-
-        status = ValidationStatus.FAILED if issues else ValidationStatus.PASSED
-        return self._create_result(status, issues)
-
-
-# =============================================================================
-# VALIDATOR 14: URLValidator
-# =============================================================================
-
-
-class URLValidator(DataValidator):
-    """Validates URL format."""
-
-    URL_PATTERN = re.compile(
-        r"^https?://"  # http:// or https://
-        r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|"  # domain
-        r"localhost|"  # localhost
-        r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"  # or IP
-        r"(?::\d+)?"  # optional port
-        r"(?:/?|[/?]\S+)$",
-        re.IGNORECASE,
-    )
-
-    def __init__(self, fields: list[str], allowed_schemes: list[str] | None = None):
-        super().__init__(
-            "URLValidator", {"fields": fields, "allowed_schemes": allowed_schemes}
-        )
-        self.fields = fields
-        self.allowed_schemes = allowed_schemes or ["http", "https"]
-
-    def validate(
-        self, data: dict[str, Any], context: dict[str, Any] | None = None
-    ) -> ValidationResult:
-        issues = []
-
-        for field in self.fields:
-            if field not in data or data[field] is None:
-                continue
-
-            value = str(data[field])
+            value = str(data[_field])
 
             if not self.URL_PATTERN.match(value):
                 issues.append(
@@ -1307,11 +1181,11 @@ class FilePathValidator(DataValidator):
 
         issues = []
 
-        for field in self.fields:
-            if field not in data or data[field] is None:
+        for _field in self.fields:
+            if _field not in data or data[_field] is None:
                 continue
 
-            value = str(data[field])
+            value = str(data[_field])
 
             # Check length
             if len(value) > self.max_length:
@@ -1384,7 +1258,7 @@ class PhoneValidator(DataValidator):
         # Simple phone number pattern (digits, spaces, dashes, parentheses, +)
         phone_pattern = re.compile(r"^[\d\s\-\(\)\+]+$")
 
-        for field in self.fields:
+        for _field in self.fields:
             if field not in data or data[field] is None:
                 continue
 
@@ -1540,7 +1414,7 @@ class UUIDValidator(DataValidator):
     ) -> ValidationResult:
         issues = []
 
-        for field in self.fields:
+        for _field in self.fields:
             if field not in data or data[field] is None:
                 continue
 
@@ -1634,7 +1508,7 @@ class IPAddressValidator(DataValidator):
     ) -> ValidationResult:
         issues = []
 
-        for field in self.fields:
+        for _field in self.fields:
             if field not in data or data[field] is None:
                 continue
 
@@ -1712,7 +1586,7 @@ class PercentageValidator(DataValidator):
     ) -> ValidationResult:
         issues = []
 
-        for field in self.fields:
+        for _field in self.fields:
             if field not in data or data[field] is None:
                 continue
 

@@ -318,7 +318,12 @@ class PrometheusMetricsCollector(MetricsCollector):
         # Try to import prometheus_client
         self._prometheus_available = False
         try:
-            from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram
+            from prometheus_client import (  # noqa: F401
+                CollectorRegistry,
+                Counter,
+                Gauge,
+                Histogram,
+            )
 
             self._prometheus_available = True
             self._setup_prometheus_metrics()
@@ -407,9 +412,7 @@ class PrometheusMetricsCollector(MetricsCollector):
 
     def record_model_registered(self, model_name: str, version: str) -> None:
         """Record model registration."""
-        self._metrics.models_registered_total[
-            datetime.now(UTC).date().isoformat()
-        ] += 1
+        self._metrics.models_registered_total[datetime.now(UTC).date().isoformat()] += 1
 
         if self._prometheus_available:
             self._models_registered.labels(model_name=model_name).inc()

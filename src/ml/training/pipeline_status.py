@@ -10,6 +10,7 @@ For ST-LAUNCH-012: Training Pipeline Integration
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 from datetime import UTC, datetime
@@ -161,10 +162,8 @@ def get_pipeline_status(pipeline_id: str) -> dict[str, Any] | None:
         # Parse metadata if present
         result = dict(data)
         if "metadata" in result:
-            try:
+            with contextlib.suppress(json.JSONDecodeError):
                 result["metadata"] = json.loads(result["metadata"])
-            except json.JSONDecodeError:
-                pass  # Keep as string if not valid JSON
 
         return result
     except Exception as e:

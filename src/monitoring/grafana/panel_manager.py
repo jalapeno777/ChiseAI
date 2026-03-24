@@ -182,9 +182,9 @@ class GrafanaPanelManager:
         result = PanelValidationResult(panel_id=panel_id, is_valid=True)
 
         # Check required fields
-        for field, field_type in self.REQUIRED_FIELDS.items():
-            if field not in panel_config:
-                result.add_error(f"Missing required field: {field}")
+        for _field, field_type in self.REQUIRED_FIELDS.items():
+            if _field not in panel_config:
+                result.add_error(f"Missing required field: {_field}")
             elif not isinstance(panel_config[field], field_type):
                 result.add_error(
                     f"Field '{field}' must be of type {field_type.__name__}"

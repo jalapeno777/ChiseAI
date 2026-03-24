@@ -7,7 +7,6 @@ TEMPO-2026-001: Distributed tracing with Grafana Tempo
 from .exporters import (
     get_console_exporter,
     get_exporter_for_environment,
-    get_tempo_exporter,
 )
 from .tracing import (
     get_sampler,
