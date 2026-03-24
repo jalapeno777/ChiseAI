@@ -11,17 +11,15 @@ For PAPER-FORENSIC-001: NO-GO Fix - Batch 4
 """
 
 import json
-from datetime import UTC, datetime
 from decimal import Decimal
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock
 from uuid import uuid4
 
 import pytest
-
 from src.execution.outcome_capture.integration import OutcomeCaptureIntegration
 from src.execution.paper.orchestrator import PaperTradingOrchestrator
 from src.execution.persistence.outcome_persistence import OutcomePersistence
-from src.ml.models.signal_outcome import SignalOutcome, SignalOutcomeStatus
+from src.ml.models.signal_outcome import SignalOutcome
 
 
 class TestProvenanceFieldsPopulation:

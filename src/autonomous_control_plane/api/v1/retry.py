@@ -28,14 +28,13 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Path, Query, Body
+from fastapi import APIRouter, Body, HTTPException, Path, Query
 from pydantic import BaseModel, Field
 
 from autonomous_control_plane.components.retry_budget_manager import RetryBudgetManager
 from autonomous_control_plane.components.retry_coordinator import RetryCoordinator
 from autonomous_control_plane.models.retry_policy import (
     BudgetExhaustionStrategy,
-    BudgetBurstConfig,
 )
 
 logger = logging.getLogger(__name__)

@@ -566,7 +566,6 @@ class TestPromotionGateEdgeCasesSmoke:
 
     def test_load_packet_invalid_json(self) -> None:
         """Test loading packet with invalid JSON."""
-        import json
 
         with tempfile.TemporaryDirectory() as tmpdir:
             gate = PromotionGate(tmpdir)

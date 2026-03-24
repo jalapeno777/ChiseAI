@@ -16,7 +16,7 @@ import numpy as np
 
 from .cache import BeliefCache
 from .search import BeliefSearchIndex, SearchResult
-from .vector import BeliefVector, ValidationError
+from .vector import BeliefVector
 
 
 class PipelineStage(Enum):

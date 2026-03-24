@@ -9,7 +9,7 @@ import json
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -18,12 +18,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts" / "monito
 
 from paper_e2e_health_probe import (
     DISCORD_CONTINUITY_PREFIX,
-    HealthCheckResult,
-    ORDER_INDEX_KEY,
-    ORDER_LOOKBACK_MINUTES,
     PAPER_MODE_KEY,
-    SIGNAL_INDEX_KEY,
     SIGNAL_LOOKBACK_MINUTES,
+    HealthCheckResult,
     PaperE2EHealthProbe,
 )
 

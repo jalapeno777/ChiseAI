@@ -14,7 +14,6 @@ from opentelemetry import trace
 from src.state.tracing import (
     get_operation_category,
     sanitize_key_pattern,
-    trace_redis_operation,
 )
 
 
@@ -229,25 +228,25 @@ class InstrumentedPipeline:
         self._pipeline = pipeline
         self._commands: list[dict] = []
 
-    def get(self, key: str) -> "InstrumentedPipeline":
+    def get(self, key: str) -> InstrumentedPipeline:
         """Add GET command to pipeline."""
         self._pipeline.get(key)
         self._commands.append({"op": "GET", "key": key})
         return self
 
-    def set(self, key: str, value: str | bytes, **kwargs) -> "InstrumentedPipeline":
+    def set(self, key: str, value: str | bytes, **kwargs) -> InstrumentedPipeline:
         """Add SET command to pipeline."""
         self._pipeline.set(key, value, **kwargs)
         self._commands.append({"op": "SET", "key": key})
         return self
 
-    def delete(self, *keys: str) -> "InstrumentedPipeline":
+    def delete(self, *keys: str) -> InstrumentedPipeline:
         """Add DELETE command to pipeline."""
         self._pipeline.delete(*keys)
         self._commands.append({"op": "DELETE", "key": keys[0] if keys else ""})
         return self
 
-    def hget(self, name: str, key: str) -> "InstrumentedPipeline":
+    def hget(self, name: str, key: str) -> InstrumentedPipeline:
         """Add HGET command to pipeline."""
         self._pipeline.hget(name, key)
         self._commands.append({"op": "HGET", "key": f"{name}:{key}"})
@@ -259,7 +258,7 @@ class InstrumentedPipeline:
         key: str | None = None,
         value: str | bytes | None = None,
         mapping: dict | None = None,
-    ) -> "InstrumentedPipeline":
+    ) -> InstrumentedPipeline:
         """Add HSET command to pipeline."""
         self._pipeline.hset(name, key, value, mapping=mapping)
         self._commands.append({"op": "HSET", "key": name})

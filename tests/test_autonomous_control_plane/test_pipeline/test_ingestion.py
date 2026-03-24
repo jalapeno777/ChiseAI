@@ -5,8 +5,6 @@ ST-CONTROL-001: Telemetry Pipeline
 
 import time
 
-import pytest
-
 from autonomous_control_plane.config.pipeline_settings import (
     BufferConfig,
     IngestionSourceConfig,
@@ -15,7 +13,6 @@ from autonomous_control_plane.config.pipeline_settings import (
 )
 from autonomous_control_plane.pipeline.ingestion import (
     CircularBuffer,
-    IngestionResult,
     IngestionSource,
     IngestionStatus,
     TelemetryEvent,

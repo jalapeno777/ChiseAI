@@ -2,9 +2,9 @@
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class TransferStatus(Enum):
@@ -37,14 +37,14 @@ class TransferEvent:
     knowledge_type: str = ""
     knowledge_item_id: str = ""
     operation: str = "transfer"  # transfer, update, delete
-    payload: Dict[str, Any] = field(default_factory=dict)
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    payload: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     status: TransferStatus = TransferStatus.PENDING
     priority: TransferPriority = TransferPriority.MEDIUM
     retry_count: int = 0
-    validation_result: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
+    validation_result: dict[str, Any] | None = None
+    error: str | None = None
 
     def mark_in_progress(self) -> None:
         """Mark transfer as in progress."""
@@ -71,7 +71,7 @@ class ValidationResult:
     is_valid: bool = False
     errors: list = field(default_factory=list)
     warnings: list = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def add_error(self, error: str) -> None:
         """Add validation error."""
@@ -97,7 +97,7 @@ class KnowledgeTransferProtocol:
     def __init__(self, max_retries: int = 3, enable_validation: bool = True):
         self.max_retries = max_retries
         self.enable_validation = enable_validation
-        self._transfer_history: Dict[str, TransferEvent] = {}
+        self._transfer_history: dict[str, TransferEvent] = {}
 
     def create_transfer_event(
         self,
@@ -105,10 +105,10 @@ class KnowledgeTransferProtocol:
         target_system: str,
         knowledge_type: str,
         knowledge_item_id: str,
-        payload: Dict[str, Any],
+        payload: dict[str, Any],
         operation: str = "transfer",
         priority: TransferPriority = TransferPriority.MEDIUM,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> TransferEvent:
         """Create a new transfer event."""
         event = TransferEvent(
@@ -223,7 +223,7 @@ class KnowledgeTransferProtocol:
         """Record a retry attempt."""
         event.retry_count += 1
 
-    def get_transfer_history(self, transfer_id: str) -> Optional[TransferEvent]:
+    def get_transfer_history(self, transfer_id: str) -> TransferEvent | None:
         """Get transfer event from history."""
         return self._transfer_history.get(transfer_id)
 

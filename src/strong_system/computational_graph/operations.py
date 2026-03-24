@@ -9,6 +9,7 @@ Note: Backward pass (auto-differentiation) will be implemented in Slice 2.
 from __future__ import annotations
 
 import numpy as np
+
 from src.strong_system.computational_graph.node import Node, Operation
 
 

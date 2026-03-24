@@ -10,18 +10,18 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from autonomous_control_plane.components.rollback_coordinator import (
-    RollbackCoordinator,
-)
 from autonomous_control_plane.components.rollback_automation import (
     RollbackAutomationCoordinator,
 )
+from autonomous_control_plane.components.rollback_coordinator import (
+    RollbackCoordinator,
+)
 from autonomous_control_plane.models.rollback import (
+    CoordinatedRollbackConfig,
     RollbackStatus,
     RollbackTemplateType,
     RollbackTrigger,
     RollbackTriggerType,
-    CoordinatedRollbackConfig,
 )
 
 router = APIRouter(prefix="/rollback", tags=["rollback"])

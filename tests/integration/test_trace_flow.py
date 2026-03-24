@@ -15,15 +15,9 @@ Task: 4.6 - Distributed Trace Flow Verification
 from __future__ import annotations
 
 import asyncio
-import json
-import os
 import sys
-import uuid
 from concurrent.futures import ThreadPoolExecutor
-from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
-from unittest.mock import Mock, patch
 
 import pytest
 
@@ -35,12 +29,11 @@ sys.path.insert(0, str(project_root / "src"))
 @pytest.fixture
 def tracer_provider():
     """Create a fresh tracer provider for each test."""
-    from opentelemetry import trace
     from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import SimpleSpanProcessor
     from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
         InMemorySpanExporter,
     )
-    from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
     provider = TracerProvider()
     exporter = InMemorySpanExporter()
@@ -228,10 +221,10 @@ class TestSpanParentChildRelationships:
     def test_multiple_children(self, set_provider):
         """Test multiple children of the same parent."""
         from opentelemetry import trace
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
         from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
             InMemorySpanExporter,
         )
-        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
         # Add exporter to capture spans
         exporter = InMemorySpanExporter()
@@ -456,10 +449,10 @@ class TestTraceAttributes:
     def test_service_attributes(self, set_provider):
         """Test that services set correct attributes."""
         from opentelemetry import trace
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
         from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
             InMemorySpanExporter,
         )
-        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
         exporter = InMemorySpanExporter()
         set_provider.add_span_processor(SimpleSpanProcessor(exporter))
@@ -487,10 +480,10 @@ class TestTraceAttributes:
     def test_error_attributes(self, set_provider):
         """Test error attributes on failed spans."""
         from opentelemetry import trace
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
         from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
             InMemorySpanExporter,
         )
-        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
         from opentelemetry.trace.status import StatusCode
 
         exporter = InMemorySpanExporter()
@@ -520,10 +513,10 @@ class TestTraceSampling:
     def test_all_spans_sampled_in_dev(self, set_provider):
         """Test that all spans are sampled in development mode."""
         from opentelemetry import trace
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
         from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
             InMemorySpanExporter,
         )
-        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
         exporter = InMemorySpanExporter()
         set_provider.add_span_processor(SimpleSpanProcessor(exporter))

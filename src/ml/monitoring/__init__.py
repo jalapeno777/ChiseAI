@@ -1,12 +1,20 @@
 """Monitoring infrastructure for ML model registry and training."""
 
-from ml.monitoring.registry_metrics import (
-    MetricsCollector,
-    NullMetricsCollector,
-    PrometheusMetricsCollector,
-    RegistryMetrics,
-    get_metrics_collector,
-    set_metrics_collector,
+from ml.monitoring.alerter import (
+    Alert as TrainingAlert,
+)
+from ml.monitoring.alerter import (
+    AlertRule as TrainingAlertRule,
+)
+from ml.monitoring.alerter import (
+    AlertSeverity as TrainingAlertSeverity,
+)
+from ml.monitoring.alerter import (
+    AlertType,
+    DiscordNotificationChannel,
+    LoggingNotificationChannel,
+    NotificationChannel,
+    TrainingAlerter,
 )
 from ml.monitoring.registry_alerts import (
     Alert,
@@ -15,31 +23,29 @@ from ml.monitoring.registry_alerts import (
     AlertSeverity,
     NullAlertManager,
 )
-from ml.monitoring.training_metrics import (
-    TrainingMetricsCollector,
-    TrainingMode,
-    TrainingRunMetrics,
-    TrainingStatus,
-    TrainingSummary,
+from ml.monitoring.registry_metrics import (
+    MetricsCollector,
+    NullMetricsCollector,
+    PrometheusMetricsCollector,
+    RegistryMetrics,
+    get_metrics_collector,
+    set_metrics_collector,
 )
 from ml.monitoring.registry_monitor import (
     DegradationEvent,
     ModelRegistryMonitor,
     ModelVersionInfo,
     ShadowModeRecord,
+    ShadowModeResult,
     ValidationGateRecord,
     ValidationGateStatus,
-    ShadowModeResult,
 )
-from ml.monitoring.alerter import (
-    TrainingAlerter,
-    Alert as TrainingAlert,
-    AlertRule as TrainingAlertRule,
-    AlertSeverity as TrainingAlertSeverity,
-    AlertType,
-    NotificationChannel,
-    LoggingNotificationChannel,
-    DiscordNotificationChannel,
+from ml.monitoring.training_metrics import (
+    TrainingMetricsCollector,
+    TrainingMode,
+    TrainingRunMetrics,
+    TrainingStatus,
+    TrainingSummary,
 )
 
 __all__ = [

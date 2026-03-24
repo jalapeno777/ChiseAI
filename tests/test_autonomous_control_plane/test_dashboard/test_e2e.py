@@ -6,14 +6,13 @@ For ST-CONTROL-003: Control Plane Dashboard
 from __future__ import annotations
 
 import pytest
-import asyncio
 
 from autonomous_control_plane.dashboard.api import DashboardAPI
 from autonomous_control_plane.dashboard.models import (
     CircuitBreakerPanelData,
     IncidentPanelData,
-    SelfHealingPanelData,
     RollbackPanelData,
+    SelfHealingPanelData,
     SystemHealthPanelData,
 )
 

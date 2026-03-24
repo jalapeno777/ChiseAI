@@ -10,13 +10,12 @@ Comprehensive tests covering:
 - CLI integration
 """
 
+import importlib.util
 import json
 from pathlib import Path
 
 import pytest
 import yaml
-
-import importlib.util
 
 # Load the module directly to avoid broken __init__.py imports
 _module_path = (

@@ -3,13 +3,11 @@
 Story: PAPER-GOVERNANCE-001
 """
 
-import json
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
 import redis
-
 from src.governance.checkpoint.gates import GateChecker, GateResult, GateSummary
 from src.governance.checkpoint.state import (
     CheckpointRecord,

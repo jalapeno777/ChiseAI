@@ -6,12 +6,8 @@ Story: PAPER-GOVERNANCE-001
 """
 
 import socket
-import ssl
 from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock, patch
-
-import pytest
-import redis
 
 from src.governance.checkpoint.gates import GateChecker, GateResult, GateSummary
 
@@ -723,7 +719,7 @@ class TestG10ChainIntegrity:
 
     def test_g10_signals_no_downstream(self, mock_redis_client):
         """Test G10 when signals exist but no downstream activity."""
-        from datetime import UTC, datetime, timedelta
+        from datetime import UTC, datetime
 
         now = datetime.now(UTC)
         recent_ts = now.isoformat()

@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from typing import Any, Self
 
 import numpy as np
+
 from src.strong_system.belief_embeddings import (
     BeliefMetadata,
     BeliefVector,

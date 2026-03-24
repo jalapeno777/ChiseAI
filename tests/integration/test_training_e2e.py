@@ -24,8 +24,8 @@ from __future__ import annotations
 
 import asyncio
 import sys
-from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -52,7 +52,6 @@ from ml.training.training_orchestrator import (
 )
 from ml.training.training_pipeline import (
     TrainingConfig,
-    TrainingDataLoader,
     TrainingMode,
     TrainingPipeline,
 )
@@ -63,7 +62,6 @@ from ml.validation.model_validator import (
     ValidationGate,
     ValidationThresholds,
 )
-
 
 # =============================================================================
 # Fixtures
@@ -655,7 +653,7 @@ class TestErrorHandling:
         # Create slow pipeline runner
         slow_runner = MagicMock()
         slow_runner.run_training = AsyncMock(
-            side_effect=asyncio.TimeoutError("Training timeout")
+            side_effect=TimeoutError("Training timeout")
         )
 
         # Create orchestrator

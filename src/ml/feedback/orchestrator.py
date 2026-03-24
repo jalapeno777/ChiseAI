@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from ml.feedback.matcher import PredictionOutcomeMatch
 
 try:
-    from redis_state import redis_state_hset, redis_state_hget
+    from redis_state import redis_state_hget, redis_state_hset
 except ImportError:
     redis_state_hset = None
     redis_state_hget = None

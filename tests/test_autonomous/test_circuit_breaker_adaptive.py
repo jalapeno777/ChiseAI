@@ -5,10 +5,6 @@ ST-SAFETY-001: Adaptive Threshold Enhancement
 
 from __future__ import annotations
 
-import time
-
-import pytest
-
 from autonomous_control_plane.models.circuit_breaker import (
     AdaptiveThresholdConfig,
     AdaptiveThresholdMetrics,

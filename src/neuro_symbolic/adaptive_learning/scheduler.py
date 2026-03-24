@@ -11,6 +11,7 @@ from enum import Enum
 from typing import Any
 
 import numpy as np
+
 from src.neuro_symbolic.learning.base import (
     AdaptationResult,
     LearningConfig,

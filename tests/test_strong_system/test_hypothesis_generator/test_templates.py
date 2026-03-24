@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from src.strong_system.belief_embeddings import BeliefVector
 from src.strong_system.hypothesis_generator.templates import (
     PromptTemplate,

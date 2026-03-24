@@ -735,10 +735,7 @@ class Constitution:
         for cat in ["autonomous", "conditional", "restricted"]:
             boundary = self.check_decision_boundary(cat, action)
             if boundary:
-                if cat == "restricted":
-                    result["requires_approval"] = True
-                    result["approval_level"] = boundary.approval_required
-                elif cat == "conditional":
+                if cat == "restricted" or cat == "conditional":
                     result["requires_approval"] = True
                     result["approval_level"] = boundary.approval_required
                 break

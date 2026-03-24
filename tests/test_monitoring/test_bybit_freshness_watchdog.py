@@ -6,7 +6,6 @@ Ensures proper exit codes, threshold handling, and error conditions.
 
 from __future__ import annotations
 
-import sys
 from datetime import UTC, datetime, timedelta
 from unittest.mock import Mock, patch
 
@@ -20,7 +19,6 @@ class TestWatchdogFreshData:
         """When data is fresh (<45m), exit code 0."""
         from scripts.validation.bybit_freshness_check import (
             BybitFreshnessChecker,
-            FreshnessCheckResult,
         )
 
         # Create timestamp 30 minutes ago (fresh)
@@ -236,7 +234,6 @@ class TestWatchdogRecoveryLock:
 
     def test_watchdog_recovery_lock_prevents_duplicate(self):
         """Redis lock prevents concurrent recovery attempts."""
-        import redis as redis_lib
 
         from scripts.validation.bybit_freshness_check import BybitFreshnessChecker
 
@@ -457,7 +454,6 @@ class TestWatchdogExitCodes:
     def test_exit_code_logic_fresh(self):
         """Exit code should be 0 when check result is fresh."""
         from scripts.validation.bybit_freshness_check import (
-            BybitFreshnessChecker,
             FreshnessCheckResult,
             FreshnessReason,
         )

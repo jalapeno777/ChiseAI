@@ -11,15 +11,13 @@ Story: ST-VALIDATION-001
 
 from __future__ import annotations
 
-import asyncio
 import json
 import os
 import sys
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -78,7 +76,6 @@ class TestEndToEndDataFlow:
 
     def test_redis_to_telemetry_to_influxdb_flow(self, pipeline, mock_redis):
         """Test Redis → Telemetry Pipeline → InfluxDB data flow."""
-        from autonomous_control_plane.pipeline.orchestrator import PipelineState
 
         pipeline.start()
         time.sleep(0.1)
@@ -107,7 +104,6 @@ class TestEndToEndDataFlow:
             AutomationController,
         )
         from autonomous_control_plane.models.healing import FailurePatternType
-        from autonomous_control_plane.pipeline.orchestrator import PipelineState
 
         pipeline.start()
         controller = AutomationController(
@@ -144,7 +140,6 @@ class TestEndToEndDataFlow:
     def test_dashboard_queries_historical_data(self, pipeline, mock_redis):
         """Test Dashboard queries → Historical data."""
         from autonomous_control_plane.dashboard.api import DashboardAPI
-        from autonomous_control_plane.pipeline.orchestrator import PipelineState
 
         pipeline.start()
         time.sleep(0.1)
@@ -171,7 +166,6 @@ class TestEndToEndDataFlow:
 
     def test_alert_propagation_path(self, pipeline, mock_redis):
         """Test alert propagation path through the system."""
-        from autonomous_control_plane.pipeline.orchestrator import PipelineState
 
         pipeline.start()
         time.sleep(0.1)
@@ -968,7 +962,6 @@ class TestFullSystemIntegration:
 
     def test_error_handling_graceful_degradation(self, integrated_system):
         """Test graceful degradation under errors."""
-        from autonomous_control_plane.pipeline.orchestrator import PipelineState
 
         pipeline = integrated_system["pipeline"]
         dashboard = integrated_system["dashboard"]

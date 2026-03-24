@@ -19,11 +19,11 @@ from autonomous_control_plane.components.incident_manager import IncidentManager
 from autonomous_control_plane.components.log_monitor import LogMonitor
 from autonomous_control_plane.components.retry_budget_manager import RetryBudgetManager
 from autonomous_control_plane.components.retry_coordinator import RetryCoordinator
-from autonomous_control_plane.components.rollback_coordinator import (
-    RollbackCoordinator,
-)
 from autonomous_control_plane.components.rollback_automation import (
     RollbackAutomationCoordinator,
+)
+from autonomous_control_plane.components.rollback_coordinator import (
+    RollbackCoordinator,
 )
 from autonomous_control_plane.components.self_healing_engine import (
     SelfHealingEngine,
@@ -470,8 +470,8 @@ async def initialize_coordinators() -> dict[str, Any]:
     from autonomous_control_plane.api.v1.circuit_breakers import set_registry
     from autonomous_control_plane.api.v1.retry import set_budget_manager
     from autonomous_control_plane.api.v1.rollback import (
-        set_coordinator,
         set_automation_coordinator,
+        set_coordinator,
     )
 
     # Create coordinator instances

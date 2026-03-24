@@ -17,7 +17,6 @@ import pandas as pd
 
 from market_analysis.indicators.base import BaseIndicator, Signal, SignalDirection
 
-
 # ---------------------------------------------------------------------------
 # Default token universe
 # ---------------------------------------------------------------------------

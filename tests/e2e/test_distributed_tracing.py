@@ -15,15 +15,12 @@ Task: 4.6 - Distributed Trace Flow Verification
 from __future__ import annotations
 
 import asyncio
-import json
 import os
 import sys
-import time
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock
 
 import pytest
 import requests
@@ -85,10 +82,10 @@ class TestTraceContextPropagation:
     def test_traceparent_header_generation(self):
         """Test that traceparent headers are correctly generated."""
         from opentelemetry import trace
+        from opentelemetry.sdk.trace import TracerProvider
         from opentelemetry.trace.propagation.tracecontext import (
             TraceContextTextMapPropagator,
         )
-        from opentelemetry.sdk.trace import TracerProvider
 
         # Initialize tracer
         provider = TracerProvider()
@@ -113,14 +110,14 @@ class TestTraceContextPropagation:
     def test_trace_context_propagation_chain(self, mock_services):
         """Test trace context propagates through API → Strategy → DB chain."""
         from opentelemetry import trace
-        from opentelemetry.trace.propagation.tracecontext import (
-            TraceContextTextMapPropagator,
-        )
         from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
         from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
             InMemorySpanExporter,
         )
-        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+        from opentelemetry.trace.propagation.tracecontext import (
+            TraceContextTextMapPropagator,
+        )
 
         # Set up in-memory span exporter for testing
         provider = TracerProvider()
@@ -219,10 +216,10 @@ class TestTraceContextPropagation:
         """Test that services add correct attributes to spans."""
         from opentelemetry import trace
         from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
         from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
             InMemorySpanExporter,
         )
-        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
         provider = TracerProvider()
         exporter = InMemorySpanExporter()
@@ -344,10 +341,10 @@ class TestServiceTraceCoverage:
         """Test API service generates traces."""
         from opentelemetry import trace
         from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
         from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
             InMemorySpanExporter,
         )
-        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
         provider = TracerProvider()
         exporter = InMemorySpanExporter()
@@ -381,10 +378,10 @@ class TestServiceTraceCoverage:
         """Test Strategy service generates traces."""
         from opentelemetry import trace
         from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
         from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
             InMemorySpanExporter,
         )
-        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
         provider = TracerProvider()
         exporter = InMemorySpanExporter()
@@ -416,10 +413,10 @@ class TestServiceTraceCoverage:
         """Test Ingestion service generates traces."""
         from opentelemetry import trace
         from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
         from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
             InMemorySpanExporter,
         )
-        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
         provider = TracerProvider()
         exporter = InMemorySpanExporter()
@@ -458,14 +455,14 @@ class TestDistributedTraceIntegration:
     async def test_full_request_flow_tracing(self):
         """Test that a single request generates traces across all services."""
         from opentelemetry import trace
-        from opentelemetry.trace.propagation.tracecontext import (
-            TraceContextTextMapPropagator,
-        )
         from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
         from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
             InMemorySpanExporter,
         )
-        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+        from opentelemetry.trace.propagation.tracecontext import (
+            TraceContextTextMapPropagator,
+        )
 
         provider = TracerProvider()
         exporter = InMemorySpanExporter()
@@ -547,10 +544,10 @@ class TestTraceErrorHandling:
         """Test that error spans have correct attributes."""
         from opentelemetry import trace
         from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
         from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
             InMemorySpanExporter,
         )
-        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
         from opentelemetry.trace.status import StatusCode
 
         provider = TracerProvider()
@@ -576,10 +573,10 @@ class TestTraceErrorHandling:
         """Test that tracing continues even after individual span errors."""
         from opentelemetry import trace
         from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
         from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
             InMemorySpanExporter,
         )
-        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
         provider = TracerProvider()
         exporter = InMemorySpanExporter()

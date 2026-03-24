@@ -19,15 +19,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts" / "valida
 
 from per_task_truth_verification import (
     DICT_FIELDS,
-    EvidenceValidationError,
     LIST_FIELDS,
     REQUIRED_FIELDS,
+    EvidenceValidationError,
     FieldValidation,
     PerTaskEvidenceValidator,
     PerTaskValidationResult,
     validate_per_task_evidence,
 )
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 

@@ -5,9 +5,9 @@ Part of ST-SKILL-EVAL-002-P0: P0 Skill Evaluation Suites
 """
 
 import json
-import pytest
 from pathlib import Path
 
+import pytest
 
 SKILLS_BASE = Path(".opencode/skills")
 TARGET_SKILLS = [
@@ -32,7 +32,7 @@ class TestSkillEvaluationSuites:
     def test_evals_json_valid(self, skill_name: str):
         """Verify evals.json is valid JSON."""
         eval_path = SKILLS_BASE / skill_name / "evals" / "evals.json"
-        with open(eval_path, "r") as f:
+        with open(eval_path) as f:
             evals = json.load(f)
         assert isinstance(evals, list), f"evals.json must be a list for {skill_name}"
 
@@ -40,7 +40,7 @@ class TestSkillEvaluationSuites:
     def test_minimum_eval_count(self, skill_name: str):
         """Verify each skill has at least 10 eval items."""
         eval_path = SKILLS_BASE / skill_name / "evals" / "evals.json"
-        with open(eval_path, "r") as f:
+        with open(eval_path) as f:
             evals = json.load(f)
         assert len(evals) >= 10, f"{skill_name} must have at least 10 eval items"
 
@@ -48,7 +48,7 @@ class TestSkillEvaluationSuites:
     def test_eval_structure(self, skill_name: str):
         """Verify each eval has required fields."""
         eval_path = SKILLS_BASE / skill_name / "evals" / "evals.json"
-        with open(eval_path, "r") as f:
+        with open(eval_path) as f:
             evals = json.load(f)
 
         required_fields = {"id", "query", "priority", "should_trigger"}
@@ -61,7 +61,7 @@ class TestSkillEvaluationSuites:
     def test_high_quality_evals(self, skill_name: str):
         """Verify high-quality evals have skill_component and expected_behavior."""
         eval_path = SKILLS_BASE / skill_name / "evals" / "evals.json"
-        with open(eval_path, "r") as f:
+        with open(eval_path) as f:
             evals = json.load(f)
 
         high_quality_count = 0
@@ -84,7 +84,7 @@ class TestSkillEvaluationSuites:
     def test_has_negative_examples(self, skill_name: str):
         """Verify evals include negative examples (should_trigger: false)."""
         eval_path = SKILLS_BASE / skill_name / "evals" / "evals.json"
-        with open(eval_path, "r") as f:
+        with open(eval_path) as f:
             evals = json.load(f)
 
         negative_count = sum(1 for e in evals if not e.get("should_trigger", True))
@@ -96,7 +96,7 @@ class TestSkillEvaluationSuites:
     def test_pass_rate_threshold(self, skill_name: str):
         """Verify eval pass rate meets 80% threshold."""
         eval_path = SKILLS_BASE / skill_name / "evals" / "evals.json"
-        with open(eval_path, "r") as f:
+        with open(eval_path) as f:
             evals = json.load(f)
 
         # Calculate pass rate based on eval quality

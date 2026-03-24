@@ -21,12 +21,11 @@ import shutil
 import tempfile
 import threading
 import time
-
-import joblib
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import joblib
 import pytest
 
 from ml.models.model_storage import (
@@ -38,7 +37,6 @@ from ml.models.model_storage import (
     ModelNotFoundError,
     ModelRegistryError,
     ModelValidationError,
-    ModelVersion,
     ModelVersionExistsError,
     NullMetricsCollector,
     S3Backend,
@@ -84,7 +82,7 @@ class TestModelCache:
         return ModelMetadata(
             model_name="test_model",
             version="1.0.0",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             training_data="dataset_v1",
             hyperparameters={},
             metrics={},
@@ -229,7 +227,7 @@ class TestModelCacheEntry:
         metadata = ModelMetadata(
             model_name="test",
             version="1.0.0",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             training_data="dataset",
             hyperparameters={},
             metrics={},
@@ -238,7 +236,7 @@ class TestModelCacheEntry:
         entry = ModelCacheEntry(
             model={"weights": [1.0]},
             metadata=metadata,
-            loaded_at=datetime.now(timezone.utc),
+            loaded_at=datetime.now(UTC),
         )
 
         initial_count = entry.access_count
@@ -259,7 +257,7 @@ class TestModelMetadata:
         metadata = ModelMetadata(
             model_name="test_model",
             version="1.0.0",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             training_data="dataset_v1",
             hyperparameters={"lr": 0.001},
             metrics={"accuracy": 0.95},
@@ -275,7 +273,7 @@ class TestModelMetadata:
         data = {
             "model_name": "test_model",
             "version": "1.0.0",
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "training_data": "dataset_v1",
             "hyperparameters": {},
             "metrics": {},
@@ -291,7 +289,7 @@ class TestModelMetadata:
         data = {
             "model_name": "test_model",
             "version": "1.0.0",
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "training_data": "dataset_v1",
             "hyperparameters": {},
             "metrics": {},
@@ -357,7 +355,7 @@ class TestFilesystemBackend:
         return ModelMetadata(
             model_name="test_model",
             version="1.0.0",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             training_data="dataset_v1",
             hyperparameters={"lr": 0.001},
             metrics={"accuracy": 0.95},
@@ -562,7 +560,7 @@ class TestFilesystemBackend:
         metadata = ModelMetadata(
             model_name="test_model",
             version="1.0.0",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             training_data="dataset_v1",
             hyperparameters={},
             metrics={},
@@ -626,7 +624,7 @@ class TestS3Backend:
         metadata = ModelMetadata(
             model_name="test",
             version="1.0.0",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             training_data="dataset",
             hyperparameters={},
             metrics={},
@@ -719,7 +717,7 @@ class TestFilesystemBackendIntegration:
             metadata = ModelMetadata(
                 model_name="test_model",
                 version=version,
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
                 training_data="dataset_v1",
                 hyperparameters={"lr": 0.001},
                 metrics={"accuracy": 0.95},
@@ -760,7 +758,7 @@ class TestFilesystemBackendIntegration:
         metadata = ModelMetadata(
             model_name="test_model",
             version="1.0.0",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             training_data="dataset_v1",
             hyperparameters={},
             metrics={},

@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
-
 from src.strong_system.belief_embeddings import BeliefVector
 from src.strong_system.hypothesis_generator import (
     ConfidenceScore,

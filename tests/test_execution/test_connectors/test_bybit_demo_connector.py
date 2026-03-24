@@ -9,11 +9,8 @@ Comprehensive test suite covering:
 
 from __future__ import annotations
 
-import asyncio
 import math
 import os
-import uuid
-from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -37,7 +34,6 @@ from execution.connectors.bybit_demo_connector import (
     create_bybit_demo_connector,
 )
 from execution.paper.models import OrderState, PaperFill, PaperOrder
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -354,7 +350,7 @@ class TestExponentialBackoffRetry:
 
     @pytest.mark.asyncio
     async def test_timeout_error_retryable(self) -> None:
-        func = AsyncMock(side_effect=[asyncio.TimeoutError(), "ok"])
+        func = AsyncMock(side_effect=[TimeoutError(), "ok"])
         retry = ExponentialBackoffRetry(config=RetryConfig(max_retries=3))
         with patch("asyncio.sleep", new_callable=AsyncMock):
             result = await retry.execute(func)

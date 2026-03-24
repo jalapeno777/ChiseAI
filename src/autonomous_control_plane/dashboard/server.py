@@ -15,7 +15,6 @@ from pathlib import Path
 from typing import Any
 
 from autonomous_control_plane.dashboard.api import DashboardAPI
-from autonomous_control_plane.dashboard.models import DashboardState
 from autonomous_control_plane.telemetry.dashboard_sync import (
     DashboardSyncServer,
 )

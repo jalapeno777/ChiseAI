@@ -1,11 +1,12 @@
 """Tests for system adapters."""
 
+from unittest.mock import AsyncMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock
 from src.autocog_integration.adapters import (
     AutocogAdapter,
-    StrongAdapter,
     DualAdapter,
+    StrongAdapter,
 )
 
 

@@ -5,12 +5,10 @@ TEMPO-2026-001: Usage example for tracing module
 """
 
 from fastapi import FastAPI
+
 from src.observability import (
     init_tracing,
     instrument_fastapi,
-    instrument_sqlalchemy,
-    instrument_redis,
-    instrument_requests,
 )
 
 

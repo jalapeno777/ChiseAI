@@ -244,7 +244,7 @@ class LocalStorageFallback:
             for filename in os.listdir(self.base_path):
                 if filename.startswith(destination):
                     file_path = os.path.join(self.base_path, filename)
-                    with open(file_path, "r") as f:
+                    with open(file_path) as f:
                         for line in f:
                             line = line.strip()
                             if line:
@@ -394,9 +394,7 @@ class InfluxDBExporter:
 
                 # Add fields
                 for key, value in metric.fields.items():
-                    if isinstance(value, int):
-                        point.field(key, value)
-                    elif isinstance(value, float):
+                    if isinstance(value, int) or isinstance(value, float):
                         point.field(key, value)
                     else:
                         point.field(key, str(value))

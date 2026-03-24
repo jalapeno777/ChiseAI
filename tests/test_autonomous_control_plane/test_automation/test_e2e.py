@@ -4,8 +4,9 @@ For ST-CONTROL-002: Self-Healing Automation
 """
 
 import asyncio
-import pytest
 from datetime import datetime
+
+import pytest
 
 from autonomous_control_plane.automation import (
     AutomationController,

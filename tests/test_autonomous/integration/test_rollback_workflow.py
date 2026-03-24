@@ -642,6 +642,7 @@ class TestRollbackAutomationAPIIntegration:
             execute_automated_rollback,
             set_automation_coordinator,
         )
+
         from autonomous_control_plane.components.rollback_automation import (
             RollbackAutomationCoordinator,
         )
@@ -664,6 +665,7 @@ class TestRollbackAutomationAPIIntegration:
             analyze_rollback_impact,
             set_automation_coordinator,
         )
+
         from autonomous_control_plane.components.rollback_automation import (
             RollbackAutomationCoordinator,
         )
@@ -687,6 +689,7 @@ class TestRollbackAutomationAPIIntegration:
             list_rollback_templates,
             set_automation_coordinator,
         )
+
         from autonomous_control_plane.components.rollback_automation import (
             RollbackAutomationCoordinator,
         )
@@ -708,6 +711,7 @@ class TestRollbackAutomationAPIIntegration:
             list_rollback_triggers,
             set_automation_coordinator,
         )
+
         from autonomous_control_plane.components.rollback_automation import (
             RollbackAutomationCoordinator,
         )
@@ -732,6 +736,7 @@ class TestRollbackAutomationAPIIntegration:
             execute_coordinated_rollback,
             set_automation_coordinator,
         )
+
         from autonomous_control_plane.components.rollback_automation import (
             RollbackAutomationCoordinator,
         )
@@ -757,6 +762,7 @@ class TestRollbackAutomationAPIIntegration:
             run_post_rollback_validation,
             set_automation_coordinator,
         )
+
         from autonomous_control_plane.components.rollback_automation import (
             RollbackAutomationCoordinator,
         )

@@ -9,7 +9,6 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -18,19 +17,19 @@ project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from scripts.governance.retrieval_baseline import (
-    RetrievalBaselineData,
+    DEFAULT_TEST_QUERIES,
+    CoverageMetrics,
     LatencyMetrics,
     RelevanceMetrics,
+    RetrievalBaselineData,
     TopKAccuracy,
-    CoverageMetrics,
+    calculate_coverage,
     calculate_percentile,
     calculate_std_dev,
+    create_retrieval_baseline,
     measure_latency,
     measure_relevance,
-    calculate_coverage,
-    create_retrieval_baseline,
     save_baseline,
-    DEFAULT_TEST_QUERIES,
 )
 
 
@@ -260,7 +259,6 @@ class TestCalculateCoverage:
 
     def test_calculate_coverage_all_empty(self):
         """Test coverage when all results are empty."""
-        from scripts.governance.retrieval_baseline import RetrievalResult
 
         results = [[], [], []]
         metrics = calculate_coverage(3, results)

@@ -15,16 +15,16 @@ Example:
 from __future__ import annotations
 
 from .controller import Episode, MetaLearningController, Task, TaskDistribution
-from .models import LinearModel, MAML, MetaModel, ParameterStore, Reptile
+from .models import MAML, LinearModel, MetaModel, ParameterStore, Reptile
 from .training import EpisodeTrainer, MetaTrainingLoop, TrainingConfig, TrainingMetrics
 from .utils import (
-    TaskSampler,
     EpisodeBatcher,
+    TaskSampler,
     compute_accuracy,
-    compute_meta_metrics,
     compute_adaptation_gain,
-    create_sinusoid_task,
+    compute_meta_metrics,
     create_classification_task,
+    create_sinusoid_task,
 )
 
 __all__ = [

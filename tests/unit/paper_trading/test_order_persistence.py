@@ -7,9 +7,6 @@ from __future__ import annotations
 
 import sys
 from datetime import UTC, datetime
-from typing import Any
-
-import pytest
 
 # Add src to path
 sys.path.insert(0, "src")

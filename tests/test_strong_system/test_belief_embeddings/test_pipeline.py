@@ -7,11 +7,9 @@ correctness, performance, and edge cases.
 from __future__ import annotations
 
 import time
-from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-
 from src.strong_system.belief_embeddings.cache import (
     BeliefCache,
     CacheEntry,
@@ -29,7 +27,7 @@ from src.strong_system.belief_embeddings.search import (
     InMemoryBackend,
     SearchResult,
 )
-from src.strong_system.belief_embeddings.vector import BeliefMetadata, BeliefVector
+from src.strong_system.belief_embeddings.vector import BeliefVector
 
 
 class TestCacheEntry:

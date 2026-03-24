@@ -12,18 +12,14 @@ from typing import Any
 
 from src.strong_system.program_synthesis.types import (
     ASTNode,
-    ASTNodeType,
-    AttributeExpression,
     BinaryOp,
     BinaryOperator,
     CallExpression,
     Conditional,
     FunctionDef,
-    IndexExpression,
     Loop,
     Program,
     ProgramSchema,
-    Sequence,
     TypeAnnotation,
     UnaryOp,
     VariableDecl,
@@ -137,7 +133,7 @@ class ValidationResult:
         """
         self.add_error(error_type, message, node, severity="warning")
 
-    def merge(self, other: "ValidationResult") -> None:
+    def merge(self, other: ValidationResult) -> None:
         """Merge another validation result into this one.
 
         Args:
@@ -568,10 +564,7 @@ class TypeChecker:
 
         from src.strong_system.program_synthesis.types import (
             BinaryOp,
-            BooleanLiteral,
             FunctionDef,
-            NumberLiteral,
-            StringLiteral,
             VariableDecl,
         )
 
@@ -722,13 +715,7 @@ class SemanticAnalyzer:
         )
 
         # Track definitions
-        if isinstance(node, VariableDecl):
-            self._defined_symbols.add(node.name)
-
-        elif isinstance(node, ParameterRef):
-            self._defined_symbols.add(node.name)
-
-        elif isinstance(node, FunctionDef):
+        if isinstance(node, VariableDecl) or isinstance(node, ParameterRef) or isinstance(node, FunctionDef):
             self._defined_symbols.add(node.name)
 
         # Track usages

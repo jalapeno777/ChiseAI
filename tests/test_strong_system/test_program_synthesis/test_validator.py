@@ -1,15 +1,12 @@
 """Tests for program synthesis validator module."""
 
 import pytest
-
 from src.strong_system.program_synthesis.dsl import (
-    DSLBuilder,
     ProgramDSL,
     create_default_schema,
     create_safe_schema,
 )
 from src.strong_system.program_synthesis.types import (
-    ASTNodeType,
     BinaryOp,
     BinaryOperator,
     CallExpression,
@@ -20,7 +17,6 @@ from src.strong_system.program_synthesis.types import (
     ProgramSchema,
     Sequence,
     StringLiteral,
-    TypeAnnotation,
     VariableDecl,
     VariableRef,
 )

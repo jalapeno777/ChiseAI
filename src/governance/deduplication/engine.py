@@ -13,6 +13,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 import numpy as np
+
 from src.governance.deduplication.audit import (
     AuditTrail,
     DeduplicationAction,
@@ -546,7 +547,7 @@ class MemoryDeduplicationEngine:
                 return 0.0
 
             # Parse timestamps
-            from datetime import UTC, datetime
+            from datetime import datetime
 
             if isinstance(ts_a, str):
                 ts_a = datetime.fromisoformat(ts_a)

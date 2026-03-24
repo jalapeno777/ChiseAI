@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+
 from src.neuro_symbolic.pattern_recognition.engine import PatternType
 
 

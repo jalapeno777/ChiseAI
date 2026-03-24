@@ -15,7 +15,6 @@ For ST-CONTROL-002: Self-Healing Automation
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from autonomous_control_plane.automation.runbook_engine import (
     Runbook,

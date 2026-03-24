@@ -18,14 +18,10 @@ Usage:
 from __future__ import annotations
 
 import json
-import time
-import uuid
 from collections import deque
-from datetime import UTC, datetime
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
-
 from src.governance.memory.qdrant_health import (
     DEFAULT_QDRANT_HOST,
     DEFAULT_QDRANT_PORT,

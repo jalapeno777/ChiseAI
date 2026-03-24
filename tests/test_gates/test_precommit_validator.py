@@ -7,12 +7,10 @@ Scope: All public methods, main branch blocking, timeout/exception handling
 from __future__ import annotations
 
 import subprocess
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
-
 from scripts.gates.precommit_validator import PrecommitValidator
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

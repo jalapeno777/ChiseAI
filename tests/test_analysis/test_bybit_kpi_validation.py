@@ -11,14 +11,13 @@ For ST-KPI-FIX-001: Bybit-Journal KPI Separation
 
 from __future__ import annotations
 
-import json
 import os
 import sys
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -513,9 +512,9 @@ class TestActualImplementationImports:
         """Test that calculate_bybit_kpis module can be imported."""
         try:
             from scripts.analysis.calculate_bybit_kpis import (
-                BybitTradingKPIs,
-                BybitKPICalculator,
                 BybitAPIExtractor,
+                BybitKPICalculator,
+                BybitTradingKPIs,
             )
 
             assert True
@@ -526,8 +525,8 @@ class TestActualImplementationImports:
         """Test that calculate_paper_kpis module can be imported."""
         try:
             from scripts.analysis.calculate_paper_kpis import (
-                PaperTradingKPIs,
                 PaperKPICalculator,
+                PaperTradingKPIs,
             )
 
             assert True

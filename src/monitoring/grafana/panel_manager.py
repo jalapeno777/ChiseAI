@@ -14,8 +14,6 @@ import json
 import logging
 import os
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import yaml
@@ -142,7 +140,7 @@ class GrafanaPanelManager:
         if self._config is not None:
             return self._config
 
-        with open(self.config_path, "r") as f:
+        with open(self.config_path) as f:
             self._config = yaml.safe_load(f)
 
         logger.debug(f"Loaded config from {self.config_path}")

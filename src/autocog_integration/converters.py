@@ -1,20 +1,19 @@
 """Data format converters for cross-system knowledge transfer."""
 
-import json
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class DataFormatConverter(ABC):
     """Abstract base class for data format converters."""
 
     @abstractmethod
-    def convert(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def convert(self, data: dict[str, Any]) -> dict[str, Any]:
         """Convert data from source format to target format."""
         pass
 
     @abstractmethod
-    def can_convert(self, data: Dict[str, Any]) -> bool:
+    def can_convert(self, data: dict[str, Any]) -> bool:
         """Check if data can be converted."""
         pass
 
@@ -22,7 +21,7 @@ class DataFormatConverter(ABC):
 class AutocogToStrongConverter(DataFormatConverter):
     """Converts AUTOCOG data formats to STRONG system formats."""
 
-    def convert(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def convert(self, data: dict[str, Any]) -> dict[str, Any]:
         """Convert AUTOCOG data to STRONG format."""
         if not self.can_convert(data):
             raise ValueError("Data cannot be converted from AUTOCOG to STRONG format")
@@ -40,7 +39,7 @@ class AutocogToStrongConverter(DataFormatConverter):
         else:
             return self._convert_generic(data)
 
-    def can_convert(self, data: Dict[str, Any]) -> bool:
+    def can_convert(self, data: dict[str, Any]) -> bool:
         """Check if data can be converted from AUTOCOG format."""
         return (
             isinstance(data, dict)
@@ -49,7 +48,7 @@ class AutocogToStrongConverter(DataFormatConverter):
             and data.get("source_system") == "autocog"
         )
 
-    def _convert_action(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_action(self, data: dict[str, Any]) -> dict[str, Any]:
         """Convert AUTOCOG action to STRONG belief embedding."""
         payload = data.get("payload", {})
 
@@ -67,7 +66,7 @@ class AutocogToStrongConverter(DataFormatConverter):
             "confidence": payload.get("confidence", 0.5),
         }
 
-    def _convert_assessment(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_assessment(self, data: dict[str, Any]) -> dict[str, Any]:
         """Convert AUTOCOG assessment to STRONG learning update."""
         payload = data.get("payload", {})
 
@@ -88,7 +87,7 @@ class AutocogToStrongConverter(DataFormatConverter):
             },
         }
 
-    def _convert_validation_result(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_validation_result(self, data: dict[str, Any]) -> dict[str, Any]:
         """Convert AUTOCOG validation result to STRONG symbolic rule."""
         payload = data.get("payload", {})
 
@@ -105,7 +104,7 @@ class AutocogToStrongConverter(DataFormatConverter):
             },
         }
 
-    def _convert_cycle_result(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_cycle_result(self, data: dict[str, Any]) -> dict[str, Any]:
         """Convert AUTOCOG cycle result to STRONG meta-learning update."""
         payload = data.get("payload", {})
 
@@ -122,7 +121,7 @@ class AutocogToStrongConverter(DataFormatConverter):
             },
         }
 
-    def _convert_generic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_generic(self, data: dict[str, Any]) -> dict[str, Any]:
         """Convert generic AUTOCOG data to STRONG format."""
         return {
             "knowledge_type": "generic_embedding",
@@ -135,7 +134,7 @@ class AutocogToStrongConverter(DataFormatConverter):
             },
         }
 
-    def _action_to_vector(self, action: Dict[str, Any]) -> list:
+    def _action_to_vector(self, action: dict[str, Any]) -> list:
         """Convert action to vector representation."""
         # Simple vectorization - in practice would use proper embedding
         action_type = action.get("action_type", "")
@@ -149,7 +148,7 @@ class AutocogToStrongConverter(DataFormatConverter):
         ]
         return vector
 
-    def _validation_to_rule(self, validation: Dict[str, Any]) -> str:
+    def _validation_to_rule(self, validation: dict[str, Any]) -> str:
         """Convert validation result to symbolic rule expression."""
         findings = validation.get("findings", {})
         is_valid = validation.get("is_valid", False)
@@ -164,7 +163,7 @@ class AutocogToStrongConverter(DataFormatConverter):
 
         return f"validation_passed={is_valid} AND {' AND '.join(rule_parts)}"
 
-    def _calculate_lr_adjustment(self, cycle_result: Dict[str, Any]) -> float:
+    def _calculate_lr_adjustment(self, cycle_result: dict[str, Any]) -> float:
         """Calculate learning rate adjustment from cycle result."""
         metrics = cycle_result.get("metrics", {})
         success_rate = metrics.get("success_rate", 0.5)
@@ -177,7 +176,7 @@ class AutocogToStrongConverter(DataFormatConverter):
         else:
             return 1.0  # Keep same
 
-    def _generic_to_vector(self, data: Dict[str, Any]) -> list:
+    def _generic_to_vector(self, data: dict[str, Any]) -> list:
         """Convert generic data to vector representation."""
         # Simple vectorization for generic data
         payload = data.get("payload", {})
@@ -187,7 +186,7 @@ class AutocogToStrongConverter(DataFormatConverter):
 class StrongToAutocogConverter(DataFormatConverter):
     """Converts STRONG system data formats to AUTOCOG formats."""
 
-    def convert(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def convert(self, data: dict[str, Any]) -> dict[str, Any]:
         """Convert STRONG data to AUTOCOG format."""
         if not self.can_convert(data):
             raise ValueError("Data cannot be converted from STRONG to AUTOCOG format")
@@ -205,7 +204,7 @@ class StrongToAutocogConverter(DataFormatConverter):
         else:
             return self._convert_generic(data)
 
-    def can_convert(self, data: Dict[str, Any]) -> bool:
+    def can_convert(self, data: dict[str, Any]) -> bool:
         """Check if data can be converted from STRONG format."""
         return (
             isinstance(data, dict)
@@ -214,7 +213,7 @@ class StrongToAutocogConverter(DataFormatConverter):
             and data.get("source_system") == "strong"
         )
 
-    def _convert_belief_embedding(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_belief_embedding(self, data: dict[str, Any]) -> dict[str, Any]:
         """Convert STRONG belief embedding to AUTOCOG action."""
         metadata = data.get("metadata", {})
 
@@ -229,7 +228,7 @@ class StrongToAutocogConverter(DataFormatConverter):
             "source_system": "strong",
         }
 
-    def _convert_learning_update(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_learning_update(self, data: dict[str, Any]) -> dict[str, Any]:
         """Convert STRONG learning update to AUTOCOG assessment."""
         gradient_info = data.get("gradient_info", {})
 
@@ -244,7 +243,7 @@ class StrongToAutocogConverter(DataFormatConverter):
             "source_system": "strong",
         }
 
-    def _convert_symbolic_rule(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_symbolic_rule(self, data: dict[str, Any]) -> dict[str, Any]:
         """Convert STRONG symbolic rule to AUTOCOG validation result."""
         metadata = data.get("metadata", {})
 
@@ -258,7 +257,7 @@ class StrongToAutocogConverter(DataFormatConverter):
             "source_system": "strong",
         }
 
-    def _convert_meta_learning_update(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_meta_learning_update(self, data: dict[str, Any]) -> dict[str, Any]:
         """Convert STRONG meta-learning update to AUTOCOG cycle result."""
         metadata = data.get("metadata", {})
 
@@ -272,7 +271,7 @@ class StrongToAutocogConverter(DataFormatConverter):
             "source_system": "strong",
         }
 
-    def _convert_generic(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_generic(self, data: dict[str, Any]) -> dict[str, Any]:
         """Convert generic STRONG data to AUTOCOG format."""
         return {
             "knowledge_type": "generic_knowledge",
@@ -291,7 +290,7 @@ class BidirectionalConverter:
         self.autocog_to_strong = AutocogToStrongConverter()
         self.strong_to_autocog = StrongToAutocogConverter()
 
-    def convert(self, data: Dict[str, Any], direction: str) -> Dict[str, Any]:
+    def convert(self, data: dict[str, Any], direction: str) -> dict[str, Any]:
         """
         Convert data in specified direction.
 
@@ -309,7 +308,7 @@ class BidirectionalConverter:
         else:
             raise ValueError(f"Unknown conversion direction: {direction}")
 
-    def can_convert(self, data: Dict[str, Any], direction: str) -> bool:
+    def can_convert(self, data: dict[str, Any], direction: str) -> bool:
         """Check if data can be converted in specified direction."""
         if direction == "autocog_to_strong":
             return self.autocog_to_strong.can_convert(data)

@@ -5,11 +5,9 @@ TEMPO-2026-001: Redis span wrapper tests.
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
-from opentelemetry import trace
-
 from src.state.tracing import (
     get_operation_category,
     sanitize_key_pattern,

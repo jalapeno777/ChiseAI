@@ -1,13 +1,9 @@
 """Integration tests for symbolic rules with computational graph."""
 
 import numpy as np
-import pytest
-
-from src.strong_system.computational_graph import Graph, Node, backward
+from src.strong_system.computational_graph import Node, backward
 from src.strong_system.symbolic_rules import (
-    CompositeRule,
     RuleEngine,
-    RuleSet,
     SymbolicRule,
     fuzzy_and,
     fuzzy_or,

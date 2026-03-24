@@ -12,12 +12,13 @@ Story: SWARM-HARDEN-001-3.1
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import Any
 
 import pytest
 from scripts.validation.file_existence_scanner import (
+    _FILENAME_PATTERN,
+    _STORY_ID_LOOSE,
     DEFAULT_EVIDENCE_DIR,
     KNOWN_PREFIXES,
     VALID_EXTENSIONS,
@@ -25,10 +26,7 @@ from scripts.validation.file_existence_scanner import (
     FileIssue,
     FileRecord,
     ScanReport,
-    _FILENAME_PATTERN,
-    _STORY_ID_LOOSE,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers

@@ -29,6 +29,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 import redis
+
 from src.governance.checkpoint.alerts import ActionableZeroAlert
 from src.governance.checkpoint.integrity import MetricIntegrityChecker
 
@@ -682,6 +683,7 @@ class GateChecker:
                 # Fallback to asyncpg if psycopg2 not available
                 try:
                     import asyncio
+
                     import asyncpg
 
                     async def query():
@@ -1140,6 +1142,7 @@ class GateChecker:
                 # Fallback to asyncpg if psycopg2 not available
                 try:
                     import asyncio
+
                     import asyncpg
 
                     async def query():

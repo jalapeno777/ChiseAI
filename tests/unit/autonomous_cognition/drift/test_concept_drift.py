@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-import pytest
-from datetime import datetime, timedelta
+from datetime import datetime
 from unittest.mock import MagicMock
+
+import pytest
 
 from autonomous_cognition.drift.concept_drift import (
     ConceptDriftDetector,

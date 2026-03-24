@@ -6,13 +6,12 @@ import json
 
 import numpy as np
 import pytest
-
 from src.strong_system.belief_embeddings import (
     BeliefClusteringEngine,
     BeliefVector,
     ClusterAssignment,
-    ClusterMetrics,
     ClusteringError,
+    ClusterMetrics,
     ValidationError,
 )
 

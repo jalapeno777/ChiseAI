@@ -127,11 +127,9 @@ class QualityGate:
         """Set up default validation rules if validator is empty."""
         if not self.validator.get_rules():
             from ml.data.validation import (
-                DataFreshnessRule,
                 NullCheckRule,
                 RangeValidationRule,
                 SchemaCompletenessRule,
-                UniqueConstraintRule,
             )
 
             # Add essential rules

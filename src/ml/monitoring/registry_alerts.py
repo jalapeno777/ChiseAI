@@ -17,13 +17,13 @@ Example:
 
 from __future__ import annotations
 
-import json
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
-from typing import Any, Callable, Optional
+from typing import Any
 
 from ml.monitoring.registry_metrics import RegistryMetrics
 
@@ -56,11 +56,11 @@ class Alert:
     name: str
     severity: AlertSeverity
     message: str
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     metadata: dict[str, Any] = field(default_factory=dict)
     acknowledged: bool = False
-    acknowledged_at: Optional[datetime] = None
-    acknowledged_by: Optional[str] = None
+    acknowledged_at: datetime | None = None
+    acknowledged_by: str | None = None
 
     def acknowledge(self, acknowledged_by: str) -> None:
         """Acknowledge the alert.
@@ -69,7 +69,7 @@ class Alert:
             acknowledged_by: Identifier of who acknowledged
         """
         self.acknowledged = True
-        self.acknowledged_at = datetime.now(timezone.utc)
+        self.acknowledged_at = datetime.now(UTC)
         self.acknowledged_by = acknowledged_by
         logger.info(f"Alert {self.name} acknowledged by {acknowledged_by}")
 
@@ -141,7 +141,7 @@ class AlertRule:
     enabled: bool = True
 
     # Internal tracking
-    _last_triggered: Optional[datetime] = field(default=None, repr=False)
+    _last_triggered: datetime | None = field(default=None, repr=False)
 
     def should_fire(self, metrics: RegistryMetrics) -> bool:
         """Check if the alert should fire given current metrics.
@@ -158,7 +158,7 @@ class AlertRule:
         # Check cooldown
         if self._last_triggered:
             elapsed = (
-                datetime.now(timezone.utc) - self._last_triggered
+                datetime.now(UTC) - self._last_triggered
             ).total_seconds()
             if elapsed < self.cooldown_seconds:
                 logger.debug(
@@ -173,7 +173,7 @@ class AlertRule:
             logger.error(f"Error evaluating alert condition for {self.name}: {e}")
             return False
 
-    def create_alert(self, metadata: Optional[dict[str, Any]] = None) -> Alert:
+    def create_alert(self, metadata: dict[str, Any] | None = None) -> Alert:
         """Create an alert instance from this rule.
 
         Args:
@@ -182,7 +182,7 @@ class AlertRule:
         Returns:
             Alert instance
         """
-        self._last_triggered = datetime.now(timezone.utc)
+        self._last_triggered = datetime.now(UTC)
         return Alert(
             name=self.name,
             severity=self.severity,
@@ -254,7 +254,7 @@ class AlertManager(ABC):
 
     @abstractmethod
     def get_alert_history(
-        self, since: Optional[datetime] = None, limit: int = 100
+        self, since: datetime | None = None, limit: int = 100
     ) -> list[Alert]:
         """Get alert history.
 
@@ -292,7 +292,7 @@ class NullAlertManager(AlertManager):
         return []
 
     def get_alert_history(
-        self, since: Optional[datetime] = None, limit: int = 100
+        self, since: datetime | None = None, limit: int = 100
     ) -> list[Alert]:
         """No-op implementation."""
         return []
@@ -307,7 +307,7 @@ class DefaultAlertManager(AlertManager):
     def __init__(
         self,
         max_history: int = 1000,
-        notification_callback: Optional[Callable[[Alert], None]] = None,
+        notification_callback: Callable[[Alert], None] | None = None,
     ) -> None:
         """Initialize alert manager.
 
@@ -407,7 +407,7 @@ class DefaultAlertManager(AlertManager):
         return list(self._active_alerts.values())
 
     def get_alert_history(
-        self, since: Optional[datetime] = None, limit: int = 100
+        self, since: datetime | None = None, limit: int = 100
     ) -> list[Alert]:
         """Get alert history."""
         history = self._alert_history

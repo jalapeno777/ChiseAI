@@ -59,20 +59,20 @@ def _get_redis_helpers():
     """
     try:
         from redis_state import (
-            redis_state_hset,
+            redis_state_hdel,
             redis_state_hget,
             redis_state_hgetall,
-            redis_state_hdel,
+            redis_state_hset,
         )
 
         return redis_state_hset, redis_state_hget, redis_state_hgetall, redis_state_hdel
     except ImportError:
         try:
             from tools.redis_state import (
-                redis_state_hset,
+                redis_state_hdel,
                 redis_state_hget,
                 redis_state_hgetall,
-                redis_state_hdel,
+                redis_state_hset,
             )
 
             return (

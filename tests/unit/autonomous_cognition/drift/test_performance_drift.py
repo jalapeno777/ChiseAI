@@ -2,17 +2,15 @@
 Unit tests for performance_drift.py
 """
 
-import pytest
-from datetime import UTC, datetime, timedelta
-from unittest.mock import Mock, MagicMock
+from datetime import UTC, datetime
+from unittest.mock import Mock
 
+import pytest
 from src.autonomous_cognition.drift.performance_drift import (
-    PerformanceDriftDetector,
+    METRIC_CONFIGS,
     Baseline,
     DriftResult,
-    DriftSeverity,
-    RootCauseTag,
-    METRIC_CONFIGS,
+    PerformanceDriftDetector,
 )
 
 

@@ -5,8 +5,6 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 import numpy as np
-import pytest
-
 from src.strong_system.belief_embeddings import BeliefVector
 from src.strong_system.hypothesis_generator import (
     ConfidenceScore,
@@ -19,7 +17,6 @@ from src.strong_system.hypothesis_generator import (
     MarketContext,
     MockLLMProvider,
     ValidationResult,
-    ValidationStatus,
 )
 
 

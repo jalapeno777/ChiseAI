@@ -6,10 +6,7 @@ Covers fee tracking functionality added in ST-KPI-FIX-001
 
 from __future__ import annotations
 
-import asyncio
 import pytest
-from datetime import UTC, datetime
-
 from src.execution.paper.position_tracker import PaperPosition, PaperPositionTracker
 
 
@@ -388,7 +385,7 @@ class TestFeeExampleScenario:
 
         # This is the critical fix: KPI now shows the actual loss,
         # not the misleading gross profit
-        print(f"\nKPI Fix Demonstration:")
+        print("\nKPI Fix Demonstration:")
         print(f"  Gross PnL: ${gross_pnl:.2f}")
         print(f"  Total fees: ${closed_pos.total_fees:.2f}")
         print(f"  Net PnL (reality): ${realized_pnl:.2f}")

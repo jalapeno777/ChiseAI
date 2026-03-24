@@ -9,11 +9,10 @@ For ST-CONTROL-003: Control Plane Dashboard
 from __future__ import annotations
 
 import logging
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 from autonomous_control_plane.dashboard.models import (
-    ChartData,
     CircuitBreakerPanelData,
     DashboardState,
     HealthScore,

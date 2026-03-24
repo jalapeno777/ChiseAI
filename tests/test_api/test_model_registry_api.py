@@ -15,34 +15,25 @@ from __future__ import annotations
 
 import io
 import pickle
+
+# Import after path setup
+import sys
 from datetime import datetime
-from typing import Any
-from unittest.mock import MagicMock, patch
+from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
 
-# Import after path setup
-import sys
-from pathlib import Path
-
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
+from fastapi import FastAPI
+
 from api.model_registry_api import (
-    CompareResponse,
-    ErrorResponse,
-    GetModelResponse,
-    HealthResponse,
-    HistoryResponse,
-    ListVersionsResponse,
-    RegisterModelResponse,
-    RollbackResponse,
-    health_check,
     health_router,
     router,
     set_model_registry,
 )
-from fastapi import FastAPI
 from ml.models.model_registry import ModelRegistry
 from ml.models.model_storage import (
     ModelMetadata,

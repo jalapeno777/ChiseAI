@@ -4,9 +4,8 @@ For ST-CONTROL-002: Self-Healing Automation
 """
 
 import asyncio
+
 import pytest
-from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from autonomous_control_plane.automation.runbook_engine import (
     Runbook,

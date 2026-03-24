@@ -12,21 +12,19 @@ Acceptance Criteria:
 from __future__ import annotations
 
 import logging
-import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from ml.monitoring.registry_metrics import RegistryMetrics
 from ml.monitoring.registry_alerts import (
     Alert,
-    AlertManager,
     AlertRule,
     AlertSeverity,
     DefaultAlertManager,
     NullAlertManager,
     create_default_alert_rules,
 )
+from ml.monitoring.registry_metrics import RegistryMetrics
 
 logger = logging.getLogger(__name__)
 
@@ -338,12 +336,12 @@ class TestDefaultAlertManager:
         manager.evaluate(RegistryMetrics())
 
         # Get history from 1 hour ago
-        since = datetime.now(timezone.utc) - timedelta(hours=1)
+        since = datetime.now(UTC) - timedelta(hours=1)
         history = manager.get_alert_history(since=since)
         assert len(history) >= 1
 
         # Get history from 1 hour in the future (should be empty)
-        since = datetime.now(timezone.utc) + timedelta(hours=1)
+        since = datetime.now(UTC) + timedelta(hours=1)
         history = manager.get_alert_history(since=since)
         assert len(history) == 0
 

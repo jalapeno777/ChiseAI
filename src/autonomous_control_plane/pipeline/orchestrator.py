@@ -20,21 +20,17 @@ from autonomous_control_plane.config.pipeline_settings import (
     pipeline_settings,
 )
 from autonomous_control_plane.pipeline.export import (
-    ExportResult,
     ExportStatus,
-    TelemetryExportLayer,
     get_export_layer,
 )
 from autonomous_control_plane.pipeline.ingestion import (
     IngestionResult,
     IngestionStatus,
     TelemetryEvent,
-    TelemetryIngestionLayer,
     get_ingestion_layer,
 )
 from autonomous_control_plane.pipeline.processing import (
     ProcessedMetric,
-    TelemetryProcessingLayer,
     get_processing_layer,
 )
 

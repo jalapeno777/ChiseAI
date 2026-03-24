@@ -3,9 +3,9 @@
 Tests for ExitReason, FillRecord, TradeEvent, TradeJournalEntry, and TradeJournal.
 """
 
-import pytest
 from datetime import UTC, datetime, timedelta
 
+import pytest
 from src.execution.paper.trade_journal import (
     ExitReason,
     FillRecord,

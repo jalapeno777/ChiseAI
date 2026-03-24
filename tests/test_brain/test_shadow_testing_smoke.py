@@ -5,17 +5,14 @@ Verifies basic functionality and imports for the shadow testing framework.
 
 from __future__ import annotations
 
-import asyncio
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock
 
 import pytest
 
 from brain.shadow_testing import (
-    BrainFunction,
     LatencyStatistics,
-    ShadowTester,
     ShadowTestConfig,
+    ShadowTester,
     ShadowTestResult,
     run_shadow_test,
 )

@@ -10,12 +10,15 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+
 from src.api.ece_router import router as ece_router
 from src.api.health_router import router as health_router
 from src.api.health_router import set_health_monitor
 from src.api.paper_router import router as paper_router
 from src.autonomous_control_plane.api.v1.circuit_breakers import (
     router as circuit_breakers_router,
+)
+from src.autonomous_control_plane.api.v1.circuit_breakers import (
     set_registry as set_circuit_breaker_registry,
 )
 from src.autonomous_control_plane.api.v1.healing import router as healing_router
@@ -24,10 +27,14 @@ from src.autonomous_control_plane.api.v1.healing import router as healing_router
 from src.autonomous_control_plane.api.v1.incidents import router as incidents_router
 from src.autonomous_control_plane.api.v1.retry import (
     router as retry_router,
+)
+from src.autonomous_control_plane.api.v1.retry import (
     set_retry_coordinator,
 )
 from src.autonomous_control_plane.api.v1.rollback import (
     router as rollback_router,
+)
+from src.autonomous_control_plane.api.v1.rollback import (
     set_coordinator as set_rollback_coordinator,
 )
 

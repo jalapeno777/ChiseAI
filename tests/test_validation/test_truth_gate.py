@@ -4,31 +4,34 @@ from __future__ import annotations
 
 import json
 import subprocess
-from pathlib import Path
-from unittest.mock import Mock, patch, mock_open
-import pytest
-import yaml
 
 # Add parent directories to path
 import sys
+from pathlib import Path
+from unittest.mock import Mock, patch
+
+import pytest
+import yaml
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts" / "validation"))
 
+from truth_gate_checks.merge_truth import (
+    check_merge_truth,
+    verify_commit_on_branch,
+)
+from truth_gate_checks.test_counts import (
+    check_test_counts,
+    find_story_test_count,
+    infer_test_path_from_story,
+    run_pytest_collect,
+)
+from truth_gate_checks.test_counts import (
+    find_story_in_workflow as find_story_in_workflow_for_tests,
+)
 from truth_gate_checks.workflow_status import (
     check_workflow_status,
     find_story_in_workflow,
     verify_file_exists,
-)
-from truth_gate_checks.test_counts import (
-    check_test_counts,
-    run_pytest_collect,
-    find_story_test_count,
-    find_story_in_workflow as find_story_in_workflow_for_tests,
-    infer_test_path_from_story,
-)
-from truth_gate_checks.merge_truth import (
-    check_merge_truth,
-    verify_commit_on_branch,
 )
 
 
@@ -551,7 +554,7 @@ class TestTruthGateCLI:
             "timestamp": "2026-01-01T00:00:00Z",
         }
 
-        from truth_gate import create_parser, main
+        from truth_gate import create_parser
 
         parser = create_parser()
         args = parser.parse_args(

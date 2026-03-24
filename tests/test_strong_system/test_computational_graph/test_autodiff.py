@@ -6,7 +6,6 @@ for computing gradients through the computational graph.
 
 import numpy as np
 import pytest
-
 from src.strong_system.computational_graph import (
     Add,
     Graph,

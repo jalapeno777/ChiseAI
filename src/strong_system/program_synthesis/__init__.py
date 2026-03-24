@@ -6,8 +6,8 @@ integrated with the belief system, hypothesis generator, and symbolic rules.
 
 from src.strong_system.program_synthesis.dsl import (
     DSLBuilder,
-    ProgramDSL,
     ProgramDeserializer,
+    ProgramDSL,
     ProgramSerializer,
     SchemaRegistry,
     create_default_schema,

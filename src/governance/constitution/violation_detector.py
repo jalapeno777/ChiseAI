@@ -11,16 +11,15 @@ import asyncio
 import json
 import logging
 import re
-from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 if TYPE_CHECKING:
     from discord_alerts.discord_client import DiscordClient
-    from discord_alerts.config import DiscordConfig
 
 logger = logging.getLogger(__name__)
 

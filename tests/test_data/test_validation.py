@@ -4,44 +4,41 @@ Tests for data validation module.
 ML-DATA-001-A: Data Validation Module
 """
 
-import pytest
 from datetime import datetime, timedelta
-from typing import Dict, Any, List
 
+import pytest
 from src.data.validation import (
-    ValidationSeverity,
-    ValidationStatus,
-    ValidationIssue,
-    ValidationResult,
-    DataQualityReport,
-    DataValidator,
-    NullValidator,
-    TypeValidator,
-    RangeValidator,
-    PatternValidator,
-    LengthValidator,
-    UniquenessValidator,
-    DateTimeValidator,
-    EnumValidator,
-    SchemaValidator,
-    CrossFieldValidator,
-    StatisticalValidator,
-    JSONValidator,
-    EmailValidator,
-    URLValidator,
+    BusinessRuleValidator,
     CoordinateValidator,
     CreditCardValidator,
-    FilePathValidator,
-    PhoneValidator,
+    CrossFieldValidator,
     CurrencyValidator,
-    UUIDValidator,
+    DataQualityReport,
+    DateTimeValidator,
+    EmailValidator,
+    EnumValidator,
+    FilePathValidator,
     IPAddressValidator,
+    JSONValidator,
+    LengthValidator,
+    NullValidator,
+    PatternValidator,
     PercentageValidator,
-    BusinessRuleValidator,
+    PhoneValidator,
+    RangeValidator,
+    SchemaValidator,
+    StatisticalValidator,
+    TypeValidator,
+    UniquenessValidator,
+    URLValidator,
+    UUIDValidator,
+    ValidationIssue,
     ValidationOrchestrator,
+    ValidationResult,
+    ValidationSeverity,
+    ValidationStatus,
     create_validation_orchestrator,
 )
-
 
 # =============================================================================
 # Fixtures
@@ -945,9 +942,7 @@ class TestIntegration:
                 validator = validator_class(patterns={"test": r".*"})
             elif validator_class == LengthValidator:
                 validator = validator_class(length_specs={"test": {"max": 10}})
-            elif validator_class == UniquenessValidator:
-                validator = validator_class(fields=["test"])
-            elif validator_class == DateTimeValidator:
+            elif validator_class == UniquenessValidator or validator_class == DateTimeValidator:
                 validator = validator_class(fields=["test"])
             elif validator_class == EnumValidator:
                 validator = validator_class(allowed_values={"test": ["a", "b"]})
@@ -957,27 +952,17 @@ class TestIntegration:
                 validator = validator_class(validations=[])
             elif validator_class == StatisticalValidator:
                 validator = validator_class(field="test", checks={})
-            elif validator_class == JSONValidator:
-                validator = validator_class(fields=["test"])
-            elif validator_class == EmailValidator:
-                validator = validator_class(fields=["test"])
-            elif validator_class == URLValidator:
+            elif validator_class == JSONValidator or validator_class == EmailValidator or validator_class == URLValidator:
                 validator = validator_class(fields=["test"])
             elif validator_class == CoordinateValidator:
                 validator = validator_class(lat_field="lat", lon_field="lon")
             elif validator_class == CreditCardValidator:
                 validator = validator_class(field="test")
-            elif validator_class == FilePathValidator:
-                validator = validator_class(fields=["test"])
-            elif validator_class == PhoneValidator:
+            elif validator_class == FilePathValidator or validator_class == PhoneValidator:
                 validator = validator_class(fields=["test"])
             elif validator_class == CurrencyValidator:
                 validator = validator_class(field="test")
-            elif validator_class == UUIDValidator:
-                validator = validator_class(fields=["test"])
-            elif validator_class == IPAddressValidator:
-                validator = validator_class(fields=["test"])
-            elif validator_class == PercentageValidator:
+            elif validator_class == UUIDValidator or validator_class == IPAddressValidator or validator_class == PercentageValidator:
                 validator = validator_class(fields=["test"])
             elif validator_class == BusinessRuleValidator:
                 validator = validator_class(rules=[])

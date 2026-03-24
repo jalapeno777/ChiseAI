@@ -5,7 +5,6 @@ from __future__ import annotations
 import pytest
 
 from autonomous_cognition.improvement.cycles import (
-    CycleCheckpoint,
     ImprovementCycleOrchestrator,
     ImprovementCycleResult,
     ImprovementPhase,

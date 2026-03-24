@@ -23,8 +23,7 @@ Example:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from copy import deepcopy
-from typing import Any, Callable, Generic, TypeVar
+from typing import TypeVar
 
 import numpy as np
 

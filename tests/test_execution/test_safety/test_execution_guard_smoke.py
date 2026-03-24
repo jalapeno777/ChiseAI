@@ -3,8 +3,9 @@
 Basic tests to verify the ExecutionGuard functionality.
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from execution.safety.execution_guard import (
     ExecutionGuardResult,

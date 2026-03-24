@@ -79,7 +79,7 @@ class DashboardClient:
                 message = await asyncio.wait_for(self._websocket.recv(), timeout=5.0)
                 initial_state = json.loads(message)
                 logger.debug(f"Received initial state: {initial_state}")
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.warning("Timeout waiting for initial state")
 
             return True

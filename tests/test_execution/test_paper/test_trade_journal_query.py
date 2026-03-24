@@ -6,9 +6,8 @@ For ST-JOURNAL-QUERY-001: Trade Journal Query/Reporting Surface
 from datetime import UTC, datetime, timedelta
 
 import pytest
-
 from src.execution.paper.reason_codes import RejectReason
-from src.execution.paper.trade_journal import ExitReason, FillRecord, TradeJournalEntry
+from src.execution.paper.trade_journal import ExitReason, TradeJournalEntry
 from src.execution.paper.trade_journal_query import (
     JournalQueryFilters,
     JournalSummaryStats,

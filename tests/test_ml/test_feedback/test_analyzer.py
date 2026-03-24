@@ -598,7 +598,6 @@ class TestAnalyzerHealth:
     @pytest.mark.asyncio
     async def test_get_health_status_after_analysis(self, analyzer) -> None:
         """Test health status after running analysis."""
-        from datetime import UTC, datetime
 
         # Create sample matches for testing
         sample_matches = []

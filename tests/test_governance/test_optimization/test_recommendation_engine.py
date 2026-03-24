@@ -10,9 +10,7 @@ import json
 from pathlib import Path
 
 import pytest
-
 from src.governance.optimization.generate_recommendations import RecommendationEngine
-
 
 BASELINE_DIR = Path("docs/evidence/ST-GOV-MINI-002")
 BASELINE_FILE = str(

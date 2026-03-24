@@ -15,14 +15,14 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "src"))
 
-import pytest
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from unittest.mock import Mock
 
+import pytest
 from scripts.analysis.calculate_paper_kpis import (
-    PaperTradingKPIs,
-    PaperKPICalculator,
     LatencyStats,
+    PaperKPICalculator,
+    PaperTradingKPIs,
     calculate_max_drawdown,
     calculate_percentile,
 )

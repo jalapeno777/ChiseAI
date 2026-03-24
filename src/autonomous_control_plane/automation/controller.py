@@ -13,27 +13,21 @@ For ST-CONTROL-002: Self-Healing Automation
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
-import time
 import uuid
-from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any, Callable
+from typing import Any
 
 from autonomous_control_plane.components.self_healing_engine import SelfHealingEngine
 from autonomous_control_plane.healing_actions.base import BaseHealingAction
 from autonomous_control_plane.models.healing import (
-    ActionPriority,
     FailurePatternType,
     HealingAttempt,
     HealingContext,
-    HealingResult,
     HealingStatus,
     LogEntry,
-    ResourceLimits,
 )
 from autonomous_control_plane.telemetry.metrics import TelemetryCollector
 
@@ -498,7 +492,7 @@ class AutomationController:
                 timeout=self.WORKFLOW_TIMEOUT_SECONDS,
             )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             workflow.status = RemediationStatus.TIMEOUT
             logger.error(f"Workflow {workflow.workflow_id} timed out")
 

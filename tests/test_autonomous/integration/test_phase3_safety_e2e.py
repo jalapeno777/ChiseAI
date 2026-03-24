@@ -13,7 +13,6 @@ Tests the live API endpoints for:
 from __future__ import annotations
 
 import time
-from typing import Any
 
 import pytest
 import requests
@@ -95,7 +94,7 @@ class TestCircuitBreakerLifecycle:
             params={"reason": "e2e-test"},
         )
         assert response.status_code == 200
-        print(f"✓ Forced circuit breaker open")
+        print("✓ Forced circuit breaker open")
 
         # Check circuit is OPEN
         response = requests.get(f"{BASE_URL}/circuit-breakers/{cb_name}")
@@ -121,7 +120,7 @@ class TestCircuitBreakerLifecycle:
         response = requests.get(f"{BASE_URL}/circuit-breakers/{cb_name}")
         data = response.json()
         assert data["state"].upper() == "CLOSED"
-        print(f"✓ Initial state: CLOSED")
+        print("✓ Initial state: CLOSED")
 
         # Force open
         requests.post(
@@ -133,18 +132,18 @@ class TestCircuitBreakerLifecycle:
         response = requests.get(f"{BASE_URL}/circuit-breakers/{cb_name}")
         data = response.json()
         assert data["state"].upper() == "OPEN"
-        print(f"✓ State after force-open: OPEN")
+        print("✓ State after force-open: OPEN")
 
         # Reset circuit breaker
         response = requests.post(f"{BASE_URL}/circuit-breakers/{cb_name}/reset")
         assert response.status_code == 200
-        print(f"✓ Circuit breaker reset")
+        print("✓ Circuit breaker reset")
 
         # Verify CLOSED again
         response = requests.get(f"{BASE_URL}/circuit-breakers/{cb_name}")
         data = response.json()
         assert data["state"].upper() == "CLOSED"
-        print(f"✓ Final state after reset: CLOSED")
+        print("✓ Final state after reset: CLOSED")
 
     def test_circuit_breaker_force_close(self, cb_name):
         """Test force-close endpoint."""
@@ -178,7 +177,7 @@ class TestCircuitBreakerLifecycle:
         # Verify CLOSED
         response = requests.get(f"{BASE_URL}/circuit-breakers/{cb_name}")
         assert response.json()["state"].upper() == "CLOSED"
-        print(f"✓ Force-close successful")
+        print("✓ Force-close successful")
 
 
 class TestRetryBudgetOperations:
@@ -193,7 +192,7 @@ class TestRetryBudgetOperations:
         data = response.json()
         # Response format: {"success": true, "data": {"budgets": [], "count": 0}}
         assert "success" in data or "budgets" in data or "data" in data
-        print(f"✓ Got all retry budgets")
+        print("✓ Got all retry budgets")
 
     def test_get_budget_for_service(self):
         """Test getting retry budget for a specific service."""
@@ -216,7 +215,7 @@ class TestRetryBudgetOperations:
         """Test getting endpoint budgets."""
         response = requests.get(f"{BASE_URL}/retry/endpoint-budgets")
         assert response.status_code == 200
-        print(f"✓ Got endpoint budgets")
+        print("✓ Got endpoint budgets")
 
     def test_get_retry_metrics(self):
         """Test getting retry metrics."""
@@ -229,7 +228,7 @@ class TestRetryBudgetOperations:
         """Test getting retry analytics."""
         response = requests.get(f"{BASE_URL}/retry/analytics")
         assert response.status_code == 200
-        print(f"✓ Got retry analytics")
+        print("✓ Got retry analytics")
 
 
 class TestRollbackEndpoints:
@@ -397,7 +396,7 @@ def run_standalone_tests():
             params={"reason": "e2e-test"},
         )
         assert response.status_code == 200
-        print(f"  ✓ Forced circuit breaker open")
+        print("  ✓ Forced circuit breaker open")
 
         # Check OPEN
         response = requests.get(f"{BASE_URL}/circuit-breakers/{cb_name}")
@@ -408,7 +407,7 @@ def run_standalone_tests():
         # Reset
         response = requests.post(f"{BASE_URL}/circuit-breakers/{cb_name}/reset")
         assert response.status_code == 200
-        print(f"  ✓ Reset circuit breaker")
+        print("  ✓ Reset circuit breaker")
 
         # Check CLOSED again
         response = requests.get(f"{BASE_URL}/circuit-breakers/{cb_name}")
@@ -442,12 +441,12 @@ def run_standalone_tests():
         # Reset budget
         response = requests.post(f"{BASE_URL}/retry/budgets/{service_name}/reset")
         assert response.status_code == 200
-        print(f"  ✓ Reset retry budget")
+        print("  ✓ Reset retry budget")
 
         # Get all budgets
         response = requests.get(f"{BASE_URL}/retry/budgets")
         assert response.status_code == 200
-        print(f"  ✓ Got all retry budgets")
+        print("  ✓ Got all retry budgets")
 
     except Exception as e:
         print(f"  ✗ Retry budget test failed: {e}")

@@ -235,9 +235,9 @@ class TestGetConstitutionEndpoint:
             return_value=mock_constitution,
         ):
             try:
-                from src.governance.constitution.api import get_constitution_endpoint
-
                 import asyncio
+
+                from src.governance.constitution.api import get_constitution_endpoint
 
                 result = asyncio.run(get_constitution_endpoint(version=None))
 
@@ -276,9 +276,9 @@ class TestValidateConstitutionEndpoint:
             return_value=mock_constitution,
         ):
             try:
-                from src.governance.constitution.api import validate_constitution
-
                 import asyncio
+
+                from src.governance.constitution.api import validate_constitution
 
                 result = asyncio.run(validate_constitution(version=None))
 
@@ -311,12 +311,12 @@ class TestCheckViolationEndpoint:
             return_value=mock_constitution,
         ):
             try:
+                import asyncio
+
                 from src.governance.constitution.api import (
                     CheckViolationRequest,
                     check_violation,
                 )
-
-                import asyncio
 
                 request = CheckViolationRequest(action="test action")
                 result = asyncio.run(check_violation(request))
@@ -349,12 +349,12 @@ class TestCreateOverrideEndpoint:
             return_value=mock_audit_logger,
         ):
             try:
+                import asyncio
+
                 from src.governance.constitution.api import (
                     OverrideRequestModel,
                     create_override,
                 )
-
-                import asyncio
 
                 request = OverrideRequestModel(
                     requester="operator-1",
@@ -392,12 +392,12 @@ class TestApproveOverrideEndpoint:
             return_value=mock_audit_logger,
         ):
             try:
+                import asyncio
+
                 from src.governance.constitution.api import (
                     ApproveOverrideRequest,
                     approve_override,
                 )
-
-                import asyncio
 
                 request = ApproveOverrideRequest(approver="admin-1")
                 result = asyncio.run(approve_override("test-uuid", request))
@@ -432,9 +432,9 @@ class TestGetAuditLogEndpoint:
             return_value=mock_audit_logger,
         ):
             try:
-                from src.governance.constitution.api import get_audit_log
-
                 import asyncio
+
+                from src.governance.constitution.api import get_audit_log
 
                 result = asyncio.run(get_audit_log())
 
@@ -458,9 +458,9 @@ class TestListVersionsEndpoint:
             ],
         ):
             try:
-                from src.governance.constitution.api import list_versions
-
                 import asyncio
+
+                from src.governance.constitution.api import list_versions
 
                 result = asyncio.run(list_versions())
 
@@ -497,9 +497,9 @@ class TestGetInvariantsEndpoint:
             return_value=mock_loader,
         ):
             try:
-                from src.governance.constitution.api import get_invariants
-
                 import asyncio
+
+                from src.governance.constitution.api import get_invariants
 
                 result = asyncio.run(get_invariants())
 
@@ -532,7 +532,6 @@ class TestErrorHandling:
         try:
             from fastapi import HTTPException
             from fastapi.responses import JSONResponse
-
             from src.governance.constitution.api import http_exception_handler
 
             # Create a mock request
@@ -552,7 +551,6 @@ class TestErrorHandling:
         """Test general exception handler."""
         try:
             from fastapi.responses import JSONResponse
-
             from src.governance.constitution.api import general_exception_handler
 
             # Create a mock request

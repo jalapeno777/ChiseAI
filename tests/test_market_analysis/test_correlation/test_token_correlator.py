@@ -2,20 +2,16 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any
-
 import numpy as np
 import pytest
 
 from data_ingestion.ohlcv_fetcher import OHLCVData
 from market_analysis.correlation.token_correlator import (
+    DEFAULT_TOKENS,
     CorrelationSnapshot,
     RollingCorrelationResult,
     TokenCorrelator,
-    DEFAULT_TOKENS,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers

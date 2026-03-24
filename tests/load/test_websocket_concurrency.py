@@ -219,7 +219,7 @@ class TestWebSocketHighConcurrency:
             f"exceeds 5 second threshold"
         )
 
-        print(f"\nConcurrent Connection Scaling:")
+        print("\nConcurrent Connection Scaling:")
         print(f"  Active Connections: {connection_pool.active_connections}")
         print(f"  Peak Connections: {connection_pool.pool_metrics['peak_connections']}")
         print(
@@ -251,7 +251,7 @@ class TestWebSocketHighConcurrency:
 
         assert connection_pool.pool_metrics["rejected_connections"] > 0
 
-        print(f"\nConnection Pool Limits:")
+        print("\nConnection Pool Limits:")
         print(f"  Max Connections: {connection_pool.max_connections}")
         print(f"  Active Connections: {connection_pool.active_connections}")
         print(
@@ -318,7 +318,7 @@ class TestWebSocketHighConcurrency:
             "Some connections disconnected unexpectedly"
         )
 
-        print(f"\nConnection Stability Under Load:")
+        print("\nConnection Stability Under Load:")
         print(f"  Test Duration: {elapsed:.1f}s")
         print(f"  Messages Sent: {messages_sent}")
         print(f"  Messages Failed: {messages_failed}")
@@ -402,7 +402,7 @@ class TestWebSocketMessageThroughput:
         )
         assert failed_messages == 0, f"Had {failed_messages} failed messages"
 
-        print(f"\nHigh Volume Message Throughput:")
+        print("\nHigh Volume Message Throughput:")
         print(f"  Total Messages: {len(latencies)}")
         print(f"  Failed Messages: {failed_messages}")
         print(f"  Messages/Second: {messages_per_second:.1f}")
@@ -469,7 +469,7 @@ class TestWebSocketMessageThroughput:
             f"Recovery time {recovery_elapsed_ms:.1f}ms exceeds 1 second"
         )
 
-        print(f"\nBurst Message Handling:")
+        print("\nBurst Message Handling:")
         print(f"  Burst Size: {burst_size}")
         print(f"  Successful: {len(latencies)}")
         print(f"  Failed: {failed}")
@@ -536,7 +536,7 @@ class TestWebSocketCircuitBreaker:
         result = await circuit.call(success_operation)
         assert result == {"status": "ok"}, "Should allow request in half-open state"
 
-        print(f"\nCircuit Breaker Under Load:")
+        print("\nCircuit Breaker Under Load:")
         print(f"  Failure Threshold: {WEBSOCKET_CIRCUIT_BREAKER_THRESHOLD}")
         print(f"  Final State: {circuit.state}")
         print(f"  Blocked Requests: {blocked}")
@@ -585,10 +585,10 @@ class TestWebSocketCircuitBreaker:
         assert result == {"status": "recovered"}
         assert circuit.state == "closed", "Circuit should be closed after recovery"
 
-        print(f"\nCircuit Breaker Recovery:")
-        print(f"  Initial State: open")
+        print("\nCircuit Breaker Recovery:")
+        print("  Initial State: open")
         print(f"  Final State: {circuit.state}")
-        print(f"  Recovery Successful: True")
+        print("  Recovery Successful: True")
 
 
 class TestConnectionPoolManagement:
@@ -628,7 +628,7 @@ class TestConnectionPoolManagement:
         # Pool should have created new connections for released slots
         assert pool.active_connections == 50
 
-        print(f"\nConnection Reuse:")
+        print("\nConnection Reuse:")
         print(f"  Initial Connections: {initial_count}")
         print(f"  Active Connections: {pool.active_connections}")
         print(f"  Total Created: {pool.total_connections_created}")
@@ -664,7 +664,7 @@ class TestConnectionPoolManagement:
         assert pool.active_connections == 0
         assert all(not conn.connected for conn in connections)
 
-        print(f"\nGraceful Connection Shutdown:")
+        print("\nGraceful Connection Shutdown:")
         print(f"  Connections Closed: {len(connections)}")
         print(f"  Shutdown Time: {shutdown_elapsed_ms:.1f}ms")
         print(f"  Active After Shutdown: {pool.active_connections}")
@@ -696,7 +696,7 @@ class TestConnectionPoolManagement:
         # Verify pool metrics
         assert pool.pool_metrics["avg_connection_time_ms"] > 0
 
-        print(f"\nConnection Timeout Handling:")
+        print("\nConnection Timeout Handling:")
         print(f"  Active Connections: {pool.active_connections}")
         print(
             f"  Avg Connection Time: {pool.pool_metrics['avg_connection_time_ms']:.1f}ms"

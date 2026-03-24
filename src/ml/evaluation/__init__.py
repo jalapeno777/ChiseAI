@@ -8,11 +8,11 @@ from ml.evaluation.brain_eval import (
     EvaluationOrchestrator,
 )
 from ml.evaluation.metrics import (
+    METRIC_CONFIGS,
     EvaluationMetrics,
     MetricCategory,
     MetricConfig,
     MetricResult,
-    METRIC_CONFIGS,
     compute_accuracy,
     compute_all_metrics,
     compute_auc_roc,

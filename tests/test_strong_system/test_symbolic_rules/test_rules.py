@@ -1,10 +1,7 @@
 """Tests for core symbolic rules functionality."""
 
-import numpy as np
-import pytest
 
 from src.strong_system.symbolic_rules import (
-    CompositeRule,
     RuleEngine,
     RuleSet,
     SymbolicRule,

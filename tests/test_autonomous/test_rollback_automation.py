@@ -14,7 +14,6 @@ Acceptance Criteria:
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -30,11 +29,9 @@ from autonomous_control_plane.components.rollback_automation import (
 from autonomous_control_plane.models.rollback import (
     CoordinatedRollbackConfig,
     PostRollbackValidationResult,
-    RollbackCheckpoint,
     RollbackImpactAnalysis,
     RollbackOperation,
     RollbackRiskLevel,
-    RollbackStatus,
     RollbackTemplate,
     RollbackTemplateStep,
     RollbackTemplateType,

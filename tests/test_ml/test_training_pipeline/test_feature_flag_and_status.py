@@ -34,7 +34,6 @@ from ml.training.pipeline_status import (
     set_pipeline_status,
 )
 
-
 # =============================================================================
 # Fixtures
 # =============================================================================
@@ -317,7 +316,6 @@ class TestPipelineIntegrationWithStatus:
         from unittest.mock import AsyncMock
 
         from ml.training.pipeline_integration import (
-            TrainingJob,
             TrainingPipelineIntegration,
         )
 

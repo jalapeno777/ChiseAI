@@ -12,8 +12,9 @@ import logging
 import statistics
 import time
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 from autonomous_control_plane.config.pipeline_settings import (
     AggregationWindow,

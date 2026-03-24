@@ -577,7 +577,7 @@ class RetryCoordinator:
                         logger.info(f"Queuing operation {operation_name} for later")
                         self._queued_operations.append(operation)
                         raise BudgetExceededError(
-                            f"Operation queued due to budget exhaustion"
+                            "Operation queued due to budget exhaustion"
                         ) from e
 
                 # Check pool budget if configured

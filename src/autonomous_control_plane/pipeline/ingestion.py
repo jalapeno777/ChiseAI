@@ -8,14 +8,14 @@ ST-CONTROL-001: Telemetry Pipeline
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import threading
 import time
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 from autonomous_control_plane.config.pipeline_settings import (
     IngestionSourceConfig,
@@ -357,15 +357,7 @@ class IngestionSource:
 
             if field and operator:
                 event_value = event.data.get(field)
-                if operator == "eq" and event_value != value:
-                    return False
-                elif operator == "ne" and event_value == value:
-                    return False
-                elif operator == "gt" and not (event_value > value):
-                    return False
-                elif operator == "lt" and not (event_value < value):
-                    return False
-                elif operator == "contains" and value not in str(event_value):
+                if operator == "eq" and event_value != value or operator == "ne" and event_value == value or operator == "gt" and not (event_value > value) or operator == "lt" and not (event_value < value) or operator == "contains" and value not in str(event_value):
                     return False
 
         return True

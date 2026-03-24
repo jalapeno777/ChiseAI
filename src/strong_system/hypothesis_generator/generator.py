@@ -11,8 +11,6 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
 
-import numpy as np
-
 from src.strong_system.belief_embeddings import BeliefVector
 from src.strong_system.hypothesis_generator.templates import (
     get_template_registry,
@@ -267,7 +265,7 @@ class HypothesisGenerator:
             response = self.llm_provider.generate(
                 prompts["system"], prompts["user"], max_tokens=1000
             )
-        except Exception as e:
+        except Exception:
             return []
 
         # Parse response into hypotheses

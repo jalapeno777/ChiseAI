@@ -8,13 +8,10 @@ import json
 from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock, patch
 
-import numpy as np
 import pytest
-
 from src.governance.deduplication import (
     AuditEntry,
     AuditTrail,
-    DEDUPLICATION_PREFIX,
     DeduplicationAction,
     DeduplicationConfig,
     DeduplicationResult,

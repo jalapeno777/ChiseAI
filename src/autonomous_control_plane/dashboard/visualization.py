@@ -12,7 +12,7 @@ import logging
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
-from autonomous_control_plane.dashboard.models import ChartData, TimeRange
+from autonomous_control_plane.dashboard.models import ChartData
 
 if TYPE_CHECKING:
     from autonomous_control_plane.automation.controller import AutomationController

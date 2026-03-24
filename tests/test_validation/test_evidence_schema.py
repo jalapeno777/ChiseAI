@@ -12,19 +12,14 @@ Story: SWARM-HARDEN-001-1.1
 from __future__ import annotations
 
 import json
-import textwrap
 from pathlib import Path
 from typing import Any
 
-import pytest
 from scripts.validation.evidence_schema_validator import (
-    EvidenceSchemaValidator,
     REQUIRED_TOP_LEVEL_FIELDS,
-    TEST_SUMMARY_OPTIONAL_FIELDS,
-    TEST_SUMMARY_REQUIRED_FIELDS,
+    EvidenceSchemaValidator,
     ValidationResult,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

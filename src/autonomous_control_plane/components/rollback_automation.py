@@ -15,7 +15,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import Callable
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 from autonomous_control_plane.models.rollback import (
@@ -26,7 +26,6 @@ from autonomous_control_plane.models.rollback import (
     RollbackOperation,
     RollbackRiskLevel,
     RollbackStatus,
-    RollbackStep,
     RollbackTemplate,
     RollbackTemplateStep,
     RollbackTemplateType,

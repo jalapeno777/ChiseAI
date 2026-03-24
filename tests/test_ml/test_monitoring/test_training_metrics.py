@@ -14,7 +14,7 @@ Acceptance Criteria:
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -39,7 +39,7 @@ class TestTrainingRunMetrics:
             model_name="signal_predictor",
             training_mode=TrainingMode.FULL,
             status=TrainingStatus.SUCCESS,
-            started_at=datetime.now(timezone.utc),
+            started_at=datetime.now(UTC),
         )
 
         assert metrics.run_id == "train_001"
@@ -50,7 +50,7 @@ class TestTrainingRunMetrics:
 
     def test_training_run_metrics_to_dict(self):
         """Test converting training run metrics to dictionary."""
-        started = datetime.now(timezone.utc)
+        started = datetime.now(UTC)
         metrics = TrainingRunMetrics(
             run_id="train_001",
             model_name="signal_predictor",

@@ -13,21 +13,14 @@ For ST-CONTROL-002: Self-Healing Automation
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any, Callable
-
-from autonomous_control_plane.models.healing import (
-    HealingContext,
-    HealingResult,
-    HealingStatus,
-    ResourceLimits,
-)
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -561,7 +554,7 @@ class RunbookEngine:
                 step.status = RunbookStepStatus.FAILED
                 return False
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             step.status = RunbookStepStatus.FAILED
             step.result = {"error": f"Step timed out after {step.timeout_seconds}s"}
             return False
@@ -732,7 +725,6 @@ class RunbookEngine:
         Returns:
             Execution result
         """
-        import subprocess
 
         command = step.action
 
@@ -759,7 +751,7 @@ class RunbookEngine:
                 "stderr": stderr.decode("utf-8", errors="replace"),
             }
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             proc.kill()
             return {"success": False, "error": "Command timed out"}
 

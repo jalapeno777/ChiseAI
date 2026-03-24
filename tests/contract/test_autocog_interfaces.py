@@ -13,13 +13,10 @@ All tests use live services to validate actual contracts.
 
 from __future__ import annotations
 
-import asyncio
 import json
 import os
 import re
 from datetime import UTC, datetime
-from typing import Any
-from unittest.mock import Mock, patch
 
 import pytest
 
@@ -42,7 +39,6 @@ class TestDiscordInterfaceContract:
         - JSON serialization format
         """
         # Import and test actual notifier formatting
-        from governance.notifications.discord_notifier import DiscordNotifier
 
         # Verify webhook URL pattern
         valid_webhook = (
