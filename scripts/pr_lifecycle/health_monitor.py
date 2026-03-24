@@ -25,6 +25,7 @@ bootstrap(load_env=True)
 # Import PR state manager and monitor
 from .pr_monitor import PRMonitor  # noqa: E402
 from .pr_state_manager import PRStateManager, _utc_now  # noqa: E402
+from .stale_detector import StaleDetector  # noqa: E402
 
 # Configuration
 DEFAULT_STUCK_THRESHOLD_MIN = int(os.getenv("CHISE_PR_STUCK_THRESHOLD_MIN", "30"))
@@ -51,6 +52,7 @@ class PRHealthMonitor:
     def __init__(self, stuck_threshold_min: int = DEFAULT_STUCK_THRESHOLD_MIN):
         self.state_mgr = PRStateManager()
         self.monitor = PRMonitor(stuck_threshold_min=stuck_threshold_min)
+        self.stuck_detector = StaleDetector()
         self.stuck_threshold_min = stuck_threshold_min
 
     def scan_all_prs(self) -> dict[str, Any]:
@@ -131,6 +133,29 @@ class PRHealthMonitor:
                         "reason": state.escalation_reason,
                     }
                 )
+
+            # Check if behind main (stale branch) - skip escalated PRs
+            if not state.escalated and self.stuck_detector.check_branch_is_feature(
+                state.branch
+            ):
+                is_behind, commits_behind = self.stuck_detector.is_behind_main(
+                    state.branch
+                )
+                if is_behind:
+                    results["issues"].append(
+                        {
+                            "pr_number": pr_number,
+                            "issue": "behind_main",
+                            "severity": "warning",
+                            "reason": f"Branch is {commits_behind} commits behind main",
+                            "commits_behind": commits_behind,
+                        }
+                    )
+                    results["summary"]["needs_attention"] += 1
+                    # Track stale state in Redis
+                    self.stuck_detector.track_stale_pr(
+                        pr_number, is_behind, commits_behind
+                    )
 
             # Track failure patterns for systemic detection
             if state.failure_type:
