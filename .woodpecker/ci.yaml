@@ -414,6 +414,12 @@ steps:
         set +e
         (
           set -euo pipefail
+          # Skip expensive steps on push-to-main (PR is authoritative)
+          if [ "$${CI_EVENT}" = "push" ] && [ "$${CI_COMMIT_BRANCH}" = "main" ]; then
+            echo "local-ci: SKIPPED (push-to-main, PR is authoritative)"
+            echo "0" > "$${CI_STATUS_DIR}/local-ci.status"
+            exit 0
+          fi
           # PHASE 3: Performance monitoring start
           START_TIME=$(date +%s)
           echo "local-ci: Starting at $(date -Iseconds)"
@@ -597,6 +603,13 @@ steps:
         set +e
         (
           set -euo pipefail
+          # Skip expensive ingestion on push-to-main (PR is authoritative)
+          if [ "$${CI_EVENT}" = "push" ] && [ "$${CI_COMMIT_BRANCH}" = "main" ]; then
+            echo "pre-eval-ingestion: SKIPPED (push-to-main, PR is authoritative)"
+            printf '%s\n' '{"success": true, "skipped": true, "reason": "push-to-main", "files_processed": 0, "files_ingested": 0, "files_failed": 0, "files_skipped": 0, "duration_seconds": 0, "errors": [], "ingested_memory_ids": []}' > "$${CI_STATUS_DIR}/pre-eval-ingestion.json"
+            echo "0" > "$${CI_STATUS_DIR}/pre-eval-ingestion.status"
+            exit 0
+          fi
           python -V
           echo "Running pre-evaluation tempmemory ingestion..."
           # Determine feature flag value
@@ -646,6 +659,13 @@ steps:
         set +e
         (
           set -euo pipefail
+          # Skip expensive brain-eval on push-to-main (PR is authoritative)
+          if [ "$${CI_EVENT}" = "push" ] && [ "$${CI_COMMIT_BRANCH}" = "main" ]; then
+            echo "brain-eval: SKIPPED (push-to-main, PR is authoritative)"
+            echo '{"success": true, "skipped": true, "reason": "push-to-main"}' > "$${CI_STATUS_DIR}/brain-eval.json"
+            echo "0" > "$${CI_STATUS_DIR}/brain-eval.status"
+            exit 0
+          fi
           python -V
           # Determine feature flag value (same logic as pre-eval-ingestion)
           if [ "$${CI_TEMPMEMORY_INGESTION_ENABLED}" = "auto" ]; then
