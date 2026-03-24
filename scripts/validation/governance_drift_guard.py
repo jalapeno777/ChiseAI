@@ -67,9 +67,7 @@ def extract_epic_status(data: dict, epic_id: str) -> dict | None:
                 "id": epic.get("id"),
                 "status": epic.get("status"),
                 "stories_completed": epic.get("stories_completed", 0),
-                "stories_completed_verified": epic.get(
-                    "stories_completed_verified", []
-                ),
+                "story_ids": epic.get("story_ids", []),
                 "story_count": epic.get("story_count", 0),
             }
     return None
@@ -94,8 +92,8 @@ def parse_evidence_file(file_path: Path) -> list:
         content = f.read()
 
     # Pattern to match story ID rows in tables
-    # Looks for: | **Story ID** | ST-GOV-XXX |
-    pattern = r"\|\s*\*\*Story ID\*\*\s*\|\s*(ST-GOV-\d+)\s*\|"
+    # Looks for: | **Story ID** | ST-GOV-XXX | or | **Story ID** | ST-GOV-MINI-XXX |
+    pattern = r"\|\s*\*\*Story ID\*\*\s*\|\s*(ST-GOV-(?:\d+|MINI-\d+))\s*\|"
     matches = re.findall(pattern, content)
 
     return sorted(set(matches))
@@ -141,7 +139,7 @@ def detect_drift(
     if workflow_status is None:
         return True, [f"Epic {EPIC_ID} not found in workflow status"]
 
-    workflow_stories = set(workflow_status.get("stories_completed_verified", []))
+    workflow_stories = set(workflow_status.get("story_ids", []))
     evidence_stories = set(evidence_summary.get("story_ids", []))
 
     # Check 1: Count mismatch (evidence stories should be subset of workflow stories)

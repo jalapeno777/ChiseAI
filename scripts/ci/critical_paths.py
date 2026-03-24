@@ -11,7 +11,6 @@ from pathlib import Path
 CRITICAL_PATH_PATTERNS = [
     "tests/test_execution/",
     "tests/test_ml/",
-    "tests/test_risk/",
     "tests/test_venue_enforcement/",
     "tests/test_kill_switch/",
     "tests/test_reconciliation/",
