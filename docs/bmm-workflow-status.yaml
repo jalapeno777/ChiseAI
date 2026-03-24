@@ -1075,6 +1075,7 @@ epics:
       - Final validation: Pending execution
       - Extended timeline per Option A decision (Mar 14, 2026)
       - Epic pending - all child stories planned
+      - Deferred per Craig decision (2026-03-24) — paper trading is active, formal readiness to follow 2026-04-14
     sprint_id: LAUNCH-SPRINT-3
     status: planned
     stories_completed: 0
@@ -1084,7 +1085,8 @@ epics:
       - ST-LAUNCH-016
       - ST-LAUNCH-017
     story_points: 7
-    timeline: 3 days (Mar 12-14, 2026) - PENDING
+    timeline: 3 days (Apr 12-14, 2026) - PENDING
+    target_date: "2026-04-14"
   - completion_date: "2026-02-22"
     completion_percentage: 100
     deployment:
