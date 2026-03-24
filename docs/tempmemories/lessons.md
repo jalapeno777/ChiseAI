@@ -532,3 +532,20 @@ LESSON
 - evidence_ref: ST-GIT-009 session.py, ST-GIT-010 session.py
 - added_utc: 2026-03-23T20:00:00Z
 ```
+
+```text
+LESSON
+- id: LESSON-20260324-001
+- context: ST-GITEA-OWNER-001 - Gitea MCP owner parameter must be "craig" not "tacopants"
+- trigger: Agents using Gitea MCP tools with owner="tacopants" (filesystem username) instead of owner="craig" (Gitea username)
+- actionable_rule: Always use owner="craig" for Gitea MCP tool calls. The filesystem username (tacopants) is NOT the Gitea username. These are separate systems. GITEA_OWNER env var should default to "craig".
+- applies_to:
+  - quickdev
+  - dev
+  - senior-dev
+  - jarvis
+  - merlin
+- expected_outcome: Zero Gitea MCP calls fail due to wrong owner parameter
+- evidence_ref: ST-GITEA-OWNER-001, AGENTS.md Gitea MCP Owner section
+- added_utc: 2026-03-24T21:30:00Z
+```
