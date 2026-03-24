@@ -131,6 +131,7 @@ def _enable_merge_check(cfg: Config, pr: dict[str, Any], head_branch: str) -> bo
     if not number:
         return False
     payload = {
+        "Do": "merge",
         "merge_when_checks_succeed": True,
         "head_commit_id": ((pr.get("head") or {}).get("sha") or ""),
     }
