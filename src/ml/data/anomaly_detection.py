@@ -428,12 +428,11 @@ class AnomalyDetector:
             n2 = len(current)
 
             # Sort both arrays
-            sorted_baseline = sorted(baseline)
-            sorted_current = sorted(current)
+            sorted(baseline)
+            sorted(current)
 
             # Calculate empirical CDFs and find max difference
             max_diff = 0.0
-            i = j = 0
 
             all_values = sorted(set(baseline + current))
 

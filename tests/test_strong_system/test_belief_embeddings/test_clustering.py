@@ -361,7 +361,7 @@ class TestBeliefClusteringEngineDBSCAN:
         cluster_id = engine.predict(new_belief)
 
         # Should assign to one of the found clusters
-        assert cluster_id in engine.get_centroids().keys()
+        assert cluster_id in engine.get_centroids()
 
 
 class TestBeliefClusteringEngineMiniBatch:

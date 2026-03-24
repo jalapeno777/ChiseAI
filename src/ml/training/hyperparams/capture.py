@@ -112,9 +112,6 @@ class HyperparameterCapture:
                 return False
             if not isinstance(hyperparams.regularization, dict):
                 return False
-            if not isinstance(hyperparams.custom_params, dict):
-                return False
-
-            return True
+            return isinstance(hyperparams.custom_params, dict)
         except (AttributeError, TypeError):
             return False

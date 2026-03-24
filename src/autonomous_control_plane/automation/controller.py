@@ -603,7 +603,7 @@ class AutomationController:
 
         try:
             # Create healing context
-            context = HealingContext(
+            HealingContext(
                 service=workflow.service,
                 action_id=step.step_id,
                 triggered_by=workflow.pattern_type.value,

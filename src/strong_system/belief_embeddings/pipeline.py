@@ -392,7 +392,7 @@ class BeliefPipeline:
             raise ValueError("vectors and metadata_list must have same length")
 
         beliefs: list[BeliefVector] = []
-        for vec, meta in zip(vectors, metadata_list):
+        for vec, meta in zip(vectors, metadata_list, strict=False):
             belief = BeliefVector(vector=vec, metadata=meta)
             beliefs.append(belief)
 

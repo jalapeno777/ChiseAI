@@ -621,7 +621,7 @@ class ProgramSerializer:
             }
 
         # Add type-specific fields
-        if isinstance(node, NumberLiteral) or isinstance(node, StringLiteral) or isinstance(node, BooleanLiteral):
+        if isinstance(node, (NumberLiteral, StringLiteral, BooleanLiteral)):
             result["value"] = node.value
         elif isinstance(node, VectorLiteral):
             result["values"] = node.values

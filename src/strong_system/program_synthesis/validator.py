@@ -715,7 +715,7 @@ class SemanticAnalyzer:
         )
 
         # Track definitions
-        if isinstance(node, VariableDecl) or isinstance(node, ParameterRef) or isinstance(node, FunctionDef):
+        if isinstance(node, (VariableDecl, ParameterRef, FunctionDef)):
             self._defined_symbols.add(node.name)
 
         # Track usages

@@ -695,7 +695,7 @@ class TrainingAlerter:
         """
         triggered = []
 
-        for rule_name, rule in self._rules.items():
+        for _rule_name, rule in self._rules.items():
             if rule.should_fire(metrics):
                 alert = rule.create_alert(source=source, metadata=metrics)
                 self._trigger_alert(alert)

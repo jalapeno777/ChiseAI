@@ -26,7 +26,7 @@ def to_dict(obj: T) -> dict[str, Any]:
     Raises:
         TypeError: If obj is not a supported type
     """
-    if isinstance(obj, BeliefVector) or isinstance(obj, BeliefMetadata) or isinstance(obj, BeliefSchema):
+    if isinstance(obj, (BeliefVector, BeliefMetadata, BeliefSchema)):
         return obj.to_dict()
     else:
         raise TypeError(f"Cannot serialize object of type {type(obj)}")

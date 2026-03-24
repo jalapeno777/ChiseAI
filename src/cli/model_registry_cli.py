@@ -171,7 +171,7 @@ def format_output(
 
     elif isinstance(data, dict):
         # Dictionary
-        max_key_len = max(len(str(k)) for k in data.keys()) if data else 0
+        max_key_len = max(len(str(k)) for k in data) if data else 0
         lines = []
         for key, value in data.items():
             lines.append(f"{str(key):{max_key_len}} : {value}")
@@ -710,7 +710,7 @@ def validate(
             sys.exit(EXIT_VALIDATION_ERROR)
 
         # Create temporary metadata for validation
-        metadata = ModelMetadata(
+        ModelMetadata(
             model_name=name,
             version="0.0.0",  # Dummy version for validation
             created_at=datetime.now(UTC),

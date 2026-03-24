@@ -162,7 +162,7 @@ class BudgetAnalytics:
         metrics = self._local_metrics[budget_key]
         total = metrics["total_retries"]
         successes = metrics["success_count"]
-        failures = metrics["failure_count"]
+        metrics["failure_count"]
 
         return {
             "retries_per_success": total / max(successes, 1),

@@ -395,7 +395,7 @@ class InfluxDBExporter:
 
                 # Add fields
                 for key, value in metric.fields.items():
-                    if isinstance(value, int) or isinstance(value, float):
+                    if isinstance(value, (int, float)):
                         point.field(key, value)
                     else:
                         point.field(key, str(value))

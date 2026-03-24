@@ -576,7 +576,7 @@ class RemediationWorkflows:
         )
 
         # Step 1: Analyze memory
-        step1 = runbook.add_step(
+        runbook.add_step(
             RunbookStep(
                 name="Analyze Memory Usage",
                 description=f"Analyze memory usage for {service_name}",
@@ -678,7 +678,7 @@ class RemediationWorkflows:
         )
 
         # Step 1: Analyze
-        step1 = runbook.add_step(
+        runbook.add_step(
             RunbookStep(
                 name="Analyze Disk Usage",
                 description="Analyze disk usage patterns",

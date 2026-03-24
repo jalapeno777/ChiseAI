@@ -928,11 +928,11 @@ class TestTradeJournalQueryReasonDistribution:
         summary = query.get_reason_summary()
 
         # Exit reasons should be serialized as string values
-        for reason_value in summary["exit_reasons"].keys():
+        for reason_value in summary["exit_reasons"]:
             assert isinstance(reason_value, str)
 
         # Reject reasons should be serialized as string values
-        for reason_value in summary["reject_reasons"].keys():
+        for reason_value in summary["reject_reasons"]:
             assert isinstance(reason_value, str)
 
     def test_get_reason_summary_counts_match(

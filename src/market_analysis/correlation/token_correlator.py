@@ -210,9 +210,7 @@ class TokenCorrelator(BaseIndicator[RollingCorrelationResult]):
         """Check that data is a non-empty list with enough entries."""
         if not isinstance(data, list) or len(data) == 0:
             return False
-        if len(data) < max(self.windows):
-            return False
-        return True
+        return not len(data) < max(self.windows)
 
     def get_metadata(self) -> dict[str, Any]:
         return {
@@ -449,7 +447,7 @@ class TokenCorrelator(BaseIndicator[RollingCorrelationResult]):
             win_dict: dict[int, np.ndarray] = {}
 
             # pandas rolling corr pairwise
-            rolling_obj = df.rolling(window=win, min_periods=self.min_periods)
+            df.rolling(window=win, min_periods=self.min_periods)
 
             # We compute per-bar: for bar i, the window is df[i-win+1 : i+1].
             # pandas rolling gives us NaN before min_periods.

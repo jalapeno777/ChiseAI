@@ -8,6 +8,7 @@ For ST-CONTROL-003: Control Plane Dashboard
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 from typing import Any
@@ -96,10 +97,8 @@ class DashboardClient:
 
         if self._poll_task:
             self._poll_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._poll_task
-            except asyncio.CancelledError:
-                pass
             self._poll_task = None
 
         if self._websocket:

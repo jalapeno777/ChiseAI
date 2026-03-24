@@ -635,7 +635,7 @@ class TrainingMetricsCollector:
             else:
                 by_model[run.model_name]["failed"] += 1
 
-        for model, stats in by_model.items():
+        for _model, stats in by_model.items():
             stats["success_rate"] = (
                 stats["successful"] / stats["total"] * 100
                 if stats["total"] > 0

@@ -942,7 +942,7 @@ class TestIntegration:
                 validator = validator_class(patterns={"test": r".*"})
             elif validator_class == LengthValidator:
                 validator = validator_class(length_specs={"test": {"max": 10}})
-            elif validator_class == UniquenessValidator or validator_class == DateTimeValidator:
+            elif validator_class in (UniquenessValidator, DateTimeValidator):
                 validator = validator_class(fields=["test"])
             elif validator_class == EnumValidator:
                 validator = validator_class(allowed_values={"test": ["a", "b"]})
@@ -952,17 +952,17 @@ class TestIntegration:
                 validator = validator_class(validations=[])
             elif validator_class == StatisticalValidator:
                 validator = validator_class(field="test", checks={})
-            elif validator_class == JSONValidator or validator_class == EmailValidator or validator_class == URLValidator:
+            elif validator_class in (JSONValidator, EmailValidator, URLValidator):
                 validator = validator_class(fields=["test"])
             elif validator_class == CoordinateValidator:
                 validator = validator_class(lat_field="lat", lon_field="lon")
             elif validator_class == CreditCardValidator:
                 validator = validator_class(field="test")
-            elif validator_class == FilePathValidator or validator_class == PhoneValidator:
+            elif validator_class in (FilePathValidator, PhoneValidator):
                 validator = validator_class(fields=["test"])
             elif validator_class == CurrencyValidator:
                 validator = validator_class(field="test")
-            elif validator_class == UUIDValidator or validator_class == IPAddressValidator or validator_class == PercentageValidator:
+            elif validator_class in (UUIDValidator, IPAddressValidator, PercentageValidator):
                 validator = validator_class(fields=["test"])
             elif validator_class == BusinessRuleValidator:
                 validator = validator_class(rules=[])

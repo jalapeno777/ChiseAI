@@ -982,7 +982,7 @@ class JSONValidator(DataValidator):
             # Try to parse as JSON string
             if isinstance(value, str):
                 try:
-                    parsed = json.loads(value)
+                    json.loads(value)
                     # Could add schema validation here
                 except json.JSONDecodeError as e:
                     issues.append(

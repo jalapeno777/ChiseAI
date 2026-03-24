@@ -234,7 +234,7 @@ class BeliefIndex:
             self._clusters[cluster_id] = cluster_info
 
         # Assign beliefs to clusters
-        belief_map = {b.belief_id: b for b in beliefs}
+        {b.belief_id: b for b in beliefs}
 
         for assignment in assignments:
             cluster_id = assignment.cluster_id
@@ -259,7 +259,6 @@ class BeliefIndex:
         self._levels.append(base_level)
 
         # Build higher levels
-        current_beliefs = beliefs
         for level in range(1, self.hierarchy_depth):
             # Cluster the centroids from previous level
             centroids = self._levels[-1].engine.get_centroids()

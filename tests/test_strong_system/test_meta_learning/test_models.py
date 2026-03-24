@@ -231,7 +231,7 @@ class TestMAML:
 
         assert maml.inner_lr == 0.01
         assert maml.n_inner_steps == 5
-        assert maml.first_order == False
+        assert not maml.first_order
 
     def test_maml_meta_parameters(self):
         """Test accessing meta-parameters."""

@@ -465,7 +465,7 @@ class SearchBasedGenerator(ProgramGenerator):
         self.reset_node_count()
 
         # Skeleton: try random generation up to max_attempts
-        for attempt in range(self._max_attempts):
+        for _attempt in range(self._max_attempts):
             program = self._try_generate(context)
             if program is not None:
                 result = self.validate_generation(program)

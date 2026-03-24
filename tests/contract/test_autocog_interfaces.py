@@ -277,7 +277,7 @@ class TestQdrantInterfaceContract:
             # Try to get non-existent collection
             try:
                 client.get_collection("non_existent_collection_xyz")
-                assert False, "Should have raised error for non-existent collection"
+                raise AssertionError("Should have raised error for non-existent collection")
             except UnexpectedResponse as e:
                 # Should get 404 or similar error
                 assert e.status_code in [404, 400], (

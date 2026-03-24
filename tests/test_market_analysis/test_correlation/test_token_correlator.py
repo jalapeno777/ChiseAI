@@ -24,7 +24,7 @@ def _make_ohlcv(
 ) -> list[OHLCVData]:
     """Build a list of OHLCVData from timestamps and close prices."""
     bars: list[OHLCVData] = []
-    for ts, c in zip(timestamps, closes):
+    for ts, c in zip(timestamps, closes, strict=False):
         bars.append(
             OHLCVData(
                 timestamp=ts,

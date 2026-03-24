@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 from typing import Any
 
@@ -377,10 +377,8 @@ class DashboardServer:
 
         if self._server_task:
             self._server_task.cancel()
-            try:
+            with suppress(asyncio.CancelledError):
                 await self._server_task
-            except asyncio.CancelledError:
-                pass
 
         # WebSocket server is stopped by lifespan
 

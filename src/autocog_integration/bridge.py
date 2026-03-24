@@ -1,6 +1,7 @@
 """Cross-system learning bridge between AUTOCOG and STRONG systems."""
 
 import asyncio
+import contextlib
 import logging
 import time
 from collections.abc import Callable
@@ -155,10 +156,8 @@ class LearningBridge:
 
         if self._sync_task:
             self._sync_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._sync_task
-            except asyncio.CancelledError:
-                pass
 
         await self.dual_adapter.disconnect_both()
         self._status = BridgeStatus.DISCONNECTED

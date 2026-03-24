@@ -7,6 +7,7 @@ selection and incremental clustering for streaming beliefs.
 
 from __future__ import annotations
 
+import contextlib
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -429,20 +430,16 @@ class BeliefClusteringEngine:
 
         # Need more samples than clusters for silhouette score
         if len(valid_vectors) > len(unique_labels):
-            try:
+            with contextlib.suppress(Exception):
                 metrics.silhouette_score = silhouette_score(
                     valid_vectors, valid_labels, metric=self.distance_metric
                 )
-            except Exception:
-                pass
 
         # Davies-Bouldin index
-        try:
+        with contextlib.suppress(Exception):
             metrics.davies_bouldin_index = davies_bouldin_score(
                 valid_vectors, valid_labels
             )
-        except Exception:
-            pass
 
         # Cohesion (average intra-cluster distance to centroid)
         total_cohesion = 0.0

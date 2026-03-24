@@ -424,7 +424,7 @@ class TelemetryPipeline:
         # Process remaining events
         events = self._coordinator.get_processing_batch(max_size=10000)
         if events:
-            processed = self._processing.process_batch(events)
+            self._processing.process_batch(events)
             metrics = self._processing.flush()
             self._coordinator.submit_to_export(metrics)
 
