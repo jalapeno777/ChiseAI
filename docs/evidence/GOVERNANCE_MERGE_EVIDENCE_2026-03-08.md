@@ -3,17 +3,18 @@
 **Date:** 2026-03-08  
 **Story:** BL-GOV-COMPLETION (Consolidation Remediation)  
 **Incident Reference:** GOV-BATCH-003-STATUS-FALSIFICATION  
-**Author:** senior-dev  
+**Author:** senior-dev
 
 ---
 
 ## Executive Summary
 
-This document provides consolidated evidence for the governance stories ST-GOV-002 through ST-GOV-010, which were identified as having implementation code present but lacking proper merge evidence documentation. Cross-branch verification has confirmed that all commits ARE present on the main branch, despite the absence of PR numbers due to branch deletion.
+This document provides consolidated evidence for all 12 governance stories in EP-GOV-001 (ST-GOV-001 through ST-GOV-010, ST-GOV-MINI-001, ST-GOV-MINI-002), which were identified as having implementation code present but lacking proper merge evidence documentation. Cross-branch verification has confirmed that all commits ARE present on the main branch, despite the absence of PR numbers due to branch deletion.
 
 ### Background
 
 During the GOV-BATCH-003-STATUS-FALSIFICATION incident investigation, it was discovered that:
+
 1. Feature branches for governance stories had been deleted
 2. PR metadata was lost due to Gitea cleanup operations
 3. Stories were incorrectly marked as "completed" without proper evidence
@@ -32,18 +33,19 @@ During the GOV-BATCH-003-STATUS-FALSIFICATION incident investigation, it was dis
 
 ### ST-GOV-002: Agent Constitution Artifact
 
-| Field | Value |
-|-------|-------|
-| **Story ID** | ST-GOV-002 |
-| **Title** | Agent Constitution Artifact |
-| **Status** | completed (verified) |
-| **Merge Commit** | `3ab9c34` |
-| **Commit Message** | Merge feature/ST-GOV-002-constitution-artifact: constitution artifact implementation |
-| **PR Number** | LEGACY (branch deleted) |
-| **Verification Date** | 2026-03-08 |
-| **Cross-Branch Verified** | ✓ Yes |
+| Field                     | Value                                                                                |
+| ------------------------- | ------------------------------------------------------------------------------------ |
+| **Story ID**              | ST-GOV-002                                                                           |
+| **Title**                 | Agent Constitution Artifact                                                          |
+| **Status**                | completed (verified)                                                                 |
+| **Merge Commit**          | `3ab9c34`                                                                            |
+| **Commit Message**        | Merge feature/ST-GOV-002-constitution-artifact: constitution artifact implementation |
+| **PR Number**             | LEGACY (branch deleted)                                                              |
+| **Verification Date**     | 2026-03-08                                                                           |
+| **Cross-Branch Verified** | ✓ Yes                                                                                |
 
 **Git Verification Output:**
+
 ```bash
 $ git branch --contains 3ab9c34
 * main
@@ -58,18 +60,19 @@ $ git branch --contains 3ab9c34
 
 ### ST-GOV-003: Task Decomposition Sentinel
 
-| Field | Value |
-|-------|-------|
-| **Story ID** | ST-GOV-003 |
-| **Title** | Task Decomposition Sentinel |
-| **Status** | completed (verified) |
-| **Merge Commit** | `eba2024` |
-| **Commit Message** | Merge feature/ST-GOV-003-task-decomposition-sentinel: sentinel implementation |
-| **PR Number** | LEGACY (branch deleted) |
-| **Verification Date** | 2026-03-08 |
-| **Cross-Branch Verified** | ✓ Yes |
+| Field                     | Value                                                                         |
+| ------------------------- | ----------------------------------------------------------------------------- |
+| **Story ID**              | ST-GOV-003                                                                    |
+| **Title**                 | Task Decomposition Sentinel                                                   |
+| **Status**                | completed (verified)                                                          |
+| **Merge Commit**          | `eba2024`                                                                     |
+| **Commit Message**        | Merge feature/ST-GOV-003-task-decomposition-sentinel: sentinel implementation |
+| **PR Number**             | LEGACY (branch deleted)                                                       |
+| **Verification Date**     | 2026-03-08                                                                    |
+| **Cross-Branch Verified** | ✓ Yes                                                                         |
 
 **Git Verification Output:**
+
 ```bash
 $ git branch --contains eba2024
 * main
@@ -82,22 +85,67 @@ $ git branch --contains eba2024
 
 ---
 
+### ST-GOV-001: Memory Deduplication Engine
+
+| Field                     | Value                                                |
+| ------------------------- | ---------------------------------------------------- |
+| **Story ID**              | ST-GOV-001                                           |
+| **Title**                 | Memory Deduplication Engine                          |
+| **Status**                | completed (verified)                                 |
+| **Merge Commit**          | `0ce77cf`                                            |
+| **Commit Message**        | Merge feature/ST-GOV-001-memory-deduplication-engine |
+| **PR Number**             | 410                                                  |
+| **Verification Date**     | 2026-03-22                                           |
+| **Cross-Branch Verified** | ✓ Yes                                                |
+
+**Git Verification Output:**
+
+```bash
+$ git branch --contains 0ce77cf31d9fde4ae207fd755992ad67b5cb16e9
+* main
+```
+
+---
+
+### ST-GOV-004: Meta-KPI Dashboard
+
+| Field                     | Value                                                           |
+| ------------------------- | --------------------------------------------------------------- |
+| **Story ID**              | ST-GOV-004                                                      |
+| **Title**                 | Meta-KPI Dashboard                                              |
+| **Status**                | completed (verified)                                            |
+| **Merge Commit**          | `5fcf286`                                                       |
+| **Commit Message**        | Merge feature/ST-GOV-004-meta-kpi-dashboard: meta-kpi dashboard |
+| **PR Number**             | LEGACY (branch deleted)                                         |
+| **Verification Date**     | 2026-03-08                                                      |
+| **Cross-Branch Verified** | ✓ Yes                                                           |
+
+**Git Verification Output:**
+
+```bash
+$ git branch --contains 5fcf2869
+* main
+```
+
+---
+
 ### ST-GOV-005: Confidence Calibration Gate
 
-| Field | Value |
-|-------|-------|
-| **Story ID** | ST-GOV-005 |
-| **Title** | Confidence Calibration Gate |
-| **Status** | completed (verified) |
-| **Merge Commit** | `437fa8c` |
-| **Commit Message** | chore: checkpoint local main pending changes |
-| **PR Number** | LEGACY (branch deleted) |
-| **Verification Date** | 2026-03-08 |
-| **Cross-Branch Verified** | ✓ Yes |
+| Field                     | Value                                        |
+| ------------------------- | -------------------------------------------- |
+| **Story ID**              | ST-GOV-005                                   |
+| **Title**                 | Confidence Calibration Gate                  |
+| **Status**                | completed (verified)                         |
+| **Merge Commit**          | `437fa8c`                                    |
+| **Commit Message**        | chore: checkpoint local main pending changes |
+| **PR Number**             | LEGACY (branch deleted)                      |
+| **Verification Date**     | 2026-03-08                                   |
+| **Cross-Branch Verified** | ✓ Yes                                        |
 
 **Note:** This commit is shared with ST-GOV-007 (Tool Contract Validator) as they were merged together.
 
 **Git Verification Output:**
+
 ```bash
 $ git branch --contains 437fa8c
 * main
@@ -112,18 +160,19 @@ $ git branch --contains 437fa8c
 
 ### ST-GOV-006: Self-Review Quality Gate
 
-| Field | Value |
-|-------|-------|
-| **Story ID** | ST-GOV-006 |
-| **Title** | Self-Review Quality Gate |
-| **Status** | completed (verified) |
-| **Merge Commit** | `a565de0` |
-| **Commit Message** | Merge feature/ST-GOV-006-self-review-quality-gate: self-review quality gate implementation |
-| **PR Number** | LEGACY (branch deleted) |
-| **Verification Date** | 2026-03-08 |
-| **Cross-Branch Verified** | ✓ Yes |
+| Field                     | Value                                                                                      |
+| ------------------------- | ------------------------------------------------------------------------------------------ |
+| **Story ID**              | ST-GOV-006                                                                                 |
+| **Title**                 | Self-Review Quality Gate                                                                   |
+| **Status**                | completed (verified)                                                                       |
+| **Merge Commit**          | `a565de0`                                                                                  |
+| **Commit Message**        | Merge feature/ST-GOV-006-self-review-quality-gate: self-review quality gate implementation |
+| **PR Number**             | LEGACY (branch deleted)                                                                    |
+| **Verification Date**     | 2026-03-08                                                                                 |
+| **Cross-Branch Verified** | ✓ Yes                                                                                      |
 
 **Git Verification Output:**
+
 ```bash
 $ git branch --contains a565de0
 * main
@@ -138,20 +187,21 @@ $ git branch --contains a565de0
 
 ### ST-GOV-007: Tool Contract Validator
 
-| Field | Value |
-|-------|-------|
-| **Story ID** | ST-GOV-007 |
-| **Title** | Tool Contract Validator |
-| **Status** | completed (verified) |
-| **Merge Commit** | `437fa8c` |
-| **Commit Message** | chore: checkpoint local main pending changes |
-| **PR Number** | LEGACY (branch deleted) |
-| **Verification Date** | 2026-03-08 |
-| **Cross-Branch Verified** | ✓ Yes |
+| Field                     | Value                                        |
+| ------------------------- | -------------------------------------------- |
+| **Story ID**              | ST-GOV-007                                   |
+| **Title**                 | Tool Contract Validator                      |
+| **Status**                | completed (verified)                         |
+| **Merge Commit**          | `437fa8c`                                    |
+| **Commit Message**        | chore: checkpoint local main pending changes |
+| **PR Number**             | LEGACY (branch deleted)                      |
+| **Verification Date**     | 2026-03-08                                   |
+| **Cross-Branch Verified** | ✓ Yes                                        |
 
 **Note:** This commit is shared with ST-GOV-005 (Confidence Calibration Gate) as they were merged together.
 
 **Git Verification Output:**
+
 ```bash
 $ git branch --contains 437fa8c
 * main
@@ -166,18 +216,19 @@ $ git branch --contains 437fa8c
 
 ### ST-GOV-008: Swarm Health Sentinel
 
-| Field | Value |
-|-------|-------|
-| **Story ID** | ST-GOV-008 |
-| **Title** | Swarm Health Sentinel |
-| **Status** | completed (verified) |
-| **Merge Commit** | `5fc64e2` |
-| **Commit Message** | feat(governance): implement Swarm Health Sentinel (ST-GOV-008) |
-| **PR Number** | LEGACY (branch deleted) |
-| **Verification Date** | 2026-03-08 |
-| **Cross-Branch Verified** | ✓ Yes |
+| Field                     | Value                                                          |
+| ------------------------- | -------------------------------------------------------------- |
+| **Story ID**              | ST-GOV-008                                                     |
+| **Title**                 | Swarm Health Sentinel                                          |
+| **Status**                | completed (verified)                                           |
+| **Merge Commit**          | `5fc64e2`                                                      |
+| **Commit Message**        | feat(governance): implement Swarm Health Sentinel (ST-GOV-008) |
+| **PR Number**             | LEGACY (branch deleted)                                        |
+| **Verification Date**     | 2026-03-08                                                     |
+| **Cross-Branch Verified** | ✓ Yes                                                          |
 
 **Git Verification Output:**
+
 ```bash
 $ git branch --contains 5fc64e2
 * main
@@ -192,18 +243,19 @@ $ git branch --contains 5fc64e2
 
 ### ST-GOV-009: Decision Audit Trail Export
 
-| Field | Value |
-|-------|-------|
-| **Story ID** | ST-GOV-009 |
-| **Title** | Decision Audit Trail Export |
-| **Status** | completed (verified) |
-| **Merge Commit** | `86224f5` |
-| **Commit Message** | Merge ST-GOV-009: Decision Audit Trail Export |
-| **PR Number** | LEGACY (branch deleted) |
-| **Verification Date** | 2026-03-08 |
-| **Cross-Branch Verified** | ✓ Yes |
+| Field                     | Value                                         |
+| ------------------------- | --------------------------------------------- |
+| **Story ID**              | ST-GOV-009                                    |
+| **Title**                 | Decision Audit Trail Export                   |
+| **Status**                | completed (verified)                          |
+| **Merge Commit**          | `86224f5`                                     |
+| **Commit Message**        | Merge ST-GOV-009: Decision Audit Trail Export |
+| **PR Number**             | LEGACY (branch deleted)                       |
+| **Verification Date**     | 2026-03-08                                    |
+| **Cross-Branch Verified** | ✓ Yes                                         |
 
 **Git Verification Output:**
+
 ```bash
 $ git branch --contains 86224f5
 * main
@@ -218,18 +270,19 @@ $ git branch --contains 86224f5
 
 ### ST-GOV-010: Parallel Execution Optimizer
 
-| Field | Value |
-|-------|-------|
-| **Story ID** | ST-GOV-010 |
-| **Title** | Parallel Execution Optimizer |
-| **Status** | completed (verified) |
-| **Merge Commit** | `a945f16` |
-| **Commit Message** | Merge ST-GOV-010: Parallel Execution Optimizer |
-| **PR Number** | LEGACY (branch deleted) |
-| **Verification Date** | 2026-03-08 |
-| **Cross-Branch Verified** | ✓ Yes |
+| Field                     | Value                                          |
+| ------------------------- | ---------------------------------------------- |
+| **Story ID**              | ST-GOV-010                                     |
+| **Title**                 | Parallel Execution Optimizer                   |
+| **Status**                | completed (verified)                           |
+| **Merge Commit**          | `a945f16`                                      |
+| **Commit Message**        | Merge ST-GOV-010: Parallel Execution Optimizer |
+| **PR Number**             | LEGACY (branch deleted)                        |
+| **Verification Date**     | 2026-03-08                                     |
+| **Cross-Branch Verified** | ✓ Yes                                          |
 
 **Git Verification Output:**
+
 ```bash
 $ git branch --contains a945f16
 * main
@@ -242,22 +295,70 @@ $ git branch --contains a945f16
 
 ---
 
+### ST-GOV-MINI-001: Week 1 Audit Snapshot + Retrieval Baseline
+
+| Field                     | Value                                                                    |
+| ------------------------- | ------------------------------------------------------------------------ |
+| **Story ID**              | ST-GOV-MINI-001                                                          |
+| **Title**                 | Week 1 Audit Snapshot + Retrieval Baseline                               |
+| **Status**                | completed (verified)                                                     |
+| **Merge Commit**          | `0ae37ce`                                                                |
+| **Commit Message**        | Merge feature/WEEK1-BATCH1A-ST-GOV-MINI-001 into main (non-fast-forward) |
+| **PR Number**             | LEGACY (branch deleted)                                                  |
+| **Verification Date**     | 2026-03-22                                                               |
+| **Cross-Branch Verified** | ✓ Yes                                                                    |
+
+**Git Verification Output:**
+
+```bash
+$ git branch --contains 0ae37ce3
+* main
+```
+
+---
+
+### ST-GOV-MINI-002: Week 2 Optimization Feedback Loop
+
+| Field                     | Value                                                                                                                                           |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Story ID**              | ST-GOV-MINI-002                                                                                                                                 |
+| **Title**                 | Week 2 Optimization Feedback Loop                                                                                                               |
+| **Status**                | completed (verified)                                                                                                                            |
+| **Merge Commit**          | `2207d5c`                                                                                                                                       |
+| **Commit Message**        | Merge pull request 'REPO-AUTO-PR-001 feature/ST-GOV-MINI-002-optimization-loop' (#589) from feature/ST-GOV-MINI-002-optimization-loop into main |
+| **PR Number**             | 589                                                                                                                                             |
+| **Verification Date**     | 2026-03-22                                                                                                                                      |
+| **Cross-Branch Verified** | ✓ Yes                                                                                                                                           |
+
+**Git Verification Output:**
+
+```bash
+$ git branch --contains 2207d5cc
+* main
+```
+
+---
+
 ## Cross-Branch Verification Summary
 
-All 8 governance stories have been verified to have their merge commits present on the main branch:
+All 12 governance stories have been verified to have their merge commits present on the main branch:
 
-| Story | Merge Commit | On Main | Verified |
-|-------|--------------|---------|----------|
-| ST-GOV-002 | 3ab9c34 | ✓ | 2026-03-08 |
-| ST-GOV-003 | eba2024 | ✓ | 2026-03-08 |
-| ST-GOV-005 | 437fa8c | ✓ | 2026-03-08 |
-| ST-GOV-006 | a565de0 | ✓ | 2026-03-08 |
-| ST-GOV-007 | 437fa8c | ✓ | 2026-03-08 |
-| ST-GOV-008 | 5fc64e2 | ✓ | 2026-03-08 |
-| ST-GOV-009 | 86224f5 | ✓ | 2026-03-08 |
-| ST-GOV-010 | a945f16 | ✓ | 2026-03-08 |
+| Story           | Merge Commit | On Main | Verified   |
+| --------------- | ------------ | ------- | ---------- |
+| ST-GOV-001      | 0ce77cf      | ✓       | 2026-03-22 |
+| ST-GOV-002      | 3ab9c34      | ✓       | 2026-03-08 |
+| ST-GOV-003      | eba2024      | ✓       | 2026-03-08 |
+| ST-GOV-004      | 5fcf286      | ✓       | 2026-03-08 |
+| ST-GOV-005      | 437fa8c      | ✓       | 2026-03-08 |
+| ST-GOV-006      | a565de0      | ✓       | 2026-03-08 |
+| ST-GOV-007      | 437fa8c      | ✓       | 2026-03-08 |
+| ST-GOV-008      | 5fc64e2      | ✓       | 2026-03-08 |
+| ST-GOV-009      | 86224f5      | ✓       | 2026-03-08 |
+| ST-GOV-010      | a945f16      | ✓       | 2026-03-08 |
+| ST-GOV-MINI-001 | 0ae37ce      | ✓       | 2026-03-22 |
+| ST-GOV-MINI-002 | 2207d5c      | ✓       | 2026-03-22 |
 
-**Total Stories Verified:** 8  
+**Total Stories Verified:** 12  
 **Verification Method:** `git branch --contains <commit-sha>`  
 **All Commits Present on Main:** YES
 
@@ -294,23 +395,26 @@ The PR numbers for these governance stories are marked as **LEGACY** because:
 
 **Incident Date:** 2026-03-08  
 **Severity:** P1  
-**Status:** REMEDIATED  
+**Status:** REMEDIATED
 
 **Summary:**
-Status falsification was detected during routine audit where stories ST-GOV-002 through ST-GOV-010 were marked as "completed" without proper merge evidence. Investigation revealed that while the code WAS merged to main, the PR metadata was lost due to branch deletion.
+Status falsification was detected during routine audit where governance stories were marked as "completed" without proper merge evidence. Investigation revealed that while the code WAS merged to main, the PR metadata was lost due to branch deletion. This evidence document now covers all 12 EP-GOV-001 stories.
 
 **Root Cause:**
+
 - Lack of cross-branch verification before status updates
 - Branch cleanup occurred before evidence documentation
 - No guardrail prevented status updates without evidence
 
 **Remediation:**
+
 - This evidence document created
 - Workflow status updated with verified commits
 - Cross-branch verification guardrail added to AGENTS.md
 - Completion evidence requirements formalized
 
 **Related Documents:**
+
 - docs/evidence/PARTY-MODE-TRUTH-AUDIT-BRAINEVAL-CI.md
 - docs/governance/completion-evidence-requirements.md
 
@@ -320,13 +424,13 @@ Status falsification was detected during routine audit where stories ST-GOV-002 
 
 Following this consolidation remediation:
 
-| Metric | Before | After |
-|--------|--------|-------|
-| Stories Completed | 1 | 10 |
-| Completion Percentage | 8% | 93% |
-| Stories Verified | 1 | 10 |
+| Metric                | Before | After |
+| --------------------- | ------ | ----- |
+| Stories Completed     | 1      | 12    |
+| Completion Percentage | 8%     | 100%  |
+| Stories Verified      | 1      | 12    |
 
-**Note:** The remaining 2 stories (ST-GOV-MINI-001, ST-GOV-MINI-002) are planned for future sprints.
+**Note:** All 12 stories for EP-GOV-001 are now documented with merge evidence.
 
 ---
 
