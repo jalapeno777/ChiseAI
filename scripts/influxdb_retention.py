@@ -17,11 +17,10 @@ Retention Guidelines:
 """
 
 import argparse
-import subprocess
 import json
+import subprocess
 import sys
 from typing import Optional
-
 
 INFLUX_CONTAINER = "chiseai-influxdb"
 DEFAULT_RETENTION_HOURS = {
@@ -63,7 +62,7 @@ def list_retention_policies() -> str:
     return output
 
 
-def get_bucket_retention(bucket_id: str) -> Optional[str]:
+def get_bucket_retention(bucket_id: str) -> str | None:
     """Get the retention duration for a specific bucket."""
     buckets = list_buckets()
     for bucket in buckets:
@@ -137,9 +136,9 @@ def main():
                 bucket_id = name_to_id[bucket_name]
                 print(f"Setting {bucket_name} ({bucket_id}) to {retention_hours}h...")
                 if update_bucket_retention(bucket_id, retention_hours):
-                    print(f"  Success!")
+                    print("  Success!")
                 else:
-                    print(f"  Failed!")
+                    print("  Failed!")
             else:
                 print(f"Bucket {bucket_name} not found, skipping")
         return
