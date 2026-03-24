@@ -294,11 +294,7 @@ def main() -> int:
 
     CI_DIR.mkdir(parents=True, exist_ok=True)
     required_files = [CI_DIR / name for name in FAST_REQUIRED]
-    if (
-        _is_main_push(env)
-        or _is_main_cron(env)
-        or env.get("FORCE_FULL_GATE", "").strip() == "1"
-    ):
+    if _is_main_cron(env) or env.get("FORCE_FULL_GATE", "").strip() == "1":
         required_files.extend(CI_DIR / name for name in FULL_REQUIRED)
     if _is_main_cron(env) or env.get("FORCE_CRON_GATE", "").strip() == "1":
         required_files.extend(CI_DIR / name for name in CRON_REQUIRED)

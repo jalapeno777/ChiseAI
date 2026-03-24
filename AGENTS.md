@@ -22,6 +22,7 @@ skill(name="chiseai-git-workflow")          # Load git workflow skill
 → chise-claim-ownership                     # Claim scope (if parallel)
 → [Do work following skill guidance]
 → chise-precommit-gates                     # Validate before PR
+→ python scripts/ci/pre_push_gate.py        # Fast local checks before push
 → chise-metacog-close                       # Capture outcome + calibration
 → chise-swarm-session (close)               # Close session and release leases
 → chise-post-branch-reconcile               # Post-branch reconcile loop (5-step check)
