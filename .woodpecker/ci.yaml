@@ -97,7 +97,7 @@ steps:
           echo "cross-branch-verify: branch=$${BRANCH}, sha=$${CI_COMMIT_SHA:-$${WOODPECKER_COMMIT_SHA:-unknown}}"
           echo "cross-branch-verify: merge-to-main event detected; verifying commit is on main"
           git fetch origin main --tags --depth=50
-          if git branch --contains "$${CI_COMMIT_SHA:-$${WOODPECKER_COMMIT_SHA}}" | grep -q "^\\* main$"; then
+          if git branch --contains "$${CI_COMMIT_SHA:-$${WOODPECKER_COMMIT_SHA}}" | grep -qE "^\s*main$"; then
             echo "cross-branch-verify: commit is on main"
             exit 0
           else
