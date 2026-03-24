@@ -167,3 +167,4 @@ None currently identified. All quick wins can start immediately.
 ---
 
 _Document synthesized from parallel research by analyst, architect, and QA agents. System state verified against docs/bmm-workflow-status.yaml and recent evidence._
+# CI skip test
