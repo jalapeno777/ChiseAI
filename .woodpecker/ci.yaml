@@ -135,15 +135,15 @@ steps:
           CHANGED_PY="$(python -c 'import json, os; raw=os.environ.get("CI_PIPELINE_FILES","[]"); payload=json.loads(raw) if raw else []; files=[str(item).strip() for item in payload if isinstance(payload, list) and str(item).strip().endswith(".py")]; print(" ".join(files))' 2>/dev/null || true)"
           if [ -n "$(printf '%s' "$CHANGED_PY" | tr -d '[:space:]')" ]; then
             echo "lint: checking changed python files only: ${CHANGED_PY}"
-            black --check ${CHANGED_PY}
-            ruff check ${CHANGED_PY}
+            printf '%s\n' "$CHANGED_PY" | tr -s '[:space:]' '\n' | grep -v '^$' | xargs black --check
+            printf '%s\n' "$CHANGED_PY" | tr -s '[:space:]' '\n' | grep -v '^$' | xargs ruff check
           else
             echo "lint: no changed python files; skipping black/ruff file checks"
           fi
           MYPY_CHANGED="$(printf '%s' "$CHANGED_PY" | tr ' ' '\n' | grep -E '^(src/|scripts/).+\\.py$' | tr '\n' ' ' || true)"
           if [ -n "$(printf '%s' "$MYPY_CHANGED" | tr -d '[:space:]')" ]; then
             echo "mypy: checking changed src/scripts files: ${MYPY_CHANGED}"
-            mypy ${MYPY_CHANGED} || echo "WARN: mypy violations (non-blocking)"
+            printf '%s\n' "$MYPY_CHANGED" | tr -s '[:space:]' '\n' | grep -v '^$' | xargs mypy || echo "WARN: mypy violations (non-blocking)"
           else
             echo "mypy: no changed src/scripts files; checking baseline src package"
             mypy src || echo "WARN: mypy violations (non-blocking)"
@@ -228,7 +228,7 @@ steps:
           if [ -n "$(printf '%s' "$CHANGED_SCAN" | tr -d '[:space:]')" ]; then
             echo "security-scan: scanning changed files only: ${CHANGED_SCAN}"
             # Keep PR checks actionable by scanning changed executable code only.
-            bandit --ini .bandit -q ${CHANGED_SCAN} -ll || echo "WARN: bandit findings (non-blocking)"
+            printf '%s\n' "$CHANGED_SCAN" | tr -s '[:space:]' '\n' | grep -v '^$' | xargs bandit --ini .bandit -q -ll || echo "WARN: bandit findings (non-blocking)"
           else
             echo "security-scan: no changed src/scripts python files; skipping"
           fi
