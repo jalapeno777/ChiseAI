@@ -113,7 +113,7 @@ steps:
         exit $code
 
   lint:
-    image: chiseai-ci-lint:py311-20260322
+    image: chiseai-ci-lint:py311-20260323
     environment:
       GITEA_TOKEN:
         from_secret: gitea_token
@@ -277,7 +277,7 @@ steps:
         exit 0
 
   risk-invariants:
-    image: chiseai-ci-risk-invariants:py311-20260322
+    image: chiseai-ci-risk-invariants:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -305,7 +305,7 @@ steps:
         exit 0
 
   brain-regression:
-    image: chiseai-ci-brain-regression:py311-20260322
+    image: chiseai-ci-brain-regression:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
@@ -970,7 +970,7 @@ steps:
         exit 0
 
   performance-gate:
-    image: chiseai-ci-performance-gate:py311-20260322
+    image: chiseai-ci-performance-gate:py311-20260323
     depends_on:
       - local-ci
       - changed-lines-coverage
