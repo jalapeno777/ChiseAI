@@ -260,7 +260,7 @@ class TestDiscordEmitter:
         """Test bypass confidence filter via environment variable."""
         with patch.dict(
             "os.environ",
-            {"DISCORD_BYPASS_CONFIDENCE_FILTER": "true"},
+            {"CHISEAI_BYPASS_CONFIDENCE_FILTER": "true"},
         ):
             # Re-import to pick up env var
             from importlib import reload
@@ -300,6 +300,46 @@ class TestDiscordEmitter:
 
             assert result.success is True
             assert result.error is None
+
+    @pytest.mark.asyncio
+    async def test_bypass_confidence_filter_env_var_emits_warning(self):
+        """Test that CHISEAI_BYPASS_CONFIDENCE_FILTER=true emits a WARNING log."""
+        emitter = DiscordEmitter(
+            webhook_url="https://discord.com/api/webhooks/test", threshold=0.40
+        )
+
+        with (
+            patch("signal_generation.signal_emitter.logger") as mock_logger,
+            patch.dict(
+                "os.environ",
+                {"CHISEAI_BYPASS_CONFIDENCE_FILTER": "true"},
+            ),
+        ):
+            emitter._get_bypass_from_env()
+
+            # Verify warning log was emitted
+            mock_logger.warning.assert_called_once()
+            log_msg = mock_logger.warning.call_args[0][0]
+            assert "CHISEAI_BYPASS_CONFIDENCE_FILTER is active" in log_msg
+            assert "confidence filtering is disabled" in log_msg
+
+    @pytest.mark.asyncio
+    async def test_bypass_confidence_filter_env_var_false_no_warning(self):
+        """Test that unset or false CHISEAI_BYPASS_CONFIDENCE_FILTER does not emit warning."""
+        emitter = DiscordEmitter(
+            webhook_url="https://discord.com/api/webhooks/test", threshold=0.40
+        )
+
+        with (
+            patch("signal_generation.signal_emitter.logger") as mock_logger,
+            patch.dict(
+                "os.environ",
+                {"CHISEAI_BYPASS_CONFIDENCE_FILTER": "false"},
+            ),
+        ):
+            result = emitter._get_bypass_from_env()
+            assert result is False
+            mock_logger.warning.assert_not_called()
 
     def test_bypass_log_event(self):
         """Test bypass event logging."""
