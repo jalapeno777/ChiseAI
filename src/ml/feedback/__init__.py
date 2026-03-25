@@ -10,6 +10,8 @@ Components:
 - orchestrator: Full feedback loop coordination
 - outcome_capture: Real-time trade outcome capture from exchange fills
 - bybit_fill_listener: Bybit WebSocket fill event listener
+- ict_signal_tracker: ICT signal prediction tracking (CVD, FVG, Order Block)
+- ict_matcher: ICT prediction-outcome matching
 
 Usage:
     from ml.feedback import (
@@ -42,6 +44,14 @@ from ml.feedback.analyzer import (
     RegimePerformance,
 )
 
+# ICT Signal Tracker (ST-ICT-017)
+from ml.feedback.ict_signal_tracker import (
+    ICTSignalDirection,
+    ICTSignalRecord,
+    ICTSignalTracker,
+    get_ict_tracker,
+)
+
 # Matcher components
 from ml.feedback.matcher import (
     MatchBatchResult,
@@ -60,6 +70,17 @@ from ml.feedback.orchestrator import (
     OrchestratorConfig,
     TemporalBoundary,
     TemporalSafetyMode,
+)
+
+# ICT Prediction-Outcome Matcher (ST-ICT-017)
+from ml.feedback.prediction_outcome_matcher_ict import (
+    ICTMatchConfidence,
+    ICTMatchConfig,
+    ICTMatchStatus,
+    ICTPredictionMatch,
+    ICTPredictionOutcomeMatcher,
+    ICTSignalMetrics,
+    get_ict_matcher,
 )
 
 # Signal Outcome Matcher (ST-LAUNCH-006)
@@ -96,6 +117,19 @@ __all__ = [
     "MatcherMetrics",
     "MatchMetadata",
     "DEFAULT_MATCH_WINDOWS",
+    # ICT Signal Tracker (ST-ICT-017)
+    "ICTSignalTracker",
+    "ICTSignalRecord",
+    "ICTSignalDirection",
+    "get_ict_tracker",
+    # ICT Prediction-Outcome Matcher (ST-ICT-017)
+    "ICTPredictionOutcomeMatcher",
+    "ICTMatchConfig",
+    "ICTMatchStatus",
+    "ICTMatchConfidence",
+    "ICTPredictionMatch",
+    "ICTSignalMetrics",
+    "get_ict_matcher",
     # Matcher
     "PredictionOutcomeMatcher",
     "MatchConfig",
