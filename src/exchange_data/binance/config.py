@@ -18,6 +18,7 @@ class BinanceConfig:
         max_latency_ms: Maximum acceptable latency in ms (default 2000)
         freshness_threshold_sec: Data freshness threshold in seconds (default 5)
         price_accuracy_pct: Price accuracy tolerance in percent (default 0.01)
+        trades_url: Recent trades endpoint URL for CVD calculation
     """
 
     api_key: str = ""
@@ -61,3 +62,8 @@ class BinanceConfig:
     def ticker_url(self) -> str:
         """Get ticker/price endpoint URL."""
         return f"{self.base_url}/fapi/v1/ticker/bookTicker"
+
+    @property
+    def trades_url(self) -> str:
+        """Get recent trades endpoint URL for CVD calculation."""
+        return f"{self.base_url}/fapi/v1/trades"
