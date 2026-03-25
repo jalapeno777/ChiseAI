@@ -28,7 +28,7 @@ import pytest
 _project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_project_root / "src"))
 
-from config.feature_flags import (
+from config import (
     FeatureFlags,
     get_feature_flags,
     reset_feature_flags,

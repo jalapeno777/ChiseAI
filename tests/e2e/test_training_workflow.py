@@ -25,7 +25,7 @@ sys.path.insert(0, "/home/tacopants/projects/ChiseAI/src")
 
 import pytest
 
-from config.feature_flags import (
+from config import (
     FeatureFlags,
     reset_feature_flags,
     set_feature_flags,

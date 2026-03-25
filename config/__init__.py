@@ -16,12 +16,15 @@ if str(_src_path) not in sys.path:
 from src.config.bootstrap import bootstrap, get_bootstrap_state  # noqa: E402
 from src.config.env_loader import (  # noqa: E402
     EnvLoader,
+    discord_loader,
     kimi_loader,
     load_discord_config,
+    load_discord_config_with_ids,
     load_kimi_config,
 )
 from src.config.feature_flags import (  # noqa: E402
     FeatureFlags,
+    get_feature_flags,
     reset_feature_flags,
     set_feature_flags,
 )
@@ -36,10 +39,13 @@ __all__ = [
     "bootstrap",
     "get_bootstrap_state",
     "EnvLoader",
+    "discord_loader",
     "kimi_loader",
     "load_discord_config",
+    "load_discord_config_with_ids",
     "load_kimi_config",
     "FeatureFlags",
+    "get_feature_flags",
     "reset_feature_flags",
     "set_feature_flags",
     "ModuleStatus",

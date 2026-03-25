@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 import pytest
 
-from config.env_loader import (
+from config import (
     EnvLoader,
     kimi_loader,
     load_discord_config,
@@ -172,7 +172,7 @@ class TestDiscordEnvLoading:
 
     def test_load_discord_config_without_guild_id(self):
         """Test loading Discord config without guild restriction."""
-        from config.env_loader import discord_loader
+        from config import discord_loader
 
         with patch.object(discord_loader, "get_str") as mock_get_str:
             # Configure mock to return values based on key
@@ -194,7 +194,7 @@ class TestDiscordEnvLoading:
 
     def test_load_discord_config_defaults(self):
         """Test loading Discord config with default values."""
-        from config.env_loader import discord_loader
+        from config import discord_loader
 
         with patch.object(discord_loader, "get_str") as mock_get_str:
             # Configure mock to return default values (all None except default_channel)

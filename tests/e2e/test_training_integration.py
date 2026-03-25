@@ -19,7 +19,7 @@ sys.path.insert(0, "/home/tacopants/projects/ChiseAI/src")
 
 import pytest
 
-from config.feature_flags import FeatureFlags, reset_feature_flags, set_feature_flags
+from config import FeatureFlags, reset_feature_flags, set_feature_flags
 from ml.training.pipeline_integration import (
     Hyperparameters,
     TrainingData,
