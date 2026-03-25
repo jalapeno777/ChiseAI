@@ -3,10 +3,19 @@
 Detects whether the market is trending or ranging using ADX indicator,
 volatility analysis, and volume confirmation. Implements a state machine
 for regime transitions.
+
+.. deprecated::
+    This module is deprecated. Use :mod:`market_analysis.regime` instead:
+
+    >>> from market_analysis.regime import MarketRegimeClassifier, UnifiedRegime
+    >>> classifier = MarketRegimeClassifier()
+    >>> result = classifier.classify(data)
+    >>> print(result.regime)  # UnifiedRegime.TRENDING, RANGING, VOLATILE, or UNKNOWN
 """
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any
@@ -40,6 +49,9 @@ class MarketRegime:
         duration_bars: How long the current regime has persisted
         transition_probability: Probability of regime transition
         description: Human-readable description
+
+    .. deprecated::
+        Use :class:`market_analysis.regime.RegimeClassification` instead.
     """
 
     regime: RegimeType
@@ -55,6 +67,12 @@ class MarketRegime:
         """Validate and normalize values."""
         self.confidence = max(0.0, min(100.0, self.confidence))
         self.transition_probability = max(0.0, min(1.0, self.transition_probability))
+        warnings.warn(
+            "MarketRegime from dashboard.regime_detector is deprecated. "
+            "Use market_analysis.regime.RegimeClassification instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
     @property
     def is_trending(self) -> bool:
@@ -157,6 +175,10 @@ class RegimeDetector:
     - Transitional: ADX between 20-25 or conflicting signals
 
     Uses state machine for smooth regime transitions.
+
+    .. deprecated::
+        Use :class:`market_analysis.regime.MarketRegimeClassifier` instead
+        for unified regime detection with Markov chain integration.
     """
 
     def __init__(
@@ -173,7 +195,16 @@ class RegimeDetector:
             adx_trending_threshold: ADX threshold for trending (default: 25)
             adx_ranging_threshold: ADX threshold for ranging (default: 20)
             volatility_period: Period for volatility calculation (default: 14)
+
+        .. deprecated::
+            Use :class:`market_analysis.regime.MarketRegimeClassifier` instead.
         """
+        warnings.warn(
+            "RegimeDetector is deprecated. Use market_analysis.regime.MarketRegimeClassifier instead. "
+            "See module docstring for migration guide.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self.adx_period = adx_period
         self.adx_trending_threshold = adx_trending_threshold
         self.adx_ranging_threshold = adx_ranging_threshold

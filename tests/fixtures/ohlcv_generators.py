@@ -20,12 +20,58 @@ from data_ingestion.ohlcv_fetcher import OHLCVData
 
 
 class MarketRegime(str, Enum):
-    """Market regime types for synthetic data generation."""
+    """Market regime types for synthetic data generation.
 
-    TRENDING_UP = "trending_up"
-    TRENDING_DOWN = "trending_down"
+    This enum covers the four unified regime types plus direction variants.
+    The unified regimes are: TRENDING, RANGING, VOLATILE, UNKNOWN.
+    Direction is determined by price action context.
+    """
+
+    TRENDING = "trending"
     RANGING = "ranging"
     VOLATILE = "volatile"
+    UNKNOWN = "unknown"
+
+    # Legacy aliases for backward compatibility
+    TRENDING_UP = "trending_up"
+    TRENDING_DOWN = "trending_down"
+
+    @classmethod
+    def from_unified(cls, regime: str) -> "MarketRegime":
+        """Create from unified regime string.
+
+        Args:
+            regime: Unified regime string ('trending', 'ranging', 'volatile', 'unknown')
+
+        Returns:
+            Corresponding MarketRegime value
+        """
+        mapping = {
+            "trending": cls.TRENDING,
+            "ranging": cls.RANGING,
+            "volatile": cls.VOLATILE,
+            "unknown": cls.UNKNOWN,
+        }
+        return mapping.get(regime.lower(), cls.UNKNOWN)
+
+    @property
+    def is_trending(self) -> bool:
+        """Check if this regime represents trending market."""
+        return self in (
+            MarketRegime.TRENDING,
+            MarketRegime.TRENDING_UP,
+            MarketRegime.TRENDING_DOWN,
+        )
+
+    @property
+    def is_ranging(self) -> bool:
+        """Check if this regime represents ranging market."""
+        return self == MarketRegime.RANGING
+
+    @property
+    def is_volatile(self) -> bool:
+        """Check if this regime represents volatile market."""
+        return self == MarketRegime.VOLATILE
 
 
 @dataclass
