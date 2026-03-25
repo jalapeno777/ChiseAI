@@ -479,13 +479,16 @@ class LookaheadGuard:
 
         Returns:
             List of violations found (empty if none)
+
+        Raises:
+            NotImplementedError: Detection not yet implemented. Use check_lookahead()
+                or check_repainting() on RepaintingDetector for actual detection.
         """
-        violations: list[RepaintingViolation] = []
-        for idx, access_type in self._access_log:
-            # Check if any access is beyond the "current" bar
-            # In real implementation, this would track "current_bar" context
-            pass  # Simplified - actual implementation would be more complex
-        return violations
+        raise NotImplementedError(
+            "LookaheadGuard.check() detection not yet implemented. "
+            "Use RepaintingDetector.check_lookahead() or check_repainting() "
+            "for actual lookahead/repainting detection."
+        )
 
     @property
     def violations(self) -> list[RepaintingViolation]:

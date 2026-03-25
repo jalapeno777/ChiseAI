@@ -122,6 +122,49 @@ class TestRepaintingDetector:
         assert detector._values_equal(1.0, 1.0 + 1e-12) is True
         assert detector._values_equal(1.0, 2.0) is False
 
+    def test_check_repainting_detects_actual_repainting(self, detector):
+        """Test that check_repainting catches an indicator that changes historical values.
+
+        This test creates a deliberately repainting indicator that returns different
+        values for the same bar index when calculated with more data.
+        """
+
+        class RepaintingIndicator:
+            """Indicator that changes historical values based on data length."""
+
+            def compute(self, data):
+                # Simulate repainting: when we have 5 bars, we "adjust" bar 0's value
+                # based on the latest bar (a classic repainting pattern)
+                values = np.array([10.0, 20.0, 30.0, 40.0, 50.0])
+                if len(data) == 5:
+                    # Pretend bar 0 changed when new data arrived
+                    values[0] = 99.0
+                return values[: len(data)]
+
+        indicator = RepaintingIndicator()
+        # Data with 4 elements: compute returns [10, 20, 30, 40]
+        data_4 = [1, 2, 3, 4]
+        result_4 = detector.check_repainting(indicator, data_4)
+        # With 4 bars, no comparison possible (only len-1 comparisons)
+        assert result_4.passed is True
+
+        # Data with 5 elements: compute returns [99, 20, 30, 40, 50]
+        # The first value changed from 10 to 99, indicating repainting
+        data_5 = [1, 2, 3, 4, 5]
+        result_5 = detector.check_repainting(indicator, data_5)
+
+        assert result_5.passed is False
+        assert result_5.violation_count >= 1
+        # Bar 0's value changed
+        assert any(
+            v.index == 0 and v.violation_type == RepaintingViolationType.VALUE_CHANGE
+            for v in result_5.violations
+        )
+        assert any(
+            "changed from" in v.details and "to" in v.details
+            for v in result_5.violations
+        )
+
 
 class TestCheckpointedData:
     """Test cases for CheckpointedData."""
