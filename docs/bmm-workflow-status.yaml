@@ -1358,16 +1358,20 @@ epics:
     status: completed
     title: CI Evidence Backfill
   - completion_date: "2026-03-25"
+    commit_sha: a071950e
     id: ST-CI-TESTPATH-001
     sprint_id: SP-2026-Q1-03
     status: completed
     title: Test Path
   - completion_date: "2026-03-25"
+    commit_sha: 49278d09
     id: ST-GOV-DRIFT-001
+    pr_number: 410
     sprint_id: SP-2026-Q1-03
     status: completed
     title: Governance Drift Fix
   - completion_date: "2026-03-25"
+    commit_sha: b5017e66
     id: I-05
     sprint_id: SP-2026-Q1-03
     status: completed
