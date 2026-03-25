@@ -86,16 +86,17 @@ log_error() {
 }
 
 # Parse arguments
-if [[ $# -lt 1 ]]; then
-    usage
-fi
+# Handle options in any order (before, after, or mixed with positional args)
 
-IMAGE_NAME="$1"
-shift
+REMAINING_ARGS=()
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --tag)
+            if [[ -z "${2:-}" || "$2" == -* ]]; then
+                log_error "--tag requires a value"
+                usage
+            fi
             CUSTOM_TAG="$2"
             shift 2
             ;;
@@ -110,12 +111,31 @@ while [[ $# -gt 0 ]]; do
         -h|--help)
             usage
             ;;
-        *)
+        --)
+            shift
+            REMAINING_ARGS+=("$@")
+            break
+            ;;
+        -*)
             log_error "Unknown option: $1"
             usage
             ;;
+        *)
+            REMAINING_ARGS+=("$1")
+            shift
+            ;;
     esac
 done
+
+# Set positional arguments from collected remaining args
+set -- "${REMAINING_ARGS[@]}"
+
+# Validate we have exactly one positional argument
+if [[ $# -lt 1 ]]; then
+    usage
+fi
+
+IMAGE_NAME="$1"
 
 # Validate image name
 if [[ -z "${DOCKERFILE_MAP[$IMAGE_NAME]:-}" ]]; then
