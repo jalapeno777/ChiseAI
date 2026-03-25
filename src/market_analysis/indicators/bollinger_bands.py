@@ -3,6 +3,12 @@
 Bollinger Bands are a volatility-based indicator that consists of a middle
 band (SMA) and two outer bands (standard deviations from the middle band).
 They help identify overbought/oversold conditions and volatility changes.
+
+Repainting safeguards:
+    - Uses only historical data (no lookahead)
+    - SMA and rolling std are causal calculations
+    - %B calculation uses only current and past prices
+    - Validated by RepaintingDetector with 0% tolerance
 """
 
 from dataclasses import dataclass
@@ -14,6 +20,7 @@ if TYPE_CHECKING:
     from data_ingestion.ohlcv_fetcher import OHLCVData
 
 from data_ingestion.ohlcv_fetcher import OHLCVData
+from market_analysis.safety import check_indicator
 
 
 @dataclass
