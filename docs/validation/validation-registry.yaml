@@ -6,7 +6,7 @@
 metadata:
   project_name: ChiseAI
   version: "2.2.0"
-  last_updated: "2026-03-22"
+  last_updated: "2026-03-25"
 
 # Validation entries
 validations:
@@ -2827,6 +2827,87 @@ validations:
       - CVD assessment document created with all required sections
     test_method: automated
     owner: chiseai-team
+
+  # ============================================================
+  # EP-ICT-002: ICT Infrastructure Prerequisites (4 validations)
+  # ============================================================
+
+  - id: V-ICT-005
+    title: MarketRegimeClassifier Consolidation
+    epic_id: EP-ICT-002
+    story_id: ST-ICT-005
+    status: validated
+    description: Validate unified MarketRegimeClassifier integrates Markov is_trending + VolatilityRegime + ADX with backward compatibility
+    acceptance_criteria:
+      - UnifiedRegime enum outputs TRENDING/RANGING/VOLATILE/UNKNOWN
+      - Integration with Markov chain is_trending logic
+      - Integration with VolatilityRegime detection
+      - Integration with ADX indicator
+      - Backward compatible with existing imports
+      - Deprecation warnings for old imports
+      - Coverage >= 90%
+    test_method: automated
+    owner: senior-dev
+    validation_evidence:
+      - test_count: 99
+      - coverage: "93%"
+      - merge_commit: "036b29134597fa8a3a6846de05bfe3a252c66989"
+
+  - id: V-ICT-006
+    title: Zone Persistence Architecture
+    epic_id: EP-ICT-002
+    story_id: ST-ICT-006
+    status: validated
+    description: Validate zone persistence with Redis storage and lifecycle management
+    acceptance_criteria:
+      - Zone data model with UUID, type, timeframe, token, price_range
+      - Redis storage using sorted sets + hashes
+      - Lifecycle ACTIVE→TESTED→MITIGATED→INVALIDATED
+      - ~600KB capacity validated
+      - Unit tests with 42 passing
+    test_method: automated
+    owner: dev
+    validation_evidence:
+      - test_count: 42
+      - merge_commit: "ae8906ceff590845cb6dd58c8890b95c0cfb5d5a"
+
+  - id: V-ICT-007
+    title: Repainting/Lookahead Guard Framework
+    epic_id: EP-ICT-002
+    story_id: ST-ICT-007
+    status: validated
+    description: Validate repainting/lookahead detection with 0% tolerance policy
+    acceptance_criteria:
+      - lookahead_guard decorator implemented
+      - repainting_detector test suite with 0% tolerance
+      - Applied to RSI, MACD, BB, Markov, OrderFlow
+      - Existing indicator tests pass (regression validated)
+    test_method: automated
+    owner: dev
+    validation_evidence:
+      - safety_tests: 23
+      - regression_tests: 412
+      - total_tests: 435
+      - merge_commit: "0bd1c10a2d7fcba85adfb7928e7ef0ea6435548d"
+
+  - id: V-ICT-008
+    title: Two-Layer Pipeline Design Document
+    epic_id: EP-ICT-002
+    story_id: ST-ICT-008
+    status: validated
+    description: Validate ICT two-layer pipeline architecture documentation
+    acceptance_criteria:
+      - Layer 1 (Structural Context/SMC) documented
+      - Layer 2 (Signal Confirmation/Mathematical) documented
+      - Confluence modification rules defined
+      - Backward compatibility plan documented
+      - No TODO/FIXME placeholders
+    test_method: manual
+    owner: dev
+    validation_evidence:
+      - doc_lines: 1322
+      - files: 3
+      - merge_commit: "ba46305af53f39e33f58723a10a34ccf5c2e65dd"
 
 # ============================================================
 # Global validation thresholds
