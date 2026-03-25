@@ -1385,17 +1385,19 @@ epics:
           passed: 0
           breakdown: "documentation only"
         notes: "Two-layer pipeline design documents (1322 lines total)"
-  - description:
+  - completion_date: "2026-03-25"
+    description:
       Core ICT signal components including Market Structure Detector (BOS/CHoCH),
       Cumulative Volume Delta (CVD), Fair Value Gap Detector, and Order Block Detector
     id: EP-ICT-003
     name: ICT Core Signal Components
     notes:
-      - Phase 1: 4 stories, 12 SP
-      - Sprint ICT-S4 (Weeks 7-8) + Sprint ICT-S5 (Weeks 9-10)
-      - All signals must pass non-repainting validation
+      - Phase 1: 4 stories, 12 SP - COMPLETED
+      - Sprint ICT-S4 (Weeks 7-8) - COMPLETED
+      - All signals pass non-repainting validation
+      - All 4 stories merged to main
     sprint_id: ICT-S4
-    status: planned
+    status: completed
     story_count: 4
     story_ids:
       - ST-ICT-009
@@ -1403,6 +1405,39 @@ epics:
       - ST-ICT-011
       - ST-ICT-012
     story_points: 12
+    completed_stories:
+      - id: ST-ICT-009
+        status: completed
+        completion_date: "2026-03-25"
+        merge_commit: "895ec3c51870c5bf83faa140c6c7ed26df9be90b"
+        test_results:
+          passed: 69
+          coverage: "86%"
+        notes: "Market Structure Detector with BOS/CHoCH classification, 2434 lines"
+      - id: ST-ICT-010
+        status: completed
+        completion_date: "2026-03-25"
+        merge_commit: "5ed5e8dd9fee731054230c6d5fd23686391d660a"
+        test_results:
+          passed: 51
+          breakdown: "27 CVD + 24 regression"
+        notes: "Cumulative Volume Delta with tick-level delta calculation"
+      - id: ST-ICT-011
+        status: completed
+        completion_date: "2026-03-25"
+        merge_commit: "737aa6ebafb63bbc363ea7d06a0124c9c31095d4"
+        test_results:
+          passed: 38
+          coverage: "79%"
+        notes: "Fair Value Gap Detector with mitigation tracking, 1690 lines"
+      - id: ST-ICT-012
+        status: completed
+        completion_date: "2026-03-25"
+        merge_commit: "109ba5e1d4f054a0686143f65a48c1098b1d131f"
+        test_results:
+          passed: 33
+          coverage: "95%"
+        notes: "Order Block Detector with smart mitigation, 1455 lines"
   - description:
       Component validation framework for shadow testing all 4 ICT signals with directional
       accuracy thresholds before Phase 2 integration

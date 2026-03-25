@@ -2909,6 +2909,75 @@ validations:
       - files: 3
       - merge_commit: "ba46305af53f39e33f58723a10a34ccf5c2e65dd"
 
+  # EP-ICT-003: ICT Core Signal Components (4 validations)
+  - id: V-ICT-009
+    title: Market Structure Detector - BOS/CHoCH Classification
+    epic_id: EP-ICT-003
+    story_id: ST-ICT-009
+    status: validated
+    description: Validate market structure detection with BOS/CHoCH classification, regime-gated, non-repainting
+    acceptance_criteria:
+      - Swing pivot detection correctly identifies highs/lows
+      - BOS detection triggers on break of structure
+      - CHoCH detection triggers on change of character
+      - Regime-gating filters to TRENDING only
+      - Non-repainting uses confirmed bars only
+      - ">90% accuracy on synthetic test fixtures"
+    test_method: automated
+    test_coverage: "86%"
+    owner: ml-team
+
+  - id: V-ICT-010
+    title: Cumulative Volume Delta - Tick-Level Delta
+    epic_id: EP-ICT-003
+    story_id: ST-ICT-010
+    status: validated
+    description: Validate CVD calculation from tick-level trades with divergence detection
+    acceptance_criteria:
+      - get_recent_trades() fetches trade data from Binance
+      - Tick-level volume delta calculates correctly (buy/sell classification)
+      - CVD divergence detection identifies price/CVD divergence
+      - Order book fallback when trades unavailable
+      - Mock tests at 90%+ coverage
+      - Regression tests pass (test_ingestion.py, test_config.py)
+    test_method: automated
+    test_coverage: "Mock 90%+"
+    owner: ml-team
+
+  - id: V-ICT-011
+    title: Fair Value Gap Detector - 3-Candle Pattern
+    epic_id: EP-ICT-003
+    story_id: ST-ICT-011
+    status: validated
+    description: Validate FVG detection using 3-candle pattern with mitigation tracking
+    acceptance_criteria:
+      - 3-candle FVG detection for bullish and bearish patterns
+      - 50% CE tracking identifies midpoint retracement
+      - Wick mitigation detection (price enters via wick)
+      - Close mitigation detection (candle closes within FVG)
+      - Regime-gated activation
+      - Zone lifecycle integration via ZoneManager
+    test_method: automated
+    test_coverage: "79%"
+    owner: ml-team
+
+  - id: V-ICT-012
+    title: Order Block Detector - Bullish/Bearish OB Detection
+    epic_id: EP-ICT-003
+    story_id: ST-ICT-012
+    status: validated
+    description: Validate Order Block detection with smart mitigation and volume confirmation
+    acceptance_criteria:
+      - Bullish OB detection (bearish candle before strong bullish move)
+      - Bearish OB detection (bullish candle before strong bearish move)
+      - Smart mitigation detection (price returns to OB zone)
+      - Volume confirmation optional (configurable)
+      - Regime-gated activation
+      - Zone lifecycle integration via ZoneManager
+    test_method: automated
+    test_coverage: "95%"
+    owner: ml-team
+
 # ============================================================
 # Global validation thresholds
 # ============================================================
