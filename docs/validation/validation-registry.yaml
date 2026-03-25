@@ -2772,6 +2772,62 @@ validations:
       - "PR #628 merged: 885b3fe"
       - "Top-20 test failures fixed"
 
+  # ============================================================
+  # ICT STORY VALIDATIONS (4 validations for EP-ICT-001)
+  # ============================================================
+
+  - id: V-ICT-001
+    title: ICT Story ST-ICT-001 Validation
+    epic_id: EP-ICT-001
+    story_id: ST-ICT-001
+    status: validated
+    description: Validate ST-ICT-001 — DISCORD_BYPASS_CONFIDENCE_FILTER env var rename fix.
+    acceptance_criteria:
+      - CHISEAI_BYPASS_CONFIDENCE_FILTER env var rename verified
+      - Warning log emission when bypass active
+      - Tests updated and passing
+    test_method: automated
+    owner: chiseai-team
+
+  - id: V-ICT-002
+    title: ICT Story ST-ICT-002 Validation
+    epic_id: EP-ICT-001
+    story_id: ST-ICT-002
+    status: validated
+    description: Validate ST-ICT-002 — RATE_LIMITED signal status fix.
+    acceptance_criteria:
+      - RATE_LIMITED enum value added to SignalStatus
+      - signal_generator sets RATE_LIMITED for rate-limited signals
+      - Downstream consumers handle RATE_LIMITED gracefully
+      - Tests passing
+    test_method: automated
+    owner: chiseai-team
+
+  - id: V-ICT-003
+    title: ICT Story ST-ICT-003 Validation
+    epic_id: EP-ICT-001
+    story_id: ST-ICT-003
+    status: validated
+    description: Validate ST-ICT-003 — order_flow weight addition to indicator presets.
+    acceptance_criteria:
+      - order_flow weight added to conservative (1.0) and aggressive (1.2) presets
+      - Scorer correctly uses order_flow weight
+      - Tests passing
+    test_method: automated
+    owner: chiseai-team
+
+  - id: V-ICT-004
+    title: ICT Story ST-ICT-004 Validation
+    epic_id: EP-ICT-001
+    story_id: ST-ICT-004
+    status: validated
+    description: Validate ST-ICT-004 — CVD data availability assessment.
+    acceptance_criteria:
+      - Binance trades_url property added to BinanceConfig
+      - CVD assessment document created with all required sections
+    test_method: automated
+    owner: chiseai-team
+
 # ============================================================
 # Global validation thresholds
 # ============================================================

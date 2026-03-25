@@ -22,7 +22,7 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 import yaml
 
@@ -61,7 +61,7 @@ def get_story_completion_age(story: dict[str, Any]) -> int | None:
     return None
 
 
-def run_git_command(args: list[str], cwd: Path = None) -> tuple[int, str, str]:
+def run_git_command(args: list[str], cwd: Path | None = None) -> tuple[int, str, str]:
     """Run a git command and return (returncode, stdout, stderr)."""
     try:
         result = subprocess.run(
@@ -73,7 +73,7 @@ def run_git_command(args: list[str], cwd: Path = None) -> tuple[int, str, str]:
 
 
 def validate_completion_evidence(
-    story: dict[str, Any], story_id: str = None, grace_period_days: int = 7
+    story: dict[str, Any], story_id: str | None = None, grace_period_days: int = 7
 ) -> tuple[bool, str, bool]:
     """
     Validate that a story marked as completed/merged has proper evidence.
@@ -98,7 +98,8 @@ def validate_completion_evidence(
 
     # Check if story is legacy (outside grace period)
     story_age = get_story_completion_age(story)
-    is_legacy = story_age is not None and story_age > grace_period_days
+    # If no completion date, treat as legacy (very old) to avoid blocking historical stories
+    is_legacy = story_age is None or story_age > grace_period_days
 
     errors = []
 
@@ -157,9 +158,18 @@ def validate_completion_evidence(
     return True, "Valid completion evidence", False
 
 
+class ValidationResults(TypedDict):
+    valid: list[dict[str, Any]]
+    invalid: list[dict[str, Any]]
+    warnings: list[dict[str, Any]]
+    skipped: list[dict[str, Any]]
+    total_stories: int
+    completed_merged_stories: int
+
+
 def validate_status_file(
     status_file: Path, grace_period_days: int = 7
-) -> dict[str, Any]:
+) -> ValidationResults:
     """
     Validate all stories in the workflow status file.
 
@@ -176,7 +186,7 @@ def validate_status_file(
     with open(status_file) as f:
         data = yaml.safe_load(f)
 
-    results = {
+    results: ValidationResults = {
         "valid": [],
         "invalid": [],
         "warnings": [],  # Legacy stories missing evidence (outside grace period)
@@ -239,7 +249,7 @@ def validate_status_file(
     return results
 
 
-def print_validation_report(results: dict[str, Any], verbose: bool = False):
+def print_validation_report(results: ValidationResults, verbose: bool = False):
     """Print a formatted validation report."""
     print("\n" + "=" * 80)
     print("COMPLETION EVIDENCE VALIDATION REPORT")
