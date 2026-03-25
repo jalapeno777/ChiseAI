@@ -484,11 +484,11 @@ class SignalGenerator:
                     f"confidence={signal.confidence:.1%}"
                 )
             else:
-                # Rate limited - still actionable but marked
-                signal.status = SignalStatus.ACTIONABLE
+                # Rate limited - actionable but throttled
+                signal.status = SignalStatus.RATE_LIMITED
                 signal.metadata["rate_limited"] = True
                 logger.warning(
-                    "Actionable signal (rate limited): %s [%s]",
+                    "Rate-limited signal (actionable but throttled): %s [%s]",
                     token,
                     signal.direction_str,
                 )
