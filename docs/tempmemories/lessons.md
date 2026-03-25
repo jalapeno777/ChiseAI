@@ -600,3 +600,9 @@ LESSON
 
 7. **InfluxDB v2 uses bucket-level retention (not named policies like v1)**
    - API differences between versions matter for implementation
+
+8. **When `ci-gate` fails with `lint.status=123`, inspect the Woodpecker bundle before changing logic**
+   - In pipeline 2488 the real failure was Black formatting drift, not a broken CI control path; `_bmad-output/ci/woodpecker/<pipeline>/raw/ci-gate.log` exposed the exact files immediately.
+
+9. **After CI-oriented Python edits, run targeted `black --check` on touched files before pushing to main**
+   - Pipeline 2488 failed only because four touched files were not Black-formatted; targeted formatting was enough to turn follow-up pipeline 2489 green.
