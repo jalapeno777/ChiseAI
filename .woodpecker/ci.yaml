@@ -47,6 +47,7 @@ when:
     - push
     - manual
     - cron
+pull: if-not-present
 
 clone:
   git:
