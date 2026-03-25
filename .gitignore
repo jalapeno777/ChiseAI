@@ -52,5 +52,8 @@ screenshots/
 *.swp
 *.swo
 
+# Generated governance audit artifacts (self-assessments)
+docs/governance/self_assessments/*.json
+
 # Utility scripts (not part of tracked codebase)
 scripts/archive_iterlog_to_qdrant.py
