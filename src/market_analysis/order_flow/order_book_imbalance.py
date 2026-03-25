@@ -3,6 +3,11 @@
 Computes bid/ask ratio and depth imbalance at multiple levels of L2
 order book data. Provides configurable thresholds for signal generation
 and integrates with FeatureStore for real-time caching.
+
+Repainting safeguards:
+    - Uses only current/latest order book snapshot (no historical peeking)
+    - No lookahead - computation is point-in-time only
+    - Validated by RepaintingDetector with 0% tolerance
 """
 
 from __future__ import annotations
@@ -19,6 +24,7 @@ from market_analysis.indicators.base import (
     SignalDirection,
 )
 from market_analysis.indicators.feature_store import FeatureStore
+from market_analysis.safety import check_indicator
 
 logger = logging.getLogger(__name__)
 

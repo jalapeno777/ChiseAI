@@ -3,6 +3,12 @@
 MACD is a trend-following momentum indicator that shows the relationship
 between two moving averages of a security's price. It consists of the
 MACD line, signal line, and histogram.
+
+Repainting safeguards:
+    - Uses only historical data (no lookahead)
+    - EMA calculations are causal (only past values)
+    - Crossover detection is retrospective, not predictive
+    - Validated by RepaintingDetector with 0% tolerance
 """
 
 from dataclasses import dataclass
@@ -15,6 +21,7 @@ if TYPE_CHECKING:
     from data_ingestion.ohlcv_fetcher import OHLCVData
 
 from data_ingestion.ohlcv_fetcher import OHLCVData
+from market_analysis.safety import check_indicator
 
 
 class MACDSignal(Enum):

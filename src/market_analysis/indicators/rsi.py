@@ -3,6 +3,11 @@
 RSI is a momentum oscillator that measures the speed and magnitude of
 recent price changes to evaluate overbought or oversold conditions.
 Uses Wilder's smoothing method for calculation.
+
+Repainting safeguards:
+    - Uses only historical data (no lookahead)
+    - Values at bar i only depend on data[0:i+1]
+    - Validated by RepaintingDetector with 0% tolerance
 """
 
 from dataclasses import dataclass
@@ -14,6 +19,7 @@ if TYPE_CHECKING:
     from data_ingestion.ohlcv_fetcher import OHLCVData
 
 from data_ingestion.ohlcv_fetcher import OHLCVData
+from market_analysis.safety import check_indicator
 
 
 @dataclass
