@@ -15,11 +15,17 @@ Usage:
     config = AnalysisConfig()
     analyzer = FeedbackAnalyzer(config)
     report = await analyzer.analyze_matches(matches)
+
+.. deprecated::
+    The MarketRegime enum in this module is deprecated. Use
+    :class:`market_analysis.regime.UnifiedRegime` instead for unified
+    regime classification (TRENDING, RANGING, VOLATILE, UNKNOWN).
 """
 
 from __future__ import annotations
 
 import logging
+import warnings
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
@@ -37,7 +43,16 @@ logger = logging.getLogger(__name__)
 
 
 class MarketRegime(Enum):
-    """Market regime classification."""
+    """Market regime classification.
+
+    .. deprecated::
+        Use :class:`market_analysis.regime.UnifiedRegime` instead.
+        The unified regime provides cleaner semantics:
+        - UnifiedRegime.TRENDING (instead of BULLISH/BEARISH with is_trending check)
+        - UnifiedRegime.RANGING (same)
+        - UnifiedRegime.VOLATILE (instead of HIGH_VOLATILITY/LOW_VOLATILITY)
+        - UnifiedRegime.UNKNOWN (same)
+    """
 
     BULLISH = "bullish"
     BEARISH = "bearish"
@@ -45,6 +60,9 @@ class MarketRegime(Enum):
     HIGH_VOLATILITY = "high_volatility"
     LOW_VOLATILITY = "low_volatility"
     UNKNOWN = "unknown"
+
+
+# Note: MarketRegime is deprecated. See class docstring for migration guide.
 
 
 class DriftSeverity(Enum):
