@@ -1,12 +1,105 @@
 metadata:
   project_name: ChiseAI
   version: 2.2.0
-  last_updated: "2026-03-22"
+  last_updated: "2026-03-25"
   managed_by: merlin
   status_notes:
     - "LLM Providers: OPERATIONAL (verified 2026-03-09 via LLM-PROVIDER-FIX-003 - 313/324 tests passing)"
     - "MiniMax: DISABLED per PAPER-LLM-DIAG-001 (initialization delays)"
 completed:
+  - acceptance_criteria:
+      - DISCORD_BYPASS_CONFIDENCE_FILTER env var renamed to CHISEAI_BYPASS_CONFIDENCE_FILTER
+      - Risk assessment completed and documented
+      - All references updated across codebase
+    completion_date: "2026-03-25"
+    description:
+      Fix DISCORD_BYPASS_CONFIDENCE_FILTER env var security risk - renamed to
+      CHISEAI_BYPASS_CONFIDENCE_FILTER to follow naming convention
+    id: ST-ICT-001
+    merge_commit: b04eb24e
+    notes:
+      - "Risk: DISCORD_BYPASS_CONFIDENCE_FILTER exposed credentials pattern"
+      - "Fix: Renamed to CHISEAI_BYPASS_CONFIDENCE_FILTER"
+      - "26 tests passed"
+    pr_number: 632
+    priority: P1
+    sprint_id: ICT-S1
+    status: merged
+    story_points: 1
+    test_results:
+      passed: 26
+      total: 26
+    title: Fix DISCORD_BYPASS_CONFIDENCE_FILTER env var risk
+  - acceptance_criteria:
+      - RATE_LIMITED signal status properly handled in signal processing
+      - Rate-limited signals not incorrectly marked ACTIONABLE
+      - Proper fallback behavior for rate-limited sources
+    completion_date: "2026-03-25"
+    description:
+      Fix rate-limited signals being incorrectly marked ACTIONABLE - add proper
+      RATE_LIMITED status handling
+    id: ST-ICT-002
+    merge_commit: b5375412
+    notes:
+      - "Issue: Rate-limited signals marked ACTIONABLE causing incorrect trades"
+      - "Fix: RATE_LIMITED status added, proper signal filtering"
+      - "206 tests passed"
+    pr_number: 635
+    priority: P1
+    sprint_id: ICT-S1
+    status: merged
+    story_points: 1
+    test_results:
+      passed: 206
+      total: 206
+    title: Fix rate-limited signals marked ACTIONABLE
+  - acceptance_criteria:
+      - order_book_imbalance weight explicitly defined and documented
+      - Weight wiring validated through signal chain
+      - Proper default value and bounds established
+    completion_date: "2026-03-25"
+    description:
+      Add explicit order_book_imbalance weight and validate wiring through the
+      signal processing chain
+    id: ST-ICT-003
+    merge_commit: 816ac819
+    notes:
+      - "Issue: order_book_imbalance weight ambiguous"
+      - "Fix: Explicit weight added, wiring validated"
+      - "92 tests passed"
+    pr_number: 636
+    priority: P1
+    sprint_id: ICT-S1
+    status: merged
+    story_points: 1
+    test_results:
+      passed: 92
+      total: 92
+    title: Add explicit order_book_imbalance weight + validate wiring
+  - acceptance_criteria:
+      - CVD data availability assessed for all required timeframes
+      - Data gaps identified and documented
+      - CVD assessment document created
+    completion_date: "2026-03-25"
+    description:
+      CVD Data Availability Assessment - evaluate CVD data availability across
+      timeframes and identify gaps
+    id: ST-ICT-004
+    merge_commit: cc63689b
+    notes:
+      - "Assessment: CVD data availability complete"
+      - "trades_url property added"
+      - "CVD assessment document created"
+    pr_number: 633
+    priority: P0
+    sprint_id: ICT-S1
+    status: merged
+    story_points: 0.5
+    test_results:
+      passed: 0
+      total: 0
+      notes: Assessment only - no tests required
+    title: CVD Data Availability Assessment
   - acceptance_criteria:
       - Phase A: Kimi adapter infrastructure verified (kimi_model default updated to kimi-k2.5)
       - Phase B:
@@ -1222,17 +1315,18 @@ epics:
       - ST-CI-001
       - ST-EVAL-SCHEDULER-001
     story_points: TBD
-  - description:
+  - completion_date: "2026-03-25"
+    description:
       Bug fixes and data foundation for ICT/SMC integration including DISCORD_BYPASS
       fix, rate-limited signal status, order_book_imbalance wiring, and CVD data assessment
     id: EP-ICT-001
     name: ICT Bug Fixes & Data Foundation
     notes:
-      - Phase 0A: 4 stories, 3.5 SP
-      - Sprint ICT-S1 (Weeks 1-2)
-      - Pre-existing bugs must be fixed before ICT components begin
+      - Phase 0A: 4 stories, 3.5 SP - COMPLETED
+      - Sprint ICT-S1 (Weeks 1-2) - COMPLETED
+      - All Phase 0A stories merged (ST-ICT-001, ST-ICT-002, ST-ICT-003, ST-ICT-004)
     sprint_id: ICT-S1
-    status: planned
+    status: completed
     story_count: 4
     story_ids:
       - ST-ICT-001
