@@ -21,11 +21,11 @@ import sys
 from pathlib import Path
 
 
-def _run(title: str, cmd: list[str]) -> bool:
+def _run(title: str, cmd: list[str], timeout: int = 120) -> bool:
     """Run a check command and report pass/fail. Returns True on success."""
     print(f"  [{title}] ... ", end="", flush=True)
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
         if result.returncode == 0:
             print("PASS")
             return True
@@ -73,18 +73,22 @@ def run_checks() -> int:
         print("\nAll checks passed (docs-only change).")
         return 0
 
-    checks: list[tuple[str, list[str]]] = [
-        ("lint: black", [sys.executable, "-m", "black", "--check", "."]),
-        ("lint: ruff", [sys.executable, "-m", "ruff", "check", "."]),
-        ("security-scan", [sys.executable, "-m", "bandit", "r", "-q", "."]),
-        ("secret-scan", ["detect-secrets", "scan", "."]),
-        ("dependency-audit", ["pip-audit", "--desc"]),
+    checks: list[tuple[str, list[str], int]] = [
+        ("lint: black", [sys.executable, "-m", "black", "--check", "."], 120),
+        ("lint: ruff", [sys.executable, "-m", "ruff", "check", "."], 120),
+        ("security-scan", [sys.executable, "-m", "bandit", "r", "-q", "."], 120),
+        ("secret-scan", ["detect-secrets", "scan", "."], 120),
+        (
+            "dependency-audit",
+            [sys.executable, "scripts/ci/dependency_audit.py"],
+            360,
+        ),
     ]
 
     passed = 0
     failed = 0
-    for title, cmd in checks:
-        if _run(title, cmd):
+    for title, cmd, timeout in checks:
+        if _run(title, cmd, timeout=timeout):
             passed += 1
         else:
             failed += 1

@@ -123,7 +123,7 @@ class WorktreeManager:
 
     def _find_repo_root(self) -> Path:
         """Find the git repository root."""
-        result = subprocess.run(  # nosec B607
+        result = subprocess.run(
             ["git", "rev-parse", "--show-toplevel"],
             capture_output=True,
             text=True,

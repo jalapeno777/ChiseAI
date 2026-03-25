@@ -44,8 +44,8 @@ class PostgresSignalStorage(SignalStorageInterface):
         host: str = "localhost",
         port: int = 5432,
         database: str = "chiseai",
-        user: str = "",  # nosec B107 - empty default for optional param
-        password: str = "",  # nosec B107 - empty default for optional param
+        user: str = "",  # nosec B107
+        password: str = "",  # nosec B107
     ):
         """Initialize PostgreSQL storage.
 

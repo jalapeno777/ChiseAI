@@ -154,6 +154,63 @@ def verify_git_sha(sha: str, repo_path: str | None = None) -> bool:
         return False
 
 
+def verify_git_shas_batch(
+    shas: list[str], repo_path: str | None = None
+) -> tuple[set[str], set[str]]:
+    """Verify many SHAs in one git invocation.
+
+    Using one `git cat-file --batch-check` call avoids N separate process launches,
+    which becomes expensive against large workflow files with many recorded commits.
+    """
+    unique_shas = [sha for sha in dict.fromkeys(shas) if SHA_PATTERN.match(sha)]
+    if not unique_shas:
+        return set(), set()
+
+    if repo_path:
+        cmd = ["git", "-C", repo_path, "cat-file", "--batch-check"]
+    else:
+        cmd = ["git", "cat-file", "--batch-check"]
+
+    try:
+        proc = subprocess.run(
+            cmd,
+            input="\n".join(unique_shas) + "\n",
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        logger.warning("Batch git SHA verification timed out")
+        return set(), set(unique_shas)
+    except FileNotFoundError:
+        logger.warning("Git command not found")
+        return set(), set(unique_shas)
+    except Exception as e:
+        logger.warning(f"Batch git SHA verification failed: {e}")
+        return set(), set(unique_shas)
+
+    verified: set[str] = set()
+    failed: set[str] = set()
+    lines = proc.stdout.splitlines()
+    for sha, line in zip(unique_shas, lines, strict=False):
+        parts = line.split()
+        object_type = parts[1].lower() if len(parts) >= 2 else ""
+        if object_type == "commit":
+            verified.add(sha)
+        else:
+            failed.add(sha)
+
+    # Defensive fallback if git emitted fewer lines than requested.
+    for sha in unique_shas:
+        if sha not in verified and sha not in failed:
+            failed.add(sha)
+
+    if proc.returncode != 0 and not verified:
+        return set(), set(unique_shas)
+    return verified, failed
+
+
 def extract_shas_from_yaml(data: Any, path: str = "") -> list[tuple[str, str]]:
     """
     Recursively extract all git SHAs from YAML data.
@@ -436,9 +493,12 @@ def validate_status_yaml(
     # Verify git SHAs
     if verify_shas and data:
         shas = extract_shas_from_yaml(data)
+        verified, failed = verify_git_shas_batch(
+            [sha for _, sha in shas], repo_path=repo_path
+        )
 
         for field_path, sha in shas:
-            if verify_git_sha(sha, repo_path):
+            if sha in verified:
                 result.git_shas_verified.append(sha)
                 logger.debug(f"Verified SHA '{sha}' at {field_path}")
             else:

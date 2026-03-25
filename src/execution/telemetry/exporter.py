@@ -54,7 +54,7 @@ class ExecutionTelemetryExporter:
         bucket: str = "chiseai",
         org: str = "chiseai",
         url: str | None = None,
-        token: str = "",  # nosec B107 - empty default for optional param
+        token: str = "",  # nosec B107
     ):
         # Use environment variable or Docker-aware default
         if url is None:

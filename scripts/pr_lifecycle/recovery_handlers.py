@@ -123,7 +123,7 @@ class AutoRebaseEngine:
         self, *args: str, check: bool = False
     ) -> subprocess.CompletedProcess[str]:
         """Run a git command in the repository."""
-        result = subprocess.run(  # nosec B607
+        result = subprocess.run(
             ["git", "-C", self.repo_path] + list(args),
             text=True,
             capture_output=True,

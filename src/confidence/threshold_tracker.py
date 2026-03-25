@@ -387,7 +387,7 @@ class InfluxDBThresholdTracker(ThresholdHistoryTracker):
         self,
         client: Any | None = None,
         url: str | None = None,
-        token: str = "",  # nosec B107 - empty default for optional param
+        token: str = "",  # nosec B107
         org: str = "chiseai",
         bucket: str = "thresholds",
     ):

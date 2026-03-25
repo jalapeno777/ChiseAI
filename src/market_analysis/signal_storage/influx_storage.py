@@ -53,7 +53,7 @@ class InfluxSignalStorage(SignalStorageInterface):
         self,
         client: InfluxDBClient | None = None,
         url: str = os.getenv("INFLUXDB_URL", "http://host.docker.internal:18087"),
-        token: str = "",  # nosec B107 - empty default for optional param
+        token: str = "",  # nosec B107
         org: str = "chiseai",
         bucket: str = "signals",
     ):

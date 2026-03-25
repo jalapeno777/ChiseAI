@@ -12,7 +12,7 @@
 #     Note: insight/metacog governance checks are intentionally lint-bundled to keep
 #     gate fan-out small while preserving strict blocking on changed iterlogs.
 #   - security-scan: Bandit security analysis
-#   - dependency-audit: pip-audit vulnerability scan
+#   - dependency-audit: targeted pip-audit vulnerability scan
 #   - secret-scan: Hardcoded secret detection
 #   - risk-invariants: Critical risk invariant tests
 #   - brain-regression: Brain evaluation regression tests
@@ -235,7 +235,7 @@ steps:
           if [ -n "$(printf '%s' "$CHANGED_SCAN" | tr -d '[:space:]')" ]; then
             echo "security-scan: scanning changed files only: ${CHANGED_SCAN}"
             # Keep PR checks actionable by scanning changed executable code only.
-            printf '%s\n' "$CHANGED_SCAN" | tr -s '[:space:]' '\n' | grep -v '^$' | xargs bandit --ini .bandit -q -ll || echo "WARN: bandit findings (non-blocking)"
+            printf '%s\n' "$CHANGED_SCAN" | tr -s '[:space:]' '\n' | grep -v '^$' | xargs bandit -c pyproject.toml -q -ll || echo "WARN: bandit findings (non-blocking)"
           else
             echo "security-scan: no changed src/scripts python files; skipping"
           fi

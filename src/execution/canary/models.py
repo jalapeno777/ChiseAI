@@ -30,7 +30,7 @@ class CanaryStatus(Enum):
 class GateCheckResult(Enum):
     """Result of a gate check."""
 
-    PASS = "pass"  # nosec B105 - enum state label, not a credential
+    PASS = "pass"  # nosec B105
     FAIL = "fail"
     PENDING = "pending"
 

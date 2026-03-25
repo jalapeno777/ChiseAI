@@ -180,8 +180,8 @@ class RegexLogParser(BaseLogParser):
     for timestamp, level, source, and message fields.
 
     Example:
-        pattern = r'(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) '
-                  r'\[(?P<level>\w+)\] (?P<source>\w+): (?P<msg>.*)'
+        pattern = r'(?P<ts>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) '
+                  r'\\[(?P<level>\\w+)\\] (?P<source>\\w+): (?P<msg>.*)'
         parser = RegexLogParser(pattern, use_named_groups=True)
     """
 

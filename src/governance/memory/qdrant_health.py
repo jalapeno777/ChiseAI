@@ -460,8 +460,10 @@ class QdrantHealthMonitor:
         test_id = f"health_check_{uuid.uuid4().hex[:8]}"
         test_vector = [0.01] * self.vector_size
 
-        # Create deterministic UUID for test point
-        point_id = str(uuid.UUID(bytes=hashlib.md5(test_id.encode()).digest()[:16]))
+        # Create deterministic UUID for test point without weak hashing primitives.
+        point_id = str(
+            uuid.UUID(bytes=hashlib.sha256(test_id.encode()).digest()[:16])
+        )
 
         start_time = time.time()
 

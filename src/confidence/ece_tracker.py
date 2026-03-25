@@ -96,7 +96,7 @@ class ECEHistoryTracker:
         self,
         client: InfluxDBClient | None = None,
         url: str | None = None,
-        token: str = "",  # nosec B107 - empty default for optional param
+        token: str = "",  # nosec B107
         org: str = "chiseai",
         bucket: str = "signals",
     ):

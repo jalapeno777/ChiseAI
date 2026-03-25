@@ -540,7 +540,7 @@ class ModelUpdater:
             model.save_model(str(model_path))
         else:
             # Generic pickle fallback for internal model serialization
-            import pickle  # nosec B403 - Used only for internal model state, not user input
+            import pickle  # nosec B403
 
             with open(model_path, "wb") as f:
                 pickle.dump(model, f)

@@ -32,7 +32,10 @@ logger = logging.getLogger("verify_workflow")
 
 
 WORKFLOW_FILE = Path("docs/bmm-workflow-status.yaml")
+STORY_SECTIONS = ["stories", "completed", "backlog", "launch_stories"]
 VALID_STATUSES = [
+    "archived",
+    "deprecated",
     "planned",
     "in_progress",
     "completed",
@@ -43,6 +46,7 @@ VALID_STATUSES = [
     "validated",
 ]
 REQUIRED_LEAN_FIELDS = ["id", "status", "title"]
+LEGACY_VIEW_SECTIONS = {"completed", "backlog", "launch_stories"}
 
 
 def load_workflow(path: Path) -> dict:
@@ -65,7 +69,7 @@ def check_required_fields(workflow_data: dict) -> tuple[bool, list[str]]:
     """Verify all stories have required fields."""
     errors = []
 
-    for section in ["completed", "backlog", "launch_stories"]:
+    for section in STORY_SECTIONS:
         stories = workflow_data.get(section, [])
         for story in stories:
             if not isinstance(story, dict):
@@ -90,7 +94,7 @@ def check_epic_integrity(workflow_data: dict) -> tuple[bool, list[str]]:
     epic_ids = {e.get("id") for e in epics if isinstance(e, dict)}
 
     # Check all stories reference valid epics
-    for section in ["completed", "backlog", "launch_stories"]:
+    for section in STORY_SECTIONS:
         stories = workflow_data.get(section, [])
         for story in stories:
             if not isinstance(story, dict):
@@ -114,7 +118,7 @@ def check_epic_integrity(workflow_data: dict) -> tuple[bool, list[str]]:
 
         # Collect all story IDs
         all_story_ids = set()
-        for section in ["completed", "backlog", "launch_stories"]:
+        for section in STORY_SECTIONS:
             for story in workflow_data.get(section, []):
                 if isinstance(story, dict) and story.get("id"):
                     all_story_ids.add(story["id"])
@@ -130,7 +134,7 @@ def check_status_values(workflow_data: dict) -> tuple[bool, list[str]]:
     """Verify all status values are valid."""
     errors = []
 
-    for section in ["completed", "backlog", "launch_stories"]:
+    for section in STORY_SECTIONS:
         stories = workflow_data.get(section, [])
         for story in stories:
             if not isinstance(story, dict):
@@ -150,7 +154,7 @@ def check_no_duplicates(workflow_data: dict) -> tuple[bool, list[str]]:
     errors = []
     story_ids = {}
 
-    for section in ["completed", "backlog", "launch_stories"]:
+    for section in STORY_SECTIONS:
         stories = workflow_data.get(section, [])
         for story in stories:
             if not isinstance(story, dict):
@@ -159,8 +163,18 @@ def check_no_duplicates(workflow_data: dict) -> tuple[bool, list[str]]:
             story_id = story.get("id")
             if story_id:
                 if story_id in story_ids:
+                    prior_section = story_ids[story_id]
+                    mirrored_sections = {section, prior_section}
+                    if mirrored_sections == {"stories", "completed"}:
+                        continue
+                    if mirrored_sections == {"stories", "backlog"}:
+                        continue
+                    if mirrored_sections == {"stories", "launch_stories"}:
+                        continue
+                    if mirrored_sections <= LEGACY_VIEW_SECTIONS:
+                        continue
                     errors.append(
-                        f"Duplicate story ID '{story_id}' in {section} and {story_ids[story_id]}"
+                        f"Duplicate story ID '{story_id}' in {section} and {prior_section}"
                     )
                 else:
                     story_ids[story_id] = section

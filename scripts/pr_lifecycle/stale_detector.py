@@ -73,7 +73,7 @@ class StaleDetector:
 
     def _run_git(self, *args: str) -> subprocess.CompletedProcess[str]:
         """Run a git command in the repository."""
-        return subprocess.run(  # nosec B607
+        return subprocess.run(
             ["git", "-C", self.repo_path] + list(args),
             text=True,
             capture_output=True,
