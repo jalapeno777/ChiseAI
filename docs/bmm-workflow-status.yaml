@@ -15,12 +15,14 @@ completed:
     completion_date: "2026-03-25"
     description: Batch lint cleanup - fix accumulated black and ruff violations in src/ and tests/
     id: REPO-LINT-001
+    title: Lint Cleanup
     notes:
       - "Baseline: 3 black violations, 62 ruff violations"
       - "Fixed: 3 files reformatted, 63 auto-fixes, 1 manual fix (unused variable)"
       - "623 regression tests passed"
+      - "Merged via PR #649 (merge commit 4d2b850f)"
     priority: P2
-    status: completed
+    status: merged
     story_points: 2
   - acceptance_criteria:
       - DISCORD_BYPASS_CONFIDENCE_FILTER env var renamed to CHISEAI_BYPASS_CONFIDENCE_FILTER
