@@ -7,12 +7,11 @@ Tracks wick and close mitigation events for FVGs.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from src.market_analysis.fvg.fvg_detector import FVG, FVGMitigation
+    pass
 
 
 class MitigationType(str, Enum):
@@ -43,7 +42,7 @@ class MitigationEvent:
     mitigation_type: MitigationType
     fvg_high: float
     fvg_low: float
-    notes: Optional[str] = None
+    notes: str | None = None
 
 
 @dataclass
@@ -63,7 +62,7 @@ class MitigationStatus:
     fvg_low: float
     current_mitigation: MitigationType = MitigationType.WICK
     ce50_reached: bool = False
-    ce50_price: Optional[float] = None
+    ce50_price: float | None = None
     events: list[MitigationEvent] = field(default_factory=list)
 
     @property
@@ -344,7 +343,7 @@ class MitigationTracker:
         )
         return f"{direction}_{timestamp}"
 
-    def get_status(self, fvg) -> Optional[MitigationStatus]:
+    def get_status(self, fvg) -> MitigationStatus | None:
         """
         Get mitigation status for an FVG.
 

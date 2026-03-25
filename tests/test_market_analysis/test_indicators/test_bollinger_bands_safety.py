@@ -52,9 +52,9 @@ class TestBollingerBandsSafety:
         detector = RepaintingDetector(tolerance=0.0)
         result = detector.check_repainting(bb_indicator, sample_ohlcv_data)
 
-        assert result.passed is True, (
-            f"Bollinger Bands repainting detected: {result.violations}"
-        )
+        assert (
+            result.passed is True
+        ), f"Bollinger Bands repainting detected: {result.violations}"
 
     def test_bollinger_bands_lookahead_check(self, bb_indicator, sample_ohlcv_data):
         """Test Bollinger Bands calculation passes lookahead check."""
@@ -65,9 +65,9 @@ class TestBollingerBandsSafety:
             "BollingerBands",
         )
 
-        assert result.passed is True, (
-            f"Bollinger Bands lookahead detected: {result.violations}"
-        )
+        assert (
+            result.passed is True
+        ), f"Bollinger Bands lookahead detected: {result.violations}"
 
     def test_bollinger_bands_percent_b_stable(self, bb_indicator, sample_ohlcv_data):
         """Test that %B values remain stable over time.

@@ -2,10 +2,10 @@
 Unit tests for zone models.
 """
 
-import pytest
 from datetime import datetime
 from uuid import UUID
 
+import pytest
 from src.market_analysis.zones.zone_models import (
     MitigationEvent,
     PriceRange,

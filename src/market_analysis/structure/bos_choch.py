@@ -16,13 +16,12 @@ Usage:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from data_ingestion.ohlcv_fetcher import OHLCVData
-
     from market_analysis.structure.swing_pivot import (
         SwingPivot,
         SwingPivotDetectionResult,

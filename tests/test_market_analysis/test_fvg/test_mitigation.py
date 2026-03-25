@@ -2,13 +2,11 @@
 Unit tests for Mitigation Tracker.
 """
 
-import pytest
 from dataclasses import dataclass
 
 from src.market_analysis.fvg.fvg_detector import (
     FVG,
     FVGDirection,
-    FVGMitigation,
 )
 from src.market_analysis.fvg.mitigation_tracker import (
     MitigationEvent,

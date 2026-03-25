@@ -37,7 +37,7 @@ class MarketRegime(str, Enum):
     TRENDING_DOWN = "trending_down"
 
     @classmethod
-    def from_unified(cls, regime: str) -> "MarketRegime":
+    def from_unified(cls, regime: str) -> MarketRegime:
         """Create from unified regime string.
 
         Args:

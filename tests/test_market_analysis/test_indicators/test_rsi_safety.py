@@ -70,7 +70,6 @@ class TestRSISafety:
         This test calculates RSI multiple times as new bars are added,
         and verifies that historical values never change.
         """
-        from market_analysis.indicators.rsi import RSI
 
         n = len(sample_ohlcv_data)
 

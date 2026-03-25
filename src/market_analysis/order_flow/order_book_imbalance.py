@@ -24,7 +24,6 @@ from market_analysis.indicators.base import (
     SignalDirection,
 )
 from market_analysis.indicators.feature_store import FeatureStore
-from market_analysis.safety import check_indicator
 
 logger = logging.getLogger(__name__)
 

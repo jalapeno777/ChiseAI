@@ -8,6 +8,21 @@ metadata:
     - "MiniMax: DISABLED per PAPER-LLM-DIAG-001 (initialization delays)"
 completed:
   - acceptance_criteria:
+      - black --check src/ tests/ exits 0
+      - ruff check src/ tests/ exits 0
+      - All modified modules pass regression tests
+      - Branch pushed to origin with matching HEAD SHA
+    completion_date: "2026-03-25"
+    description: Batch lint cleanup - fix accumulated black and ruff violations in src/ and tests/
+    id: REPO-LINT-001
+    notes:
+      - "Baseline: 3 black violations, 62 ruff violations"
+      - "Fixed: 3 files reformatted, 63 auto-fixes, 1 manual fix (unused variable)"
+      - "623 regression tests passed"
+    priority: P2
+    status: completed
+    story_points: 2
+  - acceptance_criteria:
       - DISCORD_BYPASS_CONFIDENCE_FILTER env var renamed to CHISEAI_BYPASS_CONFIDENCE_FILTER
       - Risk assessment completed and documented
       - All references updated across codebase

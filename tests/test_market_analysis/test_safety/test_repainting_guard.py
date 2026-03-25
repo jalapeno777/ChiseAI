@@ -12,9 +12,7 @@ from market_analysis.safety import (
     RepaintingError,
     RepaintingViolation,
     RepaintingViolationType,
-    checkpoint,
     check_indicator,
-    check_lookahead,
     lookahead_guard,
 )
 
