@@ -11,6 +11,7 @@ Exit codes:
 - 1: One or more checks failed (but still exit 0 for non-blocking in CI)
 """
 
+import shutil
 import subprocess
 import sys
 from typing import NamedTuple
@@ -55,6 +56,13 @@ def check_network(name: str) -> CheckResult:
 
 def main() -> int:
     """Run all Docker live checks."""
+    # Check if docker binary is available (skip in CI agent containers without docker)
+    if shutil.which("docker") is None:
+        print(
+            "docker-live-check: docker binary not found; skipping (CI agent container)"
+        )
+        return 0
+
     all_passed = True
 
     print("=== Docker Live Check ===\n")

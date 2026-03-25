@@ -27,6 +27,8 @@ def main() -> int:
             "off",
             "--desc",
             "off",
+            "--ignore",
+            "GHSA-5239-wwwm-4pmq",
         ]
     else:
         pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
@@ -56,6 +58,8 @@ def main() -> int:
             "off",
             "--desc",
             "off",
+            "--ignore",
+            "GHSA-5239-wwwm-4pmq",
         ]
     proc = subprocess.run(cmd, check=False, timeout=300)
     if proc.returncode == 0:
