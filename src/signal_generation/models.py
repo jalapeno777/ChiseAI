@@ -17,6 +17,7 @@ class SignalStatus(Enum):
 
     ACTIONABLE = "actionable"  # Meets 75% threshold - ready for trading
     LOGGED_ONLY = "logged_only"  # Below threshold - logged but not actionable
+    RATE_LIMITED = "rate_limited"  # Actionable but rate-limited
     STALE_DATA = "stale_data"  # Data freshness check failed
     ERROR = "error"  # Error during generation
 

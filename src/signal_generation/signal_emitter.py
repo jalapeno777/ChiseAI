@@ -315,6 +315,21 @@ class DiscordEmitter(SignalEmitter):
                 latency_ms=0.0,
             )
 
+        # Skip rate-limited signals gracefully
+        status_value = getattr(getattr(signal, "status", None), "value", None)
+        if status_value == "rate_limited":
+            logger.info(
+                "Skipping rate-limited signal: %s [%s]",
+                signal.token,
+                getattr(signal, "direction_str", "unknown"),
+            )
+            return EmissionResult(
+                success=False,
+                channel="discord",
+                error="Signal is rate-limited",
+                latency_ms=0.0,
+            )
+
         if not self.webhook_url:
             return EmissionResult(
                 success=False,
@@ -551,6 +566,21 @@ class DashboardEmitter(SignalEmitter):
                 success=False,
                 channel="dashboard",
                 error="Emitter is disabled",
+                latency_ms=0.0,
+            )
+
+        # Skip rate-limited signals gracefully
+        status_value = getattr(getattr(signal, "status", None), "value", None)
+        if status_value == "rate_limited":
+            logger.info(
+                "Skipping rate-limited signal: %s [%s]",
+                signal.token,
+                getattr(signal, "direction_str", "unknown"),
+            )
+            return EmissionResult(
+                success=False,
+                channel="dashboard",
+                error="Signal is rate-limited",
                 latency_ms=0.0,
             )
 

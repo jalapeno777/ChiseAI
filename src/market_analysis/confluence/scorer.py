@@ -178,6 +178,30 @@ class ConfluenceScorer:
                 metadata={"reason": "no_signals"},
             )
 
+        # Defensive: skip any signals marked as rate-limited
+        filtered_signals = [
+            s
+            for s in aggregated_signals.signals
+            if getattr(getattr(s, "status", None), "value", None) != "rate_limited"
+        ]
+        if len(filtered_signals) < len(aggregated_signals.signals):
+            skipped = len(aggregated_signals.signals) - len(filtered_signals)
+            logger.info("Confluence scorer: skipped %d rate-limited signal(s)", skipped)
+            if not filtered_signals:
+                calc_time = (time.perf_counter() - start_time) * 1000
+                return ConfluenceScore(
+                    score=50.0,
+                    direction=SignalDirection.NEUTRAL,
+                    confidence=0.0,
+                    contributing_factors=[],
+                    signal_breakdown={},
+                    timestamp=timestamp,
+                    calculation_time_ms=calc_time,
+                    metadata={"reason": "all_signals_rate_limited"},
+                )
+            # Narrow the signals list for downstream scoring
+            aggregated_signals.signals = filtered_signals
+
         # Calculate weighted scores for each signal
         weighted_signals = self._calculate_weighted_signals(aggregated_signals)
 
