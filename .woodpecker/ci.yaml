@@ -47,7 +47,6 @@ when:
     - push
     - manual
     - cron
-pull: if-not-present
 
 clone:
   git:
@@ -58,6 +57,7 @@ clone:
 
 steps:
   swarm-context:
+    pull: if-not-exists
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -79,6 +79,7 @@ steps:
   # Verifies that merge-to-main commits are actually on main before proceeding.
   # Runs in all pipelines but only enforces the check on push-to-main events.
   cross-branch-verify:
+    pull: if-not-exists
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -114,6 +115,7 @@ steps:
         exit $code
 
   lint:
+    pull: if-not-exists
     image: chiseai-ci-lint:py311-20260323
     environment:
       GITEA_TOKEN:
@@ -215,6 +217,7 @@ steps:
         exit 0
 
   security-scan:
+    pull: if-not-exists
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -242,6 +245,7 @@ steps:
         exit 0
 
   dependency-audit:
+    pull: if-not-exists
     image: chiseai-ci-dependency-audit:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -260,6 +264,7 @@ steps:
         exit 0
 
   secret-scan:
+    pull: if-not-exists
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -278,6 +283,7 @@ steps:
         exit 0
 
   risk-invariants:
+    pull: if-not-exists
     image: chiseai-ci-risk-invariants:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -306,6 +312,7 @@ steps:
         exit 0
 
   brain-regression:
+    pull: if-not-exists
     image: chiseai-ci-brain-regression:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -337,6 +344,7 @@ steps:
         exit 0
 
   docs-pairing:
+    pull: if-not-exists
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -355,6 +363,7 @@ steps:
         exit 0
 
   docker-governance:
+    pull: if-not-exists
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -373,6 +382,7 @@ steps:
         exit 0
 
   docker-live-check:
+    pull: if-not-exists
     image: chiseai-ci-tools:py311-20260323
     when:
       branch:
@@ -397,6 +407,7 @@ steps:
         exit 0
 
   local-ci:
+    pull: if-not-exists
     image: chiseai-ci-local-ci:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -504,6 +515,7 @@ steps:
         exit 0
 
   changed-lines-coverage:
+    pull: if-not-exists
     image: chiseai-ci-tools:py311-20260323
     depends_on:
       - local-ci
@@ -536,6 +548,7 @@ steps:
   # This stage validates that no new deprecation warnings are introduced.
   # It runs after tests and before merge, failing the build if new warnings are found.
   deprecation-gate:
+    pull: if-not-exists
     image: chiseai-ci-tools:py311-20260323
     depends_on:
       - local-ci
@@ -560,6 +573,7 @@ steps:
         exit 0
 
   pipeline-watchdog:
+    pull: if-not-exists
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -579,6 +593,7 @@ steps:
         exit 0
 
   pre-eval-ingestion:
+    pull: if-not-exists
     image: chiseai-ci-pre-eval-ingestion:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -633,6 +648,7 @@ steps:
         exit 0
 
   brain-eval:
+    pull: if-not-exists
     image: chiseai-ci-brain-eval:py311-20260323
     depends_on:
       - pre-eval-ingestion
@@ -690,6 +706,7 @@ steps:
         exit 0
 
   tempmemory-scheduler:
+    pull: if-not-exists
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -715,6 +732,7 @@ steps:
         exit 0
 
   mini-brain-eval:
+    pull: if-not-exists
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -740,6 +758,7 @@ steps:
         exit 0
 
   tempmemory-reconcile:
+    pull: if-not-exists
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -765,6 +784,7 @@ steps:
         exit 0
 
   tempmemory-drill:
+    pull: if-not-exists
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -797,6 +817,7 @@ steps:
         exit 0
 
   flaky-detection:
+    pull: if-not-exists
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -832,6 +853,7 @@ steps:
         exit 0
 
   compass-apply:
+    pull: if-not-exists
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_PR_LABELS: "${CI_COMMIT_PULL_REQUEST_LABELS:-}"
@@ -859,6 +881,7 @@ steps:
         exit 0
 
   compass-gate:
+    pull: if-not-exists
     image: chiseai-ci-tools:py311-20260323
     environment:
       GITEA_TOKEN:
@@ -877,6 +900,7 @@ steps:
         fi
 
   status-write-gate:
+    pull: if-not-exists
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -906,6 +930,7 @@ steps:
         exit 0
 
   status-evidence-gate:
+    pull: if-not-exists
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -931,6 +956,7 @@ steps:
         exit 0
 
   completion-evidence-gate:
+    pull: if-not-exists
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -956,6 +982,7 @@ steps:
         exit 0
 
   workflow-transition-gate:
+    pull: if-not-exists
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -981,6 +1008,7 @@ steps:
         exit 0
 
   governance-drift-check:
+    pull: if-not-exists
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -1000,6 +1028,7 @@ steps:
         exit 0
 
   evidence-gate:
+    pull: if-not-exists
     image: chiseai-ci-tools:py311-20260323
     depends_on:
       - local-ci
@@ -1023,6 +1052,7 @@ steps:
         exit 0
 
   performance-gate:
+    pull: if-not-exists
     image: chiseai-ci-performance-gate:py311-20260323
     depends_on:
       - local-ci
@@ -1085,6 +1115,7 @@ steps:
   # TG-003: Truth Gate validation for strong-system stories
   # This step enforces truth gate validation for STRONG-*, TG-*, ST-* stories
   truth-gate:
+    pull: if-not-exists
     image: chiseai-ci-tools:py311-20260323
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
@@ -1141,6 +1172,7 @@ steps:
         exit 0
 
   ci-gate:
+    pull: if-not-exists
     image: chiseai-ci-tools:py311-20260323
     depends_on:
       - swarm-context
