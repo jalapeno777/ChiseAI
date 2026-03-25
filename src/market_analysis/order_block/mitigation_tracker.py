@@ -94,19 +94,15 @@ class MitigationTracker:
         # This handles cases where candle breaks through zone boundary
         if ob_result.polarity == OBPolaridade.BULLISH:
             # Bullish OB is mitigated when candle breaks below OB low
-            if (
-                current_candle_low < ob_low
-                or prev_candle_close is not None
-                and prev_candle_close < ob_low
+            if (current_candle_low < ob_low) or (
+                prev_candle_close is not None and prev_candle_close < ob_low
             ):
                 self._mitigated_ob_uuids.add(uuid_str)
                 return True, "full"
         else:  # BEARISH
             # Bearish OB is mitigated when candle breaks above OB high
-            if (
-                current_candle_high > ob_high
-                or prev_candle_close is not None
-                and prev_candle_close > ob_high
+            if (current_candle_high > ob_high) or (
+                prev_candle_close is not None and prev_candle_close > ob_high
             ):
                 self._mitigated_ob_uuids.add(uuid_str)
                 return True, "full"
