@@ -9,6 +9,14 @@ from datetime import datetime
 from unittest.mock import MagicMock
 
 import pytest
+from src.market_analysis.ict import (
+    CVDAdapter,
+    FVGAdapter,
+    ICTSignalAdapter,
+    ICTSignalData,
+    ICTSignalDirection,
+    OrderBlockAdapter,
+)
 
 from signal_generation.registry import (
     FeatureFlagManager,
@@ -17,15 +25,6 @@ from signal_generation.registry import (
     SignalMetadata,
     SignalSource,
     get_ict_registry,
-)
-from signal_generation.registry.signal_types import SignalType
-from src.market_analysis.ict import (
-    CVDAdapter,
-    FVGAdapter,
-    ICTSignalAdapter,
-    ICTSignalData,
-    ICTSignalDirection,
-    OrderBlockAdapter,
 )
 
 
