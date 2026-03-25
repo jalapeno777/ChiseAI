@@ -577,3 +577,26 @@ LESSON
 - expected_outcome: CVE fixes via image rebuild, not suppression flags
 - evidence_ref: ST-CI-003, infrastructure/docker/Dockerfile.ci-dependency-audit
 - added_utc: 2026-03-24T22:00:00Z
+
+## Sprint SP-2026-Q1-03 Lessons (2026-03-25)
+
+1. **Verify script/file existence before referencing in worker contracts**
+   - Always confirm files exist before dispatching workers to use them
+
+2. **Verify target strings exist with grep before dispatching; don't rely on stale line numbers**
+   - Code changes; line numbers become stale quickly
+
+3. **Before creating feature branches, check if target is already satisfied on main**
+   - Prevents redundant work and orphaned branches
+
+4. **Story ID patterns (I-*) don't match gitea_pr_automerge.py validation — add to accepted patterns**
+   - The automerge script needs to accept I-* pattern for infrastructure stories
+
+5. **Woodpecker pipelines can get stuck in "running" state — needs watchdog**
+   - Monitor for stuck pipelines and implement cleanup
+
+6. **Grafana runs on port 3001 (not 3000) in this environment**
+   - Environment-specific configuration detail
+
+7. **InfluxDB v2 uses bucket-level retention (not named policies like v1)**
+   - API differences between versions matter for implementation

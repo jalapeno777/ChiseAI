@@ -1350,6 +1350,77 @@ epics:
       - ST-ICT-029
       - ST-ICT-030
     story_points: 24
+  - completion_date: "2026-03-25"
+    id: ST-CI-EVIDENCE-001
+    merge_commit: dc85838
+    pr_number: 621
+    sprint_id: SP-2026-Q1-03
+    status: completed
+    title: CI Evidence Backfill
+  - completion_date: "2026-03-25"
+    id: ST-CI-TESTPATH-001
+    sprint_id: SP-2026-Q1-03
+    status: completed
+    title: Test Path
+  - completion_date: "2026-03-25"
+    id: ST-GOV-DRIFT-001
+    sprint_id: SP-2026-Q1-03
+    status: completed
+    title: Governance Drift Fix
+  - completion_date: "2026-03-25"
+    id: I-05
+    sprint_id: SP-2026-Q1-03
+    status: completed
+    title: Datetime.utcnow Replacement
+  - completion_date: "2026-03-25"
+    id: D-03
+    merge_commit: 1f4071f
+    pr_number: 622
+    sprint_id: SP-2026-Q1-03
+    status: completed
+    title: Pip Install Failure Detection
+  - completion_date: "2026-03-25"
+    id: I-02
+    merge_commit: 887a274
+    pr_number: 623
+    sprint_id: SP-2026-Q1-03
+    status: completed
+    title: Docker Health Checks
+  - completion_date: "2026-03-25"
+    id: I-03
+    merge_commit: 89b48af
+    pr_number: 624
+    sprint_id: SP-2026-Q1-03
+    status: completed
+    title: Container Restart Policies
+  - completion_date: "2026-03-25"
+    id: I-04
+    merge_commit: 75f5070
+    pr_number: 625
+    sprint_id: SP-2026-Q1-03
+    status: completed
+    title: InfluxDB 60d Retention
+  - completion_date: "2026-03-25"
+    id: I-01
+    merge_commit: ca58a08
+    pr_number: 626
+    sprint_id: SP-2026-Q1-03
+    status: completed
+    title: Grafana API Auth Fix
+  - completion_date: "2026-03-25"
+    id: D-02a
+    merge_commit: 50e8d68
+    pr_number: 627
+    sprint_id: SP-2026-Q1-03
+    status: completed
+    title: Test Failure Categorization
+  - completion_date: "2026-03-25"
+    id: D-02b
+    merge_commit: 885b3fe
+    pr_number: 628
+    sprint_id: SP-2026-Q1-03
+    status: completed
+    title: Fix Top-20 Test Failures
 launch_stories:
   - acceptance_criteria:
       - Demo mode enforcement - Only demo/testnet endpoints are allowed, production endpoint
@@ -4621,6 +4692,28 @@ sprints:
       visual: playwright tests/visual/test_pr_dashboard.spec.ts
     title: Observability & Metrics
     validation_status: planned
+  - completion_date: "2026-03-25"
+    id: SP-2026-Q1-03
+    mapped_stories:
+      - ST-CI-EVIDENCE-001
+      - ST-CI-TESTPATH-001
+      - ST-GOV-DRIFT-001
+      - I-05
+      - D-03
+      - I-02
+      - I-03
+      - I-04
+      - I-01
+      - D-02a
+      - D-02b
+    name: Q1 2026 Week 3 Sprint - Infrastructure Hardening
+    note: >
+      CI evidence backfill, test path, governance drift fix,
+      datetime replacement, pip install detection, Docker health/restart policies,
+      InfluxDB retention, Grafana auth, test failure categorization and fixes
+    status: completed
+    story_count: 11
+    story_points: 11
 stories:
   - acceptance_criteria:
       - Brain versioning follows semantic versioning (MAJOR.MINOR.PATCH)
