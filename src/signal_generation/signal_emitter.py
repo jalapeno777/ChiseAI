@@ -132,12 +132,23 @@ class DiscordEmitter(SignalEmitter):
         return os.getenv("DISCORD_WEBHOOK_URL")
 
     def _get_bypass_from_env(self) -> bool:
-        """Check if bypass is enabled via environment variable."""
-        return os.getenv("DISCORD_BYPASS_CONFIDENCE_FILTER", "").lower() in (
+        """Check if bypass is enabled via environment variable.
+
+        Returns:
+            True if CHISEAI_BYPASS_CONFIDENCE_FILTER is set to a truthy value.
+            Emits a WARNING log when bypass is active.
+        """
+        bypass = os.getenv("CHISEAI_BYPASS_CONFIDENCE_FILTER", "").lower() in (
             "1",
             "true",
             "yes",
         )
+        if bypass:
+            logger.warning(
+                "CHISEAI_BYPASS_CONFIDENCE_FILTER is active — "
+                "confidence filtering is disabled for Discord emissions"
+            )
+        return bypass
 
     def _log_bypass_event(
         self,
