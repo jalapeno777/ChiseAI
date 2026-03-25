@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import sys
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -57,17 +58,28 @@ class ValidationResult:
     valid: bool = True
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    legacy_warnings: list[str] = field(
+        default_factory=list
+    )  # Legacy stories (outside grace period)
     stories_checked: int = 0
     stories_missing_evidence: int = 0
 
     def add_error(self, message: str) -> None:
-        """Add an error to the result."""
+        """Add an error to the result (blocking)."""
         self.errors.append(f"ERROR: {message}")
         self.valid = False
 
     def add_warning(self, message: str) -> None:
-        """Add a warning to the result."""
+        """Add a warning to the result (non-blocking)."""
         self.warnings.append(f"WARNING: {message}")
+
+    def add_legacy_warning(self, message: str) -> None:
+        """Add a legacy warning to the result (non-blocking, outside grace period)."""
+        self.legacy_warnings.append(f"WARNING (legacy): {message}")
+
+    def has_blocking_errors(self) -> bool:
+        """Check if there are any blocking errors."""
+        return len(self.errors) > 0
 
     def print(self, verbose: bool = False) -> None:
         """Print all messages."""
@@ -77,9 +89,14 @@ class ValidationResult:
         for msg in self.warnings:
             print(msg)
 
+        for msg in self.legacy_warnings:
+            print(msg)
+
         if verbose:
             print(
-                f"\nSummary: {self.stories_checked} stories checked, {self.stories_missing_evidence} missing evidence"
+                f"\nSummary: {self.stories_checked} stories checked, "
+                f"{self.stories_missing_evidence} missing evidence, "
+                f"{len(self.legacy_warnings)} legacy warnings"
             )
 
 
@@ -155,13 +172,44 @@ def has_valid_evidence(story: dict[str, Any]) -> bool:
     return any(check(story) for check in VALID_EVIDENCE_COMBINATIONS)
 
 
-def validate_story_evidence(story: dict[str, Any], result: ValidationResult) -> None:
+def get_story_completion_age(story: dict[str, Any]) -> int | None:
+    """
+    Calculate the age of a story in days since completion.
+
+    Looks for completion date in these fields (in order of preference):
+    - completion_date (YYYY-MM-DD format)
+    - completed_date (YYYY-MM-DD format)
+    - merged_date (YYYY-MM-DD format)
+
+    Args:
+        story: Story dictionary
+
+    Returns:
+        Number of days since completion, or None if no completion date found
+    """
+    today = datetime.now().date()
+
+    for date_field in ["completion_date", "completed_date", "merged_date"]:
+        date_str = story.get(date_field)
+        if date_str:
+            try:
+                completion_date = datetime.strptime(str(date_str), "%Y-%m-%d").date()
+                return (today - completion_date).days
+            except ValueError:
+                continue
+    return None
+
+
+def validate_story_evidence(
+    story: dict[str, Any], result: ValidationResult, grace_period_days: int = 7
+) -> None:
     """
     Validate that a story with completed/merged status has evidence.
 
     Args:
         story: Story dictionary
         result: ValidationResult to populate
+        grace_period_days: Stories older than this are warned but not blocked
     """
     story_id = story.get("id", "unknown")
     status = story.get("status")
@@ -191,20 +239,36 @@ def validate_story_evidence(story: dict[str, Any], result: ValidationResult) -> 
         if not story.get("commit_sha") or not str(story.get("commit_sha", "")).strip():
             missing_fields.append("commit_sha")
 
-        result.add_error(
+        error_msg = (
             f"Story '{story_id}' has status='{status}' but lacks merge evidence. "
             f"Missing: {', '.join(missing_fields)}. "
             f"At least one evidence field is required for completed/merged status."
         )
 
+        # Check if story is legacy (outside grace period)
+        story_age = get_story_completion_age(story)
+        is_legacy = story_age is not None and story_age > grace_period_days
 
-def validate_status_evidence(data: dict[str, Any], result: ValidationResult) -> None:
+        if is_legacy:
+            # Legacy story - add as legacy warning, not blocking error
+            result.add_legacy_warning(
+                f"{error_msg} (story is {story_age} days old, grace period: {grace_period_days} days)"
+            )
+        else:
+            # Within grace period - blocking error
+            result.add_error(error_msg)
+
+
+def validate_status_evidence(
+    data: dict[str, Any], result: ValidationResult, grace_period_days: int = 7
+) -> None:
     """
     Validate that all completed/merged stories have evidence.
 
     Args:
         data: Workflow status YAML data
         result: ValidationResult to populate
+        grace_period_days: Stories older than this are warned but not blocked
     """
     # Extract all stories from various locations
     stories = extract_stories_from_data(data)
@@ -213,7 +277,7 @@ def validate_status_evidence(data: dict[str, Any], result: ValidationResult) -> 
     for story in stories:
         if not isinstance(story, dict):
             continue
-        validate_story_evidence(story, result)
+        validate_story_evidence(story, result, grace_period_days)
 
 
 def main() -> int:
@@ -233,6 +297,12 @@ def main() -> int:
         action="store_true",
         help="Show detailed output",
     )
+    parser.add_argument(
+        "--legacy-grace-period-days",
+        type=int,
+        default=7,
+        help="Stories older than this many days are warned but not blocked (default: 7)",
+    )
     args = parser.parse_args()
 
     result = ValidationResult()
@@ -249,13 +319,13 @@ def main() -> int:
         return 2
 
     # Validate evidence
-    validate_status_evidence(data, result)
+    validate_status_evidence(data, result, args.legacy_grace_period_days)
 
     # Print results
     result.print(verbose=args.verbose)
 
     # Determine exit code
-    if result.errors:
+    if result.has_blocking_errors():
         print(
             f"\n❌ Status evidence validation FAILED: {result.stories_missing_evidence} "
             f"out of {result.stories_checked} completed/merged stories lack evidence",
@@ -264,9 +334,15 @@ def main() -> int:
         return 1
     else:
         if result.stories_checked > 0:
-            print(
-                f"✅ All {result.stories_checked} completed/merged stories have evidence"
-            )
+            if result.legacy_warnings:
+                print(
+                    f"✅ Validation passed with {len(result.legacy_warnings)} legacy warnings "
+                    f"(stories older than {args.legacy_grace_period_days} days)"
+                )
+            else:
+                print(
+                    f"✅ All {result.stories_checked} completed/merged stories have evidence"
+                )
         else:
             print("✅ No completed/merged stories requiring evidence found")
         return 0

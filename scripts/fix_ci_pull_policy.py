@@ -9,7 +9,7 @@ def fix_ci_yaml(input_path: str, output_path: str) -> None:
     1. Removing the root-level `pull: if-not-present` line
     2. Adding `pull: if-not-exists` as first property for each step with `image:`
     """
-    with open(input_path, "r") as f:
+    with open(input_path) as f:
         content = f.read()
 
     lines = content.split("\n")
@@ -68,7 +68,7 @@ def fix_ci_yaml(input_path: str, output_path: str) -> None:
         step_match = re.match(r"^(\s+)(\w[\w-]*)(\s*:\s*)$", line)
         if step_match and in_steps and not in_clone and block_indent is None:
             step_indent = step_match.group(1)
-            step_name = step_match.group(2)
+            step_match.group(2)
 
             # Add the step name line
             result_lines.append(line)

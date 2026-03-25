@@ -20,6 +20,7 @@ Usage:
 import argparse
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +31,34 @@ class EvidenceValidationError(Exception):
     """Raised when completion evidence validation fails."""
 
     pass
+
+
+def get_story_completion_age(story: dict[str, Any]) -> int | None:
+    """
+    Calculate the age of a story in days since completion.
+
+    Looks for completion date in these fields (in order of preference):
+    - completion_date (YYYY-MM-DD format)
+    - completed_date (YYYY-MM-DD format)
+    - merged_date (YYYY-MM-DD format)
+
+    Args:
+        story: Story dictionary
+
+    Returns:
+        Number of days since completion, or None if no completion date found
+    """
+    today = datetime.now().date()
+
+    for date_field in ["completion_date", "completed_date", "merged_date"]:
+        date_str = story.get(date_field)
+        if date_str:
+            try:
+                completion_date = datetime.strptime(str(date_str), "%Y-%m-%d").date()
+                return (today - completion_date).days
+            except ValueError:
+                continue
+    return None
 
 
 def run_git_command(args: list[str], cwd: Path = None) -> tuple[int, str, str]:
@@ -44,24 +73,32 @@ def run_git_command(args: list[str], cwd: Path = None) -> tuple[int, str, str]:
 
 
 def validate_completion_evidence(
-    story: dict[str, Any], story_id: str = None
-) -> tuple[bool, str]:
+    story: dict[str, Any], story_id: str = None, grace_period_days: int = 7
+) -> tuple[bool, str, bool]:
     """
     Validate that a story marked as completed/merged has proper evidence.
 
     Args:
         story: Story dictionary from bmm-workflow-status.yaml
         story_id: Story ID (for error messages)
+        grace_period_days: Stories older than this are warned but not blocked
 
     Returns:
-        Tuple of (is_valid, error_message)
+        Tuple of (is_valid, error_message, is_legacy_warning)
+        - is_valid: True if evidence is valid
+        - error_message: Description of validation result
+        - is_legacy_warning: True if this is a legacy story that only warrants warning
     """
     story_id = story_id or story.get("id", "UNKNOWN")
     status = story.get("status", "")
 
     # Only validate stories marked as completed or merged
     if status not in ["completed", "merged"]:
-        return True, "Valid (not marked as completed/merged)"
+        return True, "Valid (not marked as completed/merged)", False
+
+    # Check if story is legacy (outside grace period)
+    story_age = get_story_completion_age(story)
+    is_legacy = story_age is not None and story_age > grace_period_days
 
     errors = []
 
@@ -115,17 +152,20 @@ def validate_completion_evidence(
             errors.append("Has remediation_pr_numbers field but list is empty")
 
     if errors:
-        return False, "; ".join(errors)
+        return False, "; ".join(errors), is_legacy
 
-    return True, "Valid completion evidence"
+    return True, "Valid completion evidence", False
 
 
-def validate_status_file(status_file: Path) -> dict[str, Any]:
+def validate_status_file(
+    status_file: Path, grace_period_days: int = 7
+) -> dict[str, Any]:
     """
     Validate all stories in the workflow status file.
 
     Args:
         status_file: Path to bmm-workflow-status.yaml
+        grace_period_days: Stories older than this are warned but not blocked
 
     Returns:
         Dictionary with validation results
@@ -139,6 +179,7 @@ def validate_status_file(status_file: Path) -> dict[str, Any]:
     results = {
         "valid": [],
         "invalid": [],
+        "warnings": [],  # Legacy stories missing evidence (outside grace period)
         "skipped": [],
         "total_stories": 0,
         "completed_merged_stories": 0,
@@ -176,13 +217,21 @@ def validate_status_file(status_file: Path) -> dict[str, Any]:
 
             results["completed_merged_stories"] += 1
 
-            is_valid, message = validate_completion_evidence(story, story_id)
+            is_valid, message, is_legacy_warning = validate_completion_evidence(
+                story, story_id, grace_period_days
+            )
 
             if is_valid:
                 results["valid"].append(
                     {"id": story_id, "status": status, "message": message}
                 )
+            elif is_legacy_warning:
+                # Legacy story - add to warnings, not blocking errors
+                results["warnings"].append(
+                    {"id": story_id, "status": status, "warning": message}
+                )
             else:
+                # Within grace period - blocking error
                 results["invalid"].append(
                     {"id": story_id, "status": status, "error": message}
                 )
@@ -199,6 +248,7 @@ def print_validation_report(results: dict[str, Any], verbose: bool = False):
     print(f"Stories marked completed/merged: {results['completed_merged_stories']}")
     print(f"Valid completion evidence: {len(results['valid'])}")
     print(f"Invalid completion evidence: {len(results['invalid'])}")
+    print(f"Legacy warnings (outside grace period): {len(results['warnings'])}")
     print(f"Skipped (not completed/merged): {len(results['skipped'])}")
 
     if results["invalid"]:
@@ -209,6 +259,15 @@ def print_validation_report(results: dict[str, Any], verbose: bool = False):
             print(f"\n  Story ID: {invalid['id']}")
             print(f"  Status: {invalid['status']}")
             print(f"  Error: {invalid['error']}")
+
+    if results["warnings"]:
+        print("\n" + "-" * 80)
+        print("⚠️  LEGACY WARNINGS (non-blocking - outside grace period)")
+        print("-" * 80)
+        for warning in results["warnings"]:
+            print(f"\n  Story ID: {warning['id']}")
+            print(f"  Status: {warning['status']}")
+            print(f"  Warning: {warning['warning']}")
 
     if verbose and results["valid"]:
         print("\n" + "-" * 80)
@@ -225,7 +284,10 @@ def print_validation_report(results: dict[str, Any], verbose: bool = False):
         print("=" * 80)
         return False
     else:
-        print("✅ VALIDATION PASSED: All completed stories have proper evidence")
+        if results["warnings"]:
+            print("✅ VALIDATION PASSED (with legacy warnings)")
+        else:
+            print("✅ VALIDATION PASSED: All completed stories have proper evidence")
         print("=" * 80)
         return True
 
@@ -250,6 +312,12 @@ def main():
         help="Show valid completions as well as invalid",
     )
     parser.add_argument("--json", action="store_true", help="Output results as JSON")
+    parser.add_argument(
+        "--legacy-grace-period-days",
+        type=int,
+        default=7,
+        help="Stories older than this many days are warned but not blocked (default: 7)",
+    )
 
     args = parser.parse_args()
 
@@ -273,7 +341,9 @@ def main():
                 print(f"Error: Story {args.story_id} not found", file=sys.stderr)
                 sys.exit(1)
 
-            is_valid, message = validate_completion_evidence(story, args.story_id)
+            is_valid, message, is_legacy = validate_completion_evidence(
+                story, args.story_id, args.legacy_grace_period_days
+            )
 
             if args.json:
                 import json
@@ -284,6 +354,7 @@ def main():
                             "story_id": args.story_id,
                             "valid": is_valid,
                             "message": message,
+                            "is_legacy_warning": is_legacy,
                         },
                         indent=2,
                     )
@@ -291,13 +362,16 @@ def main():
             else:
                 if is_valid:
                     print(f"✅ {args.story_id}: {message}")
+                elif is_legacy:
+                    print(f"⚠️ {args.story_id}: {message} (legacy, non-blocking)")
                 else:
                     print(f"❌ {args.story_id}: {message}", file=sys.stderr)
 
-            sys.exit(0 if is_valid else 1)
+            # Exit 0 for valid, 0 for legacy warnings, 1 for blocking errors
+            sys.exit(0 if (is_valid or is_legacy) else 1)
 
         # Validate entire status file
-        results = validate_status_file(args.status_file)
+        results = validate_status_file(args.status_file, args.legacy_grace_period_days)
 
         if args.json:
             import json

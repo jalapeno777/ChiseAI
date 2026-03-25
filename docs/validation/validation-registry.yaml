@@ -2589,6 +2589,189 @@ validations:
     test_method: automated
     owner: qa-team
 
+  # ============================================================
+  # SP-2026-Q1-03: Infrastructure Hardening Sprint Validations
+  # Sprint: Q1 2026 Week 3 - Infrastructure Hardening
+  # Stories: CI evidence backfill, test path, governance drift fix,
+  #          datetime replacement, pip install detection, Docker health/restart policies,
+  #          InfluxDB retention, Grafana auth, test failure categorization and fixes
+  # ============================================================
+
+  # EP-CI-001: CI/CD Autonomy - CI Evidence Backfill
+  - id: V-CI-EVIDENCE-001
+    title: CI Evidence Backfill Validation
+    epic_id: EP-CI-001
+    story_id: ST-CI-EVIDENCE-001
+    status: validated
+    validation_date: "2026-03-25"
+    description: Validate CI evidence backfill for sprint SP-2026-Q1-03 stories.
+    acceptance_criteria:
+      - CI evidence is recorded for all sprint stories
+      - Evidence paths are documented in merge commits
+    test_method: automated
+    owner: ci-team
+    evidence:
+      - "PR #621 merged: dc85838"
+      - "CI evidence backfill completed"
+
+  # EP-CI-001: CI/CD Autonomy - Test Path
+  - id: V-CI-TESTPATH-001
+    title: Test Path Validation
+    epic_id: EP-CI-001
+    story_id: ST-CI-TESTPATH-001
+    status: pending_evidence
+    description: Validate test path implementation for CI/CD improvements.
+    acceptance_criteria:
+      - Test paths are correctly configured
+      - Test execution follows defined paths
+    test_method: automated
+    owner: ci-team
+
+  # EP-GOV-001: Governance - Governance Drift Fix
+  - id: V-GOV-DRIFT-001
+    title: Governance Drift Fix Validation
+    epic_id: EP-GOV-001
+    story_id: ST-GOV-DRIFT-001
+    status: pending_evidence
+    description: Validate governance drift fix implementation.
+    acceptance_criteria:
+      - Governance drift is detected and fixed
+      - State synchronization works correctly
+    test_method: automated
+    owner: governance-team
+
+  # EP-INFRA-CLEANUP-001: Infrastructure Cleanup - Datetime.utcnow Replacement
+  - id: V-INFRA-I-05
+    title: Datetime.utcnow Replacement Validation
+    epic_id: EP-INFRA-CLEANUP-001
+    story_id: I-05
+    status: pending_evidence
+    description: Validate datetime.utcnow deprecation replacement with timezone-aware alternatives.
+    acceptance_criteria:
+      - datetime.utcnow() replaced with timezone-aware alternatives
+      - All datetime operations use proper timezone handling
+    test_method: automated
+    owner: infra-team
+
+  # EP-INFRA-CLEANUP-001: Infrastructure Cleanup - Pip Install Failure Detection
+  - id: V-INFRA-D-03
+    title: Pip Install Failure Detection Validation
+    epic_id: EP-INFRA-CLEANUP-001
+    story_id: D-03
+    status: validated
+    validation_date: "2026-03-25"
+    description: Validate pip install failure detection and alerting.
+    acceptance_criteria:
+      - Pip install failures are detected
+      - Appropriate alerts are triggered on failure
+    test_method: automated
+    owner: infra-team
+    evidence:
+      - "PR #622 merged: 1f4071f"
+      - "Pip install failure detection implemented"
+
+  # EP-INFRA-CLEANUP-001: Infrastructure Cleanup - Docker Health Checks
+  - id: V-INFRA-I-02
+    title: Docker Health Checks Validation
+    epic_id: EP-INFRA-CLEANUP-001
+    story_id: I-02
+    status: validated
+    validation_date: "2026-03-25"
+    description: Validate Docker health check implementation for containers.
+    acceptance_criteria:
+      - Docker containers have health checks configured
+      - Health checks are monitored and alerts trigger on failure
+    test_method: automated
+    owner: infra-team
+    evidence:
+      - "PR #623 merged: 887a274"
+      - "Docker health checks implemented"
+
+  # EP-INFRA-CLEANUP-001: Infrastructure Cleanup - Container Restart Policies
+  - id: V-INFRA-I-03
+    title: Container Restart Policies Validation
+    epic_id: EP-INFRA-CLEANUP-001
+    story_id: I-03
+    status: validated
+    validation_date: "2026-03-25"
+    description: Validate container restart policies are correctly configured.
+    acceptance_criteria:
+      - Container restart policies are set appropriately
+      - Restart behavior matches intended policy
+    test_method: automated
+    owner: infra-team
+    evidence:
+      - "PR #624 merged: 89b48af"
+      - "Container restart policies configured"
+
+  # EP-INFRA-CLEANUP-001: Infrastructure Cleanup - InfluxDB 60d Retention
+  - id: V-INFRA-I-04
+    title: InfluxDB 60d Retention Validation
+    epic_id: EP-INFRA-CLEANUP-001
+    story_id: I-04
+    status: validated
+    validation_date: "2026-03-25"
+    description: Validate InfluxDB retention policy set to 60 days.
+    acceptance_criteria:
+      - InfluxDB retention policy is configured for 60 days
+      - Old data is automatically purged per policy
+    test_method: automated
+    owner: infra-team
+    evidence:
+      - "PR #625 merged: 75f5070"
+      - "InfluxDB retention policy set to 60d"
+
+  # EP-INFRA-CLEANUP-001: Infrastructure Cleanup - Grafana API Auth Fix
+  - id: V-INFRA-I-01
+    title: Grafana API Auth Fix Validation
+    epic_id: EP-INFRA-CLEANUP-001
+    story_id: I-01
+    status: validated
+    validation_date: "2026-03-25"
+    description: Validate Grafana API authentication is correctly configured.
+    acceptance_criteria:
+      - Grafana API authentication works correctly
+      - API access is properly secured
+    test_method: automated
+    owner: infra-team
+    evidence:
+      - "PR #626 merged: ca58a08"
+      - "Grafana API auth fixed"
+
+  # EP-INFRA-CLEANUP-001: Infrastructure Cleanup - Test Failure Categorization
+  - id: V-INFRA-D-02a
+    title: Test Failure Categorization Validation
+    epic_id: EP-INFRA-CLEANUP-001
+    story_id: D-02a
+    status: validated
+    validation_date: "2026-03-25"
+    description: Validate test failures are correctly categorized.
+    acceptance_criteria:
+      - Test failures are categorized by type
+      - Categories are correctly applied
+    test_method: automated
+    owner: infra-team
+    evidence:
+      - "PR #627 merged: 50e8d68"
+      - "Test failure categorization implemented"
+
+  # EP-INFRA-CLEANUP-001: Infrastructure Cleanup - Fix Top-20 Test Failures
+  - id: V-INFRA-D-02b
+    title: Fix Top-20 Test Failures Validation
+    epic_id: EP-INFRA-CLEANUP-001
+    story_id: D-02b
+    status: validated
+    validation_date: "2026-03-25"
+    description: Validate top-20 test failures have been fixed.
+    acceptance_criteria:
+      - Top-20 test failures are resolved
+      - Tests pass consistently
+    test_method: automated
+    owner: infra-team
+    evidence:
+      - "PR #628 merged: 885b3fe"
+      - "Top-20 test failures fixed"
+
 # ============================================================
 # Global validation thresholds
 # ============================================================
