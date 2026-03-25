@@ -143,6 +143,7 @@ skill(name="chiseai-git-workflow")          # Load git workflow skill
 | `chiseai-autocog-orchestration` | Autonomous cognition oversight, Aria review, and severity-based auto-action | `chise-autocog-daily-run`, `chise-autocog-review`, `chise-autocog-action` |
 | `chiseai-workflow-status-guard` | Hardening and recovery for workflow status YAML | `chise-status-yaml-guard` |
 | `python-quality` | Python code quality | N/A |
+| `scripts/ci/rebuild_ci_image.sh` | Rebuild CI Docker images | `./scripts/ci/rebuild_ci_image.sh <image>` |
 
 ## 🔧 Skill Loading Pattern
 
@@ -154,6 +155,29 @@ When starting work:
 4. Run associated commands as needed
 5. Close with `chise-iterloop-close` when done
 ```
+
+## 🐳 CI Docker Image Rebuilds
+
+When updating dependencies in CI Docker images:
+
+1. Update the relevant `Dockerfile.ci-*` in `infrastructure/docker/`
+2. Run the rebuild script:
+   ```bash
+   ./scripts/ci/rebuild_ci_image.sh chiseai-ci-dependency-audit
+   ```
+3. The script will:
+   - Build the image with today's date tag (`py311-YYYYMMDD`)
+   - Update `.woodpecker/ci.yaml` with the new tag
+   - Remove the old image from the host daemon
+   - Commit and push to main
+4. Options:
+   - `--tag custom-tag` — override the auto-generated tag
+   - `--no-push` — build and update ci.yaml but don't commit/push (for testing)
+   - `--dry-run` — show what would happen without executing
+
+**Why this matters:** Woodpecker agent shares the host Docker daemon via `/run/docker.sock`. When rebuilding an image with the same tag, old layers can persist. Using date-based tags + removing old images ensures the agent always picks up the new build.
+
+**Available images:** Run `ls infrastructure/docker/Dockerfile.ci-*` to see all CI image Dockerfiles.
 
 ## 🆘 Emergency Procedures
 
