@@ -225,9 +225,9 @@ When updating dependencies in CI Docker images:
 - Run `git status -sb` before/after operations
 - PR creation must be push-triggered via `.woodpecker/pr-auto-flow.yaml` for normal flow
 - Direct PR open/update/close actions by agents are exceptional-only (incident/manual override/recovery)
-- Use `feature/<story-id>-<slug>` branches
-- PR titles must contain a recognized story id token:
-  - `ST-*`, `CH-*`, `FT-*`, `REWARD-*`, `REPO-*`, `SAFETY-*`, `BRANCH-*`, `PAPER-*`, `RECON-*` (must include a digit)
+- Branch naming: Advisory convention is `feature/<story-id>-<slug>` (not enforced by CI)
+- PR titles MUST contain a recognized story id token:
+  - `ST-*`, `CH-*`, `FT-*`, `REWARD-*`, `REPO-*`, `SAFETY-*`, `BRANCH-*`, `PAPER-*`, `RECON-*`, `I-*`, `D-*` (must include a digit)
 - Before switching branches, working tree must be clean
 
 ### Gitea MCP Owner (REQUIRED)

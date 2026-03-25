@@ -93,21 +93,12 @@ def get_branch_info(branch_name):
 
 
 def check_branch_naming(branch_name):
-    """Check if branch follows naming conventions."""
-    valid_patterns = [
-        "feature/ST-",
-        "feature/CH-",
-        "feature/FT-",
-        "safety/",
-        "hotfix/",
-        "chore/",
-    ]
+    """Check if branch follows naming conventions.
 
-    for pattern in valid_patterns:
-        if branch_name.startswith(pattern):
-            return True, None
-
-    return False, f"Invalid naming: {branch_name}"
+    Branch naming is now advisory only. Returns True always.
+    PR title validation provides the authoritative story-ID gate.
+    """
+    return True, None
 
 
 def check_pr_exists(branch_name, base_ref="main"):

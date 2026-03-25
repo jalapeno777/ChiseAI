@@ -392,7 +392,10 @@ class TestErrorRateAlertIntegration:
     @pytest.mark.asyncio
     async def test_send_discord_alert_no_webhook(self):
         """Test send alert with no webhook."""
-        integration = ErrorRateAlertIntegration()
+        import os
+
+        os.environ.pop("DISCORD_ALERT_WEBHOOK_URL", None)
+        integration = ErrorRateAlertIntegration(discord_webhook_url="")
         snapshot = ErrorRateSnapshot(
             category=ErrorCategory.API,
             total_operations=100,

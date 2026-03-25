@@ -286,22 +286,12 @@ class GitHelper:
 
     @staticmethod
     def _validate_branch_name(name: str) -> tuple[bool, str | None]:
-        """Validate branch naming convention."""
-        valid_patterns = [
-            r"^feature/(ST|CH|FT|REWARD|REPO|SAFETY|BRANCH|PAPER|RECON)-\d+",
-            r"^safety/",
-            r"^hotfix/",
-            r"^chore/",
-        ]
+        """Validate branch naming convention.
 
-        for pattern in valid_patterns:
-            if re.match(pattern, name):
-                return True, None
-
-        return (
-            False,
-            f"Branch '{name}' does not follow naming convention (feature/ST-*, safety/*, hotfix/*, chore/*)",
-        )
+        Branch naming is now advisory only. Always returns True.
+        PR title validation provides the authoritative story-ID gate.
+        """
+        return True, None
 
     def get_worktrees(self) -> list[WorktreeInfo]:
         """Get all worktrees."""
