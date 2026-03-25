@@ -409,8 +409,9 @@ steps:
         set +e
         (
           set -euo pipefail
+          EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-$${CI_PIPELINE_EVENT:-}}}}"
           # Skip expensive steps on push-to-main (PR is authoritative)
-          if [ "$${CI_EVENT}" = "push" ] && [ "$${CI_COMMIT_BRANCH}" = "main" ]; then
+          if [ "$${EVENT}" = "push" ] && [ "$${CI_COMMIT_BRANCH}" = "main" ]; then
             echo "local-ci: SKIPPED (push-to-main, PR is authoritative)"
             echo "0" > "$${CI_STATUS_DIR}/local-ci.status"
             exit 0
@@ -429,7 +430,6 @@ steps:
           echo "local-ci: CPU count: $(nproc)"
           echo "local-ci: Memory: $(free -h | grep Mem | awk '{print $2}')"
 
-          EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-}}}"
           BRANCH="$${CI_COMMIT_BRANCH:-$${WOODPECKER_COMMIT_BRANCH:-}}"
           REF="$${CI_COMMIT_REF:-}"
           FULL_MODE=0
@@ -593,8 +593,9 @@ steps:
         set +e
         (
           set -euo pipefail
+          EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-$${CI_PIPELINE_EVENT:-}}}}"
           # Skip expensive ingestion on push-to-main (PR is authoritative)
-          if [ "$${CI_EVENT}" = "push" ] && [ "$${CI_COMMIT_BRANCH}" = "main" ]; then
+          if [ "$${EVENT}" = "push" ] && [ "$${CI_COMMIT_BRANCH}" = "main" ]; then
             echo "pre-eval-ingestion: SKIPPED (push-to-main, PR is authoritative)"
             printf '%s\n' '{"success": true, "skipped": true, "reason": "push-to-main", "files_processed": 0, "files_ingested": 0, "files_failed": 0, "files_skipped": 0, "duration_seconds": 0, "errors": [], "ingested_memory_ids": []}' > "$${CI_STATUS_DIR}/pre-eval-ingestion.json"
             echo "0" > "$${CI_STATUS_DIR}/pre-eval-ingestion.status"
@@ -644,8 +645,9 @@ steps:
         set +e
         (
           set -euo pipefail
+          EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-$${CI_PIPELINE_EVENT:-}}}}"
           # Skip expensive brain-eval on push-to-main (PR is authoritative)
-          if [ "$${CI_EVENT}" = "push" ] && [ "$${CI_COMMIT_BRANCH}" = "main" ]; then
+          if [ "$${EVENT}" = "push" ] && [ "$${CI_COMMIT_BRANCH}" = "main" ]; then
             echo "brain-eval: SKIPPED (push-to-main, PR is authoritative)"
             echo '{"success": true, "skipped": true, "reason": "push-to-main"}' > "$${CI_STATUS_DIR}/brain-eval.json"
             echo "0" > "$${CI_STATUS_DIR}/brain-eval.status"
@@ -697,7 +699,8 @@ steps:
         set +e
         (
           set -euo pipefail
-          if [ "$${CI_EVENT}" != "cron" ]; then
+          EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-$${CI_PIPELINE_EVENT:-}}}}"
+          if [ "$${EVENT}" != "cron" ]; then
             echo "tempmemory-scheduler: SKIPPED (cron-only)"
             echo "0" > "$${CI_STATUS_DIR}/tempmemory-scheduler.status"
             exit 0
@@ -721,7 +724,8 @@ steps:
         set +e
         (
           set -euo pipefail
-          if [ "$${CI_EVENT}" != "cron" ]; then
+          EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-$${CI_PIPELINE_EVENT:-}}}}"
+          if [ "$${EVENT}" != "cron" ]; then
             echo "mini-brain-eval: SKIPPED (cron-only)"
             echo "0" > "$${CI_STATUS_DIR}/mini-brain-eval.status"
             exit 0
@@ -745,7 +749,8 @@ steps:
         set +e
         (
           set -euo pipefail
-          if [ "$${CI_EVENT}" != "cron" ]; then
+          EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-$${CI_PIPELINE_EVENT:-}}}}"
+          if [ "$${EVENT}" != "cron" ]; then
             echo "tempmemory-reconcile: SKIPPED (cron-only)"
             echo "0" > "$${CI_STATUS_DIR}/tempmemory-reconcile.status"
             exit 0
@@ -769,12 +774,12 @@ steps:
         set +e
         (
           set -euo pipefail
-          if [ "$${CI_EVENT}" != "cron" ]; then
+          EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-$${CI_PIPELINE_EVENT:-}}}}"
+          if [ "$${EVENT}" != "cron" ]; then
             echo "tempmemory-drill: SKIPPED (cron-only)"
             echo "0" > "$${CI_STATUS_DIR}/tempmemory-drill.status"
             exit 0
           fi
-          EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-$${CI_PIPELINE_EVENT:-}}}}"
           BRANCH="$${CI_COMMIT_BRANCH:-$${WOODPECKER_COMMIT_BRANCH:-}}"
           if [ "$${EVENT}" != "cron" ] || [ "$${BRANCH}" != "main" ]; then
             echo "tempmemory-drill: not cron/main; skipping"
@@ -801,12 +806,12 @@ steps:
         set +e
         (
           set -euo pipefail
-          if [ "$${CI_EVENT}" != "cron" ]; then
+          EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-$${CI_PIPELINE_EVENT:-}}}}"
+          if [ "$${EVENT}" != "cron" ]; then
             echo "flaky-detection: SKIPPED (cron-only)"
             echo "0" > "$${CI_STATUS_DIR}/flaky-detection.status"
             exit 0
           fi
-          EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-$${CI_PIPELINE_EVENT:-}}}}"
           BRANCH="$${CI_COMMIT_BRANCH:-$${WOODPECKER_COMMIT_BRANCH:-}}"
           if [ "$${EVENT}" != "cron" ] || [ "$${BRANCH}" != "main" ]; then
             echo "flaky-detection: not cron/main; skipping"
