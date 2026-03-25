@@ -18,7 +18,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from config.feature_flags import FeatureFlags, reset_feature_flags
+from config import FeatureFlags, reset_feature_flags
 from ml.model_registry.registry import (
     ModelRegistry,
     ModelStatus,

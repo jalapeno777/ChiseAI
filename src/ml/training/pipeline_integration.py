@@ -600,7 +600,7 @@ class TrainingPipelineIntegration:
 
     def _get_flags(self):
         """Get current feature flags."""
-        from config.feature_flags import get_feature_flags
+        from config import get_feature_flags
 
         return get_feature_flags()
 

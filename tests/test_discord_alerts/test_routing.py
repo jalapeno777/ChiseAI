@@ -254,7 +254,7 @@ class TestEnvLoaderDiscordConfig:
 
     def test_load_discord_config_basic(self):
         """Test basic Discord config loading."""
-        from config.env_loader import load_discord_config
+        from config import load_discord_config
 
         # Set test env vars
         os.environ["DISCORD_BOT_TOKEN"] = "test_token"
@@ -269,7 +269,7 @@ class TestEnvLoaderDiscordConfig:
 
     def test_load_discord_config_with_ids(self):
         """Test Discord config loading with channel IDs."""
-        from config.env_loader import load_discord_config_with_ids
+        from config import load_discord_config_with_ids
 
         # Set test env vars
         os.environ["DISCORD_BOT_TOKEN"] = "test_token"
@@ -286,7 +286,7 @@ class TestEnvLoaderDiscordConfig:
 
     def test_load_discord_config_with_ids_defaults(self):
         """Test Discord config loading with default channel IDs."""
-        from config.env_loader import load_discord_config_with_ids
+        from config import load_discord_config_with_ids
 
         # Clear env vars to test defaults
         for key in ["DISCORD_SUMMARIES_CHANNEL_ID", "DISCORD_TRADING_CHANNEL_ID"]:

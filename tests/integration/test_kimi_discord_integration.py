@@ -41,7 +41,7 @@ class TestKimiDiscordIntegration:
             assert config.max_retries == 3  # default value
 
             # Use load_kimi_config() for full env loading
-            from config.env_loader import load_kimi_config
+            from config import load_kimi_config
 
             full_config = load_kimi_config()
             assert full_config["timeout"] == 45.0  # loaded from env
