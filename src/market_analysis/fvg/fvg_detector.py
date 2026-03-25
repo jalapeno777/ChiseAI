@@ -12,9 +12,23 @@ from enum import Enum
 from typing import TYPE_CHECKING, Optional
 
 from src.market_analysis.regime import MarketRegimeClassifier, UnifiedRegime
+from src.market_analysis.safety.lookahead_guard import lookahead_guard
 
 if TYPE_CHECKING:
     from data_ingestion.ohlcv_fetcher import OHLCVData
+
+
+# Module-level singleton for MarketRegimeClassifier to avoid creating
+# a new instance per detector (performance optimization)
+_regime_classifier_instance: Optional[MarketRegimeClassifier] = None
+
+
+def _get_default_regime_classifier() -> MarketRegimeClassifier:
+    """Get or create the default MarketRegimeClassifier singleton."""
+    global _regime_classifier_instance
+    if _regime_classifier_instance is None:
+        _regime_classifier_instance = MarketRegimeClassifier()
+    return _regime_classifier_instance
 
 
 class FVGDirection(str, Enum):
@@ -137,7 +151,7 @@ class FVGDetector:
             min_gap_percent: Minimum gap size as percentage of candle 1 body
             min_candle_size_ratio: Minimum candle size relative to average
         """
-        self._regime_classifier = regime_classifier or MarketRegimeClassifier()
+        self._regime_classifier = regime_classifier or _get_default_regime_classifier()
         self._min_gap_percent = min_gap_percent
         self._min_candle_size_ratio = min_candle_size_ratio
         self._detected_fvgs: list[FVG] = []
@@ -147,6 +161,7 @@ class FVGDetector:
         """Get list of detected FVGs."""
         return self._detected_fvgs.copy()
 
+    @lookahead_guard
     def detect(
         self,
         candles: list,
@@ -206,6 +221,7 @@ class FVGDetector:
 
         return FVGDetectionResult(fvg=None, detection_index=-1)
 
+    @lookahead_guard
     def detect_all(
         self,
         candles: list,
