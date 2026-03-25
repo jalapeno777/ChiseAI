@@ -2978,6 +2978,25 @@ validations:
     test_coverage: "95%"
     owner: ml-team
 
+  - id: V-ICT-BOS-DEFERRED
+    title: BOS/CHoCH Deferred Validation Remediation
+    epic_id: EP-ICT-004
+    story_id: BL-BOS-CHOCH-001
+    status: deferred
+    description: |
+      BOS/CHoCH validation remediation deferred to Phase 5.
+      Current accuracy 15.38% below 40% No-Go threshold.
+      Requires real market data validation before Phase 5 integration.
+    acceptance_criteria:
+      - Directional accuracy >= 60% on real market data
+      - Bearish detection accuracy >= 50%
+      - No regression in other ICT signals
+    test_method: automated
+    owner: ml-team
+    dependencies:
+      - EP-ICT-006 completion (real market data)
+      - EP-ICT-007 kickoff (Phase 5)
+
 # ============================================================
 # Global validation thresholds
 # ============================================================

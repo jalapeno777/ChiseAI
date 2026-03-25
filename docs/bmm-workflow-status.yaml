@@ -697,6 +697,36 @@ backlog:
       notes: All SIG-REM stories completed. Batch 2 is cleared for kickoff.
     pr_number: 556
     merge_commit: aa84345146df02cc0b7df9e3fded65c3c688bbff
+  - acceptance_criteria:
+      - BOS/CHoCH directional accuracy >= 60% on real market data
+      - Bearish detection accuracy >= 50%
+      - Integration tests pass with EP-ICT-005 confluence scorer
+      - Feature flag can be safely enabled
+    artifact_path: docs/backlog/BL-BOS-CHOCH-001-bos-choch-validation-remediation.md
+    created_date: "2026-03-25"
+    description:
+      Remediate BOS/CHoCH signal detector to achieve >=60% directional accuracy.
+      Currently at 15.38% (NO-GO from EP-ICT-004 validation).
+      Deferred to Phase 5 (EP-ICT-007) pending real market data validation.
+    id: BL-BOS-CHOCH-001
+    notes:
+      - BOS/CHoCH excluded from EP-ICT-005 (Phase 2 integration)
+      - 3/4 ICT signals operational (CVD, FVG, Order Block)
+      - Feature flag prevents accidental BOS/CHoCH activation
+      - Target Phase: EP-ICT-007 (Phase 5)
+    owner: ml-signal-engineering
+    priority: P2
+    related_epic: EP-ICT-004
+    related_story: ST-ICT-013
+    risk_notes:
+      - BOS/CHoCH excluded from EP-ICT-005 (Phase 2 integration)
+      - 3/4 ICT signals operational (CVD, FVG, Order Block)
+      - Feature flag prevents accidental BOS/CHoCH activation
+    status: deferred
+    story_points: 5
+    target_phase: EP-ICT-007
+    target_sprint: ICT-S9
+    title: BOS/CHoCH Validation Remediation
 current_phase:
   note:
     "ACTIVATED on 2026-02-22. Paper trading now fully autonomous. All launch flags
@@ -1490,6 +1520,9 @@ epics:
       - Phase 2: 5 stories, 10 SP
       - Sprint ICT-S6 (Week 12) + Sprint ICT-S7 (Weeks 13-14)
       - Full backward compatibility required
+      - "BOS/CHoCH EXCLUDED: Deferred to EP-ICT-007 per BL-BOS-CHOCH-001"
+      - Feature flag ict:bos_choch:enabled defaults to false
+      - Confluence scorer handles 3 ICT signals (CVD, FVG, Order Block)
     sprint_id: ICT-S6
     status: planned
     story_count: 5
