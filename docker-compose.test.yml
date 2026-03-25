@@ -16,6 +16,12 @@ services:
       - "6379:6379"
     networks:
       - cb-test-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   influxdb:
     image: influxdb:2.7-alpine
@@ -30,6 +36,12 @@ services:
       - INFLUXDB_USER_PASSWORD=chiseai123
     networks:
       - cb-test-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   postgres:
     image: postgres:15-alpine
@@ -42,6 +54,12 @@ services:
       - POSTGRES_PASSWORD=chiseai123
     networks:
       - cb-test-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 networks:
   cb-test-network:
