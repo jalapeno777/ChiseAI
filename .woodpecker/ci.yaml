@@ -249,7 +249,7 @@ steps:
 
   dependency-audit:
     pull: false
-    image: chiseai-ci-dependency-audit:py311-20260323
+    image: chiseai-ci-dependency-audit:py311-20260324
     environment:
       CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
     commands:
