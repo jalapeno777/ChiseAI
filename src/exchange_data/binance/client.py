@@ -182,3 +182,28 @@ class BinanceClient:
             self.config.ticker_url,
             params={"symbol": symbol},
         )
+
+    async def get_recent_trades(
+        self, symbol: str, limit: int = 500
+    ) -> list[dict[str, Any]]:
+        """Fetch recent trades for CVD calculation.
+
+        Args:
+            symbol: Trading pair symbol (e.g., "BTCUSDT")
+            limit: Number of recent trades to fetch (max 1000)
+
+        Returns:
+            List of recent trades with fields:
+            - id: Trade ID
+            - price: Trade price
+            - qty: Trade quantity
+            - time: Trade timestamp (ms)
+            - isBuyerMaker: True if buyer was maker
+        """
+        data = await self._make_request(
+            "GET",
+            self.config.trades_url,
+            params={"symbol": symbol, "limit": limit},
+        )
+        # trades_url returns a list directly, not wrapped in dict
+        return data if isinstance(data, list) else []
