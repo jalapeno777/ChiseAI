@@ -1065,9 +1065,7 @@ class SprintCleanup:
                     icon = (
                         "❌"
                         if severity == IssueSeverity.CRITICAL
-                        else "⚠️"
-                        if severity == IssueSeverity.WARNING
-                        else "ℹ️"
+                        else "⚠️" if severity == IssueSeverity.WARNING else "ℹ️"
                     )
                     lines.append(f"{icon} [{issue.category}] {issue.description}")
                     lines.append(f"   Action: {issue.action}")
@@ -1114,9 +1112,7 @@ class SprintCleanup:
         emoji = (
             "🟢"
             if not self.result.has_critical and self.result.warning_count == 0
-            else "🟡"
-            if not self.result.has_critical
-            else "🔴"
+            else "🟡" if not self.result.has_critical else "🔴"
         )
 
         summary = f"""
