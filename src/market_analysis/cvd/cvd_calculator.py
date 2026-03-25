@@ -10,6 +10,8 @@ from enum import Enum
 
 import numpy as np
 
+from src.market_analysis.safety.lookahead_guard import lookahead_guard
+
 
 class TradeDirection(Enum):
     """Direction of trade execution."""
@@ -116,6 +118,7 @@ class CVDCalculator:
             "institutional buying/selling pressure."
         )
 
+    @lookahead_guard
     def calculate_from_trades(self, trades: list[Trade]) -> CVDResult:
         """Calculate CVD from a list of trades.
 
@@ -158,6 +161,7 @@ class CVDCalculator:
             net_volume=buy_volume - sell_volume,
         )
 
+    @lookahead_guard
     def calculate_from_arrays(
         self,
         timestamps: list[datetime],
