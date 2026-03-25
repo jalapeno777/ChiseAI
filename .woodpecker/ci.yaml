@@ -693,6 +693,8 @@ steps:
           CHANGED_BRAIN_FILES="$(python3 scripts/ci/ci_change_scope.py --base-ref origin/main --mode changed-python | grep -E '^(src/brain/|src/neuro_symbolic/|src/strategy/)' || true)"
           if [ -n "$(printf '%s' "$${CHANGED_BRAIN_FILES}" | tr -d '[:space:]')" ]; then
             echo "Brain changes detected, running evaluation..."
+            # D-03: Ensure pip install failures are detected
+            set -e
             pip install -e . || pip install -e . --break-system-packages
             # D-03: Verify pip install actually worked - detect silent failures
             python -c "import chiseai" || { echo "FATAL: pip install failed silently - package not importable"; exit 1; }
