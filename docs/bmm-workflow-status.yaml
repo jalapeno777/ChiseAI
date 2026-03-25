@@ -1344,7 +1344,8 @@ epics:
       - Sprint ICT-S2 (Weeks 3-4) + Sprint ICT-S3 (Weeks 5-6)
       - All ICT components depend on this infrastructure
     sprint_id: ICT-S2
-    status: planned
+    status: completed
+    completion_date: "2026-03-25"
     story_count: 4
     story_ids:
       - ST-ICT-005
@@ -1352,6 +1353,38 @@ epics:
       - ST-ICT-007
       - ST-ICT-008
     story_points: 8
+    completed_stories:
+      - id: ST-ICT-005
+        status: completed
+        completion_date: "2026-03-25"
+        merge_commit: "036b29134597fa8a3a6846de05bfe3a252c66989"
+        test_results:
+          passed: 99
+          breakdown: "39 regime + 23 dashboard + 37 ml"
+        notes: "Unified MarketRegimeClassifier with 93% coverage, backward compatible"
+      - id: ST-ICT-006
+        status: completed
+        completion_date: "2026-03-25"
+        merge_commit: "ae8906ceff590845cb6dd58c8890b95c0cfb5d5a"
+        test_results:
+          passed: 42
+        notes: "Zone persistence with Redis storage, lifecycle management, capacity validation"
+      - id: ST-ICT-007
+        status: completed
+        completion_date: "2026-03-25"
+        merge_commit: "0bd1c10a2d7fcba85adfb7928e7ef0ea6435548d"
+        test_results:
+          passed: 435
+          breakdown: "23 safety + 412 regression"
+        notes: "Repainting/lookahead guard framework with 0% tolerance policy"
+      - id: ST-ICT-008
+        status: completed
+        completion_date: "2026-03-25"
+        merge_commit: "ba46305af53f39e33f58723a10a34ccf5c2e65dd"
+        test_results:
+          passed: 0
+          breakdown: "documentation only"
+        notes: "Two-layer pipeline design documents (1322 lines total)"
   - description:
       Core ICT signal components including Market Structure Detector (BOS/CHoCH),
       Cumulative Volume Delta (CVD), Fair Value Gap Detector, and Order Block Detector
