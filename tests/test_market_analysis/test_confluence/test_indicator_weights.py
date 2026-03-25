@@ -193,6 +193,13 @@ class TestWeightPresets:
         assert weights.min_signal_threshold == 0.4
         assert weights.max_indicators == 8
 
+    def test_conservative_preset_includes_order_flow(self) -> None:
+        """Test conservative preset includes order_flow weight (ST-ICT-003)."""
+        weights = WeightPreset.conservative()
+
+        assert "order_flow" in weights.indicator_weights
+        assert weights.indicator_weights["order_flow"] == 1.0
+
     def test_aggressive_preset(self) -> None:
         """Test aggressive preset configuration."""
         weights = WeightPreset.aggressive()
@@ -208,6 +215,13 @@ class TestWeightPresets:
         # Lower threshold, more indicators
         assert weights.min_signal_threshold == 0.2
         assert weights.max_indicators == 12
+
+    def test_aggressive_preset_includes_order_flow(self) -> None:
+        """Test aggressive preset includes order_flow weight (ST-ICT-003)."""
+        weights = WeightPreset.aggressive()
+
+        assert "order_flow" in weights.indicator_weights
+        assert weights.indicator_weights["order_flow"] == 1.2
 
     def test_balanced_preset(self) -> None:
         """Test balanced preset matches defaults."""

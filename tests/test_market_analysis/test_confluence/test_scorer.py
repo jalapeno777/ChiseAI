@@ -886,3 +886,121 @@ class TestConfidenceMultiplier:
         if result.metadata.get("base_confidence_before_multiplier", 1.0) < 0.85:
             assert result.multiplier_applied == 1.0
             assert "not applied" in result.multiplier_rationale.lower()
+
+
+class TestOrderFlowWeightWiring:
+    """Test order_flow weight integration with scorer (ST-ICT-003)."""
+
+    def test_order_flow_weight_used_in_conservative_preset(self):
+        """Test scorer uses order_flow weight from conservative preset."""
+        from market_analysis.confluence.indicator_weights import WeightPreset
+
+        weights = WeightPreset.conservative()
+        scorer = ConfluenceScorer(weights=weights)
+        agg = AggregatedSignals()
+
+        agg.add_signal(
+            IndicatorSignal(
+                indicator_type="order_flow",
+                timeframe="1h",
+                direction=SignalDirection.LONG,
+                strength=0.8,
+                confidence=0.9,
+            )
+        )
+
+        result = scorer.calculate_score(agg)
+
+        assert result.direction == SignalDirection.LONG
+        # order_flow weight is 1.0 in conservative, timeframe 1h is 1.0
+        # So combined weight should be 1.0 * 1.0 = 1.0
+        assert len(result.contributing_factors) == 1
+        assert result.contributing_factors[0]["indicator"] == "order_flow"
+        assert result.contributing_factors[0]["weight"] == 1.0
+
+    def test_order_flow_weight_used_in_aggressive_preset(self):
+        """Test scorer uses order_flow weight from aggressive preset."""
+        from market_analysis.confluence.indicator_weights import WeightPreset
+
+        weights = WeightPreset.aggressive()
+        scorer = ConfluenceScorer(weights=weights)
+        agg = AggregatedSignals()
+
+        agg.add_signal(
+            IndicatorSignal(
+                indicator_type="order_flow",
+                timeframe="1h",
+                direction=SignalDirection.SHORT,
+                strength=0.8,
+                confidence=0.9,
+            )
+        )
+
+        result = scorer.calculate_score(agg)
+
+        assert result.direction == SignalDirection.SHORT
+        # order_flow weight is 1.2 in aggressive, timeframe 1h is 1.1
+        # So combined weight should be 1.2 * 1.1 = 1.32
+        assert len(result.contributing_factors) == 1
+        assert result.contributing_factors[0]["indicator"] == "order_flow"
+        assert result.contributing_factors[0]["weight"] == 1.32
+
+    def test_order_flow_combined_with_other_indicators(self):
+        """Test order_flow signals contribute alongside other indicators."""
+        from market_analysis.confluence.indicator_weights import WeightPreset
+
+        weights = WeightPreset.conservative()
+        scorer = ConfluenceScorer(weights=weights)
+        agg = AggregatedSignals()
+
+        # Add order_flow signal
+        agg.add_signal(
+            IndicatorSignal(
+                indicator_type="order_flow",
+                timeframe="1h",
+                direction=SignalDirection.LONG,
+                strength=0.85,
+                confidence=0.9,
+            )
+        )
+        # Add traditional indicator
+        agg.add_signal(
+            IndicatorSignal(
+                indicator_type="rsi",
+                timeframe="1h",
+                direction=SignalDirection.LONG,
+                strength=0.8,
+                confidence=0.85,
+            )
+        )
+
+        result = scorer.calculate_score(agg)
+
+        assert result.direction == SignalDirection.LONG
+        assert len(result.contributing_factors) == 2
+        indicator_types = {f["indicator"] for f in result.contributing_factors}
+        assert "order_flow" in indicator_types
+        assert "rsi" in indicator_types
+
+    def test_order_flow_appears_in_signal_breakdown(self):
+        """Test order_flow signals appear in signal breakdown."""
+        from market_analysis.confluence.indicator_weights import WeightPreset
+
+        weights = WeightPreset.aggressive()
+        scorer = ConfluenceScorer(weights=weights)
+        agg = AggregatedSignals()
+
+        agg.add_signal(
+            IndicatorSignal(
+                indicator_type="order_flow",
+                timeframe="4h",
+                direction=SignalDirection.LONG,
+                strength=0.9,
+                confidence=0.88,
+            )
+        )
+
+        result = scorer.calculate_score(agg)
+
+        assert "order_flow" in result.signal_breakdown["by_indicator"]
+        assert result.signal_breakdown["by_indicator"]["order_flow"]["count"] == 1
