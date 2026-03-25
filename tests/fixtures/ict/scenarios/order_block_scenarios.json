@@ -1,0 +1,832 @@
+{
+  "scenarios": [
+    {
+      "id": "ob_001",
+      "name": "Bullish order block formation",
+      "candles": [
+        [1000, 100.0, 102.0, 99.0, 101.0, 800],
+        [2000, 101.0, 101.5, 100.0, 100.5, 700],
+        [3000, 100.5, 109.0, 100.0, 108.0, 2500]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "zone_high": 101.5,
+        "zone_low": 100.0
+      },
+      "tags": ["bullish", "formation", "basic"]
+    },
+    {
+      "id": "ob_002",
+      "name": "Bearish order block formation",
+      "candles": [
+        [1000, 110.0, 111.0, 109.0, 109.5, 800],
+        [2000, 109.5, 110.0, 109.0, 109.5, 700],
+        [3000, 109.5, 101.0, 100.0, 101.0, 2500]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bearish",
+        "zone_high": 110.0,
+        "zone_low": 100.0
+      },
+      "tags": ["bearish", "formation", "basic"]
+    },
+    {
+      "id": "ob_003",
+      "name": "Bullish order block with mitigation",
+      "candles": [
+        [1000, 100.0, 102.0, 99.0, 101.0, 800],
+        [2000, 101.0, 101.5, 100.0, 100.5, 700],
+        [3000, 100.5, 108.0, 100.0, 107.0, 2000],
+        [4000, 107.0, 105.0, 100.0, 101.0, 1500]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "mitigated": true
+      },
+      "tags": ["bullish", "mitigated", "tested"]
+    },
+    {
+      "id": "ob_004",
+      "name": "Bearish order block with mitigation",
+      "candles": [
+        [1000, 110.0, 111.0, 109.0, 109.5, 800],
+        [2000, 109.5, 110.0, 109.0, 109.5, 700],
+        [3000, 109.5, 102.0, 101.0, 102.0, 2000],
+        [4000, 102.0, 109.0, 109.0, 108.0, 1500]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bearish",
+        "mitigated": true
+      },
+      "tags": ["bearish", "mitigated", "tested"]
+    },
+    {
+      "id": "ob_005",
+      "name": "No order block - ranging market",
+      "candles": [
+        [1000, 100.0, 102.0, 99.0, 101.0, 1000],
+        [2000, 101.0, 102.0, 100.0, 101.5, 1000],
+        [3000, 101.5, 102.0, 100.5, 101.0, 1000],
+        [4000, 101.0, 102.0, 100.0, 101.5, 1000],
+        [5000, 101.5, 102.0, 100.5, 101.0, 1000]
+      ],
+      "expected": {
+        "ob_detected": false,
+        "polarity": "none"
+      },
+      "tags": ["no_ob", "ranging", "no_momentum"]
+    },
+    {
+      "id": "ob_006",
+      "name": "Bullish OB with strong momentum",
+      "candles": [
+        [1000, 100.0, 101.0, 99.0, 100.5, 500],
+        [2000, 100.5, 101.0, 100.0, 100.5, 500],
+        [3000, 100.5, 112.0, 100.0, 111.0, 5000]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "strong_momentum": true
+      },
+      "tags": ["bullish", "strong_momentum", "impulse"]
+    },
+    {
+      "id": "ob_007",
+      "name": "Bearish OB with strong momentum",
+      "candles": [
+        [1000, 112.0, 113.0, 111.0, 111.5, 500],
+        [2000, 111.5, 112.0, 111.0, 111.5, 500],
+        [3000, 111.5, 100.0, 99.0, 100.0, 5000]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bearish",
+        "strong_momentum": true
+      },
+      "tags": ["bearish", "strong_momentum", "impulse"]
+    },
+    {
+      "id": "ob_008",
+      "name": "Bullish OB after pullback",
+      "candles": [
+        [1000, 100.0, 105.0, 99.0, 104.0, 1500],
+        [2000, 104.0, 103.0, 101.0, 102.0, 1000],
+        [3000, 102.0, 101.0, 100.0, 100.5, 800],
+        [4000, 100.5, 110.0, 100.0, 109.0, 2500]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "pullback_context": true
+      },
+      "tags": ["bullish", "pullback", "demand_zone"]
+    },
+    {
+      "id": "ob_009",
+      "name": "Bearish OB after bounce",
+      "candles": [
+        [1000, 100.0, 101.0, 95.0, 96.0, 1500],
+        [2000, 96.0, 98.0, 96.5, 97.5, 1000],
+        [3000, 97.5, 99.0, 98.0, 98.5, 800],
+        [4000, 98.5, 90.0, 89.0, 90.0, 2500]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bearish",
+        "bounce_context": true
+      },
+      "tags": ["bearish", "bounce", "supply_zone"]
+    },
+    {
+      "id": "ob_010",
+      "name": "Bullish OB unmitigated",
+      "candles": [
+        [1000, 100.0, 102.0, 99.0, 101.0, 800],
+        [2000, 101.0, 101.5, 100.0, 100.5, 700],
+        [3000, 100.5, 110.0, 100.0, 109.0, 2000],
+        [4000, 109.0, 112.0, 108.0, 111.0, 1500],
+        [5000, 111.0, 114.0, 110.0, 113.0, 1200]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "unmitigated": true
+      },
+      "tags": ["bullish", "unmitigated", "fresh"]
+    },
+    {
+      "id": "ob_011",
+      "name": "Bearish OB unmitigated",
+      "candles": [
+        [1000, 115.0, 116.0, 113.0, 114.0, 800],
+        [2000, 114.0, 114.5, 113.0, 113.5, 700],
+        [3000, 113.5, 105.0, 104.0, 105.0, 2000],
+        [4000, 105.0, 103.0, 102.0, 103.0, 1500],
+        [5000, 103.0, 101.0, 100.0, 101.0, 1200]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bearish",
+        "unmitigated": true
+      },
+      "tags": ["bearish", "unmitigated", "fresh"]
+    },
+    {
+      "id": "ob_012",
+      "name": "Multiple bullish OBs",
+      "candles": [
+        [1000, 100.0, 102.0, 99.0, 101.0, 800],
+        [2000, 101.0, 101.5, 100.0, 100.5, 700],
+        [3000, 100.5, 108.0, 100.0, 107.0, 2000],
+        [4000, 107.0, 106.0, 105.0, 105.5, 800],
+        [5000, 105.5, 105.0, 104.5, 104.8, 700],
+        [6000, 104.8, 112.0, 104.5, 111.0, 2500]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "multiple_obs": true,
+        "count": 2
+      },
+      "tags": ["bullish", "multiple", "sequence"]
+    },
+    {
+      "id": "ob_013",
+      "name": "Multiple bearish OBs",
+      "candles": [
+        [1000, 115.0, 116.0, 113.0, 114.0, 800],
+        [2000, 114.0, 114.5, 113.0, 113.5, 700],
+        [3000, 113.5, 106.0, 105.0, 106.0, 2000],
+        [4000, 106.0, 107.5, 106.0, 107.0, 800],
+        [5000, 107.0, 107.5, 107.0, 107.3, 700],
+        [6000, 107.3, 99.0, 98.0, 99.0, 2500]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bearish",
+        "multiple_obs": true,
+        "count": 2
+      },
+      "tags": ["bearish", "multiple", "sequence"]
+    },
+    {
+      "id": "ob_014",
+      "name": "Bullish OB at support level",
+      "candles": [
+        [1000, 100.0, 102.0, 98.0, 99.0, 1500],
+        [2000, 99.0, 99.5, 98.0, 98.5, 1200],
+        [3000, 98.5, 108.0, 98.0, 107.0, 2500],
+        [4000, 107.0, 109.0, 106.0, 108.0, 2000]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "at_support": true
+      },
+      "tags": ["bullish", "support", "demand_zone"]
+    },
+    {
+      "id": "ob_015",
+      "name": "Bearish OB at resistance level",
+      "candles": [
+        [1000, 100.0, 102.0, 98.0, 101.0, 1500],
+        [2000, 101.0, 101.5, 100.0, 101.3, 1200],
+        [3000, 101.3, 92.0, 91.0, 92.0, 2500],
+        [4000, 92.0, 93.0, 91.0, 91.5, 2000]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bearish",
+        "at_resistance": true
+      },
+      "tags": ["bearish", "resistance", "supply_zone"]
+    },
+    {
+      "id": "ob_016",
+      "name": "Bullish OB with volume confirmation",
+      "candles": [
+        [1000, 100.0, 102.0, 99.0, 101.0, 800],
+        [2000, 101.0, 101.5, 100.0, 100.5, 700],
+        [3000, 100.5, 110.0, 100.0, 109.0, 5000]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "volume_confirmed": true
+      },
+      "tags": ["bullish", "volume_confirmed", "strong"]
+    },
+    {
+      "id": "ob_017",
+      "name": "Bearish OB with volume confirmation",
+      "candles": [
+        [1000, 110.0, 111.0, 109.0, 109.5, 800],
+        [2000, 109.5, 110.0, 109.0, 109.5, 700],
+        [3000, 109.5, 100.0, 99.0, 100.0, 5000]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bearish",
+        "volume_confirmed": true
+      },
+      "tags": ["bearish", "volume_confirmed", "strong"]
+    },
+    {
+      "id": "ob_018",
+      "name": "OB formation with long consolidation",
+      "candles": [
+        [1000, 100.0, 102.0, 99.0, 101.0, 800],
+        [2000, 101.0, 101.5, 100.0, 100.5, 700],
+        [3000, 100.5, 101.0, 100.0, 100.5, 600],
+        [4000, 100.5, 101.0, 100.0, 100.3, 600],
+        [5000, 100.3, 110.0, 100.0, 109.0, 3000]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "long_consolidation": true
+      },
+      "tags": ["bullish", "long_consolidation", "accumulation"]
+    },
+    {
+      "id": "ob_019",
+      "name": "Bullish OB wick test and bounce",
+      "candles": [
+        [1000, 100.0, 102.0, 99.0, 101.0, 800],
+        [2000, 101.0, 101.5, 100.0, 100.5, 700],
+        [3000, 100.5, 108.0, 100.0, 107.0, 2000],
+        [4000, 107.0, 108.0, 100.5, 100.6, 2000],
+        [5000, 100.6, 110.0, 100.5, 109.0, 2500]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "wick_test": true,
+        "bounce": true
+      },
+      "tags": ["bullish", "wick_test", "bounce"]
+    },
+    {
+      "id": "ob_020",
+      "name": "Bearish OB wick test and rejection",
+      "candles": [
+        [1000, 110.0, 111.0, 109.0, 109.5, 800],
+        [2000, 109.5, 110.0, 109.0, 109.5, 700],
+        [3000, 109.5, 102.0, 101.0, 102.0, 2000],
+        [4000, 102.0, 109.4, 102.0, 108.0, 2000],
+        [5000, 108.0, 100.0, 99.0, 100.0, 2500]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bearish",
+        "wick_test": true,
+        "rejection": true
+      },
+      "tags": ["bearish", "wick_test", "rejection"]
+    },
+    {
+      "id": "ob_021",
+      "name": "OB in trending market bullish",
+      "candles": [
+        [1000, 100.0, 103.0, 99.0, 102.0, 1000],
+        [2000, 102.0, 104.0, 101.0, 103.0, 1000],
+        [3000, 103.0, 102.0, 101.0, 101.5, 800],
+        [4000, 101.5, 101.0, 100.5, 100.8, 700],
+        [5000, 100.8, 112.0, 100.5, 111.0, 3000]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "trending_market": true
+      },
+      "tags": ["bullish", "trending", "pullback_in_trend"]
+    },
+    {
+      "id": "ob_022",
+      "name": "OB in trending market bearish",
+      "candles": [
+        [1000, 120.0, 121.0, 118.0, 119.0, 1000],
+        [2000, 119.0, 118.0, 117.0, 117.5, 1000],
+        [3000, 117.5, 118.5, 117.0, 118.0, 800],
+        [4000, 118.0, 118.5, 117.5, 118.2, 700],
+        [5000, 118.2, 108.0, 107.0, 108.0, 3000]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bearish",
+        "trending_market": true
+      },
+      "tags": ["bearish", "trending", "bounce_in_trend"]
+    },
+    {
+      "id": "ob_023",
+      "name": "OB with single consolidation candle",
+      "candles": [
+        [1000, 100.0, 101.5, 99.5, 101.0, 800],
+        [3000, 101.0, 110.0, 100.5, 109.0, 2500]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "single_consolidation": true
+      },
+      "tags": ["bullish", "single_consolidation", "minimal"]
+    },
+    {
+      "id": "ob_024",
+      "name": "OB with maximum consolidation",
+      "candles": [
+        [1000, 100.0, 101.0, 99.0, 100.5, 600],
+        [2000, 100.5, 101.0, 99.5, 100.0, 600],
+        [3000, 100.0, 101.0, 99.5, 100.5, 600],
+        [4000, 100.5, 101.0, 99.5, 100.0, 600],
+        [5000, 100.0, 101.0, 99.5, 100.5, 600],
+        [6000, 100.5, 112.0, 100.0, 111.0, 3000]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "max_consolidation": true
+      },
+      "tags": ["bullish", "max_consolidation", "boundary"]
+    },
+    {
+      "id": "ob_025",
+      "name": "Insufficient data for OB",
+      "candles": [
+        [1000, 100.0, 102.0, 99.0, 101.0, 1000],
+        [2000, 101.0, 104.0, 100.0, 103.0, 1000]
+      ],
+      "expected": {
+        "ob_detected": false,
+        "polarity": "none"
+      },
+      "tags": ["insufficient_data", "no_consolidation", "edge_case"]
+    },
+    {
+      "id": "ob_026",
+      "name": "OB with doji consolidation",
+      "candles": [
+        [1000, 100.0, 100.5, 99.5, 100.0, 600],
+        [2000, 100.0, 100.1, 99.9, 100.0, 600],
+        [3000, 100.0, 100.1, 99.9, 100.0, 600],
+        [4000, 100.0, 110.0, 99.5, 109.0, 3000]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "doji_consolidation": true
+      },
+      "tags": ["bullish", "doji", "low_volatility_consolidation"]
+    },
+    {
+      "id": "ob_027",
+      "name": "Bullish OB with hammer momentum candle",
+      "candles": [
+        [1000, 100.0, 101.0, 99.0, 100.5, 700],
+        [2000, 100.5, 100.8, 99.8, 100.0, 600],
+        [3000, 100.0, 112.0, 96.0, 111.0, 4000]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "hammer_momentum": true
+      },
+      "tags": ["bullish", "hammer", "strong_rejection"]
+    },
+    {
+      "id": "ob_028",
+      "name": "Bearish OB with shooting star momentum",
+      "candles": [
+        [1000, 112.0, 113.0, 111.0, 111.5, 700],
+        [2000, 111.5, 112.0, 111.0, 111.5, 600],
+        [3000, 111.5, 120.0, 104.0, 105.0, 4000]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bearish",
+        "shooting_star_momentum": true
+      },
+      "tags": ["bearish", "shooting_star", "strong_rejection"]
+    },
+    {
+      "id": "ob_029",
+      "name": "OB with expanding consolidation range",
+      "candles": [
+        [1000, 100.0, 101.0, 99.0, 100.0, 600],
+        [2000, 100.0, 101.5, 99.5, 100.5, 700],
+        [3000, 100.5, 102.0, 99.0, 101.0, 800],
+        [4000, 101.0, 113.0, 100.0, 112.0, 3000]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "expanding_range": true
+      },
+      "tags": ["bullish", "expanding_range", "building_pressure"]
+    },
+    {
+      "id": "ob_030",
+      "name": "OB with narrowing consolidation range",
+      "candles": [
+        [1000, 100.0, 103.0, 97.0, 102.0, 800],
+        [2000, 102.0, 101.5, 99.5, 100.5, 700],
+        [3000, 100.5, 100.5, 99.5, 100.0, 600],
+        [4000, 100.0, 112.0, 99.5, 111.0, 3000]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "narrowing_range": true
+      },
+      "tags": ["bullish", "narrowing_range", "squeezing"]
+    },
+    {
+      "id": "ob_031",
+      "name": "OB equal high low test",
+      "candles": [
+        [1000, 100.0, 101.0, 99.0, 100.0, 600],
+        [2000, 100.0, 100.5, 99.5, 100.0, 600],
+        [3000, 100.0, 100.1, 99.9, 100.0, 600],
+        [4000, 100.0, 100.1, 99.9, 100.0, 600],
+        [5000, 100.0, 108.0, 99.9, 107.0, 2000]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "equal_highs_lows": true
+      },
+      "tags": ["bullish", "equal_levels", "tight_range"]
+    },
+    {
+      "id": "ob_032",
+      "name": "OB with gap after momentum",
+      "candles": [
+        [1000, 100.0, 102.0, 99.0, 101.0, 800],
+        [2000, 101.0, 101.5, 100.0, 100.5, 700],
+        [3000, 100.5, 115.0, 113.0, 114.0, 3000]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "gap_after_momentum": true
+      },
+      "tags": ["bullish", "gap", "strong_move"]
+    },
+    {
+      "id": "ob_033",
+      "name": "OB with gap before consolidation",
+      "candles": [
+        [1000, 100.0, 105.0, 99.0, 104.0, 2000],
+        [2000, 108.0, 109.0, 107.0, 108.0, 800],
+        [3000, 108.0, 108.5, 107.0, 107.5, 700],
+        [4000, 107.5, 116.0, 107.0, 115.0, 2500]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "gap_before_consolidation": true
+      },
+      "tags": ["bullish", "gap", "continuation"]
+    },
+    {
+      "id": "ob_034",
+      "name": "OB after news-like spike",
+      "candles": [
+        [1000, 100.0, 101.0, 99.0, 100.5, 500],
+        [2000, 100.5, 101.0, 100.0, 100.5, 500],
+        [3000, 100.5, 118.0, 100.0, 117.0, 8000]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "news_spike": true
+      },
+      "tags": ["bullish", "news", "volatility_spike"]
+    },
+    {
+      "id": "ob_035",
+      "name": "OB with high volume consolidation",
+      "candles": [
+        [1000, 100.0, 101.0, 99.0, 100.5, 2000],
+        [2000, 100.5, 101.0, 100.0, 100.5, 2000],
+        [3000, 100.5, 108.0, 100.0, 107.0, 2000]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "high_volume_consolidation": true
+      },
+      "tags": ["bullish", "high_volume", "absorption"]
+    },
+    {
+      "id": "ob_036",
+      "name": "OB with low volume consolidation",
+      "candles": [
+        [1000, 100.0, 101.0, 99.0, 100.5, 200],
+        [2000, 100.5, 101.0, 100.0, 100.5, 200],
+        [3000, 100.5, 108.0, 100.0, 107.0, 2000]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "low_volume_consolidation": true
+      },
+      "tags": ["bullish", "low_volume", "quiet_before_storm"]
+    },
+    {
+      "id": "ob_037",
+      "name": "Bullish OB zone overlap with previous",
+      "candles": [
+        [1000, 100.0, 102.0, 99.0, 101.0, 800],
+        [2000, 101.0, 101.5, 100.0, 100.5, 700],
+        [3000, 100.5, 107.0, 100.0, 106.0, 2000],
+        [4000, 106.0, 105.0, 100.5, 101.0, 1500],
+        [5000, 101.0, 101.5, 100.0, 100.5, 700],
+        [6000, 100.5, 110.0, 100.0, 109.0, 2500]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "overlapping_zones": true,
+        "count": 2
+      },
+      "tags": ["bullish", "overlapping", "confluent_zones"]
+    },
+    {
+      "id": "ob_038",
+      "name": "OB with rounded bottom consolidation",
+      "candles": [
+        [1000, 101.0, 101.5, 100.0, 100.5, 600],
+        [2000, 100.5, 101.0, 99.5, 100.0, 600],
+        [3000, 100.0, 100.5, 99.0, 99.5, 600],
+        [4000, 99.5, 100.0, 99.0, 99.5, 600],
+        [5000, 99.5, 100.0, 99.0, 99.5, 600],
+        [6000, 99.5, 109.0, 99.0, 108.0, 2500]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "rounded_bottom": true
+      },
+      "tags": ["bullish", "rounded_bottom", "gradual"]
+    },
+    {
+      "id": "ob_039",
+      "name": "OB with rounded top consolidation",
+      "candles": [
+        [1000, 109.0, 110.0, 108.5, 109.5, 600],
+        [2000, 109.5, 110.0, 108.0, 109.0, 600],
+        [3000, 109.0, 109.5, 107.5, 108.0, 600],
+        [4000, 108.0, 108.5, 107.0, 107.5, 600],
+        [5000, 107.5, 108.0, 107.0, 107.5, 600],
+        [6000, 107.5, 98.0, 97.0, 98.0, 2500]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bearish",
+        "rounded_top": true
+      },
+      "tags": ["bearish", "rounded_top", "gradual"]
+    },
+    {
+      "id": "ob_040",
+      "name": "OB with V-shaped consolidation",
+      "candles": [
+        [1000, 101.0, 101.5, 100.0, 100.5, 600],
+        [2000, 100.5, 100.5, 99.0, 99.5, 800],
+        [3000, 99.5, 100.5, 99.0, 100.0, 800],
+        [4000, 100.0, 110.0, 99.5, 109.0, 2500]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "v_shaped_consolidation": true
+      },
+      "tags": ["bullish", "v_shape", "shakeout"]
+    },
+    {
+      "id": "ob_041",
+      "name": "OB with inverted V consolidation",
+      "candles": [
+        [1000, 109.0, 109.5, 108.0, 108.5, 600],
+        [2000, 108.5, 110.0, 108.5, 109.5, 800],
+        [3000, 109.5, 109.5, 108.0, 108.5, 800],
+        [4000, 108.5, 98.0, 97.0, 98.0, 2500]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bearish",
+        "inverted_v_consolidation": true
+      },
+      "tags": ["bearish", "inverted_v", "distribution"]
+    },
+    {
+      "id": "ob_042",
+      "name": "OB near session open",
+      "candles": [
+        [1000, 100.0, 102.0, 99.0, 101.0, 800],
+        [2000, 101.0, 101.5, 100.0, 100.5, 700],
+        [3000, 100.5, 110.0, 100.0, 109.0, 2000]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "session_open": true
+      },
+      "tags": ["bullish", "session_open", "opening_range"]
+    },
+    {
+      "id": "ob_043",
+      "name": "OB near session close",
+      "candles": [
+        [86300000, 100.0, 102.0, 99.0, 101.0, 800],
+        [86400000, 101.0, 101.5, 100.0, 100.5, 700],
+        [86450000, 100.5, 110.0, 100.0, 109.0, 2000]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "session_close": true
+      },
+      "tags": ["bullish", "session_close", "late_momentum"]
+    },
+    {
+      "id": "ob_044",
+      "name": "OB with very large momentum candle",
+      "candles": [
+        [1000, 100.0, 101.0, 99.0, 100.5, 500],
+        [2000, 100.5, 101.0, 100.0, 100.5, 500],
+        [3000, 100.5, 125.0, 100.0, 124.0, 10000]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "very_large_momentum": true
+      },
+      "tags": ["bullish", "extreme_momentum", "anomaly"]
+    },
+    {
+      "id": "ob_045",
+      "name": "OB with very small momentum candle",
+      "candles": [
+        [1000, 100.0, 101.0, 99.0, 100.5, 500],
+        [2000, 100.5, 101.0, 100.0, 100.5, 500],
+        [3000, 100.5, 101.0, 100.0, 100.8, 800]
+      ],
+      "expected": {
+        "ob_detected": false,
+        "polarity": "none"
+      },
+      "tags": ["no_ob", "insufficient_momentum", "weak"]
+    },
+    {
+      "id": "ob_046",
+      "name": "Bullish OB at double bottom",
+      "candles": [
+        [1000, 100.0, 101.0, 98.0, 99.0, 1000],
+        [2000, 99.0, 100.0, 97.0, 98.0, 1200],
+        [3000, 98.0, 99.0, 97.0, 98.5, 1000],
+        [4000, 98.5, 109.0, 98.0, 108.0, 2500]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "double_bottom": true
+      },
+      "tags": ["bullish", "double_bottom", "key_level"]
+    },
+    {
+      "id": "ob_047",
+      "name": "Bearish OB at double top",
+      "candles": [
+        [1000, 100.0, 102.0, 99.0, 101.0, 1000],
+        [2000, 101.0, 103.0, 101.0, 102.0, 1200],
+        [3000, 102.0, 103.0, 101.0, 102.5, 1000],
+        [4000, 102.5, 93.0, 92.0, 93.0, 2500]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bearish",
+        "double_top": true
+      },
+      "tags": ["bearish", "double_top", "key_level"]
+    },
+    {
+      "id": "ob_048",
+      "name": "OB with ascending consolidation",
+      "candles": [
+        [1000, 100.0, 100.5, 99.5, 100.0, 600],
+        [2000, 100.0, 101.0, 99.5, 100.5, 700],
+        [3000, 100.5, 101.5, 100.0, 101.0, 800],
+        [4000, 101.0, 112.0, 100.5, 111.0, 2500]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "ascending_consolidation": true
+      },
+      "tags": ["bullish", "ascending", "building"]
+    },
+    {
+      "id": "ob_049",
+      "name": "OB with descending consolidation",
+      "candles": [
+        [1000, 110.0, 110.5, 109.5, 110.0, 600],
+        [2000, 110.0, 109.5, 109.0, 109.5, 700],
+        [3000, 109.5, 109.0, 108.0, 108.5, 800],
+        [4000, 108.5, 98.0, 97.0, 98.0, 2500]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bearish",
+        "descending_consolidation": true
+      },
+      "tags": ["bearish", "descending", "weakening"]
+    },
+    {
+      "id": "ob_050",
+      "name": "OB single candle only",
+      "candles": [[1000, 100.0, 105.0, 99.0, 104.0, 2000]],
+      "expected": {
+        "ob_detected": false,
+        "polarity": "none"
+      },
+      "tags": ["insufficient_data", "single_candle", "edge_case"]
+    },
+    {
+      "id": "ob_051",
+      "name": "OB with momentum threshold boundary",
+      "candles": [
+        [1000, 100.0, 101.0, 99.0, 100.5, 600],
+        [2000, 100.5, 101.0, 100.0, 100.5, 600],
+        [3000, 100.5, 101.0, 100.0, 100.8, 800]
+      ],
+      "expected": {
+        "ob_detected": false,
+        "polarity": "none"
+      },
+      "tags": ["boundary", "momentum_threshold", "edge_case"]
+    },
+    {
+      "id": "ob_052",
+      "name": "OB with strong volume on momentum only",
+      "candles": [
+        [1000, 100.0, 101.0, 99.0, 100.5, 200],
+        [2000, 100.5, 101.0, 100.0, 100.5, 200],
+        [3000, 100.5, 112.0, 100.0, 111.0, 5000]
+      ],
+      "expected": {
+        "ob_detected": true,
+        "polarity": "bullish",
+        "momentum_volume_only": true
+      },
+      "tags": ["bullish", "volume_on_momentum", "asymmetric"]
+    }
+  ]
+}

@@ -1,0 +1,1130 @@
+{
+  "scenarios": [
+    {
+      "id": "cvd_001",
+      "name": "Positive delta accumulation",
+      "trades": [
+        [1, 100.0, 10.0, 0, false],
+        [2, 100.5, 15.0, 1, false],
+        [3, 101.0, 20.0, 2, false],
+        [4, 101.5, 25.0, 3, false],
+        [5, 102.0, 30.0, 4, false],
+        [6, 102.5, 35.0, 5, false],
+        [7, 103.0, 40.0, 6, false],
+        [8, 103.5, 45.0, 7, false],
+        [9, 104.0, 50.0, 8, false],
+        [10, 104.5, 55.0, 9, false]
+      ],
+      "expected": {
+        "cvd_direction": "positive",
+        "net_volume_positive": true,
+        "cumulative_increasing": true
+      },
+      "tags": ["positive_accumulation", "buying_pressure"]
+    },
+    {
+      "id": "cvd_002",
+      "name": "Negative delta distribution",
+      "trades": [
+        [1, 105.0, 50.0, 0, true],
+        [2, 104.5, 45.0, 1, true],
+        [3, 104.0, 40.0, 2, true],
+        [4, 103.5, 35.0, 3, true],
+        [5, 103.0, 30.0, 4, true],
+        [6, 102.5, 25.0, 5, true],
+        [7, 102.0, 20.0, 6, true],
+        [8, 101.5, 15.0, 7, true],
+        [9, 101.0, 10.0, 8, true],
+        [10, 100.5, 5.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "negative",
+        "net_volume_positive": false,
+        "cumulative_increasing": false
+      },
+      "tags": ["negative_distribution", "selling_pressure"]
+    },
+    {
+      "id": "cvd_003",
+      "name": "Bullish divergence - price down CVD up",
+      "trades": [
+        [1, 100.0, 10.0, 0, false],
+        [2, 99.5, 15.0, 1, true],
+        [3, 99.0, 20.0, 2, false],
+        [4, 98.5, 25.0, 3, true],
+        [5, 98.0, 30.0, 4, false],
+        [6, 97.5, 35.0, 5, true],
+        [7, 97.0, 40.0, 6, false],
+        [8, 96.5, 45.0, 7, true],
+        [9, 96.0, 50.0, 8, false],
+        [10, 95.5, 55.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "positive",
+        "divergence": "bullish",
+        "price_decreasing_cvd_increasing": true
+      },
+      "tags": ["bullish_divergence", "hidden_demand"]
+    },
+    {
+      "id": "cvd_004",
+      "name": "Bearish divergence - price up CVD down",
+      "trades": [
+        [1, 100.0, 50.0, 0, false],
+        [2, 100.5, 45.0, 1, true],
+        [3, 101.0, 40.0, 2, false],
+        [4, 101.5, 35.0, 3, true],
+        [5, 102.0, 30.0, 4, false],
+        [6, 102.5, 25.0, 5, true],
+        [7, 103.0, 20.0, 6, false],
+        [8, 103.5, 15.0, 7, true],
+        [9, 104.0, 10.0, 8, false],
+        [10, 104.5, 5.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "negative",
+        "divergence": "bearish",
+        "price_increasing_cvd_decreasing": true
+      },
+      "tags": ["bearish_divergence", "hidden_supply"]
+    },
+    {
+      "id": "cvd_005",
+      "name": "Extreme positive delta spike",
+      "trades": [
+        [1, 100.0, 10.0, 0, false],
+        [2, 100.1, 10.0, 1, false],
+        [3, 100.2, 10.0, 2, false],
+        [4, 100.3, 10.0, 3, false],
+        [5, 100.4, 100.0, 4, false],
+        [6, 100.5, 100.0, 5, false],
+        [7, 100.6, 100.0, 6, false],
+        [8, 100.7, 10.0, 7, false],
+        [9, 100.8, 10.0, 8, false],
+        [10, 100.9, 10.0, 9, false]
+      ],
+      "expected": {
+        "cvd_direction": "positive",
+        "extreme_delta": true,
+        "spike_detected": true
+      },
+      "tags": ["extreme_delta", "spike", "buying_climax"]
+    },
+    {
+      "id": "cvd_006",
+      "name": "Extreme negative delta spike",
+      "trades": [
+        [1, 105.0, 10.0, 0, true],
+        [2, 104.9, 10.0, 1, true],
+        [3, 104.8, 10.0, 2, true],
+        [4, 104.7, 10.0, 3, true],
+        [5, 104.6, 100.0, 4, true],
+        [6, 104.5, 100.0, 5, true],
+        [7, 104.4, 100.0, 6, true],
+        [8, 104.3, 10.0, 7, true],
+        [9, 104.2, 10.0, 8, true],
+        [10, 104.1, 10.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "negative",
+        "extreme_delta": true,
+        "spike_detected": true
+      },
+      "tags": ["extreme_delta", "spike", "selling_climax"]
+    },
+    {
+      "id": "cvd_007",
+      "name": "Neutral balanced market",
+      "trades": [
+        [1, 100.0, 20.0, 0, false],
+        [2, 100.5, 20.0, 1, true],
+        [3, 101.0, 20.0, 2, false],
+        [4, 100.5, 20.0, 3, true],
+        [5, 101.0, 20.0, 4, false],
+        [6, 100.5, 20.0, 5, true],
+        [7, 101.0, 20.0, 6, false],
+        [8, 100.5, 20.0, 7, true],
+        [9, 101.0, 20.0, 8, false],
+        [10, 100.5, 20.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "neutral",
+        "net_volume_positive": false,
+        "balanced": true
+      },
+      "tags": ["neutral", "balanced", "no_trend"]
+    },
+    {
+      "id": "cvd_008",
+      "name": "Gradual buying pressure increase",
+      "trades": [
+        [1, 100.0, 5.0, 0, false],
+        [2, 100.2, 8.0, 1, true],
+        [3, 100.4, 12.0, 2, false],
+        [4, 100.6, 10.0, 3, true],
+        [5, 100.8, 18.0, 4, false],
+        [6, 101.0, 15.0, 5, true],
+        [7, 101.2, 25.0, 6, false],
+        [8, 101.4, 20.0, 7, true],
+        [9, 101.6, 35.0, 8, false],
+        [10, 101.8, 30.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "positive",
+        "net_volume_positive": true,
+        "accelerating": true
+      },
+      "tags": ["gradual_buying", "accelerating", "building_pressure"]
+    },
+    {
+      "id": "cvd_009",
+      "name": "Gradual selling pressure increase",
+      "trades": [
+        [1, 105.0, 5.0, 0, true],
+        [2, 104.8, 8.0, 1, false],
+        [3, 104.6, 12.0, 2, true],
+        [4, 104.4, 10.0, 3, false],
+        [5, 104.2, 18.0, 4, true],
+        [6, 104.0, 15.0, 5, false],
+        [7, 103.8, 25.0, 6, true],
+        [8, 103.6, 20.0, 7, false],
+        [9, 103.4, 35.0, 8, true],
+        [10, 103.2, 30.0, 9, false]
+      ],
+      "expected": {
+        "cvd_direction": "negative",
+        "net_volume_positive": false,
+        "accelerating": true
+      },
+      "tags": ["gradual_selling", "accelerating", "building_pressure"]
+    },
+    {
+      "id": "cvd_010",
+      "name": "CVD rate acceleration - positive",
+      "trades": [
+        [1, 100.0, 5.0, 0, false],
+        [2, 100.1, 5.0, 1, true],
+        [3, 100.2, 10.0, 2, false],
+        [4, 100.3, 5.0, 3, true],
+        [5, 100.4, 15.0, 4, false],
+        [6, 100.5, 5.0, 5, true],
+        [7, 100.6, 25.0, 6, false],
+        [8, 100.7, 5.0, 7, true],
+        [9, 100.8, 40.0, 8, false],
+        [10, 100.9, 5.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "positive",
+        "rate_increasing": true,
+        "acceleration": true
+      },
+      "tags": ["rate_acceleration", "positive", "momentum_shift"]
+    },
+    {
+      "id": "cvd_011",
+      "name": "CVD rate deceleration - negative",
+      "trades": [
+        [1, 105.0, 40.0, 0, true],
+        [2, 104.8, 5.0, 1, false],
+        [3, 104.6, 30.0, 2, true],
+        [4, 104.4, 5.0, 3, false],
+        [5, 104.2, 20.0, 4, true],
+        [6, 104.0, 5.0, 5, false],
+        [7, 103.8, 10.0, 6, true],
+        [8, 103.6, 5.0, 7, false],
+        [9, 103.4, 5.0, 8, true],
+        [10, 103.2, 5.0, 9, false]
+      ],
+      "expected": {
+        "cvd_direction": "negative",
+        "rate_decelerating": true,
+        "exhaustion": true
+      },
+      "tags": ["rate_deceleration", "negative", "exhaustion"]
+    },
+    {
+      "id": "cvd_012",
+      "name": "Zero volume - no delta change",
+      "trades": [
+        [1, 100.0, 0.0, 0, false],
+        [2, 100.0, 0.0, 1, false],
+        [3, 100.0, 0.0, 2, false],
+        [4, 100.0, 0.0, 3, false],
+        [5, 100.0, 0.0, 4, false],
+        [6, 100.0, 0.0, 5, false],
+        [7, 100.0, 0.0, 6, false],
+        [8, 100.0, 0.0, 7, false],
+        [9, 100.0, 0.0, 8, false],
+        [10, 100.0, 0.0, 9, false]
+      ],
+      "expected": {
+        "cvd_direction": "neutral",
+        "net_volume_positive": false,
+        "zero_volume": true
+      },
+      "tags": ["zero_volume", "edge_case", "no_activity"]
+    },
+    {
+      "id": "cvd_013",
+      "name": "Single large buy trade",
+      "trades": [
+        [1, 100.0, 1.0, 0, true],
+        [2, 100.1, 1.0, 1, false],
+        [3, 100.2, 1.0, 2, true],
+        [4, 100.3, 1.0, 3, false],
+        [5, 100.4, 1000.0, 4, false],
+        [6, 100.5, 1.0, 5, true],
+        [7, 100.6, 1.0, 6, false],
+        [8, 100.7, 1.0, 7, true],
+        [9, 100.8, 1.0, 8, false],
+        [10, 100.9, 1.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "positive",
+        "large_single_trade": true,
+        "net_volume_positive": true
+      },
+      "tags": ["large_trade", "whale", "anomaly"]
+    },
+    {
+      "id": "cvd_014",
+      "name": "Single large sell trade",
+      "trades": [
+        [1, 105.0, 1.0, 0, false],
+        [2, 104.9, 1.0, 1, true],
+        [3, 104.8, 1.0, 2, false],
+        [4, 104.7, 1.0, 3, true],
+        [5, 104.6, 1000.0, 4, true],
+        [6, 104.5, 1.0, 5, false],
+        [7, 104.4, 1.0, 6, true],
+        [8, 104.3, 1.0, 7, false],
+        [9, 104.2, 1.0, 8, true],
+        [10, 104.1, 1.0, 9, false]
+      ],
+      "expected": {
+        "cvd_direction": "negative",
+        "large_single_trade": true,
+        "net_volume_positive": false
+      },
+      "tags": ["large_trade", "whale", "anomaly"]
+    },
+    {
+      "id": "cvd_015",
+      "name": "Alternating small buys and sells",
+      "trades": [
+        [1, 100.0, 10.0, 0, false],
+        [2, 100.1, 10.0, 1, true],
+        [3, 100.2, 10.0, 2, false],
+        [4, 100.3, 10.0, 3, true],
+        [5, 100.4, 10.0, 4, false],
+        [6, 100.5, 10.0, 5, true],
+        [7, 100.6, 10.0, 6, false],
+        [8, 100.7, 10.0, 7, true],
+        [9, 100.8, 10.0, 8, false],
+        [10, 100.9, 10.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "neutral",
+        "balanced": true,
+        "net_volume_positive": false
+      },
+      "tags": ["alternating", "balanced", "no_trend"]
+    },
+    {
+      "id": "cvd_016",
+      "name": "All buys no sells",
+      "trades": [
+        [1, 100.0, 10.0, 0, false],
+        [2, 100.1, 15.0, 1, false],
+        [3, 100.2, 20.0, 2, false],
+        [4, 100.3, 25.0, 3, false],
+        [5, 100.4, 30.0, 4, false],
+        [6, 100.5, 35.0, 5, false],
+        [7, 100.6, 40.0, 6, false],
+        [8, 100.7, 45.0, 7, false],
+        [9, 100.8, 50.0, 8, false],
+        [10, 100.9, 55.0, 9, false]
+      ],
+      "expected": {
+        "cvd_direction": "positive",
+        "net_volume_positive": true,
+        "all_one_side": true
+      },
+      "tags": ["all_buys", "one_sided", "extreme"]
+    },
+    {
+      "id": "cvd_017",
+      "name": "All sells no buys",
+      "trades": [
+        [1, 105.0, 10.0, 0, true],
+        [2, 104.9, 15.0, 1, true],
+        [3, 104.8, 20.0, 2, true],
+        [4, 104.7, 25.0, 3, true],
+        [5, 104.6, 30.0, 4, true],
+        [6, 104.5, 35.0, 5, true],
+        [7, 104.4, 40.0, 6, true],
+        [8, 104.3, 45.0, 7, true],
+        [9, 104.2, 50.0, 8, true],
+        [10, 104.1, 55.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "negative",
+        "net_volume_positive": false,
+        "all_one_side": true
+      },
+      "tags": ["all_sells", "one_sided", "extreme"]
+    },
+    {
+      "id": "cvd_018",
+      "name": "CVD reversal from negative to positive",
+      "trades": [
+        [1, 100.0, 30.0, 0, true],
+        [2, 99.5, 25.0, 1, true],
+        [3, 99.0, 20.0, 2, true],
+        [4, 98.5, 15.0, 3, true],
+        [5, 98.0, 10.0, 4, true],
+        [6, 98.5, 15.0, 5, false],
+        [7, 99.0, 20.0, 6, false],
+        [8, 99.5, 25.0, 7, false],
+        [9, 100.0, 30.0, 8, false],
+        [10, 100.5, 35.0, 9, false]
+      ],
+      "expected": {
+        "cvd_direction": "positive",
+        "reversal": true,
+        "net_volume_positive": true
+      },
+      "tags": ["reversal", "negative_to_positive", "trend_change"]
+    },
+    {
+      "id": "cvd_019",
+      "name": "CVD reversal from positive to negative",
+      "trades": [
+        [1, 100.0, 30.0, 0, false],
+        [2, 100.5, 25.0, 1, false],
+        [3, 101.0, 20.0, 2, false],
+        [4, 101.5, 15.0, 3, false],
+        [5, 102.0, 10.0, 4, false],
+        [6, 101.5, 15.0, 5, true],
+        [7, 101.0, 20.0, 6, true],
+        [8, 100.5, 25.0, 7, true],
+        [9, 100.0, 30.0, 8, true],
+        [10, 99.5, 35.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "negative",
+        "reversal": true,
+        "net_volume_positive": false
+      },
+      "tags": ["reversal", "positive_to_negative", "trend_change"]
+    },
+    {
+      "id": "cvd_020",
+      "name": "Steady buying with occasional sells",
+      "trades": [
+        [1, 100.0, 20.0, 0, false],
+        [2, 100.2, 25.0, 1, false],
+        [3, 100.3, 5.0, 2, true],
+        [4, 100.5, 30.0, 3, false],
+        [5, 100.7, 35.0, 4, false],
+        [6, 100.8, 5.0, 5, true],
+        [7, 101.0, 40.0, 6, false],
+        [8, 101.2, 45.0, 7, false],
+        [9, 101.3, 5.0, 8, true],
+        [10, 101.5, 50.0, 9, false]
+      ],
+      "expected": {
+        "cvd_direction": "positive",
+        "net_volume_positive": true,
+        "steady_with_dips": true
+      },
+      "tags": ["steady_buying", "occasional_sells", "uptrend"]
+    },
+    {
+      "id": "cvd_021",
+      "name": "Steady selling with occasional buys",
+      "trades": [
+        [1, 105.0, 20.0, 0, true],
+        [2, 104.8, 25.0, 1, true],
+        [3, 104.7, 5.0, 2, false],
+        [4, 104.5, 30.0, 3, true],
+        [5, 104.3, 35.0, 4, true],
+        [6, 104.2, 5.0, 5, false],
+        [7, 104.0, 40.0, 6, true],
+        [8, 103.8, 45.0, 7, true],
+        [9, 103.7, 5.0, 8, false],
+        [10, 103.5, 50.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "negative",
+        "net_volume_positive": false,
+        "steady_with_bounces": true
+      },
+      "tags": ["steady_selling", "occasional_buys", "downtrend"]
+    },
+    {
+      "id": "cvd_022",
+      "name": "Equal buy sell ratio exact",
+      "trades": [
+        [1, 100.0, 15.0, 0, false],
+        [2, 100.1, 15.0, 1, true],
+        [3, 100.2, 15.0, 2, false],
+        [4, 100.3, 15.0, 3, true],
+        [5, 100.4, 15.0, 4, false],
+        [6, 100.5, 15.0, 5, true],
+        [7, 100.6, 15.0, 6, false],
+        [8, 100.7, 15.0, 7, true],
+        [9, 100.8, 15.0, 8, false],
+        [10, 100.9, 15.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "neutral",
+        "net_volume_positive": false,
+        "exact_balance": true
+      },
+      "tags": ["exact_balance", "neutral", "edge_case"]
+    },
+    {
+      "id": "cvd_023",
+      "name": "Volume divergence with price",
+      "trades": [
+        [1, 100.0, 30.0, 0, false],
+        [2, 100.5, 25.0, 1, true],
+        [3, 101.0, 20.0, 2, false],
+        [4, 101.5, 15.0, 3, true],
+        [5, 102.0, 10.0, 4, false],
+        [6, 102.5, 5.0, 5, true],
+        [7, 103.0, 40.0, 6, false],
+        [8, 103.5, 35.0, 7, true],
+        [9, 104.0, 50.0, 8, false],
+        [10, 104.5, 45.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "positive",
+        "volume_divergence": true,
+        "net_volume_positive": true
+      },
+      "tags": ["volume_divergence", "expanding_range"]
+    },
+    {
+      "id": "cvd_024",
+      "name": "Decreasing volume with direction",
+      "trades": [
+        [1, 100.0, 50.0, 0, false],
+        [2, 100.2, 45.0, 1, false],
+        [3, 100.4, 40.0, 2, false],
+        [4, 100.6, 35.0, 3, false],
+        [5, 100.8, 30.0, 4, false],
+        [6, 101.0, 25.0, 5, false],
+        [7, 101.2, 20.0, 6, false],
+        [8, 101.4, 15.0, 7, false],
+        [9, 101.6, 10.0, 8, false],
+        [10, 101.8, 5.0, 9, false]
+      ],
+      "expected": {
+        "cvd_direction": "positive",
+        "net_volume_positive": true,
+        "volume_decreasing": true
+      },
+      "tags": ["volume_decreasing", "exhaustion", "fading"]
+    },
+    {
+      "id": "cvd_025",
+      "name": "CVD flat after initial move",
+      "trades": [
+        [1, 100.0, 50.0, 0, false],
+        [2, 100.5, 40.0, 1, false],
+        [3, 101.0, 5.0, 2, true],
+        [4, 101.5, 5.0, 3, false],
+        [5, 102.0, 5.0, 4, true],
+        [6, 102.5, 5.0, 5, false],
+        [7, 103.0, 5.0, 6, true],
+        [8, 103.5, 5.0, 7, false],
+        [9, 104.0, 5.0, 8, true],
+        [10, 104.5, 5.0, 9, false]
+      ],
+      "expected": {
+        "cvd_direction": "positive",
+        "net_volume_positive": true,
+        "flat_after_initial": true
+      },
+      "tags": ["flat_after_move", "consolidation"]
+    },
+    {
+      "id": "cvd_026",
+      "name": "Large volume chop with slight bias",
+      "trades": [
+        [1, 100.0, 100.0, 0, false],
+        [2, 99.0, 95.0, 1, true],
+        [3, 100.0, 100.0, 2, false],
+        [4, 99.0, 95.0, 3, true],
+        [5, 100.0, 100.0, 4, false],
+        [6, 99.0, 95.0, 5, true],
+        [7, 100.0, 100.0, 6, false],
+        [8, 99.0, 95.0, 7, true],
+        [9, 100.0, 100.0, 8, false],
+        [10, 99.0, 95.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "positive",
+        "net_volume_positive": true,
+        "slight_bias": true
+      },
+      "tags": ["choppy", "large_volume", "slight_bias"]
+    },
+    {
+      "id": "cvd_027",
+      "name": "Minimal trade count",
+      "trades": [
+        [1, 100.0, 10.0, 0, false],
+        [2, 100.5, 5.0, 1, true],
+        [3, 101.0, 15.0, 2, false]
+      ],
+      "expected": {
+        "cvd_direction": "positive",
+        "net_volume_positive": true,
+        "minimal_trades": true
+      },
+      "tags": ["minimal", "few_trades", "edge_case"]
+    },
+    {
+      "id": "cvd_028",
+      "name": "CVD confirming price uptrend",
+      "trades": [
+        [1, 100.0, 20.0, 0, false],
+        [2, 100.5, 25.0, 1, false],
+        [3, 101.0, 30.0, 2, false],
+        [4, 101.5, 35.0, 3, false],
+        [5, 102.0, 40.0, 4, false],
+        [6, 102.5, 45.0, 5, false],
+        [7, 103.0, 50.0, 6, false],
+        [8, 103.5, 55.0, 7, false],
+        [9, 104.0, 60.0, 8, false],
+        [10, 104.5, 65.0, 9, false]
+      ],
+      "expected": {
+        "cvd_direction": "positive",
+        "confirms_price": true,
+        "net_volume_positive": true
+      },
+      "tags": ["confirming", "uptrend", "healthy"]
+    },
+    {
+      "id": "cvd_029",
+      "name": "CVD confirming price downtrend",
+      "trades": [
+        [1, 105.0, 20.0, 0, true],
+        [2, 104.5, 25.0, 1, true],
+        [3, 104.0, 30.0, 2, true],
+        [4, 103.5, 35.0, 3, true],
+        [5, 103.0, 40.0, 4, true],
+        [6, 102.5, 45.0, 5, true],
+        [7, 102.0, 50.0, 6, true],
+        [8, 101.5, 55.0, 7, true],
+        [9, 101.0, 60.0, 8, true],
+        [10, 100.5, 65.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "negative",
+        "confirms_price": true,
+        "net_volume_positive": false
+      },
+      "tags": ["confirming", "downtrend", "healthy"]
+    },
+    {
+      "id": "cvd_030",
+      "name": "Spike and recovery pattern",
+      "trades": [
+        [1, 100.0, 10.0, 0, false],
+        [2, 100.1, 10.0, 1, true],
+        [3, 100.2, 10.0, 2, false],
+        [4, 100.3, 200.0, 3, true],
+        [5, 100.4, 10.0, 4, false],
+        [6, 100.5, 10.0, 5, true],
+        [7, 100.6, 10.0, 6, false],
+        [8, 100.7, 10.0, 7, true],
+        [9, 100.8, 10.0, 8, false],
+        [10, 100.9, 10.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "negative",
+        "spike_recovery": true,
+        "single_spike": true
+      },
+      "tags": ["spike", "recovery", "anomaly"]
+    },
+    {
+      "id": "cvd_031",
+      "name": "Step-wise delta increase",
+      "trades": [
+        [1, 100.0, 5.0, 0, false],
+        [2, 100.1, 3.0, 1, true],
+        [3, 100.2, 10.0, 2, false],
+        [4, 100.3, 5.0, 3, true],
+        [5, 100.4, 15.0, 4, false],
+        [6, 100.5, 7.0, 5, true],
+        [7, 100.6, 20.0, 6, false],
+        [8, 100.7, 9.0, 7, true],
+        [9, 100.8, 25.0, 8, false],
+        [10, 100.9, 11.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "positive",
+        "step_increase": true,
+        "net_volume_positive": true
+      },
+      "tags": ["step_increase", "staircase", "building"]
+    },
+    {
+      "id": "cvd_032",
+      "name": "Step-wise delta decrease",
+      "trades": [
+        [1, 105.0, 5.0, 0, true],
+        [2, 104.9, 3.0, 1, false],
+        [3, 104.8, 10.0, 2, true],
+        [4, 104.7, 5.0, 3, false],
+        [5, 104.6, 15.0, 4, true],
+        [6, 104.5, 7.0, 5, false],
+        [7, 104.4, 20.0, 6, true],
+        [8, 104.3, 9.0, 7, false],
+        [9, 104.2, 25.0, 8, true],
+        [10, 104.1, 11.0, 9, false]
+      ],
+      "expected": {
+        "cvd_direction": "negative",
+        "step_decrease": true,
+        "net_volume_positive": false
+      },
+      "tags": ["step_decrease", "staircase", "declining"]
+    },
+    {
+      "id": "cvd_033",
+      "name": "V-shape CVD recovery",
+      "trades": [
+        [1, 100.0, 20.0, 0, true],
+        [2, 99.5, 30.0, 1, true],
+        [3, 99.0, 40.0, 2, true],
+        [4, 98.5, 50.0, 3, true],
+        [5, 98.0, 60.0, 4, true],
+        [6, 98.5, 50.0, 5, false],
+        [7, 99.0, 40.0, 6, false],
+        [8, 99.5, 30.0, 7, false],
+        [9, 100.0, 20.0, 8, false],
+        [10, 100.5, 10.0, 9, false]
+      ],
+      "expected": {
+        "cvd_direction": "neutral",
+        "v_shape_recovery": true,
+        "reversal": true
+      },
+      "tags": ["v_shape", "recovery", "reversal"]
+    },
+    {
+      "id": "cvd_034",
+      "name": "Inverted V CVD spike and drop",
+      "trades": [
+        [1, 100.0, 10.0, 0, false],
+        [2, 100.5, 20.0, 1, false],
+        [3, 101.0, 30.0, 2, false],
+        [4, 101.5, 40.0, 3, false],
+        [5, 102.0, 50.0, 4, false],
+        [6, 101.5, 40.0, 5, true],
+        [7, 101.0, 30.0, 6, true],
+        [8, 100.5, 20.0, 7, true],
+        [9, 100.0, 10.0, 8, true],
+        [10, 99.5, 5.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "neutral",
+        "inverted_v": true,
+        "spike_and_drop": true
+      },
+      "tags": ["inverted_v", "spike_drop", "reversal"]
+    },
+    {
+      "id": "cvd_035",
+      "name": "CVD plateau at high level",
+      "trades": [
+        [1, 100.0, 30.0, 0, false],
+        [2, 100.5, 25.0, 1, false],
+        [3, 101.0, 20.0, 2, false],
+        [4, 101.5, 15.0, 3, false],
+        [5, 102.0, 10.0, 4, false],
+        [6, 102.5, 10.0, 5, true],
+        [7, 103.0, 10.0, 6, false],
+        [8, 103.5, 10.0, 7, true],
+        [9, 104.0, 10.0, 8, false],
+        [10, 104.5, 10.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "positive",
+        "plateau": true,
+        "net_volume_positive": true
+      },
+      "tags": ["plateau", "high_level", "consolidation"]
+    },
+    {
+      "id": "cvd_036",
+      "name": "CVD plateau at low level",
+      "trades": [
+        [1, 105.0, 30.0, 0, true],
+        [2, 104.5, 25.0, 1, true],
+        [3, 104.0, 20.0, 2, true],
+        [4, 103.5, 15.0, 3, true],
+        [5, 103.0, 10.0, 4, true],
+        [6, 102.5, 10.0, 5, false],
+        [7, 102.0, 10.0, 6, true],
+        [8, 101.5, 10.0, 7, false],
+        [9, 101.0, 10.0, 8, true],
+        [10, 100.5, 10.0, 9, false]
+      ],
+      "expected": {
+        "cvd_direction": "negative",
+        "plateau": true,
+        "net_volume_positive": false
+      },
+      "tags": ["plateau", "low_level", "consolidation"]
+    },
+    {
+      "id": "cvd_037",
+      "name": "Multiple small buys large sell",
+      "trades": [
+        [1, 100.0, 5.0, 0, false],
+        [2, 100.1, 5.0, 1, false],
+        [3, 100.2, 5.0, 2, false],
+        [4, 100.3, 5.0, 3, false],
+        [5, 100.4, 5.0, 4, false],
+        [6, 100.5, 5.0, 5, false],
+        [7, 100.6, 5.0, 6, false],
+        [8, 100.7, 5.0, 7, false],
+        [9, 100.8, 5.0, 8, false],
+        [10, 100.9, 100.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "negative",
+        "net_volume_positive": false,
+        "large_trade_impact": true
+      },
+      "tags": ["large_sell", "many_small_buys", "asymmetry"]
+    },
+    {
+      "id": "cvd_038",
+      "name": "Multiple small sells large buy",
+      "trades": [
+        [1, 100.0, 5.0, 0, true],
+        [2, 100.1, 5.0, 1, true],
+        [3, 100.2, 5.0, 2, true],
+        [4, 100.3, 5.0, 3, true],
+        [5, 100.4, 5.0, 4, true],
+        [6, 100.5, 5.0, 5, true],
+        [7, 100.6, 5.0, 6, true],
+        [8, 100.7, 5.0, 7, true],
+        [9, 100.8, 5.0, 8, true],
+        [10, 100.9, 100.0, 9, false]
+      ],
+      "expected": {
+        "cvd_direction": "positive",
+        "net_volume_positive": true,
+        "large_trade_impact": true
+      },
+      "tags": ["large_buy", "many_small_sells", "asymmetry"]
+    },
+    {
+      "id": "cvd_039",
+      "name": "Constant volume trades",
+      "trades": [
+        [1, 100.0, 10.0, 0, false],
+        [2, 100.1, 10.0, 1, false],
+        [3, 100.2, 10.0, 2, false],
+        [4, 100.3, 10.0, 3, false],
+        [5, 100.4, 10.0, 4, false],
+        [6, 100.5, 10.0, 5, false],
+        [7, 100.6, 10.0, 6, false],
+        [8, 100.7, 10.0, 7, false],
+        [9, 100.8, 10.0, 8, false],
+        [10, 100.9, 10.0, 9, false]
+      ],
+      "expected": {
+        "cvd_direction": "positive",
+        "net_volume_positive": true,
+        "constant_volume": true
+      },
+      "tags": ["constant_volume", "steady", "uniform"]
+    },
+    {
+      "id": "cvd_040",
+      "name": "Increasing volume acceleration",
+      "trades": [
+        [1, 100.0, 5.0, 0, false],
+        [2, 100.2, 7.0, 1, false],
+        [3, 100.4, 10.0, 2, false],
+        [4, 100.6, 14.0, 3, false],
+        [5, 100.8, 19.0, 4, false],
+        [6, 101.0, 25.0, 5, false],
+        [7, 101.2, 32.0, 6, false],
+        [8, 101.4, 40.0, 7, false],
+        [9, 101.6, 49.0, 8, false],
+        [10, 101.8, 60.0, 9, false]
+      ],
+      "expected": {
+        "cvd_direction": "positive",
+        "net_volume_positive": true,
+        "accelerating_volume": true
+      },
+      "tags": ["accelerating", "increasing_volume", "momentum"]
+    },
+    {
+      "id": "cvd_041",
+      "name": "CVD zero cross from positive",
+      "trades": [
+        [1, 100.0, 20.0, 0, false],
+        [2, 100.2, 15.0, 1, false],
+        [3, 100.4, 10.0, 2, false],
+        [4, 100.6, 5.0, 3, true],
+        [5, 100.8, 5.0, 4, true],
+        [6, 101.0, 10.0, 5, true],
+        [7, 101.2, 15.0, 6, true],
+        [8, 101.4, 20.0, 7, true],
+        [9, 101.6, 25.0, 8, true],
+        [10, 101.8, 30.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "negative",
+        "zero_cross": true,
+        "net_volume_positive": false
+      },
+      "tags": ["zero_cross", "sign_change", "reversal"]
+    },
+    {
+      "id": "cvd_042",
+      "name": "CVD zero cross from negative",
+      "trades": [
+        [1, 105.0, 20.0, 0, true],
+        [2, 104.8, 15.0, 1, true],
+        [3, 104.6, 10.0, 2, true],
+        [4, 104.4, 5.0, 3, false],
+        [5, 104.2, 5.0, 4, false],
+        [6, 104.0, 10.0, 5, false],
+        [7, 103.8, 15.0, 6, false],
+        [8, 103.6, 20.0, 7, false],
+        [9, 103.4, 25.0, 8, false],
+        [10, 103.2, 30.0, 9, false]
+      ],
+      "expected": {
+        "cvd_direction": "positive",
+        "zero_cross": true,
+        "net_volume_positive": true
+      },
+      "tags": ["zero_cross", "sign_change", "reversal"]
+    },
+    {
+      "id": "cvd_043",
+      "name": "CVD trending positive with pullback",
+      "trades": [
+        [1, 100.0, 20.0, 0, false],
+        [2, 100.3, 25.0, 1, false],
+        [3, 100.5, 10.0, 2, true],
+        [4, 100.7, 10.0, 3, true],
+        [5, 100.9, 30.0, 4, false],
+        [6, 101.2, 35.0, 5, false],
+        [7, 101.4, 15.0, 6, true],
+        [8, 101.6, 15.0, 7, true],
+        [9, 101.8, 40.0, 8, false],
+        [10, 102.0, 45.0, 9, false]
+      ],
+      "expected": {
+        "cvd_direction": "positive",
+        "net_volume_positive": true,
+        "pullbacks": true
+      },
+      "tags": ["trending", "pullback", "two_steps_one_back"]
+    },
+    {
+      "id": "cvd_044",
+      "name": "CVD trending negative with bounce",
+      "trades": [
+        [1, 105.0, 20.0, 0, true],
+        [2, 104.7, 25.0, 1, true],
+        [3, 104.5, 10.0, 2, false],
+        [4, 104.3, 10.0, 3, false],
+        [5, 104.1, 30.0, 4, true],
+        [6, 103.8, 35.0, 5, true],
+        [7, 103.6, 15.0, 6, false],
+        [8, 103.4, 15.0, 7, false],
+        [9, 103.2, 40.0, 8, true],
+        [10, 103.0, 45.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "negative",
+        "net_volume_positive": false,
+        "bounces": true
+      },
+      "tags": ["trending", "bounce", "two_steps_one_back"]
+    },
+    {
+      "id": "cvd_045",
+      "name": "Uniform random-ish delta",
+      "trades": [
+        [1, 100.0, 12.0, 0, false],
+        [2, 100.3, 8.0, 1, true],
+        [3, 100.1, 15.0, 2, false],
+        [4, 100.4, 7.0, 3, false],
+        [5, 100.2, 18.0, 4, true],
+        [6, 100.5, 9.0, 5, false],
+        [7, 100.3, 14.0, 6, true],
+        [8, 100.6, 11.0, 7, false],
+        [9, 100.4, 16.0, 8, false],
+        [10, 100.7, 6.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "positive",
+        "net_volume_positive": true,
+        "noisy": true
+      },
+      "tags": ["noisy", "random", "uncertain"]
+    },
+    {
+      "id": "cvd_046",
+      "name": "CVD exhaustion sell-off end",
+      "trades": [
+        [1, 105.0, 10.0, 0, true],
+        [2, 104.5, 15.0, 1, true],
+        [3, 104.0, 20.0, 2, true],
+        [4, 103.5, 30.0, 3, true],
+        [5, 103.0, 50.0, 4, true],
+        [6, 102.5, 80.0, 5, true],
+        [7, 102.0, 40.0, 6, true],
+        [8, 101.5, 20.0, 7, true],
+        [9, 101.0, 10.0, 8, true],
+        [10, 100.5, 5.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "negative",
+        "net_volume_positive": false,
+        "exhaustion_pattern": true
+      },
+      "tags": ["exhaustion", "climax", "volume_taper"]
+    },
+    {
+      "id": "cvd_047",
+      "name": "CVD exhaustion buy rush end",
+      "trades": [
+        [1, 100.0, 10.0, 0, false],
+        [2, 100.5, 15.0, 1, false],
+        [3, 101.0, 20.0, 2, false],
+        [4, 101.5, 30.0, 3, false],
+        [5, 102.0, 50.0, 4, false],
+        [6, 102.5, 80.0, 5, false],
+        [7, 103.0, 40.0, 6, false],
+        [8, 103.5, 20.0, 7, false],
+        [9, 104.0, 10.0, 8, false],
+        [10, 104.5, 5.0, 9, false]
+      ],
+      "expected": {
+        "cvd_direction": "positive",
+        "net_volume_positive": true,
+        "exhaustion_pattern": true
+      },
+      "tags": ["exhaustion", "climax", "volume_taper"]
+    },
+    {
+      "id": "cvd_048",
+      "name": "Double bottom delta pattern",
+      "trades": [
+        [1, 100.0, 20.0, 0, true],
+        [2, 99.5, 30.0, 1, true],
+        [3, 99.0, 15.0, 2, false],
+        [4, 98.5, 10.0, 3, true],
+        [5, 98.0, 25.0, 4, true],
+        [6, 98.5, 10.0, 5, false],
+        [7, 99.0, 5.0, 6, true],
+        [8, 99.5, 30.0, 7, false],
+        [9, 100.0, 35.0, 8, false],
+        [10, 100.5, 40.0, 9, false]
+      ],
+      "expected": {
+        "cvd_direction": "positive",
+        "net_volume_positive": true,
+        "double_bottom": true
+      },
+      "tags": ["double_bottom", "accumulation"]
+    },
+    {
+      "id": "cvd_049",
+      "name": "Double top delta pattern",
+      "trades": [
+        [1, 100.0, 20.0, 0, false],
+        [2, 100.5, 30.0, 1, false],
+        [3, 101.0, 15.0, 2, true],
+        [4, 101.5, 10.0, 3, false],
+        [5, 102.0, 25.0, 4, false],
+        [6, 101.5, 10.0, 5, true],
+        [7, 101.0, 5.0, 6, false],
+        [8, 100.5, 30.0, 7, true],
+        [9, 100.0, 35.0, 8, true],
+        [10, 99.5, 40.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "negative",
+        "net_volume_positive": false,
+        "double_top": true
+      },
+      "tags": ["double_top", "distribution"]
+    },
+    {
+      "id": "cvd_050",
+      "name": "CVD flat zero net",
+      "trades": [
+        [1, 100.0, 10.0, 0, false],
+        [2, 100.1, 10.0, 1, true],
+        [3, 100.0, 10.0, 2, false],
+        [4, 99.9, 10.0, 3, true],
+        [5, 100.0, 10.0, 4, false],
+        [6, 100.1, 10.0, 5, true],
+        [7, 100.0, 10.0, 6, false],
+        [8, 99.9, 10.0, 7, true],
+        [9, 100.0, 10.0, 8, false],
+        [10, 100.1, 10.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "neutral",
+        "net_volume_positive": false,
+        "flat_zero_net": true
+      },
+      "tags": ["flat", "zero_net", "balanced"]
+    },
+    {
+      "id": "cvd_051",
+      "name": "Early strong buying then distribution",
+      "trades": [
+        [1, 100.0, 50.0, 0, false],
+        [2, 101.0, 40.0, 1, false],
+        [3, 102.0, 30.0, 2, false],
+        [4, 102.5, 10.0, 3, true],
+        [5, 103.0, 20.0, 4, true],
+        [6, 103.5, 25.0, 5, true],
+        [7, 104.0, 30.0, 6, true],
+        [8, 103.5, 35.0, 7, true],
+        [9, 103.0, 40.0, 8, true],
+        [10, 102.5, 45.0, 9, true]
+      ],
+      "expected": {
+        "cvd_direction": "negative",
+        "net_volume_positive": false,
+        "early_accumulation_late_distribution": true
+      },
+      "tags": ["accumulation_distribution", "rotation"]
+    },
+    {
+      "id": "cvd_052",
+      "name": "CVD rate zero - no trades",
+      "trades": [],
+      "expected": {
+        "cvd_direction": "neutral",
+        "empty": true,
+        "no_trades": true
+      },
+      "tags": ["empty", "no_trades", "edge_case"]
+    }
+  ]
+}
