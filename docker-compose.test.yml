@@ -6,12 +6,13 @@
 #   python -m pytest tests/test_autonomous/ -v
 #   docker-compose -f docker-compose.test.yml down
 
-version: '3.8'
+version: "3.8"
 
 services:
   redis:
     image: redis:7-alpine
     container_name: cb-test-redis
+    restart: unless-stopped
     ports:
       - "6379:6379"
     networks:
@@ -26,6 +27,7 @@ services:
   influxdb:
     image: influxdb:2.7-alpine
     container_name: cb-test-influxdb
+    restart: unless-stopped
     ports:
       - "8086:8086"
     environment:
@@ -46,6 +48,7 @@ services:
   postgres:
     image: postgres:15-alpine
     container_name: cb-test-postgres
+    restart: unless-stopped
     ports:
       - "5432:5432"
     environment:
