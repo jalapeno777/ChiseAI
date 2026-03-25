@@ -182,11 +182,7 @@ def main() -> int:
                 f"got {commit_ref!r}"
             )
 
-    if branch and branch != "main" and not _is_allowed_work_branch(branch):
-        errors.append(
-            "Non-main branch must follow feature/*, safety/*, consolidation/*, or "
-            f"hotfix/* naming. Got {branch!r}"
-        )
+    # Branch naming is advisory; PR title validation is the authoritative gate
 
     if ci_mode and pr_build:
         changed = _changed_files_ci_pr(env)

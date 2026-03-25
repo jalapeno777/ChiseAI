@@ -478,8 +478,8 @@ def cmd_start(args: argparse.Namespace) -> int:
     branch = args.branch.strip()
     if not branch:
         raise SessionError("--branch is required")
-    if not re.match(r"^(feature|safety)/", branch):
-        raise SessionError("Branch must start with feature/ or safety/")
+    # Branch naming is now advisory; any branch name is allowed
+    # (PR title validation provides the authoritative story-ID gate)
 
     safe_story = re.sub(r"[^A-Za-z0-9._-]", "-", args.story_id)
     safe_agent = re.sub(r"[^A-Za-z0-9._-]", "-", args.agent)

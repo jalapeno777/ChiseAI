@@ -474,12 +474,8 @@ class AgentCLI:
             head_sha=head_sha,
         )
 
-        # Validate state
-        if not branch.startswith("feature/") and not branch.startswith("safety/"):
-            result.message = (
-                f"Invalid branch name: {branch}. Must start with feature/ or safety/"
-            )
-            return result
+        # Branch naming is advisory; any branch name is allowed
+        # PR title validation provides the authoritative story-ID gate
 
         if self._check_uncommitted_changes():
             result.message = (
