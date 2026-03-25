@@ -36,17 +36,23 @@ DEPENDENCY_AUDIT_PATHS = (
 
 def _event_name() -> str:
     return (
-        os.environ.get("CI_BUILD_EVENT")
-        or os.environ.get("WOODPECKER_BUILD_EVENT")
-        or os.environ.get("WOODPECKER_EVENT")
-        or os.environ.get("CI_PIPELINE_EVENT")
-        or ""
-    ).strip().lower()
+        (
+            os.environ.get("CI_BUILD_EVENT")
+            or os.environ.get("WOODPECKER_BUILD_EVENT")
+            or os.environ.get("WOODPECKER_EVENT")
+            or os.environ.get("CI_PIPELINE_EVENT")
+            or ""
+        )
+        .strip()
+        .lower()
+    )
 
 
 def _branch_name() -> str:
     return (
-        os.environ.get("CI_COMMIT_BRANCH") or os.environ.get("WOODPECKER_COMMIT_BRANCH") or ""
+        os.environ.get("CI_COMMIT_BRANCH")
+        or os.environ.get("WOODPECKER_COMMIT_BRANCH")
+        or ""
     ).strip()
 
 

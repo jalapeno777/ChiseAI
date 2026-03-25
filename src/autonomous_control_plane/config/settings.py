@@ -132,9 +132,7 @@ class Settings:
     cb_health_check_interval: float = 30.0
 
     # API settings
-    api_host: str = (
-        "0.0.0.0"  # nosec B104
-    )
+    api_host: str = "0.0.0.0"  # nosec B104
     api_port: int = 8000
     api_reload: bool = False
 
@@ -164,9 +162,7 @@ class Settings:
                 "ACP_CB_MEASUREMENT", "circuit_breaker_state"
             ),
             cb_health_check_interval=float(os.getenv("ACP_CB_HEALTH_INTERVAL", "30.0")),
-            api_host=os.getenv(
-                "ACP_API_HOST", "0.0.0.0"
-            ),  # nosec B104
+            api_host=os.getenv("ACP_API_HOST", "0.0.0.0"),  # nosec B104
             api_port=int(os.getenv("ACP_API_PORT", "8000")),
             api_reload=os.getenv("ACP_API_RELOAD", "false").lower() == "true",
         )
