@@ -14,11 +14,6 @@ Usage:
 
 from __future__ import annotations
 
-from market_analysis.structure.swing_pivot import (
-    PivotType,
-    SwingPivot,
-    SwingPivotDetector,
-)
 from market_analysis.structure.bos_choch import (
     BOSCHoCH,
     BOSCHoCHClassifier,
@@ -28,6 +23,11 @@ from market_analysis.structure.bos_choch import (
 from market_analysis.structure.structure_detector import (
     StructureDetectionResult,
     StructureDetector,
+)
+from market_analysis.structure.swing_pivot import (
+    PivotType,
+    SwingPivot,
+    SwingPivotDetector,
 )
 
 __all__ = [

@@ -5,8 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-import pytest
-
 from market_analysis.regime import (
     RegimeClassification,
     UnifiedRegime,
@@ -250,7 +248,6 @@ class TestStructureDetectionResult:
         """Test last_bos property."""
         from market_analysis.structure.bos_choch import (
             BOSCHoCH,
-            BOSCHoCHType,
             StructureLevel,
         )
         from market_analysis.structure.swing_pivot import (
@@ -306,7 +303,6 @@ class TestStructureDetectionResult:
         """Test last_choch property."""
         from market_analysis.structure.bos_choch import (
             BOSCHoCH,
-            BOSCHoCHType,
             StructureLevel,
         )
         from market_analysis.structure.swing_pivot import (

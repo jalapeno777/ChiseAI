@@ -24,17 +24,13 @@ from typing import TYPE_CHECKING, Any
 
 from market_analysis.regime import RegimeClassification, UnifiedRegime
 from market_analysis.safety.lookahead_guard import lookahead_guard
-
 from market_analysis.structure.bos_choch import (
     BOSCHoCH,
     BOSCHoCHClassificationResult,
     BOSCHoCHClassifier,
-    BOSCHoCHType,
     StructureLevel,
 )
 from market_analysis.structure.swing_pivot import (
-    PivotType,
-    SwingPivot,
     SwingPivotDetectionResult,
     SwingPivotDetector,
 )

@@ -2,19 +2,15 @@
 Unit tests for FVG Detector.
 """
 
-import pytest
 from dataclasses import dataclass
-from datetime import datetime
-from typing import Optional
 
 from src.market_analysis.fvg.fvg_detector import (
     FVG,
+    FVGDetectionResult,
     FVGDetector,
     FVGDirection,
-    FVGDetectionResult,
     FVGMitigation,
 )
-from src.market_analysis.regime import UnifiedRegime
 
 
 # Helper dataclass to simulate OHLCV candles for testing

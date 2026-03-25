@@ -33,8 +33,8 @@ Usage:
 """
 
 from src.market_analysis.fvg.fvg_detector import (
-    FVGDetector,
     FVG,
+    FVGDetector,
     FVGDirection,
     FVGMitigation,
 )

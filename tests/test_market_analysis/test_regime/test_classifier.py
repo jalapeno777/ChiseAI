@@ -5,11 +5,9 @@ from __future__ import annotations
 import warnings
 from dataclasses import dataclass
 
-import pytest
-
 from market_analysis.regime import (
-    MarkovTrendResult,
     MarketRegimeClassifier,
+    MarkovTrendResult,
     RegimeClassification,
     UnifiedRegime,
     VolatilityRegime,

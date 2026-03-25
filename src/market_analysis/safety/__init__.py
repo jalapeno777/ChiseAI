@@ -24,9 +24,9 @@ from market_analysis.safety.lookahead_guard import (
     RepaintingError,
     RepaintingViolation,
     RepaintingViolationType,
-    checkpoint,
     check_indicator,
     check_lookahead,
+    checkpoint,
     get_detector,
     lookahead_guard,
 )

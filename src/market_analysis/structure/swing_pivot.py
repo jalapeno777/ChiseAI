@@ -169,13 +169,17 @@ class SwingPivotDetector:
             if pivot_type != PivotType.NONE:
                 pivot = SwingPivot(
                     index=i,
-                    timestamp=current.timestamp
-                    if hasattr(current, "timestamp")
-                    else datetime.now(UTC),
+                    timestamp=(
+                        current.timestamp
+                        if hasattr(current, "timestamp")
+                        else datetime.now(UTC)
+                    ),
                     pivot_type=pivot_type,
-                    price=current.high_price
-                    if pivot_type == PivotType.SWING_HIGH
-                    else current.low_price,
+                    price=(
+                        current.high_price
+                        if pivot_type == PivotType.SWING_HIGH
+                        else current.low_price
+                    ),
                     strength=strength,
                     lookback_bars=self.window_size,
                     lookahead_bars=self.window_size,

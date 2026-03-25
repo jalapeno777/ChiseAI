@@ -2,15 +2,12 @@
 Unit tests for ZoneManager.
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
+import pytest
 from src.market_analysis.zones.redis_storage import ZoneRedisStorage
 from src.market_analysis.zones.zone_manager import ZoneManager
 from src.market_analysis.zones.zone_models import (
-    PriceRange,
-    Zone,
     ZoneStatus,
     ZoneType,
 )

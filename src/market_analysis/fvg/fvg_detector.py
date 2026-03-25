@@ -7,20 +7,19 @@ Detects bullish and bearish FVGs using 3-candle patterns with regime gating.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from src.market_analysis.regime import MarketRegimeClassifier, UnifiedRegime
 from src.market_analysis.safety.lookahead_guard import lookahead_guard
 
 if TYPE_CHECKING:
-    from data_ingestion.ohlcv_fetcher import OHLCVData
+    pass
 
 
 # Module-level singleton for MarketRegimeClassifier to avoid creating
 # a new instance per detector (performance optimization)
-_regime_classifier_instance: Optional[MarketRegimeClassifier] = None
+_regime_classifier_instance: MarketRegimeClassifier | None = None
 
 
 def _get_default_regime_classifier() -> MarketRegimeClassifier:
@@ -69,8 +68,8 @@ class FVG:
     low: float
     mitigation: FVGMitigation = FVGMitigation.NONE
     ce50_reached: bool = False
-    regime_at_formation: Optional[UnifiedRegime] = None
-    notes: Optional[str] = None
+    regime_at_formation: UnifiedRegime | None = None
+    notes: str | None = None
 
     @property
     def midpoint(self) -> float:
@@ -106,7 +105,7 @@ class FVG:
 class FVGDetectionResult:
     """Result of FVG detection on a single candle."""
 
-    fvg: Optional[FVG]
+    fvg: FVG | None
     detection_index: int  # Index of candle 1 in the data array
     is_new: bool = True  # Whether this is a newly detected FVG
 
@@ -138,7 +137,7 @@ class FVGDetector:
 
     def __init__(
         self,
-        regime_classifier: Optional[MarketRegimeClassifier] = None,
+        regime_classifier: MarketRegimeClassifier | None = None,
         min_gap_percent: float = MIN_GAP_PERCENT,
         min_candle_size_ratio: float = MIN_CANDLE_SIZE_RATIO,
     ):
@@ -165,7 +164,7 @@ class FVGDetector:
     def detect(
         self,
         candles: list,
-        regime_data: Optional[list] = None,
+        regime_data: list | None = None,
         token: str = "BTC/USDT",
         timeframe: str = "1H",
     ) -> FVGDetectionResult:
@@ -187,10 +186,6 @@ class FVGDetector:
 
         # Determine regime
         regime = self._get_regime(candles if regime_data is None else regime_data)
-
-        # For regime gating: only detect FVGs in trending markets
-        # But we still track existing FVGs regardless of regime
-        is_trending = regime.is_trending if regime else True
 
         # Look for FVG starting from candle 1 (index 1)
         # We need candles[i-1], candles[i], candles[i+1] for 3-candle pattern
@@ -225,7 +220,7 @@ class FVGDetector:
     def detect_all(
         self,
         candles: list,
-        regime_data: Optional[list] = None,
+        regime_data: list | None = None,
     ) -> list[FVG]:
         """
         Detect all FVGs in the given candle data.
@@ -264,9 +259,9 @@ class FVGDetector:
         candle1,
         candle2,
         candle3,
-        regime: Optional[UnifiedRegime],
+        regime: UnifiedRegime | None,
         index: int,
-    ) -> Optional[FVG]:
+    ) -> FVG | None:
         """
         Detect bullish FVG pattern.
 
@@ -311,9 +306,9 @@ class FVGDetector:
         candle1,
         candle2,
         candle3,
-        regime: Optional[UnifiedRegime],
+        regime: UnifiedRegime | None,
         index: int,
-    ) -> Optional[FVG]:
+    ) -> FVG | None:
         """
         Detect bearish FVG pattern.
 
@@ -353,7 +348,7 @@ class FVGDetector:
 
         return fvg
 
-    def _get_regime(self, candles: list) -> Optional[UnifiedRegime]:
+    def _get_regime(self, candles: list) -> UnifiedRegime | None:
         """Get market regime from candles."""
         try:
             result = self._regime_classifier.classify(candles)

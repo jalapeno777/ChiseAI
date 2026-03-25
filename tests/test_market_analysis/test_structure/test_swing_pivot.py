@@ -10,8 +10,8 @@ import pytest
 from market_analysis.structure.swing_pivot import (
     PivotType,
     SwingPivot,
-    SwingPivotDetector,
     SwingPivotDetectionResult,
+    SwingPivotDetector,
 )
 
 

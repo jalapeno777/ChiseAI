@@ -9,8 +9,8 @@ import pytest
 
 from market_analysis.structure.bos_choch import (
     BOSCHoCH,
-    BOSCHoCHClassifier,
     BOSCHoCHClassificationResult,
+    BOSCHoCHClassifier,
     BOSCHoCHType,
     StructureLevel,
 )

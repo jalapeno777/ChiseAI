@@ -12,10 +12,6 @@ class TestOrderBookImbalanceSafety:
     def obi_indicator(self):
         """Create Order Book Imbalance indicator instance."""
         from market_analysis.order_flow import OrderBookImbalance
-        from market_analysis.order_flow.order_book_imbalance import (
-            OrderBookSnapshot,
-            PriceLevel,
-        )
 
         return OrderBookImbalance()
 
@@ -80,9 +76,9 @@ class TestOrderBookImbalanceSafety:
         detector = RepaintingDetector(tolerance=0.0)
         result = detector.check_repainting(obi_indicator, sample_order_book_data)
 
-        assert result.passed is True, (
-            f"Order Book Imbalance repainting detected: {result.violations}"
-        )
+        assert (
+            result.passed is True
+        ), f"Order Book Imbalance repainting detected: {result.violations}"
 
     def test_order_book_imbalance_uses_latest_only(
         self, obi_indicator, sample_order_book_data
@@ -101,9 +97,9 @@ class TestOrderBookImbalanceSafety:
         bid_ask_slice = result_slice.bid_ask_ratio
 
         # Should produce same result since it uses latest snapshot
-        assert abs(bid_ask_all - bid_ask_slice) < 1e-10, (
-            "Order Book Imbalance should use only latest snapshot"
-        )
+        assert (
+            abs(bid_ask_all - bid_ask_slice) < 1e-10
+        ), "Order Book Imbalance should use only latest snapshot"
 
     def test_order_book_imbalance_check_indicator_convenience(
         self, obi_indicator, sample_order_book_data
