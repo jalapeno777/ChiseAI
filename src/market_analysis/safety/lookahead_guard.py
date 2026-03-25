@@ -21,11 +21,12 @@ Usage:
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from functools import wraps
-from typing import Any, Callable, Generic, TypeVar, cast
+from typing import Any, Generic, TypeVar, cast
 
 import numpy as np
 
@@ -189,9 +190,9 @@ class RepaintingDetector:
                         RepaintingViolation(
                             violation_type=RepaintingViolationType.LOOKAHEAD_ACCESS,
                             index=len(data),
-                            timestamp=getattr(data[-1], "timestamp", None)
-                            if data
-                            else None,
+                            timestamp=(
+                                getattr(data[-1], "timestamp", None) if data else None
+                            ),
                             details=f"Result length {len(result)} exceeds data length {len(data)}",
                             severity=1.0,
                         )
@@ -203,9 +204,9 @@ class RepaintingDetector:
                         RepaintingViolation(
                             violation_type=RepaintingViolationType.LOOKAHEAD_ACCESS,
                             index=len(data),
-                            timestamp=getattr(data[-1], "timestamp", None)
-                            if data
-                            else None,
+                            timestamp=(
+                                getattr(data[-1], "timestamp", None) if data else None
+                            ),
                             details=f"Values length {len(values)} exceeds data length {len(data)}",
                             severity=1.0,
                         )
@@ -327,9 +328,11 @@ class RepaintingDetector:
                         RepaintingViolation(
                             violation_type=RepaintingViolationType.VALUE_CHANGE,
                             index=i,
-                            timestamp=getattr(data[i], "timestamp", None)
-                            if i < len(data)
-                            else None,
+                            timestamp=(
+                                getattr(data[i], "timestamp", None)
+                                if i < len(data)
+                                else None
+                            ),
                             details=f"Value at bar {i} changed from {values_n[i]} to {values_n1[i]}",
                             severity=1.0,
                         )
@@ -433,7 +436,7 @@ class LookaheadGuard:
         self._enabled = True
         self._access_log: list[tuple[int, str]] = []
 
-    def __enter__(self) -> "LookaheadGuard":
+    def __enter__(self) -> LookaheadGuard:
         """Enter context manager."""
         self._violations.clear()
         self._access_log.clear()
@@ -636,7 +639,7 @@ class CheckpointedData(Generic[T]):
             )
         return self._data[index]
 
-    def access_checkpoint(self, current_bar: int) -> "CheckpointContext":
+    def access_checkpoint(self, current_bar: int) -> CheckpointContext:
         """Create a checkpoint context for safe access.
 
         Args:
@@ -661,7 +664,7 @@ class CheckpointContext:
         self._data = data
         self._current_bar = current_bar
 
-    def __enter__(self) -> "CheckpointedData":
+    def __enter__(self) -> CheckpointedData:
         """Enter the checkpoint context."""
         self._data._checkpoint_bar = self._current_bar
         return self._data

@@ -4,8 +4,6 @@ ZoneManager - CRUD operations and lifecycle management for ICT trading zones.
 Provides high-level API for zone persistence with Redis backend.
 """
 
-from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from src.market_analysis.zones.redis_storage import ZoneRedisStorage
@@ -45,7 +43,7 @@ class ZoneManager:
         token: str,
         high: float,
         low: float,
-        notes: Optional[str] = None,
+        notes: str | None = None,
     ) -> Zone:
         """
         Create a new zone.
@@ -86,7 +84,7 @@ class ZoneManager:
         self._storage.save(zone)
         return zone
 
-    def get_zone(self, uuid: UUID) -> Optional[Zone]:
+    def get_zone(self, uuid: UUID) -> Zone | None:
         """
         Get zone by UUID.
 
@@ -102,7 +100,7 @@ class ZoneManager:
         self,
         token: str,
         timeframe: str,
-        status: Optional[ZoneStatus] = None,
+        status: ZoneStatus | None = None,
     ) -> list[Zone]:
         """
         Get all zones for token/timeframe.
@@ -155,8 +153,8 @@ class ZoneManager:
         self,
         uuid: UUID,
         new_status: ZoneStatus,
-        mitigation_price: Optional[float] = None,
-    ) -> Optional[Zone]:
+        mitigation_price: float | None = None,
+    ) -> Zone | None:
         """
         Transition zone to new status with optional mitigation event.
 
@@ -188,7 +186,7 @@ class ZoneManager:
         self._storage.update(zone)
         return zone
 
-    def mark_tested(self, uuid: UUID, test_price: float) -> Optional[Zone]:
+    def mark_tested(self, uuid: UUID, test_price: float) -> Zone | None:
         """
         Mark zone as TESTED after price touched it.
 
@@ -201,7 +199,7 @@ class ZoneManager:
         """
         return self.transition_zone(uuid, ZoneStatus.TESTED, test_price)
 
-    def mark_mitigated(self, uuid: UUID, mitigation_price: float) -> Optional[Zone]:
+    def mark_mitigated(self, uuid: UUID, mitigation_price: float) -> Zone | None:
         """
         Mark zone as MITIGATED.
 
@@ -214,7 +212,7 @@ class ZoneManager:
         """
         return self.transition_zone(uuid, ZoneStatus.MITIGATED, mitigation_price)
 
-    def mark_invalidated(self, uuid: UUID, invalidate_price: float) -> Optional[Zone]:
+    def mark_invalidated(self, uuid: UUID, invalidate_price: float) -> Zone | None:
         """
         Mark zone as INVALIDATED.
 
@@ -315,7 +313,6 @@ class ZoneManager:
                     deleted += 1
 
         # If we still need to free space, delete active zones (oldest first)
-        remaining_needed = keep_count - (len(zones) - deleted - keep_count)
         if deleted < (len(zones) - keep_count):
             remaining = keep_count - (len(terminal_zones) - deleted)
             if remaining < 0:

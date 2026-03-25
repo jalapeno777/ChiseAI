@@ -6,9 +6,8 @@ Zone Status: ACTIVE → TESTED → MITIGATED → INVALIDATED
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional
 from uuid import UUID, uuid4
 
 
@@ -43,7 +42,7 @@ class MitigationEvent:
     timestamp: datetime
     price: float
     outcome: str  # e.g., "mitigated", "invalidated", "partially_mitigated"
-    notes: Optional[str] = None
+    notes: str | None = None
 
     def to_dict(self) -> dict:
         """Convert to dictionary for storage."""
@@ -120,10 +119,10 @@ class Zone:
     token: str
     price_range: PriceRange
     uuid: UUID = field(default_factory=uuid4)
-    creation_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    creation_time: datetime = field(default_factory=lambda: datetime.now(UTC))
     status: ZoneStatus = ZoneStatus.ACTIVE
     mitigation_history: list[MitigationEvent] = field(default_factory=list)
-    notes: Optional[str] = None
+    notes: str | None = None
 
     def to_dict(self) -> dict:
         """Convert zone to dictionary for storage."""
@@ -187,7 +186,7 @@ class Zone:
         self.status = new_status
 
     def add_mitigation(
-        self, price: float, outcome: str, notes: Optional[str] = None
+        self, price: float, outcome: str, notes: str | None = None
     ) -> MitigationEvent:
         """
         Add a mitigation event to the zone.
@@ -201,7 +200,7 @@ class Zone:
             The created MitigationEvent
         """
         event = MitigationEvent(
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             price=price,
             outcome=outcome,
             notes=notes,

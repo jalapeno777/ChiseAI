@@ -8,8 +8,6 @@ Key patterns:
 """
 
 import json
-from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 import redis
@@ -67,7 +65,7 @@ class ZoneRedisStorage:
         score = zone.creation_time.timestamp()
         self._redis.zadd(index_key, {str(zone.uuid): score})
 
-    def get(self, uuid: UUID) -> Optional[Zone]:
+    def get(self, uuid: UUID) -> Zone | None:
         """
         Retrieve zone by UUID.
 
@@ -92,7 +90,7 @@ class ZoneRedisStorage:
         return Zone.from_dict(data)
 
     def get_by_token_timeframe(
-        self, token: str, timeframe: str, status: Optional[ZoneStatus] = None
+        self, token: str, timeframe: str, status: ZoneStatus | None = None
     ) -> list[Zone]:
         """
         Get all zones for a token/timeframe, optionally filtered by status.
@@ -198,7 +196,7 @@ class ZoneRedisStorage:
             "zone_count": zone_count,
             "estimated_size_bytes": estimated_bytes,
             "estimated_size_kb": estimated_bytes / 1024,
-            "capacity_check": "OK"
-            if estimated_bytes < 614400
-            else "NEEDS_CLEANUP",  # 600KB
+            "capacity_check": (
+                "OK" if estimated_bytes < 614400 else "NEEDS_CLEANUP"
+            ),  # 600KB
         }

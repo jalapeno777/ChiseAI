@@ -20,7 +20,6 @@ if TYPE_CHECKING:
     from data_ingestion.ohlcv_fetcher import OHLCVData
 
 from data_ingestion.ohlcv_fetcher import OHLCVData
-from market_analysis.safety import check_indicator
 
 
 @dataclass

@@ -1672,11 +1672,11 @@ class EmailValidator(DataValidator):
     ) -> ValidationResult:
         issues = []
 
-        for field in self.fields:
-            if field not in data or data[field] is None:
+        for fld in self.fields:
+            if fld not in data or data[fld] is None:
                 continue
 
-            value = str(data[field])
+            value = str(data[fld])
 
             if self.allow_multiple:
                 emails = [e.strip() for e in value.split(",")]
@@ -1728,15 +1728,15 @@ class URLValidator(DataValidator):
     ) -> ValidationResult:
         issues = []
 
-        for field in self.fields:
-            if field not in data or data[field] is None:
+        for fld in self.fields:
+            if fld not in data or data[fld] is None:
                 continue
 
-            value = str(data[field])
+            value = str(data[fld])
             if not self.URL_REGEX.match(value):
                 issues.append(
                     self._create_issue(
-                        f"Field '{field}' is not a valid URL",
+                        f"Field '{fld}' is not a valid URL",
                         ValidationSeverity.ERROR,
                         field=field,
                         value=value,

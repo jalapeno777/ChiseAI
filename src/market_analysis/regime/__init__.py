@@ -21,7 +21,6 @@ Usage:
 
 from __future__ import annotations
 
-import warnings
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any
@@ -579,9 +578,11 @@ class MarketRegimeClassifier:
             Description string
         """
         regime_descriptions = {
-            UnifiedRegime.TRENDING: f"Trending {trend_direction.title()}"
-            if trend_direction != "neutral"
-            else "Trending",
+            UnifiedRegime.TRENDING: (
+                f"Trending {trend_direction.title()}"
+                if trend_direction != "neutral"
+                else "Trending"
+            ),
             UnifiedRegime.RANGING: "Ranging/Sideways",
             UnifiedRegime.VOLATILE: "High Volatility",
             UnifiedRegime.UNKNOWN: "Unknown",
