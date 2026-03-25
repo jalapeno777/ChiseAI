@@ -11,7 +11,7 @@ import asyncio
 
 import pytest
 
-from config.feature_flags import FeatureFlags, reset_feature_flags, set_feature_flags
+from config import FeatureFlags, reset_feature_flags, set_feature_flags
 from ml.model_registry.registry import (
     ModelRegistry,
     ModelStatus,
@@ -572,7 +572,7 @@ class TestFeatureFlagIntegration:
         FeatureFlags.from_env()
 
         # from_env creates new instance, but our global should be set
-        from config.feature_flags import get_feature_flags
+        from config import get_feature_flags
 
         global_flags = get_feature_flags()
 

@@ -1645,7 +1645,111 @@ class PercentageValidator(DataValidator):
 
 
 # =============================================================================
-# VALIDATOR 23: BusinessRuleValidator
+# VALIDATOR 22: EmailValidator
+# =============================================================================
+
+
+class EmailValidator(DataValidator):
+    """Validates email addresses."""
+
+    # RFC 5322 simplified email regex
+    EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+
+    def __init__(self, fields: list[str], allow_multiple: bool = False):
+        """
+        fields: list of field names to validate as emails
+        allow_multiple: if True, comma-separated emails are valid
+        """
+        super().__init__(
+            "EmailValidator",
+            {"fields": fields, "allow_multiple": allow_multiple},
+        )
+        self.fields = fields
+        self.allow_multiple = allow_multiple
+
+    def validate(
+        self, data: dict[str, Any], context: dict[str, Any] | None = None
+    ) -> ValidationResult:
+        issues = []
+
+        for field in self.fields:
+            if field not in data or data[field] is None:
+                continue
+
+            value = str(data[field])
+
+            if self.allow_multiple:
+                emails = [e.strip() for e in value.split(",")]
+            else:
+                emails = [value]
+
+            for email in emails:
+                if not self.EMAIL_REGEX.match(email):
+                    issues.append(
+                        self._create_issue(
+                            f"Field '{field}' is not a valid email address",
+                            ValidationSeverity.ERROR,
+                            field=field,
+                            value=email,
+                            expected="valid email format (e.g., user@example.com)",
+                        )
+                    )
+
+        status = ValidationStatus.FAILED if issues else ValidationStatus.PASSED
+        return self._create_result(status, issues)
+
+
+# =============================================================================
+# VALIDATOR 23: URLValidator
+# =============================================================================
+
+
+class URLValidator(DataValidator):
+    """Validates URL strings."""
+
+    # Simplified URL regex
+    URL_REGEX = re.compile(
+        r"^https?://"
+        r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|"
+        r"localhost|"
+        r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"
+        r"(?::\d+)?"
+        r"(?:/?|[/?]\S+)$",
+        re.IGNORECASE,
+    )
+
+    def __init__(self, fields: list[str]):
+        """fields: list of field names to validate as URLs"""
+        super().__init__("URLValidator", {"fields": fields})
+        self.fields = fields
+
+    def validate(
+        self, data: dict[str, Any], context: dict[str, Any] | None = None
+    ) -> ValidationResult:
+        issues = []
+
+        for field in self.fields:
+            if field not in data or data[field] is None:
+                continue
+
+            value = str(data[field])
+            if not self.URL_REGEX.match(value):
+                issues.append(
+                    self._create_issue(
+                        f"Field '{field}' is not a valid URL",
+                        ValidationSeverity.ERROR,
+                        field=field,
+                        value=value,
+                        expected="valid URL format (e.g., https://example.com)",
+                    )
+                )
+
+        status = ValidationStatus.FAILED if issues else ValidationStatus.PASSED
+        return self._create_result(status, issues)
+
+
+# =============================================================================
+# VALIDATOR 24: BusinessRuleValidator
 # =============================================================================
 
 

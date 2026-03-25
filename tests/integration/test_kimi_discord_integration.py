@@ -11,7 +11,7 @@ from unittest.mock import patch
 
 import pytest
 
-from config.env_loader import load_discord_config, load_kimi_config
+from config import load_discord_config, load_kimi_config
 from discord_alerts.config import DiscordConfig
 from discord_alerts.discord_client import DiscordClient
 from llm.kimi_client import KimiClient, KimiConfig

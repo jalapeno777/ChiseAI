@@ -22,6 +22,7 @@ from src.config.env_loader import (  # noqa: E402
 )
 from src.config.feature_flags import (  # noqa: E402
     FeatureFlags,
+    get_feature_flags,
     reset_feature_flags,
     set_feature_flags,
 )
@@ -40,6 +41,7 @@ __all__ = [
     "load_discord_config",
     "load_kimi_config",
     "FeatureFlags",
+    "get_feature_flags",
     "reset_feature_flags",
     "set_feature_flags",
     "ModuleStatus",
