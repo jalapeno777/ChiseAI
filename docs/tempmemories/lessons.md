@@ -549,3 +549,31 @@ LESSON
 - evidence_ref: ST-GITEA-OWNER-001, AGENTS.md Gitea MCP Owner section
 - added_utc: 2026-03-24T21:30:00Z
 ```
+
+- trigger: Advisory-only CI steps write non-zero to .status files causing ci-gate failures
+- actionable_rule: When converting a CI step to advisory-only, BOTH the step exit code AND the .status file write must be 0. The ci-gate reads .status files, not step exit codes.
+- context: Pipeline #2389 — cross-branch-verify, dependency-audit, and docker-live-check all exited 0 but wrote 1 to status files, causing ci-gate to fail.
+- expected_outcome: Advisory-only steps never cause ci-gate failures
+- evidence_ref: ST-CI-002, ci_gate.py FAST_REQUIRED list
+- added_utc: 2026-03-24T22:00:00Z
+
+- trigger: Woodpecker 2.8.3 rejects pull directive at pipeline root level
+- actionable_rule: Use per-step `pull: false` instead of root-level `pull: if-not-present` in .woodpecker/ci.yaml. Woodpecker 2.8.3 schema only allows pull at step level.
+- context: Pipeline #2386 failed with linter error "Additional property pull is not allowed" when pull was set at root level.
+- expected_outcome: No YAML linter errors from Woodpecker CI config
+- evidence_ref: ST-CI-001, Woodpecker 2.8.3 schema validation
+- added_utc: 2026-03-24T22:00:00Z
+
+- trigger: CI agent containers lack docker binary causing docker-live-check to fail
+- actionable_rule: Scripts that shell out to docker must detect CI context (e.g., shutil.which("docker") or env var check) and skip gracefully with exit 0 rather than failing.
+- context: docker-live-check runs `docker inspect` which fails because the Woodpecker agent container doesn't have docker CLI.
+- expected_outcome: Docker-dependent CI checks skip gracefully in agent containers
+- evidence_ref: ST-CI-002, scripts/ci/docker_live_check.py
+- added_utc: 2026-03-24T22:00:00Z
+
+- trigger: Pygments transitive CVE in CI dependency-audit image
+- actionable_rule: For transitive dependency CVEs, rebuild the CI Docker image with updated deps rather than suppressing with --ignore flags. Suppression is technical debt that needs tracking.
+- context: GHSA-5239-wwwm-4pmq (Pygments CVE) found by pip-audit as transitive dep. Initially suppressed with --ignore, then properly fixed by rebuilding image with pygments>=2.18.0.
+- expected_outcome: CVE fixes via image rebuild, not suppression flags
+- evidence_ref: ST-CI-003, infrastructure/docker/Dockerfile.ci-dependency-audit
+- added_utc: 2026-03-24T22:00:00Z
