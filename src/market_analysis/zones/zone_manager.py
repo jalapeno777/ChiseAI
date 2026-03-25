@@ -12,6 +12,7 @@ from src.market_analysis.zones.redis_storage import ZoneRedisStorage
 from src.market_analysis.zones.zone_models import (
     PriceRange,
     Zone,
+    ZoneCapacityError,
     ZoneStatus,
     ZoneType,
 )
@@ -59,7 +60,21 @@ class ZoneManager:
 
         Returns:
             Created Zone
+
+        Raises:
+            ZoneCapacityError: If storage is at capacity
         """
+        # Check capacity before saving
+        if not self.validate_capacity(token, timeframe):
+            # Try to free up space by cleaning old non-active zones
+            self.cleanup_old_zones(token, timeframe)
+            # If still over capacity, raise error
+            if not self.validate_capacity(token, timeframe):
+                raise ZoneCapacityError(
+                    f"Zone storage at capacity for {token} {timeframe}. "
+                    "Consider cleaning up old zones."
+                )
+
         zone = Zone(
             zone_type=zone_type,
             timeframe=timeframe,
@@ -157,17 +172,18 @@ class ZoneManager:
         if not zone:
             return None
 
-        # Add mitigation event for non-ACTIVE transitions
+        # Validate transition first before adding any events
+        try:
+            zone.transition_to(new_status)
+        except ValueError:
+            return None
+
+        # Add mitigation event for non-ACTIVE transitions only after successful validation
         if new_status != ZoneStatus.ACTIVE and mitigation_price is not None:
             zone.add_mitigation(
                 price=mitigation_price,
                 outcome=new_status.value.lower(),
             )
-
-        try:
-            zone.transition_to(new_status)
-        except ValueError:
-            return None
 
         self._storage.update(zone)
         return zone
@@ -260,6 +276,9 @@ class ZoneManager:
         """
         Remove oldest zones beyond keep_count.
 
+        Prioritizes deletion of INVALIDATED and MITIGATED zones first.
+        Only deletes ACTIVE/TESTED zones as last resort.
+
         Args:
             token: Trading pair symbol
             timeframe: Trading timeframe
@@ -268,16 +287,47 @@ class ZoneManager:
         Returns:
             Number of zones deleted
         """
+        import logging
+
+        logger = logging.getLogger(__name__)
+
         zones = self._storage.get_by_token_timeframe(token, timeframe)
         if len(zones) <= keep_count:
             return 0
 
-        # Get zones to delete (oldest ones beyond keep_count)
-        zones_to_delete = zones[keep_count:]
+        # Separate zones by priority (non-active first)
+        terminal_zones = [
+            z
+            for z in zones
+            if z.status in (ZoneStatus.INVALIDATED, ZoneStatus.MITIGATED)
+        ]
+        active_zones = [
+            z for z in zones if z.status in (ZoneStatus.ACTIVE, ZoneStatus.TESTED)
+        ]
+
         deleted = 0
 
-        for zone in zones_to_delete:
-            if self._storage.delete(zone.uuid):
-                deleted += 1
+        # First, delete terminal zones beyond keep_count (oldest first)
+        if len(terminal_zones) > keep_count:
+            zones_to_delete = terminal_zones[keep_count:]
+            for zone in zones_to_delete:
+                if self._storage.delete(zone.uuid):
+                    deleted += 1
+
+        # If we still need to free space, delete active zones (oldest first)
+        remaining_needed = keep_count - (len(zones) - deleted - keep_count)
+        if deleted < (len(zones) - keep_count):
+            remaining = keep_count - (len(terminal_zones) - deleted)
+            if remaining < 0:
+                remaining = 0
+            zones_to_delete = active_zones[remaining:]
+            if zones_to_delete:
+                logger.warning(
+                    f"Cleaning up {len(zones_to_delete)} ACTIVE/TESTED zones for "
+                    f"{token} {timeframe} - consider increasing keep_count"
+                )
+            for zone in zones_to_delete:
+                if self._storage.delete(zone.uuid):
+                    deleted += 1
 
         return deleted

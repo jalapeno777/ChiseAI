@@ -31,6 +31,8 @@ class MockRedis:
         self._data[name].update(kwargs)
 
     def hgetall(self, name: str):
+        # Return plain dict values (strings) to match what redis_storage.py expects
+        # The storage layer only handles bytes for JSON-encoded complex fields
         return self._data.get(name, {})
 
     def delete(self, *names):

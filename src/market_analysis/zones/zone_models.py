@@ -6,7 +6,7 @@ Zone Status: ACTIVE → TESTED → MITIGATED → INVALIDATED
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 from uuid import UUID, uuid4
@@ -28,6 +28,12 @@ class ZoneStatus(str, Enum):
     TESTED = "TESTED"
     MITIGATED = "MITIGATED"
     INVALIDATED = "INVALIDATED"
+
+
+class ZoneCapacityError(Exception):
+    """Raised when zone storage exceeds capacity limits."""
+
+    pass
 
 
 @dataclass
@@ -65,6 +71,13 @@ class PriceRange:
 
     high: float
     low: float
+
+    def __post_init__(self) -> None:
+        """Validate that high > low."""
+        if self.high <= self.low:
+            raise ValueError(
+                f"PriceRange high ({self.high}) must be greater than low ({self.low})"
+            )
 
     @property
     def midpoint(self) -> float:
@@ -107,7 +120,7 @@ class Zone:
     token: str
     price_range: PriceRange
     uuid: UUID = field(default_factory=uuid4)
-    creation_time: datetime = field(default_factory=datetime.now)
+    creation_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     status: ZoneStatus = ZoneStatus.ACTIVE
     mitigation_history: list[MitigationEvent] = field(default_factory=list)
     notes: Optional[str] = None
@@ -188,7 +201,7 @@ class Zone:
             The created MitigationEvent
         """
         event = MitigationEvent(
-            timestamp=datetime.now(),
+            timestamp=datetime.now(timezone.utc),
             price=price,
             outcome=outcome,
             notes=notes,
