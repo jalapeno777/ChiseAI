@@ -17,6 +17,13 @@ Exports:
 
 from signal_generation.confidence_filter import ConfidenceFilter, FilterResult
 from signal_generation.data_freshness_check import DataFreshnessChecker, FreshnessResult
+from signal_generation.ict_signal_emitter import (
+    ICTEmissionConfig,
+    ICTEmissionCycle,
+    ICTSignalEmitter,
+    ICTSignalResult,
+    get_ict_emitter,
+)
 from signal_generation.llm_enhancer import (
     LLMCache,
     LLMConfidenceEnhancer,
@@ -77,4 +84,10 @@ __all__ = [
     # Signal Memory (SIG-014)
     "SignalMemory",
     "SignalOutcome",
+    # ICT Signal Emitter (ST-ICT-016)
+    "ICTSignalEmitter",
+    "ICTEmissionConfig",
+    "ICTSignalResult",
+    "ICTEmissionCycle",
+    "get_ict_emitter",
 ]
