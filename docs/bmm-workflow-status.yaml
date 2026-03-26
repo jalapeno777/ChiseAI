@@ -1617,6 +1617,11 @@ epics:
         pr_number: 664
         test_results:
           passed: 30
+      - id: ST-ICT-022
+        merge_commit: 123b9689
+        pr_number: 660
+        test_results:
+          passed: 15
   - description:
       Post-validation expansion work including dynamic weight adjustment, zone-to-signal
       mapping, cross-timeframe awareness, liquidity sweeps, premium/discount zones,
@@ -7321,11 +7326,12 @@ stories:
     status: completed
     story_points: 1
     title: Paper Trading Data Collection - Part A
-  - description: Paper Trading PART-B - Time-Gated
+  - checkpoint_artifact: docs/observation/ST-ICT-020-PART-B-checkpoint.md
+    description: Paper Trading PART-B - Time-Gated
     epic_id: EP-ICT-006
     id: ST-ICT-020-PART-B
     sprint_id: ICT-S8
-    status: planned
+    status: in_progress
     story_points: 1
     title: Paper Trading Data Collection - Part B
   - acceptance_criteria:
@@ -7344,9 +7350,14 @@ stories:
     epic_id: EP-ICT-006
     id: ST-ICT-022
     sprint_id: ICT-S8
-    status: in_progress
+    status: completed
     story_points: 0.5
     title: Rollback Procedures
+    completion_date: "2026-03-25"
+    merge_commit: 123b9689
+    pr_number: 660
+    test_results:
+      passed: 15
   - description: Dynamic Weight Adjustment
     epic_id: EP-ICT-007
     id: ST-ICT-023
