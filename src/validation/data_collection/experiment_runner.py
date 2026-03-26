@@ -23,6 +23,11 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+from validation.data_collection.signal_tracker import (
+    SignalGroup,
+    SignalTracker,
+    TrackedSignal,
+)
 from validation.statistical.hypothesis_framework import (
     EffectSizeThresholds,
     HypothesisDecision,
@@ -30,12 +35,6 @@ from validation.statistical.hypothesis_framework import (
     ICTHypothesisFramework,
     SignalResult,
     TestParameters,
-)
-
-from validation.data_collection.signal_tracker import (
-    SignalGroup,
-    SignalTracker,
-    TrackedSignal,
 )
 
 
