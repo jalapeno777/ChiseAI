@@ -21,7 +21,6 @@ from src.ict.liquidity.models import (
     LiquidityLevel,
     LiquidityLevelType,
     LiquiditySweep,
-    SweepConfirmation,
     SweepDirection,
     SweepSignal,
 )
@@ -29,7 +28,6 @@ from src.ict.liquidity.sweep_detector import (
     LiquiditySweepConfig,
     LiquiditySweepDetector,
 )
-
 
 # ---------------------------------------------------------------------------
 # Test helpers
