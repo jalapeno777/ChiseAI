@@ -19,11 +19,12 @@ Integration:
 
 from __future__ import annotations
 
+import contextlib
 import json
 import sys
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -154,10 +155,10 @@ class MetricsCollector:
         self.influx_host = influx_host
         self.influx_db = influx_db
         self.measurement = measurement
-        self._current_metrics: Optional[CIMetrics] = None
+        self._current_metrics: CIMetrics | None = None
 
     def collect_cache_metrics(
-        self, cache: Optional[IncrementalCache] = None
+        self, cache: IncrementalCache | None = None
     ) -> CacheMetrics:
         """Collect cache metrics from IncrementalCache.
 
@@ -172,10 +173,8 @@ class MetricsCollector:
         if cache is None:
             # Try to get from default cache
             if IncrementalCache:
-                try:
+                with contextlib.suppress(Exception):
                     cache = IncrementalCache()
-                except Exception:
-                    pass
 
         if cache:
             try:
@@ -193,7 +192,7 @@ class MetricsCollector:
     def collect_parallel_metrics(
         self,
         worker_count: int = 0,
-        test_distribution: Optional[dict[str, int]] = None,
+        test_distribution: dict[str, int] | None = None,
         speedup: float = 0.0,
     ) -> ParallelMetrics:
         """Collect parallel execution metrics.
@@ -233,7 +232,7 @@ class MetricsCollector:
 
     def collect_speed_optimization_metrics(
         self,
-        benchmark_result: Optional[BenchmarkResult] = None,
+        benchmark_result: BenchmarkResult | None = None,
         total_duration: float = 0.0,
         selected_test_count: int = 0,
     ) -> SpeedOptimizationMetrics:
@@ -265,10 +264,10 @@ class MetricsCollector:
 
     def collect_all_metrics(
         self,
-        cache: Optional[IncrementalCache] = None,
-        benchmark_result: Optional[BenchmarkResult] = None,
+        cache: IncrementalCache | None = None,
+        benchmark_result: BenchmarkResult | None = None,
         worker_count: int = 0,
-        test_distribution: Optional[dict[str, int]] = None,
+        test_distribution: dict[str, int] | None = None,
         speedup: float = 0.0,
     ) -> CIMetrics:
         """Collect all CI metrics.
@@ -284,7 +283,7 @@ class MetricsCollector:
             CIMetrics object with all collected metrics
         """
         metrics = CIMetrics()
-        metrics.timestamp = datetime.now(timezone.utc).isoformat()
+        metrics.timestamp = datetime.now(UTC).isoformat()
 
         # Collect cache metrics
         metrics.cache = self.collect_cache_metrics(cache)
@@ -305,7 +304,7 @@ class MetricsCollector:
         self._current_metrics = metrics
         return metrics
 
-    def to_influx_line_protocol(self, metrics: Optional[CIMetrics] = None) -> str:
+    def to_influx_line_protocol(self, metrics: CIMetrics | None = None) -> str:
         """Convert metrics to InfluxDB line protocol format.
 
         Args:
@@ -351,7 +350,7 @@ class MetricsCollector:
 
         return f"{self.measurement},{tag_str} {field_str} {timestamp}"
 
-    def to_json(self, metrics: Optional[CIMetrics] = None, indent: int = 2) -> str:
+    def to_json(self, metrics: CIMetrics | None = None, indent: int = 2) -> str:
         """Convert metrics to JSON format.
 
         Args:
@@ -371,7 +370,7 @@ class MetricsCollector:
     def export_to_file(
         self,
         filepath: str | Path,
-        metrics: Optional[CIMetrics] = None,
+        metrics: CIMetrics | None = None,
         format: str = "json",
     ) -> bool:
         """Export metrics to a file.
@@ -427,7 +426,7 @@ class MetricsCollector:
 
 
 # Global metrics collector instance
-_collector: Optional[MetricsCollector] = None
+_collector: MetricsCollector | None = None
 
 
 def get_collector() -> MetricsCollector:
@@ -443,10 +442,10 @@ def get_collector() -> MetricsCollector:
 
 
 def emit_metrics(
-    cache: Optional[IncrementalCache] = None,
-    benchmark_result: Optional[BenchmarkResult] = None,
+    cache: IncrementalCache | None = None,
+    benchmark_result: BenchmarkResult | None = None,
     worker_count: int = 0,
-    test_distribution: Optional[dict[str, int]] = None,
+    test_distribution: dict[str, int] | None = None,
     speedup: float = 0.0,
     export_influx: bool = False,
     export_json: bool = False,
@@ -548,7 +547,7 @@ def main() -> int:
 
         # Create test metrics
         test_metrics = CIMetrics()
-        test_metrics.timestamp = datetime.now(timezone.utc).isoformat()
+        test_metrics.timestamp = datetime.now(UTC).isoformat()
         test_metrics.test_count = 100
         test_metrics.duration = 45.5
         test_metrics.cache_hit_rate = 75.0
