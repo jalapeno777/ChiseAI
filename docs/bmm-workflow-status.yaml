@@ -1725,6 +1725,92 @@ epics:
       ICT ML Pipeline Orchestration implemented with ICTOrchestrator, ICTSchedulerAdapter,
       PerformanceMonitor, and ModelPromoter. Includes scheduled retraining, performance
       monitoring, and model promotion/demotion. Tests: 57 passed.
+  - description: >-
+      Real data validation with provisional gating for ICT signals. Includes shadow
+      testing, live signal emission, provisional accuracy assessment, and rollback
+      procedures. Status is PROVISIONAL-GATED: ST-ICT-033 achieved provisional_pass
+      but final enablement depends on EP-ICT-006-Part-B completion.
+    id: EP-ICT-008
+    name: ICT Real Data Validation (Provisional)
+    notes:
+      - Phase 6: 7 stories, ~14 SP
+      - PROVISIONAL-GATED: not finalized
+      - ST-ICT-033 outcome: provisional_pass
+      - final_gate_dependency: EP-ICT-006-Part-B
+      - All stories merged to main via PRs #679-#683
+    sprint_id: ICT-S10
+    completion_date: "2026-03-26"
+    status: in_progress
+    provisional_gate_status: active
+    final_gate_dependency: EP-ICT-006-Part-B
+    story_count: 7
+    story_ids:
+      - ST-ICT-031
+      - ST-ICT-032
+      - ST-ICT-033
+      - ST-ICT-034
+      - ST-ICT-035
+      - ST-ICT-036
+      - ST-ICT-037
+    story_points: 14
+    completed_stories:
+      - id: ST-ICT-031
+        status: completed
+        completion_date: "2026-03-26"
+        merge_commit: d256a9c7
+        pr_number: 680
+        test_results:
+          passed: 20
+        notes: "Real data validation pipeline for ICT indicators"
+      - id: ST-ICT-032
+        status: completed
+        completion_date: "2026-03-26"
+        merge_commit: bb0cbeed
+        pr_number: 681
+        test_results:
+          passed: 15
+        notes: "BOS/CHoCH shadow testing framework"
+      - id: ST-ICT-033
+        status: completed
+        outcome_label: provisional_pass
+        completion_date: "2026-03-26"
+        merge_commit: 4c7f3f0cbc0fdb710fcb14c5b3c33c5a5780277f
+        pr_number: 682
+        test_results:
+          passed: 25
+        notes: "Provisional accuracy assessment - PROVISIONAL PASS (not final)"
+      - id: ST-ICT-034
+        status: completed
+        completion_date: "2026-03-26"
+        merge_commit: d256a9c7
+        pr_number: 680
+        test_results:
+          passed: 20
+        notes: "Real data validation pipeline (paired with ST-ICT-031)"
+      - id: ST-ICT-035
+        status: completed
+        completion_date: "2026-03-26"
+        merge_commit: bb0cbeed
+        pr_number: 681
+        test_results:
+          passed: 15
+        notes: "Live signal emission (paired with ST-ICT-032)"
+      - id: ST-ICT-036
+        status: completed
+        completion_date: "2026-03-26"
+        merge_commit: 1b97fe42
+        pr_number: 679
+        test_results:
+          passed: 12
+        notes: "Provisional rollback procedures"
+      - id: ST-ICT-037
+        status: completed
+        completion_date: "2026-03-26"
+        merge_commit: 1b97fe42
+        pr_number: 679
+        test_results:
+          passed: 8
+        notes: "Dependency tracking for provisional gating"
   - completion_date: "2026-03-25"
     id: ST-CI-EVIDENCE-001
     merge_commit: dc85838
@@ -7521,10 +7607,86 @@ stories:
     pr_number: 672
     story_points: 2
     title: Neuro-Symbolic Explainability for ICT
+  - description: Real data validation pipeline for ICT indicators
+    epic_id: EP-ICT-008
+    id: ST-ICT-031
+    status: completed
+    completion_date: "2026-03-26"
+    merge_commit: d256a9c7
+    pr_number: 680
+    story_points: 2
+    title: Real Data Validation Pipeline
+  - description: BOS/CHoCH shadow testing framework
+    epic_id: EP-ICT-008
+    id: ST-ICT-032
+    status: completed
+    completion_date: "2026-03-26"
+    merge_commit: bb0cbeed
+    pr_number: 681
+    story_points: 2
+    title: BOS/CHoCH Shadow Testing
+  - acceptance_criteria:
+      - Provisional accuracy assessment with outcome_label: provisional_pass
+      - Assessment gated on EP-ICT-006-Part-B for final enablement
+    description: Provisional accuracy assessment for ICT signals
+    epic_id: EP-ICT-008
+    id: ST-ICT-033
+    outcome_label: provisional_pass
+    status: completed
+    completion_date: "2026-03-26"
+    merge_commit: 4c7f3f0cbc0fdb710fcb14c5b3c33c5a5780277f
+    pr_number: 682
+    story_points: 2
+    title: Provisional Accuracy Assessment
+  - description: Real data validation for ICT indicators (paired with ST-ICT-031)
+    epic_id: EP-ICT-008
+    id: ST-ICT-034
+    status: completed
+    completion_date: "2026-03-26"
+    merge_commit: d256a9c7
+    pr_number: 680
+    story_points: 1
+    title: Real Data Validation (Continued)
+  - description: Live signal emission for shadow testing
+    epic_id: EP-ICT-008
+    id: ST-ICT-035
+    status: completed
+    completion_date: "2026-03-26"
+    merge_commit: bb0cbeed
+    pr_number: 681
+    story_points: 1
+    title: Live Signal Emission
+  - description: Provisional rollback procedures for ICT feature flags
+    epic_id: EP-ICT-008
+    id: ST-ICT-036
+    status: completed
+    completion_date: "2026-03-26"
+    merge_commit: 1b97fe42
+    pr_number: 679
+    story_points: 2
+    title: Provisional Rollback
+  - description: Dependency tracking for provisional gating
+    epic_id: EP-ICT-008
+    id: ST-ICT-037
+    status: completed
+    completion_date: "2026-03-26"
+    merge_commit: 1b97fe42
+    pr_number: 679
+    story_points: 2
+    title: Dependency Tracking
+  - description: Critical fixes for H-01, H-02, H-03 (feature flag gating and shadow tester)
+    epic_id: EP-ICT-008
+    id: ST-ICT-008-FIX
+    status: completed
+    completion_date: "2026-03-26"
+    merge_commit: 4d5f9523fce9f9ecc64ab4745afc3e3721e57f0d
+    pr_number: 683
+    story_points: 2
+    title: ICT Critical Fixes (Feature Flags + Shadow Tester)
 summary:
   epics_by_status:
     completed: 16
-    in_progress: 0
+    in_progress: 2
     planned: 9
   governance:
     accelerated_roadmap: docs/roadmaps/governance-autonomy-accelerated.md
@@ -7605,9 +7767,9 @@ summary:
     stories: 45
     story_points: 338
   stories_by_status:
-    completed: 66
+    completed: 73
     in_progress: 0
     planned: 48
-  total_epics: 24
-  total_stories: 119
-  total_story_points: 643
+  total_epics: 25
+  total_stories: 127
+  total_story_points: 661
