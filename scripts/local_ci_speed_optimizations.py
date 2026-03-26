@@ -32,7 +32,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 # Try to import test_selector
 try:
@@ -42,6 +42,13 @@ except ImportError:
     # Fallback if test_selector not available
     select_tests = None
     get_changed_files = None
+
+# Try to import incremental cache
+try:
+    from local_ci_incremental_cache import IncrementalCache
+except ImportError:
+    # Fallback if cache not available
+    IncrementalCache = None
 
 
 @dataclass
@@ -57,6 +64,7 @@ class BenchmarkResult:
     parallel: bool = False
     workers: int = 0
     cache_used: bool = False
+    cache_hit_rate: float = 0.0
     selected_tests: list[str] = field(default_factory=list)
     changed_files: list[str] = field(default_factory=list)
     timestamp: str = ""
@@ -167,6 +175,7 @@ def save_benchmark_result(result: BenchmarkResult, output_dir: str) -> None:
         "parallel": result.parallel,
         "workers": result.workers,
         "cache_used": result.cache_used,
+        "cache_hit_rate": result.cache_hit_rate,
         "selected_tests_count": len(result.selected_tests),
         "changed_files_count": len(result.changed_files),
         "timestamp": result.timestamp,
@@ -190,6 +199,7 @@ def print_benchmark_summary(result: BenchmarkResult) -> None:
     print(f"Parallel:          {result.parallel}")
     print(f"Workers:           {result.workers}")
     print(f"Cache Used:        {result.cache_used}")
+    print(f"Cache Hit Rate:    {result.cache_hit_rate:.1f}%")
     print(f"Changed Files:     {len(result.changed_files)}")
     print(f"Selected Tests:    {len(result.selected_tests)}")
     print("=" * 60)
@@ -248,8 +258,9 @@ def run_selective_suite(
     workers: int = 4,
     cache_file: str = ".bmad-test-cache.json",
     output_dir: str = "_bmad-output/ci",
+    use_cache: bool = True,
 ) -> BenchmarkResult:
-    """Run selective tests based on changed files."""
+    """Run selective tests based on changed files with optional caching."""
     start_time = time.time()
 
     result = BenchmarkResult(
@@ -258,6 +269,16 @@ def run_selective_suite(
         workers=workers if parallel else 0,
         timestamp=datetime.now().isoformat(),
     )
+
+    # Initialize incremental cache if available
+    cache: Any = None
+    if use_cache and IncrementalCache:
+        try:
+            cache = IncrementalCache()
+            result.cache_used = True
+        except Exception:
+            cache = None
+            result.cache_used = False
 
     # Get changed files
     if get_changed_files:
@@ -285,7 +306,9 @@ def run_selective_suite(
             verbose=False,
         )
         result.selected_tests = selected
-        result.cache_used = metadata.get("mapping_cache_used", False)
+        result.cache_used = result.cache_used or metadata.get(
+            "mapping_cache_used", False
+        )
 
         if metadata.get("fallback_reason"):
             print(f"Note: Falling back due to: {metadata['fallback_reason']}")
@@ -305,8 +328,32 @@ def run_selective_suite(
         result.duration_seconds = time.time() - start_time
         return result
 
+    # Check incremental cache for each test
+    cached_entries: list = []
+    tests_to_run = selected
+
+    if cache:
+        tests_to_run, cached_entries, _ = cache.run_cached_tests(selected)
+
+        if cached_entries:
+            # Aggregate cached results
+            for entry in cached_entries:
+                result.tests_passed += entry.passed
+                result.tests_skipped += entry.skipped
+                result.tests_failed += entry.failed
+            print(f"  Using {len(cached_entries)} cached test results")
+
+        if cache.get_stats().hit_rate > 0:
+            result.cache_hit_rate = cache.get_stats().hit_rate
+
+    if not tests_to_run:
+        # All tests were cached
+        result.tests_run = result.tests_passed + result.tests_failed
+        result.duration_seconds = time.time() - start_time
+        return result
+
     exit_code, output = run_pytest(
-        selected,
+        tests_to_run,
         parallel=parallel,
         workers=workers,
         output_dir=output_dir,
@@ -314,11 +361,26 @@ def run_selective_suite(
     )
 
     counts = parse_pytest_output(output)
-    result.tests_passed = counts["passed"]
-    result.tests_failed = counts["failed"]
-    result.tests_skipped = counts["skipped"]
+    result.tests_passed += counts["passed"]
+    result.tests_failed += counts["failed"]
+    result.tests_skipped += counts["skipped"]
     result.tests_run = result.tests_passed + result.tests_failed
     result.duration_seconds = time.time() - start_time
+
+    # Store new results in cache
+    if cache and exit_code == 0:
+        for test in tests_to_run:
+            cache.store_result(
+                test_file=test,
+                source_dir="src",
+                passed=counts["passed"] // len(tests_to_run) if tests_to_run else 0,
+                failed=counts["failed"] // len(tests_to_run) if tests_to_run else 0,
+                skipped=counts["skipped"] // len(tests_to_run) if tests_to_run else 0,
+                duration=result.duration_seconds / len(tests_to_run)
+                if tests_to_run
+                else 0,
+                output=output,
+            )
 
     return result
 
