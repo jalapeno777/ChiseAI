@@ -1,50 +1,51 @@
 ---
-type: learnings
-story_id: ST-ICT-022
-created: 2026-03-25T00:00:00Z
+story_id: ICT-022
+type: pattern
+created: "2026-03-25T00:00:00"
 tags:
   - ict
   - rollback
   - learnings
-author: worker
-priority: medium
 ---
 
 # ICT Rollback Learnings
 
-## Overview
+## Redis Key Alignment (Critical Fix)
 
-Documented rollback procedures for ICT confluence feature (ST-ICT-022).
+**Issue:** Initial runbook used wrong Redis key pattern.
 
-## Key Findings
+**Old (Incorrect):**
 
-### Feature Flag Location
+- `chiseai:feature:ict_confluence:enabled`
+- `chiseai:feature:ict_layer1:enabled`
 
-- Redis key: `chiseai:feature:ict_confluence:enabled`
-- Default state: `false` (disabled)
-- Rollback command: `SET chiseai:feature:ict_confluence:enabled false`
+**Correct (per ict_feature_flags.py):**
 
-### Rollback Triggers
+- `ict:feature_flags:integration` (master switch)
+- `ict:feature_flags:cvd`
+- `ict:feature_flags:fvg`
+- `ict:feature_flags:order_block`
+- `ict:feature_flags:bos_choch`
 
-1. **Validation Failure**: p-value > 0.05 after minimum signals
-2. **Performance Degradation**: Win rate drop > 5%, latency > 500ms
-3. **Safety Issue**: Exception in Layer 1 or confluence code
+**Database:** 1 (REDIS_DB env var)
+**TTL:** 3600 seconds (setex)
+**Default:** true for integration, cvd, fvg, order_block; false for bos_choch
 
-### Rollback Procedure
+## Rollback Commands
 
-1. Execute: `redis-cli SET chiseai:feature:ict_confluence:enabled false`
-2. Verify: `redis-cli GET chiseai:feature:ict_confluence:enabled` returns "false"
-3. Confirm: System health check returns healthy
-4. Document: File incident with metrics
+```bash
+# Quick rollback
+redis-cli -h host.docker.internal -p 6380 -n 1 SET ict:feature_flags:integration false
 
-## Recommendations
+# Full rollback (all signals)
+redis-cli -h host.docker.internal -p 6380 -n 1 SET ict:feature_flags:integration false
+redis-cli -h host.docker.internal -p 6380 -n 1 SET ict:feature_flags:cvd false
+redis-cli -h host.docker.internal -p 6380 -n 1 SET ict:feature_flags:fvg false
+redis-cli -h host.docker.internal -p 6380 -n 1 SET ict:feature_flags:order_block false
+```
 
-1. Always verify flag state after rollback
-2. Monitor system stability for 5 minutes post-rollback
-3. Capture logs before re-enabling
-4. Complete root cause analysis before re-deployment
+## Testing
 
-## Evidence
-
-- Runbook: `docs/runbooks/ict-rollback-procedures.md`
-- Test: `scripts/validation/test_ict_rollback.py`
+- 15 tests in scripts/validation/test_ict_rollback.py
+- Tests verify actual ICTFeatureFlags consumer behavior
+- All tests pass with correct keys
