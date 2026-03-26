@@ -10,22 +10,16 @@ Covers:
 
 from __future__ import annotations
 
-import time
-
 import pytest
 
 from ict.timeframe.aggregator import CrossTimeframeAggregator
 from ict.timeframe.models import (
     TIMEFRAME_WEIGHTS,
-    ConfluenceGroup,
-    CrossTimeframeResult,
     Timeframe,
     WeightedZone,
     Zone,
     ZoneType,
-    ZONE_MATCH_THRESHOLD_PCT,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -444,9 +438,9 @@ class TestPerformance:
                 )
         agg = CrossTimeframeAggregator()
         result = agg.aggregate(zones)
-        assert result.calculation_time_ms < 20.0, (
-            f"Aggregation took {result.calculation_time_ms:.2f}ms, expected < 20ms"
-        )
+        assert (
+            result.calculation_time_ms < 20.0
+        ), f"Aggregation took {result.calculation_time_ms:.2f}ms, expected < 20ms"
 
     def test_large_input_under_20ms(self) -> None:
         """Large input (100 zones, mixed types) should still be under 20ms."""
@@ -465,9 +459,9 @@ class TestPerformance:
             )
         agg = CrossTimeframeAggregator()
         result = agg.aggregate(zones)
-        assert result.calculation_time_ms < 20.0, (
-            f"Aggregation took {result.calculation_time_ms:.2f}ms, expected < 20ms"
-        )
+        assert (
+            result.calculation_time_ms < 20.0
+        ), f"Aggregation took {result.calculation_time_ms:.2f}ms, expected < 20ms"
 
     def test_repeated_calls_consistent_performance(self) -> None:
         """Multiple calls should all be under 20ms."""
