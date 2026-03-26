@@ -158,11 +158,50 @@ The `local-ci-checks.sh` script has been enhanced to support selective testing:
 
 ## Caching
 
-### Cache Location
+### Test Result Caching (ST-LOCAL-004)
+
+New incremental test result caching avoids re-running tests for unchanged code.
+
+**Cache Location:** `.cache/chiseai/test-results/` (gitignored)
+
+**How it works:**
+
+- Test results are cached using file content hashes as keys
+- Before running tests, cache is checked for each test file
+- Cache hits return stored results without re-executing tests
+- Cache misses trigger actual test execution and store results
+
+**Cache Invalidation:**
+
+- Cache expires after 1 hour
+- Cache invalidates when source file hashes change
+- All source files in `src/` are hashed for change detection
+
+**Cache Statistics:**
+
+```bash
+# Show cache statistics
+python scripts/local_ci_incremental_cache.py --show-stats
+
+# Clear all cached test results
+python scripts/local_ci_incremental_cache.py --clear-cache
+
+# Run cache integration test
+python scripts/local_ci_incremental_cache.py --test-cache
+```
+
+**Expected Hit Rate:**
+
+- Typical workflows: >= 70% cache hit rate
+- Fewer source changes = higher cache hit rate
+
+### Test Mapping Cache
 
 Default: `.bmad-test-cache.json` (gitignored)
 
-### Cache Invalidation
+**Purpose:** Maps changed source files to affected tests
+
+**Cache Invalidation:**
 
 Cache is invalidated when:
 
@@ -173,8 +212,11 @@ Cache is invalidated when:
 ### Manual Cache Control
 
 ```bash
-# Clear cache
+# Clear test mapping cache
 rm .bmad-test-cache.json
+
+# Clear test result cache
+python scripts/local_ci_incremental_cache.py --clear-cache
 
 # Use specific cache file
 python scripts/local_ci_speed_optimizations.py --cache-file /tmp/test-cache.json
@@ -248,9 +290,11 @@ Fix: pip install pytest-xdist
 - `scripts/ci/ci_change_scope.py` - Change detection
 - `scripts/ci/test_selector.py` - Test selection module
 - `scripts/local_ci_speed_optimizations.py` - Orchestration
+- `scripts/local_ci_incremental_cache.py` - Incremental test result caching
 
 ## Change Log
 
-| Date       | Change                                |
-| ---------- | ------------------------------------- |
-| 2026-03-26 | Initial implementation (ST-LOCAL-003) |
+| Date       | Change                                         |
+| ---------- | ---------------------------------------------- |
+| 2026-03-26 | Incremental test result caching (ST-LOCAL-004) |
+| 2026-03-26 | Initial implementation (ST-LOCAL-003)          |

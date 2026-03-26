@@ -27,8 +27,9 @@ Usage:
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any
 
 from validation.data_collection.experiment_runner import (
     ExperimentConfig,
@@ -198,16 +199,17 @@ class ExperimentTracker:
             start_time=self._start_time or int(time.time()),
             end_time=int(time.time()),
             config=self._get_config_dict(),
-            status="completed"
-            if self._runner.get_state().status != "running"
-            else "stopped",
+            status=(
+                "completed"
+                if self._runner.get_state().status != "running"
+                else "stopped"
+            ),
         )
 
         return metadata
 
     def _get_config_dict(self) -> dict[str, Any]:
         """Get current configuration as dict."""
-        state = self._runner.get_state()
         return {
             "early_stop_signals": self._runner.config.early_stop_signals,
             "early_stop_p_threshold": self._runner.config.early_stop_p_threshold,
@@ -400,7 +402,7 @@ class ExperimentTracker:
                 results[f"{signal_type}_excluded"] = False
                 results["validation_passed"] = False
                 results["signals_tried"].append(f"{signal_type}: NOT EXCLUDED (ERROR)")
-            except ValueError as e:
+            except ValueError:
                 results["signals_tried"].append(f"{signal_type}: correctly excluded")
 
         return results
