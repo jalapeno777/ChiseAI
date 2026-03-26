@@ -37,32 +37,37 @@ This runbook provides **rollback procedures** for the ICT (Inner Circle Trader) 
 ### 2.1 Flag Location
 
 ```
-Redis Key: chiseai:feature:ict_confluence:enabled
+Redis Key: ict:feature_flags:integration
 Type: String (true/false)
-Default: false
+Default: true
+TTL: 3600 seconds
+Database: 1
 ```
 
 ### 2.2 Related Flags
 
-| Flag                                     | Description                           | Default |
-| ---------------------------------------- | ------------------------------------- | ------- |
-| `chiseai:feature:ict_confluence:enabled` | Master kill switch for ICT confluence | `false` |
-| `chiseai:feature:ict_layer1:enabled`     | Layer 1 market structure detection    | `false` |
+| Flag                            | Description                            | Default |
+| ------------------------------- | -------------------------------------- | ------- |
+| `ict:feature_flags:integration` | Master kill switch for ICT integration | `true`  |
+| `ict:feature_flags:cvd`         | CVD (Change of Character) signals      | `true`  |
+| `ict:feature_flags:fvg`         | FVG (Fair Value Gap) signals           | `true`  |
+| `ict:feature_flags:order_block` | Order Block signals                    | `true`  |
+| `ict:feature_flags:bos_choch`   | BOS/CHoCH signals (SAFETY - disabled)  | `false` |
 
 ### 2.3 Flag Commands
 
 ```bash
 # Check current status
-redis-cli -h host.docker.internal -p 6380 GET chiseai:feature:ict_confluence:enabled
+redis-cli -h host.docker.internal -p 6380 -n 1 GET ict:feature_flags:integration
 
-# Disable ICT confluence (ROLLBACK)
-redis-cli -h host.docker.internal -p 6380 SET chiseai:feature:ict_confluence:enabled false
+# Disable ICT integration (ROLLBACK)
+redis-cli -h host.docker.internal -p 6380 -n 1 SET ict:feature_flags:integration false
 
-# Enable ICT confluence (RE-DEPLOY)
-redis-cli -h host.docker.internal -p 6380 SET chiseai:feature:ict_confluence:enabled true
+# Enable ICT integration (RE-DEPLOY)
+redis-cli -h host.docker.internal -p 6380 -n 1 SET ict:feature_flags:integration true
 
 # Check all ICT flags
-redis-cli -h host.docker.internal -p 6380 KEYS "chiseai:feature:ict*"
+redis-cli -h host.docker.internal -p 6380 -n 1 KEYS "ict:feature_flags:*"
 ```
 
 ---
@@ -91,13 +96,13 @@ redis-cli -h host.docker.internal -p 6380 KEYS "chiseai:feature:ict*"
    ```bash
    pytest scripts/validation/test_ict_rollback.py -v
    ```
-2. Disable ICT confluence:
+2. Disable ICT integration:
    ```bash
-   redis-cli -h host.docker.internal -p 6380 SET chiseai:feature:ict_confluence:enabled false
+   redis-cli -h host.docker.internal -p 6380 -n 1 SET ict:feature_flags:integration false
    ```
 3. Verify flag is disabled:
    ```bash
-   redis-cli -h host.docker.internal -p 6380 GET chiseai:feature:ict_confluence:enabled
+   redis-cli -h host.docker.internal -p 6380 -n 1 GET ict:feature_flags:integration
    # Expected: "false"
    ```
 4. Confirm system continues operating:
@@ -139,7 +144,7 @@ redis-cli -h host.docker.internal -p 6380 KEYS "chiseai:feature:ict*"
 
 2. If critical threshold breached, execute rollback:
    ```bash
-   redis-cli -h host.docker.internal -p 6380 SET chiseai:feature:ict_confluence:enabled false
+   redis-cli -h host.docker.internal -p 6380 -n 1 SET ict:feature_flags:integration false
    ```
 3. Monitor system stability for 5 minutes
 4. Document metrics before and after rollback
@@ -171,12 +176,14 @@ redis-cli -h host.docker.internal -p 6380 KEYS "chiseai:feature:ict*"
    ```
 2. Immediately disable to prevent cascade:
    ```bash
-   redis-cli -h host.docker.internal -p 6380 SET chiseai:feature:ict_confluence:enabled false
-   redis-cli -h host.docker.internal -p 6380 SET chiseai:feature:ict_layer1:enabled false
+   redis-cli -h host.docker.internal -p 6380 -n 1 SET ict:feature_flags:integration false
+   redis-cli -h host.docker.internal -p 6380 -n 1 SET ict:feature_flags:cvd false
+   redis-cli -h host.docker.internal -p 6380 -n 1 SET ict:feature_flags:fvg false
+   redis-cli -h host.docker.internal -p 6380 -n 1 SET ict:feature_flags:order_block false
    ```
-3. Verify no signals being generated with confluence:
+3. Verify no signals being generated:
    ```bash
-   redis-cli -h host.docker.internal -p 6380 GET chiseai:feature:ict_confluence:enabled
+   redis-cli -h host.docker.internal -p 6380 -n 1 GET ict:feature_flags:integration
    # Expected: "false"
    ```
 4. Capture logs for debugging:
@@ -192,40 +199,41 @@ redis-cli -h host.docker.internal -p 6380 KEYS "chiseai:feature:ict*"
 ### 4.1 Quick Rollback (One-Liner)
 
 ```bash
-redis-cli -h host.docker.internal -p 6380 SET chiseai:feature:ict_confluence:enabled false
+redis-cli -h host.docker.internal -p 6380 -n 1 SET ict:feature_flags:integration false
 ```
 
 ### 4.2 Full Rollback with Verification
 
 ```bash
 #!/bin/bash
-# ICT Confluence Full Rollback Script
+# ICT Integration Full Rollback Script
 
 set -e
 
 REDIS_HOST="${REDIS_HOST:-host.docker.internal}"
 REDIS_PORT="${REDIS_PORT:-6380}"
+REDIS_DB=1
 
-echo "=== ICT Confluence Rollback ==="
+echo "=== ICT Integration Rollback ==="
 echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 echo ""
 
 # Disable flags
-echo "Disabling ICT confluence..."
-redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" SET chiseai:feature:ict_confluence:enabled false
-redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" SET chiseai:feature:ict_layer1:enabled false
+echo "Disabling ICT integration..."
+redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" -n "$REDIS_DB" SET ict:feature_flags:integration false
+redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" -n "$REDIS_DB" SET ict:feature_flags:cvd false
+redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" -n "$REDIS_DB" SET ict:feature_flags:fvg false
+redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" -n "$REDIS_DB" SET ict:feature_flags:order_block false
 
 # Verify
-CONF=$(redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" GET chiseai:feature:ict_confluence:enabled)
-LAYER1=$(redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" GET chiseai:feature:ict_layer1:enabled)
+INTEGRATION=$(redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" -n "$REDIS_DB" GET ict:feature_flags:integration)
 
 echo ""
 echo "Verification:"
-echo "  ICT_CONFLUENCE_ENABLED: $CONF"
-echo "  ICT_LAYER1_ENABLED: $LAYER1"
+echo "  ICT_INTEGRATION_ENABLED: $INTEGRATION"
 
-if [ "$CONF" != "false" ] || [ "$LAYER1" != "false" ]; then
-    echo "ERROR: Rollback failed - flags not disabled"
+if [ "$INTEGRATION" != "false" ]; then
+    echo "ERROR: Rollback failed - integration flag not disabled"
     exit 1
 fi
 
@@ -240,7 +248,7 @@ echo "✅ Rollback successful"
 pytest scripts/validation/test_ict_rollback.py -v
 
 # Verify no ICT signals in recent output
-redis-cli -h host.docker.internal -p 6380 LRANGE chiseai:signals:recent 0 9
+redis-cli -h host.docker.internal -p 6380 -n 1 LRANGE chiseai:signals:recent 0 9
 
 # Check system health
 curl -s http://localhost:8080/health
@@ -267,7 +275,7 @@ Before re-enabling ICT confluence, complete these investigations:
 # 1. Verify investigation complete
 # 2. Apply fix
 # 3. Enable in staging first
-redis-cli -h host.docker.internal -p 6380 SET chiseai:feature:ict_confluence:enabled true
+redis-cli -h host.docker.internal -p 6380 -n 1 SET ict:feature_flags:integration true
 
 # 4. Run validation
 pytest scripts/validation/test_ict_rollback.py -v
