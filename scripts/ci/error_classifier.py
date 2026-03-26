@@ -16,6 +16,7 @@ Each category includes suggested fix actions.
 
 from __future__ import annotations
 
+import contextlib
 import re
 import sys
 from dataclasses import dataclass, field
@@ -284,10 +285,8 @@ def classify_error(error_text: str) -> ClassifiedError:
     if match.groupdict().get("file2"):
         file_path = match.group("file2")
     if match.groupdict().get("line"):
-        try:
+        with contextlib.suppress(ValueError, TypeError):
             line_number = int(match.group("line"))
-        except (ValueError, TypeError):
-            pass
 
     # Build message from match
     message_parts = []
