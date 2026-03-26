@@ -1622,100 +1622,113 @@ epics:
         pr_number: 660
         test_results:
           passed: 15
-  - completion_date: "2026-03-26"
-    completed_stories:
-      - id: ST-ICT-023
-        merge_commit: "12cce497"
-        notes: Dynamic Weight Adjustment - PR #671 open, NOT YET MERGED
-        pr_number: 671
-        status: pending_merge
-        title: Dynamic Weight Adjustment
-      - id: ST-ICT-024
-        merge_commit: "22a1068a"
-        notes: Zone-to-Signal Mapping
-        pr_number: 670
-        status: merged
-        test_results:
-          passed: 42
-        title: Zone-to-Signal Mapping
-      - id: ST-ICT-025
-        merge_commit: "41541f57"
-        notes: Cross-Timeframe Awareness
-        pr_number: 668
-        status: merged
-        test_results:
-          passed: 38
-        title: Cross-Timeframe Awareness
-      - id: ST-ICT-026
-        merge_commit: "4d16e5b2"
-        notes: Liquidity Sweeps
-        pr_number: 669
-        status: merged
-        test_results:
-          passed: 35
-        title: Liquidity Sweeps
-      - id: ST-ICT-027
-        merge_commit: "f88c682f"
-        notes: Premium/Discount Zones
-        pr_number: 667
-        status: merged
-        test_results:
-          passed: 41
-        title: Premium/Discount Zones
-      - id: ST-ICT-028
-        notes: Full ML Pipeline Integration - NOT STARTED
-        status: not_started
-        title: Full ML Pipeline Integration
-      - id: ST-ICT-029
-        merge_commit: "be8329c2"
-        notes: StrongSystem Hypothesis Integration
-        pr_number: 673
-        status: merged
-        test_results:
-          passed: 44
-        title: StrongSystem Hypothesis Integration
-      - id: ST-ICT-030
-        merge_commit: "05e88dda"
-        notes: Neuro-Symbolic Explainability
-        pr_number: 672
-        status: merged
-        test_results:
-          passed: 39
-        title: Neuro-Symbolic Explainability
-    description:
+  - description:
       Post-validation expansion work including dynamic weight adjustment, zone-to-signal
       mapping, cross-timeframe awareness, liquidity sweeps, premium/discount zones,
       ML pipeline integration, StrongSystem hypothesis, and neuro-symbolic explainability
     id: EP-ICT-007
     name: ICT Post-Validation Expansion
     notes:
-      - Phase 5: 8 stories, 24 SP (DEFERRED)
+      - Phase 5: 10 stories, 24 SP
       - Only proceeds if Phase 3 confirms ICT adds alpha (p<0.05, effect size >2%)
-      - "6 of 7 stories merged as of 2026-03-26"
-      - "ST-ICT-023 pending merge (PR #671)"
-      - "ST-ICT-028 not started (Full ML Pipeline Integration)"
-      - Integration tests created: tests/integration/test_ep_ict_007/
+      - ST-ICT-028-B and ST-ICT-028-C completed (ML Pipeline Integration + Orchestration)
     sprint_id: ICT-S9
+    completion_date: '2026-03-26'
     status: completed
-    story_count: 8
-    story_ids:
+    story_count: 10
+    completed_stories:
       - ST-ICT-023
       - ST-ICT-024
       - ST-ICT-025
       - ST-ICT-026
       - ST-ICT-027
-      - ST-ICT-028
+      - ST-ICT-028-A
+      - ST-ICT-028-B
+      - ST-ICT-028-C
       - ST-ICT-029
       - ST-ICT-030
-    story_points: 24
-    validation_summary:
-      integration_tests: 10
-      integration_tests_passed: 10
-      status: PASS
-      test_results: 10 passed, 1 skipped
+  - id: ST-ICT-028-A
+    name: ICT Feature Engineering Pipeline
+    title: ICT Feature Engineering Pipeline
+    status: completed
+    story_points: 3
+    priority: P1
+    depends_on: []
+    description: |
+      Create feature extraction pipeline for ICT signals. Integrate CVD, FVG,
+      Order Block features into ML training data.
+    scope_globs:
+      - src/ml/features/ict_features.py
+    acceptance_criteria:
+      - Feature extraction pipeline for ICT signals
+      - CVD, FVG, Order Block features integrated
+      - Training data format compatible with existing pipeline
+    test_results:
+      passed: 20
+      breakdown: "20 unit tests"
+    completion_notes: >
+      ICT feature engineering pipeline implemented with full CVD, FVG, and Order Block
+      feature extraction. Tests: 20 passed.
+    test_strategy:
+      unit: pytest tests/unit/ml/features/test_ict_features.py -v
+  - id: ST-ICT-028-B
+    name: ICT ML Model Training Integration
+    title: ICT ML Model Training Integration
+    status: completed
+    story_points: 3
+    priority: P1
+    depends_on:
+      - ST-ICT-028-A
+    description: |
+      Extend TrainingPipelineIntegration to support ICT signal training.
+      Add ICT-specific model configurations.
+    scope_globs:
+      - src/ml/training/ict_integration.py
+    acceptance_criteria:
+      - TrainingPipelineIntegration extended for ICT signals
+      - ICT-specific model configurations added
+      - Integration tests pass
+    test_strategy:
+      unit: pytest tests/unit/ml/training/test_ict_integration.py -v
+    test_results:
+      passed: 43
+      breakdown: "43 unit tests"
+    completion_date: "2026-03-26"
+    completion_notes: >
+      ICT ML Model Training Integration implemented with ICTModelConfig, ICTTrainingPipeline,
+      ICTFeatureLoader, ICTModelTrainer, and ICTValidator classes. Full integration with
+      existing TrainingPipelineIntegration and model registry. Tests: 43 passed.
+  - id: ST-ICT-028-C
+    name: ICT ML Pipeline Orchestration
+    title: ICT ML Pipeline Orchestration
+    status: completed
+    story_points: 2
+    priority: P1
+    depends_on:
+      - ST-ICT-028-B
+    description: |
+      Create orchestrator that schedules ICT model retraining.
+      Integration with existing scheduler.
+    scope_globs:
+      - src/ml/training/ict_orchestrator.py
+    acceptance_criteria:
+      - ICT model retraining scheduler created
+      - Integration with existing scheduler
+      - Orchestration tests pass
+    test_strategy:
+      unit: pytest tests/unit/ml/training/test_ict_orchestrator.py -v
+    test_results:
+      passed: 57
+      breakdown: "57 unit tests"
+    completion_date: "2026-03-26"
+    completion_notes: >
+      ICT ML Pipeline Orchestration implemented with ICTOrchestrator, ICTSchedulerAdapter,
+      PerformanceMonitor, and ModelPromoter. Includes scheduled retraining, performance
+      monitoring, and model promotion/demotion. Tests: 57 passed.
   - completion_date: "2026-03-25"
     id: ST-CI-EVIDENCE-001
     merge_commit: dc85838
+    name: CI Evidence Backfill
     pr_number: 621
     sprint_id: SP-2026-Q1-03
     status: completed
@@ -1723,12 +1736,14 @@ epics:
   - completion_date: "2026-03-25"
     commit_sha: a071950e
     id: ST-CI-TESTPATH-001
+    name: Test Path
     sprint_id: SP-2026-Q1-03
     status: completed
     title: Test Path
   - completion_date: "2026-03-25"
     commit_sha: 49278d09
     id: ST-GOV-DRIFT-001
+    name: Governance Drift Fix
     pr_number: 410
     sprint_id: SP-2026-Q1-03
     status: completed
@@ -1736,12 +1751,14 @@ epics:
   - completion_date: "2026-03-25"
     commit_sha: b5017e66
     id: I-05
+    name: Datetime.utcnow Replacement
     sprint_id: SP-2026-Q1-03
     status: completed
     title: Datetime.utcnow Replacement
   - completion_date: "2026-03-25"
     id: D-03
     merge_commit: 1f4071f
+    name: Pip Install Failure Detection
     pr_number: 622
     sprint_id: SP-2026-Q1-03
     status: completed
@@ -1749,6 +1766,7 @@ epics:
   - completion_date: "2026-03-25"
     id: I-02
     merge_commit: 887a274
+    name: Docker Health Checks
     pr_number: 623
     sprint_id: SP-2026-Q1-03
     status: completed
@@ -1756,6 +1774,7 @@ epics:
   - completion_date: "2026-03-25"
     id: I-03
     merge_commit: 89b48af
+    name: Container Restart Policies
     pr_number: 624
     sprint_id: SP-2026-Q1-03
     status: completed
@@ -1763,6 +1782,7 @@ epics:
   - completion_date: "2026-03-25"
     id: I-04
     merge_commit: 75f5070
+    name: InfluxDB 60d Retention
     pr_number: 625
     sprint_id: SP-2026-Q1-03
     status: completed
@@ -1770,6 +1790,7 @@ epics:
   - completion_date: "2026-03-25"
     id: I-01
     merge_commit: ca58a08
+    name: Grafana API Auth Fix
     pr_number: 626
     sprint_id: SP-2026-Q1-03
     status: completed
@@ -1777,6 +1798,7 @@ epics:
   - completion_date: "2026-03-25"
     id: D-02a
     merge_commit: 50e8d68
+    name: Test Failure Categorization
     pr_number: 627
     sprint_id: SP-2026-Q1-03
     status: completed
@@ -1784,6 +1806,7 @@ epics:
   - completion_date: "2026-03-25"
     id: D-02b
     merge_commit: 885b3fe
+    name: Fix Top-20 Test Failures
     pr_number: 628
     sprint_id: SP-2026-Q1-03
     status: completed
@@ -7432,39 +7455,46 @@ stories:
   - description: Dynamic Weight Adjustment
     epic_id: EP-ICT-007
     id: ST-ICT-023
-    status: planned
+    status: completed
+    completion_date: "2026-03-26"
+    merge_commit: d92af20e6f812d1578868e46dd7fb1c4493c0976
+    pr_number: 671
     story_points: 3
     title: Dynamic Weight Adjustment
   - description: Zone-to-Signal Mapping
     epic_id: EP-ICT-007
     id: ST-ICT-024
+    status: completed
+    completion_date: "2026-03-25"
     merge_commit: 22a1068a
     pr_number: 670
-    status: merged
     story_points: 3
     title: Zone-to-Signal Mapping
   - description: Cross-Timeframe Zone Awareness
     epic_id: EP-ICT-007
     id: ST-ICT-025
+    status: completed
+    completion_date: "2026-03-25"
     merge_commit: 41541f57
     pr_number: 668
-    status: merged
     story_points: 2
     title: Cross-Timeframe Zone Awareness
   - description: Liquidity Sweeps
     epic_id: EP-ICT-007
     id: ST-ICT-026
+    status: completed
+    completion_date: "2026-03-25"
     merge_commit: 4d16e5b2
     pr_number: 669
-    status: merged
     story_points: 2
     title: Liquidity Sweeps
   - description: Premium/Discount Zones
     epic_id: EP-ICT-007
     id: ST-ICT-027
+    status: completed
+    completion_date: "2026-03-25"
     merge_commit: f88c682f
     pr_number: 667
-    status: merged
     story_points: 2
     title: Premium/Discount Zones
   - description: Full ML Pipeline Integration
@@ -7476,15 +7506,19 @@ stories:
   - description: StrongSystem Hypothesis Integration
     epic_id: EP-ICT-007
     id: ST-ICT-029
+    status: completed
+    completion_date: "2026-03-25"
     merge_commit: be8329c2
     pr_number: 673
-    status: merged
     story_points: 2
     title: StrongSystem Hypothesis Integration
   - description: Neuro-Symbolic Explainability for ICT
     epic_id: EP-ICT-007
     id: ST-ICT-030
-    status: planned
+    status: completed
+    completion_date: "2026-03-26"
+    merge_commit: 05e88ddaf4f273a60435a66012eabf3f7194051a
+    pr_number: 672
     story_points: 2
     title: Neuro-Symbolic Explainability for ICT
 summary:
