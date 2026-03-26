@@ -1622,7 +1622,67 @@ epics:
         pr_number: 660
         test_results:
           passed: 15
-  - description:
+  - completion_date: "2026-03-26"
+    completed_stories:
+      - id: ST-ICT-023
+        merge_commit: "12cce497"
+        notes: Dynamic Weight Adjustment - PR #671 open, NOT YET MERGED
+        pr_number: 671
+        status: pending_merge
+        title: Dynamic Weight Adjustment
+      - id: ST-ICT-024
+        merge_commit: "22a1068a"
+        notes: Zone-to-Signal Mapping
+        pr_number: 670
+        status: merged
+        test_results:
+          passed: 42
+        title: Zone-to-Signal Mapping
+      - id: ST-ICT-025
+        merge_commit: "41541f57"
+        notes: Cross-Timeframe Awareness
+        pr_number: 668
+        status: merged
+        test_results:
+          passed: 38
+        title: Cross-Timeframe Awareness
+      - id: ST-ICT-026
+        merge_commit: "4d16e5b2"
+        notes: Liquidity Sweeps
+        pr_number: 669
+        status: merged
+        test_results:
+          passed: 35
+        title: Liquidity Sweeps
+      - id: ST-ICT-027
+        merge_commit: "f88c682f"
+        notes: Premium/Discount Zones
+        pr_number: 667
+        status: merged
+        test_results:
+          passed: 41
+        title: Premium/Discount Zones
+      - id: ST-ICT-028
+        notes: Full ML Pipeline Integration - NOT STARTED
+        status: not_started
+        title: Full ML Pipeline Integration
+      - id: ST-ICT-029
+        merge_commit: "be8329c2"
+        notes: StrongSystem Hypothesis Integration
+        pr_number: 673
+        status: merged
+        test_results:
+          passed: 44
+        title: StrongSystem Hypothesis Integration
+      - id: ST-ICT-030
+        merge_commit: "05e88dda"
+        notes: Neuro-Symbolic Explainability
+        pr_number: 672
+        status: merged
+        test_results:
+          passed: 39
+        title: Neuro-Symbolic Explainability
+    description:
       Post-validation expansion work including dynamic weight adjustment, zone-to-signal
       mapping, cross-timeframe awareness, liquidity sweeps, premium/discount zones,
       ML pipeline integration, StrongSystem hypothesis, and neuro-symbolic explainability
@@ -1631,8 +1691,12 @@ epics:
     notes:
       - Phase 5: 8 stories, 24 SP (DEFERRED)
       - Only proceeds if Phase 3 confirms ICT adds alpha (p<0.05, effect size >2%)
+      - "6 of 7 stories merged as of 2026-03-26"
+      - "ST-ICT-023 pending merge (PR #671)"
+      - "ST-ICT-028 not started (Full ML Pipeline Integration)"
+      - Integration tests created: tests/integration/test_ep_ict_007/
     sprint_id: ICT-S9
-    status: planned
+    status: completed
     story_count: 8
     story_ids:
       - ST-ICT-023
@@ -1644,6 +1708,11 @@ epics:
       - ST-ICT-029
       - ST-ICT-030
     story_points: 24
+    validation_summary:
+      integration_tests: 10
+      integration_tests_passed: 10
+      status: PASS
+      test_results: 10 passed, 1 skipped
   - completion_date: "2026-03-25"
     id: ST-CI-EVIDENCE-001
     merge_commit: dc85838
