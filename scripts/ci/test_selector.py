@@ -282,10 +282,7 @@ def check_dependencies_changed(cache_file: str, changed_files: list[str]) -> boo
 
     # Also check if cache has no mappings
     cache = load_cached_mappings(cache_file)
-    if not cache or not cache.get("mappings"):
-        return True
-
-    return False
+    return bool(not cache or not cache.get("mappings"))
 
 
 def select_tests(

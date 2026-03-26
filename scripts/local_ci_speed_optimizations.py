@@ -23,6 +23,7 @@ Options:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import subprocess
@@ -123,26 +124,20 @@ def parse_pytest_output(output: str) -> dict:
             parts = line.split()
             for i, part in enumerate(parts):
                 if part == "passed" and i > 0:
-                    try:
+                    with contextlib.suppress(ValueError, IndexError):
                         counts["passed"] = int(parts[i - 1])
-                    except (ValueError, IndexError):
-                        pass
         elif " failed" in line:
             parts = line.split()
             for i, part in enumerate(parts):
                 if part == "failed" and i > 0:
-                    try:
+                    with contextlib.suppress(ValueError, IndexError):
                         counts["failed"] = int(parts[i - 1])
-                    except (ValueError, IndexError):
-                        pass
         elif " skipped" in line:
             parts = line.split()
             for i, part in enumerate(parts):
                 if part == "skipped" and i > 0:
-                    try:
+                    with contextlib.suppress(ValueError, IndexError):
                         counts["skipped"] = int(parts[i - 1])
-                    except (ValueError, IndexError):
-                        pass
 
     return counts
 
