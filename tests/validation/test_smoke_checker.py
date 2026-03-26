@@ -6,30 +6,22 @@ Tests smoke_checker.py functions with mocked Redis data.
 from __future__ import annotations
 
 import json
-import sys
-from io import StringIO
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from src.validation.experiment_telemetry.smoke_checker import (
-    CheckResult,
-    EXIT_CODES,
     EXCLUDED_SIGNAL_TYPES,
-    REDIS_KEYS,
+    EXIT_CODES,
+    CheckResult,
     check_bos_choch_exclusion,
     check_data_freshness,
     check_redis_connectivity,
     format_human_output,
-    check_data_freshness,
     format_json_output,
     format_prometheus_output,
     get_signal_counts,
-    get_signal_data,
-    get_signal_ids,
     run_smoke_checks,
 )
-
 
 # =============================================================================
 # Fixtures
@@ -217,7 +209,7 @@ class TestDataFreshness:
         with patch(
             "src.validation.experiment_telemetry.smoke_checker.redis_state_hgetall"
         ) as mock_hgetall:
-            from datetime import datetime, timedelta, UTC
+            from datetime import UTC, datetime, timedelta
 
             # Data from 1 hour ago (fresh)
             recent_time = datetime.now(UTC) - timedelta(hours=1)
@@ -232,7 +224,7 @@ class TestDataFreshness:
         with patch(
             "src.validation.experiment_telemetry.smoke_checker.redis_state_hgetall"
         ) as mock_hgetall:
-            from datetime import datetime, timedelta, UTC
+            from datetime import UTC, datetime, timedelta
 
             # Data from 48 hours ago (stale - beyond 24h threshold)
             stale_time = datetime.now(UTC) - timedelta(hours=48)

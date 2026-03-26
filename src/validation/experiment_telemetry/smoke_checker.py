@@ -32,7 +32,7 @@ from enum import Enum
 from typing import Any
 
 # Import Redis state functions
-from tools.redis_state import redis_state_hgetall, redis_state_lrange, redis_state_llen
+from tools.redis_state import redis_state_hgetall, redis_state_llen, redis_state_lrange
 
 # Redis key patterns (same as checkpoint_updater.py)
 REDIS_KEYS = {
@@ -240,9 +240,11 @@ def run_smoke_checks() -> dict[str, Any]:
     bos_choch_clean, found_types = check_bos_choch_exclusion()
     results["checks"]["bos_choch_exclusion"] = {
         "status": "OK" if bos_choch_clean else "CRITICAL",
-        "message": "No BOS/CHoCH signals found"
-        if bos_choch_clean
-        else f"BOS/CHoCH found: {found_types}",
+        "message": (
+            "No BOS/CHoCH signals found"
+            if bos_choch_clean
+            else f"BOS/CHoCH found: {found_types}"
+        ),
         "found_excluded": found_types,
     }
     if not bos_choch_clean:

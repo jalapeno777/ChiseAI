@@ -5,31 +5,21 @@ Tests checkpoint_updater.py functions with mocked Redis data.
 
 from __future__ import annotations
 
-import json
 import math
 import sys
-from datetime import UTC, datetime
 from io import StringIO
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from src.validation.experiment_telemetry.checkpoint_updater import (
     EXCLUDED_SIGNAL_TYPES,
-    REDIS_KEYS,
     calculate_cohens_h,
     calculate_experiment_metrics,
     calculate_group_metrics,
     format_metrics_for_json,
     format_metrics_for_markdown,
-    get_experiment_meta,
-    get_outcome_data,
-    get_signal_data,
-    get_signal_ids,
     update_checkpoint_file,
 )
-
 
 # =============================================================================
 # Fixtures

@@ -15,11 +15,10 @@ Run with: pytest tests/integration/test_telemetry_runtime.py -v
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from signal_generation.models import Signal, SignalDirection, SignalStatus
 from validation.data_collection.signal_tracker import (
     SignalGroup,
     SignalTracker,
@@ -272,7 +271,6 @@ class TestICTSignalEmitterTelemetryIntegration:
     def test_redis_keys_written_correctly(self, mock_redis):
         """Test that Redis keys are written correctly via SignalTracker."""
         from validation.data_collection.signal_tracker import (
-            CONTROL_SIGNALS_KEY,
             SIGNAL_KEY_PREFIX,
             TREATMENT_SIGNALS_KEY,
         )
