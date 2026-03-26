@@ -10,13 +10,10 @@ These tests verify:
 
 from __future__ import annotations
 
-import json
 import os
 import subprocess
 import sys
-import time
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -33,8 +30,6 @@ from local_ci_parallel_runner import (
     get_optimal_workers,
     load_test_history,
     parse_pytest_counts,
-    run_tests_parallel,
-    run_tests_single,
     save_test_history,
 )
 

@@ -36,7 +36,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-
 # Default constants
 DEFAULT_MAX_WORKERS = 8
 HISTORY_FILE = ".bmad-test-times.json"
@@ -93,7 +92,7 @@ def get_cpu_count() -> int:
 
 
 def get_optimal_workers(
-    requested: Optional[int] = None, max_workers: int = DEFAULT_MAX_WORKERS
+    requested: int | None = None, max_workers: int = DEFAULT_MAX_WORKERS
 ) -> int:
     """Determine optimal number of workers.
 
@@ -239,7 +238,7 @@ def distribute_tests_balanced(
 
     # Calculate total estimated time
     total_time = sum(estimates.get(t, 1.0) for t in tests)
-    target_per_worker = total_time / num_workers
+    total_time / num_workers
 
     # Initialize worker loads
     worker_loads: dict[int, float] = {i: 0.0 for i in range(num_workers)}
@@ -462,7 +461,7 @@ def run_benchmark(
     print(f"Running with {num_workers} workers...")
 
     # Load history for estimates
-    history = load_test_history(history_file)
+    load_test_history(history_file)
 
     # Run single-worker baseline
     print("\n--- Running single-worker baseline ---")
@@ -479,7 +478,7 @@ def run_benchmark(
 
 def print_single_summary(results: BenchmarkResults) -> None:
     """Print single-worker summary."""
-    print(f"\nSingle-worker results:")
+    print("\nSingle-worker results:")
     print(f"  Duration:  {results.total_duration:.2f}s")
     print(
         f"  Tests:     {results.tests_run} (passed={results.tests_passed}, failed={results.tests_failed})"
