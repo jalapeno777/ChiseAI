@@ -110,9 +110,7 @@ class ICTFeatureFlags:
             if value is None:
                 return default
             value_lower = value.lower().strip()
-            if value_lower in ("false", "0", "no", "off"):
-                return False
-            return default
+            return value_lower not in ("false", "0", "no", "off")
 
         return cls(
             ict_cvd_enabled=_get_bool_env("ICT_CVD_ENABLED", True),

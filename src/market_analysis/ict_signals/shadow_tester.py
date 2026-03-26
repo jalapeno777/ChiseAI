@@ -16,6 +16,8 @@ from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any
 
+from src.config.ict_feature_flags import get_ict_feature_flags
+
 logger = logging.getLogger(__name__)
 
 # Redis key patterns
@@ -156,6 +158,7 @@ class BOSCHoCHShadowTester:
         self._test_start_time: datetime | None = None
         self._test_end_time: datetime | None = None
         self._duration_days: int = 7
+        self._feature_flags = get_ict_feature_flags()
 
     def _get_redis_client(self) -> Any:
         """Get or create Redis client.
@@ -202,7 +205,13 @@ class BOSCHoCHShadowTester:
 
         Returns:
             Dictionary with start status
+
+        Raises:
+            RuntimeError: If BOS/CHoCH is disabled by feature flag
         """
+        if not self._feature_flags.is_bos_choch_enabled():
+            raise RuntimeError("BOS/CHoCH shadow testing disabled by feature flag")
+
         self._test_start_time = datetime.now(UTC)
         self._duration_days = duration_days
         self._test_end_time = self._test_start_time + timedelta(days=duration_days)
