@@ -33,6 +33,10 @@ from signal_generation.registry.ict_signal_registry import (
     ICTSignalRegistry,
     get_ict_registry,
 )
+from validation.data_collection.signal_tracker import (
+    SignalGroup,
+    SignalTracker,
+)
 
 if TYPE_CHECKING:
     from market_analysis.confluence.two_layer_scorer import TwoLayerScorer
@@ -171,6 +175,7 @@ class ICTSignalEmitter:
         registry: ICTSignalRegistry | None = None,
         emitters: list[SignalEmitter] | None = None,
         two_layer_scorer: TwoLayerScorer | None = None,
+        signal_tracker: SignalTracker | None = None,
     ):
         """Initialize ICT signal emitter.
 
@@ -179,11 +184,13 @@ class ICTSignalEmitter:
             registry: ICT signal registry (uses global registry if None)
             emitters: List of signal emitters for delivery
             two_layer_scorer: Two-layer scorer instance (created if None)
+            signal_tracker: SignalTracker for experiment telemetry (optional)
         """
         self.config = config or ICTEmissionConfig()
         self.registry = registry or get_ict_registry()
         self.emitters = emitters or []
         self._two_layer_scorer = two_layer_scorer
+        self._signal_tracker = signal_tracker
 
         # Set initial feature flags from config
         self._sync_feature_flags()
@@ -195,7 +202,8 @@ class ICTSignalEmitter:
             f"ICTSignalEmitter initialized: "
             f"min_confidence={self.config.min_confidence:.0%}, "
             f"cvd={self.config.enable_cvd}, fvg={self.config.enable_fvg}, "
-            f"ob={self.config.enable_order_block}"
+            f"ob={self.config.enable_order_block}, "
+            f"telemetry={'enabled' if signal_tracker else 'disabled'}"
         )
 
     def _sync_feature_flags(self) -> None:
@@ -218,6 +226,82 @@ class ICTSignalEmitter:
 
             self._two_layer_scorer = TwoLayerScorer()
         return self._two_layer_scorer
+
+    def _get_signal_tracker(self) -> SignalTracker | None:
+        """Get or create SignalTracker instance.
+
+        Returns:
+            SignalTracker instance or None if not configured
+        """
+        if self._signal_tracker is None:
+            # Try to create from environment/default Redis
+            try:
+                from validation.experiment_tracker import create_redis_tracker
+
+                self._signal_tracker = create_redis_tracker()
+            except Exception as e:
+                logger.warning(f"Could not create SignalTracker: {e}")
+                return None
+        return self._signal_tracker
+
+    async def _track_signal_for_experiment(
+        self,
+        signal: Signal,
+        signal_type: str,
+        confluence_score: float | None,
+        direction: str,
+    ) -> None:
+        """Track signal for ICT experiment telemetry.
+
+        Args:
+            signal: The emitted Signal object
+            signal_type: Type of signal (cvd, fvg, order_block)
+            confluence_score: ICT confluence score (None for control, present for treatment)
+            direction: Signal direction (bullish/bearish)
+        """
+        tracker = self._get_signal_tracker()
+        if tracker is None:
+            logger.debug("SignalTracker not configured, skipping telemetry tracking")
+            return
+
+        try:
+            # Determine group based on confluence_score presence
+            # TREATMENT: signal has ICT confluence scoring
+            # CONTROL: signal without confluence scoring (baseline)
+            if confluence_score is not None and confluence_score > 0:
+                group = SignalGroup.TREATMENT
+            else:
+                group = SignalGroup.CONTROL
+
+            # Extract entry price from signal metadata if available
+            entry_price = 0.0
+            if signal.metadata:
+                entry_price = signal.metadata.get("entry_price", 0.0)
+
+            # Track the signal
+            tracked = tracker.track_signal(
+                signal_type=signal_type,
+                group=group,
+                entry_price=entry_price,
+                direction=direction,
+                confluence_score=confluence_score,
+                metadata={
+                    "token": signal.token,
+                    "timeframe": signal.timeframe,
+                    "confidence": signal.confidence,
+                    "source": "ict_signal_emitter",
+                },
+            )
+
+            logger.info(
+                f"Tracked {signal_type} signal for experiment: "
+                f"id={tracked.signal_id}, group={group.value}, "
+                f"confluence={confluence_score}"
+            )
+
+        except Exception as e:
+            # Log but don't fail the emission if tracking fails
+            logger.error(f"Failed to track signal for experiment: {e}")
 
     def _check_bos_choch_exclusion(self, signal_type: str) -> bool:
         """Check if signal type is BOS/CHoCH and should be excluded.
@@ -458,6 +542,15 @@ class ICTSignalEmitter:
                 except Exception as e:
                     last_error = str(e)
                     logger.error(f"Emitter {emitter.name} failed: {e}")
+
+            # Track signal for experiment telemetry if emission succeeded
+            if any_success:
+                await self._track_signal_for_experiment(
+                    signal=signal,
+                    signal_type=signal_type,
+                    confluence_score=score_result.confluence_score,
+                    direction=signal.direction.value,
+                )
 
             latency_ms = (time.perf_counter() - start_time) * 1000
 
