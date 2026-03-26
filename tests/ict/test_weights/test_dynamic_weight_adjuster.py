@@ -9,17 +9,13 @@ Tests the time-based weight decay algorithm for ICT signals:
 BOS/CHoCH signals are EXCLUDED per BL-BOS-CHOCH-001.
 """
 
-import pytest
-from datetime import UTC, datetime, timedelta
-from unittest.mock import MagicMock, patch
-
 from ict.weights.dynamic_weight_adjuster import (
-    DynamicWeightAdjuster,
-    DynamicWeightResult,
     TIER_MULTIPLIERS,
     TIER_THRESHOLDS,
-    WeightTier,
+    DynamicWeightAdjuster,
+    DynamicWeightResult,
     WeightedSignal,
+    WeightTier,
     get_weight_adjuster,
 )
 

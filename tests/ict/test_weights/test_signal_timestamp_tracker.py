@@ -3,10 +3,9 @@
 Tests the Redis-backed signal timestamp tracking for dynamic weight adjustment.
 """
 
-import pytest
 import json
 from datetime import UTC, datetime
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
 from ict.weights.signal_timestamp_tracker import (
     SignalTimestampTracker,
@@ -373,7 +372,6 @@ class TestEdgeCases:
 
     def test_tracker_handles_redis_error(self):
         """Test that tracker handles Redis errors gracefully."""
-        import logging
 
         tracker = SignalTimestampTracker(redis_client=MagicMock())
         tracker._redis.get = MagicMock(side_effect=Exception("Redis error"))
