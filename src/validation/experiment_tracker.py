@@ -199,9 +199,11 @@ class ExperimentTracker:
             start_time=self._start_time or int(time.time()),
             end_time=int(time.time()),
             config=self._get_config_dict(),
-            status="completed"
-            if self._runner.get_state().status != "running"
-            else "stopped",
+            status=(
+                "completed"
+                if self._runner.get_state().status != "running"
+                else "stopped"
+            ),
         )
 
         return metadata

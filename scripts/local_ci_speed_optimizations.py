@@ -376,9 +376,9 @@ def run_selective_suite(
                 passed=counts["passed"] // len(tests_to_run) if tests_to_run else 0,
                 failed=counts["failed"] // len(tests_to_run) if tests_to_run else 0,
                 skipped=counts["skipped"] // len(tests_to_run) if tests_to_run else 0,
-                duration=result.duration_seconds / len(tests_to_run)
-                if tests_to_run
-                else 0,
+                duration=(
+                    result.duration_seconds / len(tests_to_run) if tests_to_run else 0
+                ),
                 output=output,
             )
 
