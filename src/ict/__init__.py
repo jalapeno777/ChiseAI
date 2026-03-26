@@ -1,21 +1,5 @@
-"""ICT (Inner Circle Trader) Module.
+"""ICT (Inner Circle Trader) analysis package.
 
-Provides premium/discount zone calculations and fair value determination
-using Volume Profile POC or VWAP as the equilibrium reference.
+Provides multi-timeframe zone aggregation, confluence detection,
+and cross-timeframe awareness for ICT-based trading signals.
 """
-
-from src.ict.zones import (
-    FairValueMethod,
-    FairValueResult,
-    PremiumDiscountClassifier,
-    ZoneClassification,
-    ZoneType,
-)
-
-__all__ = [
-    "FairValueMethod",
-    "FairValueResult",
-    "PremiumDiscountClassifier",
-    "ZoneClassification",
-    "ZoneType",
-]
