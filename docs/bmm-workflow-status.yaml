@@ -1511,20 +1511,63 @@ epics:
       no_go_count: 1
       overall_decision: CONDITIONAL_GO
       threshold: ">52% directional accuracy"
-  - description:
+  - completion_date: "2026-03-25"
+    completed_stories:
+      - id: ST-ICT-014
+        merge_commit: "37a4b76a"
+        notes: Two-layer scorer with CVD, FVG, Order Block support
+        pr_number: 654
+        status: completed
+        test_results:
+          passed: 155
+        title: Two-Layer Scorer Implementation
+      - id: ST-ICT-015
+        merge_commit: "14277924"
+        notes: ICT signal registry with BOS/CHoCH exclusion
+        pr_number: 653
+        status: completed
+        test_results:
+          passed: 37
+        title: ICT Signal Registry with BOS/CHoCH Exclusion
+      - id: ST-ICT-016
+        merge_commit: "ae9607fa"
+        notes: Signal emission integration
+        pr_number: 656
+        status: completed
+        test_results:
+          passed: 28
+        title: Signal Emission Integration
+      - id: ST-ICT-017
+        merge_commit: "c64ee050"
+        notes: ML feedback analyzer wiring
+        pr_number: 657
+        status: completed
+        test_results:
+          passed: 51
+        title: ML Feedback Analyzer Wiring
+      - id: ST-ICT-018
+        merge_commit: "15e4c087"
+        notes: Feature flag implementation
+        pr_number: 652
+        status: completed
+        test_results:
+          passed: 32
+        title: Feature Flag Implementation
+    description:
       Confluence v2 integration including two-layer scorer implementation, ICT signal
       registration, emission integration, ML feedback analyzer wiring, and feature flag
     id: EP-ICT-005
     name: ICT Confluence v2 Integration
     notes:
-      - Phase 2: 5 stories, 10 SP
-      - Sprint ICT-S6 (Week 12) + Sprint ICT-S7 (Weeks 13-14)
-      - Full backward compatibility required
+      - Phase 2: 5 stories, 10 SP - COMPLETED
+      - Sprint ICT-S6 (Week 12) + Sprint ICT-S7 (Weeks 13-14) - COMPLETED
+      - Full backward compatibility maintained
       - "BOS/CHoCH EXCLUDED: Deferred to EP-ICT-007 per BL-BOS-CHOCH-001"
       - Feature flag ict:bos_choch:enabled defaults to false
       - Confluence scorer handles 3 ICT signals (CVD, FVG, Order Block)
+      - Integration tests added: tests/e2e/test_ict_integration.py, tests/integration/test_ict_confluence.py
     sprint_id: ICT-S6
-    status: planned
+    status: completed
     story_count: 5
     story_ids:
       - ST-ICT-014
@@ -1533,6 +1576,12 @@ epics:
       - ST-ICT-017
       - ST-ICT-018
     story_points: 10
+    validation_summary:
+      e2e_integration_tests: 25
+      integration_tests: 24
+      notes: All 5 stories integrated and tested. Integration tests created for EP-ICT-005 final integration.
+      status: PASS
+      total_tests: 303
   - description:
       Statistical validation including hypothesis design, paper trading data collection,
       significance testing, and rollback procedures for final Go/No-Go decision
