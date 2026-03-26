@@ -395,6 +395,56 @@ def run_benchmark(
         )
 
 
+def run_with_parallel_runner(
+    test_dirs: list[str],
+    workers: int | None = None,
+    output_dir: str = "_bmad-output/ci",
+) -> BenchmarkResult:
+    """Run tests using the parallel runner for balanced distribution.
+
+    Args:
+        test_dirs: List of test directories
+        workers: Number of workers (None for auto)
+        output_dir: Output directory
+
+    Returns:
+        BenchmarkResult with execution statistics
+    """
+    cmd = [
+        sys.executable,
+        str(Path(__file__).parent / "local_ci_parallel_runner.py"),
+        "--test-dirs",
+        ":".join(test_dirs),
+        "--output-dir",
+        output_dir,
+    ]
+
+    if workers is not None:
+        cmd.extend(["--workers", str(workers)])
+
+    start_time = time.time()
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    duration = time.time() - start_time
+
+    # Parse output for counts
+    counts = parse_pytest_output(result.stdout + result.stderr)
+
+    return BenchmarkResult(
+        mode="parallel-runner",
+        duration_seconds=duration,
+        tests_run=counts["passed"] + counts["failed"],
+        tests_passed=counts["passed"],
+        tests_failed=counts["failed"],
+        tests_skipped=counts["skipped"],
+        parallel=True,
+        workers=workers or 8,
+        cache_used=False,
+        selected_tests=test_dirs,
+        changed_files=[],
+        timestamp=datetime.now().isoformat(),
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Local CI Speed Optimizations - Orchestrates intelligent test selection"
@@ -407,7 +457,12 @@ def main() -> int:
     parser.add_argument(
         "--parallel",
         action="store_true",
-        help="Enable parallel test execution",
+        help="Enable parallel test execution (pytest-xdist)",
+    )
+    parser.add_argument(
+        "--parallel-runner",
+        action="store_true",
+        help="Use parallel runner with balanced distribution (uses min(cpu_count, 8))",
     )
     parser.add_argument(
         "--workers",
@@ -418,8 +473,8 @@ def main() -> int:
     parser.add_argument(
         "--max-workers",
         type=int,
-        default=4,
-        help="Maximum number of workers (default: 4)",
+        default=8,
+        help="Maximum number of workers (default: 8)",
     )
     parser.add_argument(
         "--cache",
@@ -457,6 +512,19 @@ def main() -> int:
     args = parser.parse_args()
 
     workers = args.workers or get_optimal_workers(args.max_workers)
+
+    # Use parallel runner for balanced distribution
+    if args.parallel_runner:
+        print("Running with parallel runner (balanced distribution)...")
+        test_dirs = ["tests"]
+        result = run_with_parallel_runner(
+            test_dirs=test_dirs,
+            workers=workers,
+            output_dir=args.output_dir,
+        )
+        print_benchmark_summary(result)
+        save_benchmark_result(result, args.output_dir)
+        return 0
 
     if args.compare:
         # Run both full and selective, then compare

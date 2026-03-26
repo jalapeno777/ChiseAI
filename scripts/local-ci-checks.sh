@@ -12,6 +12,7 @@ export PYTHONNOUSERSITE=1
 # PHASE 3: Parse command line arguments
 SCOPE_MODE="full"
 PARALLEL_MODE=""
+PARALLEL_WORKERS=""
 while [[ $# -gt 0 ]]; do
   case $1 in
     --merged-only)
@@ -20,7 +21,23 @@ while [[ $# -gt 0 ]]; do
       ;;
     --parallel)
       PARALLEL_MODE="1"
-      shift
+      # Check if next arg is a number (worker count)
+      if [[ "${2:-}" =~ ^[0-9]+$ ]]; then
+        PARALLEL_WORKERS="$2"
+        shift 2
+      else
+        shift
+      fi
+      ;;
+    --parallel-runner)
+      PARALLEL_MODE="runner"
+      # Check if next arg is a number (worker count)
+      if [[ "${2:-}" =~ ^[0-9]+$ ]]; then
+        PARALLEL_WORKERS="$2"
+        shift 2
+      else
+        shift
+      fi
       ;;
     *)
       shift
@@ -31,7 +48,7 @@ done
 # PHASE 3: Configure parallel test execution
 PARALLEL_ARGS=""
 if [ "${PARALLEL_MODE:-}" = "1" ]; then
-  WORKERS="${PYTEST_WORKERS:-auto}"
+  WORKERS="${PARALLEL_WORKERS:-${PYTEST_WORKERS:-auto}}"
   MAX_WORKERS="${PYTEST_MAX_WORKERS:-4}"
   if [ "$WORKERS" = "auto" ]; then
     # Auto-detect CPU count and cap at MAX_WORKERS
@@ -39,7 +56,10 @@ if [ "${PARALLEL_MODE:-}" = "1" ]; then
     WORKERS=$((CPU_COUNT > MAX_WORKERS ? MAX_WORKERS : CPU_COUNT))
   fi
   PARALLEL_ARGS="-n $WORKERS"
-  echo "PHASE 3: Parallel test execution enabled with $WORKERS workers"
+  echo "PHASE 3: Parallel test execution enabled with $WORKERS workers (pytest-xdist)"
+elif [ "${PARALLEL_MODE:-}" = "runner" ]; then
+  WORKERS="${PARALLEL_WORKERS:-auto}"
+  echo "PHASE 3: Parallel runner enabled with $WORKERS workers (balanced distribution)"
 fi
 
 # Swarm context is enforced by a dedicated Woodpecker step.
@@ -186,6 +206,25 @@ if [ ${#TEST_DIRS[@]} -eq 0 ]; then
 fi
 
 echo "Test batches: ${TEST_DIRS[*]}"
+
+# Use parallel runner for balanced distribution if requested
+if [ "${PARALLEL_MODE:-}" = "runner" ]; then
+  echo ""
+  echo "===== Running tests with parallel runner (balanced distribution) ====="
+
+  RUNNER_ARGS=()
+  if [ "${WORKERS:-}" != "auto" ]; then
+    RUNNER_ARGS+=("--workers" "$WORKERS")
+  fi
+
+  python3 scripts/local_ci_parallel_runner.py \
+    --test-dirs "${TEST_DIRS[*]}" \
+    "${RUNNER_ARGS[@]}" \
+    --output-dir "_bmad-output/ci" \
+    2>&1 | tee _bmad-output/ci/local-ci.log
+
+  exit "${PIPESTATUS[0]}"
+fi
 
 # Run tests in batches
 BATCH_FAIL=0
