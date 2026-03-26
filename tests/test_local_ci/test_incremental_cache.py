@@ -8,7 +8,6 @@ from __future__ import annotations
 import json
 import os
 import sys
-import tempfile
 import time
 from pathlib import Path
 
@@ -19,10 +18,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
 
 from local_ci_incremental_cache import (
     CACHE_EXT,
-    DEFAULT_CACHE_DIR,
     CacheEntry,
     CacheResult,
-    CacheStats,
     IncrementalCache,
 )
 
@@ -44,16 +41,12 @@ class TestIncrementalCache:
         source_dir.mkdir()
 
         # Create some Python files
-        (source_dir / "module1.py").write_text(
-            """def func1():
+        (source_dir / "module1.py").write_text("""def func1():
     return 1
-"""
-        )
-        (source_dir / "module2.py").write_text(
-            """def func2():
+""")
+        (source_dir / "module2.py").write_text("""def func2():
     return 2
-"""
-        )
+""")
 
         return source_dir
 
@@ -87,8 +80,8 @@ class TestIncrementalCache:
         hashes = cache._compute_dir_hash(temp_source_dir)
 
         # Hashes use absolute paths
-        assert any("module1.py" in k for k in hashes.keys())
-        assert any("module2.py" in k for k in hashes.keys())
+        assert any("module1.py" in k for k in hashes)
+        assert any("module2.py" in k for k in hashes)
         # All values should be 16 char hashes
         for v in hashes.values():
             assert len(v) == 16
@@ -195,11 +188,9 @@ class TestIncrementalCache:
 
         # Modify source file
         time.sleep(0.1)  # Ensure different mtime
-        (temp_source_dir / "module2.py").write_text(
-            """def func2():
+        (temp_source_dir / "module2.py").write_text("""def func2():
     return 42  # changed
-"""
-        )
+""")
 
         # Check cache - should miss because modifying ANY source file
         # changes the cache key (since all source file hashes are combined)
