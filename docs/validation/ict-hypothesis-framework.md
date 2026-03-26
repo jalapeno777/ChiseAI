@@ -74,7 +74,7 @@ Where:
 - `z_β = 0.84` (80% power)
 - `h = 0.50` (Cohen's h medium effect size)
 
-**Minimum signals required: 100 per group**
+**Minimum signals required: 63 per group**
 
 ### Effect Size Thresholds
 
@@ -139,19 +139,19 @@ A p-value > 0.30 after 50 signals indicates:
 
 ### Continue Collecting
 
-- Signals analyzed < 100
+- Signals analyzed < 63
 - p-value between 0.05 and 0.30
 - Effect size trending positive
 
 ### Accept H0 (ICT adds no alpha)
 
-- Signals ≥ 100
+- Signals ≥ 63
 - p-value ≥ 0.05
 - Effect size < 2% (negligible)
 
 ### Reject H0 (ICT adds alpha)
 
-- Signals ≥ 100
+- Signals ≥ 63
 - p-value < 0.05
 - Effect size ≥ 2% (Cohen's h ≥ 0.02)
 - Power achieved ≥ 80%
@@ -201,8 +201,8 @@ A p-value > 0.30 after 50 signals indicates:
 
 - [ ] Track signals in real-time
 - [ ] Evaluate at 50 signals (early stop check)
-- [ ] Re-evaluate at 75 signals
-- [ ] Final evaluation at 100+ signals
+- [ ] Re-evaluate at 63 signals (minimum)
+- [ ] Final evaluation at 100+ signals (recommended)
 
 ### Post-Collection
 

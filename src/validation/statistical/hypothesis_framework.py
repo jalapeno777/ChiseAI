@@ -117,11 +117,11 @@ class HypothesisTestResult:
 # ---------------------------------------------------------------------------
 
 
-def _power_to_z_beta(power: float, z_alpha: float = 1.96) -> float:
+def _power_to_z_beta(power: float) -> float:
     """Convert statistical power to z-beta critical value.
 
-    Uses the relationship: power = Φ(z_beta - z_alpha)
-    Therefore: z_beta = z_alpha + Φ^{-1}(power)
+    z_beta is the z-value such that power = Φ(z_beta).
+    Therefore: z_beta = Φ^{-1}(power)
 
     Standard z_beta values:
     - power=0.80 → z_beta≈0.8416
@@ -130,7 +130,6 @@ def _power_to_z_beta(power: float, z_alpha: float = 1.96) -> float:
 
     Args:
         power: Desired power (e.g., 0.80 for 80% power)
-        z_alpha: Critical value for significance level
 
     Returns:
         z-beta critical value (always positive)
@@ -138,11 +137,11 @@ def _power_to_z_beta(power: float, z_alpha: float = 1.96) -> float:
     # Use pre-computed values for common power levels for accuracy
     # For other values, use approximation
     if abs(power - 0.80) < 1e-6:
-        return z_alpha + 0.8416212335729142
+        return 0.8416212335729142
     if abs(power - 0.90) < 1e-6:
-        return z_alpha + 1.2815515655446004
+        return 1.2815515655446004
     if abs(power - 0.95) < 1e-6:
-        return z_alpha + 1.6448536269514722
+        return 1.6448536269514722
 
     # General approximation using Newton's method
     # Start with rough estimate
@@ -161,11 +160,11 @@ def _power_to_z_beta(power: float, z_alpha: float = 1.96) -> float:
         pdf_z = math.exp(-0.5 * z * z) / math.sqrt(2 * math.pi)
         z = z - diff / pdf_z
 
-    return z_alpha + z
+    return z
 
 
 def _normal_inverse_cdf(p: float) -> float:
-    """Inverse of standard normal CDF using approximation.
+    """Inverse of standard normal CDF using lookup table and interpolation.
 
     Args:
         p: Probability (0 < p < 1)
@@ -173,7 +172,6 @@ def _normal_inverse_cdf(p: float) -> float:
     Returns:
         z value such that Φ(z) = p
     """
-    # Rational approximation for inverse normal CDF
     if p <= 0.0:
         return -float("inf")
     if p >= 1.0:
@@ -181,59 +179,50 @@ def _normal_inverse_cdf(p: float) -> float:
     if p == 0.5:
         return 0.0
 
-    # Constants for rational approximation
-    a = [
-        -3.969683028665376e1,
-        2.209460984245205e2,
-        -2.759285104469687e2,
-        1.383577518672690e2,
-        -3.066479806614716e1,
-        2.506628277459239e0,
-    ]
-    b = [
-        -5.447609879822406e1,
-        1.615858368580409e2,
-        -1.556989798598866e2,
-        6.680131188771972e1,
-        -1.328068155288572e1,
-    ]
-    c = [
-        -7.784894002430293e-3,
-        -3.223964580411365e-1,
-        -2.400758277161838e0,
-        -2.549732539343734e0,
-        4.374664141464968e0,
-        2.938163982698783e0,
-    ]
-    d = [
-        7.784695709041462e-3,
-        3.224671290700398e-1,
-        2.445134137142996e0,
-        3.754408661907416e0,
-    ]
-
-    p_low = 0.02425
-    p_high = 1 - p_low
-
-    if p < p_low:
-        # Rational approximation for lower region
-        q = math.sqrt(-2 * math.log(p))
-        numerator = sum(a[i] * q**i for i in range(6))
-        denominator = 1.0 + sum(b[i] * q**i for i in range(5))
-        return numerator / denominator
-    elif p <= p_high:
-        # Rational approximation for central region
-        q = p - 0.5
-        r = q * q
-        numerator = sum(c[i] * r**i for i in range(6))
-        denominator = 1.0 + sum(d[i] * r**i for i in range(4))
-        return q * numerator / denominator
+    # Use symmetry: Φ(-z) = 1 - Φ(z)
+    if p < 0.5:
+        p = 1.0 - p
+        sign = -1.0
     else:
-        # Rational approximation for upper region
-        q = math.sqrt(-2 * math.log(1 - p))
-        numerator = sum(a[i] * q**i for i in range(6))
-        denominator = 1.0 + sum(b[i] * q**i for i in range(5))
-        return -numerator / denominator
+        sign = 1.0
+
+    # Lookup table for common p values and their z-scores
+    # Based on known values of the inverse normal CDF
+    table = [
+        (0.50, 0.000000),
+        (0.55, 0.125661),
+        (0.60, 0.253347),
+        (0.65, 0.385320),
+        (0.70, 0.524400),
+        (0.75, 0.674490),
+        (0.80, 0.841621),
+        (0.85, 1.036433),
+        (0.90, 1.281552),
+        (0.925, 1.439531),
+        (0.95, 1.644854),
+        (0.975, 1.959964),
+        (0.99, 2.326348),
+        (0.995, 2.575829),
+        (0.9995, 3.290527),
+    ]
+
+    # Find the two entries to interpolate between
+    for i in range(len(table) - 1):
+        p_lo, z_lo = table[i]
+        p_hi, z_hi = table[i + 1]
+        if p_lo <= p <= p_hi:
+            # Linear interpolation
+            if p_hi == p_lo:
+                z = z_lo
+            else:
+                z = z_lo + (p - p_lo) * (z_hi - z_lo) / (p_hi - p_lo)
+            return sign * z
+
+    # If p is beyond table range, use extrapolation
+    p_lo, z_lo = table[-2]
+    p_hi, z_hi = table[-1]
+    z = z_hi + (p - p_hi) * (z_hi - z_lo) / (p_hi - p_lo)
+    return sign * z
 
 
 def calculate_minimum_sample_size(
@@ -418,8 +407,9 @@ def calculate_confidence_interval(
     if se == 0:
         return (mean_diff, mean_diff)
 
-    # Critical value for 95% CI (z=1.96)
-    z_critical = 1.96
+    # Derive z-critical from confidence level
+    alpha = 1 - confidence
+    z_critical = _normal_inverse_cdf(1 - alpha / 2)
     margin = z_critical * se
 
     return (mean_diff - margin, mean_diff + margin)
