@@ -7,12 +7,8 @@ from __future__ import annotations
 
 import json
 import sys
-import tempfile
-import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-
-import pytest
 
 # Add scripts to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
@@ -118,7 +114,7 @@ class TestCIMetrics:
     def test_ci_metrics_to_dict(self):
         """Test CIMetrics.to_dict() method."""
         metrics = CIMetrics()
-        metrics.timestamp = datetime.now(timezone.utc).isoformat()
+        metrics.timestamp = datetime.now(UTC).isoformat()
         metrics.test_count = 100
         metrics.duration = 45.5
         metrics.cache_hit_rate = 75.0
@@ -226,7 +222,7 @@ class TestMetricsCollector:
 
         # Create test metrics
         test_metrics = CIMetrics()
-        test_metrics.timestamp = datetime.now(timezone.utc).isoformat()
+        test_metrics.timestamp = datetime.now(UTC).isoformat()
         test_metrics.test_count = 100
         test_metrics.duration = 45.5
         test_metrics.cache_hit_rate = 75.0
@@ -258,7 +254,7 @@ class TestMetricsCollector:
         collector = MetricsCollector()
 
         test_metrics = CIMetrics()
-        test_metrics.timestamp = datetime.now(timezone.utc).isoformat()
+        test_metrics.timestamp = datetime.now(UTC).isoformat()
         test_metrics.test_count = 100
 
         json_str = collector.to_json(test_metrics)
