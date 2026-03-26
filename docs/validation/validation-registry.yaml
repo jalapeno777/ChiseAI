@@ -3083,7 +3083,9 @@ validations:
     title: Rollback Procedures
     epic_id: EP-ICT-006
     story_id: ST-ICT-022
-    status: in_review
+    status: validated
+    completion_date: "2026-03-25"
+    test_results: passed 15
     description: |
       ICT feature flag rollback procedures and runbook.
       Redis key alignment verified against ict_feature_flags.py.
