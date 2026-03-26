@@ -13,14 +13,12 @@ import pytest
 from ict.strongsystem.hypothesis import (
     BOSConfirmation,
     HypothesisDirection,
-    HypothesisStrength,
     LiquiditySweepEvidence,
     MarketStructureEvidence,
     OrderFlowEvidence,
 )
 from ict.strongsystem.integrator import (
     ICTSignal,
-    IntegrationResult,
     StrongSystemIntegrator,
     get_integrator,
 )
@@ -29,7 +27,6 @@ from ict.strongsystem.zone_scorer import (
     ZoneDirection,
     ZoneType,
 )
-
 
 # --- Helpers ---
 

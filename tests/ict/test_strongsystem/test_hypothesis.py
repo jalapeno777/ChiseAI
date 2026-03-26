@@ -9,22 +9,18 @@ Tests the bullish/bearish hypothesis scoring algorithm:
 - Confidence contribution (AC4: 0.1-0.2 range)
 """
 
-import pytest
-
 from ict.strongsystem.hypothesis import (
-    BOSConfirmation,
     HYPOTHESIS_WEIGHTS,
+    STRENGTH_THRESHOLDS,
+    BOSConfirmation,
     HypothesisDirection,
-    HypothesisScore,
     HypothesisStrength,
     LiquiditySweepEvidence,
     MarketStructureEvidence,
     OrderFlowEvidence,
-    STRENGTH_THRESHOLDS,
     StrongSystemHypothesis,
     get_hypothesis_scorer,
 )
-
 
 # --- Helpers ---
 

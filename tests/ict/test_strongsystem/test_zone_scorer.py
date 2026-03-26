@@ -9,24 +9,19 @@ Tests the ICT zone scoring against hypothesis alignment:
 - Multi-zone scoring and sorting
 """
 
-import pytest
-
 from ict.strongsystem.hypothesis import (
     HypothesisDirection,
     HypothesisScore,
     HypothesisStrength,
 )
 from ict.strongsystem.zone_scorer import (
-    ALIGNMENT_MULTIPLIERS,
     ICTZone,
     ZoneAlignment,
     ZoneDirection,
     ZoneScorer,
-    ZoneScoreResult,
     ZoneType,
     get_zone_scorer,
 )
-
 
 # --- Helpers ---
 
