@@ -1,5 +1,5 @@
-"""ICT (Inner Circle Trader) analysis package.
+"""ICT (Inner Circle Trader) methodology implementations.
 
-Provides multi-timeframe zone aggregation, confluence detection,
-and cross-timeframe awareness for ICT-based trading signals.
+Provides core ICT concepts including liquidity analysis,
+order flow, and market structure detection.
 """
