@@ -43,6 +43,21 @@ LESSON
 
 ```text
 LESSON
+- id: LESSON-20260325-ict-rollback-documented
+- context: ST-ICT-022 documented ICT confluence rollback procedures
+- trigger: Need for clear rollback procedures for ICT confluence feature flag
+- actionable_rule: Document feature flag location (Redis key), rollback commands, and verification steps for all rollback scenarios
+- applies_to:
+  - dev
+  - senior-dev
+  - on-call
+- expected_outcome: Clear rollback runbook and testable procedures exist before production deployment
+- evidence_ref: docs/runbooks/ict-rollback-procedures.md, scripts/validation/test_ict_rollback.py
+- added_utc: 2026-03-25T00:00:00Z
+```
+
+```text
+LESSON
 - id: LESSON-20260317-test-path-inference
 - context: TG-002 fixed truth-gate test path inference for story-specific test directories
 - trigger: Hardcoded 'tests/' paths break story-specific test directories like 'tests_strong/'
@@ -589,8 +604,8 @@ LESSON
 3. **Before creating feature branches, check if target is already satisfied on main**
    - Prevents redundant work and orphaned branches
 
-4. **Story ID patterns (I-*) don't match gitea_pr_automerge.py validation — add to accepted patterns**
-   - The automerge script needs to accept I-* pattern for infrastructure stories
+4. **Story ID patterns (I-\*) don't match gitea_pr_automerge.py validation — add to accepted patterns**
+   - The automerge script needs to accept I-\* pattern for infrastructure stories
 
 5. **Woodpecker pipelines can get stuck in "running" state — needs watchdog**
    - Monitor for stuck pipelines and implement cleanup
