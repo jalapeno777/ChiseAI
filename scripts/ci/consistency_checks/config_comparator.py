@@ -142,9 +142,9 @@ def _parse_list_value(value: str) -> list[str]:
 
 def extract_ci_config_from_yaml(
     ci_yaml_path: str = ".woodpecker/ci.yaml",
-) -> dict[str, dict[str, Any]]:
+) -> dict[str, Any]:
     """Extract tool configuration from Woodpecker CI YAML files."""
-    configs = {}
+    configs: dict[str, Any] = {}
 
     # Read ci.yaml
     ci_path = Path(ci_yaml_path)

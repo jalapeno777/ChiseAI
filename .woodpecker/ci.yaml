@@ -219,6 +219,32 @@ steps:
         # all validation feedback is collected before failing.
         exit 0
 
+  # ST-LOCAL-008: Local CI Consistency Check (advisory-only)
+  # Validates that local development environment matches CI configuration.
+  # Non-blocking: outputs warnings but never fails the pipeline.
+  # Helps catch "works on my machine" issues before CI runs.
+  local-ci-consistency:
+    pull: false
+    image: chiseai-ci-tools:py311-20260323
+    environment:
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p "$${CI_STATUS_DIR}"
+        set +e
+        (
+          set -euo pipefail
+          echo "local-ci-consistency: Validating local environment matches CI..."
+          python scripts/validate_local_ci_consistency.py --verbose || true
+        ) > "$${CI_STATUS_DIR}/local-ci-consistency.log" 2>&1
+        code=$?
+        cat "$${CI_STATUS_DIR}/local-ci-consistency.log"
+        # Advisory-only: always write 0 regardless of check result
+        echo "0" > "$${CI_STATUS_DIR}/local-ci-consistency.status"
+        # Non-blocking: always exit 0 for advisory checks
+        exit 0
+
   security-scan:
     pull: false
     image: chiseai-ci-tools:py311-20260323
@@ -1183,6 +1209,7 @@ steps:
       - swarm-context
       - cross-branch-verify
       - lint
+      - local-ci-consistency
       - security-scan
       - dependency-audit
       - secret-scan
