@@ -7369,25 +7369,33 @@ stories:
   - description: Zone-to-Signal Mapping
     epic_id: EP-ICT-007
     id: ST-ICT-024
-    status: planned
+    merge_commit: 22a1068a
+    pr_number: 670
+    status: merged
     story_points: 3
     title: Zone-to-Signal Mapping
   - description: Cross-Timeframe Zone Awareness
     epic_id: EP-ICT-007
     id: ST-ICT-025
-    status: planned
+    merge_commit: 41541f57
+    pr_number: 668
+    status: merged
     story_points: 2
     title: Cross-Timeframe Zone Awareness
   - description: Liquidity Sweeps
     epic_id: EP-ICT-007
     id: ST-ICT-026
-    status: planned
+    merge_commit: 4d16e5b2
+    pr_number: 669
+    status: merged
     story_points: 2
     title: Liquidity Sweeps
   - description: Premium/Discount Zones
     epic_id: EP-ICT-007
     id: ST-ICT-027
-    status: planned
+    merge_commit: f88c682f
+    pr_number: 667
+    status: merged
     story_points: 2
     title: Premium/Discount Zones
   - description: Full ML Pipeline Integration
@@ -7399,7 +7407,9 @@ stories:
   - description: StrongSystem Hypothesis Integration
     epic_id: EP-ICT-007
     id: ST-ICT-029
-    status: planned
+    merge_commit: be8329c2
+    pr_number: 673
+    status: merged
     story_points: 2
     title: StrongSystem Hypothesis Integration
   - description: Neuro-Symbolic Explainability for ICT
