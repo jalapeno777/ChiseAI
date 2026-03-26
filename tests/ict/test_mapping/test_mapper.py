@@ -11,15 +11,13 @@ Tests cover:
 """
 
 import time
-from datetime import UTC, datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from uuid import UUID, uuid4
 
 import pytest
-
 from src.ict.mapping.mapper import (
-    ZoneSignalMapper,
     ZONE_STATUS_CONFIDENCE_MULTIPLIERS,
+    ZoneSignalMapper,
 )
 from src.ict.mapping.signal_models import (
     ContinuationSignal,
