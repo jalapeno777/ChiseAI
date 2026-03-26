@@ -1592,14 +1592,31 @@ epics:
       - Sprint ICT-S8 (Weeks 15-18)
       - Final decision on ICT/SMC expansion
     sprint_id: ICT-S8
-    status: planned
-    story_count: 4
+    status: in_progress
+    story_count: 5
     story_ids:
       - ST-ICT-019
-      - ST-ICT-020
+      - ST-ICT-020-PART-A
+      - ST-ICT-020-PART-B
       - ST-ICT-021
       - ST-ICT-022
     story_points: 5.5
+    completed_stories:
+      - id: ST-ICT-019
+        merge_commit: bb8aa77c
+        pr_number: 663
+        test_results:
+          passed: 53
+      - id: ST-ICT-021
+        merge_commit: 924cff76
+        pr_number: 665
+        test_results:
+          passed: 48
+      - id: ST-ICT-020-PART-A
+        merge_commit: a472e305
+        pr_number: 664
+        test_results:
+          passed: 30
   - description:
       Post-validation expansion work including dynamic weight adjustment, zone-to-signal
       mapping, cross-timeframe awareness, liquidity sweeps, premium/discount zones,
@@ -7291,7 +7308,7 @@ stories:
     epic_id: EP-ICT-006
     id: ST-ICT-019
     sprint_id: ICT-S8
-    status: planned
+    status: completed
     story_points: 1.5
     title: Hypothesis Design & Test Framework
   - acceptance_criteria:
@@ -7299,18 +7316,25 @@ stories:
         and treatment groups running, early stopping enforced
     description: Paper Trading Data Collection
     epic_id: EP-ICT-006
-    id: ST-ICT-020
+    id: ST-ICT-020-PART-A
+    sprint_id: ICT-S8
+    status: completed
+    story_points: 1
+    title: Paper Trading Data Collection - Part A
+  - description: Paper Trading PART-B - Time-Gated
+    epic_id: EP-ICT-006
+    id: ST-ICT-020-PART-B
     sprint_id: ICT-S8
     status: planned
-    story_points: 2
-    title: Paper Trading Data Collection
+    story_points: 1
+    title: Paper Trading Data Collection - Part B
   - acceptance_criteria:
       - Two-proportion z-test or Fisher exact test, Bonferroni correction, MDE 2%, decision output: "Confirm/Partial/Null"
     description: Statistical Analysis & Significance Testing
     epic_id: EP-ICT-006
     id: ST-ICT-021
     sprint_id: ICT-S8
-    status: planned
+    status: completed
     story_points: 1.5
     title: Statistical Analysis & Significance Testing
   - acceptance_criteria:
@@ -7320,7 +7344,7 @@ stories:
     epic_id: EP-ICT-006
     id: ST-ICT-022
     sprint_id: ICT-S8
-    status: planned
+    status: in_progress
     story_points: 0.5
     title: Rollback Procedures
   - description: Dynamic Weight Adjustment
