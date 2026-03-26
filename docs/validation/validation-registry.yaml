@@ -2997,6 +2997,108 @@ validations:
       - EP-ICT-006 completion (real market data)
       - EP-ICT-007 kickoff (Phase 5)
 
+  # EP-ICT-006: ICT Statistical Validation (Phase 3/4)
+  - id: V-ICT-019
+    title: Hypothesis Design & Test Framework
+    epic_id: EP-ICT-006
+    story_id: ST-ICT-019
+    status: validated
+    description: |
+      Statistical hypothesis testing framework for ICT signal validation.
+      Defines H0/H1, power analysis, sample size calculation, early stopping rules.
+    acceptance_criteria:
+      - Null hypothesis defined (ICT signals do NOT add alpha)
+      - Alternative hypothesis defined (p<0.05, effect size >2%)
+      - Power analysis shows minimum 63 signals required
+      - Early stopping rules documented (p>0.3 after 50 signals)
+      - Cohen's h effect size calculation implemented
+    test_method: automated
+    test_coverage: "95%"
+    owner: ml-team
+    merge_commit: bb8aa77c
+    pr_number: 663
+
+  - id: V-ICT-020A
+    title: Data Collection Pipeline Infrastructure
+    epic_id: EP-ICT-006
+    story_id: ST-ICT-020-PART-A
+    status: validated
+    description: |
+      Automated data collection pipeline for control/treatment group tracking.
+      Redis-backed signal storage with early stopping integration.
+    acceptance_criteria:
+      - Automated data collection pipeline operational
+      - Control group tracking (non-ICT baseline signals)
+      - Treatment group tracking (CVD, FVG, Order Block)
+      - Early stopping mechanism integrated
+      - BOS/CHoCH exclusion enforced per BL-BOS-CHOCH-001
+    test_method: automated
+    test_coverage: "90%"
+    owner: ml-team
+    merge_commit: a472e305
+    pr_number: 664
+
+  - id: V-ICT-020B
+    title: Live Paper Trading Data Collection (Time-Gated)
+    epic_id: EP-ICT-006
+    story_id: ST-ICT-020-PART-B
+    status: in_progress
+    description: |
+      4-week live observation period for statistical validation.
+      Time-gated: cannot compress, requires minimum 28 days elapsed time.
+    acceptance_criteria:
+      - 4+ weeks paper trading data collected
+      - Minimum 100 signals per group
+      - Automated data collection running continuously
+      - Early stopping evaluated weekly
+    test_method: manual
+    owner: operations
+    observation_start: "2026-03-25"
+    target_completion: "2026-04-22"
+    dependencies:
+      - ST-ICT-020-PART-A completion
+      - Paper trading environment active
+
+  - id: V-ICT-021
+    title: Statistical Analysis & Significance Testing
+    epic_id: EP-ICT-006
+    story_id: ST-ICT-021
+    status: validated
+    description: |
+      Statistical significance testing with two-proportion z-test,
+      Fisher exact test, Bonferroni correction, and MDE verification.
+    acceptance_criteria:
+      - Two-proportion z-test implemented
+      - Fisher exact test for small samples (<30 per group)
+      - Bonferroni correction for multiple comparisons
+      - MDE 2% calculation verified
+      - Decision output format (Confirm/Partial/Null)
+    test_method: automated
+    test_coverage: "92%"
+    owner: ml-team
+    merge_commit: 924cff76
+    pr_number: 665
+
+  - id: V-ICT-022
+    title: Rollback Procedures
+    epic_id: EP-ICT-006
+    story_id: ST-ICT-022
+    status: in_review
+    description: |
+      ICT feature flag rollback procedures and runbook.
+      Redis key alignment verified against ict_feature_flags.py.
+    acceptance_criteria:
+      - ICT feature flags can be disabled via Redis
+      - Rollback procedures tested per scenario
+      - Redis keys aligned with implementation (ict:feature_flags:*)
+      - DB 1 selection verified
+      - Learnings captured to docs/tempmemories/
+    test_method: automated
+    test_coverage: "85%"
+    owner: platform-team
+    merge_commit: 123b9689
+    pr_number: 660
+
 # ============================================================
 # Global validation thresholds
 # ============================================================
