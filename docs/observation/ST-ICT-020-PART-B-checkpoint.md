@@ -35,11 +35,11 @@ owner: operations
 
 ## Current Metrics
 
-_Last updated: 2026-03-25_
+_Last updated: 2026-03-26 19:00:00 UTC_
 
 | Metric                  | Value |
 | ----------------------- | ----- |
-| Days elapsed            | 0     |
+| Days elapsed            | 1     |
 | Signals collected       | 0     |
 | Control win rate        | N/A   |
 | Treatment win rate      | N/A   |
