@@ -2619,7 +2619,7 @@ validations:
     title: Test Path Validation
     epic_id: EP-CI-001
     story_id: ST-CI-TESTPATH-001
-    status: pending_evidence
+    status: planned
     description: Validate test path implementation for CI/CD improvements.
     acceptance_criteria:
       - Test paths are correctly configured
@@ -2632,7 +2632,7 @@ validations:
     title: Governance Drift Fix Validation
     epic_id: EP-GOV-001
     story_id: ST-GOV-DRIFT-001
-    status: pending_evidence
+    status: planned
     description: Validate governance drift fix implementation.
     acceptance_criteria:
       - Governance drift is detected and fixed
@@ -2645,7 +2645,7 @@ validations:
     title: Datetime.utcnow Replacement Validation
     epic_id: EP-INFRA-CLEANUP-001
     story_id: I-05
-    status: pending_evidence
+    status: planned
     description: Validate datetime.utcnow deprecation replacement with timezone-aware alternatives.
     acceptance_criteria:
       - datetime.utcnow() replaced with timezone-aware alternatives
@@ -2982,7 +2982,7 @@ validations:
     title: BOS/CHoCH Deferred Validation Remediation
     epic_id: EP-ICT-004
     story_id: BL-BOS-CHOCH-001
-    status: deferred
+    status: planned
     description: |
       BOS/CHoCH validation remediation deferred to Phase 5.
       Current accuracy 15.38% below 40% No-Go threshold.
@@ -3176,6 +3176,195 @@ validations:
     owner: platform-team
     merge_commit: 123b9689
     pr_number: 660
+
+  # EP-ICT-007: ICT Post-Validation Expansion (Phase 5)
+  - id: V-ICT-023
+    title: Dynamic Weight Adjustment
+    epic_id: EP-ICT-007
+    story_id: ST-ICT-023
+    status: validated
+    description: |
+      Dynamic weight adjustment for ICT signal components based on historical performance.
+    acceptance_criteria:
+      - Weights are adjustable per signal component (CVD, FVG, Order Blocks)
+      - Weight changes are logged with timestamp and rationale
+      - Historical weight settings are preserved for audit
+      - Weight optimization uses walk-forward analysis
+    test_method: automated
+    owner: ml-team
+    merge_commit: d92af20e6f812d1578868e46dd7fb1c4493c0976
+    pr_number: 671
+
+  - id: V-ICT-024
+    title: Zone-to-Signal Mapping
+    epic_id: EP-ICT-007
+    story_id: ST-ICT-024
+    status: validated
+    description: |
+      Mapping of ICT zones (premium/discount, order blocks, FVGs) to trading signals.
+    acceptance_criteria:
+      - Zone definitions are precise and unambiguous
+      - Zone-to-signal mapping produces consistent results
+      - All ICT zone types are supported
+      - Mapping is parameterized and configurable
+    test_method: automated
+    owner: ml-team
+    merge_commit: 22a1068a
+    pr_number: 670
+
+  - id: V-ICT-025
+    title: Cross-Timeframe Zone Awareness
+    epic_id: EP-ICT-007
+    story_id: ST-ICT-025
+    status: validated
+    description: |
+      Multi-timeframe analysis for ICT zone detection and validation.
+    acceptance_criteria:
+      - Zones are validated across 1m, 5m, 15m, 1h, 4h, 1d timeframes
+      - Timeframe confluence improves signal quality
+      - Higher timeframe zones take precedence in conflict resolution
+      - Performance meets <3s analysis requirement
+    test_method: automated
+    owner: ml-team
+    merge_commit: 41541f57
+    pr_number: 668
+
+  - id: V-ICT-026
+    title: Liquidity Sweeps
+    epic_id: EP-ICT-007
+    story_id: ST-ICT-026
+    status: validated
+    description: |
+      Detection and trading of liquidity sweeps (stop runs, stop hunting).
+    acceptance_criteria:
+      - Liquidity sweep detection identifies stop clusters
+      - Sweeps are validated against volume and price action
+      - Signal is generated after sweep completion and retest
+      - False sweep filtering based on momentum confirmation
+    test_method: automated
+    owner: ml-team
+    merge_commit: 4d16e5b2
+    pr_number: 669
+
+  - id: V-ICT-027
+    title: Premium/Discount Zones
+    epic_id: EP-ICT-007
+    story_id: ST-ICT-027
+    status: validated
+    description: |
+      Identification and trading of premium and discount zones in ICT methodology.
+    acceptance_criteria:
+      - Premium/discount zones are correctly identified
+      - Zone quality scoring based on multiple touches
+      - Trading signals respect zone polarity
+      - Zone invalidation rules are clearly defined
+    test_method: automated
+    owner: ml-team
+    merge_commit: f88c682f
+    pr_number: 667
+
+  - id: V-ICT-028
+    title: Full ML Pipeline Integration (DEPRECATED)
+    epic_id: EP-ICT-007
+    story_id: ST-ICT-028
+    status: deprecated
+    description: |
+      DEPRECATED - Split into ST-ICT-028-A, ST-ICT-028-B, ST-ICT-028-C
+    acceptance_criteria:
+      - Deprecated - no validation required
+    test_method: manual
+    owner: ml-team
+
+  - id: V-ICT-028A
+    title: ICT Feature Engineering Pipeline
+    epic_id: EP-ICT-007
+    story_id: ST-ICT-028-A
+    status: validated
+    description: |
+      Create feature extraction pipeline for ICT signals. Integrate CVD, FVG,
+      Order Block features into ML training data.
+    acceptance_criteria:
+      - Feature extraction pipeline for ICT signals
+      - CVD, FVG, Order Block features integrated
+      - Training data format compatible with existing pipeline
+    test_method: automated
+    owner: ml-team
+
+  - id: V-ICT-028B
+    title: ICT ML Model Training Integration
+    epic_id: EP-ICT-007
+    story_id: ST-ICT-028-B
+    status: validated
+    description: |
+      Extend TrainingPipelineIntegration to support ICT signal training.
+      Add ICT-specific model configurations.
+    acceptance_criteria:
+      - TrainingPipelineIntegration extended for ICT signals
+      - ICT-specific model configurations added
+      - Integration tests pass
+    test_method: automated
+    owner: ml-team
+    test_results:
+      passed: 43
+    validation_notes: >
+      ICTModelConfig, ICTTrainingPipeline, ICTFeatureLoader, ICTModelTrainer,
+      and ICTValidator implemented. Full integration with existing pipeline.
+      Tests: 43 passed.
+
+  - id: V-ICT-028C
+    title: ICT ML Pipeline Orchestration
+    epic_id: EP-ICT-007
+    story_id: ST-ICT-028-C
+    status: validated
+    description: |
+      Create orchestrator that schedules ICT model retraining.
+      Integration with existing scheduler.
+    acceptance_criteria:
+      - ICT model retraining scheduler created
+      - Integration with existing scheduler
+      - Orchestration tests pass
+    test_method: automated
+    owner: ml-team
+    test_results:
+      passed: 57
+    validation_notes: >
+      ICTOrchestrator, ICTSchedulerAdapter, PerformanceMonitor, and ModelPromoter
+      implemented. Includes scheduled retraining, performance monitoring, and
+      model promotion/demotion. Tests: 57 passed.
+
+  - id: V-ICT-029
+    title: StrongSystem Hypothesis Integration
+    epic_id: EP-ICT-007
+    story_id: ST-ICT-029
+    status: validated
+    description: |
+      Integration of StrongSystem hypothesis into ICT signal framework.
+    acceptance_criteria:
+      - StrongSystem parameters are configurable
+      - Hypothesis testing framework is in place
+      - Results are comparable to baseline ICT signals
+      - Performance metrics are tracked
+    test_method: automated
+    owner: ml-team
+    merge_commit: be8329c2
+    pr_number: 673
+
+  - id: V-ICT-030
+    title: Neuro-Symbolic Explainability for ICT
+    epic_id: EP-ICT-007
+    story_id: ST-ICT-030
+    status: validated
+    description: |
+      Explainable AI module for ICT signals using neuro-symbolic reasoning.
+    acceptance_criteria:
+      - Signal explanations reference specific ICT concepts
+      - Explanations are human-readable and actionable
+      - Symbolic rules are auditable and tunable
+      - Explanation quality is validated against signal accuracy
+    test_method: automated
+    owner: ml-team
+    merge_commit: 05e88ddaf4f273a60435a66012eabf3f7194051a
+    pr_number: 672
 
 # ============================================================
 # Global validation thresholds
