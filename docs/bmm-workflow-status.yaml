@@ -3071,6 +3071,8 @@ launch_stories:
       - FR-GOV-009
     governance_feature: GF-009
     id: ST-GOV-009
+    merge_commit: 86224f5
+    pr_number: LEGACY
     priority: P2-MEDIUM
     sprint_id: GOV-PHASE3-001
     status: completed
@@ -7273,7 +7275,7 @@ stories:
     epic_id: EP-ICT-005
     id: ST-ICT-015
     sprint_id: ICT-S7
-    status: planned
+    status: completed
     story_points: 2
     title: ICT Signal Registration
   - acceptance_criteria:
@@ -7283,7 +7285,7 @@ stories:
     epic_id: EP-ICT-005
     id: ST-ICT-016
     sprint_id: ICT-S7
-    status: planned
+    status: completed
     story_points: 2
     title: ICT Signal Emission Integration
   - acceptance_criteria:

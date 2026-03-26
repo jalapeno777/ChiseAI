@@ -2997,6 +2997,82 @@ validations:
       - EP-ICT-006 completion (real market data)
       - EP-ICT-007 kickoff (Phase 5)
 
+  # EP-ICT-005: ICT Confluence v2 Integration
+  - id: V-ICT-014
+    title: Two-Layer Confluence Scorer
+    epic_id: EP-ICT-005
+    story_id: ST-ICT-014
+    status: validated
+    description: Two-layer scorer with CVD, FVG, Order Block support.
+    acceptance_criteria:
+      - Two-layer scoring architecture implemented
+      - CVD, FVG, Order Block signals supported
+      - Backward compatible with Layer 2 alone
+    test_method: automated
+    owner: ml-team
+    merge_commit: 37a4b76a
+    pr_number: 654
+
+  - id: V-ICT-015
+    title: ICT Signal Registration
+    epic_id: EP-ICT-005
+    story_id: ST-ICT-015
+    status: validated
+    description: ICT signal registry with BOS/CHoCH exclusion.
+    acceptance_criteria:
+      - BOS/CHoCH, CVD, FVG, OB registered in indicator registry
+      - indicator_weights entries defined
+      - Wired through signal_aggregator.py
+    test_method: automated
+    owner: ml-team
+    merge_commit: 14277924
+    pr_number: 653
+
+  - id: V-ICT-016
+    title: ICT Signal Emission Integration
+    epic_id: EP-ICT-005
+    story_id: ST-ICT-016
+    status: validated
+    description: Signal emission integration for ICT signals.
+    acceptance_criteria:
+      - ICT context in Discord messages
+      - ICT context in dashboard payloads
+      - Backward compatible message format
+    test_method: automated
+    owner: ml-team
+    merge_commit: ae9607fa
+    pr_number: 656
+
+  - id: V-ICT-017
+    title: ML Feedback Analyzer Wiring
+    epic_id: EP-ICT-005
+    story_id: ST-ICT-017
+    status: validated
+    description: ML feedback analyzer integration for ICT zones.
+    acceptance_criteria:
+      - ICT zone events route to ml/feedback/analyzer.py
+      - Win rate tracking per zone type per regime per token
+      - ICT-specific ECE calibration buckets
+    test_method: automated
+    owner: ml-team
+    merge_commit: c64ee050
+    pr_number: 657
+
+  - id: V-ICT-018
+    title: Feature Flag Implementation
+    epic_id: EP-ICT-005
+    story_id: ST-ICT-018
+    status: validated
+    description: Feature flag for ICT confluence v2.
+    acceptance_criteria:
+      - ICT_CONFLUENCE_ENABLED config flag
+      - When false reverts to Layer 2 only
+      - Tested before Phase 2 deployment
+    test_method: automated
+    owner: ml-team
+    merge_commit: 15e4c087
+    pr_number: 652
+
   # EP-ICT-006: ICT Statistical Validation (Phase 3/4)
   - id: V-ICT-019
     title: Hypothesis Design & Test Framework
