@@ -11,15 +11,12 @@ Covers:
 import time
 
 import pytest
-
 from src.ict.zones.classifier import (
     FairValueMethod,
     FairValueResult,
     PremiumDiscountClassifier,
-    ZoneClassification,
     ZoneType,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
