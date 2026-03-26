@@ -72,7 +72,7 @@ class CacheResult:
     """Result of a cache lookup."""
 
     found: bool
-    entry: Optional[CacheEntry] = None
+    entry: CacheEntry | None = None
     reason: str = ""
 
 
@@ -105,7 +105,7 @@ class IncrementalCache:
         try:
             with open(path, "rb") as f:
                 return hashlib.sha256(f.read()).hexdigest()[:16]
-        except (IOError, OSError):
+        except OSError:
             return ""
 
     def _compute_dir_hash(
@@ -244,7 +244,7 @@ class IncrementalCache:
             self._update_hit_rate()
             return CacheResult(found=True, entry=entry, reason="Cache hit")
 
-        except (json.JSONDecodeError, KeyError, IOError) as e:
+        except (OSError, json.JSONDecodeError, KeyError) as e:
             self._stats.invalidations += 1
             self._stats.misses += 1
             self._update_hit_rate()
@@ -323,7 +323,7 @@ class IncrementalCache:
                 json.dump(data, f, indent=2)
             self._stats.stored += 1
             return True
-        except IOError as e:
+        except OSError as e:
             print(f"Failed to store cache: {e}", file=sys.stderr)
             return False
 
@@ -404,7 +404,7 @@ class IncrementalCache:
 def run_pytest_cached(
     tests: list[str],
     output_dir: str = "_bmad-output/ci",
-    cache: Optional[IncrementalCache] = None,
+    cache: IncrementalCache | None = None,
     source_dir: str = "src",
 ) -> tuple[int, dict, float, str]:
     """Run pytest with incremental caching.
@@ -418,7 +418,6 @@ def run_pytest_cached(
     Returns:
         Tuple of (exit_code, counts, duration, output)
     """
-    import subprocess
     import contextlib
 
     output_path = Path(output_dir)
