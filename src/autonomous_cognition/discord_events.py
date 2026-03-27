@@ -45,6 +45,7 @@ async def emit_self_assessment_completed(
     notifier: DiscordNotifier,
     artifact: Any,
     artifact_path: str | None = None,
+    decision_packet: dict[str, Any] | None = None,
 ) -> bool:
     """Emit a self-assessment completed event to Discord.
 
@@ -55,6 +56,7 @@ async def emit_self_assessment_completed(
         notifier: DiscordNotifier instance
         artifact: SelfAssessmentArtifact or similar object with assessment data
         artifact_path: Optional path to the artifact file
+        decision_packet: Optional decision context to include in notification
 
     Returns:
         True if notification was sent successfully, False otherwise
@@ -62,4 +64,5 @@ async def emit_self_assessment_completed(
     return await notifier.notify_self_assessment(
         artifact=artifact,
         artifact_path=artifact_path,
+        decision_packet=decision_packet,
     )

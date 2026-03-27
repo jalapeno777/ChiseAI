@@ -210,6 +210,7 @@ class SelfAssessmentNotificationFormatter:
         self,
         artifact: Any,
         artifact_path: str | None = None,
+        decision_packet: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Format a self-assessment completion event as a Discord embed.
 
@@ -222,10 +223,12 @@ class SelfAssessmentNotificationFormatter:
         Args:
             artifact: SelfAssessmentArtifact or similar object
             artifact_path: Optional path to the artifact file
+            decision_packet: Optional decision context to include in embed
 
         Returns:
             Dictionary suitable for Discord webhook embed format
         """
+        decision_packet = decision_packet or {}
         status = getattr(artifact, "status", "unknown")
         assessment_id = getattr(artifact, "assessment_id", "unknown")
         assessment_date = getattr(artifact, "assessment_date", "unknown")
@@ -288,6 +291,37 @@ class SelfAssessmentNotificationFormatter:
                     "inline": False,
                 }
             )
+
+        # Add decision packet info if provided
+        if decision_packet:
+            decision_lines = []
+            contradiction = decision_packet.get("contradiction")
+            if contradiction:
+                decision_lines.append(f"• Contradiction: {contradiction}")
+            previous = decision_packet.get("previous_belief")
+            if isinstance(previous, dict):
+                decision_lines.append(
+                    f"• Previous: {previous.get('belief_id', 'unknown')}"
+                )
+            replacement = decision_packet.get("replacement_belief")
+            if isinstance(replacement, dict):
+                decision_lines.append(
+                    f"• Replacement: {replacement.get('belief_id', 'unknown')}"
+                )
+            rationale = decision_packet.get("selection_rationale")
+            if rationale:
+                decision_lines.append(f"• Rationale: {rationale[:100]}")
+            expected = decision_packet.get("expected_improvements")
+            if isinstance(expected, list) and expected:
+                decision_lines.append(f"• Expected: {expected[0][:100]}")
+            if decision_lines:
+                fields.append(
+                    {
+                        "name": "Decision Context",
+                        "value": "\n".join(decision_lines)[:1024],
+                        "inline": False,
+                    }
+                )
 
         embed = {
             "title": f"{status_icon} Self-Assessment Completed",

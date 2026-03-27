@@ -176,6 +176,60 @@ class TestDiscordNotifier:
         assert result is False
 
     @pytest.mark.asyncio
+    async def test_notify_self_assessment_with_decision_packet(self, mock_client):
+        """Test self-assessment notification includes decision_packet in formatted output."""
+        notifier = DiscordNotifier(client=mock_client, channel_id="123")
+
+        decision_packet = {
+            "contradiction": "belief-42 contradicts evidence",
+            "previous_belief": {"belief_id": "belief-42", "statement": "old belief"},
+            "replacement_belief": {"belief_id": "belief-43", "statement": "new belief"},
+            "selection_rationale": "stronger evidence support",
+            "expected_improvements": ["improved accuracy"],
+        }
+
+        captured_embed = None
+
+        async def capture_embed(embed):
+            nonlocal captured_embed
+            captured_embed = embed
+            return (True, "msg123")
+
+        with patch.object(notifier, "_is_enabled", return_value=True):
+            with patch.object(
+                notifier, "_is_self_assessment_duplicate", return_value=False
+            ):
+                with patch.object(notifier, "_mark_self_assessment_sent"):
+                    with patch.object(
+                        notifier, "_send_embed_with_retry", capture_embed
+                    ):
+                        result = await notifier.notify_self_assessment(
+                            artifact=Mock(
+                                assessment_id="sa-20260313-test",
+                                assessment_date="2026-03-13",
+                                created_at="2026-03-13T00:00:00+00:00",
+                                status="ok",
+                                overall_score=0.9,
+                                findings=[],
+                                recommendations=[],
+                                dimensions={},
+                            ),
+                            artifact_path="docs/governance/self_assessments/a.json",
+                            decision_packet=decision_packet,
+                        )
+
+        assert result is True
+        assert captured_embed is not None
+        # Verify decision_packet fields appear in the embed
+        field_names = [f["name"] for f in captured_embed.get("fields", [])]
+        assert "Decision Context" in field_names
+        decision_field = next(
+            f for f in captured_embed["fields"] if f["name"] == "Decision Context"
+        )
+        assert "belief-42" in decision_field["value"]  # contradiction reference
+        assert "belief-43" in decision_field["value"]  # replacement belief
+
+    @pytest.mark.asyncio
     async def test_notify_autocog_event_success(self, mock_client):
         """Test generic autonomous cognition event notification path."""
         mock_client.send_message.return_value = Mock(success=True)

@@ -815,6 +815,7 @@ class DiscordNotifier:
         artifact: Any,
         artifact_path: str | None = None,
         previous_score: float | None = None,
+        decision_packet: dict[str, Any] | None = None,
     ) -> bool:
         """Send self-assessment completion event to Discord.
 
@@ -833,6 +834,7 @@ class DiscordNotifier:
             artifact_path: Optional path to the persisted artifact.
             previous_score: Overall score from the previous assessment,
                 or None for first assessment (always notifies).
+            decision_packet: Optional decision context to include in notification.
 
         Returns:
             True if sent successfully, False if suppressed or failed.
@@ -880,6 +882,7 @@ class DiscordNotifier:
             embed = formatter.format_self_assessment_completed(
                 artifact=artifact,
                 artifact_path=artifact_path,
+                decision_packet=decision_packet,
             )
             success, message_id = await self._send_embed_with_retry(embed)
             if success:
