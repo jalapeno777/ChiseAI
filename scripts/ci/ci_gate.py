@@ -47,6 +47,20 @@ FAST_REQUIRED = [
     "local-ci-consistency.status",
     "post-run.status",
     "gate-eval.status",
+    # From tempmemory-operations-group:
+    "tempmemory-scheduler.status",
+    "tempmemory-reconcile.status",
+    "tempmemory-drill.status",
+    # From evaluation-pre-eval-group:
+    "mini-brain-eval.status",
+    # From quality-advisory-group:
+    "pipeline-watchdog.status",
+    "compass-apply.status",
+    # From governance-gates-group:
+    "status-evidence-gate.status",
+    "completion-evidence-gate.status",
+    "workflow-transition-gate.status",
+    "governance-drift-check.status",
 ]
 FULL_REQUIRED = [
     "local-ci.status",
