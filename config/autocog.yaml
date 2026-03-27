@@ -7,13 +7,13 @@ version: 1
 # Experimental Learning Mode
 # Enables safe experimentation (2-3 experiments per cycle)
 experiments:
-  enabled: true
+  enabled: false
   max_experiments_per_cycle: 3
   safe_mode: true # Only run experiments within safety guardrails
 
 # Qdrant Integration
 qdrant:
-  write_enabled: true
+  write_enabled: false
   collection_name: "ChiseAI"
   vector_size: 384
 
