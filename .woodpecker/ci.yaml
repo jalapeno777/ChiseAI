@@ -1254,6 +1254,103 @@ steps:
         echo "$code" > "$${CI_STATUS_DIR}/gate-eval.status"
         exit 0
 
+  # Consolidated governance gates - runs 6 lightweight governance scripts in a single container
+  governance-gates-group:
+    pull: false
+    image: chiseai-ci-tools:py311-20260323
+    environment:
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p "$${CI_STATUS_DIR}"
+
+        echo "governance-gates-group: Starting consolidated governance gate execution"
+        GROUP_START_TIME=$$(date +%s)
+
+        # 1. status-write-gate
+        echo "governance-gates-group: [1/6] Running status-write-gate..."
+        (
+          set -euo pipefail
+          EVENT="$${CI_BUILD_EVENT:-$${WOODPECKER_BUILD_EVENT:-$${WOODPECKER_EVENT:-}}}"
+          BRANCH="$${CI_COMMIT_BRANCH:-$${WOODPECKER_COMMIT_BRANCH:-}}"
+          REF="$${CI_COMMIT_REF:-}"
+          CHANGED_FILES="$(printf '%s' \"$${CI_PIPELINE_FILES:-[]}\" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
+          if [ "$${CI_FORCE_FULL:-0}" != "1" ] && printf '%s' "$${REF}" | grep -q '^refs/pull/' && ! printf '%s\n' "$CHANGED_FILES" | grep -qx "docs/bmm-workflow-status.yaml"; then
+            echo "status-write-gate: workflow status file unchanged on PR; skipping"
+            exit 0
+          fi
+          echo "Running status write gate check..."
+          git fetch --quiet --unshallow origin || git fetch --quiet --depth=50000 origin main || true
+          python3 scripts/governance/status_write_gate.py --file docs/bmm-workflow-status.yaml --no-require-authority
+        ) > "$${CI_STATUS_DIR}/status-write-gate.log" 2>&1
+        code=$$?; cat "$${CI_STATUS_DIR}/status-write-gate.log"; echo "$$code" > "$${CI_STATUS_DIR}/status-write-gate.status"
+
+        # 2. status-evidence-gate
+        echo "governance-gates-group: [2/6] Running status-evidence-gate..."
+        (
+          set -euo pipefail
+          CHANGED_FILES="$(printf '%s' "${CI_PIPELINE_FILES:-[]}" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
+          if ! printf '%s\n' "$CHANGED_FILES" | grep -qx "docs/bmm-workflow-status.yaml"; then
+            echo "status-evidence-gate: workflow status file unchanged; skipping"
+            exit 0
+          fi
+          echo "status-evidence-gate: workflow status file changed; running validation..."
+          python3 scripts/validation/validate_status_evidence.py --legacy-grace-period-days 7
+        ) > "$${CI_STATUS_DIR}/status-evidence-gate.log" 2>&1
+        code=$$?; cat "$${CI_STATUS_DIR}/status-evidence-gate.log"; echo "$$code" > "$${CI_STATUS_DIR}/status-evidence-gate.status"
+
+        # 3. completion-evidence-gate
+        echo "governance-gates-group: [3/6] Running completion-evidence-gate..."
+        (
+          set -euo pipefail
+          CHANGED_FILES="$(printf '%s' "${CI_PIPELINE_FILES:-[]}" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
+          if ! printf '%s\n' "$CHANGED_FILES" | grep -qx "docs/bmm-workflow-status.yaml"; then
+            echo "completion-evidence-gate: workflow status file unchanged; skipping"
+            exit 0
+          fi
+          echo "completion-evidence-gate: workflow status file changed; running validation..."
+          python3 scripts/validate_completion_evidence.py --legacy-grace-period-days 7
+        ) > "$${CI_STATUS_DIR}/completion-evidence-gate.log" 2>&1
+        code=$$?; cat "$${CI_STATUS_DIR}/completion-evidence-gate.log"; echo "$$code" > "$${CI_STATUS_DIR}/completion-evidence-gate.status"
+
+        # 4. workflow-transition-gate
+        echo "governance-gates-group: [4/6] Running workflow-transition-gate..."
+        (
+          set -euo pipefail
+          CHANGED_FILES="$(printf '%s' "${CI_PIPELINE_FILES:-[]}" | tr -d '[]\"' | tr ',' '\n' | sed 's/^ *//;s/ *$//' || true)"
+          if ! printf '%s\n' "$CHANGED_FILES" | grep -qx "docs/bmm-workflow-status.yaml"; then
+            echo "workflow-transition-gate: workflow status file unchanged; skipping"
+            exit 0
+          fi
+          echo "workflow-transition-gate: workflow status file changed; running validation..."
+          python3 scripts/validation/validate_workflow_transitions.py
+        ) > "$${CI_STATUS_DIR}/workflow-transition-gate.log" 2>&1
+        code=$$?; cat "$${CI_STATUS_DIR}/workflow-transition-gate.log"; echo "$$code" > "$${CI_STATUS_DIR}/workflow-transition-gate.status"
+
+        # 5. governance-drift-check
+        echo "governance-gates-group: [5/6] Running governance-drift-check..."
+        (
+          set -euo pipefail
+          python3 scripts/validation/governance_drift_guard.py --verbose
+        ) > "$${CI_STATUS_DIR}/governance-drift-check.log" 2>&1
+        code=$$?; cat "$${CI_STATUS_DIR}/governance-drift-check.log"; echo "$$code" > "$${CI_STATUS_DIR}/governance-drift-check.status"
+
+        # 6. evidence-gate
+        echo "governance-gates-group: [6/6] Running evidence-gate..."
+        (
+          set -euo pipefail
+          echo "evidence-gate: Running evidence validation..."
+          python3 scripts/ci/evidence_gate_runner.py --verbose
+        ) > "$${CI_STATUS_DIR}/evidence-gate.log" 2>&1
+        code=$$?; cat "$${CI_STATUS_DIR}/evidence-gate.log"; echo "$$code" > "$${CI_STATUS_DIR}/evidence-gate.status"
+
+        GROUP_END_TIME=$$(date +%s)
+        GROUP_DURATION=$$((GROUP_END_TIME - GROUP_START_TIME))
+        echo "governance-gates-group: All 6 governance gates completed in $${GROUP_DURATION}s"
+        echo "0" > "$${CI_STATUS_DIR}/governance-gates-group.status"
+        exit 0
+
   ci-gate:
     pull: false
     image: chiseai-ci-tools:py311-20260323

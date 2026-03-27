@@ -42,6 +42,11 @@ FAST_REQUIRED = [
     "status-write-gate.status",
     "performance-gate.status",  # PHASE 3: Performance threshold validation
     "evidence-gate.status",  # TECH-002-B: Per-story evidence validation
+    # PR #714: New pipeline steps
+    "pre-flight.status",
+    "local-ci-consistency.status",
+    "post-run.status",
+    "gate-eval.status",
 ]
 FULL_REQUIRED = [
     "local-ci.status",
