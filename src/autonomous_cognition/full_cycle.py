@@ -184,10 +184,12 @@ class AutonomousCognitionFullCycle:
                     )
 
                 if notifier and notify_loop:
+                    previous_score = self._get_previous_assessment_score()
                     notify_loop.run_until_complete(
                         notifier.notify_self_assessment(
                             artifact=assessment,
                             artifact_path=str(assessment_path),
+                            previous_score=previous_score,
                         )
                     )
 
@@ -1086,6 +1088,32 @@ class AutonomousCognitionFullCycle:
                     )
                 ]
         return index
+
+    def _get_previous_assessment_score(self) -> float | None:
+        """Retrieve the overall_score from the most recent prior assessment.
+
+        Returns:
+            The ``overall_score`` from the previous assessment file, or
+            None if no prior assessment exists or the score cannot be read.
+        """
+        directory = Path("docs/governance/self_assessments")
+        if not directory.exists():
+            return None
+        files = sorted(
+            directory.glob("self_assessment_*.json"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
+        # Skip the most recent one (that's the current run's artifact).
+        # We want the one before it.
+        if len(files) < 2:
+            return None
+        try:
+            payload = json.loads(files[1].read_text(encoding="utf-8"))
+            score = payload.get("overall_score")
+            return float(score) if score is not None else None
+        except (OSError, json.JSONDecodeError, ValueError, TypeError):
+            return None
 
     def _recent_self_assessment_window(
         self, max_items: int = 5

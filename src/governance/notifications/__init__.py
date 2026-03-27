@@ -4,6 +4,7 @@ from .discord_notifier import DiscordNotifier
 from .formatters import (
     AutocogEventFormatter,
     DecisionNotificationFormatter,
+    LowSeverityDigestFormatter,
     ReflectionNotificationFormatter,
     SelfAssessmentNotificationFormatter,
 )
@@ -14,4 +15,5 @@ __all__ = [
     "DecisionNotificationFormatter",
     "SelfAssessmentNotificationFormatter",
     "AutocogEventFormatter",
+    "LowSeverityDigestFormatter",
 ]
