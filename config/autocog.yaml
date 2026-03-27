@@ -9,7 +9,7 @@ version: 1
 experiments:
   enabled: true
   max_experiments_per_cycle: 3
-  safe_mode: true  # Only run experiments within safety guardrails
+  safe_mode: true # Only run experiments within safety guardrails
 
 # Qdrant Integration
 qdrant:
@@ -20,7 +20,7 @@ qdrant:
 # Metrics and Monitoring
 metrics:
   # Candidate skip rate monitoring
-  skip_rate_alert_threshold: 0.20  # 20%
+  skip_rate_alert_threshold: 0.20 # 20%
   skip_rate_window_days: 7
   alert_on_high_skip_rate: true
 
@@ -52,9 +52,19 @@ scheduling:
 
 # Safety Guardrails (immutable via auto-actions)
 safety:
-  max_risk_level: "medium"  # Auto-actions only up to medium
+  max_risk_level: "medium" # Auto-actions only up to medium
   require_approval_for: ["high", "critical"]
   protected_files:
     - "src/core/risk_caps.py"
     - "src/core/governance_bypasses.py"
     - "docs/bmm-workflow-status.yaml"
+
+# Discord Notification Noise Reduction
+# Controls when notifications are sent vs suppressed or batched
+notifications:
+  # Minimum score delta to trigger self-assessment notification (1%)
+  notification_score_threshold: 0.01
+  # Low-severity digest flush interval in minutes
+  digest_interval_minutes: 60
+  # Max buffered low-severity items before auto-flush
+  digest_max_items: 10

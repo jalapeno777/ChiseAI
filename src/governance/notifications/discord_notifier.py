@@ -3,7 +3,7 @@
 import asyncio
 import logging
 import re
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from discord_alerts.config import DiscordConfig
@@ -21,6 +21,11 @@ CHANNEL_ID_PATTERN = re.compile(r"^\d{17,20}$")
 WEBHOOK_URL_PATTERN = re.compile(
     r"^https://discord\.com/api/webhooks/\d{17,20}/[A-Za-z0-9_-]+$"
 )
+
+# --- Noise Reduction Configuration Defaults ---
+DEFAULT_NOTIFICATION_SCORE_THRESHOLD = 0.01  # 1% minimum score change to notify
+DEFAULT_DIGEST_INTERVAL_MINUTES = 60
+DEFAULT_DIGEST_MAX_ITEMS = 10
 
 
 def validate_routing_config(routing_config: dict[str, Any]) -> dict[str, Any]:
@@ -163,6 +168,10 @@ class DiscordNotifier:
         client: DiscordClient | None = None,
         channel_id: str | None = None,
         config: DiscordConfig | None = None,
+        *,
+        notification_score_threshold: float = DEFAULT_NOTIFICATION_SCORE_THRESHOLD,
+        digest_interval_minutes: int = DEFAULT_DIGEST_INTERVAL_MINUTES,
+        digest_max_items: int = DEFAULT_DIGEST_MAX_ITEMS,
     ):
         """Initialize Discord notifier.
 
@@ -175,10 +184,21 @@ class DiscordNotifier:
             client: DiscordClient instance (created if None)
             channel_id: Target channel ID for development events
             config: DiscordConfig instance (loaded from env if None and needed)
+            notification_score_threshold: Minimum score delta to trigger
+                self-assessment notification (default 0.01 = 1%).
+            digest_interval_minutes: How often to flush low-severity digest.
+            digest_max_items: Maximum items in digest before auto-flush.
         """
         self._config = config
         self._webhook_url: str | None = None
         self._owns_client = False
+
+        # Noise reduction settings
+        self._notification_score_threshold = notification_score_threshold
+        self._digest_interval_minutes = digest_interval_minutes
+        self._digest_max_items = digest_max_items
+        self._low_severity_buffer: list[dict[str, Any]] = []
+        self._digest_last_flush: datetime | None = None
 
         # Case 1: Client is injected - use it directly
         if client is not None:
@@ -286,6 +306,108 @@ class DiscordNotifier:
             logger.debug(f"Marked {event_id} as sent with 24h TTL")
         except Exception as e:
             logger.warning(f"Failed to mark event as sent: {e}")
+
+    # --- Noise Reduction Methods ---
+
+    @staticmethod
+    def should_notify_for_assessment(
+        current_score: float,
+        previous_score: float | None,
+        threshold: float = DEFAULT_NOTIFICATION_SCORE_THRESHOLD,
+    ) -> bool:
+        """Determine whether a self-assessment score change warrants a notification.
+
+        Args:
+            current_score: The overall score from the current assessment.
+            previous_score: The overall score from the previous assessment,
+                or None if this is the first assessment.
+            threshold: Minimum absolute delta to consider a meaningful change.
+
+        Returns:
+            True if a notification should be sent:
+            - Always True when previous_score is None (first assessment).
+            - True when abs(current - previous) > threshold.
+        """
+        if previous_score is None:
+            return True
+        return abs(current_score - previous_score) > threshold
+
+    def add_to_digest(self, event: dict[str, Any]) -> bool:
+        """Buffer a low-severity event for batched digest delivery.
+
+        High/critical events should NOT use this path -- they go through
+        ``notify_autocog_event`` directly.
+
+        Args:
+            event: Dict with keys ``event_type``, ``severity``, ``summary``,
+                ``run_id``, plus optional ``impact``, ``top_metrics``,
+                ``artifact_path``.
+
+        Returns:
+            True if the event was buffered.  Returns False when the event
+            is high/critical severity (caller should send immediately).
+        """
+        severity = (event.get("severity") or "low").lower()
+        if severity in ("high", "critical"):
+            return False
+
+        self._low_severity_buffer.append(event)
+        logger.debug(
+            "Buffered low-severity event (buffer=%d/%d): %s",
+            len(self._low_severity_buffer),
+            self._digest_max_items,
+            event.get("event_type"),
+        )
+        return True
+
+    def should_flush_digest(self) -> bool:
+        """Check if the low-severity digest should be flushed.
+
+        Flush triggers:
+        - Buffer reached ``_digest_max_items``.
+        - Interval elapsed since last flush.
+        """
+        if len(self._low_severity_buffer) >= self._digest_max_items:
+            return True
+        if self._digest_last_flush is not None:
+            elapsed = datetime.now(UTC) - self._digest_last_flush
+            if elapsed >= timedelta(minutes=self._digest_interval_minutes):
+                return True
+        return False
+
+    async def send_digest(self) -> bool:
+        """Flush buffered low-severity events as a single digest notification.
+
+        Returns:
+            True if a digest was sent, False if buffer was empty or send failed.
+        """
+        if not self._low_severity_buffer:
+            return False
+
+        if not self._is_enabled():
+            logger.info("Discord notifications disabled by feature flag")
+            return False
+
+        items = list(self._low_severity_buffer)
+        self._low_severity_buffer.clear()
+        self._digest_last_flush = datetime.now(UTC)
+
+        try:
+            from .formatters import LowSeverityDigestFormatter
+
+            formatter = LowSeverityDigestFormatter()
+            content = formatter.format_digest(items)
+            success, message_id = await self._send_with_retry(content)
+            if success:
+                logger.info(
+                    "Sent low-severity digest with %d items (message_id=%s)",
+                    len(items),
+                    message_id,
+                )
+            return success
+        except Exception as e:
+            logger.error("Failed to send low-severity digest: %s", e)
+            return False
 
     async def _validate_channel(self) -> tuple[bool, str | None]:
         """Validate that the configured channel is accessible.
@@ -540,13 +662,39 @@ class DiscordNotifier:
         self,
         artifact: Any,
         artifact_path: str | None = None,
+        previous_score: float | None = None,
     ) -> bool:
         """Send self-assessment completion event to Discord.
 
         Event type: self_assessment_completed
+
+        Noise reduction: If ``previous_score`` is provided and the delta
+        between it and ``artifact.overall_score`` is within
+        ``_notification_score_threshold``, the notification is suppressed
+        (unless this is the first assessment).
+
+        Args:
+            artifact: The self-assessment artifact.
+            artifact_path: Optional path to the persisted artifact.
+            previous_score: Overall score from the previous assessment,
+                or None for first assessment (always notifies).
+
+        Returns:
+            True if sent successfully, False if suppressed or failed.
         """
         if not self._is_enabled():
             logger.info("Discord notifications disabled by feature flag")
+            return False
+
+        current_score = getattr(artifact, "overall_score", 0.0)
+
+        if not self.should_notify_for_assessment(
+            current_score, previous_score, self._notification_score_threshold
+        ):
+            logger.info(
+                "Self-assessment score unchanged (%.4f), suppressing notification",
+                current_score,
+            )
             return False
 
         event_date = getattr(artifact, "assessment_date", "")

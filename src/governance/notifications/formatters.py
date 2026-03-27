@@ -320,3 +320,52 @@ class AutocogEventFormatter:
         if head_len <= 0:
             return content[: self._MAX_DISCORD_MESSAGE_LEN]
         return content[:head_len] + suffix
+
+
+class LowSeverityDigestFormatter:
+    """Formats batched low-severity events into a single digest notification."""
+
+    _MAX_DISCORD_MESSAGE_LEN = 1900
+
+    def format_digest(self, items: list[dict[str, Any]]) -> str:
+        """Format a list of low-severity events into a digest message.
+
+        Args:
+            items: List of event dicts with at least ``event_type`` and
+                ``summary`` keys.
+
+        Returns:
+            Formatted Discord message string.
+        """
+        if not items:
+            return ""
+
+        lines = [
+            f"📋 **Low-Severity Event Digest ({len(items)} items)**",
+            "",
+        ]
+
+        for idx, item in enumerate(items, 1):
+            event_type = item.get("event_type", "unknown")
+            summary = item.get("summary", "No summary")
+            run_id = item.get("run_id", "")
+            severity = item.get("severity", "low").upper()
+
+            lines.append(f"**{idx}. [{severity}]** `{event_type}`")
+            lines.append(f"   {summary}")
+            if run_id:
+                lines.append(f"   Run: `{run_id}`")
+            lines.append("")
+
+        lines.append(f"_Digest generated at {datetime.now(UTC).isoformat()}_")
+        return self._truncate_message("\n".join(lines))
+
+    def _truncate_message(self, content: str) -> str:
+        """Trim content to stay safely within Discord 2000-char limit."""
+        if len(content) <= self._MAX_DISCORD_MESSAGE_LEN:
+            return content
+        suffix = "\n\n[digest truncated for Discord length limit]"
+        head_len = self._MAX_DISCORD_MESSAGE_LEN - len(suffix)
+        if head_len <= 0:
+            return content[: self._MAX_DISCORD_MESSAGE_LEN]
+        return content[:head_len] + suffix
