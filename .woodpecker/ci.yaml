@@ -75,6 +75,30 @@ steps:
         echo "$code" > "$${CI_STATUS_DIR}/swarm-context.status"
         exit 0
 
+  # ST-LOCAL-009: Pre-flight checks - Validate environment before CI run
+  # Non-blocking: outputs warnings but never fails the pipeline.
+  # Runs at start of pipeline to catch environment issues early.
+  pre-flight:
+    pull: false
+    image: chiseai-ci-tools:py311-20260323
+    environment:
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p "$${CI_STATUS_DIR}"
+        set +e
+        (
+          set -euo pipefail
+          echo "pre-flight: Running environment validation checks..."
+          python scripts/ci_integration/pre_flight_checks.py --output "$${CI_STATUS_DIR}/pre-flight-report.json"
+        ) > "$${CI_STATUS_DIR}/pre-flight.log" 2>&1
+        code=$?
+        cat "$${CI_STATUS_DIR}/pre-flight.log"
+        # Advisory-only: always write exit code but pipeline continues
+        echo "$code" > "$${CI_STATUS_DIR}/pre-flight.status"
+        exit 0
+
   # ST-GIT-REMEDIATION-001: Cross-branch verification (advisory-only)
   # Logs verification of merge-to-main commits but does not block pipeline.
   # Runs in all pipelines but only runs the check on push-to-main events.
@@ -541,6 +565,35 @@ steps:
         # The ci-gate step reads local-ci.status and fails if non-zero.
         # Note: local-ci is in FULL_REQUIRED list, so it only blocks on main/cron
         # or when FORCE_FULL_GATE=1. PR builds skip this gate by default.
+        exit 0
+
+  # ST-LOCAL-009: Post-run reporter - Collect and report CI/CD test results
+  # Non-blocking: collects metrics and generates reports after test execution.
+  # Runs after local-ci to collect test results and coverage data.
+  post-run:
+    pull: false
+    image: chiseai-ci-tools:py311-20260323
+    depends_on:
+      - local-ci
+    environment:
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p "$${CI_STATUS_DIR}"
+        set +e
+        (
+          set -euo pipefail
+          echo "post-run: Collecting and reporting CI/CD test results..."
+          python scripts/ci_integration/post_run_reporter.py \
+            --input-dir "$${CI_STATUS_DIR}" \
+            --output "$${CI_STATUS_DIR}/post-run-report.json" \
+            --markdown "$${CI_STATUS_DIR}/post-run-report.md"
+        ) > "$${CI_STATUS_DIR}/post-run.log" 2>&1
+        code=$?
+        cat "$${CI_STATUS_DIR}/post-run.log"
+        # Advisory-only: always write exit code but pipeline continues
+        echo "$code" > "$${CI_STATUS_DIR}/post-run.status"
         exit 0
 
   changed-lines-coverage:
@@ -1202,11 +1255,37 @@ steps:
         echo "$code" > "$${CI_STATUS_DIR}/truth-gate.status"
         exit 0
 
+  # ST-LOCAL-009: Gate evaluator - Evaluate quality gate pass/fail for CI
+  # Non-blocking: evaluates gate status and provides override capabilities.
+  # Runs after most checks to evaluate overall gate health.
+  gate-eval:
+    pull: false
+    image: chiseai-ci-tools:py311-20260323
+    environment:
+      CI_STATUS_DIR: "/woodpecker/ci-status/${CI_PIPELINE_NUMBER}"
+    commands:
+      - |
+        set -euo pipefail
+        mkdir -p "$${CI_STATUS_DIR}"
+        set +e
+        (
+          set -euo pipefail
+          echo "gate-eval: Evaluating quality gate pass/fail status..."
+          python scripts/ci_integration/gate_evaluator.py \
+            --output "$${CI_STATUS_DIR}/gate-eval-report.json"
+        ) > "$${CI_STATUS_DIR}/gate-eval.log" 2>&1
+        code=$?
+        cat "$${CI_STATUS_DIR}/gate-eval.log"
+        # Advisory-only: always write exit code but pipeline continues
+        echo "$code" > "$${CI_STATUS_DIR}/gate-eval.status"
+        exit 0
+
   ci-gate:
     pull: false
     image: chiseai-ci-tools:py311-20260323
     depends_on:
       - swarm-context
+      - pre-flight
       - cross-branch-verify
       - lint
       - local-ci-consistency
@@ -1218,6 +1297,7 @@ steps:
       - docs-pairing
       - docker-governance
       - local-ci
+      - post-run
       - pipeline-watchdog
       - pre-eval-ingestion
       - brain-eval
@@ -1238,6 +1318,7 @@ steps:
       - performance-gate
       - truth-gate
       - evidence-gate
+      - gate-eval
     environment:
       GITEA_TOKEN:
         from_secret: gitea_token
