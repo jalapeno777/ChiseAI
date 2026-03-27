@@ -60,14 +60,24 @@ class AutonomousCognitionController:
         self._redis_client = redis_client
         self._qdrant_client = qdrant_client
         self._config = self._load_config()
+        # Deduplication stats (instance-level for test isolation)
+        self._stats_files_written: int = 0
+        self._stats_files_skipped: int = 0
 
     def run_daily_self_assessment(self) -> tuple[SelfAssessmentArtifact, Path | None]:
         """Execute full self-assessment cycle and persist output."""
         artifact = self._build_artifact()
-        artifact_path = self._persist_artifact(artifact)
+        artifact_path, _ = self._persist_artifact(artifact)
         self._persist_redis(artifact)
         self._persist_qdrant(artifact)
         return artifact, artifact_path
+
+    def get_dedup_stats(self) -> dict[str, int]:
+        """Return deduplication statistics."""
+        return {
+            "files_written": self._stats_files_written,
+            "files_skipped": self._stats_files_skipped,
+        }
 
     def _build_artifact(self) -> SelfAssessmentArtifact:
         """Build self-assessment artifact from live system signals."""
@@ -173,18 +183,66 @@ class AutonomousCognitionController:
             "adaptive_learning_readiness": round(adaptation_score, 2),
         }
 
-    def _persist_artifact(self, artifact: SelfAssessmentArtifact) -> Path | None:
-        """Persist artifact to file system for auditability with error boundary."""
+    def _get_previous_score(self) -> float | None:
+        """Retrieve overall_score from the previous assessment run via Redis."""
+        payload: str | None = None
+
+        if self._redis_client is not None:
+            try:
+                payload = self._redis_client.get(self.REDIS_CURRENT_KEY)
+            except Exception as e:
+                logger.warning("Redis get failed: %s", e)
+
+        if payload is None and redis_state_get_client is not None:
+            try:
+                client = redis_state_get_client()
+                if client is not None:
+                    payload = client.get(self.REDIS_CURRENT_KEY)
+            except Exception as e:
+                logger.warning("redis_state get failed: %s", e)
+
+        if payload is None:
+            return None
+
+        try:
+            previous = SelfAssessmentArtifact.from_json(payload)
+            return previous.overall_score
+        except Exception as e:
+            logger.warning("Failed to parse previous assessment: %s", e)
+            return None
+
+    def _persist_artifact(
+        self, artifact: SelfAssessmentArtifact
+    ) -> tuple[Path | None, str]:
+        """Persist artifact to file system with deduplication.
+
+        Returns:
+            Tuple of (path, status) where status is "written" or "skipped".
+        """
+        previous_score = self._get_previous_score()
+
+        if (
+            previous_score is not None
+            and abs(artifact.overall_score - previous_score) < 1e-9
+        ):
+            logger.info(
+                "skipped redundant assessment (score unchanged: %.2f)",
+                artifact.overall_score,
+            )
+            self._stats_files_skipped += 1
+            return None, "skipped"
+
         try:
             self._artifacts_dir.mkdir(parents=True, exist_ok=True)
             filename = f"self_assessment_{artifact.assessment_date}_{artifact.assessment_id}.json"
             path = self._artifacts_dir / filename
             path.write_text(artifact.to_json(indent=2), encoding="utf-8")
             logger.info("Persisted self-assessment artifact to %s", path)
-            return path
+            self._stats_files_written += 1
+            return path, "written"
         except Exception as e:
             logger.error("Failed to persist artifact: %s", e)
-            return None
+            return None, "error"
 
     def _persist_redis(self, artifact: SelfAssessmentArtifact) -> None:
         """Persist latest and history to Redis with graceful fallback."""
