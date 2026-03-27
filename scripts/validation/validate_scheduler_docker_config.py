@@ -25,7 +25,6 @@ import argparse
 import sys
 from pathlib import Path
 
-
 # Patterns that indicate Docker-related changes (any path component match)
 DOCKER_RELEVANT_PATTERNS = [
     "infrastructure/docker/",
