@@ -3366,6 +3366,247 @@ validations:
     merge_commit: 05e88ddaf4f273a60435a66012eabf3f7194051a
     pr_number: 672
 
+  # ============================================================
+  # AUTOCOG RESTORATION VALIDATIONS (18 validations for 18 stories)
+  # Autonomous Cognition System - Real Qdrant writes, Discord notifier,
+  # BeliefStore fixes, Autonomous Controller, Belief expansion, etc.
+  # ============================================================
+
+  # AUTOCOG-RESTORE-001: Autonomous Cognition System Restoration
+  - id: V-AUTOCOG-001
+    title: Real Qdrant Writes for Iteration Learnings
+    epic_id: AUTOCOG-RESTORE-001
+    story_id: ST-AUTOCOG-001
+    status: planned
+    description: Replace simulated Qdrant writes with real vector storage for iteration learnings
+    acceptance_criteria:
+      - No simulated "would store" behavior in production paths
+      - Iteration learnings persisted to Qdrant with correct embeddings
+      - Test coverage validates real write operations
+    test_method: automated
+    owner: dev
+
+  - id: V-AUTOCOG-002
+    title: Real Qdrant Writes for Tempmemory Migration
+    epic_id: AUTOCOG-RESTORE-001
+    story_id: ST-AUTOCOG-002
+    status: planned
+    description: Replace simulated Qdrant writes with real vector storage for tempmemory migration
+    acceptance_criteria:
+      - Tempmemory data migrated to real Qdrant storage
+      - Vector embeddings generated correctly for migrated content
+      - Query performance meets production requirements
+    test_method: automated
+    owner: dev
+
+  - id: V-AUTOCOG-003
+    title: Dedup Vector TypeError Fix + Daily Sweep Re-enable
+    epic_id: AUTOCOG-RESTORE-001
+    story_id: ST-AUTOCOG-003
+    status: planned
+    description: Fix TypeError in dedup vector operations and re-enable daily sweep
+    acceptance_criteria:
+      - TypeError in dedup vector operations fixed
+      - Daily sweep re-enabled and functioning
+      - No recurrence of the TypeError in production
+    test_method: automated
+    owner: dev
+
+  - id: V-AUTOCOG-004
+    title: Discord Governance Notifier Hardening
+    epic_id: AUTOCOG-RESTORE-001
+    story_id: ST-AUTOCOG-004
+    status: planned
+    description: Harden Discord governance notifier for reliable operation
+    acceptance_criteria:
+      - Governance events delivered reliably to Discord
+      - Error handling prevents notification failures
+      - Rate limiting respects Discord API constraints
+    test_method: automated
+    owner: dev
+
+  - id: V-AUTOCOG-005-T1
+    title: Debug BeliefStore.put() Silent Failure
+    epic_id: AUTOCOG-RESTORE-001
+    story_id: ST-AUTOCOG-005-T1
+    status: planned
+    description: Debug BeliefStore.put() silent failure and identify root cause
+    acceptance_criteria:
+      - Root cause of silent failure identified
+      - Failure modes are logged appropriately
+      - Debug logging captures relevant state
+    test_method: automated
+    owner: dev
+
+  - id: V-AUTOCOG-005-T2
+    title: Implement Redis Backend Fix
+    epic_id: AUTOCOG-RESTORE-001
+    story_id: ST-AUTOCOG-005-T2
+    status: planned
+    description: Implement Redis backend fix for BeliefStore.put() failures
+    acceptance_criteria:
+      - Redis backend correctly stores beliefs
+      - Fallback behavior works when Redis is unavailable
+      - Connection pooling prevents resource exhaustion
+    test_method: automated
+    owner: dev
+
+  - id: V-AUTOCOG-005-T3
+    title: BeliefStore Integration Test Verification
+    epic_id: AUTOCOG-RESTORE-001
+    story_id: ST-AUTOCOG-005-T3
+    status: planned
+    description: Verify BeliefStore integration tests pass with Redis backend fix
+    acceptance_criteria:
+      - Integration tests pass with Redis backend
+      - Test coverage includes error scenarios
+      - No regression in other belief operations
+    test_method: automated
+    owner: dev
+
+  - id: V-AUTOCOG-006
+    title: Autonomous Controller + Daily Cycle
+    epic_id: AUTOCOG-RESTORE-001
+    story_id: ST-AUTOCOG-006
+    status: planned
+    description: Implement autonomous controller with daily cycle execution
+    acceptance_criteria:
+      - Daily cycle executes without manual intervention
+      - Controller handles errors gracefully
+      - Cycle state is persisted for recovery
+    test_method: automated
+    owner: dev
+
+  - id: V-AUTOCOG-007
+    title: Belief Expansion - Timeboxed
+    epic_id: AUTOCOG-RESTORE-001
+    story_id: ST-AUTOCOG-007
+    status: planned
+    description: Timeboxed belief expansion for autonomous cognition
+    acceptance_criteria:
+      - Belief expansion completes within time limit
+      - Quality thresholds are maintained
+      - Results are stored in Qdrant
+    test_method: automated
+    owner: dev
+
+  - id: V-AUTOCOG-008
+    title: Unified Self-Assessment Artifact Schema
+    epic_id: AUTOCOG-RESTORE-001
+    story_id: ST-AUTOCOG-008
+    status: planned
+    description: Define unified schema for self-assessment artifacts
+    acceptance_criteria:
+      - Schema covers all self-assessment metrics
+      - Schema is versioned and backward compatible
+      - Validation ensures artifact quality
+    test_method: automated
+    owner: dev
+
+  - id: V-AUTOCOG-009
+    title: Discord Completion Event
+    epic_id: AUTOCOG-RESTORE-001
+    story_id: ST-AUTOCOG-009
+    status: planned
+    description: Implement Discord completion event notifications
+    acceptance_criteria:
+      - Completion events sent to Discord on cycle finish
+      - Events include relevant metrics and status
+      - Error events trigger alerts appropriately
+    test_method: automated
+    owner: dev
+
+  - id: V-AUTOCOG-010
+    title: Belief System Refinements
+    epic_id: AUTOCOG-RESTORE-001
+    story_id: ST-AUTOCOG-010
+    status: planned
+    description: Refine belief system based on operational learnings
+    acceptance_criteria:
+      - Belief encoding improvements implemented
+      - Query performance improved
+      - Consistency checks pass
+    test_method: automated
+    owner: dev
+
+  - id: V-AUTOCOG-011
+    title: Belief Graph + Contradiction Resolution
+    epic_id: AUTOCOG-RESTORE-001
+    story_id: ST-AUTOCOG-011
+    status: planned
+    description: Implement belief graph with contradiction resolution
+    acceptance_criteria:
+      - Belief graph structure supports efficient queries
+      - Contradictions are detected automatically
+      - Resolution strategies are documented and tested
+    test_method: automated
+    owner: dev
+
+  - id: V-AUTOCOG-012
+    title: Strategy/Portfolio Improvement Loop
+    epic_id: AUTOCOG-RESTORE-001
+    story_id: ST-AUTOCOG-012
+    status: planned
+    description: Implement strategy and portfolio improvement loop
+    acceptance_criteria:
+      - Improvement loop runs on schedule
+      - Changes are evaluated against baselines
+      - Rollback available if metrics degrade
+    test_method: automated
+    owner: dev
+
+  - id: V-AUTOCOG-013
+    title: Neuro-Symbolic Runtime Integration
+    epic_id: AUTOCOG-RESTORE-001
+    story_id: ST-AUTOCOG-013
+    status: planned
+    description: Integrate neuro-symbolic runtime with autonomous cognition
+    acceptance_criteria:
+      - Runtime integrates with belief system
+      - Symbolic reasoning leverages neural embeddings
+      - Latency meets production requirements
+    test_method: automated
+    owner: dev
+
+  - id: V-AUTOCOG-014
+    title: Autonomy Tuning + Constitution Audit
+    epic_id: AUTOCOG-RESTORE-001
+    story_id: ST-AUTOCOG-014
+    status: planned
+    description: Tune autonomy parameters and audit constitution compliance
+    acceptance_criteria:
+      - Autonomy parameters tuned for operational stability
+      - Constitution compliance verified
+      - Audit trail captures all decisions
+    test_method: automated
+    owner: dev
+
+  - id: V-AUTOCOG-015
+    title: Self-Assessment Deduplication
+    epic_id: AUTOCOG-RESTORE-001
+    story_id: ST-AUTOCOG-015
+    status: planned
+    description: Deduplicate self-assessment artifacts to reduce noise
+    acceptance_criteria:
+      - Duplicate assessments identified and merged
+      - Deduplication preserves key metrics
+      - Storage efficiency improved
+    test_method: automated
+    owner: dev
+
+  - id: V-AUTOCOG-016
+    title: Discord Notification Noise Reduction
+    epic_id: AUTOCOG-RESTORE-001
+    story_id: ST-AUTOCOG-016
+    status: planned
+    description: Reduce Discord notification noise while maintaining awareness
+    acceptance_criteria:
+      - Notification volume reduced without losing critical alerts
+      - Aggregation applied to related events
+      - Critical events still delivered immediately
+    test_method: automated
+    owner: dev
+
 # ============================================================
 # Global validation thresholds
 # ============================================================
