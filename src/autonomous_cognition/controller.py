@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol
 
-from autonomous_cognition.schema.assessment_schema import AssessmentArtifact
+from autonomous_cognition.artifacts import SelfAssessmentArtifact
 
 logger = logging.getLogger(__name__)
 
@@ -36,8 +36,7 @@ try:
         _get_redis_client as redis_state_get_client,  # type: ignore[attr-defined]
     )
     from tools.redis_state import redis_state_lpush, redis_state_set
-except ImportError:
-    logger.warning("Failed to import tools.redis_state - Redis persistence disabled")
+except Exception:
     redis_state_get_client = None
     redis_state_lpush = None
     redis_state_set = None
@@ -65,7 +64,7 @@ class AutonomousCognitionController:
         self._stats_files_written: int = 0
         self._stats_files_skipped: int = 0
 
-    def run_daily_self_assessment(self) -> tuple[AssessmentArtifact, Path | None]:
+    def run_daily_self_assessment(self) -> tuple[SelfAssessmentArtifact, Path | None]:
         """Execute full self-assessment cycle and persist output."""
         artifact = self._build_artifact()
         artifact_path, _ = self._persist_artifact(artifact)
@@ -80,13 +79,12 @@ class AutonomousCognitionController:
             "files_skipped": self._stats_files_skipped,
         }
 
-    def _build_artifact(self) -> AssessmentArtifact:
+    def _build_artifact(self) -> SelfAssessmentArtifact:
         """Build self-assessment artifact from live system signals."""
         assessment_id = (
             f"sa-{datetime.now(UTC).strftime('%Y%m%d')}-{uuid.uuid4().hex[:8]}"
         )
-        assessment_date = datetime.now(UTC).date().isoformat()
-        created_at = datetime.now(UTC).isoformat()
+        artifact = SelfAssessmentArtifact.create_empty(assessment_id=assessment_id)
 
         signals = self._collect_signals()
         dimensions = self._score_dimensions(signals)
@@ -125,26 +123,18 @@ class AutonomousCognitionController:
         if overall_score < 0.5:
             status = "failed"
 
-        # Build artifact dict in legacy format for backward compatibility
-        # AssessmentArtifact.from_dict() handles conversion to typed structures
-        artifact_dict = {
-            "assessment_id": assessment_id,
-            "assessment_date": assessment_date,
-            "created_at": created_at,
-            "schema_version": "1.1.0",
-            "status": status,
-            "overall_score": overall_score,
-            "dimensions": dimensions,  # Legacy dict format - from_dict converts to DimensionScore list
-            "findings": findings,  # Legacy str list - from_dict converts to Finding list
-            "recommendations": recommendations,  # Legacy str list - from_dict converts to Recommendation list
-            "evidence": signals,  # Legacy dict format - from_dict converts to Evidence list
-            "metadata": {  # Note: 'metadata' not 'run_metadata'
-                "runner": "autonomous_cognition.controller",
-                "host": os.getenv("HOSTNAME", "unknown"),
-                "python_env": os.getenv("CHISEAI_ENV", "development"),
-            },
+        artifact.status = status
+        artifact.overall_score = overall_score
+        artifact.dimensions = dimensions
+        artifact.findings = findings
+        artifact.recommendations = recommendations
+        artifact.evidence = signals
+        artifact.run_metadata = {
+            "runner": "autonomous_cognition.controller",
+            "host": os.getenv("HOSTNAME", "unknown"),
+            "python_env": os.getenv("CHISEAI_ENV", "development"),
         }
-        return AssessmentArtifact.from_dict(artifact_dict)
+        return artifact
 
     def _collect_signals(self) -> dict[str, Any]:
         """Collect low-latency signals for assessment scoring."""
@@ -215,14 +205,14 @@ class AutonomousCognitionController:
             return None
 
         try:
-            previous = AssessmentArtifact.from_json(payload)
+            previous = SelfAssessmentArtifact.from_json(payload)
             return previous.overall_score
         except Exception as e:
             logger.warning("Failed to parse previous assessment: %s", e)
             return None
 
     def _persist_artifact(
-        self, artifact: AssessmentArtifact
+        self, artifact: SelfAssessmentArtifact
     ) -> tuple[Path | None, str]:
         """Persist artifact to file system with deduplication.
 
@@ -254,7 +244,7 @@ class AutonomousCognitionController:
             logger.error("Failed to persist artifact: %s", e)
             return None, "error"
 
-    def _persist_redis(self, artifact: AssessmentArtifact) -> None:
+    def _persist_redis(self, artifact: SelfAssessmentArtifact) -> None:
         """Persist latest and history to Redis with graceful fallback."""
         payload = artifact.to_json()
 
@@ -275,7 +265,7 @@ class AutonomousCognitionController:
         except Exception as e:
             logger.warning("Redis persistence skipped: %s", e)
 
-    def _persist_qdrant(self, artifact: AssessmentArtifact) -> None:
+    def _persist_qdrant(self, artifact: SelfAssessmentArtifact) -> None:
         """Persist artifact summary to Qdrant if client is configured."""
         if self._qdrant_client is None:
             return
@@ -283,18 +273,9 @@ class AutonomousCognitionController:
         try:
             collection_name = "ChiseAI"
             vector_size = 384
-            # Extract string descriptions from typed Finding/Recommendation objects
-            findings_text = " ".join(
-                f.description if hasattr(f, "description") else str(f)
-                for f in artifact.findings
-            )
-            recommendations_text = " ".join(
-                r.description if hasattr(r, "description") else str(r)
-                for r in artifact.recommendations
-            )
             content = (
                 f"{artifact.status} {artifact.overall_score} "
-                f"{findings_text} {recommendations_text}"
+                f"{' '.join(artifact.findings)} {' '.join(artifact.recommendations)}"
             )
             vector = self._deterministic_embedding(content, dimensions=vector_size)
             self._qdrant_client.upsert(

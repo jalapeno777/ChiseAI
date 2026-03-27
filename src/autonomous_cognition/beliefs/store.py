@@ -37,7 +37,6 @@ class BeliefStore:
                 belief.belief_id,
                 validation_errors,
             )
-            return
 
         self._beliefs[belief.belief_id] = belief
         logger.info("[BELIEF_STORE] Saved to memory: _beliefs[%s]", belief.belief_id)
