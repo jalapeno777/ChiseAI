@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 import time
+import traceback
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
@@ -320,6 +321,14 @@ class NeuroSymbolicRuntimeIntegrator:
         """
         start_time = time.perf_counter()
         integration_mode = IntegrationMode(mode)
+
+        # Validate market_input is provided for non-shadow modes
+        if market_input is None and integration_mode != IntegrationMode.SHADOW:
+            raise ValueError(
+                f"market_input is required for {integration_mode.value} mode; "
+                "use shadow mode if you don't have market data"
+            )
+
         data = market_input or {
             "price": 100.0,
             "volume": 1000.0,
@@ -397,9 +406,30 @@ class NeuroSymbolicRuntimeIntegrator:
 
             self._fallback_used = False
 
-        except Exception as e:
+        except ImportError as e:
+            # ImportError is permanent - the module is not available
             logger.error(
-                "[RUNTIME_INTEGRATION] Orchestrator failed: %s, using fallback", e
+                "[RUNTIME_INTEGRATION] ImportError: Neuro-symbolic orchestrator "
+                "module unavailable (permanent failure): %s\n%s",
+                e,
+                traceback.format_exc(),
+            )
+
+            if not self._enable_fallback:
+                return fallback_result
+
+            self._fallback_used = True
+            fallback_result.processing_time_ms = (
+                time.perf_counter() - start_time
+            ) * 1000
+            return fallback_result
+
+        except Exception as e:
+            # Other exceptions may be transient
+            logger.error(
+                "[RUNTIME_INTEGRATION] Orchestrator failed (transient): %s\n%s",
+                e,
+                traceback.format_exc(),
             )
 
             if not self._enable_fallback:

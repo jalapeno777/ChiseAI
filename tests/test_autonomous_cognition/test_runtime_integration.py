@@ -258,13 +258,17 @@ class TestIntegrationModes:
     def test_canary_mode_available(self) -> None:
         """Canary mode should be available."""
         integrator = NeuroSymbolicRuntimeIntegrator(shadow_lock=True)
-        result = integrator.run(mode="canary")
+        result = integrator.run(
+            mode="canary", market_input={"price": 100.0, "volume": 1000.0, "rsi": 55.0}
+        )
 
         assert result.mode == "canary"
 
     def test_full_mode_available(self) -> None:
         """Full mode should be available."""
         integrator = NeuroSymbolicRuntimeIntegrator(shadow_lock=True)
-        result = integrator.run(mode="full")
+        result = integrator.run(
+            mode="full", market_input={"price": 100.0, "volume": 1000.0, "rsi": 55.0}
+        )
 
         assert result.mode == "full"
