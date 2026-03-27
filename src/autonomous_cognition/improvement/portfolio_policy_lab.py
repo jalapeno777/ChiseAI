@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from autonomous_cognition.improvement.hypothesis_generator import Hypothesis
+from autonomous_cognition.improvement.scoring import composite_score
 
 
 @dataclass
@@ -144,12 +145,12 @@ class PortfolioPolicyLab:
             turnover=round(turnover, 3),
         )
 
-        # Determine pass/fail based on gates
+        # Determine pass/fail based on config thresholds
         passed = (
-            sharpe >= self.GATE_SHARPE
-            and sortino >= self.GATE_SORTINO
-            and drawdown <= self.GATE_DRAWDOWN
-            and ece <= self.GATE_ECE
+            sharpe >= self._config.min_sharpe
+            and sortino >= self._config.min_sharpe + 0.1  # sortino gate is relative
+            and drawdown <= self._config.max_drawdown
+            and ece <= self._config.max_ece
         )
 
         return ExperimentResult(
@@ -158,10 +159,10 @@ class PortfolioPolicyLab:
             passed=passed,
             details={
                 "seed": seed,
-                "gates_shapre": self.GATE_SHARPE,
-                "gates_sortino": self.GATE_SORTINO,
-                "gates_drawdown": self.GATE_DRAWDOWN,
-                "gates_ece": self.GATE_ECE,
+                "gates_sharpe": self._config.min_sharpe,
+                "gates_sortino": self._config.min_sharpe + 0.1,
+                "gates_drawdown": self._config.max_drawdown,
+                "gates_ece": self._config.max_ece,
             },
         )
 
@@ -191,16 +192,22 @@ class PortfolioPolicyLab:
         """
 
         # Score based on weighted metrics
-        def score(r: ExperimentResult) -> float:
-            return (
-                r.metrics.sharpe * 0.3
-                + r.metrics.sortino * 0.2
-                - r.metrics.drawdown * 0.3
-                - r.metrics.ece * 0.2
-            )
-
-        score_a = score(result_a)
-        score_b = score(result_b)
+        score_a = composite_score(
+            {
+                "sharpe": result_a.metrics.sharpe,
+                "sortino": result_a.metrics.sortino,
+                "drawdown": result_a.metrics.drawdown,
+                "ece": result_a.metrics.ece,
+            }
+        )
+        score_b = composite_score(
+            {
+                "sharpe": result_b.metrics.sharpe,
+                "sortino": result_b.metrics.sortino,
+                "drawdown": result_b.metrics.drawdown,
+                "ece": result_b.metrics.ece,
+            }
+        )
 
         if score_a > score_b:
             return "a"

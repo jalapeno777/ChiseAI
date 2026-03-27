@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from autonomous_cognition.improvement.scoring import composite_score
 from autonomous_cognition.policy_engine import AutonomousPolicyEngine, GateDecision
 
 
@@ -174,18 +175,8 @@ class ChampionChallengerEngine:
             ComparisonResult with winner and recommendation
         """
 
-        # Calculate composite scores
-        def score(m: dict[str, float]) -> float:
-            """Score based on weighted metrics."""
-            return (
-                m.get("sharpe", 0.0) * 0.30
-                + m.get("sortino", 0.0) * 0.20
-                - m.get("drawdown", 0.0) * 0.30
-                - m.get("ece", 0.0) * 0.20
-            )
-
-        champion_score = score(champion_metrics)
-        challenger_score = score(challenger_metrics)
+        champion_score = composite_score(champion_metrics)
+        challenger_score = composite_score(challenger_metrics)
 
         score_delta = challenger_score - champion_score
 
@@ -245,12 +236,7 @@ class ChampionChallengerEngine:
         """
         ranked = []
         for r in results:
-            score = (
-                r.metrics.get("sharpe", 0.0) * 0.30
-                + r.metrics.get("sortino", 0.0) * 0.20
-                - r.metrics.get("drawdown", 0.0) * 0.30
-                - r.metrics.get("ece", 0.0) * 0.20
-            )
+            score = composite_score(r.metrics)
             ranked.append((score, r))
 
         ranked.sort(key=lambda x: x[0], reverse=True)
