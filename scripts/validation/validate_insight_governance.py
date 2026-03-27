@@ -489,9 +489,11 @@ def main() -> int:
     )
     args = ap.parse_args()
 
-    paths = sorted(ITERLOG_DIR.glob(ITERLOG_GLOB))
     if args.story_id:
-        paths = [p for p in paths if args.story_id in p.name]
+        direct_path = ITERLOG_DIR / f"iterlog-{args.story_id}.md"
+        paths = [direct_path] if direct_path.exists() else []
+    else:
+        paths = sorted(ITERLOG_DIR.glob(ITERLOG_GLOB))
 
     exempt_story_ids = _load_legacy_exemptions()
     skipped_legacy = 0
