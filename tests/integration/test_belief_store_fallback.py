@@ -14,7 +14,6 @@ import pytest
 from autonomous_cognition.beliefs.models import Belief
 from autonomous_cognition.beliefs.store import BeliefStore
 
-
 # =============================================================================
 # Fixtures
 # =============================================================================
